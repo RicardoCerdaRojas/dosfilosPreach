@@ -56,19 +56,24 @@ console.log(`\n3. ¿Los fragmentos quedaron anclados al pasaje?`);
 if (chunks.empty) {
     console.log('   ✗ Ningún fragmento todavía.');
 } else {
-    // El anclaje vive en el encabezado de sección que el chunker preserva.
-    // Sin él, el fragmento existe pero el recuperador no sabe de qué pasaje
-    // habla, que es justo lo que la conversión desde ThML vino a evitar.
+    // El anclaje vive en `metadata.section`, que es donde el chunker deja el
+    // encabezado de la sección. Ahí hay que mirarlo y no en el cuerpo del
+    // fragmento: el texto de un comentario cita pasajes todo el tiempo
+    // —«compárese con Isa 34:11»— así que buscar una referencia dentro del
+    // texto da verdadero casi siempre y no prueba nada. Sin `section`, el
+    // fragmento existe pero el recuperador no sabe de qué pasaje habla, que
+    // es justo lo que la conversión desde ThML vino a evitar.
     const conAncla = chunks.docs.filter(d => {
-        const j = JSON.stringify(d.data());
-        return /"[A-Z1-3]{2,3} \d+(:\d+)?"/.test(j) || /## [A-Z1-3]{2,3} \d+/.test(j);
+        const seccion = d.data().metadata?.section;
+        return typeof seccion === 'string' && /^[A-Z1-3]{2,3} \d+/.test(seccion);
     }).length;
     console.log(`   muestra revisada: ${chunks.size}`);
-    console.log(`   con ancla de pasaje: ${conAncla} (${Math.round(conAncla / chunks.size * 100)}%)`);
+    console.log(`   con ancla en metadata.section: ${conAncla} (${Math.round(conAncla / chunks.size * 100)}%)`);
     const ejemplo = chunks.docs[0].data();
     const texto = String(ejemplo.text ?? ejemplo.content ?? '');
-    console.log(`\n   ejemplo — secciones: ${JSON.stringify(ejemplo.sectionPath ?? ejemplo.headings ?? '(sin ruta)')}`);
-    console.log(`   ${texto.slice(0, 180).replace(/\n/g, ' ')}…`);
+    console.log(`\n   ejemplo — sección: ${ejemplo.metadata?.section ?? '(sin ancla)'}`);
+    console.log(`   ruta:            ${JSON.stringify(ejemplo.metadata?.sectionPath ?? [])}`);
+    console.log(`   ${texto.slice(0, 160).replace(/\n/g, ' ')}…`);
 }
 
 console.log('\n' + '─'.repeat(64));
