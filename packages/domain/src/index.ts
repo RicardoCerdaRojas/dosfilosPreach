@@ -144,6 +144,7 @@ export * from './bible/searchMatching'; // 🌱 Biblia — búsqueda sin acentos
 export * from './bible/versification/versificationMap'; // 🌱 Versificación — correspondencia TM ↔ lector (UBS)
 export * from './bible/versification/mapVersification';
 export * from './bible/versification/formatForReader';
+export * from './bible/osis/osisBookCodes'; // 🌱 OSIS — códigos de libro de las fuentes abiertas
 export * from './bible/inferGenreFromBook'; // 🌱 Phase 1.6 — book → literary genre proposal (ADR-024)
 export * from './services/IPastoralWordStudyService'; // 🌱 Phase 1.5 — service port
 export * from './repositories/IPastoralWordAnalysisCacheRepository'; // 🌱 Phase 1.5 — analysis cache
