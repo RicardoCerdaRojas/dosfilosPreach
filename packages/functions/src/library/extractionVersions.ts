@@ -22,6 +22,19 @@ export type ExtractionVersion =
     | '3.0-llamaparse'
     | '4.0-gemini-standard'
     | '5.0-pdfparse-structured'
+    /**
+     * Obras de dominio público ingeridas desde ThML (el XML de CCEL). NO
+     * pasan por extracción: el texto llega ya estructurado y anclado al
+     * pasaje por los elementos `<scripCom>` de la fuente, y el conversor
+     * sólo lo pasa a markdown con un encabezado por bloque.
+     *
+     * Lleva versión propia en vez de reusar una de las de arriba porque
+     * este campo registra CÓMO se obtuvo el texto. Etiquetar como
+     * LlamaParse algo que nunca lo tocó rompería el rastro de procedencia
+     * y engañaría a cualquier lógica futura que se ramifique por acá —
+     * empezando por el diagnóstico de calidad de extracción.
+     */
+    | '6.0-thml-public-domain'
     | '2.0-gemini'
     | 'fallback-pdfparse';
 
@@ -39,6 +52,7 @@ export const STRUCTURED_EXTRACTION_VERSIONS: readonly ExtractionVersion[] = [
     '3.0-llamaparse',
     '4.0-gemini-standard',
     '5.0-pdfparse-structured',
+    '6.0-thml-public-domain',
 ] as const;
 
 /**
