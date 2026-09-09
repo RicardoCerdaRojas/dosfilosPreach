@@ -85,10 +85,22 @@ export function PageNumberingPage() {
         patch({ sheet, value: '', unnumbered: false });
     };
 
-    const pending = answers.some(a => !a.unnumbered && !a.value.trim());
+    // Qué pasos faltan, no sólo si falta alguno: un botón gris que no dice
+    // cuál está incompleto deja al usuario mirando un contador que ya marca
+    // «4 de 4» y creyendo que terminó.
+    const pendingSteps = answers
+        .map((a, i) => (!a.unnumbered && !a.value.trim() ? i : -1))
+        .filter(i => i >= 0);
+    const pending = pendingSteps.length > 0;
 
     const handleSave = async () => {
-        if (!resourceId || !numbering) return;
+        if (!resourceId) return;
+        if (!numbering) {
+            // Antes era un `return` mudo. Un guardado que no guarda y no dice
+            // nada es indistinguible de uno que funcionó.
+            toast.error(t('numbering.nothingToSave'));
+            return;
+        }
         try {
             await save.mutateAsync({ resourceId, numbering });
             toast.success(t('numbering.saved'));
@@ -211,23 +223,54 @@ export function PageNumberingPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 border-t pt-4">
-                        <Button variant="ghost" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
-                            {t('numbering.prevStep')}
-                        </Button>
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                            {t('numbering.stepCounter', { current: step + 1, total: answers.length })}
-                        </span>
-                        {step < answers.length - 1 ? (
-                            <Button onClick={() => setStep(s => s + 1)}>{t('numbering.nextStep')}</Button>
-                        ) : (
-                            <Button onClick={handleSave} disabled={!numbering || pending || save.isPending}>
+                    <div className="space-y-3 border-t pt-4">
+                        <div className="flex items-center gap-2">
+                            {answers.map((a, i) => {
+                                const done = a.unnumbered || !!a.value.trim();
+                                return (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => setStep(i)}
+                                        aria-label={t('numbering.goToStep', { step: i + 1, sheet: a.sheet })}
+                                        aria-current={i === step ? 'step' : undefined}
+                                        className={[
+                                            'flex h-8 w-8 items-center justify-center rounded-full border text-xs tabular-nums transition-colors',
+                                            i === step ? 'ring-2 ring-ring ring-offset-1' : '',
+                                            done ? 'border-primary bg-primary/10 text-foreground' : 'border-dashed text-muted-foreground',
+                                        ].join(' ')}
+                                    >
+                                        {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {pending && (
+                            <p className="text-sm text-muted-foreground">
+                                {t('numbering.missingSteps', {
+                                    count: pendingSteps.length,
+                                    sheets: pendingSteps.map(i => answers[i]!.sheet).join(', '),
+                                })}
+                            </p>
+                        )}
+
+                        <div className="flex items-center justify-between gap-2">
+                            <Button variant="ghost" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
+                                {t('numbering.prevStep')}
+                            </Button>
+                            {step < answers.length - 1 && (
+                                <Button variant="outline" onClick={() => setStep(s => s + 1)}>
+                                    {t('numbering.nextStep')}
+                                </Button>
+                            )}
+                            <Button onClick={handleSave} disabled={pending || save.isPending}>
                                 {save.isPending
                                     ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     : <Check className="mr-2 h-4 w-4" />}
                                 {t('numbering.confirm')}
                             </Button>
-                        )}
+                        </div>
                     </div>
 
                     <NumberingSegmentsPreview numbering={numbering} />
