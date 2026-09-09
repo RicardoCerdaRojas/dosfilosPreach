@@ -7,7 +7,7 @@ import {
 } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
-import { LONG_COMPOSITION_TIMEOUT_MS } from '../composerTimeouts';
+import { LONG_GENERATION_TIMEOUT_MS } from '../../llm/llmTimeouts';
 import {
     commonGuardrails,
     formatAssignmentBrief,
@@ -56,7 +56,7 @@ export class GeminiSermonComposer implements ISermonComposer {
                 temperature: 0.5,
                 topP: 0.92,
                 maxOutputTokens: 32768,
-            }, { timeoutMs: LONG_COMPOSITION_TIMEOUT_MS }),
+            }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS }),
             { contextLabel: 'GeminiSermonComposer' },
         );
 

@@ -5,7 +5,7 @@ import {
 } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
-import { LONG_COMPOSITION_TIMEOUT_MS } from '../composerTimeouts';
+import { LONG_GENERATION_TIMEOUT_MS } from '../../llm/llmTimeouts';
 import { buildComposerPrompt } from './composerPrompts';
 
 /**
@@ -68,7 +68,7 @@ export class GeminiAcademicComposer implements IAcademicComposer {
                 // 65.536, no menos: un paper de 12-25 páginas ronda los
                 // 25-50k tokens. Con un tope menor sale recortado y sin error.
                 maxOutputTokens: 65536,
-            }, { timeoutMs: LONG_COMPOSITION_TIMEOUT_MS }),
+            }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS }),
             { contextLabel: 'GeminiAcademicComposer' },
         );
 

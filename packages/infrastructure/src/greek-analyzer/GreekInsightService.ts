@@ -5,6 +5,7 @@ import {
     type GreekWordToken,
 } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
+import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 
 /**
  * El aporte del modelo al analizador griego: rango semántico, función
@@ -28,7 +29,7 @@ export class GreekInsightService {
             // Un versículo largo (30+ palabras con rango y función cada una)
             // necesita espacio; 16k cubre el peor caso del NT con margen.
             maxOutputTokens: 16384,
-        });
+        }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS });
         const parsed = parseGreekInsight(raw ?? '', {
             reference: input.reference,
             expectedWordCount: input.tokens.length,

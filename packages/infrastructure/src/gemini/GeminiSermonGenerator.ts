@@ -20,6 +20,7 @@ import {
 } from './prompts-generator';
 
 import { GEMINI_CONFIG } from './config';
+import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 
 export class GeminiSermonGenerator implements ISermonGenerator {
 
@@ -179,7 +180,7 @@ export class GeminiSermonGenerator implements ISermonGenerator {
                     ...(effectiveStore
                         ? { fileSearchStoreId: effectiveStore }
                         : { responseMimeType: 'application/json' as const }),
-                });
+                }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS });
             };
 
             let text: string;

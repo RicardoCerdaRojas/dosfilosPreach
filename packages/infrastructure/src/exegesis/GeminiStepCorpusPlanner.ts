@@ -7,7 +7,7 @@ import {
 } from '@dosfilos/domain';
 import { withGeminiRetry } from './geminiRetry';
 import { runLlmPrompt } from '../llm/callableLlm';
-import { LONG_COMPOSITION_TIMEOUT_MS } from './composerTimeouts';
+import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 
 /**
  * v1.7 — Gemini implementation of `IStepCorpusPlanner`.
@@ -65,7 +65,7 @@ export class GeminiStepCorpusPlanner implements IStepCorpusPlanner {
                 // even for ~30 sources × ~30 steps. Pro 2.5 supports up
                 // to 65k so we're nowhere near the model ceiling.
                 maxOutputTokens: 32768,
-            }, { timeoutMs: LONG_COMPOSITION_TIMEOUT_MS }),
+            }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS }),
             { contextLabel: 'GeminiStepCorpusPlanner' },
         );
 

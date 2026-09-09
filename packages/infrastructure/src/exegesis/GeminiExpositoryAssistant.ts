@@ -17,6 +17,7 @@ import {
 } from '@dosfilos/domain';
 import { withGeminiRetry } from './geminiRetry';
 import { runLlmPromptWithUsage } from '../llm/callableLlm';
+import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 import {
     buildPanoramaSystemInstruction,
     buildPanoramaUserMessage,
@@ -317,7 +318,7 @@ export class GeminiExpositoryAssistant implements IExpositoryAssistant {
                 topP: 0.92,
                 responseMimeType: 'application/json',
                 responseSchema: PREACHABLE_RESPONSE_SCHEMA,
-            }),
+            }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS }),
             { contextLabel: 'GeminiExpositoryAssistant.runPreachableConversion' },
         );
         assertUsableResponse(raw, finishReason, 'preachableConversion');
