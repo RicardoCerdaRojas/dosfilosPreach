@@ -430,6 +430,11 @@ export class LibraryResourceEntity implements LibraryResource {
     public extractionWarning?: string | null;
     public extractionError?: string;
     public indexingStatus?: IndexingStatus;
+    /**
+     * Numeración impresa por tramos. La escribe la calibración; el
+     * deserializador la repone. Ver `pageNumbering` en la interfaz.
+     */
+    public pageNumbering?: PageNumbering | null;
     public indexingError?: string | null;
     public indexingWarning?: string | null;
     public indexCoverage?: LibraryResource['indexCoverage'];
