@@ -379,7 +379,12 @@ export function LibraryManager() {
                                 onPreview={() => window.open(resource.storageUrl, '_blank')}
                                 onSetPhases={() => openPhases(resource)}
                                 onConfigureCoreStores={isAdmin ? () => openCoreStores(resource) : undefined}
-                                onCalibrateNumbering={() => setNumberingTarget(resource)}
+                                // Un recurso del sistema no es del usuario: las reglas
+                                // rechazarían la escritura, y ofrecer la acción sería
+                                // prometer algo que termina en un error de permisos.
+                                onCalibrateNumbering={resource.isSystemSource
+                                    ? undefined
+                                    : () => setNumberingTarget(resource)}
                             />
                             </div>
                         ))}
