@@ -6,7 +6,7 @@ import {
 } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
-import { LONG_COMPOSITION_TIMEOUT_MS } from '../composerTimeouts';
+import { LONG_GENERATION_TIMEOUT_MS } from '../../llm/llmTimeouts';
 import { buildAnalyzerPrompt } from './analyzerPrompts';
 import { CANONICAL_VERSE_ANALYSIS_SCHEMA } from './responseSchema';
 
@@ -71,7 +71,7 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
                 temperature: 0.3,
                 topP: 0.9,
                 maxOutputTokens: 32768,
-            }, { timeoutMs: LONG_COMPOSITION_TIMEOUT_MS }),
+            }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS }),
             { contextLabel: 'GeminiCanonicalVerseAnalyzer' },
         );
 

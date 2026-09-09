@@ -5,7 +5,7 @@ import type {
 } from '@dosfilos/domain';
 import { buildPrompt } from './prompts';
 import { runLlmPromptWithUsage } from '../llm/callableLlm';
-import { LONG_COMPOSITION_TIMEOUT_MS } from './composerTimeouts';
+import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 
 /**
  * Gemini implementation of `IExegesisOrchestrator`.
@@ -80,7 +80,7 @@ export class GeminiExegesisOrchestrator implements IExegesisOrchestrator {
             // y el servidor, que tiene 540 s, termina el paso y lo cobra sin
             // que nadie recoja el resultado. Se alinean los dos techos para
             // que corte el servidor, que es el único que sabe decir por qué.
-            timeoutMs: LONG_COMPOSITION_TIMEOUT_MS,
+            timeoutMs: LONG_GENERATION_TIMEOUT_MS,
         });
 
         return {

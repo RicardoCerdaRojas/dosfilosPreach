@@ -17,6 +17,7 @@ import { runLlmPrompt } from '../llm/callableLlm';
 import { GEMINI_CONFIG } from '../gemini/config.js';
 import { selectRelevantChunks } from './knowledge/knowledge-selector.js';
 import { buildVerseAnalysisPrompt } from './knowledge/hebrew-prompt-builder.js';
+import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 
 /**
  * Análisis morfológico del hebreo. Ya NO habla con Gemini desde el navegador:
@@ -47,7 +48,7 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
         responseMimeType: 'application/json',
         temperature: 0.2, // Bajo: el análisis morfológico debe ser determinista.
         maxOutputTokens: 32768, // Versos largos (Job, Salmos) necesitan espacio.
-      });
+      }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS });
     } catch (error) {
       throw new Error(
         `HebrewAnalysisService: API call failed — ${error instanceof Error ? error.message : String(error)}`,

@@ -10,6 +10,7 @@ import { WORD_IDENTIFICATION_SYSTEM_PROMPT, buildWordIdentificationPrompt } from
 import { getGeneralQuestionSystemInstruction, getContextualQuestionSystemInstruction, getContextualQuestionPrompt } from './prompt-helpers';
 
 import { GEMINI_CONFIG } from '../../gemini/config';
+import { LONG_GENERATION_TIMEOUT_MS } from '../../llm/llmTimeouts';
 
 export class GeminiGreekTutorService implements IGreekTutorService {
     private wordCache?: IWordCacheRepository;
@@ -455,7 +456,7 @@ export class GeminiGreekTutorService implements IGreekTutorService {
                 model: GEMINI_CONFIG.MODEL_NAME,
                 temperature: 0.3, // Bajo: el análisis sintáctico debe ser determinista.
                 maxOutputTokens: 16384, // Pasajes de 10+ versos necesitan espacio.
-            });
+            }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS });
 
             console.log('[GeminiGreekTutorService] Syntax analysis complete. Response length:', text.length);
 
