@@ -118,6 +118,23 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
 
     async update(id: string, updates: Partial<LibraryResourceEntity>): Promise<void> {
         const ref = doc(db, this.collectionName, id);
+        await updateDoc(ref, this.buildFirestoreUpdates(updates));
+    }
+
+    /**
+     * Qué campos de una actualización llegan a Firestore.
+     *
+     * Es una lista blanca, y ésa es la trampa: lo que no está enumerado se
+     * descarta SIN AVISAR. La numeración impresa estuvo así — la pantalla de
+     * calibración guardaba, la escritura llegaba con `updatedAt` y nada más, y
+     * el recurso seguía diciendo `origin: 'detected'`. Desde afuera es
+     * indistinguible de un guardado que funcionó.
+     *
+     * Al agregar un campo persistible a `LibraryResource`, agregarlo TAMBIÉN
+     * acá. Está separado del `updateDoc` para poder probarlo sin Firestore
+     * vivo, que es la única forma de que un olvido se note antes de producción.
+     */
+    buildFirestoreUpdates(updates: Partial<LibraryResourceEntity>): Record<string, any> {
         const firestoreUpdates: any = {};
 
         if (updates.title !== undefined) firestoreUpdates.title = updates.title;
@@ -144,7 +161,13 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         // 🎯 Core Library stores
         if (updates.coreStores !== undefined) firestoreUpdates.coreStores = updates.coreStores;
 
-        await updateDoc(ref, firestoreUpdates);
+        // Numeración impresa: es lo que decide si una cita puede decir «p. N»
+        // o tiene que decir «hoja N».
+        if (updates.pageNumbering !== undefined) {
+            firestoreUpdates.pageNumbering = updates.pageNumbering ?? null;
+        }
+
+        return firestoreUpdates;
     }
 
     private resourceToFirestore(resource: LibraryResourceEntity): any {
