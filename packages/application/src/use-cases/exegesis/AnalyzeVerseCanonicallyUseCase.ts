@@ -23,6 +23,7 @@ import {
     computeRubricCompliance,
     formatPassageReference,
     citationAnchorFor,
+    relabelExcerptAnchor,
     verifyAttributedQuotes,
 } from '@dosfilos/domain';
 import { loadSourceNumberings } from './sourceNumberings';
@@ -411,10 +412,18 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // persisted, not the text — see SelectSourcePagesUseCase),
                 // so this path yields an empty body for any paper built
                 // with the page selector.
+                // Las anclas guardadas dicen «p. N» sobre la HOJA del
+                // archivo: las escribió el extractor antes de que existiera la
+                // numeración del recurso. Reetiquetarlas acá es lo que hace
+                // que un trabajo ya empezado cite la página impresa sin tener
+                // que volver a extraer sus fuentes.
+                const storedNumbering = numberings.get(source.id) ?? null;
+                const anchorOf = (e: { sourceLocation: string }) =>
+                    relabelExcerptAnchor(e.sourceLocation, storedNumbering);
                 const textContent = source.excerpts
-                    .map(e => `--- ${e.sourceLocation} ---\n${e.text}`)
+                    .map(e => `--- ${anchorOf(e)} ---\n${e.text}`)
                     .join('\n\n');
-                const excerptAnchors = source.excerpts.map(e => e.sourceLocation);
+                const excerptAnchors = source.excerpts.map(anchorOf);
                 if (!textContent.trim()) {
                     silent.push(source);
                     continue;

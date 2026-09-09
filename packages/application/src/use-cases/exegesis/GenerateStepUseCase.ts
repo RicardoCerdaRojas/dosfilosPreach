@@ -1,5 +1,6 @@
 import type {
     IPageNumberingReader,
+    PageNumbering,
     ExegesisGenerationInput,
     ExegesisPriorStep,
     ExegesisSourceContext,
@@ -27,6 +28,7 @@ import {
     isCitableSourceType,
     renderCanonicalAnalysisAsMarkdown,
     citationAnchorFor,
+    relabelExcerptAnchor,
 } from '@dosfilos/domain';
 import { loadSourceNumberings } from './sourceNumberings';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
@@ -297,7 +299,7 @@ export class GenerateStepUseCase {
                 // can ask Gemini to cite using those anchors — the
                 // user explicitly accepted these, NOT the rest of the
                 // resource.
-                contexts.push({ ...buildExcerptContext(source), priority });
+                contexts.push({ ...buildExcerptContext(source, numberings.get(source.id) ?? null), priority });
             } else {
                 // 'full-document' (or legacy sources without `mode`):
                 // historical behavior — pull the entire textContent.
@@ -559,11 +561,14 @@ function toPriorStep(s: ExegeticalStep): ExegesisPriorStep {
  * gracefully; it just means this source contributes nothing to
  * generation, matching the warning the UI already shows.
  */
-function buildExcerptContext(source: ProjectSource): ExegesisSourceContext {
+function buildExcerptContext(
+    source: ProjectSource,
+    numbering: PageNumbering | null,
+): ExegesisSourceContext {
     const anchors: string[] = [];
     const blocks: string[] = [];
     source.excerpts.forEach((excerpt, idx) => {
-        const anchor = excerpt.sourceLocation.trim() || `excerpt ${idx + 1}`;
+        const anchor = relabelExcerptAnchor(excerpt.sourceLocation, numbering).trim() || `excerpt ${idx + 1}`;
         anchors.push(anchor);
         blocks.push(`--- ${anchor} ---\n${excerpt.text.trim()}`);
     });
