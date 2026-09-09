@@ -392,11 +392,14 @@
     "zoomOut": "Zoom out",
     "prevStep": "Back",
     "nextStep": "Next",
-    "stepCounter": "{{current}} of {{total}}",
     "back": "Back to library",
     "saved": "Numbering confirmed.",
     "saveFailed": "Could not save the numbering.",
     "printedRange": "pp. {{from}}–{{to}}",
-    "frontMatter": "the first {{count}} sheets fall in the front matter"
+    "frontMatter": "the first {{count}} sheets fall in the front matter",
+    "goToStep": "Go to step {{step}}, sheet {{sheet}}",
+    "missingSteps_one": "Sheet {{sheets}} is still unanswered. Type its printed number or mark it as unnumbered.",
+    "missingSteps_other": "Sheets {{sheets}} are still unanswered. Type their printed numbers or mark them as unnumbered.",
+    "nothingToSave": "No sheet has been answered yet."
   }
 }
