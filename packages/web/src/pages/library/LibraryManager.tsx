@@ -399,13 +399,14 @@ export function LibraryManager() {
                 onSave={mutations.saveResource}
             />
 
+            <PageNumberingDialog
+                open={numberingTarget !== null}
+                resourceId={numberingTarget?.id ?? null}
+                resourceTitle={numberingTarget?.title ?? ''}
+                onClose={() => setNumberingTarget(null)}
+            />
+
             {resourceForCoreStores && (
-                <PageNumberingDialog
-                    open={numberingTarget !== null}
-                    resourceId={numberingTarget?.id ?? null}
-                    resourceTitle={numberingTarget?.title ?? ''}
-                    onClose={() => setNumberingTarget(null)}
-                />
                 <ConfigureCoreStoresModal
                     resource={resourceForCoreStores}
                     open={coreStoresModalOpen}
