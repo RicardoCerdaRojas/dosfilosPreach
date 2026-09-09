@@ -6,6 +6,7 @@ import {
     detectNumberingSegments,
     numberingFromCalibrationPoints,
     printedPageIn,
+    relabelExcerptAnchor,
     singleSegmentNumbering,
     type PageNumbering,
 } from '../pageNumbering';
@@ -269,5 +270,52 @@ describe('detectNumberingSegments — desfases imposibles', () => {
     it('sigue aceptando el desfase cero', () => {
         const numbering = detectNumberingSegments(book(300, () => 0));
         expect(numbering?.segments).toEqual([{ fromSheet: 1, toSheet: 300, offset: 0 }]);
+    });
+});
+
+describe('relabelExcerptAnchor', () => {
+    const adamson: PageNumbering = {
+        origin: 'confirmed',
+        segments: [{ fromSheet: 1, toSheet: 240, offset: -4 }],
+    };
+    const mayor: PageNumbering = {
+        origin: 'confirmed',
+        segments: [
+            { fromSheet: 1, toSheet: 316, offset: null },
+            { fromSheet: 317, toSheet: 540, offset: -278 },
+        ],
+    };
+
+    it('convierte la hoja guardada en la pagina impresa', () => {
+        // El caso real: un extracto de Adamson anclado «p. 32» sobre la hoja
+        // 32, que imprime 28. El modelo copiaba ese 32 dentro del parentesis.
+        expect(relabelExcerptAnchor('p. 32', adamson)).toBe('p. 28');
+        expect(relabelExcerptAnchor('p. 320', mayor)).toBe('p. 42');
+    });
+
+    it('conserva la seccion cuando el ancla la trae', () => {
+        expect(relabelExcerptAnchor('p. 32, § III.2', adamson)).toBe('p. 28, § III.2');
+    });
+
+    it('dice hoja cuando el recurso no declara numeracion', () => {
+        expect(relabelExcerptAnchor('p. 55', null)).toBe('hoja 55');
+    });
+
+    it('cae en la seccion dentro de un tramo sin folio arabigo', () => {
+        // Las 316 primeras hojas de Mayor son su introduccion en romanos.
+        expect(relabelExcerptAnchor('p. 100, § Intro', mayor)).toBe('§ Intro');
+        expect(relabelExcerptAnchor('p. 100', mayor)).toBe('');
+    });
+
+    it('deja intacta un ancla que no reconoce', () => {
+        // Mejor devolver algo imperfecto que arriesgar una conversion falsa.
+        expect(relabelExcerptAnchor('comm. on v.1', adamson)).toBe('comm. on v.1');
+        expect(relabelExcerptAnchor('§ III.2', adamson)).toBe('§ III.2');
+        expect(relabelExcerptAnchor('', adamson)).toBe('');
+    });
+
+    it('acepta las variantes de formato del extractor', () => {
+        expect(relabelExcerptAnchor('pp. 32', adamson)).toBe('p. 28');
+        expect(relabelExcerptAnchor('p.32', adamson)).toBe('p. 28');
     });
 });

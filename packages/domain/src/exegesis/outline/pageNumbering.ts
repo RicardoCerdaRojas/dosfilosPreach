@@ -361,3 +361,38 @@ export function calibrationSheets(numbering: PageNumbering | null, lastSheet: nu
     }
     return picked.sort((a, b) => a - b);
 }
+
+/**
+ * Ancla de un extracto ya guardado, reescrita contra la numeración del libro.
+ *
+ * Los extractos guardan su ancla como TEXTO YA FORMATEADO —«p. 282», «p. 47,
+ * § III.2»— porque el extractor la armó al momento de recuperar el fragmento,
+ * cuando la numeración del recurso todavía no existía. Ese texto dice «p.»
+ * sobre la hoja del archivo, y es lo que el modelo copia dentro del paréntesis
+ * cuando una fuente inlinea sus extractos guardados en vez de consultar el
+ * corpus.
+ *
+ * Reetiquetar acá y no en el extractor tiene una razón concreta: los trabajos
+ * ya empezados llevan sus extractos escritos, y arreglar sólo el extractor
+ * dejaría mal a todo paper existente. El precio es tener que parsear una
+ * cadena, que es feo pero acotado —el extractor sólo emite tres formas— y
+ * conservador: si no reconoce la forma, devuelve el ancla intacta en vez de
+ * arriesgar una conversión.
+ */
+export function relabelExcerptAnchor(
+    sourceLocation: string,
+    numbering: PageNumbering | null,
+): string {
+    const raw = (sourceLocation ?? '').trim();
+    if (!raw) return raw;
+
+    // `p. 47`, `pp. 47`, `p.47` — con o sin una sección detrás.
+    const match = raw.match(/^pp?\.\s*(\d{1,4})\s*(?:,\s*§\s*(.*))?$/);
+    if (!match) return raw;
+
+    const sheet = Number(match[1]);
+    if (!Number.isFinite(sheet) || sheet < 1) return raw;
+    const section = match[2]?.trim() || null;
+
+    return citationAnchorFor({ sheet, section }, numbering);
+}
