@@ -366,7 +366,6 @@
   },
   "numbering": {
     "title": "Numeración del libro",
-    "description": "«{{title}}» — decinos qué número lleva impreso cada una de estas hojas. Con eso las citas pueden decir «p. 28» en vez de «hoja 32».",
     "loading": "Leyendo el libro…",
     "loadFailed": "No se pudo leer el índice de hojas de este recurso.",
     "sheetLabel": "Hoja {{sheet}} del archivo",
@@ -381,6 +380,23 @@
     "confirm": "Confirmar numeración",
     "calibrate": "Calibrar numeración",
     "uncalibrated": "Sin calibrar",
-    "uncalibratedHint": "Las citas de este recurso van a decir «hoja N» hasta que confirmes su numeración."
+    "uncalibratedHint": "Las citas de este recurso van a decir «hoja N» hasta que confirmes su numeración.",
+    "pageIntro": "Andá mirando cada hoja y decinos qué número lleva impreso, normalmente al pie. Con eso las citas de este libro pueden decir «p. 28» en vez de «hoja 32».",
+    "alreadyConfirmed": "Ya confirmaste la numeración de este libro. Podés corregirla.",
+    "printedQuestion": "¿Qué número tiene impreso la hoja {{sheet}}?",
+    "lookForFolio": "El folio suele estar al pie, a veces en el encabezado. Si esta hoja no lo muestra, mirá la siguiente en vez de marcar que no tiene número.",
+    "unnumberedHint": "Marcá esto sólo si el libro realmente no numera esta parte, como una introducción en romanos.",
+    "prevSheet": "Hoja anterior",
+    "nextSheet": "Hoja siguiente",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "prevStep": "Anterior",
+    "nextStep": "Siguiente",
+    "stepCounter": "{{current}} de {{total}}",
+    "back": "Volver a la biblioteca",
+    "saved": "Numeración confirmada.",
+    "saveFailed": "No se pudo guardar la numeración.",
+    "printedRange": "pp. {{from}}–{{to}}",
+    "frontMatter": "las primeras {{count}} hojas caen en las preliminares"
   }
 }
