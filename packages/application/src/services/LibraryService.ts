@@ -520,6 +520,12 @@ export class LibraryService {
              */
             coversBibleBooks?: ReadonlyArray<import('@dosfilos/domain').BibleBookId>;
             scope?: import('@dosfilos/domain').LibraryResourceScope;
+            /**
+             * Cómo traduce este recurso la hoja del archivo al número que el
+             * libro imprime. Lo escribe la calibración cuando una persona lo
+             * confirma contra el ejemplar; sin él, las citas dicen «hoja N».
+             */
+            pageNumbering?: import('@dosfilos/domain').PageNumbering | null;
         }
     ): Promise<void> {
         console.log(`📝 Updating resource ${id}:`, updates);

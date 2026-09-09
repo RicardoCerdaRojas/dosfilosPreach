@@ -1,4 +1,4 @@
-import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
+import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 import type { CompositionCoverage } from '../ports/IAcademicComposer';
 import { replaceVerseSectionBodies } from './composedVerseSections';
 import { renderVerseAnalysisProse } from './renderVerseAnalysisProse';
@@ -31,7 +31,7 @@ export interface EnforceAnalysisCoverageInput {
     verseAnalyses: ReadonlyArray<CanonicalVerseAnalysis>;
     language: 'es' | 'en';
     /** Mismo rótulo de página que recibió el compositor. */
-    pageLabel?: (sourceKey: string, sheet: number) => string;
+    pageLabel?: (sourceKey: string, page: number, kind: CitationPageKind) => string;
     citableKeys?: readonly string[];
 }
 

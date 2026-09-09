@@ -1,5 +1,6 @@
 import { WorkflowPhase } from './SermonWorkflow';
 import type { SourceType as ExegesisSourceType } from '../exegesis/entities/SourceType';
+import type { PageNumbering } from '../exegesis/outline/pageNumbering';
 import type { BibleBookId } from '../bible/canon/BibleCanon';
 import type {
     License,
@@ -183,6 +184,26 @@ export interface LibraryResource {
         ratio: number;
         complete: boolean;
     } | null;
+    /**
+     * Cómo se traduce la hoja del PDF al número que el libro imprime.
+     *
+     * Los fragmentos anclan a la hoja física, que es lo único medible; una
+     * cita académica habla de la página impresa. Sin esta tabla el sistema
+     * sólo puede decir «hoja 32», y decir «p. 32» sería afirmar algo que no
+     * sabe: en el comentario de Adamson la hoja 32 imprime 28, y en el de
+     * Mayor la hoja 328 imprime 50.
+     *
+     * Se guarda por tramos porque un número por libro es un modelo falso para
+     * dos formas corrientes —la cuenta que se corre a mitad del volumen y las
+     * preliminares sin numeración arábiga—, ambas presentes en bibliotecas
+     * reales. Ver `pageNumbering` en el módulo de exégesis.
+     *
+     * Lo propone el indexador (`origin: 'detected'`) y lo confirma una
+     * persona contra el ejemplar (`origin: 'confirmed'`). Ausente o `null`
+     * significa que no se sabe, y entonces las citas dicen «hoja N» — que es
+     * incompleto pero verdadero, a diferencia de una página inventada.
+     */
+    pageNumbering?: PageNumbering | null;
     /**
      * Por qué falló la extracción, en categorías que el producto puede
      * tratar distinto: `timeout` (la invocación se quedó sin tiempo),

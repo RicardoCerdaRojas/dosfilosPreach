@@ -463,6 +463,21 @@ export interface OldTestamentLink {
 }
 
 /**
+ * Qué clase de número es el de una cita.
+ *
+ * Existe porque una hoja del archivo y una página impresa son ambas
+ * `number`, y esa ambigüedad es la causa raíz de que el mismo defecto
+ * apareciera en seis lugares distintos sin que nadie lo notara: nada en el
+ * tipo impedía escribir una donde se esperaba la otra.
+ *
+ * Ausente significa `'sheet'`, y eso describe con exactitud todo lo escrito
+ * antes de la calibración: aquellas citas llevan la hoja del PDF. Rendirlas
+ * como «hoja N» es incompleto pero verdadero; rendirlas como «p. N» sería
+ * repetir el error sobre trabajos ya entregados.
+ */
+export type CitationPageKind = 'printed' | 'sheet';
+
+/**
  * A commentator's position on this verse, anchored to the dialectical
  * source strategy.
  *
@@ -477,6 +492,8 @@ export interface CommentatorPosition {
     sourceKey: string;
     /** Page number where the position is articulated. */
     page: number;
+    /** Si `page` es la página impresa o la hoja del archivo. Ausente = hoja. */
+    pageKind?: CitationPageKind;
     /**
      * Dialectical role of this engagement on this verse. Maps to the
      * platform's anchor / contrast / technical strategy.
@@ -532,6 +549,8 @@ export interface TranslationCrux {
     commentatorPositions: ReadonlyArray<{
         sourceKey: string;
         page: number;
+        /** Si `page` es la página impresa o la hoja del archivo. Ausente = hoja. */
+        pageKind?: CitationPageKind;
         /** 1-2 sentence summary of the position. */
         summary: string;
         /** Index into `options` indicating which option this commentator supports. */
@@ -658,6 +677,8 @@ export interface SourceCitation {
     sourceKey: string;
     /** Page number(s). Use 0 only when the source has no pagination. */
     page: number;
+    /** Si `page` es la página impresa o la hoja del archivo. Ausente = hoja. */
+    pageKind?: CitationPageKind;
     /**
      * Optional disambiguator when sourceKey isn't enough — volume
      * number, section reference, or position when the work is large

@@ -12,6 +12,7 @@ import { resourceAnchorId, useHighlightedResource } from './hooks/useHighlighted
 import { EditResourceModal } from './EditResourceModal';
 import { PhasePreferenceModal } from './PhasePreferenceModal';
 import { ConfigureCoreStoresModal } from './ConfigureCoreStoresModal';
+import { PageNumberingDialog } from '@/components/library/PageNumberingDialog';
 import { LibraryHeader } from './components/LibraryHeader';
 import { BalanceBanner } from './components/BalanceBanner';
 import { CreditPacksDialog } from './components/CreditPacksDialog';
@@ -153,6 +154,10 @@ export function LibraryManager() {
     const [phaseModalOpen, setPhaseModalOpen] = useState(false);
     const [resourceForPhases, setResourceForPhases] = useState<LibraryResourceEntity | null>(null);
     const [coreStoresModalOpen, setCoreStoresModalOpen] = useState(false);
+    // Calibración de numeración impresa. Se abre desde la ficha del recurso
+    // porque los libros ya subidos nunca pasaron por el paso de la subida, y
+    // sin esta entrada el trabajo sólo serviría para los del futuro.
+    const [numberingTarget, setNumberingTarget] = useState<LibraryResourceEntity | null>(null);
     const [resourceForCoreStores, setResourceForCoreStores] = useState<LibraryResourceEntity | null>(null);
 
     // ── Upload hook (depends on user + consent gate callback) ──────────────
@@ -374,6 +379,7 @@ export function LibraryManager() {
                                 onPreview={() => window.open(resource.storageUrl, '_blank')}
                                 onSetPhases={() => openPhases(resource)}
                                 onConfigureCoreStores={isAdmin ? () => openCoreStores(resource) : undefined}
+                                onCalibrateNumbering={() => setNumberingTarget(resource)}
                             />
                             </div>
                         ))}
@@ -389,6 +395,12 @@ export function LibraryManager() {
             />
 
             {resourceForCoreStores && (
+                <PageNumberingDialog
+                    open={numberingTarget !== null}
+                    resourceId={numberingTarget?.id ?? null}
+                    resourceTitle={numberingTarget?.title ?? ''}
+                    onClose={() => setNumberingTarget(null)}
+                />
                 <ConfigureCoreStoresModal
                     resource={resourceForCoreStores}
                     open={coreStoresModalOpen}

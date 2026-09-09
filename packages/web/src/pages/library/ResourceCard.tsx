@@ -69,6 +69,12 @@ interface ResourceCardProps {
     onPreview: () => void;
     onSetPhases?: () => void;
     onConfigureCoreStores?: () => void; // Admin: assigns the resource to Core Library stores
+    /**
+     * Abre la calibración de numeración impresa. Mientras el recurso no la
+     * tenga, sus citas dicen «hoja N» en vez de «p. N» — que es verdadero
+     * pero incompleto para un trabajo académico.
+     */
+    onCalibrateNumbering?: () => void;
 }
 
 // Icon mapping for category icons. Keep keys identical to the icon
@@ -152,6 +158,7 @@ export function ResourceCard({
     onPreview,
     onSetPhases,
     onConfigureCoreStores,
+    onCalibrateNumbering,
 }: ResourceCardProps) {
     const { t } = useTranslation('library');
     const category = categories.find(c => c.id === resource.type);
@@ -305,7 +312,13 @@ export function ResourceCard({
                         {t('card.actions.assignToCore')}
                     </DropdownMenuItem>
                 )}
-                {(hasPhasesAction || hasCoreStoresAction) && !resource.isSystemSource && <DropdownMenuSeparator />}
+                {onCalibrateNumbering && (
+                    <DropdownMenuItem onClick={onCalibrateNumbering} className="cursor-pointer">
+                        <BookMarked className="h-4 w-4 mr-2" />
+                        {t('numbering.calibrate')}
+                    </DropdownMenuItem>
+                )}
+                {(hasPhasesAction || hasCoreStoresAction || onCalibrateNumbering) && !resource.isSystemSource && <DropdownMenuSeparator />}
                 {!resource.isSystemSource && (
                     <DropdownMenuItem
                         onClick={onDelete}

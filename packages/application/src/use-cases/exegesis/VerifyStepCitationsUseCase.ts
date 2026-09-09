@@ -12,7 +12,10 @@ import type {
     VerificationSummary,
     VerifierSource,
     VerifierSourceChunk,
+    IPageNumberingReader,
+    PageNumbering,
 } from '@dosfilos/domain';
+import { citationAnchorFor } from '@dosfilos/domain';
 import { findUnsupportedWitnessClaims, isCitableSourceType } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
@@ -69,6 +72,13 @@ export class VerifyStepCitationsUseCase {
          * equivocada, que es justo lo que este verificador aporta de más.
          */
         private corpusReader?: ICuratedCorpusReader,
+        /**
+         * Numeración impresa de cada fuente. Es lo que pone al verificador a
+         * comparar en la misma unidad que la cita: el análisis cita la página
+         * impresa, y un `pageHint` en hojas haría saltar «página equivocada»
+         * en cada cita correcta de todo libro con preliminares.
+         */
+        private pageNumbering?: IPageNumberingReader,
     ) { }
 
     async execute(input: VerifyStepCitationsInput): Promise<VerifyStepCitationsOutput> {
@@ -157,6 +167,17 @@ export class VerifyStepCitationsUseCase {
      * lectura también devuelve `null`: verificar con evidencia vieja es mejor
      * que no verificar.
      */
+    /** `null` sin lector o cuando el recurso no declara numeración utilizable. */
+    private async numberingFor(resourceId: string): Promise<PageNumbering | null> {
+        if (!this.pageNumbering) return null;
+        try {
+            return await this.pageNumbering.numberingFor(resourceId);
+        } catch (err) {
+            console.warn('[VerifyStepCitations] sin numeración para', resourceId, err);
+            return null;
+        }
+    }
+
     private async readAdmitted(source: ProjectSource): Promise<VerifierSourceChunk[] | null> {
         const ranges = source.excerptRecipe?.sheetRanges;
         if (!this.corpusReader || !ranges || ranges.length === 0) return null;
@@ -166,11 +187,16 @@ export class VerifyStepCitationsUseCase {
             const chunks = await this.corpusReader.readAdmitted({ resourceId, sheetRanges: ranges });
             if (chunks.length === 0) return null;
 
+            const numbering = await this.numberingFor(resourceId);
             const out = chunks
                 .filter(c => c.text.trim().length > 0)
                 .map<VerifierSourceChunk>(c => ({
                     text: c.text,
-                    pageHint: c.sheet ? `p. ${c.sheet}` : null,
+                    // El mismo criterio que el ancla del corpus, y por la
+                    // misma razón: si el fragmento se rotula con la hoja y la
+                    // cita habla de la página impresa, el cotejo compara dos
+                    // unidades distintas y reprueba lo que está bien.
+                    pageHint: citationAnchorFor({ sheet: c.sheet ?? null, section: null }, numbering) || null,
                 }));
 
             // Mismo respaldo que el camino anterior: una cita a material fuera

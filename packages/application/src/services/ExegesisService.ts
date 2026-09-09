@@ -36,7 +36,7 @@ import {
     SBLGNTBibleProvider,
     TestamentDispatcherOriginalLanguageProvider,
     extractFootnoteAnchorsFromFormattedMarkdown,
-    DocumentPrintedPageOffsetReader,
+    DocumentPageNumberingReader,
 } from '@dosfilos/infrastructure';
 import type {
     IResourceContentReader,
@@ -418,6 +418,10 @@ class ExegesisService {
 
         // Steps (D.2: live Gemini generation with style guide + sources injected;
         // Phase 3c adds deterministic style formatter + cross-step ibid anchors)
+        // Un solo lector para todos los casos de uso: cachea por recurso, y
+        // compartirlo evita que cada uno vuelva a resolver la misma
+        // numeración.
+        const pageNumberingReader = new DocumentPageNumberingReader();
         this.seedSteps = new SeedStepsForPassageUseCase(paperRepository);
         this.generateStep = new GenerateStepUseCase(
             paperRepository,
@@ -427,6 +431,9 @@ class ExegesisService {
             styleFormatter,
             extractFootnoteAnchorsFromFormattedMarkdown,
             new CallableCuratedCorpusRetriever(),
+            // Mismo motivo que en el analizador: sin esto las anclas rotulan
+            // la hoja del PDF como «p. N» y el modelo copia ese número.
+            pageNumberingReader,
         );
         this.acceptStep = new AcceptStepUseCase(paperRepository);
         this.reopenStep = new ReopenStepUseCase(paperRepository);
@@ -463,6 +470,9 @@ class ExegesisService {
             // Evidencia con página para las fuentes con receta: sin esto la
             // detección de página equivocada se apaga en silencio.
             new CallableCuratedCorpusReader(),
+            // Y con la numeración, esa detección compara en la misma unidad
+            // que la cita en vez de cotejar hojas contra páginas impresas.
+            pageNumberingReader,
         );
 
         // Coherence reviewer — single Gemini call over the entire
@@ -507,6 +517,9 @@ class ExegesisService {
             // Con esto, las fuentes con receta piden material por versículo
             // en vez de inlinear su corpus entero en cada paso.
             new CallableCuratedCorpusRetriever(),
+            // Sin esto las anclas del corpus rotulan la hoja del PDF como
+            // «p. N» y el modelo copia ese número al citar.
+            pageNumberingReader,
         );
 
         // Academic-paper composer. Reuses the existing
@@ -521,9 +534,9 @@ class ExegesisService {
             contentReader,
             academicComposer,
             styleFormatter,
-            // El paper cita la página impresa donde se pudo medir el
-            // desfase, y la hoja —dicha como hoja— donde no.
-            new DocumentPrintedPageOffsetReader(),
+            // El paper cita la página impresa donde se pudo medir la
+            // numeración, y la hoja —dicha como hoja— donde no.
+            pageNumberingReader,
         );
 
         // Section-level composers. Same style-guide enforcement as
@@ -553,6 +566,9 @@ class ExegesisService {
             contentReader,
             verseAcademicComposer,
             styleFormatter,
+            // Rescata las hojas de los análisis previos a la calibración al
+            // recomponer la prosa, sin volver a analizar verso por verso.
+            pageNumberingReader,
         );
 
         // Ministry composers (sermon / devotional / study guide).

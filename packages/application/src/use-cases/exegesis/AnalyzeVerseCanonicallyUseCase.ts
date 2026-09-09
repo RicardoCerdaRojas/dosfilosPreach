@@ -15,13 +15,18 @@ import type {
     PassageReference,
     ProjectSource,
     SourceCitation,
+    IPageNumberingReader,
+    PageNumbering,
 } from '@dosfilos/domain';
 import {
     EMPTY_VERIFICATION_SUMMARY,
     computeRubricCompliance,
     formatPassageReference,
+    citationAnchorFor,
     verifyAttributedQuotes,
 } from '@dosfilos/domain';
+import { loadSourceNumberings } from './sourceNumberings';
+import { stampCitationPageKind } from './stampCitationPageKind';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
 /**
@@ -71,6 +76,13 @@ export class AnalyzeVerseCanonicallyUseCase {
          * falta para los papers viejos, cuyas fuentes no tienen receta.
          */
         private corpusRetriever?: ICuratedCorpusRetriever,
+        /**
+         * Traduce la hoja del archivo al número que el libro imprime. Sin él
+         * las anclas dicen «hoja N» y el análisis cita hojas rotuladas como
+         * tales — incompleto, pero verdadero. Con él dicen «p. N», que es lo
+         * que un trabajo académico necesita.
+         */
+        private pageNumbering?: IPageNumberingReader,
     ) { }
 
     async execute(input: AnalyzeVerseCanonicallyUseCaseInput): Promise<ExegeticalStepVersion> {
@@ -107,8 +119,15 @@ export class AnalyzeVerseCanonicallyUseCase {
             // Loaded BEFORE the sources: the verse's own words are what
             // make the corpus query find anything in a lexicon.
             const originalLanguageText = await this.loadOriginalLanguageText(step.verseRef);
+            // Se resuelve acá y no dentro de `loadSourceContexts` porque el
+            // estampado posterior necesita saber, por fuente, si el número
+            // que el modelo copió es página impresa u hoja del archivo.
+            const numberings = await loadSourceNumberings(
+                this.pageNumbering,
+                [...paper.sources].sort((a, b) => a.order - b.order),
+            );
             const sources = await this.loadSourceContexts(
-                paper, step.id, step.verseRef!, originalLanguageText,
+                paper, step.id, step.verseRef!, originalLanguageText, numberings,
             );
             const priorAcceptedAnalyses = collectPriorAcceptedAnalyses(paper, step);
             const stepEmphasis = paper.stepPlan.defaults.verse ?? null;
@@ -139,7 +158,14 @@ export class AnalyzeVerseCanonicallyUseCase {
             };
 
             reservation.markLlmContacted();
-            const result = await this.analyzer.analyzeVerse(analyzerInput);
+            const rawResult = await this.analyzer.analyzeVerse(analyzerInput);
+            // El modelo copió el número del ancla; acá se registra QUÉ copió.
+            // Sin esto una cita a un libro sin calibrar sale con la hoja del
+            // archivo y aspecto de página impresa, que es el defecto entero.
+            const result = {
+                ...rawResult,
+                analysis: stampCitationPageKind(rawResult.analysis, paper.sources, numberings),
+            };
 
             // Sanitize hallucinated source keys. The valid set is the
             // sources that CONTRIBUTED TEXT to this step, not every
@@ -339,6 +365,7 @@ export class AnalyzeVerseCanonicallyUseCase {
         stepId: string,
         verseRef: PassageReference,
         originalLanguageText: string | null,
+        numberings: ReadonlyMap<string, PageNumbering | null>,
     ): Promise<ExegesisSourceContext[]> {
         const curated = await this.retrieveCurated(paper, verseRef, originalLanguageText);
         // Mirrors GenerateStepUseCase.loadSourceContexts: pin-aware,
@@ -359,8 +386,11 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt y el verificador de citas no tienen por qué notar de
                 // dónde salió el fragmento.
+                const numbering = numberings.get(source.id) ?? null;
+                const anchor = (c: { sheet: number | null; section: string | null }) =>
+                    citationAnchorFor(c, numbering);
                 const textContent = retrieved
-                    .map(c => `--- ${anchorFor(c)} ---\n${c.text}`)
+                    .map(c => `--- ${anchor(c)} ---\n${c.text}`)
                     .join('\n\n');
                 contexts.push({
                     corpusId: source.corpusId,
@@ -368,7 +398,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                     displayLabel: source.displayLabel,
                     citationKey: source.citationKey,
                     textContent,
-                    excerptAnchors: retrieved.map(anchorFor),
+                    excerptAnchors: retrieved.map(anchor),
                     priority,
                 });
                 continue;
@@ -555,10 +585,3 @@ export interface AnalyzeVerseCanonicallyUseCaseInput {
  */
 const CORPUS_BUDGET_CHARS = 100_000;
 
-/** Ancla de citación de un fragmento, en la convención del resto del corpus. */
-function anchorFor(chunk: { sheet: number | null; section: string | null }): string {
-    if (chunk.sheet && chunk.section) return `p. ${chunk.sheet}, § ${chunk.section}`;
-    if (chunk.sheet) return `p. ${chunk.sheet}`;
-    if (chunk.section) return `§ ${chunk.section}`;
-    return '';
-}

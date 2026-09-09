@@ -363,5 +363,24 @@
       "title": "We found no Greek or Hebrew inside",
       "body": "If this book doesn't use them, it's perfectly fine. If it's a grammar, a critical text or a technical commentary that should carry them, then this file lost them and they would arrive unreadable."
     }
+  },
+  "numbering": {
+    "title": "Book page numbering",
+    "description": "“{{title}}” — tell us which number is printed on each of these sheets. With that, citations can say “p. 28” instead of “sheet 32”.",
+    "loading": "Reading the book…",
+    "loadFailed": "Could not read this resource's sheet index.",
+    "sheetLabel": "Sheet {{sheet}} of the file",
+    "printedPlaceholder": "Printed number",
+    "unnumbered": "This page has no number",
+    "previewTitle": "This is how it will be saved",
+    "previewEmpty": "Fill in at least one sheet to see the ranges.",
+    "sheetRange": "Sheets {{from}}–{{to}}",
+    "offsetLabel": "sheet {{example}} prints {{printed}}",
+    "noArabic": "no arabic numbering",
+    "cancel": "Cancel",
+    "confirm": "Confirm numbering",
+    "calibrate": "Calibrate numbering",
+    "uncalibrated": "Not calibrated",
+    "uncalibratedHint": "Citations from this resource will say “sheet N” until you confirm its numbering."
   }
 }
