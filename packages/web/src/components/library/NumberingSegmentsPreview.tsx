@@ -1,21 +1,38 @@
 import { useTranslation } from 'react-i18next';
-import type { PageNumbering } from '@dosfilos/domain';
+import type { NumberingSegment, PageNumbering } from '@dosfilos/domain';
 
 interface Props {
     numbering: PageNumbering | null;
 }
 
 /**
- * Los tramos que se van a guardar, tal como quedaron.
+ * Cómo queda descrito un tramo, sin prometer páginas imposibles.
  *
- * Está a la vista antes de confirmar porque las fronteras son una
- * aproximación: el usuario confirma tres hojas y el sistema reparte el resto a
- * mitad de camino entre ellas. Mostrar el resultado convierte esa
- * aproximación en algo que se puede corregir, en vez de una decisión que el
- * sistema toma por su cuenta y nadie ve hasta que una cita sale mal.
+ * La primera versión mostraba «la hoja 1 imprime −3», que es lo que sale de
+ * aplicar el desfase a la primera hoja de un libro con preliminares: la cuenta
+ * cae antes de la página 1. Un número negativo en una pantalla cuyo trabajo es
+ * dar confianza sobre números destruye justamente eso.
+ *
+ * Se muestra el rango de páginas impresas que el tramo produce de verdad, y se
+ * dice aparte cuántas hojas quedan antes de que el libro empiece a numerar.
  */
 export function NumberingSegmentsPreview({ numbering }: Props) {
     const { t } = useTranslation('library');
+
+    const describeSegment = (segment: NumberingSegment): string => {
+        if (segment.offset === null) return t('numbering.noArabic');
+
+        // Primera hoja del tramo cuya cuenta cae en la página 1 o después.
+        const firstNumbered = Math.max(segment.fromSheet, 1 - segment.offset);
+        if (firstNumbered > segment.toSheet) return t('numbering.noArabic');
+
+        const range = t('numbering.printedRange', {
+            from: firstNumbered + segment.offset,
+            to: segment.toSheet + segment.offset,
+        });
+        const skipped = firstNumbered - segment.fromSheet;
+        return skipped > 0 ? `${range} · ${t('numbering.frontMatter', { count: skipped })}` : range;
+    };
 
     if (!numbering || numbering.segments.length === 0) {
         return <p className="text-sm text-muted-foreground">{t('numbering.previewEmpty')}</p>;
@@ -30,18 +47,13 @@ export function NumberingSegmentsPreview({ numbering }: Props) {
                 {numbering.segments.map(segment => (
                     <li
                         key={`${segment.fromSheet}-${segment.toSheet}`}
-                        className="flex items-baseline justify-between gap-4 px-3 py-2 text-sm"
+                        className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2 text-sm"
                     >
                         <span className="tabular-nums text-muted-foreground">
                             {t('numbering.sheetRange', { from: segment.fromSheet, to: segment.toSheet })}
                         </span>
-                        <span className="tabular-nums">
-                            {segment.offset === null
-                                ? <span className="text-muted-foreground">{t('numbering.noArabic')}</span>
-                                : t('numbering.offsetLabel', {
-                                    example: segment.fromSheet,
-                                    printed: segment.fromSheet + segment.offset,
-                                })}
+                        <span className={`tabular-nums ${segment.offset === null ? 'text-muted-foreground' : ''}`}>
+                            {describeSegment(segment)}
                         </span>
                     </li>
                 ))}

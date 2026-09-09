@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '@/i18n';
 import { useFirebase } from '@/context/firebase-context';
@@ -12,7 +12,6 @@ import { resourceAnchorId, useHighlightedResource } from './hooks/useHighlighted
 import { EditResourceModal } from './EditResourceModal';
 import { PhasePreferenceModal } from './PhasePreferenceModal';
 import { ConfigureCoreStoresModal } from './ConfigureCoreStoresModal';
-import { PageNumberingDialog } from '@/components/library/PageNumberingDialog';
 import { LibraryHeader } from './components/LibraryHeader';
 import { BalanceBanner } from './components/BalanceBanner';
 import { CreditPacksDialog } from './components/CreditPacksDialog';
@@ -153,11 +152,8 @@ export function LibraryManager() {
     const [resourceToDelete, setResourceToDelete] = useState<LibraryResourceEntity | null>(null);
     const [phaseModalOpen, setPhaseModalOpen] = useState(false);
     const [resourceForPhases, setResourceForPhases] = useState<LibraryResourceEntity | null>(null);
+    const navigate = useNavigate();
     const [coreStoresModalOpen, setCoreStoresModalOpen] = useState(false);
-    // Calibración de numeración impresa. Se abre desde la ficha del recurso
-    // porque los libros ya subidos nunca pasaron por el paso de la subida, y
-    // sin esta entrada el trabajo sólo serviría para los del futuro.
-    const [numberingTarget, setNumberingTarget] = useState<LibraryResourceEntity | null>(null);
     const [resourceForCoreStores, setResourceForCoreStores] = useState<LibraryResourceEntity | null>(null);
 
     // ── Upload hook (depends on user + consent gate callback) ──────────────
@@ -384,7 +380,7 @@ export function LibraryManager() {
                                 // prometer algo que termina en un error de permisos.
                                 onCalibrateNumbering={resource.isSystemSource
                                     ? undefined
-                                    : () => setNumberingTarget(resource)}
+                                    : () => navigate(`/dashboard/library/${resource.id}/numeracion`)}
                             />
                             </div>
                         ))}
@@ -397,13 +393,6 @@ export function LibraryManager() {
                 open={editModalOpen}
                 onOpenChange={setEditModalOpen}
                 onSave={mutations.saveResource}
-            />
-
-            <PageNumberingDialog
-                open={numberingTarget !== null}
-                resourceId={numberingTarget?.id ?? null}
-                resourceTitle={numberingTarget?.title ?? ''}
-                onClose={() => setNumberingTarget(null)}
             />
 
             {resourceForCoreStores && (

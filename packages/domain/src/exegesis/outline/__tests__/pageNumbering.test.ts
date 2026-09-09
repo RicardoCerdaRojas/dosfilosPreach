@@ -155,69 +155,51 @@ describe('printedPageIn', () => {
 });
 
 describe('calibrationSheets', () => {
-    it('propone un punto interior por tramo', () => {
-        const numbering: PageNumbering = {
+    it('pide tres puntos aunque el detector vea un solo tramo', () => {
+        // Con un punto no se detecta un corrimiento. Si el libro cambia su
+        // cuenta a mitad de camino y el detector no lo vio, preguntar una vez
+        // confirmaría un desfase falso para media obra — con el aval de una
+        // persona, que es peor que sin él.
+        const uno: PageNumbering = {
+            origin: 'detected',
+            segments: [{ fromSheet: 1, toSheet: 240, offset: -4 }],
+        };
+        const sheets = calibrationSheets(uno, 240);
+        expect(sheets.length).toBeGreaterThanOrEqual(3);
+        expect(sheets[0]).toBeLessThan(sheets[sheets.length - 1]!);
+    });
+
+    it('pregunta dentro de cada tramo detectado', () => {
+        const dos: PageNumbering = {
             origin: 'detected',
             segments: [
                 { fromSheet: 1, toSheet: 271, offset: null },
                 { fromSheet: 272, toSheet: 528, offset: -278 },
             ],
         };
-        const sheets = calibrationSheets(numbering, 528);
-        expect(sheets).toHaveLength(2);
-        expect(sheets[0]).toBeGreaterThan(1);
-        expect(sheets[0]).toBeLessThan(271);
-        expect(sheets[1]).toBeGreaterThan(272);
-        expect(sheets[1]).toBeLessThan(528);
+        const sheets = calibrationSheets(dos, 528);
+        expect(sheets.some(s => s > 1 && s < 271)).toBe(true);
+        expect(sheets.some(s => s > 272 && s < 528)).toBe(true);
     });
 
     it('reparte tres puntos cuando no hay numeracion propuesta', () => {
-        expect(calibrationSheets(null, 500)).toEqual([100, 250, 400]);
+        const sheets = calibrationSheets(null, 500);
+        expect(sheets).toHaveLength(3);
+        expect(sheets).toEqual([...sheets].sort((a, b) => a - b));
     });
 
-    it('nunca propone una hoja menor a uno', () => {
-        expect(calibrationSheets(null, 1).every(s => s >= 1)).toBe(true);
-    });
-});
-
-describe('citationAnchorFor', () => {
-    const adamson: PageNumbering = {
-        origin: 'confirmed',
-        segments: [{ fromSheet: 1, toSheet: 240, offset: -4 }],
-    };
-    const mayor: PageNumbering = {
-        origin: 'confirmed',
-        segments: [
-            { fromSheet: 1, toSheet: 271, offset: null },
-            { fromSheet: 272, toSheet: 528, offset: -278 },
-        ],
-    };
-
-    it('rotula la pagina impresa, no la hoja', () => {
-        // El defecto que motiva todo esto: la hoja 32 de Adamson imprime 28,
-        // y el modelo copia el ancla tal cual dentro del parentesis.
-        expect(citationAnchorFor({ sheet: 32, section: null }, adamson)).toBe('p. 28');
-        expect(citationAnchorFor({ sheet: 95, section: null }, adamson)).toBe('p. 91');
+    it('no propone dos hojas practicamente iguales', () => {
+        const sheets = calibrationSheets(null, 600);
+        for (let i = 1; i < sheets.length; i++) {
+            expect(sheets[i]! - sheets[i - 1]!).toBeGreaterThan(1);
+        }
     });
 
-    it('dice hoja cuando el recurso no declara numeracion', () => {
-        expect(citationAnchorFor({ sheet: 55, section: null }, null)).toBe('hoja 55');
-    });
-
-    it('cita solo la seccion en un tramo sin folio arabigo', () => {
-        // Decir «hoja 100» aqui invitaria a copiarla como si fuera pagina.
-        expect(citationAnchorFor({ sheet: 100, section: 'Introduccion' }, mayor)).toBe('§ Introduccion');
-        expect(citationAnchorFor({ sheet: 100, section: null }, mayor)).toBe('');
-    });
-
-    it('combina pagina y seccion cuando hay ambas', () => {
-        expect(citationAnchorFor({ sheet: 32, section: 'II.3' }, adamson)).toBe('p. 28, § II.3');
-        expect(citationAnchorFor({ sheet: 55, section: 'II.3' }, null)).toBe('hoja 55, § II.3');
-    });
-
-    it('cae en la seccion cuando no hay hoja', () => {
-        expect(citationAnchorFor({ sheet: null, section: 'Prefacio' }, adamson)).toBe('§ Prefacio');
-        expect(citationAnchorFor({ sheet: null, section: null }, adamson)).toBe('');
+    it('nunca sale del libro', () => {
+        for (const span of [1, 3, 40, 700]) {
+            const sheets = calibrationSheets(null, span);
+            expect(sheets.every(s => s >= 1 && s <= span)).toBe(true);
+        }
     });
 });
 

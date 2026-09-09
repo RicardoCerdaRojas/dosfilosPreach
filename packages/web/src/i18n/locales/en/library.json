@@ -366,7 +366,6 @@
   },
   "numbering": {
     "title": "Book page numbering",
-    "description": "“{{title}}” — tell us which number is printed on each of these sheets. With that, citations can say “p. 28” instead of “sheet 32”.",
     "loading": "Reading the book…",
     "loadFailed": "Could not read this resource's sheet index.",
     "sheetLabel": "Sheet {{sheet}} of the file",
@@ -381,6 +380,23 @@
     "confirm": "Confirm numbering",
     "calibrate": "Calibrate numbering",
     "uncalibrated": "Not calibrated",
-    "uncalibratedHint": "Citations from this resource will say “sheet N” until you confirm its numbering."
+    "uncalibratedHint": "Citations from this resource will say “sheet N” until you confirm its numbering.",
+    "pageIntro": "Look at each sheet and tell us the number printed on it, usually at the foot. With that, citations from this book can say “p. 28” instead of “sheet 32”.",
+    "alreadyConfirmed": "You already confirmed this book's numbering. You can correct it.",
+    "printedQuestion": "What number is printed on sheet {{sheet}}?",
+    "lookForFolio": "The folio is usually at the foot, sometimes in the header. If this sheet doesn't show it, check the next one rather than marking it as unnumbered.",
+    "unnumberedHint": "Only tick this if the book genuinely doesn't number this part, such as a roman-numeral introduction.",
+    "prevSheet": "Previous sheet",
+    "nextSheet": "Next sheet",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "prevStep": "Back",
+    "nextStep": "Next",
+    "stepCounter": "{{current}} of {{total}}",
+    "back": "Back to library",
+    "saved": "Numbering confirmed.",
+    "saveFailed": "Could not save the numbering.",
+    "printedRange": "pp. {{from}}–{{to}}",
+    "frontMatter": "the first {{count}} sheets fall in the front matter"
   }
 }

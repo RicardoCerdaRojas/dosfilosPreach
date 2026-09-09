@@ -315,25 +315,49 @@ export function citationAnchorFor(
     return '';
 }
 
+/** Cuántos puntos se piden como mínimo, pase lo que pase. */
+const MIN_CALIBRATION_POINTS = 3;
+
+/** Tope, para que un libro muy segmentado no se vuelva un cuestionario. */
+const MAX_CALIBRATION_POINTS = 4;
+
 /**
- * Puntos que conviene mostrarle a una persona para confirmar la numeración.
+ * Hojas que conviene mostrarle a una persona para confirmar la numeración.
  *
- * Uno por tramo hasta tres, repartidos en el interior de cada uno. El interior
- * importa: los bordes de un tramo son justamente donde la frontera es incierta,
- * así que preguntar ahí invita a confirmar un dato dudoso.
+ * Siempre al menos tres, repartidas a lo ancho del libro, y esto no es
+ * negociable ni siquiera cuando el detector cree que la numeración es
+ * constante. La razón es que confirmar tiene que ser INDEPENDIENTE de lo que
+ * el detector concluyó: si el libro corre su cuenta a mitad de camino y el
+ * detector no lo vio —porque el folio no sobrevivió en esa banda—, preguntar
+ * un solo punto confirmaría un desfase único que es falso para media obra, y
+ * lo haría con el aval de una persona.
+ *
+ * A esos tres se suman los interiores de cada tramo detectado, que es donde el
+ * detector cree que la cuenta cambia. El interior importa: los bordes de un
+ * tramo son justamente donde la frontera es incierta, así que preguntar ahí
+ * invitaría a confirmar un dato dudoso.
  */
 export function calibrationSheets(numbering: PageNumbering | null, lastSheet: number): number[] {
-    if (!numbering || numbering.segments.length === 0) {
-        const span = Math.max(1, lastSheet);
-        return [...new Set([
-            Math.max(1, Math.round(span * 0.2)),
-            Math.max(1, Math.round(span * 0.5)),
-            Math.max(1, Math.round(span * 0.8)),
-        ])];
+    const span = Math.max(1, lastSheet);
+    const clamp = (n: number) => Math.min(span, Math.max(1, Math.round(n)));
+
+    const spread = [span * 0.2, span * 0.5, span * 0.8].map(clamp);
+    const interiors = (numbering?.segments ?? [])
+        .map(s => clamp((s.fromSheet + s.toSheet) / 2));
+
+    // Los interiores primero: llevan la información de dónde cambia la cuenta.
+    // El reparto uniforme rellena hasta el mínimo cuando hay un tramo solo.
+    const picked: number[] = [];
+    for (const sheet of [...interiors, ...spread]) {
+        if (picked.length >= MAX_CALIBRATION_POINTS) break;
+        // Dos preguntas sobre hojas contiguas no aportan una segunda medición.
+        if (picked.some(p => Math.abs(p - sheet) < Math.max(1, span * 0.05))) continue;
+        picked.push(sheet);
     }
-    return [...new Set(
-        numbering.segments
-            .slice(0, 3)
-            .map(s => Math.max(s.fromSheet, Math.round((s.fromSheet + s.toSheet) / 2))),
-    )];
+    while (picked.length < Math.min(MIN_CALIBRATION_POINTS, span)) {
+        const next = clamp(span * (picked.length + 1) / (MIN_CALIBRATION_POINTS + 1));
+        if (picked.includes(next)) break;
+        picked.push(next);
+    }
+    return picked.sort((a, b) => a - b);
 }
