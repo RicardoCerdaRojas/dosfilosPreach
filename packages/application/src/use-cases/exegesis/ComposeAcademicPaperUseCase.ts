@@ -13,9 +13,8 @@ import type {
     StyleGuideManifest,
     StyleGuideSnapshot,
     IPageNumberingReader,
-    CitationPageKind,
 } from '@dosfilos/domain';
-import { enforceAnalysisCoverage, isCitableSourceType, printedPageIn } from '@dosfilos/domain';
+import { enforceAnalysisCoverage, isCitableSourceType } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
