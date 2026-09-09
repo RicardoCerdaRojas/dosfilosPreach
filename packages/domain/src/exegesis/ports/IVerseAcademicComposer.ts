@@ -1,5 +1,5 @@
 import type { PassageReference } from '../../bible/canon/passage-reference';
-import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
+import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 import type { StyleGuideManifest } from '../entities/StyleGuideManifest';
 import type { ComposerSourceMetadata } from './IAcademicComposer';
 
@@ -41,6 +41,17 @@ export interface ComposeVerseInput {
 
     /** Output language. */
     language: 'es' | 'en';
+
+    /**
+     * Cómo rotular el número de cada cita. Opcional: sin él se rotula según
+     * el `pageKind` que guardó el análisis, que es correcto para todo lo
+     * analizado con la numeración del recurso a la vista.
+     *
+     * Se pasa para rescatar los análisis anteriores a la calibración, que
+     * guardaron la hoja del archivo: con la numeración del recurso, esos
+     * números se convierten al recomponer en vez de quedar como «hoja N».
+     */
+    pageLabel?: (sourceKey: string, page: number, kind: CitationPageKind) => string;
 
     /**
      * Optional paper-level brief — the student's framing. Threaded into

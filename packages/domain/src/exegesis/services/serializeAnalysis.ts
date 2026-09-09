@@ -1,6 +1,6 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { relabelProsePages } from './relabelProsePages';
-import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
+import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 
 /**
  * Serializes a `CanonicalVerseAnalysis` into a compact "briefing"
@@ -68,15 +68,24 @@ import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis'
 /**
  * Cómo rotular el número de una fuente citada.
  *
- * El número que guarda el análisis es la HOJA del archivo. Para el
- * briefing del tutor eso sirve tal cual; para el paper que lee un
- * profesor hay que convertirlo a página impresa cuando se conoce el
- * desfase, y decir «hoja» cuando no. Sin este gancho, el compositor
- * tendría que reescribir cadenas ya formateadas.
+ * El número que guarda el análisis puede ser la página impresa —cuando el
+ * recurso declaraba su numeración al analizar— o la hoja del archivo, y
+ * `pageKind` dice cuál. Ausente significa hoja, que describe con exactitud
+ * todo lo analizado antes de la calibración.
+ *
+ * Sin este gancho el compositor tendría que reescribir cadenas ya formateadas.
  */
 export interface SerializeAnalysisOptions {
-    /** Por defecto `p. {hoja}`, que es lo que el análisis guarda. */
-    pageLabel?: (sourceKey: string, sheet: number) => string;
+    /**
+     * Por defecto rotula según `pageKind`: `p. N` para la página impresa y
+     * `hoja N` para la hoja del archivo.
+     *
+     * El default anterior era `p. {hoja}` a secas, y ése fue el defecto: un
+     * trabajo real salió con diez citas que decían «p.» sobre hojas de PDF,
+     * todas verosímiles y todas equivocadas —en Adamson por cuatro páginas,
+     * en Mayor por doscientas setenta y ocho—.
+     */
+    pageLabel?: (sourceKey: string, page: number, kind: CitationPageKind) => string;
     /**
      * Claves citables del paper.
      *
@@ -94,12 +103,26 @@ export function serializeAnalysis(
     language: 'es' | 'en',
     options: SerializeAnalysisOptions = {},
 ): string {
-    const page = options.pageLabel ?? ((_key: string, sheet: number) => `p. ${sheet}`);
+    const page = options.pageLabel
+        ?? ((_key: string, value: number, kind: CitationPageKind) =>
+            kind === 'printed' ? `p. ${value}` : `hoja ${value}`);
+    /** Rotula una cita usando el tipo que quedó registrado al analizarla. */
+    const cite = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind }) =>
+        page(c.sourceKey, c.page, c.pageKind ?? 'sheet');
+    // Las menciones sueltas dentro de la prosa —«Adamson (p. 59) lo conecta
+    // con…»— no llevan tipo propio, pero el tipo es homogéneo por fuente: el
+    // ancla que vio el modelo fue la misma para todos los fragmentos de un
+    // mismo recurso. Así que se deduce de las citas estructuradas.
+    const kindBySource = collectPageKinds(analysis);
     // La prosa sólo se toca cuando hay con qué: sin rótulo propio ni
     // claves, reescribirla sería cambiar números por los mismos números.
     const citableKeys = options.citableKeys ?? [];
     const prose = options.pageLabel && citableKeys.length > 0
-        ? (text: string) => relabelProsePages(text, citableKeys, page)
+        ? (text: string) => relabelProsePages(
+            text,
+            citableKeys,
+            (key, value) => page(key, value, kindBySource.get(key) ?? 'sheet'),
+        )
         : (text: string) => text;
     const ref = formatPassageReference(analysis.reference, language);
     const lines: string[] = [];
@@ -138,10 +161,10 @@ export function serializeAnalysis(
         for (const la of analysis.lexicalAnalyses) {
             const generalRange = la.generalSemanticRange.glosses.join(' / ');
             const generalSrcs = la.generalSemanticRange.sources
-                .map(s => `${s.sourceKey} ${page(s.sourceKey, s.page)}`)
+                .map(s => `${s.sourceKey} ${cite(s)}`)
                 .join('; ');
             const loadingSrcs = la.loadingSources
-                .map(s => `${s.sourceKey} ${page(s.sourceKey, s.page)}`)
+                .map(s => `${s.sourceKey} ${cite(s)}`)
                 .join('; ');
             lines.push(`- ${la.term} (${la.lemma}, "${la.gloss}"):`);
             lines.push(`  general range = [${generalRange}]${generalSrcs ? ` (sources: ${generalSrcs})` : ''}`);
@@ -166,7 +189,7 @@ export function serializeAnalysis(
         lines.push('');
         lines.push('Historical context:');
         for (const h of analysis.historicalContext) {
-            const srcs = h.sources.map(s => `${s.sourceKey} ${page(s.sourceKey, s.page)}`).join('; ');
+            const srcs = h.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- ${h.aspect}: ${prose(h.relevance)}${srcs ? ` (sources: ${srcs})` : ''}`);
         }
     }
@@ -177,7 +200,7 @@ export function serializeAnalysis(
         lines.push('OT links:');
         for (const l of analysis.oldTestamentLinks) {
             const formula = l.citationFormula ? ` (formula: ${l.citationFormula})` : '';
-            const srcs = l.sources.map(s => `${s.sourceKey} ${page(s.sourceKey, s.page)}`).join('; ');
+            const srcs = l.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- [${l.type}] ${l.sourcePassage}${formula}: ${prose(l.interpretiveBearing)}${srcs ? ` (sources: ${srcs})` : ''}`);
         }
     }
@@ -188,7 +211,7 @@ export function serializeAnalysis(
         lines.push('Commentator positions:');
         for (const c of analysis.commentatorEngagement) {
             const verbatim = c.verbatimQuote ? ` [verbatim: "${c.verbatimQuote}"]` : '';
-            lines.push(`- [${c.role}] ${c.sourceKey} (${page(c.sourceKey, c.page)}): ${prose(c.position)}${verbatim}`);
+            lines.push(`- [${c.role}] ${c.sourceKey} (${cite(c)}): ${prose(c.position)}${verbatim}`);
         }
     }
 
@@ -207,7 +230,7 @@ export function serializeAnalysis(
                     const verbatim = p.verbatimQuote?.trim()
                         ? ` [verbatim: "${p.verbatimQuote.trim()}"]`
                         : '';
-                    return `${p.sourceKey} ${page(p.sourceKey, p.page)} → opt ${p.supports}: ${prose(p.summary)}${verbatim}`;
+                    return `${p.sourceKey} ${cite(p)} → opt ${p.supports}: ${prose(p.summary)}${verbatim}`;
                 })
                 .join(' | ');
             if (positions) lines.push(`    positions: ${positions}`);
@@ -224,7 +247,7 @@ export function serializeAnalysis(
         lines.push('');
         lines.push('Footnote extensions:');
         for (const fn of analysis.footnoteExtensions) {
-            const srcs = fn.sources.map(s => `${s.sourceKey} ${page(s.sourceKey, s.page)}`).join('; ');
+            const srcs = fn.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- anchor: "${fn.anchorPhrase}"`);
             lines.push(`  text: ${prose(fn.text)}${srcs ? ` (sources: ${srcs})` : ''}`);
         }
@@ -250,4 +273,27 @@ export function serializeAnalysis(
     }
 
     return lines.join('\n');
+}
+
+/**
+ * Tipo de página por fuente, leído de las citas estructuradas del análisis.
+ *
+ * `citationAnchorFor` nunca mezcla las dos formas dentro de una misma fuente,
+ * así que la primera cita que declara su tipo lo declara para todas.
+ */
+function collectPageKinds(analysis: CanonicalVerseAnalysis): Map<string, CitationPageKind> {
+    const kinds = new Map<string, CitationPageKind>();
+    const note = (c: { sourceKey: string; pageKind?: CitationPageKind }) => {
+        if (c.pageKind && !kinds.has(c.sourceKey)) kinds.set(c.sourceKey, c.pageKind);
+    };
+    for (const c of analysis.commentatorEngagement) note(c);
+    for (const crux of analysis.translationCruxes) for (const p of crux.commentatorPositions) note(p);
+    for (const l of analysis.lexicalAnalyses) {
+        for (const s of l.generalSemanticRange.sources) note(s);
+        for (const s of l.loadingSources) note(s);
+    }
+    for (const f of analysis.footnoteExtensions) for (const s of f.sources) note(s);
+    for (const o of analysis.oldTestamentLinks) for (const s of o.sources) note(s);
+    for (const h of analysis.historicalContext) for (const s of h.sources) note(s);
+    return kinds;
 }

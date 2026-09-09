@@ -40,6 +40,14 @@ export interface PrintedPageOffsetResult {
     agreement: number;
 }
 
+export interface DetectPrintedPageOffsetOptions {
+    /**
+     * Desfase máximo aceptable. Por defecto el tope sobrio; sólo
+     * `detectPrintedPageOffsetStaged` lo ensancha, y sólo tras fallar con él.
+     */
+    maxAbsOffset?: number;
+}
+
 /**
  * Cuántas hojas con número impreso legible hacen falta para arriesgar un
  * desfase. Con menos, cualquier número suelto del cuerpo —un versículo, una
@@ -56,11 +64,29 @@ const MIN_SAMPLES = 8;
 const MIN_AGREEMENT_RATIO = 0.7;
 
 /**
- * Desfase máximo aceptable. Las preliminares de un libro académico rara vez
- * pasan de unas decenas de páginas; un desfase mayor casi siempre significa
- * que se leyó un número que no era el de la página.
+ * Desfase máximo aceptable en la primera pasada. Las preliminares de un libro
+ * académico rara vez pasan de unas decenas de páginas; un desfase mayor casi
+ * siempre significa que se leyó un número que no era el de la página.
  */
 const MAX_ABS_OFFSET = 60;
+
+/**
+ * Desfase máximo de la segunda pasada, para los libros cuyas preliminares sí
+ * son enormes.
+ *
+ * Medido en el comentario de Mayor sobre Santiago: su introducción ocupa unas
+ * 234 páginas en numeración romana, de modo que el desfase real es de −278 y
+ * el tope sobrio lo descartaba ANTES de evaluarlo. No es que el detector
+ * fallara: tenía prohibido encontrarlo, y las citas del paper salieron con la
+ * hoja del PDF en lugar de la página impresa.
+ *
+ * Se aplica sólo cuando la pasada sobria no concluye —ver
+ * `detectPrintedPageOffsetStaged`—, porque ensanchar el tope de entrada
+ * admite más números del cuerpo como candidatos y diluye el acuerdo: medido
+ * sobre 49 recursos, hacerlo en una sola pasada gana Mayor pero pierde el
+ * comentario WBC de Judas y 2 Pedro, que hoy detecta bien.
+ */
+const WIDE_ABS_OFFSET = 400;
 
 /** Cuánto texto del principio y del final se mira para hallar el encabezado. */
 const HEAD_CHARS = 70;
@@ -85,14 +111,16 @@ const STANDALONE_NUMBER = /(?<!\d)(\d{1,4})(?!\d)/g;
  */
 export function detectPrintedPageOffset(
     samples: ReadonlyArray<PageTextSample>,
+    options: DetectPrintedPageOffsetOptions = {},
 ): PrintedPageOffsetResult {
+    const maxAbsOffset = options.maxAbsOffset ?? MAX_ABS_OFFSET;
     /** Desfase → hojas que lo respaldan. */
     const votes = new Map<number, number>();
     let pagesWithNumber = 0;
 
     for (const sample of samples) {
         if (!Number.isFinite(sample.page) || sample.page < 1) continue;
-        const candidates = candidateOffsets(sample);
+        const candidates = candidateOffsets(sample, maxAbsOffset);
         if (candidates.size === 0) continue;
         pagesWithNumber++;
         for (const offset of candidates) {
@@ -124,12 +152,36 @@ export function detectPrintedPageOffset(
 }
 
 /**
+ * Detecta el desfase probando primero la hipótesis sobria y ensanchando el
+ * tope sólo si aquella no concluye.
+ *
+ * El orden importa y no es intercambiable con una sola pasada ancha. Medido
+ * sobre los 49 recursos indexados de una biblioteca real:
+ *
+ *   - una sola pasada con tope 60  → 15 recursos con desfase
+ *   - una sola pasada con tope 400 → 15 también: gana Mayor (−278) pero
+ *     pierde el WBC de Judas y 2 Pedro, cuyo acuerdo cae de 89% a 36%
+ *     porque el tope ancho admite números del cuerpo como candidatos
+ *   - escalonada                   → 16, sin perder ninguno
+ *
+ * Es monótona por construcción: lo que ya resolvía la pasada sobria se
+ * devuelve tal cual, y la ancha sólo corre donde antes no había respuesta.
+ */
+export function detectPrintedPageOffsetStaged(
+    samples: ReadonlyArray<PageTextSample>,
+): PrintedPageOffsetResult {
+    const sober = detectPrintedPageOffset(samples);
+    if (sober.offset !== null) return sober;
+    return detectPrintedPageOffset(samples, { maxAbsOffset: WIDE_ABS_OFFSET });
+}
+
+/**
  * Desfases que propone una sola hoja. Es un conjunto porque el encabezado
  * puede traer más de un número (el del folio y el del capítulo, por ejemplo) y
  * a esta altura no hay forma de saber cuál es cuál — el consenso entre hojas
  * lo resuelve después.
  */
-function candidateOffsets(sample: PageTextSample): Set<number> {
+function candidateOffsets(sample: PageTextSample, maxAbsOffset: number): Set<number> {
     const text = sample.text ?? '';
     const zones = [text.slice(0, HEAD_CHARS), text.slice(-TAIL_CHARS)];
     const offsets = new Set<number>();
@@ -139,7 +191,7 @@ function candidateOffsets(sample: PageTextSample): Set<number> {
             const printed = Number(match[1]);
             if (!Number.isFinite(printed) || printed < 1) continue;
             const offset = printed - sample.page;
-            if (Math.abs(offset) > MAX_ABS_OFFSET) continue;
+            if (Math.abs(offset) > maxAbsOffset) continue;
             offsets.add(offset);
         }
     }

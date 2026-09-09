@@ -1,4 +1,5 @@
 import type {
+    IPageNumberingReader,
     ExegesisGenerationInput,
     ExegesisPriorStep,
     ExegesisSourceContext,
@@ -25,7 +26,9 @@ import {
     formatPassageReference,
     isCitableSourceType,
     renderCanonicalAnalysisAsMarkdown,
+    citationAnchorFor,
 } from '@dosfilos/domain';
+import { loadSourceNumberings } from './sourceNumberings';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
 /**
@@ -78,6 +81,12 @@ export class GenerateStepUseCase {
          * uso se comporta como antes.
          */
         private corpusRetriever?: ICuratedCorpusRetriever,
+        /**
+         * Traduce la hoja del archivo al número que el libro imprime. Sin él
+         * las anclas dicen «hoja N» y el asistente cita hojas rotuladas como
+         * tales, que es lo honesto cuando no se sabe.
+         */
+        private pageNumbering?: IPageNumberingReader,
     ) { }
 
     async execute(input: GenerateStepInput): Promise<ExegeticalStepVersion> {
@@ -258,12 +267,16 @@ export class GenerateStepUseCase {
 
         const curated = await this.retrieveCurated(paper, step);
         const sorted = [...paper.sources].sort((a, b) => a.order - b.order);
+        const numberings = await loadSourceNumberings(this.pageNumbering, sorted);
         const contexts: ExegesisSourceContext[] = [];
         for (const source of sorted) {
             const priority: 'primary' | 'secondary' =
                 pinnedIds.has(source.id) ? 'primary' : 'secondary';
             const retrieved = curated?.byResource[source.sourceLibraryResourceId ?? source.corpusId];
             if (retrieved) {
+                const numbering = numberings.get(source.id) ?? null;
+                const anchor = (c: { sheet: number | null; section: string | null }) =>
+                    citationAnchorFor(c, numbering);
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt no tiene por qué notar de dónde salió el fragmento.
                 contexts.push({
@@ -271,8 +284,8 @@ export class GenerateStepUseCase {
                     sourceType: source.sourceType,
                     displayLabel: source.displayLabel,
                     citationKey: source.citationKey,
-                    textContent: retrieved.map(c => `--- ${chunkAnchor(c)} ---\n${c.text}`).join('\n\n'),
-                    excerptAnchors: retrieved.map(chunkAnchor),
+                    textContent: retrieved.map(c => `--- ${anchor(c)} ---\n${c.text}`).join('\n\n'),
+                    excerptAnchors: retrieved.map(anchor),
                     priority,
                 });
                 continue;
@@ -581,10 +594,3 @@ function deriveCitationKey(displayLabel: string): string {
  */
 const STEP_CORPUS_BUDGET_CHARS = 100_000;
 
-/** Ancla de citación, en la convención del resto del corpus. */
-function chunkAnchor(chunk: { sheet: number | null; section: string | null }): string {
-    if (chunk.sheet && chunk.section) return `p. ${chunk.sheet}, § ${chunk.section}`;
-    if (chunk.sheet) return `p. ${chunk.sheet}`;
-    if (chunk.section) return `§ ${chunk.section}`;
-    return '';
-}

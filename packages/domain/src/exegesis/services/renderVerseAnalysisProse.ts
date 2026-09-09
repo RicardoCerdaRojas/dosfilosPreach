@@ -4,6 +4,7 @@ import { verseSectionKey } from './verseAnalysisCoverage';
 import type {
     CanonicalVerseAnalysis,
     SourceCitation,
+    CitationPageKind,
 } from '../entities/CanonicalVerseAnalysis';
 
 /**
@@ -39,7 +40,7 @@ export interface RenderVerseProseOptions {
      * análisis guarda. El compositor pasa el suyo para citar página
      * impresa donde se puede medir y «hoja» donde no.
      */
-    pageLabel?: (sourceKey: string, sheet: number) => string;
+    pageLabel?: (sourceKey: string, page: number, kind: CitationPageKind) => string;
     /** Claves citables, para reetiquetar también las páginas escritas en prosa. */
     citableKeys?: readonly string[];
     /** Cuando es `false`, se omite el encabezado `### {verso}`. Por defecto lo incluye. */
@@ -53,15 +54,28 @@ export function renderVerseAnalysisProse(
 ): string {
     const en = language === 'en';
     const L = (es: string, eng: string) => (en ? eng : es);
-    const pageOf = options.pageLabel ?? ((_key: string, sheet: number) => `p. ${sheet}`);
+    const pageOf = options.pageLabel
+        ?? ((_key: string, value: number, kind: CitationPageKind) =>
+            kind === 'printed' ? `p. ${value}` : `hoja ${value}`);
+    /** Rotula una cita con el tipo de página que registró el análisis. */
+    const cited = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind }) =>
+        pageOf(c.sourceKey, c.page, c.pageKind ?? 'sheet');
+    const kindBySource = new Map<string, CitationPageKind>();
+    for (const c of analysis.commentatorEngagement) {
+        if (c.pageKind && !kindBySource.has(c.sourceKey)) kindBySource.set(c.sourceKey, c.pageKind);
+    }
     const citableKeys = options.citableKeys ?? [];
     const prose = options.pageLabel && citableKeys.length > 0
-        ? (text: string) => relabelProsePages(text, citableKeys, pageOf)
+        ? (text: string) => relabelProsePages(
+            text,
+            citableKeys,
+            (key, value) => pageOf(key, value, kindBySource.get(key) ?? 'sheet'),
+        )
         : (text: string) => text;
 
     const cite = (sources: readonly SourceCitation[]): string => {
         const rendered = sources
-            .map(s => `${s.sourceKey}, ${pageOf(s.sourceKey, s.page)}${s.locator ? `, ${s.locator}` : ''}`)
+            .map(s => `${s.sourceKey}, ${cited(s)}${s.locator ? `, ${s.locator}` : ''}`)
             .join('; ');
         return rendered ? ` (${rendered})` : '';
     };
@@ -187,7 +201,7 @@ export function renderVerseAnalysisProse(
         const quote = c.verbatimQuote?.trim()
             ? L(` Escribe: «${c.verbatimQuote.trim()}»`, ` He writes: «${c.verbatimQuote.trim()}»`)
             : '';
-        return `${c.sourceKey} (${pageOf(c.sourceKey, c.page)}) ${sentence(c.position)}${quote}`;
+        return `${c.sourceKey} (${cited(c)}) ${sentence(c.position)}${quote}`;
     });
     if (commentators.length > 0) paragraphs.push(commentators.join(' '));
 
@@ -210,7 +224,7 @@ export function renderVerseAnalysisProse(
                 ? L(` a favor de «${supported}»`, ` in favor of «${supported}»`)
                 : '';
             const quote = p.verbatimQuote?.trim() ? ` «${p.verbatimQuote.trim()}»` : '';
-            parts.push(`${p.sourceKey} (${pageOf(p.sourceKey, p.page)}) ${sentence(p.summary)}${forOption}${quote}`.replace(/\.\s*$/, '.'));
+            parts.push(`${p.sourceKey} (${cited(p)}) ${sentence(p.summary)}${forOption}${quote}`.replace(/\.\s*$/, '.'));
         }
         parts.push(L(
             `Por esta razón, en este trabajo se adopta la traducción «${cx.commitment.chosen}»: ${sentence(cx.commitment.rationale)}`,

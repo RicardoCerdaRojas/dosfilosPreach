@@ -30,8 +30,23 @@ const label = (sourceKey: string, sheet: number) => {
 };
 
 describe('serializeAnalysis — rótulo de página', () => {
-    it('sin rotulador cita la hoja como «p.», que es como venía', () => {
-        expect(serializeAnalysis(analysis(), 'es')).toContain('Metzger (p. 719)');
+    it('sin rotulador dice «hoja», porque el número guardado es la hoja', () => {
+        // Antes decía «p. 719» y ese era el defecto: el rótulo por defecto
+        // afirmaba una página impresa que nadie había medido. Una cita sin
+        // `pageKind` es, por definición, anterior a la calibración y lleva la
+        // hoja del archivo — decirlo es incompleto; disfrazarlo es falso.
+        expect(serializeAnalysis(analysis(), 'es')).toContain('Metzger (hoja 719)');
+    });
+
+    it('respeta la pagina impresa que el analisis ya resolvio', () => {
+        // Analizado con la numeración del recurso a la vista: el número YA es
+        // la página impresa, y volver a convertirlo lo rompería.
+        const a = analysis();
+        const yaImpresa = {
+            ...a,
+            commentatorEngagement: a.commentatorEngagement.map(c => ({ ...c, pageKind: 'printed' as const })),
+        };
+        expect(serializeAnalysis(yaImpresa, 'es')).toContain('Metzger (p. 719)');
     });
 
     it('convierte a página impresa donde el desfase se pudo medir', () => {

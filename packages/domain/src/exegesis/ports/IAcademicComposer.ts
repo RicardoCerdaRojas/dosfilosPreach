@@ -1,5 +1,5 @@
 import type { PassageReference } from '../../bible/canon/passage-reference';
-import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
+import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 import type { ExegeticalStrategy } from '../entities/ExegeticalPaper';
 import type { PaperRubric } from '../entities/PaperRubric';
 import type { StyleGuideManifest } from '../entities/StyleGuideManifest';
@@ -75,7 +75,7 @@ export interface ComposeAcademicPaperInput {
      *
      * Omitido: se cita la hoja rotulada «p.», que es como venía.
      */
-    pageLabel?: (sourceKey: string, sheet: number) => string;
+    pageLabel?: (sourceKey: string, page: number, kind: CitationPageKind) => string;
 
     /**
      * Style guide content (TMS or equivalent) verbatim. Embedded in

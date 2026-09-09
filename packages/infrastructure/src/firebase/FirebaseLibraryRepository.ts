@@ -246,6 +246,10 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         (resource as any).extractionError = data.extractionError || undefined;
         (resource as any).indexingError = data.indexingError ?? undefined;
         (resource as any).processingStartedAt = data.processingStartedAt?.toDate?.() ?? undefined;
+        // Numeración impresa por tramos. Ausente en todo recurso subido antes
+        // de la calibración: `undefined` significa «no se sabe», y quien cite
+        // debe rotular el número como hoja en vez de fingir una página.
+        (resource as any).pageNumbering = data.pageNumbering ?? undefined;
         // v1.7 smart-match metadata. Legacy docs (uploaded before v1.7)
         // have neither field set in Firestore — default coversBibleBooks
         // to [] and scope to 'book' so the smart-match dialog treats

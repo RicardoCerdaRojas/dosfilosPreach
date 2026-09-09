@@ -363,5 +363,24 @@
       "title": "No encontramos griego ni hebreo dentro",
       "body": "Si es un libro que no los usa, está perfecto así. Si es una gramática, un texto crítico o un comentario técnico que sí debería traerlos, entonces este archivo los perdió y entrarían ilegibles."
     }
+  },
+  "numbering": {
+    "title": "Numeración del libro",
+    "description": "«{{title}}» — decinos qué número lleva impreso cada una de estas hojas. Con eso las citas pueden decir «p. 28» en vez de «hoja 32».",
+    "loading": "Leyendo el libro…",
+    "loadFailed": "No se pudo leer el índice de hojas de este recurso.",
+    "sheetLabel": "Hoja {{sheet}} del archivo",
+    "printedPlaceholder": "Número impreso",
+    "unnumbered": "Esta página no tiene número",
+    "previewTitle": "Así va a quedar",
+    "previewEmpty": "Completá al menos una hoja para ver los tramos.",
+    "sheetRange": "Hojas {{from}}–{{to}}",
+    "offsetLabel": "la hoja {{example}} imprime {{printed}}",
+    "noArabic": "sin numeración arábiga",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar numeración",
+    "calibrate": "Calibrar numeración",
+    "uncalibrated": "Sin calibrar",
+    "uncalibratedHint": "Las citas de este recurso van a decir «hoja N» hasta que confirmes su numeración."
   }
 }

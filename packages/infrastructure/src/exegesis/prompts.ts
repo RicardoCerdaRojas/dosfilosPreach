@@ -75,6 +75,13 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
             ``,
             `## Citation discipline (NON-NEGOTIABLE)`,
             `- Every claim drawn from a source MUST include an inline citation in the format: \`(Author, "Title", p. N)\`. If page is unavailable: \`(Author, "Title")\`.`,
+            // El ancla del fragmento ya viene resuelta: dice `p. N` cuando se
+            // pudo traducir la hoja del archivo al número que el libro
+            // imprime, y `hoja N` cuando no. Copiarla verbatim es lo que
+            // impide que una hoja termine citada como página — que es como
+            // un trabajo real salió con diez citas apuntando a páginas
+            // equivocadas, todas verosímiles.
+            `- COPY the anchor of the excerpt EXACTLY as given (\`p. N\` or \`hoja N\`). NEVER convert one into the other, and NEVER invent a page for an excerpt whose anchor carries none: an anchor that says \`hoja N\` means the printed page of that book is unknown, and writing \`p. N\` there would send the reader to a different page.`,
             `- Verbatim quotes are only allowed when wrapped in double quotes AND the exact wording appears in the cited source. If you are paraphrasing, do NOT use quotes.`,
             `- NEVER attribute to an author a conclusion they don't explicitly state. If a source merely *suggests*, write "X suggests" — not "X demonstrates".`,
             `- NEVER cite yourself as a source. You are a tutor, not a bibliography entry.`,

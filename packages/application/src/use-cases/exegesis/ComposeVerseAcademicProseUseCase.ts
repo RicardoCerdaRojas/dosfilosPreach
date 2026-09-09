@@ -11,8 +11,10 @@ import type {
     IVerseAcademicComposer,
     StyleGuideManifest,
     StyleGuideSnapshot,
+    IPageNumberingReader,
 } from '@dosfilos/domain';
 import { isCitableSourceType } from '@dosfilos/domain';
+import { buildPageLabeler } from './buildPageLabeler';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
 export interface ComposeVerseAcademicProseInput {
@@ -60,6 +62,12 @@ export class ComposeVerseAcademicProseUseCase {
         private contentReader: IResourceContentReader,
         private composer: IVerseAcademicComposer,
         private styleFormatter?: IStyleFormatter,
+        /**
+         * Numeración impresa de las fuentes. Sin ella la prosa rotula según
+         * lo que guardó el análisis; con ella, además, convierte las hojas de
+         * los análisis anteriores a la calibración.
+         */
+        private pageNumbering?: IPageNumberingReader,
     ) { }
 
     async execute(input: ComposeVerseAcademicProseInput): Promise<ComposeVerseAcademicProseOutput> {
@@ -104,6 +112,7 @@ export class ComposeVerseAcademicProseUseCase {
                 styleGuideContent,
                 styleGuideManifest: manifest,
                 sources: buildComposerSources(paper),
+                pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
             };
             reservation.markLlmContacted();
             const raw = await this.composer.composeVerse(composerInput);
