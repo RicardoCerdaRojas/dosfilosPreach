@@ -76,7 +76,7 @@
       "scan-too-large": "This is a scan over 50 MB, so it does not fit vision. No route works: Standard would fall back to reading a text layer that a scan does not have, and Premium destroys non-Latin script. Split the file before uploading.",
       "text-layer-premium": "It has a text layer. Premium rebuilds tables and columns; Standard is enough for running prose.",
       "over-every-cap": "Over 100 MB — no engine accepts it. Split it into volumes before uploading.",
-      "unknown": ""
+      "unknown": "We could not read the file to recommend a route. If it is a scan — pages as images — pick Standard: it is the only one that reads them. Premium is for documents that already carry text."
     },
     "stepModeWaiting": "Pick the file first — the right route depends on what it is."
   },

@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
+// El worker se configura en `@/lib/pdfWorker`. Importarlo desde ahí NO es
+// cosmético: sin worker `getDocument` tira excepción, el `catch` de abajo la
+// traduce a «no se pudo leer», y el diagnóstico queda mudo sin error visible.
+import { pdfjsLib } from '@/lib/pdfWorker';
 import {
     diagnosePdfSource,
     sampleWindow,
