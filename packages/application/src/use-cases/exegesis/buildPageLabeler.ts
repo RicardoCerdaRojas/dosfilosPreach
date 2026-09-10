@@ -1,6 +1,6 @@
 import {
     isCitableSourceType,
-    printedPageIn,
+    printedLabelIn,
     type CitationPageKind,
     type ExegeticalPaper,
     type IPageNumberingReader,
@@ -53,7 +53,9 @@ export async function buildPageLabeler(
 
     return (sourceKey, value, kind) => {
         if (kind === 'printed') return `p. ${value}`;
-        const printed = printedPageIn(numberings.get(sourceKey) ?? null, value);
+        // Etiqueta, no número: un tramo romano imprime «ccxxii», y `p. 222`
+        // manda al lector a una página que en ese libro es otra cosa.
+        const printed = printedLabelIn(numberings.get(sourceKey) ?? null, value);
         return printed === null ? `hoja ${value}` : `p. ${printed}`;
     };
 }

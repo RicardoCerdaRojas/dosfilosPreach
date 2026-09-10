@@ -223,6 +223,10 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                 matchedSourceLabel: matched.displayLabel,
                 similarityScore: parsedResp.confidence,
                 matchedPage,
+                // El hint es el ancla completa que el propio sistema escribió
+                // para ese fragmento; guardarla evita que la interfaz tenga
+                // que adivinar si el número es página impresa u hoja.
+                matchedPageLabel: parsedResp.bestPageHint.trim() || null,
                 note,
             };
         } catch (err) {

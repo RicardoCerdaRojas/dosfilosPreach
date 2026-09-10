@@ -36,11 +36,28 @@ export interface NumberingSegment {
     toSheet: number;
     /**
      * `impresa = hoja + offset`. `null` cuando el tramo no lleva numeración
-     * arábiga —preliminares en romanos, láminas, hojas de cortesía—, en cuyo
-     * caso la cita honesta es «hoja N».
+     * alguna —láminas, hojas de cortesía—, en cuyo caso la cita honesta es
+     * «hoja N».
      */
     offset: number | null;
+    /**
+     * Con qué cifras se imprime el número de este tramo.
+     *
+     * Ausente equivale a `'arabic'`, que es lo que describe toda la
+     * numeración guardada antes de que existiera este campo.
+     *
+     * `'roman'` existe porque las páginas de un tramo romano SON PÁGINAS: la
+     * introducción de Mayor sobre Santiago tiene 260, se citan a diario como
+     * «p. ccxxii», y tratarlas como tramo sin numerar obligaba a citar «hoja
+     * 240» —un número del archivo PDF que no existe en ningún ejemplar—. La
+     * diferencia entre `offset: null` y un tramo romano es la diferencia
+     * entre «esta hoja no tiene número» y «tiene número, y no es arábigo».
+     */
+    style?: NumberingStyle;
 }
+
+/** Cifras con las que se imprime un tramo. */
+export type NumberingStyle = 'arabic' | 'roman';
 
 /** Cómo se estableció la numeración de un recurso. */
 export type NumberingOrigin =
@@ -84,11 +101,87 @@ export function printedPageIn(
     numbering: PageNumbering | null | undefined,
     sheet: number,
 ): number | null {
+    const found = segmentValueAt(numbering, sheet);
+    // Un tramo romano devuelve `null` ACÁ a propósito. Su valor es un número
+    // —101— pero su página es «ci», y quien llame a esta función va a
+    // escribir «p. 101», que no existe en el libro. Devolver null hace que un
+    // llamador no migrado degrade a «hoja N», que es falso pero honesto, en
+    // vez de a una página inventada. Para rotular está `printedLabelIn`.
+    if (!found || found.style === 'roman') return null;
+    return found.value;
+}
+
+/** Tramo y valor numérico de una hoja, sin decidir todavía cómo se escribe. */
+function segmentValueAt(
+    numbering: PageNumbering | null | undefined,
+    sheet: number,
+): { value: number; style: NumberingStyle } | null {
     if (!numbering || !Number.isFinite(sheet) || sheet < 1) return null;
     const segment = numbering.segments.find(s => sheet >= s.fromSheet && sheet <= s.toSheet);
     if (!segment || segment.offset === null) return null;
-    const printed = sheet + segment.offset;
-    return printed >= 1 ? printed : null;
+    const value = sheet + segment.offset;
+    if (value < 1) return null;
+    return { value, style: segment.style ?? 'arabic' };
+}
+
+/**
+ * Cómo se escribe el número impreso de una hoja: `"42"` o `"ccxxii"`.
+ *
+ * Es la función que deben usar todos los caminos que ROTULAN. `printedPageIn`
+ * queda para los que COMPARAN cantidades, que no saben ni les importa con qué
+ * cifras se imprime el número.
+ */
+export function printedLabelIn(
+    numbering: PageNumbering | null | undefined,
+    sheet: number,
+): string | null {
+    const found = segmentValueAt(numbering, sheet);
+    if (!found) return null;
+    return found.style === 'roman' ? toRomanNumeral(found.value) : String(found.value);
+}
+
+const ROMAN_UNITS: ReadonlyArray<readonly [number, string]> = [
+    [1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'],
+    [100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'],
+    [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i'],
+];
+
+/**
+ * Romano en minúsculas, que es como los imprimen los preliminares de un libro
+ * («ccxxii», no «CCXXII»).
+ */
+export function toRomanNumeral(value: number): string {
+    if (!Number.isFinite(value) || value < 1 || value > 3999) return String(value);
+    let rest = Math.floor(value);
+    let out = '';
+    for (const [amount, sign] of ROMAN_UNITS) {
+        while (rest >= amount) {
+            out += sign;
+            rest -= amount;
+        }
+    }
+    return out;
+}
+
+/**
+ * Lee un romano y devuelve su valor, o `null` si no lo es.
+ *
+ * Se exige la forma CANÓNICA: `toRomanNumeral` de lo leído tiene que dar el
+ * mismo texto. Sin eso «iiii» o «ic» pasarían por válidos y la calibración
+ * guardaría un desfase deducido de un número que nadie imprime.
+ */
+export function parseRomanNumeral(raw: string): number | null {
+    const text = (raw ?? '').trim().toLowerCase();
+    if (!text || !/^[ivxlcdm]+$/.test(text)) return null;
+    const digit: Record<string, number> = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
+    let total = 0;
+    for (let i = 0; i < text.length; i++) {
+        const here = digit[text[i]!]!;
+        const next = i + 1 < text.length ? digit[text[i + 1]!]! : 0;
+        total += here < next ? -here : here;
+    }
+    if (total < 1 || total > 3999) return null;
+    return toRomanNumeral(total) === text ? total : null;
 }
 
 /**
@@ -221,6 +314,15 @@ export interface CalibrationPoint {
      * es una respuesta legítima y no un dato faltante.
      */
     printed: number | null;
+    /**
+     * Con qué cifras estaba escrito lo que la persona leyó. Ausente equivale a
+     * `'arabic'`.
+     *
+     * Va junto al valor y no aparte porque son un mismo dato: quien miró la
+     * hoja 240 de Mayor no leyó «222», leyó «ccxxii», y perder eso convierte
+     * una página real en un tramo sin numerar.
+     */
+    style?: NumberingStyle;
 }
 
 /**
@@ -258,12 +360,21 @@ export function numberingFromCalibrationPoints(
             ? end
             : Math.floor((point.sheet + sorted[i + 1]!.sheet) / 2);
 
+        const style: NumberingStyle = point.style ?? 'arabic';
         const last = segments[segments.length - 1];
-        if (last && last.offset === offset) {
+        // Mismo desfase Y mismas cifras. Sin la segunda condición, la hoja 240
+        // en romanos y la 500 en arábigo colapsarían en un tramo si sus
+        // desfases coincidieran, y medio libro se citaría con las cifras del
+        // otro medio.
+        if (last && last.offset === offset && (last.style ?? 'arabic') === style) {
             last.toSheet = to;
             continue;
         }
-        segments.push({ fromSheet: from, toSheet: to, offset });
+        segments.push(
+            offset === null || style === 'arabic'
+                ? { fromSheet: from, toSheet: to, offset }
+                : { fromSheet: from, toSheet: to, offset, style },
+        );
     }
 
     if (segments.every(s => s.offset === null)) {
@@ -286,13 +397,13 @@ export function numberingFromCalibrationPoints(
  *
  * De ahí las tres salidas:
  *
- *   - Con numeración que resuelve esta hoja → `p. N`, la página impresa.
+ *   - Con numeración que resuelve esta hoja → `p. N`, la página impresa. El
+ *     tramo decide con qué cifras: `p. 42` o `p. ccxxii`.
  *   - Sin numeración del recurso → `hoja N`, incompleto pero verdadero, y
  *     visible para quien revise el trabajo.
- *   - Con numeración pero en un tramo sin folio arábigo —las preliminares en
- *     romanos de Mayor son 271 hojas— → sólo la sección, porque ahí no hay
- *     página impresa que citar y decir «hoja N» invitaría a copiarla como si
- *     lo fuera.
+ *   - Con numeración pero en un tramo sin folio —láminas, cortesías— → sólo
+ *     la sección, porque ahí no hay página impresa que citar y decir «hoja N»
+ *     invitaría a copiarla como si lo fuera.
  *
  * Vive en el dominio y no en cada caso de uso porque estaba duplicada en dos,
  * y una regla de citación repetida es una regla que se corrige en un solo
@@ -302,7 +413,9 @@ export function citationAnchorFor(
     chunk: { sheet: number | null; section: string | null },
     numbering: PageNumbering | null,
 ): string {
-    const printed = chunk.sheet === null ? null : printedPageIn(numbering, chunk.sheet);
+    // `printedLabelIn` y no `printedPageIn`: en un tramo romano el valor es
+    // 222 y la página es «ccxxii», y acá se escribe la página.
+    const printed = chunk.sheet === null ? null : printedLabelIn(numbering, chunk.sheet);
     const page = printed !== null
         ? `p. ${printed}`
         : numbering === null && chunk.sheet
