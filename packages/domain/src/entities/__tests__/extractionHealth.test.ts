@@ -72,7 +72,18 @@ describe('requiredScriptsFor — conservador ante la duda', () => {
             .toEqual(['greek']);
     });
 
-    it('no exige nada a un comentario, aunque comente el AT', () => {
+    it('exige hebreo a un comentario EXEGÉTICO del AT', () => {
+        // Sasson, «Jonah» (Anchor Bible): 790.779 chars, 0 hebreo, 205 citas en
+        // trabajos entregados. Su razón de ser es trabajar sobre el texto
+        // hebreo, así que un cero ahí no es un libro sin hebreo: está roto.
+        expect(requiredScriptsFor({
+            type: 'exegetical-commentary',
+            title: 'Jonah — A New Translation with Introduction and Commentary',
+            coversTestament: 'OT',
+        })).toEqual(['hebrew']);
+    });
+
+    it('no exige nada a un comentario expositivo, aunque comente el AT', () => {
         // Un comentario en español sobre Jonás puede no traer una letra hebrea
         // y estar perfecto. Marcarlo enseñaría a ignorar la advertencia.
         expect(requiredScriptsFor({ type: 'commentary', title: 'Comentario Jonás', coversTestament: 'OT' }))
