@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from '@/i18n';
 import {
     LibraryCategory,
@@ -123,6 +124,22 @@ export function LibraryUploadForm({
         requiredScripts: requiredScriptsFor({ type: metadata.type, title: metadata.title }),
         evidence: preflight.status === 'done' ? preflight.evidence : null,
     });
+
+    // Una recomendación FUERTE se aplica sola. Sin esto la pantalla decía
+    // «elegí Por imágenes» y dejaba el otro azulejo marcado en verde: ya no se
+    // contradecía en palabras, pero sí en lo que tenía seleccionado, y un
+    // azulejo verde se lee como una elección hecha.
+    //
+    // Sólo al CAMBIAR la recomendación, no en cada render: si después de verla
+    // el usuario elige lo contrario a conciencia, no se le discute.
+    const ultimaAplicada = useRef<string | null>(null);
+    useEffect(() => {
+        const firma = `${recommendation.reasonKey}:${recommendation.recommended}`;
+        if (!recommendation.strong || !recommendation.recommended) return;
+        if (ultimaAplicada.current === firma) return;
+        ultimaAplicada.current = firma;
+        onMetadataChange({ extractionMode: recommendation.recommended });
+    }, [recommendation.strong, recommendation.recommended, recommendation.reasonKey, onMetadataChange]);
 
     return (
         <div className="bg-card border border-border/60 rounded-xl p-5 sm:p-6 space-y-6">

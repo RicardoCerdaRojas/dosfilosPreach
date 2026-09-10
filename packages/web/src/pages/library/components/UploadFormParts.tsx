@@ -42,17 +42,25 @@ export function ModeAdvice({ recommendation, t }: { recommendation: ModeRecommen
     // palabra, y sobre un escaneo Premium destruye el texto. Decir «no pude
     // leerlo, fijate vos si es un escaneo» es peor consejo que uno bueno y
     // mucho mejor que ninguno.
-    const bloqueante = recommendation.recommended === null && recommendation.reasonKey !== 'unknown';
+    // Tres estados, no dos. El rojo estaba diciendo dos cosas distintas —«esto
+    // va a fallar» y «hay que decidir»— y la segunda no es un error: es una
+    // pregunta que sólo el usuario puede contestar. Gastar el rojo en las dos
+    // le quita fuerza a la que de verdad importa.
+    const tono = recommendation.recommended !== null
+        ? 'consejo'
+        : recommendation.reasonKey === 'no-script-found' || recommendation.reasonKey === 'unknown'
+            ? 'pregunta'
+            : 'bloqueo';
     return (
         <p className={cn(
             'flex items-start gap-2 rounded-md border px-3 py-2 text-[11px]',
-            bloqueante
-                ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                : 'border-info/30 bg-info-subtle/40 text-info-subtle-foreground',
+            tono === 'bloqueo' ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                : tono === 'pregunta' ? 'border-warning/30 bg-warning-subtle/40 text-warning-subtle-foreground'
+                    : 'border-info/30 bg-info-subtle/40 text-info-subtle-foreground',
         )}>
-            {bloqueante
-                ? <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
-                : <Wand2 className="mt-px h-3.5 w-3.5 shrink-0" />}
+            {tono === 'consejo'
+                ? <Wand2 className="mt-px h-3.5 w-3.5 shrink-0" />
+                : <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />}
             <span>{t(`upload.modeAdvice.${recommendation.reasonKey}`)}</span>
         </p>
     );
