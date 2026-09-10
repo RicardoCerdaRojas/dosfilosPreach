@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
 } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
-import { runLlmPrompt } from '../../llm/callableLlm';
+import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
 import { buildLlmVerifierPrompt } from './llmVerifierPrompts';
 import { LLM_CITATION_VERIFIER_SCHEMA } from './llmVerifierSchema';
@@ -45,6 +45,25 @@ import { LLM_CITATION_VERIFIER_SCHEMA } from './llmVerifierSchema';
  *     whole verification run.
  *   - Source not matched bypasses the LLM entirely (free).
  */
+/**
+ * Tope de salida por cita.
+ *
+ * Fue 1.024 y con ese número el verificador no verificaba nada: en una corrida
+ * real 29 de 32 citas volvieron como «revisión manual» porque la respuesta
+ * llegaba vacía o cortada a la mitad.
+ *
+ * La causa es que `gemini-2.5-pro` razona antes de responder y **los tokens de
+ * razonamiento salen de este mismo presupuesto**. No se pueden apagar. Con 1.024
+ * el modelo gasta el cupo pensando y no le queda nada para emitir el JSON, así
+ * que el error no se parece a un tope de tokens: se parece a un modelo que
+ * responde cualquier cosa.
+ *
+ * 8.192 es lo que usa el resto de los adapters de exégesis. El JSON de acá
+ * ocupa unos cientos de tokens; el margen es para el razonamiento, y sólo se
+ * cobra lo que se consume.
+ */
+export const VERIFIER_MAX_OUTPUT_TOKENS = 8192;
+
 export class GeminiLlmCitationVerifier implements ICitationVerifier {
     private modelName: string;
     /** Per-source-chunk character cap to keep prompt tokens bounded. */
@@ -161,8 +180,8 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         });
 
         try {
-            const rawJson = await withGeminiRetry(
-                () => runLlmPrompt({
+            const { text: rawJson, finishReason } = await withGeminiRetry(
+                () => runLlmPromptWithUsage({
                     feature: 'exegesis.verifyCitation',
                     model: this.modelName,
                     system: systemInstruction,
@@ -171,11 +190,11 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                     responseSchema: LLM_CITATION_VERIFIER_SCHEMA,
                     temperature: 0.1,
                     topP: 0.9,
-                    maxOutputTokens: 1024,
+                    maxOutputTokens: VERIFIER_MAX_OUTPUT_TOKENS,
                 }),
                 { contextLabel: 'GeminiLlmCitationVerifier' },
             );
-            const parsedResp = parseLlmResponse(rawJson);
+            const parsedResp = parseLlmResponse(rawJson, finishReason);
 
             const matchedPage = extractPageFromHint(parsedResp.bestPageHint);
             let status: CitationStatus = parsedResp.status;
@@ -291,7 +310,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
     }
 }
 
-interface ParsedLlmResponse {
+export interface ParsedLlmResponse {
     status: CitationStatus;
     confidence: number | null;
     bestPageHint: string;
@@ -309,14 +328,16 @@ interface ParsedLlmResponse {
  * `status` que el esquema no contempla— y el motivo viaja en la nota, para que
  * la fila diga por qué está donde está.
  */
-function parseLlmResponse(rawJson: string): ParsedLlmResponse {
+export function parseLlmResponse(rawJson: string, finishReason: string | null = null): ParsedLlmResponse {
     let parsed: any;
     try {
         parsed = JSON.parse(rawJson);
     } catch (err) {
+        const truncado = finishReason === 'MAX_TOKENS';
         console.warn('[GeminiLlmCitationVerifier] respuesta ilegible; no es JSON válido', {
             error: err instanceof Error ? err.message : String(err),
             largo: rawJson?.length ?? 0,
+            finishReason,
             // El final es lo que delata un JSON truncado por tope de tokens.
             final: (rawJson ?? '').slice(-160),
         });
@@ -324,7 +345,12 @@ function parseLlmResponse(rawJson: string): ParsedLlmResponse {
             status: 'manual-pending',
             confidence: null,
             bestPageHint: '',
-            reasoning: 'El modelo respondió algo que no es JSON válido; probablemente se cortó. No es un problema de la cita.',
+            // `finishReason` viene del servidor justamente para no tener que
+            // adivinar acá: cuando dice MAX_TOKENS el corte es un hecho, y el
+            // arreglo es subir el presupuesto, no revisar la cita.
+            reasoning: truncado
+                ? 'La respuesta se cortó por tope de tokens antes de terminar. No es un problema de la cita: hay que ampliar el presupuesto de salida.'
+                : 'El modelo respondió algo que no es JSON válido. No es un problema de la cita.',
         };
     }
     const declarado = parsed?.status;
