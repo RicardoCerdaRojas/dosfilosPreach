@@ -37,8 +37,12 @@ export function Paso({ numero, titulo, children }: { numero: number; titulo: str
  * error y se cita.
  */
 export function ModeAdvice({ recommendation, t }: { recommendation: ModeRecommendation; t: (k: string) => string }) {
-    if (recommendation.reasonKey === 'unknown') return null;
-    const bloqueante = recommendation.recommended === null;
+    // Sin diagnóstico NO se calla. Ese silencio dejaba Premium marcado —que la
+    // interfaz pinta en verde y se lee como «esta es la buena»— sin una sola
+    // palabra, y sobre un escaneo Premium destruye el texto. Decir «no pude
+    // leerlo, fijate vos si es un escaneo» es peor consejo que uno bueno y
+    // mucho mejor que ninguno.
+    const bloqueante = recommendation.recommended === null && recommendation.reasonKey !== 'unknown';
     return (
         <p className={cn(
             'flex items-start gap-2 rounded-md border px-3 py-2 text-[11px]',

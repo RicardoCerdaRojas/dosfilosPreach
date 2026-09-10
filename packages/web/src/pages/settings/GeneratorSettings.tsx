@@ -18,11 +18,14 @@ import { ConfigService } from '@dosfilos/application';
 import { FirebaseConfigRepository, FirebaseStorageService } from '@dosfilos/infrastructure';
 
 import { Loader2, Upload, X, FileText, Database } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
+// Import por efecto: esta pantalla no usa pdf.js directamente, pero un hijo
+// suyo sí, y el worker tiene que estar configurado antes de que renderice.
+import '@/lib/pdfWorker';
 import { libraryService } from '@dosfilos/application';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+// Configurado una sola vez en `@/lib/pdfWorker`. Antes se traía de unpkg:
+// para que una pantalla funcione no hace falta depender de un tercero.
 
 import { useSearchParams } from 'react-router-dom';
 import { LibrarySettings } from './LibrarySettings';

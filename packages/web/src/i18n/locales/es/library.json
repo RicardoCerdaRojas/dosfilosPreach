@@ -76,7 +76,7 @@
       "scan-too-large": "Es un escaneo y pesa más de 50 MB, así que no entra en visión. Ninguna ruta sirve: Estándar caería en lectura de capa de texto —que en un escaneo no existe— y Premium destruye la escritura no latina. Partí el archivo antes de subirlo.",
       "text-layer-premium": "Tiene capa de texto. Premium reconstruye tablas y columnas; Estándar alcanza si es prosa corrida.",
       "over-every-cap": "Supera los 100 MB y ningún motor lo acepta. Partilo en tomos antes de subirlo.",
-      "unknown": ""
+      "unknown": "No pudimos leer el archivo para recomendarte una ruta. Si es un escaneo —páginas como imagen— elegí Estándar: es la única que las lee. Premium sirve cuando el documento ya trae texto."
     },
     "stepModeWaiting": "Elegí primero el archivo: la ruta correcta depende de lo que sea."
   },

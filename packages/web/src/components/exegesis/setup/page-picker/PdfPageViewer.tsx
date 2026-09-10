@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import * as pdfjsLib from 'pdfjs-dist';
+import { pdfjsLib } from '@/lib/pdfWorker';
 import { Loader2, FileWarning } from 'lucide-react';
 import { findQuoteInPageText } from '@dosfilos/domain';
 
@@ -18,10 +18,7 @@ import { findQuoteInPageText } from '@dosfilos/domain';
  * una fragilidad que no hace falta aceptar.
  */
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+// Configurado una sola vez en `@/lib/pdfWorker`, importado abajo.
 
 /**
  * Recursos que pdf.js pide por URL mientras renderiza. Los copia a `public/`
