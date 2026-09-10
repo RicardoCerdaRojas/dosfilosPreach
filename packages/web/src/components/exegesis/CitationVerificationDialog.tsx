@@ -146,7 +146,8 @@ function CitationRow({ citation }: { citation: VerifiedCitation }) {
             {citation.matchedSourceLabel && (
                 <p className="text-[11px] text-muted-foreground pl-6">
                     {t('canonical.verify.dialog.matchedSource')}: {citation.matchedSourceLabel}
-                    {citation.matchedPage && ` · p. ${citation.matchedPage}`}
+                    {(citation.matchedPageLabel || citation.matchedPage)
+                        && ` · ${citation.matchedPageLabel || `p. ${citation.matchedPage}`}`}
                 </p>
             )}
             {citation.evidence && (

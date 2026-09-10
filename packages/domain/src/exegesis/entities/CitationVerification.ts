@@ -81,6 +81,20 @@ export interface VerifiedCitation extends ParsedCitation {
      */
     matchedPage: string | null;
     /**
+     * El ancla del fragmento de apoyo tal como se escribe: `"p. 61"`,
+     * `"hoja 16"`, `"p. ccxxii"`.
+     *
+     * Va aparte de `matchedPage` porque las dos sirven a cosas distintas y
+     * confundirlas es el defecto que este campo cierra: `matchedPage` es un
+     * número pelado porque el cotejo compara CANTIDADES, y la interfaz lo
+     * rendía con un «p.» escrito a mano —afirmando una página impresa sobre
+     * lo que podía ser una hoja, que es exactamente lo que el resto del
+     * sistema dejó de hacer—.
+     *
+     * `null` cuando no hubo fragmento de apoyo con ancla.
+     */
+    matchedPageLabel?: string | null;
+    /**
      * Optional human-readable note explaining the verdict. Surfaces
      * directly in the dialog row so the user understands why a
      * citation came back yellow vs red.

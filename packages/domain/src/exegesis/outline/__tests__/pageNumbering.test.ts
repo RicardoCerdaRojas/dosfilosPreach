@@ -6,6 +6,9 @@ import {
     detectNumberingSegments,
     numberingFromCalibrationPoints,
     printedPageIn,
+    printedLabelIn,
+    toRomanNumeral,
+    parseRomanNumeral,
     relabelExcerptAnchor,
     singleSegmentNumbering,
     type PageNumbering,
@@ -339,5 +342,112 @@ describe('relabelExcerptAnchor — con la hoja guardada aparte', () => {
     it('cae en el parseo cuando el extracto es anterior al campo', () => {
         expect(relabelExcerptAnchor('p. 32', adamson, {})).toBe('p. 28');
         expect(relabelExcerptAnchor('p. 32', adamson, undefined)).toBe('p. 28');
+    });
+});
+
+/**
+ * Tramos en romanos.
+ *
+ * La introducción de Mayor sobre Santiago tiene 260 páginas numeradas i-cclx.
+ * Son páginas: se citan a diario como «p. ccxxii». Antes el modelo sólo sabía
+ * decir «arábigo con desfase» o «sin numeración», así que esas 260 caían en la
+ * segunda casilla y sus citas terminaban diciendo «hoja 240» —un número del
+ * archivo PDF que no existe en ningún ejemplar—.
+ *
+ * `offset: null` sigue significando «esta hoja no tiene número». Un tramo
+ * romano significa «tiene número, y no es arábigo». Son cosas distintas.
+ */
+describe('numeración en romanos', () => {
+    /** Mayor: los romanos empiezan en la hoja 19; la arábiga, en la 279. */
+    const MAYOR: PageNumbering = {
+        origin: 'confirmed',
+        segments: [
+            { fromSheet: 1, toSheet: 278, offset: -18, style: 'roman' },
+            { fromSheet: 279, toSheet: 540, offset: -278 },
+        ],
+    };
+
+    it('rotula la página romana como la imprime el libro', () => {
+        expect(printedLabelIn(MAYOR, 240)).toBe('ccxxii');
+        expect(printedLabelIn(MAYOR, 119)).toBe('ci');
+    });
+
+    it('el tramo arábigo del mismo libro no cambia', () => {
+        expect(printedLabelIn(MAYOR, 461)).toBe('183');
+        expect(printedPageIn(MAYOR, 461)).toBe(183);
+    });
+
+    it('el ancla de citación dice «p. ccxxii», no «hoja 240»', () => {
+        expect(citationAnchorFor({ sheet: 240, section: null }, MAYOR)).toBe('p. ccxxii');
+    });
+
+    it('printedPageIn calla en un tramo romano, para que nadie escriba «p. 222»', () => {
+        // Devolver el número acá haría que cualquier llamador no migrado
+        // rotulara una página que en ese libro es otra cosa. Callar lo degrada
+        // a «hoja N»: falso, pero honesto.
+        expect(printedPageIn(MAYOR, 240)).toBeNull();
+    });
+
+    it('una hoja sin número sigue sin tenerlo', () => {
+        const conLamina: PageNumbering = {
+            origin: 'confirmed',
+            segments: [{ fromSheet: 1, toSheet: 40, offset: null }],
+        };
+        expect(printedLabelIn(conLamina, 12)).toBeNull();
+        expect(citationAnchorFor({ sheet: 12, section: null }, conLamina)).toBe('');
+    });
+});
+
+describe('romanos — ida y vuelta', () => {
+    it('escribe en minúscula, como los preliminares de un libro', () => {
+        expect(toRomanNumeral(222)).toBe('ccxxii');
+        expect(toRomanNumeral(101)).toBe('ci');
+        expect(toRomanNumeral(4)).toBe('iv');
+        expect(toRomanNumeral(1)).toBe('i');
+    });
+
+    it('lee lo que escribe, en ambos sentidos', () => {
+        for (const n of [1, 4, 9, 14, 40, 90, 101, 222, 260, 1987]) {
+            expect(parseRomanNumeral(toRomanNumeral(n))).toBe(n);
+        }
+    });
+
+    it('acepta mayúsculas, que es como algunas portadas los imprimen', () => {
+        expect(parseRomanNumeral('CCXXII')).toBe(222);
+    });
+
+    it('rechaza lo que no es un romano canónico', () => {
+        // «iiii» e «ic» se leen, pero nadie los imprime. Aceptarlos guardaría
+        // un desfase deducido de un número que no existe en el libro.
+        expect(parseRomanNumeral('iiii')).toBeNull();
+        expect(parseRomanNumeral('ic')).toBeNull();
+        expect(parseRomanNumeral('42')).toBeNull();
+        expect(parseRomanNumeral('')).toBeNull();
+        expect(parseRomanNumeral('hola')).toBeNull();
+    });
+});
+
+describe('calibración con una respuesta romana', () => {
+    it('arma el tramo romano y el arábigo por separado', () => {
+        const n = numberingFromCalibrationPoints([
+            { sheet: 119, printed: 101, style: 'roman' },
+            { sheet: 240, printed: 222, style: 'roman' },
+            { sheet: 461, printed: 183 },
+        ], 540);
+        expect(n).not.toBeNull();
+        expect(printedLabelIn(n, 240)).toBe('ccxxii');
+        expect(printedLabelIn(n, 461)).toBe('183');
+    });
+
+    it('no colapsa dos tramos que comparten desfase pero no cifras', () => {
+        // Sin la comprobación de estilo, estos dos serían un solo tramo y medio
+        // libro se citaría con las cifras del otro medio.
+        const n = numberingFromCalibrationPoints([
+            { sheet: 100, printed: 90, style: 'roman' },
+            { sheet: 400, printed: 390 },
+        ], 500);
+        expect(n!.segments).toHaveLength(2);
+        expect(printedLabelIn(n, 100)).toBe('xc');
+        expect(printedLabelIn(n, 400)).toBe('390');
     });
 });

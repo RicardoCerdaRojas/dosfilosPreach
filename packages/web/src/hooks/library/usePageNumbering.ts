@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     calibrationSheets,
     detectNumberingSegments,
-    printedPageIn,
+    printedLabelIn,
     type PageNumbering,
 } from '@dosfilos/domain';
 import { fetchDocumentPageIndex, FirebaseLibraryRepository } from '@dosfilos/infrastructure';
@@ -14,11 +14,11 @@ export interface CalibrationPoint {
     /** Hoja física del archivo, contada desde 1. */
     sheet: number;
     /**
-     * Número que ya se cree impreso en esa hoja. `null` cuando no se dedujo,
-     * o cuando la hoja cae en un tramo sin numeración arábiga — y ésa es una
-     * respuesta válida, no un hueco a rellenar.
+     * Número que ya se cree impreso en esa hoja, tal como se escribe: `"42"` o
+     * `"ccxxii"`. `null` cuando no se dedujo, o cuando la hoja cae en un tramo
+     * sin numeración — y ésa es una respuesta válida, no un hueco a rellenar.
      */
-    proposed: number | null;
+    proposed: string | null;
 }
 
 export interface NumberingState {
@@ -71,7 +71,7 @@ export function usePageNumbering(resourceId: string | null) {
                 storedOrigin: stored?.origin ?? null,
                 points: calibrationSheets(numbering, lastSheet).map(sheet => ({
                     sheet,
-                    proposed: printedPageIn(numbering, sheet),
+                    proposed: printedLabelIn(numbering, sheet),
                 })),
             };
         },

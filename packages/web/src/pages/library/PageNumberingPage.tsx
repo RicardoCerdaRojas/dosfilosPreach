@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
-import { numberingFromCalibrationPoints } from '@dosfilos/domain';
+import { numberingFromCalibrationPoints, parseRomanNumeral } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,26 @@ interface Answer {
 }
 
 const ZOOM_STEPS = [1, 1.5, 2, 3] as const;
+
+/**
+ * Lee lo que la persona tecleó: `42` o `ccxxii`.
+ *
+ * Los preliminares de un libro llevan romanos y sus páginas son páginas —la
+ * introducción de Mayor tiene 260 y se citan como «p. ccxxii»—. Obligar a
+ * marcar «no tiene número» convertía esas páginas reales en un tramo sin
+ * numerar, y sus citas terminaban diciendo «hoja 240», que es un número del
+ * PDF que no existe en ningún ejemplar.
+ */
+function readPrinted(raw: string): { printed: number | null; style?: 'arabic' | 'roman' } {
+    const text = (raw ?? '').trim();
+    if (!text) return { printed: null };
+    if (/^\d+$/.test(text)) {
+        const n = Number.parseInt(text, 10);
+        return { printed: Number.isFinite(n) && n >= 1 ? n : null };
+    }
+    const roman = parseRomanNumeral(text);
+    return roman === null ? { printed: null } : { printed: roman, style: 'roman' };
+}
 
 /**
  * Decirle al sistema qué número lleva impreso cada hoja de un libro.
@@ -57,7 +77,7 @@ export function PageNumberingPage() {
         if (!state.data) return;
         setAnswers(state.data.points.map(p => ({
             sheet: p.sheet,
-            value: p.proposed === null ? '' : String(p.proposed),
+            value: p.proposed ?? '',
             unnumbered: false,
         })));
     }, [state.data]);
@@ -68,11 +88,10 @@ export function PageNumberingPage() {
     const numbering = useMemo(() => {
         if (answers.length === 0 || !state.data) return null;
         const points = answers
-            .map(a => ({
-                sheet: a.sheet,
-                printed: a.unnumbered ? null : Number.parseInt(a.value, 10),
-            }))
-            .filter(p => p.printed === null || Number.isFinite(p.printed));
+            .map(a => (a.unnumbered
+                ? { sheet: a.sheet, printed: null }
+                : { sheet: a.sheet, ...readPrinted(a.value) }))
+            .filter(p => p.printed === null || Number.isFinite(p.printed as number));
         return numberingFromCalibrationPoints(points, state.data.lastSheet);
     }, [answers, state.data]);
 
@@ -89,7 +108,7 @@ export function PageNumberingPage() {
     // cuál está incompleto deja al usuario mirando un contador que ya marca
     // «4 de 4» y creyendo que terminó.
     const pendingSteps = answers
-        .map((a, i) => (!a.unnumbered && !a.value.trim() ? i : -1))
+        .map((a, i) => (!a.unnumbered && readPrinted(a.value).printed === null ? i : -1))
         .filter(i => i >= 0);
     const pending = pendingSteps.length > 0;
 
@@ -202,13 +221,12 @@ export function PageNumberingPage() {
                         <Label htmlFor="printed">{t('numbering.printedQuestion', { sheet: current?.sheet ?? 1 })}</Label>
                         <Input
                             id="printed"
-                            inputMode="numeric"
                             autoFocus
                             className="text-lg tabular-nums"
                             value={current?.value ?? ''}
                             disabled={current?.unnumbered}
                             placeholder={t('numbering.printedPlaceholder')}
-                            onChange={e => patch({ value: e.target.value.replace(/\D/g, '') })}
+                            onChange={e => patch({ value: e.target.value.replace(/[^\dIVXLCDMivxlcdm]/g, '') })}
                         />
                         <div className="flex items-start gap-2">
                             <Checkbox
