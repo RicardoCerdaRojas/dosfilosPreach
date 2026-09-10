@@ -62,6 +62,8 @@ export interface ModeRecommendation {
     | 'layer-garbled'
     /** La capa no sirve y el archivo no entra en visión: hay que partirlo. */
     | 'layer-too-large'
+    /** No se halló escritura original y no se sabe si el libro la necesita. */
+    | 'no-script-found'
     | 'text-layer-premium'
     | 'over-every-cap'
     | 'unknown';
@@ -135,6 +137,19 @@ export function recommendExtractionMode(input: {
                 ? { recommended: 'standard', reasonKey: 'layer-missing-script', strong: true }
                 : { recommended: null, reasonKey: 'layer-too-large', strong: true };
         }
+    }
+
+    // ── No se halló escritura, y no se sabe si el libro la necesita ─
+    // Caso real: Sasson, un comentario del texto hebreo cuya capa no trae una
+    // letra hebrea en 392 páginas. Si su categoría todavía es la de fábrica,
+    // `requiredScriptsFor` no exige nada y esto caería en «Premium» — que es
+    // el motor que lee justamente esa capa. Afirmar Premium acá contradice al
+    // diagnóstico que la misma pantalla acaba de mostrar.
+    //
+    // No se elige por el usuario: se le devuelve la pregunta que sólo él puede
+    // contestar, que es si este libro DEBERÍA traer griego o hebreo.
+    if (diagnosis.verdict === 'sin-escritura-original') {
+        return { recommended: null, reasonKey: 'no-script-found', strong: false };
     }
 
     // Con capa de texto sana, Premium es lo que era: reconstruye maquetación.
