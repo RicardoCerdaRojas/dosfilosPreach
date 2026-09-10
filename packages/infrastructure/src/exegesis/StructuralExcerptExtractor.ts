@@ -273,6 +273,9 @@ function toStructuralExcerpt(chunk: DocumentChunkPayload): ProjectSourceExcerpt 
     return {
         text: chunk.text,
         sourceLocation,
+        // Aparte del rótulo: quien cite necesita el número, no la cadena.
+        ...(typeof page === 'number' ? { sheet: page } : {}),
+        ...(section ? { section } : {}),
         relevanceScore: 1,
         userEdited: false,
         editedAt: null,

@@ -298,24 +298,54 @@ interface ParsedLlmResponse {
     reasoning: string;
 }
 
+/**
+ * `manual-pending` significa «no pude opinar», no «hay un problema». La
+ * diferencia importa: en una corrida real 29 de 32 citas cayeron acá y en la
+ * interfaz se veían igual que un defecto, cuando lo que había fallado era el
+ * parseo de la respuesta del modelo.
+ *
+ * Nada de eso se podía diagnosticar porque no se registraba QUÉ había llegado.
+ * Ahora se registra —recortado, que alcanza para ver si es JSON truncado o un
+ * `status` que el esquema no contempla— y el motivo viaja en la nota, para que
+ * la fila diga por qué está donde está.
+ */
 function parseLlmResponse(rawJson: string): ParsedLlmResponse {
     let parsed: any;
     try {
         parsed = JSON.parse(rawJson);
-    } catch {
-        return { status: 'manual-pending', confidence: null, bestPageHint: '', reasoning: '' };
+    } catch (err) {
+        console.warn('[GeminiLlmCitationVerifier] respuesta ilegible; no es JSON válido', {
+            error: err instanceof Error ? err.message : String(err),
+            largo: rawJson?.length ?? 0,
+            // El final es lo que delata un JSON truncado por tope de tokens.
+            final: (rawJson ?? '').slice(-160),
+        });
+        return {
+            status: 'manual-pending',
+            confidence: null,
+            bestPageHint: '',
+            reasoning: 'El modelo respondió algo que no es JSON válido; probablemente se cortó. No es un problema de la cita.',
+        };
     }
-    const status: CitationStatus = parsed?.status === 'verified'
-        || parsed?.status === 'fuzzy-low'
-        || parsed?.status === 'not-found'
-        ? parsed.status
-        : 'manual-pending';
+    const declarado = parsed?.status;
+    const conocido = declarado === 'verified' || declarado === 'fuzzy-low' || declarado === 'not-found';
+    if (!conocido) {
+        console.warn('[GeminiLlmCitationVerifier] el modelo devolvió un status que el esquema no contempla', {
+            status: declarado,
+            claves: parsed && typeof parsed === 'object' ? Object.keys(parsed) : [],
+        });
+    }
+    const status: CitationStatus = conocido ? declarado : 'manual-pending';
     const confidence = typeof parsed?.confidence === 'number'
         && Number.isFinite(parsed.confidence)
         ? Math.max(0, Math.min(1, parsed.confidence))
         : null;
     const bestPageHint = typeof parsed?.bestPageHint === 'string' ? parsed.bestPageHint : '';
-    const reasoning = typeof parsed?.reasoning === 'string' ? parsed.reasoning.trim() : '';
+    const reasoning = typeof parsed?.reasoning === 'string' && parsed.reasoning.trim()
+        ? parsed.reasoning.trim()
+        : conocido
+            ? ''
+            : `El modelo no declaró un veredicto reconocible (${String(declarado)}). No es un problema de la cita.`;
     return { status, confidence, bestPageHint, reasoning };
 }
 

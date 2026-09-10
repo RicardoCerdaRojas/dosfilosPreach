@@ -319,3 +319,25 @@ describe('relabelExcerptAnchor', () => {
         expect(relabelExcerptAnchor('p.32', adamson)).toBe('p. 28');
     });
 });
+
+describe('relabelExcerptAnchor — con la hoja guardada aparte', () => {
+    const adamson: PageNumbering = {
+        origin: 'confirmed',
+        segments: [{ fromSheet: 1, toSheet: 240, offset: -4 }],
+    };
+
+    it('prefiere el dato explicito sobre el parseo del rotulo', () => {
+        // El rotulo guardado puede estar mal; el numero no.
+        expect(relabelExcerptAnchor('p. 999', adamson, { sheet: 32 })).toBe('p. 28');
+    });
+
+    it('conserva la seccion guardada aparte', () => {
+        expect(relabelExcerptAnchor('p. 32', adamson, { sheet: 32, section: 'II.3' }))
+            .toBe('p. 28, § II.3');
+    });
+
+    it('cae en el parseo cuando el extracto es anterior al campo', () => {
+        expect(relabelExcerptAnchor('p. 32', adamson, {})).toBe('p. 28');
+        expect(relabelExcerptAnchor('p. 32', adamson, undefined)).toBe('p. 28');
+    });
+});

@@ -382,7 +382,15 @@ export function calibrationSheets(numbering: PageNumbering | null, lastSheet: nu
 export function relabelExcerptAnchor(
     sourceLocation: string,
     numbering: PageNumbering | null,
+    /**
+     * Hoja y sección guardadas aparte, cuando el extracto las trae. Se
+     * prefieren al parseo: son el dato, no su rótulo.
+     */
+    explicit?: { sheet?: number; section?: string },
 ): string {
+    if (typeof explicit?.sheet === 'number' && Number.isFinite(explicit.sheet)) {
+        return citationAnchorFor({ sheet: explicit.sheet, section: explicit.section ?? null }, numbering);
+    }
     const raw = (sourceLocation ?? '').trim();
     if (!raw) return raw;
 

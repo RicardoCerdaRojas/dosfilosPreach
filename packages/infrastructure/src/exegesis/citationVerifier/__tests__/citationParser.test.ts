@@ -60,3 +60,44 @@ describe('parseCitations', () => {
         expect(parseCitations(md)).toHaveLength(1);
     });
 });
+
+describe('parseCitations — defectos hallados en un paper real', () => {
+    it('no toma el titulo de la cita vecina como frase citada', () => {
+        // Caso real de Santiago 1:12. La evidencia de la cita a Subukjian
+        // salia siendo «Diccionario Teologico del NT» —el titulo del libro de
+        // la cita anterior— y el verificador buscaba ESO en el corpus.
+        const md = 'Resume las pruebas externas de 1:2 (Kittel, "Diccionario Teologico del NT", p. 633). '
+            + 'Concluye asi la seccion sobre la perseverancia (Subukjian, "Volvamos a la predicacion", p. 16).';
+        const cites = parseCitations(md);
+        const subukjian = cites.find(c => c.author === 'Subukjian')!;
+        expect(subukjian.evidence).not.toContain('Diccionario');
+        expect(subukjian.evidence).toContain('perseverancia');
+    });
+
+    it('reconoce las dos citas de una compuesta con punto y coma', () => {
+        // Caso real de Santiago 1:14. Antes no se reconocia ninguna de las
+        // dos, y ademas el detector reportaba a Adamson como fuente nombrada
+        // sin citar.
+        const md = 'asegura la captura (Mayor, "The Epistle of James", 330; Adamson, "The Epistle of James", 75).';
+        const autores = parseCitations(md).map(c => c.author).sort();
+        expect(autores).toEqual(['Adamson', 'Mayor']);
+        const mayor = parseCitations(md).find(c => c.author === 'Mayor')!;
+        expect(mayor.pages).toBe('330');
+    });
+
+    it('detecta una cita verbatim entre comillas angulares', () => {
+        // La prosa academica en espanol cita con «», no con comillas rectas.
+        const md = 'Adamson lo glosa como «invencible al asalto de los males» (Adamson, "The Epistle of James", p. 74).';
+        const c = parseCitations(md)[0]!;
+        expect(c.evidenceIsQuoted).toBe(true);
+        expect(c.evidence).toBe('invencible al asalto de los males');
+    });
+
+    it('la evidencia de una cita suelta sigue siendo su oracion', () => {
+        const md = 'Primera oracion. El termino denota la prueba objetiva (Mayor, "The Epistle of James", 48).';
+        const c = parseCitations(md)[0]!;
+        expect(c.evidenceIsQuoted).toBe(false);
+        expect(c.evidence).toContain('prueba objetiva');
+        expect(c.evidence).not.toContain('Primera oracion');
+    });
+});

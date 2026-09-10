@@ -255,6 +255,22 @@ export interface ProjectSourceExcerpt {
     sourceLocation: string;
 
     /**
+     * Hoja física del archivo de la que salió el fragmento.
+     *
+     * `sourceLocation` es texto YA FORMATEADO —«p. 47»— que el extractor
+     * escribió cuando la numeración del recurso todavía no existía, y dice
+     * «p.» sobre una hoja. Guardar el número aparte deja que quien cite lo
+     * traduzca a página impresa sin tener que parsear una cadena.
+     *
+     * Ausente en todo extracto anterior a este campo; ahí se sigue parseando
+     * `sourceLocation`, que es lo que hace `relabelExcerptAnchor`.
+     */
+    sheet?: number;
+
+    /** Sección del fragmento, cuando el documento la declara. */
+    section?: string;
+
+    /**
      * Cosine similarity score from the embedding retrieval, normalized
      * to `[0, 1]`. Used by the UI to rank/filter excerpts; not passed
      * to the orchestrator (the LLM should treat all excerpts as
