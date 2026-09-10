@@ -120,9 +120,11 @@ export function useResourceUpload({
         title: '',
         author: '',
         type: 'theology',
-        // Default to premium — best quality. The user opts down to
-        // standard for narrative/sermon/essay content where the
-        // extra structure preservation isn't needed.
+        // Valor inicial mientras no hay archivo. NO es una recomendación: leer
+        // el texto del archivo no es «mejor calidad», es otra cosa, y sobre un
+        // escaneo destruye el texto —medido: 0 caracteres hebreos contra 2.418
+        // leyendo por imágenes—. Con un archivo elegido, el formulario aplica
+        // solo la ruta que el diagnóstico recomienda cuando está seguro.
         extractionMode: 'premium',
     });
     const [uploading, setUploading] = useState(false);
