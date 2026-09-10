@@ -12,7 +12,7 @@
  * Requiere credenciales de aplicación (`gcloud auth application-default login`).
  */
 import admin from 'firebase-admin';
-import { printedPageIn, type PageNumbering } from '../packages/domain/src/exegesis/outline/pageNumbering';
+import { printedLabelIn, type PageNumbering } from '../packages/domain/src/exegesis/outline/pageNumbering';
 
 const PAPER_ID = process.argv[2];
 if (!PAPER_ID) {
@@ -97,7 +97,12 @@ async function main() {
             // Correcto: el sistema no sabe la página y no la inventa.
             veredicto = 'OK — se citará como «hoja»';
         } else {
-            const impresa = printedPageIn(info!.numbering, c.page);
+            // `printedLabelIn` y no `printedPageIn`: en un tramo romano el
+            // segundo devuelve null a propósito —para que nadie escriba
+            // «p. 222» sobre una página que se imprime «ccxxii»— y esta
+            // auditoría reportaba como sospechosas las citas a los
+            // preliminares de un libro que están perfectamente bien.
+            const impresa = printedLabelIn(info!.numbering, c.page);
             veredicto = impresa === null
                 ? '⚠ hoja fuera de todo tramo numerado'
                 : `hoja ${c.page} → se rendirá como p. ${impresa}`;
@@ -113,7 +118,10 @@ async function main() {
     console.log('\nFuentes del trabajo:');
     for (const [key, info] of numeraciones) {
         const n = info.numbering;
-        console.log(`  ${key.padEnd(12)} ${n ? `[${n.origin}] ${n.segments.map(s => `${s.fromSheet}-${s.toSheet}: ${s.offset ?? 'sin num.'}`).join(' | ')}` : 'sin numeración'}`);
+        const tramos = n?.segments
+            .map(s => `${s.fromSheet}-${s.toSheet}: ${s.offset ?? 'sin num.'}${s.style === 'roman' ? ' (romano)' : ''}`)
+            .join(' | ');
+        console.log(`  ${key.padEnd(12)} ${n ? `[${n.origin}] ${tramos}` : 'sin numeración'}`);
     }
     console.log(sospechosas === 0
         ? '\n✓ Ninguna cita afirma una página que el sistema no pueda justificar.'
