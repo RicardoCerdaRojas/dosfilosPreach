@@ -105,6 +105,14 @@
       "configurePhases": "Configure phases",
       "assignToCore": "Assign to Core",
       "delete": "Delete"
+    },
+    "extraction": {
+      "missingScript": "No {{script}}",
+      "missingScriptHint": "Extraction recovered no {{script}} text. This work needs it to be citable: review the result or reprocess in Standard mode, which reads the pages as images.",
+      "script": {
+        "hebrew": "Hebrew",
+        "greek": "Greek"
+      }
     }
   },
   "status": {

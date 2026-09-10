@@ -105,6 +105,14 @@
       "configurePhases": "Configurar fases",
       "assignToCore": "Asignar a Core",
       "delete": "Eliminar"
+    },
+    "extraction": {
+      "missingScript": "Sin {{script}}",
+      "missingScriptHint": "La extracción no recuperó texto en {{script}}. Esta obra lo necesita para poder citarse: revisá el resultado o volvé a procesarla en modo Estándar, que lee las páginas como imagen.",
+      "script": {
+        "hebrew": "hebreo",
+        "greek": "griego"
+      }
     }
   },
   "status": {
