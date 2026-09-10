@@ -1,3 +1,5 @@
+import type { TestamentVoice } from '../testamentVoice';
+
 /**
  * Gemini response schema for `CanonicalVerseAnalysis`.
  *
@@ -22,17 +24,32 @@
  *   - Hand-writing lets us add rich `description` strings per field
  *     that Gemini reads as guidance — these would be lost if
  *     auto-generated from TS types.
+ *
+ * POR QUÉ ES UNA FUNCIÓN Y NO UNA CONSTANTE
+ *
+ * Sus descripciones estaban fijas en griego —«versículo del NT griego», «según
+ * NA28/UBS5», «término griego»— mientras el prompt del sistema ya cambiaba de
+ * testamento con `voiceFor`. Analizando Jonás, el modelo recibía dos
+ * instrucciones opuestas en la misma llamada: el prompt le pedía hebreo con
+ * aparato BHS y el esquema le pedía griego con aparato NA28.
+ *
+ * En producción ganó el prompt —los análisis de Jonás no traen una sola
+ * referencia a NA28— pero eso es suerte, no diseño: son dos señales en conflicto
+ * y la que gana depende del modelo, de su versión y del largo del prompt. Un
+ * esquema que contradice a su propio prompt es una regresión esperando el día
+ * en que la balanza se incline para el otro lado.
  */
-export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
+export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
+    return {
     type: 'object',
     description:
-        'Análisis exegético canónico de un único versículo del NT griego, ' +
+        `Análisis exegético canónico de un único versículo ${voice.testamentEs}, en ${voice.language}, ` +
         'estructurado según los once pasos del método histórico-gramatical-literal ' +
         'más los cinco diferenciadores documentados en docs/exegesis/METODOLOGIA.md.',
     properties: {
         greekText: {
             type: 'string',
-            description: 'Texto griego del versículo según NA28/UBS5.',
+            description: `Texto ${voice.languageAdjEs} del versículo según la edición crítica de referencia (${voice.apparatusEs}).`,
         },
         textualCriticism: {
             type: 'object',
@@ -45,7 +62,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
                     type: 'string',
                     description:
                         'Nota siempre presente. Confirma que la revisión del aparato se hizo. ' +
-                        'Cuando no hay variantes: ej. "Sin variantes significativas en el aparato NA28 para este verso." ' +
+                        `Cuando no hay variantes: ej. "Sin variantes significativas en el aparato para este verso." ` +
                         'Cuando hay variantes: breve resumen del panorama antes de detallar.',
                 },
                 variants: {
@@ -57,7 +74,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
                         properties: {
                             lemma: {
                                 type: 'string',
-                                description: 'Palabra o frase contestada en griego.',
+                                description: `Palabra o frase contestada, en ${voice.language}.`,
                             },
                             readings: {
                                 type: 'array',
@@ -67,7 +84,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
                                     properties: {
                                         text: {
                                             type: 'string',
-                                            description: 'Texto de la lectura en griego.',
+                                            description: `Texto de la lectura, en ${voice.language}.`,
                                         },
                                         witnesses: {
                                             type: 'array',
@@ -95,7 +112,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
                             apparatusReference: {
                                 type: 'string',
                                 description:
-                                    'Referencia opcional al aparato (ej. "NA28 ad loc.", "UBS5 {B} reading"). Vacío si no aplica.',
+                                    `Referencia opcional al aparato del testamento correspondiente (${voice.apparatusEs}). Vacío si no aplica.`,
                             },
                         },
                         required: ['lemma', 'readings', 'adoptedReading', 'rationale'],
@@ -142,7 +159,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
                         properties: {
                             text: {
                                 type: 'string',
-                                description: 'Fragmento de texto griego como aparece en el verso.',
+                                description: `Fragmento del texto ${voice.languageAdjEs} como aparece en el verso.`,
                             },
                             morphology: {
                                 type: 'string',
@@ -205,7 +222,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
                 properties: {
                     term: {
                         type: 'string',
-                        description: 'Término griego como aparece en el verso (flexionado).',
+                        description: `Término ${voice.language} como aparece en el verso (flexionado).`,
                     },
                     lemma: { type: 'string', description: 'Lemma (forma de diccionario).' },
                     gloss: { type: 'string', description: 'Glosa inicial para lectores no-especialistas.' },
@@ -324,7 +341,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
             items: {
                 type: 'object',
                 properties: {
-                    phrase: { type: 'string', description: 'Frase griega cuya traducción está en disputa.' },
+                    phrase: { type: 'string', description: `Frase ${voice.languageAdjEs} cuya traducción está en disputa.` },
                     description: {
                         type: 'string',
                         description: 'Por qué es un crux. 1-2 oraciones.',
@@ -388,7 +405,7 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
             type: 'string',
             description:
                 'Traducción de trabajo del verso ANTES de resolver los cruces. ' +
-                'Es la "primera pasada" que el alumno haría al leer el griego. Surfaces en study mode.',
+                `Es la "primera pasada" que el alumno haría al leer el ${voice.language}. Surfaces en study mode.`,
         },
         finalTranslation: {
             type: 'string',
@@ -500,8 +517,9 @@ export const CANONICAL_VERSE_ANALYSIS_SCHEMA = {
         'theologicalHooks',
         'confidenceFlags',
         'footnoteExtensions',
-    ],
-} as const;
+        ],
+    } as const;
+}
 
 /**
  * `SourceCitation` schema. Inlined as a function-call producing fresh

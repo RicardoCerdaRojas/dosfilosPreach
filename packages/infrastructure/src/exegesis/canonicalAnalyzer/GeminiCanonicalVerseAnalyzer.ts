@@ -8,7 +8,8 @@ import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { LONG_GENERATION_TIMEOUT_MS } from '../../llm/llmTimeouts';
 import { buildAnalyzerPrompt } from './analyzerPrompts';
-import { CANONICAL_VERSE_ANALYSIS_SCHEMA } from './responseSchema';
+import { canonicalVerseAnalysisSchema } from './responseSchema';
+import { voiceFor } from '../testamentVoice';
 
 /**
  * Gemini implementation of `ICanonicalVerseAnalyzer`.
@@ -67,7 +68,12 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
                 // El esquema lo sigue aplicando el servidor. El proxy lo pasa
                 // tal cual a `generationConfig`; perderlo no daría error, daría
                 // JSON peor formado.
-                responseSchema: CANONICAL_VERSE_ANALYSIS_SCHEMA,
+                //
+                // Se arma por verso porque sus descripciones nombran el idioma
+                // y el aparato: el mismo esquema para Jonás y para Santiago le
+                // pedía griego con NA28 a un análisis del texto masorético,
+                // contradiciendo al prompt que ya decía lo correcto.
+                responseSchema: canonicalVerseAnalysisSchema(voiceFor(input.verseRef.bookId)),
                 temperature: 0.3,
                 topP: 0.9,
                 maxOutputTokens: 32768,
