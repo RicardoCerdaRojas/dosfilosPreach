@@ -59,7 +59,13 @@ export class GeminiSourceTypeClassifier implements ISourceTypeClassifier {
                 responseSchema: SOURCE_TYPE_CLASSIFIER_SCHEMA,
                 temperature: 0.1,
                 topP: 0.9,
-                maxOutputTokens: 512,
+                // Mismo presupuesto compartido con el razonamiento del modelo
+                // que dejó mudo al verificador de citas: `gemini-2.5-pro`
+                // piensa antes de responder y esos tokens salen de acá. Con
+                // 512 el cupo se agota pensando, la respuesta llega cortada y
+                // el `catch` de abajo devuelve `'other'` —una clasificación
+                // equivocada que no se distingue de una correcta—.
+                maxOutputTokens: 8192,
             }),
             { contextLabel: 'GeminiSourceTypeClassifier' },
         );
