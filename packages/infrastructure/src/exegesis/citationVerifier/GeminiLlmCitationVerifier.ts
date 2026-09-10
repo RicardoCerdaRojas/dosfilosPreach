@@ -8,7 +8,9 @@ import type {
     VerifiedCitation,
     VerifierSource,
     VerifierSourceChunk,
+    PageNumbering,
 } from '@dosfilos/domain';
+import { citationAnchorFor } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -153,6 +155,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             evidence: parsed.evidence,
             resourceId: matched.corpusId,
             userId,
+            numbering: matched.numbering ?? null,
         });
         const chunks = this.prepareChunks([...matched.chunks, ...retrievedChunks]);
         if (chunks.length === 0) {
@@ -286,6 +289,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         evidence: string;
         resourceId: string;
         userId: string | null;
+        numbering: PageNumbering | null;
     }): Promise<VerifierSourceChunk[]> {
         if (!this.relevantChunkRetriever) return [];
         if (!input.userId) return [];
@@ -299,9 +303,18 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             });
             return chunks.map<VerifierSourceChunk>(c => ({
                 text: c.text,
-                pageHint: c.page != null
-                    ? `p. ${c.page}`
-                    : (c.section ? c.section : null),
+                // `c.page` es la HOJA del archivo. Rotularla «p. N» a secas
+                // hacía que el cotejo comparara la página impresa que dice la
+                // cita contra la hoja que dice el fragmento: en Adamson, cuya
+                // hoja 65 imprime la 61, una cita correcta salía como «citaste
+                // p. 61 pero el pasaje está en 65» —el mismo lugar, dicho en
+                // dos unidades—. `citationAnchorFor` es la única regla de
+                // rotulado del sistema y dice «hoja N» cuando no puede
+                // traducir, en vez de afirmar una página que no verificó.
+                pageHint: citationAnchorFor(
+                    { sheet: c.page ?? null, section: c.section ?? null },
+                    input.numbering ?? null,
+                ) || null,
             }));
         } catch (err) {
             console.warn('[GeminiLlmCitationVerifier] relevant-chunk retrieval failed:', err);
