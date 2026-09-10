@@ -170,13 +170,36 @@ export function LibraryUploadForm({
                         <p className="text-[11px] text-muted-foreground">{t('upload.stepModeWaiting')}</p>
                     ) : (
                         <>
+                        {/* La categoría vive ACÁ y no con los datos del libro
+                            porque gobierna la decisión de al lado: a un texto
+                            crítico o una gramática se les exige griego o hebreo,
+                            y si su capa no lo trae hay que leer por visión.
+                            Estaba después, así que la recomendación se calculaba
+                            con la categoría de fábrica y proponía Premium sobre
+                            libros cuya capa estaba rota. */}
+                        <div className="space-y-1.5 max-w-xs">
+                            <Label htmlFor="type" className="text-[12.5px]">{t('upload.categoryLabel')}</Label>
+                            <Select
+                                value={metadata.type}
+                                onValueChange={(v: ResourceType) => onMetadataChange({ type: v })}
+                            >
+                                <SelectTrigger id="type">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <ModeAdvice recommendation={recommendation} t={t} />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <ModeTile
                                 active={metadata.extractionMode === 'standard'}
                                 disabled={!tierAvailability.standard}
                                 disabledHint={t('upload.tierUnavailableHint', { capMB: tierAvailability.standardCapMB })}
-                                recommended={recommendation.recommended === 'standard'}
+                                recommended={recommendation.strong && recommendation.recommended === 'standard'}
                                 recommendedLabel={t('upload.recommendedBadge')}
                                 onClick={() => onMetadataChange({ extractionMode: 'standard' })}
                                 icon={<Wand2 className="h-3.5 w-3.5" />}
@@ -188,7 +211,7 @@ export function LibraryUploadForm({
                                 active={metadata.extractionMode === 'premium'}
                                 disabled={!tierAvailability.premium}
                                 disabledHint={t('upload.tierUnavailableHint', { capMB: tierAvailability.premiumCapMB })}
-                                recommended={recommendation.recommended === 'premium'}
+                                recommended={recommendation.strong && recommendation.recommended === 'premium'}
                                 recommendedLabel={t('upload.recommendedBadge')}
                                 onClick={() => onMetadataChange({ extractionMode: 'premium' })}
                                 icon={<Sparkles className="h-3.5 w-3.5" />}
@@ -229,22 +252,6 @@ export function LibraryUploadForm({
                                 placeholder={t('upload.authorPlaceholder')}
                                 required
                             />
-                        </div>
-                        <div className="space-y-1.5 sm:col-span-2 sm:max-w-xs">
-                            <Label htmlFor="type" className="text-[12.5px]">{t('upload.categoryLabel')}</Label>
-                            <Select
-                                value={metadata.type}
-                                onValueChange={(v: ResourceType) => onMetadataChange({ type: v })}
-                            >
-                                <SelectTrigger id="type">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
                         </div>
                     </div>
                 </Paso>

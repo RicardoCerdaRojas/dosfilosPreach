@@ -119,26 +119,29 @@ describe('recommendExtractionMode — la capa existe pero miente', () => {
         expect(r).toEqual({ recommended: 'standard', reasonKey: 'layer-garbled', strong: true });
     });
 
-    it('no exige nada cuando el libro no declara necesitarlo', () => {
+    it('no acusa a la capa cuando el libro no declara necesitar la escritura', () => {
         // Un comentario en español sobre Jonás puede no traer una letra hebrea
-        // y estar perfecto.
+        // y estar perfecto. No se lo marca como capa rota — pero tampoco se
+        // afirma Premium: no se sabe, y eso se dice.
         const r = recommendExtractionMode({
             sizeBytes: 12 * MB,
             diagnosis: dx('sin-escritura-original'),
             requiredScripts: [],
             evidence: { hebrewLetters: 0, greekLetters: 0 },
         });
-        expect(r.recommended).toBe('premium');
+        expect(r.reasonKey).toBe('no-script-found');
+        expect(r.strong).toBe(false);
     });
 
-    it('sin evidencia no se inventa el juicio', () => {
+    it('sin evidencia no acusa a la capa, y tampoco afirma Premium', () => {
         const r = recommendExtractionMode({
             sizeBytes: 12 * MB,
             diagnosis: dx('sin-escritura-original'),
             requiredScripts: ['hebrew'],
             evidence: null,
         });
-        expect(r.recommended).toBe('premium');
+        expect(r.reasonKey).toBe('no-script-found');
+        expect(r.recommended).toBeNull();
     });
 
     it('capa rota y archivo que no entra en visión: ningún motor sirve', () => {
@@ -152,5 +155,52 @@ describe('recommendExtractionMode — la capa existe pero miente', () => {
             evidence: { hebrewLetters: 0, greekLetters: 0 },
         });
         expect(r).toEqual({ recommended: null, reasonKey: 'layer-too-large', strong: true });
+    });
+});
+
+/**
+ * El caso Sasson, tal como se vio en producción.
+ *
+ * Un comentario del texto hebreo de 24 MB cuya capa no trae UNA letra hebrea en
+ * 392 páginas. El diagnóstico lo dijo en pantalla —«No encontramos griego ni
+ * hebreo dentro»— y justo debajo el selector marcaba «Premium RECOMENDADO»,
+ * contradiciéndolo. Premium es el motor que lee justamente esa capa.
+ *
+ * La causa era doble: la categoría seguía en su valor de fábrica, así que no se
+ * exigía escritura; y el distintivo «Recomendado» se pintaba también sobre las
+ * recomendaciones DÉBILES, que existen precisamente para no afirmar de más.
+ */
+describe('recommendExtractionMode — no afirmar lo que no se sabe', () => {
+    it('sin escritura hallada y sin saber si el libro la necesita, devuelve la pregunta', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 24 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: [],
+            evidence: { hebrewLetters: 0, greekLetters: 0 },
+        });
+        expect(r.recommended).toBeNull();
+        expect(r.reasonKey).toBe('no-script-found');
+        // Débil a propósito: no se sabe, así que no se marca nada como bueno.
+        expect(r.strong).toBe(false);
+    });
+
+    it('y con la categoría puesta, ya decide', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 24 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: ['hebrew'],
+            evidence: { hebrewLetters: 0, greekLetters: 0 },
+        });
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'layer-missing-script', strong: true });
+    });
+
+    it('nunca afirma Premium sobre un archivo sin la escritura hallada', () => {
+        // Era el defecto: caía en `text-layer-premium`, que la interfaz pintaba
+        // con el mismo distintivo que una certeza.
+        const r = recommendExtractionMode({
+            sizeBytes: 24 * MB,
+            diagnosis: dx('sin-escritura-original'),
+        });
+        expect(r.recommended).not.toBe('premium');
     });
 });

@@ -68,7 +68,7 @@
       "pericope": "scope: pericope"
     },
     "stepFile": "Pick the file",
-    "stepMode": "How to process it",
+    "stepMode": "What it is and how to process it",
     "stepMetadata": "Book details",
     "recommendedBadge": "Recommended",
     "modeAdvice": {
@@ -79,7 +79,8 @@
       "unknown": "We could not read the file to recommend a route. If it is a scan — pages as images — pick Standard: it is the only one that reads them. Premium is for documents that already carry text.",
       "layer-missing-script": "The file has a text layer, but its middle pages show none of the script this book needs. That happens when glyphs draw correctly while their codes point at Latin letters: Premium would read that layer and the text would come in destroyed. Standard reads the pages as images and bypasses it.",
       "layer-garbled": "The file has a text layer, but its content is not language: the glyphs look right and their codes are wrong. Premium would read exactly that. Standard reads the pages as images.",
-      "layer-too-large": "This file's text layer is unusable and it is over 50 MB, so it does not fit vision. No route fixes it — both end up reading that layer. Split the file before uploading."
+      "layer-too-large": "This file's text layer is unusable and it is over 50 MB, so it does not fit vision. No route fixes it — both end up reading that layer. Split the file before uploading.",
+      "no-script-found": "We found no Greek or Hebrew in the file. If this book does not use them, either route works. If it is a critical text, a grammar or a technical commentary that SHOULD carry them, its text layer lost them: pick Standard, which reads the pages as images."
     },
     "stepModeWaiting": "Pick the file first — the right route depends on what it is."
   },
