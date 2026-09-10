@@ -167,6 +167,9 @@ function chunkToExcerpt(chunk: RetrievedChunkPayload): ProjectSourceExcerpt {
     return {
         text: chunk.text,
         sourceLocation,
+        // Aparte del rótulo: quien cite necesita el número, no la cadena.
+        ...(typeof page === 'number' ? { sheet: page } : {}),
+        ...(section ? { section } : {}),
         // `score` from findNearest is already cosine similarity in
         // [0, 1] range. Clamp defensively in case future versions
         // return raw distances.

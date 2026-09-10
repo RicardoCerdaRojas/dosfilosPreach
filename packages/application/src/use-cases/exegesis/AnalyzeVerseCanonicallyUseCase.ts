@@ -418,8 +418,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // que un trabajo ya empezado cite la página impresa sin tener
                 // que volver a extraer sus fuentes.
                 const storedNumbering = numberings.get(source.id) ?? null;
-                const anchorOf = (e: { sourceLocation: string }) =>
-                    relabelExcerptAnchor(e.sourceLocation, storedNumbering);
+                const anchorOf = (e: { sourceLocation: string; sheet?: number; section?: string }) =>
+                    relabelExcerptAnchor(e.sourceLocation, storedNumbering, e);
                 const textContent = source.excerpts
                     .map(e => `--- ${anchorOf(e)} ---\n${e.text}`)
                     .join('\n\n');

@@ -568,7 +568,7 @@ function buildExcerptContext(
     const anchors: string[] = [];
     const blocks: string[] = [];
     source.excerpts.forEach((excerpt, idx) => {
-        const anchor = relabelExcerptAnchor(excerpt.sourceLocation, numbering).trim() || `excerpt ${idx + 1}`;
+        const anchor = relabelExcerptAnchor(excerpt.sourceLocation, numbering, excerpt).trim() || `excerpt ${idx + 1}`;
         anchors.push(anchor);
         blocks.push(`--- ${anchor} ---\n${excerpt.text.trim()}`);
     });

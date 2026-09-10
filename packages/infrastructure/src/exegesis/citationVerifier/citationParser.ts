@@ -21,13 +21,25 @@ import type { ParsedCitation } from '@dosfilos/domain';
  * visible para nadie.
  */
 
-/** `(Autor, "Título", p. N)` — la forma canónica, con título entre comillas. */
+/**
+ * `(Autor, "Título", p. N)` — la forma canónica, con título entre comillas.
+ *
+ * Abre con `(` o con `;` y cierra con `;` o con `)` para admitir las citas
+ * COMPUESTAS: `(Mayor, "…", 330; Adamson, "…", 75)` es una sola forma que el
+ * compositor emite y que antes no se reconocía entera —el grupo de páginas no
+ * admite `;`, así que el patrón moría ahí—. Resultado: dos citas reales
+ * quedaban sin verificar y, peor, el detector veía «Adamson» en la prosa sin
+ * cita asociada y lo reportaba como fuente nombrada sin citar.
+ *
+ * El terminador va en LOOKAHEAD y no se consume: en una compuesta, el `;` que
+ * cierra la primera cita es el mismo que abre la segunda.
+ */
 const QUOTED_CITATION =
-    /\(\s*([^,()]+?)\s*,\s*"([^"]+)"(?:\s*,\s*(?:pp?\.\s*)?([\d–\-—,\s]+))?\s*\)/g;
+    /[(;]\s*([^,();]+?)\s*,\s*"([^"]+)"(?:\s*,\s*(?:pp?\.\s*)?([\d–\-—,\s]+))?\s*(?=[;)])/g;
 
-/** `(Autor, p. N)` y `(Autor, N)` — sin título. */
+/** `(Autor, p. N)` y `(Autor, N)` — sin título. Mismo criterio para las compuestas. */
 const UNQUOTED_CITATION =
-    /\(\s*([^,()"]{2,60}?)\s*,\s*(?:pp?\.\s*)?(\d[\d–\-—,\s]*?)\s*\)/g;
+    /[(;]\s*([^,();"]{2,60}?)\s*,\s*(?:pp?\.\s*)?(\d[\d–\-—,\s]*?)\s*(?=[;)])/g;
 
 /**
  * `Adamson (p. 53)` — el autor queda fuera del paréntesis. Se exige
@@ -112,10 +124,20 @@ export function parseCitations(markdown: string): ParsedCitation[] {
         if (!overlaps) accepted.push(candidate);
     }
 
+    // Las citas se tapan ANTES de buscar la evidencia. Sus títulos van entre
+    // comillas rectas, y el buscador de comillas las tomaba por una frase
+    // citada: en un paper real, la evidencia de una cita a Subukjian terminó
+    // siendo «Diccionario Teologico del NT» —el título del libro de la cita
+    // anterior—, y el verificador salió a buscar ESO en el corpus.
+    //
+    // Se reemplaza por espacios, no se borra: los offsets ya calculados
+    // tienen que seguir siendo válidos.
+    const masked = maskRanges(markdown, accepted);
+
     return accepted
         .sort((a, b) => a.offset - b.offset)
         .map(m => {
-            const evidence = extractEvidence(markdown, m.offset);
+            const evidence = extractEvidence(masked, m.offset);
             return {
                 raw: m.raw,
                 author: m.author,
@@ -126,6 +148,15 @@ export function parseCitations(markdown: string): ParsedCitation[] {
                 evidenceIsQuoted: evidence.fromQuote,
             };
         });
+}
+
+/** Tapa con espacios los tramos indicados, conservando la longitud y los offsets. */
+function maskRanges(text: string, ranges: ReadonlyArray<{ offset: number; end: number }>): string {
+    const chars = [...text];
+    for (const r of ranges) {
+        for (let i = r.offset; i < r.end && i < chars.length; i++) chars[i] = ' ';
+    }
+    return chars.join('');
 }
 
 /**
@@ -149,15 +180,18 @@ function extractEvidence(
     // in the same paragraph belong to other claims.
     const lookBack = Math.max(0, citationOffset - 250);
     const window = markdown.slice(lookBack, citationOffset);
-    const lastQuoteEnd = window.lastIndexOf('"');
-    if (lastQuoteEnd > 0) {
-        // Find the matching opening quote by walking backwards.
-        const quoteOpenIdx = window.lastIndexOf('"', lastQuoteEnd - 1);
-        if (quoteOpenIdx >= 0 && lastQuoteEnd - quoteOpenIdx >= 4) {
-            const quoteText = window.slice(quoteOpenIdx + 1, lastQuoteEnd).trim();
-            if (quoteText.length >= 8) {
-                return { text: quoteText, fromQuote: true };
-            }
+
+    // Se admiten las comillas rectas Y las angulares: la prosa académica en
+    // español cita con «», y mirar sólo `"` dejaba sin detectar toda cita
+    // verbatim de un paper en castellano.
+    for (const [open, close] of [['«', '»'], ['"', '"']] as const) {
+        const closeIdx = window.lastIndexOf(close);
+        if (closeIdx <= 0) continue;
+        const openIdx = window.lastIndexOf(open, close === open ? closeIdx - 1 : closeIdx);
+        if (openIdx < 0 || closeIdx - openIdx < 4) continue;
+        const quoteText = window.slice(openIdx + 1, closeIdx).trim();
+        if (quoteText.length >= 8) {
+            return { text: quoteText, fromQuote: true };
         }
     }
 

@@ -892,6 +892,10 @@ function deserializeExcerpt(raw: any): ProjectSourceExcerpt {
         relevanceScore: typeof raw?.relevanceScore === 'number' ? raw.relevanceScore : 0,
         userEdited: raw?.userEdited === true,
         editedAt: raw?.editedAt?.toDate?.() ?? raw?.editedAt ?? null,
+        // Ausentes en todo extracto anterior al campo; ahí se sigue parseando
+        // `sourceLocation`, que es lo que hace `relabelExcerptAnchor`.
+        ...(typeof raw?.sheet === 'number' ? { sheet: raw.sheet } : {}),
+        ...(typeof raw?.section === 'string' && raw.section ? { section: raw.section } : {}),
     };
 }
 
@@ -950,6 +954,12 @@ function serializeExcerpt(excerpt: ProjectSourceExcerpt): Serialized<ProjectSour
         relevanceScore: excerpt.relevanceScore,
         userEdited: excerpt.userEdited,
         editedAt: excerpt.editedAt ?? null,
+        // La hoja y la sección van APARTE del rótulo ya formateado: quien cite
+        // necesita el número para traducirlo a página impresa, no la cadena
+        // «p. 47» que el extractor escribió cuando la numeración del recurso
+        // todavía no existía. Firestore rechaza `undefined`, así que van null.
+        sheet: excerpt.sheet ?? null,
+        section: excerpt.section ?? null,
     };
 }
 
