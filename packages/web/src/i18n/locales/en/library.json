@@ -66,7 +66,19 @@
       "whole-testament": "scope: whole testament",
       "book": "scope: book",
       "pericope": "scope: pericope"
-    }
+    },
+    "stepFile": "Pick the file",
+    "stepMode": "How to process it",
+    "stepMetadata": "Book details",
+    "recommendedBadge": "Recommended",
+    "modeAdvice": {
+      "scan-fits-vision": "This is a scan: its pages are images. Standard runs them through vision and recovers the text; Premium rebuilds layout over text that already exists, and on a scan it returns garbage.",
+      "scan-too-large": "This is a scan over 50 MB, so it does not fit vision. No route works: Standard would fall back to reading a text layer that a scan does not have, and Premium destroys non-Latin script. Split the file before uploading.",
+      "text-layer-premium": "It has a text layer. Premium rebuilds tables and columns; Standard is enough for running prose.",
+      "over-every-cap": "Over 100 MB — no engine accepts it. Split it into volumes before uploading.",
+      "unknown": ""
+    },
+    "stepModeWaiting": "Pick the file first — the right route depends on what it is."
   },
   "filters": {
     "searchPlaceholder": "Search title or author",
