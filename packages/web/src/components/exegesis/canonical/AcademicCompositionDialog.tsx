@@ -12,6 +12,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
+import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
+import { useCitationAnchoring } from '@/hooks/exegesis/useCitationAnchoring';
+import { CitationAnchoringNotice } from './CitationAnchoringNotice';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import type { ComposeAcademicPaperOutput } from '@dosfilos/domain';
 
@@ -57,6 +60,8 @@ export function AcademicCompositionDialog({
     savedAssembledMarkdown,
 }: AcademicCompositionDialogProps) {
     const { t } = useTranslation('exegesis');
+    const { paper } = useExegesisPaper(open ? paperId : undefined);
+    const anchoring = useCitationAnchoring(paper);
     const { composeAcademicPaper, saveAssembledPaper, saveExegesisArtifact } = useExegesisPapers();
     const [result, setResult] = useState<ComposeAcademicPaperOutput | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -168,7 +173,13 @@ export function AcademicCompositionDialog({
                     <DialogDescription>{t('canonical.compose.subtitle')}</DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-hidden flex flex-col gap-3">
+                    {/* Sólo antes de componer: después el documento ya existe y
+                        el aviso llegaría tarde para hacer algo con él. */}
+                    {!result && !composeAcademicPaper.isPending && !errorMessage && (
+                        <CitationAnchoringNotice summary={anchoring} />
+                    )}
+
                     {!result && !composeAcademicPaper.isPending && !errorMessage && (
                         savedAssembledMarkdown
                             ? <SavedCompositionState

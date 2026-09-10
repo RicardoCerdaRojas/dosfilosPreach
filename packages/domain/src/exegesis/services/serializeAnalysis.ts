@@ -1,5 +1,6 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { relabelProsePages } from './relabelProsePages';
+import { collectAnalysisCitations } from './citationAnchoring';
 import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 
 /**
@@ -283,17 +284,11 @@ export function serializeAnalysis(
  */
 function collectPageKinds(analysis: CanonicalVerseAnalysis): Map<string, CitationPageKind> {
     const kinds = new Map<string, CitationPageKind>();
-    const note = (c: { sourceKey: string; pageKind?: CitationPageKind }) => {
+    // El recorrido de los seis sitios vive en `collectAnalysisCitations`. Tenía
+    // una copia acá y otra en el script de auditoría, y tres copias de un
+    // recorrido son tres oportunidades de olvidar un sitio en una sola.
+    for (const c of collectAnalysisCitations(analysis)) {
         if (c.pageKind && !kinds.has(c.sourceKey)) kinds.set(c.sourceKey, c.pageKind);
-    };
-    for (const c of analysis.commentatorEngagement) note(c);
-    for (const crux of analysis.translationCruxes) for (const p of crux.commentatorPositions) note(p);
-    for (const l of analysis.lexicalAnalyses) {
-        for (const s of l.generalSemanticRange.sources) note(s);
-        for (const s of l.loadingSources) note(s);
     }
-    for (const f of analysis.footnoteExtensions) for (const s of f.sources) note(s);
-    for (const o of analysis.oldTestamentLinks) for (const s of o.sources) note(s);
-    for (const h of analysis.historicalContext) for (const s of h.sources) note(s);
     return kinds;
 }
