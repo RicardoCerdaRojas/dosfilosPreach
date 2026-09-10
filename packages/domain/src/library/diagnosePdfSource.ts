@@ -93,8 +93,14 @@ export function diagnosePdfSource(evidence: PdfEvidence): PdfDiagnosis {
     if (evidence.fontCount === 0) {
         reasons.push('El PDF no declara ninguna fuente: sus páginas son imágenes.');
         reasons.push(`En ${muestra} se extraen ${evidence.sampleChars} caracteres.`);
-        suggestions.push('Sólo sirve con OCR. La cascada estándar caería en pdf-parse, que sobre un escaneo devuelve cero texto y dejaría el recurso vacío.');
-        suggestions.push('Busca una edición born-digital antes de gastar páginas: se comprueba con este mismo diagnóstico en segundos.');
+        // El consejo anterior decía que la ruta estándar caía en pdf-parse. Es
+        // falso mientras el archivo entre en visión, y llevaba a elegir Premium
+        // —que sobre un escaneo en escritura no latina destruye el texto—.
+        // Medido sobre el mismo escaneo: Premium 0 caracteres hebreos, Estándar
+        // 2.418. Por encima del tope de visión sí cae a pdf-parse, y ahí la
+        // salida es partir el archivo, no cambiar de motor.
+        suggestions.push('Sólo sirve leyendo la imagen. Súbelo en modo Estándar, que es el que pasa las páginas por visión; Premium reconstruye maquetación sobre texto que ya existe y sobre un escaneo devuelve basura.');
+        suggestions.push('Si pesa más de 50 MB no entra en visión y caería en pdf-parse, que sobre un escaneo devuelve cero texto: pártelo antes de subirlo.');
         return { verdict: 'sin-capa-de-texto', reasons, suggestions, diacriticRatio: ratio };
     }
 

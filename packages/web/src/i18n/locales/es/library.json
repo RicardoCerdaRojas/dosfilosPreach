@@ -66,7 +66,19 @@
       "whole-testament": "cobertura: testamento completo",
       "book": "cobertura: libro",
       "pericope": "cobertura: perícopa"
-    }
+    },
+    "stepFile": "Elegí el archivo",
+    "stepMode": "Cómo procesarlo",
+    "stepMetadata": "Datos del libro",
+    "recommendedBadge": "Recomendado",
+    "modeAdvice": {
+      "scan-fits-vision": "Es un escaneo: sus páginas son imágenes. Estándar las pasa por visión y recupera el texto; Premium reconstruye maquetación sobre texto que ya existe, y sobre un escaneo devuelve basura.",
+      "scan-too-large": "Es un escaneo y pesa más de 50 MB, así que no entra en visión. Ninguna ruta sirve: Estándar caería en lectura de capa de texto —que en un escaneo no existe— y Premium destruye la escritura no latina. Partí el archivo antes de subirlo.",
+      "text-layer-premium": "Tiene capa de texto. Premium reconstruye tablas y columnas; Estándar alcanza si es prosa corrida.",
+      "over-every-cap": "Supera los 100 MB y ningún motor lo acepta. Partilo en tomos antes de subirlo.",
+      "unknown": ""
+    },
+    "stepModeWaiting": "Elegí primero el archivo: la ruta correcta depende de lo que sea."
   },
   "filters": {
     "searchPlaceholder": "Buscar título o autor",
