@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Sparkles, Wand2, Loader2 } from 'lucide-react';
+import { BookOpen, ChevronDown, Sparkles, Wand2, Loader2 } from 'lucide-react';
 import { useFirebase } from '@/context/firebase-context';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
@@ -12,11 +12,16 @@ import {
 import { CreditPacksDialog } from './CreditPacksDialog';
 
 /**
- * Compact balance summary shown at the top of the Library page.
- * Two stat tiles (standard / premium) plus a CTA to open the credit-packs
- * dialog. Subscribes to the live `users/{uid}.processingBalance` field
- * so the count updates the moment the cloud function debits — without
- * the user needing to refresh after an extraction completes.
+ * Saldo de páginas de procesamiento.
+ *
+ * Colapsado por defecto a una sola línea. Ocupaba una tarjeta de ancho completo
+ * con tres azulejos y un botón, encima de la biblioteca —el lugar de mayor
+ * jerarquía de la página— para un dato que casi nunca se mira: no se consulta
+ * el saldo, se lo consulta cuando algo falla o antes de subir un libro grande.
+ * Los números siguen a la vista; lo que se guarda es el desglose y el botón.
+ *
+ * Sigue suscrito al `users/{uid}.processingBalance` en vivo, así que el conteo
+ * baja en el momento en que la función descuenta, sin recargar.
  */
 export function BalanceBanner() {
     const { user } = useFirebase();
@@ -24,6 +29,7 @@ export function BalanceBanner() {
     const [balance, setBalance] = useState<ProcessingBalance | null>(null);
     const [loading, setLoading] = useState(true);
     const [packsOpen, setPacksOpen] = useState(false);
+    const [expandido, setExpandido] = useState(false);
 
     useEffect(() => {
         if (!user) {
@@ -45,39 +51,57 @@ export function BalanceBanner() {
 
     return (
         <>
-            <div className="rounded-lg border border-border/60 bg-card p-4 flex items-start justify-between gap-4 flex-wrap">
-                <div className="flex flex-col gap-1 min-w-0">
-                    <span className="text-[11px] uppercase tracking-[0.18em] font-medium text-muted-foreground">
+            <div className="rounded-lg border border-border/60 bg-card">
+                <button
+                    type="button"
+                    onClick={() => setExpandido(v => !v)}
+                    aria-expanded={expandido}
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left"
+                >
+                    <span className="text-[10px] uppercase tracking-[0.16em] font-medium text-muted-foreground shrink-0">
                         {t('balance.title')}
                     </span>
-                    <p className="text-[13px] text-muted-foreground">{t('balance.subtitle')}</p>
-                </div>
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] tabular-nums text-muted-foreground">
+                        <Resumen icon={Wand2} tone="text-info" label={t('balance.standard')}
+                            value={loading ? null : (balance?.standardPagesAvailable ?? 0).toLocaleString()} />
+                        <Resumen icon={Sparkles} tone="text-success" label={t('balance.premium')}
+                            value={loading ? null : (balance?.premiumPagesAvailable ?? 0).toLocaleString()} />
+                        <Resumen icon={BookOpen} tone="text-primary" label={t('balance.exegesis')}
+                            value={loading ? null : estudiosDisponibles(balance)} />
+                    </span>
+                    <ChevronDown
+                        className={`ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${expandido ? 'rotate-180' : ''}`}
+                        aria-hidden
+                    />
+                </button>
 
-                <div className="flex flex-wrap items-stretch gap-3">
-                    <BalanceTile
-                        mode="standard"
-                        pages={balance?.standardPagesAvailable ?? 0}
-                        planPages={balance?.planStandardPages ?? 0}
-                        packPages={balance?.packStandardPages ?? 0}
-                        loading={loading}
-                    />
-                    <BalanceTile
-                        mode="premium"
-                        pages={balance?.premiumPagesAvailable ?? 0}
-                        planPages={balance?.planPremiumPages ?? 0}
-                        packPages={balance?.packPremiumPages ?? 0}
-                        loading={loading}
-                    />
-                    {/* Exegesis bucket: USD-based, displayed in
-                        "estudios" via STUDY_UNIT_USD. Only meaningful
-                        for plans that include exégesis or users with
-                        a pack — `noAccess` is the Free / Personal
-                        case and the tile renders an upgrade hint. */}
-                    <ExegesisBalanceTile balance={balance} loading={loading} />
-                    <Button onClick={() => setPacksOpen(true)} className="self-center">
-                        {t('balance.buyButton')}
-                    </Button>
-                </div>
+                {expandido && (
+                    <div className="border-t border-border/60 p-4 flex items-start justify-between gap-4 flex-wrap">
+                        <p className="text-[13px] text-muted-foreground">{t('balance.subtitle')}</p>
+                        <div className="flex flex-wrap items-stretch gap-3">
+                            <BalanceTile
+                                mode="standard"
+                                pages={balance?.standardPagesAvailable ?? 0}
+                                planPages={balance?.planStandardPages ?? 0}
+                                packPages={balance?.packStandardPages ?? 0}
+                                loading={loading}
+                            />
+                            <BalanceTile
+                                mode="premium"
+                                pages={balance?.premiumPagesAvailable ?? 0}
+                                planPages={balance?.planPremiumPages ?? 0}
+                                packPages={balance?.packPremiumPages ?? 0}
+                                loading={loading}
+                            />
+                            {/* Exegesis bucket: USD-based, displayed in
+                                "estudios" via STUDY_UNIT_USD. */}
+                            <ExegesisBalanceTile balance={balance} loading={loading} />
+                            <Button onClick={() => setPacksOpen(true)} className="self-center">
+                                {t('balance.buyButton')}
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
             <CreditPacksDialog open={packsOpen} onOpenChange={setPacksOpen} />
         </>
@@ -166,4 +190,30 @@ function ExegesisBalanceTile({ balance, loading }: ExegesisBalanceTileProps) {
             </p>
         </div>
     );
+}
+
+/** Un número del resumen colapsado. */
+function Resumen({ icon: Icon, tone, label, value }: {
+    icon: typeof Wand2; tone: string; label: string; value: string | null;
+}) {
+    return (
+        <span className="inline-flex items-center gap-1">
+            <Icon className={`h-3 w-3 ${tone}`} aria-hidden />
+            <span className="text-muted-foreground/80">{label}</span>
+            <strong className="font-semibold text-foreground">{value ?? '—'}</strong>
+        </span>
+    );
+}
+
+/**
+ * Estudios disponibles, con el mismo criterio que el azulejo expandido: si
+ * queda saldo pero menos de una décima, se dice «<0.1» en vez de redondear a
+ * cero, que se leería como «no te queda nada».
+ */
+function estudiosDisponibles(balance: ProcessingBalance | null): string {
+    const estado = computeExegesisQuotaState(balance);
+    if (estado.noAccess) return '—';
+    return estado.remainingStudies < 0.1 && estado.remainingUsd > 0
+        ? '<0.1'
+        : estado.remainingStudies.toLocaleString(undefined, { maximumFractionDigits: 1 });
 }
