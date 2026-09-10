@@ -421,5 +421,10 @@
     "missingSteps_one": "Falta responder la hoja {{sheets}}. Escribí su número impreso o marcá que no tiene.",
     "missingSteps_other": "Faltan responder las hojas {{sheets}}. Escribí su número impreso o marcá que no tienen.",
     "nothingToSave": "No hay ninguna hoja respondida todavía."
+  },
+  "calibrationCallout": {
+    "title": "{{count}} recurso(s) sin numeración confirmada",
+    "body": "Hasta que digas qué número lleva impresa cada hoja, sus citas van a decir «hoja N» — un número del archivo que no existe en el ejemplar impreso, y que nadie puede comprobar.",
+    "action": "Calibrar"
   }
 }

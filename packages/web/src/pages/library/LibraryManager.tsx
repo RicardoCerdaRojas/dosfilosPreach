@@ -20,6 +20,7 @@ import { processingBalanceService } from '@dosfilos/application';
 import { LibraryAttentionCallout } from './components/LibraryAttentionCallout';
 import { LibraryStatusCallout } from './components/LibraryStatusCallout';
 import { LibraryProgress } from './components/LibraryProgress';
+import { LibraryCalibrationCallout } from './components/LibraryCalibrationCallout';
 import { LibraryUploadForm } from './components/LibraryUploadForm';
 import { LibraryFilters } from './components/LibraryFilters';
 import { MetadataBackfillBanner } from './components/MetadataBackfillBanner';
@@ -279,6 +280,10 @@ export function LibraryManager() {
                 />
 
                 <LibraryProgress progress={processing.bulkProcessing ? processing.bulkProgress : null} />
+
+                {/* Sin numeración confirmada, las citas de un recurso dicen
+                    «hoja N»: un número del archivo que no existe en el libro. */}
+                <LibraryCalibrationCallout resources={data.resources} />
 
                 {showUploadForm && (
                     <LibraryUploadForm

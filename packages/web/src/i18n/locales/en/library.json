@@ -421,5 +421,10 @@
     "missingSteps_one": "Sheet {{sheets}} is still unanswered. Type its printed number or mark it as unnumbered.",
     "missingSteps_other": "Sheets {{sheets}} are still unanswered. Type their printed numbers or mark them as unnumbered.",
     "nothingToSave": "No sheet has been answered yet."
+  },
+  "calibrationCallout": {
+    "title": "{{count}} resource(s) without confirmed page numbering",
+    "body": "Until you say which number each sheet carries in print, their citations will read «sheet N» — a number from the file that does not exist in the printed copy, and that nobody can check.",
+    "action": "Calibrate"
   }
 }
