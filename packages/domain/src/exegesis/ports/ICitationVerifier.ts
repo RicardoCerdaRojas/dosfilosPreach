@@ -1,4 +1,5 @@
 import type { VerifiedCitation } from '../entities/CitationVerification';
+import type { PageNumbering } from '../outline/pageNumbering';
 
 /**
  * Source surface a verifier needs to match a citation against. Slim by
@@ -22,6 +23,17 @@ export interface VerifierSource {
      * is skipped for these).
      */
     chunks: ReadonlyArray<VerifierSourceChunk>;
+    /**
+     * Numeración impresa del recurso, cuando está confirmada.
+     *
+     * Viaja con la fuente porque el verificador consigue evidencia por su
+     * cuenta —recupera fragmentos por embeddings— y esos fragmentos vienen
+     * rotulados con la HOJA del archivo. Sin esto los rotula «p. N» y el
+     * cotejo de página compara la página impresa que dice la cita contra la
+     * hoja que dice el fragmento: dos unidades distintas, y toda cita correcta
+     * de un libro con preliminares sale marcada como «página no coincide».
+     */
+    numbering?: PageNumbering | null;
 }
 
 export interface VerifierSourceChunk {

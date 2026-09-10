@@ -15,7 +15,7 @@ import type {
     IPageNumberingReader,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor } from '@dosfilos/domain';
+import { citationAnchorFor, relabelExcerptAnchor } from '@dosfilos/domain';
 import { findUnsupportedWitnessClaims, isCitableSourceType } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
@@ -145,7 +145,10 @@ export class VerifyStepCitationsUseCase {
         const out: VerifierSource[] = [];
         for (const source of paper.sources) {
             if (!isCitableSourceType(source.sourceType)) continue;
-            const chunks = await this.buildChunks(source);
+            const numbering = await this.numberingFor(
+                source.sourceLibraryResourceId ?? source.corpusId,
+            );
+            const chunks = await this.buildChunks(source, numbering);
             if (chunks.length === 0) continue;
             out.push({
                 corpusId: source.corpusId,
@@ -153,6 +156,9 @@ export class VerifyStepCitationsUseCase {
                 fullAuthor: source.citationKey,
                 displayLabel: source.displayLabel,
                 chunks,
+                // El verificador recupera fragmentos por su cuenta y los rotula
+                // él mismo; sin la numeración los rotularía en hojas.
+                numbering,
             });
         }
         return out;
@@ -216,7 +222,10 @@ export class VerifyStepCitationsUseCase {
         }
     }
 
-    private async buildChunks(source: ProjectSource): Promise<VerifierSourceChunk[]> {
+    private async buildChunks(
+        source: ProjectSource,
+        numbering: PageNumbering | null,
+    ): Promise<VerifierSourceChunk[]> {
         // Fuentes con receta: la evidencia con página son las hojas admitidas,
         // no los `excerpts` —que a partir del corpus consultable ya no son lo
         // que el paso recibió, y en algún momento dejan de guardarse.
@@ -227,7 +236,18 @@ export class VerifyStepCitationsUseCase {
             const excerptChunks = source.excerpts
                 .map<VerifierSourceChunk>(excerpt => ({
                     text: excerpt.text,
-                    pageHint: excerpt.sourceLocation || null,
+                    // `sourceLocation` es texto que el extractor escribió antes
+                    // de que existiera la numeración: dice «p. 65» sobre la
+                    // HOJA 65. Pasarlo tal cual pone al cotejo a comparar la
+                    // página impresa de la cita contra una hoja, y marca
+                    // «página no coincide» en citas que apuntan al mismo lugar.
+                    // El camino con receta ya convertía; éste, que es el de los
+                    // trabajos sin receta, se había quedado afuera.
+                    pageHint: relabelExcerptAnchor(
+                        excerpt.sourceLocation,
+                        numbering,
+                        { sheet: excerpt.sheet, section: excerpt.section },
+                    ) || null,
                 }))
                 .filter(c => c.text.trim().length > 0);
 

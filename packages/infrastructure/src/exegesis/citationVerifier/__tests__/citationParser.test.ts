@@ -101,3 +101,49 @@ describe('parseCitations — defectos hallados en un paper real', () => {
         expect(c.evidence).not.toContain('Primera oracion');
     });
 });
+
+/**
+ * El ancla «hoja N».
+ *
+ * El sistema la escribe cuando la fuente no declara numeración confirmada: es
+ * la forma honesta de citar, porque no afirma una página impresa que nadie
+ * verificó. El parser no la conocía, así que esas citas quedaban invisibles —y
+ * como el detector después veía el apellido en la prosa sin cita asociada, las
+ * reportaba como «fuente nombrada sin citarla». El formato correcto era el que
+ * producía la advertencia.
+ */
+describe('parseCitations — el ancla en hojas', () => {
+    it('lee una cita anclada a la hoja', () => {
+        const out = parseCitations('Sitúa la instrucción (Subukjian, "Volvamos a la predicación Bíblica", hoja 16).');
+        expect(out).toHaveLength(1);
+        expect(out[0]!.author).toBe('Subukjian');
+        // El número viaja pelado: el cotejo compara cantidades, y a esta altura
+        // ambos lados ya hablan de la misma unidad.
+        expect(out[0]!.pages).toBe('16');
+    });
+
+    it('no pierde las vecinas en una compuesta mixta', () => {
+        const out = parseCitations(
+            'Uno (Adamson, "The Epistle of James", p. 61). Dos (Subukjian, "Volvamos", hoja 16). Tres (Mayor, "The Epistle of James", p. 183).',
+        );
+        expect(out.map(c => c.author)).toEqual(['Adamson', 'Subukjian', 'Mayor']);
+    });
+
+    it('lee la forma sin título', () => {
+        const out = parseCitations('Lo sostiene (Wallace, hoja 55).');
+        expect(out).toHaveLength(1);
+        expect(out[0]!.author).toBe('Wallace');
+        expect(out[0]!.pages).toBe('55');
+    });
+
+    it('lee el autor fuera del paréntesis', () => {
+        const out = parseCitations('Así lo explica Wallace (hoja 55) en su sintaxis.');
+        expect(out).toHaveLength(1);
+        expect(out[0]!.author).toBe('Wallace');
+    });
+
+    it('sigue leyendo «p. N», que es la forma de una fuente calibrada', () => {
+        const out = parseCitations('El rico es hermano (Adamson, "The Epistle of James", p. 61).');
+        expect(out[0]!.pages).toBe('61');
+    });
+});
