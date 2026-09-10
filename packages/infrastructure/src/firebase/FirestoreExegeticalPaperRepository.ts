@@ -1064,9 +1064,28 @@ function toDateOrNull(value: unknown): Date | null {
     return value instanceof Date ? value : new Date(value as string | number);
 }
 
+/**
+ * El texto en lengua original se llamó `greekText` hasta que el módulo empezó a
+ * analizar el AT, y para entonces guardaba hebreo bajo un nombre que decía
+ * griego. Todo análisis escrito antes del rename sigue en Firestore con el
+ * nombre viejo, y son trabajos reales en curso: leerlos con el nombre nuevo los
+ * dejaría sin texto base, en silencio y sin error.
+ *
+ * Se traduce al leer, y se borra el nombre viejo del objeto para que no vuelva
+ * a escribirse: si sobreviviera al `...raw`, cada guardado posterior dejaría los
+ * dos campos y no habría forma de saber cuál manda.
+ */
+function normalizeAnalysisTextField(analysis: any): any {
+    if (!analysis || typeof analysis !== 'object') return analysis;
+    if (!('greekText' in analysis)) return analysis;
+    const { greekText, ...resto } = analysis;
+    return { ...resto, originalText: resto.originalText ?? greekText ?? '' };
+}
+
 function deserializeStepVersion(raw: any): ExegeticalStepVersion {
     return {
         ...raw,
+        canonicalAnalysis: normalizeAnalysisTextField(raw?.canonicalAnalysis),
         createdAt: toDateOrNull(raw?.createdAt) ?? new Date(),
         verifications: raw?.verifications
             ? { ...raw.verifications, lastRunAt: toDateOrNull(raw.verifications.lastRunAt) }

@@ -47,7 +47,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
         'estructurado según los once pasos del método histórico-gramatical-literal ' +
         'más los cinco diferenciadores documentados en docs/exegesis/METODOLOGIA.md.',
     properties: {
-        greekText: {
+        originalText: {
             type: 'string',
             description: `Texto ${voice.languageAdjEs} del versículo según la edición crítica de referencia (${voice.apparatusEs}).`,
         },
@@ -502,7 +502,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
         },
     },
     required: [
-        'greekText',
+        'originalText',
         'textualCriticism',
         'syntacticAnalysis',
         'lexicalAnalyses',

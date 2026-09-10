@@ -138,8 +138,8 @@ function collectReading(a: CanonicalVerseAnalysis, verseLabel: string, push: Pus
             verseLabel,
         });
     }
-    if (a.greekText.trim()) {
-        push('reading', { label: 'Texto base', detail: a.greekText.trim(), verseLabel });
+    if (a.originalText.trim()) {
+        push('reading', { label: 'Texto base', detail: a.originalText.trim(), verseLabel });
     }
 }
 

@@ -40,10 +40,20 @@ export interface CanonicalVerseAnalysis {
      * text the analysis works from. When `textualCriticism.variants`
      * indicates a different adopted reading, the academic composer
      * surfaces the variant in a dedicated paragraph; the base
-     * `greekText` field still reflects the standard NA28 reading for
+     * `originalText` field still reflects the standard critical reading for
      * traceability.
      */
-    greekText: string;
+    /**
+     * El versículo en su lengua original: griego para el NT (SBLGNT),
+     * hebreo para el AT (Códice de Leningrado, vía WLC).
+     *
+     * Se llamó `greekText` hasta que el módulo empezó a analizar el AT, y para
+     * entonces el campo guardaba hebreo con un nombre que decía griego. Un
+     * nombre que miente es el mismo tipo de trampa que costó meses acá: la hoja
+     * del PDF y la página impresa eran las dos `number`, y por eso se
+     * confundieron sin que nada avisara.
+     */
+    originalText: string;
 
     /**
      * Step 1 (Layer 1 — Establishing the text): textual criticism.
@@ -703,7 +713,7 @@ export function buildEmptyCanonicalVerseAnalysis(reference: PassageReference): C
     const now = new Date();
     return {
         reference,
-        greekText: '',
+        originalText: '',
         textualCriticism: {
             note: 'Pendiente de revisión del aparato crítico.',
             variants: [],

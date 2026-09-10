@@ -140,7 +140,7 @@ function mapToCanonicalVerseAnalysis(
 
     return {
         reference: input.verseRef,
-        greekText: String(requireField('greekText')),
+        originalText: String(requireField('originalText')),
         textualCriticism: requireField('textualCriticism') as CanonicalVerseAnalysis['textualCriticism'],
         syntacticAnalysis: requireField('syntacticAnalysis') as CanonicalVerseAnalysis['syntacticAnalysis'],
         lexicalAnalyses: requireField('lexicalAnalyses') as CanonicalVerseAnalysis['lexicalAnalyses'],
