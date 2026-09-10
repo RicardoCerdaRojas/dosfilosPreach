@@ -1,4 +1,5 @@
-import type { PdfDiagnosis } from './diagnosePdfSource';
+import type { PdfDiagnosis, PdfEvidence } from './diagnosePdfSource';
+import type { RequiredScript } from '../entities/extractionHealth';
 
 /**
  * Qué motor conviene para este archivo, y por qué.
@@ -14,6 +15,25 @@ import type { PdfDiagnosis } from './diagnosePdfSource';
  * reconstruye maquetación —tablas, columnas— sobre documentos que YA tienen
  * texto. Un escaneo no tiene texto que reconstruir; hay que LEER la imagen, y
  * eso lo hace la visión del modelo, que vive en la ruta estándar.
+ *
+ * NO ES «TIENE HEBREO → VISIÓN». Es «DEBERÍA TENER Y NO LO TIENE → VISIÓN».
+ * Una capa de texto correcta le gana a la visión siempre, porque la visión
+ * comete errores de OCR: leyendo el Salmo 23 de la BHS transcribió `בְּנֵיָא`
+ * donde el libro dice `בְּגֵיא` —consonante distinta, palabra inexistente—. Si
+ * la capa ya trae la escritura bien codificada, pasarla por visión la empeora.
+ *
+ * LO QUE SÍ SEÑALA PROBLEMA ES LA AUSENCIA DONDE DEBERÍA HABER. Y ese caso no
+ * es sólo el del escaneo: hay libros CON capa de texto cuya escritura está mal
+ * codificada, los glifos se dibujan bien pero sus códigos apuntan a letras
+ * latinas. Medidos en una biblioteca real, con capa y todo:
+ *
+ *     «Hebreo Bíblico», manual        827.573 chars   0 hebreo
+ *     Barrick & Busenitz, gramática   342.995 chars   0 hebreo
+ *     Sasson, «Jonah» (Anchor Bible)  790.779 chars   0 hebreo   205 citas
+ *
+ * Los tres tienen capa, así que no son escaneos, y una regla que sólo mirara
+ * «¿es un escaneo?» los mandaría a Premium — que lee justamente esa capa
+ * envenenada.
  *
  * EL TAMAÑO MANDA SOBRE TODO LO DEMÁS. Por encima de 50 MB la ruta estándar
  * no puede subir el archivo al modelo y cae a `pdf-parse`, que lee la capa de
@@ -36,6 +56,12 @@ export interface ModeRecommendation {
     reasonKey:
     | 'scan-fits-vision'
     | 'scan-too-large'
+    /** La capa existe pero no trae la escritura que el libro necesita. */
+    | 'layer-missing-script'
+    /** La capa existe y su escritura es basura: glifos bien, códigos latinos. */
+    | 'layer-garbled'
+    /** La capa no sirve y el archivo no entra en visión: hay que partirlo. */
+    | 'layer-too-large'
     | 'text-layer-premium'
     | 'over-every-cap'
     | 'unknown';
@@ -43,9 +69,22 @@ export interface ModeRecommendation {
     strong: boolean;
 }
 
+/**
+ * Piso por debajo del cual la muestra no trae la escritura.
+ *
+ * La muestra son diez páginas del MEDIO del libro, que en un comentario o una
+ * gramática es cuerpo, no portada. Diez páginas centrales de una obra que
+ * necesita hebreo con menos de esto no lo traen: lo tiene mal codificado.
+ */
+const MIN_LETRAS_EN_MUESTRA = 20;
+
 export function recommendExtractionMode(input: {
     sizeBytes: number;
     diagnosis: PdfDiagnosis | null;
+    /** Escritura que el libro necesita, deducida de su título y su tipo. */
+    requiredScripts?: ReadonlyArray<RequiredScript>;
+    /** Lo que la lectura previa contó en la muestra. */
+    evidence?: Pick<PdfEvidence, 'greekLetters' | 'hebrewLetters'> | null;
 }): ModeRecommendation {
     const { sizeBytes, diagnosis } = input;
 
@@ -70,6 +109,34 @@ export function recommendExtractionMode(input: {
         return { recommended: null, reasonKey: 'scan-too-large', strong: true };
     }
 
-    // Con capa de texto, Premium es lo que era: reconstruye maquetación.
+    // ── Capa presente, pero envenenada ──────────────────────────────
+    // Los glifos se dibujan bien y sus códigos apuntan a letras latinas. La
+    // capa NO sirve, y Premium es justamente el motor que la lee.
+    if (diagnosis.verdict === 'escritura-ausente') {
+        return sizeBytes <= VISION_MAX_BYTES
+            ? { recommended: 'standard', reasonKey: 'layer-garbled', strong: true }
+            // No entra en visión, y las otras dos rutas leen justamente esa capa.
+            // Cambiar de motor no arregla nada: hay que partir el archivo.
+            : { recommended: null, reasonKey: 'layer-too-large', strong: true };
+    }
+
+    // ── Capa presente, sin la escritura que el libro necesita ───────
+    // Sólo se juzga cuando el libro DECLARA necesitarla: un comentario en
+    // español sobre Jonás legítimamente puede no traer una letra hebrea, y
+    // marcarlo enseñaría a ignorar el aviso.
+    const required = input.requiredScripts ?? [];
+    const evidence = input.evidence;
+    if (required.length > 0 && evidence) {
+        const falta = required.some(script => (
+            script === 'hebrew' ? evidence.hebrewLetters : evidence.greekLetters
+        ) < MIN_LETRAS_EN_MUESTRA);
+        if (falta) {
+            return sizeBytes <= VISION_MAX_BYTES
+                ? { recommended: 'standard', reasonKey: 'layer-missing-script', strong: true }
+                : { recommended: null, reasonKey: 'layer-too-large', strong: true };
+        }
+    }
+
+    // Con capa de texto sana, Premium es lo que era: reconstruye maquetación.
     return { recommended: 'premium', reasonKey: 'text-layer-premium', strong: false };
 }

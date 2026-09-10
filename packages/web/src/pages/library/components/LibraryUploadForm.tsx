@@ -5,6 +5,7 @@ import {
     type BibleBookId,
     type LibraryResourceScope,
     recommendExtractionMode,
+    requiredScriptsFor,
 } from '@dosfilos/domain';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -112,9 +113,15 @@ export function LibraryUploadForm({
     // Qué motor conviene para ESTE archivo. El producto traía Premium marcado
     // de fábrica y sobre un escaneo eso destruye el texto: medido sobre el
     // mismo archivo, Premium dio 0 caracteres hebreos y Estándar 2.418.
+    // El título y la categoría dicen qué escritura necesita el libro, y ya están
+    // escritos cuando se elige el motor —el título se autocompleta del nombre
+    // del archivo—. Con eso se distingue el caso que «¿es un escaneo?» no ve:
+    // libros CON capa de texto cuya escritura está mal codificada.
     const recommendation = recommendExtractionMode({
         sizeBytes: file?.size ?? 0,
         diagnosis: preflight.status === 'done' ? preflight.diagnosis : null,
+        requiredScripts: requiredScriptsFor({ type: metadata.type, title: metadata.title }),
+        evidence: preflight.status === 'done' ? preflight.evidence : null,
     });
 
     return (

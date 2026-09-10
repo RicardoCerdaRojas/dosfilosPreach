@@ -91,9 +91,19 @@ export function assessExtraction(
  *
  * El tipo de recurso acota a qué obras se les exige: sólo a las que existen
  * PARA dar acceso a la lengua original. A un comentario expositivo no se le
- * pide hebreo aunque comente el AT.
+ * pide hebreo aunque comente el AT; a uno EXEGÉTICO sí, porque su razón de ser
+ * es trabajar sobre el texto original.
+ *
+ * Ese último tipo se agregó con el ruido medido y aceptado a conciencia. De 13
+ * comentarios exegéticos de una biblioteca real, los del NT están sanos —Mayor
+ * 81.770 caracteres griegos, Metzger 45.922— y los cinco del AT traen CERO
+ * hebreo. Dos o tres están rotos de verdad, Sasson entre ellos con 205 citas en
+ * trabajos entregados; alguno, como una serie de divulgación mal categorizada,
+ * probablemente tenga un cero legítimo. Se prefirió marcar de más antes que
+ * dejar pasar el que sostiene doscientas citas: un falso positivo se corrige
+ * recategorizando la obra, y el falso negativo ya costó un trabajo entregado.
  */
-const TIPOS_QUE_EXIGEN_LENGUA = new Set(['critical-text', 'grammar']);
+const TIPOS_QUE_EXIGEN_LENGUA = new Set(['critical-text', 'grammar', 'exegetical-commentary']);
 
 const TITULO_HEBREO = /biblia\s+hebraica|hebraica|\bBHS\b|\bBHQ\b|hebreo|hebrew|hebrea|masor|aramaic|arameo/i;
 const TITULO_GRIEGO = /novum\s+testamentum\s+graece|nestle[\s-]*aland|\bNA\s?2[0-9]\b|\bNTG\b|griego|griega|greek|septuaginta|\bLXX\b/i;

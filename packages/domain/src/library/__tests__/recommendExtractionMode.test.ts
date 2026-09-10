@@ -63,3 +63,94 @@ describe('recommendExtractionMode', () => {
         expect(r.strong).toBe(false);
     });
 });
+
+/**
+ * Libros CON capa de texto cuya escritura está mal codificada.
+ *
+ * Este caso no lo cubre «¿es un escaneo?»: los tres de abajo tienen capa —uno
+ * sacó 827.573 caracteres— y una regla que sólo mirara el escaneo los mandaría
+ * a Premium, que lee justamente esa capa envenenada.
+ *
+ *     «Hebreo Bíblico», manual        827.573 chars   0 hebreo
+ *     Barrick & Busenitz, gramática   342.995 chars   0 hebreo
+ *     Sasson, «Jonah» (Anchor Bible)  790.779 chars   0 hebreo   205 citas
+ */
+describe('recommendExtractionMode — la capa existe pero miente', () => {
+    it('manda a visión una obra hebrea cuya capa no trae hebreo', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 12 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: ['hebrew'],
+            evidence: { hebrewLetters: 0, greekLetters: 0 },
+        });
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'layer-missing-script', strong: true });
+    });
+
+    it('un puñado de letras en diez páginas centrales tampoco alcanza', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 12 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: ['hebrew'],
+            evidence: { hebrewLetters: 8, greekLetters: 1122 },
+        });
+        expect(r.reasonKey).toBe('layer-missing-script');
+    });
+
+    it('NO toca la capa sana: una capa correcta le gana a la visión', () => {
+        // Visión comete errores de OCR. Leyendo el Salmo 23 transcribió
+        // `בְּנֵיָא` donde el libro dice `בְּגֵיא`. Si la capa trae la escritura
+        // bien, pasarla por visión la empeora.
+        const r = recommendExtractionMode({
+            sizeBytes: 16 * MB,
+            diagnosis: dx('apto'),
+            requiredScripts: ['greek'],
+            evidence: { greekLetters: 4200, hebrewLetters: 0 },
+        });
+        expect(r.recommended).toBe('premium');
+    });
+
+    it('manda a visión cuando la escritura es basura, aunque no se exija ninguna', () => {
+        // `escritura-ausente` significa que los glifos se dibujan bien y sus
+        // códigos apuntan a letras latinas. Eso se sabe sin conocer el libro.
+        const r = recommendExtractionMode({
+            sizeBytes: 12 * MB,
+            diagnosis: dx('escritura-ausente'),
+        });
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'layer-garbled', strong: true });
+    });
+
+    it('no exige nada cuando el libro no declara necesitarlo', () => {
+        // Un comentario en español sobre Jonás puede no traer una letra hebrea
+        // y estar perfecto.
+        const r = recommendExtractionMode({
+            sizeBytes: 12 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: [],
+            evidence: { hebrewLetters: 0, greekLetters: 0 },
+        });
+        expect(r.recommended).toBe('premium');
+    });
+
+    it('sin evidencia no se inventa el juicio', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 12 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: ['hebrew'],
+            evidence: null,
+        });
+        expect(r.recommended).toBe('premium');
+    });
+
+    it('capa rota y archivo que no entra en visión: ningún motor sirve', () => {
+        // Premium leería esa misma capa envenenada y Estándar caería a
+        // pdf-parse, que la lee también. Cambiar de motor no arregla nada:
+        // la respuesta es partir el archivo.
+        const r = recommendExtractionMode({
+            sizeBytes: 60 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: ['hebrew'],
+            evidence: { hebrewLetters: 0, greekLetters: 0 },
+        });
+        expect(r).toEqual({ recommended: null, reasonKey: 'layer-too-large', strong: true });
+    });
+});
