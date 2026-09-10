@@ -19,6 +19,7 @@ import { truncateUtf8 } from './truncateUtf8';
 import { describeLayoutRepair, repairExtractedLayout } from './repairExtractedLayout';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
+import { censusOf } from './scriptCensus';
 
 
 // Gemini file size limit is 50MB (per-call upload to the Files API).
@@ -618,6 +619,11 @@ export const extractPdfWithGemini = onObjectFinalized(
                 extractedWithLlamaParse: usedLlamaParse,
                 extractionVersion,
                 extractionWarning, // null clears any prior warning on a clean reprocess
+                // Censo de escrituras del texto COMPLETO. Se cuenta acá y no
+                // después porque `textContent` se guarda truncado a 800 KB por
+                // el límite de Firestore: contarlo luego daría otro número.
+                // Quien juzga si la extracción sirve es el dominio.
+                scriptCensus: censusOf(finalText),
                 needsReindex: true,
                 wasTruncated,
                 updatedAt: new Date()

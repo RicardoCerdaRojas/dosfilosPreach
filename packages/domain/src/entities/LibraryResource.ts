@@ -1,6 +1,7 @@
 import { WorkflowPhase } from './SermonWorkflow';
 import type { SourceType as ExegesisSourceType } from '../exegesis/entities/SourceType';
 import type { PageNumbering } from '../exegesis/outline/pageNumbering';
+import type { ScriptCensus } from './extractionHealth';
 import type { BibleBookId } from '../bible/canon/BibleCanon';
 import type {
     License,
@@ -204,6 +205,16 @@ export interface LibraryResource {
      * incompleto pero verdadero, a diferencia de una página inventada.
      */
     pageNumbering?: PageNumbering | null;
+
+    /**
+     * Cuántos caracteres de cada alfabeto trajo la extracción, contados sobre
+     * el texto COMPLETO —`textContent` va truncado a 800 KB—.
+     *
+     * Es lo que permite decir que un comentario del texto hebreo con cero
+     * letras hebreas está roto. Ausente en todo recurso extraído antes de que
+     * esto existiera; ahí no se juzga nada.
+     */
+    scriptCensus?: ScriptCensus | null;
     /**
      * Por qué falló la extracción, en categorías que el producto puede
      * tratar distinto: `timeout` (la invocación se quedó sin tiempo),

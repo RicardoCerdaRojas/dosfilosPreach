@@ -9,13 +9,36 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    Book, FileText, MessageSquare, Languages, FileQuestion,
-    Trash2, Edit2, Loader2, CheckCircle2, AlertCircle, Eye,
-    BookOpen, BookMarked, Mic2, Library, PenTool, Settings2, RefreshCw,
-    MoreHorizontal, Sparkles, Wand2, FileWarning, ScrollText,
-    Landmark, Map, X,
+    AlertCircle,
+    AlertTriangle,
+    Book,
+    BookMarked,
+    BookOpen,
+    CheckCircle2,
+    Edit2,
+    Eye,
+    FileQuestion,
+    FileText,
+    FileWarning,
+    Landmark,
+    Languages,
+    Library,
+    Loader2,
+    Map,
+    MessageSquare,
+    Mic2,
+    MoreHorizontal,
+    PenTool,
+    RefreshCw,
+    ScrollText,
+    Settings2,
+    Sparkles,
+    Trash2,
+    Wand2,
+    X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { extractionHealthOf } from '@/hooks/library/useExtractionHealth';
 import { ExtractionStepper } from './components/ExtractionStepper';
 import {
     resolveResourceStatusPill,
@@ -344,6 +367,25 @@ export function ResourceCard({
         </span>
     ) : null;
 
+    // Señal de extracción rota. No es un matiz de calidad: un comentario del
+    // texto hebreo con cero letras hebreas no se puede citar, y hasta ahora
+    // entraba al corpus indistinguible de uno sano. Cuatro obras de esta
+    // biblioteca estaban así, dos de ellas citadas en trabajos entregados.
+    const health = extractionHealthOf(resource);
+    const scriptPill = health.status === 'missing-script' ? (
+        <span
+            className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium border border-destructive/30 bg-destructive/10 text-destructive"
+            title={t('card.extraction.missingScriptHint', {
+                script: t(`card.extraction.script.${health.script}`),
+            })}
+        >
+            <AlertTriangle className="h-3 w-3" />
+            {t('card.extraction.missingScript', {
+                script: t(`card.extraction.script.${health.script}`),
+            })}
+        </span>
+    ) : null;
+
     // Engine badge — surfaces which extractor produced the text
     // (LlamaParse premium, Gemini standard, or pdf-parse fallback). Only
     // shown once extraction is `ready`; pre-ready the user only needs to
@@ -517,6 +559,8 @@ export function ResourceCard({
                     <div className="hidden md:flex items-center gap-1.5 flex-wrap justify-end max-w-[40%]">
                         {systemBadge}
                         {statusBadge}
+                    {scriptPill}
+                        {scriptPill}
                         {engineBadge}
                         {metadataBadge}
                         {coreStoreBadges}

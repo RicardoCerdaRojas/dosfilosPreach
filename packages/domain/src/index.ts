@@ -37,6 +37,7 @@ export * from './services/pageGrouping'; // 🌱 Púlpito F2 — bloques que no 
 export * from './services/rehearsalReport'; // 🌱 Púlpito F3 — informe del ensayo (tiempo real vs presupuesto)
 export * from './entities/SermonSeries';
 export * from './entities/LibraryResource';
+export * from './entities/extractionHealth';
 export * from './entities/LibraryCategory';
 export * from './entities/extractionEstimate';
 export * from './entities/SermonGenerator';
