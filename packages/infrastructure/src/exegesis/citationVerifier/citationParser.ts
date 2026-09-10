@@ -14,6 +14,12 @@ import type { ParsedCitation } from '@dosfilos/domain';
  * Un verificador que sólo lee su propio formato no verifica: certifica
  * su formato.
  *
+ * Por eso el ancla admite «hoja N» además de «p. N». «hoja N» es lo que el
+ * sistema escribe cuando la fuente no tiene numeración confirmada —no inventa
+ * una página que no verificó—, y no reconocerla salía caro dos veces: la cita
+ * quedaba sin verificar Y la fuente se reportaba como nombrada sin citar, o
+ * sea que el formato honesto era el que producía la advertencia.
+ *
  * El precio de admitir las formas sin comillas es algún falso
  * positivo —«Santiago (p. 3)» parece una cita y no lo es—. Se paga a
  * conciencia: una fila «no se encontró la fuente» es visible y el
@@ -35,11 +41,11 @@ import type { ParsedCitation } from '@dosfilos/domain';
  * cierra la primera cita es el mismo que abre la segunda.
  */
 const QUOTED_CITATION =
-    /[(;]\s*([^,();]+?)\s*,\s*"([^"]+)"(?:\s*,\s*(?:pp?\.\s*)?([\d–\-—,\s]+))?\s*(?=[;)])/g;
+    /[(;]\s*([^,();]+?)\s*,\s*"([^"]+)"(?:\s*,\s*(?:pp?\.\s*|hojas?\s+)?([\d–\-—,\s]+))?\s*(?=[;)])/g;
 
 /** `(Autor, p. N)` y `(Autor, N)` — sin título. Mismo criterio para las compuestas. */
 const UNQUOTED_CITATION =
-    /[(;]\s*([^,();"]{2,60}?)\s*,\s*(?:pp?\.\s*)?(\d[\d–\-—,\s]*?)\s*(?=[;)])/g;
+    /[(;]\s*([^,();"]{2,60}?)\s*,\s*(?:pp?\.\s*|hojas?\s+)?(\d[\d–\-—,\s]*?)\s*(?=[;)])/g;
 
 /**
  * `Adamson (p. 53)` — el autor queda fuera del paréntesis. Se exige
@@ -52,7 +58,7 @@ const UNQUOTED_CITATION =
  * este producto son apellidos de una palabra.
  */
 const AUTHOR_BEFORE_PAGE =
-    /(\p{Lu}[\p{L}.'’-]+)\s*\(\s*(?:pp?\.\s*)?(\d[\d–\-—,\s]*?)\s*\)/gu;
+    /(\p{Lu}[\p{L}.'’-]+)\s*\(\s*(?:pp?\.\s*|hojas?\s+)?(\d[\d–\-—,\s]*?)\s*\)/gu;
 
 interface RawMatch {
     raw: string;
