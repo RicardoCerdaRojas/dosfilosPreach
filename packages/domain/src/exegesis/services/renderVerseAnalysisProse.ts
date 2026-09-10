@@ -94,8 +94,8 @@ export function renderVerseAnalysisProse(
 
     // ── Texto, traducción y función en el argumento ────────────────
     const opening: string[] = [];
-    if (analysis.greekText.trim()) {
-        opening.push(`${ref}: «${analysis.greekText.trim()}»`);
+    if (analysis.originalText.trim()) {
+        opening.push(`${ref}: «${analysis.originalText.trim()}»`);
     }
     if (analysis.finalTranslation.trim()) {
         opening.push(L(

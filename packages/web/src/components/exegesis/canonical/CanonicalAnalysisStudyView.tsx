@@ -120,7 +120,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                     <span className="text-foreground/70 normal-case tracking-normal font-normal">· {refLabel}</span>
                 </div>
                 <p className="font-serif text-base leading-relaxed text-foreground">
-                    {analysis.greekText || <em className="text-muted-foreground">{t('canonical.study.empty.greek')}</em>}
+                    {analysis.originalText || <em className="text-muted-foreground">{t('canonical.study.empty.greek')}</em>}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                     <TranslationCell

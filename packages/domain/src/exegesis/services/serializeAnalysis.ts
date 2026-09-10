@@ -128,7 +128,7 @@ export function serializeAnalysis(
     const ref = formatPassageReference(analysis.reference, language);
     const lines: string[] = [];
     lines.push(`== Verse ${ref} ==`);
-    lines.push(`Greek: ${analysis.greekText}`);
+    lines.push(`Texto base: ${analysis.originalText}`);
     lines.push(`Initial translation: ${analysis.initialTranslation}`);
     lines.push(`Final translation: ${analysis.finalTranslation}`);
     lines.push(`Argumentative role: ${analysis.argumentativeRole}`);

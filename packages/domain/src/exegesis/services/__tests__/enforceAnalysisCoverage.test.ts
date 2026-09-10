@@ -19,7 +19,7 @@ function buildAnalysis(): CanonicalVerseAnalysis {
     const base = buildEmptyCanonicalVerseAnalysis(REF);
     return {
         ...base,
-        greekText: 'Πᾶσαν χαρὰν ἡγήσασθε, ἀδελφοί μου',
+        originalText: 'Πᾶσαν χαρὰν ἡγήσασθε, ἀδελφοί μου',
         initialTranslation: 'Tened por sumo gozo, hermanos míos',
         finalTranslation: 'Considerad como motivo de gozo pleno, hermanos míos',
         argumentativeRole: 'Abre la sección estableciendo la tesis sobre la prueba de la fe como ocasión de gozo.',

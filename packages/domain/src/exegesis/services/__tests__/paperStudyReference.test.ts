@@ -112,7 +112,7 @@ describe('buildPaperStudyReference', () => {
         // prohibidos para el asistente. Un paper riquísimo no debe
         // filtrar ni un ítem ahí.
         const analysis = makeAnalysis(2, {
-            greekText: 'Πᾶσαν χαρὰν ἡγήσασθε',
+            originalText: 'Πᾶσαν χαρὰν ἡγήσασθε',
             finalTranslation: 'Tenedlo por sumo gozo',
             argumentativeRole: 'Abre la sección sobre la prueba.',
             verseThesis: 'El gozo es un juicio, no un sentimiento.',
@@ -156,7 +156,7 @@ describe('buildPaperStudyReference', () => {
 
     it('reparte cada hallazgo al paso que le corresponde', () => {
         const analysis = makeAnalysis(2, {
-            greekText: 'Πᾶσαν χαρὰν ἡγήσασθε',
+            originalText: 'Πᾶσαν χαρὰν ἡγήσασθε',
             finalTranslation: 'Tenedlo por sumo gozo',
             historicalContext: [
                 { aspect: 'honor-vergüenza', relevance: 'La prueba define estatus.', sources: [] },
