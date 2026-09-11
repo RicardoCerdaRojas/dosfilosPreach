@@ -341,6 +341,12 @@ export const extractPdfWithGemini = onObjectFinalized(
             let extractedText!: string;
             let pageCount!: number;
             let extractionVersion!: string;
+            /**
+             * Tamaño de tanda que la extracción por visión midió para ESTE
+             * libro. Se guarda para que una reextracción arranque calibrada.
+             * Queda `undefined` cuando el documento no fue por ese camino.
+             */
+            let paginasPorTanda: number | undefined;
             let structuredMarkdown: string | null = null;
 
             // Honor the user's choice when they explicitly picked a tier
@@ -451,10 +457,11 @@ export const extractPdfWithGemini = onObjectFinalized(
                         // so we no longer need the 12MB heuristic that used
                         // to bail out for text-heavy commentaries.
                         try {
-                            const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, userId);
+                            const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId });
                             extractedText = result.text;
                             pageCount = result.pageCount;
                             structuredMarkdown = result.markdown;
+                            paginasPorTanda = result.paginasPorTanda;
                             extractionVersion = '4.0-gemini-standard';
                         } catch (geminiError) {
                             console.warn(`⚠️ [Extract] Gemini also failed, using pdf-parse:`, geminiError);
@@ -486,10 +493,11 @@ export const extractPdfWithGemini = onObjectFinalized(
                 // splitting, so the old 12MB heuristic is gone.
                 console.log(`🤖 [Extract] Using Gemini (${userOptedOutOfPremium ? 'user opted standard' : 'no LlamaParse key'})`);
                 try {
-                    const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, userId);
+                    const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId });
                     extractedText = result.text;
                     pageCount = result.pageCount;
                     structuredMarkdown = result.markdown;
+                    paginasPorTanda = result.paginasPorTanda;
                     extractionVersion = '4.0-gemini-standard';
                 } catch (geminiError) {
                     console.warn(`⚠️ [Extract] Gemini failed, falling back to pdf-parse:`, geminiError);
@@ -629,6 +637,10 @@ export const extractPdfWithGemini = onObjectFinalized(
                 updatedAt: new Date()
             };
             if (structuredContentUrl) updateData.structuredContentUrl = structuredContentUrl;
+            // Sólo lo produce la ruta batcheada por visión. Si esta extracción
+            // fue por otro camino no se escribe, para no pisar con `undefined`
+            // una medición que sigue valiendo.
+            if (paginasPorTanda) updateData.paginasPorTanda = paginasPorTanda;
 
             await resourceRef.update(updateData);
             console.log(`✅ [Extract] Updated resource ${resourceId} (${extractionVersion}, status: ready)`);

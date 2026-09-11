@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildUsagePatch, safeMapKey, usageDayKey } from '../llmUsageRecorder';
+import { buildUsagePatch, safeMapKey, salidaFacturable, usageDayKey } from '../llmUsageRecorder';
+import { estimateUsd } from '../llmCost';
 
 describe('usageDayKey', () => {
     it('agrupa por día UTC', () => {
@@ -31,6 +32,57 @@ describe('safeMapKey', () => {
  * `update()` lo hace). Los totales se veían bien y los cortes salían vacíos,
  * que es el peor tipo de bug: el panel no fallaba, mentía a medias.
  */
+/**
+ * El razonamiento de Gemini 2.5+ llega en `thoughtsTokenCount`, aparte de
+ * `candidatesTokenCount`, y se factura como salida. El medidor sólo leía el
+ * segundo, así que todo lo que razonaba salía gratis en el panel. Medido: una
+ * sola llamada de extracción razonó 32 584 tokens —tantos como su contenido—
+ * sin dejar rastro en ningún tablero.
+ */
+describe('razonamiento facturado', () => {
+    const base = {
+        model: 'gemini-2.5-flash',
+        feature: 'library.pdfExtraction',
+        inputTokens: 4000,
+        outputTokens: 32936,
+    };
+
+    it('suma el razonamiento a la salida cobrada', () => {
+        expect(salidaFacturable(base)).toBe(32936);
+        expect(salidaFacturable({ ...base, thinkingTokens: 32584 })).toBe(65520);
+    });
+
+    it('una llamada que razona cuesta más que una que no', () => {
+        // El costo se comprueba sobre la función pura: dentro del patch los
+        // contadores son `FieldValue.increment`, objetos opacos que no dejan
+        // leer su operando y que comparados entre sí dan siempre iguales.
+        const conRazonamiento = { ...base, thinkingTokens: 32584 };
+        expect(
+            estimateUsd(base.model, base.inputTokens, salidaFacturable(conRazonamiento)),
+        ).toBeGreaterThan(
+            estimateUsd(base.model, base.inputTokens, salidaFacturable(base)),
+        );
+    });
+
+    it('el razonamiento se guarda aparte, no fundido en la salida', () => {
+        // Fundirlo haría desaparecer justo el dato que sirve para decidir en qué
+        // feature conviene apagarlo.
+        const patch = buildUsagePatch({ ...base, thinkingTokens: 32584 }) as {
+            thinkingTokens?: unknown;
+            outputTokens?: unknown;
+            byFeature: Record<string, Record<string, unknown>>;
+        };
+        expect(patch.thinkingTokens).toBeDefined();
+        expect(patch.outputTokens).toBeDefined();
+        expect(patch.byFeature['library_pdfExtraction']).toHaveProperty('thinkingTokens');
+    });
+
+    it('un registro sin razonamiento se comporta igual que antes', () => {
+        expect(salidaFacturable({ ...base, thinkingTokens: undefined })).toBe(base.outputTokens);
+        expect(buildUsagePatch(base).usd).toEqual(buildUsagePatch({ ...base, thinkingTokens: 0 }).usd);
+    });
+});
+
 describe('buildUsagePatch — forma del documento', () => {
     const record = {
         model: 'gemini-2.5-flash',

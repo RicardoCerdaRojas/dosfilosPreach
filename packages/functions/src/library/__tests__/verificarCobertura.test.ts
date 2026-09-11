@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { verificarCobertura, MIN_PAGE_COVERAGE } from '../geminiExtraction';
+import { verificarCobertura, MIN_PAGE_COVERAGE } from '../coberturaDePaginas';
 
 /**
  * El piso estaba en 0,80 y dejó pasar un caso real.

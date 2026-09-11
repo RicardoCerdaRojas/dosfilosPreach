@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convieneParir, MIN_PAGINAS_POR_TANDA } from '../geminiExtraction';
+import { convieneParir, MIN_PAGINAS_POR_TANDA } from '../partirTanda';
 
 /**
  * Caso real: una gramática hebrea de 170 páginas se parte en tandas de 60 y la

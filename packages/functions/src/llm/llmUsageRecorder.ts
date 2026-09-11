@@ -32,6 +32,17 @@ export interface LlmUsageRecord extends LlmUsageContext {
     model: string;
     inputTokens: number;
     outputTokens: number;
+    /**
+     * Tokens de razonamiento (`thoughtsTokenCount` en Gemini 2.5+).
+     *
+     * Vienen APARTE de `candidatesTokenCount` y se facturan como salida, así
+     * que hasta ahora el panel venía subcontando todo lo que los usara: en una
+     * llamada de extracción medida fueron 32 584 tokens que ningún tablero vio.
+     * Se suman al costo y además se guardan por separado, porque «cuánto de la
+     * factura es razonamiento» es la pregunta que permite decidir si conviene
+     * apagarlo en una feature concreta.
+     */
+    thinkingTokens?: number;
 }
 
 /** Clave del documento del día, en UTC (mismo huso que los jobs programados). */
@@ -69,18 +80,34 @@ export function safeMapKey(raw: string): string {
  * literalmente "byFeature.x.calls" y el lector nunca lo encuentra. Los
  * `increment` funcionan igual de bien anidados.
  */
+/**
+ * Tokens de salida que el proveedor cobra: el contenido MÁS el razonamiento.
+ *
+ * Una sola función para que el patch del día y el acumulado del mes no puedan
+ * discrepar. Cuando el costo se calculaba en dos lugares con la misma fórmula
+ * escrita dos veces, alcanzaba con corregir uno para que el panel dejara de
+ * cuadrar consigo mismo.
+ */
+export function salidaFacturable(record: LlmUsageRecord): number {
+    return (record.outputTokens || 0) + (record.thinkingTokens || 0);
+}
+
 export function buildUsagePatch(record: LlmUsageRecord, now: Date = new Date()): Record<string, unknown> {
-    const { model, feature, userId, inputTokens, outputTokens } = record;
-    const usd = estimateUsd(model, inputTokens, outputTokens);
+    const { model, feature, userId, inputTokens } = record;
+    const usd = estimateUsd(model, inputTokens, salidaFacturable(record));
     const inc = FieldValue.increment;
     const inTok = inputTokens || 0;
-    const outTok = outputTokens || 0;
+    const outTok = record.outputTokens || 0;
+    const razTok = record.thinkingTokens || 0;
 
     return {
         day: usageDayKey(now),
         calls: inc(1),
         inputTokens: inc(inTok),
         outputTokens: inc(outTok),
+        // Aparte del contenido a propósito: sumarlo a `outputTokens` haría
+        // desaparecer justo el dato que sirve para decidir dónde apagarlo.
+        thinkingTokens: inc(razTok),
         usd: inc(usd),
         byFeature: {
             [safeMapKey(feature)]: {
@@ -88,6 +115,7 @@ export function buildUsagePatch(record: LlmUsageRecord, now: Date = new Date()):
                 usd: inc(usd),
                 inputTokens: inc(inTok),
                 outputTokens: inc(outTok),
+                thinkingTokens: inc(razTok),
             },
         },
         byModel: {
@@ -103,7 +131,7 @@ export function buildUsagePatch(record: LlmUsageRecord, now: Date = new Date()):
 
 export async function recordLlmUsage(record: LlmUsageRecord, now: Date = new Date()): Promise<void> {
     try {
-        const usd = estimateUsd(record.model, record.inputTokens, record.outputTokens);
+        const usd = estimateUsd(record.model, record.inputTokens, salidaFacturable(record));
         const db = admin.firestore();
         await Promise.all([
             db.collection('llmUsageDaily').doc(usageDayKey(now)).set(buildUsagePatch(record, now), { merge: true }),
