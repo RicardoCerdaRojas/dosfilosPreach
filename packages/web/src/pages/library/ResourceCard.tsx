@@ -30,6 +30,7 @@ import {
     MoreHorizontal,
     PenTool,
     RefreshCw,
+    ScanLine,
     ScrollText,
     Settings2,
     Sparkles,
@@ -82,6 +83,8 @@ interface ResourceCardProps {
      * Optional — when not provided the action is not rendered.
      */
     onRetryPremium?: () => void;
+    /** Volver a extraer leyendo las páginas como imagen, desde el PDF guardado. */
+    onReextractFromImages?: () => void;
     /**
      * Triggered when the user wants to cancel an in-progress
      * extraction (uploaded the wrong file, doesn't want to wait).
@@ -177,6 +180,7 @@ export function ResourceCard({
     onIndex,
     onReindex,
     onRetryPremium,
+    onReextractFromImages,
     onCancelExtraction,
     onPreview,
     onSetPhases,
@@ -333,6 +337,16 @@ export function ResourceCard({
                     <DropdownMenuItem onClick={onConfigureCoreStores} className="cursor-pointer">
                         <Library className="h-4 w-4 mr-2" />
                         {t('card.actions.assignToCore')}
+                    </DropdownMenuItem>
+                )}
+                {/* Vuelve a leer el PDF que ya está guardado. Distinto del botón
+                    de reprocesar, que re-indexa el texto YA extraído: si ese
+                    texto perdió el griego o el hebreo, re-indexarlo no arregla
+                    nada. */}
+                {onReextractFromImages && (
+                    <DropdownMenuItem onClick={onReextractFromImages} className="cursor-pointer">
+                        <ScanLine className="h-4 w-4 mr-2" />
+                        {t('card.actions.reextractFromImages')}
                     </DropdownMenuItem>
                 )}
                 {onCalibrateNumbering && (

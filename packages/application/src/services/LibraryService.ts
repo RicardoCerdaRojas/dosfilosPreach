@@ -444,6 +444,31 @@ export class LibraryService {
     }
 
     /**
+     * Vuelve a extraer un recurso LEYENDO SUS PÁGINAS COMO IMAGEN, desde el PDF
+     * que ya está en Storage.
+     *
+     * Es la contraparte que faltaba de `retryWithPremium`. Un libro extraído
+     * por la ruta equivocada —leyendo una capa de texto que perdió su griego o
+     * su hebreo— no se arreglaba con el botón de reprocesar de la tarjeta: ése
+     * re-indexa el texto ya extraído, o sea el mismo texto malo. La única
+     * salida era borrar y volver a subir, con el archivo ya guardado del otro
+     * lado.
+     *
+     * Cobra páginas estándar. Errores tipados que conviene traducir:
+     *   - 'permission-denied'  → el recurso no es de quien llama
+     *   - 'failed-precondition' → no se pudo ubicar el PDF en Storage
+     *   - 'resource-exhausted' → sin saldo estándar
+     */
+    async reextractFromImages(resourceId: string): Promise<{ success: boolean; pageCount?: number; skipped?: boolean }> {
+        const fn = httpsCallable<
+            { resourceId: string; force: boolean },
+            { success: boolean; pageCount?: number; skipped?: boolean }
+        >(getFunctions(), 'processWithGemini', { timeout: 900_000 });
+        const result = await fn({ resourceId, force: true });
+        return result.data ?? { success: false };
+    }
+
+    /**
      * Cancels an in-progress extraction by deleting the resource +
      * its chunks + storage objects. Used by the "Cancelar" button on
      * the card during the pending/processing/indexing window — gives

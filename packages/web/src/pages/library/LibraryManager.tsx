@@ -376,6 +376,7 @@ export function LibraryManager() {
                                 onIndex={() => processing.processResource(resource)}
                                 onReindex={() => processing.reprocessResource(resource)}
                                 onRetryPremium={() => mutations.retryWithPremium(resource.id)}
+                                onReextractFromImages={() => mutations.reextractFromImages(resource.id)}
                                 onCancelExtraction={() => mutations.cancelExtraction(resource.id)}
                                 onPreview={() => window.open(resource.storageUrl, '_blank')}
                                 onSetPhases={() => openPhases(resource)}

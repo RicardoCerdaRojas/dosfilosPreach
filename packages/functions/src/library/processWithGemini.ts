@@ -21,9 +21,19 @@ const GEMINI_FILE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
 const FIRESTORE_TEXT_LIMIT_BYTES = 900_000;
 
 /**
- * Callable Cloud Function: re-extracts a single library_resource using Gemini
- * 2.0 Flash with native PDF support. Standard (low-cost) extraction path —
- * 5–12× cheaper than LlamaParse for narrative books.
+ * Callable: vuelve a extraer un recurso LEYENDO SUS PÁGINAS COMO IMAGEN, a
+ * partir del PDF que ya está en Storage.
+ *
+ * Existía admin-only, y eso dejaba un hueco caro: un libro extraído por la ruta
+ * equivocada —leyendo una capa de texto que perdió su griego o su hebreo— sólo
+ * se podía arreglar borrándolo y subiéndolo de nuevo. El botón de «reprocesar»
+ * de la tarjeta NO sirve para eso: re-indexa el `structured.md` ya extraído, o
+ * sea el mismo texto malo.
+ *
+ * Medido sobre una biblioteca real, cinco obras hebreas entraron así. A mano
+ * son cinco borrados y cinco subidas, con el PDF ya guardado del otro lado.
+ *
+ * Cobra páginas estándar, que es la bolsa de esta ruta.
  *
  * Output contract is **identical** to `reprocessWithLlamaParse`:
  *   - `structured.md` in Cloud Storage at `users/{uid}/library/{rid}/structured.md`
@@ -47,8 +57,8 @@ export const processWithGemini = onCall<ProcessRequest>(
     async (request) => {
         console.log(`[ProcessGemini] Called by ${request.auth?.token?.email ?? 'unauthenticated'}`);
 
-        if (!request.auth || request.auth.token?.email !== 'rdocerda@gmail.com') {
-            throw new HttpsError('permission-denied', 'Only admin can reprocess documents');
+        if (!request.auth) {
+            throw new HttpsError('unauthenticated', 'Hay que iniciar sesión.');
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
@@ -66,6 +76,17 @@ export const processWithGemini = onCall<ProcessRequest>(
         if (!snap.exists) throw new HttpsError('not-found', `Resource ${resourceId} not found`);
 
         const data = snap.data()!;
+
+        // El dueño, o el admin. Antes esto estaba cerrado con un correo a mano,
+        // así que la única forma de re-extraer un libro por la ruta de imágenes
+        // era borrarlo y volver a subirlo —y eso hace falta seguido: un libro
+        // extraído leyendo una capa de texto envenenada sólo se arregla
+        // leyéndolo de nuevo como imagen, y el PDF ya está en Storage—.
+        const esAdmin = request.auth.token?.email === 'rdocerda@gmail.com';
+        if (!esAdmin && data.userId !== request.auth.uid) {
+            throw new HttpsError('permission-denied', 'Este recurso no es tuyo.');
+        }
+
         if (!force && data.extractionVersion === EXTRACTION_VERSION) {
             return { success: true, skipped: true, reason: 'already-gemini-standard' };
         }

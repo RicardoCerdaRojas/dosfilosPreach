@@ -37,6 +37,8 @@ interface UseResourceMutationsResult {
      * user can retry without re-uploading.
      */
     retryWithPremium: (id: string) => Promise<void>;
+    /** Vuelve a extraer leyendo las páginas como imagen, desde el PDF guardado. */
+    reextractFromImages: (id: string) => Promise<void>;
     /** Id of the resource currently being retried with Premium (spinner state). Null when none. */
     retryingResourceId: string | null;
     /**
@@ -96,6 +98,31 @@ export function useResourceMutations(): UseResourceMutationsResult {
             toast.error(t('toast.updateError'));
             throw error;
         }
+    }, [t]);
+
+    /**
+     * Vuelve a extraer leyendo las páginas como imagen.
+     *
+     * La contraparte que faltaba de «reintentar premium». El botón de
+     * reprocesar de la tarjeta re-indexa el texto YA extraído —el mismo texto
+     * malo—, así que un libro leído por la ruta equivocada sólo se arreglaba
+     * borrándolo y subiéndolo de nuevo, con el PDF ya guardado del otro lado.
+     */
+    const reextractFromImages = useCallback(async (id: string) => {
+        setRetryingResourceId(id);
+        const promise = libraryService.reextractFromImages(id);
+        toast.promise(promise, {
+            loading: t('toast.reextractLoading'),
+            success: t('toast.reextractSuccess'),
+            error: (err: any) => {
+                const code = err?.code as string | undefined;
+                if (code === 'functions/resource-exhausted') return err?.message ?? t('toast.reextractNoBalance');
+                if (code === 'functions/permission-denied') return t('toast.reextractDenied');
+                return t('toast.reextractError');
+            },
+        });
+        try { await promise; } catch { /* ya se informó en el toast */ }
+        finally { setRetryingResourceId(null); }
     }, [t]);
 
     const retryWithPremium = useCallback(async (id: string) => {
@@ -158,6 +185,7 @@ export function useResourceMutations(): UseResourceMutationsResult {
         deletingResourceId,
         saveResource,
         retryWithPremium,
+        reextractFromImages,
         retryingResourceId,
         cancelExtraction,
         cancellingResourceId,
