@@ -7,7 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { MODEL_FAST } from '../llm/modelCatalog';
-import { rescatarPaginas } from './rescatarPaginas';
+import { rescatarPaginas, conMarkdown } from './rescatarPaginas';
 import { verificarCobertura, convieneReintentarTanda } from './coberturaDePaginas';
 import { convieneParir } from './partirTanda';
 import {
@@ -267,8 +267,14 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
             console.error('❌ [Gemini] JSON inválido y nada rescatable:', responseText.substring(0, 500));
             throw new Error('Failed to parse Gemini response as JSON');
         }
+        // Se dice cuántas conservaron su markdown, no sólo cuántas se
+        // rescataron. Un rescate que salva el texto y se come la estructura no
+        // falla: devuelve páginas, pasa el guard de cobertura y entra al corpus
+        // como buena. Así se perdieron las tablas de 63 páginas de una gramática
+        // hebrea sin que ningún registro lo dijera.
         console.warn(
-            `⚠️ [Gemini] JSON inválido; rescatadas ${rescatadas.length} página(s) de la respuesta`,
+            `⚠️ [Gemini] JSON inválido; rescatadas ${rescatadas.length} página(s), ` +
+            `${conMarkdown(rescatadas)} con su markdown`,
         );
         parsed = { pages: rescatadas };
     }

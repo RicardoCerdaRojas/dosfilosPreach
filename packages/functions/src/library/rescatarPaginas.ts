@@ -22,29 +22,82 @@
 export interface PaginaRescatada {
     page: number;
     text: string;
+    /**
+     * El markdown de la página, cuando la entrada lo traía entero.
+     *
+     * Antes se perdía SIEMPRE: el patrón tomaba el primer campo que encontrara
+     * —`text`, que va primero— y la interfaz ni siquiera tenía dónde guardar el
+     * otro. Medido sobre la gramática de Barrick, donde tres de cinco tandas
+     * pasaron por el rescate: las dos rescatadas quedaron con CERO encabezados
+     * y CERO tablas, contra 12 tablas en las tandas que parsearon limpio. En
+     * una gramática, un paradigma verbal sin su tabla deja de decir qué forma
+     * corresponde a qué persona.
+     */
+    md?: string;
 }
 
 /**
- * Una entrada `{"page":N,"text":"..."}`, con el texto escapado según JSON.
- * `(?:[^"\\]|\\.)*` acepta comillas escapadas dentro del texto y se detiene en
- * la primera sin escapar, que es exactamente donde la entrada se corrompió.
+ * El comienzo de una entrada: `{"page": N`. Desde ahí hasta el comienzo de la
+ * siguiente está todo lo que esa página llegó a escribir.
  */
-const ENTRADA = /\{\s*"page"\s*:\s*(\d+)\s*,\s*"(?:text|md)"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+const COMIENZO = /\{\s*"page"\s*:\s*(\d+)/g;
+
+/**
+ * Un campo de texto escapado según JSON. `(?:[^"\\]|\\.)*` acepta comillas
+ * escapadas dentro del valor y se detiene en la primera sin escapar, que es
+ * exactamente donde la entrada se corrompió.
+ */
+function leerCampo(trozo: string, nombre: 'text' | 'md'): string | undefined {
+    const m = trozo.match(new RegExp(`"${nombre}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`));
+    if (!m) return undefined;
+    try {
+        return JSON.parse(`"${m[1]}"`) as string;
+    } catch {
+        // Ese campo quedó irrecuperable. Se pierde el campo, no la página.
+        return undefined;
+    }
+}
 
 export function rescatarPaginas(crudo: string): PaginaRescatada[] {
+    // Primero las posiciones de cada entrada, para poder acotar dónde termina
+    // una y empieza la siguiente. Sin ese corte, el patrón de `md` de una
+    // página podría capturar el de la página de más abajo.
+    const comienzos: Array<{ page: number; desde: number }> = [];
+    COMIENZO.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = COMIENZO.exec(crudo)) !== null) {
+        const page = Number(m[1]);
+        if (Number.isFinite(page)) comienzos.push({ page, desde: m.index });
+    }
+
     const out: PaginaRescatada[] = [];
     const vistas = new Set<number>();
-    ENTRADA.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = ENTRADA.exec(crudo)) !== null) {
-        const page = Number(m[1]);
-        if (!Number.isFinite(page) || vistas.has(page)) continue;
-        try {
-            out.push({ page, text: JSON.parse(`"${m[2]}"`) as string });
-            vistas.add(page);
-        } catch {
-            // Esa entrada quedó irrecuperable. Se pierde una página, no ocho.
-        }
+    for (let i = 0; i < comienzos.length; i++) {
+        const { page, desde } = comienzos[i]!;
+        if (vistas.has(page)) continue;
+        const hasta = i + 1 < comienzos.length ? comienzos[i + 1]!.desde : crudo.length;
+        const trozo = crudo.slice(desde, hasta);
+
+        const text = leerCampo(trozo, 'text');
+        const md = leerCampo(trozo, 'md');
+        // Sin ninguno de los dos no hay página que rescatar. Con uno solo sí:
+        // `md` suele cortarse antes que `text` porque va después.
+        if (text === undefined && md === undefined) continue;
+
+        out.push({ page, text: text ?? md ?? '', ...(md !== undefined ? { md } : {}) });
+        vistas.add(page);
     }
     return out.sort((a, b) => a.page - b.page);
+}
+
+/**
+ * Cuántas de las páginas rescatadas conservaron su markdown.
+ *
+ * Existe para que la pérdida sea VISIBLE. Un rescate que salva el texto y se
+ * come la estructura no falla: devuelve páginas, pasa el guard de cobertura y
+ * entra al corpus como buena. Así se perdieron las tablas de 63 páginas de una
+ * gramática sin que ningún registro lo dijera.
+ */
+export function conMarkdown(paginas: ReadonlyArray<PaginaRescatada>): number {
+    return paginas.filter(p => p.md !== undefined && p.md.length > 0).length;
 }
