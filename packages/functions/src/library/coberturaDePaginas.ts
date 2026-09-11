@@ -3,8 +3,17 @@
  *
  * Vivía dentro de `geminiExtraction`, que ya estaba muy por encima del límite
  * de tamaño del repo; sale aquí al agregarle a ese módulo la calibración de
- * tanda. La lógica no cambia.
+ * tanda.
+ *
+ * Aquí vive TAMBIÉN la decisión de reintentar una tanda corta, y no en el
+ * módulo del reintento, a propósito: las dos preguntas comparten la misma
+ * tolerancia y separarlas fue justamente el defecto. Un piso aceptaba perder
+ * 5% del libro mientras el reintento exigía el 100% de cada tanda, así que una
+ * tanda de 43 páginas a la que le faltaba UNA pagaba 181 s para recuperar el
+ * 2,3%.
  */
+
+import { OVERLAP_PAGES } from './calibrarTanda';
 
 /**
  * Proporción mínima de páginas que debe volver para dar la extracción por
@@ -59,4 +68,53 @@ export function verificarCobertura(
         };
     }
     return { ok: true };
+}
+
+/**
+ * ¿Vale la pena releer una tanda que volvió corta?
+ *
+ * Releerla cuesta lo mismo que leerla: medido sobre la gramática de Barrick,
+ * 181 s por una tanda de 43 páginas. Así que sólo se paga cuando lo que falta
+ * de verdad se va a perder.
+ *
+ * DOS RAZONES PARA NO RELEER, y las dos existían ya en el sistema sin que esta
+ * decisión las consultara:
+ *
+ * 1. **El solapamiento ya cubre el final de la tanda.** La tanda siguiente
+ *    arranca `OVERLAP_PAGES` páginas antes justamente para releer ese tramo,
+ *    que es donde el modelo trunca. Si todo lo que falta cae ahí, reintentar
+ *    paga por segunda vez algo que ya está pagado. No aplica a la última
+ *    tanda: detrás de ella no hay ninguna que relea, y perder su final es
+ *    perder el final del libro — que es el caso Barrick de las 138 páginas.
+ *
+ * 2. **El piso de cobertura tolera hasta un 5%.** Exigir el 100% de cada
+ *    tanda cuando el libro entero se da por bueno con el 95% es una
+ *    contradicción entre dos constantes del mismo módulo. Se resuelve
+ *    consultando la misma.
+ *
+ * Caso real que lo destapó: tanda de 43 páginas, volvieron 42, reintento
+ * completo. 181 s por una página que la tanda siguiente iba a releer igual.
+ */
+export function convieneReintentarTanda(
+    paginasDevueltas: ReadonlyArray<number>,
+    esperadas: number,
+    /** Si existe una tanda posterior que va a releer el final de ésta. */
+    laSiguienteRelee: boolean,
+): boolean {
+    if (esperadas <= 0) return false;
+    if (paginasDevueltas.length >= esperadas) return false;
+    // Nada que conservar: eso no es una tanda corta, es una tanda fallida.
+    if (paginasDevueltas.length === 0) return true;
+
+    if (laSiguienteRelee) {
+        const primeraDelSolape = esperadas - OVERLAP_PAGES + 1;
+        const vistas = new Set(paginasDevueltas);
+        let faltaFueraDelSolape = false;
+        for (let p = 1; p < primeraDelSolape; p++) {
+            if (!vistas.has(p)) { faltaFueraDelSolape = true; break; }
+        }
+        if (!faltaFueraDelSolape) return false;
+    }
+
+    return paginasDevueltas.length / esperadas < MIN_PAGE_COVERAGE;
 }

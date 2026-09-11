@@ -8,7 +8,7 @@ import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { MODEL_FAST } from '../llm/modelCatalog';
 import { rescatarPaginas } from './rescatarPaginas';
-import { verificarCobertura } from './coberturaDePaginas';
+import { verificarCobertura, convieneReintentarTanda } from './coberturaDePaginas';
 import { convieneParir } from './partirTanda';
 import {
     PRESUPUESTO_SALIDA,
@@ -318,6 +318,7 @@ async function leerRangoPartiendoSiNoEntra(
     apiKey: string,
     userId: string | undefined,
     etiqueta: string,
+    laSiguienteRelee: boolean,
 ): Promise<{ paginas: GeminiPage[]; muestra: MuestraDeDensidad | null }> {
     const total = hasta - desde + 1;
     const doc = await PDFDocument.create();
@@ -328,7 +329,7 @@ async function leerRangoPartiendoSiNoEntra(
 
     try {
         const leida = await leerTandaConReintento(
-            ruta, `${resourceId}-${etiqueta}`, apiKey, userId, total, etiqueta,
+            ruta, `${resourceId}-${etiqueta}`, apiKey, userId, total, etiqueta, laSiguienteRelee,
         );
         return {
             // Renumerar: el modelo ve la tanda como un documento de 1..N.
@@ -344,8 +345,12 @@ async function leerRangoPartiendoSiNoEntra(
         console.warn(
             `✂️ [Gemini Batched] ${etiqueta} (${desde}-${hasta}) no entra en una respuesta; se parte en ${desde}-${medio} y ${medio + 1}-${hasta}`,
         );
-        const primera = await leerRangoPartiendoSiNoEntra(sourceDoc, desde, medio, resourceId, apiKey, userId, `${etiqueta}a`);
-        const segunda = await leerRangoPartiendoSiNoEntra(sourceDoc, medio + 1, hasta, resourceId, apiKey, userId, `${etiqueta}b`);
+        // Las dos mitades de un partido NO se solapan entre sí: la segunda
+        // arranca donde termina la primera. Así que a la primera mitad nadie le
+        // relee el final —va con `false`— mientras que la segunda hereda lo que
+        // valía para la tanda entera, porque termina donde ésta terminaba.
+        const primera = await leerRangoPartiendoSiNoEntra(sourceDoc, desde, medio, resourceId, apiKey, userId, `${etiqueta}a`, false);
+        const segunda = await leerRangoPartiendoSiNoEntra(sourceDoc, medio + 1, hasta, resourceId, apiKey, userId, `${etiqueta}b`, laSiguienteRelee);
         return {
             paginas: [...primera.paginas, ...segunda.paginas],
             // La muestra sale de la mitad que SÍ entró. Un rango que hubo que
@@ -358,7 +363,15 @@ async function leerRangoPartiendoSiNoEntra(
 }
 
 /**
- * Lee una tanda y, si vuelve corta, la reintenta una vez.
+ * Lee una tanda y, si le falta algo que de verdad se va a perder, la relee una
+ * vez.
+ *
+ * «Que de verdad se va a perder» es la parte que faltaba: releer cuesta lo
+ * mismo que leer —181 s para una tanda de 43 páginas, medido— y antes se
+ * disparaba ante cualquier página faltante. Una tanda de 43 a la que le faltaba
+ * UNA pagaba ese precio completo por una página que la tanda siguiente iba a
+ * releer igual por el solapamiento. El criterio vive junto al piso de cobertura
+ * para que las dos tolerancias no puedan volver a contradecirse.
  *
  * El reintento se queda con la mejor de las dos lecturas, no con la última: un
  * segundo intento puede salir peor, y quedarse con lo último medido sería
@@ -371,14 +384,21 @@ async function leerTandaConReintento(
     userId: string | undefined,
     esperadas: number,
     etiqueta: string,
+    laSiguienteRelee: boolean,
 ): Promise<{ paginas: GeminiPage[]; tokensDeSalida: number }> {
     const primera = await extractGeminiPagesSinglePass(ruta, etiquetaRecurso, apiKey, undefined, userId);
-    if (primera.pages.length >= esperadas) {
+    if (!convieneReintentarTanda(primera.pages.map(p => p.page), esperadas, laSiguienteRelee)) {
+        if (primera.pages.length < esperadas) {
+            console.log(
+                `ℹ️ [Gemini Batched] Tanda ${etiqueta} devolvió ${primera.pages.length}/${esperadas}; ` +
+                `dentro de lo que cubren el solapamiento y el piso de cobertura, sigue sin releer`,
+            );
+        }
         return { paginas: primera.pages, tokensDeSalida: primera.tokensDeSalida };
     }
 
     console.warn(
-        `⚠️ [Gemini Batched] Tanda ${etiqueta} devolvió ${primera.pages.length}/${esperadas} páginas; reintentando una vez`,
+        `⚠️ [Gemini Batched] Tanda ${etiqueta} devolvió ${primera.pages.length}/${esperadas} páginas; releyendo una vez`,
     );
     try {
         const segunda = await extractGeminiPagesSinglePass(ruta, etiquetaRecurso, apiKey, undefined, userId);
@@ -441,8 +461,12 @@ async function extractWithGeminiBatched(
         const etiqueta = `${numero}`;
         console.log(`📦 [Gemini Batched] Tanda ${etiqueta}: páginas ${desde}-${hasta} (de ${actualPages})`);
 
+        const esLaUltima = hasta >= actualPages;
         const { paginas, muestra } = await leerRangoPartiendoSiNoEntra(
             sourceDoc, desde, hasta, resourceId, apiKey, userId, etiqueta,
+            // Detrás de la última tanda no hay ninguna que relea su final, y
+            // perder ese final es perder el final del libro.
+            !esLaUltima,
         );
         allPages.push(...paginas);
         console.log(`✅ [Gemini Batched] Tanda ${etiqueta} devolvió ${paginas.length} páginas`);
@@ -459,7 +483,7 @@ async function extractWithGeminiBatched(
             faltaCalibrar = false;
         }
 
-        if (hasta >= actualPages) break;
+        if (esLaUltima) break;
         cursor = hasta - OVERLAP_PAGES + 1;
     }
 
