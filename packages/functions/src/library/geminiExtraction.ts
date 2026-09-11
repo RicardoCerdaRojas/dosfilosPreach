@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
-import { MODEL_FAST } from '../llm/modelCatalog';
+import { MODEL_VISION } from '../llm/modelCatalog';
 
 // ── Batched Gemini extraction tuning ────────────────────────────────────
 //
@@ -25,6 +25,61 @@ import { MODEL_FAST } from '../llm/modelCatalog';
 // (rare but observed); the next chunk re-processes those pages and
 // the dedup keeps the second (fresher) version.
 export const BATCH_THRESHOLD_PAGES = 80;
+
+/**
+ * Proporción mínima de páginas que debe volver para dar la extracción por
+ * buena.
+ *
+ * Estaba en 0,80 y dejó pasar un caso real: la gramática hebrea de Barrick, de
+ * 170 páginas, volvió con 138 —81%, cortada en la 138 y sin las últimas 32— y
+ * el libro entró al corpus como completo. Se citó 32 veces en un trabajo
+ * entregado. Nadie se enteró, porque un 81% supera un piso de 80.
+ *
+ * Perder una de cada cinco páginas no es una extracción aceptable con un
+ * defecto menor: es un libro distinto. El piso sube a 0,95 y, sobre todo, ya no
+ * es lo único que se mira —ver `verificarCobertura`, que detecta el corte al
+ * final aunque el total alcance—.
+ */
+export const MIN_PAGE_COVERAGE = 0.95;
+
+/**
+ * Verifica que las páginas devueltas cubran el documento, no sólo que sean
+ * suficientes.
+ *
+ * La proporción sola no distingue dos cosas muy distintas: un libro al que le
+ * faltan páginas sueltas —recuperable, y el resto sirve— de uno CORTADO, al que
+ * le falta todo un final. Barrick fue lo segundo: 138 páginas seguidas y nada
+ * después de la 138, con cero huecos internos. Una gramática sin su último
+ * quinto es una gramática a la que le faltan los capítulos avanzados, que son
+ * justamente los que se citan.
+ */
+export function verificarCobertura(
+    paginas: ReadonlyArray<{ page: number }>,
+    esperadas: number,
+): { ok: true } | { ok: false; motivo: string } {
+    if (esperadas <= 0) return { ok: true };
+    if (paginas.length === 0) return { ok: false, motivo: 'no volvió ninguna página' };
+
+    const cobertura = paginas.length / esperadas;
+    if (cobertura < MIN_PAGE_COVERAGE) {
+        return {
+            ok: false,
+            motivo: `volvieron ${paginas.length} de ${esperadas} páginas (${Math.round(cobertura * 100)}%)`,
+        };
+    }
+
+    // Corte al final: la última página con texto queda lejos del final del
+    // documento. Se mira aunque la proporción alcance, porque un libro largo
+    // puede perder su cierre y seguir pasando el porcentaje.
+    const ultima = Math.max(...paginas.map(p => p.page));
+    if (esperadas - ultima > Math.max(2, Math.ceil(esperadas * 0.02))) {
+        return {
+            ok: false,
+            motivo: `cortada en la página ${ultima} de ${esperadas}: faltan las últimas ${esperadas - ultima}`,
+        };
+    }
+    return { ok: true };
+}
 export const CHUNK_SIZE_PAGES = 60;
 export const OVERLAP_PAGES = 3;
 
@@ -76,9 +131,10 @@ export async function extractWithGemini(
  *
  * Truncation safeguards:
  *   1. `finishReason !== 'STOP'` → hard fail (cascade falls back).
- *   2. Returned page count < 80% of `expectedPageCount` → likely silent
- *      truncation, also hard fail. Caller can disable by passing
- *      undefined when the expected count is unknown (chunked calls).
+ *   2. Cobertura insuficiente → fallo duro. No es sólo un porcentaje: también
+ *      detecta el corte al final, que la proporción sola deja pasar. Ver
+ *      `verificarCobertura`. El llamador la desactiva pasando `undefined`
+ *      cuando no sabe cuántas páginas esperar (llamadas por tanda).
  *
  * Returns structured pages so the batched wrapper can remap page
  * numbers before formatting.
@@ -118,7 +174,7 @@ async function extractGeminiPagesSinglePass(
     // Was 'gemini-2.0-flash' until Google deprecated it for new users
     // (404 Not Found, May 2026). Bumped to the live successor.
     const model = genAI.getGenerativeModel({
-        model: MODEL_FAST,
+        model: MODEL_VISION,
         generationConfig: {
             responseMimeType: 'application/json',
             maxOutputTokens: 65536,
@@ -166,7 +222,7 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     // justo los caros— quedarían fuera de la contabilidad.
     const usage = result.response.usageMetadata;
     void recordLlmUsage({
-        model: MODEL_FAST,
+        model: MODEL_VISION,
         feature: 'library.pdfExtraction',
         userId,
         inputTokens: usage?.promptTokenCount ?? 0,
@@ -218,11 +274,9 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     // doesn't independently know its expected size — the wrapper's
     // own completeness check handles that at the end).
     if (expectedPageCount && expectedPageCount > 0) {
-        const completeness = pages.length / expectedPageCount;
-        if (completeness < 0.8) {
-            throw new Error(
-                `Gemini returned ${pages.length} of ~${expectedPageCount} pages (${Math.round(completeness * 100)}%); likely truncated`,
-            );
+        const cobertura = verificarCobertura(pages, expectedPageCount);
+        if (!cobertura.ok) {
+            throw new Error(`Extracción incompleta: ${cobertura.motivo}`);
         }
     }
 
@@ -345,11 +399,12 @@ async function extractWithGeminiBatched(
     for (const p of allPages) byPage.set(p.page, p);
     const merged = Array.from(byPage.values()).sort((a, b) => a.page - b.page);
 
-    // Whole-doc completeness check. Same 80% floor used by single-pass.
-    const completeness = merged.length / actualPages;
-    if (completeness < 0.8) {
+    // Cobertura del documento entero, con el mismo criterio que la ruta de
+    // una sola pasada: proporción Y corte al final.
+    const cobertura = verificarCobertura(merged, actualPages);
+    if (!cobertura.ok) {
         throw new Error(
-            `Gemini batched extraction returned ${merged.length} of ${actualPages} pages (${Math.round(completeness * 100)}%); likely partial`,
+            `Extracción batcheada incompleta: ${cobertura.motivo}`,
         );
     }
 
