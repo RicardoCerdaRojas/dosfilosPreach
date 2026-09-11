@@ -120,7 +120,8 @@
       "moreActions": "Más acciones",
       "configurePhases": "Configurar fases",
       "assignToCore": "Asignar a Core",
-      "delete": "Eliminar"
+      "delete": "Eliminar",
+      "reextractFromImages": "Volver a extraer por imágenes"
     },
     "extraction": {
       "missingScript": "Sin {{script}}",
@@ -359,7 +360,12 @@
     "retryPremiumDenied": "Solo puedes reintentar tus propios recursos",
     "retryPremiumError": "Error al reintentar con Premium",
     "retryIndexingError_one": "No se pudo indexar {{count}} recurso. Vuelve a intentarlo en unos minutos.",
-    "retryIndexingError_other": "No se pudieron indexar {{count}} recursos. Vuelve a intentarlo en unos minutos."
+    "retryIndexingError_other": "No se pudieron indexar {{count}} recursos. Vuelve a intentarlo en unos minutos.",
+    "reextractLoading": "Leyendo las páginas como imagen…",
+    "reextractSuccess": "Listo. Hay que volver a procesar el recurso para que el índice tome el texto nuevo.",
+    "reextractNoBalance": "No te alcanzan las páginas estándar para volver a extraer este documento.",
+    "reextractDenied": "Este recurso no es tuyo.",
+    "reextractError": "No se pudo volver a extraer. Revisá que el archivo siga disponible."
   },
   "citedResourceMissing": "La fuente que citaste ya no está en tu biblioteca. Puede que la hayas eliminado después de preparar ese sermón.",
   "citedResourceDismiss": "Entendido",

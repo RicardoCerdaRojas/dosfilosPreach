@@ -120,7 +120,8 @@
       "moreActions": "More actions",
       "configurePhases": "Configure phases",
       "assignToCore": "Assign to Core",
-      "delete": "Delete"
+      "delete": "Delete",
+      "reextractFromImages": "Re-extract from the images"
     },
     "extraction": {
       "missingScript": "No {{script}}",
@@ -359,7 +360,12 @@
     "retryPremiumDenied": "You can only retry your own resources",
     "retryPremiumError": "Error retrying with Premium",
     "retryIndexingError_one": "Couldn't index {{count}} resource. Try again in a few minutes.",
-    "retryIndexingError_other": "Couldn't index {{count}} resources. Try again in a few minutes."
+    "retryIndexingError_other": "Couldn't index {{count}} resources. Try again in a few minutes.",
+    "reextractLoading": "Reading the pages as images…",
+    "reextractSuccess": "Done. Process the resource again so the index picks up the new text.",
+    "reextractNoBalance": "Not enough standard pages to re-extract this document.",
+    "reextractDenied": "This resource is not yours.",
+    "reextractError": "Could not re-extract. Check that the file is still available."
   },
   "citedResourceMissing": "The source you cited is no longer in your library. You may have deleted it after preparing that sermon.",
   "citedResourceDismiss": "Got it",
