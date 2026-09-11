@@ -145,13 +145,19 @@ export const processWithGemini = onCall<ProcessRequest>(
                 console.warn(`[ProcessGemini] pdf-parse pre-read failed: ${preReadErr.message}`);
             }
 
-            const { text: extractedText, markdown: structuredMarkdown, pageCount } = await extractWithGemini(
+            const { text: extractedText, markdown: structuredMarkdown, pageCount, paginasPorTanda } = await extractWithGemini(
                 tempFilePath,
                 resourceId,
                 apiKey,
                 expectedPageCount,
-                // Atribuye el gasto de extracción al dueño del recurso.
-                data.userId,
+                {
+                    // Atribuye el gasto de extracción al dueño del recurso.
+                    userId: data.userId,
+                    // Si este archivo ya se extrajo antes, se reusa el tamaño de
+                    // tanda que se midió entonces: la primera tanda deja de ser
+                    // una apuesta conservadora y el libro arranca a su ritmo.
+                    paginasPorTanda: typeof data.paginasPorTanda === 'number' ? data.paginasPorTanda : undefined,
+                },
             );
 
             const textBytes = Buffer.byteLength(extractedText, 'utf8');
@@ -183,6 +189,9 @@ export const processWithGemini = onCall<ProcessRequest>(
                 structuredContentUrl,
                 needsReindex: true,
                 wasTruncated,
+                // Sólo lo escribe la ruta batcheada; un PDF corto se lee de una
+                // pasada y no tiene tamaño de tanda que recordar.
+                ...(paginasPorTanda ? { paginasPorTanda } : {}),
                 updatedAt: new Date(),
             });
 
