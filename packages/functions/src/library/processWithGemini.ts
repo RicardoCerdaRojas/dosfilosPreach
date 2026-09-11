@@ -189,6 +189,11 @@ export const processWithGemini = onCall<ProcessRequest>(
                 structuredContentUrl,
                 needsReindex: true,
                 wasTruncated,
+                // Limpia el motivo del fallo anterior. Sin esto un recurso que
+                // se reprocesa bien conserva el «superó el tiempo máximo» del
+                // intento fallido y se muestra como roto estando sano.
+                extractionError: null,
+                extractionFailureReason: null,
                 // Sólo lo escribe la ruta batcheada; un PDF corto se lee de una
                 // pasada y no tiene tamaño de tanda que recordar.
                 ...(paginasPorTanda ? { paginasPorTanda } : {}),

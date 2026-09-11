@@ -627,6 +627,15 @@ export const extractPdfWithGemini = onObjectFinalized(
                 extractedWithLlamaParse: usedLlamaParse,
                 extractionVersion,
                 extractionWarning, // null clears any prior warning on a clean reprocess
+                // Y el motivo del fallo ANTERIOR también se limpia. El guardia
+                // de plazo escribe `failed` más su motivo veinte segundos antes
+                // del tope, contando con que una extracción que termine bien
+                // después lo pise; pisaba sólo el estado. Barrick quedó `ready`
+                // con 170 páginas y arrastrando «superó el tiempo máximo»: un
+                // recurso sano con cara de fallido, que es la mentira a medias
+                // que este archivo lleva media vida corrigiendo.
+                extractionError: null,
+                extractionFailureReason: null,
                 // Censo de escrituras del texto COMPLETO. Se cuenta acá y no
                 // después porque `textContent` se guarda truncado a 800 KB por
                 // el límite de Firestore: contarlo luego daría otro número.
