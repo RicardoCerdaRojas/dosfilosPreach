@@ -65,3 +65,53 @@ describe('convieneReintentarTanda', () => {
         expect(convieneReintentarTanda([], -1, false)).toBe(false);
     });
 });
+
+/**
+ * INVARIANTE, no ejemplo.
+ *
+ * Las pruebas de arriba fijan casos concretos; si mañana alguien mueve
+ * `MIN_PAGE_COVERAGE` o `OVERLAP_PAGES`, esos casos se actualizan uno por uno y
+ * la CONTRADICCIÓN que causó el defecto puede volver sin que nada se ponga en
+ * rojo. Lo que sigue ata la RELACIÓN entre las dos tolerancias, que es lo que
+ * de verdad se rompió: un piso que acepta perder 5% conviviendo con un
+ * reintento que exigía el 100%.
+ *
+ * Es el patrón que pide `docs/REVISION_ADVERSARIAL.md` §5: cuando dos
+ * números se gobiernan entre sí, la relación se prueba, no se recuerda.
+ */
+describe('invariante: el reintento nunca es más estricto que el piso de cobertura', () => {
+    const todasMenosUltimas = (n: number, faltan: number) =>
+        Array.from({ length: n - faltan }, (_, i) => i + 1);
+
+    it('ninguna pérdida que el piso acepta obliga a releer una tanda intermedia', () => {
+        // Se recorren tamaños y pérdidas reales en vez de un solo ejemplo: la
+        // contradicción no vivía en un caso, vivía en la comparación.
+        for (const esperadas of [10, 20, 30, 43, 60]) {
+            for (let faltan = 1; faltan < esperadas; faltan++) {
+                const devueltas = todasMenosUltimas(esperadas, faltan);
+                const proporcion = devueltas.length / esperadas;
+                const cubiertoPorSolape = faltan <= OVERLAP_PAGES;
+
+                if (proporcion >= MIN_PAGE_COVERAGE || cubiertoPorSolape) {
+                    expect(
+                        convieneReintentarTanda(devueltas, esperadas, true),
+                        `${devueltas.length}/${esperadas}: el piso lo acepta (o lo cubre el solapamiento), releer es pagar de más`,
+                    ).toBe(false);
+                }
+            }
+        }
+    });
+
+    it('la última tanda sí relee, porque detrás no hay quien cubra su final', () => {
+        // El invariante de arriba vale para tandas intermedias. En la última el
+        // solapamiento no existe, y perder su final es perder el final del
+        // libro — el caso de las 138 páginas de 170 que subió el piso a 0,95.
+        const esperadas = 43;
+        const faltan = OVERLAP_PAGES; // lo que el solapamiento perdonaría
+        const devueltas = todasMenosUltimas(esperadas, faltan);
+        expect(convieneReintentarTanda(devueltas, esperadas, true)).toBe(false);
+        expect(convieneReintentarTanda(devueltas, esperadas, false)).toBe(
+            devueltas.length / esperadas < MIN_PAGE_COVERAGE,
+        );
+    });
+});
