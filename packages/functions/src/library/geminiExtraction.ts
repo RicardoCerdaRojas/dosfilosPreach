@@ -297,6 +297,84 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
 }
 
 /**
+ * Mínimo de páginas por tanda al subdividir.
+ *
+ * Por debajo de esto ya no es un problema de tamaño: si tres páginas de un
+ * libro no entran en una respuesta, el problema es otro y seguir partiendo sólo
+ * gasta llamadas.
+ */
+export const MIN_PAGINAS_POR_TANDA = 4;
+
+/**
+ * Si un fallo de lectura se arregla partiendo la tanda al medio.
+ *
+ * Sólo cuando la respuesta NO ENTRÓ. Otros fallos —un PDF corrupto, la API
+ * caída, el JSON irrecuperable— no mejoran con tandas más chicas, y reintentar
+ * con la mitad gasta páginas del usuario para volver a fallar.
+ *
+ * Y sólo mientras quede algo que partir: si cuatro páginas no entran, el
+ * problema es otro.
+ */
+export function convieneParir(err: unknown, paginasEnLaTanda: number): boolean {
+    const msg = String((err as Error)?.message ?? err);
+    const noEntro = /MAX_TOKENS|truncated/i.test(msg);
+    return noEntro && paginasEnLaTanda >= MIN_PAGINAS_POR_TANDA * 2;
+}
+
+/**
+ * Lee un rango de páginas, partiéndolo si la respuesta no entra.
+ *
+ * Caso real: una gramática hebrea de 170 páginas se parte en tandas de 60 y la
+ * primera falla con `finishReason=MAX_TOKENS`. No es un archivo malo ni un
+ * modelo malo: sesenta páginas de hebreo vocalizado con su aparato NO CABEN en
+ * una respuesta, y el razonamiento del modelo sale del mismo presupuesto. La
+ * extracción entera fallaba por eso.
+ *
+ * El tamaño fijo no puede servir para los dos extremos: una novela entra de a
+ * sesenta páginas y una gramática hebrea no. En vez de bajar el tope para todos
+ * —más llamadas y más lento en el caso corriente— la tanda que no entra se
+ * parte al medio y se reintenta. Los libros normales no pagan nada; los densos
+ * se acomodan solos.
+ */
+async function leerRangoPartiendoSiNoEntra(
+    sourceDoc: PDFDocument,
+    desde: number,
+    hasta: number,
+    resourceId: string,
+    apiKey: string,
+    userId: string | undefined,
+    etiqueta: string,
+): Promise<GeminiPage[]> {
+    const total = hasta - desde + 1;
+    const doc = await PDFDocument.create();
+    const copiadas = await doc.copyPages(sourceDoc, Array.from({ length: total }, (_, i) => desde - 1 + i));
+    copiadas.forEach(pg => doc.addPage(pg));
+    const ruta = path.join(os.tmpdir(), `${resourceId}-${desde}-${hasta}-${Date.now()}.pdf`);
+    fs.writeFileSync(ruta, await doc.save());
+
+    try {
+        const paginas = await leerTandaConReintento(
+            ruta, `${resourceId}-${etiqueta}`, apiKey, userId, total, etiqueta,
+        );
+        // Renumerar: el modelo ve la tanda como un documento de 1..N.
+        return paginas.map(pg => ({ ...pg, page: desde + (pg.page - 1) }));
+    } catch (err) {
+        if (!convieneParir(err, total)) throw err;
+
+        const medio = desde + Math.floor(total / 2) - 1;
+        console.warn(
+            `✂️ [Gemini Batched] ${etiqueta} (${desde}-${hasta}) no entra en una respuesta; se parte en ${desde}-${medio} y ${medio + 1}-${hasta}`,
+        );
+        return [
+            ...await leerRangoPartiendoSiNoEntra(sourceDoc, desde, medio, resourceId, apiKey, userId, `${etiqueta}a`),
+            ...await leerRangoPartiendoSiNoEntra(sourceDoc, medio + 1, hasta, resourceId, apiKey, userId, `${etiqueta}b`),
+        ];
+    } finally {
+        try { fs.unlinkSync(ruta); } catch { /* el temporal ya no importa */ }
+    }
+}
+
+/**
  * Lee una tanda y, si vuelve corta, la reintenta una vez.
  *
  * El reintento se queda con la mejor de las dos lecturas, no con la última: un
@@ -388,58 +466,16 @@ async function extractWithGeminiBatched(
         const chunkLabel = `${i + 1}/${chunks.length}`;
         console.log(`📦 [Gemini Batched] Chunk ${chunkLabel}: pages ${start}-${end}`);
 
-        // Surgical PDF subset for this chunk. pdf-lib uses 0-indexed
-        // page references internally; convert from our 1-indexed range.
-        const chunkDoc = await PDFDocument.create();
-        const indices = Array.from({ length: end - start + 1 }, (_, idx) => start - 1 + idx);
-        const copied = await chunkDoc.copyPages(sourceDoc, indices);
-        copied.forEach(p => chunkDoc.addPage(p));
-        const chunkBytes = await chunkDoc.save();
-
-        // Write to a unique temp file so concurrent extractions don't
-        // race on the same path. Cleaned up after the call regardless
-        // of outcome — Gemini Files API copies the bytes server-side.
-        const chunkTempPath = path.join(
-            os.tmpdir(),
-            `${resourceId}-chunk-${i + 1}-${Date.now()}.pdf`,
+        // La lectura arma su propio recorte y se PARTE SOLA si la respuesta no
+        // entra. Antes, una tanda que volvía con MAX_TOKENS tumbaba la
+        // extracción entera: pasó con una gramática hebrea de 170 páginas,
+        // donde sesenta páginas de hebreo vocalizado no caben en una respuesta.
+        // Las páginas vuelven ya renumeradas a su posición en el original.
+        const chunkPages = await leerRangoPartiendoSiNoEntra(
+            sourceDoc, start, end, resourceId, apiKey, userId, chunkLabel,
         );
-        fs.writeFileSync(chunkTempPath, chunkBytes);
-
-        try {
-            // Una tanda que vuelve corta se reintenta UNA vez.
-            //
-            // Medido sobre la BHS: la misma tanda devolvió 8 de 8 páginas en
-            // una corrida y menos en otra, con JSON válido las dos veces. Es
-            // variación del modelo, no un archivo malo, y un segundo intento la
-            // corrige sin costo cuando la primera salió corta.
-            //
-            // Sólo una vez: si falla dos, el problema no es la suerte, y seguir
-            // reintentando gasta páginas del usuario sin mejorar nada.
-            const esperadasEnTanda = end - start + 1;
-            let chunkPages = await leerTandaConReintento(
-                chunkTempPath,
-                `${resourceId}-chunk-${i + 1}`,
-                apiKey,
-                userId,
-                esperadasEnTanda,
-                chunkLabel,
-            );
-
-            // Remap each chunk page's local number (1..chunkSize, as
-            // Gemini saw the chunk PDF) to its absolute position in the
-            // ORIGINAL document. Without this remap, every chunk would
-            // claim pages 1..N and the dedup would collapse them all.
-            for (const p of chunkPages) {
-                allPages.push({
-                    page: start + (p.page - 1),
-                    text: p.text,
-                    md: p.md,
-                });
-            }
-            console.log(`✅ [Gemini Batched] Chunk ${chunkLabel} returned ${chunkPages.length} pages`);
-        } finally {
-            try { fs.unlinkSync(chunkTempPath); } catch { /* ignore */ }
-        }
+        allPages.push(...chunkPages);
+        console.log(`✅ [Gemini Batched] Chunk ${chunkLabel} returned ${chunkPages.length} pages`);
     }
 
     // Dedup overlap pages: when chunks overlap, the same page appears
