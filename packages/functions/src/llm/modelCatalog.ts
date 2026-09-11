@@ -21,34 +21,6 @@ export interface LlmModel {
 }
 
 export const MODEL_FAST = 'gemini-2.5-flash';
-
-/**
- * Modelo para LEER PÁGINAS COMO IMAGEN.
- *
- * Va aparte de `MODEL_FAST` a propósito. Transcribir un escaneo en hebreo
- * vocalizado no se parece a las demás llamadas rápidas —clasificar una fuente,
- * resumir— y lo que se midió es sólo eso. Mover `MODEL_FAST` cambiaría el
- * modelo de media aplicación con evidencia que no la cubre.
- *
- * Medido sobre el folio 1105 de la BHS, contra el texto leído del escaneo a
- * mano (Salmo 23:1-4, 28 palabras):
- *
- *     gemini-3.6-flash    19 s   consonantes 7/7   vocalización 7/7   28/28
- *     gemini-3.1-pro       96 s   consonantes 7/7   vocalización 7/7   28/28
- *     gemini-2.5-flash     14 s   consonantes 6/7   vocalización 6/7   23/28
- *
- * Y sobre las 41 páginas del Salterio, con los folios impresos como verdad de
- * referencia —cada página de la BHS imprime su número—:
- *
- *     gemini-3.6-flash    40/41 folios   vocalización 0,811
- *     gemini-2.5-flash    33/41 folios   vocalización 0,685
- *
- * La proporción de vocalización importa más de lo que parece: el Salterio está
- * íntegramente puntuado, y en hebreo la vocalización ES la morfología. Un texto
- * que entra sin ella no distingue Qal de Piel, y el análisis léxico se apoya en
- * eso.
- */
-export const MODEL_VISION = 'gemini-3.6-flash';
 export const MODEL_DEEP = 'gemini-2.5-pro';
 export const MODEL_EMBEDDING = 'gemini-embedding-001';
 export const DEFAULT_MODEL = MODEL_FAST;

@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
-import { MODEL_VISION } from '../llm/modelCatalog';
+import { MODEL_FAST } from '../llm/modelCatalog';
 
 // ── Batched Gemini extraction tuning ────────────────────────────────────
 //
@@ -174,7 +174,7 @@ async function extractGeminiPagesSinglePass(
     // Was 'gemini-2.0-flash' until Google deprecated it for new users
     // (404 Not Found, May 2026). Bumped to the live successor.
     const model = genAI.getGenerativeModel({
-        model: MODEL_VISION,
+        model: MODEL_FAST,
         generationConfig: {
             responseMimeType: 'application/json',
             maxOutputTokens: 65536,
@@ -222,7 +222,7 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     // justo los caros— quedarían fuera de la contabilidad.
     const usage = result.response.usageMetadata;
     void recordLlmUsage({
-        model: MODEL_VISION,
+        model: MODEL_FAST,
         feature: 'library.pdfExtraction',
         userId,
         inputTokens: usage?.promptTokenCount ?? 0,
