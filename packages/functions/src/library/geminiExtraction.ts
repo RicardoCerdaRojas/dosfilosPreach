@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { MODEL_FAST } from '../llm/modelCatalog';
+import { rescatarPaginas } from './rescatarPaginas';
 
 // ── Batched Gemini extraction tuning ────────────────────────────────────
 //
@@ -239,13 +240,25 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     let parsed: { pages?: Array<{ page: number; text?: string; md?: string }> };
     try {
         parsed = JSON.parse(responseText);
-    } catch (parseError) {
-        // With responseMimeType=application/json this path is rare —
-        // when it fires, log a slice for debugging but throw to fall
-        // back. The pdf-parse fallback now produces auto-indexable
-        // output so the user still ends up with searchable content.
-        console.error('❌ [Gemini] JSON parse failed even with strict mime type:', responseText.substring(0, 500));
-        throw new Error('Failed to parse Gemini response as JSON');
+    } catch {
+        // NO es truncamiento: `finishReason` ya se verificó arriba y la
+        // respuesta llegó entera. El aparato crítico mezcla paréntesis
+        // desbalanceados, comillas y tres alfabetos en un renglón, y algo de
+        // eso escapa mal aunque se pida `responseMimeType: application/json`.
+        // Medido sobre la BHS: pasa en 1 de cada 12 llamadas.
+        //
+        // Antes se descartaba la llamada entera y el libro perdía sus páginas.
+        // Rescatar las entradas bien formadas convierte «perdí las ocho» en
+        // «perdí la que venía rota», y lo que falte lo ve el guard de cobertura.
+        const rescatadas = rescatarPaginas(responseText);
+        if (rescatadas.length === 0) {
+            console.error('❌ [Gemini] JSON inválido y nada rescatable:', responseText.substring(0, 500));
+            throw new Error('Failed to parse Gemini response as JSON');
+        }
+        console.warn(
+            `⚠️ [Gemini] JSON inválido; rescatadas ${rescatadas.length} página(s) de la respuesta`,
+        );
+        parsed = { pages: rescatadas };
     }
 
     if (!parsed.pages || !Array.isArray(parsed.pages) || parsed.pages.length === 0) {
@@ -281,6 +294,38 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     }
 
     return { pages };
+}
+
+/**
+ * Lee una tanda y, si vuelve corta, la reintenta una vez.
+ *
+ * El reintento se queda con la mejor de las dos lecturas, no con la última: un
+ * segundo intento puede salir peor, y quedarse con lo último medido sería
+ * cambiar una lectura buena por una mala.
+ */
+async function leerTandaConReintento(
+    ruta: string,
+    etiquetaRecurso: string,
+    apiKey: string,
+    userId: string | undefined,
+    esperadas: number,
+    etiqueta: string,
+): Promise<Array<{ page: number; text: string; md?: string }>> {
+    const primera = (await extractGeminiPagesSinglePass(ruta, etiquetaRecurso, apiKey, undefined, userId)).pages;
+    if (primera.length >= esperadas) return primera;
+
+    console.warn(
+        `⚠️ [Gemini Batched] Chunk ${etiqueta} devolvió ${primera.length}/${esperadas} páginas; reintentando una vez`,
+    );
+    try {
+        const segunda = (await extractGeminiPagesSinglePass(ruta, etiquetaRecurso, apiKey, undefined, userId)).pages;
+        return segunda.length > primera.length ? segunda : primera;
+    } catch (err) {
+        // El reintento es una mejora oportunista: si falla, vale lo que ya se
+        // había leído. Tirarlo dejaría la tanda peor que sin reintentar.
+        console.warn(`⚠️ [Gemini Batched] El reintento de ${etiqueta} falló; se conserva la primera lectura:`, err);
+        return primera;
+    }
 }
 
 /**
@@ -361,16 +406,23 @@ async function extractWithGeminiBatched(
         fs.writeFileSync(chunkTempPath, chunkBytes);
 
         try {
-            const { pages: chunkPages } = await extractGeminiPagesSinglePass(
+            // Una tanda que vuelve corta se reintenta UNA vez.
+            //
+            // Medido sobre la BHS: la misma tanda devolvió 8 de 8 páginas en
+            // una corrida y menos en otra, con JSON válido las dos veces. Es
+            // variación del modelo, no un archivo malo, y un segundo intento la
+            // corrige sin costo cuando la primera salió corta.
+            //
+            // Sólo una vez: si falla dos, el problema no es la suerte, y seguir
+            // reintentando gasta páginas del usuario sin mejorar nada.
+            const esperadasEnTanda = end - start + 1;
+            let chunkPages = await leerTandaConReintento(
                 chunkTempPath,
                 `${resourceId}-chunk-${i + 1}`,
                 apiKey,
-                // No expectedPageCount per chunk — the per-chunk
-                // completeness check would false-positive when Gemini
-                // legitimately returns N pages because that's the chunk
-                // size. Whole-doc completeness is checked below instead.
-                undefined,
                 userId,
+                esperadasEnTanda,
+                chunkLabel,
             );
 
             // Remap each chunk page's local number (1..chunkSize, as
