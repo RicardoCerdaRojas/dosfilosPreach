@@ -108,6 +108,9 @@
     "metaPagesEstimated": "~{{count}} p. (est.)",
     "metaPagesActual_one": "{{count}} page",
     "metaPagesActual_other": "{{count}} pages",
+    "metaPagesMissing_one": "{{count}} unread",
+    "metaPagesMissing_other": "{{count}} unread",
+    "metaPagesMissingDetail": "These pages could not be read: {{paginas}}. This is usually a scanning defect, not the book. A citation to one of them will have no text behind it.",
     "metaPagesTitleActual": "Actual pages",
     "metaPagesTitleEstimated": "Estimated pages (approx.)",
     "actions": {

@@ -129,3 +129,48 @@ export function convieneReintentarTanda(
 
     return paginasDevueltas.length / esperadas < MIN_PAGE_COVERAGE;
 }
+
+/**
+ * Cuántas páginas no volvieron, y cuáles.
+ *
+ * EL HUECO QUE CIERRA. El piso de cobertura decide si el libro sirve, y con
+ * razón acepta pérdidas pequeñas: rechazar una obra entera por una hoja mal
+ * escaneada sería peor. Pero hasta ahora esa decisión no dejaba rastro. El
+ * fascículo BHQ quedó `ready` con 314 de sus 315 hojas —le falta el folio 88,
+ * Nahúm 3:1-4 con su aparato, porque en el escaneo aparece la mano de quien
+ * sostenía el libro— y NADA en el recurso lo decía. Quien cite esa página no
+ * va a recibir ningún aviso.
+ *
+ * «Aceptable» y «completo» no son lo mismo, y el sistema sólo sabía decir lo
+ * segundo.
+ *
+ * La lista va acotada: una extracción que sale muy mal puede perder cientos de
+ * páginas, y guardarlas todas engorda el documento sin decir nada nuevo. El
+ * total siempre es exacto; los números son los primeros, para poder nombrarlos.
+ */
+export const MAX_FALTANTES_LISTADAS = 50;
+
+export interface PaginasFaltantes {
+    /** Cuántas faltan en total. Exacto, aunque la lista esté recortada. */
+    total: number;
+    /** Las primeras, para poder nombrarlas en un aviso. */
+    paginas: number[];
+}
+
+export function paginasQueFaltan(
+    paginas: ReadonlyArray<{ page: number }>,
+    esperadas: number,
+    tope: number = MAX_FALTANTES_LISTADAS,
+): PaginasFaltantes {
+    if (!Number.isFinite(esperadas) || esperadas <= 0) return { total: 0, paginas: [] };
+
+    const vistas = new Set(paginas.map(p => p.page));
+    const faltan: number[] = [];
+    let total = 0;
+    for (let p = 1; p <= esperadas; p++) {
+        if (vistas.has(p)) continue;
+        total++;
+        if (faltan.length < tope) faltan.push(p);
+    }
+    return { total, paginas: faltan };
+}
