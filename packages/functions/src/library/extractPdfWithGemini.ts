@@ -379,6 +379,43 @@ export const extractPdfWithGemini = onObjectFinalized(
                 console.log(`📄 [Extract] User opted for STANDARD; skipping LlamaParse for resource ${resourceId}`);
             }
             const canUseLlamaParse = llamaAccounts.length > 0;
+
+            /**
+             * Manda el libro a la cola y corta este disparador, si corresponde.
+             *
+             * DECLARADO UNA VEZ Y USADO EN LOS DOS SITIOS que llaman a visión.
+             * Antes había dos llamadas a `extractWithGemini` —la degradación
+             * tras fallar LlamaParse y el camino directo— y sólo una tenía el
+             * encolado. Sasson entró por la otra, extrajo en línea y murió a
+             * los 540 s exactamente como antes del cambio.
+             *
+             * Este disparador tiene 540 s de tope duro por plataforma y un
+             * libro largo no entra: cada rango en su propia invocación quita
+             * ese techo.
+             *
+             * Se DESARMA el guardia de plazo antes de salir. Si no, marcaría
+             * `failed` un trabajo que está avanzando bien en otro lado — y ese
+             * estado falso es peor que no tener guardia.
+             */
+            const intentarEncolar = async (): Promise<boolean> => {
+                if (!expectedPageCount || expectedPageCount <= BATCH_THRESHOLD_PAGES) return false;
+                const encolado = await arrancarExtraccionEnCola(
+                    resourceRef, resourceId, expectedPageCount,
+                    typeof resourceDoc.data()?.paginasPorTanda === 'number'
+                        ? resourceDoc.data()!.paginasPorTanda as number
+                        : undefined,
+                );
+                // Si no se pudo encolar, se extrae acá mismo como antes: la
+                // cola quita el techo pero no puede ser un punto único de fallo.
+                if (!encolado) return false;
+
+                deadlineGuard?.disarm();
+                try { fs.unlinkSync(tempFilePath); } catch { /* el temporal ya no importa */ }
+                console.log(
+                    `⛓️ [Extract] ${resourceId}: ${expectedPageCount} páginas en cola; este disparador termina acá`,
+                );
+                return true;
+            };
             // Track which account ultimately succeeded so we can record
             // its usage after the cascade finishes. Also collected for
             // structured-failure debugging.
@@ -457,6 +494,15 @@ export const extractPdfWithGemini = onObjectFinalized(
                         // handles long page counts by splitting into chunks,
                         // so we no longer need the 12MB heuristic that used
                         // to bail out for text-heavy commentaries.
+                        //
+                        // Este camino es el MÁS apretado de los dos: llegar
+                        // hasta acá significa que LlamaParse ya se comió su
+                        // parte del presupuesto. Medido el 12-09-2026 con
+                        // Sasson: sus dos cuentas agotaron 370 s de los 540, y
+                        // a la visión le quedaron 130. Encolar no es una
+                        // optimización acá, es la única forma de terminar.
+                        if (await intentarEncolar()) return;
+
                         try {
                             const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId });
                             extractedText = result.text;
@@ -494,35 +540,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                 // splitting, so the old 12MB heuristic is gone.
                 console.log(`🤖 [Extract] Using Gemini (${userOptedOutOfPremium ? 'user opted standard' : 'no LlamaParse key'})`);
 
-                // ── Libro largo: se recorre en cola ──────────────────────────
-                //
-                // Este disparador tiene 540 s de tope duro por plataforma, y un
-                // libro largo no entra. Medido el 12-09-2026 con el comentario
-                // de Sasson (392 págs): murió a los 520 s en la tercera de nueve
-                // tandas. Cada rango en su propia invocación quita ese techo.
-                //
-                // Se sale de aquí en cuanto queda encolado: el estado final lo
-                // escribe la cadena, no este disparador. Y el guardia de plazo
-                // se desarma primero, porque si no marcaría `failed` un trabajo
-                // que está avanzando bien en otro lado.
-                if (expectedPageCount && expectedPageCount > BATCH_THRESHOLD_PAGES) {
-                    const encolado = await arrancarExtraccionEnCola(
-                        resourceRef, resourceId, expectedPageCount,
-                        typeof resourceDoc.data()?.paginasPorTanda === 'number'
-                            ? resourceDoc.data()!.paginasPorTanda as number
-                            : undefined,
-                    );
-                    if (encolado) {
-                        deadlineGuard?.disarm();
-                        try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }
-                        console.log(
-                            `⛓️ [Extract] ${resourceId}: ${expectedPageCount} páginas en cola; este disparador termina acá`,
-                        );
-                        return;
-                    }
-                    // Si no se pudo encolar se sigue de largo y se extrae acá
-                    // mismo, como antes de este cambio.
-                }
+                if (await intentarEncolar()) return;
 
                 try {
                     const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId });
