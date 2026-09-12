@@ -204,3 +204,57 @@ describe('recommendExtractionMode — no afirmar lo que no se sabe', () => {
         expect(r.recommended).not.toBe('premium');
     });
 });
+
+/**
+ * EL CASO BHQ. El fascículo de la Biblia Hebraica Quinta de los Doce Profetas
+ * pesa 94 MB y tiene 315 páginas. Es un escaneo, así que la visión es la ÚNICA
+ * ruta que puede leerlo — y el consejo decía «ninguna ruta sirve, parte el
+ * archivo», porque el tope era 50 MB.
+ *
+ * Ese tope se puso cuando la extracción subía el PDF ENTERO al modelo. Con la
+ * cola, cada tarea recorta su rango y sube sólo esa rebanada: el archivo
+ * completo nunca se sube. Medido localmente sobre ese mismo fascículo:
+ *
+ *     cargar con pdf-lib     instantáneo
+ *     memoria (RSS)          237 MB   de los 2 GiB de la función
+ *     recorte de 30 páginas  9,9 MB   ← lo único que ve el modelo
+ *
+ * Así que el tope protegía de algo que en ese camino ya no ocurre. Lo que
+ * decide no es cuánto pesa el archivo: es POR DÓNDE va a ir.
+ */
+describe('el tope de visión depende del camino, no sólo del tamaño', () => {
+    const BHQ = { sizeBytes: 94 * MB, diagnosis: dx('sin-capa-de-texto') };
+
+    it('un escaneo largo de 94 MB ahora sí se puede leer', () => {
+        const r = recommendExtractionMode({ ...BHQ, pageCount: 315 });
+        expect(r.recommended).toBe('standard');
+        expect(r.reasonKey).toBe('scan-fits-vision');
+    });
+
+    it('el mismo peso en un libro CORTO sigue sin poder: va en una sola pasada', () => {
+        // Con pocas páginas no hay cola: el archivo se sube completo y 94 MB no
+        // entran. El consejo tiene que seguir diciendo la verdad para ese caso.
+        const r = recommendExtractionMode({ ...BHQ, pageCount: 40 });
+        expect(r.recommended).toBeNull();
+        expect(r.reasonKey).toBe('scan-too-large');
+    });
+
+    it('sin saber las páginas se contesta con el tope conservador', () => {
+        // Prometer que entra y que después el servidor lo rechace es peor que
+        // quedarse corto: el usuario elige una ruta que va a fallar.
+        expect(recommendExtractionMode({ ...BHQ, pageCount: null }).recommended).toBeNull();
+        expect(recommendExtractionMode(BHQ).recommended).toBeNull();
+    });
+
+    it('por debajo del tope de una pasada nada cambia', () => {
+        const chico = { sizeBytes: 20 * MB, diagnosis: dx('sin-capa-de-texto') };
+        expect(recommendExtractionMode({ ...chico, pageCount: 315 }).recommended).toBe('standard');
+        expect(recommendExtractionMode({ ...chico, pageCount: 40 }).recommended).toBe('standard');
+    });
+
+    it('lo que ninguna ruta soporta sigue sin soportarse', () => {
+        // El tope de premium no se movió, y por encima de él no hay camino.
+        const enorme = { sizeBytes: 400 * MB, diagnosis: dx('sin-capa-de-texto'), pageCount: 315 };
+        expect(recommendExtractionMode(enorme).reasonKey).toBe('over-every-cap');
+    });
+});

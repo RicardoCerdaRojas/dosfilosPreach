@@ -25,7 +25,34 @@ import { censusOf } from './scriptCensus';
 
 // Gemini file size limit is 50MB (per-call upload to the Files API).
 // Files larger than this skip Gemini and fall to pdf-parse.
+/**
+ * Tope de la ruta de visión cuando el libro se lee en UNA sola invocación: es
+ * el límite de subir el archivo completo al modelo.
+ */
 const MAX_GEMINI_FILE_SIZE = 50 * 1024 * 1024;
+
+/**
+ * Tope cuando el libro se recorre EN COLA, donde el archivo completo nunca se
+ * sube: cada tarea recorta su rango y manda sólo esa rebanada. Medido sobre el
+ * fascículo BHQ, 94 MB y 315 páginas: 237 MB de RSS de los 2 GiB disponibles, y
+ * una rebanada de 30 páginas de 9,9 MB.
+ *
+ * Duplica `VISION_MAX_BYTES_EN_COLA` y `PAGINAS_PARA_LA_COLA` de
+ * `@dosfilos/domain`, que este paquete no puede importar (ADR-025). Un
+ * invariante en las pruebas compara los números.
+ */
+const MAX_GEMINI_FILE_SIZE_EN_COLA = 300 * 1024 * 1024;
+
+/**
+ * Cuánto puede pesar el archivo para que la visión lo lea.
+ *
+ * Depende de POR DÓNDE va a ir, no sólo de su tamaño. Sin número de páginas se
+ * contesta con el tope conservador, que es el comportamiento anterior.
+ */
+function topeDeVisionPara(pageCount?: number): number {
+    if (!pageCount || !Number.isFinite(pageCount)) return MAX_GEMINI_FILE_SIZE;
+    return pageCount > BATCH_THRESHOLD_PAGES ? MAX_GEMINI_FILE_SIZE_EN_COLA : MAX_GEMINI_FILE_SIZE;
+}
 // LlamaParse supports up to 100MB (and we've verified free-tier covers typical theology books)
 const MAX_LLAMAPARSE_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -489,7 +516,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                     console.warn(
                         `⚠️ [Extract] All ${llamaAccounts.length} LlamaParse account(s) failed; falling back to Gemini. Errors: ${JSON.stringify(llamaErrors)}`,
                     );
-                    if (stats.size <= MAX_GEMINI_FILE_SIZE) {
+                    if (stats.size <= topeDeVisionPara(expectedPageCount)) {
                         // Batched extraction (router inside extractWithGemini)
                         // handles long page counts by splitting into chunks,
                         // so we no longer need the 12MB heuristic that used
@@ -534,7 +561,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                         extractionVersion = '5.0-pdfparse-structured';
                     }
                 }
-            } else if (stats.size <= MAX_GEMINI_FILE_SIZE) {
+            } else if (stats.size <= topeDeVisionPara(expectedPageCount)) {
                 // No LlamaParse path AND file fits Gemini's 50MB cap.
                 // Batched extraction now handles long page counts by
                 // splitting, so the old 12MB heuristic is gone.

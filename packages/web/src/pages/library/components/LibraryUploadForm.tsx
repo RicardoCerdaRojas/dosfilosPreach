@@ -120,6 +120,11 @@ export function LibraryUploadForm({
     // libros CON capa de texto cuya escritura está mal codificada.
     const recommendation = recommendExtractionMode({
         sizeBytes: file?.size ?? 0,
+        // El número de páginas decide QUÉ TOPE de tamaño aplica: un libro largo
+        // se recorre en cola, que nunca sube el archivo completo al modelo, y
+        // por eso tolera mucho más peso. Sin esto, un fascículo de 94 MB se
+        // rechazaba de plano aunque la cola pueda leerlo rango por rango.
+        pageCount: preflight.status === 'done' ? preflight.evidence.pages : null,
         diagnosis: preflight.status === 'done' ? preflight.diagnosis : null,
         requiredScripts: requiredScriptsFor({ type: metadata.type, title: metadata.title }),
         evidence: preflight.status === 'done' ? preflight.evidence : null,

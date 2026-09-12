@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { STRUCTURED_EXTRACTION_VERSIONS, isStructuredExtractionVersion } from '../extractionVersions';
 import { EXTRACTION_VERSION as VERSION_DE_LA_COLA } from '../extractRangeTask';
+import { BATCH_THRESHOLD_PAGES } from '../geminiExtraction';
 
 /**
  * Una versión de extracción nueva tiene DOS hermanas, y olvidarse de cualquiera
@@ -84,5 +85,50 @@ describe('toda versión que el código escribe tiene que ser indexable', () => {
             'La lista de versiones indexables difiere entre `domain` y `functions`. ' +
             'La UI y el indexador van a discrepar sobre el mismo recurso.',
         ).toEqual([...STRUCTURED_EXTRACTION_VERSIONS].sort());
+    });
+});
+
+/**
+ * Los topes de tamaño de la ruta de visión también están escritos dos veces
+ * —`packages/functions` no puede importar `@dosfilos/domain` (ADR-025)— y las
+ * consecuencias de que se separen son asimétricas y silenciosas:
+ *
+ * - si el de `domain` fuera MÁS alto, la interfaz recomendaría «Por imágenes»
+ *   para un archivo que el servidor va a rechazar;
+ * - si fuera MÁS bajo, la interfaz diría «no disponible» sobre un archivo que
+ *   el servidor podría leer sin problema — que es exactamente el estado en que
+ *   quedó el fascículo BHQ de 94 MB.
+ */
+describe('los topes de visión dicen lo mismo en los dos paquetes', () => {
+    const numerosDe = (ruta: string, nombres: readonly string[]) => {
+        const fuente = fs.readFileSync(ruta, 'utf8');
+        return nombres.map(n => {
+            // `\\b` cierra el nombre: sin él, buscar `MAX_GEMINI_FILE_SIZE`
+            // podría engancharse con `MAX_GEMINI_FILE_SIZE_EN_COLA`.
+            const m = fuente.match(new RegExp(`\\b${n}\\b\\s*=\\s*([\\d\\s*_]+);`));
+            if (!m) throw new Error(`no se encontró ${n} en ${path.basename(ruta)}`);
+            // eslint-disable-next-line no-eval
+            return eval(m[1]!.replace(/_/g, '')) as number;
+        });
+    };
+
+    it('el tope de una pasada, el de la cola y el umbral coinciden', () => {
+        const [dominioPasada, dominioCola, dominioUmbral] = numerosDe(
+            path.join(__dirname, '..', '..', '..', '..', 'domain', 'src', 'library', 'recommendExtractionMode.ts'),
+            ['VISION_MAX_BYTES', 'VISION_MAX_BYTES_EN_COLA', 'PAGINAS_PARA_LA_COLA'],
+        );
+        // El umbral se toma del valor IMPORTADO y no del fuente: vive en
+        // `geminiExtraction`, que es de donde lo lee el código de verdad.
+        const [funcPasada, funcCola] = numerosDe(
+            path.join(__dirname, '..', 'extractPdfWithGemini.ts'),
+            ['MAX_GEMINI_FILE_SIZE', 'MAX_GEMINI_FILE_SIZE_EN_COLA'],
+        );
+        const funcUmbral = BATCH_THRESHOLD_PAGES;
+
+        expect(
+            { pasada: dominioPasada, cola: dominioCola, umbral: dominioUmbral },
+            'Los topes de visión difieren entre `domain` y `functions`: la interfaz y el servidor ' +
+            'van a discrepar sobre si un archivo se puede leer.',
+        ).toEqual({ pasada: funcPasada, cola: funcCola, umbral: funcUmbral });
     });
 });

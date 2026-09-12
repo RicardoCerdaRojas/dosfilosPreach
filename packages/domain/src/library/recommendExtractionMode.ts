@@ -42,8 +42,59 @@ import type { RequiredScript } from '../entities/extractionHealth';
  * sin error y se cita.
  */
 
-/** Tope real de la ruta estándar para subir el archivo al modelo. */
+/**
+ * Tope de la ruta estándar cuando el libro se lee en UNA sola invocación.
+ *
+ * Es el límite de subir el archivo COMPLETO al modelo, que es lo que hace el
+ * camino de una pasada: por encima de esto la subida falla y la cascada cae a
+ * `pdf-parse`, que lee la capa de texto embebida. En un escaneo esa capa no
+ * existe o es basura de OCR ajeno —un PDF de la BHS de 67 MB devolvía
+ * «0"'m1 nin~' bnnElid1»— y entra al corpus sin error y se cita.
+ */
 export const VISION_MAX_BYTES = 50 * 1024 * 1024;
+
+/**
+ * Tope de la ruta estándar cuando el libro se recorre EN COLA.
+ *
+ * Mucho más alto porque el archivo completo **nunca se sube**: cada tarea
+ * recorta su rango con pdf-lib y manda sólo esa rebanada. Medido sobre el
+ * fascículo BHQ de los Doce Profetas, 94 MB y 315 páginas:
+ *
+ *     cargar con pdf-lib     instantáneo
+ *     memoria (RSS)          237 MB   de los 2 GiB de la función
+ *     recorte de 30 páginas  9,9 MB   ← lo único que ve el modelo
+ *
+ * O sea que el tope de 50 MB protegía de algo que en este camino ya no ocurre.
+ * El límite verdadero pasa a ser la memoria al abrir el archivo, ~2,5 veces su
+ * tamaño; 300 MB deja el pico bien por debajo de los 2 GiB.
+ *
+ * El costo que sí crece: cada rango vuelve a descargar el archivo entero. Para
+ * BHQ son ~11 descargas de 94 MB. Se acepta porque la alternativa es no poder
+ * leer el libro.
+ */
+export const VISION_MAX_BYTES_EN_COLA = 300 * 1024 * 1024;
+
+/**
+ * Desde cuántas páginas el libro se recorre en cola en vez de una pasada.
+ *
+ * Duplicado a propósito de `BATCH_THRESHOLD_PAGES` en `packages/functions`,
+ * que no puede importar este paquete (ADR-025). Un invariante en las pruebas
+ * de functions compara los dos números: dos copias que deben coincidir y nadie
+ * compara terminan no coincidiendo.
+ */
+export const PAGINAS_PARA_LA_COLA = 80;
+
+/**
+ * Cuánto puede pesar un archivo para que la ruta estándar lo lea.
+ *
+ * Depende de POR DÓNDE va a ir, no sólo de su tamaño: el camino de una pasada
+ * sube el archivo completo y el de la cola sube rebanadas. Sin el número de
+ * páginas no se puede saber, y se contesta con el tope conservador.
+ */
+export function topeDeVisionPara(pageCount?: number | null): number {
+    if (!pageCount || !Number.isFinite(pageCount)) return VISION_MAX_BYTES;
+    return pageCount > PAGINAS_PARA_LA_COLA ? VISION_MAX_BYTES_EN_COLA : VISION_MAX_BYTES;
+}
 /** Tope de la ruta premium. */
 export const PREMIUM_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -82,6 +133,14 @@ const MIN_LETRAS_EN_MUESTRA = 20;
 
 export function recommendExtractionMode(input: {
     sizeBytes: number;
+    /**
+     * Cuántas páginas tiene el archivo.
+     *
+     * Decide qué tope de tamaño aplica: un libro largo va por la cola, que no
+     * sube el archivo completo, y por eso tolera mucho más peso. Sin este dato
+     * se usa el tope conservador.
+     */
+    pageCount?: number | null;
     diagnosis: PdfDiagnosis | null;
     /** Escritura que el libro necesita, deducida de su título y su tipo. */
     requiredScripts?: ReadonlyArray<RequiredScript>;
@@ -89,6 +148,7 @@ export function recommendExtractionMode(input: {
     evidence?: Pick<PdfEvidence, 'greekLetters' | 'hebrewLetters'> | null;
 }): ModeRecommendation {
     const { sizeBytes, diagnosis } = input;
+    const topeDeVision = topeDeVisionPara(input.pageCount);
 
     if (sizeBytes > PREMIUM_MAX_BYTES) {
         return { recommended: null, reasonKey: 'over-every-cap', strong: true };
@@ -101,8 +161,11 @@ export function recommendExtractionMode(input: {
     const esEscaneo = diagnosis.verdict === 'sin-capa-de-texto';
 
     if (esEscaneo) {
-        // Cabe en visión: es el único camino que LEE la imagen.
-        if (sizeBytes <= VISION_MAX_BYTES) {
+        // Cabe en visión: es el único camino que LEE la imagen. El tope
+        // depende de por dónde irá — en cola el archivo completo no se sube—, y
+        // por eso el fascículo BHQ de 94 MB pasó de «ninguna ruta sirve» a
+        // poder leerse.
+        if (sizeBytes <= topeDeVision) {
             return { recommended: 'standard', reasonKey: 'scan-fits-vision', strong: true };
         }
         // No cabe. Premium lo acepta pero sobre un escaneo en escritura no
@@ -115,7 +178,7 @@ export function recommendExtractionMode(input: {
     // Los glifos se dibujan bien y sus códigos apuntan a letras latinas. La
     // capa NO sirve, y Premium es justamente el motor que la lee.
     if (diagnosis.verdict === 'escritura-ausente') {
-        return sizeBytes <= VISION_MAX_BYTES
+        return sizeBytes <= topeDeVision
             ? { recommended: 'standard', reasonKey: 'layer-garbled', strong: true }
             // No entra en visión, y las otras dos rutas leen justamente esa capa.
             // Cambiar de motor no arregla nada: hay que partir el archivo.
@@ -133,7 +196,7 @@ export function recommendExtractionMode(input: {
             script === 'hebrew' ? evidence.hebrewLetters : evidence.greekLetters
         ) < MIN_LETRAS_EN_MUESTRA);
         if (falta) {
-            return sizeBytes <= VISION_MAX_BYTES
+            return sizeBytes <= topeDeVision
                 ? { recommended: 'standard', reasonKey: 'layer-missing-script', strong: true }
                 : { recommended: null, reasonKey: 'layer-too-large', strong: true };
         }
