@@ -23,6 +23,14 @@ export type ExtractionVersion =
     | '4.0-gemini-standard'
     | '5.0-pdfparse-structured'
     /**
+     * Extracción por visión recorrida en COLA: un rango de páginas por
+     * invocación, encadenadas. Lleva versión propia porque el resultado no se
+     * obtuvo igual que `4.0-gemini-standard` —que lo hace todo dentro de una
+     * sola invocación y por eso no puede con libros largos—, y este campo
+     * registra CÓMO se obtuvo el texto.
+     */
+    | '6.0-gemini-cola'
+    /**
      * Obras de dominio público ingeridas desde ThML (el XML de CCEL). NO
      * pasan por extracción: el texto llega ya estructurado y anclado al
      * pasaje por los elementos `<scripCom>` de la fuente, y el conversor
@@ -53,6 +61,7 @@ export const STRUCTURED_EXTRACTION_VERSIONS: readonly ExtractionVersion[] = [
     '4.0-gemini-standard',
     '5.0-pdfparse-structured',
     '6.0-thml-public-domain',
+    '6.0-gemini-cola',
 ] as const;
 
 /**
