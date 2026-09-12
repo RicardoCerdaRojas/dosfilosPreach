@@ -135,6 +135,7 @@
   "status": {
     "pending": "Queued",
     "processing": "Processing…",
+    "processingProgress": "Processing {{porcentaje}}% · {{hechas}} of {{total}} pages",
     "failed": "Processing error",
     "verifying": "Verifying",
     "indexing": "Indexing…",
@@ -362,7 +363,7 @@
     "retryIndexingError_one": "Couldn't index {{count}} resource. Try again in a few minutes.",
     "retryIndexingError_other": "Couldn't index {{count}} resources. Try again in a few minutes.",
     "reextractLoading": "Reading the pages as images…",
-    "reextractSuccess": "Done. Process the resource again so the index picks up the new text.",
+    "reextractSuccess": "Started reading the pages as images. A long book takes a while; the card shows the progress.",
     "reextractNoBalance": "Not enough standard pages to re-extract this document.",
     "reextractDenied": "This resource is not yours.",
     "reextractError": "Could not re-extract. Check that the file is still available."

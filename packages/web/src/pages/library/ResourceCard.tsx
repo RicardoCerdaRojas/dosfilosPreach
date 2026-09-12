@@ -377,7 +377,7 @@ export function ResourceCard({
             title={statusTooltip}
         >
             <StatusIcon className={cn('h-3 w-3', statusPill.iconClass)} />
-            {t(statusPill.textKey)}
+            {t(statusPill.textKey, statusPill.textValues)}
         </span>
     ) : null;
 

@@ -16,6 +16,14 @@ export interface ResourceStatusPill {
     iconClass: string;
     /** Clave de i18n del namespace `library`. */
     textKey: string;
+    /**
+     * Valores para interpolar en `textKey`.
+     *
+     * Existe por la extracción en cola: un libro largo puede pasar más de una
+     * hora en `processing`, y «Procesando…» a secas es indistinguible de estar
+     * colgado. Con el avance real la espera deja de parecer una falla.
+     */
+    textValues?: Record<string, string | number>;
 }
 
 /**
@@ -31,14 +39,32 @@ export interface ResourceStatusPill {
  * `ResourceCard` ya estaba muy por encima del límite de tamaño.
  */
 export function resolveResourceStatusPill(
-    resource: Pick<LibraryResourceEntity, 'textExtractionStatus' | 'indexingWarning'>,
+    resource: Pick<LibraryResourceEntity, 'textExtractionStatus' | 'indexingWarning' | 'extractionProgress'>,
     indexStatus: IndexStatus,
 ): ResourceStatusPill | null {
     switch (resource.textExtractionStatus) {
         case 'pending':
             return { tone: 'bg-muted text-muted-foreground', icon: Loader2, iconClass: '', textKey: 'status.pending' };
-        case 'processing':
-            return { tone: 'bg-info-subtle text-info-subtle-foreground', icon: Loader2, iconClass: 'animate-spin', textKey: 'status.processing' };
+        case 'processing': {
+            const avance = resource.extractionProgress;
+            const base = { tone: 'bg-info-subtle text-info-subtle-foreground', icon: Loader2, iconClass: 'animate-spin' };
+            // Sin avance —la ruta de una sola pasada, o el instante entre
+            // encolar y el primer rango— se dice lo de siempre. Inventar un 0%
+            // ahí sería peor: un progreso que no se mueve asusta más que
+            // ninguno.
+            if (!avance || !avance.totalPaginas) {
+                return { ...base, textKey: 'status.processing' };
+            }
+            return {
+                ...base,
+                textKey: 'status.processingProgress',
+                textValues: {
+                    porcentaje: avance.porcentaje,
+                    hechas: avance.paginasHechas,
+                    total: avance.totalPaginas,
+                },
+            };
+        }
         case 'failed':
             return { tone: 'bg-destructive/10 text-destructive', icon: AlertCircle, iconClass: '', textKey: 'status.failed' };
         case 'ready':

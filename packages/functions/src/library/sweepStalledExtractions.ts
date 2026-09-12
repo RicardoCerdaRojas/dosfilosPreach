@@ -33,6 +33,19 @@ export const STALLED_AFTER_SECONDS = 1200;
 export interface StalledCandidate {
     processingStartedAt?: Date | null;
     updatedAt?: Date | null;
+    /**
+     * Último avance real de una extracción en cola.
+     *
+     * La extracción larga dejó de ser una invocación: es una CADENA de tareas
+     * que puede durar más de una hora —un diccionario de 1 006 páginas son ~25
+     * rangos de ~200 s—. El supuesto de arriba («la invocación más larga son
+     * 900 s») deja de valer, y juzgar por la hora de ARRANQUE mataría a los
+     * veinte minutos un trabajo que avanza bien.
+     *
+     * Lo que distingue vivo de muerto pasa a ser cuándo avanzó por última vez.
+     * Cada rango escribe este campo al empezar y al terminar.
+     */
+    extractionHeartbeatAt?: Date | null;
 }
 
 /**
@@ -47,9 +60,15 @@ export function isStalledExtraction(
     now: Date,
     staleAfterSeconds: number = STALLED_AFTER_SECONDS,
 ): boolean {
-    const startedAt = candidate.processingStartedAt ?? candidate.updatedAt ?? null;
-    if (!startedAt) return false;
-    const ageSeconds = (now.getTime() - startedAt.getTime()) / 1000;
+    // El latido manda cuando existe: dice «alguien avanzó hace poco», que es lo
+    // que de verdad queremos preguntar. La hora de arranque queda como respaldo
+    // para los recursos anteriores a la cola, que no laten.
+    const referencia = candidate.extractionHeartbeatAt
+        ?? candidate.processingStartedAt
+        ?? candidate.updatedAt
+        ?? null;
+    if (!referencia) return false;
+    const ageSeconds = (now.getTime() - referencia.getTime()) / 1000;
     return ageSeconds > staleAfterSeconds;
 }
 
@@ -87,15 +106,21 @@ export const sweepStalledExtractions = onSchedule(
             const candidate: StalledCandidate = {
                 processingStartedAt: toDate(data.processingStartedAt),
                 updatedAt: toDate(data.updatedAt),
+                extractionHeartbeatAt: toDate(data.extractionHeartbeatAt),
             };
             if (!isStalledExtraction(candidate, now)) continue;
 
-            const startedAt = candidate.processingStartedAt ?? candidate.updatedAt;
-            const minutos = startedAt
-                ? Math.round((now.getTime() - startedAt.getTime()) / 60000)
+            // Se informa el silencio, no la edad: con la cola, un libro puede
+            // llevar 80 minutos en `processing` y estar perfectamente vivo. Lo
+            // que lo condena es que nadie avanzó en el último rato.
+            const ultimoAvance = candidate.extractionHeartbeatAt
+                ?? candidate.processingStartedAt
+                ?? candidate.updatedAt;
+            const minutos = ultimoAvance
+                ? Math.round((now.getTime() - ultimoAvance.getTime()) / 60000)
                 : null;
             console.warn(
-                `🧹 [Sweep] ${doc.id} ("${data.title ?? 'sin título'}") lleva ${minutos ?? '?'} min en 'processing'; se marca 'failed'`,
+                `🧹 [Sweep] ${doc.id} ("${data.title ?? 'sin título'}") lleva ${minutos ?? '?'} min sin avanzar; se marca 'failed'`,
             );
 
             await doc.ref.update({

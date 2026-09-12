@@ -63,7 +63,7 @@ interface UsoConRazonamiento {
  * Single PDF page as Gemini returned it. Same shape as `LlamaParsePage`
  * so the formatters downstream work without branching by engine.
  */
-interface GeminiPage {
+export interface GeminiPage {
     page: number;
     text: string;
     md?: string;
@@ -73,7 +73,7 @@ interface GeminiPage {
  * Lo que una lectura limpia deja para calibrar el resto del libro: cuántos
  * tokens produjo y sobre cuántas páginas.
  */
-interface MuestraDeDensidad {
+export interface MuestraDeDensidad {
     tokensDeSalida: number;
     paginas: number;
 }
@@ -305,6 +305,37 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     }
 
     return { pages, tokensDeSalida };
+}
+
+/**
+ * Lee UN rango de páginas de un PDF ya descargado, para la extracción en cola.
+ *
+ * `extractWithGemini` recorre el libro entero dentro de una invocación. Eso
+ * funciona hasta las ~170 páginas y después choca con el tope de la función: un
+ * diccionario de 1 006 páginas necesita ~25 rangos y ninguna invocación dura
+ * tanto. La cola parte ese recorrido en tareas de una tarea por rango, y cada
+ * una entra acá con lo suyo.
+ *
+ * Devuelve también los tokens que produjo, que es lo que permite a la PRIMERA
+ * tarea calibrar el tamaño del resto (ver `calibrarTanda`) y pasárselo a la
+ * siguiente por la carga de la tarea.
+ */
+export async function extraerRangoDelPdf(
+    rutaDelPdf: string,
+    resourceId: string,
+    apiKey: string,
+    desde: number,
+    hasta: number,
+    opciones: { userId?: string; laSiguienteRelee: boolean },
+): Promise<{ paginas: GeminiPage[]; muestra: MuestraDeDensidad | null }> {
+    const sourceDoc = await PDFDocument.load(fs.readFileSync(rutaDelPdf));
+    // La muestra viaja entera —tokens Y páginas— porque calibrar necesita las
+    // dos: el tamaño sale de los tokens POR PÁGINA, y devolver sólo el total
+    // obligaría al llamador a suponer sobre cuántas se midió.
+    return leerRangoPartiendoSiNoEntra(
+        sourceDoc, desde, hasta, resourceId, apiKey, opciones.userId,
+        `${desde}-${hasta}`, opciones.laSiguienteRelee,
+    );
 }
 
 /**

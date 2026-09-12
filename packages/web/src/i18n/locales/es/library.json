@@ -135,6 +135,7 @@
   "status": {
     "pending": "En cola",
     "processing": "Procesando…",
+    "processingProgress": "Procesando {{porcentaje}}% · {{hechas}} de {{total}} págs",
     "failed": "Error al procesar",
     "verifying": "Verificando",
     "indexing": "Indexando…",
@@ -362,7 +363,7 @@
     "retryIndexingError_one": "No se pudo indexar {{count}} recurso. Vuelve a intentarlo en unos minutos.",
     "retryIndexingError_other": "No se pudieron indexar {{count}} recursos. Vuelve a intentarlo en unos minutos.",
     "reextractLoading": "Leyendo las páginas como imagen…",
-    "reextractSuccess": "Listo. Hay que volver a procesar el recurso para que el índice tome el texto nuevo.",
+    "reextractSuccess": "Empezamos a leer las páginas como imagen. Un libro largo tarda un rato; el avance se ve en la tarjeta.",
     "reextractNoBalance": "No te alcanzan las páginas estándar para volver a extraer este documento.",
     "reextractDenied": "Este recurso no es tuyo.",
     "reextractError": "No se pudo volver a extraer. Revisá que el archivo siga disponible."
