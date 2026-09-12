@@ -21,6 +21,16 @@ const COLA = 'locations/us-central1/functions/extractRangeTask';
 export interface CargaDeRango {
     resourceId: string;
     runId: string;
+    /**
+     * Cuántas páginas tiene el libro.
+     *
+     * Viaja en la CARGA y no se lee del documento. `pageCount` se escribe al
+     * TERMINAR la extracción, así que en una subida nueva todavía no existe: la
+     * tarea leía `null`, `siguienteRango` no podía calcular nada, la cadena
+     * terminaba tras el primer rango y el libro quedaba certificado con 24 de
+     * sus 392 páginas. Quien encola sí sabe el total — se lo pasa.
+     */
+    totalPaginas: number;
     desde: number;
     hasta: number;
     tamano: number;
@@ -95,9 +105,9 @@ export const extractRangeTask = onTaskDispatched(
     },
     async (req) => {
         const carga = req.data as CargaDeRango;
-        const { resourceId, runId, desde, hasta, tamano } = carga ?? {};
+        const { resourceId, runId, desde, hasta, tamano, totalPaginas } = carga ?? {};
         const densidadPrevia = carga?.densidadMaxima ?? null;
-        if (!resourceId || !runId || !desde || !hasta) {
+        if (!resourceId || !runId || !desde || !hasta || !totalPaginas) {
             console.error('[Rango] carga incompleta; se descarta', carga);
             return;
         }
@@ -124,7 +134,6 @@ export const extractRangeTask = onTaskDispatched(
         }
 
         const userId: string = data.userId;
-        const totalPaginas: number = data.pageCount;
         const rango: Rango = { desde, hasta };
         const etiqueta = `${desde}-${hasta}`;
 
@@ -208,7 +217,7 @@ export const extractRangeTask = onTaskDispatched(
 
         if (siguiente) {
             await encolarRango({
-                resourceId, runId,
+                resourceId, runId, totalPaginas,
                 desde: siguiente.desde, hasta: siguiente.hasta,
                 tamano: tamanoParaElResto,
                 densidadMaxima: densidadParaElResto,

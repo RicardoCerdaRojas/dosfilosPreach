@@ -46,7 +46,18 @@ export function verificarCobertura(
     paginas: ReadonlyArray<{ page: number }>,
     esperadas: number,
 ): { ok: true } | { ok: false; motivo: string } {
-    if (esperadas <= 0) return { ok: true };
+    // NO SABER cuántas páginas esperar no es una razón para certificar. Esta
+    // línea decía `if (esperadas <= 0) return { ok: true }`, y `null <= 0` es
+    // `true` en JavaScript: el 12-09-2026 un comentario de 392 páginas quedó
+    // dado por bueno con 24, porque el total llegó `null` a quien ensambla y el
+    // guard lo leyó como «no hay nada que comprobar».
+    //
+    // Un guard que ante la duda aprueba no es un guard. Ante la duda se niega:
+    // este corpus se cita, y un libro con el 6% de su contenido entrando como
+    // completo es peor que una extracción que falla y se reintenta.
+    if (!Number.isFinite(esperadas) || esperadas <= 0) {
+        return { ok: false, motivo: 'no se sabe cuántas páginas debía tener el documento' };
+    }
     if (paginas.length === 0) return { ok: false, motivo: 'no volvió ninguna página' };
 
     const cobertura = paginas.length / esperadas;

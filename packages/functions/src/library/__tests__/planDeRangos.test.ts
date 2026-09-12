@@ -125,3 +125,33 @@ describe('nombreDeRango', () => {
         expect(nombreDeRango({ desde: 41, hasta: 83 })).toBe('41-83.json');
     });
 });
+
+/**
+ * El total de páginas tiene que VIAJAR con la tarea, no leerse del documento.
+ *
+ * Defecto del 12-09-2026: la tarea de rango leía `pageCount` del recurso, pero
+ * ese campo se escribe al TERMINAR la extracción — en una subida nueva todavía
+ * no existe. La tarea recibió `null`:
+ *
+ *     ⛓️ [Cola] …: 392 páginas en cola (~19 rangos)
+ *     📦 [Rango] …: páginas 1-24 de null
+ *     🧩 [Rango] …: 24 páginas de 1 rangos — listo
+ *
+ * Un comentario de 392 páginas quedó certificado con 24. Quien encola SÍ sabía
+ * el total; simplemente no se lo pasaba.
+ */
+describe('un total ausente no puede parecer un libro terminado', () => {
+    it('sin total, la cadena no puede calcular su siguiente paso', () => {
+        // Esto es lo que hacía que la cadena terminara tras el primer rango.
+        expect(siguienteRango(24, 48, null as unknown as number)).toBeNull();
+        expect(siguienteRango(24, 48, undefined as unknown as number)).toBeNull();
+    });
+
+    it('con el total correcto, la cadena sigue hasta el final', () => {
+        // El mismo caso real, con el total que sí debía llegar.
+        const plan = planDeRangos(392, 48);
+        expect(plan.length).toBeGreaterThan(1);
+        expect(plan[plan.length - 1]!.hasta).toBe(392);
+        expect(siguienteRango(24, 48, 392)).not.toBeNull();
+    });
+});
