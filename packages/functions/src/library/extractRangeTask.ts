@@ -6,9 +6,18 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { extraerRangoDelPdf } from './geminiExtraction';
-import { densidadDe, densidadDeReferencia, tamanoParaDensidad } from './calibrarTanda';
-import { siguienteRango, planDeRangos, type Rango } from './planDeRangos';
-import { rutaDeRango, porcentajeDeAvance } from './corridaDeExtraccion';
+
+
+import { rutaDeRango } from './corridaDeExtraccion';
+import {
+    procesarRango,
+    type CargaDeRango,
+    type PuertasDeRango,
+} from './procesarRango';
+
+// `CargaDeRango` se define junto a la orquestación y se reexporta acá porque
+// es el contrato de la cola: quien encola lo importa desde la tarea.
+export type { CargaDeRango };
 import { ensamblarDesdeRangos, limpiarRangos } from './ensamblarExtraccion';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { truncateUtf8 } from './truncateUtf8';
@@ -17,33 +26,6 @@ import { consumePagesAdmin } from './processingBalance';
 export const EXTRACTION_VERSION = '6.0-gemini-cola';
 const FIRESTORE_TEXT_LIMIT_BYTES = 900_000;
 const COLA = 'locations/us-central1/functions/extractRangeTask';
-
-export interface CargaDeRango {
-    resourceId: string;
-    runId: string;
-    /**
-     * Cuántas páginas tiene el libro.
-     *
-     * Viaja en la CARGA y no se lee del documento. `pageCount` se escribe al
-     * TERMINAR la extracción, así que en una subida nueva todavía no existe: la
-     * tarea leía `null`, `siguienteRango` no podía calcular nada, la cadena
-     * terminaba tras el primer rango y el libro quedaba certificado con 24 de
-     * sus 392 páginas. Quien encola sí sabe el total — se lo pasa.
-     */
-    totalPaginas: number;
-    desde: number;
-    hasta: number;
-    tamano: number;
-    /**
-     * Densidad más alta (tokens por página) vista hasta aquí en este libro.
-     *
-     * Viaja entre tareas porque la cadena no tiene otra memoria: cada tarea
-     * nace sabiendo sólo lo que le pasaron. Sin esto, cada rango calibraría
-     * contra su propio tramo y un capítulo liviano volvería a agrandar la
-     * tanda justo antes de un tramo denso.
-     */
-    densidadMaxima?: number | null;
-}
 
 /** Encola un rango. Se usa desde el callable que arranca y desde esta misma tarea. */
 export async function encolarRango(carga: CargaDeRango): Promise<void> {
@@ -105,132 +87,119 @@ export const extractRangeTask = onTaskDispatched(
     },
     async (req) => {
         const carga = req.data as CargaDeRango;
-        const { resourceId, runId, desde, hasta, tamano, totalPaginas } = carga ?? {};
-        const densidadPrevia = carga?.densidadMaxima ?? null;
-        if (!resourceId || !runId || !desde || !hasta || !totalPaginas) {
-            console.error('[Rango] carga incompleta; se descarta', carga);
-            return;
-        }
-
-        const db = getFirestore();
-        const ref = db.collection('library_resources').doc(resourceId);
-        const snap = await ref.get();
-        if (!snap.exists) {
-            console.error(`[Rango] ${resourceId}: el recurso ya no existe; se descarta`);
-            return;
-        }
-        const data = snap.data()!;
-
-        // Una corrida vieja no debe seguir escribiendo sobre una nueva.
-        if (data.extractionRunId !== runId) {
-            console.log(`[Rango] ${resourceId}: corrida ${runId} ya no es la vigente; se retira`);
-            return;
-        }
-
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            console.error(`[Rango] ${resourceId}: falta GEMINI_API_KEY`);
+            console.error(`[Rango] ${carga?.resourceId}: falta GEMINI_API_KEY`);
             throw new Error('falta GEMINI_API_KEY');
         }
 
-        const userId: string = data.userId;
-        const rango: Rango = { desde, hasta };
-        const etiqueta = `${desde}-${hasta}`;
+        const resultado = await procesarRango(puertasReales(apiKey), carga);
 
-        await ref.update({ extractionHeartbeatAt: FieldValue.serverTimestamp() });
-
-        const bucket = getStorage().bucket();
-        const destino = bucket.file(rutaDeRango(userId, resourceId, runId, rango));
-
-        let tamanoParaElResto = tamano;
-        let densidadParaElResto = densidadPrevia;
-
-        const [yaEstaba] = await destino.exists();
-        if (yaEstaba) {
-            // Reintento de una tarea que ya había terminado su parte. Volver a
-            // leerlo costaría ~200 s y una llamada al modelo, por nada.
-            console.log(`[Rango] ${resourceId} ${etiqueta}: ya estaba escrito; se salta la lectura`);
-        } else {
-            const { bucket: nombreBucket, path: rutaPdf } = parseFirebaseStorageLocation(
-                data.storageUrl || '', bucket.name,
+        if (resultado.estado === 'descartado') {
+            console.log(`[Rango] ${carga?.resourceId}: ${resultado.motivo}; se retira`);
+        } else if (resultado.estado === 'siguiente') {
+            console.log(
+                `⛓️ [Rango] ${carga.resourceId}: encolado ${resultado.rango.desde}-${resultado.rango.hasta}` +
+                ` (de a ${resultado.tamano})`,
             );
-            const temporal = path.join(os.tmpdir(), `${resourceId}-${runId}-${etiqueta}.pdf`);
+        }
+        // Un error de las puertas se propaga a propósito: es lo que hace que
+        // Cloud Tasks reintente, y la idempotencia evita repetir lo ya hecho.
+    },
+);
+
+/**
+ * Las puertas contra la nube de verdad.
+ *
+ * La orquestación vive en `procesarRango`, que no conoce Firestore ni Storage.
+ * Esto es el adaptador: lo único que hace es traducir cada operación a su
+ * servicio. Se separaron porque los dos defectos que rompieron la extracción en
+ * cola estaban en el cableado y no en las piezas, y mientras todo esto viviera
+ * dentro del cuerpo del disparador no había forma de recorrerlo sin la
+ * plataforma.
+ */
+function puertasReales(apiKey: string): PuertasDeRango {
+    const db = getFirestore();
+    const refDe = (id: string) => db.collection('library_resources').doc(id);
+
+    return {
+        async leerRecurso(resourceId) {
+            const snap = await refDe(resourceId).get();
+            if (!snap.exists) return null;
+            const d = snap.data()!;
+            return { userId: d.userId, extractionRunId: d.extractionRunId };
+        },
+
+        async latir(resourceId) {
+            await refDe(resourceId).update({ extractionHeartbeatAt: FieldValue.serverTimestamp() });
+        },
+
+        async rangoYaEscrito(recurso, carga, rango) {
+            const ruta = rutaDeRango(recurso.userId, carga.resourceId, carga.runId, rango);
+            const [existe] = await getStorage().bucket().file(ruta).exists();
+            if (existe) {
+                console.log(`[Rango] ${carga.resourceId} ${rango.desde}-${rango.hasta}: ya estaba escrito; se salta la lectura`);
+            }
+            return existe;
+        },
+
+        async extraerRango(recurso, carga, rango, laSiguienteRelee) {
+            const snap = await refDe(carga.resourceId).get();
+            const { bucket: nombreBucket, path: rutaPdf } = parseFirebaseStorageLocation(
+                snap.data()?.storageUrl || '', getStorage().bucket().name,
+            );
+            const temporal = path.join(
+                os.tmpdir(), `${carga.resourceId}-${carga.runId}-${rango.desde}-${rango.hasta}.pdf`,
+            );
             await getStorage().bucket(nombreBucket).file(rutaPdf).download({ destination: temporal });
-
             try {
-                console.log(`📦 [Rango] ${resourceId}: páginas ${etiqueta} de ${totalPaginas}`);
-                const { paginas, muestra } = await extraerRangoDelPdf(
-                    temporal, resourceId, apiKey, desde, hasta,
-                    { userId, laSiguienteRelee: hasta < totalPaginas },
+                console.log(
+                    `📦 [Rango] ${carga.resourceId}: páginas ${rango.desde}-${rango.hasta} de ${carga.totalPaginas}`,
                 );
-
-                await destino.save(JSON.stringify(paginas), {
-                    contentType: 'application/json; charset=utf-8',
-                    metadata: { resourceId, runId, rango: etiqueta },
-                });
-                console.log(`✅ [Rango] ${resourceId} ${etiqueta}: ${paginas.length} páginas guardadas`);
-
-                // La densidad se remide en CADA rango, no sólo en el primero.
-                // Medido sobre Sasson al subirlo: sus primeras 24 páginas
-                // —portadilla, créditos, índice— dieron 611 tokens/página y el
-                // cuerpo del libro mide 1 555. Calibrar una sola vez con ese
-                // arranque fijó 48 páginas por tanda y el tercer rango se
-                // estrelló contra el tope.
-                const referencia = densidadDeReferencia(
-                    densidadPrevia,
-                    muestra ? densidadDe(muestra.tokensDeSalida, muestra.paginas) : null,
+                return await extraerRangoDelPdf(
+                    temporal, carga.resourceId, apiKey, rango.desde, rango.hasta,
+                    { userId: recurso.userId, laSiguienteRelee },
                 );
-                if (referencia !== null && referencia !== densidadPrevia) {
-                    densidadParaElResto = referencia;
-                    const nuevo = tamanoParaDensidad(referencia);
-                    if (nuevo !== tamanoParaElResto) {
-                        console.log(
-                            `📐 [Rango] ${resourceId}: ${Math.round(referencia)} tokens/página ` +
-                            `(el tramo más denso visto); el resto va de a ${nuevo}`,
-                        );
-                        tamanoParaElResto = nuevo;
-                    }
-                    // Se guarda AHORA y no al final: un corte por tiempo perdía
-                    // también lo medido, y el reintento volvía a arrancar
-                    // conservador.
-                    await ref.update({ paginasPorTanda: tamanoParaElResto });
-                }
             } finally {
                 try { fs.unlinkSync(temporal); } catch { /* el temporal ya no importa */ }
             }
-        }
+        },
 
-        const siguiente = siguienteRango(hasta, tamanoParaElResto, totalPaginas);
-        const plan = planDeRangos(totalPaginas, tamanoParaElResto);
-
-        await ref.update({
-            extractionHeartbeatAt: FieldValue.serverTimestamp(),
-            extractionProgress: {
-                paginasHechas: hasta,
-                totalPaginas,
-                porcentaje: porcentajeDeAvance({ paginasHechas: hasta, totalPaginas }),
-                ultimoRango: etiqueta,
-                rangosEstimados: plan.length,
-            },
-            updatedAt: new Date(),
-        });
-
-        if (siguiente) {
-            await encolarRango({
-                resourceId, runId, totalPaginas,
-                desde: siguiente.desde, hasta: siguiente.hasta,
-                tamano: tamanoParaElResto,
-                densidadMaxima: densidadParaElResto,
+        async guardarRango(recurso, carga, rango, paginas) {
+            const ruta = rutaDeRango(recurso.userId, carga.resourceId, carga.runId, rango);
+            await getStorage().bucket().file(ruta).save(JSON.stringify(paginas), {
+                contentType: 'application/json; charset=utf-8',
+                metadata: { resourceId: carga.resourceId, runId: carga.runId, rango: `${rango.desde}-${rango.hasta}` },
             });
-            console.log(`⛓️ [Rango] ${resourceId}: encolado ${siguiente.desde}-${siguiente.hasta}`);
-            return;
-        }
+            console.log(
+                `✅ [Rango] ${carga.resourceId} ${rango.desde}-${rango.hasta}: ${paginas.length} páginas guardadas`,
+            );
+        },
 
-        // Último rango: quien acaba de ver que no hay siguiente es quien sabe
-        // que el libro está completo.
-        await terminar(ref, userId, resourceId, runId, totalPaginas, data.userId);
-    },
-);
+        async guardarTamano(resourceId, tamano) {
+            console.log(`📐 [Rango] ${resourceId}: el resto va de a ${tamano} páginas`);
+            await refDe(resourceId).update({ paginasPorTanda: tamano });
+        },
+
+        async guardarAvance(resourceId, avance) {
+            await refDe(resourceId).update({
+                extractionHeartbeatAt: FieldValue.serverTimestamp(),
+                extractionProgress: avance,
+                updatedAt: new Date(),
+            });
+        },
+
+        encolar: encolarRango,
+
+        async terminar(recurso, carga) {
+            const snap = await refDe(carga.resourceId).get();
+            await ensamblarYGuardar(
+                refDe(carga.resourceId), recurso.userId, carga.resourceId,
+                carga.runId, carga.totalPaginas, snap.data()!.userId,
+            );
+        },
+    };
+}
 
 /**
  * Ensambla, guarda y deja el recurso listo.
@@ -239,7 +208,7 @@ export const extractRangeTask = onTaskDispatched(
  * motivo y **los rangos NO se borran**: un reintento los reusa por
  * idempotencia, en vez de volver a pagar el libro entero.
  */
-async function terminar(
+async function ensamblarYGuardar(
     ref: FirebaseFirestore.DocumentReference,
     userId: string,
     resourceId: string,
