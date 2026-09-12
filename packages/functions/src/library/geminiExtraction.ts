@@ -14,7 +14,9 @@ import {
     PRESUPUESTO_SALIDA,
     TANDA_INICIAL,
     OVERLAP_PAGES,
-    calibrarPaginasPorTanda,
+    densidadDe,
+    densidadDeReferencia,
+    tamanoParaDensidad,
 } from './calibrarTanda';
 
 // ── Batched Gemini extraction ───────────────────────────────────────────
@@ -480,11 +482,16 @@ async function extractWithGeminiBatched(
     const actualPages = sourceDoc.getPageCount();
 
     let tamano = opciones.paginasPorTanda ?? TANDA_INICIAL;
-    let faltaCalibrar = opciones.paginasPorTanda === undefined;
+    // La densidad se remide en CADA tanda, no sólo en la primera. El principio
+    // de un libro son portadilla, créditos e índice: medido sobre el comentario
+    // de Sasson, sus primeras 24 páginas dieron 611 tokens/página y su cuerpo
+    // mide 1 555. Calibrar una sola vez con ese arranque fijaba un tamaño que
+    // el libro no sostenía, y la tercera tanda se estrellaba.
+    let densidadMaxima: number | null = null;
 
     console.log(
         `🪓 [Gemini Batched] ${actualPages} páginas; primera tanda de ${tamano}` +
-        `${faltaCalibrar ? ' (a calibrar con lo que devuelva)' : ' (tamaño ya medido antes)'}`,
+        `${opciones.paginasPorTanda ? ' (tamaño ya medido antes)' : ' (se remide en cada tanda)'}`,
     );
 
     const allPages: GeminiPage[] = [];
@@ -508,16 +515,20 @@ async function extractWithGeminiBatched(
         allPages.push(...paginas);
         console.log(`✅ [Gemini Batched] Tanda ${etiqueta} devolvió ${paginas.length} páginas`);
 
-        if (faltaCalibrar && muestra) {
-            const calibrado = calibrarPaginasPorTanda(muestra.tokensDeSalida, muestra.paginas);
-            if (calibrado !== null) {
-                const porPagina = Math.round(muestra.tokensDeSalida / muestra.paginas);
+        const referencia = densidadDeReferencia(
+            densidadMaxima,
+            muestra ? densidadDe(muestra.tokensDeSalida, muestra.paginas) : null,
+        );
+        if (referencia !== null && referencia !== densidadMaxima) {
+            densidadMaxima = referencia;
+            const nuevo = tamanoParaDensidad(referencia);
+            if (nuevo !== tamano) {
                 console.log(
-                    `📐 [Gemini Batched] ${porPagina} tokens/página medidos; el resto va de a ${calibrado} páginas`,
+                    `📐 [Gemini Batched] ${Math.round(referencia)} tokens/página (el tramo más denso visto); ` +
+                    `el resto va de a ${nuevo} páginas`,
                 );
-                tamano = calibrado;
+                tamano = nuevo;
             }
-            faltaCalibrar = false;
         }
 
         if (esLaUltima) break;

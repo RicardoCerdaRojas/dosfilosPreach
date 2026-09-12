@@ -7,7 +7,8 @@ import * as path from 'path';
 import { LlamaParseClient, pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { recordLlamaParseUsage, selectAllLlamaParseAccounts, type SelectedLlamaParseAccount } from './llamaParseAccountSelector';
 import { consumePagesAdmin, type ProcessingMode } from './processingBalance';
-import { extractWithGemini } from './geminiExtraction';
+import { extractWithGemini, BATCH_THRESHOLD_PAGES } from './geminiExtraction';
+import { arrancarExtraccionEnCola } from './arrancarExtraccionEnCola';
 import { describeSanitization, sanitizeExtractedText } from './sanitizeExtractedText';
 import {
     EXTRACTION_TIMEOUT_SECONDS,
@@ -492,6 +493,37 @@ export const extractPdfWithGemini = onObjectFinalized(
                 // Batched extraction now handles long page counts by
                 // splitting, so the old 12MB heuristic is gone.
                 console.log(`🤖 [Extract] Using Gemini (${userOptedOutOfPremium ? 'user opted standard' : 'no LlamaParse key'})`);
+
+                // ── Libro largo: se recorre en cola ──────────────────────────
+                //
+                // Este disparador tiene 540 s de tope duro por plataforma, y un
+                // libro largo no entra. Medido el 12-09-2026 con el comentario
+                // de Sasson (392 págs): murió a los 520 s en la tercera de nueve
+                // tandas. Cada rango en su propia invocación quita ese techo.
+                //
+                // Se sale de aquí en cuanto queda encolado: el estado final lo
+                // escribe la cadena, no este disparador. Y el guardia de plazo
+                // se desarma primero, porque si no marcaría `failed` un trabajo
+                // que está avanzando bien en otro lado.
+                if (expectedPageCount && expectedPageCount > BATCH_THRESHOLD_PAGES) {
+                    const encolado = await arrancarExtraccionEnCola(
+                        resourceRef, resourceId, expectedPageCount,
+                        typeof resourceDoc.data()?.paginasPorTanda === 'number'
+                            ? resourceDoc.data()!.paginasPorTanda as number
+                            : undefined,
+                    );
+                    if (encolado) {
+                        deadlineGuard?.disarm();
+                        try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }
+                        console.log(
+                            `⛓️ [Extract] ${resourceId}: ${expectedPageCount} páginas en cola; este disparador termina acá`,
+                        );
+                        return;
+                    }
+                    // Si no se pudo encolar se sigue de largo y se extrae acá
+                    // mismo, como antes de este cambio.
+                }
+
                 try {
                     const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId });
                     extractedText = result.text;

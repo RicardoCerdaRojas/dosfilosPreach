@@ -83,12 +83,51 @@ export function calibrarPaginasPorTanda(
     tokensDeSalida: number,
     paginasLeidas: number,
 ): number | null {
+    const densidad = densidadDe(tokensDeSalida, paginasLeidas);
+    return densidad === null ? null : tamanoParaDensidad(densidad);
+}
+
+/** Tokens por página de una lectura, o `null` si la muestra no sirve. */
+export function densidadDe(tokensDeSalida: number, paginasLeidas: number): number | null {
     if (!Number.isFinite(tokensDeSalida) || !Number.isFinite(paginasLeidas)) return null;
     if (tokensDeSalida <= 0 || paginasLeidas <= 0) return null;
+    return tokensDeSalida / paginasLeidas;
+}
 
-    const tokensPorPagina = tokensDeSalida / paginasLeidas;
+/** Cuántas páginas de esa densidad entran en el presupuesto, con su resguardo. */
+export function tamanoParaDensidad(tokensPorPagina: number): number {
     const caben = Math.floor((PRESUPUESTO_SALIDA * RESGUARDO) / tokensPorPagina);
     if (!Number.isFinite(caben) || caben < 1) return MIN_TANDA;
-
     return Math.min(MAX_TANDA, Math.max(MIN_TANDA, caben));
+}
+
+/**
+ * La densidad con la que hay que dimensionar el resto del libro: la MÁS ALTA
+ * vista hasta ahora, no la última ni el promedio.
+ *
+ * EL DEFECTO QUE CORRIGE. Calibrar una sola vez, con el primer rango, supone
+ * que ese tramo representa al libro. No lo representa: el principio de un libro
+ * son portadilla, créditos e índice. Medido sobre el comentario de Sasson al
+ * subirlo el 12-09-2026, sus primeras 24 páginas dieron **611 tokens/página** y
+ * el sistema calibró 48 por tanda; el cuerpo del libro mide **1 555** —medido
+ * aparte sobre las páginas 100-115— y la tercera tanda chocó contra el tope y
+ * tuvo que partirse.
+ *
+ * POR QUÉ EL MÁXIMO Y NO EL PROMEDIO. El costo es asimétrico. Quedarse corto
+ * cuesta unas llamadas de más; pasarse cuesta una respuesta que no entra, que
+ * son ~200 s tirados MÁS el partido, y encima puede repetirse en cada rango
+ * siguiente. Frente a esa asimetría, la estimación tiene que inclinarse al lado
+ * barato.
+ *
+ * El tamaño así nunca CRECE a mitad de libro, sólo se achica al encontrar un
+ * tramo más denso. Un libro que empieza liviano se corrige en el segundo rango
+ * en vez de estrellarse ocho veces.
+ */
+export function densidadDeReferencia(
+    maximaConocida: number | null,
+    nuevaDensidad: number | null,
+): number | null {
+    if (nuevaDensidad === null) return maximaConocida;
+    if (maximaConocida === null) return nuevaDensidad;
+    return Math.max(maximaConocida, nuevaDensidad);
 }
