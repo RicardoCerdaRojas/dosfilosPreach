@@ -70,12 +70,19 @@ export function ExtractionStepper({ resource, indexStatus }: ExtractionStepperPr
     return (
         <div className="space-y-0.5">
             <div
-                className="flex items-center gap-1 text-[10px] text-muted-foreground"
+                // Envuelve en vez de desbordar. Los cuatro pasos con sus
+                // etiquetas y conectores tienen un ancho mínimo mayor que el de
+                // la tarjeta —el texto no encoge por debajo de su contenido—,
+                // así que sin `flex-wrap` el riel se salía del borde derecho en
+                // cuanto la tarjeta era angosta. `min-w-0` deja que el
+                // contenedor ceda ancho, y `shrink-0` mantiene cada paso entero
+                // consigo mismo: lo que se parte es la fila, nunca un paso.
+                className="flex flex-wrap items-center gap-x-1 gap-y-1 min-w-0 text-[10px] text-muted-foreground"
                 role="list"
                 aria-label={t('stepper.ariaLabel')}
             >
                 {phases.map((phase, idx) => (
-                    <div key={phase.id} className="flex items-center gap-1" role="listitem">
+                    <div key={phase.id} className="flex shrink-0 items-center gap-1" role="listitem">
                         <PhaseDot state={phase.state} />
                         <span
                             className={cn(
