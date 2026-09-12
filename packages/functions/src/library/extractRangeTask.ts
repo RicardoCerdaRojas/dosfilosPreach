@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { extraerRangoDelPdf } from './geminiExtraction';
-import { calibrarPaginasPorTanda } from './calibrarTanda';
+import { densidadDe, densidadDeReferencia, tamanoParaDensidad } from './calibrarTanda';
 import { siguienteRango, planDeRangos, type Rango } from './planDeRangos';
 import { rutaDeRango, porcentajeDeAvance } from './corridaDeExtraccion';
 import { ensamblarDesdeRangos, limpiarRangos } from './ensamblarExtraccion';
@@ -24,8 +24,15 @@ export interface CargaDeRango {
     desde: number;
     hasta: number;
     tamano: number;
-    /** Sólo el primero calibra; los demás heredan el tamaño medido. */
-    calibrar: boolean;
+    /**
+     * Densidad más alta (tokens por página) vista hasta aquí en este libro.
+     *
+     * Viaja entre tareas porque la cadena no tiene otra memoria: cada tarea
+     * nace sabiendo sólo lo que le pasaron. Sin esto, cada rango calibraría
+     * contra su propio tramo y un capítulo liviano volvería a agrandar la
+     * tanda justo antes de un tramo denso.
+     */
+    densidadMaxima?: number | null;
 }
 
 /** Encola un rango. Se usa desde el callable que arranca y desde esta misma tarea. */
@@ -88,7 +95,8 @@ export const extractRangeTask = onTaskDispatched(
     },
     async (req) => {
         const carga = req.data as CargaDeRango;
-        const { resourceId, runId, desde, hasta, tamano, calibrar } = carga ?? {};
+        const { resourceId, runId, desde, hasta, tamano } = carga ?? {};
+        const densidadPrevia = carga?.densidadMaxima ?? null;
         if (!resourceId || !runId || !desde || !hasta) {
             console.error('[Rango] carga incompleta; se descarta', carga);
             return;
@@ -126,6 +134,7 @@ export const extractRangeTask = onTaskDispatched(
         const destino = bucket.file(rutaDeRango(userId, resourceId, runId, rango));
 
         let tamanoParaElResto = tamano;
+        let densidadParaElResto = densidadPrevia;
 
         const [yaEstaba] = await destino.exists();
         if (yaEstaba) {
@@ -152,20 +161,30 @@ export const extractRangeTask = onTaskDispatched(
                 });
                 console.log(`✅ [Rango] ${resourceId} ${etiqueta}: ${paginas.length} páginas guardadas`);
 
-                if (calibrar && muestra) {
-                    const medido = calibrarPaginasPorTanda(muestra.tokensDeSalida, muestra.paginas);
-                    if (medido !== null) {
-                        tamanoParaElResto = medido;
-                        const porPagina = Math.round(muestra.tokensDeSalida / muestra.paginas);
+                // La densidad se remide en CADA rango, no sólo en el primero.
+                // Medido sobre Sasson al subirlo: sus primeras 24 páginas
+                // —portadilla, créditos, índice— dieron 611 tokens/página y el
+                // cuerpo del libro mide 1 555. Calibrar una sola vez con ese
+                // arranque fijó 48 páginas por tanda y el tercer rango se
+                // estrelló contra el tope.
+                const referencia = densidadDeReferencia(
+                    densidadPrevia,
+                    muestra ? densidadDe(muestra.tokensDeSalida, muestra.paginas) : null,
+                );
+                if (referencia !== null && referencia !== densidadPrevia) {
+                    densidadParaElResto = referencia;
+                    const nuevo = tamanoParaDensidad(referencia);
+                    if (nuevo !== tamanoParaElResto) {
                         console.log(
-                            `📐 [Rango] ${resourceId}: ${porPagina} tokens/página; el resto va de a ${medido}`,
+                            `📐 [Rango] ${resourceId}: ${Math.round(referencia)} tokens/página ` +
+                            `(el tramo más denso visto); el resto va de a ${nuevo}`,
                         );
-                        // Se guarda AHORA y no al final. Antes la calibración
-                        // sólo se persistía si la extracción entera terminaba,
-                        // así que un corte por tiempo perdía también lo medido y
-                        // el reintento volvía a arrancar conservador.
-                        await ref.update({ paginasPorTanda: medido });
+                        tamanoParaElResto = nuevo;
                     }
+                    // Se guarda AHORA y no al final: un corte por tiempo perdía
+                    // también lo medido, y el reintento volvía a arrancar
+                    // conservador.
+                    await ref.update({ paginasPorTanda: tamanoParaElResto });
                 }
             } finally {
                 try { fs.unlinkSync(temporal); } catch { /* el temporal ya no importa */ }
@@ -192,7 +211,7 @@ export const extractRangeTask = onTaskDispatched(
                 resourceId, runId,
                 desde: siguiente.desde, hasta: siguiente.hasta,
                 tamano: tamanoParaElResto,
-                calibrar: false,
+                densidadMaxima: densidadParaElResto,
             });
             console.log(`⛓️ [Rango] ${resourceId}: encolado ${siguiente.desde}-${siguiente.hasta}`);
             return;

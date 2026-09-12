@@ -5,11 +5,8 @@ import { appCheckCallableOptions } from '../config/appCheckOptions';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
 import { extractWithGemini, BATCH_THRESHOLD_PAGES } from './geminiExtraction';
-import { TANDA_INICIAL } from './calibrarTanda';
-import { primerRango, planDeRangos } from './planDeRangos';
-import { encolarRango } from './extractRangeTask';
+import { arrancarExtraccionEnCola } from './arrancarExtraccionEnCola';
 import { consumePagesAdmin } from './processingBalance';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
@@ -23,63 +20,6 @@ interface ProcessRequest {
 const EXTRACTION_VERSION = '4.0-gemini-standard';
 const GEMINI_FILE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
 const FIRESTORE_TEXT_LIMIT_BYTES = 900_000;
-
-/**
- * Marca la corrida, deja el recurso en curso y encola su primer rango.
- *
- * Devuelve `null` si no se pudo encolar, para que el llamador degrade a extraer
- * en línea. Un fallo de la cola no puede dejar al usuario sin extracción: lo
- * peor que puede pasar es volver al comportamiento anterior.
- */
-async function arrancarEnCola(
-    resourceRef: FirebaseFirestore.DocumentReference,
-    resourceId: string,
-    totalPaginas: number,
-    tamanoConocido: number | undefined,
-): Promise<{ success: true; encolado: true; pageCount: number; rangosEstimados: number } | null> {
-    // Si este archivo ya se extrajo antes se reusa el tamaño medido entonces, y
-    // el primer rango deja de ser una apuesta conservadora.
-    const tamano = tamanoConocido ?? TANDA_INICIAL;
-    const primero = primerRango(tamano, totalPaginas);
-    if (!primero) return null;
-
-    const runId = randomUUID();
-    try {
-        await resourceRef.update({
-            extractionRunId: runId,
-            extractionHeartbeatAt: FieldValue.serverTimestamp(),
-            extractionProgress: {
-                paginasHechas: 0,
-                totalPaginas,
-                porcentaje: 0,
-                ultimoRango: null,
-                rangosEstimados: planDeRangos(totalPaginas, tamano).length,
-            },
-            // El motivo de un intento anterior se limpia al arrancar: mientras
-            // esta corrida avanza, mostrar el fallo viejo sería mentir.
-            extractionError: null,
-            extractionFailureReason: null,
-            updatedAt: new Date(),
-        });
-
-        await encolarRango({
-            resourceId, runId,
-            desde: primero.desde, hasta: primero.hasta,
-            tamano,
-            // Sólo calibra el primero, y sólo si no traíamos un tamaño medido.
-            calibrar: tamanoConocido === undefined,
-        });
-    } catch (err) {
-        console.error(`[ProcessGemini] ${resourceId}: no se pudo encolar; se extrae en línea`, err);
-        return null;
-    }
-
-    const rangosEstimados = planDeRangos(totalPaginas, tamano).length;
-    console.log(
-        `⛓️ [ProcessGemini] ${resourceId}: ${totalPaginas} páginas en cola (~${rangosEstimados} rangos), corrida ${runId}`,
-    );
-    return { success: true, encolado: true, pageCount: totalPaginas, rangosEstimados };
-}
 
 /**
  * Callable: vuelve a extraer un recurso LEYENDO SUS PÁGINAS COMO IMAGEN, a
@@ -218,12 +158,18 @@ export const processWithGemini = onCall<ProcessRequest>(
             // El usuario recibe respuesta en segundos en vez de esperar quince
             // minutos a una llamada que iba a morir.
             if (expectedPageCount && expectedPageCount > BATCH_THRESHOLD_PAGES) {
-                const encolado = await arrancarEnCola(
+                const encolado = await arrancarExtraccionEnCola(
                     resourceRef, resourceId, expectedPageCount,
                     typeof data.paginasPorTanda === 'number' ? data.paginasPorTanda : undefined,
                 );
                 try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }
-                if (encolado) return encolado;
+                if (encolado) {
+                    return {
+                        success: true, encolado: true,
+                        pageCount: encolado.pageCount,
+                        rangosEstimados: encolado.rangosEstimados,
+                    };
+                }
                 // Si no se pudo encolar se sigue de largo y se extrae acá
                 // mismo: la cola quita el techo, pero no puede ser un punto
                 // único de fallo. Un libro chico entra igual y uno grande queda

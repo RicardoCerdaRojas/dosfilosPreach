@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
     calibrarPaginasPorTanda,
+    densidadDe,
+    densidadDeReferencia,
+    tamanoParaDensidad,
     PRESUPUESTO_SALIDA,
     MIN_TANDA,
     MAX_TANDA,
@@ -77,5 +80,68 @@ describe('calibrarPaginasPorTanda', () => {
     it('la primera tanda entra incluso con la densidad más alta medida', () => {
         const masDensa = MEDIDO.sasson.tokens / MEDIDO.sasson.paginas;
         expect(TANDA_INICIAL * masDensa).toBeLessThan(PRESUPUESTO_SALIDA * 0.75);
+    });
+});
+
+/**
+ * EL DEFECTO QUE ESTO CORRIGE, visto en producción el 12-09-2026 al subir el
+ * comentario de Sasson (392 págs).
+ *
+ * Calibrar UNA sola vez supone que el primer tramo representa al libro. No lo
+ * representa: el principio de un libro son portadilla, créditos e índice.
+ *
+ *     📐 611 tokens/página medidos; el resto va de a 48 páginas
+ *     ...
+ *     ✂️ 3 (67-114) no entra en una respuesta; se parte en 67-90 y 91-114
+ *
+ * El cuerpo del libro mide 1 555 tokens/página —medido aparte sobre las páginas
+ * 100-115—, o sea 2,5 veces más que su portada. El tamaño calibrado sobre el
+ * arranque no lo sostenía.
+ */
+describe('densidadDeReferencia — la calibración se remide, no se fija', () => {
+    /** Densidades reales de Sasson: su arranque y su cuerpo. */
+    const PORTADA = 611;
+    const CUERPO = 1555;
+
+    it('el arranque liviano deja de fijar el tamaño de todo el libro', () => {
+        const trasElPrimero = densidadDeReferencia(null, PORTADA);
+        expect(tamanoParaDensidad(trasElPrimero!)).toBe(48);
+
+        // Al ver el cuerpo, la referencia sube y la tanda se achica.
+        const trasElSegundo = densidadDeReferencia(trasElPrimero, CUERPO);
+        expect(trasElSegundo).toBe(CUERPO);
+        expect(tamanoParaDensidad(trasElSegundo!)).toBeLessThan(48);
+    });
+
+    it('se queda con el tramo MÁS denso, no con el último', () => {
+        // Un capítulo liviano después de uno denso no debe volver a agrandar la
+        // tanda: el costo es asimétrico. Quedarse corto son unas llamadas de
+        // más; pasarse son ~200 s tirados y un partido, en cada rango siguiente.
+        const traselDenso = densidadDeReferencia(null, CUERPO);
+        expect(densidadDeReferencia(traselDenso, PORTADA)).toBe(CUERPO);
+    });
+
+    it('el tamaño nunca crece a mitad de libro', () => {
+        let referencia: number | null = null;
+        let anterior = Infinity;
+        // Un recorrido con tramos que alternan liviano y denso.
+        for (const densidad of [PORTADA, 900, CUERPO, 700, 1200, 400]) {
+            referencia = densidadDeReferencia(referencia, densidad);
+            const tamano = tamanoParaDensidad(referencia!);
+            expect(tamano).toBeLessThanOrEqual(anterior);
+            anterior = tamano;
+        }
+    });
+
+    it('una muestra inservible no mueve la referencia', () => {
+        expect(densidadDeReferencia(CUERPO, null)).toBe(CUERPO);
+        expect(densidadDeReferencia(null, null)).toBeNull();
+    });
+
+    it('densidadDe rechaza lo que no se puede medir', () => {
+        expect(densidadDe(0, 10)).toBeNull();
+        expect(densidadDe(1000, 0)).toBeNull();
+        expect(densidadDe(NaN, 10)).toBeNull();
+        expect(densidadDe(24882, 16)).toBeCloseTo(1555.1, 1);
     });
 });
