@@ -19,6 +19,8 @@ interface ProcessRequest {
 
 const EXTRACTION_VERSION = '4.0-gemini-standard';
 const GEMINI_FILE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
+/** Tope cuando el libro va en cola: ahí el archivo completo nunca se sube. */
+const GEMINI_FILE_SIZE_LIMIT_EN_COLA = 300 * 1024 * 1024;
 const FIRESTORE_TEXT_LIMIT_BYTES = 900_000;
 
 /**
@@ -112,11 +114,23 @@ export const processWithGemini = onCall<ProcessRequest>(
         const sizeMB = stats.size / 1024 / 1024;
         console.log(`[ProcessGemini] ${data.title ?? resourceId}: ${sizeMB.toFixed(2)} MB`);
 
-        if (stats.size > GEMINI_FILE_SIZE_LIMIT_BYTES) {
+        // El tope depende de por dónde irá el libro: la cola no sube el archivo
+        // completo, así que un fascículo de 94 MB que antes se rechazaba de
+        // plano ahora se puede leer rango por rango.
+        // El número de páginas sale del recurso, que ya lo tiene: esto es una
+        // REEXTRACCIÓN de un archivo ya procesado. La lectura previa con
+        // pdf-parse ocurre más abajo, y esperar a ella para decidir el tope
+        // obligaría a reordenar la descarga.
+        const paginasConocidas = typeof data.pageCount === 'number' ? data.pageCount : undefined;
+        const topeDeTamano = paginasConocidas && paginasConocidas > BATCH_THRESHOLD_PAGES
+            ? GEMINI_FILE_SIZE_LIMIT_EN_COLA
+            : GEMINI_FILE_SIZE_LIMIT_BYTES;
+        if (stats.size > topeDeTamano) {
             try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }
             throw new HttpsError(
                 'failed-precondition',
-                `File exceeds Gemini 50MB limit (${sizeMB.toFixed(1)} MB). Use the LlamaParse premium path for files this large.`,
+                `El archivo pesa ${sizeMB.toFixed(1)} MB y supera el tope de ` +
+                `${(topeDeTamano / 1048576).toFixed(0)} MB para esta ruta.`,
             );
         }
 
