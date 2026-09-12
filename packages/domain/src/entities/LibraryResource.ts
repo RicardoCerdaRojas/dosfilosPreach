@@ -139,6 +139,28 @@ export interface LibraryResource {
      */
     processingStartedAt?: Date;
     /**
+     * Avance de una extracción que corre por rangos en una cola.
+     *
+     * Un libro largo dejó de extraerse en una invocación: ahora es una cadena
+     * de tareas que puede durar más de una hora —un diccionario de 1 006
+     * páginas son ~25 rangos—. Con `processingStartedAt` a solas la tarjeta
+     * sólo podía decir «procesando hace 47 min», que para el usuario es
+     * indistinguible de estar colgado.
+     *
+     * Lo escribe cada rango al terminar; desaparece cuando el libro queda
+     * `ready`. Ausente en la ruta que extrae de una sola vez, donde no hay
+     * avance parcial que contar.
+     */
+    extractionProgress?: {
+        paginasHechas: number;
+        totalPaginas: number;
+        /** Tope 99: nunca dice 100 antes de que el libro esté guardado. */
+        porcentaje: number;
+        /** Último rango terminado, como «41-83». */
+        ultimoRango: string | null;
+        rangosEstimados: number;
+    };
+    /**
      * User-facing message written by the extraction pipeline when the
      * actual tier ended up below what the user requested (e.g. requested
      * Premium → got Standard because all LlamaParse accounts failed).
@@ -453,6 +475,8 @@ export class LibraryResourceEntity implements LibraryResource {
     public indexerVersion?: string;
     public characterCount?: number;
     public processingStartedAt?: Date;
+    /** Avance de una extracción por rangos en cola. Ver `LibraryResource`. */
+    public extractionProgress?: LibraryResource['extractionProgress'];
     /**
      * ADR-006 / PR 0.3 — rights-aware citation metadata. Owned by
      * deserialization; legacy docs default to `license: 'unknown'` +
