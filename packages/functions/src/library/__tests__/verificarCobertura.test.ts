@@ -44,8 +44,14 @@ describe('verificarCobertura', () => {
         expect(verificarCobertura(paginas(1, 398), 400)).toEqual({ ok: true });
     });
 
-    it('no opina cuando no se sabe cuántas páginas esperar', () => {
-        expect(verificarCobertura(paginas(1, 5), 0)).toEqual({ ok: true });
+    it('se NIEGA a certificar cuando no sabe cuántas páginas esperar', () => {
+        // Antes esto devolvía `{ ok: true }` con el argumento de que «sin total
+        // no hay nada que comprobar». El 12-09-2026 eso certificó un libro de
+        // 392 páginas con 24: el total llegó `null` y `null <= 0` es `true`.
+        // Un guard que ante la duda aprueba no es un guard.
+        expect(verificarCobertura(paginas(1, 5), 0).ok).toBe(false);
+        expect(verificarCobertura(paginas(1, 5), null as unknown as number).ok).toBe(false);
+        expect(verificarCobertura(paginas(1, 5), NaN).ok).toBe(false);
     });
 
     it('rechaza que no vuelva nada', () => {

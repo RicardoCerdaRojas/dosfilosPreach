@@ -61,7 +61,7 @@ export async function arrancarExtraccionEnCola(
         });
 
         await encolarRango({
-            resourceId, runId,
+            resourceId, runId, totalPaginas,
             desde: primero.desde, hasta: primero.hasta,
             tamano,
             // Sin densidad conocida todavía: la mide el primer rango y de ahí en
