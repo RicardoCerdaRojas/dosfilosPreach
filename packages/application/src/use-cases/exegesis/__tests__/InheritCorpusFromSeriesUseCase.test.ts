@@ -37,7 +37,7 @@ function makeRepo(actual: unknown, todos: unknown[]) {
     let creadas = 0;
     return {
         getPaper: vi.fn().mockImplementation(async () => actual),
-        listPapers: vi.fn().mockResolvedValue(todos),
+        listPaperSummaries: vi.fn().mockResolvedValue(todos),
         addSource: vi.fn().mockImplementation(async (_o, _p, s) => ({ ...s, id: `nueva-${creadas++}` })),
     };
 }
@@ -66,8 +66,8 @@ describe('InheritCorpusFromSeriesUseCase', () => {
         const uc = new InheritCorpusFromSeriesUseCase(repo as never, makeBiblioteca() as never);
 
         expect(await uc.proponer('owner-1', 'p9')).toBeNull();
-        // Y ni siquiera sale a buscar hermanos: no hay serie por la cual buscar.
-        expect(repo.listPapers).not.toHaveBeenCalled();
+        // Y ni siquiera sale a pedir el resumen: no hay serie por la cual buscar.
+        expect(repo.listPaperSummaries).not.toHaveBeenCalled();
     });
 
     it('escribe las fuentes SIN fragmentos ni huella del pasaje anterior', async () => {

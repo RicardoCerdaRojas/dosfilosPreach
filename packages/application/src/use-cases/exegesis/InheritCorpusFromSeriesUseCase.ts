@@ -50,14 +50,18 @@ export class InheritCorpusFromSeriesUseCase {
         const actual = await this.paperRepository.getPaper(ownerId, paperId);
         if (!actual?.seriesId) return null;
 
-        const [todos, recursos] = await Promise.all([
-            this.paperRepository.listPapers(ownerId),
+        // El RESUMEN, no los trabajos enteros: bajarlos completos sólo para
+        // ver qué libros tiene cada hermano cuesta 4,83 MB en la cuenta real,
+        // que es justo lo que el resumen existe para evitar. Trae la identidad
+        // de cada fuente, sin fragmentos.
+        const [resumenes, recursos] = await Promise.all([
+            this.paperRepository.listPaperSummaries(ownerId),
             this.biblioteca.findByUserId(ownerId),
         ]);
         // Sin el conjunto de libros vivos la propuesta ofrecería los borrados:
         // en la serie real de Jonás, una de once fuentes apunta a un recurso
         // que ya no está, y sólo se nota al intentar citarlo.
-        return proponerCorpusHeredado(actual, todos, new Set(recursos.map(r => r.id)));
+        return proponerCorpusHeredado(actual, resumenes, new Set(recursos.map(r => r.id)));
     }
 
     /**

@@ -22,10 +22,24 @@
  * Esa distinción es la razón de que esto sea una propuesta y no una copia.
  */
 
-import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
-import type { ProjectSource } from '../entities/ProjectSource';
+import type { ResumenDeFuente } from '../entities/ExegesisPaperSummary';
 import type { SourceType } from '../entities/SourceType';
 import type { SourceRole } from '../entities/StepSourcePlan';
+
+/**
+ * Lo mínimo que hace falta saber de un trabajo para decidir la herencia.
+ *
+ * Se describe por forma y no como `Pick<ExegeticalPaper, …>` a propósito: los
+ * candidatos llegan del RESUMEN de trabajos, no de los trabajos enteros. Bajar
+ * los enteros sólo para ver qué libros tiene cada uno costaría 4,83 MB en la
+ * cuenta real, que es exactamente lo que el resumen existe para evitar.
+ */
+export interface TrabajoConFuentes {
+    id: string;
+    /** Opcional porque el trabajo entero lo declara así: los sueltos no lo traen. */
+    seriesId?: string | null;
+    sources: ReadonlyArray<ResumenDeFuente>;
+}
 
 /** Una fuente que se puede traer, ya sin nada atado al pasaje anterior. */
 export interface FuenteHeredable {
@@ -66,7 +80,7 @@ export interface PropuestaDeHerencia {
  * Es el mismo criterio que ya usa la selección de páginas para reconocer una
  * fuente de biblioteca.
  */
-function recursoDe(s: Pick<ProjectSource, 'sourceLibraryResourceId' | 'corpusId'>): string | null {
+function recursoDe(s: Pick<ResumenDeFuente, 'sourceLibraryResourceId' | 'corpusId'>): string | null {
     return s.sourceLibraryResourceId || s.corpusId || null;
 }
 
@@ -90,13 +104,13 @@ function recursoDe(s: Pick<ProjectSource, 'sourceLibraryResourceId' | 'corpusId'
  * enseñaría a ignorar el aviso cuando sí tenga algo.
  */
 export function proponerCorpusHeredado(
-    actual: Pick<ExegeticalPaper, 'id' | 'seriesId' | 'sources'>,
-    candidatos: ReadonlyArray<Pick<ExegeticalPaper, 'id' | 'seriesId' | 'sources'>>,
+    actual: TrabajoConFuentes,
+    candidatos: ReadonlyArray<TrabajoConFuentes>,
     recursosVivos?: ReadonlySet<string>,
 ): PropuestaDeHerencia | null {
     if (!actual.seriesId) return null;
 
-    const sirve = (s: Pick<ProjectSource, 'sourceLibraryResourceId' | 'corpusId'>) => {
+    const sirve = (s: Pick<ResumenDeFuente, 'sourceLibraryResourceId' | 'corpusId'>) => {
         const recurso = recursoDe(s);
         return !!recurso && (!recursosVivos || recursosVivos.has(recurso));
     };
