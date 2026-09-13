@@ -243,12 +243,19 @@ async function ensamblarYGuardar(
         // no puede seguir mostrándose como fallido.
         extractionError: null,
         extractionFailureReason: null,
+        // Qué páginas no volvieron. El piso de cobertura ya decidió que el
+        // libro sirve; esto deja constancia de lo que igual se perdió, para que
+        // una cita a una página ausente pueda avisarse.
+        paginasFaltantes: libro.faltantes.total > 0 ? libro.faltantes : FieldValue.delete(),
         extractionProgress: FieldValue.delete(),
         updatedAt: new Date(),
     });
 
     console.log(
-        `🧩 [Rango] ${resourceId}: ${libro.pageCount} páginas de ${libro.rangosLeidos} rangos — listo`,
+        `🧩 [Rango] ${resourceId}: ${libro.pageCount} páginas de ${libro.rangosLeidos} rangos — listo` +
+        (libro.faltantes.total > 0
+            ? `; FALTAN ${libro.faltantes.total}: ${libro.faltantes.paginas.slice(0, 10).join(', ')}`
+            : ''),
     );
 
     // El cobro y la limpieza van DESPUÉS de guardar, y sus fallos no revierten

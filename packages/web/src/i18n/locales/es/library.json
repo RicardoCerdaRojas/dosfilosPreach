@@ -108,6 +108,9 @@
     "metaPagesEstimated": "~{{count}} p. (est.)",
     "metaPagesActual_one": "{{count}} pág.",
     "metaPagesActual_other": "{{count}} págs.",
+    "metaPagesMissing_one": "{{count}} sin leer",
+    "metaPagesMissing_other": "{{count}} sin leer",
+    "metaPagesMissingDetail": "No se pudieron leer estas páginas: {{paginas}}. Suele ser un defecto del escaneo, no del libro. Una cita a una de ellas no tendrá texto detrás.",
     "metaPagesTitleActual": "Páginas reales",
     "metaPagesTitleEstimated": "Páginas estimadas (aprox.)",
     "actions": {

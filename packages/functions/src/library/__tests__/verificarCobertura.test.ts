@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { verificarCobertura, MIN_PAGE_COVERAGE } from '../coberturaDePaginas';
+import { verificarCobertura, MIN_PAGE_COVERAGE, paginasQueFaltan } from '../coberturaDePaginas';
 
 /**
  * El piso estaba en 0,80 y dejó pasar un caso real.
@@ -60,5 +60,43 @@ describe('verificarCobertura', () => {
 
     it('el piso quedó por encima del que dejó pasar a Barrick', () => {
         expect(MIN_PAGE_COVERAGE).toBeGreaterThan(138 / 170);
+    });
+});
+
+/**
+ * «Aceptable» y «completo» no son lo mismo.
+ *
+ * El fascículo BHQ quedó `ready` con 314 de sus 315 hojas. El piso lo aceptó
+ * —99,7%, muy por encima del 95%— y hace bien: la hoja perdida es un escaneo
+ * defectuoso, con la mano de quien sostenía el libro tapando el tercio
+ * inferior, y rechazar la obra entera por eso sería peor.
+ *
+ * Pero nada en el recurso decía cuál faltaba. Quien cite el folio 88 —Nahúm
+ * 3:1-4 con su aparato— no recibe ningún aviso.
+ */
+describe('paginasQueFaltan', () => {
+    const leidas = (ns: number[]) => ns.map(page => ({ page }));
+
+    it('nombra la página perdida, no sólo cuenta', () => {
+        const todas = Array.from({ length: 315 }, (_, i) => i + 1).filter(p => p !== 215);
+        expect(paginasQueFaltan(leidas(todas), 315)).toEqual({ total: 1, paginas: [215] });
+    });
+
+    it('un libro completo no reporta nada', () => {
+        expect(paginasQueFaltan(leidas([1, 2, 3]), 3)).toEqual({ total: 0, paginas: [] });
+    });
+
+    it('la lista se acota pero el total sigue siendo exacto', () => {
+        // Una extracción muy mala puede perder cientos: guardarlas todas engorda
+        // el documento sin decir nada nuevo.
+        const r = paginasQueFaltan(leidas([1]), 500, 10);
+        expect(r.total).toBe(499);
+        expect(r.paginas).toHaveLength(10);
+        expect(r.paginas[0]).toBe(2);
+    });
+
+    it('sin total que comparar no inventa faltantes', () => {
+        expect(paginasQueFaltan(leidas([1, 2]), 0)).toEqual({ total: 0, paginas: [] });
+        expect(paginasQueFaltan(leidas([1, 2]), null as unknown as number).total).toBe(0);
     });
 });

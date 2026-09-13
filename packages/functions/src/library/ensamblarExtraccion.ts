@@ -9,7 +9,7 @@
 
 import { getStorage } from 'firebase-admin/storage';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
-import { verificarCobertura } from './coberturaDePaginas';
+import { verificarCobertura, paginasQueFaltan, type PaginasFaltantes } from './coberturaDePaginas';
 import { carpetaDeRangos, type PaginaGuardada } from './corridaDeExtraccion';
 
 export interface LibroEnsamblado {
@@ -17,6 +17,15 @@ export interface LibroEnsamblado {
     markdown: string;
     pageCount: number;
     rangosLeidos: number;
+    /**
+     * Qué páginas no volvieron.
+     *
+     * El piso de cobertura decide si el libro SIRVE y acepta pérdidas chicas,
+     * con razón. Pero «aceptable» y «completo» no son lo mismo, y hasta ahora
+     * el sistema sólo sabía decir lo segundo: el fascículo BHQ quedó `ready`
+     * con 314 de 315 hojas y nada decía cuál faltaba.
+     */
+    faltantes: PaginasFaltantes;
 }
 
 /**
@@ -84,6 +93,7 @@ export async function ensamblarDesdeRangos(
         markdown: pagesToMarkdown(merged),
         pageCount: merged.length,
         rangosLeidos: nombres.length,
+        faltantes: paginasQueFaltan(merged, totalPaginas),
     };
 }
 

@@ -150,6 +150,22 @@ export interface LibraryResource {
      */
     processingStartedAt?: Date;
     /**
+     * Páginas que la extracción no consiguió, en una obra que igual se dio por
+     * buena.
+     *
+     * El piso de cobertura acepta pérdidas chicas, y hace bien: rechazar un
+     * libro entero por una hoja mal escaneada sería peor. Pero «aceptable» y
+     * «completo» no son lo mismo. El fascículo BHQ quedó `ready` con 314 de sus
+     * 315 hojas —le falta el folio 88, Nahúm 3:1-4 con su aparato, porque en el
+     * escaneo aparece la mano de quien sostenía el libro— y nada lo decía.
+     *
+     * Ausente cuando no falta ninguna. La lista va acotada; `total` es exacto.
+     */
+    paginasFaltantes?: {
+        total: number;
+        paginas: number[];
+    };
+    /**
      * Avance de una extracción que corre por rangos en una cola.
      *
      * Un libro largo dejó de extraerse en una invocación: ahora es una cadena
@@ -488,6 +504,8 @@ export class LibraryResourceEntity implements LibraryResource {
     public processingStartedAt?: Date;
     /** Avance de una extracción por rangos en cola. Ver `LibraryResource`. */
     public extractionProgress?: LibraryResource['extractionProgress'];
+    /** Páginas que la extracción no consiguió. Ver `LibraryResource`. */
+    public paginasFaltantes?: LibraryResource['paginasFaltantes'];
     /**
      * ADR-006 / PR 0.3 — rights-aware citation metadata. Owned by
      * deserialization; legacy docs default to `license: 'unknown'` +
