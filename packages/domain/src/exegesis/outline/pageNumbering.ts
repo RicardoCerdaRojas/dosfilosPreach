@@ -93,23 +93,32 @@ export type NumberingStyle = 'arabic' | 'roman';
  */
 export function printedRangeOf(
     segment: NumberingSegment,
-): { from: number; to: number; unnumberedSheets: number } | null {
+): { from: string; to: string; unnumberedSheets: number } | null {
     if (segment.offset === null) return null;
 
-    // Se recorre en vez de despejar: con `step: -1` el extremo numerado no es
+    const numbering: PageNumbering = { segments: [segment], origin: 'confirmed' };
+
+    // Se ROTULA, no se devuelve el número: un tramo romano tiene numeración y
+    // hay que mostrarla con sus cifras. Usar `printedPageIn` acá haría que un
+    // tramo romano se informara como «sin numeración arábiga» —esa función
+    // calla ante los romanos a propósito, para que nadie escriba «p. 222» sobre
+    // la página «ccxxii»— y la pantalla diría que no hay número donde sí lo hay.
+    //
+    // Y se RECORRE en vez de despejar: con `step: -1` el extremo numerado no es
     // necesariamente el primero, y una fórmula que lo suponga se equivoca justo
     // en el caso que este campo vino a resolver.
-    let primera: number | null = null;
-    let ultima: number | null = null;
+    let primera: string | null = null;
+    let ultima: string | null = null;
+    let numeradas = 0;
     for (let sheet = segment.fromSheet; sheet <= segment.toSheet; sheet++) {
-        const valor = printedPageIn({ segments: [segment], origin: 'confirmed' }, sheet);
-        if (valor === null) continue;
-        if (primera === null) primera = valor;
-        ultima = valor;
+        const rotulo = printedLabelIn(numbering, sheet);
+        if (rotulo === null) continue;
+        if (primera === null) primera = rotulo;
+        ultima = rotulo;
+        numeradas++;
     }
     if (primera === null || ultima === null) return null;
 
-    const numeradas = Math.abs(ultima - primera) + 1;
     return {
         from: primera,
         to: ultima,

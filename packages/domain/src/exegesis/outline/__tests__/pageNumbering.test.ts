@@ -4,6 +4,7 @@ import {
     calibrationSheets,
     citationAnchorFor,
     detectNumberingSegments,
+    printedRangeOf,
     numberingFromCalibrationPoints,
     printedPageIn,
     printedLabelIn,
@@ -520,5 +521,72 @@ describe('numeración que decrece (libro encuadernado al revés)', () => {
         const n = numberingFromCalibrationPoints(BHQ, 400);
         expect(printedPageIn(n, 303)).toBeNull();
         expect(printedPageIn(n, 350)).toBeNull();
+    });
+});
+
+/**
+ * `printedRangeOf` es lo que la pantalla de calibración muestra como resumen de
+ * cada tramo. Antes esa pantalla calculaba el rango por su cuenta con
+ * `hoja + offset` —su propia copia de la regla—, así que con un tramo
+ * descendente habría mostrado el rango al revés mientras las citas mostraban el
+ * correcto.
+ */
+describe('printedRangeOf', () => {
+    it('un tramo normal informa su rango impreso', () => {
+        expect(printedRangeOf({ fromSheet: 1, toSheet: 100, offset: -4 }))
+            .toEqual({ from: '1', to: '96', unnumberedSheets: 4 });
+    });
+
+    it('un tramo DESCENDENTE informa el rango en el orden en que se recorre', () => {
+        // BHQ: la hoja 148 imprime 155 y la 260 imprime 43.
+        expect(printedRangeOf({ fromSheet: 148, toSheet: 260, offset: 303, step: -1 }))
+            .toEqual({ from: '155', to: '43', unnumberedSheets: 0 });
+    });
+
+    /**
+     * Un tramo romano TIENE numeración: la introducción de Mayor sobre Santiago
+     * se cita a diario como «p. ccxxii». Informarlo como «sin numeración» sería
+     * decir que no hay número donde sí lo hay.
+     */
+    it('un tramo romano se informa con sus cifras, no como «sin numeración»', () => {
+        const r = printedRangeOf({ fromSheet: 1, toSheet: 10, offset: 0, style: 'roman' });
+        expect(r).not.toBeNull();
+        expect(r!.from).toBe('i');
+        expect(r!.to).toBe('x');
+    });
+
+    it('un tramo sin numeración no informa rango', () => {
+        expect(printedRangeOf({ fromSheet: 1, toSheet: 10, offset: null })).toBeNull();
+    });
+
+    /**
+     * INVARIANTE: el rango que muestra la pantalla y el folio que va en la cita
+     * salen de la misma regla. Si se separan, el resumen dice una cosa y la
+     * cita otra sobre el mismo tramo — que es exactamente lo que pasaba.
+     */
+    it('invariante: el rango coincide con lo que se cita en sus extremos', () => {
+        const tramos: Array<{ fromSheet: number; toSheet: number; offset: number; step?: -1 }> = [
+            { fromSheet: 1, toSheet: 100, offset: -4 },
+            { fromSheet: 148, toSheet: 260, offset: 303, step: -1 },
+            { fromSheet: 50, toSheet: 80, offset: 10 },
+        ];
+        for (const t of tramos) {
+            const rango = printedRangeOf(t)!;
+            const numbering = { segments: [t], origin: 'confirmed' as const };
+
+            // Los extremos del RANGO son las hojas NUMERADAS, no las del tramo:
+            // las primeras hojas pueden caer antes de la página 1 —tapa,
+            // portadilla— y ésas no tienen folio que informar.
+            const rotulados = [];
+            for (let h = t.fromSheet; h <= t.toSheet; h++) {
+                const v = printedPageIn(numbering, h);
+                if (v !== null) rotulados.push(String(v));
+            }
+            expect(rotulados[0], JSON.stringify(t)).toBe(rango.from);
+            expect(rotulados[rotulados.length - 1], JSON.stringify(t)).toBe(rango.to);
+            // Y el conteo de hojas sin número tiene que cuadrar con lo contado.
+            expect(rango.unnumberedSheets, JSON.stringify(t))
+                .toBe((t.toSheet - t.fromSheet + 1) - rotulados.length);
+        }
     });
 });
