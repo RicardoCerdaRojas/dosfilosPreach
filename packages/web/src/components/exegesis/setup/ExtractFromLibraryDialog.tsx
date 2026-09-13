@@ -20,6 +20,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { defaultSourceTypeFor } from './tipoAcademico';
 import { useTranslation } from '@/i18n';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useRankedLibrary } from '@/hooks/exegesis/useRankedLibrary';
@@ -715,15 +716,7 @@ function GroupChip({ active, onClick, label }: { active: boolean; onClick: () =>
     );
 }
 
-function defaultSourceTypeFor(resource: LibraryResource): SourceType {
-    switch (resource.type) {
-        case 'commentary': return 'commentary-critical';
-        case 'grammar': return 'grammar-syntax';
-        case 'theology': return 'theological-monograph';
-        case 'article': return 'journal-article';
-        default: return 'other';
-    }
-}
+
 
 /**
  * Maps the readiness status enum to the i18n key fragment used in
