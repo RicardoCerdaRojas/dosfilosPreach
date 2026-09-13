@@ -738,8 +738,8 @@
           "gapsTitle": "{{satisfied}} de {{total}} requisitos satisfechos",
           "gapsBody": "Te faltan {{missing}} fuentes para cumplir la rúbrica. Los detalles abajo indican qué tipos sumar.",
           "noRubric": "Aún no hay rúbrica asociada al trabajo. Configura la rúbrica en el primer tab antes de cargar el corpus.",
-          "uploadForType": "Subir un {{type}} para cubrir este requisito",
-          "uploadForTypeShort": "Subir"
+          "findForType": "Buscar {{type}} en mi biblioteca",
+          "findForTypeShort": "Buscar en mi biblioteca"
         },
         "recommendations": {
           "toggleShow_one": "Ver {{count}} sugerencia curada",
@@ -861,7 +861,7 @@
         "list": {
           "title": "Fuentes adjuntas",
           "empty": "Aún no agregaste fuentes. Toca \"Agregar fuente\" arriba o \"Subir\" en cualquier requisito faltante.",
-          "addCta": "Agregar fuente",
+          "addCta": "Agregar recurso",
           "extractCta": "Extraer de mi biblioteca",
           "excerptsBadge_one": "{{count}} excerpt",
           "excerptsBadge_other": "{{count}} excerpts",
@@ -906,11 +906,6 @@
             "anchor": "Comentarios expositivos — la lectura base",
             "contrast": "Otra voz: comentarios críticos, monografías, diccionarios teológicos",
             "technical": "Léxicos, gramáticas, aparatos críticos"
-          },
-          "addCta": {
-            "anchor": "Agregar ancla",
-            "contrast": "Agregar contraste",
-            "technical": "Agregar técnica"
           }
         },
         "libraryFilter": {
@@ -950,7 +945,7 @@
           "body": "En lugar de inyectar PDFs completos al modelo, extraemos solo los fragmentos relevantes para tu pasaje. Tú los revisas y editas antes de generar — esa visibilidad es lo que nos distingue de NotebookLM y similares.",
           "dialecticalEyebrow": "Siembra los tres roles",
           "dialecticalTitle": "Tu biblioteca tiene {{count}} recursos — armemos un corpus dialéctico",
-          "dialecticalBody": "El corpus serio se construye en tres roles: ANCLA (lectura base, comentario expositivo), CONTRASTE (otra voz: crítico, monografía, diccionario), TÉCNICA (léxico, gramática o aparato). Empieza por los botones de abajo para sembrar al menos uno de cada rol; después agrega MÁS fuentes del rol que la rúbrica te pida (un paper riguroso suele tener 4-5 anclas, 4-5 contrastes y 3-4 técnicas).",
+          "dialecticalBody": "El corpus serio se construye en tres roles: ANCLA (lectura base, comentario expositivo), CONTRASTE (otra voz: crítico, monografía, diccionario), TÉCNICA (léxico, gramática o aparato). Agrega tus fuentes y elige el rol de cada una al agregarla; un trabajo riguroso suele tener 4-5 anclas, 4-5 contrastes y 3-4 técnicas.",
           "recommended": "Recomendado",
           "suggestedCount": "fuentes recomendadas para un paper riguroso",
           "dialecticalAlt": "O bien:",
