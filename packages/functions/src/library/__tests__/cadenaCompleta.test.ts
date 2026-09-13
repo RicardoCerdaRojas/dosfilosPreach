@@ -200,6 +200,42 @@ describe('la cadena no avanza sobre terreno que no le corresponde', () => {
         expect(registro.terminados).toBe(0);
     });
 
+    it('una tarea que reaparece sobre un libro YA LISTO se retira', async () => {
+        // CASO REAL (McComiskey, 425 páginas). Cloud Tasks reintenta hasta tres
+        // veces. Una tarea que murió DESPUÉS de que la cadena cerró el libro
+        // trae el runId VIGENTE, así que el guard de corrida no la detiene. Al
+        // terminar se borran los rangos, de modo que su ensamblado ve un libro
+        // a medias: tres intentos seguidos trataron de certificar 93 de 425
+        // páginas sobre un recurso que ya tenía las 425. Sólo lo frenó el piso
+        // de cobertura, que está ahí para otra cosa.
+        const { puertas, registro } = fabricarPuertas({
+            recurso: { userId: 'u1', extractionRunId: 'corrida-1', textExtractionStatus: 'ready' },
+        });
+
+        const r = await procesarRango(puertas, primeraCarga(392));
+
+        expect(r).toEqual({ estado: 'descartado', motivo: 'el libro ya está listo' });
+        // Ni relee, ni reescribe, ni reencola, ni vuelve a ensamblar.
+        expect(registro.rangosLeidos).toHaveLength(0);
+        expect(registro.avances).toHaveLength(0);
+        expect(registro.encolados).toHaveLength(0);
+        expect(registro.terminados).toBe(0);
+    });
+
+    it('una tarea de la corrida vigente sobre un libro EN PROCESO sí trabaja', async () => {
+        // El contrapeso del guard anterior: durante una corrida legítima el
+        // recurso está en `processing` —lo pone el arranque antes de encolar el
+        // primer rango— y la cadena tiene que avanzar con normalidad.
+        const { puertas, registro } = fabricarPuertas({
+            recurso: { userId: 'u1', extractionRunId: 'corrida-1', textExtractionStatus: 'processing' },
+        });
+
+        const r = await procesarRango(puertas, primeraCarga(392));
+
+        expect(r.estado).toBe('siguiente');
+        expect(registro.rangosLeidos).toHaveLength(1);
+    });
+
     it('un recurso borrado a mitad de camino corta la cadena', async () => {
         const { puertas, registro } = fabricarPuertas({ recurso: null });
         const r = await procesarRango(puertas, primeraCarga(392));

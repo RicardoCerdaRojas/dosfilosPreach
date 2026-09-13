@@ -64,6 +64,10 @@ export async function encolarRango(carga: CargaDeRango): Promise<void> {
  * - **Una corrida a la vez.** Una tarea cuyo `runId` ya no es el vigente se
  *   retira. Dos extracciones del mismo libro lanzadas con minutos de
  *   diferencia mezclarían sus páginas sin forma de saber cuál es cuál.
+ * - **Un libro cerrado no se retoca.** Una tarea de la corrida VIGENTE que
+ *   reaparece después de que la cadena terminó también se retira: los rangos ya
+ *   se borraron y lo único que podría hacer es ensamblar un libro a medias
+ *   encima de uno completo.
  */
 export const extractRangeTask = onTaskDispatched(
     {
@@ -127,7 +131,11 @@ function puertasReales(apiKey: string): PuertasDeRango {
             const snap = await refDe(resourceId).get();
             if (!snap.exists) return null;
             const d = snap.data()!;
-            return { userId: d.userId, extractionRunId: d.extractionRunId };
+            return {
+                userId: d.userId,
+                extractionRunId: d.extractionRunId,
+                textExtractionStatus: d.textExtractionStatus,
+            };
         },
 
         async latir(resourceId) {
