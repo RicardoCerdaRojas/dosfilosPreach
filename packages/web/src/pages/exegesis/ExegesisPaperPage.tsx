@@ -18,7 +18,7 @@ import {
     BookOpenText,
     BookOpen,
     BookText,
-    Mic,
+    PenLine,
     MessageCircle,
     PanelRightClose,
     PanelRightOpen,
@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { usePaperDerivedArtifacts } from '@/hooks/exegesis/usePaperDerivedArtifacts';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
@@ -570,6 +571,11 @@ function StartStudyButton({
     const hasAcceptedAnalysis = paper.steps.some(
         (step) => step.kind === 'verse' && Boolean(step.accepted?.canonicalAnalysis),
     );
+    // Si este paper ya abrió un borrador, el botón NO empieza nada: vuelve.
+    // Decir «comenzar» sobre algo ya empezado fue lo que llevó a cinco
+    // borradores del mismo pasaje, todos parados en el paso 1.
+    const derivados = usePaperDerivedArtifacts(paper.id);
+    const yaHayBorrador = (derivados.data ?? []).some(a => a.kind === 'sermon' && a.isDraft);
 
     return (
         <Button
@@ -577,19 +583,23 @@ function StartStudyButton({
             size="sm"
             disabled={pending}
             onClick={onStart}
-            className="text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 disabled:opacity-50"
+            className="text-success border-success/40 hover:bg-success-subtle/40 disabled:opacity-50"
             title={
-                hasAcceptedAnalysis
-                    ? t('detail.startStudy.hint')
-                    : t('detail.startStudy.hintNoMaterial')
+                yaHayBorrador
+                    ? t('detail.startStudy.hintResume')
+                    : hasAcceptedAnalysis
+                        ? t('detail.startStudy.hint')
+                        : t('detail.startStudy.hintNoMaterial')
             }
         >
             {pending ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
             ) : (
-                <Mic className="h-3.5 w-3.5 mr-1.5" />
+                // Una pluma y no un micrófono: lo que abre es el estudio donde
+                // el pastor ESCRIBE el sermón, no el momento de predicarlo.
+                <PenLine className="h-3.5 w-3.5 mr-1.5" />
             )}
-            {t('detail.startStudy.cta')}
+            {t(yaHayBorrador ? 'detail.startStudy.ctaResume' : 'detail.startStudy.cta')}
         </Button>
     );
 }

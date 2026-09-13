@@ -1827,13 +1827,15 @@
       "hint": "This paper uses the original text’s numbering, the academic convention. Your version numbers this passage differently."
     },
     "startStudy": {
-      "cta": "Take to study",
-      "hint": "Opens the 8-step study with everything you already established in this paper on hand at each step.",
-      "hintNoMaterial": "Opens the 8-step study for this passage. This paper has no accepted analyses yet to accompany the steps.",
+      "cta": "Start the sermon",
+      "ctaResume": "Continue the sermon",
+      "hint": "Opens the 8-step pastoral study with what you established in this paper visible at every step. You write the sermon yourself, in step 3.",
+      "hintNoMaterial": "Opens the 8-step pastoral study for this passage. This paper has no accepted analyses to accompany the steps yet.",
+      "hintResume": "Return to the draft you already opened from this paper, at the step where you left it.",
       "toast": {
-        "success": "Your study is open, with the paper material on hand.",
-        "successNoMaterial": "Your study is open. This paper has no accepted analyses yet to show alongside the steps.",
-        "failed": "Could not open the study. Try again."
+        "success": "Your study is open, with the paper's material in view.",
+        "successNoMaterial": "Your study is open. This paper has no accepted analyses to show alongside the steps yet.",
+        "failed": "Couldn't open the study. Try again."
       }
     }
   },

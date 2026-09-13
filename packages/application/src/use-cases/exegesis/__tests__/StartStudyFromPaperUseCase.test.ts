@@ -77,7 +77,7 @@ const makeAcceptedStep = (): ExegeticalStep => {
 const stubPaperRepo = (paper: ExegeticalPaper | null): IExegeticalPaperRepository =>
     ({ getPaper: vi.fn(async () => paper) }) as any;
 
-const stubSermonRepo = (existing?: SermonEntity): ISermonRepository => {
+const stubSermonRepo = (existing?: SermonEntity, delPaper: SermonEntity[] = []): ISermonRepository => {
     const created: SermonEntity[] = [];
     const updated: SermonEntity[] = [];
     return {
@@ -95,6 +95,7 @@ const stubSermonRepo = (existing?: SermonEntity): ISermonRepository => {
         findByUserId: vi.fn(),
         findAll: vi.fn(),
         findByDraftId: vi.fn(),
+        findBySourcePaperId: vi.fn(async () => delPaper),
         __created: created,
         __updated: updated,
     } as any;
@@ -362,6 +363,84 @@ describe('StartStudyFromPaperUseCase', () => {
             const result = await useCase.execute({ paperId: 'paper-1', actorUserId: 'user-1' });
 
             expect(result.sermonId).toBeTruthy();
+            expect((sermonRepo as any).__created).toHaveLength(1);
+        });
+    });
+
+    describe('no deja borradores duplicados', () => {
+        /** Un sermón ya colgado de este paper, en el estado y paso que se diga. */
+        const sermonDelPaper = (over: {
+            id: string; status: string; currentStep?: number; updatedAt?: Date;
+        }): SermonEntity => SermonEntity.create({
+            id: over.id,
+            userId: 'user-1',
+            title: 'Santiago y la prueba',
+            content: '',
+            bibleReferences: ['JAS 1:1-5'],
+            sourcePaperId: 'paper-1',
+            status: over.status,
+            wizardProgress: { currentStep: over.currentStep ?? 1, passage: 'JAS 1:1-5', lastSaved: new Date() },
+            createdAt: new Date('2026-08-23'),
+            updatedAt: over.updatedAt ?? new Date('2026-08-23'),
+        } as never, true);
+
+        it('retoma el borrador que este paper ya había abierto', async () => {
+            // CASO REAL: cinco «Sermón sobre Jonas 1:1-3» parados en el paso 1,
+            // uno por cada clic. El pastor creía volver a su estudio.
+            const yaExiste = sermonDelPaper({ id: 'sermon-1', status: 'draft' });
+            const sermonRepo = stubSermonRepo(undefined, [yaExiste]);
+            const useCase = new StartStudyFromPaperUseCase(
+                stubPaperRepo(makePaper({ steps: [makeAcceptedStep()] })),
+                sermonRepo,
+            );
+
+            const r = await useCase.execute({ paperId: 'paper-1', actorUserId: 'user-1' });
+
+            expect(r.sermonId).toBe('sermon-1');
+            expect((sermonRepo as any).__created).toHaveLength(0);
+        });
+
+        it('no le borra el paso al que ya iba avanzado', async () => {
+            const enElPaso5 = sermonDelPaper({ id: 'sermon-1', status: 'draft', currentStep: 5 });
+            const sermonRepo = stubSermonRepo(undefined, [enElPaso5]);
+            const useCase = new StartStudyFromPaperUseCase(
+                stubPaperRepo(makePaper({ steps: [makeAcceptedStep()] })),
+                sermonRepo,
+            );
+
+            await useCase.execute({ paperId: 'paper-1', actorUserId: 'user-1' });
+
+            const guardado = (sermonRepo as any).__updated[0] as SermonEntity;
+            expect(guardado.wizardProgress?.currentStep).toBe(5);
+        });
+
+        it('entre varios borradores retoma el último tocado', async () => {
+            const viejo = sermonDelPaper({ id: 'viejo', status: 'draft', updatedAt: new Date('2026-08-23') });
+            const reciente = sermonDelPaper({ id: 'reciente', status: 'draft', updatedAt: new Date('2026-09-01') });
+            const sermonRepo = stubSermonRepo(undefined, [viejo, reciente]);
+            const useCase = new StartStudyFromPaperUseCase(
+                stubPaperRepo(makePaper({ steps: [makeAcceptedStep()] })),
+                sermonRepo,
+            );
+
+            const r = await useCase.execute({ paperId: 'paper-1', actorUserId: 'user-1' });
+
+            expect(r.sermonId).toBe('reciente');
+        });
+
+        it('NO reabre un sermón ya publicado: crea uno nuevo', async () => {
+            // Predicarlo otra vez es empezar de cero, no seguir editando lo que
+            // ya se predicó.
+            const publicado = sermonDelPaper({ id: 'publicado', status: 'published' });
+            const sermonRepo = stubSermonRepo(undefined, [publicado]);
+            const useCase = new StartStudyFromPaperUseCase(
+                stubPaperRepo(makePaper({ steps: [makeAcceptedStep()] })),
+                sermonRepo,
+            );
+
+            const r = await useCase.execute({ paperId: 'paper-1', actorUserId: 'user-1' });
+
+            expect(r.sermonId).not.toBe('publicado');
             expect((sermonRepo as any).__created).toHaveLength(1);
         });
     });
