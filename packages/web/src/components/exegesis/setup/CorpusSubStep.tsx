@@ -1,7 +1,9 @@
 import {
     useEffect,
     useMemo,
-    useState } from 'react';
+    useRef,
+    useState,
+} from 'react';
 import {
     AlertTriangle,
     BookOpenText,
@@ -1349,13 +1351,21 @@ function AddSourceDialog({
     // open: closing always discards the form so reopening starts
     // fresh. When the parent passes a type via the gap card click,
     // we honor it as the initial selection.
+    // Cuántos recursos hay, en una referencia y no en las dependencias del
+    // efecto. Puesto como dependencia, CUALQUIER cambio de la biblioteca con el
+    // diálogo abierto vuelve a correr el reseteo y borra lo que el pastor lleva
+    // hecho — y la propia subida agrega un recurso, así que el formulario se
+    // limpiaba solo justo mientras se usaba.
+    const cuantosRecursos = useRef(0);
+    cuantosRecursos.current = library.resources.length;
+
     useEffect(() => {
         if (open) {
             // Quien ya tiene biblioteca casi siempre viene a buscar en ella;
             // subir un archivo nuevo es el caso raro. Antes el modo biblioteca
             // sólo se alcanzaba entrando por un botón de rol, así que la
             // puerta genérica caía en «subir archivo» y parecía otra cosa.
-            const tieneBiblioteca = library.resources.length > 0;
+            const tieneBiblioteca = cuantosRecursos.current > 0;
             // El requisito de la rúbrica filtra la biblioteca cuando su tipo
             // corresponde a una sola categoría; si corresponde a varias, no
             // filtra: esconder el libro que se busca es peor que no filtrar.
@@ -1373,7 +1383,7 @@ function AddSourceDialog({
             setLibrarySearch('');
             setLibraryTypeFilter(seedFilter);
         }
-    }, [open, initialType, library.resources.length]);
+    }, [open, initialType]);
 
     // Lo que el tipo sugeriría por su cuenta, y si la elección del pastor
     // lo contradice. La divergencia NO bloquea: dispara un aviso que deja
