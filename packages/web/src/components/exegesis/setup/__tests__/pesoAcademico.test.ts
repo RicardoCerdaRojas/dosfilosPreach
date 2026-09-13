@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LibraryResource } from '@dosfilos/domain';
-import { pesoDeRecurso, pesoDeTipo } from '../pesoAcademico';
+import { pesoDeRecurso, pesoDeTipo, type PesoAcademico } from '../pesoAcademico';
 
 const recurso = (over: Partial<LibraryResource>): LibraryResource =>
     ({ id: 'r1', type: 'other', ...over } as LibraryResource);
@@ -47,5 +47,28 @@ describe('pesoAcademico', () => {
 
     it('un texto crítico de la biblioteca se rotula texto base', () => {
         expect(pesoDeRecurso(recurso({ type: 'critical-text' }))).toBe('textoBase');
+    });
+});
+
+/**
+ * Cada peso tiene que tener su palabra y su explicación en los dos idiomas.
+ *
+ * Sin esto, agregar un valor a `PesoAcademico` compila y despliega, y el
+ * usuario ve la ruta cruda de la clave en la fila del libro. El tipo se recorre
+ * entero a propósito: es lo único que obliga a actualizar los textos cuando la
+ * escala cambie.
+ */
+describe('textos del peso académico', () => {
+    const TODOS: PesoAcademico[] = ['tecnica', 'academica', 'apoyo', 'textoBase', 'noCitable'];
+
+    it.each(['es', 'en'])('%s tiene rótulo y explicación para cada peso', async (locale) => {
+        const json = await import(`../../../../i18n/locales/${locale}/exegesis.json`);
+        const peso = json.default.paperSetup.subSteps.corpus.extract.peso;
+
+        for (const p of TODOS) {
+            expect(peso[p], `falta el rótulo ${locale}/${p}`).toBeTruthy();
+            expect(peso[`hint_${p}`], `falta la explicación ${locale}/${p}`).toBeTruthy();
+        }
+        expect(json.default.paperSetup.subSteps.corpus.extract.dosEjes).toBeTruthy();
     });
 });

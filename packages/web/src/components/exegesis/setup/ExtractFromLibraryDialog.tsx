@@ -627,12 +627,6 @@ function ResourceRow({
                                 {t('paperSetup.subSteps.corpus.extract.chunksRelevant', { count: rankInfo.matchedChunkCount })}
                             </span>
                         )}
-                        {/* El conteo de arriba mide cuánto HABLA del pasaje, y
-                            se lee como ranking de calidad si va solo: un
-                            devocional que nombra Jonás en cada página gana a un
-                            comentario crítico que le dedica tres páginas
-                            densas. El peso es el otro eje. */}
-                        <PesoBadge peso={pesoDeRecurso(resource)} />
                         {/* Cached classification hint — only when not
                             currently selected, to avoid duplicating
                             info already visible in the picker below. */}
@@ -641,6 +635,13 @@ function ResourceRow({
                                 · {t(`sourceTypes.${resource.exegeticalType}.label`)}
                             </span>
                         )}
+                        {/* Después de qué ES el libro, cuánto VALE. El conteo
+                            de fragmentos mide cuánto habla del pasaje y se lee
+                            como ranking de calidad si va solo: un devocional
+                            que nombra Jonás en cada página le gana a un
+                            comentario crítico que le dedica tres páginas
+                            densas. */}
+                        <PesoBadge peso={pesoDeRecurso(resource)} />
                         {!isSelectable && (
                             <span className="text-[10px] text-muted-foreground italic">
                                 · {t(`paperSetup.subSteps.corpus.readiness.${toReadinessKey(status)}`)}
