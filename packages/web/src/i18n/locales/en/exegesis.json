@@ -738,8 +738,8 @@
           "gapsTitle": "{{satisfied}} of {{total}} requirements met",
           "gapsBody": "You are {{missing}} sources short of meeting the rubric. The details below indicate what types to add.",
           "noRubric": "No rubric is attached yet. Configure the rubric in the first tab before loading the corpus.",
-          "uploadForType": "Upload a {{type}} to cover this requirement",
-          "uploadForTypeShort": "Upload"
+          "findForType": "Find {{type}} in my library",
+          "findForTypeShort": "Find in my library"
         },
         "recommendations": {
           "toggleShow_one": "Show {{count}} curated suggestion",
@@ -861,7 +861,7 @@
         "list": {
           "title": "Attached sources",
           "empty": "No sources yet. Tap \"Add source\" above or \"Upload\" on any missing requirement.",
-          "addCta": "Add source",
+          "addCta": "Add resource",
           "extractCta": "Extract from my library",
           "excerptsBadge_one": "{{count}} excerpt",
           "excerptsBadge_other": "{{count}} excerpts",
@@ -906,11 +906,6 @@
             "anchor": "Expository commentaries — the base reading",
             "contrast": "Other voice: critical commentaries, monographs, theological dictionaries",
             "technical": "Lexicons, grammars, critical apparatus"
-          },
-          "addCta": {
-            "anchor": "Add anchor",
-            "contrast": "Add contrast",
-            "technical": "Add technical"
           }
         },
         "libraryFilter": {
@@ -950,7 +945,7 @@
           "body": "Instead of feeding whole PDFs to the model, we extract only the fragments relevant to your passage. You review and edit them before generating — that visibility is what sets us apart from NotebookLM and similar tools.",
           "dialecticalEyebrow": "Seed the three roles",
           "dialecticalTitle": "Your library has {{count}} resources — let's build a dialectical corpus",
-          "dialecticalBody": "A serious corpus is built in three roles: ANCHOR (base reading, expository commentary), CONTRAST (another voice: critical, monograph, dictionary), TECHNICAL (lexicon, grammar, or apparatus). Use the buttons below to seed at least one of each; then add MORE sources per role as the rubric requires (a rigorous paper typically has 4-5 anchors, 4-5 contrasts, and 3-4 technicals).",
+          "dialecticalBody": "A serious corpus is built in three roles: ANCHOR (base reading, expository commentary), CONTRAST (another voice: critical, monograph, dictionary), TECHNICAL (lexicon, grammar or apparatus). Add your sources and choose each one's role as you add it; a rigorous paper usually has 4-5 anchors, 4-5 contrasts and 3-4 technical.",
           "recommended": "Recommended",
           "suggestedCount": "sources recommended for a rigorous paper",
           "dialecticalAlt": "Or:",

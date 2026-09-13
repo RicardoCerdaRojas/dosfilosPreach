@@ -26,9 +26,6 @@ import { toast } from 'sonner';
 import { libraryService } from '@dosfilos/application';
 import {
     CITABLE_SOURCE_TYPES,
-    LIBRARY_TYPES_BY_ROLE,
-    STRATEGY_SUGGESTED_RANGES,
-    TYPICAL_SOURCE_TYPE_BY_ROLE,
     computeEffectiveRoleTargets,
     computeRoleCoverage,
     computeRoleExpectations,
@@ -54,6 +51,7 @@ import {
 import { useFirebase } from '@/context/firebase-context';
 import { HerenciaDeSerie } from './HerenciaDeSerie';
 import { pesoDeRecurso, type PesoAcademico } from './pesoAcademico';
+import { filtroDeBibliotecaPara } from './tipoAcademico';
 import { useLibrary } from '@/hooks/library';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useAttachLibrarySource } from '@/hooks/exegesis/useAttachLibrarySource';
@@ -121,12 +119,10 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
     // dialog gives clicks immediate visible feedback and avoids
     // the auto-scroll-to-bottom problem the inline form caused.
     const [dialogOpen, setDialogOpen] = useState(false);
+    // Lo único que puede venir preseleccionado: el tipo que pide un requisito
+    // de la rúbrica, y sólo como FILTRO de la biblioteca. El rol ya no viaja
+    // desde afuera — se elige adentro, después de ver qué libro es.
     const [dialogInitialType, setDialogInitialType] = useState<SourceType | null>(null);
-    // When the user opens the dialog from a role-specific button on
-    // the dialectical hero (e.g. "Elegir el ANCLA"), this seeds the
-    // dialog's library-mode + library-type-filter so they land on
-    // commentary-expository pre-filtered to broad-category 'commentary'.
-    const [dialogInitialRole, setDialogInitialRole] = useState<SourceRole | null>(null);
     // v1.5: separate dialog for the library-extraction flow. Opens
     // independently from the upload dialog so the two paths don't
     // tangle their state — the upload dialog is "I'm bringing a new
@@ -137,13 +133,6 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
 
     const openDialog = (preselect: SourceType | null) => {
         setDialogInitialType(preselect);
-        setDialogInitialRole(null);
-        setDialogOpen(true);
-    };
-
-    const openDialogForRole = (role: SourceRole) => {
-        setDialogInitialType(TYPICAL_SOURCE_TYPE_BY_ROLE[role]);
-        setDialogInitialRole(role);
         setDialogOpen(true);
     };
 
@@ -165,6 +154,21 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                 <div className="flex items-center gap-2 shrink-0">
                     <PageBalanceHint />
                     <StrategyModeBadge strategy={resolveExegeticalStrategy(paper.exegeticalStrategy)} />
+                    {/* LA puerta. Antes había cinco —tres botones de rol, un
+                        «Subir» por cada requisito de la rúbrica y el genérico—
+                        y todas abrían este mismo diálogo: sólo cambiaban qué
+                        venía preseleccionado. Cinco puertas al mismo cuarto se
+                        leen como cinco maneras distintas de agregar. Ahora la
+                        rúbrica y los roles informan y filtran; agregar se hace
+                        acá. */}
+                    <Button
+                        type="button"
+                        onClick={() => openDialog(null)}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    >
+                        <Upload className="h-3 w-3 mr-1" />
+                        {t('paperSetup.subSteps.corpus.list.addCta')}
+                    </Button>
                 </div>
             </header>
 
@@ -176,14 +180,13 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                         paper={paper}
                         onAdd={() => openDialog(null)}
                         onExtract={() => setExtractDialogOpen(true)}
-                        onPickRole={openDialogForRole}
                     />
                     <RubricGapCard paper={paper} onPickType={(type) => openDialog(type)} />
                 </>
             ) : (
                 <>
                     {usesRoleCoverage(paper.exegeticalStrategy) && (
-                        <RoleCoverageCard paper={paper} onPickRole={openDialogForRole} />
+                        <RoleCoverageCard paper={paper} />
                     )}
                     {/* Suppress the rubric-gap card for dialectical
                         papers whose rubric has no per-type minimums
@@ -206,7 +209,6 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                         paper={paper}
                         onAdd={() => openDialog(null)}
                         onExtract={() => setExtractDialogOpen(true)}
-                        onPickRole={openDialogForRole}
                     />
                 </>
             )}
@@ -216,7 +218,6 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 initialType={dialogInitialType}
-                initialRole={dialogInitialRole}
             />
 
             <ExtractFromLibraryDialog
@@ -234,12 +235,10 @@ function CorpusSourcesList({
     paper,
     onAdd,
     onExtract,
-    onPickRole,
 }: {
     paper: ExegeticalPaper;
     onAdd: () => void;
     onExtract: () => void;
-    onPickRole: (role: SourceRole) => void;
 }) {
     const { t } = useTranslation('exegesis');
     const library = useLibrary();
@@ -283,14 +282,6 @@ function CorpusSourcesList({
                             <Sparkles className="h-3 w-3 mr-1" />
                             {t('paperSetup.subSteps.corpus.list.extractCta')}
                         </Button>
-                        <Button
-                            type="button"
-                            onClick={onAdd}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
-                        >
-                            <Upload className="h-3 w-3 mr-1" />
-                            {t('paperSetup.subSteps.corpus.list.addCta')}
-                        </Button>
                     </div>
                 </header>
             )}
@@ -300,8 +291,6 @@ function CorpusSourcesList({
                         libraryCount={library.resources.length}
                         strategy={strategy}
                         onExtract={onExtract}
-                        onAdd={onAdd}
-                        onPickRole={onPickRole}
                     />
                 ) : (
                     <EmptySourcesState onAdd={onAdd} />
@@ -315,7 +304,7 @@ function CorpusSourcesList({
                         />
                     )}
                     {usesRoleCoverage(strategy) ? (
-                        <GroupedByRoleList paper={paper} sources={sorted} onPickRole={onPickRole} />
+                        <GroupedByRoleList paper={paper} sources={sorted} />
                     ) : (
                         <ul className="space-y-2">
                             {sorted.map(source => (
@@ -346,19 +335,16 @@ function CorpusSourcesList({
  * `sourceType` doesn't suggest a role (style templates, "other")
  * fall into the "sin rol" bucket so nothing disappears.
  *
- * Empty buckets render as a one-line "vacío" hint with an inline
- * "Agregar X" button so the user can fill the gap from the same
- * surface they're scanning. Mirrors the per-chip CTA on the role
- * coverage card — same call to `openDialogForRole` upstream.
+ * Los grupos vacíos muestran una línea «vacío» y nada más. Tuvieron un botón
+ * «Agregar X» por rol, y era la tercera copia de la misma puerta —el chip de
+ * cobertura y el héroe tenían la suya—. Agregar se hace en un solo lugar.
  */
 function GroupedByRoleList({
     paper,
     sources,
-    onPickRole,
 }: {
     paper: ExegeticalPaper;
     sources: ReadonlyArray<ProjectSource>;
-    onPickRole: (role: SourceRole) => void;
 }) {
     const { t } = useTranslation('exegesis');
     const groups = useMemo(() => {
@@ -386,7 +372,6 @@ function GroupedByRoleList({
                     role={role}
                     paper={paper}
                     sources={groups[role]}
-                    onAdd={() => onPickRole(role)}
                 />
             ))}
             {groups.unrolled.length > 0 && (
@@ -409,12 +394,10 @@ function RoleGroupSection({
     role,
     paper,
     sources,
-    onAdd,
 }: {
     role: SourceRole;
     paper: ExegeticalPaper;
     sources: ReadonlyArray<ProjectSource>;
-    onAdd: () => void;
 }) {
     const { t } = useTranslation('exegesis');
     const empty = sources.length === 0;
@@ -427,14 +410,6 @@ function RoleGroupSection({
                         ({sources.length})
                     </span>
                 </h4>
-                <button
-                    type="button"
-                    onClick={onAdd}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground rounded px-1.5 py-0.5 hover:bg-muted transition-colors"
-                >
-                    <Upload className="h-3 w-3" aria-hidden />
-                    {t(`paperSetup.subSteps.corpus.roleCoverage.addCta.${role}`)}
-                </button>
             </header>
             {empty ? (
                 <p className="text-[11.5px] italic text-muted-foreground rounded-md border border-dashed border-border px-3 py-2">
@@ -528,10 +503,8 @@ function StrategyModeBadge({ strategy }: { strategy: ExegeticalStrategy }) {
  */
 function RoleCoverageCard({
     paper,
-    onPickRole,
 }: {
     paper: ExegeticalPaper;
-    onPickRole: (role: SourceRole) => void;
 }) {
     const { t } = useTranslation('exegesis');
     const coverage = useMemo(() => computeRoleCoverage(paper.sources), [paper.sources]);
@@ -630,21 +603,18 @@ function RoleCoverageCard({
                     count={coverage.anchor}
                     target={effectiveTargets.anchor}
                     fromRubric={rubricExpectations.anchor > 0}
-                    onAdd={() => onPickRole('anchor')}
                 />
                 <RoleCountChip
                     role="contrast"
                     count={coverage.contrast}
                     target={effectiveTargets.contrast}
                     fromRubric={rubricExpectations.contrast > 0}
-                    onAdd={() => onPickRole('contrast')}
                 />
                 <RoleCountChip
                     role="technical"
                     count={coverage.technical}
                     target={effectiveTargets.technical}
                     fromRubric={rubricExpectations.technical > 0}
-                    onAdd={() => onPickRole('technical')}
                 />
             </div>
 
@@ -657,12 +627,21 @@ function RoleCoverageCard({
     );
 }
 
+/**
+ * Cuánto cubre un rol, y nada más.
+ *
+ * El chip tuvo un botón «Agregar X» que abría el diálogo con el rol fijado de
+ * antemano. Se quitó: el rol es la única decisión que el sistema no puede
+ * tomar por el pastor, y se toma UNA vez dentro del diálogo, después de ver
+ * qué libro es y qué sugiere su tipo. Fijarlo antes de elegir el libro invertía
+ * el orden —comprometía la respuesta antes de conocer la pregunta— y sumaba
+ * tres puertas más a la misma habitación.
+ */
 function RoleCountChip({
     role,
     count,
     target,
     fromRubric,
-    onAdd,
 }: {
     role: SourceRole;
     count: number;
@@ -670,17 +649,6 @@ function RoleCountChip({
     target: number;
     /** True when the target came from the rubric (vs strategy fallback). */
     fromRubric: boolean;
-    /**
-     * Opens the add-source dialog with this role's library filter +
-     * typical SourceType pre-selected. The chip becomes the entry
-     * point per role once the user has at least one source — before
-     * this, the only role-aware entry point was the empty-state
-     * `RolePickerButton` in the hero, which disappeared after the
-     * first source was added (so dialectical-mode users couldn't
-     * easily route a new source to "contrast" or "technical" without
-     * navigating the full dialog).
-     */
-    onAdd: () => void;
 }) {
     const { t } = useTranslation('exegesis');
     const ok = count >= target;
@@ -731,25 +699,6 @@ function RoleCountChip({
             >
                 {t(`paperSetup.subSteps.corpus.roleCoverage.hint.${role}`)}
             </p>
-            {/* Per-chip CTA. Always visible (not just on misses) so
-                the user can add MORE for an already-satisfied role
-                without hunting for a generic button. Tone shifts:
-                primary tint on misses (the action you should take
-                next), muted on satisfied roles (still available, but
-                doesn't compete for attention). */}
-            <button
-                type="button"
-                onClick={onAdd}
-                className={[
-                    'mt-2 inline-flex items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors',
-                    ok
-                        ? 'border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground'
-                        : 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15',
-                ].join(' ')}
-            >
-                <Upload className="h-3 w-3" aria-hidden />
-                {t(`paperSetup.subSteps.corpus.roleCoverage.addCta.${role}`)}
-            </button>
         </div>
     );
 }
@@ -788,14 +737,10 @@ function ExtractHeroCard({
     libraryCount,
     strategy,
     onExtract,
-    onAdd,
-    onPickRole,
 }: {
     libraryCount: number;
     strategy: ExegeticalStrategy;
     onExtract: () => void;
-    onAdd: () => void;
-    onPickRole: (role: SourceRole) => void;
 }) {
     const { t } = useTranslation('exegesis');
 
@@ -819,32 +764,21 @@ function ExtractHeroCard({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <RolePickerButton role="anchor" recommended onClick={() => onPickRole('anchor')} />
-                    <RolePickerButton role="contrast" onClick={() => onPickRole('contrast')} />
-                    <RolePickerButton role="technical" onClick={() => onPickRole('technical')} />
-                </div>
+                {/* Una acción, y la que este héroe vende: extraer fragmentos
+                    de toda la biblioteca. Los tres botones de rol pedían
+                    comprometer el rol ANTES de elegir el libro —el rol se
+                    decide dentro del diálogo, ya viendo qué obra es— y el
+                    enlace «o subir un archivo» era una segunda copia del botón
+                    de agregar que vive en el encabezado del paso. */}
+                <Button
+                    type="button"
+                    onClick={onExtract}
+                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+                >
+                    <Sparkles className="h-4 w-4" />
+                    {t('paperSetup.subSteps.corpus.hero.primaryCta')}
+                </Button>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 border-t border-success/20 mt-2 -mb-1">
-                    <p className="text-[10.5px] text-muted-foreground uppercase tracking-wide font-semibold">
-                        {t('paperSetup.subSteps.corpus.hero.dialecticalAlt')}
-                    </p>
-                    <button
-                        type="button"
-                        onClick={onExtract}
-                        className="text-[12px] text-muted-foreground hover:text-foreground underline underline-offset-2 inline-flex items-center gap-1"
-                    >
-                        <Sparkles className="h-3 w-3" />
-                        {t('paperSetup.subSteps.corpus.hero.dialecticalAltExtract')}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onAdd}
-                        className="text-[12px] text-muted-foreground hover:text-foreground underline underline-offset-2"
-                    >
-                        {t('paperSetup.subSteps.corpus.hero.secondaryCta')}
-                    </button>
-                </div>
             </div>
         );
     }
@@ -896,67 +830,8 @@ function ExtractHeroCard({
                     <Sparkles className="h-4 w-4" />
                     {t('paperSetup.subSteps.corpus.hero.primaryCta')}
                 </Button>
-                <button
-                    type="button"
-                    onClick={onAdd}
-                    className="text-[12px] text-muted-foreground hover:text-foreground underline underline-offset-2"
-                >
-                    {t('paperSetup.subSteps.corpus.hero.secondaryCta')}
-                </button>
             </div>
         </div>
-    );
-}
-
-/**
- * Per-role primary action button for the dialectical hero. Each opens
- * the add-source dialog with the role's typical SourceType + library
- * filter pre-applied so the student lands directly on plausible
- * candidates for that role. Anchor gets a "Recomendado" hint because
- * starting with the anchor is the canonical step-1 of the method.
- */
-function RolePickerButton({
-    role,
-    onClick,
-    recommended = false,
-}: {
-    role: SourceRole;
-    onClick: () => void;
-    recommended?: boolean;
-}) {
-    const { t } = useTranslation('exegesis');
-    const range = STRATEGY_SUGGESTED_RANGES[role];
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={[
-                'text-left rounded-lg border-2 p-3 transition-colors space-y-1.5 bg-card',
-                recommended
-                    ? 'border-primary hover:border-primary/80 shadow-sm'
-                    : 'border-border hover:border-foreground/40',
-            ].join(' ')}
-        >
-            <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10.5px] uppercase tracking-wide font-bold text-primary">
-                    {t(`paperSetup.subSteps.corpus.hero.role.${role}.action`)}
-                </span>
-                {recommended && (
-                    <span className="text-[9px] uppercase tracking-wide font-medium rounded-full border border-success/40 bg-success-subtle text-success-subtle-foreground px-1.5 py-0">
-                        {t('paperSetup.subSteps.corpus.hero.recommended')}
-                    </span>
-                )}
-            </div>
-            <p className="text-[11.5px] text-muted-foreground leading-snug">
-                {t(`paperSetup.subSteps.corpus.hero.role.${role}.body`)}
-            </p>
-            <p className="text-[10.5px] font-medium text-foreground/70 inline-flex items-center gap-1 pt-0.5">
-                <span className="tabular-nums rounded bg-muted px-1.5 py-0.5 text-[10px]">
-                    {range.min}–{range.max}
-                </span>
-                <span>{t('paperSetup.subSteps.corpus.hero.suggestedCount')}</span>
-            </p>
-        </button>
     );
 }
 
@@ -1405,20 +1280,16 @@ function AddSourceDialog({
     open,
     onOpenChange,
     initialType,
-    initialRole,
 }: {
     paper: ExegeticalPaper;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialType: SourceType | null;
     /**
-     * When set (dialectical-mode role buttons), the dialog opens
-     * directly in library mode with the role's library types pre-
-     * filtered — student lands on plausible candidates for the role
-     * they're filling. Falls back to the standard 'upload' mode +
-     * 'all' filter when null.
+     * El tipo que pide un requisito de la rúbrica, usado SÓLO para filtrar la
+     * biblioteca y preseleccionar el desplegable. No decide nada: el
+     * clasificador lo corrige en cuanto se elige un libro.
      */
-    initialRole: SourceRole | null;
+    initialType: SourceType | null;
 }) {
     const { t } = useTranslation('exegesis');
     const { user } = useFirebase();
@@ -1469,32 +1340,40 @@ function AddSourceDialog({
         return getBookById(paper.passage.bookId)?.testament ?? null;
     }, [paper.passage.bookId]);
 
+    // Reads from the globally synced library cache (`useLibrarySync`
+    // mounted at the dashboard shell). First open is instant for any
+    // user who's already loaded the dashboard — no per-modal fetch.
+    const library = useLibrary();
+
     // Reset / pre-select on every open. The dialog is one-shot per
     // open: closing always discards the form so reopening starts
     // fresh. When the parent passes a type via the gap card click,
     // we honor it as the initial selection.
     useEffect(() => {
         if (open) {
-            // When the user opened from a role-specific button on the
-            // dialectical hero, jump straight to library mode with the
-            // role's library type pre-filtered. Otherwise default to
-            // upload mode with no filter.
-            const roleLibTypes = initialRole ? LIBRARY_TYPES_BY_ROLE[initialRole] : null;
-            const seedFilter: ResourceType | 'all' = roleLibTypes && roleLibTypes.length > 0
-                ? (roleLibTypes[0] as ResourceType)
-                : 'all';
-            setMode(initialRole ? 'library' : 'upload');
+            // Quien ya tiene biblioteca casi siempre viene a buscar en ella;
+            // subir un archivo nuevo es el caso raro. Antes el modo biblioteca
+            // sólo se alcanzaba entrando por un botón de rol, así que la
+            // puerta genérica caía en «subir archivo» y parecía otra cosa.
+            const tieneBiblioteca = library.resources.length > 0;
+            // El requisito de la rúbrica filtra la biblioteca cuando su tipo
+            // corresponde a una sola categoría; si corresponde a varias, no
+            // filtra: esconder el libro que se busca es peor que no filtrar.
+            const seedFilter = initialType ? filtroDeBibliotecaPara(initialType) : 'all';
+            setMode(tieneBiblioteca ? 'library' : 'upload');
             setFile(null);
             setDisplayName('');
             setSourceType(initialType ?? 'commentary-critical');
-            setChosenRole(initialRole);
+            // El rol arranca sin elegir: manda la sugerencia del tipo hasta
+            // que el pastor diga otra cosa, ya con el libro a la vista.
+            setChosenRole(null);
             setCitationKey('');
             setClassification(null);
             setPickedResourceIds(new Set());
             setLibrarySearch('');
             setLibraryTypeFilter(seedFilter);
         }
-    }, [open, initialType, initialRole]);
+    }, [open, initialType, library.resources.length]);
 
     // Lo que el tipo sugeriría por su cuenta, y si la elección del pastor
     // lo contradice. La divergencia NO bloquea: dispara un aviso que deja
@@ -1505,10 +1384,6 @@ function AddSourceDialog({
         : t('paperSetup.subSteps.corpus.roles.none');
     const roleDivergent = Boolean(chosenRole && suggestedRole && chosenRole !== suggestedRole);
 
-    // Reads from the globally synced library cache (`useLibrarySync`
-    // mounted at the dashboard shell). First open is instant for any
-    // user who's already loaded the dashboard — no per-modal fetch.
-    const library = useLibrary();
 
     const attachedCorpusIds = useMemo(
         () => new Set(paper.sources.map(s => s.corpusId)),

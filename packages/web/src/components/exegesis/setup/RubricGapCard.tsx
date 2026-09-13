@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle2, AlertTriangle, Upload } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import {
     computeRubricCompliance,
     getSourceTypeOrderIndex,
@@ -9,6 +9,7 @@ import {
     type SourceType,
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
+import { useLibrary } from '@/hooks/library';
 import { RecommendationsSection } from '../recommendations/RecommendationsSection';
 import { useAttachLibrarySource } from '@/hooks/exegesis/useAttachLibrarySource';
 
@@ -33,7 +34,9 @@ import { useAttachLibrarySource } from '@/hooks/exegesis/useAttachLibrarySource'
 interface RubricGapCardProps {
     paper: ExegeticalPaper;
     /**
-     * Called when the student clicks "Subir" on a requirement row.
+     * Abre el diálogo único de agregar, con la biblioteca filtrada al tipo que
+     * pide este requisito. NO es otra puerta de subida: la fila no agrega
+     * nada, sólo lleva a buscar lo que falta donde se busca todo.
      * The parent (`CorpusSubStep`) reacts by pre-selecting that
      * type in the upload form below and scrolling it into view.
      */
@@ -169,6 +172,7 @@ function RequirementRow({
     onPickType?: (type: SourceType) => void;
 }) {
     const { t } = useTranslation('exegesis');
+    const library = useLibrary();
     const attachMatch = useAttachRecommendationMatch(paper, check.sourceType);
     const label = t(`sourceTypes.${check.sourceType}.label`);
     const examples = t(`sourceTypes.${check.sourceType}.examples`);
@@ -190,15 +194,17 @@ function RequirementRow({
                     >
                         {label} · {check.have}/{check.required}
                     </p>
-                    {!check.satisfied && onPickType && (
+                    {/* Sin biblioteca no hay dónde buscar, y el enlace
+                        prometería una estantería vacía. */}
+                    {!check.satisfied && onPickType && library.resources.length > 0 && (
                         <button
                             type="button"
                             onClick={() => onPickType(check.sourceType)}
-                            className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-warning-subtle-foreground hover:text-foreground rounded px-1.5 py-0.5 hover:bg-warning/20 transition-colors"
-                            title={t('paperSetup.subSteps.corpus.gap.uploadForType', { type: label })}
+                            className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground rounded px-1.5 py-0.5 hover:bg-warning/20 transition-colors"
+                            title={t('paperSetup.subSteps.corpus.gap.findForType', { type: label })}
                         >
-                            <Upload className="h-3 w-3" />
-                            {t('paperSetup.subSteps.corpus.gap.uploadForTypeShort')}
+                            <Search className="h-3 w-3" />
+                            {t('paperSetup.subSteps.corpus.gap.findForTypeShort')}
                         </button>
                     )}
                 </div>

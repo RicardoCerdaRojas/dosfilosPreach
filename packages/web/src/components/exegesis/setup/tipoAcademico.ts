@@ -56,3 +56,22 @@ export const TIPO_ACADEMICO_POR_TIPO_DE_BIBLIOTECA: Record<ResourceType, SourceT
 export function defaultSourceTypeFor(resource: LibraryResource): SourceType {
     return TIPO_ACADEMICO_POR_TIPO_DE_BIBLIOTECA[resource.type] ?? 'other';
 }
+
+/**
+ * Qué filtro de biblioteca corresponde a un tipo académico.
+ *
+ * Es el camino inverso del mapa de arriba, y sirve para que un requisito de la
+ * rúbrica —«Diccionario teológico · 0/1»— abra la biblioteca ya filtrada en vez
+ * de ser otra puerta de subida.
+ *
+ * Cuando VARIOS tipos de biblioteca desembocan en el mismo tipo académico
+ * —trasfondo histórico recibe diccionarios bíblicos, panorámicas e historia—
+ * se devuelve `'all'` a propósito: elegir uno escondería los otros dos, y un
+ * filtro que oculta el libro que el pastor está buscando es peor que no
+ * filtrar. Filtrar sólo cuando la respuesta es única y no hay nada que perder.
+ */
+export function filtroDeBibliotecaPara(sourceType: SourceType): ResourceType | 'all' {
+    const [unico, ...resto] = (Object.keys(TIPO_ACADEMICO_POR_TIPO_DE_BIBLIOTECA) as ResourceType[])
+        .filter(t => TIPO_ACADEMICO_POR_TIPO_DE_BIBLIOTECA[t] === sourceType);
+    return unico && resto.length === 0 ? unico : 'all';
+}
