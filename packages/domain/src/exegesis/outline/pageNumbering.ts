@@ -35,11 +35,31 @@ export interface NumberingSegment {
     /** Última hoja del tramo, inclusive. */
     toSheet: number;
     /**
-     * `impresa = hoja + offset`. `null` cuando el tramo no lleva numeración
-     * alguna —láminas, hojas de cortesía—, en cuyo caso la cita honesta es
-     * «hoja N».
+     * `impresa = offset + step × hoja`. `null` cuando el tramo no lleva
+     * numeración alguna —láminas, hojas de cortesía—, en cuyo caso la cita
+     * honesta es «hoja N».
      */
     offset: number | null;
+    /**
+     * Hacia dónde corre la numeración a medida que avanza la hoja.
+     *
+     * Ausente equivale a `1`: la página impresa crece con la hoja, que es lo
+     * que hace todo libro encuadernado de izquierda a derecha y lo que
+     * describe toda la numeración guardada antes de este campo.
+     *
+     * `-1` existe porque un libro HEBREO se encuaderna al revés. Escaneado en
+     * orden de hoja, sus folios DECRECEN: en la Biblia Hebraica Quinta la hoja
+     * 148 imprime 155, la 190 imprime 113 y la 260 imprime 43. Con `step: 1`
+     * eso es inexpresable —ningún desfase fijo lo produce— y el libro quedaba
+     * condenado a citarse como «hoja N» o, peor, calibrado con un desfase que
+     * acierta en una hoja y falla en todas las demás.
+     *
+     * Con `step: -1`, `offset` es la SUMA CONSTANTE hoja + folio: 303 en el
+     * caso de BHQ. No es un número con significado editorial, y por eso no se
+     * le pide a nadie que lo escriba: se deduce de dos respuestas de
+     * calibración cuya suma coincide.
+     */
+    step?: NumberingStep;
     /**
      * Con qué cifras se imprime el número de este tramo.
      *
@@ -58,6 +78,56 @@ export interface NumberingSegment {
 
 /** Cifras con las que se imprime un tramo. */
 export type NumberingStyle = 'arabic' | 'roman';
+
+/**
+ * Qué páginas impresas cubre un tramo, y cuántas de sus hojas quedan sin
+ * número.
+ *
+ * Existe para que NADIE MÁS calcule el folio por su cuenta. El previsualizador
+ * de la calibración lo hacía con `hoja + offset` —su propia copia de la regla—
+ * y con un tramo descendente habría mostrado un rango al revés mientras las
+ * citas mostraban el correcto. Dos reglas que deben coincidir y viven aparte
+ * terminan no coincidiendo.
+ *
+ * Devuelve `null` cuando el tramo no numera ninguna de sus hojas.
+ */
+export function printedRangeOf(
+    segment: NumberingSegment,
+): { from: string; to: string; unnumberedSheets: number } | null {
+    if (segment.offset === null) return null;
+
+    const numbering: PageNumbering = { segments: [segment], origin: 'confirmed' };
+
+    // Se ROTULA, no se devuelve el número: un tramo romano tiene numeración y
+    // hay que mostrarla con sus cifras. Usar `printedPageIn` acá haría que un
+    // tramo romano se informara como «sin numeración arábiga» —esa función
+    // calla ante los romanos a propósito, para que nadie escriba «p. 222» sobre
+    // la página «ccxxii»— y la pantalla diría que no hay número donde sí lo hay.
+    //
+    // Y se RECORRE en vez de despejar: con `step: -1` el extremo numerado no es
+    // necesariamente el primero, y una fórmula que lo suponga se equivoca justo
+    // en el caso que este campo vino a resolver.
+    let primera: string | null = null;
+    let ultima: string | null = null;
+    let numeradas = 0;
+    for (let sheet = segment.fromSheet; sheet <= segment.toSheet; sheet++) {
+        const rotulo = printedLabelIn(numbering, sheet);
+        if (rotulo === null) continue;
+        if (primera === null) primera = rotulo;
+        ultima = rotulo;
+        numeradas++;
+    }
+    if (primera === null || ultima === null) return null;
+
+    return {
+        from: primera,
+        to: ultima,
+        unnumberedSheets: Math.max(0, (segment.toSheet - segment.fromSheet + 1) - numeradas),
+    };
+}
+
+/** Hacia dónde corre la numeración: `1` crece con la hoja, `-1` decrece. */
+export type NumberingStep = 1 | -1;
 
 /** Cómo se estableció la numeración de un recurso. */
 export type NumberingOrigin =
@@ -119,7 +189,10 @@ function segmentValueAt(
     if (!numbering || !Number.isFinite(sheet) || sheet < 1) return null;
     const segment = numbering.segments.find(s => sheet >= s.fromSheet && sheet <= s.toSheet);
     if (!segment || segment.offset === null) return null;
-    const value = sheet + segment.offset;
+    // `offset + step × hoja` en vez de `hoja + offset`: con `step: -1` la
+    // página decrece al avanzar la hoja, que es lo que hace un libro hebreo
+    // escaneado en orden de hoja. Sin `step`, la fórmula es la de siempre.
+    const value = segment.offset + (segment.step ?? 1) * sheet;
     if (value < 1) return null;
     return { value, style: segment.style ?? 'arabic' };
 }
@@ -352,7 +425,8 @@ export function numberingFromCalibrationPoints(
     const segments: NumberingSegment[] = [];
     for (let i = 0; i < sorted.length; i++) {
         const point = sorted[i]!;
-        const offset = point.printed === null ? null : point.printed - point.sheet;
+        const regla = reglaDelPunto(sorted, i);
+        const offset = regla.offset;
         const from = i === 0
             ? 1
             : Math.floor((sorted[i - 1]!.sheet + point.sheet) / 2) + 1;
@@ -366,15 +440,17 @@ export function numberingFromCalibrationPoints(
         // en romanos y la 500 en arábigo colapsarían en un tramo si sus
         // desfases coincidieran, y medio libro se citaría con las cifras del
         // otro medio.
-        if (last && last.offset === offset && (last.style ?? 'arabic') === style) {
+        if (last && last.offset === offset && (last.style ?? 'arabic') === style
+            && (last.step ?? 1) === regla.step) {
             last.toSheet = to;
             continue;
         }
-        segments.push(
-            offset === null || style === 'arabic'
-                ? { fromSheet: from, toSheet: to, offset }
-                : { fromSheet: from, toSheet: to, offset, style },
-        );
+        const base: NumberingSegment = { fromSheet: from, toSheet: to, offset };
+        if (style !== 'arabic' && offset !== null) base.style = style;
+        // `step: 1` no se escribe: es el valor por omisión y guardarlo en cada
+        // tramo ensuciaría las 29 numeraciones que ya existen sin decir nada.
+        if (regla.step === -1) base.step = -1;
+        segments.push(base);
     }
 
     if (segments.every(s => s.offset === null)) {
@@ -384,6 +460,55 @@ export function numberingFromCalibrationPoints(
         return { segments: [{ fromSheet: 1, toSheet: end, offset: null }], origin: 'confirmed' };
     }
     return { segments, origin: 'confirmed' };
+}
+
+/**
+ * Con qué regla numera un punto de calibración, mirando a sus vecinos.
+ *
+ * POR QUÉ HACE FALTA MIRAR AL VECINO. Un punto suelto —«la hoja 148 imprime
+ * 155»— no dice hacia dónde corre la numeración: encaja igual con un libro que
+ * sube y con uno que baja. Lo que sí lo dice es un PAR.
+ *
+ * En un libro encuadernado al revés —todo texto hebreo— los folios decrecen
+ * mientras las hojas avanzan, y entonces `hoja + folio` es CONSTANTE. Medido
+ * sobre la Biblia Hebraica Quinta:
+ *
+ *     hoja 148 → folio 155      148 + 155 = 303
+ *     hoja 190 → folio 113      190 + 113 = 303
+ *     hoja 260 → folio  43      260 +  43 = 303
+ *
+ * Esa constancia es una PRUEBA, no una corazonada: si dos respuestas la
+ * cumplen, describen un tramo descendente; si no, son dos tramos ascendentes
+ * distintos y no se infiere nada. Por eso la dirección se deduce en vez de
+ * preguntarse — nadie puede marcar mal una casilla que no existe, y una
+ * suposición equivocada se cae sola al no cumplirse la suma.
+ */
+function reglaDelPunto(
+    puntos: ReadonlyArray<CalibrationPoint>,
+    i: number,
+): { offset: number | null; step: NumberingStep } {
+    const punto = puntos[i]!;
+    // Se copia a una local para que el estrechamiento sobreviva al cierre de
+    // más abajo: dentro de una función anidada, TypeScript no puede saber que
+    // el campo sigue siendo no-nulo.
+    const impreso = punto.printed;
+    if (impreso === null) return { offset: null, step: 1 };
+
+    const suma = punto.sheet + impreso;
+    const desciendeCon = (otro: CalibrationPoint | undefined): boolean => (
+        !!otro && otro.printed !== null
+        && otro.sheet !== punto.sheet
+        && otro.sheet + otro.printed === suma
+        // Un par que sube NO puede cumplir la suma constante salvo que sea el
+        // mismo punto repetido, ya descartado arriba. Se comprueba igual: el
+        // costo es una comparación y lo que evita es invertir un libro entero.
+        && (otro.sheet > punto.sheet ? otro.printed < impreso : otro.printed > impreso)
+    );
+
+    if (desciendeCon(puntos[i - 1]) || desciendeCon(puntos[i + 1])) {
+        return { offset: suma, step: -1 };
+    }
+    return { offset: impreso - punto.sheet, step: 1 };
 }
 
 /**

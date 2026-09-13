@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { printedRangeOf } from '@dosfilos/domain';
 import type { NumberingSegment, PageNumbering } from '@dosfilos/domain';
 
 interface Props {
@@ -20,18 +21,17 @@ export function NumberingSegmentsPreview({ numbering }: Props) {
     const { t } = useTranslation('library');
 
     const describeSegment = (segment: NumberingSegment): string => {
-        if (segment.offset === null) return t('numbering.noArabic');
+        // El rango lo calcula el DOMINIO, no esta pantalla. Antes lo recalculaba
+        // acá con `hoja + offset` —su propia copia de la regla— y con un tramo
+        // descendente habría mostrado el rango al revés mientras las citas
+        // mostraban el correcto.
+        const rango = printedRangeOf(segment);
+        if (!rango) return t('numbering.noArabic');
 
-        // Primera hoja del tramo cuya cuenta cae en la página 1 o después.
-        const firstNumbered = Math.max(segment.fromSheet, 1 - segment.offset);
-        if (firstNumbered > segment.toSheet) return t('numbering.noArabic');
-
-        const range = t('numbering.printedRange', {
-            from: firstNumbered + segment.offset,
-            to: segment.toSheet + segment.offset,
-        });
-        const skipped = firstNumbered - segment.fromSheet;
-        return skipped > 0 ? `${range} · ${t('numbering.frontMatter', { count: skipped })}` : range;
+        const range = t('numbering.printedRange', { from: rango.from, to: rango.to });
+        return rango.unnumberedSheets > 0
+            ? `${range} · ${t('numbering.frontMatter', { count: rango.unnumberedSheets })}`
+            : range;
     };
 
     if (!numbering || numbering.segments.length === 0) {

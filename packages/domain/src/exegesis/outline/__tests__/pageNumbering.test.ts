@@ -4,6 +4,7 @@ import {
     calibrationSheets,
     citationAnchorFor,
     detectNumberingSegments,
+    printedRangeOf,
     numberingFromCalibrationPoints,
     printedPageIn,
     printedLabelIn,
@@ -449,5 +450,143 @@ describe('calibración con una respuesta romana', () => {
         expect(n!.segments).toHaveLength(2);
         expect(printedLabelIn(n, 100)).toBe('xc');
         expect(printedLabelIn(n, 400)).toBe('390');
+    });
+});
+
+/**
+ * NUMERACIÓN QUE DECRECE. Un libro hebreo se encuaderna de derecha a izquierda;
+ * escaneado en orden de hoja, sus folios van hacia atrás. Medido sobre el
+ * fascículo BHQ de los Doce Profetas, con los folios leídos de su propio texto:
+ *
+ *     hoja 148 → folio 155      hoja 239 → folio 64
+ *     hoja 183 → folio 120      hoja 260 → folio 43
+ *     hoja 190 → folio 113
+ *
+ * Todas suman 303. Con la fórmula `hoja + offset` eso es INEXPRESABLE: ningún
+ * desfase fijo produce una serie decreciente, y el libro quedaba calibrado con
+ * un número que acierta en una hoja y falla en todas las demás.
+ *
+ * La dirección se DEDUCE de esa suma constante en vez de preguntarse. Nadie
+ * puede marcar mal una casilla que no existe.
+ */
+describe('numeración que decrece (libro encuadernado al revés)', () => {
+    /** Los folios reales de BHQ, leídos de su texto extraído. */
+    const BHQ = [
+        { sheet: 148, printed: 155 },
+        { sheet: 190, printed: 113 },
+        { sheet: 260, printed: 43 },
+    ];
+
+    it('dos respuestas cuya suma coincide describen un tramo descendente', () => {
+        const n = numberingFromCalibrationPoints(BHQ, 315)!;
+        expect(n.segments.every(s => s.step === -1)).toBe(true);
+        expect(n.segments.every(s => s.offset === 303)).toBe(true);
+    });
+
+    it('y entonces cada hoja devuelve su folio REAL', () => {
+        const n = numberingFromCalibrationPoints(BHQ, 315);
+        for (const { sheet, printed } of BHQ) {
+            expect(printedPageIn(n, sheet), `hoja ${sheet}`).toBe(printed);
+        }
+        // Y en hojas que NO se usaron para calibrar, que es donde se demuestra
+        // que la regla vale y no sólo el ancla.
+        expect(printedPageIn(n, 213)).toBe(90);
+        expect(printedPageIn(n, 214)).toBe(89);
+        expect(printedPageIn(n, 216)).toBe(87);
+    });
+
+    it('un libro normal no se vuelve descendente por accidente', () => {
+        // Folios que CRECEN: la suma no es constante, así que no hay nada que
+        // deducir y la fórmula sigue siendo la de siempre.
+        const normal = [{ sheet: 10, printed: 2 }, { sheet: 50, printed: 42 }];
+        const n = numberingFromCalibrationPoints(normal, 100)!;
+        expect(n.segments.every(s => s.step === undefined)).toBe(true);
+        expect(printedPageIn(n, 30)).toBe(22);
+    });
+
+    it('`step: 1` no se escribe: las numeraciones de antes no cambian', () => {
+        const n = numberingFromCalibrationPoints([{ sheet: 5, printed: 1 }], 100)!;
+        expect(Object.prototype.hasOwnProperty.call(n.segments[0]!, 'step')).toBe(false);
+    });
+
+    it('una numeración vieja, sin `step`, se sigue leyendo igual', () => {
+        // Compatibilidad hacia atrás: los 29 libros ya calibrados no migran.
+        const vieja = { segments: [{ fromSheet: 1, toSheet: 100, offset: -4 }], origin: 'confirmed' as const };
+        expect(printedPageIn(vieja, 50)).toBe(46);
+    });
+
+    it('un tramo descendente no produce folios imposibles', () => {
+        // Más allá de donde la cuenta llega a cero, la respuesta honesta es
+        // «no sé», no un número negativo.
+        const n = numberingFromCalibrationPoints(BHQ, 400);
+        expect(printedPageIn(n, 303)).toBeNull();
+        expect(printedPageIn(n, 350)).toBeNull();
+    });
+});
+
+/**
+ * `printedRangeOf` es lo que la pantalla de calibración muestra como resumen de
+ * cada tramo. Antes esa pantalla calculaba el rango por su cuenta con
+ * `hoja + offset` —su propia copia de la regla—, así que con un tramo
+ * descendente habría mostrado el rango al revés mientras las citas mostraban el
+ * correcto.
+ */
+describe('printedRangeOf', () => {
+    it('un tramo normal informa su rango impreso', () => {
+        expect(printedRangeOf({ fromSheet: 1, toSheet: 100, offset: -4 }))
+            .toEqual({ from: '1', to: '96', unnumberedSheets: 4 });
+    });
+
+    it('un tramo DESCENDENTE informa el rango en el orden en que se recorre', () => {
+        // BHQ: la hoja 148 imprime 155 y la 260 imprime 43.
+        expect(printedRangeOf({ fromSheet: 148, toSheet: 260, offset: 303, step: -1 }))
+            .toEqual({ from: '155', to: '43', unnumberedSheets: 0 });
+    });
+
+    /**
+     * Un tramo romano TIENE numeración: la introducción de Mayor sobre Santiago
+     * se cita a diario como «p. ccxxii». Informarlo como «sin numeración» sería
+     * decir que no hay número donde sí lo hay.
+     */
+    it('un tramo romano se informa con sus cifras, no como «sin numeración»', () => {
+        const r = printedRangeOf({ fromSheet: 1, toSheet: 10, offset: 0, style: 'roman' });
+        expect(r).not.toBeNull();
+        expect(r!.from).toBe('i');
+        expect(r!.to).toBe('x');
+    });
+
+    it('un tramo sin numeración no informa rango', () => {
+        expect(printedRangeOf({ fromSheet: 1, toSheet: 10, offset: null })).toBeNull();
+    });
+
+    /**
+     * INVARIANTE: el rango que muestra la pantalla y el folio que va en la cita
+     * salen de la misma regla. Si se separan, el resumen dice una cosa y la
+     * cita otra sobre el mismo tramo — que es exactamente lo que pasaba.
+     */
+    it('invariante: el rango coincide con lo que se cita en sus extremos', () => {
+        const tramos: Array<{ fromSheet: number; toSheet: number; offset: number; step?: -1 }> = [
+            { fromSheet: 1, toSheet: 100, offset: -4 },
+            { fromSheet: 148, toSheet: 260, offset: 303, step: -1 },
+            { fromSheet: 50, toSheet: 80, offset: 10 },
+        ];
+        for (const t of tramos) {
+            const rango = printedRangeOf(t)!;
+            const numbering = { segments: [t], origin: 'confirmed' as const };
+
+            // Los extremos del RANGO son las hojas NUMERADAS, no las del tramo:
+            // las primeras hojas pueden caer antes de la página 1 —tapa,
+            // portadilla— y ésas no tienen folio que informar.
+            const rotulados = [];
+            for (let h = t.fromSheet; h <= t.toSheet; h++) {
+                const v = printedPageIn(numbering, h);
+                if (v !== null) rotulados.push(String(v));
+            }
+            expect(rotulados[0], JSON.stringify(t)).toBe(rango.from);
+            expect(rotulados[rotulados.length - 1], JSON.stringify(t)).toBe(rango.to);
+            // Y el conteo de hojas sin número tiene que cuadrar con lo contado.
+            expect(rango.unnumberedSheets, JSON.stringify(t))
+                .toBe((t.toSheet - t.fromSheet + 1) - rotulados.length);
+        }
     });
 });
