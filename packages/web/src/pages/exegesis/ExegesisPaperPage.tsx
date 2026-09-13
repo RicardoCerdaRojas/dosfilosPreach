@@ -583,7 +583,7 @@ function StartStudyButton({
             size="sm"
             disabled={pending}
             onClick={onStart}
-            className="text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 disabled:opacity-50"
+            className="text-success border-success/40 hover:bg-success-subtle/40 disabled:opacity-50"
             title={
                 yaHayBorrador
                     ? t('detail.startStudy.hintResume')
