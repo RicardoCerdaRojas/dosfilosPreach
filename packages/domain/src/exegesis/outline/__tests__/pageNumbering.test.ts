@@ -451,3 +451,74 @@ describe('calibración con una respuesta romana', () => {
         expect(printedLabelIn(n, 400)).toBe('390');
     });
 });
+
+/**
+ * NUMERACIÓN QUE DECRECE. Un libro hebreo se encuaderna de derecha a izquierda;
+ * escaneado en orden de hoja, sus folios van hacia atrás. Medido sobre el
+ * fascículo BHQ de los Doce Profetas, con los folios leídos de su propio texto:
+ *
+ *     hoja 148 → folio 155      hoja 239 → folio 64
+ *     hoja 183 → folio 120      hoja 260 → folio 43
+ *     hoja 190 → folio 113
+ *
+ * Todas suman 303. Con la fórmula `hoja + offset` eso es INEXPRESABLE: ningún
+ * desfase fijo produce una serie decreciente, y el libro quedaba calibrado con
+ * un número que acierta en una hoja y falla en todas las demás.
+ *
+ * La dirección se DEDUCE de esa suma constante en vez de preguntarse. Nadie
+ * puede marcar mal una casilla que no existe.
+ */
+describe('numeración que decrece (libro encuadernado al revés)', () => {
+    /** Los folios reales de BHQ, leídos de su texto extraído. */
+    const BHQ = [
+        { sheet: 148, printed: 155 },
+        { sheet: 190, printed: 113 },
+        { sheet: 260, printed: 43 },
+    ];
+
+    it('dos respuestas cuya suma coincide describen un tramo descendente', () => {
+        const n = numberingFromCalibrationPoints(BHQ, 315)!;
+        expect(n.segments.every(s => s.step === -1)).toBe(true);
+        expect(n.segments.every(s => s.offset === 303)).toBe(true);
+    });
+
+    it('y entonces cada hoja devuelve su folio REAL', () => {
+        const n = numberingFromCalibrationPoints(BHQ, 315);
+        for (const { sheet, printed } of BHQ) {
+            expect(printedPageIn(n, sheet), `hoja ${sheet}`).toBe(printed);
+        }
+        // Y en hojas que NO se usaron para calibrar, que es donde se demuestra
+        // que la regla vale y no sólo el ancla.
+        expect(printedPageIn(n, 213)).toBe(90);
+        expect(printedPageIn(n, 214)).toBe(89);
+        expect(printedPageIn(n, 216)).toBe(87);
+    });
+
+    it('un libro normal no se vuelve descendente por accidente', () => {
+        // Folios que CRECEN: la suma no es constante, así que no hay nada que
+        // deducir y la fórmula sigue siendo la de siempre.
+        const normal = [{ sheet: 10, printed: 2 }, { sheet: 50, printed: 42 }];
+        const n = numberingFromCalibrationPoints(normal, 100)!;
+        expect(n.segments.every(s => s.step === undefined)).toBe(true);
+        expect(printedPageIn(n, 30)).toBe(22);
+    });
+
+    it('`step: 1` no se escribe: las numeraciones de antes no cambian', () => {
+        const n = numberingFromCalibrationPoints([{ sheet: 5, printed: 1 }], 100)!;
+        expect(Object.prototype.hasOwnProperty.call(n.segments[0]!, 'step')).toBe(false);
+    });
+
+    it('una numeración vieja, sin `step`, se sigue leyendo igual', () => {
+        // Compatibilidad hacia atrás: los 29 libros ya calibrados no migran.
+        const vieja = { segments: [{ fromSheet: 1, toSheet: 100, offset: -4 }], origin: 'confirmed' as const };
+        expect(printedPageIn(vieja, 50)).toBe(46);
+    });
+
+    it('un tramo descendente no produce folios imposibles', () => {
+        // Más allá de donde la cuenta llega a cero, la respuesta honesta es
+        // «no sé», no un número negativo.
+        const n = numberingFromCalibrationPoints(BHQ, 400);
+        expect(printedPageIn(n, 303)).toBeNull();
+        expect(printedPageIn(n, 350)).toBeNull();
+    });
+});
