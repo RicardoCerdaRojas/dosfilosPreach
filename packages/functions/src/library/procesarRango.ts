@@ -54,6 +54,12 @@ export interface CargaDeRango {
 export interface RecursoDeCorrida {
     userId: string;
     extractionRunId?: string;
+    /**
+     * En qué estado está la extracción del recurso AHORA. Una corrida siempre
+     * arranca poniéndolo en `processing` antes de encolar su primer rango, así
+     * que verlo en `ready` desde una tarea significa que el libro ya se cerró.
+     */
+    textExtractionStatus?: string;
 }
 
 export interface PuertasDeRango {
@@ -122,6 +128,22 @@ export async function procesarRango(
     if (recurso.extractionRunId !== runId) {
         return { estado: 'descartado', motivo: 'la corrida ya no es la vigente' };
     }
+
+    // Un libro cerrado no se vuelve a tocar, ni siquiera por su PROPIA corrida.
+    //
+    // El guard de arriba sólo detiene a una corrida vieja. Cloud Tasks reintenta
+    // hasta tres veces una tarea que falló, y una que murió DESPUÉS de que la
+    // cadena terminó el libro trae el runId vigente: pasa el guard y vuelve a
+    // ensamblar. Pero al terminar se borran los rangos, así que ese ensamblado
+    // ve un libro a medias. Medido sobre McComiskey: tres intentos seguidos
+    // trataron de certificar 93 de 425 páginas sobre un recurso que ya tenía
+    // las 425 completas. Sólo lo frenó el piso de cobertura, que está ahí para
+    // otra cosa; sin él, la repetición habría reemplazado un libro entero por
+    // un quinto de libro y cobrado las páginas de nuevo.
+    if (recurso.textExtractionStatus === 'ready') {
+        return { estado: 'descartado', motivo: 'el libro ya está listo' };
+    }
+
 
     await puertas.latir(resourceId);
 
