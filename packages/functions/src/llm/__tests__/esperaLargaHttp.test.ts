@@ -17,6 +17,20 @@ vi.mock('undici', () => ({
  *
  * 301 segundos exactos. Un comentario de 425 páginas murió así tras llegar al
  * 16%, y Cloud Tasks reintentó tres veces contra el mismo muro.
+ *
+ * LO QUE ESTAS PRUEBAS **NO** DEMUESTRAN. Acá `undici` está simulado, así que
+ * se comprueba que se le pide el tope correcto — no que el ajuste llegue al
+ * `fetch` interno de Node, que es otra instancia del mismo paquete. Eso depende
+ * de que compartan el símbolo global y no se puede probar con un simulacro.
+ *
+ * Se verificó a mano, bajando el tope a 3 s contra un servidor que tarda 6:
+ *
+ *     sin ajuste : respondió en 6,7 s
+ *     con 3 s    : falló a los 3,3 s
+ *
+ * Y con paridad de runtime: Node 22 en local, `nodejs22` en las funciones. Si
+ * alguna vez esa paridad se rompe, esta comprobación hay que repetirla — estas
+ * pruebas seguirían en verde igual.
  */
 describe('permitirEsperasLargas', () => {
     beforeEach(() => {
