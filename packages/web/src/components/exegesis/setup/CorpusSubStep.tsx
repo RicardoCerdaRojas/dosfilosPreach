@@ -53,6 +53,7 @@ import {
 } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { HerenciaDeSerie } from './HerenciaDeSerie';
+import { pesoDeRecurso, type PesoAcademico } from './pesoAcademico';
 import { useLibrary } from '@/hooks/library';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useAttachLibrarySource } from '@/hooks/exegesis/useAttachLibrarySource';
@@ -2265,6 +2266,13 @@ function LibraryPicker({
                                                 </p>
                                             )}
                                             <ResourceReadinessBadge status={status} />
+                                            {/* Qué vale el libro, en una
+                                                palabra. Acá el pastor elige
+                                                sin más señal que el título, y
+                                                un comentario expositivo y uno
+                                                crítico se llaman igual en el
+                                                lomo. */}
+                                            <PesoDeFuente peso={pesoDeRecurso(r)} />
                                         </div>
                                     </div>
                                 </button>
@@ -2274,6 +2282,25 @@ function LibraryPicker({
                 </ul>
             )}
         </div>
+    );
+}
+
+/**
+ * El peso académico de un libro, en una palabra.
+ *
+ * Texto y no color: el peso no es un semáforo —una fuente «de apoyo» no está
+ * mal elegida, un trabajo las necesita— y pintarla de rojo empujaría a
+ * descartarla.
+ */
+function PesoDeFuente({ peso }: { peso: PesoAcademico }) {
+    const { t } = useTranslation('exegesis');
+    return (
+        <span
+            className="text-[11px] text-muted-foreground shrink-0"
+            title={`${t(`paperSetup.subSteps.corpus.extract.peso.hint_${peso}`)} ${t('paperSetup.subSteps.corpus.extract.dosEjes')}`}
+        >
+            {t(`paperSetup.subSteps.corpus.extract.peso.${peso}`)}
+        </span>
     );
 }
 

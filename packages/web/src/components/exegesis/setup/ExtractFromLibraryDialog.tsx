@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Sparkles, AlertTriangle, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { pesoDeRecurso, type PesoAcademico } from './pesoAcademico';
 import { libraryService } from '@dosfilos/application';
 import {
     ResourcesNotIndexedError,
@@ -393,6 +394,13 @@ export function ExtractFromLibraryDialog({
                                         <Sparkles className="h-3 w-3" />
                                         {t('paperSetup.subSteps.corpus.extract.smartMatchTitle')}
                                     </h3>
+                                    {/* Visible y no en un tooltip: en tablet no
+                                        hay hover, y es justo acá donde el
+                                        conteo se confunde con un ranking de
+                                        calidad. */}
+                                    <p className="text-[11px] text-muted-foreground leading-snug">
+                                        {t('paperSetup.subSteps.corpus.extract.dosEjes')}
+                                    </p>
                                     <ul className="space-y-1.5">
                                         {topMatches.map(r => {
                                             const status = libraryService.getResourceIndexStatus(r);
@@ -529,6 +537,26 @@ interface SelectionEntry {
     citationKey: string;
 }
 
+/**
+ * El peso académico de un libro, en una palabra.
+ *
+ * Va al lado del conteo de fragmentos porque los dos números se leen juntos y
+ * significan cosas distintas. Es texto, no color: el peso no es un semáforo
+ * —una fuente «de apoyo» no está mal elegida— y pintarlo de rojo o verde
+ * empujaría a descartar libros que el trabajo necesita.
+ */
+function PesoBadge({ peso }: { peso: PesoAcademico }) {
+    const { t } = useTranslation('exegesis');
+    return (
+        <span
+            className="text-[10px] text-muted-foreground"
+            title={`${t(`paperSetup.subSteps.corpus.extract.peso.hint_${peso}`)} ${t('paperSetup.subSteps.corpus.extract.dosEjes')}`}
+        >
+            · {t(`paperSetup.subSteps.corpus.extract.peso.${peso}`)}
+        </span>
+    );
+}
+
 function ResourceRow({
     resource,
     status,
@@ -599,6 +627,12 @@ function ResourceRow({
                                 {t('paperSetup.subSteps.corpus.extract.chunksRelevant', { count: rankInfo.matchedChunkCount })}
                             </span>
                         )}
+                        {/* El conteo de arriba mide cuánto HABLA del pasaje, y
+                            se lee como ranking de calidad si va solo: un
+                            devocional que nombra Jonás en cada página gana a un
+                            comentario crítico que le dedica tres páginas
+                            densas. El peso es el otro eje. */}
+                        <PesoBadge peso={pesoDeRecurso(resource)} />
                         {/* Cached classification hint — only when not
                             currently selected, to avoid duplicating
                             info already visible in the picker below. */}

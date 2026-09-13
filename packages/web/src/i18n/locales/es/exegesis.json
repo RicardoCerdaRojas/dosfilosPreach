@@ -1005,7 +1005,20 @@
             "success_one": "{{count}} fuente agregada con sus fragmentos curados",
             "success_other": "{{count}} fuentes agregadas con sus fragmentos curados",
             "failed": "No se pudo extraer los fragmentos. Intenta de nuevo."
-          }
+          },
+          "peso": {
+            "tecnica": "Técnica",
+            "academica": "Académica",
+            "apoyo": "De apoyo",
+            "textoBase": "Texto base",
+            "noCitable": "No se cita",
+            "hint_tecnica": "Peso académico alto: comentario crítico, gramática, léxico o artículo especializado.",
+            "hint_academica": "Peso académico medio: comentario expositivo, trasfondo histórico o monografía.",
+            "hint_apoyo": "Peso académico de apoyo: sirve para ilustrar, no para sostener un argumento.",
+            "hint_textoBase": "Es el texto que estás estudiando, no un estudio sobre él. Se cita, pero no cuenta como fuente académica.",
+            "hint_noCitable": "Material de método o de estilo: no se cita en el trabajo."
+          },
+          "dosEjes": "Los fragmentos dicen cuánto habla del pasaje; el peso, cuánto vale como autoridad. No son lo mismo."
         },
         "excerpts": {
           "expand": "Ver fragmentos curados",
