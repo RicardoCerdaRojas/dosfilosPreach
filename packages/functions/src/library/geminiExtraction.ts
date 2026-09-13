@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { MODEL_FAST } from '../llm/modelCatalog';
+import { permitirEsperasLargas } from '../llm/esperaLargaHttp';
 import { rescatarPaginas, conMarkdown } from './rescatarPaginas';
 import { verificarCobertura, convieneReintentarTanda } from './coberturaDePaginas';
 import { convieneParir } from './partirTanda';
@@ -34,6 +35,10 @@ import {
 // extracción batcheada terminó un libro: once arrancadas, una llegó a su
 // segundo bloque, cero completadas.
 export const BATCH_THRESHOLD_PAGES = 80;
+
+// El `fetch` de Node aborta a los 300 s, y una lectura densa tarda más. Se
+// levanta al cargar el módulo, antes de cualquier llamada.
+permitirEsperasLargas();
 
 /**
  * `GenerationConfig` más el campo que el SDK 0.21 no declara.
