@@ -145,6 +145,34 @@ export class StartStudyFromPaperUseCase {
             return this.sermonRepository.update(updated);
         }
 
+        // Sin objetivo explícito, se retoma el borrador que este paper ya abrió.
+        //
+        // Antes se creaba uno nuevo en cada llamada, y la pantalla no pasa
+        // `targetSermonId`: cada clic del botón dejaba otro borrador vacío. En
+        // la cuenta real hay CINCO «Sermón sobre Jonas 1:1-3», todos parados en
+        // el paso 1, y tres del pasaje siguiente. El pastor creía estar
+        // volviendo a su estudio y empezaba otro.
+        //
+        // Sólo se retoma un BORRADOR. Un sermón ya publicado no se reabre por
+        // un clic —predicarlo de nuevo es empezar de cero, no seguir editando—
+        // y entre varios borradores gana el último tocado, que es donde estaba
+        // trabajando.
+        const suyos = await this.sermonRepository.findBySourcePaperId(
+            args.paper.ownerId, args.paper.id,
+        );
+        const retomable = suyos
+            .filter(s => s.status === 'draft' || s.status === 'working')
+            .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0];
+        if (retomable) {
+            // El paso en el que iba NO se pisa: reabrir en el 1 a quien iba en
+            // el 5 le borraría el rastro de dónde estaba.
+            const conservandoElPaso = {
+                ...wizardProgress,
+                currentStep: retomable.wizardProgress?.currentStep ?? 1,
+            };
+            return this.sermonRepository.update(retomable.update({ wizardProgress: conservandoElPaso }));
+        }
+
         const sermon = SermonEntity.create({
             userId: args.paper.ownerId,
             title: args.paper.title ?? args.passageLabel,

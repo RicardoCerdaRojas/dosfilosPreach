@@ -1827,12 +1827,14 @@
       "hint": "Este trabajo usa la numeración del texto original, que es la convención académica. Tu versión numera este pasaje distinto."
     },
     "startStudy": {
-      "cta": "Llevar al estudio",
-      "hint": "Abre el estudio de 8 pasos con lo que ya estableciste en este paper a la vista en cada paso.",
-      "hintNoMaterial": "Abre el estudio de 8 pasos para este pasaje. Este paper todavía no tiene análisis aceptados que acompañen los pasos.",
+      "cta": "Comenzar el sermón",
+      "ctaResume": "Continuar el sermón",
+      "hint": "Abre el estudio pastoral de 8 pasos con lo que estableciste en este trabajo a la vista en cada paso. El sermón lo escribes tú, en el paso 3.",
+      "hintNoMaterial": "Abre el estudio pastoral de 8 pasos para este pasaje. Este trabajo todavía no tiene análisis aceptados que acompañen los pasos.",
+      "hintResume": "Vuelve al borrador que ya abriste desde este trabajo, en el paso donde lo dejaste.",
       "toast": {
-        "success": "Tu estudio está abierto, con el material del paper a la vista.",
-        "successNoMaterial": "Tu estudio está abierto. Este paper aún no tiene análisis aceptados que mostrar junto a los pasos.",
+        "success": "Tu estudio está abierto, con el material del trabajo a la vista.",
+        "successNoMaterial": "Tu estudio está abierto. Este trabajo aún no tiene análisis aceptados que mostrar junto a los pasos.",
         "failed": "No se pudo abrir el estudio. Intenta de nuevo."
       }
     }
