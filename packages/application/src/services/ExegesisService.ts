@@ -83,6 +83,7 @@ import {
     UpdateUserStyleGuideManifestUseCase,
     DeleteUserStyleGuideUseCase,
     AddProjectSourceUseCase,
+    InheritCorpusFromSeriesUseCase,
     UpdateProjectSourceUseCase,
     RemoveProjectSourceUseCase,
     ExtractExcerptsForPaperUseCase,
@@ -178,6 +179,8 @@ class ExegesisService {
 
     // Project sources
     public addSource: AddProjectSourceUseCase;
+    /** Trae el corpus ya armado en otro trabajo de la misma serie. */
+    public inheritCorpus: InheritCorpusFromSeriesUseCase;
     public updateSource: UpdateProjectSourceUseCase;
     public removeSource: RemoveProjectSourceUseCase;
     public extractExcerpts: ExtractExcerptsForPaperUseCase;
@@ -364,6 +367,7 @@ class ExegesisService {
 
         // Project sources (operate on the paper repo since sources live inline)
         this.addSource = new AddProjectSourceUseCase(paperRepository);
+        this.inheritCorpus = new InheritCorpusFromSeriesUseCase(paperRepository, libraryRepository);
         this.updateSource = new UpdateProjectSourceUseCase(paperRepository);
         this.removeSource = new RemoveProjectSourceUseCase(paperRepository);
 

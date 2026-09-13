@@ -52,6 +52,7 @@ import {
     type ExegeticalStrategy,
 } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
+import { HerenciaDeSerie } from './HerenciaDeSerie';
 import { useLibrary } from '@/hooks/library';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useAttachLibrarySource } from '@/hooks/exegesis/useAttachLibrarySource';
@@ -257,6 +258,11 @@ function CorpusSourcesList({
 
     return (
         <section className="space-y-2">
+            {/* Arriba de todo, y también con fuentes ya adjuntas: cuando el
+                trabajo tiene dos y la serie tiene once, traer las nueve que
+                faltan sigue siendo lo más útil de esta pantalla. La tarjeta se
+                esconde sola cuando no hay nada que ofrecer. */}
+            <HerenciaDeSerie paperId={paper.id} />
             {/* Header only when there are sources to label. The empty
                 state's hero card is doing the entry-point work and
                 the "(0)" header was just noise on first paint. */}
