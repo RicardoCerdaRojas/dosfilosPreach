@@ -14,6 +14,14 @@ import { appCheckCallableOptions } from '../config/appCheckOptions';
  * This callable reads server-side (Admin SDK), computes the counts, and drops
  * the heavy fields. The full paper is fetched via `getPaper` only when opened.
  *
+ * Desde la herencia de corpus también viaja la IDENTIDAD de cada fuente —qué
+ * libro es, cómo está clasificado, con qué clave se cita— pero NUNCA sus
+ * `excerpts`, que son lo que engorda el documento. Son unos cientos de bytes
+ * por fuente contra los 4,83 MB que pesan 22 trabajos enteros. Sin esto, la
+ * pantalla del corpus tendría que volver a bajar los trabajos completos sólo
+ * para saber qué libros usó el pastor en las otras pericopas de la serie, que
+ * es exactamente lo que este callable existe para no hacer.
+ *
  * No orderBy (single `where ownerId` — no composite index needed); the client
  * sorts by `updatedAt`. Archived papers are included; the list filters them.
  */
@@ -31,6 +39,36 @@ interface PaperSummary {
     stepCount: number;
     acceptedStepCount: number;
     sourceCount: number;
+    seriesId: string | null;
+    sources: SourceIdentity[];
+}
+
+/** Una fuente sin nada de su contenido: sólo qué libro es. */
+export interface SourceIdentity {
+    sourceLibraryResourceId: string | null;
+    corpusId: string;
+    sourceType: string;
+    chosenRole: string | null;
+    displayLabel: string;
+    citationKey: string | null;
+}
+
+/**
+ * La identidad de una fuente, y NADA de su contenido.
+ *
+ * Se enumeran los campos uno por uno en vez de copiar y borrar: así, cuando
+ * `ProjectSource` gane un campo pesado nuevo, no se cuela solo en el resumen.
+ * Es una función aparte para que la prueba la pueda llamar.
+ */
+export function identidadDeFuente(s: any): SourceIdentity {
+    return {
+        sourceLibraryResourceId: s?.sourceLibraryResourceId ?? null,
+        corpusId: s?.corpusId ?? '',
+        sourceType: s?.sourceType ?? 'other',
+        chosenRole: s?.chosenRole ?? null,
+        displayLabel: s?.displayLabel ?? '',
+        citationKey: s?.citationKey ?? null,
+    };
 }
 
 function toMillis(value: any): number {
@@ -76,6 +114,8 @@ export const getExegesisPapersSummary = onCall(
                 stepCount: steps.length,
                 acceptedStepCount: steps.filter((s: any) => s?.accepted !== null).length,
                 sourceCount: sources.length,
+                seriesId: typeof d.seriesId === 'string' ? d.seriesId : null,
+                sources: sources.map(identidadDeFuente),
             };
         });
 

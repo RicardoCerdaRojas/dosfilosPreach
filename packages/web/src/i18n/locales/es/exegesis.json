@@ -1100,6 +1100,20 @@
           "typeUpdateFailed": "No se pudo actualizar el tipo",
           "roleUpdated": "Rol actualizado",
           "roleUpdateFailed": "No se pudo actualizar el rol"
+        },
+        "herencia": {
+          "eyebrow": "Ya lo armaste en esta serie",
+          "title_one": "Hay 1 fuente que ya usaste en este plan",
+          "title_other": "Hay {{count}} fuentes que ya usaste en este plan",
+          "body": "Son las mismas de otro pasaje de esta serie, con su clasificación y su clave de cita. Trae las que sigan sirviendo y agrega el resto después.",
+          "yaPresentes_one": "1 de ellas ya está en este trabajo.",
+          "yaPresentes_other": "{{count}} de ellas ya están en este trabajo.",
+          "cta_one": "Traer 1 fuente",
+          "cta_other": "Traer {{count}} fuentes",
+          "nota": "Llegan completas: los fragmentos se eligen contra este pasaje, no contra el anterior.",
+          "toast_one": "Se agregó 1 fuente de la serie.",
+          "toast_other": "Se agregaron {{count}} fuentes de la serie.",
+          "error": "No se pudieron traer las fuentes. Intenta de nuevo."
         }
       },
       "corpus-plan": {

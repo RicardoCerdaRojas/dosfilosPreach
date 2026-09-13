@@ -125,6 +125,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
                 stepCount: p.stepCount ?? 0,
                 acceptedStepCount: p.acceptedStepCount ?? 0,
                 sourceCount: p.sourceCount ?? 0,
+                seriesId: typeof p.seriesId === 'string' ? p.seriesId : null,
+                // Un callable viejo no manda `sources`; se degrada a lista
+                // vacía, que deja la herencia sin proponer nada en vez de
+                // romper la pantalla.
+                sources: Array.isArray(p.sources) ? p.sources : [],
             }))
             .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     }

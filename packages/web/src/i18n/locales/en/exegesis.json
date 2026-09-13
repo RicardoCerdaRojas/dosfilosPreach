@@ -1100,6 +1100,20 @@
           "typeUpdateFailed": "Could not update the type",
           "roleUpdated": "Role updated",
           "roleUpdateFailed": "Could not update the role"
+        },
+        "herencia": {
+          "eyebrow": "Already built in this series",
+          "title_one": "1 source you already used in this plan",
+          "title_other": "{{count}} sources you already used in this plan",
+          "body": "The same ones from another passage in this series, with their classification and citation key. Bring the ones that still fit and add the rest later.",
+          "yaPresentes_one": "1 of them is already in this paper.",
+          "yaPresentes_other": "{{count}} of them are already in this paper.",
+          "cta_one": "Bring 1 source",
+          "cta_other": "Bring {{count}} sources",
+          "nota": "They arrive whole: excerpts are selected against this passage, not the previous one.",
+          "toast_one": "Added 1 source from the series.",
+          "toast_other": "Added {{count}} sources from the series.",
+          "error": "Couldn't bring the sources. Try again."
         }
       },
       "corpus-plan": {

@@ -53,6 +53,7 @@ export { DeleteUserStyleGuideUseCase } from './DeleteUserStyleGuideUseCase';
 
 // Project sources
 export { AddProjectSourceUseCase } from './AddProjectSourceUseCase';
+export { InheritCorpusFromSeriesUseCase } from './InheritCorpusFromSeriesUseCase';
 export { UpdateProjectSourceUseCase } from './UpdateProjectSourceUseCase';
 export { RemoveProjectSourceUseCase } from './RemoveProjectSourceUseCase';
 export {
