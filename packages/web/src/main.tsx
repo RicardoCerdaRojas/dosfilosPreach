@@ -5,6 +5,12 @@ import App from './App.tsx'
 import { ThemeProvider } from '@/components/theme-provider'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
+// Un despliegue renombra los trozos de código que se cargan bajo demanda. Una
+// pestaña abierta desde antes pide nombres que ya no existen y recibe HTML
+// donde espera JavaScript. Esto lo detecta y recarga, una vez.
+import { recargarSiLaVersionCambio } from '@/lib/versionNueva'
+recargarSiLaVersionCambio();
+
 // Initialize i18n before rendering
 import { initI18n } from '@/i18n'
 initI18n();
