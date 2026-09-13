@@ -72,12 +72,17 @@ export interface NumberingSegment {
      * 240» —un número del archivo PDF que no existe en ningún ejemplar—. La
      * diferencia entre `offset: null` y un tramo romano es la diferencia
      * entre «esta hoja no tiene número» y «tiene número, y no es arábigo».
+     *
+     * `'asterisked'` existe por los libros con DOS series de páginas. El
+     * fascículo BHQ numera su comentario al aparato `1*–162*` y su texto hebreo
+     * `1–96`: sin el asterisco, «p. 142» es ambiguo —dos páginas distintas del
+     * mismo libro llevan ese número— y el lector no tiene cómo saber a cuál ir.
      */
     style?: NumberingStyle;
 }
 
 /** Cifras con las que se imprime un tramo. */
-export type NumberingStyle = 'arabic' | 'roman';
+export type NumberingStyle = 'arabic' | 'roman' | 'asterisked';
 
 /**
  * Qué páginas impresas cubre un tramo, y cuántas de sus hojas quedan sin
@@ -177,7 +182,14 @@ export function printedPageIn(
     // escribir «p. 101», que no existe en el libro. Devolver null hace que un
     // llamador no migrado degrade a «hoja N», que es falso pero honesto, en
     // vez de a una página inventada. Para rotular está `printedLabelIn`.
-    if (!found || found.style === 'roman') return null;
+    // Un tramo romano o asteriscado devuelve `null` ACÁ a propósito. Su valor
+    // es un número —101, 142— pero su página se escribe «ci» o «142*», y quien
+    // llame a esta función va a escribir «p. 101» o «p. 142», que o no existe
+    // en el libro o señala OTRA página del mismo libro. Devolver null hace que
+    // un llamador no migrado degrade a «hoja N», que es falso pero honesto, en
+    // vez de a una página inventada o ambigua. Para rotular está
+    // `printedLabelIn`.
+    if (!found || found.style === 'roman' || found.style === 'asterisked') return null;
     return found.value;
 }
 
@@ -210,7 +222,11 @@ export function printedLabelIn(
 ): string | null {
     const found = segmentValueAt(numbering, sheet);
     if (!found) return null;
-    return found.style === 'roman' ? toRomanNumeral(found.value) : String(found.value);
+    if (found.style === 'roman') return toRomanNumeral(found.value);
+    // El asterisco NO es decoración: distingue la serie. `142*` y `142` son dos
+    // páginas distintas del mismo libro.
+    if (found.style === 'asterisked') return `${found.value}*`;
+    return String(found.value);
 }
 
 const ROMAN_UNITS: ReadonlyArray<readonly [number, string]> = [

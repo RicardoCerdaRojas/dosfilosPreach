@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
 import { numberingFromCalibrationPoints, parseRomanNumeral } from '@dosfilos/domain';
+import type { NumberingStyle } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -23,17 +24,29 @@ interface Answer {
 const ZOOM_STEPS = [1, 1.5, 2, 3] as const;
 
 /**
- * Lee lo que la persona tecleó: `42` o `ccxxii`.
+ * Lee lo que la persona tecleó: `42`, `ccxxii` o `142*`.
  *
  * Los preliminares de un libro llevan romanos y sus páginas son páginas —la
  * introducción de Mayor tiene 260 y se citan como «p. ccxxii»—. Obligar a
  * marcar «no tiene número» convertía esas páginas reales en un tramo sin
  * numerar, y sus citas terminaban diciendo «hoja 240», que es un número del
  * PDF que no existe en ningún ejemplar.
+ *
+ * El asterisco distingue SERIES. El fascículo BHQ numera su comentario al
+ * aparato `1*–162*` y su texto hebreo `1–96`: sin él, «p. 142» señala dos
+ * páginas distintas del mismo libro. Se deduce de lo tecleado, como el romano
+ * —no hay selector de estilo, y por eso no hay nada que marcar mal—.
  */
-function readPrinted(raw: string): { printed: number | null; style?: 'arabic' | 'roman' } {
+function readPrinted(raw: string): { printed: number | null; style?: NumberingStyle } {
     const text = (raw ?? '').trim();
     if (!text) return { printed: null };
+    // El asterisco se comprueba ANTES que el número pelado: `142*` empieza con
+    // dígitos, y sin este orden se leería como la página 142 de la otra serie.
+    const conAsterisco = text.match(/^(\d+)\s*\*$/);
+    if (conAsterisco) {
+        const n = Number.parseInt(conAsterisco[1]!, 10);
+        return Number.isFinite(n) && n >= 1 ? { printed: n, style: 'asterisked' } : { printed: null };
+    }
     if (/^\d+$/.test(text)) {
         const n = Number.parseInt(text, 10);
         return { printed: Number.isFinite(n) && n >= 1 ? n : null };
