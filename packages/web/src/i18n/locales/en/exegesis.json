@@ -1005,7 +1005,20 @@
             "success_one": "{{count}} source added with curated excerpts",
             "success_other": "{{count}} sources added with curated excerpts",
             "failed": "Couldn't extract excerpts. Try again."
-          }
+          },
+          "peso": {
+            "tecnica": "Technical",
+            "academica": "Academic",
+            "apoyo": "Supporting",
+            "textoBase": "Base text",
+            "noCitable": "Not cited",
+            "hint_tecnica": "High academic weight: critical commentary, grammar, lexicon or specialized article.",
+            "hint_academica": "Mid academic weight: expository commentary, historical background or monograph.",
+            "hint_apoyo": "Supporting weight: useful to illustrate, not to carry an argument.",
+            "hint_textoBase": "It's the text you're studying, not a study of it. You cite it, but it doesn't count as an academic source.",
+            "hint_noCitable": "Method or style material: not cited in the paper."
+          },
+          "dosEjes": "Fragments say how much it discusses the passage; weight says how much it carries as authority. They are not the same."
         },
         "excerpts": {
           "expand": "Show curated excerpts",
