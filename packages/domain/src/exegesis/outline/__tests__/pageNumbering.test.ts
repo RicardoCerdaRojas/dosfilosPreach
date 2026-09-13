@@ -590,3 +590,53 @@ describe('printedRangeOf', () => {
         }
     });
 });
+
+/**
+ * DOS SERIES DE PÁGINAS EN EL MISMO LIBRO.
+ *
+ * El fascículo BHQ numera su comentario al aparato crítico `1*–162*` y su texto
+ * hebreo `1–96`. Sin distinguirlas, «p. 142» señala dos páginas distintas del
+ * mismo libro y el lector no tiene cómo saber a cuál ir.
+ *
+ * El asterisco se trata como el romano: `printedPageIn` CALLA —para que ningún
+ * llamador escriba «p. 142» sobre la página «142*»— y `printedLabelIn` rotula.
+ */
+describe('páginas con asterisco (dos series en un libro)', () => {
+    const conAsterisco = {
+        segments: [{ fromSheet: 107, toSheet: 147, offset: 15, style: 'asterisked' as const }],
+        origin: 'confirmed' as const,
+    };
+
+    it('se rotula con su asterisco, que es lo que distingue la serie', () => {
+        expect(printedLabelIn(conAsterisco, 127)).toBe('142*');
+        expect(printedLabelIn(conAsterisco, 134)).toBe('149*');
+    });
+
+    it('`printedPageIn` calla, para que nadie escriba «p. 142» sobre «142*»', () => {
+        // Mismo criterio que el romano: falso pero honesto —«hoja N»— antes que
+        // un número que manda a otra página del mismo libro.
+        expect(printedPageIn(conAsterisco, 127)).toBeNull();
+    });
+
+    it('el resumen del tramo muestra la serie con asterisco', () => {
+        const r = printedRangeOf(conAsterisco.segments[0]!);
+        expect(r).toEqual({ from: '122*', to: '162*', unnumberedSheets: 0 });
+    });
+
+    it('un tramo arábigo normal sigue rotulando sin asterisco', () => {
+        const normal = { segments: [{ fromSheet: 1, toSheet: 50, offset: 0 }], origin: 'confirmed' as const };
+        expect(printedLabelIn(normal, 20)).toBe('20');
+        expect(printedPageIn(normal, 20)).toBe(20);
+    });
+
+    it('el estilo separa tramos aunque el desfase coincida', () => {
+        // Sin esto, `142*` y `142` colapsarían en un tramo si sus desfases
+        // coincidieran, y media serie se citaría con las cifras de la otra.
+        const n = numberingFromCalibrationPoints(
+            [{ sheet: 127, printed: 142, style: 'asterisked' }, { sheet: 200, printed: 215 }],
+            300,
+        )!;
+        expect(n.segments.length).toBeGreaterThan(1);
+        expect(n.segments.some(s => s.style === 'asterisked')).toBe(true);
+    });
+});
