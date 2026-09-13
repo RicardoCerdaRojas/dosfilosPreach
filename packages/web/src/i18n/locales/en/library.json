@@ -88,6 +88,8 @@
     "searchPlaceholder": "Search title or author",
     "onlyWithoutBooks": "No books",
     "onlyWithoutBooksTitle": "Show only resources still missing their Bible books",
+    "onlyUncalibrated": "Not calibrated",
+    "onlyUncalibratedTitle": "Show only books whose page numbering isn't calibrated: their citations say «sheet N» instead of the printed page.",
     "allCategories": "All categories",
     "viewGridTitle": "Grid view",
     "viewListTitle": "List view"

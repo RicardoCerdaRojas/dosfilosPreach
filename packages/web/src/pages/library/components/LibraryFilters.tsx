@@ -3,7 +3,7 @@ import { LibraryCategory, ResourceType } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookMarked, LayoutGrid, List, Search } from 'lucide-react';
+import { BookMarked, LayoutGrid, List, Ruler, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type ViewMode = 'grid' | 'list';
@@ -19,6 +19,8 @@ interface LibraryFiltersProps {
     viewMode: ViewMode;
     /** Cuando está activo, sólo se listan los recursos sin libros bíblicos. */
     onlyWithoutBooks: boolean;
+    /** Cuando está activo, sólo se listan los recursos sin numeración calibrada. */
+    onlyUncalibrated: boolean;
     /** Search input change handler. */
     onSearchChange: (query: string) => void;
     /** Category filter change handler. */
@@ -26,6 +28,7 @@ interface LibraryFiltersProps {
     /** View mode change handler. */
     onViewModeChange: (mode: ViewMode) => void;
     onOnlyWithoutBooksChange: (only: boolean) => void;
+    onOnlyUncalibratedChange: (only: boolean) => void;
 }
 
 /**
@@ -38,10 +41,12 @@ export function LibraryFilters({
     categoryFilter,
     viewMode,
     onlyWithoutBooks,
+    onlyUncalibrated,
     onSearchChange,
     onCategoryChange,
     onViewModeChange,
     onOnlyWithoutBooksChange,
+    onOnlyUncalibratedChange,
 }: LibraryFiltersProps) {
     const { t } = useTranslation('library');
 
@@ -84,6 +89,26 @@ export function LibraryFilters({
             >
                 <BookMarked className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{t('filters.onlyWithoutBooks')}</span>
+            </Button>
+            {/*
+              * Sin calibrar, una cita dice «hoja 150» — la hoja del PDF— en vez
+              * de «p. 142», que es la página del ejemplar impreso. El sistema
+              * calla antes que mentir, así que el recurso no se ve roto: se ve
+              * menos preciso, y eso no salta a la vista en ninguna parte.
+              *
+              * Calibrar es trabajo manual por libro, así que lo primero que
+              * hace falta es poder VER cuáles faltan.
+              */}
+            <Button
+                variant={onlyUncalibrated ? 'secondary' : 'outline'}
+                size="sm"
+                aria-pressed={onlyUncalibrated}
+                onClick={() => onOnlyUncalibratedChange(!onlyUncalibrated)}
+                className={cn('h-9 gap-1.5', onlyUncalibrated && 'border-primary/40')}
+                title={t('filters.onlyUncalibratedTitle')}
+            >
+                <Ruler className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{t('filters.onlyUncalibrated')}</span>
             </Button>
             <div className="flex gap-0.5 border border-border/60 rounded-lg p-0.5 sm:ml-auto">
                 <Button
