@@ -88,6 +88,8 @@
     "searchPlaceholder": "Buscar título o autor",
     "onlyWithoutBooks": "Sin libros",
     "onlyWithoutBooksTitle": "Mostrar sólo los recursos a los que falta asignar libros bíblicos",
+    "onlyUncalibrated": "Sin calibrar",
+    "onlyUncalibratedTitle": "Muestra sólo los libros cuya numeración no está calibrada: sus citas dicen «hoja N» en vez de la página impresa.",
     "allCategories": "Todas las categorías",
     "viewGridTitle": "Vista en cuadrícula",
     "viewListTitle": "Vista en lista"

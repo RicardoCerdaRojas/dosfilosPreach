@@ -145,6 +145,7 @@ export function LibraryManager() {
     const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') ?? '');
     const [categoryFilter, setCategoryFilter] = useState<ResourceType | 'all'>('all');
     const [onlyWithoutBooks, setOnlyWithoutBooks] = useState(false);
+    const [onlyUncalibrated, setOnlyUncalibrated] = useState(false);
     const [showUploadForm, setShowUploadForm] = useState(false);
     const [consentModalOpen, setConsentModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -195,9 +196,16 @@ export function LibraryManager() {
             const necesitaLibros = !resource.isSystemSource
                 && (scope === 'book' || scope === 'pericope')
                 && (resource.coversBibleBooks?.length ?? 0) === 0;
-            return matchesSearch && matchesCategory && (!onlyWithoutBooks || necesitaLibros);
+            // «Sin calibrar» es lo que separa una cita que dice «p. 142» de
+            // una que dice «hoja 150». Las fuentes del sistema no se calibran a
+            // mano, así que no son un pendiente de nadie.
+            const necesitaCalibrar = !resource.isSystemSource
+                && !(resource.pageNumbering?.segments?.length);
+            return matchesSearch && matchesCategory
+                && (!onlyWithoutBooks || necesitaLibros)
+                && (!onlyUncalibrated || necesitaCalibrar);
         });
-    }, [data.resources, searchQuery, categoryFilter, onlyWithoutBooks]);
+    }, [data.resources, searchQuery, categoryFilter, onlyWithoutBooks, onlyUncalibrated]);
 
     // ── Modal open helpers — declarative wrappers for prop drilling ─────────
     const openEdit = (resource: LibraryResourceEntity) => {
@@ -307,6 +315,8 @@ export function LibraryManager() {
                     categoryFilter={categoryFilter}
                     viewMode={viewMode}
                     onlyWithoutBooks={onlyWithoutBooks}
+                    onlyUncalibrated={onlyUncalibrated}
+                    onOnlyUncalibratedChange={setOnlyUncalibrated}
                     onSearchChange={setSearchQuery}
                     onCategoryChange={setCategoryFilter}
                     onViewModeChange={setViewMode}
