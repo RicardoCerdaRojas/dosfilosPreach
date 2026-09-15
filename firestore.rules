@@ -337,7 +337,21 @@ service cloud.firestore {
     // No writes from anyone other than the owner — the seed is the pastor's
     // own voice and cannot be authored on their behalf.
     match /pastoralSeeds/{seedId} {
-      allow get: if isOwner(resource.data.userId) || isSuperAdmin();
+      // El id del documento ES el `sermonId` desde #454, y `create()` abre una
+      // transacción que PRIMERO LEE ese documento para no crear un gemelo.
+      // Sobre un documento ausente `resource` es null: desreferenciar
+      // `resource.data` hace fallar la expresión y Firestore responde
+      // permission-denied, NO "no encontrado". Sin el caso `resource == null`
+      // la regla prohíbe leer lo que todavía no existe, y por eso el seed no se
+      // podía crear nunca — recargar no ayudaba porque el documento jamás iba a
+      // aparecer. #454 introdujo la lectura y no tocó este archivo; roto para
+      // todo sermón nuevo entre el 2026-08-23 y el 2026-09-15.
+      //
+      // Observar la ausencia no concede nada: la creación sigue guardada por
+      // `allow create`, que exige que el userId escrito sea el del llamador.
+      allow get: if isSuperAdmin()
+                 || (resource == null && isAuthenticated())
+                 || isOwner(resource.data.userId);
       allow list: if isAuthenticated();
       allow create: if isAuthenticated()
                     && request.auth.uid == request.resource.data.userId
