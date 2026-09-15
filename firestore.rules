@@ -357,11 +357,17 @@ service cloud.firestore {
       // de otro pastor entero, incluido lo que escribió a mano. El seed es su
       // trabajo y su voz, no un recurso compartido.
       //
-      // Con la condición sobre `resource.data.userId`, Firestore evalúa la
-      // regla contra CADA documento devuelto y rechaza la consulta completa si
-      // alguno no es del llamador. `findBySermonId` sigue funcionando —
-      // devuelve el seed propio— y el inspector de auditoría sigue pasando por
-      // `isSuperAdmin()`.
+      // CUIDADO CON EL MECANISMO, que no es el intuitivo: Firestore NO evalúa
+      // esta regla documento por documento sobre el resultado. Exige que la
+      // CONSULTA esté probadamente acotada a lo que la regla permite, así que
+      // al referenciar `resource.data.userId` rechaza entera cualquier consulta
+      // que no filtre por `userId` — incluso una que sólo devolvería documentos
+      // del propio llamador.
+      //
+      // Por eso `findBySermonId` antepone `where('userId','==',uid)`: no es una
+      // optimización, es lo que hace aceptable la consulta. Quitarlo rompe el
+      // wizard para TODOS. El inspector de auditoría no filtra y pasa por
+      // `isSuperAdmin()`, que no referencia `resource`.
       allow list: if isOwner(resource.data.userId) || isSuperAdmin();
       allow create: if isAuthenticated()
                     && request.auth.uid == request.resource.data.userId
