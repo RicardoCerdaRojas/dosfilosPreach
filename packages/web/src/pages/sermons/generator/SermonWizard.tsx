@@ -78,7 +78,9 @@ function WizardContent() {
                         // sermon means the 8-step study is already done (in
                         // Faculty's guided mode or the wizard) → synthesize the
                         // exegesis from the seed and land directly on homiletics.
-                        const completedSeed = await pastoralSeedService.getBySermonId(sermon.id);
+                        const completedSeed = await pastoralSeedService.getBySermonId(sermon.id, {
+                            userId: user?.uid,
+                        });
                         // Only do the fresh handoff when the pastor hasn't started
                         // homiletics/draft yet — otherwise fall through to the normal
                         // resume so reopening lands where they left off.
@@ -421,7 +423,7 @@ function WizardContent() {
         }
         let cancelled = false;
         pastoralSeedService
-            .getBySermonId(sermonId)
+            .getBySermonId(sermonId, { userId: user?.uid })
             .then((seed) => {
                 if (cancelled) return;
                 if (!seed || !evaluatePastoralSeed(seed).completed) {
@@ -439,7 +441,10 @@ function WizardContent() {
         return () => {
             cancelled = true;
         };
-    }, [usePastoralFlow, step, sermonId, setStep, t]);
+        // `user?.uid` va en las dependencias porque la consulta lo NECESITA: sin
+        // él las reglas rechazan el listado y la puerta quedaría sin aplicarse
+        // en silencio si el efecto corre antes de que la sesión esté lista.
+    }, [usePastoralFlow, step, sermonId, setStep, t, user?.uid]);
 
     // Mint the sermon doc eagerly when entering the seed wizard so the
     // seed has a `sermonId` to anchor to. Legacy flow defers creation

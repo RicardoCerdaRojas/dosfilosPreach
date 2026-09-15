@@ -352,7 +352,17 @@ service cloud.firestore {
       allow get: if isSuperAdmin()
                  || (resource == null && isAuthenticated())
                  || isOwner(resource.data.userId);
-      allow list: if isAuthenticated();
+      // `isAuthenticated()` a secas dejaba que CUALQUIER usuario con sesión
+      // consultara la colección: con `where('sermonId','==',X)` leía el estudio
+      // de otro pastor entero, incluido lo que escribió a mano. El seed es su
+      // trabajo y su voz, no un recurso compartido.
+      //
+      // Con la condición sobre `resource.data.userId`, Firestore evalúa la
+      // regla contra CADA documento devuelto y rechaza la consulta completa si
+      // alguno no es del llamador. `findBySermonId` sigue funcionando —
+      // devuelve el seed propio— y el inspector de auditoría sigue pasando por
+      // `isSuperAdmin()`.
+      allow list: if isOwner(resource.data.userId) || isSuperAdmin();
       allow create: if isAuthenticated()
                     && request.auth.uid == request.resource.data.userId
                     && request.resource.data.sermonId is string

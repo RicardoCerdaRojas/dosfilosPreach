@@ -259,6 +259,7 @@ describe('pastoralSeeds — list', () => {
         const db = env.authenticatedContext(PASTOR).firestore();
         const q = query(
             collection(db, 'pastoralSeeds'),
+            where('userId', '==', PASTOR),
             where('sermonId', '==', SERMON_EXISTENTE),
             orderBy('updatedAt', 'desc'),
             fsLimit(1),
@@ -268,15 +269,39 @@ describe('pastoralSeeds — list', () => {
     });
 
     /**
-     * FUGA CONOCIDA — se cierra en el PR que sigue a este.
+     * El filtro por `userId` NO es una optimización: es lo que hace aceptable
+     * la consulta. Firestore no evalúa `allow list` documento por documento
+     * sobre el resultado — exige que la consulta esté probadamente acotada a
+     * lo que la regla permite, así que sin el filtro se rechaza entera aunque
+     * el único documento que devolvería fuese del propio llamador.
      *
-     * `allow list: if isAuthenticated()` deja que CUALQUIER usuario con sesión
-     * consulte la colección y lea el seed de otro pastor: el estudio entero,
-     * incluido lo que escribió a mano. La prueba afirma la conducta ACTUAL a
-     * propósito, para que el PR que la cierre muestre el cambio de seguridad en
-     * su diff en vez de esconderlo.
+     * Esta prueba es la que impide que alguien "simplifique" la firma de
+     * `findBySermonId` quitando el `userId` y rompa el wizard para todos.
      */
-    it('HOY un pastor ajeno puede leer el seed de otro por consulta (pendiente de cerrar)', async () => {
+    it('el dueño NO puede consultar sólo por sermonId, sin filtrar por userId', async () => {
+        await sembrar(async (db) => {
+            await setDoc(
+                doc(db, 'pastoralSeeds', SERMON_EXISTENTE),
+                { ...seedDe(PASTOR, SERMON_EXISTENTE), updatedAt: new Date() },
+            );
+        });
+        const db = env.authenticatedContext(PASTOR).firestore();
+        const q = query(
+            collection(db, 'pastoralSeeds'),
+            where('sermonId', '==', SERMON_EXISTENTE),
+            orderBy('updatedAt', 'desc'),
+            fsLimit(1),
+        );
+        await assertFails(getDocs(q));
+    });
+
+    /**
+     * `allow list` era `isAuthenticated()` a secas: cualquier usuario con
+     * sesión consultaba la colección por `sermonId` y se llevaba el estudio
+     * ajeno completo. La consulta que lo lograba es la misma que usa
+     * `findBySermonId`, así que no hacía falta nada especial para explotarlo.
+     */
+    it('un pastor ajeno NO puede leer el seed de otro por consulta', async () => {
         await sembrar(async (db) => {
             await setDoc(
                 doc(db, 'pastoralSeeds', SERMON_EXISTENTE),
@@ -289,8 +314,52 @@ describe('pastoralSeeds — list', () => {
             where('sermonId', '==', SERMON_EXISTENTE),
             fsLimit(1),
         );
+        await assertFails(getDocs(q));
+    });
+
+    it('un pastor ajeno NO puede barrer la colección entera', async () => {
+        await sembrar(async (db) => {
+            await setDoc(
+                doc(db, 'pastoralSeeds', SERMON_EXISTENTE),
+                { ...seedDe(PASTOR, SERMON_EXISTENTE), updatedAt: new Date() },
+            );
+        });
+        const db = env.authenticatedContext(OTRO_PASTOR).firestore();
+        await assertFails(getDocs(collection(db, 'pastoralSeeds')));
+    });
+
+    it('el super_admin sigue listando para el inspector de auditoría', async () => {
+        await sembrar(async (db) => {
+            await setDoc(doc(db, 'users', SUPER_ADMIN), { role: 'super_admin' });
+            await setDoc(
+                doc(db, 'pastoralSeeds', SERMON_EXISTENTE),
+                { ...seedDe(PASTOR, SERMON_EXISTENTE), updatedAt: new Date() },
+            );
+        });
+        const db = env.authenticatedContext(SUPER_ADMIN).firestore();
+        const q = query(
+            collection(db, 'pastoralSeeds'),
+            where('sermonId', '==', SERMON_EXISTENTE),
+            fsLimit(1),
+        );
         const snap = await assertSucceeds(getDocs(q));
         expect(snap.size).toBe(1);
-        expect(snap.docs[0].data().userId).toBe(PASTOR);
+    });
+
+    it('el dueño lista sus propios seeds (consulta de listByUserId)', async () => {
+        await sembrar(async (db) => {
+            await setDoc(
+                doc(db, 'pastoralSeeds', SERMON_EXISTENTE),
+                { ...seedDe(PASTOR, SERMON_EXISTENTE), updatedAt: new Date() },
+            );
+        });
+        const db = env.authenticatedContext(PASTOR).firestore();
+        const q = query(
+            collection(db, 'pastoralSeeds'),
+            where('userId', '==', PASTOR),
+            orderBy('updatedAt', 'desc'),
+        );
+        const snap = await assertSucceeds(getDocs(q));
+        expect(snap.size).toBe(1);
     });
 });
