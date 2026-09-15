@@ -47,9 +47,18 @@ import type {
 export class FirestorePastoralSeedRepository implements IPastoralSeedRepository {
     private readonly collectionName = 'pastoralSeeds';
 
-    async findBySermonId(sermonId: string): Promise<PastoralSeed | null> {
+    async findBySermonId(
+        sermonId: string,
+        opts?: { userId?: string },
+    ): Promise<PastoralSeed | null> {
+        // El filtro por `userId` es lo que hace ACEPTABLE la consulta para
+        // `allow list`, no una optimización: la regla acota la colección al
+        // dueño y Firestore rechaza la consulta completa si no puede probar
+        // que sólo devolverá documentos suyos. Sin filtro sólo pasa el
+        // super_admin, por la otra rama de la regla.
         const q = query(
             collection(db, this.collectionName),
+            ...(opts?.userId ? [where('userId', '==', opts.userId)] : []),
             where('sermonId', '==', sermonId),
             orderBy('updatedAt', 'desc'),
             fsLimit(1),

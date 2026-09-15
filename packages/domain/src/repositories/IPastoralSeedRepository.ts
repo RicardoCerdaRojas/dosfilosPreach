@@ -18,8 +18,16 @@ export interface IPastoralSeedRepository {
      * The wizard treats sermons as 1:1 with seeds in Phase 1, but the
      * `orderBy updatedAt desc + limit 1` guards against duplicates that
      * could arise from a race during creation.
+     *
+     * `userId` NO ES OPCIONAL POR COMODIDAD. Las reglas de `pastoralSeeds`
+     * acotan `list` al dueño, y Firestore no evalúa esa regla documento por
+     * documento: exige que la CONSULTA esté probadamente acotada, así que sin
+     * el filtro por `userId` la consulta se rechaza entera. Se omite sólo en
+     * las superficies de auditoría (inspector, panel), donde el llamador es
+     * super_admin, no conoce el uid del dueño, y pasa por la otra rama de la
+     * regla. Cubierto en `tests/firestore-rules/pastoralSeeds.test.ts`.
      */
-    findBySermonId(sermonId: string): Promise<PastoralSeed | null>;
+    findBySermonId(sermonId: string, opts?: { userId?: string }): Promise<PastoralSeed | null>;
     getById(seedId: string): Promise<PastoralSeed | null>;
     /**
      * Persists a freshly minted seed. Returns the same document with

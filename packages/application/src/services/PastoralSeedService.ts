@@ -98,8 +98,17 @@ export interface StepOrientation {
 export class PastoralSeedService {
     constructor(private readonly repo: IPastoralSeedRepository) {}
 
-    async getBySermonId(sermonId: string): Promise<PastoralSeed | null> {
-        return this.repo.findBySermonId(sermonId);
+    /**
+     * `opts.userId` viaja hasta la consulta y es lo que la vuelve aceptable
+     * para `allow list`, que acota `pastoralSeeds` al dueño. Se omite SÓLO en
+     * las superficies de auditoría, donde el llamador es super_admin y no
+     * conoce el uid del pastor.
+     */
+    async getBySermonId(
+        sermonId: string,
+        opts?: { userId?: string },
+    ): Promise<PastoralSeed | null> {
+        return this.repo.findBySermonId(sermonId, opts);
     }
 
     async getById(seedId: string): Promise<PastoralSeed | null> {
@@ -121,7 +130,7 @@ export class PastoralSeedService {
         passage: string;
         projectId?: string;
     }): Promise<PastoralSeed> {
-        const existing = await this.repo.findBySermonId(args.sermonId);
+        const existing = await this.repo.findBySermonId(args.sermonId, { userId: args.userId });
         if (existing) return existing;
         const empty = createEmptyPastoralSeed({
             id: '', // repo assigns it

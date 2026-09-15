@@ -161,10 +161,11 @@ async function hidratarEstudiosDePalabra(
 async function conSemillaPastoral(
     rules: GenerationRules,
     sermonId: string | null,
+    userId: string | undefined,
 ): Promise<GenerationRules> {
     if (!sermonId) return rules;
     try {
-        const seed = await pastoralSeedService.getBySermonId(sermonId);
+        const seed = await pastoralSeedService.getBySermonId(sermonId, { userId });
         if (!seed || !evaluatePastoralSeed(seed).completed) return rules;
         return {
             ...rules,
@@ -211,5 +212,5 @@ export async function buildRulesWithContext(input: RulesContextInput): Promise<G
     const conPaper = await conContextoDePaper(rules, derivedContext, userId);
     const conFaculty = conContextoDeFaculty(conPaper, derivedContext);
     const conProyecto = await conContextoDeProyecto(conFaculty, sermonId, userId);
-    return conSemillaPastoral(conProyecto, sermonId);
+    return conSemillaPastoral(conProyecto, sermonId, userId);
 }
