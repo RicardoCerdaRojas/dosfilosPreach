@@ -148,10 +148,46 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+  firestore-rules:
+    name: Reglas de Firestore
+    runs-on: ubuntu-latest
+
+    # Las reglas eran el único archivo desplegable del repo SIN una sola prueba.
+    # El 2026-08-23 el PR #454 hizo que `create()` leyera el documento antes de
+    # escribirlo y no tocó `firestore.rules`, donde `allow get` desreferenciaba
+    # `resource.data` sin contemplar el documento ausente. Sobre un documento que
+    # no existe Firestore responde permission-denied, así que la regla prohibía
+    # leer lo que aún no existía y el estudio del pastor no se podía crear.
+    # Estuvo roto tres semanas y lo encontró un usuario, no el pipeline: un
+    # desajuste entre una lectura nueva del cliente y las reglas era indetectable.
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+
+      # El emulador de Firestore es un binario Java. Sin JDK no arranca, y el
+      # síntoma es un timeout del emulador — no un "falta Java" legible.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: Reglas contra el emulador
+        run: yarn test:rules
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint-and-type-check, test]
+    needs: [lint-and-type-check, test, firestore-rules]
     
     steps:
       - name: Checkout code

@@ -25,6 +25,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:run": "vitest run",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-dosfilos-rules \"vitest run --config vitest.rules.config.ts\"",
     "audit:features": "ts-node scripts/audit-feature-ids.ts",
     "audit:features:simple": "node scripts/audit-feature-ids-simple.js",
     "compliance": "./scripts/check-compliance.sh",
@@ -53,8 +54,11 @@
     "bakeoff:test": "vitest run scripts/extraction-bakeoff"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
     "@testing-library/dom": "^10.4.1",
     "@types/node": "^20.10.0",
+    "firebase": "^10.14.1",
+    "firebase-tools": "^13.29.1",
     "happy-dom": "^20.9.0",
     "husky": "^8.0.3",
     "lint-staged": "^15.2.0",

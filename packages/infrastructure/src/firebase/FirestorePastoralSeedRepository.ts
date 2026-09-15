@@ -91,6 +91,14 @@ export class FirestorePastoralSeedRepository implements IPastoralSeedRepository 
      *
      * Compatible hacia atrás: los seeds anteriores conservan su id aleatorio y
      * se siguen encontrando por `findBySermonId`, que consulta el CAMPO.
+     *
+     * DEPENDE DE LAS REGLAS: el `tx.get` de abajo lee un documento que en el
+     * caso normal NO EXISTE, así que `allow get` de `pastoralSeeds` tiene que
+     * admitir `resource == null`. Si alguien "endurece" esa regla volviendo a
+     * exigir `resource.data.userId`, Firestore responde permission-denied sobre
+     * el documento ausente y NINGÚN sermón nuevo vuelve a crear su estudio.
+     * Pasó de verdad entre el 2026-08-23 y el 2026-09-15. Lo cubre
+     * `tests/firestore-rules/pastoralSeeds.test.ts`.
      */
     async create(seed: PastoralSeed): Promise<PastoralSeed> {
         const payload = {
