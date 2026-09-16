@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBriefs';
 import { toast } from 'sonner';
+import { estadoDelEncuadre } from './encuadreAplicado';
 
 interface AssignmentBriefPickerProps {
     /** Current textarea value — used for the "Save as template" action. */
@@ -62,10 +63,16 @@ export function AssignmentBriefPicker({ currentBody, onApply }: AssignmentBriefP
         if (b.isDefault && !a.isDefault) return 1;
         return b.updatedAt.getTime() - a.updatedAt.getTime();
     });
-    const defaultBrief = sorted.find(b => b.isDefault) ?? null;
-    const triggerLabel = defaultBrief
-        ? t('create.brief.templates.defaultLabel', { name: defaultBrief.displayName })
-        : t('create.brief.templates.pickLabel');
+    // El rótulo nombra lo que HAY en el cuadro, no la predeterminada: se elegía
+    // otra plantilla, el texto cambiaba y el rótulo seguía igual, así que
+    // parecía que el clic no hacía nada. Ver `estadoDelEncuadre`.
+    const estado = estadoDelEncuadre(briefs, currentBody);
+    const aplicadaId = estado.tipo === 'plantilla' ? estado.plantilla.id : null;
+    const triggerLabel = estado.tipo === 'plantilla'
+        ? t('create.brief.templates.appliedLabel', { name: estado.plantilla.displayName })
+        : estado.tipo === 'propio'
+            ? t('create.brief.templates.customLabel')
+            : t('create.brief.templates.pickLabel');
 
     const canSave = currentBody.trim().length >= 30;
 
@@ -155,7 +162,11 @@ export function AssignmentBriefPicker({ currentBody, onApply }: AssignmentBriefP
                         {sorted.map(b => (
                             <div
                                 key={b.id}
-                                className="group flex items-start gap-2 px-3 py-2 hover:bg-accent/50 transition-colors"
+                                aria-current={b.id === aplicadaId ? 'true' : undefined}
+                                className={cn(
+                                    'group flex items-start gap-2 px-3 py-2 hover:bg-accent/50 transition-colors',
+                                    b.id === aplicadaId && 'bg-accent/60',
+                                )}
                             >
                                 <button
                                     type="button"

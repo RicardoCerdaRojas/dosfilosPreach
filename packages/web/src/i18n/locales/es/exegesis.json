@@ -381,7 +381,8 @@
       "tip": "Cuanto más claro sea el encuadre, mejor cohesión tendrá el paper. Menciona el pasaje, el énfasis (cristológico, eclesiológico, etc.) y cualquier expectativa explícita del profesor.",
       "templates": {
         "pickLabel": "Cargar plantilla guardada",
-        "defaultLabel": "Plantilla: {{name}}",
+        "appliedLabel": "Plantilla: {{name}}",
+        "customLabel": "Encuadre propio",
         "listHeader": "Mis encuadres",
         "loading": "Cargando…",
         "empty": "Aún no guardas plantillas. Escribe un encuadre y guárdalo para reusarlo.",

@@ -381,7 +381,8 @@
       "tip": "The clearer the framing, the more cohesive the paper. Mention the passage, the emphasis (Christological, ecclesiological, etc.), and any explicit professor expectations.",
       "templates": {
         "pickLabel": "Load saved template",
-        "defaultLabel": "Template: {{name}}",
+        "appliedLabel": "Template: {{name}}",
+        "customLabel": "Custom framing",
         "listHeader": "My framings",
         "loading": "Loading…",
         "empty": "No saved templates yet. Write a framing and save it to reuse later.",
