@@ -152,6 +152,7 @@
     "ariaLabel": "Processing progress",
     "elapsed": "Processing for {{duration}}",
     "estimated": "{{duration}} estimated",
+    "remaining": "{{duration}} left",
     "phase": {
       "uploading": "Uploading",
       "extracting": "Extracting",

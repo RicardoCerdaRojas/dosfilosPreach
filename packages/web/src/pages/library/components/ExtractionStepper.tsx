@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
 import {
     estimateExtractionDurationMs,
+    estimateRemainingFromProgressMs,
+    formatElapsedShort,
     formatEstimateShort,
     type LibraryResourceEntity,
 } from '@dosfilos/domain';
@@ -151,30 +153,33 @@ function useElapsedLabel(
     const elapsedMs = Date.now() - startedAt.getTime();
     if (elapsedMs < 0) return null; // server-time clock skew safety
 
-    // ETA: heuristic estimate from file size + requested mode. Pure
-    // function in the domain layer — see `extractionEstimate.ts` for
-    // the calibration sources. We render it ALONGSIDE elapsed (not
-    // "remaining") because remaining gets weird when our estimate is
-    // off — better to show the user the actual elapsed AND the
-    // expected total so they can judge.
-    const requestedMode = resource.requestedExtractionMode;
+    const elapsedText = t('stepper.elapsed', { duration: formatElapsedShort(elapsedMs) });
+
+    // Con avance real (extracción en cola) se proyecta lo que FALTA a partir
+    // del ritmo medido. Antes la tarjeta mostraba un total calculado por tamaño
+    // una sola vez: tres horas después seguía diciendo «~11 min estimado».
+    const avance = resource.textExtractionStatus === 'processing' ? resource.extractionProgress : undefined;
+    const restanteMs = avance
+        ? estimateRemainingFromProgressMs({
+            startedAt,
+            now: new Date(),
+            paginasHechas: avance.paginasHechas,
+            totalPaginas: avance.totalPaginas,
+        })
+        : null;
+    if (restanteMs !== null) {
+        return `${elapsedText} · ${t('stepper.remaining', { duration: formatEstimateShort(restanteMs) })}`;
+    }
+
+    // Sin avance real queda el coeficiente por tamaño, pero SOLO mientras sea
+    // creíble. Una vez que el tiempo transcurrido lo supera, el número ya está
+    // desmentido por el reloj de al lado y se deja de mostrar.
     const estimateMs = estimateExtractionDurationMs({
         sizeBytes: resource.sizeBytes,
-        mode: requestedMode,
+        mode: resource.requestedExtractionMode,
     });
-    const showEstimate = estimateMs > 0;
-
-    const elapsedText = t('stepper.elapsed', { duration: formatDuration(elapsedMs) });
-    if (!showEstimate) return elapsedText;
+    if (estimateMs <= 0 || elapsedMs >= estimateMs) return elapsedText;
     return `${elapsedText} · ${t('stepper.estimated', { duration: formatEstimateShort(estimateMs) })}`;
-}
-
-function formatDuration(ms: number): string {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    if (minutes === 0) return `${seconds}s`;
-    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
 }
 
 function PhaseDot({ state }: { state: PhaseState }) {
