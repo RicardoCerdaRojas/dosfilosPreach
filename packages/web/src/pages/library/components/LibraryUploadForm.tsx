@@ -76,12 +76,6 @@ interface LibraryUploadFormProps {
      * the resource detail (A.3) is the canonical spot for adjustment.
      */
     smartMatchInference: SmartMatchInferenceResult;
-    /**
-     * Per-tier availability for the currently picked file. Drives the
-     * disabled state on the Premium / Standard tiles and the
-     * "se procesará con Básico" callout. Without this, users could
-     * pick Premium for a 200MB file and silently get pdf-parse output.
-     */
     /** File picker handler — caller validates type + sets file/warning. Pass `null` to clear. */
     onFileChange: (file: File | null) => void;
     /** Metadata patch — caller spreads over current state. */
