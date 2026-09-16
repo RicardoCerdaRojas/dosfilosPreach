@@ -98,6 +98,41 @@ export function topeDeVisionPara(pageCount?: number | null): number {
 /** Tope de la ruta premium. */
 export const PREMIUM_MAX_BYTES = 100 * 1024 * 1024;
 
+/**
+ * Qué rutas puede tomar ESTE archivo, con sus topes ya resueltos.
+ *
+ * Existe porque los topes estaban escritos TRES veces —acá, en el hook de
+ * subida y en los textos de la interfaz— y ninguna de las tres copias sabía de
+ * la cola. La pantalla llegó a mostrar, sobre el mismo archivo, que el tope era
+ * 250 MB, que ninguna ruta lo aceptaba por pasar de 100 MB, y que se procesaría
+ * igual en «modo básico». Tres respuestas incompatibles para una sola pregunta.
+ *
+ * El tope de visión NO es una constante: depende de por dónde irá el libro.
+ * Sin `pageCount` no se sabe, y se contesta con el conservador.
+ */
+export function disponibilidadDeRutas(input: {
+    sizeBytes: number;
+    pageCount?: number | null;
+}): {
+    standard: boolean;
+    premium: boolean;
+    /** Ninguna ruta acepta el archivo: hay que partirlo. */
+    ninguna: boolean;
+    standardCapMB: number;
+    premiumCapMB: number;
+} {
+    const topeDeVision = topeDeVisionPara(input.pageCount);
+    const standard = input.sizeBytes <= topeDeVision;
+    const premium = input.sizeBytes <= PREMIUM_MAX_BYTES;
+    return {
+        standard,
+        premium,
+        ninguna: !standard && !premium,
+        standardCapMB: Math.round(topeDeVision / (1024 * 1024)),
+        premiumCapMB: Math.round(PREMIUM_MAX_BYTES / (1024 * 1024)),
+    };
+}
+
 export type ExtractionModeChoice = 'standard' | 'premium';
 
 export interface ModeRecommendation {
@@ -150,7 +185,16 @@ export function recommendExtractionMode(input: {
     const { sizeBytes, diagnosis } = input;
     const topeDeVision = topeDeVisionPara(input.pageCount);
 
-    if (sizeBytes > PREMIUM_MAX_BYTES) {
+    // «Ninguna ruta lo acepta» significa que NO ENTRA EN NINGUNA, así que se
+    // compara contra el mayor de los dos topes, no contra el de premium.
+    //
+    // Comparar contra `PREMIUM_MAX_BYTES` a secas cortaba acá y jamás llegaba a
+    // la lógica de visión de más abajo — que para un libro largo tolera hasta
+    // 300 MB porque la cola nunca sube el archivo completo. Un comentario
+    // escaneado de 148 MB y 355 páginas, que la cola lee sin problema, recibía
+    // «pártelo en tomos antes de subirlo». El tope de premium se estaba usando
+    // como si fuera el tope del producto.
+    if (sizeBytes > Math.max(topeDeVision, PREMIUM_MAX_BYTES)) {
         return { recommended: null, reasonKey: 'over-every-cap', strong: true };
     }
 

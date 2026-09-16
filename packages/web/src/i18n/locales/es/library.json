@@ -50,7 +50,7 @@
     "authorPlaceholder": "Nombre del autor",
     "categoryLabel": "Categoría",
     "uploadButton": "Subir",
-    "fileSizeWarning": "Archivo >50MB: la extracción demora más (cap: 250MB)",
+    "fileSizeWarning": "Archivo grande: la extracción demora más (tope de subida: {{uploadCapMB}} MB)",
     "modeLabel": "Cómo leer el archivo",
     "modeStandardTitle": "Por imágenes",
     "modeStandardDescription": "Mira cada página y transcribe lo que ve. La única que sirve para escaneos y para libros cuya letra griega o hebrea se perdió. Consume páginas estándar.",
@@ -59,7 +59,7 @@
     "tierUnavailableHint": "No disponible para archivos sobre {{capMB}}MB",
     "tierCalloutPremiumOnly": "Este archivo ({{sizeMB}}MB) supera el límite para leer el texto del archivo ({{premiumCapMB}}MB). Se leerá por imágenes.",
     "tierCalloutStandardOnly": "Este archivo ({{sizeMB}}MB) supera el límite para leer por imágenes ({{standardCapMB}}MB). Sólo queda leer el texto del archivo.",
-    "tierCalloutBoth": "Este archivo ({{sizeMB}}MB) supera los dos límites ({{premiumCapMB}}MB y {{standardCapMB}}MB). Se procesará en modo básico, de calidad reducida.",
+    "tierCalloutBoth": "Este archivo ({{sizeMB}} MB) no entra en ninguna ruta: supera {{standardCapMB}} MB por imágenes y {{premiumCapMB}} MB por texto. Pártelo en tomos antes de subirlo.",
     "smartMatchLabel": "Detectado del título",
     "smartMatchScope": {
       "whole-bible": "cobertura: toda la Biblia",
@@ -73,13 +73,13 @@
     "recommendedBadge": "Recomendado",
     "modeAdvice": {
       "scan-fits-vision": "Es un escaneo: sus páginas son imágenes. Sólo «Por imágenes» las mira y recupera el texto; leer el texto del archivo no sirve, porque en un escaneo ese texto no existe o es basura.",
-      "scan-too-large": "Es un escaneo y pesa más de 50 MB, así que no se puede leer por imágenes. Ninguna ruta sirve: las dos terminan buscando un texto que el escaneo no tiene. Parte el archivo antes de subirlo.",
+      "scan-too-large": "Es un escaneo y pesa más de {{standardCapMB}} MB, así que no se puede leer por imágenes. Ninguna ruta sirve: las dos terminan buscando un texto que el escaneo no tiene. Parte el archivo antes de subirlo.",
       "text-layer-premium": "Trae texto incrustado y en buen estado. Leerlo del archivo reconstruye tablas y columnas; si es prosa corrida, cualquiera de las dos sirve.",
-      "over-every-cap": "Supera los 100 MB y ninguna ruta lo acepta. Pártelo en tomos antes de subirlo.",
+      "over-every-cap": "No entra en ninguna ruta: supera {{standardCapMB}} MB por imágenes y {{premiumCapMB}} MB por texto. Pártelo en tomos antes de subirlo.",
       "unknown": "No pudimos leer el archivo para recomendarte una ruta. Si es un escaneo —páginas como imagen— elige «Por imágenes»: es la única que las mira. La otra sirve cuando el documento ya trae texto.",
       "layer-missing-script": "El archivo trae texto incrustado, pero en sus páginas centrales no aparece la escritura que este libro necesita. Eso pasa cuando las letras se ven bien y sus códigos apuntan a otro alfabeto: leer ese texto lo traería destruido. «Por imágenes» mira la página y lo esquiva.",
       "layer-garbled": "El archivo trae texto incrustado, pero su contenido no es lenguaje: las letras se ven bien y sus códigos están mal. Leerlo del archivo traería justamente eso. «Por imágenes» mira la página.",
-      "layer-too-large": "El texto incrustado de este archivo no sirve, y pesa más de 50 MB, así que no se puede leer por imágenes. Ninguna ruta lo arregla. Parte el archivo antes de subirlo.",
+      "layer-too-large": "El texto incrustado de este archivo no sirve, y pesa más de {{standardCapMB}} MB, así que no se puede leer por imágenes. Ninguna ruta lo arregla. Parte el archivo antes de subirlo.",
       "no-script-found": "No encontramos griego ni hebreo en el archivo. Si este libro no los usa, cualquiera de las dos rutas sirve. Si es un texto crítico, una gramática o un comentario técnico que SÍ debería traerlos, entonces su texto incrustado los perdió: elige «Por imágenes»."
     },
     "stepModeWaiting": "Elegí primero el archivo: la ruta correcta depende de lo que sea."

@@ -302,7 +302,6 @@ export function LibraryManager() {
                         uploading={upload.uploading}
                         uploadProgress={upload.uploadProgress}
                         smartMatchInference={upload.smartMatchInference}
-                        tierAvailability={upload.tierAvailability}
                         onFileChange={upload.handleFileChange}
                         onMetadataChange={upload.setMetadata}
                         onSubmit={upload.handleSubmit}
