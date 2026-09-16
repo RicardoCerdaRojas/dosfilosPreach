@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
 import { writeAuditLog } from './auditLog';
+import { addPackAdmin } from '../library/processingBalance';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
 
 interface GrantUserCreditsRequest {
@@ -19,9 +19,26 @@ interface GrantUserCreditsRequest {
  *      that the user shouldn't have lost.
  *   2. Sales / partnership — comp credits for a launch promotion or beta tester.
  *
- * The grant is additive (uses `FieldValue.increment`) so it composes safely
- * with the user's normal balance and other admin grants. A `reason` is
- * required and written to the audit log for compliance.
+ * El otorgamiento ACREDITA EL BUCKET `pack`, vía `addPackAdmin`, que es el
+ * helper canónico. No se escribe el agregado a mano, por dos razones que ya
+ * costaron caro:
+ *
+ *   1. `readBalance` RECALCULA `standardPagesAvailable` como plan + pack en
+ *      cada lectura. Un otorgamiento que sólo incrementaba el agregado quedaba
+ *      ignorado por la ruta de consumo: el número aparecía en el panel de admin
+ *      y en ningún otro lado. El usuario veía saldo y no podía gastarlo.
+ *
+ *   2. Va a `pack` y no a `plan` porque el bucket del plan se RESETEA en cada
+ *      factura de Stripe. Un crédito de compensación que desaparece al mes
+ *      siguiente no compensa nada.
+ *
+ * `addPackAdmin` además siembra la estructura SÓLO si no existe. La versión
+ * anterior la sembraba sin condición con `set(merge:true)`, lo que ponía en
+ * cero el saldo disponible y los contadores históricos de gasto del usuario
+ * antes de incrementar: otorgar 500 páginas a alguien que tenía 1.031 lo
+ * dejaba con 500 y le borraba el historial.
+ *
+ * A `reason` is required and written to the audit log for compliance.
  *
  * Negative values (deductions) are NOT allowed via this function — that's
  * disable + manual cleanup territory.
@@ -57,28 +74,14 @@ export const grantUserCredits = onCall<GrantUserCreditsRequest>(appCheckCallable
     }
     const userData = userDoc.data()!;
 
-    // Initialise the nested object for first-time grants on free users.
-    await userRef.set(
-        {
-            processingBalance: {
-                standardPagesAvailable: 0,
-                premiumPagesAvailable: 0,
-                standardSpentTotal: 0,
-                premiumSpentTotal: 0,
-            },
-        },
-        { merge: true },
-    );
-
-    const updates: Record<string, FirebaseFirestore.FieldValue> = {};
+    // `addPackAdmin` siembra la estructura si falta, acredita el bucket pack y
+    // deja el agregado cuadrado como plan + pack. No hay nada que escribir acá.
     if (standardPages > 0) {
-        updates['processingBalance.standardPagesAvailable'] = FieldValue.increment(standardPages);
+        await addPackAdmin(userId, 'standard', standardPages);
     }
     if (premiumPages > 0) {
-        updates['processingBalance.premiumPagesAvailable'] = FieldValue.increment(premiumPages);
+        await addPackAdmin(userId, 'premium', premiumPages);
     }
-    updates['processingBalance.updatedAt'] = FieldValue.serverTimestamp();
-    await userRef.update(updates);
 
     writeAuditLog({
         actorUid: callerUid,
