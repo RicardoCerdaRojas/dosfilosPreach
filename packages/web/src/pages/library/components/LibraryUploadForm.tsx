@@ -5,6 +5,7 @@ import {
     ResourceType,
     type BibleBookId,
     type LibraryResourceScope,
+    disponibilidadDeRutas,
     recommendExtractionMode,
     requiredScriptsFor,
 } from '@dosfilos/domain';
@@ -16,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { AlertTriangle, Loader2, Plus, Sparkles, Upload, Wand2 } from 'lucide-react';
 import { PdfPreflightNotice } from './PdfPreflightNotice';
+import { MAX_UPLOAD_SIZE_MB } from '../hooks/useResourceUpload';
 import { usePdfPreflight } from '../hooks/usePdfPreflight';
 import { ModeAdvice, ModeTile, Paso, SmartMatchPreview, TierCallout } from './UploadFormParts';
 
@@ -39,13 +41,16 @@ export interface SmartMatchInferenceResult {
 }
 
 /**
- * Subset of `UploadTierAvailability` consumed by this form. Mirrored
- * locally so the form can be rendered in stories/tests without the hook.
+ * Lo que `disponibilidadDeRutas` resuelve para ESTE archivo, más su tamaño
+ * para los textos. Se calcula acá y no en el hook de subida porque el tope de
+ * la ruta por imágenes depende del NÚMERO DE PÁGINAS —un libro largo se
+ * recorre en cola y tolera mucho más peso—, y ese dato lo trae la lectura
+ * previa, que vive en esta pantalla.
  */
 export interface TierAvailabilityProp {
     premium: boolean;
     standard: boolean;
-    bothUnavailable: boolean;
+    ninguna: boolean;
     premiumCapMB: number;
     standardCapMB: number;
     fileSizeMB: number;
@@ -77,7 +82,6 @@ interface LibraryUploadFormProps {
      * "se procesará con Básico" callout. Without this, users could
      * pick Premium for a 200MB file and silently get pdf-parse output.
      */
-    tierAvailability: TierAvailabilityProp;
     /** File picker handler — caller validates type + sets file/warning. Pass `null` to clear. */
     onFileChange: (file: File | null) => void;
     /** Metadata patch — caller spreads over current state. */
@@ -101,7 +105,6 @@ export function LibraryUploadForm({
     uploading,
     uploadProgress,
     smartMatchInference,
-    tierAvailability,
     onFileChange,
     onMetadataChange,
     onSubmit,
@@ -110,7 +113,18 @@ export function LibraryUploadForm({
     // Lee el PDF elegido en el navegador y advierte si no va a servir.
     // No bloquea: el botón de subir sigue disponible pase lo que pase.
     const preflight = usePdfPreflight(file);
-    const showTierCallout = file !== null && (!tierAvailability.premium || !tierAvailability.standard);
+    // El tope de la ruta por imágenes SÓLO se conoce con el número de páginas:
+    // hasta que la lectura previa termina se aplica el conservador, y al llegar
+    // el dato se recalcula. Sin esto, un escaneo de 148 MB y 355 páginas —que la
+    // cola lee sin problema— aparecía con las dos rutas deshabilitadas.
+    const disponibilidad: TierAvailabilityProp = {
+        ...disponibilidadDeRutas({
+            sizeBytes: file?.size ?? 0,
+            pageCount: preflight.status === 'done' ? preflight.evidence.pages : null,
+        }),
+        fileSizeMB: (file?.size ?? 0) / (1024 * 1024),
+    };
+    const showTierCallout = file !== null && (!disponibilidad.premium || !disponibilidad.standard);
     // Qué motor conviene para ESTE archivo. El producto traía Premium marcado
     // de fábrica y sobre un escaneo eso destruye el texto: medido sobre el
     // mismo archivo, Premium dio 0 caracteres hebreos y Estándar 2.418.
@@ -176,7 +190,7 @@ export function LibraryUploadForm({
                         <Alert variant="destructive" className="bg-warning-subtle border-warning/40 py-2">
                             <AlertTriangle className="h-3 w-3 text-warning-subtle-foreground" />
                             <AlertDescription className="text-warning-subtle-foreground text-[11px]">
-                                {t('upload.fileSizeWarning')}
+                                {t('upload.fileSizeWarning', { uploadCapMB: MAX_UPLOAD_SIZE_MB })}
                             </AlertDescription>
                         </Alert>
                     )}
@@ -215,12 +229,12 @@ export function LibraryUploadForm({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <ModeAdvice recommendation={recommendation} t={t} />
+                        <ModeAdvice recommendation={recommendation} availability={disponibilidad} t={t} />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <ModeTile
                                 active={metadata.extractionMode === 'standard'}
-                                disabled={!tierAvailability.standard}
-                                disabledHint={t('upload.tierUnavailableHint', { capMB: tierAvailability.standardCapMB })}
+                                disabled={!disponibilidad.standard}
+                                disabledHint={t('upload.tierUnavailableHint', { capMB: disponibilidad.standardCapMB })}
                                 recommended={recommendation.strong && recommendation.recommended === 'standard'}
                                 recommendedLabel={t('upload.recommendedBadge')}
                                 onClick={() => onMetadataChange({ extractionMode: 'standard' })}
@@ -231,8 +245,8 @@ export function LibraryUploadForm({
                             />
                             <ModeTile
                                 active={metadata.extractionMode === 'premium'}
-                                disabled={!tierAvailability.premium}
-                                disabledHint={t('upload.tierUnavailableHint', { capMB: tierAvailability.premiumCapMB })}
+                                disabled={!disponibilidad.premium}
+                                disabledHint={t('upload.tierUnavailableHint', { capMB: disponibilidad.premiumCapMB })}
                                 recommended={recommendation.strong && recommendation.recommended === 'premium'}
                                 recommendedLabel={t('upload.recommendedBadge')}
                                 onClick={() => onMetadataChange({ extractionMode: 'premium' })}
@@ -242,7 +256,7 @@ export function LibraryUploadForm({
                                 tone="success"
                             />
                         </div>
-                        {showTierCallout && <TierCallout availability={tierAvailability} />}
+                        {showTierCallout && <TierCallout availability={disponibilidad} />}
                         </>
                     )}
                 </Paso>

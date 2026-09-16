@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { libraryService } from '@dosfilos/application';
-import { ResourceType, inferBibleBooksFromTitle } from '@dosfilos/domain';
+import { ResourceType, disponibilidadDeRutas, inferBibleBooksFromTitle } from '@dosfilos/domain';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { hasAcceptedUploadConsent } from '@/components/library/UploadConsentModal';
@@ -18,23 +18,17 @@ const MAX_OPTIMAL_SIZE_MB = 50;
  * us reject large files in the client before kicking off an upload
  * that's destined to 403).
  */
-const MAX_UPLOAD_SIZE_MB = 250;
+export const MAX_UPLOAD_SIZE_MB = 250;
 /**
- * Per-tier hard limits enforced by the extraction backends.
+ * Los topes por ruta NO se declaran acá.
  *
- * - **Premium / LlamaParse**: 100MB per file (LlamaParse API cap on
- *   the tier we're on). Files above this skip LlamaParse completely.
- * - **Standard / Gemini inline**: 50MB per file (Gemini inline file
- *   cap; the File API supports more but we don't use it). Files above
- *   this skip Gemini.
- *
- * When a file exceeds a tier's cap, the backend silently degrades to
- * the next tier in the cascade — so without these client-side gates
- * the user picks "Premium" and gets pdf-parse output back. The form
- * uses these values to disable the affected tile and explain why.
+ * Estaban escritos tres veces —en el dominio, en este hook y en los textos de
+ * la interfaz— y ninguna copia sabía que la ruta de visión, cuando el libro se
+ * recorre en cola, tolera mucho más peso. La pantalla llegó a afirmar tres
+ * límites distintos sobre el mismo archivo. La única fuente es
+ * `disponibilidadDeRutas` en el dominio, que además necesita el número de
+ * páginas para saber qué tope aplica.
  */
-const MAX_PREMIUM_TIER_SIZE_MB = 100;
-const MAX_STANDARD_TIER_SIZE_MB = 50;
 
 interface UseResourceUploadOptions {
     /** ID of the user owning the upload. Hook is no-op while null/undefined. */
@@ -55,20 +49,6 @@ interface UseResourceUploadOptions {
  * silent backend degradation that landed the BHQ upload on Básico
  * even though the user picked Premium (May 2026 incident).
  */
-export interface UploadTierAvailability {
-    /** True when LlamaParse can handle the file (size ≤ 100MB). */
-    premium: boolean;
-    /** True when Gemini inline can handle the file (size ≤ 50MB). */
-    standard: boolean;
-    /** Convenience: true when neither premium nor standard is available. */
-    bothUnavailable: boolean;
-    /** Effective hard caps in MB — surfaced for UI copy. */
-    premiumCapMB: number;
-    standardCapMB: number;
-    /** Selected file's size in MB (0 when no file picked). */
-    fileSizeMB: number;
-}
-
 interface UseResourceUploadResult {
     file: File | null;
     fileSizeWarning: boolean;
@@ -85,7 +65,6 @@ interface UseResourceUploadResult {
      * Per-tier availability for the currently selected file. Always
      * defined — when no file is picked, both tiers report as available.
      */
-    tierAvailability: UploadTierAvailability;
     /** File picker change handler. Validates type + sets warning + autofills title. Pass `null` to clear. */
     handleFileChange: (file: File | null) => void;
     /** Patch the metadata partial. */
@@ -169,16 +148,17 @@ export function useResourceUpload({
         // auto-switch the extraction tier when the current selection
         // is no longer available for this size, so the user doesn't
         // submit a request the backend will silently downgrade.
-        const premiumOk = sizeMB <= MAX_PREMIUM_TIER_SIZE_MB;
-        const standardOk = sizeMB <= MAX_STANDARD_TIER_SIZE_MB;
+        // Sin haber leído el PDF todavía no se sabe cuántas páginas tiene, así
+        // que acá se aplica el tope conservador. La pantalla recalcula con el
+        // número real en cuanto la lectura previa termina.
+        const { premium: premiumOk } = disponibilidadDeRutas({ sizeBytes: selected.size });
         setMetadataState(prev => {
             const nextMode = !premiumOk && prev.extractionMode === 'premium'
                 ? 'standard'
                 : prev.extractionMode;
-            // When standard is also unavailable, we leave the mode at
-            // whatever it was — both tiles will be disabled in the UI
-            // and a callout explains the file will go to Básico
-            // regardless of selection. No auto-switch back to premium.
+            // Si estándar tampoco estuviera disponible no se toca la elección:
+            // la pantalla lo explica con el número de páginas ya leído, que acá
+            // todavía no se tiene.
             return {
                 ...prev,
                 title: selected.name.replace(/\.[^/.]+$/, '') || '',
@@ -186,22 +166,6 @@ export function useResourceUpload({
             };
         });
     }, [t]);
-
-    // Per-tier availability for the current file. Memoized off
-    // `file?.size` so we don't recompute on every title edit.
-    const tierAvailability = useMemo<UploadTierAvailability>(() => {
-        const sizeMB = file ? file.size / (1024 * 1024) : 0;
-        const premium = sizeMB <= MAX_PREMIUM_TIER_SIZE_MB;
-        const standard = sizeMB <= MAX_STANDARD_TIER_SIZE_MB;
-        return {
-            premium,
-            standard,
-            bothUnavailable: !premium && !standard,
-            premiumCapMB: MAX_PREMIUM_TIER_SIZE_MB,
-            standardCapMB: MAX_STANDARD_TIER_SIZE_MB,
-            fileSizeMB: sizeMB,
-        };
-    }, [file]);
 
     // v1.7 smart-match inference from title. Pure function so memoizing
     // by title is sufficient — no debounce needed at this latency.
@@ -269,7 +233,6 @@ export function useResourceUpload({
         uploading,
         uploadProgress,
         smartMatchInference,
-        tierAvailability,
         handleFileChange,
         setMetadata,
         handleSubmit,

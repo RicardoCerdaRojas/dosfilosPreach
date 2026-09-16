@@ -36,7 +36,12 @@ export function Paso({ numero, titulo, children }: { numero: number; titulo: str
  * rojo: seguir igual produce un recurso lleno de basura que entra al corpus sin
  * error y se cita.
  */
-export function ModeAdvice({ recommendation, t }: { recommendation: ModeRecommendation; t: (k: string) => string }) {
+export function ModeAdvice({ recommendation, availability, t }: {
+    recommendation: ModeRecommendation;
+    /** Los topes REALES de este archivo: el de imágenes depende de sus páginas. */
+    availability: TierAvailabilityProp;
+    t: (k: string, o?: Record<string, unknown>) => string;
+}) {
     // Sin diagnóstico NO se calla. Ese silencio dejaba Premium marcado —que la
     // interfaz pinta en verde y se lee como «esta es la buena»— sin una sola
     // palabra, y sobre un escaneo Premium destruye el texto. Decir «no pude
@@ -61,7 +66,13 @@ export function ModeAdvice({ recommendation, t }: { recommendation: ModeRecommen
             {tono === 'consejo'
                 ? <Wand2 className="mt-px h-3.5 w-3.5 shrink-0" />
                 : <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />}
-            <span>{t(`upload.modeAdvice.${recommendation.reasonKey}`)}</span>
+            {/* Los topes van interpolados: escribirlos en el texto los congelaba en 50
+                y 100 MB, que es el caso de una pasada única. Un libro largo va por
+                cola y su tope es otro. */}
+            <span>{t(`upload.modeAdvice.${recommendation.reasonKey}`, {
+                standardCapMB: availability.standardCapMB,
+                premiumCapMB: availability.premiumCapMB,
+            })}</span>
         </p>
     );
 }
@@ -149,7 +160,7 @@ export function TierCallout({ availability }: { availability: TierAvailabilityPr
     const { t } = useTranslation('library');
     const sizeLabel = availability.fileSizeMB.toFixed(1);
 
-    if (availability.bothUnavailable) {
+    if (availability.ninguna) {
         return (
             <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-2 text-[11.5px] text-warning-subtle-foreground">
                 <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" aria-hidden />

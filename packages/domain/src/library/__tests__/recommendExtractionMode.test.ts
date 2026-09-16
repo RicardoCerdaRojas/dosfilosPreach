@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { recommendExtractionMode, VISION_MAX_BYTES, PREMIUM_MAX_BYTES } from '../recommendExtractionMode';
+import {
+    disponibilidadDeRutas,
+    recommendExtractionMode,
+    VISION_MAX_BYTES,
+    VISION_MAX_BYTES_EN_COLA,
+    PREMIUM_MAX_BYTES,
+} from '../recommendExtractionMode';
 import type { PdfDiagnosis } from '../diagnosePdfSource';
 
 /**
@@ -256,5 +262,75 @@ describe('el tope de visión depende del camino, no sólo del tamaño', () => {
         // El tope de premium no se movió, y por encima de él no hay camino.
         const enorme = { sizeBytes: 400 * MB, diagnosis: dx('sin-capa-de-texto'), pageCount: 315 };
         expect(recommendExtractionMode(enorme).reasonKey).toBe('over-every-cap');
+    });
+});
+
+/**
+ * El tope de premium se estaba usando como si fuera el tope del producto.
+ *
+ * La guarda de entrada comparaba contra `PREMIUM_MAX_BYTES` y cortaba ahí, así
+ * que jamás llegaba a la lógica de visión —que para un libro largo tolera hasta
+ * `VISION_MAX_BYTES_EN_COLA` porque la cola nunca sube el archivo completo—.
+ * Caso real: un comentario escaneado de 148 MB y 355 páginas, que la cola lee
+ * sin problema, recibía «pártelo en tomos antes de subirlo».
+ */
+describe('recommendExtractionMode — el tope depende de por dónde irá el libro', () => {
+    it('un escaneo largo de 148 MB se lee por imágenes, no se manda a partir', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 148 * MB,
+            pageCount: 355,
+            diagnosis: dx('sin-capa-de-texto'),
+        });
+        expect(r.recommended).toBe('standard');
+        expect(r.reasonKey).toBe('scan-fits-vision');
+    });
+
+    it('el MISMO tamaño sin saber las páginas se mantiene conservador', () => {
+        // Sin `pageCount` no se sabe si irá por cola, y afirmar que entra sería
+        // prometer algo que la pasada única no puede cumplir.
+        const r = recommendExtractionMode({ sizeBytes: 148 * MB, diagnosis: dx('sin-capa-de-texto') });
+        expect(r.recommended).toBeNull();
+        expect(r.reasonKey).toBe('over-every-cap');
+    });
+
+    it('«ninguna ruta lo acepta» exige superar el MAYOR de los dos topes', () => {
+        const apenasArriba = VISION_MAX_BYTES_EN_COLA + 1;
+        const r = recommendExtractionMode({
+            sizeBytes: apenasArriba,
+            pageCount: 355,
+            diagnosis: dx('sin-capa-de-texto'),
+        });
+        expect(r.reasonKey).toBe('over-every-cap');
+    });
+
+    it('un libro largo con capa envenenada también alcanza el tope de la cola', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 148 * MB,
+            pageCount: 355,
+            diagnosis: dx('escritura-ausente'),
+        });
+        expect(r.recommended).toBe('standard');
+        expect(r.reasonKey).toBe('layer-garbled');
+    });
+});
+
+describe('disponibilidadDeRutas', () => {
+    it('el tope por imágenes crece cuando el libro se recorre en cola', () => {
+        const corto = disponibilidadDeRutas({ sizeBytes: 148 * MB, pageCount: 40 });
+        const largo = disponibilidadDeRutas({ sizeBytes: 148 * MB, pageCount: 355 });
+        expect(corto.standard).toBe(false);
+        expect(largo.standard).toBe(true);
+        expect(largo.standardCapMB).toBeGreaterThan(corto.standardCapMB);
+    });
+
+    it('premium no depende de las páginas: su tope es siempre el suyo', () => {
+        const d = disponibilidadDeRutas({ sizeBytes: 148 * MB, pageCount: 355 });
+        expect(d.premium).toBe(false);
+        expect(d.premiumCapMB).toBe(Math.round(PREMIUM_MAX_BYTES / MB));
+    });
+
+    it('«ninguna» sólo cuando de verdad no entra en ninguna', () => {
+        expect(disponibilidadDeRutas({ sizeBytes: 148 * MB, pageCount: 355 }).ninguna).toBe(false);
+        expect(disponibilidadDeRutas({ sizeBytes: 148 * MB, pageCount: 40 }).ninguna).toBe(true);
     });
 });

@@ -50,7 +50,7 @@
     "authorPlaceholder": "Author name",
     "categoryLabel": "Category",
     "uploadButton": "Upload",
-    "fileSizeWarning": "File >50MB: extraction takes longer (cap: 250MB)",
+    "fileSizeWarning": "Large file: extraction takes longer (upload cap: {{uploadCapMB}} MB)",
     "modeLabel": "How to read the file",
     "modeStandardTitle": "From the images",
     "modeStandardDescription": "Looks at each page and transcribes what it sees. The only one that works for scans and for books whose Greek or Hebrew letters were lost. Uses standard pages.",
@@ -59,7 +59,7 @@
     "tierUnavailableHint": "Not available for files over {{capMB}}MB",
     "tierCalloutPremiumOnly": "This file ({{sizeMB}}MB) exceeds the limit for reading the file's text ({{premiumCapMB}}MB). It will be read from the images.",
     "tierCalloutStandardOnly": "This file ({{sizeMB}}MB) exceeds the limit for reading from the images ({{standardCapMB}}MB). Only reading the file’s text is left.",
-    "tierCalloutBoth": "This file ({{sizeMB}}MB) exceeds both limits ({{premiumCapMB}}MB and {{standardCapMB}}MB). It will be processed in basic mode, at reduced quality.",
+    "tierCalloutBoth": "This file ({{sizeMB}} MB) fits no route: it exceeds {{standardCapMB}} MB by images and {{premiumCapMB}} MB by text. Split it into volumes before uploading.",
     "smartMatchLabel": "Detected from title",
     "smartMatchScope": {
       "whole-bible": "scope: whole Bible",
@@ -73,13 +73,13 @@
     "recommendedBadge": "Recommended",
     "modeAdvice": {
       "scan-fits-vision": "This is a scan: its pages are images. Only «From the images» looks at them and recovers the text; reading the file’s text does not work, because in a scan that text does not exist or is garbage.",
-      "scan-too-large": "This is a scan over 50 MB, so it cannot be read from the images. No route works: both end up looking for text the scan does not have. Split the file before uploading.",
+      "scan-too-large": "It is a scan and weighs more than {{standardCapMB}} MB, so it cannot be read by images. Neither route works: both end up looking for text the scan does not have. Split the file before uploading.",
       "text-layer-premium": "It carries embedded text in good shape. Reading it from the file rebuilds tables and columns; for running prose either route works.",
-      "over-every-cap": "Over 100 MB — no route accepts it. Split it into volumes before uploading.",
+      "over-every-cap": "It fits no route: it exceeds {{standardCapMB}} MB by images and {{premiumCapMB}} MB by text. Split it into volumes before uploading.",
       "unknown": "We could not read the file to recommend a route. If it is a scan — pages as images — pick «From the images»: it is the only one that looks at them. The other works when the document already carries text.",
       "layer-missing-script": "The file carries embedded text, but its middle pages show none of the script this book needs. That happens when letters look right while their codes point at another alphabet: reading that text would bring it in destroyed. «From the images» looks at the page and bypasses it.",
       "layer-garbled": "The file carries embedded text, but its content is not language: the letters look right and their codes are wrong. Reading it from the file would bring exactly that. «From the images» looks at the page.",
-      "layer-too-large": "This file's embedded text is unusable, and it is over 50 MB, so it cannot be read from the images. No route fixes it. Split the file before uploading.",
+      "layer-too-large": "This file's embedded text is unusable, and it weighs more than {{standardCapMB}} MB, so it cannot be read by images. No route fixes it. Split the file before uploading.",
       "no-script-found": "We found no Greek or Hebrew in the file. If this book does not use them, either route works. If it is a critical text, a grammar or a technical commentary that SHOULD carry them, its embedded text lost them: pick «From the images»."
     },
     "stepModeWaiting": "Pick the file first — the right route depends on what it is."
