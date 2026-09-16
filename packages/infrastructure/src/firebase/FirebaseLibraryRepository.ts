@@ -224,7 +224,12 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         return doc;
     }
 
-    private firestoreToResource(id: string, data: any): LibraryResourceEntity {
+    /**
+     * Pública para poder probarla sin Firestore vivo, igual que
+     * `buildFirestoreUpdates`: los dos son listas blancas, y lo que no está
+     * enumerado desaparece sin avisar.
+     */
+    firestoreToResource(id: string, data: any): LibraryResourceEntity {
         const resource = new LibraryResourceEntity(
             id,
             data.userId,
@@ -269,6 +274,17 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         (resource as any).extractionError = data.extractionError || undefined;
         (resource as any).indexingError = data.indexingError ?? undefined;
         (resource as any).processingStartedAt = data.processingStartedAt?.toDate?.() ?? undefined;
+        // Tres campos que las funciones escriben y la tarjeta sabe mostrar, y
+        // que durante meses no se copiaban acá. Sin ellos la interfaz tenía el
+        // código listo y nunca lo ejecutaba: la píldora decía «Procesando…» a
+        // secas en una cadena de dos horas con su avance escrito en Firestore
+        // (#598), un índice que llegó a la página 433 de 711 se mostraba «Listo»
+        // en verde (#540), y las páginas que la extracción no pudo leer no se
+        // avisaban. Este mapper es una LISTA BLANCA: todo campo nuevo del
+        // dominio que la web consuma tiene que pasar por aquí, o no existe.
+        (resource as any).extractionProgress = data.extractionProgress ?? undefined;
+        (resource as any).indexingWarning = data.indexingWarning ?? undefined;
+        (resource as any).paginasFaltantes = data.paginasFaltantes ?? undefined;
         // Numeración impresa por tramos. Ausente en todo recurso subido antes
         // de la calibración: `undefined` significa «no se sabe», y quien cite
         // debe rotular el número como hoja en vez de fingir una página.
