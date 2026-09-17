@@ -1,3 +1,4 @@
+import type { VerifiedCitation } from '../entities/CitationVerification';
 import type {
     ExegeticalPaper,
     ExegeticalPaperDraft,
@@ -223,7 +224,12 @@ export interface IExegeticalPaperRepository {
         paperId: string,
         stepId: string,
         versionId: string,
-        verifications: VerificationSummary
+        verifications: VerificationSummary,
+        /**
+         * Veredicto por cita, cuando el llamador quiere que la interfaz los
+         * muestre sin volver a verificar. Ausente = no se tocan los guardados.
+         */
+        verdicts?: ReadonlyArray<VerifiedCitation>,
     ): Promise<ExegeticalStepVersion>;
 
     /**

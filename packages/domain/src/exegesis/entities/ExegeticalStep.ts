@@ -1,4 +1,5 @@
 import type { PassageReference } from '../../bible/canon/passage-reference';
+import type { VerifiedCitation } from './CitationVerification';
 import type { CanonicalVerseAnalysis } from './CanonicalVerseAnalysis';
 
 /**
@@ -154,6 +155,16 @@ export interface ExegeticalStepVersion {
      * behavior.
      */
     canonicalAnalysis?: CanonicalVerseAnalysis | null;
+
+    /**
+     * Veredicto por cita de la última verificación de esta versión.
+     *
+     * Se guarda para que la interfaz señale cada cita sin volver a pagar la
+     * verificación, y para poder medir el verificador contra una auditoría
+     * hecha a mano. Ausente en versiones verificadas antes de que existiera
+     * el campo, y en las que nunca se verificaron.
+     */
+    citationVerdicts?: ReadonlyArray<VerifiedCitation>;
 }
 
 /**
@@ -189,6 +200,13 @@ export interface VerificationSummary {
      * campo no lo traen, y ausente significa «no se midió», no cero.
      */
     sourcesNamedWithoutCitation?: number;
+    /**
+     * Citas del análisis que atribuyen palabras a un autor —posturas de
+     * comentaristas, testigos de un cruce— sin traer la oración textual.
+     * No son errores: son citas que solo se pueden verificar juzgando la
+     * paráfrasis, y la meta es que este número baje a cero.
+     */
+    citationsWithoutVerbatim?: number;
     /**
      * Afirmaciones sobre evidencia manuscrita —códices, papiros,
      * testigos— que ninguna cita de la misma oración respalda.

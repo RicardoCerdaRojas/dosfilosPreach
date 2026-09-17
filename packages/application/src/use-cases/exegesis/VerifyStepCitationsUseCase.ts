@@ -15,7 +15,14 @@ import type {
     IPageNumberingReader,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, relabelExcerptAnchor } from '@dosfilos/domain';
+import {
+    analysisClaimsToCitations,
+    citationAnchorFor,
+    collectAnalysisClaims,
+    printedLabelIn,
+    relabelExcerptAnchor,
+    type AnalysisClaim,
+} from '@dosfilos/domain';
 import { findUnsupportedWitnessClaims, isCitableSourceType } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
@@ -103,35 +110,18 @@ export class VerifyStepCitationsUseCase {
         try {
             const sources = await this.buildVerifierSources(paper);
             reservation.markLlmContacted();
-            const { citations } = await this.verifier.verify({
-                markdown: target.markdown,
-                sources,
-                userId: ownerId,
-            });
 
-            // Las afirmaciones sobre manuscritos se cuentan aparte de las
-            // citas: no fallan por estar mal atribuidas, sino por no
-            // estar atribuidas en absoluto.
-            const witnessClaims = findUnsupportedWitnessClaims(target.markdown, citations);
-            if (witnessClaims.length > 0) {
-                console.warn('[exegesis] afirmaciones sobre manuscritos sin cita', {
-                    stepId,
-                    total: witnessClaims.length,
-                    ejemplo: witnessClaims[0]?.sentence.slice(0, 120),
-                });
-            }
+            const { citations, summary } = target.canonicalAnalysis
+                ? await this.verifyAnalysis(target.canonicalAnalysis, sources, paper.displayLanguage, ownerId)
+                : await this.verifyMarkdown(target.markdown, sources, ownerId, stepId);
 
-            const summary = buildSummary(
-                citations,
-                countSourcesNamedWithoutCitation(target.markdown, sources, citations),
-                witnessClaims.length,
-            );
             await this.paperRepository.setStepVersionVerifications(
                 ownerId,
                 paperId,
                 stepId,
                 target.id,
                 summary,
+                citations,
             );
 
             return { summary, citations, versionId: target.id };
@@ -139,6 +129,80 @@ export class VerifyStepCitationsUseCase {
             await reservation.refundIfPreLlm();
             throw err;
         }
+    }
+
+    /**
+     * El camino de la prosa: las citas se reconocen en el markdown.
+     */
+    private async verifyMarkdown(
+        markdown: string,
+        sources: VerifierSource[],
+        ownerId: string,
+        stepId: string,
+    ): Promise<{ citations: VerifiedCitation[]; summary: VerificationSummary }> {
+        const { citations } = await this.verifier.verify({ markdown, sources, userId: ownerId });
+
+        // Las afirmaciones sobre manuscritos se cuentan aparte de las
+        // citas: no fallan por estar mal atribuidas, sino por no
+        // estar atribuidas en absoluto.
+        const witnessClaims = findUnsupportedWitnessClaims(markdown, citations);
+        if (witnessClaims.length > 0) {
+            console.warn('[exegesis] afirmaciones sobre manuscritos sin cita', {
+                stepId,
+                total: witnessClaims.length,
+                ejemplo: witnessClaims[0]?.sentence.slice(0, 120),
+            });
+        }
+
+        const summary = buildSummary(citations, {
+            verifierVersion: 'fuzzy-v1',
+            sourcesNamedWithoutCitation: countSourcesNamedWithoutCitation(markdown, sources, citations),
+            witnessClaimsWithoutCitation: witnessClaims.length,
+        });
+        return { citations, summary };
+    }
+
+    /**
+     * El camino del análisis canónico: las citas ya están estructuradas.
+     *
+     * Existe porque este camino no se verificaba. El paso guarda su
+     * análisis en `canonicalAnalysis` y deja `markdown` vacío; el
+     * verificador parseaba ese vacío, encontraba cero citas, y el
+     * resultado era indistinguible de «todo verificado». En el trabajo
+     * de Sal 23:1–3 ninguno de los cinco pasos llegó a verificarse.
+     */
+    private async verifyAnalysis(
+        analysis: NonNullable<ExegeticalStepVersion['canonicalAnalysis']>,
+        sources: VerifierSource[],
+        language: 'es' | 'en',
+        ownerId: string,
+    ): Promise<{ citations: VerifiedCitation[]; summary: VerificationSummary }> {
+        const claims = collectAnalysisClaims(analysis);
+        const numberingByKey = new Map(
+            sources.map(s => [normalizeKey(s.citationKey ?? ''), s.numbering ?? null] as const),
+        );
+        const citations = analysisClaimsToCitations(
+            claims,
+            claim => pageInEvidenceUnit(claim, numberingByKey.get(normalizeKey(claim.sourceKey)) ?? null),
+        );
+
+        const { citations: verdicts } = await this.verifier.verify({
+            markdown: '',
+            citations,
+            sources,
+            userId: ownerId,
+            language,
+        });
+
+        const summary = buildSummary(verdicts, {
+            verifierVersion: 'analysis-v1',
+            sourcesNamedWithoutCitation: 0,
+            witnessClaimsWithoutCitation: 0,
+            citationsWithoutVerbatim: claims.filter(
+                c => (c.site === 'commentator' || c.site === 'crux') && c.verbatimQuote === null,
+            ).length,
+        });
+        return { citations: verdicts, summary };
     }
 
     private async buildVerifierSources(paper: ExegeticalPaper): Promise<VerifierSource[]> {
@@ -326,11 +390,35 @@ function escapeRegExp(text: string): string {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function buildSummary(
-    citations: VerifiedCitation[],
-    sourcesNamedWithoutCitation: number,
-    witnessClaimsWithoutCitation: number,
-): VerificationSummary {
+/**
+ * La página de la cita en la unidad en que el verificador rotula su
+ * evidencia, o `null` para no cotejar.
+ *
+ * La evidencia se rotula con la página impresa cuando el recurso tiene
+ * numeración y con la hoja cuando no. Una cita impresa contra evidencia en
+ * hojas —o al revés— no es comparable: ahí se devuelve `null`, que apaga el
+ * cotejo en vez de reprobar lo que está bien.
+ */
+export function pageInEvidenceUnit(claim: AnalysisClaim, numbering: PageNumbering | null): string | null {
+    const printed = claim.pageKind === 'printed';
+    if (numbering) {
+        return printed ? String(claim.page) : printedLabelIn(numbering, claim.page);
+    }
+    return printed ? null : String(claim.page);
+}
+
+function normalizeKey(s: string): string {
+    return s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+interface SummaryExtras {
+    verifierVersion: string;
+    sourcesNamedWithoutCitation: number;
+    witnessClaimsWithoutCitation: number;
+    citationsWithoutVerbatim?: number;
+}
+
+function buildSummary(citations: VerifiedCitation[], extras: SummaryExtras): VerificationSummary {
     const counts: Record<CitationStatus, number> = {
         verified: 0,
         'page-mismatch': 0,
@@ -341,7 +429,7 @@ function buildSummary(
     for (const c of citations) counts[c.status]++;
     return {
         lastRunAt: new Date(),
-        verifierVersion: 'fuzzy-v1',
+        verifierVersion: extras.verifierVersion,
         counts: {
             verified: counts.verified,
             pageMismatch: counts['page-mismatch'],
@@ -350,7 +438,10 @@ function buildSummary(
             manualPending: counts['manual-pending'],
         },
         totalCitations: citations.length,
-        sourcesNamedWithoutCitation,
-        witnessClaimsWithoutCitation,
+        sourcesNamedWithoutCitation: extras.sourcesNamedWithoutCitation,
+        witnessClaimsWithoutCitation: extras.witnessClaimsWithoutCitation,
+        ...(extras.citationsWithoutVerbatim !== undefined
+            ? { citationsWithoutVerbatim: extras.citationsWithoutVerbatim }
+            : {}),
     };
 }

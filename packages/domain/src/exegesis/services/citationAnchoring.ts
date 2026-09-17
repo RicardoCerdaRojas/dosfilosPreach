@@ -1,5 +1,6 @@
 import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 import { printedLabelIn, type PageNumbering } from '../outline/pageNumbering';
+import { collectAnalysisClaims } from './analysisClaims';
 
 /** Una cita del análisis, sin importar en cuál de sus seis sitios vivía. */
 export interface AnalysisCitation {
@@ -14,28 +15,17 @@ export interface AnalysisCitation {
  *
  * El análisis guarda citas en seis sitios distintos y ninguno es opcional al
  * contarlas: una cita en `footnoteExtensions` llega al documento igual que una
- * de `commentatorEngagement`. Este recorrido estaba escrito tres veces —el
- * serializador, el script de auditoría y el contador de tipos— y cada copia era
- * una oportunidad de olvidar un sitio en una sola de ellas.
+ * de `commentatorEngagement`. El recorrido vive en `collectAnalysisClaims`;
+ * esto es su proyección sin la afirmación, para quien solo cuenta y ancla.
  */
 export function collectAnalysisCitations(
     analysis: CanonicalVerseAnalysis,
 ): AnalysisCitation[] {
-    const out: AnalysisCitation[] = [];
-    const push = (c: { sourceKey?: string; page?: number; pageKind?: CitationPageKind }) => {
-        if (!c?.sourceKey || typeof c.page !== 'number' || !Number.isFinite(c.page)) return;
-        out.push({ sourceKey: c.sourceKey, page: c.page, pageKind: c.pageKind });
-    };
-    for (const c of analysis.commentatorEngagement) push(c);
-    for (const crux of analysis.translationCruxes) for (const p of crux.commentatorPositions) push(p);
-    for (const l of analysis.lexicalAnalyses) {
-        for (const s of l.generalSemanticRange.sources) push(s);
-        for (const s of l.loadingSources) push(s);
-    }
-    for (const f of analysis.footnoteExtensions) for (const s of f.sources) push(s);
-    for (const o of analysis.oldTestamentLinks) for (const s of o.sources) push(s);
-    for (const h of analysis.historicalContext) for (const s of h.sources) push(s);
-    return out;
+    return collectAnalysisClaims(analysis).map(c => ({
+        sourceKey: c.sourceKey,
+        page: c.page,
+        pageKind: c.pageKind,
+    }));
 }
 
 /** Cómo queda una fuente cuando el trabajo se componga. */

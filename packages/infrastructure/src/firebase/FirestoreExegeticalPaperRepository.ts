@@ -32,6 +32,7 @@ import type {
     SourceType,
     StepSourcePlan,
     VerificationSummary,
+    VerifiedCitation,
 } from '@dosfilos/domain';
 import { DEFAULT_STRATEGY_FOR_NEW_PAPER, resolveExegeticalStrategy } from '@dosfilos/domain';
 import {
@@ -615,7 +616,8 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         paperId: string,
         stepId: string,
         versionId: string,
-        verifications: VerificationSummary
+        verifications: VerificationSummary,
+        verdicts?: ReadonlyArray<VerifiedCitation>,
     ): Promise<ExegeticalStepVersion> {
         let updatedVersion: ExegeticalStepVersion | null = null;
         await this.mutateStep(ownerId, paperId, stepId, (step) => {
@@ -626,6 +628,10 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             const next: ExegeticalStepVersion = {
                 ...step.versions[idx]!,
                 verifications,
+                // Firestore rechaza `undefined`: el campo solo se escribe
+                // cuando hay veredictos, y acotado para que un paso con
+                // muchas citas no engorde el documento del trabajo.
+                ...(verdicts ? { citationVerdicts: trimVerdictsForStorage(verdicts) } : {}),
             };
             const versions = [...step.versions];
             versions[idx] = next;
@@ -1119,6 +1125,18 @@ function normalizeAnalysisTextField(analysis: any): any {
     if (!('greekText' in analysis)) return analysis;
     const { greekText, ...resto } = analysis;
     return { ...resto, originalText: resto.originalText ?? greekText ?? '' };
+}
+
+/** Tope de veredictos guardados por versión y largo de cada nota. */
+const MAX_STORED_VERDICTS = 300;
+const MAX_VERDICT_NOTE_CHARS = 400;
+
+function trimVerdictsForStorage(verdicts: ReadonlyArray<VerifiedCitation>): VerifiedCitation[] {
+    return verdicts.slice(0, MAX_STORED_VERDICTS).map(v => ({
+        ...v,
+        note: v.note && v.note.length > MAX_VERDICT_NOTE_CHARS ? `${v.note.slice(0, MAX_VERDICT_NOTE_CHARS)}…` : v.note,
+        matchedPageLabel: v.matchedPageLabel ?? null,
+    }));
 }
 
 function deserializeStepVersion(raw: any): ExegeticalStepVersion {

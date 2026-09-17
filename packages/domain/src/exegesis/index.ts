@@ -72,6 +72,8 @@ export * from './expository/SuperMacroSection';
 // step so the final output is never just intro + conclusion.
 export * from './services/renderCanonicalAnalysisAsMarkdown';
 export * from './services/citationAnchoring';
+export * from './services/analysisClaims';
+export * from './services/verbatimMatch';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';
 export * from './services/verseAnalysisCoverage';

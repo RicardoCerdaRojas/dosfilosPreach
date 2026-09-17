@@ -43,6 +43,7 @@ import type {
     IResourceIndexProbe,
 } from '@dosfilos/domain';
 import { LibraryService } from './LibraryService';
+import { VerbatimFirstCitationVerifier } from './exegesis/VerbatimFirstCitationVerifier';
 
 import {
     CreateExegeticalPaperUseCase,
@@ -463,11 +464,14 @@ class ExegesisService {
         // top-K chunks scoped to the cited resource using the
         // citation's evidence sentence as the embedding query.
         const relevantChunkRetriever = new RetrieveChunksRelevantChunkRetriever();
-        const citationVerifier = new GeminiLlmCitationVerifier({
+        // Las citas con oración textual se cotejan buscando la oración en
+        // las hojas de la fuente, sin modelo; solo lo que no aparece —o no
+        // trae oración— pasa al juicio del modelo.
+        const citationVerifier = new VerbatimFirstCitationVerifier(new GeminiLlmCitationVerifier({
             modelName: exegesisModelId,
             relevantChunkRetriever,
             retrievalTopK: 5,
-        });
+        }));
         this.verifyStepCitations = new VerifyStepCitationsUseCase(
             paperRepository,
             contentReader,

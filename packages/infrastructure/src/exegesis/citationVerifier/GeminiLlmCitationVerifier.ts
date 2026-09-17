@@ -95,12 +95,14 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
 
     async verify(input: CitationVerifierInput): Promise<CitationVerifierOutput> {
         const lookup = new SourceMatcher(input.sources);
-        const parsed = parseCitations(input.markdown);
+        // Las citas ya reconocidas (el análisis canónico) mandan; el parser
+        // es para la prosa, y sobre un markdown vacío devolvía cero citas.
+        const parsed = input.citations ? [...input.citations] : parseCitations(input.markdown);
 
-        // Detect output language from the first parsed citation's
-        // surrounding evidence — heuristic but cheap. Falls back to
-        // Spanish (the more common case for our user base).
-        const language = detectLanguage(parsed);
+        // Idioma explícito cuando el llamador lo sabe. Adivinarlo desde la
+        // evidencia falla justo cuando la evidencia es una oración textual
+        // de una fuente en inglés dentro de un trabajo en español.
+        const language = input.language ?? detectLanguage(parsed);
 
         const verdicts = await Promise.all(
             parsed.map(p => this.verifyOne(p, lookup, language, input.userId ?? null)),
