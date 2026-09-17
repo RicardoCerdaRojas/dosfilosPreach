@@ -17,6 +17,7 @@ import {
 import {
     formatPassageReference,
     type CanonicalVerseAnalysis,
+    type CitationPageKind,
     type SourceCitation,
     type VerifiedCitation,
 } from '@dosfilos/domain';
@@ -55,6 +56,7 @@ import { CitationStatusDot } from '../review/CitationStatusBadge';
 type OpenCitation = (citation: {
     sourceKey: string;
     page: number;
+    pageKind?: CitationPageKind;
     verbatimQuote?: string | null;
 }) => void;
 
@@ -88,6 +90,7 @@ interface CanonicalAnalysisStudyViewProps {
 function CitationChip({
     sourceKey,
     page,
+    pageKind,
     verbatimQuote,
     onOpen,
     path,
@@ -95,6 +98,7 @@ function CitationChip({
 }: {
     sourceKey: string;
     page: number;
+    pageKind?: CitationPageKind;
     verbatimQuote?: string | null;
     onOpen?: OpenCitation;
     path?: string;
@@ -132,7 +136,7 @@ function CitationChip({
     return (
         <button
             type="button"
-            onClick={() => onOpen({ sourceKey, page, verbatimQuote })}
+            onClick={() => onOpen({ sourceKey, page, pageKind, verbatimQuote })}
             title={t('citationViewer.openSource')}
             className="inline-flex items-baseline gap-1 rounded px-1 -mx-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
@@ -339,6 +343,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                     <CitationChip
                                         sourceKey={c.sourceKey}
                                         page={c.page}
+                                        pageKind={c.pageKind}
                                         verbatimQuote={c.verbatimQuote}
                                         onOpen={onOpenCitation}
                                         path={`commentatorEngagement[${idx}]`}
@@ -397,6 +402,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                                     <CitationChip
                                                         sourceKey={p.sourceKey}
                                                         page={p.page}
+                                                        pageKind={p.pageKind}
                                                         verbatimQuote={p.verbatimQuote}
                                                         onOpen={onOpenCitation}
                                                         path={`translationCruxes[${idx}].commentatorPositions[${pidx}]`}
@@ -713,7 +719,7 @@ function SourceList({
                     ) : onOpenCitation ? (
                         <button
                             type="button"
-                            onClick={() => onOpenCitation({ sourceKey: c.sourceKey, page: c.page })}
+                            onClick={() => onOpenCitation({ sourceKey: c.sourceKey, page: c.page, pageKind: c.pageKind })}
                             title={t('citationViewer.openSource')}
                             className="rounded px-0.5 -mx-0.5 underline decoration-dotted underline-offset-2 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         >

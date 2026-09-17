@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
-import { formatPassageReference, type CitationStatus, type SupportedLanguage, type VerifiedCitation } from '@dosfilos/domain';
+import { formatPassageReference, type CitationStatus, type SupportedLanguage } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -64,8 +64,14 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
         r.setSelectedPath(path);
         document.getElementById(`cita-${path}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
-    const openSource = (v: VerifiedCitation) =>
-        setOpenCitation({ sourceKey: v.author, page: Number(v.matchedPage ?? v.pages ?? 0), verbatimQuote: v.evidenceIsQuoted ? v.evidence : null });
+    // Se abre la página que la cita DECLARA, con su tipo (impresa u hoja):
+    // es la que el lector va a cotejar. Lo que el verificador halló ya está
+    // escrito en el panel.
+    const openSource = () => {
+        const claim = r.selectedPath ? r.claims.get(r.selectedPath) : null;
+        if (!claim) return;
+        setOpenCitation({ sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, verbatimQuote: claim.verbatimQuote });
+    };
 
     return (
         <div className="flex flex-col h-full bg-background font-sans overflow-y-auto">

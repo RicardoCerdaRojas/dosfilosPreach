@@ -11,7 +11,7 @@ interface Props {
     review: CitationReview | null;
     isReviewing: boolean;
     onReview: (path: string, note: string) => void;
-    onOpenSource: (verdict: VerifiedCitation) => void;
+    onOpenSource: () => void;
 }
 
 /**
@@ -77,7 +77,7 @@ export function CitationEvidencePanel({ path, verdict, review, isReviewing, onRe
             )}
 
             <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => onOpenSource(verdict)} disabled={!verdict.matchedCorpusId}>
+                <Button type="button" size="sm" variant="outline" onClick={onOpenSource}>
                     <BookOpen className="h-3.5 w-3.5 mr-1.5" />
                     {t('canonical.review.panel.openPdf')}
                 </Button>
