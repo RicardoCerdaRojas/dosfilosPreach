@@ -15,6 +15,27 @@ import type { ProjectSource } from '../entities/ProjectSource';
 import type { StepSourcePlan } from '../entities/StepSourcePlan';
 
 /**
+ * Campos de una fuente que `updateSource` puede cambiar. Vive como tipo
+ * propio para que la interfaz y la implementación hablen de la MISMA lista:
+ * el repositorio la aplicaba con una lista blanca a mano que había olvidado
+ * `excerptRecipe` y `excerptSelectionMode`, así que «Ajustar páginas» sobre
+ * una fuente ya adjunta no guardaba nada y nadie se enteraba.
+ */
+export type ProjectSourcePatch = Partial<Pick<
+    ProjectSource,
+    | 'sourceType'
+    | 'chosenRole'
+    | 'displayLabel'
+    | 'citationKey'
+    | 'order'
+    | 'excerpts'
+    | 'excerptSelectionMode'
+    | 'excerptRecipe'
+    | 'extractedAt'
+    | 'extractionFingerprint'
+>>;
+
+/**
  * Persistence contract for `ExegeticalPaper` and its child entities (steps
  * and project sources). Modeled as a single repository because the entities
  * are tightly coupled — a paper without its steps is meaningless — and
@@ -115,7 +136,7 @@ export interface IExegeticalPaperRepository {
         ownerId: string,
         paperId: string,
         sourceId: string,
-        patch: Partial<Pick<ProjectSource, 'sourceType' | 'chosenRole' | 'displayLabel' | 'citationKey' | 'order' | 'excerpts' | 'excerptSelectionMode' | 'excerptRecipe' | 'extractedAt' | 'extractionFingerprint'>>
+        patch: ProjectSourcePatch
     ): Promise<ProjectSource>;
 
     removeSource(ownerId: string, paperId: string, sourceId: string): Promise<void>;
