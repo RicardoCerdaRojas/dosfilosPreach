@@ -11,6 +11,7 @@ import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBriefs';
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
 import {
+    ASSIGNMENT_BRIEF_MAX_CHARS,
     type ExegeticalStrategy,
     type PassageReference,
     type SupportedLanguage,
@@ -44,7 +45,9 @@ export function ExegesisCreatePage() {
     // Track whether the user has typed into the brief — once they have,
     // a default brief loaded from Firestore mustn't clobber their text.
     const [briefUserTyped, setBriefUserTyped] = useState(false);
-    const briefMaxChars = 2000;
+    // El mismo tope que el panel de edición en la configuración: dos cifras
+    // sueltas terminan discrepando, y lo creado aquí no se podría reeditar allá.
+    const briefMaxChars = ASSIGNMENT_BRIEF_MAX_CHARS;
     // Rubric template choice. Three states:
     //   - undefined → "use default if any" (matches the use case's
     //     fallback). Initial value when the user hasn't touched the

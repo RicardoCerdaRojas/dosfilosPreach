@@ -103,7 +103,10 @@ export function useExegesisPapers() {
                 assignmentBrief,
             });
         },
-        onSuccess: () => {
+        onSuccess: (paper) => {
+            // El trabajo devuelto ya trae el encuadre nuevo: sembrarlo evita que
+            // el panel muestre el texto viejo mientras llega la relectura.
+            queryClient.setQueryData(['exegesis', 'papers', user?.uid, paper.id], paper);
             queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
         },
     });
