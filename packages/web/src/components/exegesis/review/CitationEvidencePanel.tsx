@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, CheckCircle2, Loader2, MapPin, Undo2 } from 'lucide-react';
-import type { AnalysisClaim, CitationEdit, CitationReview, VerifiedCitation } from '@dosfilos/domain';
+import { parsePageRange, type AnalysisClaim, type CitationEdit, type CitationReview, type VerifiedCitation } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { CitationCorrectionActions } from './CitationCorrectionActions';
@@ -26,6 +27,8 @@ interface Props {
     viewed?: { sheet: number; printed: string | number | null; isAnchor: boolean } | null;
     isCorrecting?: boolean;
     onCorrect?: (path: string, edit: CitationEdit) => void;
+    /** Adónde ir a arreglar la numeración del libro, si se conoce. */
+    calibrationPath?: string | null;
 }
 
 /**
@@ -36,7 +39,7 @@ interface Props {
  * la página y la cita está bien» de «quería que dejara de bloquear», y la
  * diferencia es todo lo que este panel existe para registrar.
  */
-export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, noteFromView, viewed, isCorrecting = false, onCorrect }: Props) {
+export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, noteFromView, viewed, isCorrecting = false, onCorrect, calibrationPath }: Props) {
     const { t } = useTranslation('exegesis');
     const [note, setNote] = useState(review?.note ?? '');
     useEffect(() => { setNote(review?.note ?? ''); }, [path, review?.note]);
@@ -50,6 +53,10 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
     }
 
     const canReview = verdict.status !== 'verified';
+    // Un desajuste de una página suele ser la numeración del libro, no la
+    // cita: en Ortiz las cinco «página no coincide» de la medición eran
+    // todas de un folio y todas del mismo tramo mal calibrado.
+    const offByOne = isOffByOne(verdict);
 
     return (
         <div className="rounded-xl border border-border bg-card p-4 space-y-4">
@@ -86,7 +93,15 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
 
             {verdict.status === 'page-mismatch' && (
                 <p className="rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-xs text-warning-subtle-foreground">
-                    {t('canonical.review.panel.pageHint')}
+                    {offByOne ? t('canonical.review.panel.pageHintCalibration') : t('canonical.review.panel.pageHint')}
+                    {offByOne && calibrationPath && (
+                        <>
+                            {' '}
+                            <Link to={calibrationPath} className="underline underline-offset-2 font-medium">
+                                {t('canonical.review.panel.pageHintCalibrate')}
+                            </Link>
+                        </>
+                    )}
                 </p>
             )}
 
@@ -156,4 +171,12 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
             )}
         </div>
     );
+}
+
+/** Si lo citado y lo hallado se llevan exactamente una página. */
+function isOffByOne(verdict: VerifiedCitation): boolean {
+    const cited = parsePageRange(verdict.pages);
+    const found = parsePageRange(verdict.matchedPageLabel ?? (verdict.matchedPage !== null ? String(verdict.matchedPage) : null));
+    if (!cited || !found) return false;
+    return Math.abs(cited.start - found.start) === 1;
 }

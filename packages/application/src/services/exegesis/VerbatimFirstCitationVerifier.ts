@@ -6,7 +6,7 @@ import type {
     VerifiedCitation,
     VerifierSource,
 } from '@dosfilos/domain';
-import { findVerbatim } from '@dosfilos/domain';
+import { findVerbatim, pagesOverlap } from '@dosfilos/domain';
 
 /**
  * Verifica primero lo que se puede verificar sin juzgar.
@@ -94,17 +94,4 @@ function pageNumberOf(hint: string | null): string | null {
     return m ? m[1]!.replace(/\s+/g, '') : null;
 }
 
-function pagesOverlap(citedRaw: string, matchedRaw: string): boolean {
-    const cited = parseRange(citedRaw);
-    const matched = parseRange(matchedRaw);
-    if (!cited || !matched) return citedRaw === matchedRaw;
-    return cited.start <= matched.end && matched.start <= cited.end;
-}
 
-function parseRange(raw: string): { start: number; end: number } | null {
-    const cleaned = raw.replace(/\s+/g, '').replace(/[–—]/g, '-');
-    const m = cleaned.match(/^(\d+)(?:-(\d+))?/);
-    if (!m) return null;
-    const start = parseInt(m[1]!, 10);
-    return { start, end: m[2] ? parseInt(m[2]!, 10) : start };
-}

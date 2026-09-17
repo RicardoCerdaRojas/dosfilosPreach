@@ -60,6 +60,15 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
     const selectedVerdict = r.selectedPath ? r.verdicts.get(r.selectedPath) ?? null : null;
     const selectedReview = r.selectedPath ? r.reviews.get(r.selectedPath) ?? null : null;
     const selectedClaim = r.selectedPath ? r.claims.get(r.selectedPath) ?? null : null;
+    // La numeración se arregla en la biblioteca, sobre el recurso de la
+    // fuente citada: sin el enlace, «puede ser la calibración» es un
+    // diagnóstico sin puerta.
+    const calibrationPath = (() => {
+        if (!selectedClaim) return null;
+        const source = paper.sources.find(s => (s.citationKey ?? s.displayLabel) === selectedClaim.sourceKey);
+        const resourceId = source?.sourceLibraryResourceId ?? source?.corpusId;
+        return resourceId ? `/library/${resourceId}/numeracion` : null;
+    })();
 
     const select = (path: string) => {
         r.setSelectedPath(path);
@@ -173,6 +182,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                         verdict={selectedVerdict}
                         review={selectedReview}
                         claim={selectedClaim}
+                        calibrationPath={calibrationPath}
                         isReviewing={r.isReviewing}
                         onReview={r.review}
                         isCorrecting={r.isCorrecting}

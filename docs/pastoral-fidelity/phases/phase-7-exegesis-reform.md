@@ -31,9 +31,9 @@ el documento salga en el formato y la extensión que el seminario exige.
 
 | # | Etapa | Estado | Métrica de efectividad |
 |---|---|---|---|
-| 1 | **Verificación del análisis canónico + oración textual obligatoria** (P2.1, P2.2) | `in-progress` | Recall sobre errores conocidos ≥ 4/5; falsos «no encontrada» ≤ 10 % sobre citas correctas; `citationsWithoutVerbatim` → 0 |
-| 2 | Word según la guía + extensión como contrato (P3.3, P3.2) | `planned` | El .docx generado abre en Word con 12 ± 1 páginas de cuerpo, notas al pie reales y bibliografía; 0 retoques manuales de formato |
-| 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `planned` | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
+| 1 | **Verificación del análisis canónico + oración textual obligatoria** (P2.1, P2.2) | `done` (#629, #630) | Recall sobre errores conocidos ≥ 4/5; falsos «no encontrada» ≤ 10 % sobre citas correctas; `citationsWithoutVerbatim` → 0 |
+| 2 | Word según la guía + extensión como contrato (P3.3, P3.2) | `next` | El .docx generado abre en Word con 12 ± 1 páginas de cuerpo, notas al pie reales y bibliografía; 0 retoques manuales de formato |
+| 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `in-progress` — P4.1 y P4.2 hechos (#631-#635); falta P3.1 | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
 | 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `planned` | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
 | 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `planned` | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
 | 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `planned` | 0 términos del glosario en la salida («tronco», calcos del inglés) |
@@ -127,3 +127,21 @@ bitácora de abajo.
     textual, mostrar oración y afirmación lado a lado, porque el verificador solo garantiza la
     primera; (2) un «página no coincide» de ±1 debe decir «puede ser la calibración del
     libro» y enlazar a calibrar.
+- **2026-09-17** — **Etapa 3, primera mitad (PRs #631–#636).** Página de revisión de citas
+  (`/pasos/:stepId/revision`), revisión manual con motivo y gate de aceptación (#631); el visor
+  abre la hoja que lleva impresa la página citada (#632); taller de cotejo —hojear, «ir a p.»
+  por folio impreso, el problema en un panel al lado del PDF— (#633); búsqueda literal en todo
+  el libro (#634); corrección de la cita en el análisis con re-verificación de esa sola (#635);
+  cierre de duplicados y pista de calibración (#636).
+  - **Caso testigo, medido sobre el trabajo real:** la cita «Waltke-O'Connor, p. 440» para el
+    Polel de שׁוב que la Etapa 1 marcó como «no encontrada» **no era una invención**: la
+    afirmación es correcta y está en la **página impresa 436** («to restore (Polel for Piel)
+    (lit., make restored) Jacob to him», contrastado con el Hifil de Gen 28:15). La p. 440
+    trata el Hifil, como dijo el verificador. Sin buscar en el libro entero, el desenlace
+    esperable era marcar la cita como dudosa y borrar una afirmación verdadera: **la
+    verificación sin herramientas de resolución empuja a borrar lo correcto**.
+  - Dos límites de la Etapa 1 quedan cubiertos: la afirmación y la oración se ven juntas en el
+    panel, y un «página no coincide» de ±1 dice que puede ser la calibración y enlaza a
+    arreglarla.
+  - Falta de la etapa: **P3.1**, recomposición dirigida de un verso incompleto (el render
+    mecánico de 23:2 y 23:3 sigue sin remedio propio).

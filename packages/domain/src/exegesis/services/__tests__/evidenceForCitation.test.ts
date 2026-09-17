@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsePageRange, prioritizeChunksForCitedPage } from '../evidenceForCitation';
+import { parsePageRange, prioritizeChunksForCitedPage, pagesOverlap } from '../evidenceForCitation';
 
 /**
  * El caso medido en Sal 23:1: Craigie admitido en las hojas 205–210 (pp. 203–208),
@@ -55,5 +55,29 @@ describe('parsePageRange', () => {
     it('nada numérico es null', () => {
         expect(parsePageRange(null)).toBeNull();
         expect(parsePageRange('ccxxii')).toBeNull();
+    });
+});
+
+describe('pagesOverlap — el mismo criterio para los tres verificadores', () => {
+    it('la misma página, o una dentro del rango citado, coinciden', () => {
+        expect(pagesOverlap('440', '440')).toBe(true);
+        expect(pagesOverlap('559-562', '560')).toBe(true);
+        expect(pagesOverlap('560', '559-562')).toBe(true);
+    });
+
+    it('un rango abreviado se lee entero: «559–61» es 559–561', () => {
+        // Las copias que vivían en cada verificador leían 61 como final y
+        // marcaban «página no coincide» sobre una cita correcta.
+        expect(pagesOverlap('559–61', '560')).toBe(true);
+    });
+
+    it('páginas distintas no coinciden', () => {
+        expect(pagesOverlap('440', '436')).toBe(false);
+        expect(pagesOverlap('559-560', '562')).toBe(false);
+    });
+
+    it('sin número, se comparan como texto', () => {
+        expect(pagesOverlap('ad loc.', 'ad loc.')).toBe(true);
+        expect(pagesOverlap('ad loc.', 'ci')).toBe(false);
     });
 });

@@ -11,6 +11,7 @@ import type {
 import {
     CITATION_FUZZY_LOW_THRESHOLD,
     CITATION_VERIFY_THRESHOLD,
+    pagesOverlap,
 } from '@dosfilos/domain';
 import { parseCitations } from './citationParser';
 import {
@@ -185,21 +186,7 @@ function extractPageFromHint(hint: string | null): string | null {
  * `page-mismatch` decision so a chunk that spans the cited page
  * doesn't trigger a false alarm.
  */
-function pagesOverlap(citedRaw: string, matchedRaw: string): boolean {
-    const cited = parseRange(citedRaw);
-    const matched = parseRange(matchedRaw);
-    if (!cited || !matched) return citedRaw === matchedRaw;
-    return cited.start <= matched.end && matched.start <= cited.end;
-}
 
-function parseRange(raw: string): { start: number; end: number } | null {
-    const cleaned = raw.replace(/\s+/g, '').replace(/[–—]/g, '-');
-    const m = cleaned.match(/^(\d+)(?:-(\d+))?/);
-    if (!m) return null;
-    const start = parseInt(m[1]!, 10);
-    const end = m[2] ? parseInt(m[2]!, 10) : start;
-    return { start, end };
-}
 
 // ── Source matching ─────────────────────────────────────────────────
 

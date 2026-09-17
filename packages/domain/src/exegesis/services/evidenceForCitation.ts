@@ -54,3 +54,21 @@ export function parsePageRange(raw: string | null): { start: number; end: number
     }
     return end >= start ? { start, end } : { start, end: start };
 }
+
+/**
+ * Si dos rótulos de página pueden estar hablando del mismo sitio.
+ *
+ * Lo usan los tres verificadores para decidir «página no coincide». Vivía
+ * copiado en cada uno, y las copias no sabían leer «559–61»: al abreviar,
+ * el final salía 61, menor que el inicio, y una cita correcta a un rango
+ * quedaba marcada como página equivocada.
+ *
+ * Cuando alguno de los dos rótulos no trae número —«ad loc.», «ci»— se
+ * comparan como texto: es lo único honesto que se puede hacer.
+ */
+export function pagesOverlap(citedRaw: string, matchedRaw: string): boolean {
+    const cited = parsePageRange(citedRaw);
+    const matched = parsePageRange(matchedRaw);
+    if (!cited || !matched) return citedRaw === matchedRaw;
+    return cited.start <= matched.end && matched.start <= cited.end;
+}

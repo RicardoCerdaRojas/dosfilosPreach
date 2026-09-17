@@ -1,31 +1,14 @@
-import { AlertTriangle, CheckCircle2, CircleHelp, XCircle } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import type { CitationStatus } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
+import { STATUS_TONE } from '@/components/exegesis/citation/citationStatusTone';
 
-/**
- * Una sola regla de color para los veredictos, compartida por la marca
- * junto a la cita, el panel de evidencia y los filtros.
- */
-export const STATUS_TONE: Record<CitationStatus, { badge: string; dot: string }> = {
-    verified: { badge: 'bg-success-subtle text-success-subtle-foreground border-success/30', dot: 'bg-success' },
-    'page-mismatch': { badge: 'bg-warning-subtle text-warning-subtle-foreground border-warning/30', dot: 'bg-warning' },
-    'fuzzy-low': { badge: 'bg-warning-subtle text-warning-subtle-foreground border-warning/30', dot: 'bg-warning' },
-    'not-found': { badge: 'bg-destructive/10 text-destructive border-destructive/30', dot: 'bg-destructive' },
-    'manual-pending': { badge: 'bg-muted text-muted-foreground border-border', dot: 'bg-muted-foreground' },
-};
-
-const ICON: Record<CitationStatus, typeof CheckCircle2> = {
-    verified: CheckCircle2,
-    'page-mismatch': AlertTriangle,
-    'fuzzy-low': AlertTriangle,
-    'not-found': XCircle,
-    'manual-pending': CircleHelp,
-};
+export { STATUS_TONE };
 
 export function CitationStatusBadge({ status, reviewed = false, count }: { status: CitationStatus; reviewed?: boolean; count?: number }) {
     const { t } = useTranslation('exegesis');
-    const Icon = reviewed ? CheckCircle2 : ICON[status];
+    const Icon = reviewed ? CheckCircle2 : STATUS_TONE[status].Icon;
     const tone = reviewed ? STATUS_TONE.verified : STATUS_TONE[status];
     return (
         <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium', tone.badge)}>
