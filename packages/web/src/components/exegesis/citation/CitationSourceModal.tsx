@@ -10,8 +10,10 @@ import {
 } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
-import { CitationViewerToolbar } from './CitationViewerToolbar';
+import { BookSearchResults } from './BookSearchResults';
+import { CitationViewerToolbar, type SearchScope } from './CitationViewerToolbar';
 import { useCitationSheet } from './useCitationSheet';
+import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
 
 /**
  * El libro detrás de una cita, abierto en la página citada y con la frase
@@ -76,8 +78,10 @@ export function CitationSourceModal({ open, onOpenChange, paperId, citation, asi
     const [quoteFound, setQuoteFound] = useState<boolean | null>(null);
     const [zoom, setZoom] = useState<number>(1);
     const [search, setSearch] = useState('');
+    const [scope, setScope] = useState<SearchScope>('sheet');
     const [matches, setMatches] = useState(0);
     const view = useCitationSheet(paperId, citation, open);
+    const bookSearch = useDocumentTextSearch(view.resourceId, search, open && scope === 'book');
 
     // Cada cita nueva vuelve a empezar: sin esto el modal heredaría el
     // veredicto de la anterior y diría «no la encontré» sobre una frase
@@ -86,6 +90,7 @@ export function CitationSourceModal({ open, onOpenChange, paperId, citation, asi
         setQuoteFound(null);
         setZoom(1);
         setSearch('');
+        setScope('sheet');
         setMatches(0);
     }, [citation?.sourceKey, citation?.page, citation?.verbatimQuote]);
 
@@ -130,9 +135,23 @@ export function CitationSourceModal({ open, onOpenChange, paperId, citation, asi
                         onGoToPageInput={view.goToPageInput}
                         search={search}
                         onSearch={setSearch}
+                        scope={scope}
+                        onScope={setScope}
                         matches={matches}
                         zoom={zoom}
                         onZoom={setZoom}
+                    />
+                )}
+
+                {!!view.source && scope === 'book' && search.trim().length >= 2 && (
+                    <BookSearchResults
+                        hits={bookSearch.data?.hits ?? []}
+                        truncated={bookSearch.data?.truncated ?? false}
+                        isLoading={bookSearch.isLoading}
+                        isError={bookSearch.isError}
+                        printedOf={view.printedOf}
+                        currentSheet={view.viewSheet}
+                        onGo={view.goTo}
                     />
                 )}
 

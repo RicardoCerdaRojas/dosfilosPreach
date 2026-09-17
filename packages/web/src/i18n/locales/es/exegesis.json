@@ -1918,6 +1918,20 @@
     "sheetOf": "hoja {{sheet}} de {{total}}",
     "goToPage": "Ir a p.",
     "goToPageInvalid": "Escribe un número de página.",
-    "awayFromCited": "la cita decía p. {{page}}"
+    "awayFromCited": "la cita decía p. {{page}}",
+    "scopeLabel": "Dónde buscar",
+    "scope": {
+      "sheet": "esta hoja",
+      "book": "todo el libro"
+    },
+    "searchBookPlaceholder": "Buscar en todo el libro…",
+    "bookSearching": "Buscando en el libro…",
+    "bookSearchFailed": "No se pudo buscar en el libro. Intenta de nuevo.",
+    "bookSearchEmpty": "Esa palabra no aparece en el texto extraído de este libro.",
+    "bookSearchTruncated": "Hay más hojas con esa palabra. Prueba un término más preciso.",
+    "hitPage": "p. {{printed}} · hoja {{sheet}}",
+    "hitSheet": "hoja {{sheet}}",
+    "hitCount_one": "{{count}} vez",
+    "hitCount_other": "{{count}} veces"
   }
 }

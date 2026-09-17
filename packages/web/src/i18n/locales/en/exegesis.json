@@ -1918,6 +1918,20 @@
     "sheetOf": "sheet {{sheet}} of {{total}}",
     "goToPage": "Go to p.",
     "goToPageInvalid": "Type a page number.",
-    "awayFromCited": "the citation said p. {{page}}"
+    "awayFromCited": "the citation said p. {{page}}",
+    "scopeLabel": "Where to search",
+    "scope": {
+      "sheet": "this sheet",
+      "book": "whole book"
+    },
+    "searchBookPlaceholder": "Search the whole book…",
+    "bookSearching": "Searching the book…",
+    "bookSearchFailed": "The book could not be searched. Try again.",
+    "bookSearchEmpty": "That word does not appear in this book's extracted text.",
+    "bookSearchTruncated": "More sheets contain that word. Try a narrower term.",
+    "hitPage": "p. {{printed}} · sheet {{sheet}}",
+    "hitSheet": "sheet {{sheet}}",
+    "hitCount_one": "{{count}} time",
+    "hitCount_other": "{{count}} times"
   }
 }
