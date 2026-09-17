@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, CheckCircle2, Loader2, Undo2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, Loader2, MapPin, Undo2 } from 'lucide-react';
 import type { CitationReview, VerifiedCitation } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
@@ -11,7 +11,14 @@ interface Props {
     review: CitationReview | null;
     isReviewing: boolean;
     onReview: (path: string, note: string) => void;
-    onOpenSource: () => void;
+    /** Ausente cuando el panel ya vive junto al PDF. */
+    onOpenSource?: () => void;
+    /**
+     * Frase para anotar «está aquí» con la hoja que el lector tiene
+     * delante. Se agrega a la nota, no la reemplaza: lo que ya escribió
+     * sigue siendo suyo.
+     */
+    noteFromView?: string | null;
 }
 
 /**
@@ -22,7 +29,7 @@ interface Props {
  * la página y la cita está bien» de «quería que dejara de bloquear», y la
  * diferencia es todo lo que este panel existe para registrar.
  */
-export function CitationEvidencePanel({ path, verdict, review, isReviewing, onReview, onOpenSource }: Props) {
+export function CitationEvidencePanel({ path, verdict, review, isReviewing, onReview, onOpenSource, noteFromView }: Props) {
     const { t } = useTranslation('exegesis');
     const [note, setNote] = useState(review?.note ?? '');
     useEffect(() => { setNote(review?.note ?? ''); }, [path, review?.note]);
@@ -76,12 +83,14 @@ export function CitationEvidencePanel({ path, verdict, review, isReviewing, onRe
                 </p>
             )}
 
-            <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={onOpenSource}>
-                    <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-                    {t('canonical.review.panel.openPdf')}
-                </Button>
-            </div>
+            {onOpenSource && (
+                <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={onOpenSource}>
+                        <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+                        {t('canonical.review.panel.openPdf')}
+                    </Button>
+                </div>
+            )}
 
             {canReview && (
                 <div className="space-y-2 border-t border-border pt-3">
@@ -102,7 +111,20 @@ export function CitationEvidencePanel({ path, verdict, review, isReviewing, onRe
                             {t('canonical.review.panel.reviewedOn', { date: review.reviewedAt.toLocaleString() })}
                         </p>
                     )}
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
+                        {noteFromView && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="mr-auto"
+                                disabled={isReviewing}
+                                onClick={() => setNote(n => (n.trim() ? `${n.trimEnd()}\n${noteFromView}` : noteFromView))}
+                            >
+                                <MapPin className="h-3.5 w-3.5 mr-1.5" />
+                                {t('canonical.review.panel.useThisPage')}
+                            </Button>
+                        )}
                         {review && (
                             <Button type="button" size="sm" variant="ghost" onClick={() => onReview(path, '')} disabled={isReviewing}>
                                 <Undo2 className="h-3.5 w-3.5 mr-1.5" />
