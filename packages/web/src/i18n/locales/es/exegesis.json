@@ -1595,7 +1595,26 @@
         "reviewRemoved": "Marca de revisión quitada",
         "reviewFailed": "No se pudo guardar la revisión. Intenta de nuevo.",
         "acceptBlocked_one": "No se puede aceptar: hay una cita no encontrada sin revisar.",
-        "acceptBlocked_other": "No se puede aceptar: hay {{count}} citas no encontradas sin revisar."
+        "acceptBlocked_other": "No se puede aceptar: hay {{count}} citas no encontradas sin revisar.",
+        "corrected": {
+          "page": "Página corregida y cita verificada de nuevo.",
+          "quote": "Oración registrada y cita verificada de nuevo.",
+          "remove": "Cita quitada del análisis."
+        },
+        "correctFailed": "No se pudo corregir la cita."
+      },
+      "correct": {
+        "title": "Corregir la cita",
+        "toThisPage": "Corregir a la p. {{page}}",
+        "quoteLabel": "Oración textual de la fuente",
+        "quotePlaceholder": "Copia aquí la oración exacta que sostiene la afirmación.",
+        "addQuote": "Registrar cita textual",
+        "editQuote": "Cambiar la cita textual",
+        "saveQuote": "Guardar la oración",
+        "cancel": "Cancelar",
+        "remove": "Quitar esta cita",
+        "removeConfirm": "Se quita la cita del análisis. La afirmación queda sin esta fuente y el trabajo exportado ya no la nombrará aquí.",
+        "removeConfirmAction": "Quitar la cita"
       }
     }
   },

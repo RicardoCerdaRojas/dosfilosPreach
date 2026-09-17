@@ -59,6 +59,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
     const title = step.verseRef ? formatPassageReference(step.verseRef, lang) : t(`detail.steps.kind.${step.kind}`);
     const selectedVerdict = r.selectedPath ? r.verdicts.get(r.selectedPath) ?? null : null;
     const selectedReview = r.selectedPath ? r.reviews.get(r.selectedPath) ?? null : null;
+    const selectedClaim = r.selectedPath ? r.claims.get(r.selectedPath) ?? null : null;
 
     const select = (path: string) => {
         r.setSelectedPath(path);
@@ -171,8 +172,12 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                         path={r.selectedPath}
                         verdict={selectedVerdict}
                         review={selectedReview}
+                        claim={selectedClaim}
                         isReviewing={r.isReviewing}
                         onReview={r.review}
+                        isCorrecting={r.isCorrecting}
+                        onCorrect={r.correct}
+                        viewed={viewed}
                         noteFromView={viewed.isAnchor ? null : t('canonical.review.panel.noteFromView', {
                             page: viewed.printed ?? viewed.sheet,
                             sheet: viewed.sheet,

@@ -104,6 +104,7 @@ import {
     ComposeStudyGuideFromAnalysesUseCase,
     GenerateStepUseCase,
     AcceptStepUseCase,
+    CorrectCitationUseCase,
     ReviewCitationUseCase,
     SaveStepEditUseCase,
     VerifyStepCitationsUseCase,
@@ -204,6 +205,7 @@ class ExegesisService {
     public verifyStepCitations: VerifyStepCitationsUseCase;
     /** Marca a mano una cita «no encontrada» como revisada, con motivo. */
     public reviewCitation: ReviewCitationUseCase;
+    public correctCitation: CorrectCitationUseCase;
     // Cross-section coherence reviewer — single Gemini pass over the
     // accepted intro + verses + conclusion to surface inconsistencies
     // the per-step prompts cannot see (they only get one step at a time).
@@ -485,6 +487,16 @@ class ExegesisService {
             new CallableCuratedCorpusReader(),
             // Y con la numeración, esa detección compara en la misma unidad
             // que la cita en vez de cotejar hojas contra páginas impresas.
+            pageNumberingReader,
+        );
+        // Corregir una cita vuelve a verificar SOLO esa, con la misma
+        // evidencia y el mismo verificador: corregir no debe cambiar el
+        // veredicto de las citas que nadie tocó.
+        this.correctCitation = new CorrectCitationUseCase(
+            paperRepository,
+            contentReader,
+            citationVerifier,
+            new CallableCuratedCorpusReader(),
             pageNumberingReader,
         );
 

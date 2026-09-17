@@ -1,6 +1,7 @@
 import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { CitationReview, VerifiedCitation } from './CitationVerification';
 import type { CanonicalVerseAnalysis } from './CanonicalVerseAnalysis';
+import type { CitationCorrection } from '../services/citationCorrection';
 
 /**
  * One unit of work in the exegesis wizard.
@@ -165,6 +166,14 @@ export interface ExegeticalStepVersion {
      * el campo, y en las que nunca se verificaron.
      */
     citationVerdicts?: ReadonlyArray<VerifiedCitation>;
+
+    /**
+     * Qué citas se corrigieron a mano sobre este análisis, y desde qué
+     * valor. Es el rastro de una edición que cambia el trabajo entregable:
+     * sin él, una página corregida es indistinguible de una que el
+     * analizador acertó a la primera.
+     */
+    citationCorrections?: ReadonlyArray<CitationCorrection>;
 
     /** Citas que alguien revisó a mano tras un «no encontrada». Ver `CitationReview`. */
     citationReviews?: ReadonlyArray<CitationReview>;

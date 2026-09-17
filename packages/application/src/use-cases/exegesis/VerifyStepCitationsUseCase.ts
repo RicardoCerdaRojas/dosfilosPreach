@@ -6,25 +6,22 @@ import type {
     ICitationVerifier,
     ICuratedCorpusReader,
     IExegeticalPaperRepository,
+    IPageNumberingReader,
     IResourceContentReader,
-    ProjectSource,
     VerifiedCitation,
     VerificationSummary,
     VerifierSource,
-    VerifierSourceChunk,
-    IPageNumberingReader,
     PageNumbering,
 } from '@dosfilos/domain';
 import {
     analysisClaimsToCitations,
-    citationAnchorFor,
     collectAnalysisClaims,
     printedLabelIn,
-    relabelExcerptAnchor,
     type AnalysisClaim,
 } from '@dosfilos/domain';
-import { findUnsupportedWitnessClaims, isCitableSourceType } from '@dosfilos/domain';
+import { findUnsupportedWitnessClaims } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
+import { VerifierSourcesBuilder } from '../../services/exegesis/VerifierSourcesBuilder';
 
 export interface VerifyStepCitationsInput {
     ownerId: string;
@@ -67,6 +64,8 @@ export interface VerifyStepCitationsOutput {
  * shouldn't either.
  */
 export class VerifyStepCitationsUseCase {
+    private readonly sourcesBuilder: VerifierSourcesBuilder;
+
     constructor(
         private paperRepository: IExegeticalPaperRepository,
         private contentReader: IResourceContentReader,
@@ -86,7 +85,9 @@ export class VerifyStepCitationsUseCase {
          * en cada cita correcta de todo libro con preliminares.
          */
         private pageNumbering?: IPageNumberingReader,
-    ) { }
+    ) {
+        this.sourcesBuilder = new VerifierSourcesBuilder(contentReader, corpusReader, pageNumbering);
+    }
 
     async execute(input: VerifyStepCitationsInput): Promise<VerifyStepCitationsOutput> {
         const { ownerId, paperId, stepId } = input;
@@ -108,7 +109,7 @@ export class VerifyStepCitationsUseCase {
         );
 
         try {
-            const sources = await this.buildVerifierSources(paper);
+            const sources = await this.sourcesBuilder.build(paper);
             reservation.markLlmContacted();
 
             const { citations, summary } = target.canonicalAnalysis
@@ -205,141 +206,6 @@ export class VerifyStepCitationsUseCase {
         return { citations: verdicts, summary };
     }
 
-    private async buildVerifierSources(paper: ExegeticalPaper): Promise<VerifierSource[]> {
-        const out: VerifierSource[] = [];
-        for (const source of paper.sources) {
-            if (!isCitableSourceType(source.sourceType)) continue;
-            const numbering = await this.numberingFor(
-                source.sourceLibraryResourceId ?? source.corpusId,
-            );
-            const chunks = await this.buildChunks(source, numbering);
-            if (chunks.length === 0) continue;
-            out.push({
-                corpusId: source.corpusId,
-                citationKey: source.citationKey,
-                fullAuthor: source.citationKey,
-                displayLabel: source.displayLabel,
-                chunks,
-                // El verificador recupera fragmentos por su cuenta y los rotula
-                // él mismo; sin la numeración los rotularía en hojas.
-                numbering,
-            });
-        }
-        return out;
-    }
-
-    /**
-     * Evidencia de una fuente con receta: las hojas admitidas, con su página,
-     * más el texto completo como respaldo sin pista.
-     *
-     * Devuelve `null` cuando la fuente no tiene receta o no hay lector
-     * cableado, para que el llamador siga por el camino anterior. Un fallo de
-     * lectura también devuelve `null`: verificar con evidencia vieja es mejor
-     * que no verificar.
-     */
-    /** `null` sin lector o cuando el recurso no declara numeración utilizable. */
-    private async numberingFor(resourceId: string): Promise<PageNumbering | null> {
-        if (!this.pageNumbering) return null;
-        try {
-            return await this.pageNumbering.numberingFor(resourceId);
-        } catch (err) {
-            console.warn('[VerifyStepCitations] sin numeración para', resourceId, err);
-            return null;
-        }
-    }
-
-    private async readAdmitted(source: ProjectSource): Promise<VerifierSourceChunk[] | null> {
-        const ranges = source.excerptRecipe?.sheetRanges;
-        if (!this.corpusReader || !ranges || ranges.length === 0) return null;
-        const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
-
-        try {
-            const chunks = await this.corpusReader.readAdmitted({ resourceId, sheetRanges: ranges });
-            if (chunks.length === 0) return null;
-
-            const numbering = await this.numberingFor(resourceId);
-            const out = chunks
-                .filter(c => c.text.trim().length > 0)
-                .map<VerifierSourceChunk>(c => ({
-                    text: c.text,
-                    // El mismo criterio que el ancla del corpus, y por la
-                    // misma razón: si el fragmento se rotula con la hoja y la
-                    // cita habla de la página impresa, el cotejo compara dos
-                    // unidades distintas y reprueba lo que está bien.
-                    pageHint: citationAnchorFor({ sheet: c.sheet ?? null, section: null }, numbering) || null,
-                }));
-
-            // Mismo respaldo que el camino anterior: una cita a material fuera
-            // de lo curado no debe volver como "no encontrada" solo porque el
-            // usuario no eligió esa página para escribir.
-            const fullText = await this.contentReader.getTextContent(resourceId);
-            if (fullText && fullText.trim().length > 0) {
-                out.push({ text: fullText, pageHint: null });
-            }
-            return out;
-        } catch (err) {
-            console.warn('[VerifyStepCitations] no se pudo leer lo admitido; se usa lo guardado', {
-                resourceId,
-                error: (err as Error).message,
-            });
-            return null;
-        }
-    }
-
-    private async buildChunks(
-        source: ProjectSource,
-        numbering: PageNumbering | null,
-    ): Promise<VerifierSourceChunk[]> {
-        // Fuentes con receta: la evidencia con página son las hojas admitidas,
-        // no los `excerpts` —que a partir del corpus consultable ya no son lo
-        // que el paso recibió, y en algún momento dejan de guardarse.
-        const admitted = await this.readAdmitted(source);
-        if (admitted) return admitted;
-
-        if (source.mode === 'extracted-excerpts') {
-            const excerptChunks = source.excerpts
-                .map<VerifierSourceChunk>(excerpt => ({
-                    text: excerpt.text,
-                    // `sourceLocation` es texto que el extractor escribió antes
-                    // de que existiera la numeración: dice «p. 65» sobre la
-                    // HOJA 65. Pasarlo tal cual pone al cotejo a comparar la
-                    // página impresa de la cita contra una hoja, y marca
-                    // «página no coincide» en citas que apuntan al mismo lugar.
-                    // El camino con receta ya convertía; éste, que es el de los
-                    // trabajos sin receta, se había quedado afuera.
-                    pageHint: relabelExcerptAnchor(
-                        excerpt.sourceLocation,
-                        numbering,
-                        { sheet: excerpt.sheet, section: excerpt.section },
-                    ) || null,
-                }))
-                .filter(c => c.text.trim().length > 0);
-
-            // Fallback chunk: also pull the full library-resource text
-            // when available. The user's curated excerpts are the
-            // primary evidence (preserving page-mismatch detection),
-            // but a citation may reference content elsewhere in the
-            // resource — the verifier should not return "not found"
-            // just because the cited passage wasn't curated for paper
-            // writing. The fallback chunk has no `pageHint` so any
-            // match against it doesn't trigger page-mismatch.
-            if (source.sourceLibraryResourceId) {
-                const fullText = await this.contentReader.getTextContent(
-                    source.sourceLibraryResourceId,
-                );
-                if (fullText && fullText.trim().length > 0) {
-                    excerptChunks.push({ text: fullText, pageHint: null });
-                }
-            }
-            return excerptChunks;
-        }
-        // 'full-document' (or legacy sources without `mode`): pull the
-        // whole corpus text. Page-mismatch detection is impossible
-        // here — the verifier handles a null `pageHint` gracefully.
-        const text = await this.contentReader.getTextContent(source.corpusId);
-        if (!text) return [];
-        return [{ text, pageHint: null }];
-    }
 }
 
 function pickVersion(
@@ -411,14 +277,14 @@ function normalizeKey(s: string): string {
     return s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-interface SummaryExtras {
+export interface SummaryExtras {
     verifierVersion: string;
     sourcesNamedWithoutCitation: number;
     witnessClaimsWithoutCitation: number;
     citationsWithoutVerbatim?: number;
 }
 
-function buildSummary(citations: VerifiedCitation[], extras: SummaryExtras): VerificationSummary {
+export function buildSummary(citations: VerifiedCitation[], extras: SummaryExtras): VerificationSummary {
     const counts: Record<CitationStatus, number> = {
         verified: 0,
         'page-mismatch': 0,

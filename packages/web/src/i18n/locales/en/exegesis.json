@@ -1595,7 +1595,26 @@
         "reviewRemoved": "Review mark removed",
         "reviewFailed": "Couldn't save the review. Try again.",
         "acceptBlocked_one": "Can't accept: one not-found citation hasn't been reviewed.",
-        "acceptBlocked_other": "Can't accept: {{count}} not-found citations haven't been reviewed."
+        "acceptBlocked_other": "Can't accept: {{count}} not-found citations haven't been reviewed.",
+        "corrected": {
+          "page": "Page corrected and the citation re-checked.",
+          "quote": "Quote recorded and the citation re-checked.",
+          "remove": "Citation removed from the analysis."
+        },
+        "correctFailed": "The citation could not be corrected."
+      },
+      "correct": {
+        "title": "Correct the citation",
+        "toThisPage": "Correct to p. {{page}}",
+        "quoteLabel": "Source's own sentence",
+        "quotePlaceholder": "Paste the exact sentence that supports the claim.",
+        "addQuote": "Record the quote",
+        "editQuote": "Change the quote",
+        "saveQuote": "Save the sentence",
+        "cancel": "Cancel",
+        "remove": "Remove this citation",
+        "removeConfirm": "The citation is removed from the analysis. The claim loses this source and the exported paper will no longer name it here.",
+        "removeConfirmAction": "Remove citation"
       }
     }
   },
