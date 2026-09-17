@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor } from '@dosfilos/domain';
+import { citationAnchorFor, prioritizeChunksForCitedPage } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -159,7 +159,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             userId,
             numbering: matched.numbering ?? null,
         });
-        const chunks = this.prepareChunks([...matched.chunks, ...retrievedChunks]);
+        const chunks = this.prepareChunks([...matched.chunks, ...retrievedChunks], parsed.pages);
         if (chunks.length === 0) {
             return {
                 ...parsed,
@@ -247,40 +247,11 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         }
     }
 
-    /**
-     * Prepares the chunks the verifier sends to Gemini. Three tasks:
-     *   1. Dedup by trimmed text — embedding-retrieved chunks may
-     *      duplicate excerpts the user already curated.
-     *   2. Sort so chunks with `pageHint` (curated excerpts +
-     *      retrieved chunks with page metadata) lead — they preserve
-     *      page-mismatch detection. Page-less full-document fallback
-     *      chunks fill the tail.
-     *   3. Cap per-chunk char count + total chunk count so the prompt
-     *      stays within the 1024-output-token budget at reasonable
-     *      input cost.
-     */
-    private prepareChunks(chunks: ReadonlyArray<VerifierSourceChunk>): VerifierSourceChunk[] {
-        const seen = new Set<string>();
-        const deduped: VerifierSourceChunk[] = [];
-        for (const c of chunks) {
-            const key = c.text.trim().slice(0, 200);
-            if (!key || seen.has(key)) continue;
-            seen.add(key);
-            deduped.push(c);
-        }
-        const sorted = deduped.sort((a, b) => {
-            if (!!a.pageHint === !!b.pageHint) return 0;
-            return a.pageHint ? -1 : 1;
+    private prepareChunks(chunks: ReadonlyArray<VerifierSourceChunk>, citedPages: string | null): VerifierSourceChunk[] {
+        return selectEvidenceChunks(chunks, citedPages, {
+            maxChunks: this.maxChunksPerCitation,
+            maxCharsPerChunk: this.maxCharsPerChunk,
         });
-        return sorted
-            .slice(0, this.maxChunksPerCitation)
-            .map(c => ({
-                text: c.text.length > this.maxCharsPerChunk
-                    ? c.text.slice(0, this.maxCharsPerChunk)
-                    : c.text,
-                pageHint: c.pageHint,
-            }))
-            .filter(c => c.text.trim().length > 0);
     }
 
     /**
@@ -327,6 +298,50 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             return [];
         }
     }
+}
+
+/**
+ * Qué evidencia recibe el modelo para UNA cita, dentro del presupuesto.
+ *
+ *   1. La página citada y sus vecinas van primero. Sin esto el tope se
+ *      llevaba las primeras hojas de la fuente y el modelo juzgaba una cita
+ *      a la p. 560 con las pp. 553–557: en Sal 23:1, 10 de 14 citas
+ *      correctas salieron «no encontrada» con notas que decían, con razón,
+ *      «los fragmentos llegan hasta la página 205».
+ *   2. Se quitan duplicados (los fragmentos recuperados por embeddings
+ *      repiten los admitidos).
+ *   3. Los fragmentos con página preceden a los que no la tienen, para que
+ *      el cotejo de página conserve con qué compararse.
+ *   4. Tope de fragmentos y de caracteres por fragmento.
+ *
+ * Pura y exportada para poder afirmar en una prueba que la página citada
+ * sobrevive al recorte.
+ */
+export function selectEvidenceChunks(
+    chunks: ReadonlyArray<VerifierSourceChunk>,
+    citedPages: string | null,
+    caps: { maxChunks: number; maxCharsPerChunk: number },
+): VerifierSourceChunk[] {
+    const seen = new Set<string>();
+    const deduped: VerifierSourceChunk[] = [];
+    for (const c of prioritizeChunksForCitedPage(chunks, citedPages)) {
+        const key = c.text.trim().slice(0, 200);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(c);
+    }
+    // Estable: dentro de cada grupo se conserva el orden por cercanía a la página.
+    const sorted = deduped.sort((a, b) => {
+        if (!!a.pageHint === !!b.pageHint) return 0;
+        return a.pageHint ? -1 : 1;
+    });
+    return sorted
+        .slice(0, caps.maxChunks)
+        .map(c => ({
+            text: c.text.length > caps.maxCharsPerChunk ? c.text.slice(0, caps.maxCharsPerChunk) : c.text,
+            pageHint: c.pageHint,
+        }))
+        .filter(c => c.text.trim().length > 0);
 }
 
 export interface ParsedLlmResponse {
