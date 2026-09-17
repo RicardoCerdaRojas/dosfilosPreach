@@ -426,6 +426,7 @@ class ExegesisService {
         // compartirlo evita que cada uno vuelva a resolver la misma
         // numeración.
         const pageNumberingReader = new DocumentPageNumberingReader();
+        const curatedCorpusReader = new CallableCuratedCorpusReader();
         this.seedSteps = new SeedStepsForPassageUseCase(paperRepository);
         this.generateStep = new GenerateStepUseCase(
             paperRepository,
@@ -541,6 +542,8 @@ class ExegesisService {
             // El paper cita la página impresa donde se pudo medir la
             // numeración, y la hoja —dicha como hoja— donde no.
             pageNumberingReader,
+            // Las fuentes asignadas aportan las hojas elegidas, no el libro entero.
+            curatedCorpusReader,
         );
 
         // Section-level composers. Same style-guide enforcement as
@@ -554,6 +557,8 @@ class ExegesisService {
             contentReader,
             conclusionComposer,
             styleFormatter,
+            pageNumberingReader,
+            curatedCorpusReader,
         );
         const introductionComposer = new GeminiIntroductionComposer(exegesisModelId);
         this.composeIntroductionFromAnalyses = new ComposeIntroductionFromAnalysesUseCase(
@@ -562,6 +567,8 @@ class ExegesisService {
             contentReader,
             introductionComposer,
             styleFormatter,
+            pageNumberingReader,
+            curatedCorpusReader,
         );
         const verseAcademicComposer = new GeminiVerseAcademicComposer(exegesisModelId);
         this.composeVerseAcademicProse = new ComposeVerseAcademicProseUseCase(

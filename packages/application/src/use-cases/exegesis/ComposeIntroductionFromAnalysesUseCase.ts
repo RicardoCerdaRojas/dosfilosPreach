@@ -11,6 +11,8 @@ import type {
     IResourceContentReader,
     IStyleFormatter,
     IUserStyleGuideRepository,
+    ICuratedCorpusReader,
+    IPageNumberingReader,
     StyleGuideManifest,
     StyleGuideSnapshot,
 } from '@dosfilos/domain';
@@ -19,6 +21,7 @@ import {
     isCitableSourceType,
 } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
+import { buildComposerSourcesWithPinnedContent, deriveCitationKey } from './pinnedSourceContent';
 
 /**
  * Composes the introduction section LAST in the academic flow —
@@ -44,6 +47,13 @@ export class ComposeIntroductionFromAnalysesUseCase {
         private contentReader: IResourceContentReader,
         private composer: IIntroductionComposer,
         private styleFormatter?: IStyleFormatter,
+        /** Numeración impresa, para rotular con su página las hojas de las fuentes asignadas. */
+        private pageNumbering?: IPageNumberingReader,
+        /**
+         * Lee las hojas elegidas de cada fuente asignada. Sin él, el contenido
+         * de una fuente asignada es el libro entero (ver `pinnedSourceContent`).
+         */
+        private corpusReader?: ICuratedCorpusReader,
     ) { }
 
     async execute(input: ComposeIntroductionFromAnalysesUseCaseInput): Promise<ExegeticalStepVersion> {
@@ -99,7 +109,7 @@ export class ComposeIntroductionFromAnalysesUseCase {
             const composerSources = await buildComposerSourcesWithPinnedContent(
                 paper,
                 pinnedIds,
-                this.contentReader,
+                { contentReader: this.contentReader, corpusReader: this.corpusReader, pageNumbering: this.pageNumbering },
             );
             const citableSources = buildFormatterSources(paper);
 
@@ -242,31 +252,6 @@ function buildComposerSources(paper: ExegeticalPaper): ComposerSourceMetadata[] 
         });
 }
 
-async function buildComposerSourcesWithPinnedContent(
-    paper: ExegeticalPaper,
-    pinnedIds: ReadonlySet<string>,
-    contentReader: IResourceContentReader,
-): Promise<ComposerSourceMetadata[]> {
-    const citable = paper.sources.filter(s => isCitableSourceType(s.sourceType));
-    return Promise.all(citable.map(async s => {
-        const key = s.citationKey ?? deriveCitationKey(s.displayLabel);
-        const isPinned = pinnedIds.has(s.id);
-        const base: ComposerSourceMetadata = {
-            citationKey: key,
-            author: key,
-            title: s.displayLabel,
-            isPinned,
-        };
-        if (!isPinned) return base;
-        try {
-            const text = await contentReader.getTextContent(s.corpusId);
-            return { ...base, textContent: text ?? '' };
-        } catch (err) {
-            console.warn('[compose] failed to load pinned source textContent:', s.corpusId, err);
-            return base;
-        }
-    }));
-}
 
 function buildFormatterSources(paper: ExegeticalPaper): FormatterSourceMetadata[] {
     return paper.sources
@@ -288,11 +273,6 @@ function buildFormatterSources(paper: ExegeticalPaper): FormatterSourceMetadata[
         });
 }
 
-function deriveCitationKey(displayLabel: string): string {
-    const trimmed = (displayLabel ?? '').trim();
-    if (!trimmed) return 'Source';
-    return trimmed.split(/[\s,;:.\-—]+/)[0] || 'Source';
-}
 
 export interface ComposeIntroductionFromAnalysesUseCaseInput {
     ownerId: string;
