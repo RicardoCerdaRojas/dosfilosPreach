@@ -161,7 +161,25 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                 </div>
             </div>
 
-            <CitationSourceModal open={!!openCitation} onOpenChange={o => { if (!o) setOpenCitation(null); }} paperId={paper.id} citation={openCitation} />
+            <CitationSourceModal
+                open={!!openCitation}
+                onOpenChange={o => { if (!o) setOpenCitation(null); }}
+                paperId={paper.id}
+                citation={openCitation}
+                aside={viewed => (
+                    <CitationEvidencePanel
+                        path={r.selectedPath}
+                        verdict={selectedVerdict}
+                        review={selectedReview}
+                        isReviewing={r.isReviewing}
+                        onReview={r.review}
+                        noteFromView={viewed.isAnchor ? null : t('canonical.review.panel.noteFromView', {
+                            page: viewed.printed ?? viewed.sheet,
+                            sheet: viewed.sheet,
+                        })}
+                    />
+                )}
+            />
         </div>
     );
 }

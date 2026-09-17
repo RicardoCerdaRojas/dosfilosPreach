@@ -1586,7 +1586,9 @@
         "notePlaceholder": "Qué encontraste al abrir la página. Ej.: «El contraste polel/hifil está en la p. 436; corregir la cita».",
         "reviewedOn": "Revisada el {{date}}.",
         "save": "Marcar como revisada",
-        "remove": "Quitar marca"
+        "remove": "Quitar marca",
+        "useThisPage": "Anotar esta página",
+        "noteFromView": "Está en la p. {{page}} (hoja {{sheet}}), no en la página citada."
       },
       "toast": {
         "reviewSaved": "Cita marcada como revisada",
@@ -1910,6 +1912,12 @@
     "searchMatches_other": "{{count}} coincidencias",
     "searchNoMatches": "sin coincidencias en esta hoja",
     "zoomIn": "Ampliar",
-    "zoomOut": "Reducir"
+    "zoomOut": "Reducir",
+    "prevSheet": "Hoja anterior",
+    "nextSheet": "Hoja siguiente",
+    "sheetOf": "hoja {{sheet}} de {{total}}",
+    "goToPage": "Ir a p.",
+    "goToPageInvalid": "Escribe un número de página.",
+    "awayFromCited": "la cita decía p. {{page}}"
   }
 }

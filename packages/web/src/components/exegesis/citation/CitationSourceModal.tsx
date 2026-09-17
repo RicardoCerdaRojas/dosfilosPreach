@@ -1,13 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Loader2, Search, SearchX, ZoomIn, ZoomOut } from 'lucide-react';
-import {
-    isCitableSourceType,
-    printedLabelIn,
-    printedPageFor,
-    sheetForPrintedIn,
-    sheetForPrintedPage,
-    type CitationPageKind,
-} from '@dosfilos/domain';
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { BookOpen, Loader2, SearchX } from 'lucide-react';
+import type { CitationPageKind } from '@dosfilos/domain';
 import {
     Dialog,
     DialogContent,
@@ -16,13 +9,14 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
-import { useDocumentPageIndex, useDocumentPdfUrl } from '@/hooks/exegesis/useDocumentPageIndex';
-import { usePageNumbering } from '@/hooks/library/usePageNumbering';
-import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
+import { CitationViewerToolbar } from './CitationViewerToolbar';
+import { useCitationSheet } from './useCitationSheet';
 
 /**
- * La página del libro detrás de una cita, con la frase señalada.
+ * El libro detrás de una cita, abierto en la página citada y con la frase
+ * señalada, con sitio para hojear y para el problema que se vino a
+ * resolver.
  *
  * Existe porque comprobar una cita costaba cinco pasos —ir a la
  * biblioteca, buscar el libro, abrirlo, buscar la página, buscar la
@@ -30,16 +24,12 @@ import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageVi
  * un diccionario teológico sobrevivió meses en un paper: era verificable
  * en teoría y nadie la verificaba.
  *
- * El número de una cita es la HOJA FÍSICA, no la página impresa. Viene de
- * `anchorFor`, que rotula `p. ${chunk.sheet}` sobre el número de hoja del
- * fragmento recuperado. Así que el visor abre esa hoja directamente y
- * NO convierte — convertir movería la cita de sitio.
- *
- * Lo que sí muestra, cuando el documento lo permite, es la página que ese
- * pliego lleva impresa. Es lo único que deja al lector cruzar entre lo que
- * ve en pantalla y lo que dice el libro: en el comentario de Adamson la
- * hoja 57 lleva impreso el 53, y sin decirlo el lector cree estar en una
- * página que no es.
+ * La primera versión mostraba una sola hoja fija. Servía para confirmar
+ * una cita buena y de nada para arreglar una mala: el verificador decía
+ * «la p. 440 habla de Hifil, no de Polel» y el visor dejaba al lector en
+ * la 440 sin poder ir a buscar el Polel ni ver, mientras leía, qué era lo
+ * que buscaba. Por eso hojea, va a un folio, y admite un panel al lado
+ * (`aside`) con el veredicto y la revisión.
  */
 export interface CitationTarget {
     /** Clave de cita tal como aparece en el análisis, p. ej. "Adamson". */
@@ -61,54 +51,33 @@ export interface CitationTarget {
     verbatimQuote?: string | null;
 }
 
+/** Lo que el visor sabe de la hoja que se está mirando, para quien la acompaña. */
+export interface ViewedSheet {
+    sheet: number;
+    printed: string | number | null;
+    /** Si es la hoja donde la cita dijo estar. */
+    isAnchor: boolean;
+}
+
 export interface CitationSourceModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     paperId: string;
     citation: CitationTarget | null;
+    /**
+     * Panel a la derecha del libro: el problema de la cita y su revisión.
+     * Recibe la hoja que se mira para que pueda proponer «está aquí».
+     */
+    aside?: (viewed: ViewedSheet) => ReactNode;
 }
 
-export function CitationSourceModal({
-    open,
-    onOpenChange,
-    paperId,
-    citation,
-}: CitationSourceModalProps) {
+export function CitationSourceModal({ open, onOpenChange, paperId, citation, aside }: CitationSourceModalProps) {
     const { t } = useTranslation('exegesis');
     const [quoteFound, setQuoteFound] = useState<boolean | null>(null);
     const [zoom, setZoom] = useState<number>(1);
     const [search, setSearch] = useState('');
     const [matches, setMatches] = useState(0);
-    // Ya está en caché: la página del trabajo la pidió al montarse, así
-    // que resolverla acá no agrega lecturas y evita arrastrar el paper
-    // por props hasta cada tarjeta.
-    const { paper } = useExegesisPaper(paperId);
-
-    const source = useMemo(() => {
-        if (!citation || !paper) return null;
-        return paper.sources.find(s =>
-            isCitableSourceType(s.sourceType)
-            && (s.citationKey ?? s.displayLabel) === citation.sourceKey) ?? null;
-    }, [paper, citation]);
-
-    const resourceId = source?.sourceLibraryResourceId ?? source?.corpusId ?? null;
-    const index = useDocumentPageIndex(open ? resourceId : null);
-    const pdf = useDocumentPdfUrl(open ? resourceId : null);
-
-    const numberingState = usePageNumbering(open ? resourceId : null);
-    const numbering = numberingState.data?.numbering ?? null;
-    const offset = index.data?.printedPageOffset ?? null;
-    // Una cita en página impresa se lleva a la hoja con la calibración
-    // confirmada; si no la hay, con el desfase detectado; y si tampoco, se
-    // abre el número como hoja, que es lo que había.
-    const sheet = citation
-        ? (citation.pageKind === 'printed'
-            ? sheetForPrintedIn(numbering, citation.page) ?? sheetForPrintedPage(citation.page, offset) ?? citation.page
-            : citation.page)
-        : 1;
-    // Sólo informativo: qué número lleva impreso esa hoja, para que el
-    // lector pueda buscarla en el libro de papel.
-    const printed = numbering ? printedLabelIn(numbering, sheet) : printedPageFor(sheet, offset);
+    const view = useCitationSheet(paperId, citation, open);
 
     // Cada cita nueva vuelve a empezar: sin esto el modal heredaría el
     // veredicto de la anterior y diría «no la encontré» sobre una frase
@@ -120,97 +89,80 @@ export function CitationSourceModal({
         setMatches(0);
     }, [citation?.sourceKey, citation?.page, citation?.verbatimQuote]);
 
+    // Las flechas hojean, salvo cuando el lector está escribiendo.
+    const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); view.goTo(view.viewSheet - 1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); view.goTo(view.viewSheet + 1); }
+    };
+
     const hasQuote = !!citation?.verbatimQuote?.trim();
+    const viewed: ViewedSheet = { sheet: view.viewSheet, printed: view.printedOfView, isAnchor: view.viewSheet === view.anchorSheet };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="!max-w-none w-[95vw] h-[92vh] p-0 flex flex-col gap-0">
+            <DialogContent className="!max-w-none w-[95vw] h-[92vh] p-0 flex flex-col gap-0" onKeyDown={onKeyDown}>
                 <DialogHeader className="px-6 py-4 border-b border-border space-y-1">
                     <DialogTitle className="inline-flex items-center gap-2 text-base">
                         <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                        {source?.displayLabel ?? citation?.sourceKey ?? ''}
+                        {view.source?.displayLabel ?? citation?.sourceKey ?? ''}
                     </DialogTitle>
                     <DialogDescription className="text-xs">
-                        {printed !== null
-                            ? t('citationViewer.pageWithSheet', { printed, sheet })
-                            : t('citationViewer.sheetOnly', { sheet })}
+                        {viewed.printed !== null
+                            ? t('citationViewer.pageWithSheet', { printed: viewed.printed, sheet: viewed.sheet })
+                            : t('citationViewer.sheetOnly', { sheet: viewed.sheet })}
+                        {!viewed.isAnchor && ` · ${t('citationViewer.awayFromCited', { page: citation?.page ?? '' })}`}
                     </DialogDescription>
                     <StatusLine
-                        hasSource={!!source}
+                        hasSource={!!view.source}
                         hasQuote={hasQuote}
                         quoteFound={quoteFound}
                         quote={citation?.verbatimQuote ?? ''}
                     />
                 </DialogHeader>
 
-                {!!source && (
-                    <div className="flex items-center gap-3 px-6 py-2 border-b border-border bg-card/60">
-                        <div className="relative flex-1 max-w-sm">
-                            <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                            <input
-                                type="search"
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                placeholder={t('citationViewer.searchPlaceholder')}
-                                aria-label={t('citationViewer.searchPlaceholder')}
-                                className="w-full rounded-md border border-border bg-background pl-7 pr-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            />
-                        </div>
-                        {search.trim() && (
-                            <span className="text-[11px] text-muted-foreground shrink-0">
-                                {matches > 0
-                                    ? t('citationViewer.searchMatches', { count: matches })
-                                    : t('citationViewer.searchNoMatches')}
-                            </span>
-                        )}
-                        <div className="ml-auto flex items-center gap-1 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setZoom(z => Math.max(1, Math.round((z - 0.25) * 100) / 100))}
-                                disabled={zoom <= 1}
-                                title={t('citationViewer.zoomOut')}
-                                aria-label={t('citationViewer.zoomOut')}
-                                className="rounded-md border border-border p-1 text-muted-foreground hover:bg-accent disabled:opacity-40"
-                            >
-                                <ZoomOut className="h-3.5 w-3.5" />
-                            </button>
-                            <span className="text-[11px] tabular-nums text-muted-foreground w-10 text-center">
-                                {Math.round(zoom * 100)}%
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setZoom(z => Math.min(4, Math.round((z + 0.25) * 100) / 100))}
-                                disabled={zoom >= 4}
-                                title={t('citationViewer.zoomIn')}
-                                aria-label={t('citationViewer.zoomIn')}
-                                className="rounded-md border border-border p-1 text-muted-foreground hover:bg-accent disabled:opacity-40"
-                            >
-                                <ZoomIn className="h-3.5 w-3.5" />
-                            </button>
-                        </div>
-                    </div>
+                {!!view.source && (
+                    <CitationViewerToolbar
+                        viewSheet={view.viewSheet}
+                        totalSheets={view.totalSheets}
+                        onGo={view.goTo}
+                        onGoToPageInput={view.goToPageInput}
+                        search={search}
+                        onSearch={setSearch}
+                        matches={matches}
+                        zoom={zoom}
+                        onZoom={setZoom}
+                    />
                 )}
 
-                <div className="flex-1 min-h-0 bg-muted/30">
-                    {!source ? (
-                        <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
-                            {t('citationViewer.sourceNotConfigured', { key: citation?.sourceKey ?? '' })}
-                        </Centered>
-                    ) : index.isLoading || pdf.isLoading || numberingState.isLoading ? (
-                        <Centered icon={<Loader2 className="h-4 w-4 animate-spin" />}>
-                            {t('citationViewer.loading')}
-                        </Centered>
-                    ) : (
-                        <PdfPageViewer
-                            url={pdf.data?.url ?? null}
-                            sheet={sheet}
-                            selected={false}
-                            highlightQuote={citation?.verbatimQuote ?? null}
-                            onHighlightResolved={setQuoteFound}
-                            zoom={zoom === 1 ? 'fit' : zoom}
-                            searchTerm={search.trim() || null}
-                            onSearchMatches={setMatches}
-                        />
+                <div className="flex-1 min-h-0 flex flex-col md:flex-row">
+                    <div className="flex-1 min-h-0 min-w-0 bg-muted/30">
+                        {!view.source ? (
+                            <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
+                                {t('citationViewer.sourceNotConfigured', { key: citation?.sourceKey ?? '' })}
+                            </Centered>
+                        ) : view.loading ? (
+                            <Centered icon={<Loader2 className="h-4 w-4 animate-spin" />}>
+                                {t('citationViewer.loading')}
+                            </Centered>
+                        ) : (
+                            <PdfPageViewer
+                                url={view.pdfUrl}
+                                sheet={view.viewSheet}
+                                selected={false}
+                                highlightQuote={citation?.verbatimQuote ?? null}
+                                onHighlightResolved={setQuoteFound}
+                                zoom={zoom === 1 ? 'fit' : zoom}
+                                searchTerm={search.trim() || null}
+                                onSearchMatches={setMatches}
+                            />
+                        )}
+                    </div>
+                    {aside && (
+                        <aside className="md:w-[380px] md:max-w-[40vw] shrink-0 max-h-[40vh] md:max-h-none overflow-y-auto border-t md:border-t-0 md:border-l border-border bg-background p-4">
+                            {aside(viewed)}
+                        </aside>
                     )}
                 </div>
             </DialogContent>
@@ -226,12 +178,7 @@ export function CitationSourceModal({
  * localizar —OCR ilegible, corriente en documentos escaneados—, o el
  * análisis nunca guardó una frase y sólo hay página.
  */
-function StatusLine({
-    hasSource,
-    hasQuote,
-    quoteFound,
-    quote,
-}: {
+function StatusLine({ hasSource, hasQuote, quoteFound, quote }: {
     hasSource: boolean;
     hasQuote: boolean;
     quoteFound: boolean | null;
@@ -261,7 +208,7 @@ function StatusLine({
     );
 }
 
-function Centered({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function Centered({ icon, children }: { icon: ReactNode; children: ReactNode }) {
     return (
         <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             {icon}
