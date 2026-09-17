@@ -26,6 +26,7 @@ import type {
     IExegeticalPaperRepository,
     PaperRubric,
     ProjectSource,
+    ProjectSourcePatch,
     SheetRange,
     ProjectSourceExcerpt,
     SourceType,
@@ -342,7 +343,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         ownerId: string,
         paperId: string,
         sourceId: string,
-        patch: Partial<Pick<ProjectSource, 'sourceType' | 'chosenRole' | 'displayLabel' | 'citationKey' | 'order' | 'excerpts' | 'excerptSelectionMode' | 'excerptRecipe' | 'extractedAt' | 'extractionFingerprint'>>
+        patch: ProjectSourcePatch
     ): Promise<ProjectSource> {
         const ref = this.docRef(paperId);
         let updated: ProjectSource | null = null;
@@ -365,16 +366,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // ProjectSource is well-typed (handles legacy docs without
             // the v1.5 fields).
             const existing = deserializeSource(sources[idx]);
-            // Only apply defined keys — undefined would erase the existing value.
-            const merged: ProjectSource = { ...existing };
-            if (patch.sourceType !== undefined) merged.sourceType = patch.sourceType;
-            if (patch.chosenRole !== undefined) merged.chosenRole = patch.chosenRole;
-            if (patch.displayLabel !== undefined) merged.displayLabel = patch.displayLabel;
-            if (patch.citationKey !== undefined) merged.citationKey = patch.citationKey;
-            if (patch.order !== undefined) merged.order = patch.order;
-            if (patch.excerpts !== undefined) merged.excerpts = patch.excerpts;
-            if (patch.extractedAt !== undefined) merged.extractedAt = patch.extractedAt;
-            if (patch.extractionFingerprint !== undefined) merged.extractionFingerprint = patch.extractionFingerprint;
+            const merged = applySourcePatch(existing, patch);
             sources[idx] = serializeSource(merged);
             updated = merged;
             tx.update(ref, {
@@ -845,6 +837,48 @@ function deserializeRecipe(raw: any): ProjectSource['excerptRecipe'] {
         pinnedRanges: ranges(raw.pinnedRanges),
         passageFingerprint: typeof raw.passageFingerprint === 'string' ? raw.passageFingerprint : '',
     };
+}
+
+/**
+ * Campos que un parche puede tocar. La lista existe para que un objeto con
+ * claves de más —el tipado estructural lo permite— no pueda pisar `id`,
+ * `paperId` o `createdAt`.
+ */
+export const SOURCE_PATCH_KEYS = [
+    'sourceType',
+    'chosenRole',
+    'displayLabel',
+    'citationKey',
+    'order',
+    'excerpts',
+    'excerptSelectionMode',
+    'excerptRecipe',
+    'extractedAt',
+    'extractionFingerprint',
+] as const satisfies ReadonlyArray<keyof ProjectSourcePatch>;
+
+// Si `ProjectSourcePatch` gana un campo que la lista no tiene, esto no
+// compila. Es exactamente el olvido que dejó afuera a `excerptRecipe`.
+type CamposSinAplicar = Exclude<keyof ProjectSourcePatch, (typeof SOURCE_PATCH_KEYS)[number]>;
+const listaCompleta: [CamposSinAplicar] extends [never] ? true : never = true;
+void listaCompleta;
+
+/**
+ * Aplica un parche a una fuente: todo campo DEFINIDO del parche pisa al
+ * existente; `undefined` lo deja como estaba y `null` lo borra.
+ *
+ * Antes era una lista de `if` escrita a mano, y le faltaban `excerptRecipe` y
+ * `excerptSelectionMode`. Con eso, reajustar las páginas de una fuente ya
+ * adjunta tocaba `extractedAt` y descartaba la selección en silencio: en
+ * producción ninguna de 135 fuentes quedó jamás en modo «manual».
+ */
+export function applySourcePatch(existing: ProjectSource, patch: ProjectSourcePatch): ProjectSource {
+    const merged: Record<string, unknown> = { ...existing };
+    for (const key of SOURCE_PATCH_KEYS) {
+        const value = patch[key];
+        if (value !== undefined) merged[key] = value;
+    }
+    return merged as unknown as ProjectSource;
 }
 
 function deserializeSource(raw: any): ProjectSource {
