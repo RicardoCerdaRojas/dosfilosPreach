@@ -1944,6 +1944,23 @@
         "successNoMaterial": "Your study is open. This paper has no accepted analyses to show alongside the steps yet.",
         "failed": "Couldn't open the study. Try again."
       }
+    },
+    "length": {
+      "title": "Length",
+      "estimate": "≈ {{pages}} pages · {{words}} words",
+      "noTarget": "The rubric declares no length, so there is nothing to compare against.",
+      "ok": "Within what the rubric asks ({{target}}).",
+      "short": {
+        "pages": "About {{missing}} pages short of the {{target}} the rubric asks for.",
+        "words": "About {{missing}} words short of the {{target}} the rubric asks for."
+      },
+      "long": "Over the {{target}} the rubric asks for.",
+      "pagesShort": "≈ {{pages}} pp.",
+      "unit": {
+        "pages": "pages",
+        "words": "words"
+      },
+      "disclaimer": "Pages are an estimate in the seminary's format (Times New Roman 12, double spaced). Word counts are exact."
     }
   },
   "citationViewer": {
