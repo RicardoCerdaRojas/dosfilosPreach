@@ -141,7 +141,9 @@ export function ExegesisPaperSetupPage() {
             </header>
 
             <div className="max-w-7xl w-full mx-auto px-6 py-6">
-                <PaperBriefPanel paper={paper} />
+                {/* La key descarta un borrador a medio escribir si la ruta
+                    cambia a otro trabajo sin desmontar la página. */}
+                <PaperBriefPanel key={paper.id} paper={paper} />
 
                 <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
                     {SUB_STEPS.map((s, idx) => (
