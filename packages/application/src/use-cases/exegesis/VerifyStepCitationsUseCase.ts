@@ -1,6 +1,5 @@
 import type {
     CitationStatus,
-    ExegeticalPaper,
     ExegeticalStep,
     ExegeticalStepVersion,
     ICitationVerifier,
@@ -68,7 +67,7 @@ export class VerifyStepCitationsUseCase {
 
     constructor(
         private paperRepository: IExegeticalPaperRepository,
-        private contentReader: IResourceContentReader,
+        contentReader: IResourceContentReader,
         private verifier: ICitationVerifier,
         /**
          * Cuando está cableado, las fuentes con receta aportan como evidencia
@@ -77,14 +76,14 @@ export class VerifyStepCitationsUseCase {
          * respaldo— pero deja de detectar que una cita apunta a la página
          * equivocada, que es justo lo que este verificador aporta de más.
          */
-        private corpusReader?: ICuratedCorpusReader,
+        corpusReader?: ICuratedCorpusReader,
         /**
          * Numeración impresa de cada fuente. Es lo que pone al verificador a
          * comparar en la misma unidad que la cita: el análisis cita la página
          * impresa, y un `pageHint` en hojas haría saltar «página equivocada»
          * en cada cita correcta de todo libro con preliminares.
          */
-        private pageNumbering?: IPageNumberingReader,
+        pageNumbering?: IPageNumberingReader,
     ) {
         this.sourcesBuilder = new VerifierSourcesBuilder(contentReader, corpusReader, pageNumbering);
     }
