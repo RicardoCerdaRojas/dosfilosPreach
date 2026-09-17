@@ -1,4 +1,4 @@
-import type { VerifiedCitation } from '../entities/CitationVerification';
+import type { ParsedCitation, VerifiedCitation } from '../entities/CitationVerification';
 import type { PageNumbering } from '../outline/pageNumbering';
 
 /**
@@ -45,6 +45,20 @@ export interface VerifierSourceChunk {
 export interface CitationVerifierInput {
     /** The accepted/current step version's markdown. */
     markdown: string;
+    /**
+     * Citas ya reconocidas, cuando el llamador las tiene mejor que el
+     * parser: el análisis canónico guarda cada cita estructurada (fuente,
+     * página, afirmación y, a veces, la oración textual), y parsear un
+     * markdown que no existe devolvía cero citas —verde por vacío—. Con
+     * este campo el adaptador verifica ESTAS y no parsea el markdown.
+     */
+    citations?: ReadonlyArray<ParsedCitation>;
+    /**
+     * Idioma en que se redactan las notas de veredicto. Sin él, el adaptador
+     * lo adivina a partir de la evidencia, que falla cuando la evidencia es
+     * una oración textual en el idioma de la fuente.
+     */
+    language?: 'es' | 'en';
     /** All citable sources attached to the paper. */
     sources: ReadonlyArray<VerifierSource>;
     /**

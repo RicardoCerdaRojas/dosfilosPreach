@@ -128,3 +128,26 @@ describe('FuzzyCitationVerifier', () => {
         expect(citations).toHaveLength(0);
     });
 });
+
+describe('FuzzyCitationVerifier — citas provistas por el llamador', () => {
+    it('verifica las citas recibidas en vez de parsear el markdown', async () => {
+        // El análisis canónico no tiene markdown: si el adaptador parseara
+        // el vacío, devolvería cero citas y el paso pasaría por verificado.
+        const { FuzzyCitationVerifier } = await import('../FuzzyCitationVerifier');
+        const verifier = new FuzzyCitationVerifier();
+        const out = await verifier.verify({
+            markdown: '',
+            sources: [{
+                corpusId: 'c1', citationKey: 'Ross', fullAuthor: 'Ross', displayLabel: 'Ross',
+                chunks: [{ text: 'Shepherd is an active participle used substantively, stressing the meaning of the word.', pageHint: 'p. 559' }],
+            }],
+            citations: [{
+                raw: 'Ross, p. 559', author: 'Ross', title: '', pages: '559', offset: 0,
+                evidence: 'Shepherd is an active participle used substantively, stressing the meaning of the word.',
+                evidenceIsQuoted: true,
+            }],
+        });
+        expect(out.citations).toHaveLength(1);
+        expect(out.citations[0]!.status).toBe('verified');
+    });
+});

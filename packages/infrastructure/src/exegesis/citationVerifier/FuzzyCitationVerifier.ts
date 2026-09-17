@@ -43,7 +43,8 @@ export class FuzzyCitationVerifier implements ICitationVerifier {
         const lookup = new SourceMatcher(input.sources);
         const sourceTokensCache = new Map<string, string[]>();
 
-        const citations: VerifiedCitation[] = parseCitations(input.markdown).map(parsed => {
+        const source = input.citations ? [...input.citations] : parseCitations(input.markdown);
+        const citations: VerifiedCitation[] = source.map(parsed => {
             return this.verifyOne(parsed, lookup, sourceTokensCache);
         });
 

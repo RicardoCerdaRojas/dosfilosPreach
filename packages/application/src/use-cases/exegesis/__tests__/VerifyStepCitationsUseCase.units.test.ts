@@ -136,3 +136,70 @@ describe('VerifyStepCitationsUseCase — la evidencia habla en páginas impresas
         expect(source.numbering).toEqual(ADAMSON);
     });
 });
+
+/**
+ * El camino del análisis canónico. Antes no existía: el paso guarda su
+ * análisis y deja el markdown vacío, así que el verificador encontraba cero
+ * citas y lo persistía como un resumen limpio.
+ */
+import { buildEmptyCanonicalVerseAnalysis } from '@dosfilos/domain';
+import { pageInEvidenceUnit } from '../VerifyStepCitationsUseCase';
+
+function makeAnalysisPaper(numbering: PageNumbering | null) {
+    const paper = makePaper([excerpt('p. 65', { sheet: 65 })]);
+    const analysis = {
+        ...buildEmptyCanonicalVerseAnalysis(VERSE),
+        commentatorEngagement: [
+            { sourceKey: 'Adamson', page: 61, pageKind: 'printed', role: 'anchor', position: 'El rico es hermano.', verbatimQuote: 'El rico es un hermano dentro de la comunidad.' },
+            { sourceKey: 'Adamson', page: 70, pageKind: 'printed', role: 'anchor', position: 'Otra postura.', verbatimQuote: '' },
+        ],
+    };
+    paper.steps[0]!.accepted = { ...(paper.steps[0]!.accepted as object), markdown: '', canonicalAnalysis: analysis } as never;
+    return { paper, numbering };
+}
+
+describe('VerifyStepCitationsUseCase — el análisis canónico también se verifica', () => {
+    it('manda las citas del análisis al verificador y persiste resumen y veredictos', async () => {
+        const { paper } = makeAnalysisPaper(ADAMSON);
+        const verifier = { verify: vi.fn(async (input: { citations?: unknown[] }) => ({
+            citations: (input.citations ?? []).map((c: any) => ({ ...c, status: 'verified', matchedCorpusId: 'res-adamson', matchedSourceLabel: 'Adamson', similarityScore: 1, matchedPage: '61', note: null })),
+        })) };
+        const setVerifications = vi.fn().mockResolvedValue(undefined);
+        const useCase = new VerifyStepCitationsUseCase(
+            { getPaper: vi.fn().mockResolvedValue(paper), setStepVersionVerifications: setVerifications } as never,
+            { getTextContent: vi.fn().mockResolvedValue('') } as never,
+            verifier as never, undefined as never,
+            { numberingFor: vi.fn().mockResolvedValue(ADAMSON) } as never,
+        );
+        const out = await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        const input = verifier.verify.mock.calls[0]![0] as any;
+        expect(input.citations).toHaveLength(2);
+        expect(input.citations[0]).toMatchObject({ author: 'Adamson', pages: '61', evidenceIsQuoted: true });
+        expect(input.language).toBe('es');
+        expect(out.summary.verifierVersion).toBe('analysis-v1');
+        expect(out.summary.totalCitations).toBe(2);
+        // Una postura de comentarista sin oración textual queda contada aparte.
+        expect(out.summary.citationsWithoutVerbatim).toBe(1);
+        expect(setVerifications).toHaveBeenCalledWith('owner-1', 'paper-1', 'step-1', 'v1', out.summary, out.citations);
+    });
+});
+
+describe('pageInEvidenceUnit — la cita se coteja en la unidad de la evidencia', () => {
+    const claim = (page: number, pageKind?: 'printed' | 'sheet') =>
+        ({ site: 'commentator', path: 'x', sourceKey: 'Adamson', page, pageKind, claim: '', verbatimQuote: null }) as const;
+
+    it('cita impresa con numeración: se compara tal cual', () => {
+        expect(pageInEvidenceUnit(claim(61, 'printed'), ADAMSON)).toBe('61');
+    });
+    it('cita en hoja con numeración: se traduce a página impresa', () => {
+        expect(pageInEvidenceUnit(claim(65, 'sheet'), ADAMSON)).toBe('61');
+        expect(pageInEvidenceUnit(claim(65), ADAMSON)).toBe('61');
+    });
+    it('cita impresa sin numeración: no se coteja, porque la evidencia habla en hojas', () => {
+        expect(pageInEvidenceUnit(claim(61, 'printed'), null)).toBeNull();
+    });
+    it('cita en hoja sin numeración: hoja contra hoja', () => {
+        expect(pageInEvidenceUnit(claim(65, 'sheet'), null)).toBe('65');
+    });
+});
