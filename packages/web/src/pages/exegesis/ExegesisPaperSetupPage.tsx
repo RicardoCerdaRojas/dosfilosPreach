@@ -8,6 +8,7 @@ import { RubricSubStep } from '@/components/exegesis/setup/RubricSubStep';
 import { StyleManifestSubStep } from '@/components/exegesis/setup/StyleManifestSubStep';
 import { CorpusSubStep } from '@/components/exegesis/setup/CorpusSubStep';
 import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPlanSubStep';
+import { PaperBriefPanel } from '@/components/exegesis/setup/PaperBriefPanel';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
 
@@ -140,6 +141,8 @@ export function ExegesisPaperSetupPage() {
             </header>
 
             <div className="max-w-7xl w-full mx-auto px-6 py-6">
+                <PaperBriefPanel paper={paper} />
+
                 <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
                     {SUB_STEPS.map((s, idx) => (
                         <SubStepTab

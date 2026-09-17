@@ -416,6 +416,21 @@
     "subtitle": "Academic configuration: rubric, style guide, corpus, and structural plan.",
     "backToPaper": "Back to paper",
     "goToPaper": "Go to paper",
+    "brief": {
+      "heading": "Paper framing",
+      "description": "What the professor asked for and the paper's angle. The assistant reads it at every step.",
+      "edit": "Edit",
+      "expand": "Show all",
+      "collapse": "Show less",
+      "empty": "This paper has no framing. The assistant works without the professor's instructions.",
+      "save": "Save framing",
+      "cancel": "Cancel",
+      "saved": "Framing saved",
+      "saveFailed": "Couldn't save the framing. Try again.",
+      "tooLong_one": "{{count}} character over the limit: trim it to save.",
+      "tooLong_other": "{{count}} characters over the limit: trim it to save.",
+      "appliesFromNow": "Already generated content doesn't change: the new framing applies from the next generation."
+    },
     "notFound": {
       "title": "Paper not found",
       "body": "We couldn't load this paper. Go back to the list.",

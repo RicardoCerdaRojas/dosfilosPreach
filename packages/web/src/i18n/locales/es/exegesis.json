@@ -416,6 +416,21 @@
     "subtitle": "Configuración académica: rúbrica, guía de estilo, corpus y plan estructural.",
     "backToPaper": "Volver al trabajo",
     "goToPaper": "Ir al trabajo",
+    "brief": {
+      "heading": "Encuadre del trabajo",
+      "description": "Lo que pidió el profesor y el ángulo del trabajo. El asistente lo lee en cada paso.",
+      "edit": "Editar",
+      "expand": "Ver completo",
+      "collapse": "Ver menos",
+      "empty": "Este trabajo no tiene encuadre. El asistente trabaja sin indicaciones del profesor.",
+      "save": "Guardar encuadre",
+      "cancel": "Cancelar",
+      "saved": "Encuadre guardado",
+      "saveFailed": "No se pudo guardar el encuadre. Intenta de nuevo.",
+      "tooLong_one": "Sobra {{count}} carácter: recórtalo para poder guardar.",
+      "tooLong_other": "Sobran {{count}} caracteres: recórtalo para poder guardar.",
+      "appliesFromNow": "Lo ya generado no cambia: el encuadre nuevo se usa desde la próxima generación."
+    },
     "notFound": {
       "title": "Trabajo no encontrado",
       "body": "No pudimos cargar este trabajo. Volvé al listado.",
