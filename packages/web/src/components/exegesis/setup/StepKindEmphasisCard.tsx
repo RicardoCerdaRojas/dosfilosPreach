@@ -1,5 +1,4 @@
 import {
-    useEffect,
     useMemo,
     useState } from 'react';
 import { CheckCircle2,
@@ -22,6 +21,7 @@ import { UpdateStepPlanUseCase } from '@dosfilos/application';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { useBorradorDeEnfasis } from './useBorradorDeEnfasis';
 
 /**
  * Editor for one step kind's emphasis (introduction / verse / conclusion).
@@ -80,39 +80,12 @@ export function StepKindEmphasisCard({ paper, kind, icon }: StepKindEmphasisCard
             && setEq(persistedEmphasis.deemphasizedTypes, rubricSuggestion.deemphasizedTypes));
     }, [persistedEmphasis, rubricSuggestion]);
 
-    // Initial value: prefer persisted (when the user has explicitly
-    // saved something for this kind), otherwise fall back to the
-    // rubric's structural suggestion. Without this fallback the
-    // persisted-but-empty default arrays from a fresh paper produced
-    // a misleading "elige los tipos" empty state — even though the
-    // rubric (including the strategy-only preset, which inherits the
-    // default TMS structural expectations) actually has a populated
-    // suggestion ready to apply.
-    const initialEmphasized = persistedEmphasis.emphasizedTypes.length > 0
-        ? persistedEmphasis.emphasizedTypes
-        : rubricSuggestion.emphasizedTypes;
-    const initialDeemphasized = persistedEmphasis.deemphasizedTypes.length > 0
-        ? persistedEmphasis.deemphasizedTypes
-        : rubricSuggestion.deemphasizedTypes;
-
-    const [emphasized, setEmphasized] = useState<SourceType[]>([...initialEmphasized]);
-    const [deemphasized, setDeemphasized] = useState<SourceType[]>([...initialDeemphasized]);
+    // Borrador local: arranca de lo guardado (o de la sugerencia) y solo se
+    // resincroniza cuando ese contenido cambia. Ver `useBorradorDeEnfasis`.
+    const { emphasized, setEmphasized, deemphasized, setDeemphasized, inicialAtenuados } =
+        useBorradorDeEnfasis(persistedEmphasis, rubricSuggestion);
     const [note, setNote] = useState('');
-    const [showDeemphasized, setShowDeemphasized] = useState(initialDeemphasized.length > 0);
-
-    // Re-sync when the persisted plan changes externally (e.g. another
-    // tab saved). Same fallback rule applies — keep the rubric
-    // suggestion visible if the persisted is still empty.
-    useEffect(() => {
-        const nextEmphasized = persistedEmphasis.emphasizedTypes.length > 0
-            ? persistedEmphasis.emphasizedTypes
-            : rubricSuggestion.emphasizedTypes;
-        const nextDeemphasized = persistedEmphasis.deemphasizedTypes.length > 0
-            ? persistedEmphasis.deemphasizedTypes
-            : rubricSuggestion.deemphasizedTypes;
-        setEmphasized([...nextEmphasized]);
-        setDeemphasized([...nextDeemphasized]);
-    }, [persistedEmphasis, rubricSuggestion]);
+    const [showDeemphasized, setShowDeemphasized] = useState(inicialAtenuados.length > 0);
 
     // v1.6 Phase 2 chokepoint: route paper-level structuralExpectations
     // lookup through the domain helper so the future strategy↔rubric
