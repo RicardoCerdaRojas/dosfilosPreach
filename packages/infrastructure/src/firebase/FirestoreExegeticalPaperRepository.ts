@@ -33,6 +33,7 @@ import type {
     StepSourcePlan,
     VerificationSummary,
     VerifiedCitation,
+    CitationReview,
 } from '@dosfilos/domain';
 import { DEFAULT_STRATEGY_FOR_NEW_PAPER, resolveExegeticalStrategy } from '@dosfilos/domain';
 import {
@@ -378,6 +379,40 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
 
         if (!updated) throw new Error('Source update failed');
         return updated;
+    }
+
+    async setCitationReview(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        versionId: string,
+        review: CitationReview,
+    ): Promise<ExegeticalStepVersion> {
+        let updatedVersion: ExegeticalStepVersion | null = null;
+        await this.mutateStep(ownerId, paperId, stepId, (step) => {
+            const idx = step.versions.findIndex(v => v.id === versionId);
+            if (idx === -1) {
+                throw new Error(`Version ${versionId} not found in step ${stepId}`);
+            }
+            const previous = step.versions[idx]!;
+            const others = (previous.citationReviews ?? []).filter(r => r.path !== review.path);
+            const next: ExegeticalStepVersion = {
+                ...previous,
+                citationReviews: review.note.trim()
+                    ? [...others, { path: review.path, note: review.note.trim(), reviewedAt: review.reviewedAt }]
+                    : others,
+            };
+            const versions = [...step.versions];
+            versions[idx] = next;
+            step.versions = versions;
+            if (step.current?.id === versionId) step.current = next;
+            if (step.accepted?.id === versionId) step.accepted = next;
+            step.updatedAt = new Date();
+            updatedVersion = next;
+            return step;
+        });
+        if (!updatedVersion) throw new Error('Citation review failed');
+        return updatedVersion;
     }
 
     async removeSource(ownerId: string, paperId: string, sourceId: string): Promise<void> {
@@ -1147,6 +1182,15 @@ function deserializeStepVersion(raw: any): ExegeticalStepVersion {
         verifications: raw?.verifications
             ? { ...raw.verifications, lastRunAt: toDateOrNull(raw.verifications.lastRunAt) }
             : raw?.verifications ?? undefined,
+        ...(Array.isArray(raw?.citationReviews)
+            ? {
+                citationReviews: raw.citationReviews.map((r: any) => ({
+                    path: String(r?.path ?? ''),
+                    note: String(r?.note ?? ''),
+                    reviewedAt: toDateOrNull(r?.reviewedAt) ?? new Date(),
+                })),
+            }
+            : {}),
     };
 }
 

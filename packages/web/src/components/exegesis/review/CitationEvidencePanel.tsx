@@ -1,0 +1,121 @@
+import { useEffect, useState } from 'react';
+import { BookOpen, CheckCircle2, Loader2, Undo2 } from 'lucide-react';
+import type { CitationReview, VerifiedCitation } from '@dosfilos/domain';
+import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/i18n';
+import { CitationStatusBadge } from './CitationStatusBadge';
+
+interface Props {
+    path: string | null;
+    verdict: VerifiedCitation | null;
+    review: CitationReview | null;
+    isReviewing: boolean;
+    onReview: (path: string, note: string) => void;
+    onOpenSource: (verdict: VerifiedCitation) => void;
+}
+
+/**
+ * La evidencia de UNA cita: qué dijo el verificador, dónde encontró apoyo,
+ * la oración o paráfrasis cotejada, y la decisión humana.
+ *
+ * La revisión manual pide motivo. Una marca sin motivo no distingue «miré
+ * la página y la cita está bien» de «quería que dejara de bloquear», y la
+ * diferencia es todo lo que este panel existe para registrar.
+ */
+export function CitationEvidencePanel({ path, verdict, review, isReviewing, onReview, onOpenSource }: Props) {
+    const { t } = useTranslation('exegesis');
+    const [note, setNote] = useState(review?.note ?? '');
+    useEffect(() => { setNote(review?.note ?? ''); }, [path, review?.note]);
+
+    if (!path || !verdict) {
+        return (
+            <div className="rounded-xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                {t('canonical.review.panel.empty')}
+            </div>
+        );
+    }
+
+    const canReview = verdict.status !== 'verified';
+
+    return (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+            <header className="space-y-1">
+                <CitationStatusBadge status={verdict.status} reviewed={!!review} />
+                <p className="font-mono text-sm text-foreground">{verdict.raw}</p>
+                {verdict.matchedSourceLabel && (
+                    <p className="text-xs text-muted-foreground">{verdict.matchedSourceLabel}</p>
+                )}
+            </header>
+
+            <dl className="grid grid-cols-2 gap-2 text-xs">
+                <dt className="text-muted-foreground">{t('canonical.review.panel.cited')}</dt>
+                <dd className="text-foreground tabular-nums">{verdict.pages ? `p. ${verdict.pages}` : '—'}</dd>
+                <dt className="text-muted-foreground">{t('canonical.review.panel.found')}</dt>
+                <dd className="text-foreground tabular-nums">{verdict.matchedPageLabel || (verdict.matchedPage ? `p. ${verdict.matchedPage}` : '—')}</dd>
+            </dl>
+
+            <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+                    {verdict.evidenceIsQuoted ? t('canonical.review.panel.quote') : t('canonical.review.panel.claim')}
+                </p>
+                <blockquote className="border-l-2 border-border pl-3 text-sm italic text-foreground/85 leading-relaxed">
+                    {verdict.evidence}
+                </blockquote>
+            </div>
+
+            {verdict.note && (
+                <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('canonical.review.panel.verdict')}</p>
+                    <p className="text-sm text-foreground/85 leading-relaxed">{verdict.note}</p>
+                </div>
+            )}
+
+            {verdict.status === 'page-mismatch' && (
+                <p className="rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-xs text-warning-subtle-foreground">
+                    {t('canonical.review.panel.pageHint')}
+                </p>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => onOpenSource(verdict)} disabled={!verdict.matchedCorpusId}>
+                    <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+                    {t('canonical.review.panel.openPdf')}
+                </Button>
+            </div>
+
+            {canReview && (
+                <div className="space-y-2 border-t border-border pt-3">
+                    <label htmlFor="citation-review-note" className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+                        {review ? t('canonical.review.panel.reviewedLabel') : t('canonical.review.panel.reviewLabel')}
+                    </label>
+                    <textarea
+                        id="citation-review-note"
+                        value={note}
+                        onChange={e => setNote(e.target.value)}
+                        rows={3}
+                        disabled={isReviewing}
+                        placeholder={t('canonical.review.panel.notePlaceholder')}
+                        className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary resize-y"
+                    />
+                    {review && (
+                        <p className="text-[11px] text-muted-foreground">
+                            {t('canonical.review.panel.reviewedOn', { date: review.reviewedAt.toLocaleString() })}
+                        </p>
+                    )}
+                    <div className="flex justify-end gap-2">
+                        {review && (
+                            <Button type="button" size="sm" variant="ghost" onClick={() => onReview(path, '')} disabled={isReviewing}>
+                                <Undo2 className="h-3.5 w-3.5 mr-1.5" />
+                                {t('canonical.review.panel.remove')}
+                            </Button>
+                        )}
+                        <Button type="button" size="sm" onClick={() => onReview(path, note)} disabled={isReviewing || note.trim().length < 5}>
+                            {isReviewing ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
+                            {t('canonical.review.panel.save')}
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

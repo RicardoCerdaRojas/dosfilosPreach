@@ -1553,6 +1553,48 @@
       "toast": {
         "failed": "Verification failed. Try again."
       }
+    },
+    "review": {
+      "title": "Citation review · {{step}}",
+      "verifiedAt": "Last verified: {{date}}",
+      "notVerified": "This step hasn't been verified yet. Verify the citations to see each one's evidence.",
+      "accept": "Accept step",
+      "acceptBlockedTooltip_one": "One citation was not found and hasn't been reviewed.",
+      "acceptBlockedTooltip_other": "{{count}} citations were not found and haven't been reviewed.",
+      "blocking_one": "One unreviewed not-found citation blocks acceptance.",
+      "blocking_other": "{{count}} unreviewed not-found citations block acceptance.",
+      "filters": "Filter by verdict",
+      "filterAll": "With remarks",
+      "noAnalysis": "This step has no canonical analysis; citation review works on the analysis.",
+      "listTitle": "Citations to review",
+      "link": "Review citations",
+      "linkTooltip": "Opens the analysis with each citation marked by its verdict and the evidence alongside.",
+      "status": {
+        "reviewed": "Reviewed by hand"
+      },
+      "panel": {
+        "empty": "Pick a citation in the analysis, or in the list below, to see its evidence.",
+        "cited": "Cited page",
+        "found": "Support found at",
+        "quote": "Quoted sentence",
+        "claim": "Checked claim",
+        "verdict": "What the verifier saw",
+        "pageHint": "A one-page difference may be the book's calibration, not the citation. Open the PDF and compare the printed folio.",
+        "openPdf": "Open in the PDF",
+        "reviewLabel": "Manual review",
+        "reviewedLabel": "Reviewed by hand",
+        "notePlaceholder": "What you found when opening the page. E.g. “The polel/hiphil contrast is on p. 436; fix the citation”.",
+        "reviewedOn": "Reviewed on {{date}}.",
+        "save": "Mark as reviewed",
+        "remove": "Remove mark"
+      },
+      "toast": {
+        "reviewSaved": "Citation marked as reviewed",
+        "reviewRemoved": "Review mark removed",
+        "reviewFailed": "Couldn't save the review. Try again.",
+        "acceptBlocked_one": "Can't accept: one not-found citation hasn't been reviewed.",
+        "acceptBlocked_other": "Can't accept: {{count}} not-found citations haven't been reviewed."
+      }
     }
   },
   "coherence": {

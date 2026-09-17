@@ -75,6 +75,7 @@ export * from './services/citationAnchoring';
 export * from './services/analysisClaims';
 export * from './services/verbatimMatch';
 export * from './services/evidenceForCitation';
+export * from './services/citationReview';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';
 export * from './services/verseAnalysisCoverage';
