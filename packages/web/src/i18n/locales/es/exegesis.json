@@ -1944,6 +1944,23 @@
         "successNoMaterial": "Tu estudio está abierto. Este trabajo aún no tiene análisis aceptados que mostrar junto a los pasos.",
         "failed": "No se pudo abrir el estudio. Intenta de nuevo."
       }
+    },
+    "length": {
+      "title": "Extensión",
+      "estimate": "≈ {{pages}} páginas · {{words}} palabras",
+      "noTarget": "La rúbrica no declara una extensión, así que no hay contra qué comparar.",
+      "ok": "Dentro de lo que pide la rúbrica ({{target}}).",
+      "short": {
+        "pages": "Faltan ~{{missing}} páginas para las {{target}} que pide la rúbrica.",
+        "words": "Faltan ~{{missing}} palabras para las {{target}} que pide la rúbrica."
+      },
+      "long": "Se pasa de {{target}}, que es lo que pide la rúbrica.",
+      "pagesShort": "≈ {{pages}} p.",
+      "unit": {
+        "pages": "páginas",
+        "words": "palabras"
+      },
+      "disclaimer": "Las páginas son una estimación en el formato del seminario (Times New Roman 12, doble espacio). Las palabras son exactas."
     }
   },
   "citationViewer": {
