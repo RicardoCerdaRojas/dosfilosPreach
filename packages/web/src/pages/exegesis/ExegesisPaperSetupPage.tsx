@@ -9,6 +9,7 @@ import { StyleManifestSubStep } from '@/components/exegesis/setup/StyleManifestS
 import { CorpusSubStep } from '@/components/exegesis/setup/CorpusSubStep';
 import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPlanSubStep';
 import { PaperBriefPanel } from '@/components/exegesis/setup/PaperBriefPanel';
+import { PaperCoverPanel } from '@/components/exegesis/setup/PaperCoverPanel';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
 
@@ -144,6 +145,7 @@ export function ExegesisPaperSetupPage() {
                 {/* La key descarta un borrador a medio escribir si la ruta
                     cambia a otro trabajo sin desmontar la página. */}
                 <PaperBriefPanel key={paper.id} paper={paper} />
+                <PaperCoverPanel key={`cover-${paper.id}`} paper={paper} />
 
                 <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
                     {SUB_STEPS.map((s, idx) => (

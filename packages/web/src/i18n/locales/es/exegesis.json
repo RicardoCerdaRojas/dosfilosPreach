@@ -1237,6 +1237,32 @@
           }
         }
       }
+    },
+    "cover": {
+      "heading": "Portada del trabajo",
+      "description": "Lo que va en la primera página del documento que entregas. Sin esto el Word sale sin portada.",
+      "add": "Completar",
+      "edit": "Editar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "saved": "Portada guardada.",
+      "saveFailed": "No se pudo guardar la portada.",
+      "empty": "Todavía no está. El Word se exporta sin portada.",
+      "hint": "En el documento salen en mayúsculas y centrados, como pide la guía de estilo.",
+      "fields": {
+        "institution": "Seminario",
+        "author": "Autor",
+        "course": "Curso",
+        "place": "Lugar",
+        "date": "Fecha"
+      },
+      "placeholders": {
+        "institution": "The Master's Seminary",
+        "author": "Nombre y apellido",
+        "course": "OT603 — Exégesis de hebreo",
+        "place": "Chiguayante, Concepción",
+        "date": "Septiembre 2026"
+      }
     }
   },
   "setup": {

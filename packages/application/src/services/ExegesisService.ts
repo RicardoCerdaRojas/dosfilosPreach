@@ -53,6 +53,7 @@ import {
     ArchiveExegeticalPaperUseCase,
     SetPaperStyleGuideUseCase,
     UpdatePaperBriefUseCase,
+    UpdatePaperCoverUseCase,
     SaveAssembledPaperUseCase,
     UpdateStepPlanUseCase,
     UpdateRubricUseCase,
@@ -137,6 +138,7 @@ class ExegesisService {
     public getPaper: GetExegeticalPaperUseCase;
     public archivePaper: ArchiveExegeticalPaperUseCase;
     public updatePaperBrief: UpdatePaperBriefUseCase;
+    public updatePaperCover: UpdatePaperCoverUseCase;
     /**
      * Adjunta una guía de estilo al trabajo COPIÁNDOLA. Volver a
      * llamarlo es lo que significa «actualizar a la versión actual»:
@@ -308,6 +310,7 @@ class ExegesisService {
         this.getPaper = new GetExegeticalPaperUseCase(paperRepository);
         this.archivePaper = new ArchiveExegeticalPaperUseCase(paperRepository);
         this.updatePaperBrief = new UpdatePaperBriefUseCase(paperRepository);
+        this.updatePaperCover = new UpdatePaperCoverUseCase(paperRepository);
         this.setPaperStyleGuide = new SetPaperStyleGuideUseCase(paperRepository, styleGuideRepository);
         // Guardar NO compone: la composición ya está hecha y revisada.
         this.saveAssembledPaper = new SaveAssembledPaperUseCase(paperRepository);

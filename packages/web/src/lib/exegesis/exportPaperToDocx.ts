@@ -1,8 +1,14 @@
 import {
+    AlignmentType,
     Document,
     Footer,
     FootnoteReferenceRun,
+    Header,
     HeadingLevel,
+    LineRuleType,
+    NumberFormat,
+    PageBreak,
+    PageNumber,
     Packer,
     Paragraph,
     TextRun,
@@ -11,7 +17,18 @@ import {
     exportPaperToMarkdown,
     formatPassageReference,
     type ExegeticalPaper,
+    type PaperCover,
 } from '@dosfilos/domain';
+import {
+    BIBLIOGRAPHY_PARAGRAPH,
+    BLOCK_QUOTE_PARAGRAPH,
+    BODY_PARAGRAPH,
+    BODY_RUN,
+    HEADING_PARAGRAPH,
+    isMostlyHebrew,
+    splitHebrew,
+    TMS,
+} from './tmsLayout';
 
 /**
  * Renders an `ExegeticalPaper` to a Word `.docx` Blob with NATIVE
@@ -52,54 +69,86 @@ export async function exportPaperToDocx(
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
 
+    // La bibliografía se compone distinto —sangría francesa, espacio
+    // simple— y empieza en página nueva, como pide la guía.
+    const bibliographyAt = blocks.findIndex(
+        b => b.type === 'heading' && BIBLIOGRAPHY_HEADING.test(b.text),
+    );
+
     const paragraphs: Paragraph[] = [];
-    for (const block of blocks) {
+    blocks.forEach((block, index) => {
+        const inBibliography = bibliographyAt >= 0 && index >= bibliographyAt;
         switch (block.type) {
             case 'heading':
                 paragraphs.push(new Paragraph({
                     heading: HEADING_LEVELS[Math.min(block.level, 3) as 1 | 2 | 3],
-                    children: [new TextRun({ text: block.text })],
+                    children: [
+                        ...(index === bibliographyAt ? [new PageBreak()] : []),
+                        ...textRuns(block.text),
+                    ],
                 }));
                 break;
             case 'paragraph':
                 paragraphs.push(new Paragraph({
                     children: buildInlineRuns(block.text, registerFootnote),
-                    spacing: { after: 160 },
+                    ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : {}),
                 }));
                 break;
             case 'list-item':
                 paragraphs.push(new Paragraph({
                     children: buildInlineRuns(block.text, registerFootnote),
-                    bullet: { level: 0 },
+                    // En la bibliografía, cada entrada es un párrafo con
+                    // sangría francesa: una viñeta delante la desarma.
+                    ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : { bullet: { level: 0 }, indent: { firstLine: 0 } }),
                 }));
                 break;
             case 'blockquote':
                 paragraphs.push(new Paragraph({
                     children: buildInlineRuns(block.text, registerFootnote),
-                    indent: { left: 720 },
-                    spacing: { after: 160 },
+                    ...BLOCK_QUOTE_PARAGRAPH,
+                    // Una cita hebrea se lee de derecha a izquierda y se
+                    // alinea a ese lado; sin esto Word la deja colgando a
+                    // la izquierda con la puntuación cambiada de sitio.
+                    ...(isMostlyHebrew(block.text)
+                        ? { alignment: AlignmentType.RIGHT, bidirectional: true }
+                        : {}),
                 }));
                 break;
             case 'rule':
                 paragraphs.push(new Paragraph({
-                    children: [new TextRun({ text: '___', color: '999999' })],
+                    children: [new TextRun({ text: '' })],
                     spacing: { after: 240 },
                 }));
                 break;
         }
-    }
+    });
+
+    const cover = coverSection(paper.cover ?? null, titleDisplay);
 
     const doc = new Document({
         title: titleDisplay,
-        creator: 'Dosfilos · Exegesis',
+        creator: paper.cover?.author?.trim() || 'Dosfilos · Exegesis',
+        styles: DOCUMENT_STYLES,
         footnotes,
         sections: [
+            ...(cover ? [cover] : []),
             {
-                properties: {},
+                properties: {
+                    page: {
+                        size: TMS.page,
+                        margin: { top: TMS.margin, right: TMS.margin, bottom: TMS.margin, left: TMS.margin, header: TMS.headerFooterDistance, footer: TMS.headerFooterDistance },
+                        pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL },
+                    },
+                    // La primera página del cuerpo lleva el número abajo al
+                    // centro y las siguientes arriba a la derecha: es la
+                    // regla de la guía y la razón de tener primera página
+                    // distinta.
+                    titlePage: true,
+                },
+                headers: { default: new Header({ children: [pageNumberParagraph(AlignmentType.RIGHT)] }) },
                 footers: {
-                    default: new Footer({
-                        children: [new Paragraph({ children: [new TextRun({ text: titleDisplay, size: 18, color: '999999' })] })],
-                    }),
+                    first: new Footer({ children: [pageNumberParagraph(AlignmentType.CENTER)] }),
+                    default: new Footer({ children: [new Paragraph({ children: [] })] }),
                 },
                 children: paragraphs,
             },
@@ -113,12 +162,120 @@ export async function exportPaperToDocx(
         footnotes[footnoteCounter] = {
             children: [
                 new Paragraph({
-                    children: [new TextRun({ text: citationText })],
+                    // La nota va a 10 pt y espacio simple; el cuerpo, a 12
+                    // y doble. Heredar el cuerpo llena el pie de página con
+                    // tres notas y empuja el texto fuera de la página.
+                    spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 120 },
+                    indent: { firstLine: TMS.firstLineIndent },
+                    children: textRuns(citationText, { size: TMS.footnoteHalfPt }),
                 }),
             ],
         };
         return footnoteCounter;
     }
+}
+
+
+/** Encabezados que abren la bibliografía, en los dos idiomas del producto. */
+const BIBLIOGRAPHY_HEADING = /^(bibliograf|works cited|bibliography)/i;
+
+/**
+ * Estilos del documento. Word trae Calibri 11 y encabezados azules; sin
+ * redefinirlos, el trabajo sale con una tipografía que la guía no admite
+ * y el estudiante la arregla a mano cada vez.
+ */
+const DOCUMENT_STYLES = {
+    default: {
+        document: { run: BODY_RUN, paragraph: BODY_PARAGRAPH },
+        heading1: {
+            run: { ...BODY_RUN, bold: true, color: '000000' },
+            paragraph: HEADING_PARAGRAPH,
+        },
+        heading2: {
+            run: { ...BODY_RUN, bold: false, color: '000000' },
+            paragraph: HEADING_PARAGRAPH,
+        },
+        heading3: {
+            run: { ...BODY_RUN, bold: false, italics: true, color: '000000' },
+            paragraph: HEADING_PARAGRAPH,
+        },
+    },
+} as const;
+
+/** Número de página como campo, para que Word lo actualice solo. */
+function pageNumberParagraph(alignment: (typeof AlignmentType)[keyof typeof AlignmentType]): Paragraph {
+    return new Paragraph({
+        alignment,
+        indent: { firstLine: 0 },
+        spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO },
+        children: [new TextRun({ children: [PageNumber.CURRENT], font: TMS.font, size: TMS.bodyHalfPt })],
+    });
+}
+
+/**
+ * Texto en runs, con el hebreo marcado de derecha a izquierda.
+ */
+function textRuns(text: string, options: { size?: number; bold?: boolean; italics?: boolean } = {}): TextRun[] {
+    return splitHebrew(text).map(seg => new TextRun({
+        text: seg.text,
+        font: TMS.font,
+        size: options.size ?? TMS.bodyHalfPt,
+        ...(options.bold ? { bold: true } : {}),
+        ...(options.italics ? { italics: true } : {}),
+        ...(seg.hebrew ? { rightToLeft: true } : {}),
+    }));
+}
+
+/**
+ * La portada que pide la guía: institución arriba, título al medio, autor
+ * y lugar abajo, todo centrado, en mayúsculas y sin número de página.
+ *
+ * Devuelve `null` cuando el trabajo no tiene datos de portada: un
+ * documento sin portada es lo que había, y es mejor que una portada con
+ * el nombre de otro.
+ */
+function coverSection(cover: PaperCover | null, fallbackTitle: string) {
+    const institution = cover?.institution?.trim();
+    const author = cover?.author?.trim();
+    if (!institution && !author) return null;
+
+    const line = (text: string, blanks = 0) => [
+        new Paragraph({
+            alignment: AlignmentType.CENTER,
+            indent: { firstLine: 0 },
+            spacing: { line: 360, lineRule: LineRuleType.AUTO },
+            children: textRuns(text.toLocaleUpperCase('es')),
+        }),
+        ...Array.from({ length: blanks }, () => new Paragraph({
+            alignment: AlignmentType.CENTER,
+            indent: { firstLine: 0 },
+            spacing: { line: 360, lineRule: LineRuleType.AUTO },
+            children: [],
+        })),
+    ];
+
+    const title = (cover?.course?.trim() ? `${fallbackTitle}` : fallbackTitle);
+    return {
+        properties: {
+            page: {
+                size: TMS.page,
+                margin: { top: TMS.margin, right: TMS.margin, bottom: TMS.margin, left: TMS.margin },
+            },
+            titlePage: true,
+        },
+        // Sin número: la portada no se cuenta.
+        footers: { first: new Footer({ children: [new Paragraph({ children: [] })] }) },
+        children: [
+            ...line('', 3),
+            ...(institution ? line(institution, 6) : []),
+            ...line(title, 2),
+            ...(cover?.course?.trim() ? line(cover.course, 4) : line('', 4)),
+            ...line('POR'),
+            ...(author ? line(author, 4) : line('', 4)),
+            ...(cover?.place?.trim() ? line(cover.place) : []),
+            ...(cover?.date?.trim() ? line(cover.date) : []),
+        ],
+    };
 }
 
 const HEADING_LEVELS = {
@@ -261,22 +418,25 @@ function buildInlineRuns(
     let cursor = 0;
     for (const mk of markers) {
         if (mk.start > cursor) {
-            runs.push(new TextRun({ text: paragraphText.slice(cursor, mk.start) }));
+            // `textRuns` y no un run suelto: el hebreo que aparece en
+            // mitad de una frase castellana necesita su propia marca de
+            // derecha a izquierda o Word lo reordena al abrir.
+            runs.push(...textRuns(paragraphText.slice(cursor, mk.start)));
         }
         if (mk.kind === 'citation') {
             const id = registerFootnote(mk.body);
             runs.push(new FootnoteReferenceRun(id));
         } else if (mk.kind === 'bold') {
-            runs.push(new TextRun({ text: mk.body, bold: true }));
+            runs.push(...textRuns(mk.body, { bold: true }));
         } else {
-            runs.push(new TextRun({ text: mk.body, italics: true }));
+            runs.push(...textRuns(mk.body, { italics: true }));
         }
         cursor = mk.end;
     }
     if (cursor < paragraphText.length) {
-        runs.push(new TextRun({ text: paragraphText.slice(cursor) }));
+        runs.push(...textRuns(paragraphText.slice(cursor)));
     }
-    return runs.length > 0 ? runs : [new TextRun({ text: paragraphText })];
+    return runs.length > 0 ? runs : textRuns(paragraphText);
 }
 
 function overlapsExisting(
