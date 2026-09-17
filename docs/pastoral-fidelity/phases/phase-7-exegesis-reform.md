@@ -95,4 +95,12 @@ bitácora de abajo.
 ## Bitácora
 
 - **2026-05-22** — Placeholder creado. Fase explícitamente diferida.
-- **2026-09-17** — Activada tras la retrospectiva del trabajo de Sal 23:1–3. Etapa 1 en PR.
+- **2026-09-17** — Activada tras la retrospectiva del trabajo de Sal 23:1–3. Etapa 1 en PR (#629).
+- **2026-09-17** — **Medición 1 (23:1, tras #629):** 16 citas · verificadas 3 · página no coincide 2 ·
+  coincidencia baja 1 · **no encontrada 10**. Recall sobre errores conocidos del verso: 2/2
+  (Andersen p. 42, dos entradas). **Falsos negativos: 10/14 = 71 %** (meta ≤ 10 %). Causa,
+  legible en las notas del modelo («los fragmentos llegan hasta la página 205» sobre una cita a
+  la 206): el adaptador recortaba la evidencia a los primeros 8 fragmentos de la fuente en orden
+  de hoja, sin mirar la página citada. Corrección: `prioritizeChunksForCitedPage` +
+  `selectEvidenceChunks` (la página citada y sus vecinas sobreviven al tope). Pendiente:
+  medición 2 sobre los tres versos.
