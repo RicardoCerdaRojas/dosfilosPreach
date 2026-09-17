@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Loader2, Search, SearchX, ZoomIn, ZoomOut } from 'lucide-react';
 import {
     isCitableSourceType,
+    printedLabelIn,
     printedPageFor,
+    sheetForPrintedIn,
+    sheetForPrintedPage,
+    type CitationPageKind,
 } from '@dosfilos/domain';
 import {
     Dialog,
@@ -13,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
 import { useDocumentPageIndex, useDocumentPdfUrl } from '@/hooks/exegesis/useDocumentPageIndex';
+import { usePageNumbering } from '@/hooks/library/usePageNumbering';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
 
@@ -40,10 +45,18 @@ export interface CitationTarget {
     /** Clave de cita tal como aparece en el análisis, p. ej. "Adamson". */
     sourceKey: string;
     /**
-     * Número que declara la cita. Es la HOJA del archivo: el análisis lo
-     * toma del ancla del fragmento, que rotula la hoja como «p.».
+     * Número que declara la cita. Desde las citas ancladas es la PÁGINA
+     * IMPRESA cuando `pageKind` es `'printed'`; si no, la hoja del archivo.
      */
     page: number;
+    /**
+     * Qué es `page`. Ausente = hoja, que es lo que decían todas las citas
+     * antes de la calibración. Con `'printed'` el visor convierte a hoja
+     * con la calibración confirmada del libro: en Waltke-O'Connor la p. 440
+     * es la hoja 458, y abrir la hoja 440 (que imprime 422) mandaba al
+     * lector a otro capítulo.
+     */
+    pageKind?: CitationPageKind;
     /** Frase textual registrada, cuando el análisis guardó una. */
     verbatimQuote?: string | null;
 }
@@ -82,11 +95,20 @@ export function CitationSourceModal({
     const index = useDocumentPageIndex(open ? resourceId : null);
     const pdf = useDocumentPdfUrl(open ? resourceId : null);
 
+    const numberingState = usePageNumbering(open ? resourceId : null);
+    const numbering = numberingState.data?.numbering ?? null;
     const offset = index.data?.printedPageOffset ?? null;
-    const sheet = citation?.page ?? 1;
+    // Una cita en página impresa se lleva a la hoja con la calibración
+    // confirmada; si no la hay, con el desfase detectado; y si tampoco, se
+    // abre el número como hoja, que es lo que había.
+    const sheet = citation
+        ? (citation.pageKind === 'printed'
+            ? sheetForPrintedIn(numbering, citation.page) ?? sheetForPrintedPage(citation.page, offset) ?? citation.page
+            : citation.page)
+        : 1;
     // Sólo informativo: qué número lleva impreso esa hoja, para que el
     // lector pueda buscarla en el libro de papel.
-    const printed = printedPageFor(sheet, offset);
+    const printed = numbering ? printedLabelIn(numbering, sheet) : printedPageFor(sheet, offset);
 
     // Cada cita nueva vuelve a empezar: sin esto el modal heredaría el
     // veredicto de la anterior y diría «no la encontré» sobre una frase
@@ -109,7 +131,7 @@ export function CitationSourceModal({
                         {source?.displayLabel ?? citation?.sourceKey ?? ''}
                     </DialogTitle>
                     <DialogDescription className="text-xs">
-                        {offset !== null && printed !== null
+                        {printed !== null
                             ? t('citationViewer.pageWithSheet', { printed, sheet })
                             : t('citationViewer.sheetOnly', { sheet })}
                     </DialogDescription>
@@ -174,7 +196,7 @@ export function CitationSourceModal({
                         <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
                             {t('citationViewer.sourceNotConfigured', { key: citation?.sourceKey ?? '' })}
                         </Centered>
-                    ) : index.isLoading || pdf.isLoading ? (
+                    ) : index.isLoading || pdf.isLoading || numberingState.isLoading ? (
                         <Centered icon={<Loader2 className="h-4 w-4 animate-spin" />}>
                             {t('citationViewer.loading')}
                         </Centered>

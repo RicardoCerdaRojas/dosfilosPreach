@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
+    collectAnalysisClaims,
     isUnreviewedCitationsError,
     mapVerdictsByPath,
     unreviewedNotFound,
+    type AnalysisClaim,
     type CitationStatus,
     type ExegeticalPaper,
     type ExegeticalStep,
@@ -33,6 +35,10 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
     const verdicts = useMemo(
         () => (analysis ? mapVerdictsByPath(analysis, version?.citationVerdicts ?? []) : new Map<string, VerifiedCitation>()),
         [analysis, version?.citationVerdicts],
+    );
+    const claims = useMemo(
+        () => new Map<string, AnalysisClaim>(analysis ? collectAnalysisClaims(analysis).map(c => [c.path, c]) : []),
+        [analysis],
     );
     const reviews = useMemo(
         () => new Map((version?.citationReviews ?? []).map(r => [r.path, r] as const)),
@@ -96,6 +102,7 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         version,
         analysis,
         verdicts,
+        claims,
         reviews,
         blocking,
         counts,

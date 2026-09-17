@@ -216,6 +216,32 @@ function segmentValueAt(
  * queda para los que COMPARAN cantidades, que no saben ni les importa con qué
  * cifras se imprime el número.
  */
+/**
+ * La hoja del archivo que lleva impreso un número, según la calibración.
+ *
+ * Inversa de `printedPageIn` para libros con tramos: en Ortiz las hojas
+ * 159–417 llevan un desfase y las 418–807 otro, y un desfase único abre la
+ * hoja equivocada en la mitad del libro. Solo mira tramos arábigos: una
+ * página «ci» no se pide con un número.
+ *
+ * `null` cuando ningún tramo produce esa página. Con dos tramos que la
+ * produzcan (series repetidas), gana el primero.
+ */
+export function sheetForPrintedIn(
+    numbering: PageNumbering | null | undefined,
+    printed: number,
+): number | null {
+    if (!numbering || !Number.isFinite(printed)) return null;
+    for (const segment of numbering.segments) {
+        if (segment.offset === null) continue;
+        if ((segment.style ?? 'arabic') !== 'arabic') continue;
+        const step = segment.step ?? 1;
+        const sheet = (printed - segment.offset) / step;
+        if (Number.isInteger(sheet) && sheet >= segment.fromSheet && sheet <= segment.toSheet) return sheet;
+    }
+    return null;
+}
+
 export function printedLabelIn(
     numbering: PageNumbering | null | undefined,
     sheet: number,

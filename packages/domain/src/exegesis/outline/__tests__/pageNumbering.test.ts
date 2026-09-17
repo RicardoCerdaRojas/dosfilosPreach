@@ -11,6 +11,7 @@ import {
     toRomanNumeral,
     parseRomanNumeral,
     relabelExcerptAnchor,
+    sheetForPrintedIn,
     singleSegmentNumbering,
     type PageNumbering,
 } from '../pageNumbering';
@@ -638,5 +639,40 @@ describe('páginas con asterisco (dos series en un libro)', () => {
         )!;
         expect(n.segments.length).toBeGreaterThan(1);
         expect(n.segments.some(s => s.style === 'asterisked')).toBe(true);
+    });
+});
+
+describe('sheetForPrintedIn — de la página impresa a la hoja, por tramos', () => {
+    // Ortiz, calibrado con los folios reales: tres tramos.
+    const ORTIZ = { origin: 'confirmed', segments: [
+        { fromSheet: 1, toSheet: 158, offset: 0 },
+        { fromSheet: 159, toSheet: 417, offset: -1 },
+        { fromSheet: 418, toSheet: 807, offset: -2 },
+    ] } as const;
+
+    it('elige el tramo que produce esa página', () => {
+        expect(sheetForPrintedIn(ORTIZ, 140)).toBe(140);
+        expect(sheetForPrintedIn(ORTIZ, 373)).toBe(374);
+        expect(sheetForPrintedIn(ORTIZ, 430)).toBe(432);
+        expect(sheetForPrintedIn(ORTIZ, 707)).toBe(709);
+    });
+
+    it('con un desfase único abría la hoja equivocada: Waltke-O\'Connor p. 440 es la hoja 458', () => {
+        const WO = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 792, offset: -18 }] } as const;
+        expect(sheetForPrintedIn(WO, 440)).toBe(458);
+    });
+
+    it('ignora tramos romanos y sin desfase', () => {
+        const n = { origin: 'confirmed', segments: [
+            { fromSheet: 1, toSheet: 20, offset: 0, style: 'roman' as const },
+            { fromSheet: 21, toSheet: 30, offset: null },
+            { fromSheet: 31, toSheet: 100, offset: -30 },
+        ] } as const;
+        expect(sheetForPrintedIn(n, 5)).toBe(35);
+        expect(sheetForPrintedIn(n, 500)).toBeNull();
+    });
+
+    it('sin calibración no convierte', () => {
+        expect(sheetForPrintedIn(null, 440)).toBeNull();
     });
 });
