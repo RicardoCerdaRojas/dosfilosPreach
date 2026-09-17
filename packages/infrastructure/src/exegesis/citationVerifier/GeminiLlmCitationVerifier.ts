@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, prioritizeChunksForCitedPage } from '@dosfilos/domain';
+import { citationAnchorFor, prioritizeChunksForCitedPage, pagesOverlap } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -415,21 +415,7 @@ function extractPageFromHint(hint: string): string | null {
     return match ? match[1]!.replace(/\s+/g, '') : null;
 }
 
-function pagesOverlap(citedRaw: string, matchedRaw: string): boolean {
-    const cited = parseRange(citedRaw);
-    const matched = parseRange(matchedRaw);
-    if (!cited || !matched) return citedRaw === matchedRaw;
-    return cited.start <= matched.end && matched.start <= cited.end;
-}
 
-function parseRange(raw: string): { start: number; end: number } | null {
-    const cleaned = raw.replace(/\s+/g, '').replace(/[–—]/g, '-');
-    const m = cleaned.match(/^(\d+)(?:-(\d+))?/);
-    if (!m) return null;
-    const start = parseInt(m[1]!, 10);
-    const end = m[2] ? parseInt(m[2]!, 10) : start;
-    return { start, end };
-}
 
 /**
  * Heuristic language detection from the first citation's evidence.

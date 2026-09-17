@@ -1588,7 +1588,9 @@
         "save": "Mark as reviewed",
         "remove": "Remove mark",
         "useThisPage": "Note this page",
-        "noteFromView": "It is on p. {{page}} (sheet {{sheet}}), not on the cited page."
+        "noteFromView": "It is on p. {{page}} (sheet {{sheet}}), not on the cited page.",
+        "pageHintCalibration": "They differ by one page: that is almost always the book's numbering, not the citation.",
+        "pageHintCalibrate": "Check this book's numbering"
       },
       "toast": {
         "reviewSaved": "Citation marked as reviewed",

@@ -1588,7 +1588,9 @@
         "save": "Marcar como revisada",
         "remove": "Quitar marca",
         "useThisPage": "Anotar esta página",
-        "noteFromView": "Está en la p. {{page}} (hoja {{sheet}}), no en la página citada."
+        "noteFromView": "Está en la p. {{page}} (hoja {{sheet}}), no en la página citada.",
+        "pageHintCalibration": "Se llevan una página: casi siempre es la numeración del libro, no la cita.",
+        "pageHintCalibrate": "Revisar la numeración de este libro"
       },
       "toast": {
         "reviewSaved": "Cita marcada como revisada",
