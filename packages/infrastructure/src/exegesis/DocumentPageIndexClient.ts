@@ -112,6 +112,41 @@ export async function fetchDocumentPdfUrl(resourceId: string): Promise<DocumentP
     return handle;
 }
 
+/** Una hoja del libro donde aparece el término buscado. */
+export interface DocumentSheetHit {
+    sheet: number;
+    /** Apariciones en esa hoja, sumando todos sus fragmentos. */
+    count: number;
+    /** Renglón donde cae la primera, para reconocer la hoja sin abrirla. */
+    snippet: string;
+    section: string | null;
+}
+
+export interface DocumentTextSearchResult {
+    hits: DocumentSheetHit[];
+    /** Hubo más hojas de las que caben en la respuesta. */
+    truncated: boolean;
+    scannedChunks: number;
+}
+
+/**
+ * Busca una palabra en TODO el libro, no en la hoja abierta.
+ *
+ * No se cachea: el término cambia en cada búsqueda y react-query ya
+ * guarda por término del lado del llamador. El tope de tiempo es el mismo
+ * del índice — recorrer los fragmentos de un libro grande tarda segundos,
+ * no milisegundos.
+ */
+export async function searchDocumentText(resourceId: string, term: string): Promise<DocumentTextSearchResult> {
+    const callable = httpsCallable<{ resourceId: string; term: string }, DocumentTextSearchResult>(
+        getFunctions(),
+        'searchDocumentText',
+        { timeout: INDEX_TIMEOUT_MS },
+    );
+    const response = await callable({ resourceId, term });
+    return response.data;
+}
+
 /**
  * Olvida lo cacheado de un recurso. Lo llama el flujo de re-indexación: después
  * de re-extraer un documento, su índice de hojas cambió y el viejo describe un

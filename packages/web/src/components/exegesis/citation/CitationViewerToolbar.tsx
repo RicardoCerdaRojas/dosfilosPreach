@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, ZoomIn, ZoomOut } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+
+export type SearchScope = 'sheet' | 'book';
 
 interface Props {
     viewSheet: number;
@@ -10,6 +13,8 @@ interface Props {
     onGoToPageInput: (input: number) => boolean;
     search: string;
     onSearch: (v: string) => void;
+    scope: SearchScope;
+    onScope: (s: SearchScope) => void;
     matches: number;
     zoom: number;
     onZoom: (z: number) => void;
@@ -23,7 +28,7 @@ interface Props {
  * quien conoce la calibración. Las flechas del teclado hojean cuando el
  * foco no está en un cuadro de texto.
  */
-export function CitationViewerToolbar({ viewSheet, totalSheets, onGo, onGoToPageInput, search, onSearch, matches, zoom, onZoom }: Props) {
+export function CitationViewerToolbar({ viewSheet, totalSheets, onGo, onGoToPageInput, search, onSearch, scope, onScope, matches, zoom, onZoom }: Props) {
     const { t } = useTranslation('exegesis');
     const [pageInput, setPageInput] = useState('');
     const [rejected, setRejected] = useState(false);
@@ -89,12 +94,29 @@ export function CitationViewerToolbar({ viewSheet, totalSheets, onGo, onGoToPage
                     type="search"
                     value={search}
                     onChange={e => onSearch(e.target.value)}
-                    placeholder={t('citationViewer.searchPlaceholder')}
-                    aria-label={t('citationViewer.searchPlaceholder')}
+                    placeholder={t(scope === 'book' ? 'citationViewer.searchBookPlaceholder' : 'citationViewer.searchPlaceholder')}
+                    aria-label={t(scope === 'book' ? 'citationViewer.searchBookPlaceholder' : 'citationViewer.searchPlaceholder')}
                     className="w-full rounded-md border border-border bg-background pl-7 pr-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
             </div>
-            {search.trim() && (
+            <div className="flex items-center rounded-md border border-border overflow-hidden shrink-0" role="group" aria-label={t('citationViewer.scopeLabel')}>
+                {(['sheet', 'book'] as const).map(value => (
+                    <button
+                        key={value}
+                        type="button"
+                        onClick={() => onScope(value)}
+                        aria-pressed={scope === value}
+                        className={cn(
+                            'px-2 py-1 text-[11px]',
+                            scope === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
+                        )}
+                    >
+                        {t(`citationViewer.scope.${value}`)}
+                    </button>
+                ))}
+            </div>
+
+            {scope === 'sheet' && search.trim() && (
                 <span className="text-[11px] text-muted-foreground shrink-0">
                     {matches > 0
                         ? t('citationViewer.searchMatches', { count: matches })

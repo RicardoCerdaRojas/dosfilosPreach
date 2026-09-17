@@ -20,10 +20,11 @@ export type { ProposalKind, SheetRangeProposal, ProposeSheetRangesInput } from '
 // Índice de hojas y PDF original, para el selector de páginas.
 export {
     fetchDocumentPageIndex,
+    searchDocumentText,
     fetchDocumentPdfUrl,
     invalidateDocumentCaches,
 } from './DocumentPageIndexClient';
-export type { DocumentPageIndex, DocumentPdfHandle } from './DocumentPageIndexClient';
+export type { DocumentPageIndex, DocumentPdfHandle, DocumentSheetHit, DocumentTextSearchResult } from './DocumentPageIndexClient';
 export { DocumentPageNumberingReader } from './DocumentPageNumberingReader';
 export { RetrieveChunksResourceRanker } from './RetrieveChunksResourceRanker';
 export { GeminiStepCorpusPlanner } from './GeminiStepCorpusPlanner';

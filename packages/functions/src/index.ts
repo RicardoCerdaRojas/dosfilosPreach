@@ -36,6 +36,7 @@ export { retrieveChunks } from './library/retrieveChunks';
 // Complementan a `retrieveChunks` — responden "qué parte de este libro
 // trata este pasaje" en vez de "qué se parece a esta consulta".
 export { getDocumentOutline, getDocumentChunks } from './library/documentStructure';
+export { searchDocumentText } from './library/documentTextSearch';
 // Selector de páginas: índice de hojas del documento y URL firmada del PDF.
 export { getDocumentPageIndex, getDocumentPdfUrl } from './library/documentPageIndex';
 // Corpus consultable: ranking dentro de las hojas que el trabajo admitió.

@@ -63,12 +63,14 @@ export function useCitationSheet(paperId: string, citation: CitationTarget | nul
 
     return {
         source,
+        resourceId,
         pdfUrl: pdf.data?.url ?? null,
         loading,
         totalSheets,
         anchorSheet,
         viewSheet,
         printedOfView: printedOfSheet(viewSheet, ctx),
+        printedOf: (sheet: number) => printedOfSheet(sheet, ctx),
         goTo,
         goToPageInput,
     };
