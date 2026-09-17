@@ -104,6 +104,7 @@ import {
     ComposeStudyGuideFromAnalysesUseCase,
     GenerateStepUseCase,
     AcceptStepUseCase,
+    ReviewCitationUseCase,
     SaveStepEditUseCase,
     VerifyStepCitationsUseCase,
     RunCoherencePassUseCase,
@@ -201,6 +202,8 @@ class ExegesisService {
     // matches cited sources against the paper's project-source list,
     // and persists a per-status summary on the version.
     public verifyStepCitations: VerifyStepCitationsUseCase;
+    /** Marca a mano una cita «no encontrada» como revisada, con motivo. */
+    public reviewCitation: ReviewCitationUseCase;
     // Cross-section coherence reviewer — single Gemini pass over the
     // accepted intro + verses + conclusion to surface inconsistencies
     // the per-step prompts cannot see (they only get one step at a time).
@@ -442,6 +445,7 @@ class ExegesisService {
             pageNumberingReader,
         );
         this.acceptStep = new AcceptStepUseCase(paperRepository);
+        this.reviewCitation = new ReviewCitationUseCase(paperRepository);
         this.reopenStep = new ReopenStepUseCase(paperRepository);
         this.saveStepEdit = new SaveStepEditUseCase(paperRepository);
 

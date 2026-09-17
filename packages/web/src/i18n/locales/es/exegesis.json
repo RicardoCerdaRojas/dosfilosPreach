@@ -1553,6 +1553,48 @@
       "toast": {
         "failed": "No se pudo verificar las citas. Intenta de nuevo."
       }
+    },
+    "review": {
+      "title": "Revisión de citas · {{step}}",
+      "verifiedAt": "Última verificación: {{date}}",
+      "notVerified": "Este paso todavía no se verificó. Verifica las citas para ver la evidencia de cada una.",
+      "accept": "Aceptar paso",
+      "acceptBlockedTooltip_one": "Hay una cita no encontrada sin revisar.",
+      "acceptBlockedTooltip_other": "Hay {{count}} citas no encontradas sin revisar.",
+      "blocking_one": "Una cita no encontrada sin revisar bloquea la aceptación.",
+      "blocking_other": "{{count}} citas no encontradas sin revisar bloquean la aceptación.",
+      "filters": "Filtrar por veredicto",
+      "filterAll": "Con observaciones",
+      "noAnalysis": "Este paso no tiene análisis canónico; la revisión de citas funciona sobre el análisis.",
+      "listTitle": "Citas para revisar",
+      "link": "Revisar citas",
+      "linkTooltip": "Abre el análisis con cada cita marcada según la verificación y la evidencia al lado.",
+      "status": {
+        "reviewed": "Revisada a mano"
+      },
+      "panel": {
+        "empty": "Elige una cita en el análisis, o en la lista de abajo, para ver su evidencia.",
+        "cited": "Página citada",
+        "found": "Apoyo hallado en",
+        "quote": "Oración citada",
+        "claim": "Afirmación cotejada",
+        "verdict": "Qué vio el verificador",
+        "pageHint": "Una diferencia de una página puede ser la calibración del libro, no la cita. Abre el PDF y compara el folio impreso.",
+        "openPdf": "Abrir en el PDF",
+        "reviewLabel": "Revisión manual",
+        "reviewedLabel": "Revisada a mano",
+        "notePlaceholder": "Qué encontraste al abrir la página. Ej.: «El contraste polel/hifil está en la p. 436; corregir la cita».",
+        "reviewedOn": "Revisada el {{date}}.",
+        "save": "Marcar como revisada",
+        "remove": "Quitar marca"
+      },
+      "toast": {
+        "reviewSaved": "Cita marcada como revisada",
+        "reviewRemoved": "Marca de revisión quitada",
+        "reviewFailed": "No se pudo guardar la revisión. Intenta de nuevo.",
+        "acceptBlocked_one": "No se puede aceptar: hay una cita no encontrada sin revisar.",
+        "acceptBlocked_other": "No se puede aceptar: hay {{count}} citas no encontradas sin revisar."
+      }
     }
   },
   "coherence": {

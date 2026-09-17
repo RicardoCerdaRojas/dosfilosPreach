@@ -1,4 +1,4 @@
-import type { VerifiedCitation } from '../entities/CitationVerification';
+import type { CitationReview, VerifiedCitation } from '../entities/CitationVerification';
 import type {
     ExegeticalPaper,
     ExegeticalPaperDraft,
@@ -230,6 +230,18 @@ export interface IExegeticalPaperRepository {
          * muestre sin volver a verificar. Ausente = no se tocan los guardados.
          */
         verdicts?: ReadonlyArray<VerifiedCitation>,
+    ): Promise<ExegeticalStepVersion>;
+
+    /**
+     * Guarda (o reemplaza, por ruta) la revisión manual de una cita de la
+     * versión. Con `review.note` vacía se quita la marca.
+     */
+    setCitationReview(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        versionId: string,
+        review: CitationReview,
     ): Promise<ExegeticalStepVersion>;
 
     /**

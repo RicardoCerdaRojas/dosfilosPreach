@@ -28,6 +28,8 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useReopenStep } from '@/hooks/exegesis/useReopenStep';
 import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/CanonicalAnalysisStudyView';
 import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
+import { Link, useNavigate } from 'react-router-dom';
+import { isUnreviewedCitationsError } from '@dosfilos/domain';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
 import { ExegesisOutOfCreditsDialog } from '@/components/exegesis/ExegesisOutOfCreditsDialog';
 import { ExegesisPreConfirmDialog } from '@/components/exegesis/ExegesisPreConfirmDialog';
@@ -161,6 +163,8 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
     // temporizador, disparado exactamente al vencer, y sólo mientras genera.
     // Cita abierta en el visor del documento original. `null` = cerrado.
     const [openCitation, setOpenCitation] = useState<CitationTarget | null>(null);
+    const navigate = useNavigate();
+    const reviewPath = `/dashboard/exegesis/${paperId}/pasos/${step.id}/revision`;
 
     const [now, setNow] = useState(() => new Date());
     const stepUpdatedAtMs = step.updatedAt?.getTime?.();
@@ -415,6 +419,12 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
             await acceptStep.mutateAsync({ paperId, stepId: step.id, versionId: step.current.id });
             toast.success(t('detail.steps.toast.accepted'));
         } catch (err) {
+            if (isUnreviewedCitationsError(err)) {
+                toast.error(t('canonical.review.toast.acceptBlocked', { count: err.paths.length }), {
+                    action: { label: t('canonical.review.link'), onClick: () => navigate(reviewPath) },
+                });
+                return;
+            }
             console.error('[exegesis] accept failed:', err);
             toast.error(t('detail.steps.toast.acceptFailed'));
         }
@@ -955,6 +965,16 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
                         <RotateCcw className="h-3 w-3" />
                         {t('detail.steps.action.redo')}
                     </button>
+                    {canonicalAnalysis ? (
+                        <Link
+                            to={reviewPath}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-success"
+                            title={t('canonical.review.linkTooltip')}
+                        >
+                            <ShieldCheck className="h-3 w-3" />
+                            {t('canonical.review.link')}
+                        </Link>
+                    ) : (
                     <button
                         type="button"
                         onClick={handleVerifyCitations}
@@ -965,6 +985,7 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
                         {verifyStepCitations.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
                         {t('canonical.verify.button.label')}
                     </button>
+                    )}
 
                     {/* Verse-only affordances. Two paths:
                         - Legacy (no canonicalAnalysis): offer the

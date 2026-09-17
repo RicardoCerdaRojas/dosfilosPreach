@@ -184,3 +184,5 @@ export {
     type FidelityCallInput,
 } from './expository/RunExpositoryPassesUseCase';
 export * from './SetPaperStyleGuideUseCase';
+export { ReviewCitationUseCase } from './ReviewCitationUseCase';
+export type { ReviewCitationInput } from './ReviewCitationUseCase';

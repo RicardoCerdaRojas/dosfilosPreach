@@ -102,5 +102,28 @@ bitácora de abajo.
   legible en las notas del modelo («los fragmentos llegan hasta la página 205» sobre una cita a
   la 206): el adaptador recortaba la evidencia a los primeros 8 fragmentos de la fuente en orden
   de hoja, sin mirar la página citada. Corrección: `prioritizeChunksForCitedPage` +
-  `selectEvidenceChunks` (la página citada y sus vecinas sobreviven al tope). Pendiente:
-  medición 2 sobre los tres versos.
+  `selectEvidenceChunks` (la página citada y sus vecinas sobreviven al tope). PR #630.
+- **2026-09-17** — **Medición 2 (23:1–3, tras #630):** 54 citas · verificadas 44 · coincidencia
+  baja 3 · página no coincide 5 · no encontrada 2. Las 15 citas con oración textual se
+  verificaron sin modelo (5 de ellas) o con él; ninguna oración textual resultó inventada.
+  - **Falsos negativos sobre citas correctas: 0/49.** Los 5 «página no coincide» son todos de
+    Ortiz y todos corridos una página (430→431, 432→433, 455→456): la **calibración del
+    recurso está mal** (segmento −1 declarado hasta la hoja 457; el folio impreso cambia a −2
+    cerca de la hoja 382–432). El verificador detectó un problema real del libro; la interfaz
+    lo atribuye a la cita. Va a la Etapa 4 (salud del recurso) y a la nota de la Etapa 3.
+  - **Recall:** Waltke-O'Connor p. 440 citado para el polel de שׁוב → 2 de 3 entradas
+    «no encontrada» («los fragmentos no mencionan el tronco Polel»): **atrapado**. La tercera
+    entrada trae una oración textual que sí está en la p. 440 (sobre el hifil interno) y pasó
+    como verificada: la oración es real, la afirmación que la rodea es un estiramiento.
+    Límite conocido: **oración hallada ≠ afirmación sostenida**. Ross p. 564 con Ezequiel:
+    pasó; en el análisis las referencias a Ezequiel no se atribuyen a Ross (la atribución
+    equivocada la hizo el compositor), así que el veredicto es defendible. Andersen p. 42 se
+    retiró de los errores conocidos: la página discute la Regla 1 por nombre.
+  - Además flagueó (coincidencia baja / página no coincide) tres citas donde la fuente apoya
+    menos de lo que el análisis afirma (W-O p. 513 sobre לֹא; W-O p. 436 como rango léxico de
+    רבץ; Ross p. 561 sobre «pastizales de alta calidad»). Las tres son avisos legítimos.
+  - **Conclusión:** la Etapa 1 cumple su métrica (0 % de falsos negativos reales; los errores
+    de fondo atrapados). Dos límites quedan anotados para la Etapa 3: (1) cuando hay oración
+    textual, mostrar oración y afirmación lado a lado, porque el verificador solo garantiza la
+    primera; (2) un «página no coincide» de ±1 debe decir «puede ser la calibración del
+    libro» y enlazar a calibrar.

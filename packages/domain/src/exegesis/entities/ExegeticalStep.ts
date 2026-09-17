@@ -1,5 +1,5 @@
 import type { PassageReference } from '../../bible/canon/passage-reference';
-import type { VerifiedCitation } from './CitationVerification';
+import type { CitationReview, VerifiedCitation } from './CitationVerification';
 import type { CanonicalVerseAnalysis } from './CanonicalVerseAnalysis';
 
 /**
@@ -165,6 +165,9 @@ export interface ExegeticalStepVersion {
      * el campo, y en las que nunca se verificaron.
      */
     citationVerdicts?: ReadonlyArray<VerifiedCitation>;
+
+    /** Citas que alguien revisó a mano tras un «no encontrada». Ver `CitationReview`. */
+    citationReviews?: ReadonlyArray<CitationReview>;
 }
 
 /**

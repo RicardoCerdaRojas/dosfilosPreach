@@ -114,3 +114,19 @@ export interface VerifiedCitation extends ParsedCitation {
  */
 export const CITATION_VERIFY_THRESHOLD = 0.55;
 export const CITATION_FUZZY_LOW_THRESHOLD = 0.3;
+
+/**
+ * Marca de revisión manual sobre una cita del análisis.
+ *
+ * El verificador dice «no encontrada» y a veces se equivoca (el libro está
+ * mal calibrado, la oración está en la página vecina) y a veces acierta. En
+ * los dos casos alguien tiene que mirar la página; esto registra que lo hizo
+ * y qué encontró. Con la marca, la cita deja de bloquear la aceptación.
+ */
+export interface CitationReview {
+    /** Ruta de la cita en el análisis, p. ej. `commentatorEngagement[2]`. */
+    path: string;
+    /** Qué encontró quien revisó. Obligatoria: una marca sin motivo no dice nada. */
+    note: string;
+    reviewedAt: Date;
+}

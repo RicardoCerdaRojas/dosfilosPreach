@@ -3,6 +3,7 @@ import type {
     ExegeticalStep,
     IExegeticalPaperRepository,
 } from '@dosfilos/domain';
+import { UnreviewedCitationsError, unreviewedNotFound } from '@dosfilos/domain';
 
 /**
  * Marks a generated version as the accepted content for a step,
@@ -35,6 +36,20 @@ export class AcceptStepUseCase {
         if (!input.ownerId || !input.paperId || !input.stepId || !input.versionId) {
             throw new Error('AcceptStepUseCase: ownerId, paperId, stepId and versionId required');
         }
+        // Bloquear lo que está mal, no lo que está incompleto: una cita que
+        // el verificador no encontró y nadie revisó no puede aceptarse; una
+        // duda o un paso sin verificar, sí.
+        const paper = await this.paperRepository.getPaper(input.ownerId, input.paperId);
+        const version = paper?.steps.find(s => s.id === input.stepId)?.versions.find(v => v.id === input.versionId);
+        if (version?.canonicalAnalysis) {
+            const blocking = unreviewedNotFound(
+                version.canonicalAnalysis,
+                version.citationVerdicts ?? [],
+                version.citationReviews ?? [],
+            );
+            if (blocking.length > 0) throw new UnreviewedCitationsError(blocking);
+        }
+
         const acceptedStep = await this.paperRepository.acceptStepVersion(
             input.ownerId,
             input.paperId,

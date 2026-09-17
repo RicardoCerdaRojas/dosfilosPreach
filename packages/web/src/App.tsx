@@ -107,6 +107,7 @@ const ExegesisCreatePage = lazy(() => import('@/pages/exegesis/ExegesisCreatePag
 const ExegesisPaperPage = lazy(() => import('@/pages/exegesis/ExegesisPaperPage').then(m => ({ default: m.ExegesisPaperPage })));
 const ExegesisPaperSetupPage = lazy(() => import('@/pages/exegesis/ExegesisPaperSetupPage').then(m => ({ default: m.ExegesisPaperSetupPage })));
 const SeriesExegesisConfigPage = lazy(() => import('@/pages/series/SeriesExegesisConfigPage').then(m => ({ default: m.SeriesExegesisConfigPage })));
+const ExegesisStepReviewPage = lazy(() => import('@/pages/exegesis/ExegesisStepReviewPage').then(m => ({ default: m.ExegesisStepReviewPage })));
 const ExegesisSourcePagesPage = lazy(() => import('@/pages/exegesis/ExegesisSourcePagesPage').then(m => ({ default: m.ExegesisSourcePagesPage })));
 const ProjectsListPage = lazy(() => import('@/pages/projects/ProjectsListPage').then(m => ({ default: m.ProjectsListPage })));
 
@@ -353,6 +354,10 @@ function App() {
                   libro de 400 páginas pide el viewport entero, botón atrás y
                   una URL a la que volver. */}
               <Route path=":paperId/fuentes/:sourceId/paginas" element={<ExegesisSourcePagesPage />} />
+              {/* Revisar las citas de un paso: el análisis con cada cita
+                  marcada y la evidencia al lado. Es página por lo mismo que
+                  el selector de hojas: no cabe en un diálogo. */}
+              <Route path=":paperId/pasos/:stepId/revision" element={<ExegesisStepReviewPage />} />
             </Route>
 
             {/* Greek Tutor - Start page with sidebar for navigation */}

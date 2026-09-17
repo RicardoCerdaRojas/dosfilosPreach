@@ -18,8 +18,11 @@ import {
     formatPassageReference,
     type CanonicalVerseAnalysis,
     type SourceCitation,
+    type VerifiedCitation,
 } from '@dosfilos/domain';
+import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
+import { CitationStatusDot } from '../review/CitationStatusBadge';
 
 /**
  * Read-only "study mode" view for a `CanonicalVerseAnalysis`.
@@ -55,12 +58,24 @@ type OpenCitation = (citation: {
     verbatimQuote?: string | null;
 }) => void;
 
+/**
+ * Veredictos y revisiones, por ruta de la cita. Cuando vienen, cada cita
+ * lleva su marca y pulsarla la selecciona en vez de abrir el libro.
+ */
+export interface CitationMarks {
+    verdicts: ReadonlyMap<string, VerifiedCitation>;
+    reviewed: ReadonlySet<string>;
+    selectedPath: string | null;
+    onSelect: (path: string) => void;
+}
+
 interface CanonicalAnalysisStudyViewProps {
     analysis: CanonicalVerseAnalysis;
     /**
      * Sin él las citas se muestran como texto, que es como venían.
      */
     onOpenCitation?: OpenCitation;
+    marks?: CitationMarks;
 }
 
 /**
@@ -75,14 +90,37 @@ function CitationChip({
     page,
     verbatimQuote,
     onOpen,
+    path,
+    marks,
 }: {
     sourceKey: string;
     page: number;
     verbatimQuote?: string | null;
     onOpen?: OpenCitation;
+    path?: string;
+    marks?: CitationMarks;
 }) {
     const { t } = useTranslation('exegesis');
     const label = `${sourceKey} p. ${page}`;
+    if (marks && path) {
+        const verdict = marks.verdicts.get(path) ?? null;
+        return (
+            <button
+                type="button"
+                id={`cita-${path}`}
+                onClick={() => marks.onSelect(path)}
+                aria-pressed={marks.selectedPath === path}
+                className={cn(
+                    'inline-flex items-center gap-1.5 rounded px-1 -mx-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                    marks.selectedPath === path && 'bg-accent ring-1 ring-ring',
+                )}
+            >
+                {verdict && <CitationStatusDot status={verdict.status} reviewed={marks.reviewed.has(path)} />}
+                <span className="text-xs font-semibold text-foreground">{sourceKey}</span>
+                <span className="text-[11px] text-muted-foreground">p. {page}</span>
+            </button>
+        );
+    }
     if (!onOpen) {
         return (
             <>
@@ -105,7 +143,7 @@ function CitationChip({
     );
 }
 
-export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: CanonicalAnalysisStudyViewProps) {
+export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: CanonicalAnalysisStudyViewProps) {
     const { t, i18n } = useTranslation('exegesis');
     const lang = i18n.language?.split('-')[0] === 'en' ? 'en' : 'es';
     const refLabel = formatPassageReference(analysis.reference, lang);
@@ -184,7 +222,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                                         <p className="text-xs text-muted-foreground italic">—</p>
                                     )}
                                     {la.generalSemanticRange.sources.length > 0 && (
-                                        <SourceList onOpenCitation={onOpenCitation} citations={la.generalSemanticRange.sources} />
+                                        <SourceList onOpenCitation={onOpenCitation} citations={la.generalSemanticRange.sources} marks={marks} pathFor={j => `lexicalAnalyses[${idx}].generalSemanticRange.sources[${j}]`} />
                                     )}
                                 </div>
                                 <div>
@@ -193,7 +231,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                                     </p>
                                     <p className="text-xs text-foreground/85 leading-relaxed">{la.verseSpecificLoading}</p>
                                     {la.loadingSources.length > 0 && (
-                                        <SourceList onOpenCitation={onOpenCitation} citations={la.loadingSources} />
+                                        <SourceList onOpenCitation={onOpenCitation} citations={la.loadingSources} marks={marks} pathFor={j => `lexicalAnalyses[${idx}].loadingSources[${j}]`} />
                                     )}
                                 </div>
                             </li>
@@ -248,7 +286,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                             <li key={idx} className="rounded-md border border-border bg-card p-3">
                                 <p className="text-xs font-semibold text-foreground">{h.aspect}</p>
                                 <p className="text-xs text-foreground/85 leading-relaxed mt-1">{h.relevance}</p>
-                                {h.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={h.sources} />}
+                                {h.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={h.sources} marks={marks} pathFor={j => `historicalContext[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
                     </ul>
@@ -275,7 +313,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                                     )}
                                 </div>
                                 <p className="text-xs text-foreground/85 leading-relaxed mt-1">{l.interpretiveBearing}</p>
-                                {l.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={l.sources} />}
+                                {l.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={l.sources} marks={marks} pathFor={j => `oldTestamentLinks[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
                     </ul>
@@ -303,6 +341,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                                         page={c.page}
                                         verbatimQuote={c.verbatimQuote}
                                         onOpen={onOpenCitation}
+                                        path={`commentatorEngagement[${idx}]`}
+                                        marks={marks}
                                     />
                                 </div>
                                 <p className="text-xs text-foreground/85 leading-relaxed">{c.position}</p>
@@ -359,6 +399,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                                                         page={p.page}
                                                         verbatimQuote={p.verbatimQuote}
                                                         onOpen={onOpenCitation}
+                                                        path={`translationCruxes[${idx}].commentatorPositions[${pidx}]`}
+                                                        marks={marks}
                                                     />
                                                     {' → '}
                                                     <span>opt {p.supports}: {p.summary}</span>
@@ -448,7 +490,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation }: Canonic
                             <li key={idx} className="text-xs space-y-1">
                                 <p className="text-foreground italic">"{fn.anchorPhrase}"</p>
                                 <p className="text-foreground/85 pl-3 border-l border-border">{fn.text}</p>
-                                {fn.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={fn.sources} />}
+                                {fn.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={fn.sources} marks={marks} pathFor={j => `footnoteExtensions[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
                     </ul>
@@ -651,9 +693,13 @@ function ConfidenceBadge({ level }: { level: 'high' | 'medium' | 'tentative' }) 
 function SourceList({
     citations,
     onOpenCitation,
+    marks,
+    pathFor,
 }: {
     citations: ReadonlyArray<SourceCitation>;
     onOpenCitation?: OpenCitation;
+    marks?: CitationMarks;
+    pathFor?: (index: number) => string;
 }) {
     const { t } = useTranslation('exegesis');
     if (citations.length === 0) return null;
@@ -662,7 +708,9 @@ function SourceList({
             {citations.map((c, i) => (
                 <span key={i}>
                     {i > 0 && '; '}
-                    {onOpenCitation ? (
+                    {marks && pathFor ? (
+                        <CitationChip sourceKey={c.sourceKey} page={c.page} path={pathFor(i)} marks={marks} />
+                    ) : onOpenCitation ? (
                         <button
                             type="button"
                             onClick={() => onOpenCitation({ sourceKey: c.sourceKey, page: c.page })}

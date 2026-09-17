@@ -517,6 +517,18 @@ export function useExegesisPapers() {
     // the per-citation list AND the persisted summary; the dialog
     // renders the list, the badge in the step header reflects the
     // summary that was written back to the version.
+    const reviewCitation = useMutation({
+        mutationFn: async ({ paperId, stepId, versionId, path, note }: {
+            paperId: string; stepId: string; versionId: string; path: string; note: string;
+        }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.reviewCitation.execute({ ownerId: user.uid, paperId, stepId, versionId, path, note });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     const verifyStepCitations = useMutation({
         mutationFn: async ({ paperId, stepId, versionId }: {
             paperId: string;
@@ -626,6 +638,7 @@ export function useExegesisPapers() {
         acceptStep,
         saveStepEdit,
         verifyStepCitations,
+        reviewCitation,
         runCoherencePass,
         classifySourceType,
         startStudyFromPaper,
