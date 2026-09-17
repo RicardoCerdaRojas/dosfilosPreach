@@ -13,10 +13,12 @@ import type {
     StyleGuideManifest,
     StyleGuideSnapshot,
     IPageNumberingReader,
+    ICuratedCorpusReader,
 } from '@dosfilos/domain';
 import { enforceAnalysisCoverage, isCitableSourceType } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
+import { buildComposerSourcesWithPinnedContent, deriveCitationKey } from './pinnedSourceContent';
 
 /**
  * Composes a TMS-style academic paper from a paper's accepted verse
@@ -70,6 +72,11 @@ export class ComposeAcademicPaperUseCase {
          * rotula las hojas como tales, que es lo honesto cuando no se sabe.
          */
         private pageNumbering?: IPageNumberingReader,
+        /**
+         * Lee las hojas elegidas de cada fuente asignada. Sin él, el contenido
+         * de una fuente asignada es el libro entero (ver `pinnedSourceContent`).
+         */
+        private corpusReader?: ICuratedCorpusReader,
     ) { }
 
 
@@ -133,7 +140,7 @@ export class ComposeAcademicPaperUseCase {
             const composerSources = await buildComposerSourcesWithPinnedContent(
                 paper,
                 pinnedIdSet,
-                this.contentReader,
+                { contentReader: this.contentReader, corpusReader: this.corpusReader, pageNumbering: this.pageNumbering },
             );
 
             // ── Build citable sources for the deterministic formatter ───
@@ -324,37 +331,6 @@ function collectAcceptedVerseAnalyses(paper: ExegeticalPaper): CanonicalVerseAna
         .map(s => s.accepted!.canonicalAnalysis!);
 }
 
-/**
- * Builds the composer's source registry from the paper's project
- * sources. v1 populates the fields we have on `ProjectSource`;
- * publisher/city/year/edition stay undefined until library_resource
- * metadata gets surfaced through the source.
- */
-async function buildComposerSourcesWithPinnedContent(
-    paper: ExegeticalPaper,
-    pinnedIds: ReadonlySet<string>,
-    contentReader: IResourceContentReader,
-): Promise<ComposerSourceMetadata[]> {
-    const citable = paper.sources.filter(s => isCitableSourceType(s.sourceType));
-    return Promise.all(citable.map(async s => {
-        const key = s.citationKey ?? deriveCitationKey(s.displayLabel);
-        const isPinned = pinnedIds.has(s.id);
-        const base: ComposerSourceMetadata = {
-            citationKey: key,
-            author: key,
-            title: s.displayLabel,
-            isPinned,
-        };
-        if (!isPinned) return base;
-        try {
-            const text = await contentReader.getTextContent(s.corpusId);
-            return { ...base, textContent: text ?? '' };
-        } catch (err) {
-            console.warn('[compose] failed to load pinned source textContent:', s.corpusId, err);
-            return base;
-        }
-    }));
-}
 
 function buildComposerSources(paper: ExegeticalPaper): ComposerSourceMetadata[] {
     return paper.sources
@@ -394,16 +370,6 @@ function buildFormatterSources(paper: ExegeticalPaper): FormatterSourceMetadata[
         });
 }
 
-/**
- * Derives a stable short citation key from a display label when the
- * student didn't set one. Mirrors the heuristic used in
- * GenerateStepUseCase: take the first significant word.
- */
-function deriveCitationKey(displayLabel: string): string {
-    const trimmed = (displayLabel ?? '').trim();
-    if (!trimmed) return 'Source';
-    return trimmed.split(/[\s,;:.\-—]+/)[0] || 'Source';
-}
 
 export interface ComposeAcademicPaperUseCaseInput {
     ownerId: string;

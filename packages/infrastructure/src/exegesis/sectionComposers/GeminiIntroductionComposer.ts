@@ -9,6 +9,7 @@ import {
 } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
+import { fitPromptToCap } from '../../llm/promptBudget';
 import { formatPaperRubric, formatStrategy } from '../composer/composerPrompts';
 
 /**
@@ -68,7 +69,7 @@ export class GeminiIntroductionComposer implements IIntroductionComposer {
 
 // ── Prompt construction ─────────────────────────────────────────────────
 
-function buildIntroductionPrompt(input: ComposeIntroductionInput): { systemInstruction: string; userMessage: string } {
+export function buildIntroductionPrompt(input: ComposeIntroductionInput): { systemInstruction: string; userMessage: string } {
     const lang = input.language;
     const passage = formatPassageReference(input.paperPassage, lang);
     const styleGuideBlock = formatStyleGuide(input.styleGuideContent, input.styleGuideManifest, lang);
@@ -138,7 +139,6 @@ function buildIntroductionPrompt(input: ComposeIntroductionInput): { systemInstr
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 
     const briefings = input.verseAnalyses.map(a => serializeAnalysis(a, lang)).join('\n\n');
-    const sourcesBlock = formatSourceRegistry(input.sources, lang);
     const pinnedBlock = formatPinnedContract(input.pinnedSourceKeys, lang);
     const hint = input.regenerationHint
         ? (lang === 'en'
@@ -159,7 +159,7 @@ function buildIntroductionPrompt(input: ComposeIntroductionInput): { systemInstr
         ? '### Source registry (sparingly used in the introduction)'
         : '### Registro de fuentes (uso moderado en la introducción)';
 
-    const user = [
+    const renderUser = (sourcesBlock: string) => [
         userPrefix,
         ``,
         pinnedBlock,
@@ -180,6 +180,17 @@ function buildIntroductionPrompt(input: ComposeIntroductionInput): { systemInstr
             ? `Now produce the introduction. 2-3 paragraphs of continuous academic prose, opening with "## Introduction". State the thesis the body and conclusion actually demonstrated, not the original aspiration.`
             : `Ahora producí la introducción. 2-3 párrafos de prosa académica continua, abriendo con "## Introducción". Enunciá la tesis que el cuerpo y la conclusión efectivamente demostraron, no la aspiración original.`,
     ].filter(Boolean).join('\n');
+
+    // El contenido de las fuentes asignadas es lo único que se recorta: los
+    // análisis aceptados y el hint del usuario entran siempre. Con dos fuentes
+    // asignadas a 80.000 caracteres cada una, el mensaje pasaba el tope del
+    // servidor y el paso fallaba con «prompt excede 200000 caracteres».
+    const user = fitPromptToCap(
+        renderUser,
+        budget => formatSourceRegistry(input.sources, lang, budget),
+        PREFERRED_PINNED_CONTENT_BUDGET,
+        'GeminiIntroductionComposer',
+    );
 
     return { systemInstruction: system, userMessage: user };
 }
@@ -213,10 +224,20 @@ function formatStyleGuide(content: string, manifest: StyleGuideManifest | null, 
         : parts.join('\n');
 }
 
-function formatSourceRegistry(sources: ReadonlyArray<ComposerSourceMetadata>, lang: 'es' | 'en'): string {
+/** Tope preferido para el contenido de TODAS las fuentes asignadas juntas. */
+const PREFERRED_PINNED_CONTENT_BUDGET = 80_000;
+
+function formatSourceRegistry(
+    sources: ReadonlyArray<ComposerSourceMetadata>,
+    lang: 'es' | 'en',
+    /** Caracteres para el contenido de las fuentes asignadas, repartidos entre ellas. */
+    pinnedContentBudget: number,
+): string {
     if (sources.length === 0) {
         return lang === 'en' ? '(No sources configured.)' : '(Sin fuentes configuradas.)';
     }
+    const pinnedCount = sources.filter(s => s.isPinned && s.textContent?.trim()).length;
+    const perPinned = pinnedCount > 0 ? Math.max(0, Math.floor(pinnedContentBudget / pinnedCount)) : 0;
     const lines: string[] = [];
     for (const s of sources) {
         const badge = s.isPinned
@@ -224,15 +245,16 @@ function formatSourceRegistry(sources: ReadonlyArray<ComposerSourceMetadata>, la
             : '';
         lines.push(`- **${s.citationKey}**${badge}: ${s.author}, *${s.title}*`);
         if (s.isPinned && s.textContent && s.textContent.trim()) {
-            // 80k char cap (~20k tokens) per pinned source. See
-            // matching note in GeminiConclusionComposer.
-            const truncated = s.textContent.length > 80000
-                ? s.textContent.slice(0, 80000) + '\n[…content truncated to fit context window…]'
-                : s.textContent;
+            // Se recorta DESPUÉS de sangrar: la sangría suma dos caracteres por
+            // línea, y medir antes dejaba al bloque pasado de su presupuesto.
+            const indented = s.textContent.replace(/\n/g, '\n  ');
+            const truncated = indented.length > perPinned
+                ? indented.slice(0, perPinned) + '\n  […content truncated to fit context window…]'
+                : indented;
             const heading = lang === 'en'
                 ? `\n  _Source content for grounding the pinned citation. Find the passage most relevant to ${s.citationKey}'s commentary on this paper's pericope and paraphrase or quote from there:_\n`
                 : `\n  _Contenido de la fuente para anclar la cita asignada. Encontrá el pasaje más relevante del comentario de ${s.citationKey} sobre la perícopa de este paper y parafraseá o citá desde ahí:_\n`;
-            lines.push(heading + '  ```\n  ' + truncated.replace(/\n/g, '\n  ') + '\n  ```');
+            lines.push(heading + '  ```\n  ' + truncated + '\n  ```');
         }
     }
     return lines.join('\n');
