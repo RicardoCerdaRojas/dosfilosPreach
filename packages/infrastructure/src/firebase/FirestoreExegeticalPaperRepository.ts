@@ -34,6 +34,8 @@ import type {
     VerificationSummary,
     VerifiedCitation,
     CitationReview,
+    CitationCorrection,
+    CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
 import { DEFAULT_STRATEGY_FOR_NEW_PAPER, resolveExegeticalStrategy } from '@dosfilos/domain';
 import {
@@ -646,6 +648,50 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         });
     }
 
+    async applyCitationCorrection(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        versionId: string,
+        payload: {
+            analysis: CanonicalVerseAnalysis;
+            verdicts: ReadonlyArray<VerifiedCitation>;
+            reviews: ReadonlyArray<CitationReview>;
+            verifications: VerificationSummary;
+            correction: CitationCorrection;
+        },
+    ): Promise<ExegeticalStepVersion> {
+        let updatedVersion: ExegeticalStepVersion | null = null;
+        await this.mutateStep(ownerId, paperId, stepId, (step) => {
+            const idx = step.versions.findIndex(v => v.id === versionId);
+            if (idx === -1) {
+                throw new Error(`Version ${versionId} not found in step ${stepId}`);
+            }
+            const previous = step.versions[idx]!;
+            const next: ExegeticalStepVersion = {
+                ...previous,
+                canonicalAnalysis: payload.analysis,
+                citationVerdicts: trimVerdictsForStorage(payload.verdicts),
+                citationReviews: [...payload.reviews],
+                verifications: payload.verifications,
+                // El rastro se acota como los veredictos: interesa lo último
+                // que se corrigió, no el historial completo de un trabajo.
+                citationCorrections: [...(previous.citationCorrections ?? []), payload.correction]
+                    .slice(-MAX_STORED_CORRECTIONS),
+            };
+            const versions = [...step.versions];
+            versions[idx] = next;
+            step.versions = versions;
+            if (step.current?.id === versionId) step.current = next;
+            if (step.accepted?.id === versionId) step.accepted = next;
+            step.updatedAt = new Date();
+            updatedVersion = next;
+            return step;
+        });
+        if (!updatedVersion) throw new Error('Citation correction produced no result');
+        return updatedVersion;
+    }
+
     async setStepVersionVerifications(
         ownerId: string,
         paperId: string,
@@ -1164,6 +1210,8 @@ function normalizeAnalysisTextField(analysis: any): any {
 
 /** Tope de veredictos guardados por versión y largo de cada nota. */
 const MAX_STORED_VERDICTS = 300;
+/** Correcciones de cita que se conservan por versión. */
+const MAX_STORED_CORRECTIONS = 100;
 const MAX_VERDICT_NOTE_CHARS = 400;
 
 function trimVerdictsForStorage(verdicts: ReadonlyArray<VerifiedCitation>): VerifiedCitation[] {
@@ -1182,6 +1230,14 @@ function deserializeStepVersion(raw: any): ExegeticalStepVersion {
         verifications: raw?.verifications
             ? { ...raw.verifications, lastRunAt: toDateOrNull(raw.verifications.lastRunAt) }
             : raw?.verifications ?? undefined,
+        ...(Array.isArray(raw?.citationCorrections)
+            ? {
+                citationCorrections: raw.citationCorrections.map((c: any) => ({
+                    ...c,
+                    correctedAt: toDateOrNull(c?.correctedAt) ?? new Date(),
+                })),
+            }
+            : {}),
         ...(Array.isArray(raw?.citationReviews)
             ? {
                 citationReviews: raw.citationReviews.map((r: any) => ({

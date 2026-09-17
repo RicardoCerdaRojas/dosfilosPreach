@@ -3,6 +3,7 @@ import { exegesisService, libraryService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
 import type {
     AddProjectSourceInput,
+    CitationEdit,
     CreateExegeticalPaperInput,
     ExtractRubricFromTextInput,
     UpdateProjectSourceInput,
@@ -529,6 +530,18 @@ export function useExegesisPapers() {
         },
     });
 
+    const correctCitation = useMutation({
+        mutationFn: async ({ paperId, stepId, versionId, path, edit }: {
+            paperId: string; stepId: string; versionId: string; path: string; edit: CitationEdit;
+        }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.correctCitation.execute({ ownerId: user.uid, paperId, stepId, versionId, path, edit });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     const verifyStepCitations = useMutation({
         mutationFn: async ({ paperId, stepId, versionId }: {
             paperId: string;
@@ -639,6 +652,7 @@ export function useExegesisPapers() {
         saveStepEdit,
         verifyStepCitations,
         reviewCitation,
+        correctCitation,
         runCoherencePass,
         classifySourceType,
         startStudyFromPaper,

@@ -6,6 +6,7 @@ import {
     mapVerdictsByPath,
     unreviewedNotFound,
     type AnalysisClaim,
+    type CitationEdit,
     type CitationStatus,
     type ExegeticalPaper,
     type ExegeticalStep,
@@ -25,7 +26,7 @@ export type ReviewFilter = CitationStatus | 'all';
  */
 export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
     const { t } = useTranslation('exegesis');
-    const { verifyStepCitations, reviewCitation, acceptStep } = useExegesisPapers();
+    const { verifyStepCitations, reviewCitation, correctCitation, acceptStep } = useExegesisPapers();
     const [selectedPath, setSelectedPath] = useState<string | null>(null);
     const [filter, setFilter] = useState<ReviewFilter>('all');
 
@@ -82,6 +83,24 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         }
     };
 
+    /**
+     * Corrige la cita elegida y vuelve a verificar solo esa.
+     *
+     * Lo que se corrige es el análisis guardado, no una nota: el trabajo
+     * que se exporte llevará la página nueva.
+     */
+    const correct = async (path: string, edit: CitationEdit) => {
+        if (!version) return;
+        try {
+            await correctCitation.mutateAsync({ paperId: paper.id, stepId: step.id, versionId: version.id, path, edit });
+            toast.success(t(`canonical.review.toast.corrected.${edit.kind}`));
+            if (edit.kind === 'remove') setSelectedPath(null);
+        } catch (err) {
+            console.error('[exegesis] correct citation failed:', err);
+            toast.error(t('canonical.review.toast.correctFailed'));
+        }
+    };
+
     const accept = async () => {
         if (!step.current) return;
         try {
@@ -113,9 +132,11 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         setSelectedPath,
         verify,
         review,
+        correct,
         accept,
         isVerifying: verifyStepCitations.isPending,
         isReviewing: reviewCitation.isPending,
+        isCorrecting: correctCitation.isPending,
         isAccepting: acceptStep.isPending,
         verifiedAt: version?.verifications?.lastRunAt ?? null,
         canAccept: step.state !== 'accepted' && !!step.current,

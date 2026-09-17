@@ -1,4 +1,6 @@
 import type { CitationReview, VerifiedCitation } from '../entities/CitationVerification';
+import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
+import type { CitationCorrection } from '../services/citationCorrection';
 import type {
     ExegeticalPaper,
     ExegeticalPaperDraft,
@@ -236,6 +238,28 @@ export interface IExegeticalPaperRepository {
      * Guarda (o reemplaza, por ruta) la revisión manual de una cita de la
      * versión. Con `review.note` vacía se quita la marca.
      */
+    /**
+     * Guarda la corrección de UNA cita: el análisis con la cita cambiada,
+     * las marcas realineadas y el rastro de qué se corrigió.
+     *
+     * Va en una sola escritura porque las cuatro cosas son la misma
+     * corrección: un análisis nuevo con veredictos viejos apunta marcas a
+     * citas que se movieron, y ese estado no debe existir ni un instante.
+     */
+    applyCitationCorrection(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        versionId: string,
+        payload: {
+            analysis: CanonicalVerseAnalysis;
+            verdicts: ReadonlyArray<VerifiedCitation>;
+            reviews: ReadonlyArray<CitationReview>;
+            verifications: VerificationSummary;
+            correction: CitationCorrection;
+        },
+    ): Promise<ExegeticalStepVersion>;
+
     setCitationReview(
         ownerId: string,
         paperId: string,

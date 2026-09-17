@@ -185,4 +185,6 @@ export {
 } from './expository/RunExpositoryPassesUseCase';
 export * from './SetPaperStyleGuideUseCase';
 export { ReviewCitationUseCase } from './ReviewCitationUseCase';
+export { CorrectCitationUseCase } from './CorrectCitationUseCase';
+export type { CorrectCitationInput, CorrectCitationOutput } from './CorrectCitationUseCase';
 export type { ReviewCitationInput } from './ReviewCitationUseCase';

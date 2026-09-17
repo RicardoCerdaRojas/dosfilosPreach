@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, CheckCircle2, Loader2, MapPin, Undo2 } from 'lucide-react';
-import type { CitationReview, VerifiedCitation } from '@dosfilos/domain';
+import type { AnalysisClaim, CitationEdit, CitationReview, VerifiedCitation } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
+import { CitationCorrectionActions } from './CitationCorrectionActions';
 import { CitationStatusBadge } from './CitationStatusBadge';
 
 interface Props {
     path: string | null;
     verdict: VerifiedCitation | null;
+    /** La cita tal como vive en el análisis; sin ella no se puede corregir. */
+    claim?: AnalysisClaim | null;
     review: CitationReview | null;
     isReviewing: boolean;
     onReview: (path: string, note: string) => void;
@@ -19,6 +22,10 @@ interface Props {
      * sigue siendo suyo.
      */
     noteFromView?: string | null;
+    /** La hoja que se mira, para proponerla como página correcta. */
+    viewed?: { sheet: number; printed: string | number | null; isAnchor: boolean } | null;
+    isCorrecting?: boolean;
+    onCorrect?: (path: string, edit: CitationEdit) => void;
 }
 
 /**
@@ -29,7 +36,7 @@ interface Props {
  * la página y la cita está bien» de «quería que dejara de bloquear», y la
  * diferencia es todo lo que este panel existe para registrar.
  */
-export function CitationEvidencePanel({ path, verdict, review, isReviewing, onReview, onOpenSource, noteFromView }: Props) {
+export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, noteFromView, viewed, isCorrecting = false, onCorrect }: Props) {
     const { t } = useTranslation('exegesis');
     const [note, setNote] = useState(review?.note ?? '');
     useEffect(() => { setNote(review?.note ?? ''); }, [path, review?.note]);
@@ -90,6 +97,15 @@ export function CitationEvidencePanel({ path, verdict, review, isReviewing, onRe
                         {t('canonical.review.panel.openPdf')}
                     </Button>
                 </div>
+            )}
+
+            {claim && onCorrect && (
+                <CitationCorrectionActions
+                    claim={claim}
+                    viewed={viewed}
+                    isCorrecting={isCorrecting}
+                    onCorrect={edit => onCorrect(path, edit)}
+                />
             )}
 
             {canReview && (
