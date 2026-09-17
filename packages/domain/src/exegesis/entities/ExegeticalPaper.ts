@@ -67,6 +67,16 @@ export interface ExegeticalPaper {
     title?: string;
 
     /**
+     * Datos de la portada que exige la guía de estilo del seminario.
+     *
+     * No se deducen del trabajo: el seminario, el autor y el lugar son del
+     * estudiante, no del pasaje. Sin ellos el .docx sale sin portada —que
+     * es lo que hacía— y el trabajo se entrega incompleto o se arma la
+     * portada a mano cada vez.
+     */
+    cover?: PaperCover | null;
+
+    /**
      * Free-text framing of the paper — typically a paragraph that
      * combines what the seminary professor assigned ("escribir un
      * análisis exegético del prólogo cristológico de Hebreos 1:1-4")
@@ -257,3 +267,24 @@ export type ExegeticalPaperDraft = Omit<
     | 'rubric'
     | 'stepPlan'
 >;
+
+/**
+ * Lo que va en la portada, tal como lo escribe el estudiante.
+ *
+ * Todo opcional: una portada a medias es mejor que ninguna, y el
+ * exportador omite lo que falte en vez de inventarlo. El texto se guarda
+ * como se escribió; la mayúscula de la portada la pone el exportador,
+ * porque es decisión de formato y no del dato.
+ */
+export interface PaperCover {
+    /** «The Master's Seminary». */
+    institution?: string;
+    /** Nombre del estudiante que firma el trabajo. */
+    author?: string;
+    /** Ciudad, como la pide la guía: «Chiguayante, Concepción». */
+    place?: string;
+    /** Fecha de entrega en el formato del seminario: «Septiembre 2026». */
+    date?: string;
+    /** Curso o sigla, cuando la guía lo pide en la portada. */
+    course?: string;
+}

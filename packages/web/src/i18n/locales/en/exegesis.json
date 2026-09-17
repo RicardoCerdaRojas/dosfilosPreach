@@ -1237,6 +1237,32 @@
           }
         }
       }
+    },
+    "cover": {
+      "heading": "Paper cover page",
+      "description": "What goes on the first page of the document you hand in. Without it the Word file has no cover.",
+      "add": "Fill in",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Cover page saved.",
+      "saveFailed": "The cover page could not be saved.",
+      "empty": "Not set yet. The Word file exports without a cover.",
+      "hint": "They appear centred and in capitals, as the style guide requires.",
+      "fields": {
+        "institution": "Seminary",
+        "author": "Author",
+        "course": "Course",
+        "place": "Place",
+        "date": "Date"
+      },
+      "placeholders": {
+        "institution": "The Master's Seminary",
+        "author": "Full name",
+        "course": "OT603 — Hebrew Exegesis",
+        "place": "Chiguayante, Concepción",
+        "date": "September 2026"
+      }
     }
   },
   "setup": {

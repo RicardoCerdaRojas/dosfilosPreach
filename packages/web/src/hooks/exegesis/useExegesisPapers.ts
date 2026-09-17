@@ -4,6 +4,7 @@ import { useFirebase } from '@/context/firebase-context';
 import type {
     AddProjectSourceInput,
     CitationEdit,
+    PaperCover,
     CreateExegeticalPaperInput,
     ExtractRubricFromTextInput,
     UpdateProjectSourceInput,
@@ -542,6 +543,17 @@ export function useExegesisPapers() {
         },
     });
 
+    const updatePaperCover = useMutation({
+        mutationFn: async ({ paperId, cover }: { paperId: string; cover: PaperCover | null }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.updatePaperCover.execute({ ownerId: user.uid, paperId, cover });
+        },
+        onSuccess: (paper) => {
+            queryClient.setQueryData(['exegesis', 'papers', user?.uid, paper.id], paper);
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     const verifyStepCitations = useMutation({
         mutationFn: async ({ paperId, stepId, versionId }: {
             paperId: string;
@@ -653,6 +665,7 @@ export function useExegesisPapers() {
         verifyStepCitations,
         reviewCitation,
         correctCitation,
+        updatePaperCover,
         runCoherencePass,
         classifySourceType,
         startStudyFromPaper,

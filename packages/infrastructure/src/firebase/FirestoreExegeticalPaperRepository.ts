@@ -197,7 +197,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover'>>
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Strip undefined — Firestore rejects undefined values; null is fine.
@@ -822,6 +822,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
         displayLanguage: paper.displayLanguage,
         styleGuideId: paper.styleGuideId,
         assignmentBrief: paper.assignmentBrief,
+        ...(paper.cover ? { cover: paper.cover } : {}),
         sources: paper.sources.map(serializeSource),
         rubric: paper.rubric,
         stepPlan: paper.stepPlan,
@@ -855,6 +856,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         exegeticalStrategy: resolveExegeticalStrategy(data.exegeticalStrategy),
         title: data.title,
         assignmentBrief: data.assignmentBrief ?? null,
+        cover: data.cover ?? null,
         styleGuideId: data.styleGuideId ?? null,
         // La copia de la guía. `capturedAt` viaja como Timestamp y hay
         // que devolverlo a Date: la interfaz lo muestra como fecha.

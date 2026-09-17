@@ -52,7 +52,7 @@ function build(overrides: { verify?: ReturnType<typeof vi.fn> } = {}) {
 
 const input = { ownerId: 'o', paperId: 'p1', stepId: 's1', versionId: 'v1' };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('CorrectCitationUseCase', () => {
     it('corregir la página la escribe en el análisis guardado', async () => {
