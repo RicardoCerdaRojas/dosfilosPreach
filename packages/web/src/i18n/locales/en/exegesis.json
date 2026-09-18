@@ -1644,6 +1644,23 @@
         "removeConfirm": "The citation is removed from the analysis. The claim loses this source and the exported paper will no longer name it here.",
         "removeConfirmAction": "Remove citation"
       }
+    },
+    "recompose": {
+      "title": "Recompose {{verse}}",
+      "description": "Only this verse's prose is written again. The analysis, its citations and their verdicts stay as they are.",
+      "current": "It currently has {{words}} words (≈ {{pages}} pages).",
+      "guidanceLabel": "What is missing or wrong",
+      "guidancePlaceholder": "E.g.: it came out as a data sheet — develop the morphology in prose, explain the polel/hiphil contrast and close with the translation decision.",
+      "targetLabel": "Target words",
+      "targetPlaceholder": "800",
+      "targetHint": "Suggested from the length the rubric asks for. Change it or leave it empty.",
+      "safety": "The analysis is untouched: verified citations and your reviews stay as they are. If the paper is already assembled, the new prose goes into its section.",
+      "cancel": "Cancel",
+      "submit": "Recompose this verse",
+      "toast": {
+        "done": "Verse recomposed.",
+        "assemblyUntouched": "Verse recomposed, but the assembled paper has no section for it: assemble again so it lands."
+      }
     }
   },
   "coherence": {

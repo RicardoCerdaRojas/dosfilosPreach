@@ -83,6 +83,30 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         ].join('\n')
         : '';
 
+    // Lo que el autor pide corregir en esta pasada. Va al final del
+    // mensaje, después del análisis, porque es lo último que el modelo
+    // debe tener presente al escribir; y se enmarca como exigencia de
+    // esta redacción, no como contenido nuevo: las reglas duras siguen
+    // rigiendo y el análisis sigue siendo la única fuente.
+    const guidance = input.guidance?.trim();
+    const guidanceBlock = guidance
+        ? [
+            lang === 'en'
+                ? 'WHAT TO FIX IN THIS PASS (the author\'s instruction — obey it within the hard rules; it is not new content):'
+                : 'QUÉ CORREGIR EN ESTA PASADA (indicación del autor — obedécela dentro de las reglas duras; no es contenido nuevo):',
+            '"""',
+            guidance,
+            '"""',
+        ].join('\n')
+        : '';
+
+    const target = input.targetWords && input.targetWords > 0 ? Math.round(input.targetWords) : null;
+    const lengthBlock = target
+        ? (lang === 'en'
+            ? `TARGET LENGTH: about ${target} words. Develop what the analysis holds — morphology, syntax, the commentators' positions and the lexical range — until it is covered. If the analysis does not hold that much, write what it holds: padding, repeating, or inventing is worse than a short paragraph.`
+            : `EXTENSIÓN OBJETIVO: unas ${target} palabras. Desarrolla lo que el análisis contiene —morfología, sintaxis, las posturas de los comentaristas y el rango léxico— hasta cubrirlo. Si el análisis no da para tanto, escribe lo que hay: rellenar, repetir o inventar es peor que un párrafo corto.`)
+        : '';
+
     const userMessage = [
         lang === 'en'
             ? `Pericope: ${formatPassageReference(input.paperPassage, lang)}`
@@ -96,6 +120,8 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         '',
         lang === 'en' ? 'CANONICAL ANALYSIS (the only authoritative content source):' : 'ANÁLISIS CANÓNICO (única fuente autoritativa):',
         serializeAnalysis(input.verseAnalysis, lang, { pageLabel: input.pageLabel }),
+        lengthBlock,
+        guidanceBlock,
     ].filter(Boolean).join('\n\n');
 
     return { systemInstruction, userMessage };

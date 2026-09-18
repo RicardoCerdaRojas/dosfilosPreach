@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkLength, countProseWords, estimateLength } from '../paperLength';
+import { checkLength, countProseWords, estimateLength, wordsPerVerseTarget } from '../paperLength';
 
 describe('countProseWords', () => {
     it('cuenta palabras, no espacios ni puntuación', () => {
@@ -74,5 +74,26 @@ describe('checkLength', () => {
     it('sin extensión declarada no se inventa una', () => {
         expect(checkLength('texto corto', null).verdict).toBe('unknown');
         expect(checkLength('texto corto', { unit: 'pages', min: null, max: null }).verdict).toBe('unknown');
+    });
+});
+
+describe('wordsPerVerseTarget', () => {
+    it('doce páginas entre tres versos, dejando su parte a introducción y conclusión', () => {
+        // 12 × 250 = 3.000 palabras; 80 % para los versos = 2.400; /3 = 800.
+        expect(wordsPerVerseTarget({ unit: 'pages', min: 12, max: 15 }, 3)).toBe(800);
+    });
+
+    it('en palabras se reparte igual', () => {
+        expect(wordsPerVerseTarget({ unit: 'words', min: 3000, max: null }, 3)).toBe(800);
+    });
+
+    it('redondea a cincuenta: más precisión de la que la cuenta sostiene es falsa', () => {
+        expect(wordsPerVerseTarget({ unit: 'pages', min: 10, max: null }, 3) % 50).toBe(0);
+    });
+
+    it('sin extensión declarada o sin versos, no se propone nada', () => {
+        expect(wordsPerVerseTarget(null, 3)).toBeNull();
+        expect(wordsPerVerseTarget({ unit: 'pages', min: 12, max: null }, 0)).toBeNull();
+        expect(wordsPerVerseTarget({ unit: 'pages', min: null, max: null }, 3)).toBeNull();
     });
 });

@@ -140,3 +140,29 @@ function normalizeHeading(text: string): string {
         .replace(/\s+/g, ' ')
         .trim();
 }
+
+/**
+ * Cambia la prosa de UN verso dentro del trabajo ya ensamblado, dejando
+ * todo lo demás igual.
+ *
+ * Es el remedio para un verso que salió corto o como ficha mecánica.
+ * Antes, la única salida era recomponer el trabajo entero: una llamada
+ * cara que reescribe los versos que estaban bien y descoloca lo que el
+ * autor ya había revisado.
+ *
+ * Devuelve `null` cuando el ensamblado no trae la sección de ese verso.
+ * Eso NO se arregla pegando la prosa al final: el trabajo terminaría con
+ * dos versiones del mismo verso, y de las dos la vieja es la que el
+ * lector encuentra primero. Quien llama debe decirlo.
+ */
+export function replaceVerseSection(
+    assembled: string,
+    key: string,
+    prose: string,
+): string | null {
+    const body = prose.trim();
+    if (!body) return null;
+    return replaceVerseSectionBodies(assembled, [key], (_key, previous) => (
+        previous.trim() === body ? null : body
+    ));
+}

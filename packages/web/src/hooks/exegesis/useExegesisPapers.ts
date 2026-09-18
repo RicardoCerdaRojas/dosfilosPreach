@@ -419,12 +419,16 @@ export function useExegesisPapers() {
     // analysis changes (a new analysis version starts with empty
     // markdown again).
     const composeVerseAcademicProse = useMutation({
-        mutationFn: async ({ paperId, stepId }: { paperId: string; stepId: string }) => {
+        mutationFn: async ({ paperId, stepId, guidance, targetWords }: {
+            paperId: string; stepId: string; guidance?: string; targetWords?: number;
+        }) => {
             if (!user?.uid) throw new Error('User not authenticated');
             return exegesisService.composeVerseAcademicProse.execute({
                 ownerId: user.uid,
                 paperId,
                 stepId,
+                guidance,
+                targetWords,
             });
         },
         onSuccess: () => {

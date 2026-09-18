@@ -1,4 +1,5 @@
 import type {
+    CanonicalVerseAnalysis,
     ComposeVerseInput,
     ComposeVerseOutput,
     ComposerSourceMetadata,
@@ -13,7 +14,7 @@ import type {
     StyleGuideSnapshot,
     IPageNumberingReader,
 } from '@dosfilos/domain';
-import { isCitableSourceType } from '@dosfilos/domain';
+import { isCitableSourceType, replaceVerseSection, verseSectionKey } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
@@ -21,11 +22,27 @@ export interface ComposeVerseAcademicProseInput {
     ownerId: string;
     paperId: string;
     stepId: string;
+    /**
+     * Qué corregir en esta pasada. Vacío la primera vez; con texto, es
+     * una recomposición dirigida de ESE verso.
+     */
+    guidance?: string;
+    /** Palabras que debería tener la prosa del verso, si el curso lo exige. */
+    targetWords?: number;
 }
 
 export interface ComposeVerseAcademicProseOutput extends ComposeVerseOutput {
     /** ID of the version whose `markdown` was updated. */
     versionId: string;
+    /**
+     * Si la prosa nueva entró también en el trabajo ensamblado.
+     *
+     * `false` cuando no hay ensamblado todavía o cuando no se encontró la
+     * sección de ese verso: entonces el ensamblado quedó como estaba y hay
+     * que volver a ensamblar. Se informa en vez de pegar la prosa al
+     * final, que dejaría el trabajo con dos versiones del mismo verso.
+     */
+    assemblyUpdated: boolean;
 }
 
 /**
@@ -113,6 +130,8 @@ export class ComposeVerseAcademicProseUseCase {
                 styleGuideManifest: manifest,
                 sources: buildComposerSources(paper),
                 pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
+                ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
+                ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
             };
             reservation.markLlmContacted();
             const raw = await this.composer.composeVerse(composerInput);
@@ -149,16 +168,57 @@ export class ComposeVerseAcademicProseUseCase {
                 finalMarkdown,
             );
 
+            // Y, si el trabajo ya está ensamblado, la prosa nueva entra en
+            // su sitio. Volver a componer el trabajo entero costaría una
+            // llamada larga y reescribiría los versos que están bien.
+            const assemblyUpdated = await this.spliceIntoAssembly(
+                input.ownerId,
+                paper,
+                target.canonicalAnalysis,
+                finalMarkdown,
+            );
+
             return {
                 ...raw,
                 markdown: finalMarkdown,
                 formatterStatus,
                 versionId: target.id,
+                assemblyUpdated,
             };
         } catch (err) {
             await reservation.refundIfPreLlm();
             throw err;
         }
+    }
+
+
+    /**
+     * Mete la prosa del verso en el trabajo ensamblado, en su sección.
+     *
+     * Devuelve `false` si no hay ensamblado o si su sección no aparece
+     * —un ensamblado escrito a mano, o con otros encabezados—. Ahí el
+     * llamador avisa: pegar la prosa donde caiga deja el trabajo con el
+     * verso dos veces.
+     */
+    private async spliceIntoAssembly(
+        ownerId: string,
+        paper: ExegeticalPaper,
+        analysis: CanonicalVerseAnalysis,
+        prose: string,
+    ): Promise<boolean> {
+        const assembled = paper.assembledMarkdown?.trim();
+        if (!assembled) return false;
+
+        const key = verseSectionKey(analysis, paper.displayLanguage);
+        const next = replaceVerseSection(assembled, key, prose);
+        if (next === null) {
+            console.warn('[ComposeVerseAcademicProseUseCase] el ensamblado no trae la sección', key);
+            return false;
+        }
+        if (next === assembled) return true;
+
+        await this.paperRepository.updatePaper(ownerId, paper.id, { assembledMarkdown: next });
+        return true;
     }
 
     private async loadStyleGuideContent(ownerId: string, styleGuideId: string | null): Promise<string> {
