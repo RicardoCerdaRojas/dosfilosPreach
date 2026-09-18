@@ -59,6 +59,24 @@ export interface ComposeVerseInput {
      */
     assignmentBrief: string | null;
 
+    /**
+     * Qué corregir en esta pasada, escrito por el autor.
+     *
+     * Existe porque un verso que salió corto o como ficha no se arregla
+     * repitiendo la misma petición: el compositor devuelve lo mismo. La
+     * indicación entra como exigencia de ESTA redacción —«desarrolla la
+     * morfología de שׁוב», «faltan dos páginas»— sin tocar las reglas
+     * duras: sigue sin poder escribir lo que el análisis no dice.
+     */
+    guidance?: string;
+
+    /**
+     * Palabras que debería tener la prosa de este verso, cuando el curso
+     * exige una extensión. Es un objetivo, no un relleno: si el análisis
+     * no da para tanto, el compositor escribe lo que hay y no inventa.
+     */
+    targetWords?: number;
+
     /** Style guide content (verbatim) when configured. */
     styleGuideContent: string;
 

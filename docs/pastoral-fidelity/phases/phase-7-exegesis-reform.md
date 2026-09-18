@@ -32,9 +32,9 @@ el documento salga en el formato y la extensión que el seminario exige.
 | # | Etapa | Estado | Métrica de efectividad |
 |---|---|---|---|
 | 1 | **Verificación del análisis canónico + oración textual obligatoria** (P2.1, P2.2) | `done` (#629, #630) | Recall sobre errores conocidos ≥ 4/5; falsos «no encontrada» ≤ 10 % sobre citas correctas; `citationsWithoutVerbatim` → 0 |
-| 2 | Word según la guía + extensión como contrato (P3.3, P3.2) | `next` | El .docx generado abre en Word con 12 ± 1 páginas de cuerpo, notas al pie reales y bibliografía; 0 retoques manuales de formato |
-| 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `in-progress` — P4.1 y P4.2 hechos (#631-#635); falta P3.1 | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
-| 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `planned` | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
+| 2 | Word según la guía + extensión como contrato (P3.3, P3.2) | `done` (#637, #638) | El .docx generado abre en Word con 12 ± 1 páginas de cuerpo, notas al pie reales y bibliografía; 0 retoques manuales de formato |
+| 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `done` (#631-#636, #639) | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
+| 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `next` | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
 | 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `planned` | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
 | 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `planned` | 0 términos del glosario en la salida («tronco», calcos del inglés) |
 
@@ -145,3 +145,17 @@ bitácora de abajo.
     arreglarla.
   - Falta de la etapa: **P3.1**, recomposición dirigida de un verso incompleto (el render
     mecánico de 23:2 y 23:3 sigue sin remedio propio).
+- **2026-09-17** — **Etapa 2 (PRs #637, #638).** El .docx sale con el formato de la guía
+  —Times New Roman 12, doble espacio, sangría 0,5", márgenes de 1", portada, numeración,
+  notas a 10 pt, bibliografía con sangría francesa, hebreo de derecha a izquierda— y las
+  pruebas leen el XML del archivo, porque el formato ES el entregable. La extensión exigida
+  por la rúbrica (`expectedLength`, guardada desde siempre y nunca comparada) ahora se mide
+  contra lo escrito, con desglose por verso: 250 palabras por página de cuerpo, 500 por
+  página de notas.
+- **2026-09-17** — **Etapa 3 cerrada (PR #639): recomposición dirigida (P3.1).** Un verso
+  que salió corto o como ficha se vuelve a redactar solo, con indicación del autor y
+  extensión objetivo, y la prosa nueva entra en su sección del trabajo ensamblado
+  (`replaceVerseSection`). Antes la única salida era recomponer el trabajo entero —caro, y
+  reescribe lo que ya estaba bien—. El análisis no se toca: las citas verificadas y las
+  revisiones manuales sobreviven a la recomposición, que era la condición para que esto no
+  deshiciera la Etapa 1.

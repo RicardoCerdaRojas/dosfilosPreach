@@ -106,3 +106,29 @@ export function checkLength(markdown: string, expected: ExpectedLengthRange | nu
 function round(n: number): number {
     return Math.round(n * 2) / 2;
 }
+
+/**
+ * Cuántas palabras le tocan a cada verso para llegar a lo exigido.
+ *
+ * El trabajo no es solo versos: la introducción y la conclusión ocupan su
+ * parte, y en los trabajos de exégesis vistos hasta ahora rondan un
+ * quinto del total. El resto se reparte parejo entre los versos, que es
+ * una aproximación —un verso con tres cruces de traducción da para más
+ * que uno con una cláusula nominal— pero sirve para lo que se usa: poner
+ * un número delante de quien recompone, en vez de dejarlo adivinar.
+ *
+ * `null` cuando el curso no declara extensión o no hay versos: no se
+ * inventa un objetivo.
+ */
+export function wordsPerVerseTarget(
+    expected: ExpectedLengthRange | null,
+    verseCount: number,
+): number | null {
+    if (!expected || verseCount <= 0) return null;
+    const target = expected.min ?? expected.max;
+    if (target === null || target <= 0) return null;
+
+    const totalWords = expected.unit === 'words' ? target : target * WORDS_PER_PAGE;
+    const forVerses = totalWords * 0.8;
+    return Math.round(forVerses / verseCount / 50) * 50;
+}

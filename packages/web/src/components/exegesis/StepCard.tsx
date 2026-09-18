@@ -28,6 +28,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useReopenStep } from '@/hooks/exegesis/useReopenStep';
 import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/CanonicalAnalysisStudyView';
 import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
+import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { Link, useNavigate } from 'react-router-dom';
 import { isUnreviewedCitationsError } from '@dosfilos/domain';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
@@ -67,6 +68,10 @@ interface StepCardProps {
      * compatibility with callers that only render verse cards.
      */
     allSteps?: ReadonlyArray<ExegeticalStep>;
+    /** Si el trabajo ya está ensamblado: decide si recomponer lo alcanza. */
+    hasAssembly?: boolean;
+    /** Palabras que le tocan a este verso según la rúbrica, si la hay. */
+    targetWordsPerVerse?: number | null;
 }
 
 /**
@@ -95,7 +100,7 @@ interface StepCardProps {
  * El documento sigue siendo legible por sí solo: dice `generating`, y el
  * `updatedAt` que está al lado dice desde cuándo.
  */
-export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
+export function StepCard({ step, paperId, language, allSteps, hasAssembly = false, targetWordsPerVerse = null }: StepCardProps) {
     const { t } = useTranslation('exegesis');
     const {
         generateStep,
@@ -109,6 +114,7 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
     } = useExegesisPapers();
 
     const [editing, setEditing] = useState(false);
+    const [recomposeOpen, setRecomposeOpen] = useState(false);
     const [editDraft, setEditDraft] = useState('');
     const [hintDraft, setHintDraft] = useState('');
     const [hintMode, setHintMode] = useState(false);
@@ -367,10 +373,24 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
     // Per-verse academic prose composer. Persists on the version's
     // `markdown` field, so re-rendering after the user clicks once is
     // free until the analysis itself changes.
-    const handleComposeVerseProse = async () => {
+    const handleComposeVerseProse = async (guidance?: string, targetWords?: number | null) => {
         if (step.kind !== 'verse') return;
         try {
-            await composeVerseAcademicProse.mutateAsync({ paperId, stepId: step.id });
+            const result = await composeVerseAcademicProse.mutateAsync({
+                paperId,
+                stepId: step.id,
+                ...(guidance ? { guidance } : {}),
+                ...(targetWords ? { targetWords } : {}),
+            });
+            setRecomposeOpen(false);
+            // Si el trabajo ya estaba ensamblado y su sección no se pudo
+            // encontrar, el ensamblado quedó con la prosa vieja: decirlo es
+            // la diferencia entre entregar lo corregido y entregar lo de antes.
+            if (guidance && !result.assemblyUpdated && hasAssembly) {
+                toast.warning(t('canonical.recompose.toast.assemblyUntouched'));
+            } else if (guidance) {
+                toast.success(t('canonical.recompose.toast.done'));
+            }
             // Surface the prose by switching the view toggle so the
             // user sees the result immediately. The toggle is otherwise
             // controlled by the user's last choice.
@@ -1014,7 +1034,7 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
                         <>
                             <button
                                 type="button"
-                                onClick={handleComposeVerseProse}
+                                onClick={() => (previewMarkdown.trim().length > 0 ? setRecomposeOpen(true) : handleComposeVerseProse())}
                                 disabled={anyPipelinePending}
                                 className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                                 title={t('canonical.verseProse.button.tooltip')}
@@ -1155,6 +1175,15 @@ export function StepCard({ step, paperId, language, allSteps }: StepCardProps) {
                     language={language}
                 />
             )}
+            <VerseRecomposeDialog
+                open={recomposeOpen}
+                onOpenChange={setRecomposeOpen}
+                verseLabel={step.verseRef ? formatPassageReference(step.verseRef, language) : t(`detail.steps.kind.${step.kind}`)}
+                currentProse={previewMarkdown}
+                suggestedWords={targetWordsPerVerse}
+                isComposing={composeVerseAcademicProse.isPending}
+                onRecompose={(guidance, targetWords) => handleComposeVerseProse(guidance, targetWords)}
+            />
             <CitationSourceModal
                 open={!!openCitation}
                 onOpenChange={(open) => { if (!open) setOpenCitation(null); }}

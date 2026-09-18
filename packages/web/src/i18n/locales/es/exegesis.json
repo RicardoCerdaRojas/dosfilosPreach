@@ -1644,6 +1644,23 @@
         "removeConfirm": "Se quita la cita del análisis. La afirmación queda sin esta fuente y el trabajo exportado ya no la nombrará aquí.",
         "removeConfirmAction": "Quitar la cita"
       }
+    },
+    "recompose": {
+      "title": "Recomponer {{verse}}",
+      "description": "Se vuelve a redactar la prosa de este verso y de ninguno más. El análisis, las citas y sus veredictos quedan como están.",
+      "current": "Ahora tiene {{words}} palabras (≈ {{pages}} páginas).",
+      "guidanceLabel": "Qué falta o qué corregir",
+      "guidancePlaceholder": "Ej.: «Salió como ficha: desarrolla la morfología de יְשׁוֹבֵב en prosa, explica el contraste polel/hifil y cierra con la decisión de traducción».",
+      "targetLabel": "Palabras objetivo",
+      "targetPlaceholder": "800",
+      "targetHint": "Sugerido a partir de la extensión que pide la rúbrica. Puedes cambiarlo o dejarlo vacío.",
+      "safety": "No se toca el análisis: las citas verificadas y las revisiones que hiciste siguen igual. Si el trabajo ya está ensamblado, la prosa nueva entra en su sección.",
+      "cancel": "Cancelar",
+      "submit": "Recomponer este verso",
+      "toast": {
+        "done": "Verso recompuesto.",
+        "assemblyUntouched": "Verso recompuesto, pero el trabajo ensamblado no tiene una sección para él: vuelve a ensamblar para que entre."
+      }
     }
   },
   "coherence": {

@@ -67,6 +67,7 @@ import {
     type ExegeticalPaper,
     type ProjectSource,
     type SupportedLanguage,
+    wordsPerVerseTarget,
 } from '@dosfilos/domain';
 
 /**
@@ -630,6 +631,12 @@ function StepsPanel({
     const steps = paper.steps ?? [];
     const hasSteps = steps.length > 0;
     const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
+    // Cuánto le toca a cada verso para llegar a la extensión que exige la
+    // rúbrica: es el número que el diálogo de recomposición propone.
+    const targetWordsPerVerse = wordsPerVerseTarget(
+        paper.rubric?.expectedLength ?? null,
+        steps.filter(s => s.kind === 'verse').length,
+    );
 
     return (
         <section className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
@@ -687,6 +694,8 @@ function StepsPanel({
                             paperId={paper.id}
                             language={language}
                             allSteps={paper.steps}
+                            hasAssembly={!!paper.assembledMarkdown?.trim()}
+                            targetWordsPerVerse={targetWordsPerVerse}
                         />
                     ))}
                     {/* v1.7 corpus-usage planning — coverage report
