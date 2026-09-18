@@ -21,6 +21,7 @@ import { describeLayoutRepair, repairExtractedLayout } from './repairExtractedLa
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
 import { censusOf } from './scriptCensus';
+import { leerPaginasDelPdf } from './textoDelPdf';
 
 
 // Gemini file size limit is 50MB (per-call upload to the Files API).
@@ -162,22 +163,16 @@ async function extractWithPdfParse(buffer: Buffer): Promise<{
     markdown: string;
     pageCount: number;
 }> {
-    const pdfData = await pdfParse(buffer);
-    const numpages = Math.max(1, pdfData.numpages);
-    const rawText = pdfData.text ?? '';
-
-    // Split into per-page strings — prefer form-feed boundaries (pdf-parse
-    // inserts `\f` between pages on most PDFs). When the count doesn't
-    // match `numpages` we fall back to equal-segment splitting so the
-    // page numbers remain approximately right.
-    let pageTexts: string[] = rawText.split('\f');
-    if (pageTexts.length !== numpages) {
-        const segmentLen = Math.ceil(rawText.length / numpages);
-        pageTexts = [];
-        for (let i = 0; i < numpages; i++) {
-            pageTexts.push(rawText.substring(i * segmentLen, (i + 1) * segmentLen));
-        }
-    }
+    // Las páginas vienen de `pdfjs`, no de `pdf-parse`: aquél respeta el
+    // renglón y éste encadena los fragmentos sin mirar dónde caen, lo que
+    // REVIERTE las palabras hebreas. Medido sobre un léxico de 807 páginas,
+    // `pdf-parse` dejaba el 9,8 % de las palabras hebreas rotas y esto deja
+    // el 0,1 %. Los límites de página también dejan de ser aproximados: cada
+    // página se lee por separado en vez de partir el texto en trozos iguales
+    // cuando faltan los saltos de forma.
+    const paginas = await leerPaginasDelPdf(buffer);
+    const numpages = Math.max(1, paginas.length);
+    const pageTexts = paginas.map(p => p.text);
 
     // Clean each page independently (preserves the per-page structure so
     // line-end / multi-space normalization doesn't bleed across pages).

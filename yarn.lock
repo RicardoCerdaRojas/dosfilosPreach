@@ -17891,7 +17891,7 @@ pdf-parse@^1.1.1:
   dependencies:
     node-ensure "^0.0.0"
 
-pdfjs-dist@^5.4.449:
+pdfjs-dist@^5.4.449, pdfjs-dist@^5.7.284:
   version "5.7.284"
   resolved "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-5.7.284.tgz"
   integrity sha512-h4EdYQczmGhbOlqc3PPZwxevn7ApdWPbovAuWXOB/DjIyigSnwfy2oze7c6mRcSr9XgLp3eN3EeL4DyySTPMFw==

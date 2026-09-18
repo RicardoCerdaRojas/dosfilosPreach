@@ -25,6 +25,7 @@
         "marked": "^18.0.3",
         "pdf-lib": "^1.17.1",
         "pdf-parse": "^1.1.1",
+        "pdfjs-dist": "^5.7.284",
         "react": "^19.2.6",
         "react-dom": "^19.2.6",
         "resend": "^6.7.0",
