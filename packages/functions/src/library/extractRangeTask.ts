@@ -19,6 +19,7 @@ import {
 // es el contrato de la cola: quien encola lo importa desde la tarea.
 export type { CargaDeRango };
 import { ensamblarDesdeRangos, limpiarRangos } from './ensamblarExtraccion';
+import { motivoDeLibroVacio } from './libroVacio';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { truncateUtf8 } from './truncateUtf8';
 import { consumePagesAdmin } from './processingBalance';
@@ -279,6 +280,25 @@ async function ensamblarYGuardar(
     dueño: string,
 ): Promise<void> {
     const libro = await ensamblarDesdeRangos(userId, resourceId, runId, totalPaginas);
+
+    // Antes de escribir nada: un libro que volvió en blanco no reemplaza al
+    // que el recurso ya tenía. Ortiz terminó «listo» con trece caracteres por
+    // página, cobró sus 807 y pisó el texto bueno; lo que estaba guardado se
+    // perdió en la misma operación que lo dio por exitoso.
+    const vacio = motivoDeLibroVacio({ pageCount: libro.pageCount, textLength: libro.text.length });
+    if (vacio) {
+        console.error(`[Rango] ${resourceId}: ${vacio}`);
+        await ref.update({
+            textExtractionStatus: 'failed',
+            extractionError: vacio,
+            extractionFailureReason: 'error',
+            extractionAttemptedAt: new Date(),
+            extractionProgress: FieldValue.delete(),
+            updatedAt: new Date(),
+        });
+        await limpiarRangos(userId, resourceId, runId);
+        return;
+    }
 
     const bucket = getStorage().bucket();
     const mdPath = `users/${userId}/library/${resourceId}/structured.md`;

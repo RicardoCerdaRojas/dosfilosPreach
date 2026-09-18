@@ -21,20 +21,24 @@ import {
 } from './calibrarTanda';
 
 /**
- * Cómo se abre un PDF para recortarlo.
+ * POR QUÉ NO SE ABRE UN PDF CIFRADO CON `ignoreEncryption`.
  *
- * `ignoreEncryption` no descifra nada ni saltea contraseñas: los libros
- * comprados traen casi siempre un cifrado de PERMISOS —«no copiar», «no
- * imprimir»— sin contraseña de apertura, y `pdf-lib` se niega a cargarlos
- * igual. El lector que cuenta las páginas los lee sin problema; el que se
- * plantaba era el recortador.
+ * Se probó, se desplegó, y salió peor que el problema. `pdf-lib` acepta la
+ * bandera pero NO DESCIFRA: copia los flujos de contenido tal cual a un
+ * contenedor sin cifrar, y el recorte resultante es ilegible. Medido sobre
+ * el léxico de Ortiz: el original da 1.258.947 caracteres leído por pdfjs;
+ * el recorte de cuatro páginas dio OCHO, con «Unknown compression method in
+ * flate stream» en cada página.
  *
- * Sin esto, el léxico de Ortiz —807 páginas, cifrado por permisos— se quedó
- * en «0 de 807»: tres reintentos, tres veces el mismo error, y después
- * silencio. Como el conteo de páginas sí funcionaba, desde afuera parecía un
- * libro sano que no avanzaba.
+ * El daño no fue perder el libro: fue que el modelo recibió páginas en
+ * blanco, devolvió nada, y la extracción terminó «lista» con 10 KB para 807
+ * páginas —cobradas— pisando el texto anterior. Un fallo ruidoso se
+ * convirtió en uno silencioso que además cobra.
+ *
+ * Un PDF con cifrado de permisos se rechaza al entrar, con un mensaje que
+ * dice qué hacer. Descifrarlo de verdad necesita otra biblioteca (qpdf o
+ * mupdf), y eso es una decisión aparte, no una bandera.
  */
-const CARGA_DE_PDF = { ignoreEncryption: true } as const;
 
 // ── Batched Gemini extraction ───────────────────────────────────────────
 //
@@ -351,7 +355,7 @@ export async function extraerRangoDelPdf(
     hasta: number,
     opciones: { userId?: string; laSiguienteRelee: boolean },
 ): Promise<{ paginas: GeminiPage[]; muestra: MuestraDeDensidad | null }> {
-    const sourceDoc = await PDFDocument.load(fs.readFileSync(rutaDelPdf), CARGA_DE_PDF);
+    const sourceDoc = await PDFDocument.load(fs.readFileSync(rutaDelPdf));
     // La muestra viaja entera —tokens Y páginas— porque calibrar necesita las
     // dos: el tamaño sale de los tokens POR PÁGINA, y devolver sólo el total
     // obligaría al llamador a suponer sobre cuántas se midió.
@@ -499,7 +503,7 @@ async function extractWithGeminiBatched(
 ): Promise<ResultadoDeExtraccion> {
     const { userId } = opciones;
     const sourceBytes = fs.readFileSync(tempFilePath);
-    const sourceDoc = await PDFDocument.load(sourceBytes, CARGA_DE_PDF);
+    const sourceDoc = await PDFDocument.load(sourceBytes);
     const actualPages = sourceDoc.getPageCount();
 
     let tamano = opciones.paginasPorTanda ?? TANDA_INICIAL;
