@@ -610,7 +610,6 @@ export function ResourceCard({
                     <div className="hidden md:flex items-center gap-1.5 flex-wrap justify-end max-w-[40%]">
                         {systemBadge}
                         {statusBadge}
-                    {scriptPill}
                         {scriptPill}
                         {engineBadge}
                         {metadataBadge}
@@ -657,9 +656,15 @@ export function ResourceCard({
             </div>
 
             {/* Status + assignment badges (single row, wraps if needed) */}
-            {(statusBadge || engineBadge || metadataBadge || coreStoreBadges || phaseBadges) && (
+            {(statusBadge || scriptPill || engineBadge || metadataBadge || coreStoreBadges || phaseBadges) && (
                 <div className="flex items-center gap-1.5 flex-wrap">
                     {statusBadge}
+                    {/* La marca de extracción rota va junto al estado y ANTES del
+                        motor: «Listo · Premium» es justo lo que hace creer que el
+                        libro sirve. En la vista de tarjetas —la que se abre por
+                        defecto— no se pintaba desde que existe (#580), así que el
+                        aviso protegía sólo a quien mirara la lista. */}
+                    {scriptPill}
                     {engineBadge}
                     {metadataBadge}
                     {coreStoreBadges}
