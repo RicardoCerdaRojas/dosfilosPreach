@@ -43,6 +43,19 @@ export type ExtractionVersion =
      * empezando por el diagnóstico de calidad de extracción.
      */
     | '6.0-thml-public-domain'
+    /**
+     * Lectura de la capa de texto con `pdfjs`, agrupando los fragmentos en
+     * renglones por su altura.
+     *
+     * Lleva versión propia y no reusa `5.0-pdfparse-structured` porque este
+     * campo registra CÓMO se obtuvo el texto, y la diferencia es exactamente
+     * la que rompía los libros hebreos: `pdf-parse` encadenaba los fragmentos
+     * sin mirar dónde caían y devolvía las palabras de derecha a izquierda
+     * invertidas —9,8 % de las palabras hebreas de un léxico de 807 páginas,
+     * contra 0,1 % leyendo por renglones—. Un recurso etiquetado `5.0` puede
+     * traer el hebreo roto; uno `7.0`, no.
+     */
+    | '7.0-pdfjs-lineas'
     | '2.0-gemini'
     | 'fallback-pdfparse';
 
@@ -62,6 +75,7 @@ export const STRUCTURED_EXTRACTION_VERSIONS: readonly ExtractionVersion[] = [
     '5.0-pdfparse-structured',
     '6.0-thml-public-domain',
     '6.0-gemini-cola',
+    '7.0-pdfjs-lineas',
 ] as const;
 
 /**

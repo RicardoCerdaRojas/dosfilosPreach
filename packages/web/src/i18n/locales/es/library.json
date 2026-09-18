@@ -168,7 +168,9 @@
     "gemini": "Estándar",
     "geminiHint": "Procesado en modo estándar — texto narrativo, ensayos y sermones",
     "pdfparse": "Básico",
-    "pdfparseHint": "Procesado con extractor básico — calidad reducida; considera reprocesar"
+    "pdfparseHint": "Procesado con extractor básico — calidad reducida; considera reprocesar",
+    "textLayer": "Capa de texto",
+    "textLayerHint": "Se leyó el texto que el PDF ya trae, renglón por renglón. Es exacto y no usa el modelo; sólo sirve cuando el PDF no es un escaneo."
   },
   "stores": {
     "exegesis": "Exégesis",

@@ -71,6 +71,13 @@ export type ExtractionVersion =
      * registra CÓMO se obtuvo el texto.
      */
     | '6.0-gemini-cola'
+    /**
+     * Lectura de la capa de texto con `pdfjs`, agrupando los fragmentos en
+     * renglones por su altura. Reemplaza a `5.0-pdfparse-structured`, que
+     * encadenaba los fragmentos sin mirar dónde caían y devolvía invertidas
+     * las palabras escritas de derecha a izquierda.
+     */
+    | '7.0-pdfjs-lineas'
     | '2.0-gemini'
     | 'fallback-pdfparse';
 
@@ -99,6 +106,7 @@ export const STRUCTURED_EXTRACTION_VERSIONS: readonly ExtractionVersion[] = [
     '5.0-pdfparse-structured',
     '6.0-thml-public-domain',
     '6.0-gemini-cola',
+    '7.0-pdfjs-lineas',
 ] as const;
 
 /** Membership check for {@link STRUCTURED_EXTRACTION_VERSIONS}. */
