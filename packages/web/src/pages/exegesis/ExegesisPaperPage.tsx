@@ -50,6 +50,7 @@ import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
 import { StepCard } from '@/components/exegesis/StepCard';
 import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
+import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 import { CorpusCoverageReport } from '@/components/exegesis/corpus-plan/CorpusCoverageReport';
 import { PaperFacultyDrawer } from '@/components/exegesis/PaperFacultyDrawer';
 import { AcademicCompositionDialog } from '@/components/exegesis/canonical/AcademicCompositionDialog';
@@ -520,6 +521,7 @@ export function ExegesisPaperPage() {
                     {!effectiveSidebarHidden && (
                         <aside className="space-y-4">
                             <PaperLengthCard paper={paper} language={activeLanguage} />
+                            <PaperBibliographyCard paper={paper} />
                             <RubricCard paper={paper} t={t} />
                             <StyleGuideCard paper={paper} t={t} />
                             <SourcesCard

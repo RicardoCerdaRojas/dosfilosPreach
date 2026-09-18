@@ -2,6 +2,7 @@ import {
     formatPassageReference,
     serializeAnalysis,
     type ComposeVerseInput,
+    type ComposerSourceMetadata,
 } from '@dosfilos/domain';
 
 const ES_INSTRUCTION = `Eres un redactor académico de exégesis bíblica nivel TMS/Turabian. Recibes el análisis canónico estructurado de UN versículo y produces 1-3 párrafos de prosa académica continua sobre ese versículo SOLAMENTE.
@@ -68,7 +69,10 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     const sourceTable = input.sources.length > 0
         ? [
             lang === 'en' ? 'AVAILABLE SOURCES (cite by sourceKey):' : 'FUENTES DISPONIBLES (cita por sourceKey):',
-            ...input.sources.map(s => `- ${s.citationKey}: ${s.author}, "${s.title}"${s.year ? ` (${s.year})` : ''}`),
+            ...input.sources.map(s => `- ${s.citationKey}: ${describeSource(s)}`),
+            lang === 'en'
+                ? 'Publisher, city and year are given here ONLY when someone copied them from the book. If a datum is missing above, do not write it and do not guess it.'
+                : 'La editorial, la ciudad y el año están arriba SOLO cuando alguien los copió del libro. Si un dato no aparece, no lo escribas ni lo deduzcas.',
         ].join('\n')
         : (lang === 'en'
             ? 'No external sources configured for this paper.'
@@ -125,4 +129,21 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     ].filter(Boolean).join('\n\n');
 
     return { systemInstruction, userMessage };
+}
+
+
+/**
+ * La ficha de una fuente tal como el compositor puede citarla.
+ *
+ * Se escribe lo que hay y nada más. Antes esta línea llevaba autor,
+ * título y año, y el resto de la referencia —ciudad y editorial— salía
+ * del modelo: en el trabajo de Salmo 23 llegaron inventadas.
+ */
+function describeSource(s: ComposerSourceMetadata): string {
+    const parts = [`${s.author}, "${s.title}"`];
+    if (s.seriesVolume) parts.push(s.seriesVolume);
+    if (s.edition) parts.push(s.edition);
+    const imprint = [s.city, s.publisher, s.year ? String(s.year) : ''].filter(Boolean);
+    if (imprint.length > 0) parts.push(`(${imprint.join(': ')})`);
+    return parts.join(', ');
 }

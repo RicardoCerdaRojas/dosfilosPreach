@@ -167,6 +167,12 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
             firestoreUpdates.pageNumbering = updates.pageNumbering ?? null;
         }
 
+        // Datos de la portada: es lo que separa una bibliografía copiada del
+        // libro de una inventada por el modelo.
+        if (updates.bibliography !== undefined) {
+            firestoreUpdates.bibliography = updates.bibliography ?? null;
+        }
+
         return firestoreUpdates;
     }
 
@@ -290,6 +296,10 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         // debe rotular el número como hoja en vez de fingir una página.
         (resource as any).pageNumbering = data.pageNumbering ?? undefined;
         (resource as any).scriptCensus = data.scriptCensus ?? undefined;
+        // Ausente en todo recurso subido antes de pedir la portada:
+        // `undefined` significa «no se ha escrito», y la bibliografía lo
+        // muestra como hueco en vez de rellenarlo.
+        (resource as any).bibliography = data.bibliography ?? undefined;
         // v1.7 smart-match metadata. Legacy docs (uploaded before v1.7)
         // have neither field set in Firestore — default coversBibleBooks
         // to [] and scope to 'book' so the smart-match dialog treats

@@ -1,5 +1,6 @@
 import { WorkflowPhase } from './SermonWorkflow';
 import type { SourceType as ExegesisSourceType } from '../exegesis/entities/SourceType';
+import type { BibliographicData } from '../exegesis/services/bibliography';
 import type { PageNumbering } from '../exegesis/outline/pageNumbering';
 import type { ScriptCensus } from './extractionHealth';
 import type { BibleBookId } from '../bible/canon/BibleCanon';
@@ -133,6 +134,12 @@ export interface LibraryResource {
     userId: string;
     title: string;
     author: string;
+    /**
+     * Cómo se cita este libro. Lo escribe una persona mirando la portada:
+     * el compositor recibía solo la clave de cita y el nombre del archivo,
+     * y de ahí sacaba ciudad, editorial y año inventándolos.
+     */
+    bibliography?: BibliographicData | null;
     type: ResourceType;
     storageUrl: string;
     textContent?: string | undefined; // Legacy: Extracted text directly (deprecated)
@@ -495,6 +502,12 @@ export class LibraryResourceEntity implements LibraryResource {
      * deserializador la repone. Ver `pageNumbering` en la interfaz.
      */
     public pageNumbering?: PageNumbering | null;
+    /**
+     * Datos de portada para citar sin inventar. Los escribe una persona
+     * mirando el libro; el deserializador los repone. Ver `bibliography`
+     * en la interfaz.
+     */
+    public bibliography?: BibliographicData | null;
     public indexingError?: string | null;
     public indexingWarning?: string | null;
     public indexCoverage?: LibraryResource['indexCoverage'];

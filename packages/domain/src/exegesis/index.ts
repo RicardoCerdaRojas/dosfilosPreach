@@ -78,6 +78,7 @@ export * from './services/evidenceForCitation';
 export * from './services/citationReview';
 export * from './services/citationCorrection';
 export * from './services/paperLength';
+export * from './services/bibliography';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';
 export * from './services/verseAnalysisCoverage';
@@ -103,6 +104,7 @@ export * from './outline/printedPageOffset';
 export * from './outline/pageNumbering';
 export * from './outline/findQuoteInPageText';
 export * from './ports/IPageNumberingReader';
+export * from './ports/IBibliographyReader';
 // ¿Los fragmentos guardados de una fuente corresponden a su receta?
 export * from './outline/recipeConsistency';
 

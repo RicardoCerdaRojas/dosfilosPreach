@@ -5,6 +5,7 @@ import type {
     ComposerSourceMetadata,
     ExegeticalPaper,
     FormatterSourceMetadata,
+    IBibliographyReader,
     IExegeticalPaperRepository,
     IResourceContentReader,
     IStyleFormatter,
@@ -16,6 +17,7 @@ import type {
 } from '@dosfilos/domain';
 import { isCitableSourceType, replaceVerseSection, verseSectionKey } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
+import { composerSourceOf } from './pinnedSourceContent';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
 export interface ComposeVerseAcademicProseInput {
@@ -85,6 +87,11 @@ export class ComposeVerseAcademicProseUseCase {
          * los análisis anteriores a la calibración.
          */
         private pageNumbering?: IPageNumberingReader,
+        /**
+         * Datos de portada de las fuentes. Sin él se cita con la clave y el
+         * nombre del archivo, y el modelo completa el resto inventándolo.
+         */
+        private bibliography?: IBibliographyReader,
     ) { }
 
     async execute(input: ComposeVerseAcademicProseInput): Promise<ComposeVerseAcademicProseOutput> {
@@ -128,7 +135,7 @@ export class ComposeVerseAcademicProseUseCase {
                 assignmentBrief: paper.assignmentBrief,
                 styleGuideContent,
                 styleGuideManifest: manifest,
-                sources: buildComposerSources(paper),
+                sources: await buildComposerSources(paper, this.bibliography),
                 pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
@@ -248,17 +255,15 @@ export class ComposeVerseAcademicProseUseCase {
     }
 }
 
-function buildComposerSources(paper: ExegeticalPaper): ComposerSourceMetadata[] {
-    return paper.sources
-        .filter(s => isCitableSourceType(s.sourceType))
-        .map(s => {
-            const key = s.citationKey ?? deriveCitationKey(s.displayLabel);
-            return {
-                citationKey: key,
-                author: key,
-                title: s.displayLabel,
-            };
-        });
+function buildComposerSources(
+    paper: ExegeticalPaper,
+    bibliography?: IBibliographyReader,
+): Promise<ComposerSourceMetadata[]> {
+    return Promise.all(
+        paper.sources
+            .filter(s => isCitableSourceType(s.sourceType))
+            .map(s => composerSourceOf(s, bibliography)),
+    );
 }
 
 function buildFormatterSources(paper: ExegeticalPaper): FormatterSourceMetadata[] {

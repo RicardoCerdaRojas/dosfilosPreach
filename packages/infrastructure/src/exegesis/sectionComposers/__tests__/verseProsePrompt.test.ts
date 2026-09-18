@@ -54,3 +54,27 @@ describe('recomposición dirigida', () => {
         expect(buildVerseProsePrompt({ ...base, targetWords: 0 }).userMessage).not.toMatch(/EXTENSIÓN OBJETIVO/);
     });
 });
+
+describe('registro de fuentes', () => {
+    const conDatos = {
+        ...promptInput(),
+        sources: [{
+            citationKey: 'Ross', author: 'Allen P. Ross', title: 'A Commentary on the Psalms',
+            seriesVolume: 'Kregel Exegetical Library 1', city: 'Grand Rapids', publisher: 'Kregel', year: 2011,
+        }],
+    };
+
+    it('la ficha llega completa, para que el compositor copie en vez de deducir', () => {
+        const { userMessage } = buildVerseProsePrompt(conDatos as never);
+        expect(userMessage).toContain('Allen P. Ross, "A Commentary on the Psalms"');
+        expect(userMessage).toContain('Grand Rapids: Kregel: 2011');
+    });
+
+    it('sin datos de portada se escribe lo que hay, y se prohíbe deducir el resto', () => {
+        const sinDatos = { ...promptInput(), sources: [{ citationKey: 'Ortiz', author: 'Ortiz', title: 'Lexicón' }] };
+        const { userMessage } = buildVerseProsePrompt(sinDatos as never);
+        expect(userMessage).toContain('Ortiz: Ortiz, "Lexicón"');
+        expect(userMessage).not.toMatch(/\(\s*\)/);
+        expect(userMessage).toMatch(/no lo escribas ni lo deduzcas/);
+    });
+});
