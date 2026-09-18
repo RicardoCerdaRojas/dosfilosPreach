@@ -1,8 +1,10 @@
 import {
     citationAnchorFor,
     isCitableSourceType,
+    type BibliographicData,
     type ComposerSourceMetadata,
     type ExegeticalPaper,
+    type IBibliographyReader,
     type ICuratedCorpusReader,
     type IPageNumberingReader,
     type IResourceContentReader,
@@ -15,6 +17,11 @@ import { loadSourceNumberings } from './sourceNumberings';
  * composición (paper completo, conclusión, introducción).
  */
 export interface PinnedContentReaders {
+    /**
+     * Datos de portada de cada fuente. Sin él se cita con la clave y el
+     * nombre del archivo, que es como estaba.
+     */
+    bibliography?: IBibliographyReader;
     contentReader: IResourceContentReader;
     /** Lee las hojas que la fuente admite. Sin él se cae al texto completo. */
     corpusReader?: ICuratedCorpusReader;
@@ -38,6 +45,46 @@ export interface PinnedContentReaders {
  * Vive aparte porque estaba copiada en tres casos de uso, y las tres copias
  * tenían el mismo defecto.
  */
+/**
+ * La ficha de una fuente tal como la ve el compositor.
+ *
+ * Manda lo que una persona copió de la portada; lo que falte se queda
+ * fuera. Antes esto era `author: key, title: displayLabel` —la clave de
+ * cita y el nombre del archivo— y el modelo completaba ciudad, editorial
+ * y año por su cuenta: así llegaron datos inventados al trabajo de
+ * Salmo 23.
+ */
+export async function composerSourceOf(
+    source: ProjectSource,
+    reader?: IBibliographyReader,
+): Promise<ComposerSourceMetadata> {
+    const key = source.citationKey ?? deriveCitationKey(source.displayLabel);
+    const fallback: ComposerSourceMetadata = { citationKey: key, author: key, title: source.displayLabel };
+    if (!reader) return fallback;
+
+    const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
+    const data = await reader.bibliographyFor(resourceId).catch(() => null);
+    if (!data) return fallback;
+
+    return {
+        citationKey: key,
+        author: (data.author ?? '').trim() || key,
+        title: (data.title ?? '').trim() || source.displayLabel,
+        ...(data.subtitle?.trim() ? { subtitle: data.subtitle.trim() } : {}),
+        ...(seriesVolumeOf(data) ? { seriesVolume: seriesVolumeOf(data) } : {}),
+        ...(data.city?.trim() ? { city: data.city.trim() } : {}),
+        ...(data.publisher?.trim() ? { publisher: data.publisher.trim() } : {}),
+        ...(data.year?.trim() && Number.isFinite(Number(data.year)) ? { year: Number(data.year) } : {}),
+        ...(data.edition?.trim() ? { edition: data.edition.trim() } : {}),
+    };
+}
+
+/** «Kregel Exegetical Library 1» — serie y volumen, como los pide el compositor. */
+function seriesVolumeOf(data: BibliographicData): string | undefined {
+    const parts = [data.series?.trim(), data.volume?.trim()].filter(Boolean);
+    return parts.length > 0 ? parts.join(' ') : undefined;
+}
+
 export async function buildComposerSourcesWithPinnedContent(
     paper: ExegeticalPaper,
     pinnedIds: ReadonlySet<string>,
@@ -48,11 +95,8 @@ export async function buildComposerSourcesWithPinnedContent(
     const numberings = await loadSourceNumberings(readers.pageNumbering, pinned);
 
     return Promise.all(citable.map(async s => {
-        const key = s.citationKey ?? deriveCitationKey(s.displayLabel);
         const base: ComposerSourceMetadata = {
-            citationKey: key,
-            author: key,
-            title: s.displayLabel,
+            ...await composerSourceOf(s, readers.bibliography),
             isPinned: pinnedIds.has(s.id),
         };
         if (!base.isPinned) return base;

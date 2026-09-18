@@ -55,3 +55,19 @@ describe('FirebaseLibraryRepository — payload de actualización', () => {
         expect(Object.values(out).every(v => v !== undefined)).toBe(true);
     });
 });
+
+describe('datos bibliográficos', () => {
+    it('llegan a Firestore: sin esto la bibliografía la sigue inventando el modelo', () => {
+        const repo = new FirebaseLibraryRepository();
+        const updates = repo.buildFirestoreUpdates({
+            bibliography: { author: 'Allen P. Ross', title: 'A Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' },
+        } as never);
+        expect(updates.bibliography).toMatchObject({ publisher: 'Kregel', year: '2011' });
+    });
+
+    it('`null` los borra; `undefined` no toca lo guardado', () => {
+        const repo = new FirebaseLibraryRepository();
+        expect(repo.buildFirestoreUpdates({ bibliography: null } as never).bibliography).toBeNull();
+        expect('bibliography' in repo.buildFirestoreUpdates({ title: 'x' } as never)).toBe(false);
+    });
+});

@@ -64,7 +64,9 @@ export function countProseWords(text: string): number {
  * documento bajan al pie con letra más chica.
  */
 export function estimateLength(markdown: string): PaperLengthEstimate {
-    const citations = markdown.match(INLINE_CITATION) ?? [];
+    // Tipado explícito: `match` devuelve `RegExpMatchArray | null` y el
+    // `?? []` deja una unión con `never[]` que rompe el `reduce`.
+    const citations: string[] = markdown.match(INLINE_CITATION) ?? [];
     const footnoteWords = citations.reduce((sum, c) => sum + countProseWords(c), 0);
 
     const body = markdown

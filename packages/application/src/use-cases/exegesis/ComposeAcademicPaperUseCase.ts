@@ -6,6 +6,7 @@ import type {
     ExegeticalPaper,
     FormatterSourceMetadata,
     IAcademicComposer,
+    IBibliographyReader,
     IExegeticalPaperRepository,
     IResourceContentReader,
     IStyleFormatter,
@@ -77,6 +78,8 @@ export class ComposeAcademicPaperUseCase {
          * de una fuente asignada es el libro entero (ver `pinnedSourceContent`).
          */
         private corpusReader?: ICuratedCorpusReader,
+        /** Datos de portada de las fuentes, para no inventar la bibliografía. */
+        private bibliography?: IBibliographyReader,
     ) { }
 
 
@@ -140,7 +143,7 @@ export class ComposeAcademicPaperUseCase {
             const composerSources = await buildComposerSourcesWithPinnedContent(
                 paper,
                 pinnedIdSet,
-                { contentReader: this.contentReader, corpusReader: this.corpusReader, pageNumbering: this.pageNumbering },
+                { contentReader: this.contentReader, corpusReader: this.corpusReader, pageNumbering: this.pageNumbering, bibliography: this.bibliography },
             );
 
             // ── Build citable sources for the deterministic formatter ───

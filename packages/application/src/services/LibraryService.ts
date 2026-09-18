@@ -551,6 +551,12 @@ export class LibraryService {
              * confirma contra el ejemplar; sin él, las citas dicen «hoja N».
              */
             pageNumbering?: import('@dosfilos/domain').PageNumbering | null;
+            /**
+             * Datos de la portada para citar sin inventar: autor, título,
+             * ciudad, editorial, año. Se escriben una vez por libro y los
+             * reutiliza cada trabajo que lo cite.
+             */
+            bibliography?: import('@dosfilos/domain').BibliographicData | null;
         }
     ): Promise<void> {
         console.log(`📝 Updating resource ${id}:`, updates);

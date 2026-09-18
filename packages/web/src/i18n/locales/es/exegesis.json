@@ -1978,6 +1978,51 @@
         "words": "palabras"
       },
       "disclaimer": "Las páginas son una estimación en el formato del seminario (Times New Roman 12, doble espacio). Las palabras son exactas."
+    },
+    "bibliography": {
+      "title": "Datos para citar",
+      "dialogTitle": "Ficha bibliográfica",
+      "allComplete": "Todos los libros tienen sus datos: la bibliografía sale del libro, no del asistente.",
+      "someMissing": "A {{count}} libro(s) les faltan datos. Sin ellos la bibliografía queda coja o el asistente los inventa.",
+      "missingFields": "Faltan: {{fields}}.",
+      "previewLabel": "Así saldrá en la bibliografía",
+      "previewEmpty": "Escribe al menos autor y título.",
+      "saved": "Ficha guardada.",
+      "saveFailed": "No se pudo guardar la ficha.",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "fields": {
+        "author": "Autor",
+        "authorSorted": "Autor (para ordenar)",
+        "title": "Título",
+        "subtitle": "Subtítulo",
+        "shortTitle": "Título corto",
+        "volume": "Volumen",
+        "volumeTitle": "Título del volumen",
+        "series": "Colección",
+        "edition": "Edición",
+        "translator": "Traductor",
+        "editor": "Editor",
+        "city": "Ciudad",
+        "publisher": "Editorial",
+        "year": "Año"
+      },
+      "placeholders": {
+        "author": "Allen P. Ross",
+        "authorSorted": "Ross, Allen P.",
+        "title": "A Commentary on the Psalms",
+        "subtitle": "",
+        "shortTitle": "Commentary on the Psalms",
+        "volume": "1",
+        "volumeTitle": "1–41",
+        "series": "Kregel Exegetical Library",
+        "edition": "2ª ed.",
+        "translator": "",
+        "editor": "",
+        "city": "Grand Rapids",
+        "publisher": "Kregel",
+        "year": "2011"
+      }
     }
   },
   "citationViewer": {

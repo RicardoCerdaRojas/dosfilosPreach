@@ -26,6 +26,7 @@ export {
 } from './DocumentPageIndexClient';
 export type { DocumentPageIndex, DocumentPdfHandle, DocumentSheetHit, DocumentTextSearchResult } from './DocumentPageIndexClient';
 export { DocumentPageNumberingReader } from './DocumentPageNumberingReader';
+export { DocumentBibliographyReader } from './DocumentBibliographyReader';
 export { RetrieveChunksResourceRanker } from './RetrieveChunksResourceRanker';
 export { GeminiStepCorpusPlanner } from './GeminiStepCorpusPlanner';
 export { GeminiCanonicalVerseAnalyzer } from './canonicalAnalyzer/GeminiCanonicalVerseAnalyzer';

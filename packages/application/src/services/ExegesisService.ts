@@ -36,6 +36,7 @@ import {
     SBLGNTBibleProvider,
     TestamentDispatcherOriginalLanguageProvider,
     extractFootnoteAnchorsFromFormattedMarkdown,
+    DocumentBibliographyReader,
     DocumentPageNumberingReader,
 } from '@dosfilos/infrastructure';
 import type {
@@ -555,6 +556,11 @@ class ExegesisService {
         // citations get rewritten per the manifest's templates after
         // the LLM composes prose. Style guide enforcement is mandatory
         // when configured; falls back to TMS / Turabian otherwise.
+        // Los datos de portada que una persona escribió sobre cada libro.
+        // Sin esto el compositor cita con la clave y el nombre del archivo,
+        // y completa ciudad, editorial y año por su cuenta.
+        const bibliographyReader = new DocumentBibliographyReader();
+
         const academicComposer = new GeminiAcademicComposer(exegesisModelId);
         this.composeAcademicPaper = new ComposeAcademicPaperUseCase(
             paperRepository,
@@ -567,6 +573,7 @@ class ExegesisService {
             pageNumberingReader,
             // Las fuentes asignadas aportan las hojas elegidas, no el libro entero.
             curatedCorpusReader,
+            bibliographyReader,
         );
 
         // Section-level composers. Same style-guide enforcement as
@@ -582,6 +589,7 @@ class ExegesisService {
             styleFormatter,
             pageNumberingReader,
             curatedCorpusReader,
+            bibliographyReader,
         );
         const introductionComposer = new GeminiIntroductionComposer(exegesisModelId);
         this.composeIntroductionFromAnalyses = new ComposeIntroductionFromAnalysesUseCase(
@@ -592,6 +600,7 @@ class ExegesisService {
             styleFormatter,
             pageNumberingReader,
             curatedCorpusReader,
+            bibliographyReader,
         );
         const verseAcademicComposer = new GeminiVerseAcademicComposer(exegesisModelId);
         this.composeVerseAcademicProse = new ComposeVerseAcademicProseUseCase(
@@ -603,6 +612,7 @@ class ExegesisService {
             // Rescata las hojas de los análisis previos a la calibración al
             // recomponer la prosa, sin volver a analizar verso por verso.
             pageNumberingReader,
+            bibliographyReader,
         );
 
         // Ministry composers (sermon / devotional / study guide).

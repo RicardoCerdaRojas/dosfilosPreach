@@ -6,6 +6,7 @@ import type {
     ExegeticalStep,
     ExegeticalStepVersion,
     FormatterSourceMetadata,
+    IBibliographyReader,
     IExegeticalPaperRepository,
     IIntroductionComposer,
     IResourceContentReader,
@@ -54,6 +55,8 @@ export class ComposeIntroductionFromAnalysesUseCase {
          * de una fuente asignada es el libro entero (ver `pinnedSourceContent`).
          */
         private corpusReader?: ICuratedCorpusReader,
+        /** Datos de portada de las fuentes, para no inventar la bibliografía. */
+        private bibliography?: IBibliographyReader,
     ) { }
 
     async execute(input: ComposeIntroductionFromAnalysesUseCaseInput): Promise<ExegeticalStepVersion> {
@@ -109,7 +112,7 @@ export class ComposeIntroductionFromAnalysesUseCase {
             const composerSources = await buildComposerSourcesWithPinnedContent(
                 paper,
                 pinnedIds,
-                { contentReader: this.contentReader, corpusReader: this.corpusReader, pageNumbering: this.pageNumbering },
+                { contentReader: this.contentReader, corpusReader: this.corpusReader, pageNumbering: this.pageNumbering, bibliography: this.bibliography },
             );
             const citableSources = buildFormatterSources(paper);
 
