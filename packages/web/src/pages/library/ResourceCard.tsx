@@ -409,6 +409,17 @@ export function ResourceCard({
                 script: t(`card.extraction.script.${health.script}`),
             })}
         </span>
+    ) : health.status === 'reversed-hebrew' ? (
+        // El hebreo está, pero al revés. Se marca aparte de «sin hebreo»
+        // porque el remedio es otro y porque este daño es peor: se ve texto
+        // hebreo y se copia a un trabajo sin releerlo letra a letra.
+        <span
+            className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium border border-destructive/30 bg-destructive/10 text-destructive"
+            title={t('card.extraction.reversedHebrewHint', { percent: Math.round(health.ratio * 100) })}
+        >
+            <AlertTriangle className="h-3 w-3" />
+            {t('card.extraction.reversedHebrew')}
+        </span>
     ) : null;
 
     // Engine badge — surfaces which extractor produced the text

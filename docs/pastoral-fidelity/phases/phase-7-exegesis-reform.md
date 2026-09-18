@@ -34,8 +34,8 @@ el documento salga en el formato y la extensión que el seminario exige.
 | 1 | **Verificación del análisis canónico + oración textual obligatoria** (P2.1, P2.2) | `done` (#629, #630) | Recall sobre errores conocidos ≥ 4/5; falsos «no encontrada» ≤ 10 % sobre citas correctas; `citationsWithoutVerbatim` → 0 |
 | 2 | Word según la guía + extensión como contrato (P3.3, P3.2) | `done` (#637, #638) | El .docx generado abre en Word con 12 ± 1 páginas de cuerpo, notas al pie reales y bibliografía; 0 retoques manuales de formato |
 | 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `done` (#631-#636, #639) | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
-| 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `next` | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
-| 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `planned` | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
+| 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `done` (#640, #641) | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
+| 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `next` | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
 | 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `planned` | 0 términos del glosario en la salida («tronco», calcos del inglés) |
 
 ## Etapa 1 — Verificación del análisis canónico
@@ -159,3 +159,21 @@ bitácora de abajo.
   reescribe lo que ya estaba bien—. El análisis no se toca: las citas verificadas y las
   revisiones manuales sobreviven a la recomposición, que era la condición para que esto no
   deshiciera la Etapa 1.
+- **2026-09-17** — **Etapa 4 (PRs #640, #641).**
+  - *Datos bibliográficos (P2.3).* El compositor recibía `author` = clave de cita y `title` =
+    nombre del archivo; ciudad, editorial y año los ponía el modelo porque Turabian los exige.
+    Ahora la ficha vive en el RECURSO, la escribe una persona mirando la portada, y los cuatro
+    compositores citan con ella. Regla: lo que no está no se escribe —ni «s.f.» ni «n.p.»,
+    que afirman que el dato no existe cuando lo que pasa es que nadie lo escribió—.
+  - *Salud del recurso (P1.3).* **Medición nueva sobre las 67 obras de la biblioteca real:**
+    cuatro libros extrajeron su hebreo AL REVÉS —Ortiz 11,8 % de palabras con letra final al
+    inicio, «Gramática Hebreo» 13,3 %, «Léxico Griego-Español» 9,7 %, «Diccionario Teológico
+    del NT» 10,3 %— contra 0,0–0,1 % en todo el resto. Las letras finales (ך ם ן ף ץ) sólo
+    cierran palabra; al invertir el texto quedan al principio, y eso separa las dos
+    poblaciones sin nada en el medio.
+  - **Corrección a una afirmación de la Fase anterior:** «Gramática Hebreo» de Farfán se citaba
+    como prueba de que el sistema podía con ese tipo de libro (65.188 caracteres hebreos
+    extraídos). Los extrajo invertidos. **Tener el alfabeto y tenerlo utilizable son dos cosas
+    distintas**, y el censo de alfabetos sólo veía la primera.
+  - Los cuatro recursos de la biblioteca del fundador quedaron con los contadores calculados
+    desde sus fragmentos indexados; los libros nuevos los traen desde la extracción.

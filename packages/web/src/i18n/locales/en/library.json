@@ -134,7 +134,9 @@
       "script": {
         "hebrew": "Hebrew",
         "greek": "Greek"
-      }
+      },
+      "reversedHebrew": "Hebrew reversed",
+      "reversedHebrewHint": "The Hebrew words came out backwards in extraction: «אֲגָם» became «םָגֲא» ({{percent}}% of words give it away). The surrounding text reads fine, so the damage is invisible until you cite the term. Re-process the book in Standard mode, which reads the pages as images."
     }
   },
   "status": {
