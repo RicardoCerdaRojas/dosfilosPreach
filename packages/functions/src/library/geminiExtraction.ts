@@ -20,6 +20,22 @@ import {
     tamanoParaDensidad,
 } from './calibrarTanda';
 
+/**
+ * Cómo se abre un PDF para recortarlo.
+ *
+ * `ignoreEncryption` no descifra nada ni saltea contraseñas: los libros
+ * comprados traen casi siempre un cifrado de PERMISOS —«no copiar», «no
+ * imprimir»— sin contraseña de apertura, y `pdf-lib` se niega a cargarlos
+ * igual. El lector que cuenta las páginas los lee sin problema; el que se
+ * plantaba era el recortador.
+ *
+ * Sin esto, el léxico de Ortiz —807 páginas, cifrado por permisos— se quedó
+ * en «0 de 807»: tres reintentos, tres veces el mismo error, y después
+ * silencio. Como el conteo de páginas sí funcionaba, desde afuera parecía un
+ * libro sano que no avanzaba.
+ */
+const CARGA_DE_PDF = { ignoreEncryption: true } as const;
+
 // ── Batched Gemini extraction ───────────────────────────────────────────
 //
 // Una sola llamada tiene un tope de salida de 65 536 tokens. Por encima de
@@ -335,7 +351,7 @@ export async function extraerRangoDelPdf(
     hasta: number,
     opciones: { userId?: string; laSiguienteRelee: boolean },
 ): Promise<{ paginas: GeminiPage[]; muestra: MuestraDeDensidad | null }> {
-    const sourceDoc = await PDFDocument.load(fs.readFileSync(rutaDelPdf));
+    const sourceDoc = await PDFDocument.load(fs.readFileSync(rutaDelPdf), CARGA_DE_PDF);
     // La muestra viaja entera —tokens Y páginas— porque calibrar necesita las
     // dos: el tamaño sale de los tokens POR PÁGINA, y devolver sólo el total
     // obligaría al llamador a suponer sobre cuántas se midió.
@@ -483,7 +499,7 @@ async function extractWithGeminiBatched(
 ): Promise<ResultadoDeExtraccion> {
     const { userId } = opciones;
     const sourceBytes = fs.readFileSync(tempFilePath);
-    const sourceDoc = await PDFDocument.load(sourceBytes);
+    const sourceDoc = await PDFDocument.load(sourceBytes, CARGA_DE_PDF);
     const actualPages = sourceDoc.getPageCount();
 
     let tamano = opciones.paginasPorTanda ?? TANDA_INICIAL;

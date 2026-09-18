@@ -69,6 +69,9 @@ export async function encolarRango(carga: CargaDeRango): Promise<void> {
  *   se borraron y lo único que podría hacer es ensamblar un libro a medias
  *   encima de uno completo.
  */
+/** Intentos de Cloud Tasks por rango. El último deja el fallo por escrito. */
+const MAX_INTENTOS = 3;
+
 export const extractRangeTask = onTaskDispatched(
     {
         region: 'us-central1',
@@ -79,7 +82,7 @@ export const extractRangeTask = onTaskDispatched(
             // Tres intentos. Lo que se arregla solo acá es una caída transitoria
             // de la API; lo que no, queda escrito como `failed` con el rango que
             // rompió, y los rangos ya hechos se conservan.
-            maxAttempts: 3,
+            maxAttempts: MAX_INTENTOS,
             minBackoffSeconds: 30,
         },
         rateLimits: {
@@ -97,20 +100,71 @@ export const extractRangeTask = onTaskDispatched(
             throw new Error('falta GEMINI_API_KEY');
         }
 
-        const resultado = await procesarRango(puertasReales(apiKey), carga);
+        try {
+            const resultado = await procesarRango(puertasReales(apiKey), carga);
 
-        if (resultado.estado === 'descartado') {
-            console.log(`[Rango] ${carga?.resourceId}: ${resultado.motivo}; se retira`);
-        } else if (resultado.estado === 'siguiente') {
-            console.log(
-                `⛓️ [Rango] ${carga.resourceId}: encolado ${resultado.rango.desde}-${resultado.rango.hasta}` +
-                ` (de a ${resultado.tamano})`,
-            );
+            if (resultado.estado === 'descartado') {
+                console.log(`[Rango] ${carga?.resourceId}: ${resultado.motivo}; se retira`);
+            } else if (resultado.estado === 'siguiente') {
+                console.log(
+                    `⛓️ [Rango] ${carga.resourceId}: encolado ${resultado.rango.desde}-${resultado.rango.hasta}` +
+                    ` (de a ${resultado.tamano})`,
+                );
+            }
+        } catch (err) {
+            // Un error se propaga a propósito: es lo que hace que Cloud Tasks
+            // reintente, y la idempotencia evita repetir lo ya hecho. Pero el
+            // ÚLTIMO intento tiene que dejar constancia: si no, la cadena se
+            // detiene sin decir nada y el recurso se queda en «procesando» con
+            // su barra en cero hasta que el barrido lo recoja veinte minutos
+            // después. Un PDF cifrado se quedó así, y desde la pantalla era
+            // indistinguible de un libro que tarda.
+            if (req.retryCount >= MAX_INTENTOS - 1) {
+                await marcarFalloDeRango(carga, err);
+            }
+            throw err;
         }
-        // Un error de las puertas se propaga a propósito: es lo que hace que
-        // Cloud Tasks reintente, y la idempotencia evita repetir lo ya hecho.
     },
 );
+
+/**
+ * Deja el fallo donde el usuario lo ve, con el rango que rompió.
+ *
+ * No borra lo hecho: los rangos ya extraídos siguen en Storage y un
+ * reintento los saltea. Lo que cambia es que la pantalla deja de mostrar
+ * un progreso que ya no avanza.
+ */
+async function marcarFalloDeRango(carga: CargaDeRango, err: unknown): Promise<void> {
+    const motivo = err instanceof Error ? err.message : String(err);
+    const rango = `${carga.desde}-${carga.hasta}`;
+    console.error(`[Rango] ${carga.resourceId}: último intento del rango ${rango} falló — ${motivo}`);
+    try {
+        await getFirestore().collection('library_resources').doc(carga.resourceId).update({
+            textExtractionStatus: 'failed',
+            extractionError: mensajeParaLaPantalla(motivo, rango),
+            extractionFailureReason: 'error',
+            extractionAttemptedAt: new Date(),
+            updatedAt: new Date(),
+        });
+    } catch (escritura) {
+        console.error(`[Rango] ${carga.resourceId}: tampoco se pudo escribir el fallo:`, escritura);
+    }
+}
+
+/**
+ * El error técnico, dicho de forma que se pueda actuar.
+ *
+ * Un PDF cifrado no se arregla reintentando —hay que quitarle la
+ * protección o subir otra copia—, y decir «error al procesar» manda al
+ * usuario a repetir lo que ya falló tres veces.
+ */
+export function mensajeParaLaPantalla(motivo: string, rango: string): string {
+    if (/encrypted/i.test(motivo)) {
+        return 'El PDF está protegido y no se pudieron recortar sus páginas. '
+            + 'Quita la protección del archivo o sube otra copia.';
+    }
+    return `El procesamiento falló en las páginas ${rango} y no pudo continuar. Vuelve a intentarlo.`;
+}
 
 /**
  * Las puertas contra la nube de verdad.
