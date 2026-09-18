@@ -444,6 +444,13 @@ export function ResourceCard({
                     text: t('engine.gemini'),
                     title: t('engine.geminiHint'),
                 };
+            case '7.0-pdfjs-lineas':
+                return {
+                    tone: 'bg-muted text-muted-foreground border border-border',
+                    icon: FileText,
+                    text: t('engine.textLayer'),
+                    title: t('engine.textLayerHint'),
+                };
             case 'fallback-pdfparse':
             case '5.0-pdfparse-structured':
                 return {

@@ -539,7 +539,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                             extractedText = result.text;
                             pageCount = result.pageCount;
                             structuredMarkdown = result.markdown;
-                            extractionVersion = '5.0-pdfparse-structured';
+                            extractionVersion = '7.0-pdfjs-lineas';
                         }
                     } else {
                         // >50MB exceeds Gemini Files API per-file cap.
@@ -553,7 +553,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                         extractedText = result.text;
                         pageCount = result.pageCount;
                         structuredMarkdown = result.markdown;
-                        extractionVersion = '5.0-pdfparse-structured';
+                        extractionVersion = '7.0-pdfjs-lineas';
                     }
                 }
             } else if (stats.size <= topeDeVisionPara(expectedPageCount)) {
@@ -578,7 +578,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                     extractedText = result.text;
                     pageCount = result.pageCount;
                     structuredMarkdown = result.markdown;
-                    extractionVersion = '5.0-pdfparse-structured';
+                    extractionVersion = '7.0-pdfjs-lineas';
                 }
             } else {
                 console.log(`📄 [Extract] Using pdf-parse (file > 100MB or no LlamaParse)`);
@@ -587,7 +587,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                 extractedText = result.text;
                 pageCount = result.pageCount;
                 structuredMarkdown = result.markdown;
-                extractionVersion = '5.0-pdfparse-structured';
+                extractionVersion = '7.0-pdfjs-lineas';
             }
 
             const usedGemini = extractionVersion === '4.0-gemini-standard' || extractionVersion === '2.0-gemini';
@@ -679,10 +679,10 @@ export const extractPdfWithGemini = onObjectFinalized(
                     : 'Premium no estuvo disponible';
                 if (extractionVersion === '4.0-gemini-standard' || extractionVersion === '2.0-gemini') {
                     extractionWarning = `${accountSummary}; usamos Estándar (Gemini).`;
-                } else if (extractionVersion === '5.0-pdfparse-structured') {
+                } else if (extractionVersion === '7.0-pdfjs-lineas') {
                     extractionWarning = `${accountSummary} y Gemini tampoco pudo procesar; usamos Básico (pdf-parse) sin cobro. Reprocesa con Premium para mejor calidad.`;
                 }
-            } else if (requestedMode === 'standard' && extractionVersion === '5.0-pdfparse-structured') {
+            } else if (requestedMode === 'standard' && extractionVersion === '7.0-pdfjs-lineas') {
                 extractionWarning = 'Gemini falló; usamos Básico (pdf-parse) sin cobro. Considera reprocesar.';
             }
             // Note: requestedMode === undefined (legacy uploads) gets no
