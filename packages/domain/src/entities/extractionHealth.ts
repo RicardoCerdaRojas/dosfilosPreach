@@ -33,6 +33,10 @@ export interface ScriptCensus {
     hebrew: number;
     greek: number;
     latin: number;
+    /** Palabras hebreas de dos o más consonantes. Ausente en censos viejos. */
+    hebrewWords?: number;
+    /** De ésas, cuántas empiezan por letra final: la marca del texto invertido. */
+    hebrewFinalAtStart?: number;
 }
 
 /** Alfabeto que el contenido de una obra requiere para ser citable. */
@@ -43,6 +47,11 @@ export type ExtractionHealth =
     | { status: 'ok' }
     /** Declara necesitar un alfabeto y no trae prácticamente nada de él. */
     | { status: 'missing-script'; script: RequiredScript; found: number }
+    /**
+     * Trae el hebreo, pero al revés. Peor que no traerlo: se ve texto
+     * hebreo y se copia a un trabajo, donde nadie lo relee letra a letra.
+     */
+    | { status: 'reversed-hebrew'; ratio: number; words: number }
     /** Sin censo: extraído antes de que esto existiera. No se juzga. */
     | { status: 'unknown' };
 
@@ -57,6 +66,21 @@ export type ExtractionHealth =
  */
 const MIN_SCRIPT_CHARS = 200;
 
+/**
+ * Palabras hebreas mínimas para juzgar la dirección del texto.
+ *
+ * Con veinte palabras, dos casualidades dan 10 % y marcarían un libro
+ * sano. Las obras que importan traen miles.
+ */
+const MIN_HEBREW_WORDS = 50;
+
+/**
+ * Proporción de palabras con letra final al inicio que delata la
+ * inversión. Los libros sanos medidos dan 0,0 % y el invertido 11,8 %:
+ * cualquier valor de este orden decide igual.
+ */
+const REVERSED_HEBREW_RATIO = 0.02;
+
 export function assessExtraction(
     census: ScriptCensus | null | undefined,
     required: ReadonlyArray<RequiredScript>,
@@ -70,7 +94,38 @@ export function assessExtraction(
         const found = script === 'hebrew' ? census.hebrew : census.greek;
         if (found < MIN_SCRIPT_CHARS) return { status: 'missing-script', script, found };
     }
+
+    // El hebreo está, pero puede estar invertido. Se juzga en TODO libro que
+    // traiga hebreo suficiente, se le exija o no: un léxico invertido hace
+    // daño igual aunque su tipo no obligue a tener hebreo.
+    const reversed = assessHebrewDirection(census);
+    if (reversed) return reversed;
+
     return { status: 'ok' };
+}
+
+/**
+ * Si las palabras hebreas salieron al revés.
+ *
+ * Las letras finales (ך ם ן ף ץ) sólo existen al FINAL de una palabra
+ * hebrea; al invertir el texto quedan al principio. Medido sobre cinco
+ * obras de una biblioteca real: el léxico de Ortiz —79.687 caracteres
+ * hebreos, «sano» para el censo de alfabetos— tiene el 11,8 % de sus
+ * palabras con final al inicio, y Waltke-O'Connor, la BHS, Arnold y Ross
+ * tienen 0,0 %. No hay nada entre medio, así que el umbral no es un
+ * ajuste fino: separa dos poblaciones que no se tocan.
+ *
+ * `null` cuando no se puede juzgar: censo viejo sin los contadores, o un
+ * libro con tan poco hebreo que el porcentaje no significa nada.
+ */
+export function assessHebrewDirection(census: ScriptCensus): ExtractionHealth | null {
+    const words = census.hebrewWords;
+    const finalAtStart = census.hebrewFinalAtStart;
+    if (typeof words !== 'number' || typeof finalAtStart !== 'number') return null;
+    if (words < MIN_HEBREW_WORDS) return null;
+
+    const ratio = finalAtStart / words;
+    return ratio >= REVERSED_HEBREW_RATIO ? { status: 'reversed-hebrew', ratio, words } : null;
 }
 
 /**

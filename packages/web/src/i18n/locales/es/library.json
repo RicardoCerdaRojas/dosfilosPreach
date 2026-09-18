@@ -134,7 +134,9 @@
       "script": {
         "hebrew": "hebreo",
         "greek": "griego"
-      }
+      },
+      "reversedHebrew": "Hebreo invertido",
+      "reversedHebrewHint": "Las palabras hebreas salieron al revés en la extracción: «אֲגָם» quedó como «םָגֲא» ({{percent}}% de las palabras lo delatan). Las definiciones en español se leen bien, así que el daño no se ve hasta citar el término. Vuelve a procesar el libro en modo Estándar, que lee las páginas como imagen."
     }
   },
   "status": {

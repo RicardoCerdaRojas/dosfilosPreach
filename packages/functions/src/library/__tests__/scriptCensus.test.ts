@@ -39,6 +39,6 @@ describe('censusOf', () => {
     });
 
     it('no explota con vacío', () => {
-        expect(censusOf('')).toEqual({ totalChars: 0, hebrew: 0, greek: 0, latin: 0 });
+        expect(censusOf('')).toEqual({ totalChars: 0, hebrew: 0, greek: 0, latin: 0, hebrewWords: 0, hebrewFinalAtStart: 0 });
     });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assessExtraction, requiredScriptsFor } from '../extractionHealth';
+import { assessExtraction, requiredScriptsFor, type ScriptCensus } from '../extractionHealth';
 
 /**
  * Los casos de acá son obras REALES de una biblioteca de 59 recursos, con sus
@@ -100,5 +100,41 @@ describe('requiredScriptsFor — conservador ante la duda', () => {
 
     it('no exige nada cuando el título no dice nada', () => {
         expect(requiredScriptsFor({ type: 'grammar', title: 'Gramática' })).toEqual([]);
+    });
+});
+
+describe('hebreo invertido', () => {
+    const censo = (over: Partial<ScriptCensus>): ScriptCensus => ({
+        totalChars: 500_000, hebrew: 79_687, greek: 0, latin: 400_000, ...over,
+    });
+
+    it('el léxico de Ortiz, con 11,8 % de palabras con final al inicio, se marca', () => {
+        const health = assessExtraction(censo({ hebrewWords: 27_638, hebrewFinalAtStart: 3_261 }), ['hebrew']);
+        expect(health.status).toBe('reversed-hebrew');
+    });
+
+    it('los libros sanos medidos (0,0 %) pasan', () => {
+        expect(assessExtraction(censo({ hebrewWords: 19_345, hebrewFinalAtStart: 0 }), ['hebrew']).status).toBe('ok');
+        // Arnold: 2,9 % de finales fuera de sitio pero 0 al inicio — ruido de
+        // OCR, no inversión.
+        expect(assessExtraction(censo({ hebrewWords: 6_114, hebrewFinalAtStart: 0 }), ['hebrew']).status).toBe('ok');
+    });
+
+    it('se juzga aunque al libro no se le exija hebreo: un léxico invertido daña igual', () => {
+        expect(assessExtraction(censo({ hebrewWords: 27_638, hebrewFinalAtStart: 3_261 }), []).status)
+            .toBe('reversed-hebrew');
+    });
+
+    it('con poco hebreo no se juzga: dos casualidades no son una inversión', () => {
+        expect(assessExtraction(censo({ hebrew: 300, hebrewWords: 20, hebrewFinalAtStart: 3 }), []).status).toBe('ok');
+    });
+
+    it('un censo viejo, sin los contadores, no se juzga', () => {
+        expect(assessExtraction(censo({}), ['hebrew']).status).toBe('ok');
+    });
+
+    it('la falta del alfabeto manda sobre la dirección: primero traerlo, después ordenarlo', () => {
+        const health = assessExtraction(censo({ hebrew: 0, hebrewWords: 0, hebrewFinalAtStart: 0 }), ['hebrew']);
+        expect(health.status).toBe('missing-script');
     });
 });
