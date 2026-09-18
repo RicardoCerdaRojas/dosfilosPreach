@@ -85,7 +85,17 @@ export function assessExtraction(
     census: ScriptCensus | null | undefined,
     required: ReadonlyArray<RequiredScript>,
 ): ExtractionHealth {
-    if (!census || typeof census.totalChars !== 'number') return { status: 'unknown' };
+    if (!census) return { status: 'unknown' };
+
+    // La dirección se juzga primero y con sus propios contadores. Un recurso
+    // al que se le midió la dirección sobre sus fragmentos indexados —los
+    // libros ya extraídos, que no traen censo de alfabetos— quedaría sin
+    // juzgar si esto dependiera de `totalChars`, y el libro invertido
+    // seguiría pareciendo sano.
+    const reversedFirst = assessHebrewDirection(census);
+    if (reversedFirst) return reversedFirst;
+
+    if (typeof census.totalChars !== 'number') return { status: 'unknown' };
     // Un documento vacío es otro problema —extracción fallida sin más— y lo
     // reporta el estado del recurso, no este chequeo.
     if (census.totalChars === 0) return { status: 'unknown' };
@@ -94,12 +104,6 @@ export function assessExtraction(
         const found = script === 'hebrew' ? census.hebrew : census.greek;
         if (found < MIN_SCRIPT_CHARS) return { status: 'missing-script', script, found };
     }
-
-    // El hebreo está, pero puede estar invertido. Se juzga en TODO libro que
-    // traiga hebreo suficiente, se le exija o no: un léxico invertido hace
-    // daño igual aunque su tipo no obligue a tener hebreo.
-    const reversed = assessHebrewDirection(census);
-    if (reversed) return reversed;
 
     return { status: 'ok' };
 }

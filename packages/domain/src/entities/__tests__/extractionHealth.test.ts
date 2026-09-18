@@ -138,3 +138,18 @@ describe('hebreo invertido', () => {
         expect(health.status).toBe('missing-script');
     });
 });
+
+describe('dirección sin censo de alfabetos', () => {
+    it('un libro medido sobre sus fragmentos indexados también se juzga', () => {
+        // Los libros ya extraídos no traen censo: sus contadores de dirección
+        // se calcularon después, desde lo indexado. Si el juicio dependiera de
+        // `totalChars`, el libro invertido seguiría pareciendo sano.
+        const health = assessExtraction({ hebrewWords: 27_638, hebrewFinalAtStart: 3_254 } as ScriptCensus, ['hebrew']);
+        expect(health.status).toBe('reversed-hebrew');
+    });
+
+    it('sin censo alguno, sigue sin juzgarse', () => {
+        expect(assessExtraction(null, ['hebrew']).status).toBe('unknown');
+        expect(assessExtraction({} as ScriptCensus, ['hebrew']).status).toBe('unknown');
+    });
+});
