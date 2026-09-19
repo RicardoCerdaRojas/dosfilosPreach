@@ -36,7 +36,7 @@ el documento salga en el formato y la extensión que el seminario exige.
 | 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `done` (#631-#636, #639) | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
 | 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `done` (#640, #641) | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
 | 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `done` (#648, #649, #650) | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
-| 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `next` | 0 términos del glosario en la salida («tronco», calcos del inglés) |
+| 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `in-progress` — P3.5 hecho (#651); falta P3.4 | 0 términos del glosario en la salida («tronco», calcos del inglés) |
 
 ## Etapa 1 — Verificación del análisis canónico
 
@@ -209,3 +209,15 @@ bitácora de abajo.
     trabajo sobre Jonás sería arrastrar el error en vez de ahorrar trabajo.
   - Se guarda DESDE un trabajo ya configurado, que es el único momento en que la
     configuración existe y está probada.
+- **2026-09-19** — **Etapa 6, glosario terminológico (P3.5, PR #651).** En el trabajo de Salmo
+  23:1–3 el autor fue tachando a mano términos que no eran suyos: «tronco» por «conjugación»
+  —una expresión que ni entendió al leerla—, «atestiguada» por «documentada», y calcos del
+  inglés que un hispanohablante de Chile no escribe. Ninguno era error de contenido: eran
+  palabras de otro puestas en su boca.
+  - El glosario es del USUARIO, no del trabajo: una palabra que no es suya no lo es en ninguna
+    entrega, y la lista sólo crece con el uso.
+  - Viaja al prompt como regla dura **y** se coteja sobre el texto después. Pedirlo solo no
+    basta: el modelo casi siempre obedece, y «casi siempre» es justo lo que obliga a releer el
+    trabajo entero buscando.
+  - No reemplaza solo: cambiar una palabra dentro de una frase compuesta rompe la concordancia,
+    y el trabajo lo firma el autor.

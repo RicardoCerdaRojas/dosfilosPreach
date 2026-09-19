@@ -59,7 +59,25 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
             ? 'No style guide attached. Apply TMS / Turabian conventions as default.'
             : 'Sin guía de estilo configurada. Aplica TMS / Turabian como default.');
 
-    const systemInstruction = [baseInstruction, '', styleGuideBlock].join('\n');
+    // El glosario va en la INSTRUCCIÓN y no en el mensaje: es una regla de
+    // cómo escribir, no un dato del verso, y vale igual para todas las
+    // pasadas sobre este trabajo.
+    const glosario = (input.glossary ?? []).filter(t => t.avoid.trim().length >= 3);
+    const glossaryBlock = glosario.length > 0
+        ? [
+            lang === 'en'
+                ? 'WORDS THIS AUTHOR DOES NOT USE (hard rule — never write them):'
+                : 'PALABRAS QUE ESTE AUTOR NO USA (regla dura — nunca las escribas):',
+            ...glosario.map(t => {
+                const cambio = t.prefer?.trim()
+                    ? (lang === 'en' ? ` → write "${t.prefer.trim()}"` : ` → escribe «${t.prefer.trim()}»`)
+                    : (lang === 'en' ? ' → rephrase without it' : ' → reformula sin ella');
+                return `- "${t.avoid.trim()}"${cambio}${t.note?.trim() ? ` (${t.note.trim()})` : ''}`;
+            }),
+        ].join('\n')
+        : '';
+
+    const systemInstruction = [baseInstruction, '', styleGuideBlock, glossaryBlock].filter(Boolean).join('\n');
 
     const verseRef = input.verseAnalysis.reference;
     const verseLabel = `${verseRef.bookId} ${verseRef.chapterStart}:${verseRef.verseStart}${

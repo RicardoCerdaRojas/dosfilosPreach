@@ -5,8 +5,10 @@ import type {
     ComposerSourceMetadata,
     ExegeticalPaper,
     FormatterSourceMetadata,
+    GlossaryTerm,
     IBibliographyReader,
     IExegeticalPaperRepository,
+    ITermGlossaryRepository,
     IResourceContentReader,
     IStyleFormatter,
     IUserStyleGuideRepository,
@@ -92,6 +94,11 @@ export class ComposeVerseAcademicProseUseCase {
          * nombre del archivo, y el modelo completa el resto inventándolo.
          */
         private bibliography?: IBibliographyReader,
+        /**
+         * El glosario del autor. Sin él la prosa sale con las palabras de
+         * otro y el autor las tacha a mano, una por una, en cada entrega.
+         */
+        private glossaryRepository?: ITermGlossaryRepository,
     ) { }
 
     async execute(input: ComposeVerseAcademicProseInput): Promise<ComposeVerseAcademicProseOutput> {
@@ -126,6 +133,7 @@ export class ComposeVerseAcademicProseUseCase {
 
         try {
             const styleGuideContent = await this.loadStyleGuideContent(input.ownerId, paper.styleGuideId);
+            const glossary = await this.loadGlossary(input.ownerId);
             const manifest = await this.loadStyleManifest(input.ownerId, paper);
 
             const composerInput: ComposeVerseInput = {
@@ -137,6 +145,7 @@ export class ComposeVerseAcademicProseUseCase {
                 styleGuideManifest: manifest,
                 sources: await buildComposerSources(paper, this.bibliography),
                 pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
+                ...(glossary.length > 0 ? { glossary } : {}),
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
             };
@@ -226,6 +235,24 @@ export class ComposeVerseAcademicProseUseCase {
 
         await this.paperRepository.updatePaper(ownerId, paper.id, { assembledMarkdown: next });
         return true;
+    }
+
+    /**
+     * Las palabras que este autor no usa.
+     *
+     * Un fallo de lectura devuelve lista vacía: componer con el glosario
+     * ausente deja una prosa que habrá que corregir a mano —molesto—; no
+     * componer deja al autor sin verso —peor—.
+     */
+    private async loadGlossary(ownerId: string): Promise<GlossaryTerm[]> {
+        if (!this.glossaryRepository) return [];
+        try {
+            const glosario = await this.glossaryRepository.getGlossary(ownerId);
+            return [...(glosario?.terms ?? [])];
+        } catch (err) {
+            console.warn('[ComposeVerseAcademicProseUseCase] no se pudo leer el glosario:', err);
+            return [];
+        }
     }
 
     private async loadStyleGuideContent(ownerId: string, styleGuideId: string | null): Promise<string> {

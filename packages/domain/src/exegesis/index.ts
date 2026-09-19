@@ -81,6 +81,8 @@ export * from './services/paperLength';
 export * from './services/lemmaPages';
 export * from './services/courseBibliography';
 export * from './entities/WorkProfile';
+export * from './entities/TermGlossary';
+export * from './repositories/ITermGlossaryRepository';
 export * from './repositories/IWorkProfileRepository';
 export * from './services/bibliography';
 export * from './services/corpusHeredado';

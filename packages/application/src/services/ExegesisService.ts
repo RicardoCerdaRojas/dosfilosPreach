@@ -2,6 +2,7 @@ import {
     FirestoreExegeticalPaperRepository,
     FirestoreUserRubricRepository,
     FirestoreWorkProfileRepository,
+    FirestoreTermGlossaryRepository,
     FirestoreUserStyleGuideRepository,
     FirestoreUserAssignmentBriefRepository,
     FirebaseLibraryRepository,
@@ -42,6 +43,7 @@ import {
 } from '@dosfilos/infrastructure';
 import type {
     IWorkProfileRepository,
+    ITermGlossaryRepository,
     IResourceContentReader,
     IResourceIndexProbe,
 } from '@dosfilos/domain';
@@ -163,6 +165,8 @@ class ExegesisService {
     public listUserRubrics: ListUserRubricsUseCase;
     /** Acceso directo al repositorio de perfiles: son CRUD sin reglas propias. */
     public workProfiles: IWorkProfileRepository;
+    /** Acceso directo: el glosario es un documento por persona, sin reglas propias. */
+    public termGlossary: ITermGlossaryRepository;
     public saveWorkProfileFromPaper: SaveWorkProfileFromPaperUseCase;
     public createUserRubric: CreateUserRubricUseCase;
     public updateUserRubric: UpdateUserRubricUseCase;
@@ -296,6 +300,9 @@ class ExegesisService {
         // Perfiles de trabajo: cómo se configuró un trabajo, para el siguiente
         // del mismo curso.
         const workProfileRepository = new FirestoreWorkProfileRepository();
+        // El glosario del autor: palabras que no son suyas.
+        const termGlossaryRepository = new FirestoreTermGlossaryRepository();
+        this.termGlossary = termGlossaryRepository;
         this.workProfiles = workProfileRepository;
         const userAssignmentBriefRepository = new FirestoreUserAssignmentBriefRepository();
         const libraryRepository = new FirebaseLibraryRepository();
@@ -624,6 +631,7 @@ class ExegesisService {
             // recomponer la prosa, sin volver a analizar verso por verso.
             pageNumberingReader,
             bibliographyReader,
+            termGlossaryRepository,
         );
 
         // Ministry composers (sermon / devotional / study guide).

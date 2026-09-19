@@ -77,6 +77,16 @@ export interface ComposeVerseInput {
      */
     targetWords?: number;
 
+    /**
+     * Palabras que el autor no usa, y por cuáles cambiarlas.
+     *
+     * Viajan al prompt porque pedirlo antes cuesta una línea y corregirlo
+     * después cuesta releer el trabajo entero. No sustituyen al cotejo
+     * posterior: el modelo casi siempre obedece, y «casi siempre» es
+     * exactamente lo que obliga a releer.
+     */
+    glossary?: ReadonlyArray<{ avoid: string; prefer?: string; note?: string }>;
+
     /** Style guide content (verbatim) when configured. */
     styleGuideContent: string;
 

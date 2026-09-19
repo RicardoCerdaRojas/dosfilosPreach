@@ -2059,6 +2059,19 @@
         "publisher": "Kregel",
         "year": "2011"
       }
+    },
+    "glossary": {
+      "title": "Palabras que no uso",
+      "empty": "Todavía no hay ninguna. Agrega las que corrijas a mano y no volverán a aparecer.",
+      "clean": "Ninguna de tus {{count}} palabras aparece en este trabajo.",
+      "found": "{{count}} apariciones por revisar",
+      "times": "{{count}} vez/veces",
+      "howToFix": "Usa «Recomponer» en el verso donde aparezcan: el compositor ya recibe esta lista como regla.",
+      "avoidPlaceholder": "palabra a evitar",
+      "preferPlaceholder": "usar en su lugar (opcional)",
+      "add": "Agregar",
+      "remove": "Quitar {{term}}",
+      "saveFailed": "No se pudo guardar el glosario."
     }
   },
   "citationViewer": {
