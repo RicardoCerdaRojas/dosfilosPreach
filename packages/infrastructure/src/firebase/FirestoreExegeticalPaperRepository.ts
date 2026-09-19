@@ -1106,6 +1106,8 @@ function deserializeRubric(raw: any): ExegeticalPaper['rubric'] {
         expectedLength: raw.expectedLength ?? null,
         citationStandard: raw.citationStandard ?? null,
         sourceRequirements: Array.isArray(raw.sourceRequirements) ? raw.sourceRequirements : [],
+        // Las rúbricas anteriores a la bibliografía del curso no la traen.
+        courseBibliography: Array.isArray(raw.courseBibliography) ? raw.courseBibliography : [],
         structuralExpectations: Array.isArray(raw.structuralExpectations) ? raw.structuralExpectations : [],
         qualityCriteria: Array.isArray(raw.qualityCriteria) ? raw.qualityCriteria : [],
         sourceCorpusId: raw.sourceCorpusId ?? null,

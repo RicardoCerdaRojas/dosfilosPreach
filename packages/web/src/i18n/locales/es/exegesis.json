@@ -1147,6 +1147,16 @@
           "page": "p. {{printed}}",
           "sheet": "hoja {{sheet}}",
           "hint": "La primera hoja es la que más veces nombra el lema, que casi siempre es su entrada. Pasa el cursor para ver el renglón."
+        },
+        "courseBib": {
+          "title": "Bibliografía del curso",
+          "coverage": "{{inCorpus}} de {{required}} obras obligatorias ya están en el corpus",
+          "missingFromLibrary": "{{count}} no están en tu biblioteca",
+          "recommended": "recomendada",
+          "inCorpus": "en el corpus de este trabajo",
+          "inLibrary": "está en tu biblioteca, falta agregarla al corpus",
+          "notFound": "no la encuentro en tu biblioteca; súbela o agrégala a mano si la tienes con otro título",
+          "add": "Agregar"
         }
       },
       "corpus-plan": {

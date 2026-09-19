@@ -79,6 +79,7 @@ export * from './services/citationReview';
 export * from './services/citationCorrection';
 export * from './services/paperLength';
 export * from './services/lemmaPages';
+export * from './services/courseBibliography';
 export * from './services/bibliography';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';

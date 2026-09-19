@@ -1,4 +1,5 @@
 import {
+    type CourseBibliographyEntry,
     type ExtractRubricInput,
     type ExtractedRubric,
     type IPaperRubricExtractor,
@@ -165,6 +166,15 @@ function buildUserMessageEN(rawText: string, typeList: string, source: 'document
         `      "justification": string                                       // localized academic rationale`,
         `    }, ...`,
         `  ],`,
+        `  "courseBibliography": [                                          // the WORKS the syllabus names, by title. Empty when it names none.`,
+        `    {`,
+        `      "title": string,                                              // as the syllabus writes it`,
+        `      "author": string | null,`,
+        `      "series": string | null,                                      // "IBHS", "WBC 19", when given`,
+        `      "requirement": "required" | "recommended",`,
+        `      "note": string | null                                         // what the syllabus says about it, if anything`,
+        `    }, ...`,
+        `  ],`,
         `  "structuralExpectations": [                                      // one entry per section the rubric addresses`,
         `    {`,
         `      "section": "introduction" | "verse" | "conclusion",`,
@@ -235,6 +245,15 @@ function buildUserMessageES(rawText: string, typeList: string, source: 'document
         `      "justification": string                                       // racional académico localizado`,
         `    }, ...`,
         `  ],`,
+        `  "courseBibliography": [                                          // las OBRAS que el sílabo nombra, por su título. Vacío si no nombra ninguna.`,
+        `    {`,
+        `      "title": string,                                              // tal como lo escribe el sílabo`,
+        `      "author": string | null,`,
+        `      "series": string | null,                                      // "IBHS", "WBC 19", cuando lo da`,
+        `      "requirement": "required" | "recommended",`,
+        `      "note": string | null                                         // lo que el sílabo dice de ella, si dice algo`,
+        `    }, ...`,
+        `  ],`,
         `  "structuralExpectations": [                                      // un entry por sección que la rúbrica menciona`,
         `    {`,
         `      "section": "introduction" | "verse" | "conclusion",`,
@@ -291,6 +310,7 @@ interface RawExtractionResult {
         maximum: number | null;
         justification: string;
     }>;
+    courseBibliography?: unknown;
     structuralExpectations: Array<{
         section: string;
         emphasizedTypes: string[];
@@ -388,6 +408,7 @@ function mapToDomain(raw: RawExtractionResult, input: ExtractRubricInput): Omit<
         expectedLength: raw.expectedLength,
         citationStandard: raw.citationStandard,
         sourceRequirements,
+        courseBibliography: parseCourseBibliography(raw.courseBibliography),
         structuralExpectations,
         qualityCriteria,
         sourceCorpusId: input.sourceCorpusId,
@@ -438,4 +459,38 @@ function collectReviewNotes(raw: RawExtractionResult, lang: 'es' | 'en'): string
         );
     }
     return notes;
+}
+
+/**
+ * Las obras que el sílabo nombra.
+ *
+ * Se guarda lo que el modelo leyó, sin completar lo que falte: un sílabo
+ * que dice «Waltke–O'Connor» y nada más deja el autor puesto y el resto
+ * vacío. Inventar la editorial o el año aquí sería repetir el defecto que
+ * la ficha bibliográfica vino a cerrar.
+ *
+ * Tope de 40 obras: un sílabo real lista entre tres y quince, y una lista
+ * más larga es el modelo confundiendo la bibliografía del curso con las
+ * obras citadas en el propio documento.
+ */
+function parseCourseBibliography(raw: unknown): CourseBibliographyEntry[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
+        .map(e => {
+            const title = typeof e.title === 'string' ? e.title.trim() : '';
+            if (!title) return null;
+            const author = typeof e.author === 'string' ? e.author.trim() : '';
+            const series = typeof e.series === 'string' ? e.series.trim() : '';
+            const note = typeof e.note === 'string' ? e.note.trim() : '';
+            return {
+                title,
+                ...(author ? { author } : {}),
+                ...(series ? { series } : {}),
+                requirement: e.requirement === 'recommended' ? 'recommended' as const : 'required' as const,
+                ...(note ? { note } : {}),
+            };
+        })
+        .filter((e): e is CourseBibliographyEntry => e !== null)
+        .slice(0, 40);
 }
