@@ -1282,6 +1282,23 @@
         "place": "Chiguayante, Concepción",
         "date": "September 2026"
       }
+    },
+    "workProfile": {
+      "title": "Work profile",
+      "description": "Save how this paper is set up so the next one for the course starts the same way.",
+      "cta": "Save profile",
+      "nameLabel": "Profile name",
+      "namePlaceholder": "OT603 · Research paper",
+      "courseLabel": "Course (optional)",
+      "coursePlaceholder": "OT603 — Hebrew Exegesis",
+      "whatItSaves": "Saves the style guide, the method, the cover page and which rubric and brief templates you used. It does not save the passage or the corpus: those belong to each paper.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Profile saved. It will be available when you create the next paper.",
+      "saveFailed": "The profile could not be saved.",
+      "pickLabel": "Work profile",
+      "pickNone": "No profile",
+      "pickHint": "Fills in rubric, brief, style guide and method. You can change any of them before creating."
     }
   },
   "setup": {

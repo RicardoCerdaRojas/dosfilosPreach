@@ -1,6 +1,7 @@
 import {
     FirestoreExegeticalPaperRepository,
     FirestoreUserRubricRepository,
+    FirestoreWorkProfileRepository,
     FirestoreUserStyleGuideRepository,
     FirestoreUserAssignmentBriefRepository,
     FirebaseLibraryRepository,
@@ -40,6 +41,7 @@ import {
     DocumentPageNumberingReader,
 } from '@dosfilos/infrastructure';
 import type {
+    IWorkProfileRepository,
     IResourceContentReader,
     IResourceIndexProbe,
 } from '@dosfilos/domain';
@@ -107,6 +109,7 @@ import {
     GenerateStepUseCase,
     AcceptStepUseCase,
     CorrectCitationUseCase,
+    SaveWorkProfileFromPaperUseCase,
     ReviewCitationUseCase,
     SaveStepEditUseCase,
     VerifyStepCitationsUseCase,
@@ -158,6 +161,9 @@ class ExegesisService {
 
     // User-level rubric templates
     public listUserRubrics: ListUserRubricsUseCase;
+    /** Acceso directo al repositorio de perfiles: son CRUD sin reglas propias. */
+    public workProfiles: IWorkProfileRepository;
+    public saveWorkProfileFromPaper: SaveWorkProfileFromPaperUseCase;
     public createUserRubric: CreateUserRubricUseCase;
     public updateUserRubric: UpdateUserRubricUseCase;
     public deleteUserRubric: DeleteUserRubricUseCase;
@@ -287,6 +293,10 @@ class ExegesisService {
         const paperRepository = new FirestoreExegeticalPaperRepository();
         const styleGuideRepository = new FirestoreUserStyleGuideRepository();
         const userRubricRepository = new FirestoreUserRubricRepository();
+        // Perfiles de trabajo: cómo se configuró un trabajo, para el siguiente
+        // del mismo curso.
+        const workProfileRepository = new FirestoreWorkProfileRepository();
+        this.workProfiles = workProfileRepository;
         const userAssignmentBriefRepository = new FirestoreUserAssignmentBriefRepository();
         const libraryRepository = new FirebaseLibraryRepository();
         const orchestrator = new GeminiExegesisOrchestrator(exegesisModelId);
@@ -340,6 +350,7 @@ class ExegesisService {
 
         // User-level rubric templates
         this.listUserRubrics = new ListUserRubricsUseCase(userRubricRepository);
+        this.saveWorkProfileFromPaper = new SaveWorkProfileFromPaperUseCase(paperRepository, workProfileRepository);
         this.createUserRubric = new CreateUserRubricUseCase(userRubricRepository);
         this.updateUserRubric = new UpdateUserRubricUseCase(userRubricRepository);
         this.deleteUserRubric = new DeleteUserRubricUseCase(userRubricRepository);

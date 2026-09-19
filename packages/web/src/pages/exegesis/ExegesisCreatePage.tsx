@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, BookText, Sparkles, Loader2, Lightbulb, Languages, FileCheck2, Compass } from 'lucide-react';
@@ -16,6 +16,8 @@ import {
     type PassageReference,
     type SupportedLanguage,
 } from '@dosfilos/domain';
+import { useWorkProfiles } from '@/hooks/exegesis/useWorkProfiles';
+import type { WorkProfile } from '@dosfilos/domain';
 
 /**
  * Step 1 of the exegesis creation flow — minimal page.
@@ -35,7 +37,7 @@ import {
 export function ExegesisCreatePage() {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('exegesis');
-    const { createPaper } = useExegesisPapers();
+    const { createPaper, updatePaperCover } = useExegesisPapers();
     const { rubrics, defaultRubric } = useUserRubrics();
     const { defaultBrief } = useUserAssignmentBriefs();
 
@@ -74,6 +76,34 @@ export function ExegesisCreatePage() {
     // deliberate, named choice (`free`) — not the absence of one.
     const [exegeticalStrategy, setExegeticalStrategy] = useState<ExegeticalStrategy>('dialectical');
 
+    // Perfil de trabajo: cómo quedó configurado un trabajo anterior del
+    // mismo curso. Rellena los campos y NO decide: el estudiante ve los
+    // valores puestos y cambia los que quiera antes de crear. Un perfil que
+    // decide en silencio es un perfil que nadie revisa.
+    const { profiles, defaultProfile } = useWorkProfiles();
+    const perfilElegido = profiles.find(p => p.id === workProfileId) ?? null;
+    const [workProfileId, setWorkProfileId] = useState<string | null>(null);
+    const perfilAplicado = useRef(false);
+
+    const aplicarPerfil = useCallback((profile: WorkProfile | null) => {
+        setWorkProfileId(profile?.id ?? null);
+        if (!profile) return;
+        perfilAplicado.current = true;
+        setRubricTemplateId(profile.rubricTemplateId);
+        setExegeticalStrategy(profile.exegeticalStrategy);
+        setCoverFromProfile(profile.cover ?? null);
+    }, []);
+
+    /** La portada del perfil, que se escribe en el trabajo recién creado. */
+    const [coverFromProfile, setCoverFromProfile] = useState<WorkProfile['cover']>(null);
+
+    // El perfil por defecto se aplica al entrar, y sólo mientras el
+    // estudiante no haya tocado nada.
+    useEffect(() => {
+        if (perfilAplicado.current || !defaultProfile) return;
+        aplicarPerfil(defaultProfile);
+    }, [defaultProfile, aplicarPerfil]);
+
     // Auto-load the user's default brief once the hook resolves.
     // Skip when the user already typed something so we don't clobber.
     useEffect(() => {
@@ -93,10 +123,16 @@ export function ExegesisCreatePage() {
                 passage,
                 displayLanguage,
                 exegeticalStrategy,
-                styleGuideId: null,
+                styleGuideId: perfilElegido?.styleGuideId ?? null,
                 assignmentBrief: assignmentBrief.trim() || null,
                 rubricTemplateId,
             });
+            // La portada del perfil se escribe sobre el trabajo nuevo: es el
+            // dato que menos cambia entre trabajos del mismo curso y el que
+            // más molesta retipear.
+            if (coverFromProfile) {
+                await updatePaperCover.mutateAsync({ paperId: paper.id, cover: coverFromProfile });
+            }
             toast.success(t('create.toast.created'));
             navigate(`/dashboard/exegesis/${paper.id}/setup`);
         } catch (err) {
@@ -197,6 +233,28 @@ export function ExegesisCreatePage() {
                         {t('create.strategy.hint')}
                     </p>
                 </Step>
+
+                {profiles.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card p-3 space-y-1">
+                        <label htmlFor="work-profile" className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+                            {t('paperSetup.workProfile.pickLabel')}
+                        </label>
+                        <select
+                            id="work-profile"
+                            value={workProfileId ?? ''}
+                            onChange={e => aplicarPerfil(profiles.find(p => p.id === e.target.value) ?? null)}
+                            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        >
+                            <option value="">{t('paperSetup.workProfile.pickNone')}</option>
+                            {profiles.map(p => (
+                                <option key={p.id} value={p.id}>
+                                    {p.displayName}{p.course ? ` · ${p.course}` : ''}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-[11px] text-muted-foreground">{t('paperSetup.workProfile.pickHint')}</p>
+                    </div>
+                )}
 
                 <Step
                     number={4}
