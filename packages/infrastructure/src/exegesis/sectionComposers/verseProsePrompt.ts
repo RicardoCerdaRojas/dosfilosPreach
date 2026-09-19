@@ -1,4 +1,5 @@
 import {
+    buildAcademicVoiceBlock,
     formatPassageReference,
     serializeAnalysis,
     type ComposeVerseInput,
@@ -77,7 +78,13 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         ].join('\n')
         : '';
 
-    const systemInstruction = [baseInstruction, '', styleGuideBlock, glossaryBlock].filter(Boolean).join('\n');
+    // La voz va en la instrucción, junto al estilo y al glosario: las tres
+    // dicen CÓMO escribir, no QUÉ escribir.
+    const voiceBlock = buildAcademicVoiceBlock(input.voiceSamples ?? [], lang);
+
+    const systemInstruction = [baseInstruction, '', styleGuideBlock, glossaryBlock, voiceBlock]
+        .filter(Boolean)
+        .join('\n');
 
     const verseRef = input.verseAnalysis.reference;
     const verseLabel = `${verseRef.bookId} ${verseRef.chapterStart}:${verseRef.verseStart}${
