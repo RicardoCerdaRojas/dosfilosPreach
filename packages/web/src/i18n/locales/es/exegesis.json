@@ -1138,6 +1138,15 @@
           "toast_one": "Se agregó 1 fuente de la serie.",
           "toast_other": "Se agregaron {{count}} fuentes de la serie.",
           "error": "No se pudieron traer las fuentes. Intenta de nuevo."
+        },
+        "lemmas": {
+          "title": "Páginas por lema",
+          "addAll": "Agregar las {{count}} principales",
+          "empty": "Todavía no hay lemas: salen del análisis canónico de los versos.",
+          "notFound": "no aparece en este libro",
+          "page": "p. {{printed}}",
+          "sheet": "hoja {{sheet}}",
+          "hint": "La primera hoja es la que más veces nombra el lema, que casi siempre es su entrada. Pasa el cursor para ver el renglón."
         }
       },
       "corpus-plan": {

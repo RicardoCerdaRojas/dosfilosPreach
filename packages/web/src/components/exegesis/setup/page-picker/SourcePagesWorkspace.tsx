@@ -9,6 +9,8 @@ import {
     printedPageFor,
     type PageIndexEntry,
     type SheetRange,
+    type LemmaPageProposal,
+    type PageNumbering,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { PanelGroup } from '@/components/ui/PanelGroup';
@@ -17,6 +19,7 @@ import { useDocumentPdfUrl } from '@/hooks/exegesis/useDocumentPageIndex';
 import { PageRail, sheetsInRanges } from './PageRail';
 import { PdfPageViewer } from './PdfPageViewer';
 import { SelectionCart } from './SelectionCart';
+import { LemmaPagesPanel } from './LemmaPagesPanel';
 
 /**
  * Los tres paneles del selector: índice, hoja y carrito.
@@ -46,6 +49,14 @@ interface Props {
     otherSourcesChars: number;
     onConfirm: (ranges: ReadonlyArray<SheetRange>, pinned: ReadonlyArray<SheetRange>) => Promise<void>;
     isSaving: boolean;
+    /**
+     * Dónde vive cada lema del pasaje dentro de ESTE libro. Sólo llega
+     * para los léxicos: en un comentario, un lema no tiene entrada propia.
+     */
+    lemmaProposals?: ReadonlyArray<LemmaPageProposal>;
+    lemmaLoading?: boolean;
+    /** Numeración confirmada del libro, para nombrar las hojas por su folio. */
+    numbering?: PageNumbering | null;
 }
 
 export function SourcePagesWorkspace({
@@ -60,6 +71,9 @@ export function SourcePagesWorkspace({
     otherSourcesChars,
     onConfirm,
     isSaving,
+    lemmaProposals,
+    lemmaLoading = false,
+    numbering = null,
 }: Props) {
     const { t } = useTranslation('exegesis');
     const pdf = useDocumentPdfUrl(resourceId);
@@ -136,6 +150,23 @@ export function SourcePagesWorkspace({
 
     const toggleSheet = useCallback((sheet: number) => {
         rebuild(sheets => { if (sheets.has(sheet)) sheets.delete(sheet); else sheets.add(sheet); });
+    }, []);
+
+    /**
+     * Agrega una hoja propuesta para un lema y va a verla.
+     *
+     * Se muestra la hoja porque la propuesta es literal: dice dónde
+     * aparece la palabra, no que ahí esté su entrada. Quien decide es
+     * quien firma el trabajo, y para decidir hay que mirar.
+     */
+    const addLemmaSheet = useCallback((sheet: number) => {
+        rebuild(sheets => sheets.add(sheet));
+        setCurrentSheet(sheet);
+    }, []);
+
+    const addLemmaSheets = useCallback((hojas: ReadonlyArray<number>) => {
+        rebuild(sheets => { for (const h of hojas) sheets.add(h); });
+        if (hojas[0]) setCurrentSheet(hojas[0]);
     }, []);
 
     /**
@@ -369,7 +400,17 @@ export function SourcePagesWorkspace({
                     onResize={(delta) => setCartWidth(w => Math.min(460, Math.max(260, w + delta)))}
                     title={t('paperSetup.subSteps.corpus.picker.cart.resize')}
                 />
-                <div className="flex min-w-0 shrink-0" style={{ width: `${cartWidth}px` }}>
+                <div className="flex flex-col gap-2 min-w-0 shrink-0 overflow-y-auto" style={{ width: `${cartWidth}px` }}>
+                    {lemmaProposals && (
+                        <LemmaPagesPanel
+                            proposals={lemmaProposals}
+                            isLoading={lemmaLoading}
+                            numbering={numbering}
+                            selected={selectedSheets}
+                            onAdd={addLemmaSheet}
+                            onAddAll={addLemmaSheets}
+                        />
+                    )}
                     <SelectionCart
                         ranges={ranges}
                         pages={pages}

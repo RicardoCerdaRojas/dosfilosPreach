@@ -1138,6 +1138,15 @@
           "toast_one": "Added 1 source from the series.",
           "toast_other": "Added {{count}} sources from the series.",
           "error": "Couldn't bring the sources. Try again."
+        },
+        "lemmas": {
+          "title": "Pages by lemma",
+          "addAll": "Add the top {{count}}",
+          "empty": "No lemmas yet: they come from the verses' canonical analysis.",
+          "notFound": "does not appear in this book",
+          "page": "p. {{printed}}",
+          "sheet": "sheet {{sheet}}",
+          "hint": "The first sheet is the one that names the lemma most often, which is usually its entry. Hover to see the line."
         }
       },
       "corpus-plan": {
