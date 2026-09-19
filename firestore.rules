@@ -759,6 +759,13 @@ service cloud.firestore {
     // Exegesis Module — perfiles de trabajo: cómo se configura un trabajo
     // de un curso (rúbrica, encuadre, guía de estilo, método, portada) para
     // reusarlo en el siguiente. Mismo acceso que userRubrics: colección de
+    // Exegesis Module — glosario de términos del usuario: las palabras que
+    // no son suyas y por cuáles cambiarlas. Un documento por persona, cuyo
+    // id ES el del dueño: la regla se escribe sobre la ruta.
+    match /termGlossaries/{ownerId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == ownerId;
+    }
+
     // primer nivel con `ownerId`, sólo el dueño.
     match /workProfiles/{profileId} {
       allow read: if isAuthenticated() && resource.data.ownerId == request.auth.uid;

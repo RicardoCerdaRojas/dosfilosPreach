@@ -78,3 +78,34 @@ describe('registro de fuentes', () => {
         expect(userMessage).toMatch(/no lo escribas ni lo deduzcas/);
     });
 });
+
+describe('glosario del autor', () => {
+    const conGlosario = {
+        ...promptInput(),
+        glossary: [
+            { avoid: 'tronco', prefer: 'conjugación', note: 'nadie llama «tronco» a un binyan' },
+            { avoid: 'anclada' },
+        ],
+    };
+
+    it('las palabras prohibidas van en la instrucción, con su reemplazo', () => {
+        const { systemInstruction } = buildVerseProsePrompt(conGlosario as never);
+        expect(systemInstruction).toMatch(/PALABRAS QUE ESTE AUTOR NO USA/);
+        expect(systemInstruction).toContain('"tronco" → escribe «conjugación»');
+        expect(systemInstruction).toContain('nadie llama «tronco» a un binyan');
+    });
+
+    it('sin reemplazo, se pide reformular en vez de sustituir por nada', () => {
+        const { systemInstruction } = buildVerseProsePrompt(conGlosario as never);
+        expect(systemInstruction).toContain('"anclada" → reformula sin ella');
+    });
+
+    it('sin glosario, la instrucción queda como estaba', () => {
+        expect(buildVerseProsePrompt(promptInput()).systemInstruction).not.toMatch(/NO USA/);
+    });
+
+    it('un término de menos de tres letras no entra: sería ruido en cada frase', () => {
+        const corto = { ...promptInput(), glossary: [{ avoid: 'de' }] };
+        expect(buildVerseProsePrompt(corto as never).systemInstruction).not.toMatch(/NO USA/);
+    });
+});

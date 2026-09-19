@@ -70,3 +70,4 @@ export * from './gemini/SseMultiAgentService';
 // infraestructura para que la capa web no importe Firebase directamente.
 export * from './library/callableLibrary';
 export { FirestoreWorkProfileRepository } from './firebase/FirestoreWorkProfileRepository';
+export { FirestoreTermGlossaryRepository } from './firebase/FirestoreTermGlossaryRepository';

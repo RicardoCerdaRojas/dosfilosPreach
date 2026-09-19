@@ -2059,6 +2059,19 @@
         "publisher": "Kregel",
         "year": "2011"
       }
+    },
+    "glossary": {
+      "title": "Words I don't use",
+      "empty": "None yet. Add the ones you correct by hand and they won't come back.",
+      "clean": "None of your {{count}} words appear in this paper.",
+      "found": "{{count}} occurrences to review",
+      "times": "{{count}} time(s)",
+      "howToFix": "Use \"Recompose\" on the verse where they appear: the composer already receives this list as a rule.",
+      "avoidPlaceholder": "word to avoid",
+      "preferPlaceholder": "use instead (optional)",
+      "add": "Add",
+      "remove": "Remove {{term}}",
+      "saveFailed": "The glossary could not be saved."
     }
   },
   "citationViewer": {
