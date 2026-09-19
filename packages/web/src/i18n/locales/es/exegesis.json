@@ -1282,6 +1282,23 @@
         "place": "Chiguayante, Concepción",
         "date": "Septiembre 2026"
       }
+    },
+    "workProfile": {
+      "title": "Perfil de trabajo",
+      "description": "Guarda cómo quedó configurado este trabajo para empezar el siguiente del curso con lo mismo.",
+      "cta": "Guardar perfil",
+      "nameLabel": "Nombre del perfil",
+      "namePlaceholder": "OT603 · Trabajo de investigación",
+      "courseLabel": "Curso (opcional)",
+      "coursePlaceholder": "OT603 — Exégesis de hebreo",
+      "whatItSaves": "Guarda la guía de estilo, el método, la portada y qué plantillas de rúbrica y encuadre usaste. No guarda el pasaje ni el corpus: ésos son de cada trabajo.",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "saved": "Perfil guardado. Estará disponible al crear el próximo trabajo.",
+      "saveFailed": "No se pudo guardar el perfil.",
+      "pickLabel": "Perfil de trabajo",
+      "pickNone": "Sin perfil",
+      "pickHint": "Rellena rúbrica, encuadre, guía de estilo y método. Puedes cambiar cualquiera antes de crear."
     }
   },
   "setup": {

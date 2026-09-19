@@ -69,3 +69,4 @@ export * from './gemini/SseMultiAgentService';
 // 🔐 Callables de biblioteca (subida a Files API + caché de contexto). Viven en
 // infraestructura para que la capa web no importe Firebase directamente.
 export * from './library/callableLibrary';
+export { FirestoreWorkProfileRepository } from './firebase/FirestoreWorkProfileRepository';

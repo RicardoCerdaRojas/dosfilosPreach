@@ -35,8 +35,8 @@ el documento salga en el formato y la extensión que el seminario exige.
 | 2 | Word según la guía + extensión como contrato (P3.3, P3.2) | `done` (#637, #638) | El .docx generado abre en Word con 12 ± 1 páginas de cuerpo, notas al pie reales y bibliografía; 0 retoques manuales de formato |
 | 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `done` (#631-#636, #639) | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
 | 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `done` (#640, #641) | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
-| 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `in-progress` — P1.4 (#648) y P1.1 (#649) hechos; falta P1.2 | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
-| 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `planned` | 0 términos del glosario en la salida («tronco», calcos del inglés) |
+| 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `done` (#648, #649, #650) | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
+| 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `next` | 0 términos del glosario en la salida («tronco», calcos del inglés) |
 
 ## Etapa 1 — Verificación del análisis canónico
 
@@ -197,3 +197,15 @@ bitácora de abajo.
     19, Psalms 1-50» no supera su umbral, porque «Psalms» es su única palabra larga—.
     Aflojarlo haría que el sistema afirme tener libros que no tiene, así que manda el enlace
     manual: `resourceId` en la entrada, y el automático sólo propone.
+- **2026-09-19** — **Etapa 5 cerrada: perfil de trabajo (P1.2, PR #650).** El fundador tiene
+  tres trabajos de investigación en el mismo ramo; el primero costó configurar rúbrica,
+  encuadre, guía de estilo, método y portada, y los otros dos habrían empezado de cero. Lo que
+  se repite a mano se repite distinto: una rúbrica ligeramente diferente cambia la extensión
+  exigida y una portada retecleada cambia el nombre del seminario.
+  - El perfil es un PUNTERO a plantillas, no una copia: la rúbrica y el encuadre siguen
+    viviendo en sus colecciones. Sólo la portada se guarda por valor, porque no tiene
+    plantilla propia.
+  - Lo que NO lleva, a propósito: pasaje y corpus. Heredar las fuentes del salmo 23 en un
+    trabajo sobre Jonás sería arrastrar el error en vez de ahorrar trabajo.
+  - Se guarda DESDE un trabajo ya configurado, que es el único momento en que la
+    configuración existe y está probada.

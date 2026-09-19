@@ -188,5 +188,7 @@ export {
 export * from './SetPaperStyleGuideUseCase';
 export { ReviewCitationUseCase } from './ReviewCitationUseCase';
 export { CorrectCitationUseCase } from './CorrectCitationUseCase';
+export { SaveWorkProfileFromPaperUseCase, defaultsOfProfile } from './WorkProfileUseCases';
+export type { SaveWorkProfileFromPaperInput, WorkProfileDefaults } from './WorkProfileUseCases';
 export type { CorrectCitationInput, CorrectCitationOutput } from './CorrectCitationUseCase';
 export type { ReviewCitationInput } from './ReviewCitationUseCase';
