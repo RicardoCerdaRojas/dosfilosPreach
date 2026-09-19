@@ -9,6 +9,7 @@ import type {
     IBibliographyReader,
     IExegeticalPaperRepository,
     ITermGlossaryRepository,
+    IVoiceProfileRepository,
     IResourceContentReader,
     IStyleFormatter,
     IUserStyleGuideRepository,
@@ -17,7 +18,13 @@ import type {
     StyleGuideSnapshot,
     IPageNumberingReader,
 } from '@dosfilos/domain';
-import { isCitableSourceType, replaceVerseSection, verseSectionKey } from '@dosfilos/domain';
+import {
+    isCitableSourceType,
+    replaceVerseSection,
+    selectAcademicVoiceSamples,
+    verseSectionKey,
+    type AcademicVoiceSample,
+} from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { composerSourceOf } from './pinnedSourceContent';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
@@ -99,6 +106,11 @@ export class ComposeVerseAcademicProseUseCase {
          * otro y el autor las tacha a mano, una por una, en cada entrega.
          */
         private glossaryRepository?: ITermGlossaryRepository,
+        /**
+         * Qué texto propio enseña cómo escribe el autor. Sin él la prosa
+         * sale correcta y ajena, que es de lo que se quejó al leer la suya.
+         */
+        private voiceProfileRepository?: IVoiceProfileRepository,
     ) { }
 
     async execute(input: ComposeVerseAcademicProseInput): Promise<ComposeVerseAcademicProseOutput> {
@@ -134,6 +146,7 @@ export class ComposeVerseAcademicProseUseCase {
         try {
             const styleGuideContent = await this.loadStyleGuideContent(input.ownerId, paper.styleGuideId);
             const glossary = await this.loadGlossary(input.ownerId);
+            const voiceSamples = await this.loadVoiceSamples(input.ownerId);
             const manifest = await this.loadStyleManifest(input.ownerId, paper);
 
             const composerInput: ComposeVerseInput = {
@@ -146,6 +159,7 @@ export class ComposeVerseAcademicProseUseCase {
                 sources: await buildComposerSources(paper, this.bibliography),
                 pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
                 ...(glossary.length > 0 ? { glossary } : {}),
+                ...(voiceSamples.length > 0 ? { voiceSamples } : {}),
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
             };
@@ -251,6 +265,25 @@ export class ComposeVerseAcademicProseUseCase {
             return [...(glosario?.terms ?? [])];
         } catch (err) {
             console.warn('[ComposeVerseAcademicProseUseCase] no se pudo leer el glosario:', err);
+            return [];
+        }
+    }
+
+    /**
+     * Unos párrafos de la prosa del autor, de un texto que él declaró suyo.
+     *
+     * Un fallo de lectura devuelve lista vacía, como el glosario: componer
+     * sin su registro es molesto; no componer es peor.
+     */
+    private async loadVoiceSamples(ownerId: string): Promise<AcademicVoiceSample[]> {
+        if (!this.voiceProfileRepository) return [];
+        try {
+            const perfil = await this.voiceProfileRepository.getProfile(ownerId);
+            if (!perfil?.resourceId) return [];
+            const texto = await this.contentReader.getTextContent(perfil.resourceId);
+            return texto ? selectAcademicVoiceSamples(texto) : [];
+        } catch (err) {
+            console.warn('[ComposeVerseAcademicProseUseCase] no se pudo leer el perfil de voz:', err);
             return [];
         }
     }

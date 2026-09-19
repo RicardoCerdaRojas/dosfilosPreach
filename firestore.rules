@@ -761,6 +761,12 @@ service cloud.firestore {
     // reusarlo en el siguiente. Mismo acceso que userRubrics: colección de
     // Exegesis Module — glosario de términos del usuario: las palabras que
     // no son suyas y por cuáles cambiarlas. Un documento por persona, cuyo
+    // Exegesis Module — perfil de voz académica: qué texto propio enseña
+    // cómo escribe el autor. Un documento por persona, con el id del dueño.
+    match /academicVoiceProfiles/{ownerId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == ownerId;
+    }
+
     // id ES el del dueño: la regla se escribe sobre la ruta.
     match /termGlossaries/{ownerId} {
       allow read, write: if isAuthenticated() && request.auth.uid == ownerId;

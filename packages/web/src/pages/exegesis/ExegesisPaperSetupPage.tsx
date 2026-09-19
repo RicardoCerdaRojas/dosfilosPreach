@@ -11,6 +11,7 @@ import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPla
 import { PaperBriefPanel } from '@/components/exegesis/setup/PaperBriefPanel';
 import { PaperCoverPanel } from '@/components/exegesis/setup/PaperCoverPanel';
 import { SaveWorkProfileCard } from '@/components/exegesis/setup/SaveWorkProfileCard';
+import { AcademicVoiceCard } from '@/components/exegesis/setup/AcademicVoiceCard';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
 
@@ -147,6 +148,7 @@ export function ExegesisPaperSetupPage() {
                     cambia a otro trabajo sin desmontar la página. */}
                 <PaperBriefPanel key={paper.id} paper={paper} />
                 <PaperCoverPanel key={`cover-${paper.id}`} paper={paper} />
+                <AcademicVoiceCard />
                 <SaveWorkProfileCard key={`profile-${paper.id}`} paper={paper} />
 
                 <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">

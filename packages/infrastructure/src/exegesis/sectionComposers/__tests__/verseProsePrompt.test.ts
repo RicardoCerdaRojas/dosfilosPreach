@@ -109,3 +109,29 @@ describe('glosario del autor', () => {
         expect(buildVerseProsePrompt(corto as never).systemInstruction).not.toMatch(/NO USA/);
     });
 });
+
+describe('voz del autor', () => {
+    const conVoz = {
+        ...promptInput(),
+        voiceSamples: [
+            { excerpt: 'La cláusula nominal que abre el salmo no afirma una posesión cualquiera.', position: 0.2 },
+        ],
+    };
+
+    it('las muestras van en la instrucción, con la regla de imitar el registro', () => {
+        const { systemInstruction } = buildVerseProsePrompt(conVoz as never);
+        expect(systemInstruction).toMatch(/ASÍ ESCRIBE ESTE AUTOR/);
+        expect(systemInstruction).toContain('cláusula nominal');
+    });
+
+    it('prohíbe expresamente tomar contenido y citas de las muestras', () => {
+        // Son de OTRO trabajo: reusar sus fuentes sería citar lo que este
+        // trabajo no estudió.
+        const { systemInstruction } = buildVerseProsePrompt(conVoz as never);
+        expect(systemInstruction).toMatch(/NUNCA tomes contenido, fuentes, páginas ni ejemplos/);
+    });
+
+    it('sin muestras la instrucción queda como estaba', () => {
+        expect(buildVerseProsePrompt(promptInput()).systemInstruction).not.toMatch(/ASÍ ESCRIBE/);
+    });
+});

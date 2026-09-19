@@ -1299,6 +1299,16 @@
       "pickLabel": "Perfil de trabajo",
       "pickNone": "Sin perfil",
       "pickHint": "Rellena rúbrica, encuadre, guía de estilo y método. Puedes cambiar cualquiera antes de crear."
+    },
+    "voice": {
+      "heading": "Cómo escribo yo",
+      "description": "Elige un texto tuyo —un ensayo, un trabajo anterior— y la prosa se redactará en tu registro.",
+      "pick": "Elegir un texto propio…",
+      "clear": "Quitar",
+      "saved": "Listo: la prosa nueva imitará tu registro.",
+      "cleared": "Quitado. La prosa volverá al registro genérico.",
+      "saveFailed": "No se pudo guardar.",
+      "warning": "Tiene que ser un texto ESCRITO POR TI. Si eliges un comentario de tu biblioteca, el trabajo saldrá sonando a su autor y con tu firma. Se imita el registro —largo de frase, conectores, cuánto matizas—, nunca el contenido ni sus citas."
     }
   },
   "setup": {

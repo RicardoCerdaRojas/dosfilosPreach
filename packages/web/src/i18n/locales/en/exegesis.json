@@ -1299,6 +1299,16 @@
       "pickLabel": "Work profile",
       "pickNone": "No profile",
       "pickHint": "Fills in rubric, brief, style guide and method. You can change any of them before creating."
+    },
+    "voice": {
+      "heading": "How I write",
+      "description": "Pick a text of your own — an essay, an earlier paper — and the prose will be written in your register.",
+      "pick": "Pick one of your own texts…",
+      "clear": "Remove",
+      "saved": "Done: new prose will imitate your register.",
+      "cleared": "Removed. Prose returns to the generic register.",
+      "saveFailed": "Could not save.",
+      "warning": "It must be a text WRITTEN BY YOU. If you pick a commentary from your library, the paper will sound like its author and carry your name. Only the register is imitated — sentence length, connectors, how much you hedge — never the content or its citations."
     }
   },
   "setup": {

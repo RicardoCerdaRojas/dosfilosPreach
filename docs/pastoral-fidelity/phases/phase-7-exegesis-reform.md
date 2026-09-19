@@ -36,7 +36,7 @@ el documento salga en el formato y la extensión que el seminario exige.
 | 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `done` (#631-#636, #639) | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
 | 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `done` (#640, #641) | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
 | 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `done` (#648, #649, #650) | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
-| 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `in-progress` — P3.5 hecho (#651); falta P3.4 | 0 términos del glosario en la salida («tronco», calcos del inglés) |
+| 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `done` (#651, #652) | 0 términos del glosario en la salida («tronco», calcos del inglés) |
 
 ## Etapa 1 — Verificación del análisis canónico
 
@@ -221,3 +221,18 @@ bitácora de abajo.
     trabajo entero buscando.
   - No reemplaza solo: cambiar una palabra dentro de una frase compuesta rompe la concordancia,
     y el trabajo lo firma el autor.
+- **2026-09-19** — **Etapa 6 cerrada: perfil de voz académica (P3.4, PR #652).** El glosario
+  cierra las palabras ajenas una por una; esto ataca el registro —largo de frase, conectores,
+  cuánto matiza—. La fuente es un texto que el autor DECLARA suyo: un paso `origin: 'edited'`
+  no califica, porque es una mezcla de su corrección y de prosa generada, y aprender de ahí
+  sería devolverle nuestra voz cada vez más convincente (misma regla que el perfil de voz de
+  los sermones, Fase 4).
+  - **La revisión adversarial encontró dos defectos antes del PR, ambos por la pregunta 7
+    —«¿la muestra con la que se midió es representativa?»—.** Probado contra un documento
+    REAL de la biblioteca (la guía de estilo del seminario, 130.566 caracteres): (1) el texto
+    no tiene NI UN salto de línea, así que el troceo por párrafos devolvía un solo bloque y
+    la única «muestra» era la portada recortada; (2) el índice, con sus puntos conductores,
+    pasaba todos los filtros porque es largo, latino y tiene puntos. Las pruebas sintéticas
+    no veían ninguno de los dos.
+  - También se corrigió una prueba que cementaba el algoritmo: afirmaba qué párrafo exacto
+    tocaba al repartir («Marca 5») en vez del contrato («vienen de tramos distintos»).

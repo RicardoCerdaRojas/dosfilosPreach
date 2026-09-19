@@ -87,6 +87,15 @@ export interface ComposeVerseInput {
      */
     glossary?: ReadonlyArray<{ avoid: string; prefer?: string; note?: string }>;
 
+    /**
+     * Muestras de la prosa del PROPIO autor, para imitar su registro.
+     *
+     * Sólo texto que él declara suyo. Un paso «editado» no califica: es
+     * una mezcla de su corrección y de prosa generada, y aprender de ahí
+     * sería devolverle nuestra voz cada vez más convincente.
+     */
+    voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }>;
+
     /** Style guide content (verbatim) when configured. */
     styleGuideContent: string;
 
