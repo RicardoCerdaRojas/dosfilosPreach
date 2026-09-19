@@ -73,6 +73,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useAutoClassifyOtherSources } from '@/hooks/exegesis/useAutoClassifyOtherSources';
 import { SourceTypePicker } from './SourceTypePicker';
 import { RubricGapCard } from './RubricGapCard';
+import { CourseBibliographyCard } from './CourseBibliographyCard';
 import { RubricRigorIndicator } from '@/components/exegesis/rubric/RubricRigorIndicator';
 import { ExtractFromLibraryDialog } from './ExtractFromLibraryDialog';
 import { SourceSelectionModeBadge } from './SourceSelectionModeBadge';
@@ -125,6 +126,7 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
     // de la rúbrica, y sólo como FILTRO de la biblioteca. El rol ya no viaja
     // desde afuera — se elige adentro, después de ver qué libro es.
     const [dialogInitialType, setDialogInitialType] = useState<SourceType | null>(null);
+    const [dialogPickedResourceId, setDialogPickedResourceId] = useState<string | null>(null);
     // v1.5: separate dialog for the library-extraction flow. Opens
     // independently from the upload dialog so the two paths don't
     // tangle their state — the upload dialog is "I'm bringing a new
@@ -135,6 +137,14 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
 
     const openDialog = (preselect: SourceType | null) => {
         setDialogInitialType(preselect);
+        setDialogPickedResourceId(null);
+        setDialogOpen(true);
+    };
+
+    /** Abre el diálogo con el libro ya marcado, desde la bibliografía del curso. */
+    const openDialogForResource = (resourceId: string) => {
+        setDialogInitialType(null);
+        setDialogPickedResourceId(resourceId);
         setDialogOpen(true);
     };
 
@@ -184,6 +194,7 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                         onExtract={() => setExtractDialogOpen(true)}
                     />
                     <RubricGapCard paper={paper} onPickType={(type) => openDialog(type)} />
+                    <CourseBibliographyCard paper={paper} onAddResource={openDialogForResource} />
                 </>
             ) : (
                 <>
@@ -207,6 +218,7 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                     ) && (
                         <RubricGapCard paper={paper} onPickType={(type) => openDialog(type)} />
                     )}
+                    <CourseBibliographyCard paper={paper} onAddResource={openDialogForResource} />
                     <CorpusSourcesList
                         paper={paper}
                         onAdd={() => openDialog(null)}
@@ -220,6 +232,7 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 initialType={dialogInitialType}
+                initialPickedResourceId={dialogPickedResourceId}
             />
 
             <ExtractFromLibraryDialog
@@ -1282,6 +1295,7 @@ function AddSourceDialog({
     open,
     onOpenChange,
     initialType,
+    initialPickedResourceId = null,
 }: {
     paper: ExegeticalPaper;
     open: boolean;
@@ -1292,6 +1306,13 @@ function AddSourceDialog({
      * clasificador lo corrige en cuanto se elige un libro.
      */
     initialType: SourceType | null;
+    /**
+     * Recurso que el diálogo abre ya marcado. Lo usa la bibliografía del
+     * curso: la obra ya se emparejó con un libro de la biblioteca, así que
+     * pedirle al usuario que lo busque otra vez es hacerle repetir trabajo
+     * que el sistema ya hizo.
+     */
+    initialPickedResourceId?: string | null;
 }) {
     const { t } = useTranslation('exegesis');
     const { user } = useFirebase();
@@ -1370,7 +1391,7 @@ function AddSourceDialog({
             // corresponde a una sola categoría; si corresponde a varias, no
             // filtra: esconder el libro que se busca es peor que no filtrar.
             const seedFilter = initialType ? filtroDeBibliotecaPara(initialType) : 'all';
-            setMode(tieneBiblioteca ? 'library' : 'upload');
+            setMode(initialPickedResourceId || tieneBiblioteca ? 'library' : 'upload');
             setFile(null);
             setDisplayName('');
             setSourceType(initialType ?? 'commentary-critical');
@@ -1379,7 +1400,7 @@ function AddSourceDialog({
             setChosenRole(null);
             setCitationKey('');
             setClassification(null);
-            setPickedResourceIds(new Set());
+            setPickedResourceIds(initialPickedResourceId ? new Set([initialPickedResourceId]) : new Set());
             setLibrarySearch('');
             setLibraryTypeFilter(seedFilter);
         }

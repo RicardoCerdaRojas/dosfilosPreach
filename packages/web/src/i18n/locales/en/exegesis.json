@@ -1147,6 +1147,16 @@
           "page": "p. {{printed}}",
           "sheet": "sheet {{sheet}}",
           "hint": "The first sheet is the one that names the lemma most often, which is usually its entry. Hover to see the line."
+        },
+        "courseBib": {
+          "title": "Course bibliography",
+          "coverage": "{{inCorpus}} of {{required}} required works are already in the corpus",
+          "missingFromLibrary": "{{count}} are not in your library",
+          "recommended": "recommended",
+          "inCorpus": "in this paper's corpus",
+          "inLibrary": "in your library, not yet in the corpus",
+          "notFound": "not found in your library; upload it, or add it by hand if you have it under another title",
+          "add": "Add"
         }
       },
       "corpus-plan": {

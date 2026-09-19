@@ -193,6 +193,7 @@ function deserialize(id: string, data: DocumentData): UserRubric {
             expectedLength: inner.expectedLength ?? null,
             citationStandard: inner.citationStandard ?? null,
             sourceRequirements: Array.isArray(inner.sourceRequirements) ? inner.sourceRequirements : [],
+            courseBibliography: Array.isArray(inner.courseBibliography) ? inner.courseBibliography : [],
             structuralExpectations: Array.isArray(inner.structuralExpectations) ? inner.structuralExpectations : [],
             qualityCriteria: Array.isArray(inner.qualityCriteria) ? inner.qualityCriteria : [],
             sourceCorpusId: inner.sourceCorpusId ?? null,

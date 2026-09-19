@@ -35,7 +35,7 @@ el documento salga en el formato y la extensión que el seminario exige.
 | 2 | Word según la guía + extensión como contrato (P3.3, P3.2) | `done` (#637, #638) | El .docx generado abre en Word con 12 ± 1 páginas de cuerpo, notas al pie reales y bibliografía; 0 retoques manuales de formato |
 | 3 | Recomposición dirigida, paso «Revisión», correcciones persistentes (P3.1, P4.1, P4.2) | `done` (#631-#636, #639) | 0 versos publicados con render mecánico; una indicación marcada «para todo el trabajo» aparece en el prompt de cada paso siguiente |
 | 4 | Salud del recurso y datos bibliográficos al ingerir (P1.3, P2.3) | `done` (#640, #641) | Ortiz muestra «formas hebreas ilegibles»; 0 datos bibliográficos inventados en la bibliografía |
-| 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `in-progress` — P1.4 hecho (#648); faltan P1.1 y P1.2 | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
+| 5 | Bibliografía del curso, perfil de trabajo, páginas por lema (P1.1, P1.2, P1.4) | `in-progress` — P1.4 (#648) y P1.1 (#649) hechos; falta P1.2 | Propuesta de páginas de un léxico acierta ≥ 10 de 12 entradas del pasaje |
 | 6 | Perfil de voz y glosario terminológico (P3.4, P3.5) | `planned` | 0 términos del glosario en la salida («tronco», calcos del inglés) |
 
 ## Etapa 1 — Verificación del análisis canónico
@@ -186,3 +186,14 @@ bitácora de abajo.
     Salmo 23:1–3, **7/7 caen en las tres primeras propuestas y 6/7 en la primera**.
   - **Antes no era medible.** Con el texto del léxico invertido, la misma lógica daba 4/7:
     la Etapa 5 dependía de arreglar la extracción (#646), no del algoritmo.
+- **2026-09-19** — **Etapa 5, bibliografía del curso (P1.1, PR #649).** El sílabo nombra las
+  obras —«Waltke–O'Connor, IBHS»; «Ross, Commentary on the Psalms»— y ese listado moría en el
+  PDF del curso: la rúbrica extraía CUÁNTAS fuentes de cada tipo hacían falta, nunca CUÁLES.
+  «Tres comentarios críticos» se cumple con cualquier tres; el profesor busca los suyos en las
+  notas al pie. Ahora el extractor recoge la lista, se cruza con la biblioteca y el corpus, y
+  la tarjeta dice qué falta y qué está a un clic.
+  - **Límite medido y aceptado:** el emparejador es conservador y falla con títulos cortos
+    —«Craigie, Psalms 1–50 (WBC 19)» contra un archivo llamado «Word Biblical Commentary Vol_
+    19, Psalms 1-50» no supera su umbral, porque «Psalms» es su única palabra larga—.
+    Aflojarlo haría que el sistema afirme tener libros que no tiene, así que manda el enlace
+    manual: `resourceId` en la entrada, y el automático sólo propone.

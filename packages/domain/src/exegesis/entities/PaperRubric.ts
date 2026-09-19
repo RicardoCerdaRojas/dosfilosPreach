@@ -1,5 +1,6 @@
 import { SOURCE_TYPE_CATALOG, SOURCE_TYPE_GROUPS, type SourceType } from './SourceType';
 import type { ExegeticalStepKind } from './ExegeticalStep';
+import type { CourseBibliographyEntry } from '../services/courseBibliography';
 
 /**
  * Paper-level rubric — the seminary's grading criteria for THIS paper,
@@ -57,6 +58,20 @@ export interface PaperRubric {
      * standards is open and each seminary phrases them differently.
      */
     citationStandard: string | null;
+
+    /**
+     * Las obras que el curso manda leer, por su nombre.
+     *
+     * `sourceRequirements` dice CUÁNTAS fuentes de cada tipo hacen falta;
+     * esto dice CUÁLES. La diferencia es la que el estudiante nota al
+     * final: «tres comentarios críticos» se cumple con cualquier tres, y
+     * «Ross, Craigie y Waltke–O'Connor» es lo que el profesor busca en las
+     * notas al pie.
+     *
+     * Vacío por defecto: las rúbricas anteriores a este campo, y los
+     * sílabos que no listan bibliografía, se deserializan como `[]`.
+     */
+    courseBibliography: ReadonlyArray<CourseBibliographyEntry>;
 
     /**
      * Per-`SourceType` quantitative requirements. The setup UI
@@ -331,6 +346,7 @@ export const DEFAULT_TMS_EXEGETICAL_RUBRIC: PaperRubric = {
             justification: 'Ancient primary sources (Josephus / Philo / Apostolic Fathers) strengthen background claims.',
         },
     ],
+    courseBibliography: [],
     structuralExpectations: [
         {
             section: 'introduction',
@@ -420,6 +436,7 @@ export function buildStrategyOnlyRubric(): PaperRubric {
         expectedLength: { unit: 'pages', min: 10, max: 25 },
         citationStandard: null,
         sourceRequirements: [],
+        courseBibliography: [],
         // Keep the structural expectations from the default — they're
         // useful guidance for the planner regardless of whether the
         // rubric specifies per-type minimums.
