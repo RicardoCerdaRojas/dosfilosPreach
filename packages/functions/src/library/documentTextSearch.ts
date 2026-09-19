@@ -43,6 +43,18 @@ const MIN_TERM_LENGTH = 2;
 interface SearchRequest {
     resourceId: string;
     term: string;
+    /**
+     * `'texto'` busca la secuencia donde aparezca; `'lema'` exige PALABRA
+     * ENTERA y compara sólo consonantes.
+     *
+     * La diferencia no es de matiz. Buscando «שוב» como secuencia, sus tres
+     * letras caen dentro de decenas de palabras y la entrada del léxico
+     * queda sepultada: sobre los siete lemas de un trabajo real, la página
+     * correcta salía en 4. Exigiendo palabra entera, en 7. Y sin vocales
+     * porque el análisis escribe «שׁוּב» y el léxico encabeza «שוב»: son la
+     * misma entrada y ninguna de las dos grafías encuentra a la otra.
+     */
+    mode?: 'texto' | 'lema';
 }
 
 interface SheetHit {
@@ -92,6 +104,26 @@ function fold(char: string): string {
  * Dónde cae cada aparición del término dentro de un fragmento, en
  * posiciones del texto ORIGINAL.
  */
+/** Consonantes hebreas o griegas, sin vocales ni cantilación. */
+export function soloConsonantes(text: string): string {
+    return (text.match(/[\u05D0-\u05EA]/g) ?? []).join('');
+}
+
+/**
+ * Dónde aparece un lema como PALABRA ENTERA, comparando consonantes.
+ *
+ * Devuelve posiciones aproximadas —la del comienzo de la palabra en el
+ * texto original— que bastan para el renglón de contexto.
+ */
+export function lemmaOccurrencesIn(text: string, consonantes: string): number[] {
+    if (!consonantes || !text) return [];
+    const out: number[] = [];
+    for (const m of text.matchAll(/[\u0590-\u05FF]+/g)) {
+        if (soloConsonantes(m[0]) === consonantes) out.push(m.index ?? 0);
+    }
+    return out;
+}
+
 export function occurrencesIn(text: string, foldedTerm: string): number[] {
     if (!foldedTerm || !text) return [];
     const haystack = foldForSearch(text);
@@ -135,8 +167,9 @@ export const searchDocumentText = onCall<SearchRequest>(
         const term = typeof request.data?.term === 'string' ? request.data.term.trim() : '';
         if (!resourceId) throw new HttpsError('invalid-argument', 'resourceId is required');
 
-        const foldedTerm = foldForSearch(term).text;
-        if (foldedTerm.length < MIN_TERM_LENGTH) {
+        const modo = request.data?.mode === 'lema' ? 'lema' : 'texto';
+        const aguja = modo === 'lema' ? soloConsonantes(term) : foldForSearch(term).text;
+        if (aguja.length < MIN_TERM_LENGTH) {
             return { hits: [], truncated: false, scannedChunks: 0 };
         }
 
@@ -164,7 +197,7 @@ export const searchDocumentText = onCall<SearchRequest>(
             const text = typeof data.text === 'string' ? data.text : '';
             const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : null;
             if (!text || sheet === null) continue;
-            const at = occurrencesIn(text, foldedTerm);
+            const at = modo === 'lema' ? lemmaOccurrencesIn(text, aguja) : occurrencesIn(text, aguja);
             if (at.length === 0) continue;
 
             const existing = bySheet.get(sheet);

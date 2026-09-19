@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findQuoteInPageText } from '@dosfilos/domain';
-import { foldForSearch, occurrencesIn, snippetAround } from '../documentTextSearch';
+import { foldForSearch, lemmaOccurrencesIn, occurrencesIn, snippetAround, soloConsonantes } from '../documentTextSearch';
 
 /**
  * Los dos buscadores tienen que plegar IGUAL.
@@ -62,5 +62,27 @@ describe('snippetAround', () => {
         const s = snippetAround(largo, 500);
         expect(s.startsWith('…')).toBe(true);
         expect(s.endsWith('…')).toBe(true);
+    });
+});
+
+describe('búsqueda por lema', () => {
+    it('exige palabra entera: «שוב» no cuenta dentro de otra palabra', () => {
+        const texto = 'וַיָּשׁוּבוּ el verbo compuesto';
+        expect(lemmaOccurrencesIn(texto, soloConsonantes('שׁוּב'))).toEqual([]);
+    });
+
+    it('encuentra la entrada del léxico aunque las vocales no coincidan', () => {
+        // El análisis escribe «שׁוּב»; el léxico encabeza «שוב».
+        const entrada = '7725 שוב QAL: Volver, regresar';
+        expect(lemmaOccurrencesIn(entrada, soloConsonantes('שׁוּב'))).toHaveLength(1);
+    });
+
+    it('cuenta todas las veces que la entrada nombra su lema', () => {
+        const texto = 'נפש alma; נפש vida; נפשי mi alma';
+        expect(lemmaOccurrencesIn(texto, soloConsonantes('נֶפֶשׁ'))).toHaveLength(2);
+    });
+
+    it('un lema sin consonantes no busca nada', () => {
+        expect(lemmaOccurrencesIn('cualquier texto', soloConsonantes('...'))).toEqual([]);
     });
 });

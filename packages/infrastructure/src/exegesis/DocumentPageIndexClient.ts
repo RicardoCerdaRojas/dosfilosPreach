@@ -137,13 +137,18 @@ export interface DocumentTextSearchResult {
  * del índice — recorrer los fragmentos de un libro grande tarda segundos,
  * no milisegundos.
  */
-export async function searchDocumentText(resourceId: string, term: string): Promise<DocumentTextSearchResult> {
-    const callable = httpsCallable<{ resourceId: string; term: string }, DocumentTextSearchResult>(
+export async function searchDocumentText(
+    resourceId: string,
+    term: string,
+    /** `'lema'` exige palabra entera y compara sólo consonantes. */
+    mode: 'texto' | 'lema' = 'texto',
+): Promise<DocumentTextSearchResult> {
+    const callable = httpsCallable<{ resourceId: string; term: string; mode: string }, DocumentTextSearchResult>(
         getFunctions(),
         'searchDocumentText',
         { timeout: INDEX_TIMEOUT_MS },
     );
-    const response = await callable({ resourceId, term });
+    const response = await callable({ resourceId, term, mode });
     return response.data;
 }
 

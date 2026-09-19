@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { proposeSheetRanges, type ProposalKind } from '@dosfilos/infrastructure';
-import { normalizeSheetRanges, type SheetRange } from '@dosfilos/domain';
+import { lemmasOfAnalyses, normalizeSheetRanges, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -12,6 +12,8 @@ import { useDocumentPageIndex } from '@/hooks/exegesis/useDocumentPageIndex';
 import { PaperCorpusTooLargeError } from '@dosfilos/application';
 import { useSelectSourcePages } from '@/hooks/exegesis/useSelectSourcePages';
 import { SourcePagesWorkspace } from '@/components/exegesis/setup/page-picker/SourcePagesWorkspace';
+import { useLemmaPages } from '@/hooks/exegesis/useLemmaPages';
+import { usePageNumbering } from '@/hooks/library/usePageNumbering';
 
 /**
  * Elegir qué hojas de una fuente entran al trabajo.
@@ -25,6 +27,17 @@ import { SourcePagesWorkspace } from '@/components/exegesis/setup/page-picker/So
  * La primera versión fue un modal y se notó enseguida: tres paneles y un visor
  * de PDF no entran en un diálogo sin pelearse por cada píxel.
  */
+/**
+ * Tipos de obra que tienen una ENTRADA por lema: buscar «שׁוּב» en ellas
+ * lleva a un sitio concreto. En un comentario, el mismo lema aparece
+ * repartido por el pasaje que comenta, así que proponer páginas por lema
+ * sería ruido.
+ */
+const TIPOS_CON_ENTRADA_POR_LEMA: ReadonlySet<string> = new Set([
+    'lexicon-technical',
+    'theological-dictionary',
+]);
+
 export function ExegesisSourcePagesPage() {
     const { paperId, sourceId } = useParams<{ paperId: string; sourceId: string }>();
     const navigate = useNavigate();
@@ -54,6 +67,26 @@ export function ExegesisSourcePagesPage() {
         });
         return () => { cancelled = true; };
     }, [user, paper, resourceId, index.data]);
+
+    /**
+     * Los lemas que este trabajo va a buscar en el léxico.
+     *
+     * Sólo para léxicos y diccionarios: en un comentario un lema no tiene
+     * entrada propia, y proponer páginas por lema ahí sería ruido. Salen de
+     * los análisis aceptados, que es donde el lema existe como dato.
+     */
+    const esLexico = source ? TIPOS_CON_ENTRADA_POR_LEMA.has(source.sourceType) : false;
+    const lemmas = useMemo(() => {
+        if (!paper || !esLexico) return [];
+        const analyses = paper.steps
+            .filter(step => step.kind === 'verse')
+            .map(step => (step.accepted ?? step.current)?.canonicalAnalysis)
+            .filter((a): a is NonNullable<typeof a> => !!a);
+        return lemmasOfAnalyses(analyses);
+    }, [paper, esLexico]);
+
+    const lemmaPages = useLemmaPages(resourceId, lemmas, esLexico);
+    const numbering = usePageNumbering(esLexico ? resourceId : null);
 
     const otherSourcesChars = useMemo(() => {
         if (!paper || !source) return 0;
@@ -156,6 +189,9 @@ export function ExegesisSourcePagesPage() {
                 otherSourcesChars={otherSourcesChars}
                 onConfirm={handleConfirm}
                 isSaving={selectPages.isPending}
+                lemmaProposals={esLexico ? lemmaPages.proposals : undefined}
+                lemmaLoading={lemmaPages.isLoading}
+                numbering={numbering.data?.numbering ?? null}
             />
         </div>
     );
