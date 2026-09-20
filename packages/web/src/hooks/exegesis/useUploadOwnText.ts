@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { libraryService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
+import { hasAcceptedUploadConsent } from '@/components/library/UploadConsentModal';
+import { motivoDeRechazo, type MotivoDeRechazo } from '@/lib/library/limitesDeSubida';
+
 
 /**
  * Sube un texto escrito por el propio usuario y lo deja marcado como suyo.
@@ -23,6 +26,13 @@ export function useUploadOwnText() {
 
     const upload = async (file: File): Promise<{ id: string; title: string }> => {
         if (!user?.uid) throw new Error('User not authenticated');
+        // Las mismas puertas que el formulario de la biblioteca. Saltárselas
+        // no hacía el camino más corto: hacía que el archivo se subiera
+        // entero para morir en la regla de almacenamiento, y en el caso del
+        // consentimiento dejaba sin declarar lo que el flujo normal exige
+        // declarar antes de subir nada.
+        const motivo = motivoDeRechazo(file, hasAcceptedUploadConsent());
+        if (motivo) throw new RechazoDeSubida(motivo);
         setProgress(0);
         try {
             const titulo = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || file.name;
@@ -49,4 +59,13 @@ export function useUploadOwnText() {
     };
 
     return { upload, progress, isUploading: progress !== null };
+}
+
+/** Rechazo con motivo, para que la interfaz diga cuál y no «no se pudo». */
+export class RechazoDeSubida extends Error {
+    readonly name = 'RechazoDeSubida';
+    constructor(readonly motivo: MotivoDeRechazo) {
+        super(`Subida rechazada: ${motivo}`);
+        Object.setPrototypeOf(this, RechazoDeSubida.prototype);
+    }
 }

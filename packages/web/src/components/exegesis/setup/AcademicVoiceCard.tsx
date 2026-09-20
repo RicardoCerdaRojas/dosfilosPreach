@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, PenLine, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,7 +9,8 @@ import {
     useSetAcademicVoiceResource,
     useSetUseSermons,
 } from '@/hooks/exegesis/useAcademicVoiceProfile';
-import { useUploadOwnText } from '@/hooks/exegesis/useUploadOwnText';
+import { RechazoDeSubida, useUploadOwnText } from '@/hooks/exegesis/useUploadOwnText';
+import { UploadConsentModal } from '@/components/library/UploadConsentModal';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -33,6 +34,11 @@ export function AcademicVoiceCard() {
     const setSermons = useSetUseSermons();
     const subir = useUploadOwnText();
     const inputArchivo = useRef<HTMLInputElement>(null);
+    // El archivo espera mientras el usuario acepta las condiciones de subida.
+    // Son las mismas del formulario de la biblioteca: declarar que el
+    // documento es suyo y que lo usa para su estudio personal.
+    const [consentimientoAbierto, setConsentimientoAbierto] = useState(false);
+    const pendiente = useRef<File | null>(null);
 
     const propios = resources.filter(r => (r as { authoredByUser?: boolean }).authoredByUser === true);
     const elegido = resources.find(r => r.id === profile?.resourceId) ?? null;
@@ -60,6 +66,18 @@ export function AcademicVoiceCard() {
             await setResource.mutateAsync({ resourceId: recurso.id, resourceTitle: recurso.title });
             toast.success(t('paperSetup.voice.uploaded'));
         } catch (err) {
+            if (err instanceof RechazoDeSubida) {
+                // Falta el consentimiento: se pide y el archivo espera. Los
+                // otros motivos se dicen por su nombre —«no se pudo subir»
+                // manda a reintentar lo que va a fallar igual—.
+                if (err.motivo === 'consentimiento') {
+                    pendiente.current = file;
+                    setConsentimientoAbierto(true);
+                    return;
+                }
+                toast.error(t(`paperSetup.voice.reject.${err.motivo}`));
+                return;
+            }
             console.error('[exegesis] no se pudo subir el texto propio:', err);
             toast.error(t('paperSetup.voice.uploadFailed'));
         }
@@ -124,7 +142,7 @@ export function AcademicVoiceCard() {
                         <input
                             ref={inputArchivo}
                             type="file"
-                            accept=".pdf,.docx,.txt,.md"
+                            accept="application/pdf,application/epub+zip"
                             className="hidden"
                             onChange={e => {
                                 const file = e.target.files?.[0];
@@ -169,6 +187,20 @@ export function AcademicVoiceCard() {
 
                 <p className="text-[11px] text-muted-foreground">{t('paperSetup.voice.warning')}</p>
             </div>
+
+            <UploadConsentModal
+                open={consentimientoAbierto}
+                onAccept={() => {
+                    setConsentimientoAbierto(false);
+                    const file = pendiente.current;
+                    pendiente.current = null;
+                    if (file) void subirYElegir(file);
+                }}
+                onCancel={() => {
+                    setConsentimientoAbierto(false);
+                    pendiente.current = null;
+                }}
+            />
         </section>
     );
 }
