@@ -101,6 +101,14 @@ export class LibraryService {
              */
             coversBibleBooks?: ReadonlyArray<import('@dosfilos/domain').BibleBookId>;
             scope?: import('@dosfilos/domain').LibraryResourceScope;
+            /**
+             * El usuario declara que ESTE texto lo escribió él. Se recibe al
+             * subir —y no sólo al editar después— porque el camino natural
+             * para enseñarle al sistema cómo escribe es subir su ensayo, y
+             * obligarlo a subir, buscar y editar es tres pasos para un dato
+             * que ya tenía en la cabeza al elegir el archivo.
+             */
+            authoredByUser?: boolean;
         },
         onProgress?: (percentage: number) => void
     ): Promise<LibraryResourceEntity> {
@@ -150,6 +158,9 @@ export class LibraryService {
         }
         if (metadata.scope) {
             resource.scope = metadata.scope;
+        }
+        if (metadata.authoredByUser !== undefined) {
+            resource.authoredByUser = metadata.authoredByUser;
         }
 
         // 4. Save to Firestore

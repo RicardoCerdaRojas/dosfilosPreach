@@ -84,3 +84,26 @@ describe('texto escrito por el usuario', () => {
         expect('authoredByUser' in repo.buildFirestoreUpdates({ title: 'x' } as never)).toBe(false);
     });
 });
+
+describe('autoría al crear el recurso', () => {
+    it('la marca viaja al documento nuevo: subir el texto propio es el camino natural', () => {
+        const repo = new FirebaseLibraryRepository();
+        const doc = (repo as unknown as { resourceToFirestore(r: unknown): Record<string, unknown> })
+            .resourceToFirestore({
+                userId: 'u1', title: 'Mi ensayo', author: 'Ricardo', type: 'other',
+                storageUrl: 'gs://x', authoredByUser: true,
+                createdAt: new Date(), updatedAt: new Date(),
+            });
+        expect(doc.authoredByUser).toBe(true);
+    });
+
+    it('sin declararla, no se escribe: ausente significa «no se sabe», no «no es suyo»', () => {
+        const repo = new FirebaseLibraryRepository();
+        const doc = (repo as unknown as { resourceToFirestore(r: unknown): Record<string, unknown> })
+            .resourceToFirestore({
+                userId: 'u1', title: 'Un comentario', author: 'Ross', type: 'commentary',
+                storageUrl: 'gs://x', createdAt: new Date(), updatedAt: new Date(),
+            });
+        expect('authoredByUser' in doc).toBe(false);
+    });
+});

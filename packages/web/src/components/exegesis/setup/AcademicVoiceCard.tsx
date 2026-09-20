@@ -1,5 +1,6 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, PenLine, X } from 'lucide-react';
+import { Loader2, PenLine, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { useLibrary } from '@/hooks/library';
@@ -8,6 +9,8 @@ import {
     useSetAcademicVoiceResource,
     useSetUseSermons,
 } from '@/hooks/exegesis/useAcademicVoiceProfile';
+import { useUploadOwnText } from '@/hooks/exegesis/useUploadOwnText';
+import { Button } from '@/components/ui/button';
 
 /**
  * De qué texto propio aprende el sistema a escribir como el autor.
@@ -28,10 +31,12 @@ export function AcademicVoiceCard() {
     const { profile } = useAcademicVoiceProfile();
     const setResource = useSetAcademicVoiceResource();
     const setSermons = useSetUseSermons();
+    const subir = useUploadOwnText();
+    const inputArchivo = useRef<HTMLInputElement>(null);
 
     const propios = resources.filter(r => (r as { authoredByUser?: boolean }).authoredByUser === true);
     const elegido = resources.find(r => r.id === profile?.resourceId) ?? null;
-    const guardando = setResource.isPending || setSermons.isPending;
+    const guardando = setResource.isPending || setSermons.isPending || subir.isUploading;
 
     const cambiar = async (resourceId: string) => {
         const recurso = resources.find(r => r.id === resourceId);
@@ -41,6 +46,22 @@ export function AcademicVoiceCard() {
         } catch (err) {
             console.error('[exegesis] no se pudo guardar el perfil de voz:', err);
             toast.error(t('paperSetup.voice.saveFailed'));
+        }
+    };
+
+    /**
+     * Sube el texto y lo deja elegido de una vez. Se avisa que hay que
+     * esperar la extracción: hasta que termine no hay prosa que muestrear,
+     * y sin decirlo el usuario creería que ya está aprendiendo de él.
+     */
+    const subirYElegir = async (file: File) => {
+        try {
+            const recurso = await subir.upload(file);
+            await setResource.mutateAsync({ resourceId: recurso.id, resourceTitle: recurso.title });
+            toast.success(t('paperSetup.voice.uploaded'));
+        } catch (err) {
+            console.error('[exegesis] no se pudo subir el texto propio:', err);
+            toast.error(t('paperSetup.voice.uploadFailed'));
         }
     };
 
@@ -96,13 +117,40 @@ export function AcademicVoiceCard() {
                             ))}
                         </select>
                     ) : (
-                        <p className="text-xs text-muted-foreground">
-                            {t('paperSetup.voice.noOwnTexts')}{' '}
-                            <Link to="/dashboard/library" className="underline underline-offset-2 text-foreground">
-                                {t('paperSetup.voice.goToLibrary')}
-                            </Link>
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t('paperSetup.voice.noOwnTexts')}</p>
                     )}
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <input
+                            ref={inputArchivo}
+                            type="file"
+                            accept=".pdf,.docx,.txt,.md"
+                            className="hidden"
+                            onChange={e => {
+                                const file = e.target.files?.[0];
+                                e.target.value = '';
+                                if (file) void subirYElegir(file);
+                            }}
+                        />
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => inputArchivo.current?.click()}
+                            disabled={guardando}
+                        >
+                            {subir.isUploading
+                                ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                            {subir.isUploading
+                                ? t('paperSetup.voice.uploading', { percent: Math.round(subir.progress ?? 0) })
+                                : t('paperSetup.voice.upload')}
+                        </Button>
+                        <Link to="/dashboard/library" className="text-[11px] underline underline-offset-2 text-muted-foreground hover:text-foreground">
+                            {t('paperSetup.voice.goToLibrary')}
+                        </Link>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">{t('paperSetup.voice.uploadHint')}</p>
                 </div>
 
                 <label className="flex items-start gap-2 text-xs text-foreground">
