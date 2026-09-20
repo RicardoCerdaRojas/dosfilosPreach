@@ -303,9 +303,16 @@ export class ComposeVerseAcademicProseUseCase {
 
             const sermones = await this.proseReader.workshopSermons(ownerId, 8);
             const delTaller = selectVoiceSamples(sermones, { maxSamples: MAX_VOICE_SAMPLES - deTexto.length });
+            // Las posiciones de los sermones CONTINÚAN las del texto en vez
+            // de volver a empezar en cero: la lista se lee como una sola
+            // secuencia, y dos muestras distintas con la misma posición
+            // describen mal de dónde salieron.
             return [
                 ...deTexto,
-                ...delTaller.map((s, i) => ({ excerpt: s.excerpt, position: i / Math.max(1, delTaller.length) })),
+                ...delTaller.map((muestra, i) => ({
+                    excerpt: muestra.excerpt,
+                    position: (deTexto.length + i) / MAX_VOICE_SAMPLES,
+                })),
             ];
         } catch (err) {
             console.warn('[ComposeVerseAcademicProseUseCase] no se pudo leer el perfil de voz:', err);
