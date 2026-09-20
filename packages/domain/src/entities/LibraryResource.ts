@@ -148,6 +148,17 @@ export interface LibraryResource {
      * y de ahí sacaba ciudad, editorial y año inventándolos.
      */
     bibliography?: BibliographicData | null;
+
+    /**
+     * El usuario declara que ESTE texto lo escribió él.
+     *
+     * No se deduce: un PDF no dice quién lo escribió. Lo marca una
+     * persona, y de eso depende que el sistema pueda aprender su registro
+     * sin devolverle la voz de otro —si se aprendiera de un comentario de
+     * su biblioteca, el trabajo saldría sonando a su autor y con la firma
+     * del estudiante—.
+     */
+    authoredByUser?: boolean;
     type: ResourceType;
     storageUrl: string;
     textContent?: string | undefined; // Legacy: Extracted text directly (deprecated)
@@ -516,6 +527,8 @@ export class LibraryResourceEntity implements LibraryResource {
      * en la interfaz.
      */
     public bibliography?: BibliographicData | null;
+    /** Ver `authoredByUser` en la interfaz. Lo declara el usuario. */
+    public authoredByUser?: boolean;
     public indexingError?: string | null;
     public indexingWarning?: string | null;
     public indexCoverage?: LibraryResource['indexCoverage'];

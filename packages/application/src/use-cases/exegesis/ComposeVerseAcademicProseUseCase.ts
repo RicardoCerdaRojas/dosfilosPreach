@@ -9,6 +9,7 @@ import type {
     IBibliographyReader,
     IExegeticalPaperRepository,
     ITermGlossaryRepository,
+    IUserProseReader,
     IVoiceProfileRepository,
     IResourceContentReader,
     IStyleFormatter,
@@ -21,7 +22,9 @@ import type {
 import {
     isCitableSourceType,
     replaceVerseSection,
+    MAX_VOICE_SAMPLES,
     selectAcademicVoiceSamples,
+    selectVoiceSamples,
     verseSectionKey,
     type AcademicVoiceSample,
 } from '@dosfilos/domain';
@@ -111,6 +114,12 @@ export class ComposeVerseAcademicProseUseCase {
          * sale correcta y ajena, que es de lo que se quejó al leer la suya.
          */
         private voiceProfileRepository?: IVoiceProfileRepository,
+        /**
+         * Prosa del propio autor fuera de la biblioteca: sus sermones del
+         * taller. Registro distinto —predicar no es escribir un trabajo—,
+         * así que sólo entra si el autor lo pide.
+         */
+        private proseReader?: IUserProseReader,
     ) { }
 
     async execute(input: ComposeVerseAcademicProseInput): Promise<ComposeVerseAcademicProseOutput> {
@@ -279,9 +288,32 @@ export class ComposeVerseAcademicProseUseCase {
         if (!this.voiceProfileRepository) return [];
         try {
             const perfil = await this.voiceProfileRepository.getProfile(ownerId);
-            if (!perfil?.resourceId) return [];
-            const texto = await this.contentReader.getTextContent(perfil.resourceId);
-            return texto ? selectAcademicVoiceSamples(texto) : [];
+            if (!perfil) return [];
+
+            // Manda el texto académico: es el registro que este trabajo pide.
+            // Los sermones rellenan lo que falte, y sólo si el autor los
+            // eligió: son prosa suya con certeza, pero predicar no es
+            // escribir un trabajo.
+            const deTexto = perfil.resourceId
+                ? selectAcademicVoiceSamples((await this.contentReader.getTextContent(perfil.resourceId)) ?? '')
+                : [];
+            if (deTexto.length >= MAX_VOICE_SAMPLES || !perfil.useSermons || !this.proseReader) {
+                return deTexto.slice(0, MAX_VOICE_SAMPLES);
+            }
+
+            const sermones = await this.proseReader.workshopSermons(ownerId, 8);
+            const delTaller = selectVoiceSamples(sermones, { maxSamples: MAX_VOICE_SAMPLES - deTexto.length });
+            // Las posiciones de los sermones CONTINÚAN las del texto en vez
+            // de volver a empezar en cero: la lista se lee como una sola
+            // secuencia, y dos muestras distintas con la misma posición
+            // describen mal de dónde salieron.
+            return [
+                ...deTexto,
+                ...delTaller.map((muestra, i) => ({
+                    excerpt: muestra.excerpt,
+                    position: (deTexto.length + i) / MAX_VOICE_SAMPLES,
+                })),
+            ];
         } catch (err) {
             console.warn('[ComposeVerseAcademicProseUseCase] no se pudo leer el perfil de voz:', err);
             return [];

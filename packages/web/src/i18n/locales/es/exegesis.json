@@ -1302,13 +1302,18 @@
     },
     "voice": {
       "heading": "Cómo escribo yo",
-      "description": "Elige un texto tuyo —un ensayo, un trabajo anterior— y la prosa se redactará en tu registro.",
+      "description": "De aquí aprende el sistema tu registro. Es tuyo, no de un trabajo: se aplica a todos.",
       "pick": "Elegir un texto propio…",
       "clear": "Quitar",
       "saved": "Listo: la prosa nueva imitará tu registro.",
       "cleared": "Quitado. La prosa volverá al registro genérico.",
       "saveFailed": "No se pudo guardar.",
-      "warning": "Tiene que ser un texto ESCRITO POR TI. Si eliges un comentario de tu biblioteca, el trabajo saldrá sonando a su autor y con tu firma. Se imita el registro —largo de frase, conectores, cuánto matizas—, nunca el contenido ni sus citas."
+      "warning": "El sistema no puede saber quién escribió un PDF: lo marcas tú en la biblioteca. Se imita el registro —largo de frase, conectores, cuánto matizas—, nunca el contenido ni sus citas.",
+      "ownTextLabel": "Un texto escrito por ti",
+      "noOwnTexts": "Todavía no marcaste ningún texto como escrito por ti.",
+      "goToLibrary": "Ir a la biblioteca",
+      "useSermons": "Aprender también de mis sermones",
+      "useSermonsHint": "Sólo los que armaste tú en el taller, nunca los generados. Es prosa tuya con certeza, pero predicar no es escribir un trabajo: el registro es otro."
     }
   },
   "setup": {
@@ -2081,7 +2086,10 @@
       "preferPlaceholder": "usar en su lugar (opcional)",
       "add": "Agregar",
       "remove": "Quitar {{term}}",
-      "saveFailed": "No se pudo guardar el glosario."
+      "saveFailed": "No se pudo guardar el glosario.",
+      "settingsDescription": "Se aplican a todos tus trabajos. En cada trabajo verás si alguna aparece en lo que vas a entregar.",
+      "emptyInPaper": "No tienes palabras en tu glosario.",
+      "goToSettings": "Configurarlo en Ajustes"
     }
   },
   "citationViewer": {

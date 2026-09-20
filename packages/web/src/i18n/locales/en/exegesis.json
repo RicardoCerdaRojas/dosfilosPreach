@@ -1302,13 +1302,18 @@
     },
     "voice": {
       "heading": "How I write",
-      "description": "Pick a text of your own — an essay, an earlier paper — and the prose will be written in your register.",
+      "description": "This is where the system learns your register. It is yours, not a paper's: it applies to all of them.",
       "pick": "Pick one of your own texts…",
       "clear": "Remove",
       "saved": "Done: new prose will imitate your register.",
       "cleared": "Removed. Prose returns to the generic register.",
       "saveFailed": "Could not save.",
-      "warning": "It must be a text WRITTEN BY YOU. If you pick a commentary from your library, the paper will sound like its author and carry your name. Only the register is imitated — sentence length, connectors, how much you hedge — never the content or its citations."
+      "warning": "The system cannot know who wrote a PDF: you mark it in the library. Only the register is imitated — sentence length, connectors, how much you hedge — never the content or its citations.",
+      "ownTextLabel": "A text written by you",
+      "noOwnTexts": "You haven't marked any text as written by you yet.",
+      "goToLibrary": "Go to the library",
+      "useSermons": "Also learn from my sermons",
+      "useSermonsHint": "Only the ones you assembled in the workshop, never generated ones. It is certainly your prose, but preaching is not writing a paper: the register differs."
     }
   },
   "setup": {
@@ -2081,7 +2086,10 @@
       "preferPlaceholder": "use instead (optional)",
       "add": "Add",
       "remove": "Remove {{term}}",
-      "saveFailed": "The glossary could not be saved."
+      "saveFailed": "The glossary could not be saved.",
+      "settingsDescription": "They apply to all your papers. In each paper you'll see whether any shows up in what you're about to hand in.",
+      "emptyInPaper": "Your glossary is empty.",
+      "goToSettings": "Set it up in Settings"
     }
   },
   "citationViewer": {

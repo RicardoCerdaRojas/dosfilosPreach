@@ -163,6 +163,7 @@ export * from './models/Plan'; // 🎯 Plan models (refactored system)
 export * from './llm/modelCatalog';
 export * from './voice/selectVoiceSamples';
 export * from './voice/buildVoiceBlock';
+export * from './voice/IUserProseReader';
 export * from './exegesis/services/exegeticalStrategy';
 
 

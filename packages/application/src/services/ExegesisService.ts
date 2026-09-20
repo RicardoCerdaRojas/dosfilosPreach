@@ -4,6 +4,7 @@ import {
     FirestoreWorkProfileRepository,
     FirestoreTermGlossaryRepository,
     FirestoreVoiceProfileRepository,
+    SermonProseReader,
     FirestoreUserStyleGuideRepository,
     FirestoreUserAssignmentBriefRepository,
     FirebaseLibraryRepository,
@@ -308,6 +309,8 @@ class ExegesisService {
         const termGlossaryRepository = new FirestoreTermGlossaryRepository();
         // Qué texto propio enseña cómo escribe el autor.
         const voiceProfileRepository = new FirestoreVoiceProfileRepository();
+        // Sus sermones del taller, cuando el autor los elige como fuente de voz.
+        const proseReader = new SermonProseReader();
         this.academicVoiceProfile = voiceProfileRepository;
         this.termGlossary = termGlossaryRepository;
         this.workProfiles = workProfileRepository;
@@ -640,6 +643,7 @@ class ExegesisService {
             bibliographyReader,
             termGlossaryRepository,
             voiceProfileRepository,
+            proseReader,
         );
 
         // Ministry composers (sermon / devotional / study guide).

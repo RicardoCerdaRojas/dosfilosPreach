@@ -173,6 +173,13 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
             firestoreUpdates.bibliography = updates.bibliography ?? null;
         }
 
+        // Quién escribió el texto. Decide si puede enseñar el registro del
+        // autor, así que un olvido acá haría que la marca se guarde «bien»
+        // y el perfil de voz no lo encuentre nunca.
+        if (updates.authoredByUser !== undefined) {
+            firestoreUpdates.authoredByUser = !!updates.authoredByUser;
+        }
+
         return firestoreUpdates;
     }
 
@@ -300,6 +307,7 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         // `undefined` significa «no se ha escrito», y la bibliografía lo
         // muestra como hueco en vez de rellenarlo.
         (resource as any).bibliography = data.bibliography ?? undefined;
+        (resource as any).authoredByUser = data.authoredByUser === true;
         // v1.7 smart-match metadata. Legacy docs (uploaded before v1.7)
         // have neither field set in Firestore — default coversBibleBooks
         // to [] and scope to 'book' so the smart-match dialog treats

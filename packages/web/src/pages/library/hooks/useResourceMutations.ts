@@ -17,6 +17,8 @@ export interface ResourceUpdates {
      * full state.
      */
     coversBibleBooks?: ReadonlyArray<BibleBookId>;
+    /** El usuario declara que este texto lo escribió él. */
+    authoredByUser?: boolean;
     scope?: LibraryResourceScope;
 }
 

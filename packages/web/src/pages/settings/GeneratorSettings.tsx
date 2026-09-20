@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { WorkflowPhase } from '@dosfilos/domain';
 import { DEFAULT_MODEL, resolveUserModel, selectableModels } from '@dosfilos/domain';
-import { BookOpen, Mic, PenTool, Settings, Library, Layers, Cog, Calendar, GraduationCap, Globe, CreditCard } from 'lucide-react';
+import { BookOpen, Mic, PenTool, Settings, Library, Layers, Cog, Calendar, GraduationCap, Globe, CreditCard , PenLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { useFirebase } from '@/context/firebase-context';
 import { ConfigService } from '@dosfilos/application';
@@ -31,6 +31,8 @@ import { useSearchParams } from 'react-router-dom';
 import { LibrarySettings } from './LibrarySettings';
 import { IntegrationsSettings } from './IntegrationsSettings';
 import { useAuthorization } from '@/hooks/useAuthorization';
+import { AcademicVoiceCard } from '@/components/exegesis/setup/AcademicVoiceCard';
+import { GlossaryEditorCard } from '@/components/exegesis/setup/GlossaryEditorCard';
 
 // Subscription page is heavy (Stripe + plan grid). Lazy-load so users who never
 // open the Suscripción tab don't pay the cost.
@@ -471,6 +473,9 @@ export function SettingsPage() {
                     <TabsTrigger value="library" className="h-10 gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                         <Library className="h-4 w-4" /> Biblioteca
                     </TabsTrigger>
+                    <TabsTrigger value="writing" className="h-10 gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                        <PenLine className="h-4 w-4" /> Mi escritura
+                    </TabsTrigger>
                     <TabsTrigger value="integrations" className="h-10 gap-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                         <Globe className="h-4 w-4" /> Integraciones
                     </TabsTrigger>
@@ -788,6 +793,16 @@ export function SettingsPage() {
                 </TabsContent>
 
                 {/* ==================== LIBRARY TAB ==================== */}
+                {/* Cómo escribe el autor: de qué texto suyo se aprende su
+                    registro, y qué palabras no son suyas. Las dos cosas son
+                    de la PERSONA y no de un trabajo, y por eso viven acá:
+                    puestas dentro de un trabajo parecía que había que
+                    repetirlas en cada entrega. */}
+                <TabsContent value="writing" className="space-y-4">
+                    <AcademicVoiceCard />
+                    <GlossaryEditorCard />
+                </TabsContent>
+
                 <TabsContent value="library">
                     <LibrarySettings />
                 </TabsContent>

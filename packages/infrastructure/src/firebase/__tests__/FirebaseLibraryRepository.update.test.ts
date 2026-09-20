@@ -71,3 +71,16 @@ describe('datos bibliográficos', () => {
         expect('bibliography' in repo.buildFirestoreUpdates({ title: 'x' } as never)).toBe(false);
     });
 });
+
+describe('texto escrito por el usuario', () => {
+    it('la marca llega a Firestore: de ella depende que el perfil de voz lo encuentre', () => {
+        const repo = new FirebaseLibraryRepository();
+        expect(repo.buildFirestoreUpdates({ authoredByUser: true } as never).authoredByUser).toBe(true);
+        expect(repo.buildFirestoreUpdates({ authoredByUser: false } as never).authoredByUser).toBe(false);
+    });
+
+    it('sin tocarla, no viaja: `undefined` no borra lo guardado', () => {
+        const repo = new FirebaseLibraryRepository();
+        expect('authoredByUser' in repo.buildFirestoreUpdates({ title: 'x' } as never)).toBe(false);
+    });
+});
