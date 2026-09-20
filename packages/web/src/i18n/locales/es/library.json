@@ -241,7 +241,9 @@
       "other": "Otro"
     },
     "cancel": "Cancelar",
-    "save": "Guardar"
+    "save": "Guardar",
+    "authoredByUser": "Lo escribí yo",
+    "authoredByUserHint": "Marca esto sólo si este texto es tuyo. El sistema lo usa para aprender tu forma de escribir; si marcas el libro de otro, tus trabajos saldrán sonando a él."
   },
   "phaseModal": {
     "title": "Fases Preferidas",

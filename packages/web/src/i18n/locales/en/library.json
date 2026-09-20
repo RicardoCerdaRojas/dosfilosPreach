@@ -241,7 +241,9 @@
       "other": "Other"
     },
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "authoredByUser": "I wrote this",
+    "authoredByUserHint": "Tick this only if the text is yours. The system uses it to learn how you write; if you tick someone else's book, your papers will sound like them."
   },
   "phaseModal": {
     "title": "Preferred Phases",

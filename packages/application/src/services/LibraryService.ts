@@ -557,6 +557,8 @@ export class LibraryService {
              * reutiliza cada trabajo que lo cite.
              */
             bibliography?: import('@dosfilos/domain').BibliographicData | null;
+            /** El usuario declara que este texto lo escribió él. */
+            authoredByUser?: boolean;
         }
     ): Promise<void> {
         console.log(`📝 Updating resource ${id}:`, updates);

@@ -31,6 +31,7 @@ interface EditResourceModalProps {
         type: ResourceType;
         coversBibleBooks: ReadonlyArray<BibleBookId>;
         scope: LibraryResourceScope;
+        authoredByUser: boolean;
     }) => Promise<void>;
 }
 
@@ -57,6 +58,10 @@ export function EditResourceModal({ resource, open, onOpenChange, onSave }: Edit
     const [type, setType] = useState<ResourceType>('theology');
     const [coversBibleBooks, setCoversBibleBooks] = useState<ReadonlyArray<BibleBookId>>([]);
     const [scope, setScope] = useState<LibraryResourceScope>('book');
+    // Quién escribió el texto. No se deduce de nada: un PDF no lo dice, y de
+    // esta marca depende que el perfil de voz pueda aprender el registro del
+    // autor sin devolverle el de otro.
+    const [authoredByUser, setAuthoredByUser] = useState(false);
     const [saving, setSaving] = useState(false);
 
     // Reset form when resource changes
@@ -68,6 +73,7 @@ export function EditResourceModal({ resource, open, onOpenChange, onSave }: Edit
             // v1.7 metadata. Repo deserializer defaults legacy docs to
             // [] + 'book' so these reads are always defined.
             setCoversBibleBooks(resource.coversBibleBooks ?? []);
+            setAuthoredByUser((resource as { authoredByUser?: boolean }).authoredByUser === true);
             setScope(resource.scope ?? 'book');
         }
     }, [resource]);
@@ -82,6 +88,7 @@ export function EditResourceModal({ resource, open, onOpenChange, onSave }: Edit
                 type,
                 coversBibleBooks,
                 scope,
+                authoredByUser,
             });
             onOpenChange(false);
         } catch (error) {
@@ -140,6 +147,20 @@ export function EditResourceModal({ resource, open, onOpenChange, onSave }: Edit
                         onCoversBibleBooksChange={setCoversBibleBooks}
                         onScopeChange={setScope}
                     />
+                    <label className="flex items-start gap-2 text-sm text-foreground">
+                        <input
+                            type="checkbox"
+                            checked={authoredByUser}
+                            onChange={e => setAuthoredByUser(e.target.checked)}
+                            className="mt-1"
+                        />
+                        <span>
+                            {t('editModal.authoredByUser')}
+                            <span className="block text-xs text-muted-foreground">
+                                {t('editModal.authoredByUserHint')}
+                            </span>
+                        </span>
+                    </label>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

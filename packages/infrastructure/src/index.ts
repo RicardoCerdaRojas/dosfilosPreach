@@ -72,3 +72,4 @@ export * from './library/callableLibrary';
 export { FirestoreWorkProfileRepository } from './firebase/FirestoreWorkProfileRepository';
 export { FirestoreTermGlossaryRepository } from './firebase/FirestoreTermGlossaryRepository';
 export { FirestoreVoiceProfileRepository } from './firebase/FirestoreVoiceProfileRepository';
+export { SermonProseReader } from './exegesis/SermonProseReader';

@@ -20,6 +20,7 @@ export class FirestoreVoiceProfileRepository implements IVoiceProfileRepository 
         return {
             ownerId,
             resourceId: data.resourceId ?? null,
+            useSermons: data.useSermons === true,
             ...(data.resourceTitle ? { resourceTitle: data.resourceTitle } : {}),
             updatedAt: data.updatedAt?.toDate?.() ?? new Date(),
         };
@@ -35,11 +36,20 @@ export class FirestoreVoiceProfileRepository implements IVoiceProfileRepository 
             resourceTitle: resourceId && resourceTitle ? resourceTitle : deleteField(),
             updatedAt,
         }, { merge: true });
+        const actual = await this.getProfile(ownerId);
         return {
             ownerId,
             resourceId,
+            ...(actual?.useSermons ? { useSermons: true } : {}),
             ...(resourceId && resourceTitle ? { resourceTitle } : {}),
             updatedAt,
         };
+    }
+
+    async setUseSermons(ownerId: string, useSermons: boolean): Promise<AcademicVoiceProfile> {
+        const updatedAt = new Date();
+        await setDoc(this.docRef(ownerId), { ownerId, useSermons, updatedAt }, { merge: true });
+        const actual = await this.getProfile(ownerId);
+        return actual ?? { ownerId, resourceId: null, useSermons, updatedAt };
     }
 }

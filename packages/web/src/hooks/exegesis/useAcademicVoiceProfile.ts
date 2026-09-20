@@ -16,6 +16,20 @@ export function useAcademicVoiceProfile() {
     return { profile: query.data ?? null, isLoading: query.isLoading };
 }
 
+export function useSetUseSermons() {
+    const { user } = useFirebase();
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (useSermons: boolean) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.academicVoiceProfile.setUseSermons(user.uid, useSermons);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [KEY, user?.uid] });
+        },
+    });
+}
+
 export function useSetAcademicVoiceResource() {
     const { user } = useFirebase();
     const queryClient = useQueryClient();
