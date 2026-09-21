@@ -129,6 +129,12 @@ export const PROXY_FEATURES = [
     'exegesis.detectPericopes',
     'exegesis.extractRubric',
     'exegesis.extractStyleManifest',
+    // Leer la ficha bibliográfica de la página de créditos del propio libro.
+    // Llamada corta, una por libro y a pedido: el usuario pulsa «leer del
+    // libro» en la ficha. Lo que el modelo devuelve se filtra en el cliente
+    // contra el texto que se le dio, así que no puede colar un dato de
+    // memoria.
+    'exegesis.readBibliography',
     'exegesis.planStepCorpus',
     'exegesis.paperToSermon',
     'exegesis.expository.panorama',

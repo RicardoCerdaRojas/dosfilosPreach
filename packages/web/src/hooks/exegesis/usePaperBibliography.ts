@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { libraryService } from '@dosfilos/application';
+import { readBibliographyFromCover } from '@dosfilos/infrastructure';
 import {
     isCitableSourceType,
     missingBibliographyFields,
@@ -9,6 +10,7 @@ import {
     type RequiredBibliographyField,
 } from '@dosfilos/domain';
 import { useLibrary } from '@/hooks/library';
+import { useFirebase } from '@/context/firebase-context';
 
 export interface PaperBibliographyRow {
     sourceId: string;
@@ -17,6 +19,16 @@ export interface PaperBibliographyRow {
     displayLabel: string;
     data: BibliographicData | null;
     missing: RequiredBibliographyField[];
+    /**
+     * Si la ficha de este libro se puede escribir desde aquí.
+     *
+     * Es la MISMA condición que las reglas de Firestore: dueño del
+     * recurso. No «que no sea del sistema», que dejaba pasar la
+     * biblioteca común —sus documentos llevan el identificador de un
+     * administrador— y también dejaba pasar todo mientras la biblioteca
+     * todavía cargaba. Una compuerta de permisos no abre ante la duda.
+     */
+    editable: boolean;
 }
 
 /**
@@ -28,16 +40,22 @@ export interface PaperBibliographyRow {
  */
 export function usePaperBibliography(paper: ExegeticalPaper | null | undefined): PaperBibliographyRow[] {
     const { resources } = useLibrary();
+    const { user } = useFirebase();
+    const uid = user?.uid;
 
     return useMemo(() => {
         if (!paper) return [];
-        const byId = new Map(resources.map(r => [r.id, r as { bibliography?: BibliographicData | null }]));
+        const byId = new Map(resources.map(r => [r.id, r as {
+            bibliography?: BibliographicData | null;
+            userId?: string;
+        }]));
 
         return paper.sources
             .filter(s => isCitableSourceType(s.sourceType))
             .map(s => {
                 const resourceId = s.sourceLibraryResourceId ?? s.corpusId;
-                const data = byId.get(resourceId)?.bibliography ?? null;
+                const resource = byId.get(resourceId);
+                const data = resource?.bibliography ?? null;
                 return {
                     sourceId: s.id,
                     resourceId,
@@ -45,9 +63,10 @@ export function usePaperBibliography(paper: ExegeticalPaper | null | undefined):
                     displayLabel: s.displayLabel,
                     data,
                     missing: missingBibliographyFields(data),
+                    editable: !!uid && resource?.userId === uid,
                 };
             });
-    }, [paper, resources]);
+    }, [paper, resources, uid]);
 }
 
 /**
@@ -66,5 +85,18 @@ export function useSaveBibliography() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['library'] });
         },
+    });
+}
+
+/**
+ * Lee la ficha de la portada del propio ejemplar.
+ *
+ * No guarda nada: devuelve una PROPUESTA que el diálogo vuelca sobre los
+ * campos vacíos. Quien tiene el libro en la mano confirma y guarda, que es
+ * el mismo gesto de siempre.
+ */
+export function useReadBibliographyFromCover() {
+    return useMutation({
+        mutationFn: (resourceId: string) => readBibliographyFromCover(resourceId),
     });
 }

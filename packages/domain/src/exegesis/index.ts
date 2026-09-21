@@ -87,6 +87,7 @@ export * from './repositories/ITermGlossaryRepository';
 export * from './repositories/IVoiceProfileRepository';
 export * from './repositories/IWorkProfileRepository';
 export * from './services/bibliography';
+export * from './services/bibliographyFromText';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';
 export * from './services/verseAnalysisCoverage';

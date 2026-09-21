@@ -8,6 +8,7 @@ export {
     extractFootnoteAnchorsFromFormattedMarkdown,
 } from './DeterministicStyleFormatter';
 export { OverloadedError } from './geminiRetry';
+export { readBibliographyFromCover, type CoverBibliographyResult } from './CoverBibliographyReader';
 export { RetrieveChunksExcerptExtractor } from './RetrieveChunksExcerptExtractor';
 export { StructuralExcerptExtractor } from './StructuralExcerptExtractor';
 export { CallableDocumentChunkReader } from './CallableDocumentChunkReader';
