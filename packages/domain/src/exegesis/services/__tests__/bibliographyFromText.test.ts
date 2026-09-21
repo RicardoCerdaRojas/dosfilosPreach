@@ -714,6 +714,21 @@ describe('cuál hoja es la legal', () => {
         expect(data.publisher).toBe('Kress Biblical Resources');
     });
 
+    it('LÍMITE CONOCIDO: la legal sin símbolo de copyright y con la nota de la versión al frente se pierde', () => {
+        // Esta prueba documenta el borde en vez de taparlo. La página
+        // legal propia se pierde solo cuando se juntan dos cosas: su
+        // línea de derechos no lleva «©» Y la nota de la versión bíblica
+        // cae en las primeras 200 letras. Eso exige una página tan
+        // escueta que ni siquiera trae la cláusula de reserva completa;
+        // con ella en medio —lo normal— la nota queda más allá y la hoja
+        // se conserva. El coste es un HUECO VISIBLE, no un dato falso:
+        // el usuario lee que el ejemplar no trae sus datos y los escribe.
+        const legalCompacta = 'Publicado por Editorial Portavoz, Grand Rapids. Todos los derechos reservados. 2011.\n'
+            + 'Las citas bíblicas son de la Reina-Valera 1960 © 1960 Sociedades Bíblicas.';
+        const libro = porHojas('Comentario', legalCompacta, HOJA_DE_PREFACIO);
+        expect(readableRegionsOf(libro).credits).toBe('');
+    });
+
     it('la hoja de permisos que lista cuatro versiones tampoco es la página legal', () => {
         // Mide más de 400 letras, así que una compuerta de largo la
         // dejaba entrar. Lo que la delata es que ABRE con el permiso.

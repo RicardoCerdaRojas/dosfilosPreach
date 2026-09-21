@@ -111,6 +111,20 @@ const pedirleAlModelo: EjecutarPrompt = (prompt, modelName) => withGeminiRetry(
 /** Bajo esto no hay portada que leer: es un libro sin texto extraído. */
 const MINIMO_PARA_INTENTAR = 200;
 
+/**
+ * LA REGLA 6 ES CARGA ESTRUCTURAL, NO UN ADORNO.
+ *
+ * Hay dos datos ajenos que viven DENTRO de la página legal propia y que
+ * ningún recorte por hojas puede separar, porque están impresos justo
+ * donde hay que mirar: el pie de imprenta de la versión bíblica citada
+ * («Las citas son de la Reina-Valera 1960 © 1960 Sociedades Bíblicas,
+ * Miami») y el de la edición original de una traducción («el original de
+ * esta obra fue publicado por Baker Book House, Grand Rapids»).
+ * `keepOnlyWhatIsWritten` los aceptaría: están escritos ahí.
+ *
+ * Lo único que los separa es esa regla del prompt. No se reescribe sin
+ * volver a medir contra la biblioteca.
+ */
 const INSTRUCCION = [
     'Eres un transcriptor de páginas de créditos. No eres un investigador.',
     '',
