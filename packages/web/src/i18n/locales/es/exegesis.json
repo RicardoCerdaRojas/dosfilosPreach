@@ -2096,7 +2096,7 @@
       "readFailed": "No se pudo leer la portada del libro.",
       "readAlreadyComplete": "Esta ficha ya está completa. No hay nada que leer del libro.",
       "readNothingNew": "El libro no agrega nada a lo que ya escribiste.",
-      "notEditable": "Esta fuente es de la biblioteca común, así que su ficha no se edita desde aquí."
+      "notEditable": "La ficha de esta fuente no se edita desde aquí: el libro no es tuyo."
     },
     "glossary": {
       "title": "Palabras que no uso",

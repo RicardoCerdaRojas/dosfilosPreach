@@ -103,11 +103,19 @@ export function hasCompleteBibliography(data: BibliographicData | null | undefin
 export function proposeSortedAuthor(author: string): string {
     const clean = author.trim().replace(/\s+/g, ' ');
     if (!clean || clean.includes(',')) return clean;
+    // Con dos autores, mover la última palabra al frente produce basura:
+    // «Bill T. Arnold and John H. Choi» daba «Choi, Bill T. Arnold and
+    // John H.», y eso se imprimía en la bibliografía del trabajo. Un
+    // nombre coordinado se deja como está y lo ordena la persona.
+    if (TIENE_COORDINACION.test(clean)) return clean;
     const parts = clean.split(' ');
     if (parts.length < 2) return clean;
     const surname = parts[parts.length - 1]!;
     return `${surname}, ${parts.slice(0, -1).join(' ')}`;
 }
+
+/** Dos autores en un solo campo: «X and Y», «X y Y», «X & Y». */
+const TIENE_COORDINACION = /\s(and|y|e|&)\s|\s&\s/i;
 
 /**
  * La entrada de bibliografía, en Turabian:

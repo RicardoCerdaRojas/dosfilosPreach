@@ -2096,7 +2096,7 @@
       "readFailed": "The book's front matter could not be read.",
       "readAlreadyComplete": "This record is already complete. There is nothing to read from the book.",
       "readNothingNew": "The book adds nothing to what you already typed.",
-      "notEditable": "This source belongs to the shared library, so its record is not edited here."
+      "notEditable": "This source's record is not edited here: the book is not yours."
     },
     "glossary": {
       "title": "Words I don't use",

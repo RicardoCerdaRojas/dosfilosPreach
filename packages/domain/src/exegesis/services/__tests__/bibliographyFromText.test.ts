@@ -8,6 +8,7 @@ import {
     VENTANA_DESPUES,
     completeWithProposal,
     creditsRegionOf,
+    MARCA_DE_HOJA,
     frontMatterOf,
     readableRegionsOf,
     isbnsIn,
@@ -473,5 +474,146 @@ describe('la colección y la edición valen en cualquiera de los dos tramos', ()
         expect(data.edition).toBe('Segunda edición');
         expect(data.translator).toBe('Pedro Vega');
         expect(data.city).toBe('Barcelona');
+    });
+});
+
+describe('cuál hoja es la legal', () => {
+    const LEGAL_PROPIA = '© 2011 Kregel Publications, Grand Rapids, Michigan\nISBN 978-0-8254-2562-2';
+    const OTROS_TITULOS = [
+        'OTROS TÍTULOS DE ESTA COLECCIÓN',
+        'The Message of the Psalms, © 1984 Augsburg, Minneapolis. Printed in the USA.',
+    ].join('\n');
+
+    it('la hoja de «otros títulos» no le gana a la página legal', () => {
+        // Trae copyright, ciudad, editorial y año de OTROS libros, va
+        // delante, y con el puntaje a secas empataba y ganaba por ser la
+        // primera: volvía a salir la ficha ajena completa.
+        const libro = porHojas('A Commentary on the Psalms', OTROS_TITULOS, LEGAL_PROPIA);
+        const { credits } = readableRegionsOf(libro);
+        expect(credits).toContain('Kregel');
+        expect(credits).not.toContain('Augsburg');
+    });
+
+    it('y por eso la ficha de ese otro libro se descarta', () => {
+        const libro = porHojas('A Commentary on the Psalms', OTROS_TITULOS, LEGAL_PROPIA);
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Minneapolis', publisher: 'Augsburg', year: '1984' },
+            libro,
+        );
+        expect(data).toEqual({});
+    });
+
+    it('la hoja anterior no viaja cuando es un prefacio', () => {
+        // Logos, Kindle y varias reimpresiones ponen el copyright DESPUÉS
+        // del prefacio de serie. La hoja anterior entraba gratis y con
+        // ella los libros que ese prefacio cita.
+        const libro = porHojas('A Commentary on the Psalms', HOJA_DE_PREFACIO, LEGAL_PROPIA);
+        expect(readableRegionsOf(libro).credits).not.toContain('Brueggemann');
+    });
+
+    it('la página legal escueta hispanoamericana vale con una sola seña', () => {
+        // «© 2011 Editorial Portavoz / Grand Rapids» es una página legal
+        // entera. Exigirle dos señas la dejaba fuera.
+        const libro = porHojas('Comentario', '© 2011 Editorial Portavoz\nGrand Rapids, Michigan', HOJA_DE_PREFACIO);
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Grand Rapids', publisher: 'Editorial Portavoz', year: '2011' },
+            libro,
+        );
+        expect(data.publisher).toBe('Editorial Portavoz');
+        expect(data.year).toBe('2011');
+    });
+
+    it('la línea de índice que nombra el copyright sigue perdiendo', () => {
+        const indiceLargo = `CONTENTS\nCopyright and Permissions .... iv\n${'Capítulo tal .... 12\n'.repeat(60)}`;
+        const libro = porHojas(indiceLargo, 'Comentario', LEGAL_PROPIA);
+        expect(readableRegionsOf(libro).credits).toContain('Kregel');
+    });
+
+    it('la página legal se encuentra aunque el cuerpo empiece en la hoja 2', () => {
+        // El corte del cuerpo protegía la portada y de paso escondía el
+        // pie de imprenta: costaba el libro entero.
+        const libro = porHojas('Comentario a los Salmos', 'INTRODUCCIÓN\nEl salterio…', LEGAL_PROPIA);
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Grand Rapids', publisher: 'Kregel Publications', year: '2011' },
+            libro,
+        );
+        expect(data.publisher).toBe('Kregel Publications');
+    });
+});
+
+describe('dónde empieza el cuerpo', () => {
+    it.each([
+        ['ix\n\nPREFACIO', 'un folio delante'],
+        ['# Prefacio', 'una almohadilla de markdown'],
+        ['PRESENTACIÓN', 'como lo titulan Sígueme y CLIE'],
+        ['Nota del autor', 'sin la palabra prefacio'],
+        ['Series Preface', 'en inglés y con prefijo'],
+    ])('%s se reconoce como cuerpo (%s)', (encabezado) => {
+        const libro = porHojas(
+            'A Commentary on the Psalms\nAllen P. Ross',
+            `${encabezado}\nComo bien dice Walter Brueggemann, The Message of the Psalms.`,
+            '© 2011 Kregel\nISBN 978-0-8254-2562-2',
+        );
+        expect(readableRegionsOf(libro).cover).not.toContain('Brueggemann');
+    });
+});
+
+describe('un título que lleva la palabra dentro no abre el cuerpo', () => {
+    it('«An Introduction to Biblical Hebrew Syntax» es el título, no la introducción', () => {
+        // Medido sobre el ejemplar real de Waltke-O'Connor: el corte
+        // falso dejaba la portada en 69 letras.
+        const libro = porHojas(
+            'AN INTRODUCTION TO BIBLICAL HEBREW SYNTAX',
+            'An Introduction to Biblical Hebrew Syntax\nBruce K. Waltke and M. O\'Connor',
+            'Eisenbrauns\nWinona Lake, Indiana\n1990',
+        );
+        expect(readableRegionsOf(libro).cover).toContain('Waltke');
+    });
+});
+
+describe('por qué camino se recortó', () => {
+    it('lo dice, para que un cambio del extractor no pase inadvertido', () => {
+        expect(readableRegionsOf(porHojas('a', 'b', 'c')).origin).toBe('hojas');
+        expect(readableRegionsOf(CREDITOS).origin).toBe('letras');
+    });
+
+    it('una marca mal formada cae al recorte por letras en vez de romper', () => {
+        expect(readableRegionsOf('[Page 1] uno [PAGE] dos').origin).toBe('letras');
+    });
+
+    it('la marca es la que escribe el extractor', () => {
+        // Hermana de la prueba de `pagesToMarkedText` en el paquete de
+        // funciones, que no puede importar dominio. Si allá cambia el
+        // formato, acá deja de haber hojas y nadie se entera.
+        expect(MARCA_DE_HOJA.test('[PAGE 1]')).toBe(true);
+        expect(MARCA_DE_HOJA.test('[PAGE 137]')).toBe(true);
+    });
+});
+
+describe('la forma ordenable de un nombre', () => {
+    it('rechaza el campo puesto al revés', () => {
+        // Con la portada que ya imprime el nombre invertido, aceptar
+        // «Allen P. Ross» como forma ordenada alfabetizaba por «Allen».
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Ross, Allen P.', authorSorted: 'Allen P. Ross' },
+            CREDITOS.replace('Allen P. Ross', 'Ross, Allen P.'),
+        );
+        expect(data.authorSorted).toBeUndefined();
+    });
+
+    it('rechaza el apellido que no cierra el nombre', () => {
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Allen P. Ross', authorSorted: 'Allen, Ross P.' },
+            CREDITOS,
+        );
+        expect(data.authorSorted).toBeUndefined();
+    });
+
+    it('acepta el apellido compuesto español', () => {
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Ricardo Cerda Rojas', authorSorted: 'Cerda Rojas, Ricardo' },
+            'Ricardo Cerda Rojas\n© 2026',
+        );
+        expect(data.authorSorted).toBe('Cerda Rojas, Ricardo');
     });
 });

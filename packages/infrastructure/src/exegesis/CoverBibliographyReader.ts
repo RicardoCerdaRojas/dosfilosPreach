@@ -17,6 +17,15 @@ export interface CoverBibliographyResult {
     discarded: ReadonlyArray<keyof BibliographicData>;
     /** `false` cuando el libro todavía no tiene texto extraído. */
     hasText: boolean;
+    /**
+     * Por qué camino se recortó el texto.
+     *
+     * `letras` es el de respaldo —el libro no trae marcas de hoja— y deja
+     * pasar el prefacio. Viaja para que se pueda ver en producción cuántas
+     * lecturas caen ahí: si mañana el extractor cambiara la marca, caerían
+     * todas y sin esto no se notaría.
+     */
+    origin: 'hojas' | 'letras';
 }
 
 /**
@@ -59,8 +68,14 @@ export async function readBibliographyFromCover(
 
     const regiones = readableRegionsOf(resource?.textContent ?? '');
     if (regiones.cover.length < MINIMO_PARA_INTENTAR) {
-        return { data: {}, discarded: [], hasText: false };
+        return { data: {}, discarded: [], hasText: false, origin: regiones.origin };
     }
+    console.log('[CoverBibliography] leyendo', {
+        resourceId,
+        origin: regiones.origin,
+        cover: regiones.cover.length,
+        credits: regiones.credits.length,
+    });
 
     const raw = await ejecutarPrompt(
         buildCoverPrompt(regiones, resource?.title, resource?.author),
@@ -71,7 +86,7 @@ export async function readBibliographyFromCover(
     const isbn = proposeIsbn(`${regiones.cover}\n${regiones.credits}`);
     if (isbn) data.isbn = isbn;
 
-    return { data, discarded, hasText: true };
+    return { data, discarded, hasText: true, origin: regiones.origin };
 }
 
 /** El paso que habla con el modelo, aparte para poder probar el resto. */

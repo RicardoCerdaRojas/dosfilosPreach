@@ -247,6 +247,8 @@ export interface ReadableRegions {
     cover: string;
     /** La página legal: ahí está el pie de imprenta. Vacía si no la hay. */
     credits: string;
+    /** Por qué camino se recortó. `letras` es el de respaldo, y es peor. */
+    origin: 'hojas' | 'letras';
 }
 
 /**
@@ -258,10 +260,22 @@ export interface ReadableRegions {
  */
 const HOJAS_DE_PORTADA = 8;
 
-/** Hasta dónde se busca la página legal cuando no hay encabezado de cuerpo. */
+/** Hasta dónde se busca la página legal. Más allá ya es cuerpo del libro. */
 const HOJAS_A_MIRAR = 25;
 
-/** Señales de una página legal. Se cuentan: una sola no hace una portada legal. */
+/**
+ * Cuántas hojas se miran siempre, aunque el cuerpo empiece antes.
+ *
+ * Un libro cuya hoja 2 abre con «Introducción» dejaba de tener página
+ * legal aunque estuviera en la hoja 3. Una fuga de encabezado cuesta un
+ * prefacio dentro de la portada; un corte falso costaba el pie de
+ * imprenta entero.
+ */
+const HOJAS_MINIMAS_A_MIRAR = 6;
+
+/**
+ * Señales de imprenta. Se cuentan: una sola no hace una página legal.
+ */
 const SENAS_DE_PAGINA_LEGAL = [
     /©/, /copyright/, /derechos reservados/, /reservados todos los derechos/,
     /\bisbn\b/, /printed in/, /impreso en/, /all rights reserved/,
@@ -270,21 +284,53 @@ const SENAS_DE_PAGINA_LEGAL = [
 ];
 
 /**
- * Con menos de dos señales no es una página legal.
+ * Señales que SOLO aparecen en la página legal propia.
  *
- * Un índice con la línea «Copyright and Permissions .... iv» trae UNA, y
- * tomarla por la página legal apagaba la lectura del libro entero.
+ * La hoja de «otros títulos de esta colección» trae copyright, ciudad,
+ * editorial y año de OTROS libros, y con el puntaje a secas le ganaba a
+ * la página legal verdadera: volvía a salir la ficha ajena completa. Un
+ * catálogo de otros títulos no lleva el bloque de catalogación ni la
+ * reserva de derechos del ejemplar que se tiene en la mano.
  */
-const SENAS_MINIMAS = 2;
+const SENAS_PROPIAS = [
+    /all rights reserved/, /reservados todos los derechos/, /derechos reservados/,
+    /library of congress/, /cataloging/, /catalogacion/, /deposito legal/,
+    /queda prohibida/, /\bisbn\b/,
+];
 
 /**
- * Dónde empieza el cuerpo. Antes de esto está el frente del libro.
+ * Una página legal escueta es corta.
  *
- * El índice, las abreviaturas y los agradecimientos NO cuentan: son
- * frente, y en muchas ediciones van ANTES de la página legal. Tomarlos
- * por cuerpo dejaba al libro entero sin hoja legal.
+ * «© 2011 Editorial Portavoz / Grand Rapids, Michigan» es una página
+ * legal entera y no trae ninguna seña propia. Exigirle dos señales
+ * dejaba sin pie de imprenta a las ediciones hispanoamericanas mínimas.
+ * Lo que la distingue de una línea de índice que dice «Copyright and
+ * Permissions .... iv» no es cuántas señales trae, sino que la línea de
+ * índice vive en una hoja larga y llena de otras cosas.
  */
-const EMPIEZA_EL_CUERPO = /^(prefac|preface|introduc|foreword|prologo|chapter|capitulo)/;
+const HOJA_LEGAL_ESCUETA = 1_500;
+
+/** Una portadilla es corta; un prefacio, no. */
+const MAX_LETRAS_DE_PORTADILLA = 1_200;
+
+/** Dónde empieza el cuerpo. Antes de esto está el frente del libro. */
+const EMPIEZA_EL_CUERPO = /\b(prefac|preface|introduc|foreword|prologo|proemio|presentac|nota del|al lector|advertencia|chapter|capitulo|parte i)/;
+
+/** Un encabezado es corto. Una frase que hable del prefacio, no. */
+const MAX_LETRAS_DE_ENCABEZADO = 60;
+
+/**
+ * Cuántas palabras puede haber DESPUÉS de la palabra del encabezado.
+ *
+ * Un encabezado casi se acaba ahí: «Series Preface», «Nota del autor».
+ * Un título no: «An Introduction to Biblical Hebrew Syntax» lleva la
+ * palabra dentro y seguía cuatro palabras más, y sin este tope el propio
+ * título de Waltke-O'Connor se tomaba por el comienzo del cuerpo.
+ */
+const PALABRAS_TRAS_EL_ENCABEZADO = 3;
+
+/** Cuántas líneas del principio de una hoja se miran buscando su encabezado. */
+const LINEAS_DE_ENCABEZADO = 3;
 
 /** Topes de tamaño, por si una «hoja» resulta ser medio libro. */
 const MAX_LETRAS_DE_PORTADA = 8_000;
@@ -312,54 +358,122 @@ interface Hoja {
  * prefacio es otra.
  *
  * Cuando el texto no trae marcas de hoja —medido: 13 de 68 recursos— se
- * vuelve al recorte por letras, que es peor y se sabe.
+ * vuelve al recorte por letras, que es peor y se sabe. `origin` lo dice,
+ * para que un cambio de formato del extractor no pase inadvertido.
  */
 export function readableRegionsOf(text: string): ReadableRegions {
     const hojas = hojasDe(text);
     if (hojas.length < MINIMO_DE_HOJAS) return porLetras(text);
 
     const finDelFrente = hojas.findIndex(h => h.esCuerpo);
-    const hastaDondeMirar = finDelFrente < 0 ? Math.min(hojas.length, HOJAS_A_MIRAR) : finDelFrente;
-    const frente = hojas.slice(0, hastaDondeMirar);
-
-    const cover = frente
-        .slice(0, HOJAS_DE_PORTADA)
+    const cover = hojas
+        .slice(0, finDelFrente < 0 ? HOJAS_DE_PORTADA : Math.min(finDelFrente, HOJAS_DE_PORTADA))
         .map(h => h.texto)
         .join('\n')
         .slice(0, MAX_LETRAS_DE_PORTADA);
 
-    return { cover, credits: paginaLegalDe(frente) };
+    // La página legal se busca por sus propias señas y no por debajo del
+    // corte del cuerpo: si el corte se equivoca, que cueste una hoja de
+    // más en la portada y no el pie de imprenta entero.
+    const hastaDondeMirar = Math.min(
+        hojas.length,
+        HOJAS_A_MIRAR,
+        Math.max(finDelFrente < 0 ? HOJAS_A_MIRAR : finDelFrente, HOJAS_MINIMAS_A_MIRAR),
+    );
+
+    return { cover, credits: paginaLegalDe(hojas.slice(0, hastaDondeMirar)), origin: 'hojas' };
 }
 
 /**
- * La hoja legal: la que más señales de imprenta reúne, con la anterior.
+ * La hoja legal, y con ella la portadilla que la precede.
  *
- * Va con la anterior porque muchas ediciones parten el dato: Waltke-
- * O'Connor imprime «Eisenbrauns, Winona Lake, Indiana 1990» en la
- * portadilla y «©1990 by Eisenbrauns» en la hoja siguiente.
+ * Gana la que trae una seña PROPIA —catalogación, reserva de derechos,
+ * ISBN—; si ninguna la trae, una hoja corta con una seña y un año
+ * creíble. Entre iguales, la más cercana a la portada. La hoja anterior
+ * viaja solo si parece portadilla, porque muchas ediciones parten el
+ * dato —Waltke-O'Connor imprime editorial y ciudad en la portadilla y el
+ * copyright en la hoja siguiente— y porque una anterior que sea prefacio
+ * vuelve a meter los libros que ese prefacio cita.
  */
 function paginaLegalDe(frente: ReadonlyArray<Hoja>): string {
     let mejor = -1;
-    let mejorPuntaje = 0;
-    frente.forEach((hoja, i) => {
-        const plegada = foldForSearch(hoja.texto);
-        const puntaje = SENAS_DE_PAGINA_LEGAL.filter(sena => sena.test(plegada)).length;
-        if (puntaje > mejorPuntaje) { mejor = i; mejorPuntaje = puntaje; }
-    });
-    if (mejor < 0 || mejorPuntaje < SENAS_MINIMAS) return '';
+    let mejorRango = 0;
+    let mejorSenas = 0;
 
-    const anterior = mejor > 0 ? frente[mejor - 1]!.texto : '';
+    frente.forEach((hoja, i) => {
+        if (hoja.esCuerpo) return;
+        const plegada = foldForSearch(hoja.texto);
+        const senas = SENAS_DE_PAGINA_LEGAL.filter(sena => sena.test(plegada)).length;
+        if (senas === 0) return;
+        const propia = SENAS_PROPIAS.some(sena => sena.test(plegada));
+        const escueta = hoja.texto.length <= HOJA_LEGAL_ESCUETA && ANIO_SUELTO.test(plegada);
+        const rango = propia ? 2 : (escueta ? 1 : 0);
+        if (rango === 0) return;
+        // Entre iguales gana la primera: la página legal va delante.
+        if (rango > mejorRango || (rango === mejorRango && senas > mejorSenas)) {
+            mejor = i;
+            mejorRango = rango;
+            mejorSenas = senas;
+        }
+    });
+    if (mejor < 0) return '';
+
+    // La anterior viaja solo si es una PORTADILLA: corta, que no abra
+    // cuerpo y SIN ninguna seña de imprenta propia. Una hoja de «otros
+    // títulos de esta colección» es corta y no es cuerpo, pero trae el
+    // copyright de otros libros, y colándose por aquí volvía a producir
+    // la ficha ajena completa.
+    const previa = mejor > 0 ? frente[mejor - 1]! : null;
+    const esPortadilla = !!previa
+        && !previa.esCuerpo
+        && previa.texto.length <= MAX_LETRAS_DE_PORTADILLA
+        && !SENAS_DE_PAGINA_LEGAL.some(sena => sena.test(foldForSearch(previa.texto)));
+    const anterior = esPortadilla ? previa!.texto : '';
     return `${anterior}\n${frente[mejor]!.texto}`.trim().slice(0, MAX_LETRAS_DE_CREDITOS);
 }
 
-/** Parte el arranque del libro en hojas por sus marcas «[PAGE n]». */
+/** Un año de imprenta suelto en la hoja. */
+const ANIO_SUELTO = /\b(1[89]\d{2}|20[0-4]\d)\b/;
+
+/**
+ * Parte el arranque del libro en hojas por sus marcas «[PAGE n]».
+ *
+ * El formato lo escribe el extractor (`pagesToMarkedText`, en el paquete
+ * de funciones, que no puede importar dominio). Una prueba a cada lado
+ * fija el literal: si allá cambia, acá deja de haber hojas y se cae al
+ * recorte por letras sin que nadie se entere.
+ */
 function hojasDe(text: string): Hoja[] {
     const arranque = (text ?? '').slice(0, LETRAS_DE_BUSQUEDA);
-    const partes = arranque.split(/\[PAGE \d+\]/).map(p => p.trim()).filter(Boolean);
-    return partes.map(texto => ({
-        texto,
-        esCuerpo: EMPIEZA_EL_CUERPO.test(foldForSearch(texto).trimStart()),
-    }));
+    const partes = arranque.split(MARCA_DE_HOJA).map(p => p.trim()).filter(Boolean);
+    return partes.map(texto => ({ texto, esCuerpo: abreElCuerpo(texto) }));
+}
+
+export const MARCA_DE_HOJA = /\[PAGE \d+\]/;
+
+/**
+ * ¿Esta hoja abre el cuerpo?
+ *
+ * Se miran las primeras líneas y no el primer carácter: la salida del
+ * extractor antepone folios («ix»), almohadillas de markdown y
+ * encabezados de página, y con el ancla pegada al inicio un «ix\n\nPREFACIO»
+ * no se reconocía y el prefacio entraba en la portada.
+ */
+function abreElCuerpo(texto: string): boolean {
+    return foldForSearch(texto)
+        .split('\n')
+        .map(linea => linea.replace(/^[#\s]+/, '').trim())
+        .filter(linea => linea.length > 0 && !/^[ivxlcdm\d.,:()-]+$/.test(linea))
+        .slice(0, LINEAS_DE_ENCABEZADO)
+        .some(esEncabezadoDeCuerpo);
+}
+
+function esEncabezadoDeCuerpo(linea: string): boolean {
+    if (linea.length > MAX_LETRAS_DE_ENCABEZADO) return false;
+    const donde = linea.match(EMPIEZA_EL_CUERPO);
+    if (!donde || donde.index === undefined) return false;
+    const despues = linea.slice(donde.index + donde[0].length).trim();
+    return despues.split(/\s+/).filter(Boolean).length <= PALABRAS_TRAS_EL_ENCABEZADO;
 }
 
 /**
@@ -372,6 +486,7 @@ function porLetras(text: string): ReadableRegions {
     return {
         cover: frontMatter.slice(0, LETRAS_DE_PORTADA),
         credits: creditsRegionOf(frontMatter),
+        origin: 'letras',
     };
 }
 
@@ -408,7 +523,10 @@ export function keepOnlyWhatIsWritten(
     };
 
     for (const campo of CAMPOS_DE_PORTADA) aceptar(campo, portada);
-    for (const campo of CAMPOS_DE_CUALQUIER_TRAMO) aceptar(campo, `${portada} ${creditos}`);
+    // El separador no puede formar palabra: pegados con un espacio, un
+    // valor podría casar a caballo entre el final de uno y el principio
+    // del otro.
+    for (const campo of CAMPOS_DE_CUALQUIER_TRAMO) aceptar(campo, `${portada}\n—\n${creditos}`);
     for (const campo of CAMPOS_DEL_PIE_DE_IMPRENTA) aceptar(campo, creditos);
 
     const ordenado = (raw.authorSorted ?? '').trim();
@@ -449,26 +567,29 @@ export function completeWithProposal(
 }
 
 /**
- * ¿«Ross, Allen P.» son las MISMAS palabras que «Allen P. Ross»?
+ * ¿«Ross, Allen P.» es «Allen P. Ross» puesto en orden alfabético?
  *
- * Se comparan como multiconjunto: las mismas palabras, cada una las
- * mismas veces. Así «Ross, Ross Ross» no pasa —repite— pero «Arnold,
- * Bill T., and John H. Choi» sí, que es como se ordena un libro de dos
- * autores y trae comas por dentro.
+ * Tres comprobaciones, y cada una está por un caso real:
  *
- * NO se comprueba que el apellido sea el correcto. Exigir la vuelta
- * exacta parecía más estricto y rompía justo los libros de dos autores:
- * el campo se descartaba, `formatBibliographyEntry` caía en la propuesta
- * automática y la bibliografía salía con «Choi, Bill T. Arnold and John
- * H.» impreso. Un apellido mal elegido desordena una entrada y se ve en
- * la vista previa del propio diálogo antes de guardar; esa basura, no.
+ * 1. Las mismas palabras, cada una las mismas veces. «Ross, Ross Ross»
+ *    no pasa.
+ * 2. Tiene que haber coma, o ser idéntico al nombre. Sin esto, «Allen P.
+ *    Ross» pasaba como forma ordenada de «Ross, Allen P.» —el campo al
+ *    revés— y la bibliografía quedaba alfabetizada por el nombre de pila.
+ * 3. El apellido —lo que va antes de la primera coma— tiene que cerrar el
+ *    nombre. Así «Allen, Ross P.» se rechaza. La excepción son los
+ *    nombres coordinados, «Bill T. Arnold and John H. Choi», donde el
+ *    apellido del primer autor va por el medio: ahí basta con que esté
+ *    entero y seguido.
  */
 function esElMismoNombreOrdenado(ordenado: string, autor: string): boolean {
-    // Las comas se quitan de los dos lados: la portada también imprime
-    // nombres ya invertidos, y «Ross,» no es la misma palabra que «Ross».
-    const palabrasDelAutor = comparable(autor).replace(/,/g, ' ').split(' ').filter(Boolean);
-    if (palabrasDelAutor.length === 0) return false;
-    const palabras = comparable(ordenado).replace(/,/g, ' ').split(' ').filter(Boolean);
+    const nombre = comparable(autor).replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    const puesto = comparable(ordenado).replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!nombre || !puesto) return false;
+    if (puesto === nombre) return true;
+
+    const palabrasDelAutor = nombre.split(' ');
+    const palabras = puesto.split(' ');
     if (palabras.length !== palabrasDelAutor.length) return false;
     const restantes = [...palabrasDelAutor];
     for (const palabra of palabras) {
@@ -476,8 +597,17 @@ function esElMismoNombreOrdenado(ordenado: string, autor: string): boolean {
         if (donde < 0) return false;
         restantes.splice(donde, 1);
     }
-    return true;
+
+    const coma = ordenado.indexOf(',');
+    if (coma < 0) return false;
+    const apellido = comparable(ordenado.slice(0, coma)).trim();
+    if (!apellido) return false;
+    if (TIENE_COORDINACION.test(nombre)) return nombre.includes(apellido);
+    return nombre.endsWith(apellido);
 }
+
+/** Dos autores en un solo campo: «X and Y», «X y Y», «X & Y». */
+const TIENE_COORDINACION = /\s(and|y|e|&)\s/;
 
 /** Minúsculas, sin acentos y con los espacios colapsados. */
 function comparable(text: string): string {
