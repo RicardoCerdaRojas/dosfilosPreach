@@ -1313,7 +1313,17 @@
       "noOwnTexts": "You haven't marked any text as written by you yet.",
       "goToLibrary": "Go to the library",
       "useSermons": "Also learn from my sermons",
-      "useSermonsHint": "Only the ones you assembled in the workshop, never generated ones. It is certainly your prose, but preaching is not writing a paper: the register differs."
+      "useSermonsHint": "Only the ones you assembled in the workshop, never generated ones. It is certainly your prose, but preaching is not writing a paper: the register differs.",
+      "upload": "Upload a text of mine",
+      "uploading": "Uploading… {{percent}}%",
+      "uploaded": "Uploaded and selected. The document is being read; once it finishes, new prose will use your register.",
+      "uploadFailed": "The text could not be uploaded.",
+      "uploadHint": "PDF or EPUB, up to 250 MB. It is read like any library document — it consumes processing pages — and until it finishes there is no prose to imitate.",
+      "reject": {
+        "tipo": "The library only accepts PDF and EPUB. Export your text to PDF and try again.",
+        "tamano": "The file is over 250 MB, the library's maximum.",
+        "consentimiento": "The upload terms still need to be accepted."
+      }
     }
   },
   "setup": {

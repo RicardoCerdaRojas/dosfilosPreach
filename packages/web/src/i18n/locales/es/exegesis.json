@@ -1313,7 +1313,17 @@
       "noOwnTexts": "Todavía no marcaste ningún texto como escrito por ti.",
       "goToLibrary": "Ir a la biblioteca",
       "useSermons": "Aprender también de mis sermones",
-      "useSermonsHint": "Sólo los que armaste tú en el taller, nunca los generados. Es prosa tuya con certeza, pero predicar no es escribir un trabajo: el registro es otro."
+      "useSermonsHint": "Sólo los que armaste tú en el taller, nunca los generados. Es prosa tuya con certeza, pero predicar no es escribir un trabajo: el registro es otro.",
+      "upload": "Subir un texto mío",
+      "uploading": "Subiendo… {{percent}}%",
+      "uploaded": "Subido y elegido. Se está leyendo el documento; cuando termine, la prosa nueva usará tu registro.",
+      "uploadFailed": "No se pudo subir el texto.",
+      "uploadHint": "PDF o EPUB, hasta 250 MB. Se lee como cualquier documento de la biblioteca —consume páginas de procesamiento— y hasta que termine no hay prosa que imitar.",
+      "reject": {
+        "tipo": "La biblioteca sólo acepta PDF y EPUB. Exporta tu texto a PDF y vuelve a intentarlo.",
+        "tamano": "El archivo pasa de 250 MB, que es el máximo de la biblioteca.",
+        "consentimiento": "Falta aceptar las condiciones de subida."
+      }
     }
   },
   "setup": {

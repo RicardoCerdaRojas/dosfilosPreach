@@ -4,6 +4,7 @@ import { ResourceType, disponibilidadDeRutas, inferBibleBooksFromTitle } from '@
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { hasAcceptedUploadConsent } from '@/components/library/UploadConsentModal';
+import { MAX_UPLOAD_SIZE_MB } from '@/lib/library/limitesDeSubida';
 import { UploadFormMetadata } from '../components/LibraryUploadForm';
 
 /**
@@ -18,7 +19,9 @@ const MAX_OPTIMAL_SIZE_MB = 50;
  * us reject large files in the client before kicking off an upload
  * that's destined to 403).
  */
-export const MAX_UPLOAD_SIZE_MB = 250;
+// Reexportado desde el módulo común para no tener dos números que
+// gobiernen la misma cantidad; los llamadores de siempre no cambian.
+export { MAX_UPLOAD_SIZE_MB } from '@/lib/library/limitesDeSubida';
 /**
  * Los topes por ruta NO se declaran acá.
  *

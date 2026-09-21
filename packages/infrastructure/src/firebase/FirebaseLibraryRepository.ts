@@ -223,6 +223,11 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         if (resource.isSystemSource !== undefined) {
             doc.isSystemSource = resource.isSystemSource;
         }
+        // Quién escribió el texto. Se persiste sólo cuando se declaró: la
+        // ausencia significa «no se sabe», que es distinto de «no es suyo».
+        if (resource.authoredByUser !== undefined) {
+            doc.authoredByUser = resource.authoredByUser;
+        }
         // ADR-006 / PR 0.3 — rights-aware citation metadata. Persist
         // only when explicitly set so the conservative defaults in
         // `firestoreToResource` continue to govern legacy docs.
