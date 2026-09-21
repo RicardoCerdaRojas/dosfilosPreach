@@ -212,7 +212,7 @@ export function proposeIsbn(frontMatter: string): string | null {
  * no vale mirar el arranque entero.
  */
 const CAMPOS_DE_PORTADA = [
-    'author', 'title', 'subtitle', 'volume', 'volumeTitle', 'series',
+    'author', 'title', 'subtitle', 'volume', 'volumeTitle',
 ] as const;
 
 /**
@@ -222,9 +222,17 @@ const CAMPOS_DE_PORTADA = [
  * lugar del libro propio. Donde sí aparecen en cualquier página es en las
  * citas de otros libros, que es exactamente lo que no se quiere copiar.
  */
-const CAMPOS_DEL_PIE_DE_IMPRENTA = [
-    'edition', 'translator', 'editor', 'city', 'publisher', 'year',
-] as const;
+const CAMPOS_DEL_PIE_DE_IMPRENTA = ['city', 'publisher', 'year'] as const;
+
+/**
+ * Campos que valen en cualquiera de los dos tramos.
+ *
+ * La colección se imprime en la portadilla Y en el bloque de
+ * catalogación; la edición, el traductor y el editor, en una o en otra
+ * según la casa. Y ninguno de los cuatro es un dato que las citas de
+ * otros libros falsifiquen: nadie copia el «traducido por» ajeno.
+ */
+const CAMPOS_DE_CUALQUIER_TRAMO = ['series', 'edition', 'translator', 'editor'] as const;
 
 /**
  * Los dos únicos tramos que se le muestran al modelo.
@@ -237,11 +245,129 @@ const CAMPOS_DEL_PIE_DE_IMPRENTA = [
 export interface ReadableRegions {
     /** Las primeras hojas: ahí están el autor y el título. */
     cover: string;
-    /** Alrededor de la marca de copyright: ahí está el pie de imprenta. */
+    /** La página legal: ahí está el pie de imprenta. Vacía si no la hay. */
     credits: string;
 }
 
+/**
+ * Cuántas hojas del frente son «la portada» como mucho.
+ *
+ * El corte de verdad no es este número sino el encabezado del cuerpo: se
+ * para antes del prefacio. Este tope solo cubre al libro que no tiene
+ * ningún encabezado reconocible.
+ */
+const HOJAS_DE_PORTADA = 8;
+
+/** Hasta dónde se busca la página legal cuando no hay encabezado de cuerpo. */
+const HOJAS_A_MIRAR = 25;
+
+/** Señales de una página legal. Se cuentan: una sola no hace una portada legal. */
+const SENAS_DE_PAGINA_LEGAL = [
+    /©/, /copyright/, /derechos reservados/, /reservados todos los derechos/,
+    /\bisbn\b/, /printed in/, /impreso en/, /all rights reserved/,
+    /library of congress/, /deposito legal/, /cataloging/, /catalogacion/,
+    /primera edicion/, /first published/, /queda prohibida/,
+];
+
+/**
+ * Con menos de dos señales no es una página legal.
+ *
+ * Un índice con la línea «Copyright and Permissions .... iv» trae UNA, y
+ * tomarla por la página legal apagaba la lectura del libro entero.
+ */
+const SENAS_MINIMAS = 2;
+
+/**
+ * Dónde empieza el cuerpo. Antes de esto está el frente del libro.
+ *
+ * El índice, las abreviaturas y los agradecimientos NO cuentan: son
+ * frente, y en muchas ediciones van ANTES de la página legal. Tomarlos
+ * por cuerpo dejaba al libro entero sin hoja legal.
+ */
+const EMPIEZA_EL_CUERPO = /^(prefac|preface|introduc|foreword|prologo|chapter|capitulo)/;
+
+/** Topes de tamaño, por si una «hoja» resulta ser medio libro. */
+const MAX_LETRAS_DE_PORTADA = 8_000;
+const MAX_LETRAS_DE_CREDITOS = 6_000;
+
+/** Con menos hojas que esto, el texto no trae marcas útiles. */
+const MINIMO_DE_HOJAS = 3;
+
+interface Hoja {
+    texto: string;
+    /** Si esta hoja abre el cuerpo del libro (prefacio, índice, capítulo). */
+    esCuerpo: boolean;
+}
+
+/**
+ * Los dos únicos tramos que se le muestran al modelo.
+ *
+ * EL LÍMITE ES LA HOJA, NO LA DISTANCIA. Recortar por cantidad de letras
+ * no sirve: en un libro cuya página legal va seguida del prefacio, el
+ * prefacio cae dentro de la ventana, y el prefacio cita otros libros con
+ * su ciudad, su editorial y su año. Un ejemplar de Ross cuyo prefacio
+ * cita a Brueggemann devolvía la ficha de Brueggemann, entera y con el
+ * rótulo «del libro». Las hojas, en cambio, son un límite del libro y no
+ * un número elegido por nosotros: la página legal es UNA hoja y el
+ * prefacio es otra.
+ *
+ * Cuando el texto no trae marcas de hoja —medido: 13 de 68 recursos— se
+ * vuelve al recorte por letras, que es peor y se sabe.
+ */
 export function readableRegionsOf(text: string): ReadableRegions {
+    const hojas = hojasDe(text);
+    if (hojas.length < MINIMO_DE_HOJAS) return porLetras(text);
+
+    const finDelFrente = hojas.findIndex(h => h.esCuerpo);
+    const hastaDondeMirar = finDelFrente < 0 ? Math.min(hojas.length, HOJAS_A_MIRAR) : finDelFrente;
+    const frente = hojas.slice(0, hastaDondeMirar);
+
+    const cover = frente
+        .slice(0, HOJAS_DE_PORTADA)
+        .map(h => h.texto)
+        .join('\n')
+        .slice(0, MAX_LETRAS_DE_PORTADA);
+
+    return { cover, credits: paginaLegalDe(frente) };
+}
+
+/**
+ * La hoja legal: la que más señales de imprenta reúne, con la anterior.
+ *
+ * Va con la anterior porque muchas ediciones parten el dato: Waltke-
+ * O'Connor imprime «Eisenbrauns, Winona Lake, Indiana 1990» en la
+ * portadilla y «©1990 by Eisenbrauns» en la hoja siguiente.
+ */
+function paginaLegalDe(frente: ReadonlyArray<Hoja>): string {
+    let mejor = -1;
+    let mejorPuntaje = 0;
+    frente.forEach((hoja, i) => {
+        const plegada = foldForSearch(hoja.texto);
+        const puntaje = SENAS_DE_PAGINA_LEGAL.filter(sena => sena.test(plegada)).length;
+        if (puntaje > mejorPuntaje) { mejor = i; mejorPuntaje = puntaje; }
+    });
+    if (mejor < 0 || mejorPuntaje < SENAS_MINIMAS) return '';
+
+    const anterior = mejor > 0 ? frente[mejor - 1]!.texto : '';
+    return `${anterior}\n${frente[mejor]!.texto}`.trim().slice(0, MAX_LETRAS_DE_CREDITOS);
+}
+
+/** Parte el arranque del libro en hojas por sus marcas «[PAGE n]». */
+function hojasDe(text: string): Hoja[] {
+    const arranque = (text ?? '').slice(0, LETRAS_DE_BUSQUEDA);
+    const partes = arranque.split(/\[PAGE \d+\]/).map(p => p.trim()).filter(Boolean);
+    return partes.map(texto => ({
+        texto,
+        esCuerpo: EMPIEZA_EL_CUERPO.test(foldForSearch(texto).trimStart()),
+    }));
+}
+
+/**
+ * El recorte de respaldo, por letras, para el texto sin marcas de hoja.
+ *
+ * Es el que dejaba pasar el prefacio y por eso no es el camino principal.
+ */
+function porLetras(text: string): ReadableRegions {
     const frontMatter = frontMatterOf(text);
     return {
         cover: frontMatter.slice(0, LETRAS_DE_PORTADA),
@@ -282,6 +408,7 @@ export function keepOnlyWhatIsWritten(
     };
 
     for (const campo of CAMPOS_DE_PORTADA) aceptar(campo, portada);
+    for (const campo of CAMPOS_DE_CUALQUIER_TRAMO) aceptar(campo, `${portada} ${creditos}`);
     for (const campo of CAMPOS_DEL_PIE_DE_IMPRENTA) aceptar(campo, creditos);
 
     const ordenado = (raw.authorSorted ?? '').trim();
@@ -322,22 +449,34 @@ export function completeWithProposal(
 }
 
 /**
- * ¿«Ross, Allen P.» es «Allen P. Ross» puesto al revés?
+ * ¿«Ross, Allen P.» son las MISMAS palabras que «Allen P. Ross»?
  *
- * Se comprueba la VUELTA, no el juego de palabras: con un juego, «Allen,
- * Ross P.» también pasaba, y la bibliografía se ordenaría por «Allen».
- * La coma parte el nombre en apellido y nombres, y al volver a pegarlos
- * al revés tiene que salir el nombre aceptado, palabra por palabra.
+ * Se comparan como multiconjunto: las mismas palabras, cada una las
+ * mismas veces. Así «Ross, Ross Ross» no pasa —repite— pero «Arnold,
+ * Bill T., and John H. Choi» sí, que es como se ordena un libro de dos
+ * autores y trae comas por dentro.
+ *
+ * NO se comprueba que el apellido sea el correcto. Exigir la vuelta
+ * exacta parecía más estricto y rompía justo los libros de dos autores:
+ * el campo se descartaba, `formatBibliographyEntry` caía en la propuesta
+ * automática y la bibliografía salía con «Choi, Bill T. Arnold and John
+ * H.» impreso. Un apellido mal elegido desordena una entrada y se ve en
+ * la vista previa del propio diálogo antes de guardar; esa basura, no.
  */
 function esElMismoNombreOrdenado(ordenado: string, autor: string): boolean {
-    const nombre = comparable(autor);
-    if (!nombre) return false;
-    const coma = ordenado.indexOf(',');
-    // Un nombre de una sola palabra se ordena solo: es igual a sí mismo.
-    if (coma < 0) return comparable(ordenado) === nombre;
-    const apellido = comparable(ordenado.slice(0, coma));
-    const nombres = comparable(ordenado.slice(coma + 1));
-    return `${nombres} ${apellido}`.trim() === nombre;
+    // Las comas se quitan de los dos lados: la portada también imprime
+    // nombres ya invertidos, y «Ross,» no es la misma palabra que «Ross».
+    const palabrasDelAutor = comparable(autor).replace(/,/g, ' ').split(' ').filter(Boolean);
+    if (palabrasDelAutor.length === 0) return false;
+    const palabras = comparable(ordenado).replace(/,/g, ' ').split(' ').filter(Boolean);
+    if (palabras.length !== palabrasDelAutor.length) return false;
+    const restantes = [...palabrasDelAutor];
+    for (const palabra of palabras) {
+        const donde = restantes.indexOf(palabra);
+        if (donde < 0) return false;
+        restantes.splice(donde, 1);
+    }
+    return true;
 }
 
 /** Minúsculas, sin acentos y con los espacios colapsados. */

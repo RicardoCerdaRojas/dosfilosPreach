@@ -9,6 +9,7 @@ import {
     completeWithProposal,
     creditsRegionOf,
     frontMatterOf,
+    readableRegionsOf,
     isbnsIn,
     keepOnlyWhatIsWritten,
     proposeIsbn,
@@ -172,15 +173,28 @@ describe('keepOnlyWhatIsWritten', () => {
         expect(discarded).toEqual(['city', 'publisher', 'year']);
     });
 
-    it('descarta el nombre ordenado con el apellido equivocado', () => {
-        // «Allen, Ross P.» usa las mismas palabras que «Allen P. Ross» y la
-        // bibliografía quedaría ordenada por el nombre de pila.
-        const { data, discarded } = keepOnlyWhatIsWritten(
-            { author: 'Allen P. Ross', authorSorted: 'Allen, Ross P.' },
-            CREDITOS,
+    it('acepta el nombre ordenado de un libro de DOS autores, con sus comas', () => {
+        // Exigir la vuelta exacta partiendo por la primera coma descartaba
+        // este campo, `formatBibliographyEntry` caía en la propuesta
+        // automática y la bibliografía salía con «Choi, Bill T. Arnold and
+        // John H.» impreso. Una entrada desordenada se ve en la vista
+        // previa; esa basura llega al trabajo entregado.
+        const { data } = keepOnlyWhatIsWritten(
+            {
+                author: 'Bill T. Arnold and John H. Choi',
+                authorSorted: 'Arnold, Bill T., and John H. Choi',
+            },
+            'Bill T. Arnold and John H. Choi\n© 2003 Cambridge University Press',
         );
-        expect(data.authorSorted).toBeUndefined();
-        expect(discarded).toContain('authorSorted');
+        expect(data.authorSorted).toBe('Arnold, Bill T., and John H. Choi');
+    });
+
+    it('acepta el nombre que la portada ya imprime invertido', () => {
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Ross, Allen P.', authorSorted: 'Ross, Allen P.' },
+            CREDITOS.replace('Allen P. Ross', 'Ross, Allen P.'),
+        );
+        expect(data.authorSorted).toBe('Ross, Allen P.');
     });
 
     it('descarta el nombre ordenado que repite una palabra', () => {
@@ -280,6 +294,13 @@ describe('invariantes del tramo que se manda al modelo', () => {
     it('sin marca de créditos no se persigue nada: el tramo es el arranque', () => {
         expect(frontMatterOf('x'.repeat(900_000))).toHaveLength(LETRAS_DE_ARRANQUE);
     });
+
+    it('no se persigue la marca más allá del tramo de búsqueda', () => {
+        // Pasadas 60.000 letras ya es cuerpo del libro, y una editorial
+        // nombrada en el cuerpo es la de otro libro citado.
+        const lejos = `${'a'.repeat(70_000)}© 2011 by Kregel Publications`;
+        expect(frontMatterOf(lejos)).toHaveLength(LETRAS_DE_ARRANQUE);
+    });
 });
 
 describe('isbnsIn, casos del mundo real', () => {
@@ -315,5 +336,142 @@ describe('la lista de campos del formulario', () => {
         // sin que nada se quejara.
         expectTypeOf<Exclude<keyof BibliographicData, BibliographyField>>().toEqualTypeOf<never>();
         expect(BIBLIOGRAPHY_FIELDS.length).toBeGreaterThan(0);
+    });
+});
+
+/** Un libro de verdad, tal como lo deja el extractor: por hojas. */
+const porHojas = (...hojas: string[]) => hojas.map((h, i) => `[PAGE ${i + 1}]\n${h}`).join('\n\n');
+
+const HOJA_LEGAL = [
+    '© 2011 by Allen P. Ross',
+    'Published by Kregel Publications, Grand Rapids, Michigan 49501',
+    'All rights reserved. Printed in the United States of America.',
+    'Library of Congress Cataloging-in-Publication Data',
+    'ISBN 978-0-8254-2562-2',
+].join('\n');
+
+const HOJA_DE_PREFACIO = [
+    'PREFACIO',
+    'Como bien dice Walter Brueggemann, The Message of the Psalms',
+    '(Minneapolis: Augsburg, 1984), el salterio es el libro de oración.',
+].join('\n');
+
+describe('readableRegionsOf, recortando por hojas', () => {
+    it('el prefacio NO entra, aunque venga pegado a la hoja legal', () => {
+        // El defecto que sobrevivió al primer arreglo: con ventanas de
+        // letras, un prefacio pegado a la página legal caía dentro de los
+        // dos tramos y la ficha de Brueggemann salía aceptada entera.
+        const libro = porHojas('A Commentary on the Psalms\nAllen P. Ross', HOJA_LEGAL, HOJA_DE_PREFACIO);
+        const { cover, credits } = readableRegionsOf(libro);
+        expect(cover).not.toContain('Brueggemann');
+        expect(credits).not.toContain('Brueggemann');
+        expect(credits).toContain('Kregel Publications');
+    });
+
+    it('y por eso la ficha de ese otro libro se descarta entera', () => {
+        const libro = porHojas('A Commentary on the Psalms\nAllen P. Ross', HOJA_LEGAL, HOJA_DE_PREFACIO);
+        const { data, discarded } = keepOnlyWhatIsWritten({
+            author: 'Walter Brueggemann',
+            title: 'The Message of the Psalms',
+            city: 'Minneapolis',
+            publisher: 'Augsburg',
+            year: '1984',
+        }, libro);
+        expect(data).toEqual({});
+        expect(discarded).toEqual(['author', 'title', 'city', 'publisher', 'year']);
+    });
+
+    it('un índice que nombra el copyright no se toma por la hoja legal', () => {
+        // «Copyright and Permissions .... iv» trae UNA señal. Tomarla por
+        // la página legal apagaba la lectura del libro entero.
+        const libro = porHojas(
+            'CONTENTS\nCopyright and Permissions .... iv\nPreface .... v',
+            'A Commentary on the Psalms\nAllen P. Ross',
+            HOJA_LEGAL,
+        );
+        expect(readableRegionsOf(libro).credits).toContain('Kregel Publications');
+    });
+
+    it('las páginas de elogios no empujan la portada fuera del tramo', () => {
+        // Una sección de elogios de Kregel o Baker pasa de 2.500 letras y
+        // dejaba al libro sin autor ni título.
+        const elogios = 'Elogios para este libro. '.repeat(120);
+        const libro = porHojas(elogios, 'A Commentary on the Psalms\nAllen P. Ross', HOJA_LEGAL);
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Allen P. Ross', title: 'A Commentary on the Psalms' },
+            libro,
+        );
+        expect(data.author).toBe('Allen P. Ross');
+        expect(data.title).toBe('A Commentary on the Psalms');
+    });
+
+    it('el ISBN al final de una hoja legal larga sigue dentro del tramo', () => {
+        // La maqueta corriente en EE. UU. pone permisos y catalogación
+        // entre el copyright y el ISBN; recortar a 1.200 letras desde la
+        // marca se llevaba puestos el ISBN y el pie de imprenta.
+        const legalLarga = [
+            '© 2011 by Allen P. Ross',
+            'All rights reserved. '.repeat(60),
+            'Scripture quotations are taken from… '.repeat(20),
+            'Published by Kregel Publications, Grand Rapids, Michigan 49501',
+            'ISBN 978-0-8254-2562-2',
+        ].join('\n');
+        const libro = porHojas('A Commentary on the Psalms', legalLarga, HOJA_DE_PREFACIO);
+        const { credits } = readableRegionsOf(libro);
+        expect(proposeIsbn(credits)).toBe('9780825425622');
+        expect(credits).toContain('Grand Rapids');
+    });
+
+    it('la hoja legal viaja con la anterior: el dato se parte entre las dos', () => {
+        // Waltke-O'Connor imprime editorial y ciudad en la portadilla y el
+        // copyright en la hoja siguiente.
+        const libro = porHojas(
+            'An Introduction to Biblical Hebrew Syntax',
+            'Eisenbrauns\nWinona Lake, Indiana\n1990',
+            '©1990 by Eisenbrauns. All rights reserved.\nPrinted in the United States of America.\nLibrary of Congress Cataloging-in-Publication Data',
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Winona Lake', publisher: 'Eisenbrauns', year: '1990' },
+            libro,
+        );
+        expect(data).toEqual({ city: 'Winona Lake', publisher: 'Eisenbrauns', year: '1990' });
+    });
+
+    it('un ejemplar sin hoja legal no produce pie de imprenta', () => {
+        const libro = porHojas('Lexicón Hebreo-Arameo-Español', 'א Alef…', 'ב Bet…');
+        expect(readableRegionsOf(libro).credits).toBe('');
+    });
+
+    it('sin marcas de hoja se vuelve al recorte por letras', () => {
+        // Medido: 13 de 68 recursos no las traen.
+        const { cover } = readableRegionsOf(CREDITOS);
+        expect(cover).toContain('Kregel Publications');
+    });
+});
+
+describe('la colección y la edición valen en cualquiera de los dos tramos', () => {
+    it('la colección impresa solo en el bloque de catalogación se acepta', () => {
+        const libro = porHojas(
+            'A Commentary on the Psalms',
+            `${HOJA_LEGAL}\nKregel Exegetical Library`,
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten({ series: 'Kregel Exegetical Library' }, libro);
+        expect(data.series).toBe('Kregel Exegetical Library');
+    });
+
+    it('la edición y el traductor impresos en la portadilla se aceptan', () => {
+        const libro = porHojas(
+            'Comentario a los Salmos\nSegunda edición\nTraducido por Pedro Vega',
+            '© 1998 Editorial Herder\nBarcelona\nISBN 978-0-8254-2562-2\nAll rights reserved',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { edition: 'Segunda edición', translator: 'Pedro Vega', city: 'Barcelona', publisher: 'Editorial Herder' },
+            libro,
+        );
+        expect(data.edition).toBe('Segunda edición');
+        expect(data.translator).toBe('Pedro Vega');
+        expect(data.city).toBe('Barcelona');
     });
 });

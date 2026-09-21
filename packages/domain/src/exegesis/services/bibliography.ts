@@ -44,7 +44,12 @@ export interface BibliographicData {
     publisher?: string;
     year?: string;
     /**
-     * El ISBN del ejemplar, sin guiones.
+     * El ISBN del ejemplar, sin guiones y siempre en trece dígitos.
+     *
+     * Se normaliza el de diez a trece porque son la misma tirada escrita
+     * de dos maneras y muchas ediciones imprimen las dos. Es la única
+     * excepción a «se guarda lo que está impreso»: el valor equivale al
+     * impreso, no lo reemplaza por otro.
      *
      * No se imprime en la entrada de Turabian. Se guarda porque identifica
      * LA TIRADA: es la única llave que permite pedirle a un catálogo los

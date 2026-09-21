@@ -5,6 +5,7 @@ import {
     BIBLIOGRAPHY_FIELDS,
     REQUIRED_BIBLIOGRAPHY_FIELDS,
     completeWithProposal,
+    missingBibliographyFields,
     formatBibliographyEntry,
     proposeSortedAuthor,
     type BibliographicData,
@@ -67,9 +68,12 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
         // cierta. Va FUERA del actualizador de `draft` porque ese se ejecuta
         // dos veces en modo estricto y no debe tener efectos.
         setFromBook(marked => {
-            // Escribir el autor reescribe también la forma ordenable, así
-            // que su marca deja de ser cierta junto con la del autor.
-            const tambien = field === 'author' ? (['authorSorted'] as const) : [];
+            // Escribir el autor reescribe también la forma ordenable —pero
+            // solo mientras nadie la haya tocado—, y en ese caso su marca
+            // deja de ser cierta junto con la del autor.
+            const seReescribeElOrdenado = field === 'author'
+                && (draft.authorSorted === '' || draft.authorSorted === proposeSortedAuthor(draft.author));
+            const tambien = seReescribeElOrdenado ? (['authorSorted'] as const) : [];
             if (!marked.has(field) && !tambien.some(f => marked.has(f))) return marked;
             const next = new Set(marked);
             next.delete(field);
@@ -109,8 +113,12 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
             if (filled.length === 0) {
                 // Tres razones distintas para no llenar nada, y decirlas
                 // todas «tu libro no trae datos» sería mentir en dos de ellas.
-                const huecos = FIELDS.some(f => !draft[f].trim());
-                if (!huecos) toast.info(t('detail.bibliography.readAlreadyComplete'));
+                // «Completa» son los campos OBLIGATORIOS, no los quince:
+                // casi ningún libro tiene subtítulo, traductor y volumen a
+                // la vez, así que mirar los quince hacía que esta rama no
+                // ocurriera nunca y el aviso mentiroso siguiera saliendo.
+                const completa = missingBibliographyFields(clean).length === 0;
+                if (completa) toast.info(t('detail.bibliography.readAlreadyComplete'));
                 else if (Object.keys(result.data).length === 0) toast.info(t('detail.bibliography.readNothing'));
                 else toast.info(t('detail.bibliography.readNothingNew'));
                 return;
@@ -132,7 +140,10 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
         }
     };
 
-    const busy = save.isPending || read.isPending || !canEdit;
+    // «Ocupado» y «de solo lectura» son cosas distintas: mezclarlas dejaba
+    // muerto el botón de cancelar en las fichas que no se pueden escribir.
+    const busy = save.isPending || read.isPending;
+    const bloqueado = busy || !canEdit;
 
     const submit = async () => {
         try {
@@ -162,7 +173,7 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                         variant="outline"
                         size="sm"
                         onClick={readFromBook}
-                        disabled={busy}
+                        disabled={bloqueado}
                     >
                         {read.isPending
                             ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -190,7 +201,7 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                                 type="text"
                                 value={draft[field]}
                                 onChange={e => set(field, e.target.value)}
-                                disabled={busy}
+                                disabled={bloqueado}
                                 placeholder={t(`detail.bibliography.placeholders.${field}`)}
                                 className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                             />
@@ -211,7 +222,7 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                     <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
                         {t('detail.bibliography.cancel')}
                     </Button>
-                    <Button type="button" onClick={submit} disabled={busy}>
+                    <Button type="button" onClick={submit} disabled={bloqueado}>
                         {save.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
                         {t('detail.bibliography.save')}
                     </Button>

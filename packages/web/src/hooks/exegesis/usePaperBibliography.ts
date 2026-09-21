@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { libraryService } from '@dosfilos/application';
 import { readBibliographyFromCover } from '@dosfilos/infrastructure';
 import {
-    SYSTEM_SOURCE_OWNER_ID,
     isCitableSourceType,
     missingBibliographyFields,
     type BibliographicData,
@@ -11,6 +10,7 @@ import {
     type RequiredBibliographyField,
 } from '@dosfilos/domain';
 import { useLibrary } from '@/hooks/library';
+import { useFirebase } from '@/context/firebase-context';
 
 export interface PaperBibliographyRow {
     sourceId: string;
@@ -22,9 +22,11 @@ export interface PaperBibliographyRow {
     /**
      * Si la ficha de este libro se puede escribir desde aquí.
      *
-     * Las fuentes de la biblioteca común son de todos y de nadie: las
-     * reglas rechazan el guardado. Sin esta marca el botón invitaba a leer
-     * la portada —gastando la llamada al modelo— para chocar después.
+     * Es la MISMA condición que las reglas de Firestore: dueño del
+     * recurso. No «que no sea del sistema», que dejaba pasar la
+     * biblioteca común —sus documentos llevan el identificador de un
+     * administrador— y también dejaba pasar todo mientras la biblioteca
+     * todavía cargaba. Una compuerta de permisos no abre ante la duda.
      */
     editable: boolean;
 }
@@ -38,6 +40,8 @@ export interface PaperBibliographyRow {
  */
 export function usePaperBibliography(paper: ExegeticalPaper | null | undefined): PaperBibliographyRow[] {
     const { resources } = useLibrary();
+    const { user } = useFirebase();
+    const uid = user?.uid;
 
     return useMemo(() => {
         if (!paper) return [];
@@ -59,10 +63,10 @@ export function usePaperBibliography(paper: ExegeticalPaper | null | undefined):
                     displayLabel: s.displayLabel,
                     data,
                     missing: missingBibliographyFields(data),
-                    editable: resource?.userId !== SYSTEM_SOURCE_OWNER_ID,
+                    editable: !!uid && resource?.userId === uid,
                 };
             });
-    }, [paper, resources]);
+    }, [paper, resources, uid]);
 }
 
 /**
