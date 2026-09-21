@@ -523,6 +523,88 @@ describe('cuál hoja es la legal', () => {
         expect(data.year).toBe('2011');
     });
 
+    it('el catálogo de la colección no gana por traer un ISBN ajeno', () => {
+        // El ISBN parecía seña de página legal propia, y un catálogo de
+        // colección lista ISBN: eso es lo que hace un catálogo. Le ganaba
+        // a la página legal escueta y devolvía la ficha del otro libro.
+        const catalogo = 'OTROS TÍTULOS DE LA COLECCIÓN\nBrueggemann, The Message of the Psalms. '
+            + 'Augsburg, Minneapolis, 1984. ISBN 978-0-8066-2120-7';
+        const libro = porHojas('Comentario', catalogo, '© 2011 Editorial Portavoz\nGrand Rapids, Michigan');
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Minneapolis', publisher: 'Augsburg', year: '1984' },
+            libro,
+        );
+        expect(data).toEqual({});
+        const propia = keepOnlyWhatIsWritten({ publisher: 'Editorial Portavoz', year: '2011' }, libro);
+        expect(propia.data.publisher).toBe('Editorial Portavoz');
+    });
+
+    it('la nota de permisos de la versión bíblica no es la página legal', () => {
+        // «Reservados todos los derechos» va en toda nota de permiso de
+        // una versión bíblica, y es de Bíblica, no del ejemplar.
+        const permisos = 'Las citas bíblicas son de la Nueva Versión Internacional NVI\n'
+            + 'Copyright © 1999, 2015 por Biblica, Inc.\nUsada con permiso. Reservados todos los derechos.';
+        const libro = porHojas('Comentario', permisos, '© 2011 Editorial Portavoz\nGrand Rapids, Michigan');
+        const { data } = keepOnlyWhatIsWritten({ publisher: 'Biblica', year: '2015' }, libro);
+        expect(data).toEqual({});
+    });
+
+    it('pero una hoja legal larga con permisos dentro sí es la página legal', () => {
+        // Maqueta corriente en Estados Unidos: el bloque de permisos vive
+        // DENTRO de la página legal.
+        const legalConPermisos = [
+            '© 2011 by Allen P. Ross',
+            'Scripture quotations are taken from the New International Version.',
+            'All rights reserved. '.repeat(60),
+            'Published by Kregel Publications, Grand Rapids, Michigan',
+            'ISBN 978-0-8254-2562-2',
+        ].join('\n');
+        const libro = porHojas('Comentario', legalConPermisos, HOJA_DE_PREFACIO);
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Grand Rapids', publisher: 'Kregel Publications', year: '2011' },
+            libro,
+        );
+        expect(data.publisher).toBe('Kregel Publications');
+    });
+
+    it('la página legal encabezada «Nota del editor» no se pierde', () => {
+        // Las ediciones españolas la encabezan así, y el guardia del
+        // cuerpo la descartaba entera aunque trajera la catalogación.
+        const libro = porHojas(
+            'Comentario a los Salmos',
+            'Nota del editor\n© 2011 Editorial Clie, Viladecavalls\nDepósito legal B-12345-2011\nISBN 978-0-8254-2562-2',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Viladecavalls', publisher: 'Editorial Clie', year: '2011' },
+            libro,
+        );
+        expect(data.publisher).toBe('Editorial Clie');
+    });
+
+    it('la página legal larga de una traducción no se pierde', () => {
+        // Medido sobre la Gramática Griega de Wallace en español: lista
+        // las dos imprentas, no usa ninguna fórmula de reserva de
+        // derechos y es larga, así que no era ni «propia» ni «escueta» y
+        // el libro se quedaba sin pie de imprenta.
+        const legalLarga = [
+            'GRAMÁTICA GRIEGA: SINTAXIS DEL NUEVO TESTAMENTO',
+            'Daniel B. Wallace y Daniel S. Steffen',
+            'Edición en español publicada por Editorial Vida – 2011, 2015',
+            'Miami, Florida',
+            '©2015 por Daniel Wallace y Daniel Steffen',
+            'Originally published in the U.S.A. under the title: Greek Grammar Beyond the Basics',
+            'Copyright ©1996 by Daniel B. Wallace. '.repeat(30),
+        ].join('\n');
+        const libro = porHojas('Gramática Griega', legalLarga, HOJA_DE_PREFACIO);
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Miami', publisher: 'Editorial Vida', year: '2015' },
+            libro,
+        );
+        expect(data.publisher).toBe('Editorial Vida');
+        expect(data.city).toBe('Miami');
+    });
+
     it('la línea de índice que nombra el copyright sigue perdiendo', () => {
         const indiceLargo = `CONTENTS\nCopyright and Permissions .... iv\n${'Capítulo tal .... 12\n'.repeat(60)}`;
         const libro = porHojas(indiceLargo, 'Comentario', LEGAL_PROPIA);
@@ -549,12 +631,41 @@ describe('dónde empieza el cuerpo', () => {
         ['Nota del autor', 'sin la palabra prefacio'],
         ['Series Preface', 'en inglés y con prefijo'],
     ])('%s se reconoce como cuerpo (%s)', (encabezado) => {
+        // La portada ocupa las dos primeras hojas —cubierta y portadilla—
+        // porque el cuerpo de un libro no empieza ahí.
         const libro = porHojas(
+            'A COMMENTARY ON THE PSALMS',
             'A Commentary on the Psalms\nAllen P. Ross',
             `${encabezado}\nComo bien dice Walter Brueggemann, The Message of the Psalms.`,
-            '© 2011 Kregel\nISBN 978-0-8254-2562-2',
+            '© 2011 Kregel\nAll rights reserved\nISBN 978-0-8254-2562-2',
         );
         expect(readableRegionsOf(libro).cover).not.toContain('Brueggemann');
+    });
+
+    it.each([
+        ['Preface to the Second Edition'],
+        ['Prefacio a la segunda edición española'],
+        ['Introducción general a los profetas menores'],
+    ])('«%s» también, aunque el encabezado sea largo', (encabezado) => {
+        const libro = porHojas(
+            'A COMMENTARY ON THE PSALMS',
+            'A Commentary on the Psalms\nAllen P. Ross',
+            `${encabezado}\nComo bien dice Walter Brueggemann, The Message of the Psalms.`,
+            '© 2011 Kregel\nAll rights reserved\nISBN 978-0-8254-2562-2',
+        );
+        expect(readableRegionsOf(libro).cover).not.toContain('Brueggemann');
+    });
+
+    it('un título que lleva la palabra dentro no corta la portada a cero', () => {
+        // Con el corte en la hoja 0 la portada salía VACÍA y el lector
+        // respondía «este libro no tiene texto extraído».
+        const libro = porHojas(
+            'INTRODUCCIÓN AL ANTIGUO TESTAMENTO',
+            'Introducción al Antiguo Testamento\nRaymond B. Dillard',
+            '© 1994 Zondervan\nAll rights reserved\nGrand Rapids, Michigan',
+        );
+        const { cover } = readableRegionsOf(libro);
+        expect(cover).toContain('Dillard');
     });
 });
 

@@ -295,7 +295,34 @@ const SENAS_DE_PAGINA_LEGAL = [
 const SENAS_PROPIAS = [
     /all rights reserved/, /reservados todos los derechos/, /derechos reservados/,
     /library of congress/, /cataloging/, /catalogacion/, /deposito legal/,
-    /queda prohibida/, /\bisbn\b/,
+    /queda prohibida/,
+];
+
+/**
+ * El bloque de catalogación: la seña que NINGUNA otra hoja puede tener.
+ *
+ * La escribe la biblioteca nacional sobre el ejemplar, así que un
+ * catálogo de otros títulos y una nota de permisos no la llevan nunca.
+ */
+const CATALOGACION = [/library of congress/, /cataloging/, /catalogacion/, /deposito legal/];
+
+/**
+ * Hojas que hablan de LIBROS AJENOS y por eso no son la página legal.
+ *
+ * Dos familias, las dos medidas contra maquetas reales: el catálogo de
+ * la colección —que lista título, editorial, año e ISBN de otros
+ * volúmenes— y la nota de permisos de la versión bíblica citada, que
+ * lleva «Reservados todos los derechos» de Bíblica y no del ejemplar.
+ * Las dos ganaban la elección y devolvían la ficha de otro libro.
+ *
+ * La excepción es el bloque de catalogación: cuando la hoja lo trae, es
+ * la página legal propia aunque además cite permisos, que es la maqueta
+ * corriente en Estados Unidos.
+ */
+const HABLA_DE_OTROS_LIBROS = [
+    /otros titulos/, /other titles/, /del mismo autor/, /by the same author/,
+    /de esta coleccion/, /in this series/, /also available/, /tambien de/,
+    /citas biblicas/, /scripture quotations/, /usada con permiso/, /used by permission/,
 ];
 
 /**
@@ -310,6 +337,23 @@ const SENAS_PROPIAS = [
  */
 const HOJA_LEGAL_ESCUETA = 1_500;
 
+/**
+ * Cuántas señas hacen creíble una página legal sin fórmula de reserva.
+ *
+ * Con una sola, la línea de índice «Copyright and Permissions .... iv»
+ * pasaba por página legal y apagaba la lectura del libro entero.
+ */
+const SENAS_MINIMAS = 2;
+
+/**
+ * Una hoja que no es más que un catálogo o una nota de permisos.
+ *
+ * Medido contra maquetas reales: el catálogo de colección y la nota de
+ * la versión bíblica caben en dos o tres líneas, mientras que una página
+ * legal con permisos dentro pasa holgada de esto.
+ */
+const HOJA_DE_SOLO_OTROS_LIBROS = 400;
+
 /** Una portadilla es corta; un prefacio, no. */
 const MAX_LETRAS_DE_PORTADILLA = 1_200;
 
@@ -322,12 +366,25 @@ const MAX_LETRAS_DE_ENCABEZADO = 60;
 /**
  * Cuántas palabras puede haber DESPUÉS de la palabra del encabezado.
  *
- * Un encabezado casi se acaba ahí: «Series Preface», «Nota del autor».
- * Un título no: «An Introduction to Biblical Hebrew Syntax» lleva la
- * palabra dentro y seguía cuatro palabras más, y sin este tope el propio
- * título de Waltke-O'Connor se tomaba por el comienzo del cuerpo.
+ * Cabe «Prefacio a la segunda edición española» y «Introducción general
+ * a los profetas menores», que son encabezados de verdad y se escapaban.
+ * Lo que ya no hace falta que corte este tope son los títulos que llevan
+ * la palabra dentro —«An Introduction to Biblical Hebrew Syntax»—:
+ * de esos se encarga `HOJAS_QUE_NUNCA_SON_CUERPO`, que es el
+ * discriminante bueno, porque separa por dónde está la hoja y no por
+ * cuánto mide la línea.
  */
-const PALABRAS_TRAS_EL_ENCABEZADO = 3;
+const PALABRAS_TRAS_EL_ENCABEZADO = 6;
+
+/**
+ * Las primeras hojas nunca son cuerpo.
+ *
+ * El cuerpo de un libro no empieza en la portada. Sin esto, un título
+ * que lleva dentro la palabra del encabezado cortaba el frente en la
+ * hoja 0 y la portada salía VACÍA: el lector respondía «este libro no
+ * tiene texto extraído» sobre un libro con texto de sobra.
+ */
+const HOJAS_QUE_NUNCA_SON_CUERPO = 2;
 
 /** Cuántas líneas del principio de una hoja se miran buscando su encabezado. */
 const LINEAS_DE_ENCABEZADO = 3;
@@ -365,7 +422,7 @@ export function readableRegionsOf(text: string): ReadableRegions {
     const hojas = hojasDe(text);
     if (hojas.length < MINIMO_DE_HOJAS) return porLetras(text);
 
-    const finDelFrente = hojas.findIndex(h => h.esCuerpo);
+    const finDelFrente = hojas.findIndex((h, i) => h.esCuerpo && i >= HOJAS_QUE_NUNCA_SON_CUERPO);
     const cover = hojas
         .slice(0, finDelFrente < 0 ? HOJAS_DE_PORTADA : Math.min(finDelFrente, HOJAS_DE_PORTADA))
         .map(h => h.texto)
@@ -401,13 +458,32 @@ function paginaLegalDe(frente: ReadonlyArray<Hoja>): string {
     let mejorSenas = 0;
 
     frente.forEach((hoja, i) => {
-        if (hoja.esCuerpo) return;
         const plegada = foldForSearch(hoja.texto);
         const senas = SENAS_DE_PAGINA_LEGAL.filter(sena => sena.test(plegada)).length;
         if (senas === 0) return;
-        const propia = SENAS_PROPIAS.some(sena => sena.test(plegada));
-        const escueta = hoja.texto.length <= HOJA_LEGAL_ESCUETA && ANIO_SUELTO.test(plegada);
-        const rango = propia ? 2 : (escueta ? 1 : 0);
+        const catalogada = CATALOGACION.some(sena => sena.test(plegada));
+        // Una hoja con el bloque de catalogación es la página legal
+        // aunque su encabezado parezca cuerpo —las ediciones españolas la
+        // encabezan «Nota del editor» o «Presentación»— o aunque cite
+        // permisos de la versión bíblica.
+        if (!catalogada && hoja.esCuerpo) return;
+        // Descalifica solo a la hoja que NO ES MÁS QUE ESO: un catálogo
+        // de dos líneas o una nota de permisos suelta. Una página legal
+        // de verdad con su bloque de permisos dentro —la maqueta
+        // corriente en Estados Unidos— es mucho más larga.
+        const soloEso = hoja.texto.length <= HOJA_DE_SOLO_OTROS_LIBROS;
+        if (!catalogada && soloEso && HABLA_DE_OTROS_LIBROS.some(sena => sena.test(plegada))) return;
+        const propia = catalogada || SENAS_PROPIAS.some(sena => sena.test(plegada));
+        // Sin seña propia, una hoja vale como página legal de dos
+        // maneras: es escueta y trae un año —la hispanoamericana mínima—,
+        // o reúne varias señas y un año. Lo segundo rescata la página
+        // legal larga de una traducción, que lista las dos imprentas y no
+        // usa ninguna fórmula de reserva de derechos: medido sobre la
+        // Gramática Griega de Wallace, que se perdía entera.
+        const anio = ANIO_SUELTO.test(plegada);
+        const escueta = hoja.texto.length <= HOJA_LEGAL_ESCUETA && anio;
+        const varias = senas >= SENAS_MINIMAS && anio;
+        const rango = propia ? 2 : ((escueta || varias) ? 1 : 0);
         if (rango === 0) return;
         // Entre iguales gana la primera: la página legal va delante.
         if (rango > mejorRango || (rango === mejorRango && senas > mejorSenas)) {

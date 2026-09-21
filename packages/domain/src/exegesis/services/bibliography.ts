@@ -114,8 +114,13 @@ export function proposeSortedAuthor(author: string): string {
     return `${surname}, ${parts.slice(0, -1).join(' ')}`;
 }
 
-/** Dos autores en un solo campo: «X and Y», «X y Y», «X & Y». */
-const TIENE_COORDINACION = /\s(and|y|e|&)\s|\s&\s/i;
+/**
+ * Nombres que no se ordenan moviendo la última palabra.
+ *
+ * Dos autores en un campo —«X and Y», «X y Y», «X & Y»— y los sufijos
+ * de linaje: «Walter C. Kaiser Jr.» daba «Jr., Walter C. Kaiser».
+ */
+const TIENE_COORDINACION = /\s(and|y|e|&)\s|\s&\s|[\s,](jr|sr|ii|iii|h)\.?$/i;
 
 /**
  * La entrada de bibliografía, en Turabian:
