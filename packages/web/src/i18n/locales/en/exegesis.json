@@ -2066,7 +2066,8 @@
         "editor": "Editor",
         "city": "City",
         "publisher": "Publisher",
-        "year": "Year"
+        "year": "Year",
+        "isbn": "ISBN"
       },
       "placeholders": {
         "author": "Allen P. Ross",
@@ -2082,8 +2083,17 @@
         "editor": "",
         "city": "Grand Rapids",
         "publisher": "Kregel",
-        "year": "2011"
-      }
+        "year": "2011",
+        "isbn": "9780825425622"
+      },
+      "readFromBook": "Read from the book",
+      "reading": "Reading the front matter…",
+      "readHint": "The title page and copyright page of this very copy are read. Whatever the book does not state is left blank: nothing is filled in from memory.",
+      "fromBook": "from the book",
+      "readFilled": "{{count}} field(s) filled with what the book says. Check them against the copy.",
+      "readNothing": "This copy does not carry its publication data in the opening pages. They have to be typed in.",
+      "readNoText": "This book has no extracted text yet, so there is no front matter to read.",
+      "readFailed": "The book's front matter could not be read."
     },
     "glossary": {
       "title": "Words I don't use",

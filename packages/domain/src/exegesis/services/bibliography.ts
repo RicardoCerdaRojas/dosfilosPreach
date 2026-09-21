@@ -43,7 +43,31 @@ export interface BibliographicData {
     city?: string;
     publisher?: string;
     year?: string;
+    /**
+     * El ISBN del ejemplar, sin guiones.
+     *
+     * No se imprime en la entrada de Turabian. Se guarda porque identifica
+     * LA TIRADA: es la única llave que permite pedirle a un catálogo los
+     * datos de este ejemplar y no los de otra edición, cuyas páginas no
+     * son las que se citan.
+     */
+    isbn?: string;
 }
+
+/**
+ * Todos los campos de la ficha, en el orden en que se leen de una portada.
+ *
+ * Vive acá y no en el formulario porque el formulario no es la única
+ * pantalla que los recorre, y porque `satisfies` obliga a que cada nombre
+ * sea un campo real: un campo renombrado en la interfaz de datos rompe la
+ * compilación en vez de desaparecer en silencio de la pantalla.
+ */
+export const BIBLIOGRAPHY_FIELDS = [
+    'author', 'authorSorted', 'title', 'subtitle', 'shortTitle',
+    'volume', 'volumeTitle', 'series', 'edition', 'translator', 'editor',
+    'city', 'publisher', 'year', 'isbn',
+] as const satisfies ReadonlyArray<keyof BibliographicData>;
+export type BibliographyField = (typeof BIBLIOGRAPHY_FIELDS)[number];
 
 /** Campos sin los cuales una entrada bibliográfica queda coja. */
 export const REQUIRED_BIBLIOGRAPHY_FIELDS = ['author', 'title', 'city', 'publisher', 'year'] as const;

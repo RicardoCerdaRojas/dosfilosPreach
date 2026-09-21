@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { BookOpenCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+    BIBLIOGRAPHY_FIELDS,
+    REQUIRED_BIBLIOGRAPHY_FIELDS,
+    completeWithProposal,
     formatBibliographyEntry,
     proposeSortedAuthor,
     type BibliographicData,
+    type BibliographyField,
 } from '@dosfilos/domain';
 import {
     Dialog,
@@ -16,17 +20,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
-import { useSaveBibliography } from '@/hooks/exegesis/usePaperBibliography';
+import { useReadBibliographyFromCover, useSaveBibliography } from '@/hooks/exegesis/usePaperBibliography';
 
-/** Campos del formulario, en el orden en que se leen de una portada. */
-const FIELDS = [
-    'author', 'authorSorted', 'title', 'subtitle', 'shortTitle',
-    'volume', 'volumeTitle', 'series', 'edition', 'translator', 'editor',
-    'city', 'publisher', 'year',
-] as const;
-type Field = (typeof FIELDS)[number];
+// La lista y los obligatorios son del dominio: la bibliografía se imprime
+// con ellos y el formulario solo los muestra.
+const FIELDS = BIBLIOGRAPHY_FIELDS;
+type Field = BibliographyField;
 
-const REQUIRED: ReadonlySet<Field> = new Set(['author', 'title', 'city', 'publisher', 'year']);
+const REQUIRED: ReadonlySet<string> = new Set(REQUIRED_BIBLIOGRAPHY_FIELDS);
 
 interface Props {
     open: boolean;
@@ -47,27 +48,79 @@ interface Props {
 export function BibliographyEditDialog({ open, onOpenChange, resourceId, displayLabel, data }: Props) {
     const { t } = useTranslation('exegesis');
     const save = useSaveBibliography();
+    const read = useReadBibliographyFromCover();
     const [draft, setDraft] = useState<Record<Field, string>>(() => emptyDraft());
+    // Qué campos vinieron del ejemplar y no de la mano de quien lo tiene.
+    // Se marca porque un dato leído se revisa distinto de uno escrito.
+    const [fromBook, setFromBook] = useState<ReadonlySet<Field>>(() => new Set());
 
     useEffect(() => {
         if (!open) return;
         setDraft(Object.fromEntries(FIELDS.map(f => [f, data?.[f] ?? ''])) as Record<Field, string>);
+        setFromBook(new Set());
     }, [open, data]);
 
-    const set = (field: Field, value: string) => setDraft(d => {
-        // Al escribir el nombre se propone la forma ordenable, y solo
-        // mientras el autor no la haya tocado: es una ayuda, no una regla
-        // —«Ricardo Cerda Rojas» ordena por «Cerda Rojas»—.
-        if (field !== 'author') return { ...d, [field]: value };
-        const proposal = proposeSortedAuthor(value);
-        const untouched = d.authorSorted === '' || d.authorSorted === proposeSortedAuthor(d.author);
-        return { ...d, author: value, authorSorted: untouched ? proposal : d.authorSorted };
-    });
+    const set = (field: Field, value: string) => {
+        // Tocar un campo leído lo vuelve escrito: la marca dejaría de ser
+        // cierta. Va FUERA del actualizador de `draft` porque ese se ejecuta
+        // dos veces en modo estricto y no debe tener efectos.
+        setFromBook(marked => {
+            if (!marked.has(field)) return marked;
+            const next = new Set(marked);
+            next.delete(field);
+            return next;
+        });
+        setDraft(d => {
+            // Al escribir el nombre se propone la forma ordenable, y solo
+            // mientras el autor no la haya tocado: es una ayuda, no una regla
+            // —«Ricardo Cerda Rojas» ordena por «Cerda Rojas»—.
+            if (field !== 'author') return { ...d, [field]: value };
+            const proposal = proposeSortedAuthor(value);
+            const untouched = d.authorSorted === '' || d.authorSorted === proposeSortedAuthor(d.author);
+            return { ...d, author: value, authorSorted: untouched ? proposal : d.authorSorted };
+        });
+    };
 
     const clean: BibliographicData = Object.fromEntries(
         FIELDS.map(f => [f, draft[f].trim()]).filter(([, v]) => (v as string).length > 0),
     );
     const preview = formatBibliographyEntry(clean);
+
+    /**
+     * Vuelca sobre los huecos lo que dice la portada del propio ejemplar.
+     *
+     * Nunca pisa lo ya escrito: quien tiene el libro en la mano sabe más
+     * que un PDF, y el lector solo vio el PDF.
+     */
+    const readFromBook = async () => {
+        try {
+            const result = await read.mutateAsync(resourceId);
+            if (!result.hasText) {
+                toast.error(t('detail.bibliography.readNoText'));
+                return;
+            }
+            const { data: merged, filled } = completeWithProposal(clean, result.data);
+            if (filled.length === 0) {
+                toast.info(t('detail.bibliography.readNothing'));
+                return;
+            }
+            // `completeWithProposal` habla de campos de la ficha y el
+            // formulario de los suyos: se filtra en vez de forzar el tipo,
+            // que mentiría si alguna vez dejaran de coincidir.
+            const llenados = filled.filter((f): f is Field => (FIELDS as ReadonlyArray<string>).includes(f));
+            setDraft(d => ({
+                ...d,
+                ...Object.fromEntries(llenados.map(f => [f, (merged[f] ?? '').toString()])),
+            }));
+            setFromBook(new Set(llenados));
+            toast.success(t('detail.bibliography.readFilled', { count: llenados.length }));
+        } catch (err) {
+            console.error('[exegesis] no se pudo leer la portada del libro:', err);
+            toast.error(t('detail.bibliography.readFailed'));
+        }
+    };
+
+    const busy = save.isPending || read.isPending;
 
     const submit = async () => {
         try {
@@ -88,18 +141,39 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                     <DialogDescription>{displayLabel}</DialogDescription>
                 </DialogHeader>
 
+                <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={readFromBook}
+                        disabled={busy}
+                    >
+                        {read.isPending
+                            ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                            : <BookOpenCheck className="h-3.5 w-3.5 mr-1.5" />}
+                        {read.isPending ? t('detail.bibliography.reading') : t('detail.bibliography.readFromBook')}
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground">{t('detail.bibliography.readHint')}</p>
+                </div>
+
                 <div className="grid gap-3 sm:grid-cols-2">
                     {FIELDS.map(field => (
                         <label key={field} className="space-y-1">
                             <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
                                 {t(`detail.bibliography.fields.${field}`)}
                                 {REQUIRED.has(field) && <span className="text-destructive"> *</span>}
+                                {fromBook.has(field) && (
+                                    <span className="ml-1.5 normal-case tracking-normal font-normal text-primary">
+                                        {t('detail.bibliography.fromBook')}
+                                    </span>
+                                )}
                             </span>
                             <input
                                 type="text"
                                 value={draft[field]}
                                 onChange={e => set(field, e.target.value)}
-                                disabled={save.isPending}
+                                disabled={busy}
                                 placeholder={t(`detail.bibliography.placeholders.${field}`)}
                                 className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                             />
@@ -117,10 +191,10 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={save.isPending}>
+                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
                         {t('detail.bibliography.cancel')}
                     </Button>
-                    <Button type="button" onClick={submit} disabled={save.isPending}>
+                    <Button type="button" onClick={submit} disabled={busy}>
                         {save.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
                         {t('detail.bibliography.save')}
                     </Button>

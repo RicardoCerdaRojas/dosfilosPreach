@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { libraryService } from '@dosfilos/application';
+import { readBibliographyFromCover } from '@dosfilos/infrastructure';
 import {
     isCitableSourceType,
     missingBibliographyFields,
@@ -66,5 +67,18 @@ export function useSaveBibliography() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['library'] });
         },
+    });
+}
+
+/**
+ * Lee la ficha de la portada del propio ejemplar.
+ *
+ * No guarda nada: devuelve una PROPUESTA que el diálogo vuelca sobre los
+ * campos vacíos. Quien tiene el libro en la mano confirma y guarda, que es
+ * el mismo gesto de siempre.
+ */
+export function useReadBibliographyFromCover() {
+    return useMutation({
+        mutationFn: (resourceId: string) => readBibliographyFromCover(resourceId),
     });
 }
