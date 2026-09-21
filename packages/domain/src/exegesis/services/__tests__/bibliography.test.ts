@@ -102,3 +102,28 @@ describe('missingBibliographyFields', () => {
         expect(missingBibliographyFields({ ...ROSS, city: '   ' })).toEqual(['city']);
     });
 });
+
+describe('proposeSortedAuthor — nombres que no se ordenan moviendo la última palabra', () => {
+    it('deja el nombre coordinado tal cual', () => {
+        // «Choi, Bill T. Arnold and John H.» llegaba impreso a la
+        // bibliografía del trabajo.
+        expect(proposeSortedAuthor('Bill T. Arnold and John H. Choi')).toBe('Bill T. Arnold and John H. Choi');
+        expect(proposeSortedAuthor('Gordon J. Wenham y John Walton')).toBe('Gordon J. Wenham y John Walton');
+    });
+
+    it('deja el sufijo de linaje tal cual', () => {
+        expect(proposeSortedAuthor('Walter C. Kaiser Jr.')).toBe('Walter C. Kaiser Jr.');
+    });
+
+    it('no toma por apellido la inicial del segundo apellido', () => {
+        // En Hispanoamérica se abrevia: «Plutarco Bonilla A.» daba
+        // «A., Plutarco Bonilla».
+        expect(proposeSortedAuthor('Plutarco Bonilla A.')).toBe('Plutarco Bonilla A.');
+        expect(proposeSortedAuthor('Samuel Pérez H.')).toBe('Samuel Pérez H.');
+    });
+
+    it('sigue ordenando el nombre corriente', () => {
+        expect(proposeSortedAuthor('Allen P. Ross')).toBe('Ross, Allen P.');
+        expect(proposeSortedAuthor('Ricardo Cerda Rojas')).toBe('Rojas, Ricardo Cerda');
+    });
+});

@@ -605,6 +605,62 @@ describe('cuál hoja es la legal', () => {
         expect(data.city).toBe('Miami');
     });
 
+    it('un epígrafe que agradece el permiso de citar no es la página legal', () => {
+        // Tres líneas, dos señas y un año: reunía lo mismo que la página
+        // legal escueta y la desbancaba, sin decir ninguna de las frases
+        // de catálogo ni de permisos de versión bíblica.
+        const epigrafe = '«El Señor es mi pastor».\nTomado de The Message of the Psalms, '
+            + '© 1984 Augsburg, Minneapolis.\nPrinted in the USA.';
+        const libro = porHojas('Comentario', epigrafe, '© 2011 Editorial Portavoz\nGrand Rapids, Michigan');
+        const ajena = keepOnlyWhatIsWritten(
+            { city: 'Minneapolis', publisher: 'Augsburg', year: '1984' },
+            libro,
+        );
+        expect(ajena.data).toEqual({});
+        const propia = keepOnlyWhatIsWritten({ publisher: 'Editorial Portavoz', year: '2011' }, libro);
+        expect(propia.data.publisher).toBe('Editorial Portavoz');
+    });
+
+    it('el catálogo de la colección se descarta aunque liste cinco títulos', () => {
+        // Un catálogo crece con el número de títulos, así que su largo es
+        // justo la variable que no lo distingue de una página legal.
+        const catalogo = ['OTROS TÍTULOS DE LA COLECCIÓN',
+            'Brueggemann, The Message of the Psalms. Augsburg, Minneapolis, 1984. ISBN 978-0-8066-2120-7',
+            'Waltke, An Introduction to Biblical Hebrew Syntax. Eisenbrauns, Winona Lake, 1990.',
+            'Arnold y Choi, A Guide to Biblical Hebrew Syntax. Cambridge, 2003.',
+            'Kaiser, Toward an Exegetical Theology. Baker, Grand Rapids, 1981.',
+            'Copyright de cada obra en su editorial. Printed in the USA.'].join('\n');
+        const libro = porHojas('Comentario', catalogo, '© 2011 Editorial Portavoz\nGrand Rapids, Michigan');
+        const ajena = keepOnlyWhatIsWritten(
+            { city: 'Minneapolis', publisher: 'Augsburg', year: '1984' },
+            libro,
+        );
+        expect(ajena.data).toEqual({});
+    });
+
+    it('la página legal encabezada «Presentación» y SIN depósito legal tampoco se pierde', () => {
+        // La escapatoria pedía catalogación, y Portavoz, Vida o Certeza no
+        // la imprimen. Una seña propia basta.
+        const libro = porHojas(
+            'Comentario a los Salmos',
+            'Presentación\n© 2011 Editorial Portavoz, Grand Rapids\nReservados todos los derechos\nISBN 978-0-8254-2562-2',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Grand Rapids', publisher: 'Editorial Portavoz', year: '2011' },
+            libro,
+        );
+        expect(data.publisher).toBe('Editorial Portavoz');
+    });
+
+    it('agradecer a la Library of Congress no convierte la hoja en página legal', () => {
+        const agradecimientos = 'AGRADECIMIENTOS\nAgradezco al personal de la Library of Congress por su ayuda,\n'
+            + 'y a Augsburg, Minneapolis, por citar The Message of the Psalms, © 1984.';
+        const libro = porHojas('Comentario', agradecimientos, '© 2011 Editorial Portavoz\nGrand Rapids, Michigan');
+        const ajena = keepOnlyWhatIsWritten({ city: 'Minneapolis', publisher: 'Augsburg', year: '1984' }, libro);
+        expect(ajena.data).toEqual({});
+    });
+
     it('la línea de índice que nombra el copyright sigue perdiendo', () => {
         const indiceLargo = `CONTENTS\nCopyright and Permissions .... iv\n${'Capítulo tal .... 12\n'.repeat(60)}`;
         const libro = porHojas(indiceLargo, 'Comentario', LEGAL_PROPIA);

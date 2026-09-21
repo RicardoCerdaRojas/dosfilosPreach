@@ -304,7 +304,16 @@ const SENAS_PROPIAS = [
  * La escribe la biblioteca nacional sobre el ejemplar, así que un
  * catálogo de otros títulos y una nota de permisos no la llevan nunca.
  */
-const CATALOGACION = [/library of congress/, /cataloging/, /catalogacion/, /deposito legal/];
+const CATALOGACION = [
+    // Pegados a su forma real: en prosa nadie escribe esto. Un autor que
+    // agradece «al personal de la Library of Congress» hacía pasar su
+    // hoja de agradecimientos por página legal, y con ella entraba el
+    // libro que esa hoja citaba.
+    /library of congress (cataloging|control number)/,
+    /cataloging-in-publication/,
+    /catalogacion en (la )?fuente/,
+    /deposito legal:?\s*[a-z]*-?\s*\d/,
+];
 
 /**
  * Hojas que hablan de LIBROS AJENOS y por eso no son la página legal.
@@ -319,10 +328,28 @@ const CATALOGACION = [/library of congress/, /cataloging/, /catalogacion/, /depo
  * la página legal propia aunque además cite permisos, que es la maqueta
  * corriente en Estados Unidos.
  */
-const HABLA_DE_OTROS_LIBROS = [
+const CATALOGO_DE_OTROS_LIBROS = [
     /otros titulos/, /other titles/, /del mismo autor/, /by the same author/,
     /de esta coleccion/, /in this series/, /also available/, /tambien de/,
+];
+
+/**
+ * La nota de permisos de la versión bíblica citada.
+ *
+ * Se trata aparte del catálogo: esta SÍ vive dentro de la página legal
+ * estadounidense, así que solo descalifica a la hoja que no es más que
+ * eso. Un catálogo, en cambio, descalifica mida lo que mida —una página
+ * legal nunca dice «otros títulos de esta colección»— y su largo crece
+ * con el número de títulos, que es justo la variable que no distingue.
+ */
+const PERMISOS_DE_OTROS_LIBROS = [
     /citas biblicas/, /scripture quotations/, /usada con permiso/, /used by permission/,
+    // Y la hoja de epígrafe o de agradecimientos, que da las gracias por
+    // el permiso de citar otra obra y trae su editorial, su ciudad y su
+    // año. Es corta, así que reunía la misma forma que la página legal
+    // hispanoamericana mínima y le ganaba por ir delante.
+    /tomado de/, /taken from/, /por citar/, /por el permiso/, /con permiso de/,
+    /reproducido/, /agradec/, /acknowledg/,
 ];
 
 /**
@@ -462,18 +489,15 @@ function paginaLegalDe(frente: ReadonlyArray<Hoja>): string {
         const senas = SENAS_DE_PAGINA_LEGAL.filter(sena => sena.test(plegada)).length;
         if (senas === 0) return;
         const catalogada = CATALOGACION.some(sena => sena.test(plegada));
-        // Una hoja con el bloque de catalogación es la página legal
-        // aunque su encabezado parezca cuerpo —las ediciones españolas la
-        // encabezan «Nota del editor» o «Presentación»— o aunque cite
-        // permisos de la versión bíblica.
-        if (!catalogada && hoja.esCuerpo) return;
-        // Descalifica solo a la hoja que NO ES MÁS QUE ESO: un catálogo
-        // de dos líneas o una nota de permisos suelta. Una página legal
-        // de verdad con su bloque de permisos dentro —la maqueta
-        // corriente en Estados Unidos— es mucho más larga.
-        const soloEso = hoja.texto.length <= HOJA_DE_SOLO_OTROS_LIBROS;
-        if (!catalogada && soloEso && HABLA_DE_OTROS_LIBROS.some(sena => sena.test(plegada))) return;
         const propia = catalogada || SENAS_PROPIAS.some(sena => sena.test(plegada));
+        // Una hoja con seña PROPIA es la página legal aunque su encabezado
+        // parezca cuerpo: las ediciones hispanoamericanas la encabezan
+        // «Nota del editor» o «Presentación», y sin esto se perdían
+        // enteras. Una seña propia es prueba más fuerte que una palabra.
+        if (!propia && hoja.esCuerpo) return;
+        if (!catalogada && CATALOGO_DE_OTROS_LIBROS.some(sena => sena.test(plegada))) return;
+        const soloEso = hoja.texto.length <= HOJA_DE_SOLO_OTROS_LIBROS;
+        if (!catalogada && soloEso && PERMISOS_DE_OTROS_LIBROS.some(sena => sena.test(plegada))) return;
         // Sin seña propia, una hoja vale como página legal de dos
         // maneras: es escueta y trae un año —la hispanoamericana mínima—,
         // o reúne varias señas y un año. Lo segundo rescata la página
@@ -482,7 +506,11 @@ function paginaLegalDe(frente: ReadonlyArray<Hoja>): string {
         // Gramática Griega de Wallace, que se perdía entera.
         const anio = ANIO_SUELTO.test(plegada);
         const escueta = hoja.texto.length <= HOJA_LEGAL_ESCUETA && anio;
-        const varias = senas >= SENAS_MINIMAS && anio;
+        // La vía de «varias señas» rescata la página legal LARGA de una
+        // traducción. Puesta sin compuerta, una hoja de tres líneas que
+        // agradezca el permiso de citar a otro editor reunía las mismas
+        // señas y desbancaba a la página legal escueta.
+        const varias = senas >= SENAS_MINIMAS && anio && hoja.texto.length > HOJA_DE_SOLO_OTROS_LIBROS;
         const rango = propia ? 2 : ((escueta || varias) ? 1 : 0);
         if (rango === 0) return;
         // Entre iguales gana la primera: la página legal va delante.
@@ -678,12 +706,12 @@ function esElMismoNombreOrdenado(ordenado: string, autor: string): boolean {
     if (coma < 0) return false;
     const apellido = comparable(ordenado.slice(0, coma)).trim();
     if (!apellido) return false;
-    if (TIENE_COORDINACION.test(nombre)) return nombre.includes(apellido);
+    if (SON_VARIOS_AUTORES.test(nombre)) return nombre.includes(apellido);
     return nombre.endsWith(apellido);
 }
 
 /** Dos autores en un solo campo: «X and Y», «X y Y», «X & Y». */
-const TIENE_COORDINACION = /\s(and|y|e|&)\s/;
+const SON_VARIOS_AUTORES = /\s(and|y|e|&)\s/;
 
 /** Minúsculas, sin acentos y con los espacios colapsados. */
 function comparable(text: string): string {

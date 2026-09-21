@@ -107,10 +107,14 @@ export function proposeSortedAuthor(author: string): string {
     // «Bill T. Arnold and John H. Choi» daba «Choi, Bill T. Arnold and
     // John H.», y eso se imprimía en la bibliografía del trabajo. Un
     // nombre coordinado se deja como está y lo ordena la persona.
-    if (TIENE_COORDINACION.test(clean)) return clean;
+    if (NO_SE_ORDENA_SOLO.test(clean)) return clean;
     const parts = clean.split(' ');
     if (parts.length < 2) return clean;
     const surname = parts[parts.length - 1]!;
+    // En Hispanoamérica el segundo apellido se abrevia a inicial: «Plutarco
+    // Bonilla A.» daba «A., Plutarco Bonilla». Una letra sola con punto
+    // nunca es un apellido.
+    if (/^\p{L}\.?$/u.test(surname)) return clean;
     return `${surname}, ${parts.slice(0, -1).join(' ')}`;
 }
 
@@ -120,7 +124,7 @@ export function proposeSortedAuthor(author: string): string {
  * Dos autores en un campo —«X and Y», «X y Y», «X & Y»— y los sufijos
  * de linaje: «Walter C. Kaiser Jr.» daba «Jr., Walter C. Kaiser».
  */
-const TIENE_COORDINACION = /\s(and|y|e|&)\s|\s&\s|[\s,](jr|sr|ii|iii|h)\.?$/i;
+const NO_SE_ORDENA_SOLO = /\s(and|y|e|&)\s|\s&\s|[\s,](jr|sr|ii|iii)\.?$/i;
 
 /**
  * La entrada de bibliografía, en Turabian:
