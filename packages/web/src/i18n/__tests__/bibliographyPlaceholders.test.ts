@@ -22,6 +22,15 @@ describe('los textos de ejemplo de la ficha bibliográfica', () => {
     for (const [idioma, json] of Object.entries(idiomas)) {
         const ejemplos = json.detail.bibliography.placeholders as Record<string, string>;
 
+        it(`${idioma}: ningún ejemplo empieza por una cifra`, () => {
+            // «1», «1–41» y «2ª ed.» son datos del mismo ejemplar de Ross.
+            // Lo que los delata es que abren con el número; una
+            // descripción de qué escribir, no.
+            for (const campo of ['volume', 'volumeTitle', 'edition']) {
+                expect(ejemplos[campo], campo).not.toMatch(/^\s*\d/);
+            }
+        });
+
         it(`${idioma}: ninguno está vacío`, () => {
             for (const [campo, texto] of Object.entries(ejemplos)) {
                 expect(texto.trim(), campo).not.toBe('');
@@ -43,8 +52,14 @@ describe('los textos de ejemplo de la ficha bibliográfica', () => {
         });
 
         it(`${idioma}: ni la editorial ni la ciudad nombran una editorial o una ciudad reales`, () => {
-            const inventario = `${ejemplos.publisher} ${ejemplos.city} ${ejemplos.series} ${ejemplos.title}`.toLowerCase();
-            for (const real of ['kregel', 'grand rapids', 'eisenbrauns', 'zondervan', 'cambridge', 'psalms']) {
+            // Los cinco campos que pueden nombrar el libro de otro. Es un
+            // guardia de esta regresión y no una regla general: un ejemplo
+            // futuro podría usar otra editorial real y pasaría.
+            const inventario = [
+                ejemplos.publisher, ejemplos.city, ejemplos.series,
+                ejemplos.title, ejemplos.shortTitle, ejemplos.authorSorted,
+            ].join(' ').toLowerCase();
+            for (const real of ['kregel', 'grand rapids', 'eisenbrauns', 'zondervan', 'cambridge', 'psalms', 'ross']) {
                 expect(inventario, real).not.toContain(real);
             }
         });
