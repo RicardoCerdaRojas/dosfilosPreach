@@ -29,6 +29,42 @@ export interface AcademicVoiceSample {
     position: number;
 }
 
+/**
+ * Una nota al pie empieza con su número y sigue con el nombre del autor:
+ * «1 James Leo Garrett h., …». No lleva punto tras el número —eso ya lo
+ * descarta el filtro de listas numeradas—, y por eso hace falta esta.
+ */
+const EMPIEZA_COMO_NOTA = /^\d{1,3}\s+\p{Lu}\p{L}+/u;
+
+/**
+ * Pie de imprenta: «(El Paso, TX: Editorial Mundo Hispano, 2011)». Uno
+ * suelto puede aparecer en prosa que comenta una edición; dos o más en el
+ * mismo párrafo son una tira de notas.
+ */
+const PIE_DE_IMPRENTA = /\([^)]{3,60}:\s*[^)]{3,60},\s*\d{4}\)/g;
+
+function contarPiesDeImprenta(parrafo: string): number {
+    const pies: string[] = parrafo.match(PIE_DE_IMPRENTA) ?? [];
+    return pies.length;
+}
+
+/**
+ * Cuánto de un párrafo puede ser cita textual de otro. Por encima de esto
+ * lo que enseñaría es el registro del citado.
+ */
+const MAX_PROPORCION_CITADA = 0.5;
+
+/** Lo que va entre comillas, en cualquiera de las formas que usa el autor. */
+const ENTRECOMILLADO = /«[^»]{20,}»|“[^”]{20,}”|"[^"]{20,}"/g;
+
+function proporcionCitada(parrafo: string): number {
+    // Tipado explícito: `match` devuelve `RegExpMatchArray | null` y el
+    // `?? []` deja una unión con `never[]` que rompe el `reduce`.
+    const citas: string[] = parrafo.match(ENTRECOMILLADO) ?? [];
+    const citado = citas.reduce((n, c) => n + c.length, 0);
+    return parrafo.length > 0 ? citado / parrafo.length : 0;
+}
+
 /** Largo de párrafo que sirve como muestra de registro. */
 const MIN_CHARS = 220;
 const MAX_CHARS = 700;
@@ -108,7 +144,18 @@ function trocearEnParrafos(text: string): string[] {
 function troceoPlausible(bloques: string[]): boolean {
     if (bloques.length < 3) return false;
     const promedio = bloques.reduce((n, p) => n + p.length, 0) / bloques.length;
-    return promedio <= MAX_PARRAFO_PLAUSIBLE;
+    if (promedio > MAX_PARRAFO_PLAUSIBLE) return false;
+
+    // Un promedio bajo delata RENGLONES en vez de párrafos —medido sobre un
+    // ensayo real del autor: 22.518 caracteres, 603 saltos de línea, 37
+    // caracteres por línea—, pero sólo cuando hay muchos bloques. En un
+    // documento de cuatro, un promedio bajo es sólo un documento corto, y
+    // rechazar el troceo ahí junta el encabezado con el texto y lo descarta
+    // todo.
+    if (bloques.length >= MIN_BLOQUES_PARA_SOSPECHAR_RENGLONES && promedio < MIN_PARRAFO_PLAUSIBLE) {
+        return false;
+    }
+    return true;
 }
 
 function agruparPorOraciones(text: string): string[] {
@@ -138,6 +185,19 @@ function limpiar(parrafo: string): string {
 const MAX_PARRAFO_PLAUSIBLE = 2_000;
 
 /**
+ * Largo medio por debajo del cual lo que se partió son renglones y no
+ * párrafos. Un párrafo académico corto ronda los 300; 120 es holgado
+ * para no confundirlo con una línea de PDF, que ronda los 40-90.
+ */
+const MIN_PARRAFO_PLAUSIBLE = 120;
+
+/**
+ * Cuántos bloques hacen falta para que un promedio bajo signifique algo.
+ * Con cuatro, «promedio corto» es «documento corto».
+ */
+const MIN_BLOQUES_PARA_SOSPECHAR_RENGLONES = 20;
+
+/**
  * Cuánto del principio se salta por ser portada, índice y resumen, y a
  * partir de cuántos párrafos vale la pena saltarlo. En un documento de
  * diez párrafos, saltarse el primero ya es perder el 10 % del material.
@@ -162,6 +222,21 @@ function sirveComoMuestra(parrafo: string): boolean {
     // Medido sobre la guía de estilo real, el índice pasaba todos los demás
     // filtros —es largo, es latino y tiene puntos— y salía como muestra.
     if (/\.{4,}/.test(parrafo)) return false;
+    // Notas al pie. Medido sobre un ensayo real del autor: DOS de las cuatro
+    // muestras eran bloques de notas —«1 James Leo Garrett h., Teología
+    // sistemática, trans. …, vol. II (El Paso, TX: Editorial Mundo Hispano,
+    // 2011), 706.»—. Enseñan a citar, no a escribir, que es justo lo que
+    // este módulo dice descartar. Se reconocen por cómo empiezan (número de
+    // nota y nombre propio) y por el pie de imprenta entre paréntesis.
+    if (EMPIEZA_COMO_NOTA.test(parrafo)) return false;
+    if (contarPiesDeImprenta(parrafo) >= 2) return false;
+    // Un párrafo que es sobre todo una cita larga de otro autor enseña el
+    // registro de ese otro. Medido sobre un ensayo real: «Millard lo explica
+    // de esta manera: “Todo esto significa que la iglesia estará ausente…”»
+    // —una frase suya y trescientas palabras ajenas—. Se mide lo entrecomi-
+    // llado en vez de descartar todo párrafo con comillas: citar una línea
+    // dentro del propio argumento SÍ es parte de cómo escribe.
+    if (proporcionCitada(parrafo) > MAX_PROPORCION_CITADA) return false;
 
     const letras = parrafo.replace(/[\s\d\p{P}]/gu, '');
     if (letras.length === 0) return false;

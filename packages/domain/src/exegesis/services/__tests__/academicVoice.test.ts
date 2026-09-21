@@ -59,6 +59,47 @@ describe('selectAcademicVoiceSamples', () => {
         expect(selectAcademicVoiceSamples(seguido).length).toBeGreaterThan(1);
     });
 
+    it('descarta las notas al pie: enseñan a citar, no a escribir', () => {
+        // De un ensayo real del autor: DOS de sus cuatro muestras eran esto.
+        const nota = '1 James Leo Garrett h., Teologia sistematica: Biblica, historica y evangelica, '
+            + 'trans. Nancy Bedford de Stutz, Daniel Stutz, y LaNell W. de Bedford, Tercera edición., '
+            + 'vol. II (El Paso, TX: Editorial Mundo Hispano, 2011), 706. Y sigue la nota siguiente.';
+        expect(selectAcademicVoiceSamples(nota)).toEqual([]);
+    });
+
+    it('descarta una tira de referencias aunque no empiece por número', () => {
+        const tira = 'Charles Caldwell Ryrie, Teología básica (Miami: Unilit, 2003), 552. '
+            + 'Wayne Grudem, Teología Sistemática (Miami: Vida, 2007), 1194. '
+            + 'John MacArthur, Biblia de Estudio (Nashville, TN: Thomas Nelson, 1997), 1502.';
+        expect(selectAcademicVoiceSamples(tira)).toEqual([]);
+    });
+
+    it('descarta el párrafo que es sobre todo una cita de otro autor', () => {
+        const citando = 'Millard lo explica de esta manera: «Todo esto significa que la iglesia estará '
+            + 'ausente durante la tribulación. En esto consiste el arrebatamiento, en liberar a la iglesia '
+            + 'de la tribulación. Podemos esperar la liberación porque Pablo lo prometió a los tesalonicenses '
+            + 'en su primera carta, y porque el Señor mismo lo dijo con claridad en el Apocalipsis».';
+        expect(selectAcademicVoiceSamples(citando)).toEqual([]);
+    });
+
+    it('pero una cita corta dentro del propio argumento SÍ es parte de cómo escribe', () => {
+        const suyo = 'El pretribulacionismo descansa en una hermenéutica literal, histórica y gramatical. '
+            + 'En este punto Garrett arremete diciendo: «una hermenéutica literal», lo cual no es una objeción '
+            + 'sino una descripción, y conviene detenerse en la diferencia porque de ella depende el resto '
+            + 'del argumento que se expone a continuación en este trabajo.';
+        expect(selectAcademicVoiceSamples(suyo)).toHaveLength(1);
+    });
+
+    it('un PDF que sólo trae cortes de renglón se agrupa igual por oraciones', () => {
+        // Medido sobre un ensayo real: 22.518 caracteres y 603 saltos de
+        // línea, promedio de 37 por línea. Tomarlos por párrafos dejaba casi
+        // todo bajo el largo mínimo y rebajaba el ensayo a dos muestras.
+        const porRenglones = Array.from({ length: 60 }, (_, i) =>
+            `linea ${i} del parrafo con texto suficiente para no`).join('\n');
+        const conProsa = `${LARGO_A.replace(/ /g, '\n')}\n${porRenglones}`;
+        expect(selectAcademicVoiceSamples(conProsa).length).toBeGreaterThan(0);
+    });
+
     it('descarta lo demasiado corto: no hay frase que imitar', () => {
         expect(selectAcademicVoiceSamples('Una frase breve y nada más.')).toEqual([]);
     });
