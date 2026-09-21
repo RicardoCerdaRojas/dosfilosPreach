@@ -35,6 +35,8 @@ interface Props {
     resourceId: string;
     displayLabel: string;
     data: BibliographicData | null;
+    /** Las fuentes de la biblioteca común se miran, no se escriben. */
+    canEdit: boolean;
 }
 
 /**
@@ -45,7 +47,7 @@ interface Props {
  * sacaba editorial, ciudad y año: en el trabajo de Salmo 23 salieron
  * inventados y hubo que corregirlos uno por uno.
  */
-export function BibliographyEditDialog({ open, onOpenChange, resourceId, displayLabel, data }: Props) {
+export function BibliographyEditDialog({ open, onOpenChange, resourceId, displayLabel, data, canEdit }: Props) {
     const { t } = useTranslation('exegesis');
     const save = useSaveBibliography();
     const read = useReadBibliographyFromCover();
@@ -65,9 +67,13 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
         // cierta. Va FUERA del actualizador de `draft` porque ese se ejecuta
         // dos veces en modo estricto y no debe tener efectos.
         setFromBook(marked => {
-            if (!marked.has(field)) return marked;
+            // Escribir el autor reescribe también la forma ordenable, así
+            // que su marca deja de ser cierta junto con la del autor.
+            const tambien = field === 'author' ? (['authorSorted'] as const) : [];
+            if (!marked.has(field) && !tambien.some(f => marked.has(f))) return marked;
             const next = new Set(marked);
             next.delete(field);
+            for (const f of tambien) next.delete(f);
             return next;
         });
         setDraft(d => {
@@ -101,7 +107,12 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
             }
             const { data: merged, filled } = completeWithProposal(clean, result.data);
             if (filled.length === 0) {
-                toast.info(t('detail.bibliography.readNothing'));
+                // Tres razones distintas para no llenar nada, y decirlas
+                // todas «tu libro no trae datos» sería mentir en dos de ellas.
+                const huecos = FIELDS.some(f => !draft[f].trim());
+                if (!huecos) toast.info(t('detail.bibliography.readAlreadyComplete'));
+                else if (Object.keys(result.data).length === 0) toast.info(t('detail.bibliography.readNothing'));
+                else toast.info(t('detail.bibliography.readNothingNew'));
                 return;
             }
             // `completeWithProposal` habla de campos de la ficha y el
@@ -112,7 +123,8 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                 ...d,
                 ...Object.fromEntries(llenados.map(f => [f, (merged[f] ?? '').toString()])),
             }));
-            setFromBook(new Set(llenados));
+            // Se suman a las de una lectura anterior en vez de reemplazarlas.
+            setFromBook(marcadas => new Set([...marcadas, ...llenados]));
             toast.success(t('detail.bibliography.readFilled', { count: llenados.length }));
         } catch (err) {
             console.error('[exegesis] no se pudo leer la portada del libro:', err);
@@ -120,7 +132,7 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
         }
     };
 
-    const busy = save.isPending || read.isPending;
+    const busy = save.isPending || read.isPending || !canEdit;
 
     const submit = async () => {
         try {
@@ -142,6 +154,9 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                 </DialogHeader>
 
                 <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
+                    {!canEdit && (
+                        <p className="text-[11px] text-muted-foreground">{t('detail.bibliography.notEditable')}</p>
+                    )}
                     <Button
                         type="button"
                         variant="outline"
@@ -154,7 +169,9 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                             : <BookOpenCheck className="h-3.5 w-3.5 mr-1.5" />}
                         {read.isPending ? t('detail.bibliography.reading') : t('detail.bibliography.readFromBook')}
                     </Button>
-                    <p className="text-[11px] text-muted-foreground">{t('detail.bibliography.readHint')}</p>
+                    {canEdit && (
+                        <p className="text-[11px] text-muted-foreground">{t('detail.bibliography.readHint')}</p>
+                    )}
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">

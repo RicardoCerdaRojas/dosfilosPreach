@@ -1,9 +1,10 @@
 import {
     MODEL_FAST,
-    frontMatterOf,
     keepOnlyWhatIsWritten,
     proposeIsbn,
+    readableRegionsOf,
     type BibliographicData,
+    type ReadableRegions,
 } from '@dosfilos/domain';
 import { FirebaseLibraryRepository } from '../firebase/FirebaseLibraryRepository';
 import { runLlmPrompt } from '../llm/callableLlm';
@@ -37,11 +38,18 @@ export interface CoverBibliographyResult {
  *
  * El texto sale de `textContent`, que es el ARRANQUE del libro —el
  * extractor lo corta a 800 KB—, y los créditos viven justo ahí.
+ *
+ * LO QUE NO SE MANDA NO SE COPIA. Al modelo le llegan dos tramos y nada
+ * más: la portada y la página de créditos. El prefacio se queda fuera
+ * porque cita otros libros con su ciudad, su editorial y su año; un
+ * ejemplar de Ross cuyo prefacio cita a Brueggemann devolvía la ficha de
+ * Brueggemann, completa y con el rótulo «del libro».
  */
 export async function readBibliographyFromCover(
     resourceId: string,
     modelName: string = MODEL_FAST,
     library: FirebaseLibraryRepository = new FirebaseLibraryRepository(),
+    ejecutarPrompt: EjecutarPrompt = pedirleAlModelo,
 ): Promise<CoverBibliographyResult> {
     const resource = (await library.findById(resourceId)) as {
         textContent?: string;
@@ -49,30 +57,41 @@ export async function readBibliographyFromCover(
         author?: string;
     } | null;
 
-    const frontMatter = frontMatterOf(resource?.textContent ?? '');
-    if (frontMatter.length < MINIMO_PARA_INTENTAR) {
+    const regiones = readableRegionsOf(resource?.textContent ?? '');
+    if (regiones.cover.length < MINIMO_PARA_INTENTAR) {
         return { data: {}, discarded: [], hasText: false };
     }
 
-    const raw = await withGeminiRetry(
-        () => runLlmPrompt({
-            feature: 'exegesis.readBibliography',
-            model: modelName,
-            system: INSTRUCCION,
-            prompt: buildCoverPrompt(frontMatter, resource?.title, resource?.author),
-            responseMimeType: 'application/json',
-            temperature: 0,
-            maxOutputTokens: 2048,
-        }),
-        { contextLabel: 'CoverBibliographyReader' },
+    const raw = await ejecutarPrompt(
+        buildCoverPrompt(regiones, resource?.title, resource?.author),
+        modelName,
     );
 
-    const { data, discarded } = keepOnlyWhatIsWritten(parseCoverJson(raw), frontMatter);
-    const isbn = proposeIsbn(frontMatter);
+    const { data, discarded } = keepOnlyWhatIsWritten(parseCoverJson(raw), regiones);
+    const isbn = proposeIsbn(`${regiones.cover}\n${regiones.credits}`);
     if (isbn) data.isbn = isbn;
 
     return { data, discarded, hasText: true };
 }
+
+/** El paso que habla con el modelo, aparte para poder probar el resto. */
+export type EjecutarPrompt = (prompt: string, modelName: string) => Promise<string>;
+
+const pedirleAlModelo: EjecutarPrompt = (prompt, modelName) => withGeminiRetry(
+    () => runLlmPrompt({
+        feature: 'exegesis.readBibliography',
+        model: modelName,
+        system: INSTRUCCION,
+        prompt,
+        responseMimeType: 'application/json',
+        temperature: 0,
+        maxOutputTokens: 2048,
+    }),
+    // Tres intentos y no cinco: el callable ya reintenta del lado del
+    // servidor, y cinco por cinco son veinticinco llamadas al modelo por un
+    // clic. Leer una portada no es una operación que valga esa cuenta.
+    { contextLabel: 'CoverBibliographyReader', maxAttempts: 3 },
+);
 
 /** Bajo esto no hay portada que leer: es un libro sin texto extraído. */
 const MINIMO_PARA_INTENTAR = 200;
@@ -106,7 +125,7 @@ const INSTRUCCION = [
     'siguientes: los dos salen de reordenar o recortar lo que ya copiaste.',
 ].join('\n');
 
-function buildCoverPrompt(frontMatter: string, title?: string, author?: string): string {
+export function buildCoverPrompt(regiones: ReadableRegions, title?: string, author?: string): string {
     return [
         // El título y el autor del archivo se dan como PISTA y se dice que lo
         // son: los escribió quien subió el libro, muchas veces es el nombre
@@ -115,10 +134,15 @@ function buildCoverPrompt(frontMatter: string, title?: string, author?: string):
         `pista de quien lo subió, no la portada): ${title ?? '—'}`,
         `Autor con que está guardado: ${author ?? '—'}`,
         '',
-        'ARRANQUE DEL LIBRO:',
+        'PRIMERAS HOJAS (de aquí salen autor, título, subtítulo, volumen y colección):',
         '---',
-        frontMatter,
+        regiones.cover,
         '---',
+        '',
+        regiones.credits
+            ? 'PÁGINA DE CRÉDITOS (de aquí salen ciudad, editorial, año, edición, traductor y editor):'
+            : 'Este ejemplar NO trae página de créditos: deja vacíos la ciudad, la editorial y el año.',
+        ...(regiones.credits ? ['---', regiones.credits, '---'] : []),
     ].join('\n');
 }
 
@@ -128,7 +152,7 @@ function buildCoverPrompt(frontMatter: string, title?: string, author?: string):
  * Un fallo de formato devuelve `null` y el llamador se queda sin
  * propuesta, que es el mismo resultado que un libro sin créditos.
  */
-function parseCoverJson(raw: string): BibliographicData | null {
+export function parseCoverJson(raw: string): BibliographicData | null {
     const limpio = (raw ?? '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     try {
         const parsed: unknown = JSON.parse(limpio);

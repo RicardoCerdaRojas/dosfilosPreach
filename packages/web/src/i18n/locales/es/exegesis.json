@@ -2093,7 +2093,10 @@
       "readFilled": "Se llenaron {{count}} campo(s) con lo que dice el libro. Revísalos contra el ejemplar.",
       "readNothing": "Este ejemplar no trae sus datos de publicación en las primeras páginas. Hay que escribirlos a mano.",
       "readNoText": "Este libro todavía no tiene texto extraído, así que no hay portada que leer.",
-      "readFailed": "No se pudo leer la portada del libro."
+      "readFailed": "No se pudo leer la portada del libro.",
+      "readAlreadyComplete": "Esta ficha ya está completa. No hay nada que leer del libro.",
+      "readNothingNew": "El libro no agrega nada a lo que ya escribiste.",
+      "notEditable": "Esta fuente es de la biblioteca común, así que su ficha no se edita desde aquí."
     },
     "glossary": {
       "title": "Palabras que no uso",

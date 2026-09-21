@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
+import type { BibliographicData } from '../bibliography';
+import { BIBLIOGRAPHY_FIELDS, type BibliographyField } from '../bibliography';
 import {
+    CORTE_VISIBLE,
+    LETRAS_DE_ARRANQUE,
+    VENTANA_ANTES,
+    VENTANA_DESPUES,
     completeWithProposal,
+    creditsRegionOf,
     frontMatterOf,
     isbnsIn,
     keepOnlyWhatIsWritten,
@@ -36,7 +43,7 @@ describe('frontMatterOf', () => {
         const cuerpo = 'El salmista abre con una confesión personal. '.repeat(200);
         const tramo = frontMatterOf(cuerpo, 500);
         expect(tramo).toHaveLength(500);
-        expect(tramo).not.toContain('[…]');
+        expect(tramo).not.toContain(CORTE_VISIBLE);
     });
 
     it('un texto vacío no tiene portada', () => {
@@ -49,8 +56,19 @@ describe('isbnsIn', () => {
         expect(isbnsIn(CREDITOS)).toEqual(['9780825425622']);
     });
 
-    it('lee el ISBN de diez, incluida la X de control', () => {
-        expect(isbnsIn('ISBN: 0-8254-3548-X')).toEqual(['082543548X']);
+    it('el de diez vuelve en trece: es la otra notación del mismo ejemplar', () => {
+        expect(isbnsIn('ISBN: 0-8254-3548-X')).toEqual(['9780825435485']);
+    });
+
+    it('el par de trece y diez del mismo libro es UN ISBN, no dos', () => {
+        // Medio catálogo de los años 2005-2012 imprime los dos, uno debajo
+        // del otro. Tomarlos por ediciones distintas dejaba sin ISBN justo
+        // a los libros que sí lo declaran.
+        expect(isbnsIn('ISBN 978-0-8254-2562-2\nISBN 0-8254-2562-X')).toEqual(['9780825425622']);
+    });
+
+    it('la etiqueta con número no se cuela dentro del ISBN', () => {
+        expect(isbnsIn('ISBN-13: 978-0-8254-2562-2')).toEqual(['9780825425622']);
     });
 
     it('descarta la tira de dígitos que no valida: apuntaría a otra edición', () => {
@@ -99,7 +117,7 @@ describe('keepOnlyWhatIsWritten', () => {
     it('ignora acentos y mayúsculas: la portada grita y la ficha no', () => {
         const { data } = keepOnlyWhatIsWritten(
             { publisher: 'Ediciones Sígueme', city: 'Salamanca' },
-            'EDICIONES SIGUEME, S.A.U.\nSALAMANCA 2019',
+            '© EDICIONES SIGUEME, S.A.U.\nSALAMANCA 2019',
         );
         expect(data.publisher).toBe('Ediciones Sígueme');
         expect(data.city).toBe('Salamanca');
@@ -111,6 +129,66 @@ describe('keepOnlyWhatIsWritten', () => {
             CREDITOS,
         );
         expect(data.authorSorted).toBe('Ross, Allen P.');
+    });
+
+    it('descarta el pie de imprenta de OTRO libro citado en el prefacio', () => {
+        // El defecto que encontró la revisión del PR #656: comprobar contra
+        // todo el arranque no comprueba nada, porque el prefacio cita otros
+        // libros con su ciudad, su editorial y su año. La ficha salía
+        // completa, verosímil y falsa, y con el rótulo «del libro».
+        const conPrefacio = [
+            'A Commentary on the Psalms',
+            'Allen P. Ross',
+            '© 2011 by Allen P. Ross',
+            'Published by Kregel Publications, Grand Rapids, Michigan',
+            // Entre la página legal y el prefacio van la dedicatoria y el
+            // índice. Esa separación es lo que compran las ventanas: un
+            // prefacio pegado a la página legal sigue siendo un límite.
+            'CONTENIDO '.repeat(300),
+            'PREFACIO',
+            'Como bien dice Walter Brueggemann, The Message of the Psalms',
+            '(Minneapolis: Augsburg, 1984), el salterio es el libro de oración.',
+        ].join('\n');
+        const { data, discarded } = keepOnlyWhatIsWritten({
+            author: 'Walter Brueggemann',
+            title: 'The Message of the Psalms',
+            city: 'Minneapolis',
+            publisher: 'Augsburg',
+            year: '1984',
+        }, conPrefacio);
+        expect(data).toEqual({});
+        expect(discarded).toEqual(['author', 'title', 'city', 'publisher', 'year']);
+    });
+
+    it('sin página de créditos no hay ciudad, editorial ni año', () => {
+        // Un ejemplar sin portada legal no dice quién lo publicó. El hueco
+        // es la respuesta correcta; rellenarlo sería inventar.
+        const sinCreditos = 'Lexicón Hebreo-Arameo-Español\nא La letra Alef toma su nombre…';
+        const { data, discarded } = keepOnlyWhatIsWritten(
+            { title: 'Lexicón Hebreo-Arameo-Español', city: 'Miami', publisher: 'Vida', year: '2000' },
+            sinCreditos,
+        );
+        expect(data.title).toBe('Lexicón Hebreo-Arameo-Español');
+        expect(discarded).toEqual(['city', 'publisher', 'year']);
+    });
+
+    it('descarta el nombre ordenado con el apellido equivocado', () => {
+        // «Allen, Ross P.» usa las mismas palabras que «Allen P. Ross» y la
+        // bibliografía quedaría ordenada por el nombre de pila.
+        const { data, discarded } = keepOnlyWhatIsWritten(
+            { author: 'Allen P. Ross', authorSorted: 'Allen, Ross P.' },
+            CREDITOS,
+        );
+        expect(data.authorSorted).toBeUndefined();
+        expect(discarded).toContain('authorSorted');
+    });
+
+    it('descarta el nombre ordenado que repite una palabra', () => {
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Allen P. Ross', authorSorted: 'Ross, Ross Ross' },
+            CREDITOS,
+        );
+        expect(data.authorSorted).toBeUndefined();
     });
 
     it('descarta el nombre ordenado que agrega un nombre que nadie escribió', () => {
@@ -189,17 +267,18 @@ describe('proposeIsbn', () => {
 });
 
 describe('invariantes del tramo que se manda al modelo', () => {
-    it('el tramo nunca pasa del arranque más la ventana de los créditos', () => {
-        // Ata las cuatro constantes que deciden el tamaño: subir una sin
-        // mirar las otras engordaría el prompt en silencio.
-        const enorme = `${'a'.repeat(200_000)}ISBN 978-0-8254-2562-2${'b'.repeat(50_000)}`;
-        expect(frontMatterOf(enorme).length).toBeLessThan(25_000);
+    it('el tramo mide exactamente el arranque más la ventana de los créditos', () => {
+        // Ata las cuatro constantes que deciden el tamaño del prompt. Con
+        // una cota floja, subir el arranque de 12.000 a 15.000 pasaba igual
+        // y el prompt engordaba en silencio.
+        const enorme = `${'a'.repeat(30_000)}ISBN 978-0-8254-2562-2${'b'.repeat(50_000)}`;
+        expect(frontMatterOf(enorme)).toHaveLength(
+            LETRAS_DE_ARRANQUE + CORTE_VISIBLE.length + VENTANA_ANTES + VENTANA_DESPUES,
+        );
     });
 
-    it('cabe de sobra en lo que el extractor guarda del libro', () => {
-        // `textContent` se corta a 800 KB y los créditos viven al principio:
-        // si el tramo creciera hasta ahí, leeríamos cuerpo del libro.
-        expect(frontMatterOf('x'.repeat(900_000)).length).toBeLessThan(800_000);
+    it('sin marca de créditos no se persigue nada: el tramo es el arranque', () => {
+        expect(frontMatterOf('x'.repeat(900_000))).toHaveLength(LETRAS_DE_ARRANQUE);
     });
 });
 
@@ -214,5 +293,27 @@ describe('isbnsIn, casos del mundo real', () => {
         // Uno de cada once pasa la comprobación por azar. Sin la palabra
         // «ISBN» al lado no hay razón para creerle a una tira de dígitos.
         expect(isbnsIn('Library of Congress 2010028703 y el número 0852440014')).toEqual([]);
+    });
+});
+
+describe('creditsRegionOf', () => {
+    it('devuelve vacío cuando el ejemplar no tiene página de créditos', () => {
+        expect(creditsRegionOf('Lexicón Hebreo-Arameo-Español\nא Alef…')).toBe('');
+    });
+
+    it('trae lo de alrededor de la marca, que es donde vive el pie de imprenta', () => {
+        const region = creditsRegionOf(CREDITOS);
+        expect(region).toContain('Kregel Publications');
+        expect(region).toContain('Grand Rapids');
+    });
+});
+
+describe('la lista de campos del formulario', () => {
+    it('cubre todos los campos de la ficha', () => {
+        // `satisfies` comprueba que cada nombre exista, no que estén todos:
+        // un campo nuevo en `BibliographicData` desaparecería del formulario
+        // sin que nada se quejara.
+        expectTypeOf<Exclude<keyof BibliographicData, BibliographyField>>().toEqualTypeOf<never>();
+        expect(BIBLIOGRAPHY_FIELDS.length).toBeGreaterThan(0);
     });
 });

@@ -72,6 +72,7 @@ export function PaperBibliographyCard({ paper }: { paper: ExegeticalPaper }) {
                     resourceId={editing.resourceId}
                     displayLabel={editing.displayLabel}
                     data={editing.data}
+                    canEdit={editing.editable}
                 />
             )}
         </section>

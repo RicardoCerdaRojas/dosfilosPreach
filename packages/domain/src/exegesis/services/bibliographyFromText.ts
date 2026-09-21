@@ -19,23 +19,13 @@
 import { foldForSearch } from '../../bible/searchMatching';
 import type { BibliographicData } from './bibliography';
 
-/** De dónde salió el dato. Se marca para que la interfaz pueda decirlo. */
-export type BibliographyOrigin = 'ejemplar' | 'catalogo' | 'busqueda';
-
-export interface BibliographyProposal {
-    data: BibliographicData;
-    origin: BibliographyOrigin;
-    /** Lo que el modelo propuso y el texto no respaldaba. */
-    discarded: ReadonlyArray<keyof BibliographicData>;
-}
-
 /**
  * Cuánto texto del arranque se mira.
  *
  * Medido sobre los 68 libros de la biblioteca: en 47 hay tres o más
  * señales de página de créditos dentro de las primeras 12.000 letras.
  */
-const LETRAS_DE_ARRANQUE = 12_000;
+export const LETRAS_DE_ARRANQUE = 12_000;
 
 /**
  * Hasta dónde se persigue la página de créditos cuando no está al frente.
@@ -47,8 +37,30 @@ const LETRAS_DE_ARRANQUE = 12_000;
 const LETRAS_DE_BUSQUEDA = 60_000;
 
 /** Cuánto se lleva alrededor de la marca de créditos hallada tarde. */
-const VENTANA_ANTES = 3_000;
-const VENTANA_DESPUES = 6_000;
+export const VENTANA_ANTES = 3_000;
+export const VENTANA_DESPUES = 6_000;
+/** Lo que separa el arranque del tramo de créditos hallado tarde. */
+export const CORTE_VISIBLE = '\n[…]\n';
+
+/**
+ * Cuánto se mira alrededor de la marca de créditos para dar por bueno un
+ * pie de imprenta.
+ *
+ * Existe porque comprobar contra TODO el arranque no comprueba nada: el
+ * prefacio de un libro cita otros libros con su ciudad, su editorial y su
+ * año, y esos datos están tan «escritos en el texto» como los propios.
+ * Medido sobre un arranque real de Ross con un prefacio que cita a
+ * Brueggemann, la ficha entera salía aceptada y falsa.
+ */
+export const VENTANA_DE_CREDITOS = 1_200;
+
+/**
+ * Dónde vive la portada: el frente del frente.
+ *
+ * El autor y el título están impresos en las primeras hojas. Un libro
+ * citado en el prefacio, no.
+ */
+export const LETRAS_DE_PORTADA = 2_500;
 
 /**
  * Lo que delata una página de créditos. Se busca sobre el texto plegado,
@@ -80,12 +92,32 @@ export function frontMatterOf(text: string, letrasDeArranque = LETRAS_DE_ARRANQU
     const plegado = foldForSearch(limpio.slice(0, LETRAS_DE_BUSQUEDA));
     if (MARCAS_DE_CREDITOS.test(foldForSearch(arranque))) return arranque;
 
-    const marca = plegado.slice(letrasDeArranque).search(MARCAS_DE_CREDITOS);
+    // Se retrocede el largo de la marca más larga: si una cayera justo
+    // sobre el corte («IS|BN»), ni el arranque ni la búsqueda la verían.
+    const desdeLaBusqueda = Math.max(0, letrasDeArranque - LARGO_DE_MARCA);
+    const marca = plegado.slice(desdeLaBusqueda).search(MARCAS_DE_CREDITOS);
     if (marca < 0) return arranque;
 
-    const centro = letrasDeArranque + marca;
+    const centro = desdeLaBusqueda + marca;
     const desde = Math.max(letrasDeArranque, centro - VENTANA_ANTES);
-    return `${arranque}\n[…]\n${limpio.slice(desde, centro + VENTANA_DESPUES)}`;
+    return `${arranque}${CORTE_VISIBLE}${limpio.slice(desde, centro + VENTANA_DESPUES)}`;
+}
+
+/** La marca de créditos más larga, en letras. */
+const LARGO_DE_MARCA = 'reservados todos los derechos'.length;
+
+/**
+ * El tramo donde puede estar impreso el pie de imprenta.
+ *
+ * Devuelve vacío cuando el ejemplar no tiene página de créditos: entonces
+ * NO hay de dónde sacar ciudad, editorial ni año, y el hueco queda a la
+ * vista, que es la respuesta correcta.
+ */
+export function creditsRegionOf(frontMatter: string): string {
+    const texto = frontMatter ?? '';
+    const marca = foldForSearch(texto).search(MARCAS_DE_CREDITOS);
+    if (marca < 0) return '';
+    return texto.slice(Math.max(0, marca - VENTANA_DE_CREDITOS), marca + VENTANA_DE_CREDITOS);
 }
 
 /**
@@ -102,11 +134,19 @@ export function isbnsIn(text: string): string[] {
     const agregar = (crudo: string) => {
         const limpio = crudo.replace(/[-\s]/g, '').toUpperCase();
         const largoDeIsbn = limpio.length === 13 || limpio.length === 10;
-        if (largoDeIsbn && isbnValido(limpio) && !encontrados.includes(limpio)) encontrados.push(limpio);
+        if (!largoDeIsbn || !isbnValido(limpio)) return;
+        // El de diez se pasa a trece ANTES de comparar: el mismo ejemplar
+        // se imprime con las dos notaciones, una debajo de la otra, y
+        // tomarlas por dos ISBN distintos dejaba sin proponer justo a los
+        // libros que sí declaran el suyo.
+        const canonico = limpio.length === 10 ? aIsbn13(limpio) : limpio;
+        if (!encontrados.includes(canonico)) encontrados.push(canonico);
     };
 
     // Declarado con su nombre: «ISBN 978-0-8254-2562-2», de diez o de trece.
-    recorrer(/isbn[^0-9]{0,12}([0-9][0-9\s-]{8,16}[0-9x])/g, plegado, agregar);
+    // La etiqueta puede traer su propio número —«ISBN-13:»—, y sin quitarlo
+    // los dígitos de la etiqueta entran al ISBN y lo echan a perder.
+    recorrer(/isbn(?:-1[03])?[^0-9]{0,12}([0-9][0-9\s-]{8,16}[0-9x])/g, plegado, agregar);
     // Sin su nombre, solo con el prefijo de libro. Aparece así en la URL del
     // catálogo de la editorial, que es de donde salió el de Arnold. Un número
     // suelto de DIEZ dígitos no se toma por esta vía: uno de cada once pasa
@@ -123,6 +163,19 @@ function recorrer(patron: RegExp, texto: string, agregar: (crudo: string) => voi
         agregar(match[1] ?? '');
         match = patron.exec(texto);
     }
+}
+
+/**
+ * El mismo ejemplar, escrito en trece dígitos.
+ *
+ * «0-8254-2562-X» y «978-0-8254-2562-2» son el MISMO libro: el de trece
+ * es el de diez con el prefijo 978 y otro dígito de control.
+ */
+function aIsbn13(isbn10: string): string {
+    const cuerpo = `978${isbn10.slice(0, 9)}`;
+    let suma = 0;
+    for (let i = 0; i < 12; i += 1) suma += Number(cuerpo[i]) * (i % 2 === 0 ? 1 : 3);
+    return `${cuerpo}${(10 - (suma % 10)) % 10}`;
 }
 
 function isbnValido(isbn: string): boolean {
@@ -151,11 +204,50 @@ export function proposeIsbn(frontMatter: string): string | null {
     return encontrados.length === 1 ? (encontrados[0] ?? null) : null;
 }
 
-/** Campos que tienen que estar escritos tal cual en el libro. */
-const CAMPOS_LITERALES = [
-    'author', 'title', 'subtitle', 'volume', 'volumeTitle',
-    'series', 'edition', 'translator', 'editor', 'city', 'publisher', 'year',
+/**
+ * Campos que se buscan en la PORTADA, o sea al frente del arranque.
+ *
+ * El autor y el título del libro están impresos en sus primeras hojas.
+ * Un libro citado en el prefacio también trae autor y título, y por eso
+ * no vale mirar el arranque entero.
+ */
+const CAMPOS_DE_PORTADA = [
+    'author', 'title', 'subtitle', 'volume', 'volumeTitle', 'series',
 ] as const;
+
+/**
+ * Campos que se buscan SOLO en la página de créditos.
+ *
+ * La ciudad, la editorial y el año están impresos ahí y en ningún otro
+ * lugar del libro propio. Donde sí aparecen en cualquier página es en las
+ * citas de otros libros, que es exactamente lo que no se quiere copiar.
+ */
+const CAMPOS_DEL_PIE_DE_IMPRENTA = [
+    'edition', 'translator', 'editor', 'city', 'publisher', 'year',
+] as const;
+
+/**
+ * Los dos únicos tramos que se le muestran al modelo.
+ *
+ * El prefacio NO viaja. Cita otros libros con su ciudad, su editorial y
+ * su año, y un modelo al que se le enseña eso lo copia: un ejemplar de
+ * Ross cuyo prefacio cita a Brueggemann devolvía la ficha de Brueggemann,
+ * completa y con el rótulo «del libro». Lo que no se manda no se copia.
+ */
+export interface ReadableRegions {
+    /** Las primeras hojas: ahí están el autor y el título. */
+    cover: string;
+    /** Alrededor de la marca de copyright: ahí está el pie de imprenta. */
+    credits: string;
+}
+
+export function readableRegionsOf(text: string): ReadableRegions {
+    const frontMatter = frontMatterOf(text);
+    return {
+        cover: frontMatter.slice(0, LETRAS_DE_PORTADA),
+        credits: creditsRegionOf(frontMatter),
+    };
+}
 
 /**
  * Deja de la propuesta solo lo que el texto respalda.
@@ -166,31 +258,35 @@ const CAMPOS_LITERALES = [
  */
 export function keepOnlyWhatIsWritten(
     raw: BibliographicData | null | undefined,
-    sourceText: string,
+    source: string | ReadableRegions,
 ): { data: BibliographicData; discarded: Array<keyof BibliographicData> } {
     const data: BibliographicData = {};
     const discarded: Array<keyof BibliographicData> = [];
     if (!raw) return { data, discarded };
 
-    const fuente = comparable(sourceText);
+    // Se aceptan los dos tramos ya recortados —es lo que ve el modelo— o el
+    // texto entero, que se recorta igual. Comprobar contra otra cosa que la
+    // que se mostró abriría la puerta que este módulo cierra.
+    const regiones = typeof source === 'string' ? readableRegionsOf(source) : source;
+    const portada = comparable(regiones.cover);
+    const creditos = comparable(regiones.credits);
     const anioMaximo = new Date().getFullYear() + ANIO_MAXIMO_SOBRE_HOY;
 
-    for (const campo of CAMPOS_LITERALES) {
+    const aceptar = (campo: keyof BibliographicData, donde: string) => {
         const valor = (raw[campo] ?? '').toString().trim();
-        if (!valor) continue;
-        if (valor.length > LARGO_MAXIMO_DE_CAMPO) { discarded.push(campo); continue; }
-        if (!fuente.includes(comparable(valor))) { discarded.push(campo); continue; }
-        if (campo === 'year' && !anioCreible(valor, anioMaximo)) { discarded.push(campo); continue; }
+        if (!valor) return;
+        if (valor.length > LARGO_MAXIMO_DE_CAMPO) { discarded.push(campo); return; }
+        if (!donde.includes(comparable(valor))) { discarded.push(campo); return; }
+        if (campo === 'year' && !anioCreible(valor, anioMaximo)) { discarded.push(campo); return; }
         data[campo] = valor;
-    }
+    };
+
+    for (const campo of CAMPOS_DE_PORTADA) aceptar(campo, portada);
+    for (const campo of CAMPOS_DEL_PIE_DE_IMPRENTA) aceptar(campo, creditos);
 
     const ordenado = (raw.authorSorted ?? '').trim();
     if (ordenado) {
-        // Reordenar un nombre no agrega información; inventarlo, sí. Cada
-        // palabra del nombre ordenado tiene que venir del nombre aceptado.
-        const palabrasDelAutor = comparable(data.author ?? '').split(' ').filter(Boolean);
-        const palabras = comparable(ordenado).replace(/,/g, ' ').split(' ').filter(Boolean);
-        if (palabras.length > 0 && palabras.every(p => palabrasDelAutor.includes(p))) data.authorSorted = ordenado;
+        if (esElMismoNombreOrdenado(ordenado, data.author ?? '')) data.authorSorted = ordenado;
         else discarded.push('authorSorted');
     }
 
@@ -223,6 +319,25 @@ export function completeWithProposal(
         filled.push(campo);
     }
     return { data, filled };
+}
+
+/**
+ * ¿«Ross, Allen P.» es «Allen P. Ross» puesto al revés?
+ *
+ * Se comprueba la VUELTA, no el juego de palabras: con un juego, «Allen,
+ * Ross P.» también pasaba, y la bibliografía se ordenaría por «Allen».
+ * La coma parte el nombre en apellido y nombres, y al volver a pegarlos
+ * al revés tiene que salir el nombre aceptado, palabra por palabra.
+ */
+function esElMismoNombreOrdenado(ordenado: string, autor: string): boolean {
+    const nombre = comparable(autor);
+    if (!nombre) return false;
+    const coma = ordenado.indexOf(',');
+    // Un nombre de una sola palabra se ordena solo: es igual a sí mismo.
+    if (coma < 0) return comparable(ordenado) === nombre;
+    const apellido = comparable(ordenado.slice(0, coma));
+    const nombres = comparable(ordenado.slice(coma + 1));
+    return `${nombres} ${apellido}`.trim() === nombre;
 }
 
 /** Minúsculas, sin acentos y con los espacios colapsados. */

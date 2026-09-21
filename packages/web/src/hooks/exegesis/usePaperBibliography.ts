@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { libraryService } from '@dosfilos/application';
 import { readBibliographyFromCover } from '@dosfilos/infrastructure';
 import {
+    SYSTEM_SOURCE_OWNER_ID,
     isCitableSourceType,
     missingBibliographyFields,
     type BibliographicData,
@@ -18,6 +19,14 @@ export interface PaperBibliographyRow {
     displayLabel: string;
     data: BibliographicData | null;
     missing: RequiredBibliographyField[];
+    /**
+     * Si la ficha de este libro se puede escribir desde aquí.
+     *
+     * Las fuentes de la biblioteca común son de todos y de nadie: las
+     * reglas rechazan el guardado. Sin esta marca el botón invitaba a leer
+     * la portada —gastando la llamada al modelo— para chocar después.
+     */
+    editable: boolean;
 }
 
 /**
@@ -32,13 +41,17 @@ export function usePaperBibliography(paper: ExegeticalPaper | null | undefined):
 
     return useMemo(() => {
         if (!paper) return [];
-        const byId = new Map(resources.map(r => [r.id, r as { bibliography?: BibliographicData | null }]));
+        const byId = new Map(resources.map(r => [r.id, r as {
+            bibliography?: BibliographicData | null;
+            userId?: string;
+        }]));
 
         return paper.sources
             .filter(s => isCitableSourceType(s.sourceType))
             .map(s => {
                 const resourceId = s.sourceLibraryResourceId ?? s.corpusId;
-                const data = byId.get(resourceId)?.bibliography ?? null;
+                const resource = byId.get(resourceId);
+                const data = resource?.bibliography ?? null;
                 return {
                     sourceId: s.id,
                     resourceId,
@@ -46,6 +59,7 @@ export function usePaperBibliography(paper: ExegeticalPaper | null | undefined):
                     displayLabel: s.displayLabel,
                     data,
                     missing: missingBibliographyFields(data),
+                    editable: resource?.userId !== SYSTEM_SOURCE_OWNER_ID,
                 };
             });
     }, [paper, resources]);
