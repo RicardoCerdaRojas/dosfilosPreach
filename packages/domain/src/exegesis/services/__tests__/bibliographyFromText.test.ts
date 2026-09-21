@@ -318,6 +318,21 @@ describe('isbnsIn, casos del mundo real', () => {
     });
 });
 
+describe('una ciudad sin editorial no es un pie de imprenta', () => {
+    it('la portadilla que trae la cátedra del autor no da ciudad', () => {
+        // Robertson: «Professor … Southern Baptist Theological Seminary,
+        // Louisville, Ky.». La entrada salía con «Louisville, 1919»
+        // impreso, que se lee como pie de imprenta y no lo es.
+        const { data, discarded } = keepOnlyWhatIsWritten(
+            { city: 'Louisville', year: '1919' },
+            '© 1919\nProfessor of Interpretation, Southern Baptist Theological Seminary, Louisville, Ky.',
+        );
+        expect(data.city).toBeUndefined();
+        expect(data.year).toBe('1919');
+        expect(discarded).toContain('city');
+    });
+});
+
 describe('creditsRegionOf', () => {
     it('devuelve vacío cuando el ejemplar no tiene página de créditos', () => {
         expect(creditsRegionOf('Lexicón Hebreo-Arameo-Español\nא Alef…')).toBe('');
@@ -659,6 +674,63 @@ describe('cuál hoja es la legal', () => {
         const libro = porHojas('Comentario', agradecimientos, '© 2011 Editorial Portavoz\nGrand Rapids, Michigan');
         const ajena = keepOnlyWhatIsWritten({ city: 'Minneapolis', publisher: 'Augsburg', year: '1984' }, libro);
         expect(ajena.data).toEqual({});
+    });
+
+    it.each([
+        ['El texto bíblico ha sido tomado de la Reina-Valera 1960.'],
+        ['Ningún fragmento de esta obra puede ser reproducido sin permiso.'],
+        ['Agradecemos a los traductores su trabajo.'],
+    ])('la página legal que además dice «%s» se conserva', (linea) => {
+        // Esas fórmulas van en la página legal de casi todo libro
+        // evangélico en español. Descalificar por la frase, a secas,
+        // tiraba el pie de imprenta entero.
+        const libro = porHojas(
+            'Comentario',
+            `© 2011 Editorial Portavoz, Grand Rapids, Michigan\n${linea}`,
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'Grand Rapids', publisher: 'Editorial Portavoz', year: '2011' },
+            libro,
+        );
+        expect(data.publisher).toBe('Editorial Portavoz');
+    });
+
+    it('la página legal cuya propia línea de derechos no lleva el símbolo se conserva', () => {
+        // Salido del ejemplar real de Varner: dice «2010 William Varner.
+        // All Rights Reserved» sin ©, y el primer © de la hoja es el de
+        // la versión bíblica citada, más abajo. Comparar solo contra ese
+        // © tiraba la página legal entera.
+        const legal = 'THE BOOK OF JAMES—A NEW PERSPECTIVE\n2010 William Varner\nAll Rights Reserved\n'
+            + 'No part of this publication may be reproduced. '.repeat(6)
+            + '\nPublished by Kress Biblical Resources, The Woodlands, TX\n'
+            + 'Scripture taken from the NEW AMERICAN STANDARD BIBLE, © Copyright 1995 by The Lockman Foundation.\n'
+            + 'ISBN 978-1-934952-12-2';
+        const libro = porHojas('The Book of James', legal, HOJA_DE_PREFACIO);
+        const { data } = keepOnlyWhatIsWritten(
+            { city: 'The Woodlands', publisher: 'Kress Biblical Resources', year: '2010' },
+            libro,
+        );
+        expect(data.publisher).toBe('Kress Biblical Resources');
+    });
+
+    it('la hoja de permisos que lista cuatro versiones tampoco es la página legal', () => {
+        // Mide más de 400 letras, así que una compuerta de largo la
+        // dejaba entrar. Lo que la delata es que ABRE con el permiso.
+        const permisos = [
+            'Las citas NVI son de la Nueva Versión Internacional, © 1999 por Biblica. Usada con permiso.',
+            'Las citas LBLA son de La Biblia de las Américas, © 1986 The Lockman Foundation, La Habra, California.',
+            'Las citas RVR son de la Reina-Valera 1960, © Sociedades Bíblicas Unidas.',
+            'Las citas DHH son de Dios Habla Hoy, © Sociedades Bíblicas Unidas, todas usadas con permiso.',
+        ].join('\n');
+        const libro = porHojas('Comentario', permisos, '© 2011 Editorial Portavoz\nGrand Rapids, Michigan');
+        const ajena = keepOnlyWhatIsWritten(
+            { city: 'La Habra', publisher: 'The Lockman Foundation', year: '1986' },
+            libro,
+        );
+        expect(ajena.data).toEqual({});
+        const propia = keepOnlyWhatIsWritten({ publisher: 'Editorial Portavoz', year: '2011' }, libro);
+        expect(propia.data.publisher).toBe('Editorial Portavoz');
     });
 
     it('la línea de índice que nombra el copyright sigue perdiendo', () => {

@@ -336,14 +336,14 @@ const CATALOGO_DE_OTROS_LIBROS = [
 /**
  * La nota de permisos de la versión bíblica citada.
  *
- * Se trata aparte del catálogo: esta SÍ vive dentro de la página legal
- * estadounidense, así que solo descalifica a la hoja que no es más que
- * eso. Un catálogo, en cambio, descalifica mida lo que mida —una página
- * legal nunca dice «otros títulos de esta colección»— y su largo crece
- * con el número de títulos, que es justo la variable que no distingue.
+ * Se trata aparte del catálogo: esta SÍ vive dentro de la página legal,
+ * así que solo descalifica cuando la hoja ABRE con ella. Un catálogo, en
+ * cambio, descalifica mida lo que mida —una página legal nunca dice
+ * «otros títulos de esta colección»—.
  */
 const PERMISOS_DE_OTROS_LIBROS = [
-    /citas biblicas/, /scripture quotations/, /usada con permiso/, /used by permission/,
+    /citas biblicas/, /las citas/, /scripture quotations/, /scripture taken from/,
+    /usada con permiso/, /used by permission/,
     // Y la hoja de epígrafe o de agradecimientos, que da las gracias por
     // el permiso de citar otra obra y trae su editorial, su ciudad y su
     // año. Es corta, así que reunía la misma forma que la página legal
@@ -496,8 +496,7 @@ function paginaLegalDe(frente: ReadonlyArray<Hoja>): string {
         // enteras. Una seña propia es prueba más fuerte que una palabra.
         if (!propia && hoja.esCuerpo) return;
         if (!catalogada && CATALOGO_DE_OTROS_LIBROS.some(sena => sena.test(plegada))) return;
-        const soloEso = hoja.texto.length <= HOJA_DE_SOLO_OTROS_LIBROS;
-        if (!catalogada && soloEso && PERMISOS_DE_OTROS_LIBROS.some(sena => sena.test(plegada))) return;
+        if (!catalogada && abreConUnPermiso(plegada)) return;
         // Sin seña propia, una hoja vale como página legal de dos
         // maneras: es escueta y trae un año —la hispanoamericana mínima—,
         // o reúne varias señas y un año. Lo segundo rescata la página
@@ -535,6 +534,37 @@ function paginaLegalDe(frente: ReadonlyArray<Hoja>): string {
     const anterior = esPortadilla ? previa!.texto : '';
     return `${anterior}\n${frente[mejor]!.texto}`.trim().slice(0, MAX_LETRAS_DE_CREDITOS);
 }
+
+/**
+ * ¿La hoja ABRE con una fórmula de permiso?
+ *
+ * Es la comparación que separa las dos familias sin recurrir al largo.
+ * Una nota de permisos EMPIEZA por la fórmula, porque de eso trata. Una
+ * página legal la menciona DESPUÉS de su propia imprenta: primero dice
+ * quién publica el libro y luego de dónde salen las citas bíblicas.
+ *
+ * Medir por largo fallaba en los dos sentidos: dejaba entrar la hoja de
+ * permisos que lista cuatro versiones y tiraba la página legal
+ * hispanoamericana que dice «el texto bíblico ha sido tomado de la
+ * Reina-Valera 1960» o «ningún fragmento puede ser reproducido».
+ */
+function abreConUnPermiso(plegada: string): boolean {
+    const copyright = plegada.search(/©|copyright/);
+    // La fórmula tiene que estar en el ARRANQUE de la hoja y antes del
+    // copyright, si lo hay. Las dos condiciones hacen falta: mirar solo
+    // el copyright fallaba con la página legal cuya propia línea de
+    // derechos no lleva el símbolo —«2010 William Varner. All Rights
+    // Reserved»—, y mirar solo el arranque fallaba con la página legal
+    // que nombra las citas en su segunda línea.
+    const limite = copyright >= 0 ? Math.min(copyright, ARRANQUE_DE_LA_HOJA) : ARRANQUE_DE_LA_HOJA;
+    return PERMISOS_DE_OTROS_LIBROS.some(sena => {
+        const donde = plegada.search(sena);
+        return donde >= 0 && donde < limite;
+    });
+}
+
+/** Lo que se lee de un vistazo al empezar una hoja. */
+const ARRANQUE_DE_LA_HOJA = 200;
 
 /** Un año de imprenta suelto en la hoja. */
 const ANIO_SUELTO = /\b(1[89]\d{2}|20[0-4]\d)\b/;
@@ -637,6 +667,15 @@ export function keepOnlyWhatIsWritten(
     if (ordenado) {
         if (esElMismoNombreOrdenado(ordenado, data.author ?? '')) data.authorSorted = ordenado;
         else discarded.push('authorSorted');
+    }
+
+    // Una ciudad sin editorial no es un pie de imprenta. En Turabian el
+    // pie es «Ciudad: Editorial, Año», y una ciudad sola es una
+    // dirección: la portadilla de Robertson trae «Louisville, Ky.» porque
+    // ahí enseñaba, y la entrada salía con «Louisville, 1919» impreso.
+    if (data.city && !data.publisher) {
+        delete data.city;
+        if (!discarded.includes('city')) discarded.push('city');
     }
 
     const corto = (raw.shortTitle ?? '').trim();
