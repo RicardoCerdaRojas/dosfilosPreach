@@ -465,6 +465,145 @@ describe('readableRegionsOf, recortando por hojas', () => {
     });
 });
 
+describe('un libro de dos autores', () => {
+    // La maqueta real de Arnold y Choi, hoja por hoja: la cubierta con el
+    // nombre pegado por el extractor, la hoja en blanco, la contracubierta,
+    // la portadilla con los nombres bien escritos y la página legal.
+    const ARNOLD = porHojas(
+        'BILLT. ARNOLD\nJOHN H. CHOI\nA GUIDE TOD\nBiblical Hebrew Syntax\nCAMBRIDGE',
+        'This page intentionally left blank',
+        'A Guide to Biblical Hebrew Syntax\nA Guide to Biblical Hebrew Syntax introduces and abridges the syntactical features of the original language.',
+        'A Guide to Biblical Hebrew Syntax\nBILL T. ARNOLD\nAsbury Theological Seminary\nJOHN H. CHOI\nAsbury Theological Seminary',
+        'CAMBRIDGE UNIVERSITY PRESS\nCambridge, New York, Melbourne, Madrid\n'
+        + 'Cambridge University Press 2003\nThis publication is in copyright.\n'
+        + 'All rights reserved\nISBN-13 978-0-521-82609-9',
+        'Contents\nPreface\nINTRODUCTION',
+    );
+
+    it('acepta a los dos aunque el libro no los imprima juntos', () => {
+        // Medido sobre el ejemplar real: «Bill T. Arnold and John H. Choi»
+        // no aparece en ninguna parte del libro —la portadilla mete el
+        // seminario de cada uno en medio—, así que el campo se descartaba
+        // entero y la ficha salía SIN AUTOR.
+        const { data } = keepOnlyWhatIsWritten({ author: 'Bill T. Arnold and John H. Choi' }, ARNOLD);
+        expect(data.author).toBe('Bill T. Arnold and John H. Choi');
+    });
+
+    it('y también con «y» o con coma, que es como se escribe en español', () => {
+        for (const autor of ['Bill T. Arnold y John H. Choi', 'Bill T. Arnold, John H. Choi']) {
+            expect(keepOnlyWhatIsWritten({ author: autor }, ARNOLD).data.author, autor).toBe(autor);
+        }
+    });
+
+    it('pero no acepta a un tercero que el libro no nombra', () => {
+        // La puerta se abre para unir nombres impresos, no para agregar uno.
+        const { data, discarded } = keepOnlyWhatIsWritten(
+            { author: 'Bill T. Arnold and Walter Brueggemann' },
+            ARNOLD,
+        );
+        expect(data.author).toBeUndefined();
+        expect(discarded).toContain('author');
+    });
+
+    it('no toma por autor al editor general de la colección', () => {
+        // Una portada reúne nombres propios completos que no son el
+        // autor. Unir dos de ellos componía un autor entero y falso.
+        const conColeccion = porHojas(
+            'THE NEW INTERNATIONAL COMMENTARY ON THE OLD TESTAMENT\nGeneral Editor\nR. K. Harrison',
+            'The Book of Genesis\nGordon J. Wenham',
+            '© 1990 Eerdmans\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Gordon J. Wenham and R. K. Harrison' },
+            conColeccion,
+        );
+        expect(data.author).toBeUndefined();
+    });
+
+    it('no toma por autor al homenajeado de un festschrift', () => {
+        const festschrift = porHojas(
+            'ISRAEL\'S PROPHETS AND ISRAEL\'S PAST\nEssays in honor of John H. Hayes',
+            'Edited by Brad E. Kelle and Megan Bishop Moore',
+            '© 2006 T&T Clark\nAll rights reserved\nNew York',
+            HOJA_DE_PREFACIO,
+        );
+        for (const autor of ['John H. Hayes and Brad E. Kelle', 'Brad E. Kelle and Megan Bishop Moore']) {
+            expect(keepOnlyWhatIsWritten({ author: autor }, festschrift).data.author, autor).toBeUndefined();
+        }
+    });
+
+    it('no toma por autor a quien elogia el libro en la contracubierta', () => {
+        const conElogios = porHojas(
+            'A Commentary on the Psalms\nAllen P. Ross',
+            '«Un logro monumental.» —Bruce K. Waltke, Regent College',
+            '© 2011 Kregel\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Allen P. Ross and Bruce K. Waltke' },
+            conElogios,
+        );
+        expect(data.author).toBeUndefined();
+    });
+
+    it('acepta el sufijo de linaje sin partirlo en dos', () => {
+        // «Walter C. Kaiser, Jr. and Moisés Silva» se partía en tres y
+        // «Jr.» no es un nombre, así que el libro se quedaba sin autor.
+        const conSufijo = porHojas(
+            'An Introduction to Biblical Hermeneutics',
+            'Walter C. Kaiser, Jr.\nGordon-Conwell\nMoisés Silva\nWestmont College',
+            '© 1994 Zondervan\nAll rights reserved\nGrand Rapids',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Walter C. Kaiser, Jr. and Moisés Silva' },
+            conSufijo,
+        );
+        expect(data.author).toBe('Walter C. Kaiser, Jr. and Moisés Silva');
+    });
+
+    it('la raya entre el título y el autor no descarta al autor', () => {
+        // Es una portadilla corriente, y la regla ancha de la raya la
+        // confundía con la firma de un elogio: el libro se quedaba sin
+        // autor en silencio. Lo que las separa es la puntuación de
+        // cierre, que una firma lleva delante y un título no.
+        const conRaya = porHojas(
+            'Comentario a los Salmos — Allen P. Ross',
+            '© 2011 Kregel\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        expect(keepOnlyWhatIsWritten({ author: 'Allen P. Ross' }, conRaya).data.author)
+            .toBe('Allen P. Ross');
+    });
+
+    it('CANJE A PROPÓSITO: una obra cuyo único crédito es «Edited by» se queda sin autor', () => {
+        // Un diccionario o una Biblia de estudio no tienen autor, tienen
+        // editor. Dejar el hueco es lo correcto —Turabian encabeza esas
+        // obras por el editor o por el título—, y el campo `editor` no
+        // pasa por este filtro, así que el dato no se pierde si el modelo
+        // lo pone donde corresponde.
+        const diccionario = porHojas(
+            'NEW INTERNATIONAL DICTIONARY OF OLD TESTAMENT THEOLOGY\nEdited by Willem A. VanGemeren',
+            '© 1997 Zondervan\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Willem A. VanGemeren', editor: 'Willem A. VanGemeren' },
+            diccionario,
+        );
+        expect(data.author).toBeUndefined();
+        expect(data.editor).toBe('Willem A. VanGemeren');
+    });
+
+    it('ni acepta una tira de palabras sueltas', () => {
+        // Cada parte tiene que ser un nombre de dos palabras; si no,
+        // cualquier palabra del libro serviría de autor.
+        const { data } = keepOnlyWhatIsWritten({ author: 'Arnold and Choi' }, ARNOLD);
+        expect(data.author).toBeUndefined();
+    });
+});
+
 describe('la colección y la edición valen en cualquiera de los dos tramos', () => {
     it('la colección impresa solo en el bloque de catalogación se acepta', () => {
         const libro = porHojas(

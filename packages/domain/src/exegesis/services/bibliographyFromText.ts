@@ -627,9 +627,10 @@ function porLetras(text: string): ReadableRegions {
 /**
  * Deja de la propuesta solo lo que el texto respalda.
  *
- * `authorSorted` y `shortTitle` son los dos casos derivados y se aceptan
- * por otra vía: el primero reordena el nombre y el segundo recorta el
- * título, así que ninguno de los dos aparece literal en la portada.
+ * Tres campos se aceptan por otra vía, porque ninguno aparece literal en
+ * el libro: `authorSorted` reordena el nombre, `shortTitle` recorta el
+ * título, y un `author` de dos autores los une con una conjunción que el
+ * libro no imprime —cada nombre sí está impreso, la unión no—.
  */
 export function keepOnlyWhatIsWritten(
     raw: BibliographicData | null | undefined,
@@ -651,7 +652,14 @@ export function keepOnlyWhatIsWritten(
         const valor = (raw[campo] ?? '').toString().trim();
         if (!valor) return;
         if (valor.length > LARGO_MAXIMO_DE_CAMPO) { discarded.push(campo); return; }
-        if (!donde.includes(comparable(valor))) { discarded.push(campo); return; }
+        // El autor no se comprueba como los demás campos: además de estar
+        // escrito, tiene que estar escrito COMO AUTOR. «Edited by Brad E.
+        // Kelle and Megan Bishop Moore» está impreso tal cual, y son los
+        // editores del homenaje, no quienes escribieron el libro.
+        const escrito = campo === 'author'
+            ? (esUnAutorImpreso(valor, donde, 1) || cadaAutorEstaEscrito(valor, donde))
+            : donde.includes(comparable(valor));
+        if (!escrito) { discarded.push(campo); return; }
         if (campo === 'year' && !anioCreible(valor, anioMaximo)) { discarded.push(campo); return; }
         data[campo] = valor;
     };
@@ -751,6 +759,96 @@ function esElMismoNombreOrdenado(ordenado: string, autor: string): boolean {
 
 /** Dos autores en un solo campo: «X and Y», «X y Y», «X & Y». */
 const SON_VARIOS_AUTORES = /\s(and|y|e|&)\s/;
+
+/**
+ * ¿Están escritos TODOS los autores, aunque no estén escritos juntos?
+ *
+ * Un libro de dos autores nunca los imprime pegados: la portadilla de
+ * Arnold y Choi pone un nombre, debajo su seminario, y luego el otro.
+ * Así que «Bill T. Arnold and John H. Choi» no aparece literalmente en
+ * ninguna parte y el campo se descartaba entero: el libro salía SIN
+ * AUTOR, que es el peor hueco de una ficha.
+ *
+ * Lo que se acepta no es la conjunción sino los nombres: cada uno tiene
+ * que estar impreso y tener al menos dos palabras. Unirlos con una «y»
+ * es la forma de escribirlos en Turabian, no un dato nuevo.
+ */
+function cadaAutorEstaEscrito(valor: string, donde: string): boolean {
+    const partes = valor
+        .split(CONECTORES_DE_AUTORES)
+        .map(p => p.trim().replace(/[,;]+$/, '').trim())
+        .filter(Boolean);
+    if (partes.length < 2) return false;
+    return partes.every(p => esUnAutorImpreso(p, donde, PALABRAS_DE_UN_NOMBRE));
+}
+
+/**
+ * ¿Este nombre está impreso COMO AUTOR, y no como otra cosa?
+ *
+ * Una portada reúne muchos nombres propios completos que no son el
+ * autor: el editor general de la colección, el homenajeado de un
+ * festschrift, quien firma el prólogo, quien elogia el libro en la
+ * contracubierta. Unir dos de ellos componía un autor entero, verosímil
+ * y falso, que es justo lo que este módulo existe para impedir.
+ *
+ * Lo que los delata no es la distancia entre los nombres —medido: el
+ * homenajeado de un festschrift está más cerca del autor que el segundo
+ * autor de Arnold— sino lo que va escrito JUSTO ANTES. Basta con que el
+ * nombre aparezca limpio una vez.
+ */
+function esUnAutorImpreso(parte: string, donde: string, palabrasMinimas: number): boolean {
+    if (parte.split(/\s+/).length < palabrasMinimas) return false;
+    const aguja = comparable(parte);
+    if (!aguja) return false;
+    let desde = donde.indexOf(aguja);
+    while (desde >= 0) {
+        const antes = donde.slice(Math.max(0, desde - LETRAS_DE_CONTEXTO), desde);
+        if (!ATRIBUYE_A_OTRO.test(antes) && !FIRMA_DE_ELOGIO.test(antes)) return true;
+        desde = donde.indexOf(aguja, desde + 1);
+    }
+    return false;
+}
+
+/** Lo que antecede a un nombre que NO es el autor del libro. */
+const ATRIBUYE_A_OTRO = /edited by|editado por|general editor|editor general|series editor|in honor of|en honor de|homenaje a|foreword by|prologo de|prefacio de|introduccion de|traducido por|translated by/;
+
+/**
+ * La raya que firma un elogio: «…monumental.» —Bruce K. Waltke.
+ *
+ * Pide puntuación de cierre delante, que es lo que separa las dos rayas
+ * de una portada: la de una firma va detrás de un punto o de unas
+ * comillas que cierran, y la de un título va detrás de una letra.
+ * «Comentario a los Salmos — Allen P. Ross» es una portadilla corriente
+ * y se descartaba entera, dejando al libro sin autor en silencio.
+ */
+const FIRMA_DE_ELOGIO = /[.!?»”"'\u2019]\s*[—–]\s*$/;
+
+/** Cuánto se mira hacia atrás buscando esa atribución. */
+const LETRAS_DE_CONTEXTO = 40;
+
+/**
+ * «X and Y», «X y Y», «X & Y», «X, Y».
+ *
+ * La coma no parte delante de un sufijo de linaje: «Walter C. Kaiser,
+ * Jr. and Moisés Silva» se partía en tres y «Jr.» no es un nombre, así
+ * que el libro se quedaba sin autor.
+ *
+ * Límite conocido y a propósito: «José Ortega y Gasset y Juan Pérez» se
+ * parte por los dos «y» y el libro queda sin autor. Hace falta un
+ * apellido compuesto con «y» MÁS un segundo autor para que muerda, el
+ * nombre solo entra sin problema por la vía literal, y cualquier regla
+ * que intente distinguir el «y» de apellido del «y» de conjunción es
+ * adivinanza.
+ */
+const CONECTORES_DE_AUTORES = /\s+(?:and|y|e|&)\s+|,\s+(?![JjSs]r\b|I{2,3}\b|IV\b)(?=\p{Lu})/u;
+
+/**
+ * Menos de esto no es un nombre: es una palabra que casaría con
+ * cualquier cosa. De paso rechaza la forma invertida —«Ross, Allen P.»,
+ * cuyo primer trozo es una palabra sola—, que no es un caso de dos
+ * autores y no debe entrar por aquí.
+ */
+const PALABRAS_DE_UN_NOMBRE = 2;
 
 /** Minúsculas, sin acentos y con los espacios colapsados. */
 function comparable(text: string): string {

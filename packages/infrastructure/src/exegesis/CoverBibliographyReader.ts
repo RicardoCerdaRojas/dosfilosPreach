@@ -112,7 +112,7 @@ const pedirleAlModelo: EjecutarPrompt = (prompt, modelName) => withGeminiRetry(
 const MINIMO_PARA_INTENTAR = 200;
 
 /**
- * LA REGLA 6 ES CARGA ESTRUCTURAL, NO UN ADORNO.
+ * LA REGLA 7 ES CARGA ESTRUCTURAL, NO UN ADORNO.
  *
  * Hay dos datos ajenos que viven DENTRO de la página legal propia y que
  * ningún recorte por hojas puede separar, porque están impresos justo
@@ -136,14 +136,28 @@ const INSTRUCCION = [
     '1. Copia. No completes de memoria. Si el fragmento no dice la ciudad,',
     '   la editorial o el año, deja el campo vacío. Un campo vacío es una',
     '   respuesta correcta; un dato que no está impreso es un error.',
-    '2. No traduzcas ni normalices: copia tal como está escrito, con sus',
-    '   acentos y su idioma.',
+    '2. No traduzcas: copia con sus acentos y en su idioma. Lo único que se',
+    '   recompone es la caja: el título y el autor van con mayúscula',
+    '   inicial, no en versalitas ni todo en mayúsculas, aunque el libro los',
+    '   imprima así en su cubierta.',
     '3. La ciudad es solo la ciudad («Grand Rapids», no «Grand Rapids,',
-    '   Michigan 49501»), y tiene que aparecer así en el fragmento.',
-    '4. El año es el del copyright o el de la edición que se tiene delante.',
-    '   Si hay varios, el de esta edición.',
+    '   Michigan 49501»), y tiene que aparecer así en el fragmento. Cuando',
+    '   la editorial lista varias —«Cambridge, New York, Melbourne,',
+    '   Madrid…»—, la del pie de imprenta es LA PRIMERA.',
+    '4. El año es el de la edición que se tiene delante. Si la página lista',
+    '   varios copyright —«© 1981, 1993, 2003, 2014»—, el que se cita es el',
+    '   de ESTA edición, o sea el último. Y si distingue el copyright de una',
+    '   reimpresión o de un «first published in print format», se cita el',
+    '   del copyright y no el de la impresión.',
     '5. No inventes el ISBN: ese campo no existe aquí.',
-    '6. La página legal puede nombrar OTROS libros, y esos no son este:',
+    '6. Si el libro tiene dos o más autores, escríbelos TODOS en el campo',
+    '   del autor, cada nombre tal como está impreso y unidos como los une',
+    '   el propio libro: «and» en inglés, «y» en español. Los libros no los',
+    '   imprimen juntos: van uno debajo del otro, con el seminario o la',
+    '   universidad de cada uno en medio. Y el autor es quien ESCRIBIÓ el',
+    '   libro: ni el editor general de la colección, ni el homenajeado, ni',
+    '   quien firma el prólogo, ni quien lo elogia en la contracubierta.',
+    '7. La página legal puede nombrar OTROS libros, y esos no son este:',
     '   el bloque de permisos de la versión bíblica citada («las citas',
     '   bíblicas son de…», «Copyright © … por Bíblica») y el «título',
     '   original» de una traducción, con la imprenta del original. El pie',
