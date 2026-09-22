@@ -465,42 +465,51 @@ describe('readableRegionsOf, recortando por hojas', () => {
     });
 });
 
-describe('el autor bien escrito vive en la portadilla, no en la cubierta', () => {
-    it('acepta el nombre que solo la portadilla imprime con sus espacios', () => {
-        // Medido sobre el ejemplar real de Arnold: la cubierta dice
-        // «BILLT. ARNOLD» porque el extractor pegó las dos palabras, y el
-        // nombre bien escrito está en la portadilla, que viaja con la
-        // página legal. Acotar el autor a la cubierta lo dejaba vacío.
-        const libro = porHojas(
-            'BILLT. ARNOLD\nJOHN H. CHOI\nA GUIDE TOD\nBiblical Hebrew Syntax\nCAMBRIDGE',
-            'A Guide to Biblical Hebrew Syntax\nBILL T. ARNOLD\nAsbury Theological Seminary\nJOHN H. CHOI',
-            'CAMBRIDGE UNIVERSITY PRESS\nCambridge, New York, Melbourne, Madrid\n'
-            + 'Cambridge University Press 2003\nThis publication is in copyright.\n'
-            + 'All rights reserved\nISBN-13 978-0-521-82609-9',
-            HOJA_DE_PREFACIO,
-        );
-        const { data } = keepOnlyWhatIsWritten({
-            author: 'Bill T. Arnold',
-            title: 'A Guide to Biblical Hebrew Syntax',
-            city: 'Cambridge',
-            publisher: 'Cambridge University Press',
-            year: '2003',
-        }, libro);
-        expect(data.author).toBe('Bill T. Arnold');
-        expect(data.title).toBe('A Guide to Biblical Hebrew Syntax');
-        expect(data.city).toBe('Cambridge');
-        expect(data.year).toBe('2003');
+describe('un libro de dos autores', () => {
+    // La maqueta real de Arnold y Choi, hoja por hoja: la cubierta con el
+    // nombre pegado por el extractor, la hoja en blanco, la contracubierta,
+    // la portadilla con los nombres bien escritos y la página legal.
+    const ARNOLD = porHojas(
+        'BILLT. ARNOLD\nJOHN H. CHOI\nA GUIDE TOD\nBiblical Hebrew Syntax\nCAMBRIDGE',
+        'This page intentionally left blank',
+        'A Guide to Biblical Hebrew Syntax\nA Guide to Biblical Hebrew Syntax introduces and abridges the syntactical features of the original language.',
+        'A Guide to Biblical Hebrew Syntax\nBILL T. ARNOLD\nAsbury Theological Seminary\nJOHN H. CHOI\nAsbury Theological Seminary',
+        'CAMBRIDGE UNIVERSITY PRESS\nCambridge, New York, Melbourne, Madrid\n'
+        + 'Cambridge University Press 2003\nThis publication is in copyright.\n'
+        + 'All rights reserved\nISBN-13 978-0-521-82609-9',
+        'Contents\nPreface\nINTRODUCTION',
+    );
+
+    it('acepta a los dos aunque el libro no los imprima juntos', () => {
+        // Medido sobre el ejemplar real: «Bill T. Arnold and John H. Choi»
+        // no aparece en ninguna parte del libro —la portadilla mete el
+        // seminario de cada uno en medio—, así que el campo se descartaba
+        // entero y la ficha salía SIN AUTOR.
+        const { data } = keepOnlyWhatIsWritten({ author: 'Bill T. Arnold and John H. Choi' }, ARNOLD);
+        expect(data.author).toBe('Bill T. Arnold and John H. Choi');
     });
 
-    it('y el prefacio sigue sin poder aportar autor ni título', () => {
-        // El reparto de tramos se ensanchó; lo que protege no es el
-        // reparto sino que el prefacio no entre en ninguno de los dos.
-        const libro = porHojas('Comentario', HOJA_LEGAL, HOJA_DE_PREFACIO);
-        const { data } = keepOnlyWhatIsWritten(
-            { author: 'Walter Brueggemann', title: 'The Message of the Psalms' },
-            libro,
+    it('y también con «y» o con coma, que es como se escribe en español', () => {
+        for (const autor of ['Bill T. Arnold y John H. Choi', 'Bill T. Arnold, John H. Choi']) {
+            expect(keepOnlyWhatIsWritten({ author: autor }, ARNOLD).data.author, autor).toBe(autor);
+        }
+    });
+
+    it('pero no acepta a un tercero que el libro no nombra', () => {
+        // La puerta se abre para unir nombres impresos, no para agregar uno.
+        const { data, discarded } = keepOnlyWhatIsWritten(
+            { author: 'Bill T. Arnold and Walter Brueggemann' },
+            ARNOLD,
         );
-        expect(data).toEqual({});
+        expect(data.author).toBeUndefined();
+        expect(discarded).toContain('author');
+    });
+
+    it('ni acepta una tira de palabras sueltas', () => {
+        // Cada parte tiene que ser un nombre de dos palabras; si no,
+        // cualquier palabra del libro serviría de autor.
+        const { data } = keepOnlyWhatIsWritten({ author: 'Arnold and Choi' }, ARNOLD);
+        expect(data.author).toBeUndefined();
     });
 });
 

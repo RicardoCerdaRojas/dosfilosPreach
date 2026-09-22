@@ -205,6 +205,17 @@ export function proposeIsbn(frontMatter: string): string | null {
 }
 
 /**
+ * Campos que se buscan en la PORTADA, o sea al frente del arranque.
+ *
+ * El autor y el título del libro están impresos en sus primeras hojas.
+ * Un libro citado en el prefacio también trae autor y título, y por eso
+ * no vale mirar el arranque entero.
+ */
+const CAMPOS_DE_PORTADA = [
+    'author', 'title', 'subtitle', 'volume', 'volumeTitle',
+] as const;
+
+/**
  * Campos que se buscan SOLO en la página de créditos.
  *
  * La ciudad, la editorial y el año están impresos ahí y en ningún otro
@@ -216,23 +227,12 @@ const CAMPOS_DEL_PIE_DE_IMPRENTA = ['city', 'publisher', 'year'] as const;
 /**
  * Campos que valen en cualquiera de los dos tramos.
  *
- * La cubierta, la portadilla y la página legal son las tres del propio
- * ejemplar, y cada casa reparte los datos entre ellas a su manera: el
- * autor puede estar bien escrito solo en la portadilla, la colección
- * solo en el bloque de catalogación, la edición en una o en otra. El
- * autor y el título estuvieron acotados a la cubierta y eso dejó a
- * Arnold sin autor: la suya dice «BILLT. ARNOLD» porque el extractor
- * pegó las dos palabras. Acotarlos no protegía de nada, porque lo que
- * mantiene fuera a los libros ajenos no es este reparto sino que el
- * prefacio no entre en ninguno de los dos tramos.
- *
- * Lo que NO vale en cualquier tramo es el pie de imprenta, que se cita
- * de la página legal y en ningún otro sitio.
+ * La colección se imprime en la portadilla Y en el bloque de
+ * catalogación; la edición, el traductor y el editor, en una o en otra
+ * según la casa. Y ninguno de los cuatro es un dato que las citas de
+ * otros libros falsifiquen: nadie copia el «traducido por» ajeno.
  */
-const CAMPOS_DE_CUALQUIER_TRAMO = [
-    'author', 'title', 'subtitle', 'volume', 'volumeTitle',
-    'series', 'edition', 'translator', 'editor',
-] as const;
+const CAMPOS_DE_CUALQUIER_TRAMO = ['series', 'edition', 'translator', 'editor'] as const;
 
 /**
  * Los dos únicos tramos que se le muestran al modelo.
@@ -651,11 +651,14 @@ export function keepOnlyWhatIsWritten(
         const valor = (raw[campo] ?? '').toString().trim();
         if (!valor) return;
         if (valor.length > LARGO_MAXIMO_DE_CAMPO) { discarded.push(campo); return; }
-        if (!donde.includes(comparable(valor))) { discarded.push(campo); return; }
+        const escrito = donde.includes(comparable(valor))
+            || (campo === 'author' && cadaAutorEstaEscrito(valor, donde));
+        if (!escrito) { discarded.push(campo); return; }
         if (campo === 'year' && !anioCreible(valor, anioMaximo)) { discarded.push(campo); return; }
         data[campo] = valor;
     };
 
+    for (const campo of CAMPOS_DE_PORTADA) aceptar(campo, portada);
     // El separador no puede formar palabra: pegados con un espacio, un
     // valor podría casar a caballo entre el final de uno y el principio
     // del otro.
@@ -750,6 +753,32 @@ function esElMismoNombreOrdenado(ordenado: string, autor: string): boolean {
 
 /** Dos autores en un solo campo: «X and Y», «X y Y», «X & Y». */
 const SON_VARIOS_AUTORES = /\s(and|y|e|&)\s/;
+
+/**
+ * ¿Están escritos TODOS los autores, aunque no estén escritos juntos?
+ *
+ * Un libro de dos autores nunca los imprime pegados: la portadilla de
+ * Arnold y Choi pone un nombre, debajo su seminario, y luego el otro.
+ * Así que «Bill T. Arnold and John H. Choi» no aparece literalmente en
+ * ninguna parte y el campo se descartaba entero: el libro salía SIN
+ * AUTOR, que es el peor hueco de una ficha.
+ *
+ * Lo que se acepta no es la conjunción sino los nombres: cada uno tiene
+ * que estar impreso y tener al menos dos palabras. Unirlos con una «y»
+ * es la forma de escribirlos en Turabian, no un dato nuevo.
+ */
+function cadaAutorEstaEscrito(valor: string, donde: string): boolean {
+    const partes = valor.split(CONECTORES_DE_AUTORES).map(p => p.trim()).filter(Boolean);
+    if (partes.length < 2) return false;
+    return partes.every(p => p.split(/\s+/).length >= PALABRAS_DE_UN_NOMBRE
+        && donde.includes(comparable(p)));
+}
+
+/** «X and Y», «X y Y», «X & Y», «X, Y». */
+const CONECTORES_DE_AUTORES = /\s+(?:and|y|e|&)\s+|,\s+(?=\p{Lu})/u;
+
+/** Menos de esto no es un nombre: es una palabra que casaría con cualquier cosa. */
+const PALABRAS_DE_UN_NOMBRE = 2;
 
 /** Minúsculas, sin acentos y con los espacios colapsados. */
 function comparable(text: string): string {
