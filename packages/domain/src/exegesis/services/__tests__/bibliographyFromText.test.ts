@@ -505,6 +505,64 @@ describe('un libro de dos autores', () => {
         expect(discarded).toContain('author');
     });
 
+    it('no toma por autor al editor general de la colección', () => {
+        // Una portada reúne nombres propios completos que no son el
+        // autor. Unir dos de ellos componía un autor entero y falso.
+        const conColeccion = porHojas(
+            'THE NEW INTERNATIONAL COMMENTARY ON THE OLD TESTAMENT\nGeneral Editor\nR. K. Harrison',
+            'The Book of Genesis\nGordon J. Wenham',
+            '© 1990 Eerdmans\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Gordon J. Wenham and R. K. Harrison' },
+            conColeccion,
+        );
+        expect(data.author).toBeUndefined();
+    });
+
+    it('no toma por autor al homenajeado de un festschrift', () => {
+        const festschrift = porHojas(
+            'ISRAEL\'S PROPHETS AND ISRAEL\'S PAST\nEssays in honor of John H. Hayes',
+            'Edited by Brad E. Kelle and Megan Bishop Moore',
+            '© 2006 T&T Clark\nAll rights reserved\nNew York',
+            HOJA_DE_PREFACIO,
+        );
+        for (const autor of ['John H. Hayes and Brad E. Kelle', 'Brad E. Kelle and Megan Bishop Moore']) {
+            expect(keepOnlyWhatIsWritten({ author: autor }, festschrift).data.author, autor).toBeUndefined();
+        }
+    });
+
+    it('no toma por autor a quien elogia el libro en la contracubierta', () => {
+        const conElogios = porHojas(
+            'A Commentary on the Psalms\nAllen P. Ross',
+            '«Un logro monumental.» —Bruce K. Waltke, Regent College',
+            '© 2011 Kregel\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Allen P. Ross and Bruce K. Waltke' },
+            conElogios,
+        );
+        expect(data.author).toBeUndefined();
+    });
+
+    it('acepta el sufijo de linaje sin partirlo en dos', () => {
+        // «Walter C. Kaiser, Jr. and Moisés Silva» se partía en tres y
+        // «Jr.» no es un nombre, así que el libro se quedaba sin autor.
+        const conSufijo = porHojas(
+            'An Introduction to Biblical Hermeneutics',
+            'Walter C. Kaiser, Jr.\nGordon-Conwell\nMoisés Silva\nWestmont College',
+            '© 1994 Zondervan\nAll rights reserved\nGrand Rapids',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Walter C. Kaiser, Jr. and Moisés Silva' },
+            conSufijo,
+        );
+        expect(data.author).toBe('Walter C. Kaiser, Jr. and Moisés Silva');
+    });
+
     it('ni acepta una tira de palabras sueltas', () => {
         // Cada parte tiene que ser un nombre de dos palabras; si no,
         // cualquier palabra del libro serviría de autor.
