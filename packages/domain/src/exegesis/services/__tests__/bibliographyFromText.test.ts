@@ -563,6 +563,39 @@ describe('un libro de dos autores', () => {
         expect(data.author).toBe('Walter C. Kaiser, Jr. and Moisés Silva');
     });
 
+    it('la raya entre el título y el autor no descarta al autor', () => {
+        // Es una portadilla corriente, y la regla ancha de la raya la
+        // confundía con la firma de un elogio: el libro se quedaba sin
+        // autor en silencio. Lo que las separa es la puntuación de
+        // cierre, que una firma lleva delante y un título no.
+        const conRaya = porHojas(
+            'Comentario a los Salmos — Allen P. Ross',
+            '© 2011 Kregel\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        expect(keepOnlyWhatIsWritten({ author: 'Allen P. Ross' }, conRaya).data.author)
+            .toBe('Allen P. Ross');
+    });
+
+    it('CANJE A PROPÓSITO: una obra cuyo único crédito es «Edited by» se queda sin autor', () => {
+        // Un diccionario o una Biblia de estudio no tienen autor, tienen
+        // editor. Dejar el hueco es lo correcto —Turabian encabeza esas
+        // obras por el editor o por el título—, y el campo `editor` no
+        // pasa por este filtro, así que el dato no se pierde si el modelo
+        // lo pone donde corresponde.
+        const diccionario = porHojas(
+            'NEW INTERNATIONAL DICTIONARY OF OLD TESTAMENT THEOLOGY\nEdited by Willem A. VanGemeren',
+            '© 1997 Zondervan\nAll rights reserved\nGrand Rapids, Michigan',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Willem A. VanGemeren', editor: 'Willem A. VanGemeren' },
+            diccionario,
+        );
+        expect(data.author).toBeUndefined();
+        expect(data.editor).toBe('Willem A. VanGemeren');
+    });
+
     it('ni acepta una tira de palabras sueltas', () => {
         // Cada parte tiene que ser un nombre de dos palabras; si no,
         // cualquier palabra del libro serviría de autor.

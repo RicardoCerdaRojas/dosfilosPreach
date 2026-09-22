@@ -813,13 +813,15 @@ function esUnAutorImpreso(parte: string, donde: string, palabrasMinimas: number)
 const ATRIBUYE_A_OTRO = /edited by|editado por|general editor|editor general|series editor|in honor of|en honor de|homenaje a|foreword by|prologo de|prefacio de|introduccion de|traducido por|translated by/;
 
 /**
- * La raya que firma un elogio: «—Bruce K. Waltke, Regent College».
+ * La raya que firma un elogio: «…monumental.» —Bruce K. Waltke.
  *
- * Se mira pegada al nombre y no en las cuarenta letras anteriores: una
- * raya suelta también separa un rango de páginas, «1—41», y con la regla
- * ancha un autor legítimo impreso detrás de su volumen se descartaba.
+ * Pide puntuación de cierre delante, que es lo que separa las dos rayas
+ * de una portada: la de una firma va detrás de un punto o de unas
+ * comillas que cierran, y la de un título va detrás de una letra.
+ * «Comentario a los Salmos — Allen P. Ross» es una portadilla corriente
+ * y se descartaba entera, dejando al libro sin autor en silencio.
  */
-const FIRMA_DE_ELOGIO = /[—–]\s*$/;
+const FIRMA_DE_ELOGIO = /[.!?»”"'\u2019]\s*[—–]\s*$/;
 
 /** Cuánto se mira hacia atrás buscando esa atribución. */
 const LETRAS_DE_CONTEXTO = 40;
@@ -830,6 +832,13 @@ const LETRAS_DE_CONTEXTO = 40;
  * La coma no parte delante de un sufijo de linaje: «Walter C. Kaiser,
  * Jr. and Moisés Silva» se partía en tres y «Jr.» no es un nombre, así
  * que el libro se quedaba sin autor.
+ *
+ * Límite conocido y a propósito: «José Ortega y Gasset y Juan Pérez» se
+ * parte por los dos «y» y el libro queda sin autor. Hace falta un
+ * apellido compuesto con «y» MÁS un segundo autor para que muerda, el
+ * nombre solo entra sin problema por la vía literal, y cualquier regla
+ * que intente distinguir el «y» de apellido del «y» de conjunción es
+ * adivinanza.
  */
 const CONECTORES_DE_AUTORES = /\s+(?:and|y|e|&)\s+|,\s+(?![JjSs]r\b|I{2,3}\b|IV\b)(?=\p{Lu})/u;
 
