@@ -465,6 +465,45 @@ describe('readableRegionsOf, recortando por hojas', () => {
     });
 });
 
+describe('el autor bien escrito vive en la portadilla, no en la cubierta', () => {
+    it('acepta el nombre que solo la portadilla imprime con sus espacios', () => {
+        // Medido sobre el ejemplar real de Arnold: la cubierta dice
+        // «BILLT. ARNOLD» porque el extractor pegó las dos palabras, y el
+        // nombre bien escrito está en la portadilla, que viaja con la
+        // página legal. Acotar el autor a la cubierta lo dejaba vacío.
+        const libro = porHojas(
+            'BILLT. ARNOLD\nJOHN H. CHOI\nA GUIDE TOD\nBiblical Hebrew Syntax\nCAMBRIDGE',
+            'A Guide to Biblical Hebrew Syntax\nBILL T. ARNOLD\nAsbury Theological Seminary\nJOHN H. CHOI',
+            'CAMBRIDGE UNIVERSITY PRESS\nCambridge, New York, Melbourne, Madrid\n'
+            + 'Cambridge University Press 2003\nThis publication is in copyright.\n'
+            + 'All rights reserved\nISBN-13 978-0-521-82609-9',
+            HOJA_DE_PREFACIO,
+        );
+        const { data } = keepOnlyWhatIsWritten({
+            author: 'Bill T. Arnold',
+            title: 'A Guide to Biblical Hebrew Syntax',
+            city: 'Cambridge',
+            publisher: 'Cambridge University Press',
+            year: '2003',
+        }, libro);
+        expect(data.author).toBe('Bill T. Arnold');
+        expect(data.title).toBe('A Guide to Biblical Hebrew Syntax');
+        expect(data.city).toBe('Cambridge');
+        expect(data.year).toBe('2003');
+    });
+
+    it('y el prefacio sigue sin poder aportar autor ni título', () => {
+        // El reparto de tramos se ensanchó; lo que protege no es el
+        // reparto sino que el prefacio no entre en ninguno de los dos.
+        const libro = porHojas('Comentario', HOJA_LEGAL, HOJA_DE_PREFACIO);
+        const { data } = keepOnlyWhatIsWritten(
+            { author: 'Walter Brueggemann', title: 'The Message of the Psalms' },
+            libro,
+        );
+        expect(data).toEqual({});
+    });
+});
+
 describe('la colección y la edición valen en cualquiera de los dos tramos', () => {
     it('la colección impresa solo en el bloque de catalogación se acepta', () => {
         const libro = porHojas(

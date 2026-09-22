@@ -205,17 +205,6 @@ export function proposeIsbn(frontMatter: string): string | null {
 }
 
 /**
- * Campos que se buscan en la PORTADA, o sea al frente del arranque.
- *
- * El autor y el título del libro están impresos en sus primeras hojas.
- * Un libro citado en el prefacio también trae autor y título, y por eso
- * no vale mirar el arranque entero.
- */
-const CAMPOS_DE_PORTADA = [
-    'author', 'title', 'subtitle', 'volume', 'volumeTitle',
-] as const;
-
-/**
  * Campos que se buscan SOLO en la página de créditos.
  *
  * La ciudad, la editorial y el año están impresos ahí y en ningún otro
@@ -227,12 +216,23 @@ const CAMPOS_DEL_PIE_DE_IMPRENTA = ['city', 'publisher', 'year'] as const;
 /**
  * Campos que valen en cualquiera de los dos tramos.
  *
- * La colección se imprime en la portadilla Y en el bloque de
- * catalogación; la edición, el traductor y el editor, en una o en otra
- * según la casa. Y ninguno de los cuatro es un dato que las citas de
- * otros libros falsifiquen: nadie copia el «traducido por» ajeno.
+ * La cubierta, la portadilla y la página legal son las tres del propio
+ * ejemplar, y cada casa reparte los datos entre ellas a su manera: el
+ * autor puede estar bien escrito solo en la portadilla, la colección
+ * solo en el bloque de catalogación, la edición en una o en otra. El
+ * autor y el título estuvieron acotados a la cubierta y eso dejó a
+ * Arnold sin autor: la suya dice «BILLT. ARNOLD» porque el extractor
+ * pegó las dos palabras. Acotarlos no protegía de nada, porque lo que
+ * mantiene fuera a los libros ajenos no es este reparto sino que el
+ * prefacio no entre en ninguno de los dos tramos.
+ *
+ * Lo que NO vale en cualquier tramo es el pie de imprenta, que se cita
+ * de la página legal y en ningún otro sitio.
  */
-const CAMPOS_DE_CUALQUIER_TRAMO = ['series', 'edition', 'translator', 'editor'] as const;
+const CAMPOS_DE_CUALQUIER_TRAMO = [
+    'author', 'title', 'subtitle', 'volume', 'volumeTitle',
+    'series', 'edition', 'translator', 'editor',
+] as const;
 
 /**
  * Los dos únicos tramos que se le muestran al modelo.
@@ -656,7 +656,6 @@ export function keepOnlyWhatIsWritten(
         data[campo] = valor;
     };
 
-    for (const campo of CAMPOS_DE_PORTADA) aceptar(campo, portada);
     // El separador no puede formar palabra: pegados con un espacio, un
     // valor podría casar a caballo entre el final de uno y el principio
     // del otro.
