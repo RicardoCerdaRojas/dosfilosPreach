@@ -1,4 +1,5 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Cliente del proxy de LLM del servidor.
@@ -100,6 +101,18 @@ export async function runLlmPromptWithUsage(
     options: CallableLlmOptions,
     transport: CallableLlmTransport = {},
 ): Promise<CallableLlmResult> {
+    try {
+        return await pedirleAlProxy(options, transport);
+    } catch (err) {
+        if (!esFaltaDeSesion(err) || !(await renovarLaSesion())) throw err;
+        return pedirleAlProxy(options, transport);
+    }
+}
+
+async function pedirleAlProxy(
+    options: CallableLlmOptions,
+    transport: CallableLlmTransport,
+): Promise<CallableLlmResult> {
     const callable = httpsCallable<CallableLlmOptions, LlmProxyResponse>(
         getFunctions(),
         'runLlmPrompt',
@@ -111,6 +124,43 @@ export async function runLlmPromptWithUsage(
         tokensUsed: res.data?.tokens ?? null,
         finishReason: res.data?.finishReason ?? null,
     };
+}
+
+/**
+ * ¿El servidor dijo que no venía sesión?
+ *
+ * Medido en producción: dos análisis de hebreo seguidos salieron sin el
+ * token y volvieron con 401; el tercero, dos minutos después, funcionó.
+ * El token de sesión tarda un instante en quedar disponible tras cargar
+ * la página, y justo ahí el pastor veía un error rojo que parece una
+ * caída del módulo.
+ */
+function esFaltaDeSesion(err: unknown): boolean {
+    return (err as { code?: string } | null)?.code === 'functions/unauthenticated';
+}
+
+/**
+ * Pide un token nuevo y dice si hay con qué reintentar.
+ *
+ * REINTENTAR AQUÍ ES SEGURO Y NO ES UNA SUPOSICIÓN: el manejador del
+ * servidor rechaza por falta de sesión en su PRIMERA línea, antes de
+ * mirar la clave del modelo, antes de llamar a Gemini y antes de
+ * contabilizar gasto. Un 401 significa que no se hizo nada, así que el
+ * segundo intento no puede cobrar dos veces ni duplicar una escritura.
+ *
+ * Solo se reintenta si hay una sesión de verdad: sin usuario no hay
+ * token que renovar y el error tiene que llegar a la pantalla.
+ */
+async function renovarLaSesion(): Promise<boolean> {
+    try {
+        const usuario = getAuth().currentUser;
+        if (!usuario) return false;
+        await usuario.getIdToken(true);
+        return true;
+    } catch (err) {
+        console.warn('[callableLlm] no se pudo renovar la sesión antes de reintentar', err);
+        return false;
+    }
 }
 
 export async function runLlmPrompt(
