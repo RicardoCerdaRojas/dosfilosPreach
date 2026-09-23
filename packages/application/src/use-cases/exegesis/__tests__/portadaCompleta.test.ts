@@ -1,9 +1,8 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
     PAPER_COVER_FIELDS,
     PAPER_COVER_FIELDS_POR_ENTREGA,
     type PaperCover,
-    type PaperCoverField,
 } from '@dosfilos/domain';
 import { normalizeCover } from '../UpdatePaperCoverUseCase';
 
@@ -47,12 +46,16 @@ describe('normalizeCover', () => {
 });
 
 describe('la lista de campos de la portada', () => {
-    it('cubre todos los campos de la ficha', () => {
-        // `satisfies` comprueba que cada nombre exista, no que estén
-        // todos: un campo nuevo desaparecería del formulario y del
-        // guardado sin que nada se quejara, que es justo lo que pasó.
-        expectTypeOf<Exclude<keyof PaperCover, PaperCoverField>>().toEqualTypeOf<never>();
-        expect(PAPER_COVER_FIELDS.length).toBeGreaterThan(0);
+    it('sale ordenada y sin huecos', () => {
+        // La exhaustividad NO se comprueba acá. Vive en el propio
+        // archivo del dominio, como `satisfies Record<keyof PaperCover,
+        // number>`: un campo nuevo en la interfaz que no entre en ese
+        // objeto no compila, y el control de tipos que lo ve es de los
+        // que bloquean. Escrito como prueba de tipos aquí solo lo veía
+        // `expectTypeOf`, que en esta configuración no se ejecuta.
+        expect(PAPER_COVER_FIELDS[0]).toBe('institution');
+        expect(PAPER_COVER_FIELDS).toContain('assignmentTitle');
+        expect(new Set(PAPER_COVER_FIELDS).size).toBe(PAPER_COVER_FIELDS.length);
     });
 
     it('el título del trabajo es de la entrega, no del curso', () => {

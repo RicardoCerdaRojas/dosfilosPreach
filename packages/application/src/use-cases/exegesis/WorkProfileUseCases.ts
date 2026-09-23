@@ -1,4 +1,4 @@
-import { PAPER_COVER_FIELDS_POR_ENTREGA } from '@dosfilos/domain';
+import { PAPER_COVER_FIELDS, PAPER_COVER_FIELDS_POR_ENTREGA } from '@dosfilos/domain';
 import type {
     ExegeticalPaper,
     PaperCover,
@@ -96,8 +96,14 @@ export function defaultsOfProfile(profile: WorkProfile): WorkProfileDefaults {
  */
 function coverDelCurso(cover: PaperCover | null | undefined): PaperCover | null {
     if (!cover) return null;
-    const heredable = Object.fromEntries(
-        Object.entries(cover).filter(([campo]) => !PAPER_COVER_FIELDS_POR_ENTREGA.includes(campo as never)),
-    ) as PaperCover;
+    // Se recorre la lista de campos y no las claves del objeto: así lo
+    // que se hereda es lo que el dominio reconoce, y no todo lo que
+    // venga guardado de una versión anterior.
+    const heredable: PaperCover = {};
+    for (const campo of PAPER_COVER_FIELDS) {
+        if (PAPER_COVER_FIELDS_POR_ENTREGA.includes(campo)) continue;
+        const valor = cover[campo];
+        if (valor) heredable[campo] = valor;
+    }
     return Object.keys(heredable).length > 0 ? heredable : null;
 }

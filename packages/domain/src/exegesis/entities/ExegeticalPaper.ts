@@ -310,13 +310,29 @@ export interface PaperCover {
  * formulario y el normalizador que guarda— y se desincronizaron: al
  * agregar el título del trabajo, el normalizador lo descartaba antes de
  * escribirlo. La pantalla decía «Portada guardada», el campo desaparecía
- * y no había ni un error. `satisfies` obliga a que cada nombre sea un
- * campo real, y la prueba de tipos obliga a que estén todos.
+ * y no había ni un error.
+ *
+ * LA GUARDA ES `satisfies Record<keyof PaperCover, number>` Y ESTÁ AQUÍ
+ * A PROPÓSITO. Un campo nuevo en la interfaz que no entre en este objeto
+ * no compila, con un mensaje que nombra el objeto, y en un archivo que
+ * sí entra en el control de tipos que bloquea. La misma comprobación
+ * escrita en un archivo de pruebas solo la veía `expectTypeOf`, que no
+ * corre en esta configuración.
  */
-export const PAPER_COVER_FIELDS = [
-    'institution', 'assignmentTitle', 'author', 'place', 'date', 'course',
-] as const satisfies ReadonlyArray<keyof PaperCover>;
-export type PaperCoverField = (typeof PAPER_COVER_FIELDS)[number];
+const ORDEN_DE_LA_PORTADA = {
+    institution: 0,
+    assignmentTitle: 1,
+    author: 2,
+    place: 3,
+    date: 4,
+    course: 5,
+} as const satisfies Record<keyof PaperCover, number>;
+
+export type PaperCoverField = keyof typeof ORDEN_DE_LA_PORTADA;
+
+export const PAPER_COVER_FIELDS: ReadonlyArray<PaperCoverField> = (
+    Object.keys(ORDEN_DE_LA_PORTADA) as PaperCoverField[]
+).sort((a, b) => ORDEN_DE_LA_PORTADA[a] - ORDEN_DE_LA_PORTADA[b]);
 
 /**
  * Lo que NO se hereda al guardar la configuración como perfil de trabajo.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
-import type { ExegeticalPaper } from '@dosfilos/domain';
+import { PAPER_COVER_FIELDS } from '@dosfilos/domain';
+import type { ExegeticalPaper, PaperCover } from '@dosfilos/domain';
 import { EMPTY_VERIFICATION_SUMMARY } from '@dosfilos/domain';
 import { exportPaperToDocx } from '../exportPaperToDocx';
 
@@ -136,6 +137,24 @@ describe('exportPaperToDocx — formato de la guía', () => {
         expect(doc).toContain('TRABAJO PRÁCTICO #3');
         expect(doc.indexOf('THE MASTER&apos;S SEMINARY')).toBeLessThan(doc.indexOf('TRABAJO PRÁCTICO #3'));
         expect(doc.indexOf('TRABAJO PRÁCTICO #3')).toBeLessThan(doc.indexOf('POR'));
+    });
+
+    it('el exportador imprime TODOS los campos de la portada, no una lista aparte', async () => {
+        // El exportador arma la portada renglón por renglón, con sus
+        // líneas en blanco, así que no puede recorrer la lista del
+        // dominio. Esta prueba es lo que los ata: un campo nuevo que
+        // alguien agregue al dominio y olvide aquí deja de imprimirse
+        // sin un solo error, que es el mismo fallo que ya costó el
+        // título del trabajo una capa más abajo.
+        const marcas = Object.fromEntries(
+            PAPER_COVER_FIELDS.map(campo => [campo, `marca${campo}`]),
+        ) as PaperCover;
+        const doc = await xmlOf(paper({ cover: marcas } as Partial<ExegeticalPaper>), 'word/document.xml');
+
+        const ausentes = PAPER_COVER_FIELDS.filter(
+            campo => !doc.includes(`MARCA${campo.toLocaleUpperCase('es')}`),
+        );
+        expect(ausentes, 'campos que el exportador NO imprime').toEqual([]);
     });
 
     // Las dos que siguen fijan comportamiento que ya existía antes de
