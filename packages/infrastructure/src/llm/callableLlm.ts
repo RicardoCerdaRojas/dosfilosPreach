@@ -172,6 +172,23 @@ function esFaltaDeSesion(err: unknown): boolean {
  *
  * Si no hay ninguna credencial que renovar, el error tiene que llegar a
  * la pantalla en vez de repetir la misma petición.
+ *
+ * TRES COSAS QUE EL CÓDIGO NO PUEDE DECIR POR SÍ SOLO:
+ *
+ *  · `renovada` significa «la llamada no lanzó», no «se renovó algo». Si
+ *    el intercambio de App Check falla pero queda un token cacheado y
+ *    todavía válido, el SDK devuelve ese mismo token sin lanzar, y el
+ *    reintento sale con la credencial que el servidor acaba de
+ *    rechazar. Cuesta una petición de más y no recupera nada.
+ *  · Un fallo de reCAPTCHA del lado del navegador —un bloqueador, un
+ *    proxy corporativo— NO entra en la ventana de espera del SDK, así
+ *    que cada llamada fallida ejecuta una atestación nueva. Con esta
+ *    cantidad de usuarios es ruido; a otra escala habría que mirarlo.
+ *  · `appCheck` se lee en tiempo de llamada a propósito, para que el
+ *    enlace vivo del módulo entregue el valor de después de inicializar
+ *    Firebase. Si algún día se compila este paquete a CommonJS, ese
+ *    enlace pasa a ser una foto de `undefined` y la renovación de App
+ *    Check deja de ocurrir EN SILENCIO.
  */
 async function renovarLasCredenciales(): Promise<boolean> {
     let renovada = false;
