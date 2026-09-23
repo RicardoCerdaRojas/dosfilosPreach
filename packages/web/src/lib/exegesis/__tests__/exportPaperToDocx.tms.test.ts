@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
-import type { ExegeticalPaper } from '@dosfilos/domain';
+import { PAPER_COVER_FIELDS } from '@dosfilos/domain';
+import type { ExegeticalPaper, PaperCover } from '@dosfilos/domain';
 import { EMPTY_VERIFICATION_SUMMARY } from '@dosfilos/domain';
 import { exportPaperToDocx } from '../exportPaperToDocx';
 
@@ -117,6 +118,61 @@ describe('exportPaperToDocx — formato de la guía', () => {
         expect(doc.indexOf('THE MASTER&apos;S SEMINARY')).toBeLessThan(doc.indexOf('Introducción'));
         // Dos secciones: la portada y el cuerpo.
         expect(doc.match(/<w:sectPr/g)?.length).toBe(2);
+    });
+
+    it('el título del trabajo va ENCIMA del pasaje, que es como lo nombra el profesor', async () => {
+        // La portada abría con el pasaje y el trabajo llegaba sin
+        // identificarse: «Trabajo práctico #3» es el renglón que el
+        // profesor busca para saber qué entrega está corrigiendo.
+        const doc = await xmlOf(paper({
+            cover: {
+                institution: "The Master's Seminary",
+                assignmentTitle: 'Trabajo práctico #3',
+                author: 'Ricardo Cerda',
+                place: 'Concepción, Chile',
+                date: 'Septiembre 2026',
+            },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+
+        expect(doc).toContain('TRABAJO PRÁCTICO #3');
+        expect(doc.indexOf('THE MASTER&apos;S SEMINARY')).toBeLessThan(doc.indexOf('TRABAJO PRÁCTICO #3'));
+        expect(doc.indexOf('TRABAJO PRÁCTICO #3')).toBeLessThan(doc.indexOf('POR'));
+    });
+
+    it('el exportador imprime TODOS los campos de la portada, no una lista aparte', async () => {
+        // El exportador arma la portada renglón por renglón, con sus
+        // líneas en blanco, así que no puede recorrer la lista del
+        // dominio. Esta prueba es lo que los ata: un campo nuevo que
+        // alguien agregue al dominio y olvide aquí deja de imprimirse
+        // sin un solo error, que es el mismo fallo que ya costó el
+        // título del trabajo una capa más abajo.
+        const marcas = Object.fromEntries(
+            PAPER_COVER_FIELDS.map(campo => [campo, `marca${campo}`]),
+        ) as PaperCover;
+        const doc = await xmlOf(paper({ cover: marcas } as Partial<ExegeticalPaper>), 'word/document.xml');
+
+        const ausentes = PAPER_COVER_FIELDS.filter(
+            campo => !doc.includes(`MARCA${campo.toLocaleUpperCase('es')}`),
+        );
+        expect(ausentes, 'campos que el exportador NO imprime').toEqual([]);
+    });
+
+    // Las dos que siguen fijan comportamiento que ya existía antes de
+    // agregar el título: el curso nunca fue obligatorio en el exportador.
+    // No prueban nada nuevo de este cambio y no pretenden hacerlo; están
+    // para que el reordenamiento del formulario no lo rompa sin querer.
+    it('sin curso no aparece ningún renglón de curso: la portada del seminario no lo lleva', async () => {
+        const doc = await xmlOf(paper({
+            cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda' },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+        expect(doc).not.toContain('OT603');
+    });
+
+    it('con curso escrito, se imprime: otra guía sí puede pedirlo', async () => {
+        const doc = await xmlOf(paper({
+            cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda', course: 'OT603' },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+        expect(doc).toContain('OT603');
     });
 
     it('el cuerpo numera sus páginas: la primera abajo al centro, las demás arriba a la derecha', async () => {

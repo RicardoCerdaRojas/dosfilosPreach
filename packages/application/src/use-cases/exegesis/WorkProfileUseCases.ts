@@ -1,5 +1,7 @@
+import { PAPER_COVER_FIELDS, PAPER_COVER_FIELDS_POR_ENTREGA } from '@dosfilos/domain';
 import type {
     ExegeticalPaper,
+    PaperCover,
     IExegeticalPaperRepository,
     IWorkProfileRepository,
     WorkProfile,
@@ -54,7 +56,7 @@ export class SaveWorkProfileFromPaperUseCase {
             briefTemplateId: input.briefTemplateId ?? null,
             styleGuideId: paper.styleGuideId ?? null,
             exegeticalStrategy: paper.exegeticalStrategy === 'free' ? 'free' : 'dialectical',
-            cover: paper.cover ?? null,
+            cover: coverDelCurso(paper.cover),
             isDefault: input.makeDefault ?? false,
         });
     }
@@ -84,4 +86,24 @@ export function defaultsOfProfile(profile: WorkProfile): WorkProfileDefaults {
         exegeticalStrategy: profile.exegeticalStrategy,
         cover: profile.cover ?? null,
     };
+}
+
+/**
+ * La portada que se hereda: lo que NO cambia entre entregas del curso.
+ *
+ * El título del trabajo es de la entrega —«Trabajo práctico #3»— y sin
+ * esto cada trabajo nuevo del curso nacería llamándose como el anterior.
+ */
+function coverDelCurso(cover: PaperCover | null | undefined): PaperCover | null {
+    if (!cover) return null;
+    // Se recorre la lista de campos y no las claves del objeto: así lo
+    // que se hereda es lo que el dominio reconoce, y no todo lo que
+    // venga guardado de una versión anterior.
+    const heredable: PaperCover = {};
+    for (const campo of PAPER_COVER_FIELDS) {
+        if (PAPER_COVER_FIELDS_POR_ENTREGA.includes(campo)) continue;
+        const valor = cover[campo];
+        if (valor) heredable[campo] = valor;
+    }
+    return Object.keys(heredable).length > 0 ? heredable : null;
 }

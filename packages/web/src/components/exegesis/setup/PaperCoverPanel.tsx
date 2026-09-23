@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { FileText, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import type { ExegeticalPaper, PaperCover } from '@dosfilos/domain';
+import { PAPER_COVER_FIELDS } from '@dosfilos/domain';
+import type { ExegeticalPaper, PaperCover, PaperCoverField } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
-const FIELDS = ['institution', 'author', 'course', 'place', 'date'] as const;
-type Field = (typeof FIELDS)[number];
+// La lista es del dominio: el formulario y el normalizador que guarda
+// tienen que recorrer los mismos campos, o el que falte se pierde al
+// guardar sin decir nada.
+const FIELDS = PAPER_COVER_FIELDS;
+
+/** Lo que la portada del seminario no lleva, pero otra guía podría pedir. */
+const OPCIONALES: ReadonlySet<PaperCoverField> = new Set(['course']);
+type Field = PaperCoverField;
 
 /**
  * Los datos de la portada que exige el seminario.
@@ -82,6 +89,11 @@ export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
                             <label key={f} className="space-y-1">
                                 <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
                                     {t(`paperSetup.cover.fields.${f}`)}
+                                    {OPCIONALES.has(f) && (
+                                        <span className="ml-1.5 normal-case tracking-normal font-normal">
+                                            {t('paperSetup.cover.optional')}
+                                        </span>
+                                    )}
                                 </span>
                                 <input
                                     type="text"

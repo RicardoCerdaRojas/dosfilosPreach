@@ -279,12 +279,66 @@ export type ExegeticalPaperDraft = Omit<
 export interface PaperCover {
     /** «The Master's Seminary». */
     institution?: string;
+    /**
+     * Lo que va impreso ENCIMA del pasaje: «Trabajo práctico #3».
+     *
+     * Es distinto del título del trabajo dentro de la aplicación: eso es
+     * cómo lo encuentras tú, y esto es cómo lo nombra el profesor en el
+     * documento que recibe. Sin este renglón la portada abría con el
+     * pasaje y el trabajo llegaba sin identificarse.
+     */
+    assignmentTitle?: string;
     /** Nombre del estudiante que firma el trabajo. */
     author?: string;
     /** Ciudad, como la pide la guía: «Chiguayante, Concepción». */
     place?: string;
     /** Fecha de entrega en el formato del seminario: «Septiembre 2026». */
     date?: string;
-    /** Curso o sigla, cuando la guía lo pide en la portada. */
+    /**
+     * Curso o sigla. OPCIONAL: solo se imprime cuando está escrito.
+     *
+     * La portada del seminario no lo lleva, y el formulario lo pedía como
+     * si fuera obligatorio.
+     */
     course?: string;
 }
+
+/**
+ * Los campos de la portada, en el orden en que se imprimen.
+ *
+ * Vive acá porque la lista estaba escrita TRES veces —la interfaz, el
+ * formulario y el normalizador que guarda— y se desincronizaron: al
+ * agregar el título del trabajo, el normalizador lo descartaba antes de
+ * escribirlo. La pantalla decía «Portada guardada», el campo desaparecía
+ * y no había ni un error.
+ *
+ * LA GUARDA ES `satisfies Record<keyof PaperCover, number>` Y ESTÁ AQUÍ
+ * A PROPÓSITO. Un campo nuevo en la interfaz que no entre en este objeto
+ * no compila, con un mensaje que nombra el objeto, y en un archivo que
+ * sí entra en el control de tipos que bloquea. La misma comprobación
+ * escrita en un archivo de pruebas solo la veía `expectTypeOf`, que no
+ * corre en esta configuración.
+ */
+const ORDEN_DE_LA_PORTADA = {
+    institution: 0,
+    assignmentTitle: 1,
+    author: 2,
+    place: 3,
+    date: 4,
+    course: 5,
+} as const satisfies Record<keyof PaperCover, number>;
+
+export type PaperCoverField = keyof typeof ORDEN_DE_LA_PORTADA;
+
+export const PAPER_COVER_FIELDS: ReadonlyArray<PaperCoverField> = (
+    Object.keys(ORDEN_DE_LA_PORTADA) as PaperCoverField[]
+).sort((a, b) => ORDEN_DE_LA_PORTADA[a] - ORDEN_DE_LA_PORTADA[b]);
+
+/**
+ * Lo que NO se hereda al guardar la configuración como perfil de trabajo.
+ *
+ * El seminario, el autor, el lugar y el curso no cambian entre entregas
+ * del mismo curso; el título del trabajo sí, y sin esto cada trabajo
+ * nuevo nacería llamándose como el anterior.
+ */
+export const PAPER_COVER_FIELDS_POR_ENTREGA: ReadonlyArray<PaperCoverField> = ['assignmentTitle'];
