@@ -1,3 +1,4 @@
+import { PAPER_COVER_FIELDS } from '@dosfilos/domain';
 import type { ExegeticalPaper, IExegeticalPaperRepository, PaperCover } from '@dosfilos/domain';
 
 export interface UpdatePaperCoverInput {
@@ -37,7 +38,9 @@ export class UpdatePaperCoverUseCase {
  */
 export function normalizeCover(cover: PaperCover | null): PaperCover | null {
     if (!cover) return null;
-    const entries = (['institution', 'author', 'place', 'date', 'course'] as const)
+    // La lista es del dominio: escrita acá a mano, se quedó sin el campo
+    // nuevo y la portada se guardaba incompleta sin avisar.
+    const entries = PAPER_COVER_FIELDS
         .map(key => [key, cover[key]?.trim().slice(0, MAX_FIELD_CHARS) ?? ''] as const)
         .filter(([, value]) => value.length > 0);
     return entries.length > 0 ? Object.fromEntries(entries) as PaperCover : null;

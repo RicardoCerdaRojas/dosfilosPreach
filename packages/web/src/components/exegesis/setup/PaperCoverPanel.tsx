@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { FileText, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import type { ExegeticalPaper, PaperCover } from '@dosfilos/domain';
+import { PAPER_COVER_FIELDS } from '@dosfilos/domain';
+import type { ExegeticalPaper, PaperCover, PaperCoverField } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
-const FIELDS = ['institution', 'assignmentTitle', 'author', 'place', 'date', 'course'] as const;
+// La lista es del dominio: el formulario y el normalizador que guarda
+// tienen que recorrer los mismos campos, o el que falte se pierde al
+// guardar sin decir nada.
+const FIELDS = PAPER_COVER_FIELDS;
 
 /** Lo que la portada del seminario no lleva, pero otra guía podría pedir. */
-const OPCIONALES: ReadonlySet<string> = new Set(['course']);
-type Field = (typeof FIELDS)[number];
+const OPCIONALES: ReadonlySet<PaperCoverField> = new Set(['course']);
+type Field = PaperCoverField;
 
 /**
  * Los datos de la portada que exige el seminario.

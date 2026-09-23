@@ -302,3 +302,27 @@ export interface PaperCover {
      */
     course?: string;
 }
+
+/**
+ * Los campos de la portada, en el orden en que se imprimen.
+ *
+ * Vive acá porque la lista estaba escrita TRES veces —la interfaz, el
+ * formulario y el normalizador que guarda— y se desincronizaron: al
+ * agregar el título del trabajo, el normalizador lo descartaba antes de
+ * escribirlo. La pantalla decía «Portada guardada», el campo desaparecía
+ * y no había ni un error. `satisfies` obliga a que cada nombre sea un
+ * campo real, y la prueba de tipos obliga a que estén todos.
+ */
+export const PAPER_COVER_FIELDS = [
+    'institution', 'assignmentTitle', 'author', 'place', 'date', 'course',
+] as const satisfies ReadonlyArray<keyof PaperCover>;
+export type PaperCoverField = (typeof PAPER_COVER_FIELDS)[number];
+
+/**
+ * Lo que NO se hereda al guardar la configuración como perfil de trabajo.
+ *
+ * El seminario, el autor, el lugar y el curso no cambian entre entregas
+ * del mismo curso; el título del trabajo sí, y sin esto cada trabajo
+ * nuevo nacería llamándose como el anterior.
+ */
+export const PAPER_COVER_FIELDS_POR_ENTREGA: ReadonlyArray<PaperCoverField> = ['assignmentTitle'];

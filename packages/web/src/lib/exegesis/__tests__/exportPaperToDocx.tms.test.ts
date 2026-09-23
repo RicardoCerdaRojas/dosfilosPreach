@@ -138,6 +138,10 @@ describe('exportPaperToDocx — formato de la guía', () => {
         expect(doc.indexOf('TRABAJO PRÁCTICO #3')).toBeLessThan(doc.indexOf('POR'));
     });
 
+    // Las dos que siguen fijan comportamiento que ya existía antes de
+    // agregar el título: el curso nunca fue obligatorio en el exportador.
+    // No prueban nada nuevo de este cambio y no pretenden hacerlo; están
+    // para que el reordenamiento del formulario no lo rompa sin querer.
     it('sin curso no aparece ningún renglón de curso: la portada del seminario no lo lleva', async () => {
         const doc = await xmlOf(paper({
             cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda' },
