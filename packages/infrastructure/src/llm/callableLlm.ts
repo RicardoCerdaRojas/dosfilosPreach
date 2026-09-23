@@ -1,5 +1,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getAuth } from 'firebase/auth';
+import { getToken as pedirTokenDeAppCheck } from 'firebase/app-check';
+import { appCheck } from '../config/firebase';
 
 /**
  * Cliente del proxy de LLM del servidor.
@@ -104,7 +106,11 @@ export async function runLlmPromptWithUsage(
     try {
         return await pedirleAlProxy(options, transport);
     } catch (err) {
-        if (!esFaltaDeSesion(err) || !(await renovarLaSesion())) throw err;
+        // Con imagen adjunta no se reintenta: la foto de una rúbrica pesa
+        // megabytes y reenviarla desde el navegador es justo lo que el
+        // reintento del SERVIDOR existe para no hacer.
+        if (options.inlineImage) throw err;
+        if (!esFaltaDeSesion(err) || !(await renovarLasCredenciales())) throw err;
         return pedirleAlProxy(options, transport);
     }
 }
@@ -127,40 +133,66 @@ async function pedirleAlProxy(
 }
 
 /**
- * ¿El servidor dijo que no venía sesión?
+ * ¿El servidor rechazó por credenciales?
  *
- * Medido en producción: dos análisis de hebreo seguidos salieron sin el
- * token y volvieron con 401; el tercero, dos minutos después, funcionó.
- * El token de sesión tarda un instante en quedar disponible tras cargar
- * la página, y justo ahí el pastor veía un error rojo que parece una
- * caída del módulo.
+ * TRES COSAS DISTINTAS PRODUCEN ESTE MISMO CÓDIGO, y conviene saberlo
+ * antes de extender este patrón a otro callable:
+ *
+ *  1. El manejador, cuando no viene sesión. Su mensaje es «User must be
+ *     authenticated».
+ *  2. El framework, cuando el token de sesión es inválido.
+ *  3. El framework, cuando el de App Check falta o es inválido —y App
+ *     Check va exigido en producción, así que este camino está siempre
+ *     vivo—. Los dos del framework dicen «Unauthenticated» a secas.
+ *
+ * Los tres llegan al navegador como `functions/unauthenticated` y son
+ * indistinguibles por el código. Medido en el fallo real del analizador
+ * de hebreo, el mensaje era «Unauthenticated»: fue el framework, no el
+ * manejador. Por eso se renuevan las DOS credenciales y no solo la
+ * sesión, que era el error de la primera versión de este arreglo.
  */
 function esFaltaDeSesion(err: unknown): boolean {
     return (err as { code?: string } | null)?.code === 'functions/unauthenticated';
 }
 
 /**
- * Pide un token nuevo y dice si hay con qué reintentar.
+ * Pide credenciales nuevas y dice si hay con qué reintentar.
  *
- * REINTENTAR AQUÍ ES SEGURO Y NO ES UNA SUPOSICIÓN: el manejador del
- * servidor rechaza por falta de sesión en su PRIMERA línea, antes de
- * mirar la clave del modelo, antes de llamar a Gemini y antes de
- * contabilizar gasto. Un 401 significa que no se hizo nada, así que el
- * segundo intento no puede cobrar dos veces ni duplicar una escritura.
+ * REINTENTAR AQUÍ ES SEGURO, y vale para los tres productores del
+ * código: los tres rechazan ANTES de que el manejador haga nada. El del
+ * manejador es su primera línea, antes de mirar la clave del modelo,
+ * antes de consumir cuota y antes de contabilizar gasto; los dos del
+ * framework ocurren antes incluso de que el manejador exista. Un 401
+ * significa que no se hizo nada, así que el segundo intento no puede
+ * cobrar dos veces ni duplicar una escritura.
  *
- * Solo se reintenta si hay una sesión de verdad: sin usuario no hay
- * token que renovar y el error tiene que llegar a la pantalla.
+ * Por eso mismo NO se reintenta ningún otro código. `resource-exhausted`
+ * llega DESPUÉS de que el limitador ya escribió en Firestore, y
+ * reintentarlo consumiría un segundo turno.
+ *
+ * Si no hay ninguna credencial que renovar, el error tiene que llegar a
+ * la pantalla en vez de repetir la misma petición.
  */
-async function renovarLaSesion(): Promise<boolean> {
+async function renovarLasCredenciales(): Promise<boolean> {
+    let renovada = false;
     try {
         const usuario = getAuth().currentUser;
-        if (!usuario) return false;
-        await usuario.getIdToken(true);
-        return true;
+        if (usuario) {
+            await usuario.getIdToken(true);
+            renovada = true;
+        }
     } catch (err) {
         console.warn('[callableLlm] no se pudo renovar la sesión antes de reintentar', err);
-        return false;
     }
+    try {
+        if (appCheck) {
+            await pedirTokenDeAppCheck(appCheck, true);
+            renovada = true;
+        }
+    } catch (err) {
+        console.warn('[callableLlm] no se pudo renovar App Check antes de reintentar', err);
+    }
+    return renovada;
 }
 
 export async function runLlmPrompt(

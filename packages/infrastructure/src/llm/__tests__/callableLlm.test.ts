@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const llamar = vi.fn();
 const getIdToken = vi.fn();
+const pedirTokenDeAppCheck = vi.fn();
 let usuario: { getIdToken: typeof getIdToken } | null = null;
+let appCheckActivo: object | undefined = { nombre: 'appCheck' };
 
 vi.mock('firebase/functions', () => ({
     getFunctions: () => ({}),
@@ -10,6 +12,12 @@ vi.mock('firebase/functions', () => ({
 }));
 vi.mock('firebase/auth', () => ({
     getAuth: () => ({ get currentUser() { return usuario; } }),
+}));
+vi.mock('firebase/app-check', () => ({
+    getToken: (...args: unknown[]) => pedirTokenDeAppCheck(...args),
+}));
+vi.mock('../../config/firebase', () => ({
+    get appCheck() { return appCheckActivo; },
 }));
 
 const { runLlmPromptWithUsage } = await import('../callableLlm');
@@ -32,7 +40,9 @@ describe('runLlmPromptWithUsage', () => {
     beforeEach(() => {
         llamar.mockReset();
         getIdToken.mockReset().mockResolvedValue('token-nuevo');
+        pedirTokenDeAppCheck.mockReset().mockResolvedValue({ token: 'appcheck-nuevo' });
         usuario = { getIdToken };
+        appCheckActivo = { nombre: 'appCheck' };
     });
 
     it('devuelve la respuesta cuando no hay nada que reintentar', async () => {
@@ -43,11 +53,45 @@ describe('runLlmPromptWithUsage', () => {
         expect(llamar).toHaveBeenCalledTimes(1);
     });
 
-    it('renueva el token y reintenta UNA vez cuando falta la sesión', async () => {
+    it('renueva LAS DOS credenciales y reintenta UNA vez', async () => {
+        // El mismo código de error lo producen tres cosas: el manejador
+        // sin sesión, el framework con la sesión inválida y el framework
+        // con App Check inválido o ausente. La primera versión de este
+        // arreglo solo renovaba la sesión, y el fallo real del analizador
+        // de hebreo venía del framework.
         llamar.mockRejectedValueOnce(faltaDeSesion).mockResolvedValueOnce(respuesta);
         await expect(runLlmPromptWithUsage(opciones)).resolves.toMatchObject({ text: 'hola' });
         expect(getIdToken).toHaveBeenCalledWith(true);
+        expect(pedirTokenDeAppCheck).toHaveBeenCalledWith({ nombre: 'appCheck' }, true);
         expect(llamar).toHaveBeenCalledTimes(2);
+    });
+
+    it('reintenta cuando el fallo es de App Check y la sesión está perfecta', async () => {
+        // Es el caso que de verdad ocurrió: mensaje «Unauthenticated» a
+        // secas, que es el del framework y no el del manejador.
+        const appCheckInvalido = Object.assign(new Error('Unauthenticated'), {
+            code: 'functions/unauthenticated',
+        });
+        llamar.mockRejectedValueOnce(appCheckInvalido).mockResolvedValueOnce(respuesta);
+        await expect(runLlmPromptWithUsage(opciones)).resolves.toMatchObject({ text: 'hola' });
+        expect(pedirTokenDeAppCheck).toHaveBeenCalledWith({ nombre: 'appCheck' }, true);
+    });
+
+    it('reintenta aunque no haya usuario, si App Check sí se puede renovar', async () => {
+        usuario = null;
+        llamar.mockRejectedValueOnce(faltaDeSesion).mockResolvedValueOnce(respuesta);
+        await expect(runLlmPromptWithUsage(opciones)).resolves.toMatchObject({ text: 'hola' });
+        expect(llamar).toHaveBeenCalledTimes(2);
+    });
+
+    it('no reenvía una imagen adjunta: pesa megabytes', async () => {
+        // El reintento del servidor existe precisamente para no volver a
+        // subir un prompt grande desde el navegador. La foto de una
+        // rúbrica llega a varios megabytes.
+        llamar.mockRejectedValue(faltaDeSesion);
+        const conFoto = { ...opciones, inlineImage: { mimeType: 'image/png', base64: 'x'.repeat(1000) } };
+        await expect(runLlmPromptWithUsage(conFoto)).rejects.toThrow();
+        expect(llamar).toHaveBeenCalledTimes(1);
     });
 
     it('no reintenta más de una vez: dos fallos son un fallo', async () => {
@@ -56,8 +100,9 @@ describe('runLlmPromptWithUsage', () => {
         expect(llamar).toHaveBeenCalledTimes(2);
     });
 
-    it('no reintenta sin usuario: no hay token que renovar', async () => {
+    it('no reintenta cuando no hay NINGUNA credencial que renovar', async () => {
         usuario = null;
+        appCheckActivo = undefined;
         llamar.mockRejectedValue(faltaDeSesion);
         await expect(runLlmPromptWithUsage(opciones)).rejects.toThrow();
         expect(llamar).toHaveBeenCalledTimes(1);
@@ -73,8 +118,9 @@ describe('runLlmPromptWithUsage', () => {
         }
     });
 
-    it('si la renovación del token falla, el error original llega a la pantalla', async () => {
+    it('si las dos renovaciones fallan, el error original llega a la pantalla', async () => {
         getIdToken.mockRejectedValue(new Error('sin red'));
+        pedirTokenDeAppCheck.mockRejectedValue(new Error('sin red'));
         llamar.mockRejectedValue(faltaDeSesion);
         await expect(runLlmPromptWithUsage(opciones)).rejects.toThrow('User must be authenticated');
         expect(llamar).toHaveBeenCalledTimes(1);
