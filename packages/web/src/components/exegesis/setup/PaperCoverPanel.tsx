@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
-const FIELDS = ['institution', 'author', 'course', 'place', 'date'] as const;
+const FIELDS = ['institution', 'assignmentTitle', 'author', 'place', 'date', 'course'] as const;
+
+/** Lo que la portada del seminario no lleva, pero otra guía podría pedir. */
+const OPCIONALES: ReadonlySet<string> = new Set(['course']);
 type Field = (typeof FIELDS)[number];
 
 /**
@@ -82,6 +85,11 @@ export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
                             <label key={f} className="space-y-1">
                                 <span className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
                                     {t(`paperSetup.cover.fields.${f}`)}
+                                    {OPCIONALES.has(f) && (
+                                        <span className="ml-1.5 normal-case tracking-normal font-normal">
+                                            {t('paperSetup.cover.optional')}
+                                        </span>
+                                    )}
                                 </span>
                                 <input
                                     type="text"

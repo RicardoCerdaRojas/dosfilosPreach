@@ -1270,18 +1270,21 @@
       "hint": "They appear centred and in capitals, as the style guide requires.",
       "fields": {
         "institution": "Seminary",
+        "assignmentTitle": "Assignment title",
         "author": "Author",
-        "course": "Course",
         "place": "Place",
-        "date": "Date"
+        "date": "Date",
+        "course": "Course"
       },
       "placeholders": {
         "institution": "The Master's Seminary",
+        "assignmentTitle": "Practical assignment #3",
         "author": "Full name",
-        "course": "OT603 — Hebrew Exegesis",
         "place": "Chiguayante, Concepción",
-        "date": "September 2026"
-      }
+        "date": "September 2026",
+        "course": "OT603 — Hebrew Exegesis"
+      },
+      "optional": "(optional)"
     },
     "workProfile": {
       "title": "Work profile",

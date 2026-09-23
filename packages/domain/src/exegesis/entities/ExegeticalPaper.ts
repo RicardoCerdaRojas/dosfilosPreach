@@ -279,12 +279,26 @@ export type ExegeticalPaperDraft = Omit<
 export interface PaperCover {
     /** «The Master's Seminary». */
     institution?: string;
+    /**
+     * Lo que va impreso ENCIMA del pasaje: «Trabajo práctico #3».
+     *
+     * Es distinto del título del trabajo dentro de la aplicación: eso es
+     * cómo lo encuentras tú, y esto es cómo lo nombra el profesor en el
+     * documento que recibe. Sin este renglón la portada abría con el
+     * pasaje y el trabajo llegaba sin identificarse.
+     */
+    assignmentTitle?: string;
     /** Nombre del estudiante que firma el trabajo. */
     author?: string;
     /** Ciudad, como la pide la guía: «Chiguayante, Concepción». */
     place?: string;
     /** Fecha de entrega en el formato del seminario: «Septiembre 2026». */
     date?: string;
-    /** Curso o sigla, cuando la guía lo pide en la portada. */
+    /**
+     * Curso o sigla. OPCIONAL: solo se imprime cuando está escrito.
+     *
+     * La portada del seminario no lo lleva, y el formulario lo pedía como
+     * si fuera obligatorio.
+     */
     course?: string;
 }

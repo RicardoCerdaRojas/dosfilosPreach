@@ -119,6 +119,39 @@ describe('exportPaperToDocx — formato de la guía', () => {
         expect(doc.match(/<w:sectPr/g)?.length).toBe(2);
     });
 
+    it('el título del trabajo va ENCIMA del pasaje, que es como lo nombra el profesor', async () => {
+        // La portada abría con el pasaje y el trabajo llegaba sin
+        // identificarse: «Trabajo práctico #3» es el renglón que el
+        // profesor busca para saber qué entrega está corrigiendo.
+        const doc = await xmlOf(paper({
+            cover: {
+                institution: "The Master's Seminary",
+                assignmentTitle: 'Trabajo práctico #3',
+                author: 'Ricardo Cerda',
+                place: 'Concepción, Chile',
+                date: 'Septiembre 2026',
+            },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+
+        expect(doc).toContain('TRABAJO PRÁCTICO #3');
+        expect(doc.indexOf('THE MASTER&apos;S SEMINARY')).toBeLessThan(doc.indexOf('TRABAJO PRÁCTICO #3'));
+        expect(doc.indexOf('TRABAJO PRÁCTICO #3')).toBeLessThan(doc.indexOf('POR'));
+    });
+
+    it('sin curso no aparece ningún renglón de curso: la portada del seminario no lo lleva', async () => {
+        const doc = await xmlOf(paper({
+            cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda' },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+        expect(doc).not.toContain('OT603');
+    });
+
+    it('con curso escrito, se imprime: otra guía sí puede pedirlo', async () => {
+        const doc = await xmlOf(paper({
+            cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda', course: 'OT603' },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+        expect(doc).toContain('OT603');
+    });
+
     it('el cuerpo numera sus páginas: la primera abajo al centro, las demás arriba a la derecha', async () => {
         const doc = await xmlOf(paper(), 'word/document.xml');
         expect(doc).toMatch(/w:titlePg/);

@@ -254,7 +254,9 @@ function coverSection(cover: PaperCover | null, fallbackTitle: string) {
         })),
     ];
 
-    const title = (cover?.course?.trim() ? `${fallbackTitle}` : fallbackTitle);
+    // El renglón del pasaje. Encima puede ir el nombre que le da el
+    // profesor al trabajo, que es lo que identifica la entrega.
+    const assignmentTitle = cover?.assignmentTitle?.trim();
     return {
         properties: {
             page: {
@@ -268,7 +270,8 @@ function coverSection(cover: PaperCover | null, fallbackTitle: string) {
         children: [
             ...line('', 3),
             ...(institution ? line(institution, 6) : []),
-            ...line(title, 2),
+            ...(assignmentTitle ? line(assignmentTitle) : []),
+            ...line(fallbackTitle, 2),
             ...(cover?.course?.trim() ? line(cover.course, 4) : line('', 4)),
             ...line('POR'),
             ...(author ? line(author, 4) : line('', 4)),

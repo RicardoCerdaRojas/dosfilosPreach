@@ -1270,18 +1270,21 @@
       "hint": "En el documento salen en mayúsculas y centrados, como pide la guía de estilo.",
       "fields": {
         "institution": "Seminario",
+        "assignmentTitle": "Título del trabajo",
         "author": "Autor",
-        "course": "Curso",
         "place": "Lugar",
-        "date": "Fecha"
+        "date": "Fecha",
+        "course": "Curso"
       },
       "placeholders": {
         "institution": "The Master's Seminary",
+        "assignmentTitle": "Trabajo práctico #3",
         "author": "Nombre y apellido",
-        "course": "OT603 — Exégesis de hebreo",
         "place": "Chiguayante, Concepción",
-        "date": "Septiembre 2026"
-      }
+        "date": "Septiembre 2026",
+        "course": "OT603 — Exégesis de hebreo"
+      },
+      "optional": "(opcional)"
     },
     "workProfile": {
       "title": "Perfil de trabajo",
