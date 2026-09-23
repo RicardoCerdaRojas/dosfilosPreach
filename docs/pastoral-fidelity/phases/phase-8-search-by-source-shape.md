@@ -27,6 +27,55 @@ organizado así.
 
 **La forma del libro decide la forma de la búsqueda, y hoy el sistema hace siempre la misma.**
 
+## El hallazgo que cambia el diseño: el índice YA ESTÁ, y se tira
+
+Medido sobre el propio ejemplar de Porter, al abrir «Ajustar páginas»:
+
+- **329 de sus 332 hojas tienen sección nombrada**, con **262 secciones distintas**.
+- Y las secciones SON las categorías que el trabajo necesita:
+
+```
+2.2. Independent Participle            2.19. μέν (Conjunction, Adversative…)
+2.3. Commanding Participle             2.23. νῦν (Particle, Inferential)
+4.1. Time and the Participle           2.28. οὖν (Conjunction, Inferential…)
+4.2. Subsequent Use of the Aorist…     2.4.6. Subjective genitive.
+10. Participles                        1. Classification of Conditional Clauses
+```
+
+El libro está perfectamente estructurado. Lo que pasa es que
+`outlineStructureQuality` pregunta si los encabezados nombran una REFERENCIA BÍBLICA,
+ve que no, y el llamador «cae al camino semántico» —tirando las 262 secciones— en vez de
+preguntar lo otro: si los encabezados nombran CATEGORÍAS.
+
+Así que el problema no es que la recuperación semántica sea mala. Es que hay un índice
+perfecto en la base de datos y el sistema no lo mira porque no está en el formato que
+esperaba.
+
+### Lo que costó, medido
+
+La sugerencia semántica para Santiago 2:1–13 propuso **11 tramos, 46 hojas, 103 % del
+presupuesto del trabajo**. Contra las cuatro preguntas del trabajo práctico:
+
+| Pregunta | Dónde vive en Porter | ¿La sugerencia la trajo? |
+|---|---|---|
+| Función de los genitivos | hojas 88–98 | sí |
+| Función de `ἐάν` (condicional de 3.ª clase) | hojas 254–257, 261–263 | **no, ninguna** |
+| Significado de `μέντοι` | hojas 211–215 | sí |
+| Función del participio | hojas 184–193 | parcial (190–192) |
+
+Ocho de los once tramos no servían a ninguna pregunta —entraron porque Porter cita
+versículos de Santiago como ejemplo en otras secciones, como Jas. 5:2–3 en la hoja 41— y
+el tramo que contesta la pregunta 2 no entró. Con el índice de secciones delante, los
+cuatro tramos salen exactos y suman 33 hojas en vez de 46.
+
+## Defecto menor del mismo camino: el rótulo del tramo miente
+
+En el carrito, un tramo se rotula con la sección de su PRIMERA hoja. El tramo 184–193 —la
+sección de participios— aparece como «2.1. Genitive Absolute», que es la sección que
+termina justo antes; el 88–98 aparece como «2.2. The Vocative Case» cuando adentro está
+«2.4.6. Subjective genitive». El rótulo debería nombrar la sección que domina el tramo, o
+las secciones que cubre.
+
 ## Lo que ya existe y no está donde hace falta
 
 Las dos piezas están construidas y viven en habitaciones equivocadas:
@@ -49,13 +98,18 @@ El sistema la calcula y después no la usa para ir a buscar páginas.
 
 **La consulta se arma según el tipo de la fuente**, no según el pasaje a secas:
 
-| Tipo de fuente | Qué se le pregunta |
-|---|---|
-| Comentario (crítico, expositivo, textual) | El pasaje, como hoy |
-| Gramática / sintaxis | Las categorías que el análisis nombró: genitivo de aposición, participio adverbial, condicional de tercera clase, la partícula concreta |
-| Léxico técnico | Los lemas del pasaje, uno por uno |
-| Aparato crítico | El versículo |
-| Diccionario teológico | Los lemas de peso teológico |
+| Tipo de fuente | Qué se le pregunta | Contra qué |
+|---|---|---|
+| Comentario (crítico, expositivo, textual) | El pasaje, como hoy | Los encabezados por referencia |
+| Gramática / sintaxis | Las categorías que el análisis nombró: genitivo de aposición, participio adverbial, condicional de tercera clase, la partícula concreta | **Los títulos de sección**, que ya están indexados |
+| Léxico técnico | Los lemas del pasaje, uno por uno | El título de sección o el texto |
+| Aparato crítico | El versículo | Los encabezados por referencia |
+| Diccionario teológico | Los lemas de peso teológico | Los títulos de sección |
+
+La columna de la derecha es la parte que faltaba en la primera versión de este documento:
+para una gramática **no hace falta buscar en el texto**. Basta cotejar las categorías del
+análisis contra los títulos de sección, que son pocos, están estructurados y son
+exactamente el vocabulario que el análisis produce.
 
 Y cuando la consulta devuelve cero, el aviso deja de ser un cuadro amarillo mudo: dice que
 este libro no está organizado por pasajes y ofrece el camino —«Ajustar páginas»— con las
