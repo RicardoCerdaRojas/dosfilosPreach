@@ -134,6 +134,31 @@ describe('exportPaperToMarkdown — la bibliografía llega al documento', () => 
         expect(md).toContain('- Mayor, Joseph B. *The Epistle of St. James*. Grand Rapids: Baker Book House, 1978.');
     });
 
+    it('sin portada, la cabecera de trabajo identifica el archivo', () => {
+        const md = exportPaperToMarkdown(p, { exportedAt: new Date('2026-09-23') });
+        expect(md).toContain('# Santiago 2:1–13');
+        expect(md).toContain('**Pasaje:**');
+        expect(md).toContain('**Exportado:** 2026-09-23');
+    });
+
+    it('con portada, la cabecera de trabajo desaparece y el cuerpo abre el documento', () => {
+        // «Exportado: 2026-09-23» impreso sobre la página 1 de un trabajo con
+        // portada delata la herramienta. El cuerpo empieza en el contenido.
+        const md = exportPaperToMarkdown(p, { exportedAt: new Date('2026-09-23'), omitHeader: true });
+        expect(md).not.toContain('**Exportado:**');
+        expect(md).not.toContain('**Pasaje:**');
+        expect(md).not.toContain('# Santiago 2:1–13');
+        expect(md.trimStart().startsWith('## ')).toBe(true);
+    });
+
+    it('sin cabecera, la bibliografía sigue entrando', () => {
+        const md = exportPaperToMarkdown(p, {
+            omitHeader: true,
+            bibliography: buildPaperBibliography(p, FICHAS),
+        });
+        expect(md).toContain('## Bibliografía');
+    });
+
     it('si el cuerpo ya trae una bibliografía, no se agrega otra', () => {
         // `assembledMarkdown` se usa literal y puede venir del ensamblado o
         // de la mano del usuario. Añadir una segunda dejaría el documento con

@@ -63,12 +63,16 @@ export async function exportPaperToDocx(
     options: { exportedAt?: Date; bibliography?: ReadonlyArray<BibliographyEntry> } = {},
 ): Promise<Blob> {
     const exportedAt = options.exportedAt ?? new Date();
+    // La portada manda: si se va a imprimir, el cuerpo NO lleva la cabecera de
+    // trabajo. Se pregunta antes de componer el markdown porque es lo que
+    // decide qué se compone.
+    const cover = coverSection(paper.cover ?? null, titleDisplayOf(paper));
     const markdown = exportPaperToMarkdown(paper, {
         exportedAt,
         bibliography: options.bibliography,
+        omitHeader: cover !== null,
     });
-    const titleDisplay = paper.title?.trim()
-        || formatPassageReference(paper.passage, paper.displayLanguage);
+    const titleDisplay = titleDisplayOf(paper);
 
     const blocks = parseMarkdownBlocks(markdown);
     const footnotes: Record<number, { children: Paragraph[] }> = {};
@@ -128,7 +132,6 @@ export async function exportPaperToDocx(
         }
     });
 
-    const cover = coverSection(paper.cover ?? null, titleDisplay);
 
     const doc = new Document({
         title: titleDisplay,
@@ -238,6 +241,10 @@ function textRuns(text: string, options: { size?: number; bold?: boolean; italic
  * documento sin portada es lo que había, y es mejor que una portada con
  * el nombre de otro.
  */
+function titleDisplayOf(paper: ExegeticalPaper): string {
+    return paper.title?.trim() || formatPassageReference(paper.passage, paper.displayLanguage);
+}
+
 function coverSection(cover: PaperCover | null, fallbackTitle: string) {
     const institution = cover?.institution?.trim();
     const author = cover?.author?.trim();

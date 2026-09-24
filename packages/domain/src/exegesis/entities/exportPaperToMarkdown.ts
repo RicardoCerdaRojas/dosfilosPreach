@@ -28,7 +28,26 @@ import type { ExegeticalStep } from './ExegeticalStep';
  */
 export function exportPaperToMarkdown(
     paper: ExegeticalPaper,
-    options: { exportedAt?: Date; bibliography?: ReadonlyArray<BibliographyEntry> } = {},
+    options: {
+        exportedAt?: Date;
+        bibliography?: ReadonlyArray<BibliographyEntry>;
+        /**
+         * Suprime la cabecera de trabajo —título, pasaje, fecha de exportación
+         * y el encuadre como cita— porque el documento ya lleva portada.
+         *
+         * La cabecera es un artefacto de TRABAJO: dice de qué es este archivo y
+         * cuándo se bajó, que es justo lo que hace falta mirando un `.md` suelto
+         * en una carpeta. Un trabajo académico con portada no lleva nada de eso:
+         * el cuerpo empieza en la primera pregunta, y «Exportado: 2026-09-23»
+         * impreso sobre la página 1 delata la herramienta.
+         *
+         * Lo decide el exportador Word, que es el único que sabe si la portada
+         * se va a imprimir de verdad. La descarga en markdown no lleva portada,
+         * así que conserva la cabecera: sin ella el archivo no dice ni de qué
+         * pasaje es.
+         */
+        omitHeader?: boolean;
+    } = {},
 ): string {
     const labels = paper.displayLanguage === 'en' ? LABELS_EN : LABELS_ES;
     const exportedAt = options.exportedAt ?? new Date();
@@ -39,7 +58,7 @@ export function exportPaperToMarkdown(
         ? paper.assembledMarkdown
         : assembleFromAcceptedSteps(paper.steps, labels);
 
-    const header = [
+    const header = options.omitHeader ? '' : [
         `# ${titleDisplay}`,
         '',
         `**${labels.passage}:** ${passageDisplay}`,
@@ -69,7 +88,7 @@ export function exportPaperToMarkdown(
         : renderBibliography(options.bibliography ?? [], labels);
 
     const cuerpo = body.trim().length > 0 ? body.trim() : `_${labels.emptyBody}_`;
-    return `${header}\n${cuerpo}\n${biblio}`;
+    return header ? `${header}\n${cuerpo}\n${biblio}` : `${cuerpo}\n${biblio}`;
 }
 
 /**

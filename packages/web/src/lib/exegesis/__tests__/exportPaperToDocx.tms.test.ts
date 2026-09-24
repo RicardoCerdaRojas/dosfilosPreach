@@ -55,6 +55,27 @@ const paper = (over: Partial<ExegeticalPaper> = {}): ExegeticalPaper => ({
     ...over,
 } as unknown as ExegeticalPaper);
 
+describe('exportPaperToDocx — la portada manda sobre la cabecera', () => {
+    const conPortada = paper({
+        cover: {
+            institution: "The Master's Seminary", assignmentTitle: 'Trabajo práctico #4',
+            author: 'Ricardo Cerda', place: 'Concepción, Chile', date: 'Septiembre 2026', course: null,
+        },
+    } as unknown as Partial<ExegeticalPaper>);
+
+    it('con portada, el cuerpo NO repite título, pasaje ni fecha de exportación', async () => {
+        const xml = await xmlOf(conPortada, 'word/document.xml');
+        // La portada sí los dice, en mayúsculas y centrados. Lo que no puede
+        // pasar es que la página 1 del cuerpo los repita con «Exportado».
+        expect(xml).not.toContain('Exportado');
+    });
+
+    it('sin portada, la cabecera se conserva: el archivo tiene que decir de qué es', async () => {
+        const xml = await xmlOf(paper(), 'word/document.xml');
+        expect(xml).toContain('Exportado');
+    });
+});
+
 describe('exportPaperToDocx — la bibliografía generada', () => {
     /** Un trabajo sin `assembledMarkdown`: el cuerpo sale de los pasos aceptados. */
     const sinEnsamblar = paper({
