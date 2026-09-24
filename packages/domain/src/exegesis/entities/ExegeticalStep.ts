@@ -49,6 +49,30 @@ export interface ExegeticalStep {
     /** Display order in the wizard (1, 2, 3, ...). */
     order: number;
 
+    /**
+     * Si este paso pertenece al DOCUMENTO que se va a entregar.
+     *
+     * Vive en el paso y no en una versión porque es una decisión del autor
+     * sobre el entregable, no una propiedad de un texto generado.
+     *
+     * Existe porque antes la pertenencia se DEDUCÍA de tener prosa compuesta,
+     * y eso usa una acción tomada con otro propósito como si fuera una
+     * declaración. Falla en las dos direcciones: componer para ver cómo queda
+     * —que es exploración legítima— metía el versículo al documento sin
+     * remedio, y dejar un versículo como análisis a propósito no se podía
+     * decir.
+     *
+     * Ausente equivale a `true`: todo paso aceptado se considera parte del
+     * documento mientras nadie diga lo contrario, que es como se comportaban
+     * los trabajos anteriores a este campo.
+     *
+     * Gobierna DOS cosas a la vez, y por eso es una sola marca y no dos: qué
+     * entra al ensamble, y entre cuántas secciones se reparte la extensión que
+     * exige la rúbrica. Sacar la introducción y la conclusión devuelve su
+     * parte del presupuesto a los versículos.
+     */
+    includeInDocument?: boolean;
+
     state: ExegeticalStepState;
 
     /**

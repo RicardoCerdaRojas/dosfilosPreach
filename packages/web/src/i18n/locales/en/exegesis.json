@@ -1944,8 +1944,10 @@
       "assembly": {
         "manifestTitle": "This goes into the document · {{count}} words",
         "words": "{{count}} w.",
-        "excludedTitle_one": "1 analyzed verse stays out, with no composed prose:",
-        "excludedTitle_other": "{{count}} analyzed verses stay out, with no composed prose:"
+        "pendingMark": "not composed",
+        "pendingHint_one": "1 selected section has no prose yet: it will not enter the document until you compose it.",
+        "pendingHint_other": "{{count}} selected sections have no prose yet: they will not enter the document until you compose them.",
+        "hint": "Uncheck whatever you do not want in the document. The length the rubric asks for is split only among what is checked."
       }
     },
     "rubric": {

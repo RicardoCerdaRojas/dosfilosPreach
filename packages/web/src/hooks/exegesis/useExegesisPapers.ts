@@ -489,6 +489,22 @@ export function useExegesisPapers() {
         },
     });
 
+    /** Qué secciones pertenecen al documento que se entrega. */
+    const setStepInclusion = useMutation({
+        mutationFn: async ({ paperId, stepId, include }: { paperId: string; stepId: string; include: boolean }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.setStepInclusion.execute({
+                ownerId: user.uid,
+                paperId,
+                stepId,
+                include,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     const saveStepEdit = useMutation({
         mutationFn: async ({ paperId, stepId, markdown }: { paperId: string; stepId: string; markdown: string }) => {
             if (!user?.uid) throw new Error('User not authenticated');
@@ -665,6 +681,7 @@ export function useExegesisPapers() {
         seedSteps,
         generateStep,
         acceptStep,
+        setStepInclusion,
         saveStepEdit,
         verifyStepCitations,
         reviewCitation,

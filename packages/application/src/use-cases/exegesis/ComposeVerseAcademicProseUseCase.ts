@@ -20,7 +20,8 @@ import type {
     IPageNumberingReader,
 } from '@dosfilos/domain';
 import {
-    wordsPerVerseTarget,
+    documentSections,
+    sectionBudgets,
     isCitableSourceType,
     replaceVerseSection,
     verseSectionKey,
@@ -172,10 +173,10 @@ export class ComposeVerseAcademicProseUseCase {
                 // que exige la rúbrica y repartido entre los versículos del
                 // trabajo. Sin esto el compositor no sabía que había un
                 // límite: un trabajo de 2-3 páginas salió de 16.
-                wordBudget: wordsPerVerseTarget(
+                wordBudget: sectionBudgets(
                     paper.rubric?.expectedLength ?? null,
-                    paper.steps.filter(s => s.kind === 'verse').length,
-                ),
+                    documentSections(paper.steps),
+                ).perVerse,
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
             };

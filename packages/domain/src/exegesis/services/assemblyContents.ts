@@ -2,6 +2,7 @@ import { formatPassageReference } from '../../bible/canon/passage-reference';
 import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
 import type { ExegeticalStep } from '../entities/ExegeticalStep';
 import { countWords } from '../../services/movementBudget';
+import type { DocumentSections } from './paperLength';
 
 /**
  * Qué entra al documento y qué se queda fuera.
@@ -33,15 +34,27 @@ export interface AssemblyContents {
     /** En orden de documento: introducción, versículos, conclusión. */
     included: AssemblyPart[];
     /**
-     * Pasos aceptados que NO entran porque nadie les compuso la prosa.
+     * Elegidos para el documento y todavía sin prosa compuesta.
      *
-     * No son un error ni algo a medias: son análisis que el autor puede haber
-     * hecho a propósito sin querer publicarlos. Se listan para que nadie
-     * descubra su ausencia al abrir el archivo.
+     * Es el estado que faltaba. Antes un versículo que el autor QUERÍA pero no
+     * había escrito se veía igual que uno descartado: los dos «quedaban
+     * fuera». Separarlos convierte una ausencia silenciosa en un pendiente.
      */
+    pending: AssemblyPart[];
+    /** Excluidos del documento por decisión del autor. */
     excluded: AssemblyPart[];
     /** Palabras que tendrá el documento. */
     words: number;
+}
+
+/**
+ * Si un paso pertenece al documento.
+ *
+ * Ausente equivale a `true`: todo paso aceptado cuenta mientras nadie diga lo
+ * contrario, que es como se comportaban los trabajos anteriores al campo.
+ */
+export function pertenceAlDocumento(step: ExegeticalStep): boolean {
+    return step.includeInDocument !== false;
 }
 
 export function assemblyContents(
@@ -49,6 +62,7 @@ export function assemblyContents(
     language: 'es' | 'en',
 ): AssemblyContents {
     const included: AssemblyPart[] = [];
+    const pending: AssemblyPart[] = [];
     const excluded: AssemblyPart[] = [];
 
     const etiqueta = (step: ExegeticalStep): string =>
@@ -68,7 +82,9 @@ export function assemblyContents(
             label: etiqueta(step),
             words: countWords(body),
         };
-        (body ? included : excluded).push(parte);
+        if (!pertenceAlDocumento(step)) excluded.push(parte);
+        else if (body) included.push(parte);
+        else pending.push(parte);
     };
 
     clasifica(steps.find(s => s.kind === 'introduction'));
@@ -79,6 +95,7 @@ export function assemblyContents(
 
     return {
         included,
+        pending,
         excluded,
         words: included.reduce((n, p) => n + p.words, 0),
     };
@@ -113,4 +130,25 @@ export function assembleMarkdown(
         out.push(body, '');
     }
     return out.join('\n');
+}
+
+/**
+ * Las secciones del documento, para repartir la extensión entre ellas.
+ *
+ * Sale de la MISMA marca que decide qué entra al ensamble, y por eso el
+ * presupuesto y el documento no pueden discrepar. Un paso que no está
+ * aceptado todavía cuenta igual: el reparto describe el documento que se va a
+ * escribir, no el que ya está escrito, y si sólo contara lo compuesto el
+ * primer versículo recibiría el trabajo entero para él solo.
+ */
+export function documentSections(
+    steps: ReadonlyArray<ExegeticalStep>,
+): DocumentSections {
+    const cuenta = (kind: ExegeticalStep['kind']) =>
+        steps.filter(s => s.kind === kind && pertenceAlDocumento(s)).length;
+    return {
+        verses: cuenta('verse'),
+        introduction: cuenta('introduction') > 0,
+        conclusion: cuenta('conclusion') > 0,
+    };
 }

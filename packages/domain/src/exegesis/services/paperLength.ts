@@ -110,65 +110,58 @@ function round(n: number): number {
 }
 
 /**
- * Cuántas palabras le tocan a cada verso para llegar a lo exigido.
+ * Qué secciones va a tener el documento.
  *
- * El trabajo no es solo versos: la introducción y la conclusión ocupan su
- * parte, y en los trabajos de exégesis vistos hasta ahora rondan un
- * quinto del total. El resto se reparte parejo entre los versos, que es
- * una aproximación —un verso con tres cruces de traducción da para más
- * que uno con una cláusula nominal— pero sirve para lo que se usa: poner
- * un número delante de quien recompone, en vez de dejarlo adivinar.
- *
- * `null` cuando el curso no declara extensión o no hay versos: no se
- * inventa un objetivo.
+ * Sale de la MISMA marca que decide qué entra al ensamble, y por eso el
+ * presupuesto y el documento no pueden discrepar: si la introducción no va,
+ * su parte de la extensión vuelve a los versículos en vez de reservarse para
+ * una sección que nadie va a escribir.
  */
-export function wordsPerVerseTarget(
-    expected: ExpectedLengthRange | null,
-    verseCount: number,
-): number | null {
-    if (!expected || verseCount <= 0) return null;
-    const target = expected.min ?? expected.max;
-    if (target === null || target <= 0) return null;
-
-    const totalWords = expected.unit === 'words' ? target : target * WORDS_PER_PAGE;
-    return redondeaA50(totalWords * REPARTO.versos / verseCount);
+export interface DocumentSections {
+    /** Cuántos versículos pertenecen al documento. */
+    verses: number;
+    introduction: boolean;
+    conclusion: boolean;
 }
 
-/**
- * Cómo se reparte la extensión del trabajo entre sus tres clases de sección.
- *
- * Una sola tabla porque las tres partes tienen que sumar el trabajo entero, y
- * tres constantes sueltas se desincronizan en cuanto alguien toca una: se
- * ajusta la de los versos, las otras dos se quedan donde estaban, y el
- * presupuesto que reciben los compositores deja de sumar lo que la rúbrica
- * pide. Hay una prueba que comprueba la suma.
- *
- * El quinto para el marco sale de los trabajos de exégesis vistos hasta ahora.
- */
-export const REPARTO = {
-    versos: 0.8,
-    introduccion: 0.1,
-    conclusion: 0.1,
-} as const;
+/** Qué fracción del trabajo se lleva la introducción, y otro tanto la conclusión. */
+const PARTE_DEL_MARCO = 0.1;
 
 /**
- * Cuántas palabras le tocan a la introducción o a la conclusión.
+ * Las palabras que le tocan a cada sección del documento.
  *
- * Existe por la misma razón que `wordsPerVerseTarget`: el número tiene que
- * llegar a QUIEN ESCRIBE. Sin esto los compositores de apertura y cierre no
- * sabían que había un límite, y un trabajo que pedía 2-3 páginas salió de 16.
+ * Una sola función en vez de constantes sueltas, porque las partes tienen que
+ * sumar el trabajo ENTERO y sueltas se desincronizan en cuanto alguien ajusta
+ * una. Hay una prueba que suma.
  *
- * `null` cuando el curso no declara extensión: no se inventa un objetivo.
+ * El marco —introducción y conclusión— se lleva un décimo cada uno cuando
+ * está, y NADA cuando no. Un trabajo de sólo versículos reparte el cien por
+ * ciento entre ellos: reservarle extensión a una sección que no va escrita
+ * deja el documento corto sin que nadie sepa por qué.
+ *
+ * `null` en cada parte que no corresponde, y en todas cuando el curso no
+ * declara extensión: no se inventa un objetivo.
  */
-export function wordsForFramingSection(
+export function sectionBudgets(
     expected: ExpectedLengthRange | null,
-    kind: 'introduccion' | 'conclusion',
-): number | null {
-    if (!expected) return null;
+    sections: DocumentSections,
+): { perVerse: number | null; introduction: number | null; conclusion: number | null } {
+    const vacio = { perVerse: null, introduction: null, conclusion: null };
+    if (!expected) return vacio;
     const target = expected.min ?? expected.max;
-    if (target === null || target <= 0) return null;
+    if (target === null || target <= 0) return vacio;
+
     const totalWords = expected.unit === 'words' ? target : target * WORDS_PER_PAGE;
-    return redondeaA50(totalWords * REPARTO[kind]);
+    const marco = (sections.introduction ? PARTE_DEL_MARCO : 0)
+        + (sections.conclusion ? PARTE_DEL_MARCO : 0);
+
+    return {
+        perVerse: sections.verses > 0
+            ? redondeaA50(totalWords * (1 - marco) / sections.verses)
+            : null,
+        introduction: sections.introduction ? redondeaA50(totalWords * PARTE_DEL_MARCO) : null,
+        conclusion: sections.conclusion ? redondeaA50(totalWords * PARTE_DEL_MARCO) : null,
+    };
 }
 
 /** Un presupuesto se dice en decenas, no en unidades: «unas 150 palabras». */

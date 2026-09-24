@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import {
     Wand2,
     Loader2,
-    Check,
     CheckCircle2,
     RotateCcw,
     Pencil,
@@ -32,7 +31,7 @@ import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { Link, useNavigate } from 'react-router-dom';
 import { assemblyContents, isUnreviewedCitationsError } from '@dosfilos/domain';
-import type { AssemblyContents } from '@dosfilos/domain';
+import type { AssemblyContents, AssemblyPart } from '@dosfilos/domain';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
 import { ExegesisOutOfCreditsDialog } from '@/components/exegesis/ExegesisOutOfCreditsDialog';
 import { ExegesisPreConfirmDialog } from '@/components/exegesis/ExegesisPreConfirmDialog';
@@ -114,36 +113,57 @@ interface StepCardProps {
  * Lee la MISMA función que usa el ensamblador, así la lista y el archivo no
  * pueden discrepar.
  */
-function AssemblyManifest({ contents }: { contents: AssemblyContents }) {
+function AssemblyManifest({ contents, paperId }: { contents: AssemblyContents; paperId: string }) {
     const { t } = useTranslation('exegesis');
+    const { setStepInclusion } = useExegesisPapers();
+
+    const fila = (p: AssemblyPart, estado: 'in' | 'pending' | 'out') => (
+        <li key={p.stepId} className="flex items-baseline gap-2 text-[12px]">
+            <input
+                type="checkbox"
+                id={`inc-${p.stepId}`}
+                checked={estado !== 'out'}
+                disabled={setStepInclusion.isPending}
+                onChange={(e) => setStepInclusion.mutate({
+                    paperId, stepId: p.stepId, include: e.target.checked,
+                })}
+                className="mt-0.5 shrink-0 rounded border-border"
+            />
+            <label
+                htmlFor={`inc-${p.stepId}`}
+                className={cn('flex-1 truncate cursor-pointer',
+                    estado === 'out' ? 'text-muted-foreground line-through' : 'text-foreground')}
+            >
+                {p.label}
+            </label>
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+                {estado === 'pending'
+                    ? t('detail.steps.assembly.pendingMark')
+                    : estado === 'out'
+                        ? ''
+                        : t('detail.steps.assembly.words', { count: p.words })}
+            </span>
+        </li>
+    );
+
     return (
         <div className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2.5 space-y-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {t('detail.steps.assembly.manifestTitle', { count: contents.words })}
             </p>
-            <ul className="space-y-0.5">
-                {contents.included.map(p => (
-                    <li key={p.stepId} className="flex items-baseline gap-1.5 text-[12px] text-foreground">
-                        <Check className="h-3 w-3 shrink-0 text-success" aria-hidden />
-                        <span className="flex-1 truncate">{p.label}</span>
-                        <span className="text-[11px] tabular-nums text-muted-foreground">
-                            {t('detail.steps.assembly.words', { count: p.words })}
-                        </span>
-                    </li>
-                ))}
+            <ul className="space-y-1">
+                {contents.included.map(p => fila(p, 'in'))}
+                {contents.pending.map(p => fila(p, 'pending'))}
+                {contents.excluded.map(p => fila(p, 'out'))}
             </ul>
-            {contents.excluded.length > 0 && (
-                <div className="border-t border-border pt-2 space-y-0.5">
-                    <p className="text-[11px] text-muted-foreground">
-                        {t('detail.steps.assembly.excludedTitle', { count: contents.excluded.length })}
-                    </p>
-                    <ul className="flex flex-wrap gap-x-2 gap-y-0.5">
-                        {contents.excluded.map(p => (
-                            <li key={p.stepId} className="text-[12px] text-muted-foreground">{p.label}</li>
-                        ))}
-                    </ul>
-                </div>
+            {contents.pending.length > 0 && (
+                <p className="border-t border-border pt-2 text-[11px] text-warning-subtle-foreground">
+                    {t('detail.steps.assembly.pendingHint', { count: contents.pending.length })}
+                </p>
             )}
+            <p className="text-[11px] leading-snug text-muted-foreground">
+                {t('detail.steps.assembly.hint')}
+            </p>
         </div>
     );
 }
@@ -801,7 +821,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
             <>
             {/* Body — state-aware */}
             <div className="px-5 py-4">
-                {contents && <AssemblyManifest contents={contents} />}
+                {contents && <AssemblyManifest contents={contents} paperId={paperId} />}
                 {isGenerating && (
                     <div className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <Loader2 className="h-4 w-4 animate-spin" />

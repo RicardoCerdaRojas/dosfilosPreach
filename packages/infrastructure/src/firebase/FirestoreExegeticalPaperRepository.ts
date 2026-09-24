@@ -537,6 +537,19 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         });
     }
 
+    async setStepInclusion(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        include: boolean
+    ): Promise<ExegeticalStep> {
+        return this.mutateStep(ownerId, paperId, stepId, (step) => {
+            step.includeInDocument = include;
+            step.updatedAt = new Date();
+            return step;
+        });
+    }
+
     async appendStepVersion(
         ownerId: string,
         paperId: string,

@@ -165,6 +165,19 @@ export interface IExegeticalPaperRepository {
     ): Promise<ExegeticalStep>;
 
     /**
+     * Marca si el paso pertenece al DOCUMENTO que se va a entregar.
+     *
+     * Gobierna dos cosas con una sola marca: qué entra al ensamble, y entre
+     * cuántas secciones se reparte la extensión que exige la rúbrica.
+     */
+    setStepInclusion(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        include: boolean
+    ): Promise<ExegeticalStep>;
+
+    /**
      * Appends a new version to the step's history and sets `current` to
      * point at it. Does NOT change `accepted` — that requires explicit
      * acceptance via `acceptStepVersion`.
