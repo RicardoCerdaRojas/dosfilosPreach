@@ -1,3 +1,4 @@
+import { hasResolvedNumbering } from '@dosfilos/domain';
 import type {
     CanonicalVerseAnalysis,
     CitationPageKind,
@@ -30,7 +31,12 @@ export function stampCitationPageKind(
         if (!source.citationKey) continue;
         kindByCitationKey.set(
             source.citationKey,
-            numberings.get(source.id) ? 'printed' : 'sheet',
+            // `hasResolvedNumbering` y no la verdad del objeto: la
+            // «Gramática Griega» TIENE numeración guardada y esa numeración
+            // no resuelve una sola página —un tramo único, hojas 1-711, sin
+            // folio—. Preguntar por el objeto la marcaba `printed` y sellaba
+            // como página impresa un número que nadie podía comprobar.
+            hasResolvedNumbering(numberings.get(source.id)) ? 'printed' : 'sheet',
         );
     }
     if (kindByCitationKey.size === 0) return analysis;

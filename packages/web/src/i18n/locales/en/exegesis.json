@@ -1623,6 +1623,7 @@
       "status": {
         "verified": "Verified",
         "page-mismatch": "Page mismatch",
+        "page-unverifiable": "Page not checked",
         "fuzzy-low": "Low match",
         "not-found": "Not found",
         "manual-pending": "Manual review"

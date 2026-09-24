@@ -1,5 +1,5 @@
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
-import type { CitationReview, VerifiedCitation } from '../entities/CitationVerification';
+import type { CitationReview, CitationStatus, VerifiedCitation } from '../entities/CitationVerification';
 import { collectAnalysisClaims } from './analysisClaims';
 
 /**
@@ -26,16 +26,29 @@ export function mapVerdictsByPath(
 }
 
 /**
- * Citas que impiden aceptar el paso: las que el verificador no encontró y
- * nadie revisó a mano.
+ * Citas que impiden aceptar el paso: las que el verificador no pudo respaldar
+ * y nadie revisó a mano.
  *
- * La regla es la que ya rige el Estudio Madre: se bloquea lo que está mal,
- * no lo que está incompleto. «No encontrada» es una afirmación atribuida a
- * una fuente que no la contiene; «coincidencia baja» y «revisión manual»
- * son dudas, y una duda no bloquea. Un paso sin verificar tampoco: no se
- * sabe que esté mal.
+ * La regla es la que ya rige el Estudio Madre: se bloquea lo que está mal, no
+ * lo que está incompleto. «Coincidencia baja» y «revisión manual» son dudas
+ * de grado —el sistema miró y quedó a medias— y una duda no bloquea. Un paso
+ * sin verificar tampoco: no se sabe que esté mal.
+ *
+ * Bloquean dos:
+ *
+ *   - `not-found`: una afirmación atribuida a una fuente que no la contiene.
+ *   - `page-unverifiable`: una página citada que no se comparó con nada. No
+ *     es una duda de grado sino una afirmación sin respaldo: el número lo
+ *     puso el modelo y ningún fragmento lo sostiene. Salía en verde, y así
+ *     llegó una página inexistente a un trabajo entregado.
+ *
+ * El nombre dice «blocking» y no «notFound» a propósito: una función que
+ * devuelve dos clases de cita y se llama por una sola es la misma clase de
+ * mentira silenciosa que este cambio retira del verificador.
  */
-export function unreviewedNotFound(
+const BLOQUEAN: ReadonlySet<CitationStatus> = new Set(['not-found', 'page-unverifiable']);
+
+export function unreviewedBlockingCitations(
     analysis: CanonicalVerseAnalysis,
     verdicts: ReadonlyArray<VerifiedCitation>,
     reviews: ReadonlyArray<CitationReview>,
@@ -43,7 +56,7 @@ export function unreviewedNotFound(
     const reviewed = new Set(reviews.map(r => r.path));
     const out: string[] = [];
     for (const [path, v] of mapVerdictsByPath(analysis, verdicts)) {
-        if (v.status === 'not-found' && !reviewed.has(path)) out.push(path);
+        if (BLOQUEAN.has(v.status) && !reviewed.has(path)) out.push(path);
     }
     return out;
 }
@@ -55,7 +68,7 @@ export function unreviewedNotFound(
 export class UnreviewedCitationsError extends Error {
     readonly name = 'UnreviewedCitationsError';
     constructor(readonly paths: ReadonlyArray<string>) {
-        super(`${paths.length} cita(s) no encontrada(s) sin revisar`);
+        super(`${paths.length} cita(s) sin respaldo y sin revisar`);
         Object.setPrototypeOf(this, UnreviewedCitationsError.prototype);
     }
 }

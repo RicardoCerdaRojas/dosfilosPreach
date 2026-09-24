@@ -4,7 +4,7 @@ import {
     collectAnalysisClaims,
     isUnreviewedCitationsError,
     mapVerdictsByPath,
-    unreviewedNotFound,
+    unreviewedBlockingCitations,
     type AnalysisClaim,
     type CitationEdit,
     type CitationStatus,
@@ -46,12 +46,12 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         [version?.citationReviews],
     );
     const blocking = useMemo(
-        () => (analysis ? unreviewedNotFound(analysis, version?.citationVerdicts ?? [], version?.citationReviews ?? []) : []),
+        () => (analysis ? unreviewedBlockingCitations(analysis, version?.citationVerdicts ?? [], version?.citationReviews ?? []) : []),
         [analysis, version?.citationVerdicts, version?.citationReviews],
     );
 
     const counts = useMemo(() => {
-        const out: Record<CitationStatus, number> = { verified: 0, 'page-mismatch': 0, 'fuzzy-low': 0, 'not-found': 0, 'manual-pending': 0 };
+        const out: Record<CitationStatus, number> = { verified: 0, 'page-mismatch': 0, 'page-unverifiable': 0, 'fuzzy-low': 0, 'not-found': 0, 'manual-pending': 0 };
         for (const v of verdicts.values()) out[v.status]++;
         return out;
     }, [verdicts]);

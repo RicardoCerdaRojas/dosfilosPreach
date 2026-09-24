@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildEmptyCanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { CanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { VerifiedCitation } from '../../entities/CitationVerification';
-import { isUnreviewedCitationsError, mapVerdictsByPath, UnreviewedCitationsError, unreviewedNotFound } from '../citationReview';
+import { isUnreviewedCitationsError, mapVerdictsByPath, UnreviewedCitationsError, unreviewedBlockingCitations } from '../citationReview';
 
 const analisis = (): CanonicalVerseAnalysis => ({
     ...buildEmptyCanonicalVerseAnalysis({ bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 3, verseEnd: 3 }),
@@ -30,24 +30,47 @@ describe('mapVerdictsByPath', () => {
     });
 });
 
-describe('unreviewedNotFound', () => {
+describe('unreviewedBlockingCitations', () => {
     const verdicts = [veredicto(0, 'verified'), veredicto(1, 'not-found'), veredicto(2, 'not-found')];
 
     it('bloquea las no encontradas que nadie revisó', () => {
-        expect(unreviewedNotFound(analisis(), verdicts, [])).toEqual(['commentatorEngagement[1]', 'footnoteExtensions[0].sources[0]']);
+        expect(unreviewedBlockingCitations(analisis(), verdicts, [])).toEqual(['commentatorEngagement[1]', 'footnoteExtensions[0].sources[0]']);
     });
 
     it('una revisión manual levanta el bloqueo de esa cita', () => {
-        expect(unreviewedNotFound(analisis(), verdicts, [{ path: 'commentatorEngagement[1]', note: 'está en p. 436', reviewedAt: new Date() }]))
+        expect(unreviewedBlockingCitations(analisis(), verdicts, [{ path: 'commentatorEngagement[1]', note: 'está en p. 436', reviewedAt: new Date() }]))
             .toEqual(['footnoteExtensions[0].sources[0]']);
     });
 
     it('las dudas no bloquean: coincidencia baja y revisión manual pasan', () => {
-        expect(unreviewedNotFound(analisis(), [veredicto(1, 'fuzzy-low'), veredicto(2, 'manual-pending')], [])).toEqual([]);
+        expect(unreviewedBlockingCitations(analisis(), [veredicto(1, 'fuzzy-low'), veredicto(2, 'manual-pending')], [])).toEqual([]);
+    });
+
+    it('una página que no se pudo comprobar bloquea igual que una no encontrada', () => {
+        // El caso de la «Gramática Griega»: la afirmación SÍ está en el libro,
+        // de modo que nada la marca como no encontrada, y el número de página
+        // no se comparó con nada. Salía en verde y la cita entró a un trabajo
+        // entregado apuntando a una página de ejercicios sobre Juan 1:14.
+        expect(unreviewedBlockingCitations(analisis(), [veredicto(1, 'page-unverifiable')], []))
+            .toEqual(['commentatorEngagement[1]']);
+    });
+
+    it('revisada a mano, la página sin comprobar deja de bloquear', () => {
+        expect(unreviewedBlockingCitations(
+            analisis(),
+            [veredicto(1, 'page-unverifiable')],
+            [{ path: 'commentatorEngagement[1]', note: 'miré la hoja: la frase está ahí', reviewedAt: new Date() }],
+        )).toEqual([]);
+    });
+
+    it('una página que discrepa es una duda de grado y no bloquea', () => {
+        // `page-mismatch` tiene dos números comparables y el revisor ve cuál
+        // es cuál. `page-unverifiable` no tiene con qué comparar.
+        expect(unreviewedBlockingCitations(analisis(), [veredicto(1, 'page-mismatch')], [])).toEqual([]);
     });
 
     it('sin verificación no hay nada que bloquee', () => {
-        expect(unreviewedNotFound(analisis(), [], [])).toEqual([]);
+        expect(unreviewedBlockingCitations(analisis(), [], [])).toEqual([]);
     });
 });
 

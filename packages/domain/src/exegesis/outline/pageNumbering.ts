@@ -595,6 +595,22 @@ export function citationAnchorFor(
     return '';
 }
 
+/**
+ * Si la numeración de un recurso resuelve la página impresa de ALGUNA hoja.
+ *
+ * Existe porque «tiene numeración» y «se le puede citar una página» no son lo
+ * mismo, y confundirlas costó una cita falsa en un trabajo entregado. La
+ * «Gramática Griega» está guardada con un solo tramo, hojas 1-711, `offset:
+ * null` —es decir, declarando que el libro entero no lleva folio— y marcada
+ * como confirmada. El objeto de numeración existe y es verdad que no resuelve
+ * nada, de modo que preguntar por el objeto da «sí» y preguntar por lo que el
+ * objeto puede hacer da «no». Lo segundo es lo que decide si una cita puede
+ * llevar número de página.
+ */
+export function hasResolvedNumbering(numbering: PageNumbering | null | undefined): boolean {
+    return !!numbering?.segments.some(segment => segment.offset !== null);
+}
+
 /** Cuántos puntos se piden como mínimo, pase lo que pase. */
 const MIN_CALIBRATION_POINTS = 3;
 

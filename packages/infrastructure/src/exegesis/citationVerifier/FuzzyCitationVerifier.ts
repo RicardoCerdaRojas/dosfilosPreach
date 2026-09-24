@@ -11,7 +11,7 @@ import type {
 import {
     CITATION_FUZZY_LOW_THRESHOLD,
     CITATION_VERIFY_THRESHOLD,
-    pagesOverlap,
+    pageVerdictFor,
 } from '@dosfilos/domain';
 import { parseCitations } from './citationParser';
 import {
@@ -29,11 +29,12 @@ import {
  *   2. **Text match** — sliding-window Jaccard between the citation's
  *      `evidence` (preceding quote or containing sentence) and the
  *      source's chunks. Best score across all chunks wins.
- *   3. **Page check** — when the matched chunk has a `pageHint`
- *      (extracted-excerpts mode) and the citation provides pages,
- *      compare numerically. Mismatch downgrades from `verified` to
- *      `page-mismatch`. For full-document mode the page check is
- *      skipped (no per-chunk page anchoring).
+ *   3. **Page check** — when the citation provides pages, the verdict
+ *      splits three ways. Both sides carry a number and overlap →
+ *      `verified`. Both carry a number and discrepan → `page-mismatch`.
+ *      El fragmento de apoyo NO trae ancla —modo documento completo, o
+ *      un recurso cuya numeración no resuelve— → `page-unverifiable`:
+ *      no hay con qué comparar, y antes eso se escribía como verde.
  *
  * Verdicts are conservative — when in doubt, the verifier marks
  * `fuzzy-low` rather than `verified`. The user is the final arbiter:
@@ -118,14 +119,20 @@ export class FuzzyCitationVerifier implements ICitationVerifier {
         const status = decideStatus(bestScore);
         const matchedPage = bestChunk ? extractPageFromHint(bestChunk.pageHint) : null;
 
-        // Page-mismatch override: only meaningful when we DID find the
-        // text (verified) AND both sides have a parseable page number.
-        // Anything else (no page on either side, fuzzy-low, not-found)
-        // skips the page check.
+        // Cotejo de página, con los mismos tres desenlaces que el
+        // verificador LLM para que el diálogo se pinte igual por los dos
+        // caminos. La cita trae número y el fragmento de apoyo no: no hay con
+        // qué comparar, y eso no es «coincide» —que es como salía cuando la
+        // condición era `&& matchedPage`—. Ver `page-unverifiable` en
+        // `CitationVerification.ts`.
         let finalStatus: CitationStatus = status;
         let note: string | null = buildBaseNote(status, parsed.evidenceIsQuoted);
-        if (status === 'verified' && parsed.pages && matchedPage) {
-            if (!pagesOverlap(parsed.pages, matchedPage)) {
+        if (status === 'verified') {
+            const verdict = pageVerdictFor(parsed.pages, matchedPage);
+            if (verdict === 'unverifiable') {
+                finalStatus = 'page-unverifiable';
+                note = `The claim is in the source, but p. ${parsed.pages} could not be checked: the matching excerpt carries no page anchor.`;
+            } else if (verdict === 'mismatch') {
                 finalStatus = 'page-mismatch';
                 note = `Cited p. ${parsed.pages} but the matching excerpt is at ${matchedPage}.`;
             }
