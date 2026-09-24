@@ -44,7 +44,7 @@ que no se delega.
 | 14 | Contar bien los subjuntivos de la prótasis | cotejar el análisis contra el texto griego | **S** |
 | 15 | Escribir la bibliografía | reunir fichas y ordenarlas | **S** (fase 10, brecha 4) |
 | 16 | Conseguir la ficha de Adamson | apretar «leer ficha del ejemplar» | **P** (el botón ya existe; ver §4) |
-| 17 | Que la voz configurada llegara al documento | ninguna: el documento se escribió fuera | **S** |
+| 17 | Que la voz configurada llegara al documento | cablear el perfil a los otros dos compositores | **S** (ver §4, tanda 2.8) |
 | 18 | Saber que la prótasis se extiende al v. 3 | leer la oración completa, no el versículo | **S** (fase 9) |
 
 **Catorce de dieciocho se cierran con software.** Tres con proceso. Uno —la lectura del programa
@@ -98,7 +98,7 @@ que hoy trata `not-found`.
 
 ## 4. Backlog, en orden de ejecución
 
-### Tanda 1 — integridad de la cita (bloquea entregar con errores)
+### Tanda 1 — integridad de la cita (bloquea entregar con errores) — ✅ CERRADA
 
 1. **`page-unverifiable`**: estado nuevo cuando no hay numeración resuelta. Semáforo ámbar,
    cuenta como no revisada. (§3)
@@ -110,15 +110,26 @@ que hoy trata `not-found`.
    Grand Rapids, 1976, NICNT, ISBN 0-8028-2377-7— y el campo vacío: es un botón sin apretar,
    no una función que falte. Queda como paso de proceso.
 
-### Tanda 2 — el documento entregable (fase 10)
+### Tanda 2 — el documento entregable (fase 10) — ✅ CERRADA
 
-4. Suprimir la cabecera de trabajo cuando hay portada.
-5. Maquetación (interlineado, sangría) tomada de la rúbrica, no cableada.
-6. **Generar la bibliografía** desde las fuentes efectivamente citadas, con aviso previo si a
-   alguna le falta ficha.
-7. Formato de cita —nota al pie o parentética— declarado en la rúbrica; que el patrón acepte
-   `(Apellido, página)` sin título.
-8. **La voz configurada aplicada al documento**, no solo a los pasos.
+4. ✅ Cabecera de trabajo suprimida cuando hay portada (#667).
+5. ✅ Maquetación tomada de la rúbrica (#668): `PaperRubric.formatting`, con el interlineado y
+   la línea entre párrafos leídos del sílabo por el extractor.
+6. ✅ Bibliografía generada desde las fuentes **citadas** (#666), con aviso al descargar cuando
+   a alguna le falta ficha.
+7. ⚠️ **Parcial** (#669). La forma de cita —nota al pie o parentética— ya se declara en la
+   rúbrica. Lo que NO se hizo: ensanchar el patrón para que acepte `(Apellido, página)` sin
+   título. Medido sobre los 16 trabajos con prosa en producción, sólo 5 traen alguna cita que
+   el conversor sepa ver: el patrón exige `(Autor, "Título", p. N)` y el compositor emite
+   además `Autor (p. N)`, con el autor fuera del paréntesis. Once trabajos exportan con cero
+   notas al pie y nada lo dice. La solución obvia choca con las fichas Turabian —
+   `(Nashville: Broadman & Holman, 2003)` tiene exactamente esa forma— y necesita un
+   discriminador pensado. **Queda como el pendiente de mayor valor de esta tanda.**
+8. ✅ Voz aplicada al documento (#670), y la brecha **no era la que decía este informe**. No es
+   que el artefacto se escriba fuera del sistema: es que el perfil de voz alimentaba sólo el
+   compositor de versículos. La introducción, la conclusión y el compositor del trabajo
+   completo tenían cero menciones de voz. El cuerpo salía con el registro del autor y las dos
+   partes que un profesor lee con más atención salían con el del modelo.
 
 ### Tanda 3 — la unidad de trabajo (fases 9 y 10)
 
