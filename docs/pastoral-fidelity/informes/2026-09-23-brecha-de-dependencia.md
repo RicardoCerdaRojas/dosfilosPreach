@@ -43,12 +43,16 @@ que no se delega.
 | 13 | Descubrir que Wallace comenta Stg. 2:9 por nombre | búsqueda de la gramática por versículo | **S** (fase 8) |
 | 14 | Contar bien los subjuntivos de la prótasis | cotejar el análisis contra el texto griego | **S** |
 | 15 | Escribir la bibliografía | reunir fichas y ordenarlas | **S** (fase 10, brecha 4) |
-| 16 | Conseguir la ficha de Adamson | leerla de su hoja 8 | **S** (reejecutar el lector sobre lo ya cargado) |
+| 16 | Conseguir la ficha de Adamson | apretar «leer ficha del ejemplar» | **P** (el botón ya existe; ver §4) |
 | 17 | Que la voz configurada llegara al documento | ninguna: el documento se escribió fuera | **S** |
 | 18 | Saber que la prótasis se extiende al v. 3 | leer la oración completa, no el versículo | **S** (fase 9) |
 
-**Quince de dieciocho se cierran con software.** Dos con proceso. Uno —la lectura del programa
+**Catorce de dieciocho se cierran con software.** Tres con proceso. Uno —la lectura del programa
 del curso— se queda donde debe quedarse.
+
+El ítem 16 cambió de columna al implementarlo: se había anotado como software y resultó ser un
+botón que ya existe. Queda dicho porque un inventario que no se corrige al chocar con el código
+es una lista de deseos.
 
 ## 3. El defecto más grave: una cita se da por verificada sin comprobar la página
 
@@ -100,8 +104,11 @@ que hoy trata `not-found`.
    cuenta como no revisada. (§3)
 2. **Aviso de libro sin numeración** al agregarlo al corpus: «de este libro no se puede
    comprobar el número de página impresa; resuélvelo en el ajustador antes de citarlo».
-3. **Reejecutar el lector de fichas** sobre los libros ya cargados. Adamson tiene su ficha
-   completa en la hoja 8 y `bibliography` en `null`.
+3. ~~Reejecutar el lector de fichas~~ **— no hacía falta software.** El botón «leer la ficha
+   del ejemplar» ya existe en el diálogo de bibliografía (`BibliographyEditDialog`, vía
+   `useReadBibliographyFromCover`). Adamson tiene su ficha completa en su hoja 8 —Eerdmans,
+   Grand Rapids, 1976, NICNT, ISBN 0-8028-2377-7— y el campo vacío: es un botón sin apretar,
+   no una función que falte. Queda como paso de proceso.
 
 ### Tanda 2 — el documento entregable (fase 10)
 
