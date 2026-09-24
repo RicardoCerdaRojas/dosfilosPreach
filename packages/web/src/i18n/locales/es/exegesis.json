@@ -508,7 +508,14 @@
           "lengthUnitWords": "Palabras",
           "lengthMinPlaceholder": "Mín.",
           "lengthMaxPlaceholder": "Máx.",
-          "lengthClear": "Sin límite especificado"
+          "lengthClear": "Sin límite especificado",
+          "formattingLabel": "Maquetación del documento",
+          "spacingDefault": "Como la guía de la casa (doble espacio)",
+          "spacingSingle": "Espacio simple",
+          "spacingOneAndAHalf": "Espacio y medio",
+          "spacingDouble": "Doble espacio",
+          "blankLineLabel": "Una línea en blanco entre párrafos",
+          "formattingHint": "Sólo si esta entrega pide algo distinto de la guía del seminario. El trabajo práctico semanal suele pedir espacio simple; el trabajo exegético largo, doble."
         },
         "requirements": {
           "title": "Requisitos del corpus",

@@ -60,6 +60,7 @@ export class UpdateRubricUseCase {
             sourceRequirements,
             structuralExpectations: input.structuralExpectations ?? existing.structuralExpectations,
             qualityCriteria,
+            formatting: input.formatting !== undefined ? input.formatting : existing.formatting,
             // Authorship: any patch flips provenance to user-edited
             // unless we were already there. Re-extracting from a doc
             // would explicitly set provenance back via

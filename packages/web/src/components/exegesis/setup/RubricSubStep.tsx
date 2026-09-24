@@ -21,6 +21,7 @@ import {
     getSourceTypeOrderIndex,
     type ExegeticalPaper,
     type PaperRubric,
+    type LineSpacing,
     type QualityCriterion,
     type SourceRequirement,
     type SourceType,
@@ -142,6 +143,12 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
     const [lengthMax, setLengthMax] = useState<string>(rubric.expectedLength?.max?.toString() ?? '');
     const [requirements, setRequirements] = useState<SourceRequirement[]>([...rubric.sourceRequirements]);
     const [qualityCriteria, setQualityCriteria] = useState<ReadonlyArray<QualityCriterion>>(rubric.qualityCriteria);
+    // «Como la casa» es un valor distinto de «doble espacio»: el primero sigue
+    // a la guía si algún día cambia, el segundo la fija en esta entrega.
+    const [lineSpacing, setLineSpacing] = useState<LineSpacing | 'default'>(
+        rubric.formatting?.lineSpacing ?? 'default');
+    const [blankLine, setBlankLine] = useState<boolean>(
+        rubric.formatting?.blankLineBetweenParagraphs ?? false);
     // Tab inside the editor: 'prescriptive' (the existing form for
     // metadata + requirements + structural) vs 'qualitative' (the
     // levels-grid criteria). Editing is shared across tabs — Save
@@ -156,6 +163,8 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
         setLengthMax(rubric.expectedLength?.max?.toString() ?? '');
         setRequirements([...rubric.sourceRequirements]);
         setQualityCriteria(rubric.qualityCriteria);
+        setLineSpacing(rubric.formatting?.lineSpacing ?? 'default');
+        setBlankLine(rubric.formatting?.blankLineBetweenParagraphs ?? false);
         // When the rubric reference changes (template applied / extracted /
         // reset), drop edit mode so the user sees the new content first.
         setMode('summary');
@@ -202,6 +211,9 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                 expectedLength,
                 sourceRequirements: requirements,
                 qualityCriteria,
+                formatting: lineSpacing === 'default'
+                    ? null
+                    : { lineSpacing, blankLineBetweenParagraphs: blankLine },
             });
             toast.success(t('paperSetup.subSteps.rubric.actions.saved'));
             // The useEffect on [rubric] will flip mode back to
@@ -419,6 +431,36 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                                 </select>
                             </div>
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-foreground mb-1">
+                            {t('paperSetup.subSteps.rubric.metadata.formattingLabel')}
+                        </label>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <select
+                                value={lineSpacing}
+                                onChange={(e) => setLineSpacing(e.target.value as LineSpacing | 'default')}
+                                className="rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+                            >
+                                <option value="default">{t('paperSetup.subSteps.rubric.metadata.spacingDefault')}</option>
+                                <option value="single">{t('paperSetup.subSteps.rubric.metadata.spacingSingle')}</option>
+                                <option value="one-and-a-half">{t('paperSetup.subSteps.rubric.metadata.spacingOneAndAHalf')}</option>
+                                <option value="double">{t('paperSetup.subSteps.rubric.metadata.spacingDouble')}</option>
+                            </select>
+                            <label className="inline-flex items-center gap-1.5 text-xs text-foreground">
+                                <input
+                                    type="checkbox"
+                                    checked={blankLine}
+                                    disabled={lineSpacing === 'default'}
+                                    onChange={(e) => setBlankLine(e.target.checked)}
+                                    className="rounded border-border"
+                                />
+                                {t('paperSetup.subSteps.rubric.metadata.blankLineLabel')}
+                            </label>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1 italic">
+                            {t('paperSetup.subSteps.rubric.metadata.formattingHint')}
+                        </p>
                     </div>
                 </div>
             </section>

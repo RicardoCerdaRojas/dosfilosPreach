@@ -145,6 +145,7 @@ export interface UpdateRubricInput {
     sourceRequirements?: ReadonlyArray<SourceRequirement>;
     structuralExpectations?: ReadonlyArray<StructuralExpectation>;
     qualityCriteria?: ReadonlyArray<QualityCriterion>;
+    formatting?: PaperRubric['formatting'];
 }
 
 // ── ResetRubric ────────────────────────────────────────────────────────

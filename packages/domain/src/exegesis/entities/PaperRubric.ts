@@ -137,11 +137,52 @@ export interface PaperRubric {
      */
     sourceTemplateId: string | null;
 
+    /**
+     * Cómo se maqueta el documento entregado.
+     *
+     * `null` significa «la guía de la casa»: Times New Roman 12 a doble
+     * espacio, que es lo que pide TMS y lo que el exportador hacía cableado.
+     *
+     * Existe porque la norma de la casa y la norma de LA ENTREGA no siempre
+     * coinciden, y hasta ahora ganaba la de la casa sin que nadie pudiera
+     * cambiarlo. El trabajo práctico semanal de griego se pide a espacio
+     * simple con una línea entre párrafos; el trabajo exegético largo, a
+     * doble espacio. Es el mismo estudiante, el mismo seminario y dos
+     * formatos, y quien los distingue es el encuadre de cada entrega.
+     */
+    formatting: PaperFormatting | null;
+
     /** When the rubric was first attached to the paper. */
     createdAt: Date;
     /** Last time the user edited or re-extracted the rubric. */
     updatedAt: Date;
 }
+
+/**
+ * Interlineado del cuerpo. Los nombres son los de la guía, no los números:
+ * quien llena el formulario lee «espacio simple» en su sílabo, no «240».
+ */
+export type LineSpacing = 'single' | 'one-and-a-half' | 'double';
+
+export interface PaperFormatting {
+    lineSpacing: LineSpacing;
+    /**
+     * Si entre párrafos va una línea en blanco.
+     *
+     * Va aparte del interlineado porque son decisiones independientes y los
+     * sílabos las piden por separado: «espacio simple con una línea adicional
+     * entre párrafos» son dos instrucciones, no una. En Word esto es el
+     * espacio POSTERIOR del párrafo, no un renglón vacío de verdad —un
+     * renglón vacío se descuadra al editar y cuenta como párrafo—.
+     */
+    blankLineBetweenParagraphs: boolean;
+}
+
+/** La maquetación de la casa, cuando la rúbrica no dice otra cosa. */
+export const DEFAULT_PAPER_FORMATTING: PaperFormatting = {
+    lineSpacing: 'double',
+    blankLineBetweenParagraphs: false,
+};
 
 export type RubricProvenance =
     | 'extracted-from-document'   // Uploaded PDF parsed by the extractor
@@ -381,6 +422,7 @@ export const DEFAULT_TMS_EXEGETICAL_RUBRIC: PaperRubric = {
     sourceCorpusId: null,
     sourcePastedText: null,
     sourceTemplateId: null,
+    formatting: null,
     createdAt: new Date(0),
     updatedAt: new Date(0),
 };
@@ -445,6 +487,7 @@ export function buildStrategyOnlyRubric(): PaperRubric {
         sourceCorpusId: null,
         sourcePastedText: null,
         sourceTemplateId: null,
+        formatting: null,
         createdAt: now,
         updatedAt: now,
     };

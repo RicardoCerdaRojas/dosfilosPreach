@@ -196,6 +196,8 @@ function deserialize(id: string, data: DocumentData): UserRubric {
             courseBibliography: Array.isArray(inner.courseBibliography) ? inner.courseBibliography : [],
             structuralExpectations: Array.isArray(inner.structuralExpectations) ? inner.structuralExpectations : [],
             qualityCriteria: Array.isArray(inner.qualityCriteria) ? inner.qualityCriteria : [],
+            // Ausente en las rúbricas anteriores al campo: `null` es «la guía de la casa».
+            formatting: inner.formatting ?? null,
             sourceCorpusId: inner.sourceCorpusId ?? null,
             sourcePastedText: inner.sourcePastedText ?? null,
             sourceTemplateId: inner.sourceTemplateId ?? null,

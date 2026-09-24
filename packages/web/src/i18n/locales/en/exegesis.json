@@ -508,7 +508,14 @@
           "lengthUnitWords": "Words",
           "lengthMinPlaceholder": "Min.",
           "lengthMaxPlaceholder": "Max.",
-          "lengthClear": "No limit specified"
+          "lengthClear": "No limit specified",
+          "formattingLabel": "Document layout",
+          "spacingDefault": "House style (double spacing)",
+          "spacingSingle": "Single spacing",
+          "spacingOneAndAHalf": "One-and-a-half spacing",
+          "spacingDouble": "Double spacing",
+          "blankLineLabel": "A blank line between paragraphs",
+          "formattingHint": "Only when this assignment asks for something other than the seminary guide. Weekly practicals usually ask for single spacing; the long exegetical paper, double."
         },
         "requirements": {
           "title": "Corpus requirements",

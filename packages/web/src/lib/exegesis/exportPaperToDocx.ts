@@ -20,12 +20,13 @@ import {
     type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
+    type PaperFormatting,
 } from '@dosfilos/domain';
 import {
     BIBLIOGRAPHY_PARAGRAPH,
     BLOCK_QUOTE_PARAGRAPH,
-    BODY_PARAGRAPH,
     BODY_RUN,
+    bodyParagraphFor,
     HEADING_PARAGRAPH,
     isMostlyHebrew,
     splitHebrew,
@@ -136,7 +137,7 @@ export async function exportPaperToDocx(
     const doc = new Document({
         title: titleDisplay,
         creator: paper.cover?.author?.trim() || 'Dosfilos · Exegesis',
-        styles: DOCUMENT_STYLES,
+        styles: documentStyles(paper.rubric?.formatting ?? null),
         footnotes,
         sections: [
             ...(cover ? [cover] : []),
@@ -191,9 +192,17 @@ export async function exportPaperToDocx(
  * redefinirlos, el trabajo sale con una tipografía que la guía no admite
  * y el estudiante la arregla a mano cada vez.
  */
-const DOCUMENT_STYLES = {
+/**
+ * Los estilos del documento, con el cuerpo maquetado como lo pida la entrega.
+ *
+ * Era una constante: el interlineado doble estaba cableado y ganaba siempre,
+ * aunque el encuadre pidiera otra cosa. Los títulos, las citas en bloque y la
+ * bibliografía NO se parametrizan —van a espacio simple en las dos guías—.
+ */
+function documentStyles(formatting: PaperFormatting | null) {
+    return {
     default: {
-        document: { run: BODY_RUN, paragraph: BODY_PARAGRAPH },
+        document: { run: BODY_RUN, paragraph: bodyParagraphFor(formatting) },
         heading1: {
             run: { ...BODY_RUN, bold: true, color: '000000' },
             paragraph: HEADING_PARAGRAPH,
@@ -207,7 +216,8 @@ const DOCUMENT_STYLES = {
             paragraph: HEADING_PARAGRAPH,
         },
     },
-} as const;
+    } as const;
+}
 
 /** Número de página como campo, para que Word lo actualice solo. */
 function pageNumberParagraph(alignment: (typeof AlignmentType)[keyof typeof AlignmentType]): Paragraph {
