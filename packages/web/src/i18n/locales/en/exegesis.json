@@ -2105,7 +2105,9 @@
       "readFailed": "The book's front matter could not be read.",
       "readAlreadyComplete": "This record is already complete. There is nothing to read from the book.",
       "readNothingNew": "The book adds nothing to what you already typed.",
-      "notEditable": "This source's record is not edited here: the book is not yours."
+      "notEditable": "This source's record is not edited here: the book is not yours.",
+      "incompleteToast_one": "The bibliography has 1 incomplete entry: {{sources}}. Complete it before submitting.",
+      "incompleteToast_other": "The bibliography has {{count}} incomplete entries: {{sources}}. Complete them before submitting."
     },
     "glossary": {
       "title": "Words I don't use",

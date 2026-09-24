@@ -14,8 +14,10 @@ import {
     TextRun,
 } from 'docx';
 import {
+    esEncabezadoDeBibliografia,
     exportPaperToMarkdown,
     formatPassageReference,
+    type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
 } from '@dosfilos/domain';
@@ -58,10 +60,13 @@ import {
  */
 export async function exportPaperToDocx(
     paper: ExegeticalPaper,
-    options: { exportedAt?: Date } = {},
+    options: { exportedAt?: Date; bibliography?: ReadonlyArray<BibliographyEntry> } = {},
 ): Promise<Blob> {
     const exportedAt = options.exportedAt ?? new Date();
-    const markdown = exportPaperToMarkdown(paper, { exportedAt });
+    const markdown = exportPaperToMarkdown(paper, {
+        exportedAt,
+        bibliography: options.bibliography,
+    });
     const titleDisplay = paper.title?.trim()
         || formatPassageReference(paper.passage, paper.displayLanguage);
 
@@ -72,7 +77,7 @@ export async function exportPaperToDocx(
     // La bibliografía se compone distinto —sangría francesa, espacio
     // simple— y empieza en página nueva, como pide la guía.
     const bibliographyAt = blocks.findIndex(
-        b => b.type === 'heading' && BIBLIOGRAPHY_HEADING.test(b.text),
+        b => b.type === 'heading' && esEncabezadoDeBibliografia(b.text),
     );
 
     const paragraphs: Paragraph[] = [];
@@ -177,7 +182,6 @@ export async function exportPaperToDocx(
 
 
 /** Encabezados que abren la bibliografía, en los dos idiomas del producto. */
-const BIBLIOGRAPHY_HEADING = /^(bibliograf|works cited|bibliography)/i;
 
 /**
  * Estilos del documento. Word trae Calibri 11 y encabezados azules; sin
