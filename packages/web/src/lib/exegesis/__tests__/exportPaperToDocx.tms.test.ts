@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
-import { PAPER_COVER_FIELDS } from '@dosfilos/domain';
+import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS } from '@dosfilos/domain';
 import type { ExegeticalPaper, PaperCover } from '@dosfilos/domain';
 import { EMPTY_VERIFICATION_SUMMARY } from '@dosfilos/domain';
 import { exportPaperToDocx } from '../exportPaperToDocx';
@@ -54,6 +54,57 @@ const paper = (over: Partial<ExegeticalPaper> = {}): ExegeticalPaper => ({
     verifications: EMPTY_VERIFICATION_SUMMARY,
     ...over,
 } as unknown as ExegeticalPaper);
+
+describe('exportPaperToDocx — la maquetación sale de la rúbrica', () => {
+    const conFormato = (formatting: unknown) => paper({
+        rubric: { ...DEFAULT_TMS_EXEGETICAL_RUBRIC, formatting },
+    } as unknown as Partial<ExegeticalPaper>);
+
+    it('sin rúbrica que diga otra cosa, manda la guía de la casa: doble espacio', async () => {
+        const styles = await xmlOf(paper(), 'word/styles.xml');
+        expect(styles).toMatch(/w:line="480"/);
+    });
+
+    it('el encuadre pide espacio simple y el documento sale a espacio simple', async () => {
+        // Es el caso que originó el campo: el trabajo práctico semanal de
+        // griego se pide a espacio simple y el exportador lo sacaba a doble,
+        // porque el número estaba cableado.
+        const styles = await xmlOf(
+            conFormato({ lineSpacing: 'single', blankLineBetweenParagraphs: false }),
+            'word/styles.xml',
+        );
+        const cuerpo = styles.slice(0, styles.indexOf('w:styleId="Heading1"'));
+        expect(cuerpo).toMatch(/w:line="240"/);
+        expect(cuerpo).not.toMatch(/w:line="480"/);
+    });
+
+    it('la línea entre párrafos se escribe como espacio posterior, no como renglón vacío', async () => {
+        // Un renglón vacío es un párrafo más: se descuadra al editar y cuenta
+        // en cualquier recuento que mire párrafos.
+        const styles = await xmlOf(
+            conFormato({ lineSpacing: 'single', blankLineBetweenParagraphs: true }),
+            'word/styles.xml',
+        );
+        const cuerpo = styles.slice(0, styles.indexOf('w:styleId="Heading1"'));
+        expect(cuerpo).toMatch(/w:after="240"/);
+    });
+
+    it('espacio y medio', async () => {
+        const styles = await xmlOf(
+            conFormato({ lineSpacing: 'one-and-a-half', blankLineBetweenParagraphs: false }),
+            'word/styles.xml',
+        );
+        expect(styles.slice(0, styles.indexOf('w:styleId="Heading1"'))).toMatch(/w:line="360"/);
+    });
+
+    it('la sangría de primera línea no la toca el interlineado', async () => {
+        const styles = await xmlOf(
+            conFormato({ lineSpacing: 'single', blankLineBetweenParagraphs: true }),
+            'word/styles.xml',
+        );
+        expect(styles).toMatch(/w:firstLine="720"/);
+    });
+});
 
 describe('exportPaperToDocx — la portada manda sobre la cabecera', () => {
     const conPortada = paper({

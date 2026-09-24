@@ -3,6 +3,7 @@ import {
     type ExtractRubricInput,
     type ExtractedRubric,
     type IPaperRubricExtractor,
+    type PaperFormatting,
     type PaperRubric,
     type SourceRequirement,
     type SourceType,
@@ -158,6 +159,7 @@ function buildUserMessageEN(rawText: string, typeList: string, source: 'document
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // e.g. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean } | null,   // ONLY when the syllabus states it. null = not stated.`,
         `  "sourceRequirements": [                                          // one entry per source type the rubric requires`,
         `    {`,
         `      "sourceType": <one of: ${typeList}>,`,
@@ -237,6 +239,7 @@ function buildUserMessageES(rawText: string, typeList: string, source: 'document
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // ej. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean } | null,   // SÓLO si el sílabo lo dice. null = no lo dice.`,
         `  "sourceRequirements": [                                          // un entry por tipo de fuente que la rúbrica requiere`,
         `    {`,
         `      "sourceType": <uno de: ${typeList}>,`,
@@ -304,6 +307,7 @@ interface RawExtractionResult {
     description: string | null;
     citationStandard: string | null;
     expectedLength: { unit: 'pages' | 'words'; min: number | null; max: number | null } | null;
+    formatting?: unknown;
     sourceRequirements: Array<{
         sourceType: string;
         minimum: number;
@@ -407,6 +411,7 @@ function mapToDomain(raw: RawExtractionResult, input: ExtractRubricInput): Omit<
         description: raw.description,
         expectedLength: raw.expectedLength,
         citationStandard: raw.citationStandard,
+        formatting: parseFormatting(raw.formatting),
         sourceRequirements,
         courseBibliography: parseCourseBibliography(raw.courseBibliography),
         structuralExpectations,
@@ -493,4 +498,24 @@ function parseCourseBibliography(raw: unknown): CourseBibliographyEntry[] {
         })
         .filter((e): e is CourseBibliographyEntry => e !== null)
         .slice(0, 40);
+}
+
+/**
+ * La maquetación que el sílabo pide, si la pide.
+ *
+ * Se valida en vez de confiar: un modelo que devuelve `"lineSpacing": "1.5"`
+ * o `"doble"` produciría un interlineado que el exportador no sabe traducir,
+ * y el documento saldría con la maquetación de la casa sin que nadie se
+ * entere. Ante la duda, `null` —la guía de la casa, que es lo que el sistema
+ * hacía antes de este campo y no sorprende a nadie—.
+ */
+export function parseFormatting(raw: unknown): PaperFormatting | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const f = raw as { lineSpacing?: unknown; blankLineBetweenParagraphs?: unknown };
+    const spacing = f.lineSpacing;
+    if (spacing !== 'single' && spacing !== 'one-and-a-half' && spacing !== 'double') return null;
+    return {
+        lineSpacing: spacing,
+        blankLineBetweenParagraphs: f.blankLineBetweenParagraphs === true,
+    };
 }

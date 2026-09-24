@@ -1,3 +1,4 @@
+import { DEFAULT_PAPER_FORMATTING, type PaperFormatting } from '@dosfilos/domain';
 import {
     AlignmentType,
     LineRuleType,
@@ -40,11 +41,49 @@ export const BODY_RUN: IRunStylePropertiesOptions = {
     size: TMS.bodyHalfPt,
 };
 
-export const BODY_PARAGRAPH: IParagraphStylePropertiesOptions = {
-    spacing: { line: TMS.doubleLine, lineRule: LineRuleType.AUTO, before: 0, after: 0 },
-    indent: { firstLine: TMS.firstLineIndent },
-    alignment: AlignmentType.LEFT,
-};
+/**
+ * Veinteavos de punto de cada interlineado. 240 = una línea.
+ *
+ * Los dos extremos SALEN de `TMS` en vez de repetirse: son los mismos números
+ * que ya gobiernan los títulos, las citas en bloque y la bibliografía, y dos
+ * copias de una medida son dos medidas apenas alguien toca una.
+ */
+const LINEA = {
+    single: TMS.singleLine,
+    'one-and-a-half': TMS.singleLine * 1.5,
+    double: TMS.doubleLine,
+} as const;
+
+/**
+ * El párrafo del cuerpo, según lo que pida la entrega.
+ *
+ * `null` es la guía de la casa —doble espacio, sin línea entre párrafos—,
+ * que es lo que el exportador hacía cableado y lo que sigue haciendo cuando
+ * la rúbrica no dice otra cosa.
+ *
+ * La línea entre párrafos se escribe como espacio POSTERIOR y no como un
+ * renglón vacío: un renglón vacío es un párrafo más, se descuadra al editar,
+ * y cuenta en cualquier recuento que mire párrafos.
+ *
+ * La sangría de primera línea no se toca. Es independiente del interlineado
+ * y ninguna de las dos guías la quita; el trabajo práctico a espacio simple
+ * que originó este campo la conserva.
+ */
+export function bodyParagraphFor(
+    formatting: PaperFormatting | null,
+): IParagraphStylePropertiesOptions {
+    const f = formatting ?? DEFAULT_PAPER_FORMATTING;
+    return {
+        spacing: {
+            line: LINEA[f.lineSpacing],
+            lineRule: LineRuleType.AUTO,
+            before: 0,
+            after: f.blankLineBetweenParagraphs ? TMS.singleLine : 0,
+        },
+        indent: { firstLine: TMS.firstLineIndent },
+        alignment: AlignmentType.LEFT,
+    };
+}
 
 /**
  * Títulos: mismo cuerpo de letra que el texto, centrados, negrita solo el

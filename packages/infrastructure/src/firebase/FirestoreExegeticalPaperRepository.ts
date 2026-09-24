@@ -1110,6 +1110,8 @@ function deserializeRubric(raw: any): ExegeticalPaper['rubric'] {
         courseBibliography: Array.isArray(raw.courseBibliography) ? raw.courseBibliography : [],
         structuralExpectations: Array.isArray(raw.structuralExpectations) ? raw.structuralExpectations : [],
         qualityCriteria: Array.isArray(raw.qualityCriteria) ? raw.qualityCriteria : [],
+        // Ausente en las rúbricas anteriores al campo: `null` es «la guía de la casa».
+        formatting: raw.formatting ?? null,
         sourceCorpusId: raw.sourceCorpusId ?? null,
         sourcePastedText: raw.sourcePastedText ?? null,
         sourceTemplateId: raw.sourceTemplateId ?? null,
