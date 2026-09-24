@@ -131,6 +131,73 @@ export function wordsPerVerseTarget(
     if (target === null || target <= 0) return null;
 
     const totalWords = expected.unit === 'words' ? target : target * WORDS_PER_PAGE;
-    const forVerses = totalWords * 0.8;
-    return Math.round(forVerses / verseCount / 50) * 50;
+    return redondeaA50(totalWords * REPARTO.versos / verseCount);
+}
+
+/**
+ * Cómo se reparte la extensión del trabajo entre sus tres clases de sección.
+ *
+ * Una sola tabla porque las tres partes tienen que sumar el trabajo entero, y
+ * tres constantes sueltas se desincronizan en cuanto alguien toca una: se
+ * ajusta la de los versos, las otras dos se quedan donde estaban, y el
+ * presupuesto que reciben los compositores deja de sumar lo que la rúbrica
+ * pide. Hay una prueba que comprueba la suma.
+ *
+ * El quinto para el marco sale de los trabajos de exégesis vistos hasta ahora.
+ */
+export const REPARTO = {
+    versos: 0.8,
+    introduccion: 0.1,
+    conclusion: 0.1,
+} as const;
+
+/**
+ * Cuántas palabras le tocan a la introducción o a la conclusión.
+ *
+ * Existe por la misma razón que `wordsPerVerseTarget`: el número tiene que
+ * llegar a QUIEN ESCRIBE. Sin esto los compositores de apertura y cierre no
+ * sabían que había un límite, y un trabajo que pedía 2-3 páginas salió de 16.
+ *
+ * `null` cuando el curso no declara extensión: no se inventa un objetivo.
+ */
+export function wordsForFramingSection(
+    expected: ExpectedLengthRange | null,
+    kind: 'introduccion' | 'conclusion',
+): number | null {
+    if (!expected) return null;
+    const target = expected.min ?? expected.max;
+    if (target === null || target <= 0) return null;
+    const totalWords = expected.unit === 'words' ? target : target * WORDS_PER_PAGE;
+    return redondeaA50(totalWords * REPARTO[kind]);
+}
+
+/** Un presupuesto se dice en decenas, no en unidades: «unas 150 palabras». */
+function redondeaA50(words: number): number {
+    return Math.max(50, Math.round(words / 50) * 50);
+}
+
+/**
+ * La instrucción de extensión que reciben los compositores.
+ *
+ * Una sola redacción para los tres —versículo, introducción, conclusión— y
+ * para los que vengan. Tres textos distintos diciendo lo mismo derivan solos:
+ * uno se vuelve un ruego («intentá no pasarte»), otro un límite duro, y el
+ * mismo trabajo sale con secciones que obedecen distinto.
+ *
+ * Cadena vacía cuando no hay presupuesto: sin extensión declarada, callar es
+ * más honesto que inventar un número.
+ */
+export function buildWordBudgetBlock(words: number | null, language: 'es' | 'en'): string {
+    if (!words || words <= 0) return '';
+    return language === 'en'
+        ? [
+            '## Length',
+            `Write approximately ${words} words for this section. This is a budget, not a suggestion: the paper has a length the course grades, and every section spending more than its share takes it from another.`,
+            'Cut breadth, never rigor. Fewer points, each fully argued and cited — not the same points said more briefly.',
+        ].join('\n')
+        : [
+            '## Extensión',
+            `Escribí aproximadamente ${words} palabras para esta sección. Es un presupuesto, no una sugerencia: el trabajo tiene una extensión que el curso califica, y cada sección que gasta de más se lo quita a otra.`,
+            'Recortá amplitud, nunca rigor. Menos puntos, cada uno argumentado y citado entero — no los mismos puntos dichos más corto.',
+        ].join('\n');
 }

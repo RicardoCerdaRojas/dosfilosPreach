@@ -83,6 +83,16 @@ export interface ComposeConclusionInput {
      */
     voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }>;
     /**
+     * Cuántas palabras le tocan a esta sección, derivadas de la extensión que
+     * exige la rúbrica. `null` o ausente cuando el curso no la declara.
+     *
+     * Llega hasta acá porque el número existía y no salía de la pantalla: lo
+     * calculaba `wordsPerVerseTarget` y su único llamador era la interfaz. Un
+     * trabajo que pedía 2-3 páginas salió de 16.
+     */
+    wordBudget?: number | null;
+
+    /**
      * Optional regeneration hint provided by the user when re-running
      * the composer (e.g. "más énfasis en la cristología", "menos
      * referencia a contexto histórico").

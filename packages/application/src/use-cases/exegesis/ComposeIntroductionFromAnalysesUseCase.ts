@@ -21,6 +21,7 @@ import type {
 } from '@dosfilos/domain';
 import {
     EMPTY_VERIFICATION_SUMMARY,
+    wordsForFramingSection,
     isCitableSourceType,
 } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
@@ -147,6 +148,7 @@ export class ComposeIntroductionFromAnalysesUseCase {
                 paperRubric: paper.rubric ?? null,
                 exegeticalStrategy: paper.exegeticalStrategy ?? null,
                 voiceSamples,
+                wordBudget: wordsForFramingSection(paper.rubric?.expectedLength ?? null, 'introduccion'),
                 regenerationHint: input.regenerationHint ?? null,
             };
 

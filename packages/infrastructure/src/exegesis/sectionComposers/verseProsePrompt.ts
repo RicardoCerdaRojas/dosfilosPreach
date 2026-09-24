@@ -1,5 +1,6 @@
 import {
     buildAcademicVoiceBlock,
+    buildWordBudgetBlock,
     formatPassageReference,
     serializeAnalysis,
     type ComposeVerseInput,
@@ -82,7 +83,8 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     // dicen CÓMO escribir, no QUÉ escribir.
     const voiceBlock = buildAcademicVoiceBlock(input.voiceSamples ?? [], lang);
 
-    const systemInstruction = [baseInstruction, '', styleGuideBlock, glossaryBlock, voiceBlock]
+    const systemInstruction = [baseInstruction, '', styleGuideBlock, glossaryBlock,
+        buildWordBudgetBlock(input.wordBudget ?? null, lang), voiceBlock]
         .filter(Boolean)
         .join('\n');
 
