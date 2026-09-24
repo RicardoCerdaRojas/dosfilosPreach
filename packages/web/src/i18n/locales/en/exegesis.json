@@ -1157,6 +1157,11 @@
           "inLibrary": "in your library, not yet in the corpus",
           "notFound": "not found in your library; upload it, or add it by hand if you have it under another title",
           "add": "Add"
+        },
+        "sinPaginaComprobable": {
+          "title": "This book cannot check its pages",
+          "body": "Its numbering resolves no printed page, so its excerpts arrive without one and any citation naming it cannot be checked. Resolve it before citing.",
+          "action": "Resolve numbering"
         }
       },
       "corpus-plan": {
