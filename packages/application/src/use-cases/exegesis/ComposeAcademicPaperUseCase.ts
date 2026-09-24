@@ -10,7 +10,9 @@ import type {
     IExegeticalPaperRepository,
     IResourceContentReader,
     IStyleFormatter,
+    IUserProseReader,
     IUserStyleGuideRepository,
+    IVoiceProfileRepository,
     StyleGuideManifest,
     StyleGuideSnapshot,
     IPageNumberingReader,
@@ -20,6 +22,7 @@ import { enforceAnalysisCoverage, isCitableSourceType } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 import { buildComposerSourcesWithPinnedContent, deriveCitationKey } from './pinnedSourceContent';
+import { loadAcademicVoiceSamples } from '../../services/exegesis/academicVoiceSamples';
 
 /**
  * Composes a TMS-style academic paper from a paper's accepted verse
@@ -80,6 +83,10 @@ export class ComposeAcademicPaperUseCase {
         private corpusReader?: ICuratedCorpusReader,
         /** Datos de portada de las fuentes, para no inventar la bibliografía. */
         private bibliography?: IBibliographyReader,
+        /** El perfil de voz del autor. Ver `loadAcademicVoiceSamples`. */
+        private voiceProfileRepository?: IVoiceProfileRepository,
+        /** Sermones del taller, cuando el autor eligió usarlos como muestra. */
+        private proseReader?: IUserProseReader,
     ) { }
 
 
@@ -158,7 +165,13 @@ export class ComposeAcademicPaperUseCase {
             // con la confianza de un dato verificado.
             const pageLabel = await buildPageLabeler(this.pageNumbering, paper, 'ComposeAcademicPaper');
 
+            const voiceSamples = await loadAcademicVoiceSamples(input.ownerId, {
+                voiceProfileRepository: this.voiceProfileRepository,
+                contentReader: this.contentReader,
+                proseReader: this.proseReader,
+            });
             const composerInput: ComposeAcademicPaperInput = {
+                voiceSamples,
                 paperPassage: paper.passage,
                 paperTitle: paper.title ?? null,
                 language: paper.displayLanguage,

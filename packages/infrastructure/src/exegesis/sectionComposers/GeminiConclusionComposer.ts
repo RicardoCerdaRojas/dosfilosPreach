@@ -1,4 +1,5 @@
 import {
+    buildAcademicVoiceBlock,
     formatPassageReference,
     serializeAnalysis,
     type ComposeConclusionInput,
@@ -144,6 +145,12 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             `Un único bloque markdown, 2-3 párrafos. Comenzá la sección con un heading "## Conclusión", después la prosa. Sin sub-headings "##" adentro.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 
+    // La voz del autor, al final de la instrucción de sistema y no en el
+    // mensaje: es una regla de REGISTRO, no material del pasaje, y mezclarla
+    // con los briefings la deja compitiendo con el contenido.
+    const conVoz = [system, buildAcademicVoiceBlock(input.voiceSamples ?? [], lang)]
+        .filter(Boolean).join('\n\n');
+
     const briefings = input.verseAnalyses.map(a => serializeAnalysis(a, lang)).join('\n\n');
     const pinnedBlock = formatPinnedContract(input.pinnedSourceKeys, lang);
     const hint = input.regenerationHint
@@ -191,7 +198,7 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
         'GeminiConclusionComposer',
     );
 
-    return { systemInstruction: system, userMessage: user };
+    return { systemInstruction: conVoz, userMessage: user };
 }
 
 function formatAssignmentBrief(brief: string | null, lang: 'es' | 'en'): string {

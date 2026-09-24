@@ -602,6 +602,8 @@ class ExegesisService {
             // Las fuentes asignadas aportan las hojas elegidas, no el libro entero.
             curatedCorpusReader,
             bibliographyReader,
+            voiceProfileRepository,
+            proseReader,
         );
 
         // Section-level composers. Same style-guide enforcement as
@@ -618,6 +620,8 @@ class ExegesisService {
             pageNumberingReader,
             curatedCorpusReader,
             bibliographyReader,
+            voiceProfileRepository,
+            proseReader,
         );
         const introductionComposer = new GeminiIntroductionComposer(exegesisModelId);
         this.composeIntroductionFromAnalyses = new ComposeIntroductionFromAnalysesUseCase(
@@ -629,6 +633,8 @@ class ExegesisService {
             pageNumberingReader,
             curatedCorpusReader,
             bibliographyReader,
+            voiceProfileRepository,
+            proseReader,
         );
         const verseAcademicComposer = new GeminiVerseAcademicComposer(exegesisModelId);
         this.composeVerseAcademicProse = new ComposeVerseAcademicProseUseCase(

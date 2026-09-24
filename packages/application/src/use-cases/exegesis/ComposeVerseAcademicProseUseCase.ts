@@ -22,15 +22,13 @@ import type {
 import {
     isCitableSourceType,
     replaceVerseSection,
-    MAX_VOICE_SAMPLES,
-    selectAcademicVoiceSamples,
-    selectVoiceSamples,
     verseSectionKey,
     type AcademicVoiceSample,
 } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { composerSourceOf } from './pinnedSourceContent';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
+import { loadAcademicVoiceSamples } from '../../services/exegesis/academicVoiceSamples';
 
 export interface ComposeVerseAcademicProseInput {
     ownerId: string;
@@ -281,43 +279,16 @@ export class ComposeVerseAcademicProseUseCase {
     /**
      * Unos párrafos de la prosa del autor, de un texto que él declaró suyo.
      *
-     * Un fallo de lectura devuelve lista vacía, como el glosario: componer
-     * sin su registro es molesto; no componer es peor.
+     * Delega en el servicio compartido: la introducción y la conclusión
+     * necesitan exactamente las mismas muestras, y tres copias de esta lógica
+     * serían tres criterios distintos sobre qué es la voz de una persona.
      */
-    private async loadVoiceSamples(ownerId: string): Promise<AcademicVoiceSample[]> {
-        if (!this.voiceProfileRepository) return [];
-        try {
-            const perfil = await this.voiceProfileRepository.getProfile(ownerId);
-            if (!perfil) return [];
-
-            // Manda el texto académico: es el registro que este trabajo pide.
-            // Los sermones rellenan lo que falte, y sólo si el autor los
-            // eligió: son prosa suya con certeza, pero predicar no es
-            // escribir un trabajo.
-            const deTexto = perfil.resourceId
-                ? selectAcademicVoiceSamples((await this.contentReader.getTextContent(perfil.resourceId)) ?? '')
-                : [];
-            if (deTexto.length >= MAX_VOICE_SAMPLES || !perfil.useSermons || !this.proseReader) {
-                return deTexto.slice(0, MAX_VOICE_SAMPLES);
-            }
-
-            const sermones = await this.proseReader.workshopSermons(ownerId, 8);
-            const delTaller = selectVoiceSamples(sermones, { maxSamples: MAX_VOICE_SAMPLES - deTexto.length });
-            // Las posiciones de los sermones CONTINÚAN las del texto en vez
-            // de volver a empezar en cero: la lista se lee como una sola
-            // secuencia, y dos muestras distintas con la misma posición
-            // describen mal de dónde salieron.
-            return [
-                ...deTexto,
-                ...delTaller.map((muestra, i) => ({
-                    excerpt: muestra.excerpt,
-                    position: (deTexto.length + i) / MAX_VOICE_SAMPLES,
-                })),
-            ];
-        } catch (err) {
-            console.warn('[ComposeVerseAcademicProseUseCase] no se pudo leer el perfil de voz:', err);
-            return [];
-        }
+    private loadVoiceSamples(ownerId: string): Promise<AcademicVoiceSample[]> {
+        return loadAcademicVoiceSamples(ownerId, {
+            voiceProfileRepository: this.voiceProfileRepository,
+            contentReader: this.contentReader,
+            proseReader: this.proseReader,
+        });
     }
 
     private async loadStyleGuideContent(ownerId: string, styleGuideId: string | null): Promise<string> {

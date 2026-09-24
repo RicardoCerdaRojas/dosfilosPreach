@@ -11,7 +11,9 @@ import type {
     IExegeticalPaperRepository,
     IResourceContentReader,
     IStyleFormatter,
+    IUserProseReader,
     IUserStyleGuideRepository,
+    IVoiceProfileRepository,
     ICuratedCorpusReader,
     IPageNumberingReader,
     StyleGuideManifest,
@@ -23,6 +25,7 @@ import {
 } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 import { buildComposerSourcesWithPinnedContent, deriveCitationKey } from './pinnedSourceContent';
+import { loadAcademicVoiceSamples } from '../../services/exegesis/academicVoiceSamples';
 
 /**
  * Composes the conclusion section from accepted canonical verse
@@ -60,6 +63,14 @@ export class ComposeConclusionFromAnalysesUseCase {
         private corpusReader?: ICuratedCorpusReader,
         /** Datos de portada de las fuentes, para no inventar la bibliografía. */
         private bibliography?: IBibliographyReader,
+        /**
+         * El perfil de voz del autor. Llega hasta acá por la misma razón que
+         * llegaba al compositor de versículos: cómo abre y cómo cierra un
+         * trabajo es lo que más se lee, y salían con la voz del modelo.
+         */
+        private voiceProfileRepository?: IVoiceProfileRepository,
+        /** Sermones del taller, cuando el autor eligió usarlos como muestra. */
+        private proseReader?: IUserProseReader,
     ) { }
 
     async execute(input: ComposeConclusionFromAnalysesUseCaseInput): Promise<ExegeticalStepVersion> {
@@ -116,6 +127,13 @@ export class ComposeConclusionFromAnalysesUseCase {
             );
             const citableSources = buildFormatterSources(paper);
 
+            // Una sola lectura del perfil: el reintento por fuentes asignadas
+            // reusa este mismo input y no debe volver a leer la biblioteca.
+            const voiceSamples = await loadAcademicVoiceSamples(input.ownerId, {
+                voiceProfileRepository: this.voiceProfileRepository,
+                contentReader: this.contentReader,
+                proseReader: this.proseReader,
+            });
             const composerInput: ComposeConclusionInput = {
                 paperPassage: paper.passage,
                 language: paper.displayLanguage,
@@ -127,6 +145,7 @@ export class ComposeConclusionFromAnalysesUseCase {
                 pinnedSourceKeys,
                 paperRubric: paper.rubric ?? null,
                 exegeticalStrategy: paper.exegeticalStrategy ?? null,
+                voiceSamples,
                 regenerationHint: input.regenerationHint ?? null,
             };
 
