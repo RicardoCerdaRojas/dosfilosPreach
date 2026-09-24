@@ -74,6 +74,24 @@ export interface AnalyzeVerseInput {
     originalLanguageText: string | null;
 
     /**
+     * El texto original de los versículos VECINOS, con el analizado señalado.
+     *
+     * Existe porque la sintaxis griega no respeta los versículos y el
+     * analizador veía sólo el suyo. El caso testigo es Santiago 2:2: una
+     * prótasis condicional cuya apódosis está en 2:4. Sin el entorno no se
+     * puede decir qué clase de condición es, porque la evidencia está dos
+     * versículos más adelante y el sistema la recortaba.
+     *
+     * NO es texto para analizar: es para ver antecedentes y consecuentes. Lo
+     * que se analiza sigue siendo `originalLanguageText`, y el contexto lleva
+     * el versículo marcado para que no haya duda de cuál es.
+     *
+     * Null cuando no hay vecinos que ofrecer —un trabajo de un solo
+     * versículo— o cuando el proveedor no responde.
+     */
+    pericopeContext: string | null;
+
+    /**
      * Free-text framing of the paper — typically the assignment
      * brief + the student's chosen angle. Threaded into the analyzer
      * so the verse's `argumentativeRole` and `verseThesis` align with

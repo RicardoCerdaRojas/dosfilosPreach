@@ -47,6 +47,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const styleGuideBlock = formatStyleGuide(input.styleGuideContent, lang);
     const corpusGapsBlock = formatCorpusGaps(input.missingSourceTypes, lang);
     const baseTextBlock = formatOriginalLanguageText(input.originalLanguageText, lang);
+    const pericopeBlock = formatPericopeBlock(input.pericopeContext, lang);
 
     if (lang === 'en') {
         return [
@@ -56,6 +57,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             `Verse: **${verse}**`,
             `Within paper passage: ${passage}`,
             baseTextBlock,
+            pericopeBlock,
             briefBlock,
             ``,
             `## Methodological foundation`,
@@ -97,6 +99,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `Versículo: **${verse}**`,
         `Dentro del pasaje del paper: ${passage}`,
         baseTextBlock,
+        pericopeBlock,
         briefBlock,
         ``,
         `## Fundamento metodológico`,
@@ -279,6 +282,22 @@ function formatOriginalLanguageText(text: string | null, lang: 'es' | 'en'): str
     const note = lang === 'en'
         ? 'This is the authoritative base text for the verse. Every grammatical, lexical, and syntactic claim you make MUST square with the wording below; do not paraphrase from memory.'
         : 'Este es el texto base autoritativo del versículo. Toda afirmación gramatical, léxica y sintáctica que hagas DEBE coincidir con la redacción de abajo; no parafrasees desde memoria.';
+    return [``, heading, '```', text.trim(), '```', note].join('\n');
+}
+
+/**
+ * El entorno del versículo, con el analizado señalado.
+ *
+ * Va DESPUÉS del texto base y dice explícitamente qué es y qué no es. Sin esa
+ * frase el modelo recibe seis versículos de griego y analiza los seis: el
+ * contexto se vuelve tarea, que es el defecto contrario al que esto arregla.
+ */
+function formatPericopeBlock(text: string | null, lang: 'es' | 'en'): string {
+    if (!text || !text.trim()) return '';
+    const heading = lang === 'en' ? '## Surrounding text' : '## Texto del entorno';
+    const note = lang === 'en'
+        ? 'Context ONLY. The verse to analyze is the one marked with \u25ba; do not analyze the others. Greek syntax does not respect verse divisions: use this to find antecedents and consequents \u2014 a protasis whose apodosis lands two verses later, a particle whose contrast sits just before, a participle whose argument continues after. When a construction reaches beyond the marked verse, say so and cite the verse where the evidence is.'
+        : 'Contexto SOLAMENTE. El vers\u00edculo a analizar es el marcado con \u25ba; no analices los otros. La sintaxis griega no respeta la divisi\u00f3n en vers\u00edculos: us\u00e1 esto para hallar antecedentes y consecuentes \u2014una pr\u00f3tasis cuya ap\u00f3dosis cae dos vers\u00edculos despu\u00e9s, una part\u00edcula cuyo contraste est\u00e1 justo antes, un participio cuyo argumento sigue adelante\u2014. Cuando una construcci\u00f3n se extienda m\u00e1s all\u00e1 del vers\u00edculo marcado, decilo y cit\u00e1 el vers\u00edculo donde est\u00e1 la evidencia.';
     return [``, heading, '```', text.trim(), '```', note].join('\n');
 }
 
