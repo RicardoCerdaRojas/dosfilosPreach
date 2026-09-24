@@ -614,29 +614,12 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         stepId: string,
         markdown: string
     ): Promise<ExegeticalStep> {
-        const editVersion: ExegeticalStepVersion = {
-            id: crypto.randomUUID(),
-            createdAt: new Date(),
-            markdown,
-            origin: 'edited',
-            parentVersionId: null, // filled inside mutateStep using step.accepted
-            modelId: null,
-            regenerationHint: null,
-            tokensUsed: null,
-            verifications: { ...EMPTY_VERIFICATION_SUMMARY },
-        };
-
         return this.mutateStep(ownerId, paperId, stepId, (step) => {
             // Edits are anchored to whatever was previously accepted (or
-            // current, as a fallback). Resets verifications: per the
-            // user's request, edits do NOT auto-re-run verification —
-            // they show as 'manualPending' instead until the user
-            // explicitly clicks "verify".
+            // current, as a fallback).
             const parent = step.accepted ?? step.current;
-            const versioned: ExegeticalStepVersion = {
-                ...editVersion,
-                parentVersionId: parent?.id ?? null,
-            };
+
+            const versioned = buildManualEditVersion(parent ?? null, markdown);
             step.versions = [...step.versions, versioned];
             step.accepted = versioned;
             // State stays 'accepted' if it was already; if it was
@@ -1264,5 +1247,53 @@ export function deserializeStep(raw: any): ExegeticalStep {
         current: raw?.current ? deserializeStepVersion(raw.current) : null,
         accepted: raw?.accepted ? deserializeStepVersion(raw.accepted) : null,
         versions: Array.isArray(raw?.versions) ? raw.versions.map(deserializeStepVersion) : [],
+    };
+}
+
+/**
+ * La versión que deja una edición manual de la prosa.
+ *
+ * EL ANÁLISIS VIAJA CON LA EDICIÓN. Esta versión se armaba desde cero, con el
+ * markdown y nada más, y el análisis canónico del versículo se quedaba en la
+ * versión anterior. Corregir una cita a mano borraba el estudio que estaba
+ * debajo del párrafo: medido sobre un trabajo real, editar la prosa de
+ * Santiago 2:1 dejó su versión aceptada sin análisis y sin las 16 citas ya
+ * verificadas, y la insignia del paso pasó de «15/16» a nada.
+ *
+ * El análisis describe el VERSÍCULO, no el párrafo. Editar una frase de la
+ * prosa no dice nada sobre la sintaxis del griego.
+ *
+ * Los veredictos y las revisiones viajan con él por la misma razón: se
+ * calculan contra las citas del ANÁLISIS —no contra el markdown— así que una
+ * edición del texto no los invalida.
+ *
+ * Sin análisis, en cambio, la verificación lee el markdown, y ahí sí una
+ * edición la invalida: el resumen se reinicia y el paso queda pidiendo que
+ * alguien vuelva a verificar. Ése era el motivo original de reiniciarlo, y se
+ * conserva donde sigue siendo cierto.
+ */
+export function buildManualEditVersion(
+    parent: ExegeticalStepVersion | null,
+    markdown: string,
+): ExegeticalStepVersion {
+    const analysis = parent?.canonicalAnalysis ?? null;
+    return {
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        markdown,
+        origin: 'edited',
+        parentVersionId: parent?.id ?? null,
+        modelId: null,
+        regenerationHint: null,
+        tokensUsed: null,
+        verifications: analysis
+            ? (parent?.verifications ?? { ...EMPTY_VERIFICATION_SUMMARY })
+            : { ...EMPTY_VERIFICATION_SUMMARY },
+        ...(analysis ? {
+            canonicalAnalysis: analysis,
+            citationVerdicts: parent?.citationVerdicts ?? [],
+            citationReviews: parent?.citationReviews ?? [],
+            citationCorrections: parent?.citationCorrections ?? [],
+        } : {}),
     };
 }
