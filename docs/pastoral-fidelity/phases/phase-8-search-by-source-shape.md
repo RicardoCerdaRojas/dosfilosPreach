@@ -7,7 +7,7 @@
 
 ## El problema, medido
 
-Al armar el corpus de Santiago 2:1–13, tres de las seis fuentes quedaron en **0 fragmentos**
+Al armar el corpus de Santiago 2:1–13, tres de las siete fuentes quedaron en **0 fragmentos**
 y por lo tanto no aportan nada a la generación. El sistema lo avisa —«Esta fuente no tiene
 fragmentos seleccionados — no contribuirá a la generación»— pero no dice por qué, y el porqué
 es el mismo en los tres casos:
@@ -17,6 +17,10 @@ es el mismo en los tres casos:
 | Porter, *Idioms of the Greek NT* | Gramática / sintaxis | 0 | No habla de Santiago 2. Habla de partículas y participios. |
 | Léxico Griego-Español | Léxico técnico | 0 | No habla de pasajes. Habla de palabras, en orden alfabético. |
 | Metzger, *Textual Commentary* | Comentario textual | 0 | Sí habla de Santiago, pero la consulta no lo alcanzó. |
+
+A las tres hubo que ponerles los tramos de hojas **a mano** para que aportaran algo —Metzger
+10 tramos, el Léxico 2, Porter 4—, y ese trabajo manual es exactamente el que esta fase
+retira.
 
 `RetrieveChunksExcerptExtractor` arma **una sola consulta de embeddings** con la referencia
 del pasaje más un trozo del encuadre, y se la hace a todos los libros por igual. A un
@@ -31,7 +35,8 @@ organizado así.
 
 Medido sobre el propio ejemplar de Porter, al abrir «Ajustar páginas»:
 
-- **329 de sus 332 hojas tienen sección nombrada**, con **262 secciones distintas**.
+- **329 de sus 332 hojas tienen sección nombrada**, con **465 secciones distintas**
+  (medido sobre `document_chunks.metadata.section` el 2026-09-23).
 - Y las secciones SON las categorías que el trabajo necesita:
 
 ```
@@ -42,10 +47,14 @@ Medido sobre el propio ejemplar de Porter, al abrir «Ajustar páginas»:
 10. Participles                        1. Classification of Conditional Clauses
 ```
 
-El libro está perfectamente estructurado. Lo que pasa es que
-`outlineStructureQuality` pregunta si los encabezados nombran una REFERENCIA BÍBLICA,
-ve que no, y el llamador «cae al camino semántico» —tirando las 262 secciones— en vez de
-preguntar lo otro: si los encabezados nombran CATEGORÍAS.
+El libro está perfectamente estructurado, y el camino estructural **no lo descarta por falta
+de encabezados**: `outlineStructureQuality` solo mide `headingCount >= 2`, que Porter cumple
+con holgura. Lo descarta el paso siguiente. `selectChunksForPassage` busca en el esquema los
+encabezados cuya REFERENCIA BÍBLICA solapa el pasaje; los títulos de Porter nombran
+categorías gramaticales y no referencias, así que la selección vuelve con
+`chunkCount === 0`, y tanto `StructuralExcerptExtractor` como `SheetRangeProposer` caen al
+camino semántico tirando las 465 secciones. Nadie pregunta lo otro: si los encabezados
+nombran CATEGORÍAS.
 
 Así que el problema no es que la recuperación semántica sea mala. Es que hay un índice
 perfecto en la base de datos y el sistema no lo mira porque no está en el formato que

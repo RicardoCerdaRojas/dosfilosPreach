@@ -36,9 +36,10 @@ El caso testigo es la pregunta 2 del trabajo práctico, que el propio profesor f
 cruzando versículos: *«¿Cómo funciona ἐάν (Stg. 2:2)? ¿Qué relación tiene con el
 versículo 4?»*.
 
-Santiago 2:2–4 es **un solo período condicional**. La prótasis son cuatro subjuntivos
+Santiago 2:2–4 es **un solo período condicional**. La prótasis son cinco subjuntivos
 aoristos que corren desde el v.2 hasta el v.3 —ἐὰν εἰσέλθῃ… εἰσέλθῃ δὲ… καὶ ἐπιβλέψητε…
-καὶ εἴπητε— y la apódosis es el v.4: οὐ διεκρίθητε ἐν ἑαυτοῖς. Hoy el analizador ve el v.2
+καὶ εἴπητε… καὶ τῷ πτωχῷ εἴπητε, uno al rico y otro al pobre— y la apódosis es el v.4:
+οὐ διεκρίθητε ἐν ἑαυτοῖς. Hoy el analizador ve el v.2
 solo: una prótasis sin su apódosis. No puede decir qué clase de condición es ni qué función
 cumple, porque la evidencia está dos versículos más adelante y el sistema la recortó.
 
