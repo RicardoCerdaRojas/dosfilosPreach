@@ -515,7 +515,9 @@
           "spacingOneAndAHalf": "Espacio y medio",
           "spacingDouble": "Doble espacio",
           "blankLineLabel": "Una línea en blanco entre párrafos",
-          "formattingHint": "Sólo si esta entrega pide algo distinto de la guía del seminario. El trabajo práctico semanal suele pedir espacio simple; el trabajo exegético largo, doble."
+          "formattingHint": "Sólo si esta entrega pide algo distinto de la guía del seminario. El trabajo práctico semanal suele pedir espacio simple; el trabajo exegético largo, doble.",
+          "citationFootnote": "Cita en nota al pie",
+          "citationParenthetical": "Cita entre paréntesis en el texto"
         },
         "requirements": {
           "title": "Requisitos del corpus",

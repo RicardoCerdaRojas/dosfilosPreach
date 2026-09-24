@@ -21,6 +21,7 @@ import {
     getSourceTypeOrderIndex,
     type ExegeticalPaper,
     type PaperRubric,
+    type CitationForm,
     type LineSpacing,
     type QualityCriterion,
     type SourceRequirement,
@@ -149,6 +150,8 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
         rubric.formatting?.lineSpacing ?? 'default');
     const [blankLine, setBlankLine] = useState<boolean>(
         rubric.formatting?.blankLineBetweenParagraphs ?? false);
+    const [citationForm, setCitationForm] = useState<CitationForm>(
+        rubric.formatting?.citationForm ?? 'footnote');
     // Tab inside the editor: 'prescriptive' (the existing form for
     // metadata + requirements + structural) vs 'qualitative' (the
     // levels-grid criteria). Editing is shared across tabs — Save
@@ -165,6 +168,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
         setQualityCriteria(rubric.qualityCriteria);
         setLineSpacing(rubric.formatting?.lineSpacing ?? 'default');
         setBlankLine(rubric.formatting?.blankLineBetweenParagraphs ?? false);
+        setCitationForm(rubric.formatting?.citationForm ?? 'footnote');
         // When the rubric reference changes (template applied / extracted /
         // reset), drop edit mode so the user sees the new content first.
         setMode('summary');
@@ -213,7 +217,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                 qualityCriteria,
                 formatting: lineSpacing === 'default'
                     ? null
-                    : { lineSpacing, blankLineBetweenParagraphs: blankLine },
+                    : { lineSpacing, blankLineBetweenParagraphs: blankLine, citationForm },
             });
             toast.success(t('paperSetup.subSteps.rubric.actions.saved'));
             // The useEffect on [rubric] will flip mode back to
@@ -446,6 +450,15 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                                 <option value="single">{t('paperSetup.subSteps.rubric.metadata.spacingSingle')}</option>
                                 <option value="one-and-a-half">{t('paperSetup.subSteps.rubric.metadata.spacingOneAndAHalf')}</option>
                                 <option value="double">{t('paperSetup.subSteps.rubric.metadata.spacingDouble')}</option>
+                            </select>
+                            <select
+                                value={citationForm}
+                                disabled={lineSpacing === 'default'}
+                                onChange={(e) => setCitationForm(e.target.value as CitationForm)}
+                                className="rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50"
+                            >
+                                <option value="footnote">{t('paperSetup.subSteps.rubric.metadata.citationFootnote')}</option>
+                                <option value="parenthetical">{t('paperSetup.subSteps.rubric.metadata.citationParenthetical')}</option>
                             </select>
                             <label className="inline-flex items-center gap-1.5 text-xs text-foreground">
                                 <input

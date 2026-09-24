@@ -13,8 +13,19 @@ describe('parseFormatting', () => {
     it('lee los tres interlineados del catálogo', () => {
         for (const lineSpacing of ['single', 'one-and-a-half', 'double'] as const) {
             expect(parseFormatting({ lineSpacing, blankLineBetweenParagraphs: true }))
-                .toEqual({ lineSpacing, blankLineBetweenParagraphs: true });
+                .toEqual({ lineSpacing, blankLineBetweenParagraphs: true, citationForm: 'footnote' });
         }
+    });
+
+    it('la forma de cita sólo cambia con la palabra exacta', () => {
+        const con = (citationForm: unknown) =>
+            parseFormatting({ lineSpacing: 'single', citationForm })!.citationForm;
+        expect(con('parenthetical')).toBe('parenthetical');
+        // Cualquier otra cosa deja la nota al pie, que es lo que el
+        // exportador hacía antes del campo.
+        expect(con('parentética')).toBe('footnote');
+        expect(con(undefined)).toBe('footnote');
+        expect(con('footnote')).toBe('footnote');
     });
 
     it('un interlineado fuera del catálogo cae a la guía de la casa', () => {

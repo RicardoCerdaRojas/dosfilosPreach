@@ -14,12 +14,14 @@ import {
     TextRun,
 } from 'docx';
 import {
+    DEFAULT_PAPER_FORMATTING,
     esEncabezadoDeBibliografia,
     exportPaperToMarkdown,
     formatPassageReference,
     type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
+    type CitationForm,
     type PaperFormatting,
 } from '@dosfilos/domain';
 import {
@@ -75,6 +77,7 @@ export async function exportPaperToDocx(
     });
     const titleDisplay = titleDisplayOf(paper);
 
+    const citationForm = (paper.rubric?.formatting ?? DEFAULT_PAPER_FORMATTING).citationForm;
     const blocks = parseMarkdownBlocks(markdown);
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
@@ -100,13 +103,13 @@ export async function exportPaperToDocx(
                 break;
             case 'paragraph':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm),
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : {}),
                 }));
                 break;
             case 'list-item':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm),
                     // En la bibliografía, cada entrada es un párrafo con
                     // sangría francesa: una viñeta delante la desarma.
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : { bullet: { level: 0 }, indent: { firstLine: 0 } }),
@@ -114,7 +117,7 @@ export async function exportPaperToDocx(
                 break;
             case 'blockquote':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm),
                     ...BLOCK_QUOTE_PARAGRAPH,
                     // Una cita hebrea se lee de derecha a izquierda y se
                     // alinea a ese lado; sin esto Word la deja colgando a
@@ -395,6 +398,15 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
 function buildInlineRuns(
     paragraphText: string,
     registerFootnote: (citationText: string) => number,
+    /**
+     * `'parenthetical'` deja la cita donde está, tal como se escribió.
+     *
+     * No es «no hacer nada»: es la otra convención. El sílabo del trabajo
+     * práctico semanal pide «(Apellido, página)» en el texto más bibliografía
+     * al final, sin notas, y el exportador convertía a nota al pie siempre
+     * porque la forma estaba cableada.
+     */
+    citationForm: CitationForm = 'footnote',
 ): Array<TextRun | FootnoteReferenceRun> {
     interface Marker {
         kind: 'citation' | 'bold' | 'italic';
@@ -406,7 +418,7 @@ function buildInlineRuns(
 
     CITATION_PATTERN.lastIndex = 0;
     let m: RegExpExecArray | null;
-    while ((m = CITATION_PATTERN.exec(paragraphText)) !== null) {
+    while (citationForm === 'footnote' && (m = CITATION_PATTERN.exec(paragraphText)) !== null) {
         const fullMatch = m[0];
         const innerText = fullMatch.replace(/^\(\s*/, '').replace(/\s*\)$/, '');
         markers.push({

@@ -164,8 +164,19 @@ export interface PaperRubric {
  */
 export type LineSpacing = 'single' | 'one-and-a-half' | 'double';
 
+/**
+ * Dónde va la referencia: al pie de la página, o entre paréntesis en el texto.
+ *
+ * Las dos son convenciones académicas legítimas y el sílabo elige. TMS pide
+ * nota al pie en el trabajo exegético largo; el trabajo práctico semanal de
+ * griego pide cita parentética —«(Apellido, página)»— más bibliografía al
+ * final, sin notas.
+ */
+export type CitationForm = 'footnote' | 'parenthetical';
+
 export interface PaperFormatting {
     lineSpacing: LineSpacing;
+    citationForm: CitationForm;
     /**
      * Si entre párrafos va una línea en blanco.
      *
@@ -181,6 +192,7 @@ export interface PaperFormatting {
 /** La maquetación de la casa, cuando la rúbrica no dice otra cosa. */
 export const DEFAULT_PAPER_FORMATTING: PaperFormatting = {
     lineSpacing: 'double',
+    citationForm: 'footnote',
     blankLineBetweenParagraphs: false,
 };
 
