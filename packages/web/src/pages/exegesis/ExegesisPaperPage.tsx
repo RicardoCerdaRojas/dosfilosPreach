@@ -46,6 +46,7 @@ import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { usePaperDerivedArtifacts } from '@/hooks/exegesis/usePaperDerivedArtifacts';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
+import { usePaperBibliographyEntries } from '@/hooks/exegesis/usePaperBibliography';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
 import { StepCard } from '@/components/exegesis/StepCard';
@@ -110,6 +111,10 @@ export function ExegesisPaperPage() {
     // `paper.sources.length` — pantalla en blanco al abrir cualquier paper.
     // La página de setup ya usaba este hook; esta se quedó atrás.
     const { paper, isLoading, error } = useExegesisPaper(paperId);
+    // Antes del `if (!paper)` de más abajo: los hooks no pueden vivir detrás
+    // de un retorno temprano. El hook tolera `paper` nulo y devuelve lista
+    // vacía.
+    const bibliography = usePaperBibliographyEntries(paper);
 
     const [facultyDrawerOpen, setFacultyDrawerOpen] = useState(false);
     const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
@@ -234,18 +239,37 @@ export function ExegesisPaperPage() {
         URL.revokeObjectURL(url);
     };
 
+    /**
+     * Avisa por los libros citados a los que les falta la ficha.
+     *
+     * El documento los imprime igual, con lo que falta entre corchetes, para
+     * que no se pierda una obra citada. Pero eso se ve al abrir el archivo, y
+     * quien descarga suele mandarlo sin abrirlo: el aviso va acá, en el gesto
+     * de descargar.
+     */
+    const avisarFichasIncompletas = () => {
+        const cojas = bibliography.filter(e => !e.text);
+        if (cojas.length === 0) return;
+        toast.warning(t('detail.bibliography.incompleteToast', {
+            count: cojas.length,
+            sources: cojas.map(e => e.displayLabel).join(', '),
+        }));
+    };
+
     const handleExportMarkdown = () => {
-        const markdown = exportPaperToMarkdown(paper);
+        const markdown = exportPaperToMarkdown(paper, { bibliography });
         const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
         triggerDownload(blob, buildSafeFilename('md'));
         toast.success(t('detail.exportMarkdown.toast.exported'));
+        avisarFichasIncompletas();
     };
 
     const handleExportDocx = async () => {
         try {
-            const blob = await exportPaperToDocx(paper);
+            const blob = await exportPaperToDocx(paper, { bibliography });
             triggerDownload(blob, buildSafeFilename('docx'));
             toast.success(t('detail.exportDocx.toast.exported'));
+            avisarFichasIncompletas();
         } catch (err) {
             console.error('[exegesis] export docx failed:', err);
             toast.error(t('detail.exportDocx.toast.failed'));

@@ -3,9 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { libraryService } from '@dosfilos/application';
 import { readBibliographyFromCover } from '@dosfilos/infrastructure';
 import {
+    buildPaperBibliography,
     isCitableSourceType,
     missingBibliographyFields,
     type BibliographicData,
+    type BibliographyEntry,
     type ExegeticalPaper,
     type RequiredBibliographyField,
 } from '@dosfilos/domain';
@@ -67,6 +69,25 @@ export function usePaperBibliography(paper: ExegeticalPaper | null | undefined):
                 };
             });
     }, [paper, resources, uid]);
+}
+
+/**
+ * La bibliografía que se imprime en el trabajo: sólo las fuentes CITADAS.
+ *
+ * Se separa de `usePaperBibliography` —que lista todas las fuentes citables
+ * del corpus, porque esa tarjeta sirve para completar fichas— por lo que cada
+ * una responde. La tarjeta pregunta «¿a qué libro de mi corpus le falta la
+ * ficha?». El documento pregunta «¿qué libros cité?», y son distintos: el
+ * corpus de Santiago 2:1-13 tenía siete fuentes y el trabajo citó cinco.
+ */
+export function usePaperBibliographyEntries(
+    paper: ExegeticalPaper | null | undefined,
+): BibliographyEntry[] {
+    const rows = usePaperBibliography(paper);
+    return useMemo(
+        () => (paper ? buildPaperBibliography(paper, rows) : []),
+        [paper, rows],
+    );
 }
 
 /**

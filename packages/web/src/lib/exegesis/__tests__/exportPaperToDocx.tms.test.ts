@@ -55,6 +55,53 @@ const paper = (over: Partial<ExegeticalPaper> = {}): ExegeticalPaper => ({
     ...over,
 } as unknown as ExegeticalPaper);
 
+describe('exportPaperToDocx — la bibliografía generada', () => {
+    /** Un trabajo sin `assembledMarkdown`: el cuerpo sale de los pasos aceptados. */
+    const sinEnsamblar = paper({
+        assembledMarkdown: null,
+        steps: [{
+            kind: 'verse', order: 0,
+            verseRef: { bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 1, verseEnd: 1 },
+            accepted: { markdown: 'El salmo abre con una metáfora pastoral.' },
+        }],
+    } as unknown as Partial<ExegeticalPaper>);
+
+    it('la sección entra con sangría francesa y sin viñeta', async () => {
+        const blob = await exportPaperToDocx(sinEnsamblar, {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [{
+                citationKey: 'Ross', displayLabel: 'A Commentary on the Psalms',
+                text: 'Ross, Allen P. *A Commentary on the Psalms*. Grand Rapids: Kregel, 2011.',
+                missing: [],
+            }],
+        });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const xml = await zip.file('word/document.xml')!.async('string');
+        expect(xml).toContain('Bibliograf');
+        expect(xml).toContain('Ross, Allen P.');
+        // Sangría francesa: medio pulgada a la izquierda y media negativa en
+        // la primera línea. Sin esto la entrada sale como un párrafo normal.
+        expect(xml).toMatch(/w:ind[^>]*w:hanging="720"/);
+        // Y sin viñeta: una bibliografía con topos no es una bibliografía.
+        const desdeBiblio = xml.slice(xml.indexOf('Bibliograf'));
+        expect(desdeBiblio).not.toContain('w:numPr');
+    });
+
+    it('una ficha incompleta llega al documento diciendo qué le falta', async () => {
+        const blob = await exportPaperToDocx(sinEnsamblar, {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [{
+                citationKey: 'Adamson', displayLabel: 'The Epistle of James',
+                text: null, missing: ['city', 'publisher', 'year'],
+            }],
+        });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const xml = await zip.file('word/document.xml')!.async('string');
+        expect(xml).toContain('FICHA INCOMPLETA');
+        expect(xml).toContain('The Epistle of James');
+    });
+});
+
 describe('exportPaperToDocx — formato de la guía', () => {
     it('el documento entero va en Times New Roman 12 a doble espacio', async () => {
         const styles = await xmlOf(paper(), 'word/styles.xml');
