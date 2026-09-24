@@ -53,7 +53,20 @@ export function locateVerseSections(
     const claimed = new Set<number>();
     for (const key of keys) {
         const needle = normalizeHeading(key);
-        const idx = headings.findIndex((h, i) => !claimed.has(i) && headingNames(h.text, needle));
+        // Entre los encabezados que nombran la clave gana el MÁS PROFUNDO.
+        //
+        // En un trabajo de un solo verso el título y la sección se llaman
+        // igual —«# Santiago 2:1» y «## Santiago 2:1»— y el título aparece
+        // primero. Quedarse con el primero reclama el título, cuya sección
+        // llega hasta el final del documento, y reemplazar el cuerpo del verso
+        // borra el trabajo. El título de un documento nunca está más adentro
+        // que sus secciones, así que la profundidad los distingue sin tener
+        // que saber cuál es el título.
+        let idx = -1;
+        for (let i = 0; i < headings.length; i += 1) {
+            if (claimed.has(i) || !headingNames(headings[i]!.text, needle)) continue;
+            if (idx === -1 || headings[i]!.level > headings[idx]!.level) idx = i;
+        }
         if (idx === -1) return null;
         claimed.add(idx);
 
@@ -107,12 +120,26 @@ export function replaceVerseSectionBodies(
 }
 
 /**
- * Si el encabezado nombra ESTA clave y no otra que la contenga.
+ * Caracteres que, detrás de la clave, significan que la referencia SIGUE.
  *
- * «Santiago 1:2» es subcadena de «Santiago 1:20», y los dos versos
- * pueden estar en el mismo trabajo. Sin este corte, un verso al que
- * el compositor le comió el encabezado se llevaría la sección del
- * otro y publicaría su análisis en el lugar equivocado.
+ * Los dígitos y los dos puntos cortan «Santiago 1:20» cuando se busca
+ * «Santiago 1:2»: dos versos distintos que pueden estar en el mismo trabajo.
+ *
+ * Los guiones se agregaron después de que un RANGO se hiciera pasar por el
+ * verso que lo abre. El título del trabajo era «# Santiago 2:1-13» y la clave
+ * «Santiago 2:1»: el carácter siguiente era un guion, el guardián lo dejaba
+ * pasar, y el título quedaba reclamado como si fuera la sección del primer
+ * verso. Como el título es de nivel 1 y las secciones de nivel 2, esa sección
+ * llegaba hasta el final del documento —no hay otro nivel 1 después— y
+ * recomponer 2:1 REEMPLAZABA EL TRABAJO ENTERO. Medido sobre un trabajo real:
+ * 41.416 caracteres quedaron en 39.
+ *
+ * Van los tres guiones porque las referencias se escriben con los tres.
+ */
+const SIGUE_LA_REFERENCIA = /[\d:\-–—]/;
+
+/**
+ * Si el encabezado nombra ESTA clave y no otra que la contenga.
  */
 function headingNames(headingText: string, normalizedKey: string): boolean {
     const heading = normalizeHeading(headingText);
@@ -121,7 +148,7 @@ function headingNames(headingText: string, normalizedKey: string): boolean {
         const at = heading.indexOf(normalizedKey, from);
         if (at === -1) return false;
         const after = heading[at + normalizedKey.length];
-        if (after === undefined || !/[\d:]/.test(after)) return true;
+        if (after === undefined || !SIGUE_LA_REFERENCIA.test(after)) return true;
         from = at + 1;
     }
 }
