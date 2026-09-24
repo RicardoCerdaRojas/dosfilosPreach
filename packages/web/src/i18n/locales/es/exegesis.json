@@ -1157,6 +1157,11 @@
           "inLibrary": "está en tu biblioteca, falta agregarla al corpus",
           "notFound": "no la encuentro en tu biblioteca; súbela o agrégala a mano si la tienes con otro título",
           "add": "Agregar"
+        },
+        "sinPaginaComprobable": {
+          "title": "Este libro no puede comprobar sus páginas",
+          "body": "Su numeración no resuelve ninguna página impresa, así que sus fragmentos llegan sin página y las citas que lo nombren no se podrán comprobar. Resuélvelo antes de citarlo.",
+          "action": "Resolver numeración"
         }
       },
       "corpus-plan": {

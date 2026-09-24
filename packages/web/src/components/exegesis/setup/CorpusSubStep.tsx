@@ -19,6 +19,7 @@ import {
     Loader2,
     Quote,
     RefreshCcw,
+    Ruler,
     Search,
     Sparkles,
     Upload,
@@ -36,6 +37,7 @@ import {
     suggestRoleForType,
     formatPassageReference,
     getBookById,
+    hasResolvedNumbering,
     isExcerptSetStale,
     resourceMatchesTestament,
     type ExegeticalPaper,
@@ -1021,6 +1023,10 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 </button>
             </div>
 
+            {isCitable && libraryResource && !hasResolvedNumbering(libraryResource.pageNumbering) && (
+                <SinPaginaComprobable resourceId={libraryResource.id} />
+            )}
+
             {isStale && canReExtract && (
                 <StaleBanner
                     onReExtract={handleReExtract}
@@ -1102,6 +1108,50 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 </div>
             )}
         </li>
+    );
+}
+
+/**
+ * Un libro del corpus cuya numeración no resuelve ninguna página impresa.
+ *
+ * Se dice ACÁ y no en la biblioteca porque acá es donde el libro se va a
+ * citar. El aviso de la biblioteca calla a propósito cuando la numeración
+ * está confirmada —«este libro no lleva folios» es una respuesta válida para
+ * un álbum de láminas, y volver a preguntarla enseñaría a ignorar el aviso—.
+ * Pero un comentario de 700 hojas guardado así no es un álbum de láminas: es
+ * una calibración que salió mal, y la consecuencia sólo aparece al final, en
+ * la cita.
+ *
+ * Qué pasa si no se resuelve: los fragmentos de este libro llegan al modelo
+ * sin ninguna página, de modo que el número que la cita termine llevando no
+ * salió de ningún rótulo del sistema. Medido en un trabajo real: el modelo
+ * tomó por página una referencia cruzada impresa dentro del texto, y la cita
+ * apuntó a una página que habla de otra cosa. El verificador ahora lo marca
+ * en ámbar y bloquea la aceptación, que es tarde: este aviso es el momento
+ * temprano.
+ */
+function SinPaginaComprobable({ resourceId }: { resourceId: string }) {
+    const { t } = useTranslation('exegesis');
+    const navigate = useNavigate();
+    return (
+        <div className="rounded-md border border-warning/30 bg-warning-subtle/40 px-2.5 py-2 flex items-start gap-2">
+            <Ruler className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
+            <div className="min-w-0 flex-1">
+                <p className="text-[11.5px] font-medium text-warning-subtle-foreground">
+                    {t('paperSetup.subSteps.corpus.sinPaginaComprobable.title')}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-warning-subtle-foreground/90">
+                    {t('paperSetup.subSteps.corpus.sinPaginaComprobable.body')}
+                </p>
+            </div>
+            <button
+                type="button"
+                onClick={() => navigate(`/dashboard/library/${resourceId}/numeracion`)}
+                className="shrink-0 rounded border border-warning/40 px-2 py-1 text-[11px] font-medium text-warning-subtle-foreground hover:bg-warning-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+                {t('paperSetup.subSteps.corpus.sinPaginaComprobable.action')}
+            </button>
+        </div>
     );
 }
 
