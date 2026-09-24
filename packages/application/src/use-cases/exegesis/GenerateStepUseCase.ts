@@ -26,7 +26,7 @@ import {
     computeRubricCompliance,
     formatPassageReference,
     isCitableSourceType,
-    renderCanonicalAnalysisAsMarkdown,
+    assembleMarkdown,
     citationAnchorFor,
     relabelExcerptAnchor,
 } from '@dosfilos/domain';
@@ -452,40 +452,16 @@ export class GenerateStepUseCase {
         paper: ExegeticalPaper,
         step: ExegeticalStep,
     ): Promise<ExegeticalStepVersion> {
-        const accepted = paper.steps.filter(s => s.accepted !== null);
-        const intro = accepted.find(s => s.kind === 'introduction');
-        const verses = accepted.filter(s => s.kind === 'verse').sort((a, b) => a.order - b.order);
-        const conclusion = accepted.find(s => s.kind === 'conclusion');
-
-        const lang = paper.displayLanguage;
-        const passage = formatPassageReference(paper.passage, lang);
-        const sections: string[] = [
-            `# ${paper.title || passage}`,
-            '',
-        ];
-        if (intro?.accepted) {
-            sections.push('---', '', intro.accepted.markdown, '');
-        }
-        for (const v of verses) {
-            if (!v.accepted) continue;
-            // Prefer the LLM-composed prose (markdown). When a verse
-            // was canonical-analyzed but the academic-prose composer
-            // hasn't run, markdown is empty — fall back to a
-            // deterministic render of the structured analysis so the
-            // assembly is never just intro + conclusion.
-            let body = v.accepted.markdown?.trim() ?? '';
-            if (!body && v.accepted.canonicalAnalysis) {
-                body = renderCanonicalAnalysisAsMarkdown(v.accepted.canonicalAnalysis, {
-                    verseRef: v.verseRef,
-                    lang,
-                });
-            }
-            if (body) sections.push('---', '', body, '');
-        }
-        if (conclusion?.accepted) {
-            sections.push('---', '', conclusion.accepted.markdown, '');
-        }
-        const markdown = sections.join('\n');
+        // Qué entra y qué no lo decide el dominio, en una sola regla que la
+        // interfaz también lee: el análisis es materia prima, la prosa es el
+        // documento. Un versículo sin prosa compuesta no entra.
+        //
+        // Antes caía a un volcado del análisis estructurado «para que el
+        // ensamble nunca sea sólo intro + conclusión». Medido sobre un trabajo
+        // real de 2-3 páginas: 4.000 de sus 4.566 palabras eran volcados de
+        // nueve versículos que el autor nunca pensó incluir, y el documento
+        // salió de 18 páginas.
+        const markdown = assembleMarkdown(paper, paper.displayLanguage);
 
         return await this.paperRepository.appendStepVersion(
             paper.ownerId,

@@ -1940,6 +1940,12 @@
         "acceptFailed": "Couldn't accept the step",
         "edited": "Edit saved",
         "editFailed": "Couldn't save the edit"
+      },
+      "assembly": {
+        "manifestTitle": "This goes into the document · {{count}} words",
+        "words": "{{count}} w.",
+        "excludedTitle_one": "1 analyzed verse stays out, with no composed prose:",
+        "excludedTitle_other": "{{count}} analyzed verses stay out, with no composed prose:"
       }
     },
     "rubric": {
