@@ -515,7 +515,9 @@
           "spacingOneAndAHalf": "One-and-a-half spacing",
           "spacingDouble": "Double spacing",
           "blankLineLabel": "A blank line between paragraphs",
-          "formattingHint": "Only when this assignment asks for something other than the seminary guide. Weekly practicals usually ask for single spacing; the long exegetical paper, double."
+          "formattingHint": "Only when this assignment asks for something other than the seminary guide. Weekly practicals usually ask for single spacing; the long exegetical paper, double.",
+          "citationFootnote": "Footnote citation",
+          "citationParenthetical": "In-text parenthetical citation"
         },
         "requirements": {
           "title": "Corpus requirements",

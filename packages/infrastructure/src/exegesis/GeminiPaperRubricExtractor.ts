@@ -159,7 +159,7 @@ function buildUserMessageEN(rawText: string, typeList: string, source: 'document
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // e.g. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
-        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean } | null,   // ONLY when the syllabus states it. null = not stated.`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical" } | null,   // ONLY when the syllabus states it. null = not stated.`,
         `  "sourceRequirements": [                                          // one entry per source type the rubric requires`,
         `    {`,
         `      "sourceType": <one of: ${typeList}>,`,
@@ -239,7 +239,7 @@ function buildUserMessageES(rawText: string, typeList: string, source: 'document
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // ej. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
-        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean } | null,   // SÓLO si el sílabo lo dice. null = no lo dice.`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical" } | null,   // SÓLO si el sílabo lo dice. null = no lo dice.`,
         `  "sourceRequirements": [                                          // un entry por tipo de fuente que la rúbrica requiere`,
         `    {`,
         `      "sourceType": <uno de: ${typeList}>,`,
@@ -511,11 +511,14 @@ function parseCourseBibliography(raw: unknown): CourseBibliographyEntry[] {
  */
 export function parseFormatting(raw: unknown): PaperFormatting | null {
     if (!raw || typeof raw !== 'object') return null;
-    const f = raw as { lineSpacing?: unknown; blankLineBetweenParagraphs?: unknown };
+    const f = raw as { lineSpacing?: unknown; blankLineBetweenParagraphs?: unknown; citationForm?: unknown };
     const spacing = f.lineSpacing;
     if (spacing !== 'single' && spacing !== 'one-and-a-half' && spacing !== 'double') return null;
     return {
         lineSpacing: spacing,
         blankLineBetweenParagraphs: f.blankLineBetweenParagraphs === true,
+        // Sólo la palabra exacta cambia la forma. Cualquier otra cosa deja la
+        // nota al pie, que es lo que el exportador hacía antes del campo.
+        citationForm: f.citationForm === 'parenthetical' ? 'parenthetical' : 'footnote',
     };
 }

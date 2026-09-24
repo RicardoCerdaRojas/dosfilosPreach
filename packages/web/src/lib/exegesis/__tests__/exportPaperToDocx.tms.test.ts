@@ -55,6 +55,41 @@ const paper = (over: Partial<ExegeticalPaper> = {}): ExegeticalPaper => ({
     ...over,
 } as unknown as ExegeticalPaper);
 
+describe('exportPaperToDocx — la forma de cita sale de la rúbrica', () => {
+    const conForma = (citationForm: string) => paper({
+        rubric: {
+            ...DEFAULT_TMS_EXEGETICAL_RUBRIC,
+            formatting: { lineSpacing: 'single', blankLineBetweenParagraphs: true, citationForm },
+        },
+    } as unknown as Partial<ExegeticalPaper>);
+
+    it('por omisión la cita va a nota al pie, como antes', async () => {
+        const blob = await exportPaperToDocx(paper(), { exportedAt: new Date('2026-09-17') });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        expect(Object.keys(zip.files)).toContain('word/footnotes.xml');
+        const notas = await zip.file('word/footnotes.xml')!.async('string');
+        expect(notas).toContain('Waltke');
+    });
+
+    it('cuando el encuadre pide cita entre paréntesis, la cita se queda en el texto', async () => {
+        // No es «no hacer nada»: es la otra convención. El trabajo práctico
+        // semanal pide «(Apellido, página)» en el texto más bibliografía al
+        // final, sin notas, y el exportador convertía a nota siempre.
+        const blob = await exportPaperToDocx(conForma('parenthetical'), { exportedAt: new Date('2026-09-17') });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const doc = await zip.file('word/document.xml')!.async('string');
+        expect(doc).toContain('Waltke');
+        const notas = zip.file('word/footnotes.xml');
+        if (notas) expect(await notas.async('string')).not.toContain('Waltke');
+    });
+
+    it('«footnote» explícito se comporta como el valor por omisión', async () => {
+        const blob = await exportPaperToDocx(conForma('footnote'), { exportedAt: new Date('2026-09-17') });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        expect(await zip.file('word/footnotes.xml')!.async('string')).toContain('Waltke');
+    });
+});
+
 describe('exportPaperToDocx — la maquetación sale de la rúbrica', () => {
     const conFormato = (formatting: unknown) => paper({
         rubric: { ...DEFAULT_TMS_EXEGETICAL_RUBRIC, formatting },
