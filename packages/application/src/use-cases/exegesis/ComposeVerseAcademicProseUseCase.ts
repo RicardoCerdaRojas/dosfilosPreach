@@ -20,6 +20,7 @@ import type {
     IPageNumberingReader,
 } from '@dosfilos/domain';
 import {
+    wordsPerVerseTarget,
     isCitableSourceType,
     replaceVerseSection,
     verseSectionKey,
@@ -167,6 +168,14 @@ export class ComposeVerseAcademicProseUseCase {
                 pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
                 ...(glossary.length > 0 ? { glossary } : {}),
                 ...(voiceSamples.length > 0 ? { voiceSamples } : {}),
+                // El presupuesto de ESTE versículo, derivado de la extensión
+                // que exige la rúbrica y repartido entre los versículos del
+                // trabajo. Sin esto el compositor no sabía que había un
+                // límite: un trabajo de 2-3 páginas salió de 16.
+                wordBudget: wordsPerVerseTarget(
+                    paper.rubric?.expectedLength ?? null,
+                    paper.steps.filter(s => s.kind === 'verse').length,
+                ),
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
             };

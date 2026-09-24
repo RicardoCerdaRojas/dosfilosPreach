@@ -95,6 +95,16 @@ export interface ComposeVerseInput {
      * sería devolverle nuestra voz cada vez más convincente.
      */
     voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }>;
+    /**
+     * Cuántas palabras le tocan a esta sección, derivadas de la extensión que
+     * exige la rúbrica. `null` o ausente cuando el curso no la declara.
+     *
+     * Llega hasta acá porque el número existía y no salía de la pantalla: lo
+     * calculaba `wordsPerVerseTarget` y su único llamador era la interfaz. Un
+     * trabajo que pedía 2-3 páginas salió de 16.
+     */
+    wordBudget?: number | null;
+
 
     /** Style guide content (verbatim) when configured. */
     styleGuideContent: string;

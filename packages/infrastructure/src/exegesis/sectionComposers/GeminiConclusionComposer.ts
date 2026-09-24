@@ -1,5 +1,6 @@
 import {
     buildAcademicVoiceBlock,
+    buildWordBudgetBlock,
     formatPassageReference,
     serializeAnalysis,
     type ComposeConclusionInput,
@@ -148,8 +149,11 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
     // La voz del autor, al final de la instrucción de sistema y no en el
     // mensaje: es una regla de REGISTRO, no material del pasaje, y mezclarla
     // con los briefings la deja compitiendo con el contenido.
-    const conVoz = [system, buildAcademicVoiceBlock(input.voiceSamples ?? [], lang)]
-        .filter(Boolean).join('\n\n');
+    const conVoz = [
+        system,
+        buildWordBudgetBlock(input.wordBudget ?? null, lang),
+        buildAcademicVoiceBlock(input.voiceSamples ?? [], lang),
+    ].filter(Boolean).join('\n\n');
 
     const briefings = input.verseAnalyses.map(a => serializeAnalysis(a, lang)).join('\n\n');
     const pinnedBlock = formatPinnedContract(input.pinnedSourceKeys, lang);

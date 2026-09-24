@@ -16,7 +16,7 @@ const PASSAGE: PassageReference = { bookId: 'JAS', chapterStart: 2, chapterEnd: 
 
 const MUESTRA = 'Se adopta la aposición, y de ahí que el título no sea ornamental sino la premisa del argumento.';
 
-function base(voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }>) {
+function base(voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }>, wordBudget?: number | null) {
     return {
         paperPassage: PASSAGE,
         language: 'es' as const,
@@ -30,14 +30,15 @@ function base(voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }
         exegeticalStrategy: null,
         regenerationHint: null,
         voiceSamples,
+        wordBudget,
     };
 }
 
 const construir = {
-    introducción: (v?: ReadonlyArray<{ excerpt: string; position: number }>) => buildIntroductionPrompt(
-        { ...base(v), acceptedConclusionMarkdown: null } as unknown as ComposeIntroductionInput),
-    conclusión: (v?: ReadonlyArray<{ excerpt: string; position: number }>) => buildConclusionPrompt(
-        base(v) as unknown as ComposeConclusionInput),
+    introducción: (v?: ReadonlyArray<{ excerpt: string; position: number }>, w?: number | null) => buildIntroductionPrompt(
+        { ...base(v, w), acceptedConclusionMarkdown: null } as unknown as ComposeIntroductionInput),
+    conclusión: (v?: ReadonlyArray<{ excerpt: string; position: number }>, w?: number | null) => buildConclusionPrompt(
+        base(v, w) as unknown as ComposeConclusionInput),
 };
 
 describe.each(Object.entries(construir))('%s — la voz del autor', (_nombre, build) => {
@@ -84,5 +85,28 @@ describe('trabajo completo — la voz del autor', () => {
     it('sin perfil de voz la instrucción no cambia', () => {
         expect(buildComposerPrompt(entrada([]).valueOf() as ComposeAcademicPaperInput).systemInstruction)
             .toBe(buildComposerPrompt(entrada(undefined)).systemInstruction);
+    });
+});
+
+/**
+ * El presupuesto de extensión, que existía en dominio y no salía de la
+ * pantalla. Un trabajo que pedía 2-3 páginas salió de 16.
+ */
+describe.each(Object.entries(construir))('%s — el presupuesto de extensión', (_nombre, build) => {
+    const conPresupuesto = (wordBudget: number | null) =>
+        build(undefined, wordBudget).systemInstruction;
+
+    it('el número llega a la instrucción del modelo', () => {
+        expect(conPresupuesto(400)).toContain('400 palabras');
+    });
+
+    it('sin extensión declarada no se inventa un objetivo', () => {
+        expect(conPresupuesto(null)).not.toContain('palabras para esta sección');
+    });
+
+    it('dice que se recorte amplitud y no rigor', () => {
+        // La instrucción tiene que decir POR DÓNDE cortar. «Escribí menos» sin
+        // eso invita a citar menos, que es exactamente lo que no se quiere.
+        expect(conPresupuesto(400)).toContain('nunca rigor');
     });
 });
