@@ -108,6 +108,7 @@ import {
     ComposeConclusionFromAnalysesUseCase,
     ComposeDevotionalFromAnalysesUseCase,
     ComposeIntroductionFromAnalysesUseCase,
+    SetStepInclusionUseCase,
     ComposeVerseAcademicProseUseCase,
     ComposeSermonFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,
@@ -252,6 +253,8 @@ class ExegesisService {
     // user reviews + accepts the same way as legacy generation.
     public composeConclusionFromAnalyses: ComposeConclusionFromAnalysesUseCase;
     public composeIntroductionFromAnalyses: ComposeIntroductionFromAnalysesUseCase;
+    /** Qué secciones pertenecen al documento que se entrega. */
+    public setStepInclusion: SetStepInclusionUseCase;
     // Per-verse academic prose composer. Reads ONE verse's accepted
     // canonical analysis, produces 1-3 paragraphs of TMS-style prose,
     // PERSISTS on that version's `markdown` field so re-renders are
@@ -623,6 +626,7 @@ class ExegesisService {
             voiceProfileRepository,
             proseReader,
         );
+        this.setStepInclusion = new SetStepInclusionUseCase(paperRepository);
         const introductionComposer = new GeminiIntroductionComposer(exegesisModelId);
         this.composeIntroductionFromAnalyses = new ComposeIntroductionFromAnalysesUseCase(
             paperRepository,

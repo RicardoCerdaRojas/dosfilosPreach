@@ -70,7 +70,8 @@ import {
     type ExegeticalPaper,
     type ProjectSource,
     type SupportedLanguage,
-    wordsPerVerseTarget,
+    documentSections,
+    sectionBudgets,
 } from '@dosfilos/domain';
 
 /**
@@ -661,10 +662,10 @@ function StepsPanel({
     const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
     // Cuánto le toca a cada verso para llegar a la extensión que exige la
     // rúbrica: es el número que el diálogo de recomposición propone.
-    const targetWordsPerVerse = wordsPerVerseTarget(
+    const targetWordsPerVerse = sectionBudgets(
         paper.rubric?.expectedLength ?? null,
-        steps.filter(s => s.kind === 'verse').length,
-    );
+        documentSections(steps),
+    ).perVerse;
 
     return (
         <section className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">

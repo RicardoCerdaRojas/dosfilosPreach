@@ -1944,8 +1944,10 @@
       "assembly": {
         "manifestTitle": "Esto entra al documento · {{count}} palabras",
         "words": "{{count}} pal.",
-        "excludedTitle_one": "Queda fuera 1 versículo analizado sin prosa compuesta:",
-        "excludedTitle_other": "Quedan fuera {{count}} versículos analizados sin prosa compuesta:"
+        "pendingMark": "falta componer",
+        "pendingHint_one": "1 sección elegida todavía no tiene prosa: no va a entrar al documento hasta que la compongas.",
+        "pendingHint_other": "{{count}} secciones elegidas todavía no tienen prosa: no van a entrar al documento hasta que las compongas.",
+        "hint": "Desmarca lo que no quieras en el documento. La extensión que pide la rúbrica se reparte solo entre lo marcado."
       }
     },
     "rubric": {

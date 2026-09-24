@@ -122,6 +122,7 @@ export {
     type ComposeStudyGuideFromAnalysesUseCaseInput,
 } from './MinistryComposerUseCases';
 export { AcceptStepUseCase } from './AcceptStepUseCase';
+export { SetStepInclusionUseCase, type SetStepInclusionInput } from './SetStepInclusionUseCase';
 export { SaveStepEditUseCase } from './SaveStepEditUseCase';
 export {
     VerifyStepCitationsUseCase,
