@@ -1313,9 +1313,14 @@ function QuickHintChips({
  */
 function VerificationBadge({ summary }: { summary: VerificationSummary }) {
     const { t } = useTranslation('exegesis');
+    // `pageUnverifiable` cuenta acá o la insignia miente: una cita cuya
+    // página no se pudo comprobar BLOQUEA la aceptación, y omitirla dejaba
+    // el paso en verde de «todo en orden» mientras la puerta lo rechazaba.
+    // Ausente en resúmenes viejos, que no midieron el estado.
     const issues = summary.counts.pageMismatch
         + summary.counts.notFound
-        + summary.counts.fuzzyLow;
+        + summary.counts.fuzzyLow
+        + (summary.counts.pageUnverifiable ?? 0);
     const allVerified = issues === 0 && summary.counts.verified > 0;
     if (summary.totalCitations === 0) return null;
 

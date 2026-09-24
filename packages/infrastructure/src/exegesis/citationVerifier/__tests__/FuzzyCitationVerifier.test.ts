@@ -97,7 +97,7 @@ describe('FuzzyCitationVerifier', () => {
         expect(citations[0]!.status).toBe('verified');
     });
 
-    it('handles full-document mode by skipping page-mismatch detection', async () => {
+    it('full-document mode: la página citada no se puede comprobar contra nada', async () => {
         const fullDocSource: VerifierSource = {
             corpusId: 'corpus-full',
             citationKey: 'Cockerill',
@@ -117,9 +117,12 @@ describe('FuzzyCitationVerifier', () => {
             markdown,
             sources: [fullDocSource],
         });
-        // Full-document has no pageHint → page-mismatch is skipped,
-        // verdict stays at the text-similarity tier.
-        expect(citations[0]!.status).toBe('verified');
+        // Este test afirmaba `verified`, y ese era el defecto: el modo
+        // documento completo no trae ancla de página, así que la «p. 99» de
+        // la cita no se comparó con nada y el veredicto la daba por buena.
+        // El texto SÍ está en la fuente —por eso no es `not-found`— y la
+        // página sigue sin respaldo, que es lo que este estado dice.
+        expect(citations[0]!.status).toBe('page-unverifiable');
         expect(citations[0]!.matchedPage).toBeNull();
     });
 

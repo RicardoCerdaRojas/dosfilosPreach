@@ -11,6 +11,31 @@
 export type CitationStatus =
     /** Source matched, claim text matched (≥ verifiedThreshold), page matches or not provided. */
     | 'verified'
+    /**
+     * La fuente coincide y el texto coincide, pero LA PÁGINA CITADA NO SE
+     * PUDO COMPROBAR contra nada.
+     *
+     * Existe porque hasta ahora este caso salía en verde. El cotejo de
+     * páginas estaba condicionado a que el fragmento de apoyo trajera un
+     * número (`&& matchedPage`), así que un recurso cuya numeración no
+     * resuelve —fragmentos sin ancla, o ancladas en hoja mientras la cita
+     * habla de página impresa— se saltaba la comprobación entera y conservaba
+     * el `verified`. El verificador había comprobado el CONTENIDO y nunca la
+     * PÁGINA, y no lo decía.
+     *
+     * No es lo mismo que `page-mismatch`: ahí hay dos números comparables y
+     * discrepan. Aquí no hay con qué comparar, y afirmar que coinciden es
+     * exactamente la mentira que este estado retira. Tampoco es `not-found`:
+     * la afirmación sí está en el libro.
+     *
+     * Caso testigo: la «Gramática Griega» está guardada con su libro entero
+     * como tramo sin folio, de modo que sus fragmentos llegaron al modelo sin
+     * ninguna página. El modelo copió como página el «ExSyn 86-91» impreso
+     * dentro del texto —una referencia cruzada a la edición inglesa— y el
+     * verificador lo dio por bueno. La página 87 de ese libro es una hoja de
+     * ejercicios sobre Juan 1:14.
+     */
+    | 'page-unverifiable'
     /** Source matched, text matched, but the cited page differs from the source excerpt's page. */
     | 'page-mismatch'
     /**

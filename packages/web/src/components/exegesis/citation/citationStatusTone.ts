@@ -35,6 +35,13 @@ export const STATUS_TONE: Record<CitationStatus, {
         dot: 'bg-warning',
         container: 'border-warning/30 bg-warning-subtle/40',
     },
+    'page-unverifiable': {
+        Icon: AlertTriangle,
+        icon: 'text-warning',
+        badge: 'bg-warning-subtle text-warning-subtle-foreground border-warning/30',
+        dot: 'bg-warning',
+        container: 'border-warning/30 bg-warning-subtle/40',
+    },
     'fuzzy-low': {
         Icon: AlertTriangle,
         icon: 'text-warning',

@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, prioritizeChunksForCitedPage, pagesOverlap } from '@dosfilos/domain';
+import { citationAnchorFor, prioritizeChunksForCitedPage, pageVerdictFor } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -205,12 +205,29 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             let status: CitationStatus = parsedResp.status;
             let note: string | null = parsedResp.reasoning || null;
 
-            // Page-mismatch overlay: if the LLM declared verified AND
-            // both sides provide pages, surface page-mismatch when
-            // they don't overlap. Same semantics as the Fuzzy verifier
-            // so the dialog renders identically.
-            if (status === 'verified' && parsed.pages && matchedPage) {
-                if (!pagesOverlap(parsed.pages, matchedPage)) {
+            // Cotejo de página. La cita trae un número; hay tres desenlaces
+            // y antes sólo se escribían dos.
+            //
+            // El que faltaba es el de arriba: cuando el fragmento de apoyo no
+            // trae ancla, no hay con qué comparar. Eso ANTES se escribía como
+            // `verified` —la condición era `&& matchedPage`, de modo que la
+            // falta de número cancelaba la comprobación entera y dejaba el
+            // verde en pie—. Y es justo el caso peor: un fragmento sin ancla
+            // llega al modelo sin página, así que el número de la cita no lo
+            // copió de ningún rótulo; lo sacó del texto. En la «Gramática
+            // Griega», guardada con el libro entero como tramo sin folio, el
+            // modelo tomó por página el «ExSyn 86-91» impreso dentro de la
+            // hoja —una referencia cruzada a la edición inglesa— y la cita
+            // salió verde apuntando a una página de ejercicios sobre Juan
+            // 1:14.
+            if (status === 'verified') {
+                const verdict = pageVerdictFor(parsed.pages, matchedPage);
+                if (verdict === 'unverifiable') {
+                    status = 'page-unverifiable';
+                    note = language === 'en'
+                        ? `The claim is in the source, but p. ${parsed.pages} could not be checked: the supporting passage carries no page anchor.`
+                        : `La afirmación está en la fuente, pero la p. ${parsed.pages} no se pudo comprobar: el pasaje de apoyo no trae ancla de página.`;
+                } else if (verdict === 'mismatch') {
                     status = 'page-mismatch';
                     note = language === 'en'
                         ? `Cited p. ${parsed.pages} but the supporting passage is at ${matchedPage}.`

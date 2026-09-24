@@ -63,6 +63,7 @@ export function CitationVerificationDialog({
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                     <CountChip kind="verified" count={counts.verified} />
                     <CountChip kind="page-mismatch" count={counts['page-mismatch']} />
+                    <CountChip kind="page-unverifiable" count={counts['page-unverifiable']} />
                     <CountChip kind="fuzzy-low" count={counts['fuzzy-low']} />
                     <CountChip kind="not-found" count={counts['not-found']} />
                     <CountChip kind="manual-pending" count={counts['manual-pending']} />
@@ -190,6 +191,7 @@ function countByStatus(citations: VerifiedCitation[]): Record<CitationStatus, nu
     const counts: Record<CitationStatus, number> = {
         verified: 0,
         'page-mismatch': 0,
+        'page-unverifiable': 0,
         'not-found': 0,
         'fuzzy-low': 0,
         'manual-pending': 0,

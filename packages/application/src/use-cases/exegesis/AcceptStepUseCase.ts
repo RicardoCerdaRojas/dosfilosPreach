@@ -3,7 +3,7 @@ import type {
     ExegeticalStep,
     IExegeticalPaperRepository,
 } from '@dosfilos/domain';
-import { UnreviewedCitationsError, unreviewedNotFound } from '@dosfilos/domain';
+import { UnreviewedCitationsError, unreviewedBlockingCitations } from '@dosfilos/domain';
 
 /**
  * Marks a generated version as the accepted content for a step,
@@ -42,7 +42,7 @@ export class AcceptStepUseCase {
         const paper = await this.paperRepository.getPaper(input.ownerId, input.paperId);
         const version = paper?.steps.find(s => s.id === input.stepId)?.versions.find(v => v.id === input.versionId);
         if (version?.canonicalAnalysis) {
-            const blocking = unreviewedNotFound(
+            const blocking = unreviewedBlockingCitations(
                 version.canonicalAnalysis,
                 version.citationVerdicts ?? [],
                 version.citationReviews ?? [],

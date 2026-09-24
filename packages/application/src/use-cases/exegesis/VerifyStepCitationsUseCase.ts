@@ -287,6 +287,7 @@ export function buildSummary(citations: VerifiedCitation[], extras: SummaryExtra
     const counts: Record<CitationStatus, number> = {
         verified: 0,
         'page-mismatch': 0,
+        'page-unverifiable': 0,
         'not-found': 0,
         'fuzzy-low': 0,
         'manual-pending': 0,
@@ -298,6 +299,7 @@ export function buildSummary(citations: VerifiedCitation[], extras: SummaryExtra
         counts: {
             verified: counts.verified,
             pageMismatch: counts['page-mismatch'],
+            pageUnverifiable: counts['page-unverifiable'],
             notFound: counts['not-found'],
             fuzzyLow: counts['fuzzy-low'],
             manualPending: counts['manual-pending'],

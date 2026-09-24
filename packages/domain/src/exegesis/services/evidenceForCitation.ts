@@ -72,3 +72,34 @@ export function pagesOverlap(citedRaw: string, matchedRaw: string): boolean {
     if (!cited || !matched) return citedRaw === matchedRaw;
     return cited.start <= matched.end && matched.start <= cited.end;
 }
+
+/**
+ * Qué se puede decir de la página de una cita, mirando la del fragmento que
+ * la respalda.
+ *
+ * Vive acá, en una sola función, porque la regla estaba escrita dos veces —una
+ * en cada verificador— y dos copias de una regla son dos reglas apenas alguien
+ * toca una. El defecto que cierra vivía justamente en las dos: ambas
+ * condicionaban el cotejo a que el fragmento trajera número (`&& matchedPage`),
+ * de modo que la falta de número cancelaba la comprobación entera y dejaba la
+ * cita en verde.
+ *
+ *   - `ok`         — la cita no afirma página, o afirma una que el fragmento
+ *                    respalda. No hay nada que reprochar.
+ *   - `mismatch`   — hay dos números comparables y no se tocan.
+ *   - `unverifiable` — la cita afirma una página y el fragmento no trae
+ *                    ninguna. No es que discrepen: es que no hay con qué
+ *                    comparar, y ese es el caso peor, porque un fragmento sin
+ *                    ancla llega al modelo sin página y el número de la cita
+ *                    no lo copió de ningún rótulo.
+ */
+export type PageVerdict = 'ok' | 'mismatch' | 'unverifiable';
+
+export function pageVerdictFor(
+    citedPages: string | null | undefined,
+    matchedPage: string | null | undefined,
+): PageVerdict {
+    if (!citedPages) return 'ok';
+    if (!matchedPage) return 'unverifiable';
+    return pagesOverlap(citedPages, matchedPage) ? 'ok' : 'mismatch';
+}

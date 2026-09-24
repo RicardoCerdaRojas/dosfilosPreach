@@ -195,6 +195,13 @@ export interface VerificationSummary {
         pageMismatch: number;
         notFound: number;
         fuzzyLow: number;
+        /**
+         * Citas cuya página no se pudo comprobar contra nada.
+         *
+         * Opcional: los resúmenes guardados antes de que existiera el estado
+         * no lo traen, y ausente significa «no se midió», no cero.
+         */
+        pageUnverifiable?: number;
         manualPending: number;
     };
     /** Total citations parsed from the markdown — independent of verification. */
@@ -242,6 +249,7 @@ export const EMPTY_VERIFICATION_SUMMARY: VerificationSummary = {
         pageMismatch: 0,
         notFound: 0,
         fuzzyLow: 0,
+        pageUnverifiable: 0,
         manualPending: 0,
     },
     totalCitations: 0,

@@ -203,3 +203,38 @@ describe('pageInEvidenceUnit — la cita se coteja en la unidad de la evidencia'
         expect(pageInEvidenceUnit(claim(65, 'sheet'), null)).toBe('65');
     });
 });
+
+import { buildSummary } from '../VerifyStepCitationsUseCase';
+import type { CitationStatus, VerifiedCitation } from '@dosfilos/domain';
+
+describe('buildSummary — los contadores cubren el catálogo entero', () => {
+    const TODOS: ReadonlyArray<CitationStatus> = [
+        'verified', 'page-mismatch', 'page-unverifiable', 'not-found', 'manual-pending', 'fuzzy-low',
+    ];
+    const cita = (status: CitationStatus, offset: number): VerifiedCitation => ({
+        raw: '', author: '', title: '', pages: null, offset, evidence: '', evidenceIsQuoted: false,
+        status, matchedCorpusId: null, matchedSourceLabel: null, similarityScore: null,
+        matchedPage: null, note: null,
+    });
+
+    it('la suma de los contadores es el total de citas, para todo estado del catálogo', () => {
+        // El invariante que ata los números entre sí. Un estado nuevo que
+        // nadie sume deja el total mintiendo por lo bajo, y ese hueco no se
+        // ve leyendo el objeto: se ve sumándolo.
+        const citations = TODOS.map((s, i) => cita(s, i));
+        const { counts, totalCitations } = buildSummary(citations, { verifierVersion: 'test' });
+        const suma = counts.verified + counts.pageMismatch + counts.notFound
+            + counts.fuzzyLow + counts.manualPending + (counts.pageUnverifiable ?? 0);
+        expect(totalCitations).toBe(TODOS.length);
+        expect(suma).toBe(totalCitations);
+    });
+
+    it('cuenta las páginas sin comprobar en su propio casillero', () => {
+        const { counts } = buildSummary(
+            [cita('page-unverifiable', 0), cita('page-unverifiable', 1), cita('verified', 2)],
+            { verifierVersion: 'test' },
+        );
+        expect(counts.pageUnverifiable).toBe(2);
+        expect(counts.verified).toBe(1);
+    });
+});
