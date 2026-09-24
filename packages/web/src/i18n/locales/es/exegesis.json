@@ -1940,6 +1940,12 @@
         "acceptFailed": "No se pudo aceptar el paso",
         "edited": "Edición guardada",
         "editFailed": "No se pudo guardar la edición"
+      },
+      "assembly": {
+        "manifestTitle": "Esto entra al documento · {{count}} palabras",
+        "words": "{{count}} pal.",
+        "excludedTitle_one": "Queda fuera 1 versículo analizado sin prosa compuesta:",
+        "excludedTitle_other": "Quedan fuera {{count}} versículos analizados sin prosa compuesta:"
       }
     },
     "rubric": {

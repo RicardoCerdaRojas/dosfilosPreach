@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Wand2,
     Loader2,
+    Check,
     CheckCircle2,
     RotateCcw,
     Pencil,
@@ -30,7 +31,8 @@ import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/Cano
 import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { Link, useNavigate } from 'react-router-dom';
-import { isUnreviewedCitationsError } from '@dosfilos/domain';
+import { assemblyContents, isUnreviewedCitationsError } from '@dosfilos/domain';
+import type { AssemblyContents } from '@dosfilos/domain';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
 import { ExegesisOutOfCreditsDialog } from '@/components/exegesis/ExegesisOutOfCreditsDialog';
 import { ExegesisPreConfirmDialog } from '@/components/exegesis/ExegesisPreConfirmDialog';
@@ -100,6 +102,52 @@ interface StepCardProps {
  * El documento sigue siendo legible por sí solo: dice `generating`, y el
  * `updatedAt` que está al lado dice desde cuándo.
  */
+/**
+ * Qué entra al documento y qué se queda fuera.
+ *
+ * El ensamblador volcaba el análisis estructurado de los versículos sin prosa
+ * «para que el ensamble nunca sea sólo intro + conclusión». Ese miedo era
+ * legítimo —que el autor descubriera la ausencia al abrir el archivo— y la
+ * respuesta era la equivocada: informar no ensucia el entregable, volcar sí.
+ * Esta lista es la respuesta correcta al mismo miedo.
+ *
+ * Lee la MISMA función que usa el ensamblador, así la lista y el archivo no
+ * pueden discrepar.
+ */
+function AssemblyManifest({ contents }: { contents: AssemblyContents }) {
+    const { t } = useTranslation('exegesis');
+    return (
+        <div className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2.5 space-y-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {t('detail.steps.assembly.manifestTitle', { count: contents.words })}
+            </p>
+            <ul className="space-y-0.5">
+                {contents.included.map(p => (
+                    <li key={p.stepId} className="flex items-baseline gap-1.5 text-[12px] text-foreground">
+                        <Check className="h-3 w-3 shrink-0 text-success" aria-hidden />
+                        <span className="flex-1 truncate">{p.label}</span>
+                        <span className="text-[11px] tabular-nums text-muted-foreground">
+                            {t('detail.steps.assembly.words', { count: p.words })}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+            {contents.excluded.length > 0 && (
+                <div className="border-t border-border pt-2 space-y-0.5">
+                    <p className="text-[11px] text-muted-foreground">
+                        {t('detail.steps.assembly.excludedTitle', { count: contents.excluded.length })}
+                    </p>
+                    <ul className="flex flex-wrap gap-x-2 gap-y-0.5">
+                        {contents.excluded.map(p => (
+                            <li key={p.stepId} className="text-[12px] text-muted-foreground">{p.label}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function StepCard({ step, paperId, language, allSteps, hasAssembly = false, targetWordsPerVerse = null }: StepCardProps) {
     const { t } = useTranslation('exegesis');
     const {
@@ -295,6 +343,15 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
         }
         void runAnalyzeCanonically(regenerationHint);
     };
+    const isAssembly = step.kind === 'assembly';
+    // Qué va a entrar al documento y qué no. La misma regla que usa el
+    // ensamblador, leída del dominio: así la lista y el archivo no pueden
+    // discrepar.
+    const contents = useMemo(
+        () => (isAssembly && allSteps ? assemblyContents(allSteps, language) : null),
+        [isAssembly, allSteps, language],
+    );
+
     const isVerse = step.kind === 'verse';
     const isConclusion = step.kind === 'conclusion';
     const isIntroduction = step.kind === 'introduction';
@@ -744,6 +801,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
             <>
             {/* Body — state-aware */}
             <div className="px-5 py-4">
+                {contents && <AssemblyManifest contents={contents} />}
                 {isGenerating && (
                     <div className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <Loader2 className="h-4 w-4 animate-spin" />

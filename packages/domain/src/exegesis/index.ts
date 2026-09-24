@@ -89,6 +89,7 @@ export * from './repositories/IWorkProfileRepository';
 export * from './services/bibliography';
 export * from './services/paperBibliography';
 export * from './services/pericopeContext';
+export * from './services/assemblyContents';
 export * from './services/bibliographyFromText';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';
