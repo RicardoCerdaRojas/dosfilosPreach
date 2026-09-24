@@ -80,8 +80,35 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
+      # Reintenta el despliegue de funciones hasta tres veces.
+      #
+      # POR QUÉ SÓLO ESTE PASO. El fallo observado es «Failed to list
+      # functions», que ocurre ANTES de desplegar nada: el CLI pide a Google la
+      # lista de funciones existentes para diferenciar qué cambió, y esa
+      # llamada falla sola de vez en cuando. Pasó en el despliegue de #672 y el
+      # push siguiente, con el mismo código y el mismo proyecto, funcionó; ya
+      # había pasado igual en el #501. Los otros pasos del workflow no han
+      # mostrado esta falla, y poner reintentos donde no hay un fallo medido
+      # esconde los reales.
+      #
+      # `firebase deploy --only functions` es idempotente —compara y actualiza
+      # lo que cambió— así que reintentar un despliegue a medio aplicar es
+      # seguro.
+      #
+      # Un fallo de verdad sigue tumbando el job: tres intentos y se rinde.
       - name: Deploy Firebase Functions
-        run: firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          for intento in 1 2 3; do
+            if firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }}; then
+              exit 0
+            fi
+            if [ "$intento" -lt 3 ]; then
+              echo "::warning::El despliegue de funciones falló (intento $intento de 3). Reintentando en 30 s."
+              sleep 30
+            fi
+          done
+          echo "::error::El despliegue de funciones falló tres veces seguidas. No es el fallo transitorio de listado."
+          exit 1
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
