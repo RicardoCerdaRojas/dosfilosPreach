@@ -74,6 +74,15 @@ export interface ComposeConclusionInput {
      */
     exegeticalStrategy: ExegeticalStrategy | null;
     /**
+     * Muestras de la prosa del PROPIO autor, para imitar su registro.
+     *
+     * Vienen del mismo perfil que ya usaba el compositor de versículos. Sin
+     * esto el cuerpo del trabajo salía con la voz del autor y las dos partes
+     * que un profesor lee con más atención —cómo abre y cómo cierra— salían
+     * con la del modelo.
+     */
+    voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }>;
+    /**
      * Optional regeneration hint provided by the user when re-running
      * the composer (e.g. "más énfasis en la cristología", "menos
      * referencia a contexto histórico").

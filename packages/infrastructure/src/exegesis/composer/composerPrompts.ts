@@ -1,5 +1,6 @@
 import { fitPromptToCap } from '../../llm/promptBudget';
 import {
+    buildAcademicVoiceBlock,
     buildVerseCoverageContract,
     formatPassageReference,
     serializeAnalysis,
@@ -38,7 +39,12 @@ const STYLE_GUIDE_BUDGET_CHARS = 25_000;
 
 export function buildComposerPrompt(input: ComposeAcademicPaperInput): BuiltComposerPrompt {
     return {
-        systemInstruction: buildSystemInstruction(input),
+        // La voz al final de la instrucción de sistema: es una regla de
+        // REGISTRO, no material del pasaje.
+        systemInstruction: [
+            buildSystemInstruction(input),
+            buildAcademicVoiceBlock(input.voiceSamples ?? [], input.language),
+        ].filter(Boolean).join('\n\n'),
         userMessage: buildUserMessage(input),
     };
 }

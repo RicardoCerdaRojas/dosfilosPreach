@@ -43,6 +43,15 @@ export interface IAcademicComposer {
 }
 
 export interface ComposeAcademicPaperInput {
+    /**
+     * Muestras de la prosa del PROPIO autor, para imitar su registro.
+     *
+     * Este camino compone el trabajo ENTERO de una vez, así que sin esto el
+     * documento completo salía con la voz del modelo —no sólo su apertura y
+     * su cierre, como pasaba componiendo por partes—.
+     */
+    voiceSamples?: ReadonlyArray<{ excerpt: string; position: number }>;
+
     /** Whole-paper passage. Used for the title and global framing. */
     paperPassage: PassageReference;
 
