@@ -19,6 +19,8 @@ import type {
     PageNumbering,
 } from '@dosfilos/domain';
 import {
+    formatPericopeContext,
+    pericopeContextRange,
     EMPTY_VERIFICATION_SUMMARY,
     computeRubricCompliance,
     formatPassageReference,
@@ -119,7 +121,8 @@ export class AnalyzeVerseCanonicallyUseCase {
             const styleGuideContent = await this.loadStyleGuideContent(input.ownerId, paper.styleGuideId);
             // Loaded BEFORE the sources: the verse's own words are what
             // make the corpus query find anything in a lexicon.
-            const originalLanguageText = await this.loadOriginalLanguageText(step.verseRef);
+            const { verse: originalLanguageText, pericope: pericopeContext } =
+                await this.loadOriginalLanguageText(paper.passage, step.verseRef);
             // Se resuelve acá y no dentro de `loadSourceContexts` porque el
             // estampado posterior necesita saber, por fuente, si el número
             // que el modelo copió es página impresa u hoja del archivo.
@@ -148,6 +151,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                 paperPassage: paper.passage,
                 verseRef: step.verseRef,
                 originalLanguageText,
+                pericopeContext,
                 language: paper.displayLanguage,
                 assignmentBrief: paper.assignmentBrief,
                 stepEmphasis,
@@ -324,24 +328,57 @@ export class AnalyzeVerseCanonicallyUseCase {
         }
     }
 
-    private async loadOriginalLanguageText(verseRef: PassageReference): Promise<string | null> {
-        if (!this.originalLanguageProvider) return null;
+    /**
+     * El texto original del versículo y el de su entorno, de una sola carga.
+     *
+     * El capítulo entero ya venía en memoria y se tiraba: `getChapterContent`
+     * devolvía los cincuenta versículos y esta función recortaba uno. Con el
+     * recorte se iba la evidencia de toda construcción que cruce el corte, que
+     * en griego son casi todas las interesantes —una prótasis cuya apódosis
+     * está dos versículos más adelante no se puede clasificar mirando sólo la
+     * prótasis—.
+     *
+     * Devuelve los dos por separado a propósito. El del VERSÍCULO sigue siendo
+     * el texto autoritativo contra el que toda afirmación debe cuadrar; el del
+     * ENTORNO es para ver antecedentes y consecuentes, no para analizarlo.
+     * Mezclarlos invitaría a analizar lo que nadie pidió.
+     */
+    private async loadOriginalLanguageText(
+        paperPassage: PassageReference,
+        verseRef: PassageReference,
+    ): Promise<{ verse: string | null; pericope: string | null }> {
+        const vacio = { verse: null, pericope: null };
+        if (!this.originalLanguageProvider) return vacio;
         const provider = this.originalLanguageProvider;
-        if (!provider.supports(verseRef.bookId)) return null;
+        if (!provider.supports(verseRef.bookId)) return vacio;
         try {
             const verses = await provider.getChapterContent(verseRef.bookId, verseRef.chapterStart);
             const start = (verseRef.verseStart ?? 1) - 1;
             const end = verseRef.verseEnd ?? verseRef.verseStart ?? verses.length;
             const slice = verses.slice(start, end);
-            if (slice.length === 0) return null;
+            if (slice.length === 0) return vacio;
             const numbered = slice.map((text, i) => {
                 const v = (verseRef.verseStart ?? 1) + i;
                 return `${verseRef.chapterStart}:${v} ${text}`;
             });
-            return numbered.join(' ');
+
+            const porNumero = new Map(verses.map((text, i) => [i + 1, text]));
+            const rango = pericopeContextRange(paperPassage, verseRef);
+            const objetivo = {
+                from: verseRef.verseStart ?? 1,
+                to: verseRef.verseEnd ?? verseRef.verseStart ?? 1,
+            };
+            const pericope = formatPericopeContext(porNumero, rango, objetivo, verseRef.chapterStart);
+
+            return {
+                verse: numbered.join(' '),
+                // `formatPericopeContext` devuelve vacío cuando no hay
+                // vecinos que ofrecer; la decisión vive allá, con su prueba.
+                pericope: pericope || null,
+            };
         } catch (err) {
             console.warn('[AnalyzeVerseCanonicallyUseCase] original-language load failed:', err);
-            return null;
+            return vacio;
         }
     }
 
