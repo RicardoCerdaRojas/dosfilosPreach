@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checkLength, countProseWords, estimateLength, sectionBudgets } from '../paperLength';
+import { checkLength, countProseWords, estimateLength, sectionBudgets, wordsPerPage } from '../paperLength';
+import { DEFAULT_PAPER_FORMATTING, type PaperFormatting } from '../../entities/PaperRubric';
 
 describe('countProseWords', () => {
     it('cuenta palabras, no espacios ni puntuación', () => {
@@ -97,5 +98,73 @@ describe('sectionBudgets — el reparto por versículo', () => {
         expect(sectionBudgets(null, { verses: 3, ...CON_MARCO }).perVerse).toBeNull();
         expect(sectionBudgets({ unit: 'pages', min: 12, max: null }, { verses: 0, ...CON_MARCO }).perVerse).toBeNull();
         expect(sectionBudgets({ unit: 'pages', min: null, max: null }, { verses: 3, ...CON_MARCO }).perVerse).toBeNull();
+    });
+});
+
+describe('wordsPerPage — la página rinde según el interlineado', () => {
+    const formato = (over: Partial<PaperFormatting>): PaperFormatting =>
+        ({ ...DEFAULT_PAPER_FORMATTING, ...over });
+
+    it('la maquetación de la casa sigue dando las 250 de siempre', () => {
+        // Doble espacio, sin línea entre párrafos: es el número que estaba
+        // cableado, y este caso es el que garantiza que nada cambió para los
+        // trabajos que no declaran formato.
+        expect(wordsPerPage(null)).toBe(250);
+        expect(wordsPerPage(DEFAULT_PAPER_FORMATTING)).toBe(250);
+    });
+
+    it('los tres interlineados salen de un solo número, no de tres cuentas sueltas', () => {
+        // El invariante que hay que preservar es la RELACIÓN: un renglón a
+        // doble espacio ocupa exactamente dos renglones simples. Tres
+        // constantes escritas a mano la pierden en cuanto alguien toca una.
+        const simple = wordsPerPage(formato({ lineSpacing: 'single' }));
+        for (const [spacing, alto] of [['double', 2], ['one-and-a-half', 1.5]] as const) {
+            const rinde = wordsPerPage(formato({ lineSpacing: spacing }));
+            // La tolerancia es el redondeo a 25 de los dos extremos, más el
+            // renglón que se pierde al truncar la división.
+            expect(Math.abs(rinde - simple / alto)).toBeLessThanOrEqual(25);
+        }
+    });
+
+    it('el interlineado de uno y medio queda entre los otros dos', () => {
+        const medio = wordsPerPage(formato({ lineSpacing: 'one-and-a-half' }));
+        expect(medio).toBeGreaterThan(wordsPerPage(formato({ lineSpacing: 'double' })));
+        expect(medio).toBeLessThan(wordsPerPage(formato({ lineSpacing: 'single' })));
+    });
+
+    it('la línea entre párrafos hace rendir menos, no más', () => {
+        const con = wordsPerPage(formato({ lineSpacing: 'single', blankLineBetweenParagraphs: true }));
+        const sin = wordsPerPage(formato({ lineSpacing: 'single', blankLineBetweenParagraphs: false }));
+        expect(con).toBeLessThan(sin);
+    });
+});
+
+describe('la extensión de un trabajo a espacio simple', () => {
+    // El caso medido: Santiago 2:1-13, rúbrica de 2-3 páginas, formato a
+    // espacio simple con línea entre párrafos, 881 palabras de prosa. El aviso
+    // decía «se pasa de 3 páginas» y el documento entregado cumplía.
+    const formato: PaperFormatting = {
+        lineSpacing: 'single',
+        citationForm: 'parenthetical',
+        blankLineBetweenParagraphs: true,
+    };
+    const prosa = 'palabra '.repeat(881);
+
+    it('medido a doble espacio decía que se pasaba', () => {
+        const viejo = checkLength(prosa, { unit: 'pages', min: 2, max: 3 }, null);
+        expect(viejo.verdict).toBe('long');
+    });
+
+    it('medido con el formato de la entrega, cumple', () => {
+        const check = checkLength(prosa, { unit: 'pages', min: 2, max: 3 }, formato);
+        expect(check.verdict).toBe('ok');
+    });
+
+    it('y el presupuesto por versículo deja de pedir la mitad', () => {
+        const secciones = { verses: 4, introduction: false, conclusion: false };
+        const viejo = sectionBudgets({ unit: 'pages', min: 2, max: 3 }, secciones, null).perVerse!;
+        const nuevo = sectionBudgets({ unit: 'pages', min: 2, max: 3 }, secciones, formato).perVerse!;
+        expect(viejo).toBe(150);
+        expect(nuevo).toBeGreaterThan(viejo);
     });
 });

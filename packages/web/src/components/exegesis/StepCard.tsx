@@ -31,7 +31,7 @@ import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { Link, useNavigate } from 'react-router-dom';
 import { assemblyContents, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, unansweredQuestions } from '@dosfilos/domain';
-import type { AssemblyContents, AssemblyPart } from '@dosfilos/domain';
+import type { AssemblyContents, AssemblyPart, PaperFormatting } from '@dosfilos/domain';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
 import { ExegesisOutOfCreditsDialog } from '@/components/exegesis/ExegesisOutOfCreditsDialog';
 import { ExegesisPreConfirmDialog } from '@/components/exegesis/ExegesisPreConfirmDialog';
@@ -75,6 +75,8 @@ interface StepCardProps {
     hasAssembly?: boolean;
     /** Palabras que le tocan a este verso según la rúbrica, si la hay. */
     targetWordsPerVerse?: number | null;
+    /** El formato de la entrega: decide cuántas palabras entran en la página. */
+    formatting?: PaperFormatting | null;
 }
 
 /**
@@ -195,7 +197,7 @@ function AssemblyManifest({ contents, paperId, preguntas }: {
     );
 }
 
-export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, hasAssembly = false, targetWordsPerVerse = null }: StepCardProps) {
+export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, hasAssembly = false, targetWordsPerVerse = null, formatting = null }: StepCardProps) {
     const { t } = useTranslation('exegesis');
     const {
         generateStep,
@@ -1340,6 +1342,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 verseLabel={step.verseRef ? formatPassageReference(step.verseRef, language) : t(`detail.steps.kind.${step.kind}`)}
                 currentProse={previewMarkdown}
                 suggestedWords={targetWordsPerVerse}
+                formatting={formatting}
                 isComposing={composeVerseAcademicProse.isPending}
                 onRecompose={(guidance, targetWords) => handleComposeVerseProse(guidance, targetWords)}
             />

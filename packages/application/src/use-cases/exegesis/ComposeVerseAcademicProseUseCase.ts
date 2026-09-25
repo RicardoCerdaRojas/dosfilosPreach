@@ -184,7 +184,13 @@ export class ComposeVerseAcademicProseUseCase {
                 wordBudget: sectionBudgets(
                     paper.rubric?.expectedLength ?? null,
                     documentSections(paper.steps),
+                    paper.rubric?.formatting ?? null,
                 ).perVerse,
+                // La forma de cita la decide la entrega, no el compositor: es
+                // la misma que el exportador va a maquetar.
+                ...(paper.rubric?.formatting?.citationForm
+                    ? { citationForm: paper.rubric.formatting.citationForm }
+                    : {}),
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
             };

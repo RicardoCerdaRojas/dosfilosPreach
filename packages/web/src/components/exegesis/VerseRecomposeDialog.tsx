@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Wand2 } from 'lucide-react';
-import { estimateLength } from '@dosfilos/domain';
+import { estimateLength, type PaperFormatting } from '@dosfilos/domain';
 import {
     Dialog,
     DialogContent,
@@ -25,6 +25,12 @@ interface Props {
      * extensión: entonces no se propone ningún número.
      */
     suggestedWords: number | null;
+    /**
+     * El formato de la entrega. Decide cuántas palabras entran en la página,
+     * y sin él el diálogo anunciaba el doble de páginas en un trabajo a
+     * espacio simple.
+     */
+    formatting: PaperFormatting | null;
     isComposing: boolean;
     onRecompose: (guidance: string, targetWords: number | null) => void;
 }
@@ -37,7 +43,7 @@ interface Props {
  * estaba bien— o arreglarlo a mano fuera del producto. La instrucción es
  * obligatoria: sin decirle qué falta, el compositor devuelve lo mismo.
  */
-export function VerseRecomposeDialog({ open, onOpenChange, verseLabel, currentProse, suggestedWords, isComposing, onRecompose }: Props) {
+export function VerseRecomposeDialog({ open, onOpenChange, verseLabel, currentProse, suggestedWords, formatting, isComposing, onRecompose }: Props) {
     const { t } = useTranslation('exegesis');
     const [guidance, setGuidance] = useState('');
     const [target, setTarget] = useState<string>('');
@@ -48,7 +54,7 @@ export function VerseRecomposeDialog({ open, onOpenChange, verseLabel, currentPr
         setTarget(suggestedWords ? String(suggestedWords) : '');
     }, [open, suggestedWords]);
 
-    const current = estimateLength(currentProse);
+    const current = estimateLength(currentProse, formatting);
     const targetNumber = Number(target.trim());
     const validTarget = Number.isFinite(targetNumber) && targetNumber > 0 ? Math.round(targetNumber) : null;
     const ready = guidance.trim().length >= 10;

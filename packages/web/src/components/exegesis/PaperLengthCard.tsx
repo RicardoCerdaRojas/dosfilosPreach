@@ -23,7 +23,10 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
     const { t } = useTranslation('exegesis');
 
     const markdown = paper.assembledMarkdown?.trim() || exportPaperToMarkdown(paper);
-    const check = checkLength(markdown, paper.rubric?.expectedLength ?? null);
+    // El formato de la entrega decide cuántas palabras entran en la página:
+    // el mismo campo que el exportador obedece.
+    const formatting = paper.rubric?.formatting ?? null;
+    const check = checkLength(markdown, paper.rubric?.expectedLength ?? null, formatting);
     if (check.words === 0) return null;
 
     const perStep = paper.steps
@@ -33,7 +36,7 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
             return {
                 id: s.id,
                 label: s.verseRef ? formatPassageReference(s.verseRef, language) : t(`detail.steps.kind.${s.kind}`),
-                pages: estimateLength(version.markdown ?? '').estimatedPages,
+                pages: estimateLength(version.markdown ?? '', formatting).estimatedPages,
             };
         });
     // Un verso escrito a la mitad del más largo es el síntoma de la ficha

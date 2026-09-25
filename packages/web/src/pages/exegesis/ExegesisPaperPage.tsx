@@ -662,9 +662,11 @@ function StepsPanel({
     const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
     // Cuánto le toca a cada verso para llegar a la extensión que exige la
     // rúbrica: es el número que el diálogo de recomposición propone.
+    const formatting = paper.rubric?.formatting ?? null;
     const targetWordsPerVerse = sectionBudgets(
         paper.rubric?.expectedLength ?? null,
         documentSections(steps),
+        formatting,
     ).perVerse;
 
     return (
@@ -726,6 +728,7 @@ function StepsPanel({
                             assignmentBrief={paper.assignmentBrief}
                             hasAssembly={!!paper.assembledMarkdown?.trim()}
                             targetWordsPerVerse={targetWordsPerVerse}
+                            formatting={formatting}
                         />
                     ))}
                     {/* v1.7 corpus-usage planning — coverage report

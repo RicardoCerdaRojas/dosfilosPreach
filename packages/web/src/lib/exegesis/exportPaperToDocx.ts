@@ -379,8 +379,29 @@ function parseMarkdownBlocks(markdown: string): Block[] {
 
 // ── Inline run rendering ────────────────────────────────────────────
 
+/**
+ * La cita inline que baja a nota al pie: `(Autor, "Título", p. N)`.
+ *
+ * El rótulo admite «hoja N» además de «p. N», y no es un adorno. «hoja N» es
+ * lo que el sistema escribe cuando la numeración impresa de esa fuente se
+ * desconoce —no inventa una página que no verificó—, y sin esa rama la cita
+ * honesta era justamente la que NO se convertía: quedaba varada en el cuerpo
+ * como paréntesis mientras sus vecinas con «p. N» sí bajaban al pie, o sea
+ * dos formas de cita en el mismo documento por culpa del exportador. Medido
+ * en Santiago 2:1-13, donde la única fuente sin folios impresos es Wallace.
+ *
+ * El orden de la alternancia importa poco y por eso se deja explícito: las
+ * dos ramas son mutuamente excluyentes —«p.» empieza por `p`, «hoja» por
+ * `h`—, así que ninguna puede robarle el texto a la otra. El grupo capturado
+ * son sólo las cifras, pero la nota al pie se arma con el texto COMPLETO del
+ * paréntesis, de modo que el rótulo viaja intacto.
+ *
+ * Es la misma alternancia que ya usaba el verificador de citas
+ * (`citationParser`). Eran dos lecturas de la misma forma y sólo una sabía
+ * leer el rótulo honesto.
+ */
 const CITATION_PATTERN =
-    /\(\s*([^,()]+?)\s*,\s*"([^"]+)"(?:\s*,\s*(?:pp?\.\s*)?([\d–\-—,\s]+))?\s*\)/g;
+    /\(\s*([^,()]+?)\s*,\s*"([^"]+)"(?:\s*,\s*(?:pp?\.\s*|hojas?\s+)?([\d–\-—,\s]+))?\s*\)/g;
 const BOLD_PATTERN = /\*\*([^*]+)\*\*/g;
 const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
 
