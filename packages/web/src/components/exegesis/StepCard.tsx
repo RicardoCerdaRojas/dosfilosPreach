@@ -468,6 +468,26 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
         || composeIntroductionFromAnalyses.isPending
         || composeVerseAcademicProse.isPending;
 
+    /**
+     * La versión actual del paso está por cambiar: nada que trabaje sobre ella
+     * debe poder dispararse.
+     *
+     * `Aceptar` y `Verificar citas` operan sobre `step.current`. Durante una
+     * regeneración esa versión es la VIEJA —la nueva todavía no aterriza—, así
+     * que aceptar fija la anterior y deja al paso volviendo a revisión cuando
+     * llega la nueva, y verificar gasta una pasada sobre un texto que está por
+     * desaparecer, dejando veredictos atados a una versión que deja de ser la
+     * actual.
+     *
+     * Se nombra una vez porque estaba escrita a mano en cuatro botones con
+     * cuatro combinaciones distintas, y dos de ellos se habían quedado sin la
+     * parte de `anyPipelinePending`. Cuatro copias de una condición son cuatro
+     * condiciones en cuanto alguien toca una.
+     */
+    const versionEnVuelo =
+        anyPipelinePending || acceptStep.isPending || verifyStepCitations.isPending;
+
+
     // Per-verse academic prose composer. Persists on the version's
     // `markdown` field, so re-rendering after the user clicks once is
     // free until the analysis itself changes.
@@ -823,7 +843,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                         <Button
                             size="sm"
                             onClick={(e) => { e.stopPropagation(); void handleAccept(); }}
-                            disabled={acceptStep.isPending || !step.current}
+                            disabled={versionEnVuelo || !step.current}
                             className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
                             title={t('detail.steps.action.acceptCollapsedTooltip')}
                         >
@@ -953,7 +973,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                         <Button
                             size="sm"
                             onClick={handleAccept}
-                            disabled={acceptStep.isPending || !step.current}
+                            disabled={versionEnVuelo || !step.current}
                             className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
                         >
                             {acceptStep.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
@@ -963,7 +983,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                             size="sm"
                             variant="outline"
                             onClick={() => handleAdaptiveRegenerate()}
-                            disabled={anyPipelinePending || acceptStep.isPending}
+                            disabled={versionEnVuelo}
                         >
                             {anyPipelinePending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5 mr-1.5" />}
                             {anyPipelinePending ? t('detail.steps.action.regenerating') : t('detail.steps.action.regenerate')}
@@ -972,7 +992,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                             size="sm"
                             variant="outline"
                             onClick={() => setHintMode(v => !v)}
-                            disabled={anyPipelinePending || acceptStep.isPending}
+                            disabled={versionEnVuelo}
                         >
                             <Pencil className="h-3.5 w-3.5 mr-1.5" />
                             {t('detail.steps.action.regenerateWithHint')}
@@ -981,7 +1001,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                             size="sm"
                             variant="ghost"
                             onClick={startEdit}
-                            disabled={anyPipelinePending || acceptStep.isPending}
+                            disabled={versionEnVuelo}
                         >
                             <Pencil className="h-3.5 w-3.5 mr-1.5" />
                             {t('detail.steps.action.editManual')}
@@ -995,7 +1015,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleAnalyzeCanonically()}
-                                disabled={anyPipelinePending || acceptStep.isPending}
+                                disabled={versionEnVuelo}
                                 title={t('canonical.actions.analyzeFromAcceptedTooltip')}
                             >
                                 {analyzeVerseCanonically.isPending
@@ -1008,7 +1028,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                             size="sm"
                             variant="ghost"
                             onClick={handleVerifyCitations}
-                            disabled={verifyStepCitations.isPending || !step.current}
+                            disabled={versionEnVuelo || !step.current}
                             className="ml-auto"
                             title={t('canonical.verify.button.tooltip')}
                         >
@@ -1021,7 +1041,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                             <QuickHintChips
                                 stepKind={step.kind}
                                 onPick={(hint) => handleAdaptiveRegenerate(hint)}
-                                disabled={anyPipelinePending || acceptStep.isPending}
+                                disabled={versionEnVuelo}
                             />
                             <div className="flex items-center gap-2">
                                 <input
@@ -1093,7 +1113,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                     <button
                         type="button"
                         onClick={handleVerifyCitations}
-                        disabled={verifyStepCitations.isPending || anyPipelinePending}
+                        disabled={versionEnVuelo}
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                         title={t('canonical.verify.button.tooltip')}
                     >
