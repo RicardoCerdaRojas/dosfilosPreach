@@ -30,7 +30,7 @@ import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/Cano
 import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { Link, useNavigate } from 'react-router-dom';
-import { assemblyContents, isUnreviewedCitationsError } from '@dosfilos/domain';
+import { assemblyContents, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, unansweredQuestions } from '@dosfilos/domain';
 import type { AssemblyContents, AssemblyPart } from '@dosfilos/domain';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
 import { ExegesisOutOfCreditsDialog } from '@/components/exegesis/ExegesisOutOfCreditsDialog';
@@ -69,6 +69,8 @@ interface StepCardProps {
      * compatibility with callers that only render verse cards.
      */
     allSteps?: ReadonlyArray<ExegeticalStep>;
+    /** El encuadre del trabajo, para decir qué pregunta responde cada paso. */
+    assignmentBrief?: string | null;
     /** Si el trabajo ya está ensamblado: decide si recomponer lo alcanza. */
     hasAssembly?: boolean;
     /** Palabras que le tocan a este verso según la rúbrica, si la hay. */
@@ -113,7 +115,11 @@ interface StepCardProps {
  * Lee la MISMA función que usa el ensamblador, así la lista y el archivo no
  * pueden discrepar.
  */
-function AssemblyManifest({ contents, paperId }: { contents: AssemblyContents; paperId: string }) {
+function AssemblyManifest({ contents, paperId, preguntas }: {
+    contents: AssemblyContents;
+    paperId: string;
+    preguntas: ReturnType<typeof parseBriefQuestions>;
+}) {
     const { t } = useTranslation('exegesis');
     const { setStepInclusion } = useExegesisPapers();
 
@@ -161,6 +167,27 @@ function AssemblyManifest({ contents, paperId }: { contents: AssemblyContents; p
                     {t('detail.steps.assembly.pendingHint', { count: contents.pending.length })}
                 </p>
             )}
+            {(() => {
+                // Preguntas que ninguna sección elegida va a responder. Es el
+                // aviso que convierte un documento incompleto —que hoy se
+                // descubre leyendo— en algo que el sistema dice antes de
+                // exportar.
+                const versiculos = contents.included
+                    .concat(contents.pending)
+                    .map(p => p.label.match(/(\d+):(\d+)/))
+                    .filter((m): m is RegExpMatchArray => !!m)
+                    .map(m => ({ chapter: Number(m[1]), verse: Number(m[2]) }));
+                const sinResponder = unansweredQuestions(preguntas, versiculos);
+                if (sinResponder.length === 0) return null;
+                return (
+                    <p className="border-t border-border pt-2 text-[11px] text-warning-subtle-foreground">
+                        {t('detail.steps.assembly.unanswered', {
+                            count: sinResponder.length,
+                            numbers: sinResponder.map(q => q.number).join(', '),
+                        })}
+                    </p>
+                );
+            })()}
             <p className="text-[11px] leading-snug text-muted-foreground">
                 {t('detail.steps.assembly.hint')}
             </p>
@@ -168,7 +195,7 @@ function AssemblyManifest({ contents, paperId }: { contents: AssemblyContents; p
     );
 }
 
-export function StepCard({ step, paperId, language, allSteps, hasAssembly = false, targetWordsPerVerse = null }: StepCardProps) {
+export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, hasAssembly = false, targetWordsPerVerse = null }: StepCardProps) {
     const { t } = useTranslation('exegesis');
     const {
         generateStep,
@@ -363,6 +390,12 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
         }
         void runAnalyzeCanonically(regenerationHint);
     };
+    const preguntas = useMemo(() => parseBriefQuestions(assignmentBrief), [assignmentBrief]);
+    /** La pregunta del encuadre que le toca a este versículo. */
+    const preguntaPropia = step.kind === 'verse' && step.verseRef
+        ? questionsForVerse(preguntas, step.verseRef.chapterStart, step.verseRef.verseStart ?? 1)
+        : [];
+
     const isAssembly = step.kind === 'assembly';
     // Qué va a entrar al documento y qué no. La misma regla que usa el
     // ensamblador, leída del dominio: así la lista y el archivo no pueden
@@ -665,6 +698,17 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                             {t(`detail.steps.state.${step.state}`)}
                             {step.versions.length > 0 ? ` · v${step.versions.length}` : ''}
                         </span>
+                        {/* Qué pregunta del encuadre le toca a este paso. Se
+                            dice acá para que el emparejamiento sea visible sin
+                            que nadie tenga que ir a buscarlo: si se equivocó,
+                            se ve; si acertó, da confianza. */}
+                        {preguntaPropia.length > 0 && (
+                            <span className="text-[11px] text-muted-foreground">
+                                · {t('detail.steps.answersQuestion', {
+                                    numbers: preguntaPropia.map(q => q.number).join(', '),
+                                })}
+                            </span>
+                        )}
                         {displayVerificationSummary && (
                             <VerificationBadge summary={displayVerificationSummary} />
                         )}
@@ -862,7 +906,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
             <>
             {/* Body — state-aware */}
             <div className="px-5 py-4">
-                {contents && <AssemblyManifest contents={contents} paperId={paperId} />}
+                {contents && <AssemblyManifest contents={contents} paperId={paperId} preguntas={preguntas} />}
                 {isGenerating && (
                     <div className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <Loader2 className="h-4 w-4 animate-spin" />

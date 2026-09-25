@@ -21,6 +21,8 @@ import type {
 } from '@dosfilos/domain';
 import {
     documentSections,
+    parseBriefQuestions,
+    questionsForVerse,
     sectionBudgets,
     isCitableSourceType,
     replaceVerseSection,
@@ -173,6 +175,12 @@ export class ComposeVerseAcademicProseUseCase {
                 // que exige la rúbrica y repartido entre los versículos del
                 // trabajo. Sin esto el compositor no sabía que había un
                 // límite: un trabajo de 2-3 páginas salió de 16.
+                // La pregunta del encuadre que le toca a ESTE versículo.
+                sectionQuestions: questionsForVerse(
+                    parseBriefQuestions(paper.assignmentBrief),
+                    step.verseRef!.chapterStart,
+                    step.verseRef!.verseStart ?? 1,
+                ).map(q => ({ number: q.number, text: q.text })),
                 wordBudget: sectionBudgets(
                     paper.rubric?.expectedLength ?? null,
                     documentSections(paper.steps),

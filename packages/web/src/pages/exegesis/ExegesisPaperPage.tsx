@@ -723,6 +723,7 @@ function StepsPanel({
                             paperId={paper.id}
                             language={language}
                             allSteps={paper.steps}
+                            assignmentBrief={paper.assignmentBrief}
                             hasAssembly={!!paper.assembledMarkdown?.trim()}
                             targetWordsPerVerse={targetWordsPerVerse}
                         />

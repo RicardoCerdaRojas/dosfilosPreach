@@ -105,6 +105,23 @@ export interface ComposeVerseInput {
      */
     wordBudget?: number | null;
 
+    /**
+     * Las preguntas del encuadre que ESTA sección tiene que responder.
+     *
+     * El encuadre entero ya llegaba, rotulado «contexto, no lo repitas»: se
+     * entregaba como trasfondo que el modelo debía ignorar, que es lo
+     * contrario de una tarea. Y aunque se reetiquetara, el compositor de un
+     * versículo vería todas las preguntas sin saber cuál es la suya.
+     *
+     * Medido: el análisis de Santiago 2:2 decía dónde estaba la apódosis —en
+     * el v. 4— y la prosa compuesta no lo mencionaba. El dato existía y se
+     * recortó, porque nada decía que esa frase era justamente lo preguntado.
+     *
+     * Vacío cuando el encuadre no viene en forma de preguntas, o cuando
+     * ninguna nombra este versículo.
+     */
+    sectionQuestions?: ReadonlyArray<{ number: number; text: string }>;
+
 
     /** Style guide content (verbatim) when configured. */
     styleGuideContent: string;
