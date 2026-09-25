@@ -1326,12 +1326,35 @@ export function serializeStep(step: ExegeticalStep): Record<string, unknown> {
     const { current, accepted, ...resto } = step as ExegeticalStep & Record<string, unknown>;
     const out: Record<string, unknown> = {
         ...resto,
-        versions,
+        versions: versions.map(v => sinIndefinidos(v as unknown as Record<string, unknown>)),
         currentId: current?.id ?? null,
         acceptedId: accepted?.id ?? null,
     };
-    // Firestore rechaza `undefined`; un campo opcional ausente no se escribe.
-    for (const k of Object.keys(out)) if (out[k] === undefined) delete out[k];
+    return sinIndefinidos(out);
+}
+
+/**
+ * El mismo objeto sin las claves que valen `undefined`.
+ *
+ * Firestore las rechaza, y `deserializeStepVersion` las PRODUCE: deja
+ * `canonicalAnalysis: undefined` en los pasos que no tienen análisis —la
+ * introducción, la conclusión, y cualquier verso compuesto sin analizar— y
+ * `verifications: undefined` cuando falta.
+ *
+ * Antes daba igual, porque `mutateStep` mutaba el objeto CRUDO y nunca pasaba
+ * por el deserializador. Al meterlo en el camino de escritura, marcar la
+ * introducción empezó a fallar con «No se pudo cambiar la selección».
+ *
+ * Se limpia SÓLO el primer nivel, a propósito. Recorrer en profundidad
+ * convertiría cualquier `Timestamp` anidado que no haya pasado por el
+ * deserializador en un objeto plano, y una fecha rota es peor que una clave
+ * de más.
+ */
+function sinIndefinidos(valor: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(valor)) {
+        if (v !== undefined) out[k] = v;
+    }
     return out;
 }
 

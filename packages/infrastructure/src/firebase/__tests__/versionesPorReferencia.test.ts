@@ -50,6 +50,47 @@ describe('serializeStep', () => {
     });
 });
 
+describe('serializeStep — Firestore rechaza `undefined`', () => {
+    /**
+     * `deserializeStepVersion` PRODUCE `undefined`: deja
+     * `canonicalAnalysis: undefined` en los pasos sin análisis —la
+     * introducción, la conclusión, cualquier verso compuesto sin analizar— y
+     * `verifications: undefined` cuando falta.
+     *
+     * Antes daba igual, porque `mutateStep` mutaba el objeto crudo y nunca
+     * pasaba por el deserializador. Al meterlo en el camino de escritura,
+     * marcar la introducción empezó a fallar con «No se pudo cambiar la
+     * selección».
+     */
+    it('una versión sin análisis no arrastra la clave en undefined', () => {
+        const sinAnalisis = {
+            id: 'v1', markdown: 'texto', canonicalAnalysis: undefined, verifications: undefined,
+        } as unknown as ExegeticalStepVersion;
+        const out = serializeStep(paso({ versions: [sinAnalisis], current: sinAnalisis, accepted: sinAnalisis }));
+        const guardada = (out.versions as Record<string, unknown>[])[0]!;
+        expect('canonicalAnalysis' in guardada).toBe(false);
+        expect('verifications' in guardada).toBe(false);
+        expect(guardada.markdown).toBe('texto');
+    });
+
+    it('ninguna clave del paso ni de sus versiones vale undefined', () => {
+        const sinAnalisis = { id: 'v1', canonicalAnalysis: undefined } as unknown as ExegeticalStepVersion;
+        const out = serializeStep(paso({
+            versions: [sinAnalisis], current: sinAnalisis, accepted: null,
+            verseRef: undefined as never,
+        }));
+        const indefinidos = (o: Record<string, unknown>) => Object.values(o).filter(v => v === undefined).length;
+        expect(indefinidos(out)).toBe(0);
+        for (const v of out.versions as Record<string, unknown>[]) expect(indefinidos(v)).toBe(0);
+    });
+
+    it('un valor nulo SÍ se guarda: null y ausente no son lo mismo', () => {
+        const out = serializeStep(paso({ accepted: null }));
+        expect(out.acceptedId).toBeNull();
+        expect('acceptedId' in out).toBe(true);
+    });
+});
+
 describe('deserializeStep', () => {
     it('resuelve las referencias contra versions[]', () => {
         const leido = deserializeStep(serializeStep(paso()));
