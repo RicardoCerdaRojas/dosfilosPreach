@@ -513,7 +513,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             newSteps.push(buildStep({ paperId, kind: 'assembly', order: newSteps.length + 1, now }));
 
             tx.update(ref, {
-                steps: newSteps,
+                steps: newSteps.map(serializeStep),
                 phase: 'in-progress',
                 currentStepId: newSteps[0]!.id,
                 updatedAt: now,
@@ -791,8 +791,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             if (idx === -1) {
                 throw new Error(`Step ${stepId} not found in paper ${paperId}`);
             }
-            const next = mutator({ ...steps[idx]! });
-            steps[idx] = next;
+            // El mutador trabaja sobre la forma de DOMINIO —con `current` y
+            // `accepted` como objetos— y lo que se escribe es la forma
+            // guardada, con esas dos por referencia.
+            const next = mutator(deserializeStep(steps[idx]!));
+            steps[idx] = serializeStep(next) as unknown as ExegeticalStep;
             updatedStep = next;
             tx.update(ref, { steps, updatedAt: new Date() });
         });
@@ -831,7 +834,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
         rubric: paper.rubric,
         stepPlan: paper.stepPlan,
         phase: paper.phase,
-        steps: paper.steps,
+        steps: paper.steps.map(serializeStep),
         currentStepId: paper.currentStepId,
         assembledMarkdown: paper.assembledMarkdown,
         archivedAt: paper.archivedAt,
@@ -1261,14 +1264,75 @@ function deserializeStepVersion(raw: any): ExegeticalStepVersion {
 }
 
 export function deserializeStep(raw: any): ExegeticalStep {
+    const versions: ExegeticalStepVersion[] = Array.isArray(raw?.versions)
+        ? raw.versions.map(deserializeStepVersion)
+        : [];
+    const porId = new Map(versions.map(v => [v.id, v]));
+
+    /**
+     * `current` y `accepted` se guardan como IDENTIFICADOR y se resuelven acá.
+     *
+     * Se guardaban como copias enteras de la versión, análisis canónico
+     * incluido, de modo que cada versión podía quedar almacenada tres veces.
+     * Medido sobre los 42 trabajos en producción: de 8.595 KB, 4.145 eran esa
+     * duplicación —casi la mitad—, y el trabajo más grande estaba a 91% del
+     * límite de 1 MB por documento de Firestore.
+     *
+     * Resolver al LEER es lo que hace el cambio barato: todo el código que
+     * hace `step.accepted.markdown` sigue recibiendo el objeto y no se entera.
+     *
+     * El segundo argumento es la forma vieja. Un documento guardado antes de
+     * este cambio trae el objeto y no el identificador, y se sigue leyendo sin
+     * migrar nada; también cubre el caso de una versión referenciada que no
+     * esté en `versions[]`, donde perder la referencia sería perder el texto.
+     */
+    const resolver = (
+        id: unknown,
+        legado: unknown,
+    ): ExegeticalStepVersion | null => {
+        if (typeof id === 'string') {
+            const hallada = porId.get(id);
+            if (hallada) return hallada;
+        }
+        return legado ? deserializeStepVersion(legado) : null;
+    };
+
     return {
         ...raw,
         createdAt: toDateOrNull(raw?.createdAt) ?? new Date(),
         updatedAt: toDateOrNull(raw?.updatedAt) ?? new Date(),
-        current: raw?.current ? deserializeStepVersion(raw.current) : null,
-        accepted: raw?.accepted ? deserializeStepVersion(raw.accepted) : null,
-        versions: Array.isArray(raw?.versions) ? raw.versions.map(deserializeStepVersion) : [],
+        current: resolver(raw?.currentId, raw?.current),
+        accepted: resolver(raw?.acceptedId, raw?.accepted),
+        versions,
     };
+}
+
+/**
+ * El paso tal como se guarda: las versiones una sola vez, y `current` y
+ * `accepted` por referencia.
+ *
+ * Antes de referenciar se ASEGURA que la versión esté en `versions[]`. Si no
+ * estuviera, guardar sólo su identificador perdería el texto, que es
+ * exactamente lo que este cambio no puede permitirse.
+ */
+export function serializeStep(step: ExegeticalStep): Record<string, unknown> {
+    const versions = [...step.versions];
+    const asegura = (v: ExegeticalStepVersion | null | undefined) => {
+        if (v && !versions.some(x => x.id === v.id)) versions.push(v);
+    };
+    asegura(step.current);
+    asegura(step.accepted);
+
+    const { current, accepted, ...resto } = step as ExegeticalStep & Record<string, unknown>;
+    const out: Record<string, unknown> = {
+        ...resto,
+        versions,
+        currentId: current?.id ?? null,
+        acceptedId: accepted?.id ?? null,
+    };
+    // Firestore rechaza `undefined`; un campo opcional ausente no se escribe.
+    for (const k of Object.keys(out)) if (out[k] === undefined) delete out[k];
+    return out;
 }
 
 /**
