@@ -123,10 +123,10 @@ function AssemblyManifest({ contents, paperId }: { contents: AssemblyContents; p
                 type="checkbox"
                 id={`inc-${p.stepId}`}
                 checked={estado !== 'out'}
-                disabled={setStepInclusion.isPending}
-                onChange={(e) => setStepInclusion.mutate({
-                    paperId, stepId: p.stepId, include: e.target.checked,
-                })}
+                onChange={(e) => setStepInclusion.mutate(
+                    { paperId, stepId: p.stepId, include: e.target.checked },
+                    { onError: () => toast.error(t('detail.steps.assembly.toggleFailed')) },
+                )}
                 className="mt-0.5 shrink-0 rounded border-border"
             />
             <label

@@ -6,6 +6,7 @@ import type {
     CitationEdit,
     PaperCover,
     CreateExegeticalPaperInput,
+    ExegeticalPaper,
     ExtractRubricFromTextInput,
     UpdateProjectSourceInput,
     UpdateRubricInput,
@@ -489,7 +490,19 @@ export function useExegesisPapers() {
         },
     });
 
-    /** Qué secciones pertenecen al documento que se entrega. */
+    /**
+     * Qué secciones pertenecen al documento que se entrega.
+     *
+     * OPTIMISTA, y no por lujo. El documento de un trabajo pesa cerca de un
+     * mega: esperar la escritura y volver a bajarlo dejaba la casilla varios
+     * segundos sin moverse, con toda la lista grisada, para un cambio que es
+     * un booleano.
+     *
+     * Y la invalidación iba a `['exegesis','papers', uid]`, que React Query
+     * hace por PREFIJO: tumbaba también la consulta del trabajo completo y
+     * volvía a descargarlo entero. Acá se invalida sólo el trabajo tocado, y
+     * después de que la casilla ya se movió.
+     */
     const setStepInclusion = useMutation({
         mutationFn: async ({ paperId, stepId, include }: { paperId: string; stepId: string; include: boolean }) => {
             if (!user?.uid) throw new Error('User not authenticated');
@@ -500,8 +513,28 @@ export function useExegesisPapers() {
                 include,
             });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        onMutate: async ({ paperId, stepId, include }) => {
+            const key = ['exegesis', 'papers', user?.uid, paperId];
+            // Sin esto, una lectura en vuelo aterriza después del cambio
+            // optimista y lo pisa con el valor viejo.
+            await queryClient.cancelQueries({ queryKey: key });
+            const previo = queryClient.getQueryData<ExegeticalPaper>(key);
+            if (previo) {
+                queryClient.setQueryData<ExegeticalPaper>(key, {
+                    ...previo,
+                    steps: previo.steps.map(s => (s.id === stepId ? { ...s, includeInDocument: include } : s)),
+                });
+            }
+            return { key, previo };
+        },
+        onError: (_err, _vars, contexto) => {
+            // Si la escritura falla, la casilla vuelve sola a donde estaba.
+            // La casilla vuelve sola a donde estaba. El aviso lo da la
+            // pantalla, que es la que tiene traducciones.
+            if (contexto?.previo) queryClient.setQueryData(contexto.key, contexto.previo);
+        },
+        onSettled: (_data, _err, { paperId }) => {
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid, paperId] });
         },
     });
 
