@@ -1947,7 +1947,8 @@
         "pendingMark": "not composed",
         "pendingHint_one": "1 selected section has no prose yet: it will not enter the document until you compose it.",
         "pendingHint_other": "{{count}} selected sections have no prose yet: they will not enter the document until you compose them.",
-        "hint": "Uncheck whatever you do not want in the document. The length the rubric asks for is split only among what is checked."
+        "hint": "Uncheck whatever you do not want in the document. The length the rubric asks for is split only among what is checked.",
+        "toggleFailed": "Could not change the selection. Try again."
       }
     },
     "rubric": {
