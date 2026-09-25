@@ -78,6 +78,7 @@ export * from './services/evidenceForCitation';
 export * from './services/citationReview';
 export * from './services/citationCorrection';
 export * from './services/paperLength';
+export * from './services/citationStyle';
 export * from './services/lemmaPages';
 export * from './services/courseBibliography';
 export * from './entities/WorkProfile';

@@ -2,6 +2,7 @@ import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 import type { StyleGuideManifest } from '../entities/StyleGuideManifest';
 import type { ComposerSourceMetadata } from './IAcademicComposer';
+import type { CitationForm } from '../entities/PaperRubric';
 
 /**
  * Per-verse academic composer. Sibling of `IAcademicComposer` but
@@ -121,6 +122,14 @@ export interface ComposeVerseInput {
      * ninguna nombra este versículo.
      */
     sectionQuestions?: ReadonlyArray<{ number: number; text: string }>;
+
+    /**
+     * Cómo se escribe una cita dentro del párrafo en ESTA entrega.
+     *
+     * Ausente equivale a la maquetación de la casa —nota al pie—, que es lo
+     * que el compositor pedía cableado antes de que la rúbrica lo guardara.
+     */
+    citationForm?: CitationForm;
 
 
     /** Style guide content (verbatim) when configured. */

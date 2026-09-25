@@ -1,4 +1,9 @@
-import type { ExpectedLengthRange } from '../entities/PaperRubric';
+import {
+    DEFAULT_PAPER_FORMATTING,
+    type ExpectedLengthRange,
+    type LineSpacing,
+    type PaperFormatting,
+} from '../entities/PaperRubric';
 
 /**
  * Cuánto ocupa lo escrito, frente a lo que el curso exige.
@@ -10,11 +15,84 @@ import type { ExpectedLengthRange } from '../entities/PaperRubric';
  *
  * La cuenta de palabras es exacta; las páginas son una estimación y así
  * hay que nombrarlas en la interfaz. La estimación vale para el formato
- * del seminario y para ningún otro: Times New Roman 12 a doble espacio
- * con márgenes de una pulgada entra ~250 palabras por página, y las
- * notas al pie a 10 pt y espacio simple, ~500.
+ * del seminario y para ningún otro: Times New Roman 12 con márgenes de una
+ * pulgada. Cuántas palabras entran en esa página depende del interlineado
+ * que pida la entrega, y eso lo resuelve `wordsPerPage`; las notas al pie
+ * van a 10 pt y espacio simple en las dos guías, ~500.
  */
-const WORDS_PER_PAGE = 250;
+/**
+ * Renglones de cuerpo que entran en una página, por interlineado.
+ *
+ * Carta menos dos pulgadas de margen deja nueve pulgadas de caja = 648 puntos.
+ * Un renglón de Times New Roman 12 a espacio simple ocupa ~13,8 puntos; los
+ * otros dos interlineados son ese renglón por 1,5 y por 2.
+ */
+const RENGLONES_A_ESPACIO_SIMPLE = 47;
+
+/**
+ * Cuántos renglones simples ocupa un renglón, por interlineado.
+ *
+ * Los tres tamaños salen de ESTE multiplicador y no de tres cuentas sueltas:
+ * tres números escritos a mano se desincronizan en cuanto alguien toca uno, y
+ * la relación entre ellos —doble es exactamente el doble de simple— es lo que
+ * hay que preservar. Son los mismos multiplicadores que el exportador aplica
+ * sobre `TMS.singleLine` para maquetar el Word; si algún día hay un cuarto
+ * interlineado, se agrega en los dos sitios.
+ */
+const ALTO_DE_RENGLON: Record<LineSpacing, number> = {
+    single: 1,
+    'one-and-a-half': 1.5,
+    double: 2,
+};
+
+/**
+ * Palabras que entran en un renglón de 6,5 pulgadas en Times New Roman 12.
+ *
+ * No es una medición independiente: es el número que hace que el caso ya
+ * validado —doble espacio, sin línea entre párrafos— siga dando las 250
+ * palabras por página que esta función tenía cableadas. 23 × 11 = 253. Lo que
+ * este cambio introduce es variar los RENGLONES según el interlineado, no una
+ * escala nueva.
+ */
+const PALABRAS_POR_RENGLON = 11;
+
+/**
+ * Lo que cuesta la línea en blanco entre párrafos.
+ *
+ * Un párrafo de prosa académica ocupa unos diez renglones, así que la línea
+ * extra se paga una vez cada diez: la página rinde un décimo menos.
+ */
+const RINDE_CON_LINEA_EXTRA = 0.9;
+
+/**
+ * Palabras de cuerpo que entran en una página, según el formato de ESTA
+ * entrega.
+ *
+ * Era una constante —250— con un comentario que decía de dónde salía: doble
+ * espacio. La rúbrica ya guardaba el interlineado y el exportador ya lo
+ * respetaba; el único que seguía midiendo todo a doble espacio era este
+ * estimador, y a un trabajo a espacio simple le anunciaba el doble de páginas
+ * de las que iba a ocupar. Medido en Santiago 2:1-13: 881 palabras a espacio
+ * simple: el aviso decía 3,5 páginas contra un máximo de 3, y el documento
+ * entregado cumplía.
+ *
+ * El número no sale de un ajuste hasta que cuadre, sale de la caja de texto:
+ * renglones que entran en la página por palabras que entran en el renglón.
+ * A doble espacio y sin línea entre párrafos —la maquetación de la casa— da
+ * 253, que redondea a las mismas 250 de antes.
+ */
+export function wordsPerPage(formatting: PaperFormatting | null): number {
+    const f = formatting ?? DEFAULT_PAPER_FORMATTING;
+    const renglones = Math.floor(RENGLONES_A_ESPACIO_SIMPLE / ALTO_DE_RENGLON[f.lineSpacing])
+        * (f.blankLineBetweenParagraphs ? RINDE_CON_LINEA_EXTRA : 1);
+    // Un presupuesto de página se dice en cuartos de centenar, no en unidades.
+    return Math.round(renglones * PALABRAS_POR_RENGLON / 25) * 25;
+}
+
+/**
+ * Las notas al pie no siguen el interlineado del cuerpo: van a 10 puntos y
+ * espacio simple en las dos guías, así que su rendimiento es fijo.
+ */
 const FOOTNOTE_WORDS_PER_PAGE = 500;
 
 /** Citas entre paréntesis: viajan a las notas al pie, no al cuerpo. */
@@ -63,7 +141,10 @@ export function countProseWords(text: string): number {
  * no, y las citas entre paréntesis se cuentan aparte porque en el
  * documento bajan al pie con letra más chica.
  */
-export function estimateLength(markdown: string): PaperLengthEstimate {
+export function estimateLength(
+    markdown: string,
+    formatting: PaperFormatting | null = null,
+): PaperLengthEstimate {
     // Tipado explícito: `match` devuelve `RegExpMatchArray | null` y el
     // `?? []` deja una unión con `never[]` que rompe el `reduce`.
     const citations: string[] = markdown.match(INLINE_CITATION) ?? [];
@@ -75,7 +156,7 @@ export function estimateLength(markdown: string): PaperLengthEstimate {
         .replace(/[*_`>#]|^\s*[-+]\s+/gm, ' ');
     const words = countProseWords(body);
 
-    const pages = words / WORDS_PER_PAGE + footnoteWords / FOOTNOTE_WORDS_PER_PAGE;
+    const pages = words / wordsPerPage(formatting) + footnoteWords / FOOTNOTE_WORDS_PER_PAGE;
     // Media página es la unidad más fina que una estimación así sostiene.
     return { words, footnoteWords, estimatedPages: Math.round(pages * 2) / 2 };
 }
@@ -87,8 +168,12 @@ export function estimateLength(markdown: string): PaperLengthEstimate {
  * un trabajo corto para un curso es exacto para otro, y una advertencia
  * falsa enseña a ignorar las advertencias.
  */
-export function checkLength(markdown: string, expected: ExpectedLengthRange | null): PaperLengthCheck {
-    const estimate = estimateLength(markdown);
+export function checkLength(
+    markdown: string,
+    expected: ExpectedLengthRange | null,
+    formatting: PaperFormatting | null = null,
+): PaperLengthCheck {
+    const estimate = estimateLength(markdown, formatting);
     if (!expected || (expected.min === null && expected.max === null)) {
         return { ...estimate, verdict: 'unknown', expected: expected ?? null, missing: null };
     }
@@ -145,13 +230,14 @@ const PARTE_DEL_MARCO = 0.1;
 export function sectionBudgets(
     expected: ExpectedLengthRange | null,
     sections: DocumentSections,
+    formatting: PaperFormatting | null = null,
 ): { perVerse: number | null; introduction: number | null; conclusion: number | null } {
     const vacio = { perVerse: null, introduction: null, conclusion: null };
     if (!expected) return vacio;
     const target = expected.min ?? expected.max;
     if (target === null || target <= 0) return vacio;
 
-    const totalWords = expected.unit === 'words' ? target : target * WORDS_PER_PAGE;
+    const totalWords = expected.unit === 'words' ? target : target * wordsPerPage(formatting);
     const marco = (sections.introduction ? PARTE_DEL_MARCO : 0)
         + (sections.conclusion ? PARTE_DEL_MARCO : 0);
 

@@ -1,5 +1,6 @@
 import {
     buildAcademicVoiceBlock,
+    buildCitationFormBlock,
     buildWordBudgetBlock,
     formatPassageReference,
     serializeAnalysis,
@@ -14,7 +15,6 @@ REGLAS DURAS:
 - NUNCA agregues introducción ni conclusión global. La prosa entra directo en el análisis del verso.
 - NO uses listas numeradas, viñetas, ni encabezados. Prosa continua.
 - Integra la morfología EN la prosa (no tablas).
-- Citas inline en formato (Autor, "Título", p. N) siguiendo la guía de estilo cuando esté configurada.
 - COPIÁ el rótulo de página TAL CUAL viene en el briefing. Si dice «hoja 55», escribí «hoja 55» — NUNCA lo conviertas a «p. 55»: significa que la página impresa de ese libro se desconoce, y escribir «p.» mandaría al lector a otra página.
 - Cierra el último párrafo con la tesis del verso + la decisión de traducción comprometida.
 - Si el análisis declara confianza baja en algún hallazgo, calibra el lenguaje hedge ("posiblemente", "es plausible que…").
@@ -32,7 +32,6 @@ HARD RULES:
 - NEVER add a global introduction or conclusion. The prose drops directly into the verse analysis.
 - NO numbered lists, bullets, or headings. Continuous prose.
 - Integrate morphology INTO the prose (no tables).
-- Inline citations as (Author, "Title", p. N) following the style guide when configured.
 - COPY the page label EXACTLY as the briefing gives it. If it says "hoja 55", write "hoja 55" — NEVER convert it to "p. 55": it means that book's printed page is unknown, and writing "p." would send the reader to a different page.
 - Close the final paragraph with the verse's thesis + the committed translation decision.
 - If the analysis declares low confidence on a finding, calibrate hedge language ("possibly", "it is plausible that…").
@@ -102,6 +101,7 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         : '';
 
     const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, glossaryBlock,
+        buildCitationFormBlock(input.citationForm ?? null, lang),
         buildWordBudgetBlock(input.wordBudget ?? null, lang), voiceBlock]
         .filter(Boolean)
         .join('\n');

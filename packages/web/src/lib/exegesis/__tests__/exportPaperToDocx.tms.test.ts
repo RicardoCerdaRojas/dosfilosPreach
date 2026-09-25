@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
-import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS } from '@dosfilos/domain';
+import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS, buildCitationFormBlock } from '@dosfilos/domain';
 import type { ExegeticalPaper, PaperCover } from '@dosfilos/domain';
 import { EMPTY_VERIFICATION_SUMMARY } from '@dosfilos/domain';
 import { exportPaperToDocx } from '../exportPaperToDocx';
@@ -87,6 +87,42 @@ describe('exportPaperToDocx — la forma de cita sale de la rúbrica', () => {
         const blob = await exportPaperToDocx(conForma('footnote'), { exportedAt: new Date('2026-09-17') });
         const zip = await JSZip.loadAsync(await blob.arrayBuffer());
         expect(await zip.file('word/footnotes.xml')!.async('string')).toContain('Waltke');
+    });
+});
+
+/**
+ * El puente entre lo que se le PIDE al compositor y lo que el exportador
+ * sabe maquetar.
+ *
+ * `buildCitationFormBlock` afirma, en prosa, que la forma con título entre
+ * comillas es «la única que el exportador reconoce para bajar la cita a nota
+ * al pie». Esa afirmación vivía sólo en un comentario, en otro paquete, y el
+ * día que alguien toque cualquiera de las dos puntas nada se iba a enterar.
+ * Medido en Santiago 2:1-13: tres versículos salieron con la forma corta y el
+ * cuarto con la larga, en el mismo trabajo.
+ */
+describe('la forma que se le pide al compositor es la que el exportador convierte', () => {
+    const conCita = (cita: string) => paper({
+        assembledMarkdown: ['## Versículo 1', '', `El genitivo es atributivo ${cita}.`].join('\n'),
+    });
+
+    it('la forma que el bloque enseña como ejemplo sí baja a nota al pie', async () => {
+        // El ejemplo se toma del bloque, no se reescribe acá: si alguien
+        // cambia la forma que se le enseña al compositor, esta prueba cae.
+        const bloque = buildCitationFormBlock('footnote', 'es');
+        const ejemplo = bloque.match(/\(Wallace[^)]*\)/)?.[0];
+        expect(ejemplo).toBeTruthy();
+        const notas = await xmlOf(conCita(ejemplo!), 'word/footnotes.xml');
+        expect(notas).toContain('Wallace');
+    });
+
+    it('la forma corta se queda varada en el cuerpo, que es por lo que se prohíbe mezclarlas', async () => {
+        const doc = await xmlOf(conCita('(Wallace, hoja 87)'), 'word/document.xml');
+        expect(doc).toContain('Wallace');
+        const blob = await exportPaperToDocx(conCita('(Wallace, hoja 87)'), { exportedAt: new Date('2026-09-17') });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const notas = zip.file('word/footnotes.xml');
+        if (notas) expect(await notas.async('string')).not.toContain('Wallace');
     });
 });
 
