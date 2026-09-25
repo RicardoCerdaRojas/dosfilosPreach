@@ -83,7 +83,25 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     // dicen CÓMO escribir, no QUÉ escribir.
     const voiceBlock = buildAcademicVoiceBlock(input.voiceSamples ?? [], lang);
 
-    const systemInstruction = [baseInstruction, '', styleGuideBlock, glossaryBlock,
+    /**
+     * Lo que ESTA sección tiene que contestar, dicho como encargo.
+     *
+     * Va en la instrucción de sistema y antes que todo lo demás, porque es la
+     * tarea y no material. El encuadre completo sigue llegando al mensaje como
+     * trasfondo, y ahí su rótulo —«no lo repitas»— es correcto: lo que no era
+     * correcto es que fuera el ÚNICO sitio donde aparecían las preguntas.
+     */
+    const preguntasBlock = (input.sectionQuestions ?? []).length > 0
+        ? [
+            lang === 'en' ? '## What this section must answer' : '## Lo que esta sección tiene que responder',
+            ...(input.sectionQuestions ?? []).map(q => `${q.number}. ${q.text}`),
+            lang === 'en'
+                ? 'This is the assignment, not background. Answer it explicitly and completely: every part of the question, including any verse it points to beyond this one. If the analysis carries the evidence, it goes in — cutting for length never cuts the answer.'
+                : 'Esto es el encargo, no trasfondo. Respondelo de forma explícita y completa: cada parte de la pregunta, incluido cualquier versículo al que remita más allá de éste. Si el análisis trae la evidencia, entra — recortar por extensión nunca recorta la respuesta.',
+        ].join('\n')
+        : '';
+
+    const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, glossaryBlock,
         buildWordBudgetBlock(input.wordBudget ?? null, lang), voiceBlock]
         .filter(Boolean)
         .join('\n');
