@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, resolveExegeticalStrategy } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, resolveExegeticalStrategy, trimStepVersions } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -579,7 +579,15 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         }
 
         await this.mutateStep(ownerId, paperId, stepId, (step) => {
-            step.versions = [...step.versions, fullVersion];
+            // El historial se acota acá o el documento crece sin techo: el
+            // trabajo más grande en producción llegó a 932 KB —313 KB de
+            // versiones— contra el límite duro de 1 MB por documento de
+            // Firestore. Cruzarlo no deja el trabajo lento: lo deja
+            // imposible de escribir.
+            step.versions = trimStepVersions(
+                [...step.versions, fullVersion],
+                [step.accepted?.id, fullVersion.id],
+            );
             step.current = fullVersion;
             step.state = 'awaiting-review';
             step.updatedAt = new Date();
