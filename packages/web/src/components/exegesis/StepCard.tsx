@@ -440,6 +440,27 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
         }
     };
 
+    /**
+     * El markdown, renderizado una sola vez por texto.
+     *
+     * `ReactMarkdown` parsea y construye el árbol en cada render, y el paso de
+     * ensamble llegó a 29.000 caracteres. Marcar una casilla del documento
+     * cambia la identidad del trabajo, eso re-renderiza los dieciséis pasos, y
+     * cada uno volvía a parsear su markdown: el hilo principal quedaba
+     * bloqueado unos tres segundos —el tiempo que el usuario veía todo gris y
+     * sin responder—.
+     *
+     * El texto no cambia al marcar una casilla. Atarlo a `previewMarkdown`
+     * hace que ese re-render no cueste nada.
+     */
+    const markdownRenderizado = useMemo(() => (
+        <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {previewMarkdown}
+            </ReactMarkdown>
+        </div>
+    ), [previewMarkdown]);
+
     const anyPipelinePending =
         generateStep.isPending
         || analyzeVerseCanonically.isPending
@@ -886,11 +907,7 @@ export function StepCard({ step, paperId, language, allSteps, hasAssembly = fals
                         {supportsStudyView && viewMode === 'study' ? (
                             <CanonicalAnalysisStudyView analysis={canonicalAnalysis!} onOpenCitation={setOpenCitation} />
                         ) : previewMarkdown ? (
-                            <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {previewMarkdown}
-                                </ReactMarkdown>
-                            </div>
+                            markdownRenderizado
                         ) : (
                             // Canonical analysis exists but no markdown yet —
                             // composer hasn't run on this version. Default
