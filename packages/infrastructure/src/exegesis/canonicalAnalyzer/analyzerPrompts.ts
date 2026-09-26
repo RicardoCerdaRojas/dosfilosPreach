@@ -1,4 +1,6 @@
 import {
+    buildHebrewMorphologyBlock,
+    type HebrewVerseMorphology,
     buildVerseMorphologyBlock,
     formatPassageReference,
     type AnalyzeVerseInput,
@@ -52,7 +54,13 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const planNoteBlock = formatPlanNote(input.planNote, lang);
     // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
     // es parte de lo que el analizador lee, no de lo que tiene que producir.
-    const morphologyBlock = buildVerseMorphologyBlock(input.verseMorphology ?? null, lang);
+    // Cuál de los dos bloques lo decide la FORMA del dato, no el libro: el
+    // griego llega con los rasgos en columnas y el hebreo con el código OSHB
+    // en una cadena. Preguntar por la forma evita una segunda tabla de qué
+    // testamento es cada libro, que ya vive en el proveedor.
+    const morphologyBlock = esMorfologiaHebrea(input.verseMorphology)
+        ? buildHebrewMorphologyBlock(input.verseMorphology, lang)
+        : buildVerseMorphologyBlock(input.verseMorphology ?? null, lang);
 
     if (lang === 'en') {
         return [
@@ -490,4 +498,18 @@ function formatPlanNote(note: string | null | undefined, lang: 'es' | 'en'): str
     return lang === 'en'
         ? `**Why this corpus for this step** (context for reading the sources, NOT a thesis to defend): ${texto}`
         : `**Por qué este corpus para este paso** (contexto para leer las fuentes, NO una tesis a defender): ${texto}`;
+}
+
+
+/**
+ * Si la morfología que llegó es la hebrea.
+ *
+ * Se mira el primer token y no una etiqueta de lengua: la etiqueta habría que
+ * mantenerla al día en tres sitios, y la forma del dato no miente.
+ */
+function esMorfologiaHebrea(
+    m: AnalyzeVerseInput['verseMorphology'],
+): m is HebrewVerseMorphology {
+    if (!m || !('tokens' in m) || m.tokens.length === 0) return false;
+    return 'oshbMorphCode' in m.tokens[0]!;
 }

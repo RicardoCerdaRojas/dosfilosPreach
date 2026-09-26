@@ -1,4 +1,4 @@
-import type { GreekVerseTokens } from '@dosfilos/domain';
+import type { GreekVerseTokens, HebrewVerseMorphology } from '@dosfilos/domain';
 import type {
     BibleBookId,
     IOriginalLanguageBibleProvider,
@@ -55,16 +55,17 @@ export class TestamentDispatcherOriginalLanguageProvider implements IOriginalLan
     }
 
     /**
-     * Delega sólo si el proveedor del libro trae morfología tabulada.
+     * Delega en el proveedor del libro, que sabe en qué forma viene su
+     * morfología: columnas de MorphGNT para el NT, códigos OSHB para el AT.
      *
-     * Hoy la trae el griego y no el hebreo, y el `null` de vuelta es lo que
-     * deja al analizador del AT exactamente como estaba.
+     * El `null` es para el libro que ningún proveedor cubre, y deja al
+     * analizador exactamente como estaba.
      */
     async getVerseMorphology(
         bookId: BibleBookId,
         chapter: number,
         verse: number,
-    ): Promise<GreekVerseTokens | null> {
+    ): Promise<GreekVerseTokens | HebrewVerseMorphology | null> {
         for (const provider of [this.greek, this.hebrew]) {
             if (!provider.supports(bookId)) continue;
             return provider.getVerseMorphology?.(bookId, chapter, verse) ?? null;
