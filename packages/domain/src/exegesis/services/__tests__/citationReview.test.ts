@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildEmptyCanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { CanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { VerifiedCitation } from '../../entities/CitationVerification';
-import { isUnreviewedCitationsError, mapVerdictsByPath, UnreviewedCitationsError, unreviewedBlockingCitations } from '../citationReview';
+import { isUnreviewedCitationsError, mapVerdictsByPath, pendingCitationCounts, reviewedCitationCount, UnreviewedCitationsError, unreviewedBlockingCitations } from '../citationReview';
 
 const analisis = (): CanonicalVerseAnalysis => ({
     ...buildEmptyCanonicalVerseAnalysis({ bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 3, verseEnd: 3 }),
@@ -80,5 +80,67 @@ describe('UnreviewedCitationsError', () => {
         expect(isUnreviewedCitationsError(e)).toBe(true);
         expect(isUnreviewedCitationsError({ name: 'UnreviewedCitationsError' })).toBe(true);
         expect(isUnreviewedCitationsError(new Error('x'))).toBe(false);
+    });
+});
+
+describe('pendingCitationCounts — lo revisado deja de ser una observación', () => {
+    const v = (status: VerifiedCitation['status']) => ({ status } as VerifiedCitation);
+    const mapa = (entries: Array<[string, VerifiedCitation['status']]>) =>
+        new Map(entries.map(([p, s]) => [p, v(s)]));
+
+    it('descuenta las revisadas a mano', () => {
+        // Los contadores sumaban todo mientras el bloqueo de aceptación sí
+        // descontaba, así que la misma pantalla decía «3 no encontradas» y
+        // dejaba aceptar el paso.
+        const verdicts = mapa([['a', 'not-found'], ['b', 'not-found'], ['c', 'not-found']]);
+        expect(pendingCitationCounts(verdicts, new Set(['a', 'b']))['not-found']).toBe(1);
+    });
+
+    it('aplica la MISMA regla que el bloqueo de aceptación', () => {
+        // Es el invariante que este cambio existe para restablecer: si las dos
+        // derivaciones discrepan, una de las dos miente.
+        const a = analisis();
+        const verdicts = [veredicto(0, 'verified'), veredicto(1, 'not-found'), veredicto(2, 'not-found')];
+        const revisada = 'commentatorEngagement[1]';
+        const bloqueadas = unreviewedBlockingCitations(
+            a, verdicts, [{ path: revisada, note: '', reviewedAt: new Date() }],
+        );
+        const pendientes = pendingCitationCounts(
+            mapVerdictsByPath(a, verdicts), new Set([revisada]),
+        );
+        expect(pendientes['not-found']).toBe(bloqueadas.length);
+        expect(bloqueadas).toHaveLength(1);
+    });
+
+    it('lo verificado no se descuenta: no es una observación', () => {
+        const verdicts = mapa([['a', 'verified'], ['b', 'verified']]);
+        expect(pendingCitationCounts(verdicts, new Set(['a'])).verified).toBe(2);
+    });
+
+    it('sin revisiones cuenta todo, como antes', () => {
+        const verdicts = mapa([['a', 'fuzzy-low'], ['b', 'page-mismatch']]);
+        const c = pendingCitationCounts(verdicts, new Set());
+        expect(c['fuzzy-low']).toBe(1);
+        expect(c['page-mismatch']).toBe(1);
+    });
+});
+
+describe('reviewedCitationCount — el trabajo hecho no desaparece', () => {
+    const v = (status: VerifiedCitation['status']) => ({ status } as VerifiedCitation);
+
+    it('cuenta las observaciones resueltas a mano', () => {
+        // Quedarse sin observaciones porque se revisaron todas y quedarse sin
+        // ellas porque nunca hubo son dos estados distintos.
+        const verdicts = new Map([['a', v('not-found')], ['b', v('fuzzy-low')]]);
+        expect(reviewedCitationCount(verdicts, new Set(['a', 'b']))).toBe(2);
+    });
+
+    it('una cita verificada y marcada no cuenta como observación resuelta', () => {
+        const verdicts = new Map([['a', v('verified')]]);
+        expect(reviewedCitationCount(verdicts, new Set(['a']))).toBe(0);
+    });
+
+    it('sin revisiones, cero', () => {
+        expect(reviewedCitationCount(new Map([['a', v('not-found')]]), new Set())).toBe(0);
     });
 });

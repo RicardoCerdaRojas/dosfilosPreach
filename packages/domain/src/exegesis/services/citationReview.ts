@@ -62,6 +62,52 @@ export function unreviewedBlockingCitations(
 }
 
 /**
+ * Cuántas citas quedan PENDIENTES en cada veredicto.
+ *
+ * Vive al lado de `unreviewedBlockingCitations` porque aplica la MISMA regla:
+ * una cita revisada a mano ya no está pendiente. Estaban separadas y sólo una
+ * la aplicaba — los contadores de la pantalla sumaban todo y el bloqueo de
+ * aceptación descontaba lo revisado, así que la misma pantalla podía decir
+ * «3 citas no encontradas» y a la vez dejar aceptar el paso. Dos derivaciones
+ * del mismo dato que no podían tener razón las dos.
+ *
+ * Lo verificado no se descuenta ni se revisa: no es una observación.
+ */
+export function pendingCitationCounts(
+    verdictsByPath: ReadonlyMap<string, VerifiedCitation>,
+    reviewedPaths: ReadonlySet<string>,
+): Record<CitationStatus, number> {
+    const out: Record<CitationStatus, number> = {
+        verified: 0, 'page-mismatch': 0, 'page-unverifiable': 0,
+        'fuzzy-low': 0, 'not-found': 0, 'manual-pending': 0,
+    };
+    for (const [path, v] of verdictsByPath) {
+        if (v.status !== 'verified' && reviewedPaths.has(path)) continue;
+        out[v.status]++;
+    }
+    return out;
+}
+
+/**
+ * Cuántas observaciones se resolvieron a mano.
+ *
+ * Se cuenta aparte para que el trabajo hecho no desaparezca de la pantalla al
+ * descontarlo de los contadores: quedarse sin observaciones porque se
+ * revisaron todas y quedarse sin ellas porque nunca hubo son dos estados
+ * distintos, y un contador en cero no los separa.
+ */
+export function reviewedCitationCount(
+    verdictsByPath: ReadonlyMap<string, VerifiedCitation>,
+    reviewedPaths: ReadonlySet<string>,
+): number {
+    let n = 0;
+    for (const [path, v] of verdictsByPath) {
+        if (v.status !== 'verified' && reviewedPaths.has(path)) n++;
+    }
+    return n;
+}
+
+/**
  * Se lanza al aceptar un paso con citas no encontradas y sin revisar. Lleva
  * las rutas para que la interfaz pueda llevar al usuario a cada una.
  */

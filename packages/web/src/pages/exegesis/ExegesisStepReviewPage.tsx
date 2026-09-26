@@ -128,9 +128,23 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                                 <CitationStatusBadge status={status} count={r.counts[status]} />
                             </button>
                         ))}
-                        {r.blocking.length > 0 && (
-                            <span className="ml-auto text-xs text-destructive">{t('canonical.review.blocking', { count: r.blocking.length })}</span>
+                        {/* Lo revisado a mano se cuenta aparte: quedarse sin
+                            observaciones porque se revisaron todas y quedarse
+                            sin ellas porque nunca hubo son dos estados
+                            distintos, y el contador solo no los separa. */}
+                        {r.reviewedCount > 0 && (
+                            <span className="text-[11px] text-muted-foreground">
+                                {t('canonical.review.reviewedCount', { count: r.reviewedCount })}
+                            </span>
                         )}
+                        {r.blocking.length > 0 ? (
+                            <span className="ml-auto text-xs text-destructive">{t('canonical.review.blocking', { count: r.blocking.length })}</span>
+                        ) : r.reviewedCount > 0 && r.listed.length === 0 ? (
+                            <span className="ml-auto inline-flex items-center gap-1 text-xs text-success">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {t('canonical.review.allReviewed')}
+                            </span>
+                        ) : null}
                     </div>
                 )}
 
