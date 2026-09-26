@@ -48,6 +48,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const corpusGapsBlock = formatCorpusGaps(input.missingSourceTypes, lang);
     const baseTextBlock = formatOriginalLanguageText(input.originalLanguageText, lang);
     const pericopeBlock = formatPericopeBlock(input.pericopeContext, lang);
+    const planNoteBlock = formatPlanNote(input.planNote, lang);
 
     if (lang === 'en') {
         return [
@@ -59,6 +60,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             baseTextBlock,
             pericopeBlock,
             briefBlock,
+            planNoteBlock,
             ``,
             `## Methodological foundation`,
             `Apply the historical-grammatical-literal method documented in the platform's METODOLOGIA.md. Anchor your analysis in canonical authorities:`,
@@ -101,6 +103,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         baseTextBlock,
         pericopeBlock,
         briefBlock,
+        planNoteBlock,
         ``,
         `## Fundamento metodológico`,
         `Aplicá el método histórico-gramatical-literal documentado en METODOLOGIA.md de la plataforma. Anclá tu análisis en autoridades canónicas:`,
@@ -183,7 +186,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
             ``,
             `**oldTestamentLinks** — Use Hays' taxonomy: 'quotation' (with formula like γέγραπται), 'allusion', 'echo'. Empty when the verse has no canonical resonance.`,
             ``,
-            `**commentatorEngagement** — NOT a citation list. POSITIONS. What each commentator argues about THIS verse, paraphrased in your voice. Use the 'role' field to classify per the dialectical strategy: 'anchor' / 'contrast' / 'technical'.`,
+            `**commentatorEngagement** — NOT a citation list. POSITIONS. What each commentator argues about THIS verse, paraphrased in your voice. The 'role' field: when the source block says "role assigned by the plan", COPY that role — the strategy is already decided and re-deciding it silently overrides the author. Classify yourself ('anchor' / 'contrast' / 'technical') only for sources without an assigned role.`,
             ``,
             `**translationCruxes** — One entry per genuinely contested translation decision. Each: phrase + description + options + commentator positions (with 'supports' index pointing to the chosen option) + commitment with rationale derived from the analysis above.`,
             `  Every commentatorPosition MUST carry \`verbatimQuote\`: the sentence from that source's provided text on which your summary rests, copied EXACTLY. Enlisting an author as a witness FOR an option is the strongest claim you make about someone else's work — you must be able to point at the words. If the provided text does not contain a sentence supporting the position, OMIT the position. Do not reconstruct it from memory of the work.`,
@@ -232,7 +235,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
         ``,
         `**oldTestamentLinks** — Usá la taxonomía de Hays: 'quotation' (con fórmula tipo γέγραπται), 'allusion', 'echo'. Vacío cuando el verso no tiene resonancia canónica.`,
         ``,
-        `**commentatorEngagement** — NO es lista de citas. POSICIONES. Qué argumenta cada comentarista sobre ESTE verso, parafraseado en tu voz. Usá el campo 'role' para clasificar según la estrategia dialéctica: 'anchor' / 'contrast' / 'technical'.`,
+        `**commentatorEngagement** — NO es lista de citas. POSICIONES. Qué argumenta cada comentarista sobre ESTE verso, parafraseado en tu voz. El campo 'role': cuando la ficha de la fuente diga «rol asignado por el plan», COPIÁ ese rol — la estrategia ya está decidida y volver a decidirla pisa al autor en silencio. Clasificá vos ('anchor' / 'contrast' / 'technical') sólo las fuentes sin rol asignado.`,
         ``,
         `**translationCruxes** — Una entrada por decisión de traducción genuinamente contestada. Cada uno: phrase + description + options + commentatorPositions (con índice 'supports' apuntando a la opción elegida) + commitment con justificación derivada del análisis previo.`,
         `  Cada commentatorPosition DEBE llevar \`verbatimQuote\`: la oración del texto provisto de esa fuente sobre la que se apoya tu summary, copiada EXACTA. Alistar a un autor como testigo A FAVOR de una opción es la afirmación más fuerte que hacés sobre el trabajo ajeno — tenés que poder señalar las palabras. Si el texto provisto no contiene una oración que sostenga la posición, OMITÍ la posición. No la reconstruyas de tu memoria de la obra.`,
@@ -357,7 +360,10 @@ function formatSources(
             ].join('\n') + '\n';
     }
 
-    const blocks = sources
+    /** Los tres roles, con el nombre que el autor lee en pantalla. */
+const ROL_ES: Record<string, string> = { anchor: 'ancla', contrast: 'contraste', technical: 'técnica' };
+
+const blocks = sources
         .map(s => {
             const truncated = truncate(s.textContent, perSourceBudget);
             const keyLine = s.citationKey ? `sourceKey: \`${s.citationKey}\`` : `(no citation key)`;
@@ -365,9 +371,17 @@ function formatSources(
             const pinnedBadge = s.priority === 'primary'
                 ? (lang === 'en' ? '⭐ PINNED — MUST cite. ' : '⭐ ASIGNADA — DEBES citarla. ')
                 : '';
+            // El rol que YA decidió el plan de corpus. Sin esto, el prompt le
+            // pedía al modelo clasificar a cada comentarista en estos mismos
+            // tres roles desde cero, rehaciendo una decisión tomada.
+            const roleLine = s.plannedRole
+                ? (lang === 'en'
+                    ? ` · role assigned by the plan: **${s.plannedRole}**`
+                    : ` · rol asignado por el plan: **${ROL_ES[s.plannedRole]}**`)
+                : '';
             return [
                 `### ${pinnedBadge}${s.displayLabel}`,
-                `_${keyLine} · type: ${typeLine}_`,
+                `_${keyLine} · type: ${typeLine}${roleLine}_`,
                 '```',
                 truncated || (lang === 'en' ? '(content not yet extracted)' : '(contenido aún no extraído)'),
                 '```',
@@ -447,4 +461,27 @@ function truncate(text: string, maxChars: number): string {
     if (!text) return '';
     if (text.length <= maxChars) return text;
     return text.slice(0, maxChars) + '\n\n[…contenido truncado para encajar en el contexto…]';
+}
+
+
+/**
+ * Por qué el plan de corpus eligió estas fuentes para este paso.
+ *
+ * `StepSourcePlanEntry.note` llevaba escrito desde su primer día que era
+ * «useful at generation time (the note is mentioned in the prompt)». No lo
+ * era: ningún constructor de prompt la leía, y 108 de los 108 pasos con plan
+ * en producción tienen una escrita.
+ *
+ * Entra rotulada como CONTEXTO y no como orden, a propósito. Dice cosas como
+ * «Ancla: Mayor ofrece una perspectiva sintética del argumento», que explica
+ * la estrategia del corpus; lo que el análisis AFIRME lo siguen decidiendo las
+ * fuentes, no esta nota. Sin ese rótulo, una frase así se lee como una tesis
+ * a defender.
+ */
+function formatPlanNote(note: string | null | undefined, lang: 'es' | 'en'): string {
+    const texto = (note ?? '').trim();
+    if (!texto) return '';
+    return lang === 'en'
+        ? `**Why this corpus for this step** (context for reading the sources, NOT a thesis to defend): ${texto}`
+        : `**Por qué este corpus para este paso** (contexto para leer las fuentes, NO una tesis a defender): ${texto}`;
 }

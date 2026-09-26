@@ -1,3 +1,4 @@
+import type { SourceRole } from '../entities/StepSourcePlan';
 import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { ExegeticalStepKind } from '../entities/ExegeticalStep';
 import type { SourceType } from '../entities/SourceType';
@@ -107,6 +108,23 @@ export interface ExegesisSourceContext {
     displayLabel: string;
     /** Author key for inline citations, e.g. "Lane". May be null. */
     citationKey: string | null;
+
+    /**
+     * El rol que el PLAN DE CORPUS le asignó a esta fuente en este paso.
+     *
+     * El plan decide, fuente por fuente, cuál ancla el paso, cuál aporta
+     * contraste y cuál entra como técnica; lo persiste en
+     * `StepSourcePlanEntry.pinnedSourceRoles` y hasta acá sólo lo leía la
+     * interfaz para pintar insignias. Mientras tanto al analizador se le pedía
+     * clasificar a cada comentarista en esos MISMOS tres roles desde cero, o
+     * sea rehacer una decisión ya tomada. Medido en producción: 79 pasos
+     * llevan roles asignados, 168 asignaciones en total —79 anclas, 56
+     * contrastes, 33 técnicas—, y ninguna llegaba a la generación.
+     *
+     * Ausente cuando el plan no clasificó esa fuente; ahí el analizador sí
+     * decide, que es lo que hacía siempre.
+     */
+    plannedRole?: SourceRole;
     /**
      * Source body the orchestrator inlines into the prompt. For
      * `'full-document'` sources this is the entire textContent. For
