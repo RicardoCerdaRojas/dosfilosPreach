@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import {
     claimsQuotingUnreadableOriginal,
     collectAnalysisClaims,
+    pendingCitationCounts,
+    reviewedCitationCount,
     sourcesWithoutOriginalLanguage,
     isUnreviewedCitationsError,
     mapVerdictsByPath,
@@ -73,16 +75,32 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         [analysis, sinLenguaOriginal],
     );
 
-    const counts = useMemo(() => {
-        const out: Record<CitationStatus, number> = { verified: 0, 'page-mismatch': 0, 'page-unverifiable': 0, 'fuzzy-low': 0, 'not-found': 0, 'manual-pending': 0 };
-        for (const v of verdicts.values()) out[v.status]++;
-        return out;
-    }, [verdicts]);
+    /**
+     * Cuántas citas quedan PENDIENTES en cada veredicto.
+     *
+     * Una cita revisada a mano ya no es una observación: el autor la miró y
+     * dejó su decisión escrita. Los contadores la seguían sumando, así que la
+     * misma pantalla podía decir «3 citas no encontradas» y a la vez dejar
+     * aceptar el paso — porque el bloqueo de aceptación SÍ descuenta las
+     * revisadas (`unreviewedBlockingCitations`). Dos derivaciones del mismo
+     * dato que no podían tener razón las dos.
+     */
+    const counts = useMemo(() => pendingCitationCounts(verdicts, new Set(reviews.keys())), [verdicts, reviews]);
+    const reviewedCount = useMemo(() => reviewedCitationCount(verdicts, new Set(reviews.keys())), [verdicts, reviews]);
 
-    /** Citas visibles en la lista lateral, en el orden del análisis. */
+    /**
+     * Citas visibles en la lista lateral, en el orden del análisis.
+     *
+     * El filtro «pendientes» deja fuera lo verificado y lo ya revisado, que es
+     * lo que el rótulo promete. Los filtros por veredicto siguen mostrando
+     * TODO lo de ese veredicto, revisado incluido: quien entra por ahí busca
+     * un caso concreto y esconderle el que ya resolvió sería perderlo.
+     */
     const listed = useMemo(
-        () => [...verdicts.entries()].filter(([, v]) => filter === 'all' ? v.status !== 'verified' : v.status === filter),
-        [verdicts, filter],
+        () => [...verdicts.entries()].filter(([path, v]) => filter === 'all'
+            ? v.status !== 'verified' && !reviews.has(path)
+            : v.status === filter),
+        [verdicts, filter, reviews],
     );
 
     const verify = async () => {
@@ -148,6 +166,7 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         reviews,
         blocking,
         counts,
+        reviewedCount,
         unreadableOriginal,
         listed,
         filter,

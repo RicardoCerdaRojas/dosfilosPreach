@@ -1698,7 +1698,7 @@
       "blocking_one": "One unreviewed not-found citation blocks acceptance.",
       "blocking_other": "{{count}} unreviewed not-found citations block acceptance.",
       "filters": "Filter by verdict",
-      "filterAll": "With remarks",
+      "filterAll": "Pending",
       "noAnalysis": "This step has no canonical analysis; citation review works on the analysis.",
       "listTitle": "Citations to review",
       "link": "Review citations",
@@ -1757,7 +1757,9 @@
         "body": "These claims quote an original-language form while resting on a book whose extracted text contains none. The form did not come from there — the assistant supplied it. It may well be right, but nobody checked it against that book, and the citation verifier cannot.",
         "item": "{{form}} — attributed to {{source}}",
         "hint": "Usually an extraction that lost the book’s Greek. Check the book in the library, or rest that claim on a source that does carry the original."
-      }
+      },
+      "reviewedCount": "{{count}} reviewed by hand",
+      "allReviewed": "Every observation has been reviewed."
     },
     "recompose": {
       "title": "Recompose {{verse}}",
