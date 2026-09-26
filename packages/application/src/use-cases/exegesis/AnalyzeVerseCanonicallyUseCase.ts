@@ -11,6 +11,7 @@ import type {
     CuratedCorpusResult,
     IExegeticalPaperRepository,
     IOriginalLanguageBibleProvider,
+    GreekVerseTokens,
     IResourceContentReader,
     IUserStyleGuideRepository,
     PassageReference,
@@ -124,6 +125,12 @@ export class AnalyzeVerseCanonicallyUseCase {
             // make the corpus query find anything in a lexicon.
             const { verse: originalLanguageText, pericope: pericopeContext } =
                 await this.loadOriginalLanguageText(paper.passage, step.verseRef);
+            // La morfología tabulada del versículo, cuando la fuente la trae.
+            // Es un cálculo, no una deducción: el analizador recibía el texto
+            // corrido y contaba de memoria. Medido en Santiago 2:2-3, contó
+            // cuatro subjuntivos donde hay cinco. Un fallo acá NO interrumpe
+            // el análisis: sin el bloque, trabaja como trabajaba antes.
+            const verseMorphology = await this.loadVerseMorphology(step.verseRef!);
             // Se resuelve acá y no dentro de `loadSourceContexts` porque el
             // estampado posterior necesita saber, por fuente, si el número
             // que el modelo copió es página impresa u hoja del archivo.
@@ -165,6 +172,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // guardaba desde siempre con el comentario «the note is
                 // mentioned in the prompt», y ningún prompt la leía.
                 planNote: paper.stepPlan.perStep[step.id]?.note ?? null,
+                verseMorphology,
             };
 
             reservation.markLlmContacted();
@@ -348,6 +356,27 @@ export class AnalyzeVerseCanonicallyUseCase {
      * ENTORNO es para ver antecedentes y consecuentes, no para analizarlo.
      * Mezclarlos invitaría a analizar lo que nadie pidió.
      */
+    /**
+     * La morfología del versículo, si el proveedor de ese libro la tabula.
+     *
+     * Devuelve `null` ante cualquier tropiezo —libro sin soporte, proveedor
+     * sin la capacidad, caída de red—. El análisis sigue: quedarse sin el
+     * bloque deja las cosas como estaban, y no producir el versículo sería
+     * mucho peor que producirlo sin la tabla.
+     */
+    private async loadVerseMorphology(verseRef: PassageReference): Promise<GreekVerseTokens | null> {
+        const provider = this.originalLanguageProvider;
+        if (!provider?.getVerseMorphology || !provider.supports(verseRef.bookId)) return null;
+        try {
+            return await provider.getVerseMorphology(
+                verseRef.bookId, verseRef.chapterStart, verseRef.verseStart ?? 1,
+            );
+        } catch (err) {
+            console.warn('[AnalyzeVerseCanonically] sin morfología tabulada para el versículo:', err);
+            return null;
+        }
+    }
+
     private async loadOriginalLanguageText(
         paperPassage: PassageReference,
         verseRef: PassageReference,

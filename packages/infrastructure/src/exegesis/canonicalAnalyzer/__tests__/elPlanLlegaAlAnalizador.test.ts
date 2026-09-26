@@ -88,3 +88,53 @@ describe('la nota del plan llega como contexto, no como tesis', () => {
         expect(sin.systemInstruction).not.toContain('Por qué este corpus');
     });
 });
+
+/**
+ * Santiago 2:2–3 tiene CINCO subjuntivos —εἰσέλθῃ dos veces, ἐπιβλέψητε,
+ * εἴπητε dos veces— y el análisis del trabajo enumeró cuatro. No fue una
+ * invención: se verificó que las 983 formas que enumeran los 115 análisis de
+ * producción están todas en su propio versículo. El defecto es de recuento, y
+ * un recuento no se arregla pidiendo más cuidado sino entregando la cuenta.
+ */
+const verbo = (text: string, tag: Record<string, string>) =>
+    ({ text, lemma: text, pos: 'V', tag, transliteration: '' });
+
+const MORFOLOGIA = {
+    reference: { chapter: 2, verse: 2 },
+    text: '',
+    tokens: [
+        verbo('εἰσέλθῃ', { tense: 'A', voice: 'A', mood: 'S', person: '3', number: 'S' }),
+        verbo('εἰσέλθῃ', { tense: 'A', voice: 'A', mood: 'S', person: '3', number: 'S' }),
+        verbo('ἐπιβλέψητε', { tense: 'A', voice: 'A', mood: 'S', person: '2', number: 'P' }),
+        verbo('εἴπητε', { tense: 'A', voice: 'A', mood: 'S', person: '2', number: 'P' }),
+        verbo('εἴπητε', { tense: 'A', voice: 'A', mood: 'S', person: '2', number: 'P' }),
+    ],
+};
+
+describe('la morfología tabulada llega al analizador', () => {
+    const prompt = (over: Record<string, unknown> = {}) =>
+        buildAnalyzerPrompt(entrada({ verseMorphology: MORFOLOGIA, ...over } as never));
+
+    it('el recuento de subjuntivos viaja en el prompt', () => {
+        const { systemInstruction } = prompt();
+        expect(systemInstruction).toContain('5 subjuntivos');
+    });
+
+    it('cada forma va con su parsing, para que no haya que deducirlo', () => {
+        expect(prompt().systemInstruction).toContain('ἐπιβλέψητε');
+        expect(prompt().systemInstruction).toContain('aoristo activa subjuntivo');
+    });
+
+    it('va junto al texto base y no en la guía de campos', () => {
+        // Es parte de lo que el analizador LEE, no de lo que produce.
+        const { systemInstruction, userMessage } = prompt();
+        expect(systemInstruction).toContain('Morfología de este versículo');
+        expect(userMessage).not.toContain('Morfología de este versículo');
+    });
+
+    it('sin morfología el prompt queda como estaba', () => {
+        // El hebreo y los libros fuera de MorphGNT pasan por acá sin bloque.
+        const sin = buildAnalyzerPrompt(entrada({ verseMorphology: null } as never));
+        expect(sin.systemInstruction).not.toContain('Morfología de este versículo');
+    });
+});

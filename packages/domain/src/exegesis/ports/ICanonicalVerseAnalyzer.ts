@@ -1,3 +1,4 @@
+import type { GreekVerseTokens } from '../../greek-analyzer/morphGntToken';
 import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
 import type { StepEmphasis } from '../entities/StepSourcePlan';
@@ -139,6 +140,15 @@ export interface AnalyzeVerseInput {
      * decidiendo las fuentes.
      */
     planNote?: string | null;
+
+    /**
+     * La morfología tabulada del versículo, cuando la fuente la trae.
+     *
+     * Griego solamente: MorphGNT la da columna por columna, así que es un dato
+     * calculado. El hebreo la tiene en morphhb con otro sistema de códigos sin
+     * mapear todavía, y ausente aquí el analizador trabaja como antes.
+     */
+    verseMorphology?: GreekVerseTokens | null;
 
     /**
      * Prior accepted verse analyses in canonical structured form.

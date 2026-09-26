@@ -1,3 +1,4 @@
+import type { GreekVerseTokens } from '../../greek-analyzer/morphGntToken';
 import type { BibleBookId } from '../canon/BibleCanon';
 
 /**
@@ -54,4 +55,20 @@ export interface IOriginalLanguageBibleProvider {
      * translation" rather than surfacing the error to the user.
      */
     getChapterContent(bookId: BibleBookId, chapter: number): Promise<string[]>;
+
+    /**
+     * La morfología del versículo, si la fuente la trae tabulada.
+     *
+     * OPCIONAL a propósito. El griego del NT viene de MorphGNT con la
+     * morfología columna por columna, así que es un dato calculado; el hebreo
+     * la tiene en morphhb con otro sistema de códigos que todavía no se mapeó,
+     * y devolver ahí una traducción aproximada sería inventar precisión.
+     *
+     * Quien no la implemente deja al analizador exactamente como estaba.
+     */
+    getVerseMorphology?(
+        bookId: BibleBookId,
+        chapter: number,
+        verse: number,
+    ): Promise<GreekVerseTokens | null>;
 }
