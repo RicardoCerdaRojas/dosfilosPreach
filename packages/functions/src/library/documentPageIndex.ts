@@ -179,8 +179,34 @@ export const getDocumentPageIndex = onCall<PageIndexRequest>(
         }
 
         const pages = Array.from(bySheet.values()).sort((a, b) => a.sheet - b.sheet);
-        console.log(`[PageIndex] ${resourceId}: ${readable.length} fragmentos → ${pages.length} hojas`);
-        return { pages, sheetCount: pages.length };
+
+        /**
+         * El índice de secciones del libro, entero.
+         *
+         * `pages` guarda UNA sección por hoja, y una hoja puede traer varias:
+         * la 209 de Porter arranca en «2.9. διό» y adentro están «2.10. ἐάν» y
+         * «2.11. εἰ». Medido sobre ese libro, de sus 465 secciones el índice
+         * por hoja sólo deja ver 130 — se pierden 335, y entre ellas la que
+         * contesta la pregunta del trabajo sobre las condicionales.
+         *
+         * Va aparte y no arregla `pages`, porque `pages` responde otra
+         * pregunta —«qué encabezado abre esta hoja»— y ésa la contesta bien.
+         * Cada sección se registra en la PRIMERA hoja donde aparece, que es
+         * donde empieza.
+         */
+        const sections: Array<{ section: string; sheet: number }> = [];
+        const vistas = new Set<string>();
+        for (const data of ordered) {
+            const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : 0;
+            const section = typeof data.metadata?.section === 'string' ? data.metadata.section.trim() : '';
+            if (sheet < 1 || !section || vistas.has(section)) continue;
+            vistas.add(section);
+            sections.push({ section, sheet });
+        }
+        sections.sort((a, b) => a.sheet - b.sheet);
+
+        console.log(`[PageIndex] ${resourceId}: ${readable.length} fragmentos → ${pages.length} hojas, ${sections.length} secciones`);
+        return { pages, sheetCount: pages.length, sections };
     },
 );
 

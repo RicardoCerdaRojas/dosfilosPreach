@@ -1180,6 +1180,14 @@
           "sheet": "hoja {{sheet}}",
           "verses": "v. {{verses}}",
           "hint": "Una gramática o un léxico no se organizan por pasajes, pero citan el versículo como ejemplo. Estas son las páginas donde lo nombran; vos decidís cuáles entran."
+        },
+        "grammarSections": {
+          "title": "Secciones del índice que responden al encuadre ({{count}})",
+          "count": "· {{count}} secciones",
+          "corroborated": "nombra la forma griega",
+          "page": "p. {{printed}}",
+          "sheet": "hoja {{sheet}}",
+          "hint": "Una gramática se indexa por categorías, no por pasajes. Estas son las secciones que nombran lo que tu encuadre pregunta; la lista va en el orden del libro y no se recorta."
         }
       },
       "corpus-plan": {

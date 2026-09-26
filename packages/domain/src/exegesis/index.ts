@@ -81,6 +81,7 @@ export * from './services/paperLength';
 export * from './services/citationStyle';
 export * from './services/inlineCitations';
 export * from './services/passagePages';
+export * from './services/grammarSearchKeys';
 export * from './services/lemmaPages';
 export * from './services/courseBibliography';
 export * from './entities/WorkProfile';

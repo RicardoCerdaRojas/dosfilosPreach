@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { proposeSheetRanges, type ProposalKind } from '@dosfilos/infrastructure';
-import { lemmasOfAnalyses, normalizeSheetRanges, type SheetRange } from '@dosfilos/domain';
+import { grammarSearchKeys, lemmasOfAnalyses, normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -100,6 +100,17 @@ export function ExegesisSourcePagesPage() {
      * la llave es el pasaje, que se conoce desde el primer minuto.
      */
     const passagePages = usePassagePages(resourceId, paper?.passage ?? null, !!resourceId);
+
+    /**
+     * Las secciones del índice del libro que responden al encuadre.
+     *
+     * No cuesta una consulta: el índice del documento ya viaja para pintar el
+     * selector, y ahora trae el índice de secciones entero. El cruce es local.
+     */
+    const sectionProposals = useMemo(
+        () => sectionsForKeys(index.data?.sections ?? [], grammarSearchKeys(paper?.assignmentBrief ?? null)),
+        [index.data?.sections, paper?.assignmentBrief],
+    );
 
     // La numeración se pide para cualquier fuente, no sólo para los léxicos:
     // las dos propuestas rotulan sus hojas con el folio impreso del libro.
@@ -210,6 +221,7 @@ export function ExegesisSourcePagesPage() {
                 lemmaLoading={lemmaPages.isLoading}
                 passageProposals={passagePages.proposals}
                 passageLoading={passagePages.isLoading}
+                sectionProposals={sectionProposals}
                 numbering={numbering.data?.numbering ?? null}
             />
         </div>

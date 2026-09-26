@@ -11,6 +11,7 @@ import {
     type SheetRange,
     type LemmaPageProposal,
     type PassagePageHit,
+    type SectionProposal,
     type PageNumbering,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import { PdfPageViewer } from './PdfPageViewer';
 import { SelectionCart } from './SelectionCart';
 import { LemmaPagesPanel } from './LemmaPagesPanel';
 import { PassagePagesPanel } from './PassagePagesPanel';
+import { GrammarSectionsPanel } from './GrammarSectionsPanel';
 
 /**
  * Los tres paneles del selector: índice, hoja y carrito.
@@ -66,6 +68,13 @@ interface Props {
      */
     passageProposals?: ReadonlyArray<PassagePageHit>;
     passageLoading?: boolean;
+    /**
+     * Las secciones del índice del libro que responden al encuadre.
+     *
+     * Vacío cuando el libro no tiene índice de secciones —Wallace y el léxico
+     * no lo tienen— o cuando el encuadre no nombra ninguna categoría.
+     */
+    sectionProposals?: ReadonlyArray<SectionProposal>;
     /** Numeración confirmada del libro, para nombrar las hojas por su folio. */
     numbering?: PageNumbering | null;
 }
@@ -86,6 +95,7 @@ export function SourcePagesWorkspace({
     lemmaLoading = false,
     passageProposals,
     passageLoading = false,
+    sectionProposals,
     numbering = null,
 }: Props) {
     const { t } = useTranslation('exegesis');
@@ -414,6 +424,14 @@ export function SourcePagesWorkspace({
                     title={t('paperSetup.subSteps.corpus.picker.cart.resize')}
                 />
                 <div className="flex flex-col gap-2 min-w-0 shrink-0 overflow-y-auto" style={{ width: `${cartWidth}px` }}>
+                    {sectionProposals && sectionProposals.length > 0 && (
+                        <GrammarSectionsPanel
+                            proposals={sectionProposals}
+                            numbering={numbering}
+                            selected={selectedSheets}
+                            onAdd={addLemmaSheet}
+                        />
+                    )}
                     {passageProposals && (
                         <PassagePagesPanel
                             proposals={passageProposals}
