@@ -151,7 +151,13 @@ export class ComposeConclusionFromAnalysesUseCase {
                 wordBudget: sectionBudgets(
                     paper.rubric?.expectedLength ?? null,
                     documentSections(paper.steps),
+                    paper.rubric?.formatting ?? null,
                 ).conclusion,
+                // La forma de cita la decide la entrega, no el compositor: es
+                // la misma que el exportador va a maquetar.
+                ...(paper.rubric?.formatting?.citationForm
+                    ? { citationForm: paper.rubric.formatting.citationForm }
+                    : {}),
                 regenerationHint: input.regenerationHint ?? null,
             };
 

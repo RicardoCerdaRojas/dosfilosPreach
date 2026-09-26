@@ -1,4 +1,5 @@
 import {
+    buildCitationFormBlock,
     buildAcademicVoiceBlock,
     buildWordBudgetBlock,
     formatPassageReference,
@@ -87,6 +88,13 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
     const rubricBlock = formatPaperRubric(input.paperRubric, lang, 'conclusion');
     const strategyBlock = formatStrategy(input.exegeticalStrategy, lang);
     const fallback = !input.styleGuideContent && !input.styleGuideManifest;
+    // Cómo se escribe una cita dentro del párrafo. Sin esta regla estas dos
+    // secciones escribían su PROPIO aparato de notas como texto —un «¹» en la
+    // prosa y un párrafo «¹. Peter C. Craigie, *Psalms 1-50*, …» al final—,
+    // que en el Word sale como cuerpo, no como nota, y duplica las notas de
+    // verdad. El exportador ya sabe armar la nota Turabian desde la ficha: lo
+    // que necesita del compositor es la cita marcada, no la nota escrita.
+    const citationBlock = buildCitationFormBlock(input.citationForm ?? null, lang);
 
     const system = lang === 'en'
         ? [
@@ -100,8 +108,10 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             ``,
             `## Mandatory style guide`,
             fallback
-                ? `(NO style guide attached. Apply The Master's Seminary / Turabian conventions explicitly: footnotes for citations, French quotation marks «...», italics for foreign-language terms, sober academic register.)`
+                ? `(NO style guide attached. Apply The Master's Seminary / Turabian conventions explicitly: French quotation marks «...», italics for foreign-language terms, sober academic register.)`
                 : styleGuideBlock,
+            ``,
+            citationBlock,
             ``,
             `## Hard rules for the conclusion`,
             `- Synthesize what the body's verse analyses ACTUALLY ESTABLISHED. Do NOT introduce new arguments, new sources, or new lines of inquiry.`,
@@ -130,6 +140,8 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             fallback
                 ? `(SIN guía de estilo adjunta. Aplicá explícitamente convenciones The Master's Seminary / Turabian: notas al pie para citas, comillas francesas «...», itálicas para términos en lenguas extranjeras, registro académico sobrio.)`
                 : styleGuideBlock,
+            ``,
+            citationBlock,
             ``,
             `## Reglas duras para la conclusión`,
             `- Sintetizá lo que los análisis verso por verso EFECTIVAMENTE ESTABLECIERON. NO introduzcas argumentos nuevos, fuentes nuevas, ni líneas de indagación nuevas.`,

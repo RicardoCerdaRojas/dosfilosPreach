@@ -1,3 +1,4 @@
+import type { CitationForm } from '../entities/PaperRubric';
 import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
 import type { ExegeticalStrategy } from '../entities/ExegeticalPaper';
@@ -91,6 +92,15 @@ export interface ComposeConclusionInput {
      * trabajo que pedía 2-3 páginas salió de 16.
      */
     wordBudget?: number | null;
+
+    /**
+     * Cómo se escribe una cita dentro del párrafo en ESTA entrega.
+     *
+     * Llega hasta acá porque sin la regla estas secciones escribían su propio
+     * aparato de notas como texto plano, que el exportador maqueta como
+     * cuerpo y no como nota.
+     */
+    citationForm?: CitationForm;
 
     /**
      * Optional regeneration hint provided by the user when re-running

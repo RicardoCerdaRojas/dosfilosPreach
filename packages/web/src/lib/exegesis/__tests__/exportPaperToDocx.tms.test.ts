@@ -222,6 +222,70 @@ describe('una cita sin título baja al pie sólo si su autor es fuente del traba
     });
 });
 
+/**
+ * La nota al pie se arma con la FICHA del libro, no con el paréntesis.
+ *
+ * Turabian pide que la nota lleve la obra completa —autor con nombre de pila,
+ * título, colección, pie de imprenta y página— y eso no está en el cuerpo: el
+ * paréntesis dice «(Craigie, …, 206)». El dato vive en la ficha de la
+ * biblioteca y `formatFirstNote` sabía armarlo desde antes; no lo llamaba
+ * nadie, así que la nota salía como un eco del paréntesis.
+ */
+describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
+    const CRAIGIE = {
+        author: 'Peter C. Craigie', authorSorted: 'Craigie, Peter C.',
+        title: 'Psalms 1-50', shortTitle: 'Psalms',
+        series: 'Word Biblical Commentary', volume: '19',
+        city: 'Waco, TX', publisher: 'Word Books', year: '1983',
+    };
+    const conCraigie = (cuerpo: string): ExegeticalPaper => paper({
+        sources: [{ id: 's0', citationKey: 'Craigie' }] as never,
+        assembledMarkdown: ['## Versículo 1', '', cuerpo].join('\n'),
+    });
+    const notasDe = async (cuerpo: string) => {
+        const blob = await exportPaperToDocx(conCraigie(cuerpo), {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [{
+                citationKey: 'Craigie', displayLabel: 'Psalms 1-50',
+                text: 'Craigie, Peter C. *Psalms 1-50*.', missing: [], data: CRAIGIE,
+            }],
+        });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const f = zip.file('word/footnotes.xml');
+        return f ? await f.async('string') : '';
+    };
+
+    it('la nota trae el nombre de pila y el pie de imprenta, que el paréntesis no tenía', async () => {
+        const n = await notasDe('Como observa Craigie (Craigie, p. 206).');
+        expect(n).toContain('Peter C. Craigie');
+        expect(n).toContain('Word Books');
+        expect(n).toContain('206');
+    });
+
+    it('la primera nota va completa y la siguiente abreviada', async () => {
+        // Turabian: repetir la ficha entera en cada nota no es más prolijo,
+        // es otro estilo.
+        const n = await notasDe('Primero (Craigie, p. 206). Después (Craigie, p. 210).');
+        expect(n).toContain('Peter C. Craigie');
+        expect((n.match(/Word Books/g) ?? []).length).toBe(1);
+        expect(n).toContain('210');
+    });
+
+    it('sin ficha se escribe lo que decía el cuerpo, sin inventar editorial', async () => {
+        // Una nota incompleta se ve y se corrige; una con una editorial
+        // inventada no se ve.
+        const sinFicha = paper({
+            sources: [{ id: 's0', citationKey: 'Andersen' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', 'Así (Andersen, p. 42).'].join('\n'),
+        });
+        const blob = await exportPaperToDocx(sinFicha, { exportedAt: new Date('2026-09-17') });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const n = await zip.file('word/footnotes.xml')!.async('string');
+        expect(n).toContain('Andersen');
+        expect(n).toContain('42');
+    });
+});
+
 describe('exportPaperToDocx — la maquetación sale de la rúbrica', () => {
     const conFormato = (formatting: unknown) => paper({
         rubric: { ...DEFAULT_TMS_EXEGETICAL_RUBRIC, formatting },
@@ -311,7 +375,7 @@ describe('exportPaperToDocx — la bibliografía generada', () => {
             bibliography: [{
                 citationKey: 'Ross', displayLabel: 'A Commentary on the Psalms',
                 text: 'Ross, Allen P. *A Commentary on the Psalms*. Grand Rapids: Kregel, 2011.',
-                missing: [],
+                missing: [], data: null,
             }],
         });
         const zip = await JSZip.loadAsync(await blob.arrayBuffer());
@@ -331,7 +395,7 @@ describe('exportPaperToDocx — la bibliografía generada', () => {
             exportedAt: new Date('2026-09-17'),
             bibliography: [{
                 citationKey: 'Adamson', displayLabel: 'The Epistle of James',
-                text: null, missing: ['city', 'publisher', 'year'],
+                text: null, missing: ['city', 'publisher', 'year'], data: null,
             }],
         });
         const zip = await JSZip.loadAsync(await blob.arrayBuffer());

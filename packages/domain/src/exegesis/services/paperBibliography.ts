@@ -26,6 +26,16 @@ export interface BibliographyEntry {
     text: string | null;
     /** Campos que faltan. Vacío cuando la entrada está completa. */
     missing: ReadonlyArray<RequiredBibliographyField>;
+    /**
+     * La ficha en crudo, para quien necesite otra forma de la misma obra.
+     *
+     * La bibliografía y la nota al pie son dos maquetaciones distintas del
+     * MISMO dato —«Ross, Allen P. *Commentary*. Grand Rapids: Kregel, 2011.»
+     * contra «Allen P. Ross, *Commentary* (Grand Rapids: Kregel, 2011), 561»—
+     * y el exportador sólo recibía la primera ya armada. Sin la ficha, la
+     * única nota que podía escribir era un eco del paréntesis del cuerpo.
+     */
+    data: BibliographicData | null;
 }
 
 /**
@@ -77,6 +87,7 @@ export function buildPaperBibliography(
             displayLabel: row.displayLabel,
             text: missing.length === 0 && row.data ? formatBibliographyEntry(row.data) : null,
             missing,
+            data: row.data,
         });
     }
 
@@ -92,6 +103,7 @@ export function buildPaperBibliography(
             displayLabel: key,
             text: null,
             missing: missingBibliographyFields(null),
+            data: null,
         });
     }
 
