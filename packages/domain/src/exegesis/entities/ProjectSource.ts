@@ -1,3 +1,4 @@
+import { briefForQuery } from '../services/assignmentBriefWindows';
 import type { SourceType } from './SourceType';
 import type { SourceRole } from './StepSourcePlan';
 import { isCitableSourceType } from './SourceType';
@@ -312,11 +313,11 @@ export function computeExtractionFingerprint(
     assignmentBrief: string | null,
 ): string {
     const passageNorm = (passageRef ?? '').trim().toLowerCase();
-    // Brief is sliced to the same window the extractor uses (first 500
-    // chars per v1.5 spec). Keep this in sync with
-    // `RetrieveChunksExcerptExtractor`'s query construction — if the
-    // window grows there, grow it here too.
-    const briefNorm = (assignmentBrief ?? '').trim().slice(0, 500);
+    // La huella mira la MISMA ventana que la consulta de extracción, y ahora
+    // por construcción y no por acuerdo: las dos llaman a `briefForQuery`. El
+    // comentario anterior pedía mantenerlas en sincronía a mano, que es la
+    // forma en que dos números se desincronizan.
+    const briefNorm = briefForQuery(assignmentBrief);
     return `v1|${passageNorm}|${briefNorm}`;
 }
 

@@ -1,5 +1,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
+    briefForQuery,
     formatPassageReference,
     type IResourceRanker,
     type RankResourcesInput,
@@ -133,10 +134,12 @@ function toRankedResource(bucket: ChunkBucket): RankedResource {
  * tokens); brief biases the angle and is truncated to keep embedding
  * quality high.
  */
-const BRIEF_TRUNCATION_CHARS = 800;
-
 function buildRankingQuery(passageLabel: string, assignmentBrief: string | null): string {
-    const briefSlice = (assignmentBrief ?? '').trim().slice(0, BRIEF_TRUNCATION_CHARS);
+    // El comentario de arriba prometía reflejar el formato del extractor y no
+    // era verdad: acá se recortaba a 800 caracteres y el extractor a 500, así
+    // que en 4 de los 13 trabajos con encuadre los dos rankeaban y extraían
+    // contra textos distintos. Ahora comparten `BRIEF_QUERY_CHARS`.
+    const briefSlice = briefForQuery(assignmentBrief);
     if (briefSlice.length === 0) return passageLabel;
     return `${passageLabel} — ${briefSlice}`;
 }

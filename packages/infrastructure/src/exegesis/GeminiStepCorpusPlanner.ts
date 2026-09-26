@@ -1,4 +1,5 @@
 import {
+    briefForInstruction,
     formatPassageReference,
     type IStepCorpusPlanner,
     type ProposeStepCorpusInput,
@@ -163,10 +164,17 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
     const passageLine = isSpanish
         ? `**Pasaje del paper:** ${passageLabel}`
         : `**Paper passage:** ${passageLabel}`;
-    const briefLine = input.assignmentBrief
+    // El encuadre llega ENTERO: acá es una instrucción, no una consulta de
+    // embeddings. Con el tope de 1.000 que había, el planificador de Santiago
+    // 2:1-13 nunca vio «Prohibido citar McCartney, Ropes, Varner: el plan de
+    // estudios no permite repetir una fuente en semanas consecutivas» — una
+    // restricción sobre qué fuentes elegir, escondida justamente de quien las
+    // elige.
+    const briefText = briefForInstruction(input.assignmentBrief);
+    const briefLine = briefText
         ? (isSpanish
-            ? `**Brief del estudiante:** ${input.assignmentBrief.trim().slice(0, 1000)}`
-            : `**Student brief:** ${input.assignmentBrief.trim().slice(0, 1000)}`)
+            ? `**Brief del estudiante:** ${briefText}`
+            : `**Student brief:** ${briefText}`)
         : null;
 
     const sourcesSection = isSpanish ? '**Fuentes en el corpus:**' : '**Sources in the corpus:**';

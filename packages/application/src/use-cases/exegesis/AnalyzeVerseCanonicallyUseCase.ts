@@ -1,3 +1,4 @@
+import { briefForQuery } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -300,7 +301,7 @@ export class AnalyzeVerseCanonicallyUseCase {
         if (scopes.length === 0) return null;
 
         const label = formatPassageReference(verseRef, paper.displayLanguage);
-        const brief = paper.assignmentBrief?.trim().slice(0, 500) ?? '';
+        const brief = briefForQuery(paper.assignmentBrief);
         // The verse's own words lead the query.
         //
         // Without them the query was the reference plus the assignment
