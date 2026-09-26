@@ -18,7 +18,9 @@ import {
     esEncabezadoDeBibliografia,
     exportPaperToMarkdown,
     findInlineCitations,
+    formatFirstNote,
     formatPassageReference,
+    formatShortNote,
     resolvesToCitedSource,
     type BibliographyEntry,
     type ExegeticalPaper,
@@ -84,6 +86,30 @@ export async function exportPaperToDocx(
     // cita sin título —«(Mayor, 77)»— de un pie de imprenta —«(Nashville:
     // Broadman & Holman, 2003)»—, que por su forma son idénticos.
     const citationKeys = (paper.sources ?? []).map(s => s.citationKey);
+    /**
+     * La ficha de cada obra, por clave de cita.
+     *
+     * Turabian pide que la nota lleve la obra completa —autor con nombre de
+     * pila, título, colección, pie de imprenta y página—, y eso NO está en el
+     * paréntesis del cuerpo: el paréntesis dice «(Craigie, …, 206)» y la nota
+     * tiene que decir «Peter C. Craigie, *Psalms 1-50*, vol. 19, Word Biblical
+     * Commentary (Waco, TX: Word Books, 1983), 206». El dato existe, lo trae
+     * la ficha del libro en la biblioteca, y la nota se armaba con un eco del
+     * paréntesis porque nunca se le pasó.
+     */
+    const fichas = new Map(
+        (options.bibliography ?? [])
+            .filter(e => e.data)
+            .map(e => [e.citationKey, e.data!]),
+    );
+    /**
+     * Qué obras ya llevan una nota completa.
+     *
+     * Turabian: la primera nota a una obra va entera y las siguientes van
+     * abreviadas —«Ross, *Commentary on the Psalms*, 562»—. Repetir la ficha
+     * completa en cada nota no es un estilo más prolijo, es otro estilo.
+     */
+    const yaCitadas = new Set<string>();
     const blocks = parseMarkdownBlocks(markdown);
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
@@ -175,7 +201,30 @@ export async function exportPaperToDocx(
 
     return await Packer.toBlob(doc);
 
-    function registerFootnote(citationText: string): number {
+    /**
+     * El texto de la nota: Turabian cuando hay ficha, el paréntesis cuando no.
+     *
+     * Sin ficha NO se inventa: se escribe lo que el cuerpo decía. Una nota
+     * incompleta se ve y se corrige; una nota con una editorial inventada no
+     * se ve. El aviso de fichas cojas al descargar ya nombra a los libros que
+     * están en este caso.
+     */
+    function textoDeLaNota(author: string, pages: string | null, crudo: string): string {
+        const clave = [...fichas.keys()].find(k => resolvesToCitedSource(author, [k]));
+        const ficha = clave ? fichas.get(clave)! : null;
+        if (!ficha || !clave) return crudo;
+        const primera = !yaCitadas.has(clave);
+        yaCitadas.add(clave);
+        const nota = primera
+            ? formatFirstNote(ficha, pages ?? undefined)
+            : formatShortNote(ficha, pages ?? undefined);
+        // Turabian cierra la nota con punto; las dos funciones devuelven la
+        // referencia sin él porque también sirven en pantalla.
+        return nota.endsWith('.') ? nota : `${nota}.`;
+    }
+
+    function registerFootnote(cita: { author: string; pages: string | null; raw: string }): number {
+        const citationText = textoDeLaNota(cita.author, cita.pages, cita.raw);
         footnoteCounter += 1;
         footnotes[footnoteCounter] = {
             children: [
@@ -401,7 +450,7 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
  */
 function buildInlineRuns(
     paragraphText: string,
-    registerFootnote: (citationText: string) => number,
+    registerFootnote: (cita: { author: string; pages: string | null; raw: string }) => number,
     /**
      * `'parenthetical'` deja la cita donde está, tal como se escribió.
      *
@@ -434,6 +483,9 @@ function buildInlineRuns(
         start: number;
         end: number;
         body: string;
+        /** Sólo en las citas: lo que hace falta para buscar su ficha. */
+        author?: string;
+        pages?: string | null;
     }
     const markers: Marker[] = [];
 
@@ -453,6 +505,8 @@ function buildInlineRuns(
                 start: cita.offset,
                 end: cita.end,
                 body: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
+                author: cita.author,
+                pages: cita.pages,
             });
         }
     }
@@ -488,7 +542,7 @@ function buildInlineRuns(
             runs.push(...textRuns(paragraphText.slice(cursor, mk.start)));
         }
         if (mk.kind === 'citation') {
-            const id = registerFootnote(mk.body);
+            const id = registerFootnote({ author: mk.author ?? '', pages: mk.pages ?? null, raw: mk.body });
             runs.push(new FootnoteReferenceRun(id));
         } else if (mk.kind === 'bold') {
             runs.push(...textRuns(mk.body, { bold: true }));

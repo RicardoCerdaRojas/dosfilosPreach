@@ -1,4 +1,5 @@
 import {
+    buildCitationFormBlock,
     buildAcademicVoiceBlock,
     buildWordBudgetBlock,
     formatPassageReference,
@@ -79,6 +80,13 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
     const rubricBlock = formatPaperRubric(input.paperRubric, lang, 'introduction');
     const strategyBlock = formatStrategy(input.exegeticalStrategy, lang);
     const fallback = !input.styleGuideContent && !input.styleGuideManifest;
+    // Cómo se escribe una cita dentro del párrafo. Sin esta regla estas dos
+    // secciones escribían su PROPIO aparato de notas como texto —un «¹» en la
+    // prosa y un párrafo «¹. Peter C. Craigie, *Psalms 1-50*, …» al final—,
+    // que en el Word sale como cuerpo, no como nota, y duplica las notas de
+    // verdad. El exportador ya sabe armar la nota Turabian desde la ficha: lo
+    // que necesita del compositor es la cita marcada, no la nota escrita.
+    const citationBlock = buildCitationFormBlock(input.citationForm ?? null, lang);
 
     const system = lang === 'en'
         ? [
@@ -94,6 +102,8 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             fallback
                 ? `(NO style guide attached. Apply The Master's Seminary / Turabian conventions.)`
                 : styleGuideBlock,
+            ``,
+            citationBlock,
             ``,
             `## Hard rules for the introduction`,
             `- Present the passage and its importance within its book (1 paragraph).`,
@@ -123,6 +133,8 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             fallback
                 ? `(SIN guía de estilo adjunta. Aplicá convenciones The Master's Seminary / Turabian.)`
                 : styleGuideBlock,
+            ``,
+            citationBlock,
             ``,
             `## Reglas duras para la introducción`,
             `- Presentá el pasaje y su importancia dentro del libro (1 párrafo).`,
