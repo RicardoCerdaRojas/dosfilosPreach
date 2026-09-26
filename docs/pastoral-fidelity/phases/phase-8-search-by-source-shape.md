@@ -2,7 +2,10 @@
 
 ## Estado
 
-`planned`. Sale del segundo uso real del módulo, el trabajo práctico semanal de griego
+`shipped` en sus dos etapas (PRs #693 y #694). Queda un pendiente que NO es de
+búsqueda: ver «Metzger: el problema es la extracción» al final.
+
+Nació como `planned`. Sale del segundo uso real del módulo, el trabajo práctico semanal de griego
 (Santiago 2:1–13, 2026-09-23), y se hace **inmediatamente después** de cerrar ese trabajo.
 
 ## El problema, medido
