@@ -1748,6 +1748,12 @@
         "remove": "Remove this citation",
         "removeConfirm": "The citation is removed from the analysis. The claim loses this source and the exported paper will no longer name it here.",
         "removeConfirmAction": "Remove citation"
+      },
+      "unreadableOriginal": {
+        "title": "Greek or Hebrew that is not in the source ({{count}})",
+        "body": "These claims quote an original-language form while resting on a book whose extracted text contains none. The form did not come from there — the assistant supplied it. It may well be right, but nobody checked it against that book, and the citation verifier cannot.",
+        "item": "{{form}} — attributed to {{source}}",
+        "hint": "Usually an extraction that lost the book’s Greek. Check the book in the library, or rest that claim on a source that does carry the original."
       }
     },
     "recompose": {

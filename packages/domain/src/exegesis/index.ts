@@ -83,6 +83,7 @@ export * from './services/inlineCitations';
 export * from './services/passagePages';
 export * from './services/grammarSearchKeys';
 export * from './services/assignmentBriefWindows';
+export * from './services/originalLanguageEvidence';
 export * from './services/lemmaPages';
 export * from './services/courseBibliography';
 export * from './entities/WorkProfile';

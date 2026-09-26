@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
+    claimsQuotingUnreadableOriginal,
     collectAnalysisClaims,
+    sourcesWithoutOriginalLanguage,
     isUnreviewedCitationsError,
     mapVerdictsByPath,
     unreviewedBlockingCitations,
@@ -48,6 +50,27 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
     const blocking = useMemo(
         () => (analysis ? unreviewedBlockingCitations(analysis, version?.citationVerdicts ?? [], version?.citationReviews ?? []) : []),
         [analysis, version?.citationVerdicts, version?.citationReviews],
+    );
+
+    /**
+     * Formas en lengua original atribuidas a un libro cuyo texto leído no
+     * tiene ninguna.
+     *
+     * No es una sospecha sobre la calidad de la extracción: es que esa forma
+     * no pudo salir de ahí. El verificador de citas no puede atraparlo —sale a
+     * buscar la afirmación dentro de un texto sin griego, y no encontrar nada
+     * ahí es su comportamiento normal—, así que se reporta aparte.
+     */
+    const sinLenguaOriginal = useMemo(
+        () => sourcesWithoutOriginalLanguage(paper.sources.map(s => ({
+            citationKey: s.citationKey,
+            text: s.excerpts.map(e => e.text).join('\n'),
+        }))),
+        [paper.sources],
+    );
+    const unreadableOriginal = useMemo(
+        () => (analysis ? claimsQuotingUnreadableOriginal(analysis, sinLenguaOriginal) : []),
+        [analysis, sinLenguaOriginal],
     );
 
     const counts = useMemo(() => {
@@ -125,6 +148,7 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         reviews,
         blocking,
         counts,
+        unreadableOriginal,
         listed,
         filter,
         setFilter,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { formatPassageReference, type CitationStatus, type SupportedLanguage } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
@@ -132,6 +132,34 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                             <span className="ml-auto text-xs text-destructive">{t('canonical.review.blocking', { count: r.blocking.length })}</span>
                         )}
                     </div>
+                )}
+
+                {r.unreadableOriginal.length > 0 && (
+                    <section className="rounded-xl border border-warning/40 bg-warning-subtle/40 px-4 py-3 space-y-1.5">
+                        <h2 className="inline-flex items-center gap-1.5 text-xs font-semibold text-warning-subtle-foreground">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            {t('canonical.review.unreadableOriginal.title', { count: r.unreadableOriginal.length })}
+                        </h2>
+                        <p className="text-[11px] text-warning-subtle-foreground">
+                            {t('canonical.review.unreadableOriginal.body')}
+                        </p>
+                        <ul className="space-y-0.5">
+                            {r.unreadableOriginal.map(c => (
+                                <li key={c.path}>
+                                    <button
+                                        type="button"
+                                        onClick={() => select(c.path)}
+                                        className="text-[11px] text-warning-subtle-foreground underline-offset-2 hover:underline"
+                                    >
+                                        {t('canonical.review.unreadableOriginal.item', { form: c.form, source: c.sourceKey })}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="text-[11px] text-muted-foreground">
+                            {t('canonical.review.unreadableOriginal.hint')}
+                        </p>
+                    </section>
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
