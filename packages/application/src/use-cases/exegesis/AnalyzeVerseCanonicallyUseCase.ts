@@ -161,6 +161,10 @@ export class AnalyzeVerseCanonicallyUseCase {
                 priorAcceptedAnalyses,
                 regenerationHint: input.regenerationHint ?? null,
                 missingSourceTypes,
+                // Por qué el plan eligió este corpus para este paso. Se
+                // guardaba desde siempre con el comentario «the note is
+                // mentioned in the prompt», y ningún prompt la leía.
+                planNote: paper.stepPlan.perStep[step.id]?.note ?? null,
             };
 
             reservation.markLlmContacted();
@@ -413,13 +417,19 @@ export class AnalyzeVerseCanonicallyUseCase {
         // Curated-excerpt sources concatenate their pre-reviewed
         // chunks inline with anchor separators so the analyzer can
         // cite using the exact anchors the user accepted.
-        const pinnedIds = new Set(paper.stepPlan.perStep[stepId]?.pinnedSources ?? []);
+        const plan = paper.stepPlan.perStep[stepId];
+        const pinnedIds = new Set(plan?.pinnedSources ?? []);
+        // El rol que el plan le dio a cada fuente. Se persistía y sólo lo leía
+        // la interfaz, mientras al analizador se le pedía clasificar en esos
+        // mismos tres roles desde cero.
+        const plannedRoles = plan?.pinnedSourceRoles ?? {};
         const sorted = [...paper.sources].sort((a, b) => a.order - b.order);
 
         const contexts: ExegesisSourceContext[] = [];
         const silent: ProjectSource[] = [];
         for (const source of sorted) {
             const priority: 'primary' | 'secondary' = pinnedIds.has(source.id) ? 'primary' : 'secondary';
+            const plannedRole = plannedRoles[source.id];
             const retrieved = curated?.byResource[source.sourceLibraryResourceId ?? source.corpusId];
             if (retrieved) {
                 // Mismos separadores con ancla que el camino anterior: el
@@ -436,6 +446,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                     sourceType: source.sourceType,
                     displayLabel: source.displayLabel,
                     citationKey: source.citationKey,
+                    ...(plannedRole ? { plannedRole } : {}),
                     textContent,
                     excerptAnchors: retrieved.map(anchor),
                     priority,
@@ -471,6 +482,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                     sourceType: source.sourceType,
                     displayLabel: source.displayLabel,
                     citationKey: source.citationKey,
+                    ...(plannedRole ? { plannedRole } : {}),
                     textContent,
                     excerptAnchors,
                     priority,
@@ -488,6 +500,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                     sourceType: source.sourceType,
                     displayLabel: source.displayLabel,
                     citationKey: source.citationKey,
+                    ...(plannedRole ? { plannedRole } : {}),
                     textContent: text,
                     priority,
                 });

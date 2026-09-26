@@ -125,6 +125,22 @@ export interface AnalyzeVerseInput {
     sources: ExegesisSourceContext[];
 
     /**
+     * La nota del plan de corpus para ESTE paso: por qué estas fuentes.
+     *
+     * `StepSourcePlanEntry.note` llevaba escrito desde su primer día que era
+     * «useful at generation time (the note is mentioned in the prompt)». No lo
+     * era: ningún constructor de prompt la leía. Medido en producción, 108 de
+     * 108 pasos con plan tienen una nota escrita, y todas se descartaban.
+     *
+     * Dice cosas como «Ancla: Mayor ofrece una perspectiva sintética y crítica
+     * del argumento de Santiago 2:1-13», o sea la estrategia dialéctica del
+     * paso en palabras. Llega como CONTEXTO de por qué se eligió el corpus, no
+     * como orden sobre el contenido: lo que el análisis afirme lo siguen
+     * decidiendo las fuentes.
+     */
+    planNote?: string | null;
+
+    /**
      * Prior accepted verse analyses in canonical structured form.
      * Used for inter-verse continuity:
      *   - avoid redoing lexical analyses for terms already analyzed
