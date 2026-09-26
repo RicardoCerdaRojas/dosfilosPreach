@@ -54,7 +54,27 @@ interface SearchRequest {
      * porque el análisis escribe «שׁוּב» y el léxico encabeza «שוב»: son la
      * misma entrada y ninguna de las dos grafías encuentra a la otra.
      */
-    mode?: 'texto' | 'lema';
+    mode?: 'texto' | 'lema' | 'referencia';
+
+    /**
+     * Sólo en modo `'referencia'`: el pasaje que hay que buscar nombrado
+     * dentro del libro.
+     *
+     * Llega desagregado y NO como una expresión regular. La forma de la
+     * búsqueda la arma esta función, con lo que el cliente le pasa escapado;
+     * aceptar un patrón de afuera sería dejar que quien llama decida cuánto
+     * texto recorre el servidor.
+     *
+     * Las grafías vienen del canon, que ya guarda cómo se escribe cada libro
+     * en los dos idiomas y abreviado: «Santiago», «James», «Stg», «Jas».
+     */
+    reference?: {
+        names: string[];
+        chapterStart: number;
+        chapterEnd: number;
+        verseStart: number | null;
+        verseEnd: number | null;
+    };
 }
 
 interface SheetHit {
@@ -64,6 +84,13 @@ interface SheetHit {
     /** Renglón donde cae la primera, para reconocer la hoja sin abrirla. */
     snippet: string;
     section: string | null;
+    /**
+     * Sólo en modo `'referencia'`: qué versículos del pasaje nombra la hoja.
+     *
+     * Es lo que separa una hoja que DISCUTE el pasaje de una que lo usa de
+     * ejemplo: la primera nombra varios versículos, la segunda repite uno.
+     */
+    verses?: number[];
 }
 
 /**
@@ -124,6 +151,53 @@ export function lemmaOccurrencesIn(text: string, consonantes: string): number[] 
     return out;
 }
 
+/** Un texto suelto, listo para meterse dentro de una expresión regular. */
+function escapeRegExp(input: string): string {
+    return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * La forma que reconoce «Santiago 2:9», «Stg. 2.9» o «Jas 2:9».
+ *
+ * El separador admite dos puntos Y punto porque los dos se usan —Metzger
+ * escribe «2.9», Wallace «2:9»— y entre las partes se tolera el espacio que
+ * el corte de renglón deja.
+ */
+export function referenceRegExp(names: ReadonlyArray<string>): RegExp {
+    // Las grafías se ordenan de más larga a más corta, y eso NO es cosmético.
+    // La alternancia de JavaScript prueba de izquierda a derecha y se queda
+    // con la PRIMERA que entra: con «jas» antes que «james», el motor consume
+    // «jas» de «james 2:9», falla al pedir la cifra contra la «e», y la cita
+    // se pierde. Con la más larga primero eso no puede pasar.
+    const grafias = [...names].sort((a, b) => b.length - a.length).map(escapeRegExp).join('|');
+    return new RegExp(`(?:${grafias})\\.?\\s*(\\d{1,3})\\s*[:.]\\s*(\\d{1,3})`, 'gi');
+}
+
+/**
+ * Qué versículos del pasaje nombra un texto, y dónde cae el primero.
+ *
+ * Devuelve las posiciones en el texto ORIGINAL para poder recortar el renglón
+ * de contexto, igual que las otras dos búsquedas.
+ */
+export function referenceOccurrencesIn(
+    text: string,
+    re: RegExp,
+    enElPasaje: (chapter: number, verse: number) => boolean,
+): { at: number[]; verses: number[] } {
+    const at: number[] = [];
+    const verses = new Set<number>();
+    re.lastIndex = 0;
+    for (const m of text.matchAll(re)) {
+        const chapter = Number(m[1]);
+        const verse = Number(m[2]);
+        if (!Number.isFinite(chapter) || !Number.isFinite(verse)) continue;
+        if (!enElPasaje(chapter, verse)) continue;
+        at.push(m.index ?? 0);
+        verses.add(verse);
+    }
+    return { at, verses: [...verses].sort((a, b) => a - b) };
+}
+
 export function occurrencesIn(text: string, foldedTerm: string): number[] {
     if (!foldedTerm || !text) return [];
     const haystack = foldForSearch(text);
@@ -167,9 +241,31 @@ export const searchDocumentText = onCall<SearchRequest>(
         const term = typeof request.data?.term === 'string' ? request.data.term.trim() : '';
         if (!resourceId) throw new HttpsError('invalid-argument', 'resourceId is required');
 
-        const modo = request.data?.mode === 'lema' ? 'lema' : 'texto';
-        const aguja = modo === 'lema' ? soloConsonantes(term) : foldForSearch(term).text;
-        if (aguja.length < MIN_TERM_LENGTH) {
+        const pedido = request.data?.mode;
+        const modo: 'texto' | 'lema' | 'referencia' =
+            pedido === 'lema' || pedido === 'referencia' ? pedido : 'texto';
+
+        // En modo referencia la aguja es el pasaje, no un término escrito.
+        const ref = modo === 'referencia' ? request.data?.reference : undefined;
+        const names = Array.isArray(ref?.names)
+            ? ref!.names.filter((n): n is string => typeof n === 'string' && n.trim().length >= MIN_TERM_LENGTH)
+            : [];
+        if (modo === 'referencia' && names.length === 0) {
+            throw new HttpsError('invalid-argument', 'reference.names is required in mode "referencia"');
+        }
+        const referencia = modo === 'referencia' ? referenceRegExp(names) : null;
+        const enElPasaje = (chapter: number, verse: number): boolean => {
+            const r = ref!;
+            if (chapter < r.chapterStart || chapter > r.chapterEnd) return false;
+            if (chapter === r.chapterStart && r.verseStart !== null && verse < r.verseStart) return false;
+            if (chapter === r.chapterEnd && r.verseEnd !== null && verse > r.verseEnd) return false;
+            return true;
+        };
+
+        const aguja = modo === 'lema' ? soloConsonantes(term)
+            : modo === 'texto' ? foldForSearch(term).text
+            : '';
+        if (modo !== 'referencia' && aguja.length < MIN_TERM_LENGTH) {
             return { hits: [], truncated: false, scannedChunks: 0 };
         }
 
@@ -197,25 +293,35 @@ export const searchDocumentText = onCall<SearchRequest>(
             const text = typeof data.text === 'string' ? data.text : '';
             const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : null;
             if (!text || sheet === null) continue;
-            const at = modo === 'lema' ? lemmaOccurrencesIn(text, aguja) : occurrencesIn(text, aguja);
+            const encontrado = modo === 'referencia'
+                ? referenceOccurrencesIn(text, referencia!, enElPasaje)
+                : { at: modo === 'lema' ? lemmaOccurrencesIn(text, aguja) : occurrencesIn(text, aguja), verses: [] };
+            const at = encontrado.at;
             if (at.length === 0) continue;
 
             const existing = bySheet.get(sheet);
             if (existing) {
                 existing.count += at.length;
+                // Una hoja tiene varios fragmentos y el pasaje puede repartirse
+                // entre ellos: los versículos se acumulan sin repetir.
+                if (existing.verses) {
+                    existing.verses = [...new Set([...existing.verses, ...encontrado.verses])].sort((a, b) => a - b);
+                }
             } else {
                 bySheet.set(sheet, {
                     sheet,
                     count: at.length,
                     snippet: snippetAround(text, at[0]!),
                     section: typeof data.metadata?.section === 'string' ? data.metadata.section : null,
+                    ...(modo === 'referencia' ? { verses: encontrado.verses } : {}),
                 });
             }
         }
 
         const all = [...bySheet.values()].sort((a, b) => a.sheet - b.sheet);
         const hits = all.slice(0, MAX_SHEETS);
-        console.log(`[DocumentTextSearch] ${resourceId} «${term}»: ${readable.length} chunks → ${all.length} hojas`);
+        const etiqueta = modo === 'referencia' ? `referencia ${names[0]} ${ref!.chapterStart}` : `«${term}»`;
+        console.log(`[DocumentTextSearch] ${resourceId} ${etiqueta} (${modo}): ${readable.length} chunks → ${all.length} hojas`);
         return { hits, truncated: all.length > hits.length, scannedChunks: readable.length };
     },
 );
