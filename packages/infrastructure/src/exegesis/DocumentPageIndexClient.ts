@@ -19,6 +19,14 @@ import {
 export interface DocumentPageIndex {
     pages: ReadonlyArray<PageIndexEntry>;
     /**
+     * Todas las secciones del libro, cada una en la hoja donde empieza.
+     *
+     * Va aparte de `pages` porque una hoja puede traer varias y `pages` sólo
+     * guarda la que la abre: en Porter, el índice por hoja deja ver 130 de sus
+     * 465 secciones.
+     */
+    sections: ReadonlyArray<{ section: string; sheet: number }>;
+    /**
      * `impresa = hoja + offset`, o `null` cuando no hubo evidencia suficiente.
      * Se deduce acá y no en el servidor porque la tabla del canon y la
      * heurística viven en domain, que `packages/functions` no puede importar.
@@ -36,6 +44,7 @@ export interface DocumentPdfHandle {
 interface PageIndexResponse {
     pages: PageIndexEntry[];
     sheetCount: number;
+    sections?: Array<{ section: string; sheet: number }>;
 }
 
 const INDEX_TIMEOUT_MS = 60_000;
@@ -82,7 +91,7 @@ export async function fetchDocumentPageIndex(resourceId: string): Promise<Docume
             offsetAgreement: `${detection.agreement}/${detection.samples}`,
         });
 
-        return { pages, printedPageOffset: detection.offset };
+        return { pages, sections: response.data.sections ?? [], printedPageOffset: detection.offset };
     })();
 
     // Se cachea la promesa, no el resultado: dos paneles que abran el mismo

@@ -1180,6 +1180,14 @@
           "sheet": "sheet {{sheet}}",
           "verses": "v. {{verses}}",
           "hint": "A grammar or a lexicon is not organised by passage, but it cites the verse as an example. These are the pages where it names it; you decide which ones come in."
+        },
+        "grammarSections": {
+          "title": "Index sections that answer the brief ({{count}})",
+          "count": "· {{count}} sections",
+          "corroborated": "names the Greek form",
+          "page": "p. {{printed}}",
+          "sheet": "sheet {{sheet}}",
+          "hint": "A grammar is indexed by category, not by passage. These are the sections naming what your brief asks about; the list follows the book order and is not trimmed."
         }
       },
       "corpus-plan": {
