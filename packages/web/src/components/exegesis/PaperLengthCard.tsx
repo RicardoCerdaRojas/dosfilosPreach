@@ -1,5 +1,7 @@
 import { AlertTriangle, CheckCircle2, Ruler } from 'lucide-react';
 import {
+    DEFAULT_PAPER_FORMATTING,
+    assemblyDelivery,
     checkLength,
     estimateLength,
     exportPaperToMarkdown,
@@ -43,9 +45,18 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
     // mecánica; sin comparar entre versos no se distingue de un verso corto.
     const longest = perStep.reduce((m, s) => Math.max(m, s.pages), 0);
 
-    const tone = check.verdict === 'short' || check.verdict === 'long'
-        ? 'border-warning/30 bg-warning-subtle/40'
-        : 'border-border bg-card';
+    // Lo medido sale de `paper.assembledMarkdown`, que sólo se escribe al
+    // ACEPTAR el ensamble. Con una versión generada y sin aceptar, esta
+    // tarjeta mide —y el exportador baja— un documento que el autor ya no
+    // tiene a la vista.
+    const entrega = assemblyDelivery(paper);
+    const desfasado = entrega.state === 'difiere';
+
+    const tone = desfasado
+        ? 'border-warning/40 bg-warning-subtle/40'
+        : check.verdict === 'short' || check.verdict === 'long'
+            ? 'border-warning/30 bg-warning-subtle/40'
+            : 'border-border bg-card';
 
     return (
         <section className={cn('rounded-xl border p-4 space-y-3', tone)}>
@@ -53,6 +64,21 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
                 <Ruler className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-sm font-semibold text-foreground">{t('detail.length.title')}</h3>
             </header>
+
+            {desfasado && (
+                <div className="rounded-md border border-warning/40 bg-warning-subtle/60 px-3 py-2 space-y-1">
+                    <p className="inline-flex items-start gap-1.5 text-xs font-semibold text-warning-subtle-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        {t('detail.length.stale.title')}
+                    </p>
+                    <p className="text-[11px] text-warning-subtle-foreground">
+                        {t('detail.length.stale.body', {
+                            delivered: entrega.deliveredWords,
+                            onScreen: entrega.onScreenWords,
+                        })}
+                    </p>
+                </div>
+            )}
 
             <p className="text-sm text-foreground">
                 {t('detail.length.estimate', { pages: check.estimatedPages, words: check.words })}
@@ -96,7 +122,11 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
                 </dl>
             )}
 
-            <p className="text-[11px] text-muted-foreground">{t('detail.length.disclaimer')}</p>
+            <p className="text-[11px] text-muted-foreground">
+                {t('detail.length.disclaimer', {
+                    spacing: t(`detail.length.spacing.${(formatting ?? DEFAULT_PAPER_FORMATTING).lineSpacing}`),
+                })}
+            </p>
         </section>
     );
 }

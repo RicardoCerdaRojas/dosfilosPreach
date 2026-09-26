@@ -70,6 +70,7 @@ import {
     type ExegeticalPaper,
     type ProjectSource,
     type SupportedLanguage,
+    assemblyDelivery,
     documentSections,
     sectionBudgets,
 } from '@dosfilos/domain';
@@ -257,11 +258,35 @@ export function ExegesisPaperPage() {
         }));
     };
 
+    /**
+     * Avisa cuando lo que acaba de bajar no es lo que el autor está viendo.
+     *
+     * Los dos exportadores leen `paper.assembledMarkdown`, que NO se escribe al
+     * regenerar el ensamble. Un ensamble regenerado y sin aceptar es
+     * invisible: la pantalla muestra el texto nuevo y el archivo trae el
+     * anterior. Medido en Santiago 2:1-13, el archivo habría traído los nueve
+     * versículos que el autor excluyó y ninguno de los cuatro de su trabajo.
+     *
+     * El aviso va DESPUÉS de la descarga, como el de las fichas incompletas y
+     * por el mismo motivo: quien descarga suele mandar el archivo sin abrirlo,
+     * y el único momento en que se lo puede alcanzar es ése. Quién decide si
+     * vale la pena volver a bajarlo es él, con los dos tamaños a la vista.
+     */
+    const avisarEnsambleDesfasado = () => {
+        const entrega = assemblyDelivery(paper);
+        if (entrega.state !== 'difiere') return;
+        toast.warning(t('detail.length.stale.toast', {
+            delivered: entrega.deliveredWords,
+            onScreen: entrega.onScreenWords,
+        }));
+    };
+
     const handleExportMarkdown = () => {
         const markdown = exportPaperToMarkdown(paper, { bibliography });
         const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
         triggerDownload(blob, buildSafeFilename('md'));
         toast.success(t('detail.exportMarkdown.toast.exported'));
+        avisarEnsambleDesfasado();
         avisarFichasIncompletas();
     };
 
@@ -270,6 +295,7 @@ export function ExegesisPaperPage() {
             const blob = await exportPaperToDocx(paper, { bibliography });
             triggerDownload(blob, buildSafeFilename('docx'));
             toast.success(t('detail.exportDocx.toast.exported'));
+            avisarEnsambleDesfasado();
             avisarFichasIncompletas();
         } catch (err) {
             console.error('[exegesis] export docx failed:', err);
