@@ -12,6 +12,7 @@ import type {
     IExegeticalPaperRepository,
     IOriginalLanguageBibleProvider,
     GreekVerseTokens,
+    HebrewVerseMorphology,
     IResourceContentReader,
     IUserStyleGuideRepository,
     PassageReference,
@@ -364,7 +365,9 @@ export class AnalyzeVerseCanonicallyUseCase {
      * bloque deja las cosas como estaban, y no producir el versículo sería
      * mucho peor que producirlo sin la tabla.
      */
-    private async loadVerseMorphology(verseRef: PassageReference): Promise<GreekVerseTokens | null> {
+    private async loadVerseMorphology(
+        verseRef: PassageReference,
+    ): Promise<GreekVerseTokens | HebrewVerseMorphology | null> {
         const provider = this.originalLanguageProvider;
         if (!provider?.getVerseMorphology || !provider.supports(verseRef.bookId)) return null;
         try {

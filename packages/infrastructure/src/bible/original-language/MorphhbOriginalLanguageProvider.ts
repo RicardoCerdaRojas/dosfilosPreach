@@ -1,3 +1,4 @@
+import type { HebrewVerseMorphology } from '@dosfilos/domain';
 import type {
     BibleBookId,
     IOriginalLanguageBibleProvider,
@@ -40,6 +41,34 @@ export class MorphhbOriginalLanguageProvider implements IOriginalLanguageBiblePr
 
     supports(bookId: BibleBookId): boolean {
         return Object.prototype.hasOwnProperty.call(MORPHHB_KEY_BY_BOOK, bookId);
+    }
+
+    /**
+     * La morfología tabulada del versículo, con los códigos OSHB tal cual.
+     *
+     * NO se decodifican acá. El adaptador entrega el dato como viene y quien
+     * lo lee es `oshbMorphology`, en dominio, donde las pruebas lo atan a
+     * formas reales del Salmo 23 verificadas contra el análisis que el autor
+     * escribió a mano. Traducir el código en el adaptador lo dejaría sin esa
+     * comprobación.
+     */
+    async getVerseMorphology(
+        bookId: BibleBookId,
+        chapter: number,
+        verse: number,
+    ): Promise<HebrewVerseMorphology | null> {
+        const morphhbKey = MORPHHB_KEY_BY_BOOK[bookId];
+        if (!morphhbKey) return null;
+        await this.morphhb.loadBook(morphhbKey);
+        const entry = this.morphhb.getVerse(morphhbKey, chapter, verse);
+        if (!entry?.words?.length) return null;
+        return {
+            tokens: entry.words.map(w => ({
+                text: w.text,
+                lemma: w.lemma,
+                oshbMorphCode: w.oshbMorphCode,
+            })),
+        };
     }
 
     async getChapterContent(bookId: BibleBookId, chapter: number): Promise<string[]> {

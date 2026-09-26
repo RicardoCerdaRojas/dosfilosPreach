@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    buildHebrewMorphologyBlock,
     buildVerseMorphologyBlock,
     countGreekMoods,
     describeGreekToken,
@@ -88,5 +89,51 @@ describe('buildVerseMorphologyBlock', () => {
         // El hebreo y los libros fuera de MorphGNT pasan por acá sin bloque.
         expect(buildVerseMorphologyBlock(null, 'es')).toBe('');
         expect(buildVerseMorphologyBlock(verso([]), 'es')).toBe('');
+    });
+});
+
+/** Salmo 23:2-3 tal como lo tabula morphhb. */
+const SALMO_23: Array<{ text: string; lemma: string; oshbMorphCode: string }> = [
+    { text: 'בִּ/נְא֣וֹת', lemma: 'b/4999', oshbMorphCode: 'HR/Ncfpc' },
+    { text: 'יַרְבִּיצֵ֑/נִי', lemma: '7257', oshbMorphCode: 'HVhi3ms/Sp1cs' },
+    { text: 'יְנַהֲלֵֽ/נִי', lemma: '5095', oshbMorphCode: 'HVpi3ms/Sp1cs' },
+    { text: 'יְשׁוֹבֵ֑ב', lemma: '7725', oshbMorphCode: 'HVoi3ms' },
+    { text: 'יַֽנְחֵ֥/נִי', lemma: '5148', oshbMorphCode: 'HVhi3ms/Sp1cs' },
+];
+
+describe('buildHebrewMorphologyBlock', () => {
+    const verso = (tokens: typeof SALMO_23) => ({ tokens });
+
+    it('el resumen cuenta ocurrencias por forma y tallo', () => {
+        // Dos hifiles imperfectos: יַרְבִּיצֵנִי y יַנְחֵנִי.
+        expect(buildHebrewMorphologyBlock(verso(SALMO_23), 'es')).toContain('2 imperfecto hifils');
+    });
+
+    it('cada palabra sale con sus morfemas, junturas incluidas', () => {
+        const bloque = buildHebrewMorphologyBlock(verso(SALMO_23), 'es');
+        expect(bloque).toContain('preposición + sustantivo femenino plural constructo');
+        expect(bloque).toContain('polel imperfecto 3ª masculino singular');
+    });
+
+    it('la barra de morphhb no se imprime: separa morfemas, no palabras', () => {
+        expect(buildHebrewMorphologyBlock(verso(SALMO_23), 'es')).toContain('יְשׁוֹבֵ֑ב');
+        expect(buildHebrewMorphologyBlock(verso([SALMO_23[0]!]), 'es')).not.toContain('בִּ/נְא֣וֹת');
+    });
+
+    it('avisa que un código crudo NO se adivina', () => {
+        // Es la instrucción que impide que el modelo invente un nombre de
+        // tallo donde el sistema decidió callar.
+        const b = buildHebrewMorphologyBlock(verso(SALMO_23), 'es');
+        expect(b).toContain('NO lo adivines');
+        expect(buildHebrewMorphologyBlock(verso(SALMO_23), 'en')).toContain('Do NOT guess');
+    });
+
+    it('va rotulado como dato, igual que el griego', () => {
+        expect(buildHebrewMorphologyBlock(verso(SALMO_23), 'es')).toContain('DATO, no análisis');
+    });
+
+    it('sin tokens no se agrega un bloque vacío', () => {
+        expect(buildHebrewMorphologyBlock(null, 'es')).toBe('');
+        expect(buildHebrewMorphologyBlock(verso([]), 'es')).toBe('');
     });
 });

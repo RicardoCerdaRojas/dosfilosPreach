@@ -1,3 +1,4 @@
+import type { HebrewVerseMorphology } from '../../exegesis/services/verseMorphologyBriefing';
 import type { GreekVerseTokens } from '../../greek-analyzer/morphGntToken';
 import type { BibleBookId } from '../canon/BibleCanon';
 
@@ -59,16 +60,19 @@ export interface IOriginalLanguageBibleProvider {
     /**
      * La morfología del versículo, si la fuente la trae tabulada.
      *
-     * OPCIONAL a propósito. El griego del NT viene de MorphGNT con la
-     * morfología columna por columna, así que es un dato calculado; el hebreo
-     * la tiene en morphhb con otro sistema de códigos que todavía no se mapeó,
-     * y devolver ahí una traducción aproximada sería inventar precisión.
+     * OPCIONAL a propósito: quien no la implemente deja al analizador
+     * exactamente como estaba.
      *
-     * Quien no la implemente deja al analizador exactamente como estaba.
+     * Las dos lenguas la traen tabulada y por eso el retorno es una unión, no
+     * una forma común inventada: el griego llega de MorphGNT con los rasgos ya
+     * separados en columnas, y el hebreo de morphhb con el código OSHB entero
+     * en una cadena. Aplanarlos a un tipo único obligaría a decodificar el
+     * hebreo acá, en un puerto, en vez de en el servicio que tiene las pruebas
+     * que lo atan a los datos reales.
      */
     getVerseMorphology?(
         bookId: BibleBookId,
         chapter: number,
         verse: number,
-    ): Promise<GreekVerseTokens | null>;
+    ): Promise<GreekVerseTokens | HebrewVerseMorphology | null>;
 }

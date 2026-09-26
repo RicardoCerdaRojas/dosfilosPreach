@@ -138,3 +138,44 @@ describe('la morfología tabulada llega al analizador', () => {
         expect(sin.systemInstruction).not.toContain('Morfología de este versículo');
     });
 });
+
+/** Salmo 23:2-3 tal como lo tabula morphhb, con sus códigos OSHB. */
+const MORFOLOGIA_HEBREA = {
+    tokens: [
+        { text: 'יַרְבִּיצֵ֑/נִי', lemma: '7257', oshbMorphCode: 'HVhi3ms/Sp1cs' },
+        { text: 'יְשׁוֹבֵ֑ב', lemma: '7725', oshbMorphCode: 'HVoi3ms' },
+        { text: 'יַֽנְחֵ֥/נִי', lemma: '5148', oshbMorphCode: 'HVhi3ms/Sp1cs' },
+    ],
+};
+
+describe('la morfología hebrea también llega, y se distingue de la griega', () => {
+    const conHebreo = () =>
+        buildAnalyzerPrompt(entrada({ verseMorphology: MORFOLOGIA_HEBREA } as never));
+
+    it('se elige el bloque hebreo por la FORMA del dato, no por el libro', () => {
+        // El código OSHB viene en una cadena; el griego, con los rasgos ya en
+        // columnas. Preguntar por la forma evita una segunda tabla de qué
+        // testamento es cada libro.
+        expect(conHebreo().systemInstruction).toContain('OSHB');
+    });
+
+    it('los tallos llegan nombrados, no en código', () => {
+        const s = conHebreo().systemInstruction;
+        expect(s).toContain('polel imperfecto');
+        expect(s).toContain('hifil imperfecto');
+    });
+
+    it('el recuento cuenta ocurrencias: dos hifiles imperfectos', () => {
+        expect(conHebreo().systemInstruction).toContain('2 imperfecto hifils');
+    });
+
+    it('y avisa que un código crudo no se adivina', () => {
+        expect(conHebreo().systemInstruction).toContain('NO lo adivines');
+    });
+
+    it('el griego sigue eligiendo su propio bloque', () => {
+        const griego = buildAnalyzerPrompt(entrada({ verseMorphology: MORFOLOGIA } as never));
+        expect(griego.systemInstruction).not.toContain('OSHB');
+        expect(griego.systemInstruction).toContain('MorphGNT');
+    });
+});

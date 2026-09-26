@@ -1,4 +1,5 @@
 import type { GreekMorphTag, GreekVerseTokens, GreekWordToken } from '../../greek-analyzer/morphGntToken';
+import { countOshbVerbTypes, describeOshbCode } from './oshbMorphology';
 
 /**
  * El inventario morfológico del versículo, contado y no opinado.
@@ -16,9 +17,10 @@ import type { GreekMorphTag, GreekVerseTokens, GreekWordToken } from '../../gree
  * ausente. El defecto es de recuento, y un recuento no se arregla pidiendo más
  * cuidado: se arregla entregando la cuenta.
  *
- * Esto es griego solamente. El hebreo tiene morfología igual de determinista
- * en morphhb, con otro sistema de códigos que habría que mapear; entregar una
- * traducción aproximada de esos códigos sería inventar precisión.
+ * Sirve para las dos lenguas. El griego llega tabulado por MorphGNT y el
+ * hebreo por morphhb con los códigos de OSHB, que `oshbMorphology` decodifica
+ * —sólo los tallos que se pudieron verificar; los raros salen con su código
+ * crudo en vez de con una etiqueta inventada—.
  */
 
 const MODO: Record<string, string> = {
@@ -120,6 +122,67 @@ export function buildVerseMorphologyBlock(
             '## Morfología de este versículo (DATO, no análisis — calculado, no deducido)',
             'Sale columna por columna de MorphGNT. No es una opinión ni es negociable: toda afirmación morfológica de tu análisis tiene que cuadrar con esta tabla, y todo recuento tiene que coincidir con ella.',
             resumen ? `Modos verbales presentes: **${resumen}**. Contá OCURRENCIAS, no formas distintas: una forma repetida dos veces son dos.` : '',
+            ...lineas,
+        ].filter(Boolean).join('\n');
+}
+
+
+/**
+ * Una palabra hebrea tal como la trae morphhb: su texto y su código OSHB.
+ *
+ * Se declara acá y no se importa de `hebrew-tutor` para que este servicio no
+ * dependa del tutor: son dos usos del mismo dato, no una jerarquía.
+ */
+export interface HebrewMorphToken {
+    readonly text: string;
+    readonly lemma: string;
+    readonly oshbMorphCode: string;
+}
+
+export interface HebrewVerseMorphology {
+    readonly tokens: readonly HebrewMorphToken[];
+}
+
+/** La barra de morphhb separa morfemas dentro de la palabra, no palabras. */
+function limpiaTexto(text: string): string {
+    return text.replace(/\//g, '');
+}
+
+/**
+ * El mismo bloque que el griego, para el hebreo.
+ *
+ * Se mantiene la forma —resumen de recuentos arriba, una línea por palabra— y
+ * el rótulo de DATO: lo que cambia entre lenguas es de dónde sale la tabla, no
+ * qué se hace con ella.
+ */
+export function buildHebrewMorphologyBlock(
+    verse: HebrewVerseMorphology | null,
+    language: 'es' | 'en',
+): string {
+    if (!verse || verse.tokens.length === 0) return '';
+
+    const conteo = countOshbVerbTypes(verse.tokens.map(t => t.oshbMorphCode));
+    const resumen = Object.entries(conteo)
+        .sort((a, b) => b[1] - a[1])
+        .map(([forma, n]) => `${n} ${forma}${n === 1 ? '' : 's'}`)
+        .join(', ');
+
+    const lineas = verse.tokens.map(t =>
+        `- ${limpiaTexto(t.text)} — ${describeOshbCode(t.oshbMorphCode)}`);
+
+    return language === 'en'
+        ? [
+            '## Morphology of this verse (DATA, not analysis — computed, not inferred)',
+            'Taken from morphhb (Westminster Leningrad Codex with OSHB tagging). It is not an opinion and it is not negotiable: every morphological statement in your analysis must square with this table, and every count must match it.',
+            resumen ? `Verb forms present: **${resumen}**. Count OCCURRENCES, not distinct forms: a form repeated twice is two.` : '',
+            'A code shown raw (e.g. `Vzi3ms`) is a stem this system does not name with certainty. Do NOT guess it — say what the code says.',
+            ...lineas,
+        ].filter(Boolean).join('\n')
+        : [
+            '## Morfología de este versículo (DATO, no análisis — calculado, no deducido)',
+            'Sale de morphhb (Códice de Leningrado con etiquetado OSHB). No es una opinión ni es negociable: toda afirmación morfológica de tu análisis tiene que cuadrar con esta tabla, y todo recuento tiene que coincidir con ella.',
+            resumen ? `Formas verbales presentes: **${resumen}**. Contá OCURRENCIAS, no formas distintas: una forma repetida dos veces son dos.` : '',
+            'Un código que salga crudo (p. ej. `Vzi3ms`) es un tallo que este sistema no nombra con certeza. NO lo adivines: decí lo que el código dice.',
             ...lineas,
         ].filter(Boolean).join('\n');
 }
