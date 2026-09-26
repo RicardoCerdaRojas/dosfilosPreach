@@ -30,6 +30,17 @@ export interface ExegesisPaperSummary {
     /** `sources.length` — corpus size. */
     sourceCount: number;
     /**
+     * Las claves de cita que este trabajo efectivamente CITÓ.
+     *
+     * No son las fuentes del corpus: son las que llegaron al texto. La
+     * diferencia es el dato entero — el corpus de Santiago 2:1-13 tenía siete
+     * fuentes y el trabajo citó cinco.
+     *
+     * Vacío en los trabajos anteriores a este campo y en los que todavía no
+     * aceptaron ningún paso, que es lo mismo que decir «no citó nada».
+     */
+    citedSourceKeys: ReadonlyArray<string>;
+    /**
      * A qué serie pertenece, o `null` si es un trabajo suelto. Lo necesita la
      * herencia de corpus para encontrar a los hermanos de un plan.
      */

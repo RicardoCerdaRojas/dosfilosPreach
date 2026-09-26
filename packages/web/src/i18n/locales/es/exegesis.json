@@ -1197,6 +1197,9 @@
           "page": "p. {{printed}}",
           "sheet": "hoja {{sheet}}",
           "hint": "Una gramática se indexa por categorías, no por pasajes. Estas son las secciones que nombran lo que tu encuadre pregunta; la lista va en el orden del libro y no se recorta."
+        },
+        "sourceMemory": {
+          "repeated": "Citaste {{source}} en tu entrega anterior ({{paper}}, {{date}}). Si tu plan de estudios no permite repetir fuente en semanas consecutivas, esta no debería entrar."
         }
       },
       "corpus-plan": {

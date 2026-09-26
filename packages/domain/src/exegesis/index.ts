@@ -85,6 +85,7 @@ export * from './services/grammarSearchKeys';
 export * from './services/assignmentBriefWindows';
 export * from './services/originalLanguageEvidence';
 export * from './services/verseMorphologyBriefing';
+export * from './services/sourceMemory';
 export * from './services/lemmaPages';
 export * from './services/courseBibliography';
 export * from './entities/WorkProfile';

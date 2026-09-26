@@ -1197,6 +1197,9 @@
           "page": "p. {{printed}}",
           "sheet": "sheet {{sheet}}",
           "hint": "A grammar is indexed by category, not by passage. These are the sections naming what your brief asks about; the list follows the book order and is not trimmed."
+        },
+        "sourceMemory": {
+          "repeated": "You cited {{source}} in your previous paper ({{paper}}, {{date}}). If your syllabus forbids repeating a source in consecutive weeks, this one should stay out."
         }
       },
       "corpus-plan": {

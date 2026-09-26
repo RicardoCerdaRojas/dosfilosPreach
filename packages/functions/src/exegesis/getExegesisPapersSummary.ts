@@ -41,6 +41,48 @@ interface PaperSummary {
     sourceCount: number;
     seriesId: string | null;
     sources: SourceIdentity[];
+    /**
+     * Las claves de cita que este trabajo efectivamente CITÓ.
+     *
+     * No son las fuentes del corpus: son las que llegaron al texto. La
+     * diferencia es el dato entero — el corpus de Santiago 2:1-13 tenía siete
+     * fuentes y el trabajo citó cinco.
+     *
+     * Viaja en el resumen porque el resumen ya lee los trabajos completos del
+     * lado del servidor: son un puñado de cadenas cortas, y calcularlas en el
+     * navegador obligaría a bajar los 25 trabajos enteros de un usuario para
+     * responder «¿esto ya lo citaste?».
+     */
+    citedSourceKeys: string[];
+}
+
+/**
+ * Las claves de cita que los pasos ACEPTADOS afirman haber usado.
+ *
+ * Sólo los aceptados: lo que se descartó al regenerar no dejó cita en el
+ * documento entregado, y decir que se citó sería mentir sobre la entrega.
+ *
+ * Recorre el análisis buscando `sourceKey` en vez de conocer su forma. Es
+ * deliberado: `packages/functions` no puede importar domain —corren en
+ * runtimes distintos— y replicar acá la estructura del análisis canónico sería
+ * una segunda copia que se desincroniza en cuanto el análisis gane un campo.
+ * Lo que NO cambia es el nombre del campo, que es contrato de citación.
+ */
+export function clavesCitadas(steps: any[]): string[] {
+    const out = new Set<string>();
+    const recorre = (node: any): void => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) { node.forEach(recorre); return; }
+        const key = (node as any).sourceKey;
+        if (typeof key === 'string' && key.trim()) out.add(key.trim());
+        for (const v of Object.values(node)) recorre(v);
+    };
+    for (const step of steps ?? []) {
+        const aceptada = step?.accepted
+            ?? (Array.isArray(step?.versions) ? step.versions.find((v: any) => v?.id === step?.acceptedId) : null);
+        recorre(aceptada?.canonicalAnalysis);
+    }
+    return [...out].sort();
 }
 
 /** Una fuente sin nada de su contenido: sólo qué libro es. */
@@ -116,6 +158,7 @@ export const getExegesisPapersSummary = onCall(
                 sourceCount: sources.length,
                 seriesId: typeof d.seriesId === 'string' ? d.seriesId : null,
                 sources: sources.map(identidadDeFuente),
+                citedSourceKeys: clavesCitadas(steps),
             };
         });
 
