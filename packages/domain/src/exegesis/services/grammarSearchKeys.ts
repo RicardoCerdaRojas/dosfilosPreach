@@ -265,3 +265,34 @@ export function sectionsForKeys(
     return [...vistas.values()].sort((a, b) =>
         Number(b.corroborated) - Number(a.corroborated) || a.sheet - b.sheet);
 }
+
+/**
+ * Qué secciones del libro cubre un tramo de hojas.
+ *
+ * El carrito rotulaba cada tramo con la sección de su PRIMERA hoja, y como el
+ * índice por hoja guarda la sección que la ABRE, el rótulo nombraba la sección
+ * que venía corriendo desde antes: el tramo 184–193 de Porter —participios—
+ * aparecía como «2.1. Genitive Absolute», que empieza antes y termina ahí.
+ *
+ * Con el índice de secciones entero se puede decir la verdad: qué secciones
+ * hay dentro. Y el número importa tanto como el nombre — un tramo que cubre
+ * quince secciones no es una elección quirúrgica, y hoy nada lo decía. Medido
+ * en Porter: el tramo 184–193 cubre 15 secciones y el 88–98 cubre 21.
+ *
+ * Cuenta la que viene corriendo al abrir el tramo y todas las que empiezan
+ * adentro. Comparar contra «dónde empieza la siguiente» no sirve: en la hoja
+ * 209 empiezan cuatro secciones, así que el final de una es la misma hoja en
+ * la que empieza la otra.
+ */
+export function sectionsCoveredBy(
+    sections: ReadonlyArray<{ sheet: number; section: string | null }>,
+    range: { start: number; end: number },
+): Array<{ sheet: number; section: string }> {
+    const ordenadas = [...sections]
+        .filter((s): s is { sheet: number; section: string } => !!s.section?.trim())
+        .sort((a, b) => a.sheet - b.sheet);
+
+    const adentro = ordenadas.filter(s => s.sheet >= range.start && s.sheet <= range.end);
+    const corriendo = [...ordenadas].reverse().find(s => s.sheet < range.start);
+    return corriendo ? [corriendo, ...adentro] : adentro;
+}

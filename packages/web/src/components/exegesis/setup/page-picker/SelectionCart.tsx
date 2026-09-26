@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Pin, PinOff, X } from 'lucide-react';
-import { printedPageFor, type PageIndexEntry, type SheetRange } from '@dosfilos/domain';
+import { printedPageFor, sectionsCoveredBy, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -18,7 +18,14 @@ const BUDGET_CHARS = 200_000;
 
 interface Props {
     ranges: ReadonlyArray<SheetRange>;
-    pages: ReadonlyArray<PageIndexEntry>;
+    /**
+     * El índice de secciones del libro, entero.
+     *
+     * Reemplaza a `pages`, que el carrito usaba sólo para rotular y que guarda
+     * una sola sección por hoja —la que la ABRE—: por eso el rótulo del tramo
+     * nombraba la sección que venía corriendo desde antes.
+     */
+    sections: ReadonlyArray<{ sheet: number; section: string | null }>;
     printedPageOffset: number | null;
     /** Caracteres que ya ocupan las otras fuentes del trabajo. */
     otherSourcesChars: number;
@@ -36,7 +43,7 @@ interface Props {
 
 export function SelectionCart({
     ranges,
-    pages,
+    sections,
     printedPageOffset,
     otherSourcesChars,
     selectedChars,
@@ -58,9 +65,27 @@ export function SelectionCart({
     const isPinned = (range: SheetRange): boolean =>
         pinnedRanges.some(p => p.start === range.start && p.end === range.end);
 
-    const labelFor = (range: SheetRange): string => {
-        const first = pages.find(p => p.sheet >= range.start && p.sheet <= range.end && !!p.section);
-        return first?.section ?? '';
+    /**
+     * Qué secciones cubre el tramo.
+     *
+     * Antes se rotulaba con la sección de la PRIMERA hoja, y como el índice
+     * por hoja guarda la que la ABRE, el rótulo nombraba la sección que venía
+     * corriendo desde antes: el tramo 184–193 de Porter —participios— salía
+     * como «2.1. Genitive Absolute», que empieza antes y termina ahí.
+     *
+     * Y el número dice tanto como el nombre: un tramo que cubre quince
+     * secciones no es una elección quirúrgica, y nada lo decía.
+     */
+    const labelFor = (range: SheetRange): { text: string; covered: ReadonlyArray<string> } => {
+        const covered = sectionsCoveredBy(sections, range);
+        if (covered.length === 0) return { text: '', covered: [] };
+        const first = covered[0]!.section;
+        return {
+            text: covered.length > 1
+                ? t('paperSetup.subSteps.corpus.picker.cart.sectionsCovered', { section: first, count: covered.length })
+                : first,
+            covered: covered.map(c => c.section),
+        };
     };
 
     const rangeLabel = (range: SheetRange): string => {
@@ -103,11 +128,18 @@ export function SelectionCart({
                                 <span className="block text-xs font-semibold tabular-nums text-foreground">
                                     {rangeLabel(range)}
                                 </span>
-                                {labelFor(range) && (
-                                    <span className="block truncate text-[11px] text-muted-foreground">
-                                        {labelFor(range)}
-                                    </span>
-                                )}
+                                {(() => {
+                                    const label = labelFor(range);
+                                    if (!label.text) return null;
+                                    return (
+                                        <span
+                                            className="block truncate text-[11px] text-muted-foreground"
+                                            title={label.covered.join('\n')}
+                                        >
+                                            {label.text}
+                                        </span>
+                                    );
+                                })()}
                             </span>
                             <button
                                 type="button"

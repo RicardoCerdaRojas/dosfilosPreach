@@ -1278,12 +1278,18 @@ function ExcerptsReviewPanel({
          * seguidas quedaron en cero por tres razones distintas y el usuario
          * vio el mismo cuadro amarillo en las tres.
          */
-        const razon = emptySourceReason(source.sourceType);
+        // Los tramos elegidos cambian la respuesta entera: con tramos, decir
+        // «no tiene fragmentos seleccionados» le dice al autor que no eligió
+        // nada cuando eligió, y lo manda a repetir un trabajo ya hecho.
+        const tramos = source.excerptRecipe?.sheetRanges?.length ?? 0;
+        const razon = emptySourceReason(source.sourceType, tramos);
         return (
             <div className="mt-2 space-y-1.5 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-[11px] text-warning-subtle-foreground">
-                <p className="font-medium">{t('paperSetup.subSteps.corpus.excerpts.empty.lead')}</p>
-                <p>{t(`paperSetup.subSteps.corpus.excerpts.empty.${razon}`)}</p>
-                {razon !== 'expected-by-passage' && (
+                {razon !== 'ranges-without-excerpts' && (
+                    <p className="font-medium">{t('paperSetup.subSteps.corpus.excerpts.empty.lead')}</p>
+                )}
+                <p>{t(`paperSetup.subSteps.corpus.excerpts.empty.${razon}`, { count: tramos })}</p>
+                {razon !== 'expected-by-passage' && razon !== 'ranges-without-excerpts' && (
                     <button
                         type="button"
                         onClick={() => navigate(`/dashboard/exegesis/${paperId}/fuentes/${source.id}/paginas`)}
