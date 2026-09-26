@@ -1,5 +1,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
+    briefForQuery,
     ResourcesNotIndexedError,
     formatPassageReference,
     type ExtractExcerptsInput,
@@ -138,7 +139,7 @@ export class RetrieveChunksExcerptExtractor implements IExcerptExtractor {
  * embedding quality (the model collapses to the dominant term).
  */
 function buildExtractionQuery(passageLabel: string, assignmentBrief: string | null): string {
-    const briefSlice = assignmentBrief?.trim().slice(0, 500) ?? '';
+    const briefSlice = briefForQuery(assignmentBrief);
     if (briefSlice.length === 0) return passageLabel;
     return `${passageLabel} — ${briefSlice}`;
 }

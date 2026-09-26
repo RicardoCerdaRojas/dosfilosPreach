@@ -1,3 +1,4 @@
+import { briefForQuery } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -235,7 +236,7 @@ export class GenerateStepUseCase {
 
         const target = step.verseRef ?? paper.passage;
         const label = formatPassageReference(target, paper.displayLanguage);
-        const brief = paper.assignmentBrief?.trim().slice(0, 500) ?? '';
+        const brief = briefForQuery(paper.assignmentBrief);
         try {
             return await this.corpusRetriever.retrieve({
                 userId: paper.ownerId,

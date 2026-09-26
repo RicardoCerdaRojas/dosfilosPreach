@@ -1,5 +1,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
+    briefForQuery,
     formatPassageReference,
     outlineStructureQuality,
     resolveOutlineReferences,
@@ -196,6 +197,6 @@ async function proposeSemantic(input: ProposeSheetRangesInput): Promise<SheetRan
  */
 function buildQuery(input: ProposeSheetRangesInput): string {
     const label = formatPassageReference(input.passage, input.language);
-    const brief = input.assignmentBrief?.trim().slice(0, 500) ?? '';
+    const brief = briefForQuery(input.assignmentBrief);
     return brief ? `${label} — ${brief}` : label;
 }
