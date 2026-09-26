@@ -2068,7 +2068,17 @@
         "pages": "pages",
         "words": "words"
       },
-      "disclaimer": "Pages are an estimate in the seminary's format (Times New Roman 12, double spaced). Word counts are exact."
+      "disclaimer": "Page counts are an estimate for this paper's format (Times New Roman 12, {{spacing}}). Word counts are exact.",
+      "spacing": {
+        "single": "single-spaced",
+        "one-and-a-half": "one-and-a-half spaced",
+        "double": "double-spaced"
+      },
+      "stale": {
+        "title": "This is not what will be downloaded.",
+        "body": "The file carries {{delivered}} words; the screen shows {{onScreen}}. Regenerate the assembly and accept it — only then does the file take what you see.",
+        "toast": "You downloaded {{delivered}} words, and the screen shows {{onScreen}}. Regenerate the assembly, accept it, and download again."
+      }
     },
     "bibliography": {
       "title": "Citation data",

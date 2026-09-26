@@ -152,3 +152,55 @@ export function documentSections(
         conclusion: cuenta('conclusion') > 0,
     };
 }
+
+/**
+ * Qué se va a entregar, comparado con lo que se está viendo.
+ *
+ * `paper.assembledMarkdown` —el campo del que leen el medidor de extensión Y
+ * los dos exportadores— no se escribe al regenerar el ensamble, sólo al
+ * ACEPTARLO. Quien regenera ve el texto nuevo en pantalla y descarga el
+ * anterior, sin que nada lo diga.
+ *
+ * Medido en Santiago 2:1-13: el paso tenía tres versiones —6.455, 4.513 y
+ * 1.176 palabras— y ninguna aceptada desde la segunda. La pantalla mostraba
+ * la de 1.176 con los cuatro versículos del trabajo; el campo entregable
+ * seguía con la de 4.513, que traía los NUEVE versículos que el autor había
+ * excluido y ninguno de los cuatro que quería.
+ *
+ * La comparación es de TEXTO y no de identificador de versión, y eso se midió
+ * antes de elegirlo. Con identificadores, de los 42 trabajos en producción dos
+ * quedaban marcados y uno de los dos era una falsa alarma: no tenía versión
+ * aceptada y sin embargo su texto entregable era idéntico, carácter por
+ * carácter, al de pantalla —recomponer un verso parchea `assembledMarkdown`
+ * en su sitio (`spliceIntoAssembly`) sin tocar las versiones del paso—. El
+ * otro difería de verdad: 2.552 caracteres entregables contra 14.913 en
+ * pantalla. Una advertencia falsa enseña a ignorar las advertencias.
+ *
+ * Por la misma razón el estado se llama `difiere` y no «sin aceptar»: la
+ * causa puede ser una falta de aceptación o un parche en sitio, y el hecho
+ * que importa —y el único que se comprueba— es que los dos textos no son el
+ * mismo.
+ */
+export interface AssemblyDeliveryCheck {
+    state: 'sin-ensamble' | 'difiere' | 'al-dia';
+    /** Palabras del texto que el exportador va a bajar. */
+    deliveredWords: number;
+    /** Palabras del ensamble que el autor tiene en pantalla. */
+    onScreenWords: number;
+}
+
+export function assemblyDelivery(paper: ExegeticalPaper): AssemblyDeliveryCheck {
+    const entregable = paper.assembledMarkdown?.trim() ?? '';
+    const paso = (paper.steps ?? []).find(s => s.kind === 'assembly');
+    const enPantalla = paso?.current?.markdown?.trim() ?? '';
+    const palabras = {
+        deliveredWords: countWords(entregable),
+        onScreenWords: countWords(enPantalla),
+    };
+    // Sin ninguno de los dos no hay nada que comparar. Sin `assembledMarkdown`
+    // tampoco: los exportadores caen en armar desde los pasos ACEPTADOS, que
+    // es justo lo que el autor está viendo, y el trabajo ensamblado por
+    // primera vez es exactamente ese caso.
+    if (!entregable || !enPantalla) return { state: 'sin-ensamble', ...palabras };
+    return { state: entregable === enPantalla ? 'al-dia' : 'difiere', ...palabras };
+}
