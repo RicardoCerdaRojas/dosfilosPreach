@@ -1728,7 +1728,7 @@
       "title": "Recompose {{verse}}",
       "description": "Only this verse's prose is written again. The analysis, its citations and their verdicts stay as they are.",
       "current": "It currently has {{words}} words (≈ {{pages}} pages).",
-      "guidanceLabel": "What is missing or wrong",
+      "guidanceLabel": "What is missing or wrong (optional)",
       "guidancePlaceholder": "E.g.: it came out as a data sheet — develop the morphology in prose, explain the polel/hiphil contrast and close with the translation decision.",
       "targetLabel": "Target words",
       "targetPlaceholder": "800",
@@ -1739,7 +1739,8 @@
       "toast": {
         "done": "Verse recomposed.",
         "assemblyUntouched": "Verse recomposed, but the assembled paper has no section for it: assemble again so it lands."
-      }
+      },
+      "guidanceOptional": "You can leave this empty: recomposing with no hint rewrites using what the paper asks for today — length, citation form, and the question this section answers."
     }
   },
   "coherence": {
@@ -1917,12 +1918,10 @@
         "overflowMenuLabel": "More actions",
         "regenerate": "Regenerate",
         "regenerating": "Regenerating…",
-        "regenerateWithHint": "Hint & regenerate",
-        "applyHint": "Apply hint",
         "editManual": "Edit manually",
         "editAccepted": "Edit accepted content",
-        "redo": "Redo",
-        "redoTooltip": "Returns the step to review so it can be generated again. The accepted analysis stays in the history.",
+        "redo": "Back to review",
+        "redoTooltip": "Returns the step to review without touching the content: it gets the accept and regenerate buttons again.",
         "saveEdit": "Save edit",
         "expand": "Expand",
         "collapse": "Collapse"
@@ -1952,7 +1951,15 @@
         "unanswered_one": "⚠ Question {{numbers}} of the brief is not answered by any selected section.",
         "unanswered_other": "⚠ Questions {{numbers}} of the brief are not answered by any selected section."
       },
-      "answersQuestion": "answers question {{numbers}}"
+      "answersQuestion": "answers question {{numbers}}",
+      "regenerate": {
+        "title": "Regenerate {{step}}",
+        "description": "This section is written again from the accepted analyses.",
+        "analysisWarning": "The verse's canonical analysis is run again. The composed prose and the verified citations of the current version are left behind: you will need to recompose the prose and review the citations again. If you only want to redo the writing, use “Recompose prose”.",
+        "hintLabel": "What to change (optional)",
+        "hintOptional": "You can leave this empty. Regenerating with no hint already applies what the paper asks for: the length the rubric allots, the citation form, and the brief's question this section answers.",
+        "submit": "Regenerate"
+      }
     },
     "rubric": {
       "title": "Rubric",

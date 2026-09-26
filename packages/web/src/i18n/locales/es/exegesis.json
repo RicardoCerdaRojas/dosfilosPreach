@@ -1728,7 +1728,7 @@
       "title": "Recomponer {{verse}}",
       "description": "Se vuelve a redactar la prosa de este verso y de ninguno más. El análisis, las citas y sus veredictos quedan como están.",
       "current": "Ahora tiene {{words}} palabras (≈ {{pages}} páginas).",
-      "guidanceLabel": "Qué falta o qué corregir",
+      "guidanceLabel": "Qué falta o qué corregir (opcional)",
       "guidancePlaceholder": "Ej.: «Salió como ficha: desarrolla la morfología de יְשׁוֹבֵב en prosa, explica el contraste polel/hifil y cierra con la decisión de traducción».",
       "targetLabel": "Palabras objetivo",
       "targetPlaceholder": "800",
@@ -1739,7 +1739,8 @@
       "toast": {
         "done": "Verso recompuesto.",
         "assemblyUntouched": "Verso recompuesto, pero el trabajo ensamblado no tiene una sección para él: vuelve a ensamblar para que entre."
-      }
+      },
+      "guidanceOptional": "Podés dejarlo vacío: recomponer sin indicación vuelve a redactar con lo que pide la entrega hoy —extensión, forma de cita y la pregunta que responde esta sección."
     }
   },
   "coherence": {
@@ -1917,12 +1918,10 @@
         "overflowMenuLabel": "Más acciones",
         "regenerate": "Regenerar",
         "regenerating": "Regenerando…",
-        "regenerateWithHint": "Hint y regenerar",
-        "applyHint": "Aplicar hint",
         "editManual": "Editar a mano",
         "editAccepted": "Editar contenido aceptado",
-        "redo": "Rehacer",
-        "redoTooltip": "Vuelve el paso a revisión para generarlo de nuevo. El análisis aceptado queda en el historial.",
+        "redo": "Volver a revisión",
+        "redoTooltip": "Devuelve el paso a revisión sin tocar el contenido: queda otra vez con los botones de aceptar y regenerar.",
         "saveEdit": "Guardar edición",
         "expand": "Expandir",
         "collapse": "Colapsar"
@@ -1952,7 +1951,15 @@
         "unanswered_one": "⚠ La pregunta {{numbers}} del encuadre no la responde ninguna sección elegida.",
         "unanswered_other": "⚠ Las preguntas {{numbers}} del encuadre no las responde ninguna sección elegida."
       },
-      "answersQuestion": "responde la pregunta {{numbers}}"
+      "answersQuestion": "responde la pregunta {{numbers}}",
+      "regenerate": {
+        "title": "Regenerar {{step}}",
+        "description": "Se vuelve a redactar esta sección desde los análisis aceptados.",
+        "analysisWarning": "Se vuelve a correr el análisis canónico de este verso. La prosa compuesta y las citas verificadas de la versión actual quedan atrás: después habrá que recomponer la prosa y volver a revisar las citas. Si sólo querés rehacer la redacción, usá «Recomponer prosa».",
+        "hintLabel": "Qué cambiar (opcional)",
+        "hintOptional": "Podés dejarlo vacío. Regenerar sin indicación ya aplica lo que pide la entrega: la extensión repartida por la rúbrica, la forma de cita y la pregunta del encuadre que le toca a esta sección.",
+        "submit": "Regenerar"
+      }
     },
     "rubric": {
       "title": "Rúbrica",

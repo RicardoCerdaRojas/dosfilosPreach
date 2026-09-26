@@ -7,7 +7,6 @@ import {
     Pencil,
     AlertCircle,
     Save,
-    X,
     BookOpen,
     Bookmark,
     BookText,
@@ -29,6 +28,7 @@ import { useReopenStep } from '@/hooks/exegesis/useReopenStep';
 import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/CanonicalAnalysisStudyView';
 import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
+import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { Link, useNavigate } from 'react-router-dom';
 import { assemblyContents, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, unansweredQuestions } from '@dosfilos/domain';
 import type { AssemblyContents, AssemblyPart, PaperFormatting } from '@dosfilos/domain';
@@ -213,8 +213,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const [editing, setEditing] = useState(false);
     const [recomposeOpen, setRecomposeOpen] = useState(false);
     const [editDraft, setEditDraft] = useState('');
-    const [hintDraft, setHintDraft] = useState('');
-    const [hintMode, setHintMode] = useState(false);
+    const [regenerateOpen, setRegenerateOpen] = useState(false);
     // Citation verifier dialog state. Last results live here so the
     // user can re-open the dialog without re-running the verifier.
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
@@ -300,8 +299,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         ? step.current?.markdown ?? step.accepted?.markdown ?? ''
         : step.accepted?.markdown ?? step.current?.markdown ?? '';
 
-    const canGenerate = isPending || isFailed;
-    const canRegenerate = isReview;
     const showActions = isReview;
     const showAccepted = isAccepted;
 
@@ -340,8 +337,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const runGenerate = async (regenerationHint?: string) => {
         try {
             await generateStep.mutateAsync({ paperId, stepId: step.id, regenerationHint });
-            setHintMode(false);
-            setHintDraft('');
         } catch (err) {
             if (handleQuotaError(err)) return;
             console.error('[exegesis] generate failed:', err);
@@ -371,8 +366,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 stepId: step.id,
                 regenerationHint: regenerationHint ?? null,
             });
-            setHintMode(false);
-            setHintDraft('');
             setViewMode('study');
         } catch (err) {
             if (handleQuotaError(err)) return;
@@ -539,9 +532,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             // Si el trabajo ya estaba ensamblado y su sección no se pudo
             // encontrar, el ensamblado quedó con la prosa vieja: decirlo es
             // la diferencia entre entregar lo corregido y entregar lo de antes.
-            if (guidance && !result.assemblyUpdated && hasAssembly) {
+            // El aviso ya no depende de que hubiera indicación: recomponer sin
+            // decir nada también cambia el verso, y dejar el ensamblado atrás
+            // es igual de caro en los dos casos.
+            if (!result.assemblyUpdated && hasAssembly) {
                 toast.warning(t('canonical.recompose.toast.assemblyUntouched'));
-            } else if (guidance) {
+            } else {
                 toast.success(t('canonical.recompose.toast.done'));
             }
             // Surface the prose by switching the view toggle so the
@@ -568,6 +564,9 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // into the cross-pollination bug from issue #126.
     const currentHasCanonical = !!step.current?.canonicalAnalysis;
     const shouldRegenerateCanonically = isVerse && currentHasCanonical;
+    const stepLabel = step.verseRef
+        ? formatPassageReference(step.verseRef, language)
+        : t(`detail.steps.kind.${step.kind}`);
     const handleAdaptiveRegenerate = (regenerationHint?: string) => {
         if (shouldRegenerateCanonically) {
             return handleAnalyzeCanonically(regenerationHint);
@@ -1028,20 +1027,11 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleAdaptiveRegenerate()}
+                            onClick={() => setRegenerateOpen(true)}
                             disabled={versionEnVuelo}
                         >
                             {anyPipelinePending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5 mr-1.5" />}
                             {anyPipelinePending ? t('detail.steps.action.regenerating') : t('detail.steps.action.regenerate')}
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setHintMode(v => !v)}
-                            disabled={versionEnVuelo}
-                        >
-                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                            {t('detail.steps.action.regenerateWithHint')}
                         </Button>
                         <Button
                             size="sm"
@@ -1082,46 +1072,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             {t('canonical.verify.button.label')}
                         </Button>
                     </div>
-                    {hintMode && (
-                        <div className="space-y-1.5">
-                            <QuickHintChips
-                                stepKind={step.kind}
-                                onPick={(hint) => handleAdaptiveRegenerate(hint)}
-                                disabled={versionEnVuelo}
-                            />
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
-                                    value={hintDraft}
-                                    onChange={(e) => setHintDraft(e.target.value)}
-                                    placeholder={t('detail.steps.hintPlaceholder')}
-                                    className="flex-1 rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && hintDraft.trim()) {
-                                            handleAdaptiveRegenerate(hintDraft.trim());
-                                        }
-                                    }}
-                                />
-                                <Button
-                                    size="sm"
-                                    onClick={() => hintDraft.trim() && handleAdaptiveRegenerate(hintDraft.trim())}
-                                    disabled={!hintDraft.trim() || anyPipelinePending}
-                                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
-                                >
-                                    {anyPipelinePending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-                                    {anyPipelinePending ? t('detail.steps.action.regenerating') : t('detail.steps.action.applyHint')}
-                                </Button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setHintMode(false); setHintDraft(''); }}
-                                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                                    aria-label={t('setup.cancel')}
-                                >
-                                    <X className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </footer>
             )}
 
@@ -1209,7 +1159,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             </button>
                             <button
                                 type="button"
-                                onClick={() => handleAdaptiveRegenerate()}
+                                onClick={() => setRegenerateOpen(true)}
                                 disabled={anyPipelinePending}
                                 className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                                 title={t('canonical.actions.regenAnalysisTooltip')}
@@ -1218,15 +1168,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     ? <Loader2 className="h-3 w-3 animate-spin" />
                                     : <RotateCcw className="h-3 w-3" />}
                                 {t('canonical.actions.regenAnalysis')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setHintMode(v => !v)}
-                                disabled={anyPipelinePending}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
-                            >
-                                <Pencil className="h-3 w-3" />
-                                {t('detail.steps.action.regenerateWithHint')}
                             </button>
                         </>
                     )}
@@ -1255,39 +1196,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         </button>
                     )}
 
-                    {hintMode && isVerse && canonicalAnalysis && (
-                        <div className="basis-full flex items-center gap-2 mt-1">
-                            <input
-                                type="text"
-                                value={hintDraft}
-                                onChange={(e) => setHintDraft(e.target.value)}
-                                placeholder={t('detail.steps.hintPlaceholder')}
-                                className="flex-1 rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && hintDraft.trim()) {
-                                        handleAdaptiveRegenerate(hintDraft.trim());
-                                    }
-                                }}
-                            />
-                            <Button
-                                size="sm"
-                                onClick={() => hintDraft.trim() && handleAdaptiveRegenerate(hintDraft.trim())}
-                                disabled={!hintDraft.trim() || anyPipelinePending}
-                                className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
-                            >
-                                {anyPipelinePending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-                                {anyPipelinePending ? t('detail.steps.action.regenerating') : t('detail.steps.action.applyHint')}
-                            </Button>
-                            <button
-                                type="button"
-                                onClick={() => { setHintMode(false); setHintDraft(''); }}
-                                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                                aria-label={t('setup.cancel')}
-                            >
-                                <X className="h-3.5 w-3.5" />
-                            </button>
-                        </div>
-                    )}
                 </footer>
             )}
 
@@ -1336,10 +1244,19 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     language={language}
                 />
             )}
+            <RegenerateStepDialog
+                open={regenerateOpen}
+                onOpenChange={setRegenerateOpen}
+                stepLabel={stepLabel}
+                stepKind={step.kind}
+                redoesAnalysis={shouldRegenerateCanonically}
+                isPending={anyPipelinePending}
+                onRegenerate={(hint) => { setRegenerateOpen(false); handleAdaptiveRegenerate(hint); }}
+            />
             <VerseRecomposeDialog
                 open={recomposeOpen}
                 onOpenChange={setRecomposeOpen}
-                verseLabel={step.verseRef ? formatPassageReference(step.verseRef, language) : t(`detail.steps.kind.${step.kind}`)}
+                verseLabel={stepLabel}
                 currentProse={previewMarkdown}
                 suggestedWords={targetWordsPerVerse}
                 formatting={formatting}
@@ -1408,63 +1325,6 @@ function SectionOverflowMenu({
     );
 }
 
-/**
- * Predefined regeneration hints, scoped by step kind. Each entry is
- * one click — no typing required for the most common feedback the
- * user gives the orchestrator. The hints are designed to nudge the
- * model in a single dimension so the diff is interpretable.
- *
- * The keys mirror the i18n bundle so adding/removing a chip means
- * touching `detail.steps.quickHints.<kind>.<id>` in both ES + EN.
- */
-const QUICK_HINTS: Record<ExegeticalStep['kind'], readonly string[]> = {
-    verse: ['syntax', 'theology', 'historical', 'lexis', 'lessGeneral'],
-    conclusion: ['concise', 'verseFocus', 'highlightThesis'],
-    introduction: ['concise', 'previewStructure', 'pastoralHook'],
-    // Assembly is mechanical; no LLM regen.
-    assembly: [],
-};
-
-function QuickHintChips({
-    stepKind,
-    onPick,
-    disabled,
-}: {
-    stepKind: ExegeticalStep['kind'];
-    onPick: (hint: string) => void;
-    disabled: boolean;
-}) {
-    const { t } = useTranslation('exegesis');
-    const ids = QUICK_HINTS[stepKind];
-    if (ids.length === 0) return null;
-    return (
-        <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500 mr-0.5">
-                {t('detail.steps.quickHints.label')}
-            </span>
-            {ids.map(id => {
-                const labelKey = `detail.steps.quickHints.${stepKind}.${id}`;
-                return (
-                    <button
-                        key={id}
-                        type="button"
-                        onClick={() => onPick(t(labelKey))}
-                        disabled={disabled}
-                        className={cn(
-                            'rounded-full border px-2 py-0.5 text-[11px] transition-colors',
-                            'border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300',
-                            'hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800',
-                            'dark:hover:bg-emerald-950/40 dark:hover:border-emerald-700 dark:hover:text-emerald-200',
-                            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
-                        )}
-                    >
-                        {t(labelKey)}
-                    </button>
-                );
-            })}
-        </div>
-    );
-}
 
 /**
  * Compact summary chip the step header shows once verification has

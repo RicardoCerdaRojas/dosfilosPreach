@@ -40,8 +40,15 @@ interface Props {
  *
  * Nace de 23:2 y 23:3, que salieron como fichas mecánicas: la única
  * salida era recomponer el trabajo entero —caro, y reescribe lo que ya
- * estaba bien— o arreglarlo a mano fuera del producto. La instrucción es
- * obligatoria: sin decirle qué falta, el compositor devuelve lo mismo.
+ * estaba bien— o arreglarlo a mano fuera del producto.
+ *
+ * La instrucción ERA obligatoria, con este motivo: sin decirle qué falta, el
+ * compositor devuelve lo mismo. Dejó de serlo, porque dejó de ser cierto. El
+ * compositor ya no recibe sólo el análisis: recibe la extensión que le reparte
+ * la rúbrica, la forma de cita que pide el encuadre y la pregunta que esta
+ * sección tiene que responder. Después de cambiar cualquiera de las tres, «lo
+ * mismo otra vez» es precisamente lo que hay que pedir, y obligar a inventar
+ * una instrucción para conseguirlo hacía escribir una excusa.
  */
 export function VerseRecomposeDialog({ open, onOpenChange, verseLabel, currentProse, suggestedWords, formatting, isComposing, onRecompose }: Props) {
     const { t } = useTranslation('exegesis');
@@ -57,7 +64,9 @@ export function VerseRecomposeDialog({ open, onOpenChange, verseLabel, currentPr
     const current = estimateLength(currentProse, formatting);
     const targetNumber = Number(target.trim());
     const validTarget = Number.isFinite(targetNumber) && targetNumber > 0 ? Math.round(targetNumber) : null;
-    const ready = guidance.trim().length >= 10;
+    // Vacío vale: ver la nota de arriba. Lo que el diálogo no acepta es un
+    // objetivo de palabras inválido, que sí cambiaría la salida en silencio.
+    const ready = true;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,6 +94,7 @@ export function VerseRecomposeDialog({ open, onOpenChange, verseLabel, currentPr
                             placeholder={t('canonical.recompose.guidancePlaceholder')}
                             className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary resize-y"
                         />
+                        <p className="text-[11px] text-muted-foreground">{t('canonical.recompose.guidanceOptional')}</p>
                     </div>
 
                     <div className="space-y-1">
