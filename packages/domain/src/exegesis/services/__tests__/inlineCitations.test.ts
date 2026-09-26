@@ -26,6 +26,40 @@ describe('findInlineCitations — las tres formas que el sistema emite', () => {
     });
 });
 
+describe('la cuarta forma — título sin comillas — necesita el corpus', () => {
+    const CITA = '(Craigie, Word Biblical Commentary Vol_ 19, Psalms 1-50, 206)';
+    const IMPRENTA = '(Waco, TX: Word Books, 1983)';
+
+    it('sin claves de cita no se reconoce, porque sin corpus no se PUEDE', () => {
+        // Su estructura es idéntica a la de un pie de imprenta: tres campos
+        // separados por comas y el último numérico.
+        expect(findInlineCitations(CITA)).toHaveLength(0);
+    });
+
+    it('con las claves del trabajo sí, y trae autor y página', () => {
+        const [c] = findInlineCitations(CITA, ['Craigie']);
+        expect(c!.author).toBe('Craigie');
+        expect(c!.pages).toBe('206');
+    });
+
+    it('el pie de imprenta no pasa ni con las claves puestas', () => {
+        expect(findInlineCitations(IMPRENTA, ['Craigie'])).toHaveLength(0);
+        expect(findInlineCitations(IMPRENTA, ['Waco'])).toHaveLength(1);
+    });
+
+    it('el título admite los paréntesis que lleva de verdad', () => {
+        const [c] = findInlineCitations('(Ross, A Commentary on the Psalms 1-41 (Kregel Exegetical Library), 560)', ['Ross']);
+        expect(c!.author).toBe('Ross');
+        expect(c!.pages).toBe('560');
+    });
+
+    it('pasar claves no cambia lo que las otras tres formas ya veían', () => {
+        const texto = 'El genitivo (Mayor, "The Epistle of St. James", p. 77) y Kistemaker (p. 259).';
+        expect(findInlineCitations(texto).map(c => c.author).sort())
+            .toEqual(findInlineCitations(texto, ['Mayor', 'Kistemaker']).map(c => c.author).sort());
+    });
+});
+
 describe('resolvesToCitedSource — el corpus separa la cita del pie de imprenta', () => {
     const FUENTES = ['Mayor', 'Adamson', 'Wallace', 'Nestle-Aland', null];
 

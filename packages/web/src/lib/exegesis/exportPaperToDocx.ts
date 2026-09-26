@@ -439,10 +439,14 @@ function buildInlineRuns(
 
     let m: RegExpExecArray | null;
     if (citationForm === 'footnote') {
-        for (const cita of findInlineCitations(paragraphText)) {
-            // Con título es inequívoca. Sin título, sólo si el autor es una
-            // fuente que el trabajo declara: es la única señal que distingue
-            // una cita de un pie de imprenta o de una referencia bíblica.
+        // Las claves viajan al reconocedor porque hay una forma —título sin
+        // comillas— que sin el corpus no se puede distinguir de un pie de
+        // imprenta, y por eso sólo participa cuando se las pasan.
+        for (const cita of findInlineCitations(paragraphText, citationKeys)) {
+            // Con título entre comillas es inequívoca por su forma. Sin
+            // título, sólo si el autor es una fuente que el trabajo declara:
+            // es la única señal que la separa de un pie de imprenta o de una
+            // referencia bíblica.
             if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
             markers.push({
                 kind: 'citation',
