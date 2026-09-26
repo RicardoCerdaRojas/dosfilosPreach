@@ -1052,6 +1052,13 @@
           "toast": {
             "saved": "Changes saved",
             "saveFailed": "Couldn't save changes"
+          },
+          "empty": {
+            "lead": "This source has no selected excerpts — it will not contribute to generation.",
+            "organized-by-category": "A grammar is indexed by grammatical category, not by passage, so a passage query finds nothing. “Adjust pages” lists the index sections that answer your brief, and the pages where the book cites the passage as an example.",
+            "organized-by-lemma": "A lexicon is indexed by lemma, not by passage. “Adjust pages” lists the pages where the book cites the passage, and the entries for the passage’s lemmas.",
+            "expected-by-passage": "This book IS organised by passage, so the zero is not its shape: the extraction is probably incomplete, or its verse numbering came out damaged. Check the book in the library before relying on it.",
+            "openPicker": "Adjust pages"
           }
         },
         "staleBanner": {

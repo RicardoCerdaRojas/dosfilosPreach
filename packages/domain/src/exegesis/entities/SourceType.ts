@@ -477,3 +477,37 @@ export function migrateLegacyRole(role: LegacyProjectSourceRole | SourceType): S
     }
     return role as SourceType;
 }
+
+/**
+ * Por qué una fuente puede haber quedado sin fragmentos.
+ *
+ * El aviso decía «Esta fuente no tiene fragmentos seleccionados — no
+ * contribuirá a la generación» y ahí terminaba. Es verdadero y mudo: no dice
+ * por qué, y el porqué depende de la FORMA del libro, que el corpus ya
+ * declara.
+ *
+ * Medido al armar Santiago 2:1-13, donde tres fuentes seguidas quedaron en
+ * cero por tres razones distintas: Porter porque una gramática se indexa por
+ * categorías y no por pasajes; el léxico de Tuggy porque se indexa por lemas;
+ * y Metzger porque su extracción está dañada —cita capítulos que no existen en
+ * el libro, y la única entrada del pasaje quedó rotulada con el versículo
+ * equivocado—. Tres causas, un mismo cuadro amarillo.
+ *
+ * `'organized-by-category'` y `'organized-by-lemma'` tienen salida dentro del
+ * producto: «Ajustar páginas» propone las secciones del índice y las páginas
+ * donde el libro cita el pasaje. `'expected-by-passage'` no la tiene: un
+ * comentario SÍ está organizado por pasajes, así que un cero ahí no es la
+ * forma del libro sino una extracción incompleta.
+ */
+export type EmptySourceReason =
+    | 'organized-by-category'
+    | 'organized-by-lemma'
+    | 'expected-by-passage';
+
+export function emptySourceReason(sourceType: SourceType): EmptySourceReason {
+    if (sourceType === 'grammar-syntax') return 'organized-by-category';
+    if (sourceType === 'lexicon-technical' || sourceType === 'theological-dictionary') {
+        return 'organized-by-lemma';
+    }
+    return 'expected-by-passage';
+}

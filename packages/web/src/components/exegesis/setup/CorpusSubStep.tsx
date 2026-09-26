@@ -37,6 +37,7 @@ import {
     suggestRoleForType,
     formatPassageReference,
     getBookById,
+    emptySourceReason,
     hasResolvedNumbering,
     isExcerptSetStale,
     resourceMatchesTestament,
@@ -1221,6 +1222,7 @@ function ExcerptsReviewPanel({
     source: ProjectSource;
 }) {
     const { t } = useTranslation('exegesis');
+    const navigate = useNavigate();
     const { updateSource } = useExegesisPapers();
     // Local working copy. Re-syncs whenever the persisted source
     // identity changes (re-extraction lands new excerpts, another
@@ -1269,9 +1271,27 @@ function ExcerptsReviewPanel({
     };
 
     if (drafts.length === 0) {
+        /**
+         * El aviso decía que la fuente no contribuye y ahí terminaba. Es
+         * verdadero y mudo: el porqué depende de la FORMA del libro, y el
+         * corpus ya la declara. Medido al armar Santiago 2:1-13, tres fuentes
+         * seguidas quedaron en cero por tres razones distintas y el usuario
+         * vio el mismo cuadro amarillo en las tres.
+         */
+        const razon = emptySourceReason(source.sourceType);
         return (
-            <div className="mt-2 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-[11px] text-warning-subtle-foreground">
-                {t('paperSetup.subSteps.corpus.excerpts.emptyWarning')}
+            <div className="mt-2 space-y-1.5 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-[11px] text-warning-subtle-foreground">
+                <p className="font-medium">{t('paperSetup.subSteps.corpus.excerpts.empty.lead')}</p>
+                <p>{t(`paperSetup.subSteps.corpus.excerpts.empty.${razon}`)}</p>
+                {razon !== 'expected-by-passage' && (
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/dashboard/exegesis/${paperId}/fuentes/${source.id}/paginas`)}
+                        className="rounded border border-warning/40 px-1.5 py-0.5 font-medium hover:bg-warning-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        {t('paperSetup.subSteps.corpus.excerpts.empty.openPicker')}
+                    </button>
+                )}
             </div>
         );
     }
