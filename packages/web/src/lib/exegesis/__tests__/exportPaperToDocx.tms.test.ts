@@ -126,6 +126,77 @@ describe('la forma que se le pide al compositor es la que el exportador conviert
     });
 });
 
+/**
+ * Las citas SIN título: la forma que el exportador no sabía leer.
+ *
+ * Medido sobre los 14 trabajos con prosa ensamblada en producción: 63 citas
+ * bajaban a nota al pie y 103 se quedaban varadas en el cuerpo, con seis
+ * trabajos enteros sin una sola nota. El compositor emite «Kistemaker
+ * (p. 259)» y «(Mayor, 77)» además de la forma con título, y este archivo
+ * sólo conocía la última.
+ *
+ * Ensanchar el patrón a secas convertiría en nota al pie el pie de imprenta de
+ * la propia bibliografía. El discriminador es el corpus del trabajo.
+ */
+describe('una cita sin título baja al pie sólo si su autor es fuente del trabajo', () => {
+    const conFuentes = (texto: string, claves: Array<string | null>): ExegeticalPaper => paper({
+        sources: claves.map((citationKey, i) => ({ id: `s${i}`, citationKey })) as never,
+        assembledMarkdown: ['## Versículo 1', '', texto].join('\n'),
+    });
+
+    const notas = async (texto: string, claves: Array<string | null>) => {
+        const blob = await exportPaperToDocx(conFuentes(texto, claves), { exportedAt: new Date('2026-09-17') });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const f = zip.file('word/footnotes.xml');
+        return f ? await f.async('string') : '';
+    };
+
+    it('«(Mayor, 77)» con Mayor declarado baja al pie', async () => {
+        expect(await notas('El genitivo es apositivo (Mayor, 77).', ['Mayor'])).toContain('Mayor');
+    });
+
+    it('«Kistemaker (p. 259)», con el autor fuera del paréntesis, también', async () => {
+        expect(await notas('Así lo sostiene Kistemaker (p. 259).', ['Kistemaker'])).toContain('Kistemaker');
+    });
+
+    it('el rótulo honesto «hoja N» no queda afuera', async () => {
+        expect(await notas('Wallace lo clasifica así (Wallace, hoja 87).', ['Wallace'])).toContain('Wallace');
+    });
+
+    it('un pie de imprenta NO es una cita, aunque tenga la misma forma', async () => {
+        // El caso que prohibía ensanchar el patrón: la ficha Turabian de la
+        // propia bibliografía es «(Ciudad: Editorial, año)».
+        const n = await notas('Ross, Allen P. *Commentary*. (Nashville: Broadman & Holman, 2003).', ['Mayor']);
+        expect(n).not.toContain('Broadman');
+    });
+
+    it('una referencia bíblica tampoco', async () => {
+        const n = await notas('La prohibición viene de antes (Génesis 19:25, 29).', ['Mayor']);
+        expect(n).not.toContain('Génesis');
+    });
+
+    it('un autor que el trabajo no declara se queda en el cuerpo', async () => {
+        // Sin ficha no hay entrada de bibliografía a la que remitir: bajarla
+        // al pie produciría una nota que no lleva a ninguna parte.
+        const n = await notas('Algo dice Fulano (p. 12).', ['Mayor']);
+        expect(n).not.toContain('Fulano');
+    });
+
+    it('con la forma parentética no baja ninguna, resuelva o no', async () => {
+        const conForma = paper({
+            sources: [{ id: 's0', citationKey: 'Mayor' }] as never,
+            rubric: { formatting: { lineSpacing: 'single', blankLineBetweenParagraphs: true, citationForm: 'parenthetical' } } as never,
+            assembledMarkdown: ['## Versículo 1', '', 'El genitivo es apositivo (Mayor, 77).'].join('\n'),
+        });
+        const blob = await exportPaperToDocx(conForma, { exportedAt: new Date('2026-09-17') });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const doc = await zip.file('word/document.xml')!.async('string');
+        expect(doc).toContain('Mayor');
+        const f = zip.file('word/footnotes.xml');
+        if (f) expect(await f.async('string')).not.toContain('Mayor');
+    });
+});
+
 describe('exportPaperToDocx — la maquetación sale de la rúbrica', () => {
     const conFormato = (formatting: unknown) => paper({
         rubric: { ...DEFAULT_TMS_EXEGETICAL_RUBRIC, formatting },

@@ -17,7 +17,9 @@ import {
     DEFAULT_PAPER_FORMATTING,
     esEncabezadoDeBibliografia,
     exportPaperToMarkdown,
+    findInlineCitations,
     formatPassageReference,
+    resolvesToCitedSource,
     type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
@@ -78,6 +80,10 @@ export async function exportPaperToDocx(
     const titleDisplay = titleDisplayOf(paper);
 
     const citationForm = (paper.rubric?.formatting ?? DEFAULT_PAPER_FORMATTING).citationForm;
+    // Las fuentes que el trabajo declara. Son el discriminador que separa una
+    // cita sin título —«(Mayor, 77)»— de un pie de imprenta —«(Nashville:
+    // Broadman & Holman, 2003)»—, que por su forma son idénticos.
+    const citationKeys = (paper.sources ?? []).map(s => s.citationKey);
     const blocks = parseMarkdownBlocks(markdown);
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
@@ -103,13 +109,13 @@ export async function exportPaperToDocx(
                 break;
             case 'paragraph':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : {}),
                 }));
                 break;
             case 'list-item':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
                     // En la bibliografía, cada entrada es un párrafo con
                     // sangría francesa: una viñeta delante la desarma.
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : { bullet: { level: 0 }, indent: { firstLine: 0 } }),
@@ -117,7 +123,7 @@ export async function exportPaperToDocx(
                 break;
             case 'blockquote':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
                     ...BLOCK_QUOTE_PARAGRAPH,
                     // Una cita hebrea se lee de derecha a izquierda y se
                     // alinea a ese lado; sin esto Word la deja colgando a
@@ -379,29 +385,6 @@ function parseMarkdownBlocks(markdown: string): Block[] {
 
 // ── Inline run rendering ────────────────────────────────────────────
 
-/**
- * La cita inline que baja a nota al pie: `(Autor, "Título", p. N)`.
- *
- * El rótulo admite «hoja N» además de «p. N», y no es un adorno. «hoja N» es
- * lo que el sistema escribe cuando la numeración impresa de esa fuente se
- * desconoce —no inventa una página que no verificó—, y sin esa rama la cita
- * honesta era justamente la que NO se convertía: quedaba varada en el cuerpo
- * como paréntesis mientras sus vecinas con «p. N» sí bajaban al pie, o sea
- * dos formas de cita en el mismo documento por culpa del exportador. Medido
- * en Santiago 2:1-13, donde la única fuente sin folios impresos es Wallace.
- *
- * El orden de la alternancia importa poco y por eso se deja explícito: las
- * dos ramas son mutuamente excluyentes —«p.» empieza por `p`, «hoja» por
- * `h`—, así que ninguna puede robarle el texto a la otra. El grupo capturado
- * son sólo las cifras, pero la nota al pie se arma con el texto COMPLETO del
- * paréntesis, de modo que el rótulo viaja intacto.
- *
- * Es la misma alternancia que ya usaba el verificador de citas
- * (`citationParser`). Eran dos lecturas de la misma forma y sólo una sabía
- * leer el rótulo honesto.
- */
-const CITATION_PATTERN =
-    /\(\s*([^,()]+?)\s*,\s*"([^"]+)"(?:\s*,\s*(?:pp?\.\s*|hojas?\s+)?([\d–\-—,\s]+))?\s*\)/g;
 const BOLD_PATTERN = /\*\*([^*]+)\*\*/g;
 const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
 
@@ -428,6 +411,23 @@ function buildInlineRuns(
      * porque la forma estaba cableada.
      */
     citationForm: CitationForm = 'footnote',
+    /**
+     * Claves de cita de las fuentes del trabajo.
+     *
+     * Sin ellas sólo se convertían las citas con título entre comillas, que
+     * era el único patrón que este archivo sabía leer. Medido sobre los 14
+     * trabajos con prosa ensamblada en producción: 63 citas bajaban al pie y
+     * 103 se quedaban varadas en el cuerpo —«Kistemaker (p. 259)», «(Mayor,
+     * 77)»—, seis trabajos enteros sin una sola nota al pie y nada que lo
+     * dijera.
+     *
+     * Ensanchar el patrón a secas no servía: `(Nashville: Broadman & Holman,
+     * 2003)` y `(Génesis 19:25, 29)` tienen exactamente esa forma. El corpus
+     * del trabajo es lo que los separa, y los separa entero: de esas 103, 89
+     * resuelven a una fuente declarada y las 14 que no son, una por una, pies
+     * de imprenta y referencias bíblicas.
+     */
+    citationKeys: ReadonlyArray<string | null | undefined> = [],
 ): Array<TextRun | FootnoteReferenceRun> {
     interface Marker {
         kind: 'citation' | 'bold' | 'italic';
@@ -437,17 +437,20 @@ function buildInlineRuns(
     }
     const markers: Marker[] = [];
 
-    CITATION_PATTERN.lastIndex = 0;
     let m: RegExpExecArray | null;
-    while (citationForm === 'footnote' && (m = CITATION_PATTERN.exec(paragraphText)) !== null) {
-        const fullMatch = m[0];
-        const innerText = fullMatch.replace(/^\(\s*/, '').replace(/\s*\)$/, '');
-        markers.push({
-            kind: 'citation',
-            start: m.index,
-            end: m.index + fullMatch.length,
-            body: innerText,
-        });
+    if (citationForm === 'footnote') {
+        for (const cita of findInlineCitations(paragraphText)) {
+            // Con título es inequívoca. Sin título, sólo si el autor es una
+            // fuente que el trabajo declara: es la única señal que distingue
+            // una cita de un pie de imprenta o de una referencia bíblica.
+            if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
+            markers.push({
+                kind: 'citation',
+                start: cita.offset,
+                end: cita.end,
+                body: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
+            });
+        }
     }
     BOLD_PATTERN.lastIndex = 0;
     while ((m = BOLD_PATTERN.exec(paragraphText)) !== null) {
