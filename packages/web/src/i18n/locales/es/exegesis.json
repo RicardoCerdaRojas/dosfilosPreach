@@ -1748,6 +1748,12 @@
         "remove": "Quitar esta cita",
         "removeConfirm": "Se quita la cita del análisis. La afirmación queda sin esta fuente y el trabajo exportado ya no la nombrará aquí.",
         "removeConfirmAction": "Quitar la cita"
+      },
+      "unreadableOriginal": {
+        "title": "Griego o hebreo que no está en la fuente ({{count}})",
+        "body": "Estas afirmaciones citan una forma en lengua original apoyándose en un libro cuyo texto extraído no tiene ninguna. La forma no salió de ahí: la puso el asistente. Puede ser correcta —la palabra está en el versículo— pero nadie la verificó contra ese libro, y el verificador de citas no puede hacerlo.",
+        "item": "{{form}} — atribuido a {{source}}",
+        "hint": "Suele ser una extracción que perdió el griego del libro. Revisá el libro en la biblioteca, o apoyá esa afirmación en una fuente que sí traiga el original."
       }
     },
     "recompose": {
