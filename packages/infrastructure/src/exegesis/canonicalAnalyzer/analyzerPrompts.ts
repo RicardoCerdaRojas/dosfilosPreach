@@ -1,4 +1,5 @@
 import {
+    buildVerseMorphologyBlock,
     formatPassageReference,
     type AnalyzeVerseInput,
     type CanonicalVerseAnalysis,
@@ -49,6 +50,9 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const baseTextBlock = formatOriginalLanguageText(input.originalLanguageText, lang);
     const pericopeBlock = formatPericopeBlock(input.pericopeContext, lang);
     const planNoteBlock = formatPlanNote(input.planNote, lang);
+    // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
+    // es parte de lo que el analizador lee, no de lo que tiene que producir.
+    const morphologyBlock = buildVerseMorphologyBlock(input.verseMorphology ?? null, lang);
 
     if (lang === 'en') {
         return [
@@ -58,6 +62,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             `Verse: **${verse}**`,
             `Within paper passage: ${passage}`,
             baseTextBlock,
+            morphologyBlock,
             pericopeBlock,
             briefBlock,
             planNoteBlock,
@@ -101,6 +106,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `Versículo: **${verse}**`,
         `Dentro del pasaje del paper: ${passage}`,
         baseTextBlock,
+        morphologyBlock,
         pericopeBlock,
         briefBlock,
         planNoteBlock,

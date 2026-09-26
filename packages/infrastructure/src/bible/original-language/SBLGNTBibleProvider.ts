@@ -79,6 +79,22 @@ export class SBLGNTBibleProvider implements IOriginalLanguageBibleProvider {
      * declarar `morphologyRendered` en las atribuciones (bloque BY-SA latente
      * en `aggregateRequiredAttributions`).
      */
+    /**
+     * El mismo dato que `getVerseTokens`, con el nombre que declara el puerto.
+     *
+     * MorphGNT trae la morfología tabulada, así que acá es un cálculo y no una
+     * deducción: el analizador recibía sólo el texto corrido y tenía que
+     * contar de memoria. Medido en Santiago 2:2-3, contó cuatro subjuntivos
+     * donde hay cinco.
+     */
+    async getVerseMorphology(
+        bookId: BibleBookId,
+        chapter: number,
+        verse: number,
+    ): Promise<GreekVerseTokens | null> {
+        return this.getVerseTokens(bookId, chapter, verse);
+    }
+
     async getVerseTokens(
         bookId: BibleBookId,
         chapter: number,

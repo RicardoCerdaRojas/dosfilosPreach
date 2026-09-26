@@ -1,3 +1,4 @@
+import type { GreekVerseTokens } from '@dosfilos/domain';
 import type {
     BibleBookId,
     IOriginalLanguageBibleProvider,
@@ -51,5 +52,23 @@ export class TestamentDispatcherOriginalLanguageProvider implements IOriginalLan
         throw new Error(
             `TestamentDispatcherOriginalLanguageProvider: no provider supports book ${bookId}`,
         );
+    }
+
+    /**
+     * Delega sólo si el proveedor del libro trae morfología tabulada.
+     *
+     * Hoy la trae el griego y no el hebreo, y el `null` de vuelta es lo que
+     * deja al analizador del AT exactamente como estaba.
+     */
+    async getVerseMorphology(
+        bookId: BibleBookId,
+        chapter: number,
+        verse: number,
+    ): Promise<GreekVerseTokens | null> {
+        for (const provider of [this.greek, this.hebrew]) {
+            if (!provider.supports(bookId)) continue;
+            return provider.getVerseMorphology?.(bookId, chapter, verse) ?? null;
+        }
+        return null;
     }
 }
