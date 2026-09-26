@@ -135,6 +135,10 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
                 // vacía, que deja la herencia sin proponer nada en vez de
                 // romper la pantalla.
                 sources: Array.isArray(p.sources) ? p.sources : [],
+                // Mismo criterio que `sources`: un callable viejo no las manda
+                // y la lista vacía deja la memoria de fuentes sin proponer
+                // nada, en vez de romper la pantalla.
+                citedSourceKeys: Array.isArray(p.citedSourceKeys) ? p.citedSourceKeys : [],
             }))
             .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     }

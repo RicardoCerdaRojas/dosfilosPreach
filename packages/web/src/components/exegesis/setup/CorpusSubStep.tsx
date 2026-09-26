@@ -37,7 +37,9 @@ import {
     suggestRoleForType,
     formatPassageReference,
     getBookById,
+    previousDelivery,
     emptySourceReason,
+    repeatedFromPreviousDelivery,
     hasResolvedNumbering,
     isExcerptSetStale,
     resourceMatchesTestament,
@@ -878,8 +880,21 @@ function ComparisonChip({
 function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectSource }) {
     const navigate = useNavigate();
     const { t } = useTranslation('exegesis');
-    const { updateSource, removeSource } = useExegesisPapers();
+    const { updateSource, removeSource, papers } = useExegesisPapers();
     const extractExcerpts = useExtractExcerpts();
+    /**
+     * Si esta fuente ya se citó en la entrega anterior del autor.
+     *
+     * Sale de una regla real de su plan de estudios: «no se permite repetir
+     * una fuente en semanas consecutivas». Hasta ahora la hacía cumplir él, a
+     * mano, escribiendo la prohibición en el encuadre de la semana siguiente.
+     *
+     * Se muestra el HECHO y no un veredicto: cuántas semanas hay que esperar
+     * lo dice el sílabo de cada curso, no este código.
+     */
+    const entregaPrevia = useMemo(() => previousDelivery(papers, paper.id), [papers, paper.id]);
+    const yaCitadaAntes = !!source.citationKey
+        && repeatedFromPreviousDelivery([source.citationKey], entregaPrevia).size > 0;
     const library = useLibrary();
     const isCitable = CITABLE_SOURCE_TYPES.has(source.sourceType);
     const isExtracted = source.mode === 'extracted-excerpts';
@@ -1026,6 +1041,16 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
 
             {isCitable && libraryResource && !hasResolvedNumbering(libraryResource.pageNumbering) && (
                 <SinPaginaComprobable resourceId={libraryResource.id} />
+            )}
+
+            {yaCitadaAntes && entregaPrevia && (
+                <div className="mt-2 rounded-lg border border-info/30 bg-info-subtle/40 px-3 py-2 text-[11px] text-info-subtle-foreground">
+                    {t('paperSetup.subSteps.corpus.sourceMemory.repeated', {
+                        source: source.citationKey,
+                        paper: entregaPrevia.title ?? formatPassageReference(entregaPrevia.passage, paper.displayLanguage),
+                        date: entregaPrevia.createdAt.toLocaleDateString(),
+                    })}
+                </div>
             )}
 
             {isStale && canReExtract && (
