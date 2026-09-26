@@ -182,6 +182,31 @@ describe('una cita sin título baja al pie sólo si su autor es fuente del traba
         expect(n).not.toContain('Fulano');
     });
 
+    it('el título SIN comillas también baja, si el autor es fuente del trabajo', async () => {
+        // La cuarta forma. Un trabajo entero de Salmo 23:1-3 exportó sin una
+        // sola nota al pie teniendo seis citas así.
+        const n = await notas(
+            'Así lo señala Craigie (Craigie, Word Biblical Commentary Vol_ 19, Psalms 1-50, 206).',
+            ['Craigie'],
+        );
+        expect(n).toContain('Craigie');
+    });
+
+    it('y admite los paréntesis que el título lleva de verdad', async () => {
+        const n = await notas(
+            'Ross argumenta (Ross, A Commentary on the Psalms 1-41 (Kregel Exegetical Library), 560).',
+            ['Ross'],
+        );
+        expect(n).toContain('Ross');
+    });
+
+    it('un pie de imprenta tiene esa MISMA estructura y sigue sin bajar', async () => {
+        // Tres campos separados por comas, el último numérico: por su forma
+        // es indistinguible de la cita de arriba. Sólo el corpus las separa.
+        const n = await notas('Craigie, Peter C. *Psalms 1-50*. (Waco, TX: Word Books, 1983).', ['Craigie']);
+        expect(n).not.toContain('Word Books');
+    });
+
     it('con la forma parentética no baja ninguna, resuelva o no', async () => {
         const conForma = paper({
             sources: [{ id: 's0', citationKey: 'Mayor' }] as never,

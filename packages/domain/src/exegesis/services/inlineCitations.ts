@@ -92,6 +92,34 @@ function collect(
 }
 
 /**
+ * `(Autor, Título sin comillas, N)` — la cuarta forma, y la única que NO se
+ * puede reconocer por su forma.
+ *
+ * El compositor también emite el título sin comillas, con o sin cursivas:
+ * `(Craigie, Word Biblical Commentary Vol_ 19, Psalms 1-50, 206)`. Los tres
+ * patrones anteriores no la ven —el primero exige comillas, los otros dos
+ * exigen que después del apellido venga la página— y por eso un trabajo
+ * entero de Salmo 23:1-3 exportó sin una sola nota al pie teniendo seis citas.
+ *
+ * El problema es que su estructura es IDÉNTICA a la de un pie de imprenta:
+ *
+ *     (Andersen, The Hebrew Verbless Clause In The Pentateuch, 42)   ← cita
+ *     (Waco, TX: Word Books, 1983)                                   ← imprenta
+ *
+ * Tres campos separados por comas, el último numérico. No hay regla de forma
+ * que los distinga, y por eso esta forma sólo participa cuando se le pasan
+ * las claves de cita del trabajo: sin corpus no se reconoce, porque sin
+ * corpus no se PUEDE reconocer. Medido en producción: 49 de estas, 42
+ * resuelven a una fuente declarada y de las 7 restantes, 6 son pies de
+ * imprenta.
+ *
+ * El título admite paréntesis anidados —`A Commentary on the Psalms 1-41
+ * (Kregel Exegetical Library)`— porque los lleva de verdad.
+ */
+const TITLED_UNQUOTED_CITATION =
+    /\(\s*([^,():"]{2,40}?)\s*,\s*((?:[^()"]|\([^()]*\))+?)\s*,\s*(?:pp?\.\s*|hojas?\s+)?([\d][\d–\-—]*)\s*\)/g;
+
+/**
  * Todas las citas inline de un texto, resueltos los solapamientos.
  *
  * Cuando dos formas caen sobre el mismo texto gana la más rica:
@@ -115,8 +143,21 @@ export interface InlineCitationMatch {
     end: number;
 }
 
-export function findInlineCitations(markdown: string): InlineCitationMatch[] {
+export function findInlineCitations(
+    markdown: string,
+    /**
+     * Claves de cita del trabajo. Sin ellas la cuarta forma no participa: su
+     * estructura no la distingue de un pie de imprenta, y quien no tiene el
+     * corpus a mano no puede decidir.
+     */
+    citationKeys: ReadonlyArray<string | null | undefined> = [],
+): InlineCitationMatch[] {
     const matches = [
+        ...(citationKeys.length > 0
+            ? collect(markdown, TITLED_UNQUOTED_CITATION, m => ({
+                author: m[1] ?? '', title: m[2] ?? '', pages: m[3] ?? null,
+            })).filter(m => resolvesToCitedSource(m.author, citationKeys))
+            : []),
         ...collect(markdown, QUOTED_CITATION, m => ({
             author: m[1] ?? '', title: m[2] ?? '', pages: m[3] ?? null,
         })),

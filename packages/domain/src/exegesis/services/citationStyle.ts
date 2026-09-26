@@ -31,13 +31,15 @@ export function buildCitationFormBlock(
             ? [
                 '## Citation form (hard rule)',
                 'Cite as (Author, p. N) — surname and page only. NEVER put the title inside the parentheses: this paper carries a bibliography at the end and that is where titles live.',
-                'Use the page label exactly as the briefing gives it: (Wallace, sheet 87), not (Wallace, p. 87).',
+                'The number is ALWAYS labelled. “(Mayor, 77)” is wrong: write “(Mayor, p. 77)”. A bare number does not say whether it is a page, a verse or a year.',
+                'Which label it takes is set by the briefing, and it is copied verbatim: if it says “sheet 87”, write “(Wallace, sheet 87)” and NEVER “(Wallace, p. 87)” — it means that book\u2019s printed page is unknown.',
                 'One single form across the whole section. Two citation forms in one paper is an error the grader sees.',
             ].join('\n')
             : [
                 '## Citation form (hard rule)',
-                'Cite as (Author, "Title", p. N) — the title in double quotes, verbatim. The exporter turns exactly this shape into a footnote; any other shape stays stranded in the body as a parenthesis.',
-                'Use the page label exactly as the briefing gives it: (Wallace, "Greek Grammar", sheet 87), not "p. 87".',
+                'Cite as (Author, "Title", p. N) — the title in double quotes, verbatim. The quotes are not decoration: the exporter uses them to recognise the citation and move it into a footnote.',
+                'The number is ALWAYS labelled. “(Mayor, "…", 77)” is wrong: write “p. 77”. A bare number does not say whether it is a page, a verse or a year.',
+                'Which label it takes is set by the briefing, and it is copied verbatim: (Wallace, "Greek Grammar", sheet 87), NEVER “p. 87”.',
                 'One single form across the whole section. Two citation forms in one paper is an error the grader sees.',
             ].join('\n');
     }
@@ -45,13 +47,15 @@ export function buildCitationFormBlock(
         ? [
             '## Forma de cita (regla dura)',
             'Citá como (Apellido, p. N) — sólo apellido y página. NUNCA metas el título dentro del paréntesis: este trabajo lleva bibliografía al final y ahí es donde va el título.',
-            'El rótulo de página va tal cual lo da el briefing: (Wallace, hoja 87), no (Wallace, p. 87).',
+            'El número SIEMPRE va rotulado. «(Mayor, 77)» está mal escrito: se escribe «(Mayor, p. 77)». Un número suelto no dice si es página, versículo o año.',
+            'Qué rótulo lleva lo dice el briefing, y se copia tal cual: si dice «hoja 87» se escribe «(Wallace, hoja 87)» y NUNCA «(Wallace, p. 87)» —significa que la página impresa de ese libro se desconoce—.',
             'Una sola forma en toda la sección. Dos formas de cita en un mismo trabajo es un error que el corrector ve.',
         ].join('\n')
         : [
             '## Forma de cita (regla dura)',
-            'Citá como (Apellido, "Título", p. N) — el título entre comillas dobles, literal. El exportador convierte exactamente esa forma en nota al pie; cualquier otra queda varada en el cuerpo como paréntesis.',
-            'El rótulo de página va tal cual lo da el briefing: (Wallace, "Gramática Griega", hoja 87), no «p. 87».',
+            'Citá como (Apellido, "Título", p. N) — el título entre comillas dobles, literal. Las comillas no son decoración: el exportador las usa para reconocer la cita y bajarla a nota al pie.',
+            'El número SIEMPRE va rotulado. «(Mayor, "…", 77)» está mal escrito: se escribe «p. 77». Un número suelto no dice si es página, versículo o año.',
+            'Qué rótulo lleva lo dice el briefing, y se copia tal cual: (Wallace, "Gramática Griega", hoja 87), NUNCA «p. 87».',
             'Una sola forma en toda la sección. Dos formas de cita en un mismo trabajo es un error que el corrector ve.',
         ].join('\n');
 }
