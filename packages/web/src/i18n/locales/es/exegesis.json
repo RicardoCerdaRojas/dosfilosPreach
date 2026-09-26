@@ -880,7 +880,8 @@
             "overBudgetHint": "El trabajo se pasa del presupuesto. Podés guardar igual, pero antes de generar hay que bajar hojas de esta fuente o de otra.",
             "saving": "Guardando…",
             "confirm_one": "Agregar {{count}} hoja al trabajo",
-            "confirm_other": "Agregar {{count}} hojas al trabajo"
+            "confirm_other": "Agregar {{count}} hojas al trabajo",
+            "sectionsCovered": "{{section}} · cubre {{count}} secciones"
           }
         },
         "list": {
@@ -1058,7 +1059,8 @@
             "organized-by-category": "Una gramática se indexa por categorías gramaticales, no por pasajes, así que la búsqueda por pasaje no encuentra nada. En «Ajustar páginas» están las secciones de su índice que responden a tu encuadre, y las páginas donde el libro cita el pasaje como ejemplo.",
             "organized-by-lemma": "Un léxico se indexa por lemas, no por pasajes. En «Ajustar páginas» están las páginas donde el libro cita el pasaje, y las entradas de los lemas del texto.",
             "expected-by-passage": "Este libro SÍ se organiza por pasajes, así que el cero no es su forma: probablemente la extracción quedó incompleta o su numeración de versículos salió dañada. Revisá el libro en la biblioteca antes de confiar en él.",
-            "openPicker": "Ajustar páginas"
+            "openPicker": "Ajustar páginas",
+            "ranges-without-excerpts": "Elegiste {{count}} tramo(s) de páginas, pero la extracción no dejó fragmentos. Puede estar en curso, o haber fallado. No hace falta que vuelvas a elegir páginas: revisá el libro en la biblioteca."
           }
         },
         "staleBanner": {

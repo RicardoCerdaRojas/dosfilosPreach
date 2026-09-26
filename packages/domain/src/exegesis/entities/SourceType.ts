@@ -500,11 +500,26 @@ export function migrateLegacyRole(role: LegacyProjectSourceRole | SourceType): S
  * forma del libro sino una extracción incompleta.
  */
 export type EmptySourceReason =
+    /** Hay páginas elegidas y la extracción no dejó fragmentos. */
+    | 'ranges-without-excerpts'
     | 'organized-by-category'
     | 'organized-by-lemma'
     | 'expected-by-passage';
 
-export function emptySourceReason(sourceType: SourceType): EmptySourceReason {
+export function emptySourceReason(
+    sourceType: SourceType,
+    /**
+     * Cuántos tramos de hojas eligió el autor para esta fuente.
+     *
+     * Cambia la respuesta entera y por eso no es opcional. Con tramos
+     * elegidos, «no tiene fragmentos seleccionados» le dice al autor que no
+     * eligió nada cuando eligió, y lo manda a repetir un trabajo que ya hizo;
+     * lo que falta es la extracción. Medido sobre producción: 32 de las 142
+     * fuentes están en ese estado, casi una de cada cuatro.
+     */
+    selectedRanges: number,
+): EmptySourceReason {
+    if (selectedRanges > 0) return 'ranges-without-excerpts';
     if (sourceType === 'grammar-syntax') return 'organized-by-category';
     if (sourceType === 'lexicon-technical' || sourceType === 'theological-dictionary') {
         return 'organized-by-lemma';

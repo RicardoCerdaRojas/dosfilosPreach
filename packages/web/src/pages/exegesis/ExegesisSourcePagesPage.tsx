@@ -222,6 +222,7 @@ export function ExegesisSourcePagesPage() {
                 passageProposals={passagePages.proposals}
                 passageLoading={passagePages.isLoading}
                 sectionProposals={sectionProposals}
+                sections={index.data?.sections ?? []}
                 numbering={numbering.data?.numbering ?? null}
             />
         </div>

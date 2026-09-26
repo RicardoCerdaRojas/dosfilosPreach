@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { foldKey, grammarSearchKeys, sectionsForKeys, titleNamesGreek } from '../grammarSearchKeys';
+import { foldKey, grammarSearchKeys, sectionsCoveredBy, sectionsForKeys, titleNamesGreek } from '../grammarSearchKeys';
 
 /** El encuadre real del trabajo de Santiago 2:1-13. */
 const ENCUADRE = `Trabajo práctico semanal de exégesis del NT sobre Santiago 2:1-13.
@@ -132,5 +132,38 @@ describe('sectionsForKeys — qué secciones se proponen y en qué orden', () =>
     it('sin claves no se propone nada, y un libro sin secciones tampoco', () => {
         expect(sectionsForKeys(PORTER, { greek: [], categories: [] })).toEqual([]);
         expect(sectionsForKeys([{ sheet: 1, section: null }], claves)).toEqual([]);
+    });
+});
+
+describe('sectionsCoveredBy — qué secciones cubre un tramo de hojas', () => {
+    /** Porter, la zona de las condicionales, con cuatro secciones en la 209. */
+    const PORTER = [
+        { sheet: 205, section: '12. Particles and Conjunctions' },
+        { sheet: 209, section: '2.9. διό (Conjunction, Inferential)' },
+        { sheet: 209, section: '2.10. ἐάν (Conjunction, Conditional)' },
+        { sheet: 209, section: '2.11. εἰ (Conjunction, Conditional)' },
+        { sheet: 210, section: '2.12. εἴτε (Conjunction, Connective)' },
+        { sheet: 400, section: null },
+    ];
+
+    it('varias secciones en una misma hoja se cuentan todas', () => {
+        // Comparar contra «dónde empieza la siguiente» las perdía: el final de
+        // una es la misma hoja en la que empieza la otra.
+        const c = sectionsCoveredBy(PORTER, { start: 209, end: 209 });
+        expect(c.map(x => x.section)).toContain('2.10. ἐάν (Conjunction, Conditional)');
+        expect(c.filter(x => x.sheet === 209)).toHaveLength(3);
+    });
+
+    it('incluye la que viene corriendo al abrir el tramo', () => {
+        // Es la que el lector encuentra en la primera página del tramo.
+        expect(sectionsCoveredBy(PORTER, { start: 209, end: 209 })[0]!.sheet).toBe(205);
+    });
+
+    it('un tramo anterior a toda sección no inventa ninguna', () => {
+        expect(sectionsCoveredBy(PORTER, { start: 1, end: 10 })).toEqual([]);
+    });
+
+    it('las hojas sin sección no cuentan', () => {
+        expect(sectionsCoveredBy(PORTER, { start: 399, end: 401 }).every(s => s.section)).toBe(true);
     });
 });

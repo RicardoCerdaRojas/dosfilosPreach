@@ -75,6 +75,8 @@ interface Props {
      * no lo tienen— o cuando el encuadre no nombra ninguna categoría.
      */
     sectionProposals?: ReadonlyArray<SectionProposal>;
+    /** El índice de secciones del libro, para rotular los tramos del carrito. */
+    sections?: ReadonlyArray<{ sheet: number; section: string | null }>;
     /** Numeración confirmada del libro, para nombrar las hojas por su folio. */
     numbering?: PageNumbering | null;
 }
@@ -96,6 +98,7 @@ export function SourcePagesWorkspace({
     passageProposals,
     passageLoading = false,
     sectionProposals,
+    sections = [],
     numbering = null,
 }: Props) {
     const { t } = useTranslation('exegesis');
@@ -454,7 +457,7 @@ export function SourcePagesWorkspace({
                     )}
                     <SelectionCart
                         ranges={ranges}
-                        pages={pages}
+                        sections={sections}
                         printedPageOffset={printedPageOffset}
                         otherSourcesChars={otherSourcesChars}
                         selectedChars={selectedChars}
