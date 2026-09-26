@@ -120,6 +120,8 @@ export interface DocumentSheetHit {
     /** Renglón donde cae la primera, para reconocer la hoja sin abrirla. */
     snippet: string;
     section: string | null;
+    /** Sólo en modo `'referencia'`: qué versículos del pasaje nombra la hoja. */
+    verses?: number[];
 }
 
 export interface DocumentTextSearchResult {
@@ -149,6 +151,32 @@ export async function searchDocumentText(
         { timeout: INDEX_TIMEOUT_MS },
     );
     const response = await callable({ resourceId, term, mode });
+    return response.data;
+}
+
+/**
+ * Dónde nombra el libro al pasaje del trabajo.
+ *
+ * Una sola llamada por libro: la pregunta viaja desagregada —las grafías del
+ * canon, el capítulo y el rango de versículos— y la función arma la forma de
+ * búsqueda de su lado. Ir por grafía sería multiplicar por seis las llamadas y
+ * dejar que el cliente ordene cuánto texto recorre el servidor.
+ */
+export async function searchDocumentByReference(
+    resourceId: string,
+    reference: {
+        names: string[];
+        chapterStart: number;
+        chapterEnd: number;
+        verseStart: number | null;
+        verseEnd: number | null;
+    },
+): Promise<DocumentTextSearchResult> {
+    const callable = httpsCallable<
+        { resourceId: string; term: string; mode: string; reference: typeof reference },
+        DocumentTextSearchResult
+    >(getFunctions(), 'searchDocumentText', { timeout: INDEX_TIMEOUT_MS });
+    const response = await callable({ resourceId, term: '', mode: 'referencia', reference });
     return response.data;
 }
 

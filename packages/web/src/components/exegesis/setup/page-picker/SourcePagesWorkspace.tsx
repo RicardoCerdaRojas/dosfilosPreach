@@ -10,6 +10,7 @@ import {
     type PageIndexEntry,
     type SheetRange,
     type LemmaPageProposal,
+    type PassagePageHit,
     type PageNumbering,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import { PageRail, sheetsInRanges } from './PageRail';
 import { PdfPageViewer } from './PdfPageViewer';
 import { SelectionCart } from './SelectionCart';
 import { LemmaPagesPanel } from './LemmaPagesPanel';
+import { PassagePagesPanel } from './PassagePagesPanel';
 
 /**
  * Los tres paneles del selector: índice, hoja y carrito.
@@ -55,6 +57,15 @@ interface Props {
      */
     lemmaProposals?: ReadonlyArray<LemmaPageProposal>;
     lemmaLoading?: boolean;
+    /**
+     * Las páginas donde ESTE libro nombra el pasaje del trabajo.
+     *
+     * Va para toda fuente y no sólo para las que quedaron sin fragmentos:
+     * Wallace tenía trece y le faltaban justo las dos que contestaban la
+     * pregunta difícil del trabajo.
+     */
+    passageProposals?: ReadonlyArray<PassagePageHit>;
+    passageLoading?: boolean;
     /** Numeración confirmada del libro, para nombrar las hojas por su folio. */
     numbering?: PageNumbering | null;
 }
@@ -73,6 +84,8 @@ export function SourcePagesWorkspace({
     isSaving,
     lemmaProposals,
     lemmaLoading = false,
+    passageProposals,
+    passageLoading = false,
     numbering = null,
 }: Props) {
     const { t } = useTranslation('exegesis');
@@ -401,6 +414,16 @@ export function SourcePagesWorkspace({
                     title={t('paperSetup.subSteps.corpus.picker.cart.resize')}
                 />
                 <div className="flex flex-col gap-2 min-w-0 shrink-0 overflow-y-auto" style={{ width: `${cartWidth}px` }}>
+                    {passageProposals && (
+                        <PassagePagesPanel
+                            proposals={passageProposals}
+                            isLoading={passageLoading}
+                            numbering={numbering}
+                            selected={selectedSheets}
+                            onAdd={addLemmaSheet}
+                            onAddAll={addLemmaSheets}
+                        />
+                    )}
                     {lemmaProposals && (
                         <LemmaPagesPanel
                             proposals={lemmaProposals}

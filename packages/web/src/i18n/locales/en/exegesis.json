@@ -1171,6 +1171,15 @@
           "title": "This book cannot check its pages",
           "body": "Its numbering resolves no printed page, so its excerpts arrive without one and any citation naming it cannot be checked. Resolve it before citing.",
           "action": "Resolve numbering"
+        },
+        "passagePages": {
+          "title": "Pages naming the passage ({{count}})",
+          "addAll": "Add all {{count}}",
+          "empty": "This book never names the passage. That is normal in a commentary: its whole page already is the passage, and those pages come in through the other path.",
+          "page": "p. {{printed}}",
+          "sheet": "sheet {{sheet}}",
+          "verses": "v. {{verses}}",
+          "hint": "A grammar or a lexicon is not organised by passage, but it cites the verse as an example. These are the pages where it names it; you decide which ones come in."
         }
       },
       "corpus-plan": {

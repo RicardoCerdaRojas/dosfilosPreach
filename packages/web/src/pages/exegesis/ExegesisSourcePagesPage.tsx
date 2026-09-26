@@ -13,6 +13,7 @@ import { PaperCorpusTooLargeError } from '@dosfilos/application';
 import { useSelectSourcePages } from '@/hooks/exegesis/useSelectSourcePages';
 import { SourcePagesWorkspace } from '@/components/exegesis/setup/page-picker/SourcePagesWorkspace';
 import { useLemmaPages } from '@/hooks/exegesis/useLemmaPages';
+import { usePassagePages } from '@/hooks/exegesis/usePassagePages';
 import { usePageNumbering } from '@/hooks/library/usePageNumbering';
 
 /**
@@ -86,7 +87,23 @@ export function ExegesisSourcePagesPage() {
     }, [paper, esLexico]);
 
     const lemmaPages = useLemmaPages(resourceId, lemmas, esLexico);
-    const numbering = usePageNumbering(esLexico ? resourceId : null);
+
+    /**
+     * Dónde nombra ESTE libro al pasaje del trabajo.
+     *
+     * Para toda fuente, sin mirar su tipo. Un comentario no va a nombrarlo
+     * —su página entera ya es el pasaje— y devuelve vacío, que es correcto y
+     * el panel lo dice. Las gramáticas y los léxicos sí lo nombran, como
+     * ejemplo, y ahí es donde el camino semántico devuelve cero.
+     *
+     * No depende del análisis canónico, que corre después de armar el corpus:
+     * la llave es el pasaje, que se conoce desde el primer minuto.
+     */
+    const passagePages = usePassagePages(resourceId, paper?.passage ?? null, !!resourceId);
+
+    // La numeración se pide para cualquier fuente, no sólo para los léxicos:
+    // las dos propuestas rotulan sus hojas con el folio impreso del libro.
+    const numbering = usePageNumbering(resourceId);
 
     const otherSourcesChars = useMemo(() => {
         if (!paper || !source) return 0;
@@ -191,6 +208,8 @@ export function ExegesisSourcePagesPage() {
                 isSaving={selectPages.isPending}
                 lemmaProposals={esLexico ? lemmaPages.proposals : undefined}
                 lemmaLoading={lemmaPages.isLoading}
+                passageProposals={passagePages.proposals}
+                passageLoading={passagePages.isLoading}
                 numbering={numbering.data?.numbering ?? null}
             />
         </div>
