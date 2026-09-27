@@ -10,11 +10,15 @@ import type {
  * Marca cada cita del análisis según qué clase de número lleva.
  *
  * No se le pregunta al modelo. Se deduce de lo que el propio caso de uso le
- * dio a leer: `citationAnchorFor` nunca mezcla las dos formas dentro de una
- * misma fuente —emite `p. N` cuando la numeración resuelve, sólo la sección
- * cuando el tramo no tiene folio arábigo, y `hoja N` únicamente cuando el
- * recurso no declara numeración—, así que basta con saber si esa fuente tenía
- * numeración para saber qué es el número que el modelo copió.
+ * dio a leer: `citationAnchorFor` emite `p. N` donde la numeración resuelve la
+ * hoja y `hoja N` donde no.
+ *
+ * La deducción mira LAS HOJAS QUE ESTA FUENTE OFRECE, no si el libro resuelve
+ * alguna. Antes alcanzaba con lo segundo porque un tramo sin folio devolvía el
+ * ancla vacía y no había número que sellar. Ahora ese tramo dice `hoja N`, así
+ * que un libro con preliminares en romanos y cuerpo numerado —Mayor: hojas
+ * 1-316 sin folio, 317-540 con −278— emite las DOS formas, y preguntarle al
+ * libro si numera «alguna» página sellaría como impresa una hoja.
  *
  * Deducirlo en vez de pedirlo importa: el modelo ya demostró que copia el
  * rótulo que se le da sin cuestionarlo, y esa obediencia es justamente lo que
@@ -29,15 +33,7 @@ export function stampCitationPageKind(
     const kindByCitationKey = new Map<string, CitationPageKind>();
     for (const source of sources) {
         if (!source.citationKey) continue;
-        kindByCitationKey.set(
-            source.citationKey,
-            // `hasResolvedNumbering` y no la verdad del objeto: la
-            // «Gramática Griega» TIENE numeración guardada y esa numeración
-            // no resuelve una sola página —un tramo único, hojas 1-711, sin
-            // folio—. Preguntar por el objeto la marcaba `printed` y sellaba
-            // como página impresa un número que nadie podía comprobar.
-            hasResolvedNumbering(numberings.get(source.id)) ? 'printed' : 'sheet',
-        );
+        kindByCitationKey.set(source.citationKey, kindFor(source, numberings.get(source.id)));
     }
     if (kindByCitationKey.size === 0) return analysis;
 
@@ -74,4 +70,38 @@ export function stampCitationPageKind(
             sources: item.sources.map(stamp),
         })),
     };
+}
+
+/**
+ * Qué clase de número va a copiar el modelo de las anclas de ESTA fuente.
+ *
+ * `printed` sólo si todas las hojas que la fuente ofrece resuelven su página
+ * impresa. Si alguna no resuelve, sus anclas dicen `hoja N` y sellar la fuente
+ * entera como impresa pondría el rótulo de verificado sobre un número que
+ * nadie puede comprobar —que es el defecto que este archivo existe para
+ * cerrar—.
+ *
+ * Sin tramos elegidos no hay con qué acotar y se pregunta por el libro, que es
+ * como venía: `hasResolvedNumbering` y no la verdad del objeto, porque la
+ * «Gramática Griega» TIENE numeración guardada y esa numeración no resuelve
+ * una sola página —un tramo único, hojas 1-711, sin folio—.
+ */
+function kindFor(source: ProjectSource, numbering: PageNumbering | null | undefined): CitationPageKind {
+    const ranges = source.excerptRecipe?.sheetRanges ?? [];
+    if (ranges.length === 0) return hasResolvedNumbering(numbering) ? 'printed' : 'sheet';
+    if (!numbering) return 'sheet';
+    // Se miran los SEGMENTOS que el tramo toca, no sus dos extremos: un tramo
+    // 50-250 sobre un libro que no numera las hojas 101-200 tiene los dos
+    // extremos resueltos y un hueco en el medio.
+    const cubierto = (r: { start: number; end: number }) => {
+        const tocados = numbering.segments.filter(g => g.fromSheet <= r.end && g.toSheet >= r.start);
+        if (tocados.length === 0) return false;
+        // Un hueco entre segmentos declarados tampoco resuelve.
+        const declarado = tocados.reduce(
+            (n, g) => n + (Math.min(g.toSheet, r.end) - Math.max(g.fromSheet, r.start) + 1),
+            0,
+        );
+        return declarado === r.end - r.start + 1 && tocados.every(g => g.offset !== null);
+    };
+    return ranges.every(cubierto) ? 'printed' : 'sheet';
 }
