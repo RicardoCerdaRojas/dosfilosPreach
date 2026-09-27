@@ -1,4 +1,4 @@
-import { briefForQuery } from '@dosfilos/domain';
+import { briefForQuery, hasCuratedScope } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -226,7 +226,7 @@ export class GenerateStepUseCase {
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
         const scopes = paper.sources
-            .filter(s => (s.excerptRecipe?.sheetRanges.length ?? 0) > 0)
+            .filter(hasCuratedScope)
             .map(s => ({
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
                 sheetRanges: s.excerptRecipe!.sheetRanges,
@@ -272,11 +272,12 @@ export class GenerateStepUseCase {
         const sorted = [...paper.sources].sort((a, b) => a.order - b.order);
         const numberings = await loadSourceNumberings(this.pageNumbering, sorted);
         const contexts: ExegesisSourceContext[] = [];
+        const silent: ProjectSource[] = [];
         for (const source of sorted) {
             const priority: 'primary' | 'secondary' =
                 pinnedIds.has(source.id) ? 'primary' : 'secondary';
             const retrieved = curated?.byResource[source.sourceLibraryResourceId ?? source.corpusId];
-            if (retrieved) {
+            if (retrieved && retrieved.length > 0) {
                 const numbering = numberings.get(source.id) ?? null;
                 const anchor = (c: { sheet: number | null; section: string | null }) =>
                     citationAnchorFor(c, numbering);
@@ -291,6 +292,15 @@ export class GenerateStepUseCase {
                     excerptAnchors: retrieved.map(anchor),
                     priority,
                 });
+                continue;
+            }
+            // Una fuente con receta ya declaró qué hojas admitió el trabajo.
+            // Si la recuperación no trajo nada de ellas, las dos salidas que
+            // quedan mienten: el documento entero contradice la curaduría, y
+            // un cuerpo vacío deja la clave de cita a la vista sobre un
+            // estante pelado. Se retira.
+            if (hasCuratedScope(source)) {
+                silent.push(source);
                 continue;
             }
             if (source.mode === 'extracted-excerpts') {
@@ -317,6 +327,16 @@ export class GenerateStepUseCase {
                     priority,
                 });
             }
+        }
+
+        // Una fuente que no aportó texto no se le ofrece al modelo: la
+        // clave queda disponible sobre un estante vacío y nada río abajo
+        // distingue esa cita de una verdadera.
+        if (silent.length > 0) {
+            console.warn(
+                '[GenerateStep] fuentes sin texto, fuera del prompt y de las citas válidas: '
+                + silent.map(s => s.citationKey ?? s.displayLabel).join(', '),
+            );
         }
 
         // Sort primary sources first — the orchestrator's prompt
