@@ -8,7 +8,7 @@ import type {
     VerifierSource,
     VerifierSourceChunk,
 } from '@dosfilos/domain';
-import { citationAnchorFor, isCitableSourceType, relabelExcerptAnchor } from '@dosfilos/domain';
+import { citationAnchorFor, hasCuratedScope, isCitableSourceType, relabelExcerptAnchor } from '@dosfilos/domain';
 
 /**
  * La evidencia con la que se verifica un trabajo: qué texto de cada fuente
@@ -46,7 +46,11 @@ export class VerifierSourcesBuilder {
                 source.sourceLibraryResourceId ?? source.corpusId,
             );
             const chunks = await this.buildChunks(source, numbering);
-            if (chunks.length === 0) continue;
+            // Una fuente con receta entra aunque su evidencia no se haya
+            // podido leer: así el verificador la RECONOCE y puede decir que no
+            // pudo comprobar, en vez de dejar la cita sin fuente coincidente
+            // —que se informa igual que una cita inventada—.
+            if (chunks.length === 0 && !hasCuratedScope(source)) continue;
             out.push({
                 corpusId: source.corpusId,
                 citationKey: source.citationKey,
@@ -128,6 +132,21 @@ export class VerifierSourcesBuilder {
         // que el paso recibió, y en algún momento dejan de guardarse.
         const admitted = await this.readAdmitted(source);
         if (admitted) return admitted;
+
+        // Una fuente con receta no se verifica contra el libro entero.
+        //
+        // Debajo, una fuente `full-document` cae al texto completo como UN
+        // fragmento sin página, y el verificador se queda con sus primeros
+        // `maxCharsPerChunk` caracteres: la portada y el arranque del libro.
+        // Con esa evidencia toda cita a una página interior vuelve «no
+        // encontrada», que es el peor veredicto posible —el autor borra una
+        // cita correcta—. Es el mismo respaldo que se cerró del lado del
+        // analizador: el documento entero contradice la curaduría.
+        //
+        // Sin evidencia admitida la fuente entra igual, pero VACÍA y marcada:
+        // el verificador la reconoce y responde «no se pudo comprobar» en vez
+        // de «no encontrada». No poder leer no es haber leído y no hallar.
+        if (hasCuratedScope(source)) return [];
 
         if (source.mode === 'extracted-excerpts') {
             const excerptChunks = source.excerpts
