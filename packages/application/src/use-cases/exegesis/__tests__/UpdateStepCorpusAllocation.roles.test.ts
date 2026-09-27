@@ -73,3 +73,37 @@ describe('editar un paso no borra los roles de las fuentes que siguen', () => {
         expect(e.emphasis.emphasizedTypes).toEqual(['commentary-expository']);
     });
 });
+
+describe('asignar el rol a mano', () => {
+    const conRoles = async (pinnedSources: string[], pinnedSourceRoles: Record<string, string>) => {
+        const setStepPlan = vi.fn(async (_o: string, _p: string, plan: StepSourcePlan) => plan as never);
+        const repo = { getPaper: async () => paper(), setStepPlan } as unknown as IExegeticalPaperRepository;
+        await new UpdateStepCorpusAllocationUseCase(repo).execute({
+            ownerId: 'o', paperId: 'p1', stepId: 's3',
+            pinnedSources, pinnedSourceRoles: pinnedSourceRoles as never,
+        });
+        return (setStepPlan.mock.calls[0]![2] as StepSourcePlan).perStep.s3!;
+    };
+
+    it('un mapa explícito REEMPLAZA los roles', async () => {
+        // Es lo que manda el selector de rol: el mapa entero con el cambio ya
+        // aplicado. Mandar sólo el par cambiado borraría los otros dos.
+        const e = await conRoles(['burt', 'sasson', 'barrick'], {
+            burt: 'anchor', sasson: 'contrast', barrick: 'technical',
+        });
+        expect(e.pinnedSourceRoles?.barrick).toBe('technical');
+        expect(e.pinnedSourceRoles?.burt).toBe('anchor');
+    });
+
+    it('quitarle el rol a una deja a las otras intactas', async () => {
+        const e = await conRoles(['burt', 'sasson', 'bhq'], { burt: 'anchor', sasson: 'contrast' });
+        expect(e.pinnedSourceRoles?.bhq).toBeUndefined();
+        expect(e.pinnedSourceRoles?.burt).toBe('anchor');
+    });
+
+    it('un rol para una fuente que no está pinchada se descarta', async () => {
+        // Su insignia no tendría dónde anclarse.
+        const e = await conRoles(['burt'], { burt: 'anchor', barrick: 'technical' });
+        expect(e.pinnedSourceRoles?.barrick).toBeUndefined();
+    });
+});

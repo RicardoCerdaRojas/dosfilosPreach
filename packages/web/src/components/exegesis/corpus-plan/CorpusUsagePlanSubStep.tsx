@@ -8,6 +8,7 @@ import {
     type ExegeticalPaper,
     type ExegeticalStep,
     type ExegeticalStepKind,
+    type SourceRole,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import {
@@ -116,6 +117,33 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
         }
     };
 
+    /**
+     * Cambiar el rol de una fuente sin tocar la lista de fuentes.
+     *
+     * Se manda el mapa ENTERO —el que había con este cambio aplicado— porque
+     * el caso de uso distingue «ausente, conservá lo que hay» de «acá está el
+     * mapa, reemplazá». Mandar sólo el par cambiado borraría los otros dos.
+     */
+    const handleUpdateRole = async (
+        stepId: string, sourceId: string, role: SourceRole | null,
+    ) => {
+        const entry = paper.stepPlan.perStep[stepId];
+        const siguiente: Record<string, SourceRole> = { ...(entry?.pinnedSourceRoles ?? {}) };
+        if (role) siguiente[sourceId] = role;
+        else delete siguiente[sourceId];
+        try {
+            await updateAllocation.mutateAsync({
+                paperId: paper.id,
+                stepId,
+                pinnedSources: entry?.pinnedSources ?? [],
+                pinnedSourceRoles: siguiente,
+            });
+        } catch (err) {
+            console.error('[CorpusUsagePlan] update role failed:', err);
+            toast.error(t('paperSetup.subSteps.corpus-plan.toastUpdateError'));
+        }
+    };
+
     return (
         <div className="space-y-4">
             <header className="flex items-start gap-3">
@@ -208,6 +236,7 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
                                                         step={step}
                                                         paper={paper}
                                                         onChangePinned={pinned => handleUpdateRow(step.id, pinned)}
+                                                        onChangeRole={(sourceId, role) => handleUpdateRole(step.id, sourceId, role)}
                                                         disabled={updateAllocation.isPending}
                                                     />
                                                 ))}
@@ -343,11 +372,13 @@ function PlanRow({
     step,
     paper,
     onChangePinned,
+    onChangeRole,
     disabled,
 }: {
     step: ExegeticalStep;
     paper: ExegeticalPaper;
     onChangePinned: (next: ReadonlyArray<string>) => void;
+    onChangeRole: (sourceId: string, role: SourceRole | null) => void;
     disabled: boolean;
 }) {
     const { t } = useTranslation('exegesis');
@@ -371,6 +402,7 @@ function PlanRow({
                     selected={pinned}
                     roles={roles}
                     onChange={onChangePinned}
+                    onChangeRole={onChangeRole}
                     disabled={disabled}
                 />
                 {note && (
