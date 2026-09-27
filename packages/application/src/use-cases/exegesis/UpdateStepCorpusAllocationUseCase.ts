@@ -42,6 +42,20 @@ export interface UpdateStepCorpusAllocationInput {
  * Does NOT touch `proposedAt` or `proposalCorpusSourceIds` — those
  * are owned by the planner use case. A manual edit doesn't reset
  * the staleness signal.
+ *
+ * Los ROLES sobreviven a la edición, y eso hay que hacerlo a mano porque la
+ * entrada se reconstruye entera. Se copiaban `emphasis`, `suppressedSources` y
+ * la nota, y `pinnedSourceRoles` se había quedado afuera: quitar una fuente de
+ * un paso borraba los roles de TODAS las demás. Lo encontró el fundador
+ * editando Jonás 4:3 —las tres insignias desaparecieron de golpe—.
+ *
+ * Desde #698 eso ya no es un detalle de color: el analizador lee esos roles y
+ * la instrucción le manda copiarlos en vez de reclasificar. Perderlos en una
+ * edición devuelve ese paso al estado que #698 corrigió, y en silencio.
+ *
+ * La fuente que se AGREGA queda sin rol a propósito. El plan no la asignó y
+ * heredar el rol de la que salió sería inventar una decisión que nadie tomó;
+ * sin rol, el analizador la clasifica, que es lo que hacía siempre.
  */
 export class UpdateStepCorpusAllocationUseCase {
     constructor(private paperRepository: IExegeticalPaperRepository) { }
@@ -64,6 +78,19 @@ export class UpdateStepCorpusAllocationUseCase {
         }
 
         const existing = paper.stepPlan.perStep[input.stepId];
+
+        // El rol de cada fuente que sigue en el paso. Las que se fueron no
+        // dejan entrada huérfana —su insignia no tendría dónde anclarse— y las
+        // que entran quedan sin rol, que es el estado honesto: el plan no las
+        // asignó.
+        const rolesPrevios = existing?.pinnedSourceRoles ?? {};
+        const sobreviven: Record<string, StepSourcePlanEntry['pinnedSourceRoles'] extends
+            Readonly<Record<string, infer R>> | undefined ? R : never> = {};
+        for (const id of input.pinnedSources) {
+            const rol = rolesPrevios[id];
+            if (rol) sobreviven[id] = rol;
+        }
+        const rolesQueSobreviven = Object.keys(sobreviven).length > 0 ? sobreviven : null;
         const nextEntry: StepSourcePlanEntry = {
             stepId: input.stepId,
             kind: step.kind,
@@ -73,6 +100,7 @@ export class UpdateStepCorpusAllocationUseCase {
                 citationOverrides: [],
             },
             pinnedSources: [...input.pinnedSources],
+            ...(rolesQueSobreviven && { pinnedSourceRoles: rolesQueSobreviven }),
             suppressedSources: existing?.suppressedSources ?? [],
             note: input.note === undefined ? (existing?.note ?? null) : input.note,
         };
