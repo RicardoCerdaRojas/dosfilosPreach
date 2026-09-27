@@ -429,7 +429,14 @@
       "saveFailed": "Couldn't save the framing. Try again.",
       "tooLong_one": "{{count}} character over the limit: trim it to save.",
       "tooLong_other": "{{count}} characters over the limit: trim it to save.",
-      "appliesFromNow": "Already generated content doesn't change: the new framing applies from the next generation."
+      "appliesFromNow": "Already generated content doesn't change: the new framing applies from the next generation.",
+      "gaps": {
+        "usePreachingTemplate": "Use preaching template",
+        "gapTitle": "This brief is not usable by the system yet",
+        "empty": "It is empty. Without a brief the length is not allotted, no section knows which question it answers, and the citation form is left to chance.",
+        "template-unfilled": "Template blocks are still unfilled — the ones in brackets.",
+        "no-search-keys": "It names no Hebrew or Greek form and no grammatical category. Without those, the grammars and lexicons in your corpus have no way into the passage: they are indexed by category and lemma, not by passage."
+      }
     },
     "notFound": {
       "title": "Paper not found",

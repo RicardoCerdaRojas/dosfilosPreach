@@ -17,6 +17,12 @@
  *
  *     «¿Cómo funciona ἐὰν (Stg. 2:2)?»                 → ἐάν
  *     «¿Cómo está funcionando el participio ἐλεγχόμενοι?» → participio
+ *     «¿Qué aporta el hitpael de וַיִּתְפַּלֵּל?»              → ויתפלל
+ *
+ * Las dos lenguas. La primera versión sólo leía griego y ante un encuadre
+ * hebreo devolvía cero llaves en silencio —el defecto que este módulo existe
+ * para corregir, cometido dentro del propio módulo—. Lo destapó una prueba
+ * sobre Jonás 4.
  */
 
 /**
@@ -39,6 +45,24 @@
  * «genitivos», «genitive» y «genitives».
  */
 export const GRAMMAR_TERMS: ReadonlyArray<{ es: string; en: string }> = [
+    // Tallos verbales hebreos (binyanim). Faltaban enteros: el glosario había
+    // nacido con un trabajo griego y ante un encuadre de Jonás no reconocía
+    // ninguna categoría. Son exactamente los títulos que indexa una gramática
+    // hebrea —Barrick y Farfan titulan así— y se escriben distinto en los dos
+    // idiomas, que es el motivo de que el glosario tenga dos columnas.
+    { es: 'qal', en: 'qal' },
+    { es: 'nifal', en: 'niphal' },
+    { es: 'piel', en: 'piel' },
+    { es: 'pual', en: 'pual' },
+    { es: 'hifil', en: 'hiphil' },
+    { es: 'hofal', en: 'hophal' },
+    { es: 'hitpael', en: 'hithpael' },
+    { es: 'polel', en: 'polel' },
+    { es: 'binyan', en: 'stem' },
+    { es: 'wayyiqtol', en: 'wayyiqtol' },
+    { es: 'yiqtol', en: 'yiqtol' },
+    { es: 'qatal', en: 'qatal' },
+    { es: 'consecutiv', en: 'consecutive' },
     // Casos
     { es: 'nominativ', en: 'nominativ' },
     { es: 'genitiv', en: 'genitiv' },
@@ -92,7 +116,12 @@ export function foldKey(text: string): string {
         .normalize('NFD')
         // Diacríticos latinos y griegos —tildes, espíritus, iota suscrita—:
         // «ἐὰν» y «ἐάν» son la misma palabra y el índice escribe una sola.
-        .replace(/[̀-ͯ᾽-῾]/g, '')
+        .replace(/[\u0300-\u036f\u1FBD-\u1FFE]/g, '')
+        // Puntos vocálicos y acentos hebreos, por el mismo motivo: el encuadre
+        // escribe «וַיִּתְפַּלֵּל» y un índice escribe «ויתפלל».
+        .replace(/[\u0591-\u05BD\u05BF-\u05C7]/g, '')
+        // El maqqef une dos palabras: separa, no pega.
+        .replace(/\u05BE/g, ' ')
         .normalize('NFC')
         .toLowerCase();
 }
@@ -111,8 +140,14 @@ export function foldKey(text: string): string {
 const MIN_LARGO_GRIEGO = 2;
 
 export interface GrammarSearchKeys {
-    /** Formas griegas que nombra el encuadre, sin diacríticos. */
-    greek: string[];
+    /**
+     * Formas del original que nombra el encuadre, sin diacríticos.
+     *
+     * Griegas y hebreas. El nombre no dice «greek» porque la primera versión
+     * sí lo decía y con él se coló el defecto: leía una lengua y callaba en la
+     * otra.
+     */
+    originalForms: string[];
     /**
      * Categorías gramaticales que nombra el encuadre, en las dos lenguas.
      *
@@ -132,12 +167,12 @@ export interface GrammarSearchKeys {
  */
 export function grammarSearchKeys(brief: string | null | undefined): GrammarSearchKeys {
     const texto = foldKey(brief ?? '');
-    if (!texto.trim()) return { greek: [], categories: [] };
+    if (!texto.trim()) return { originalForms: [], categories: [] };
 
-    const greek = [...new Set(
-        (texto.match(/[Ͱ-Ͽἀ-῿]+/g) ?? []).filter(w => w.length >= MIN_LARGO_GRIEGO),
+    const originalForms = [...new Set(
+        (texto.match(/[\u0370-\u03FF\u1F00-\u1FFF\u0590-\u05FF]+/g) ?? [])
+            .filter(w => w.length >= MIN_LARGO_GRIEGO),
     )];
-
     const categories: string[] = [];
     for (const { es, en } of GRAMMAR_TERMS) {
         if (!nombraElTermino(texto, es)) continue;
@@ -145,7 +180,7 @@ export function grammarSearchKeys(brief: string | null | undefined): GrammarSear
         if (en !== es) categories.push(en);
     }
 
-    return { greek, categories: [...new Set(categories)] };
+    return { originalForms, categories: [...new Set(categories)] };
 }
 
 
@@ -169,8 +204,8 @@ function nombraElTermino(texto: string, termino: string): boolean {
     return false;
 }
 
-/** Una letra griega, para reconocer dónde empieza y termina una palabra. */
-const LETRA_GRIEGA = /[\u0370-\u03FF\u1F00-\u1FFF]/;
+/** Una letra del original, para reconocer dónde empieza y termina una palabra. */
+const LETRA_GRIEGA = /[\u0370-\u03FF\u1F00-\u1FFF\u0590-\u05FF]/;
 
 /**
  * Si un título nombra esta forma griega como PALABRA ENTERA.
@@ -179,7 +214,7 @@ const LETRA_GRIEGA = /[\u0370-\u03FF\u1F00-\u1FFF]/;
  * letras. `\b` de JavaScript no sirve —es ASCII y considera frontera a
  * cualquier letra griega—, así que se mira el carácter de cada lado.
  */
-export function titleNamesGreek(title: string, key: string): boolean {
+export function titleNamesOriginalForm(title: string, key: string): boolean {
     const t = foldKey(title);
     let at = t.indexOf(key);
     while (at !== -1) {
@@ -243,14 +278,14 @@ export function sectionsForKeys(
     sections: ReadonlyArray<{ sheet: number; section: string | null }>,
     keys: GrammarSearchKeys,
 ): SectionProposal[] {
-    if (keys.greek.length === 0 && keys.categories.length === 0) return [];
+    if (keys.originalForms.length === 0 && keys.categories.length === 0) return [];
 
     const vistas = new Map<string, SectionProposal>();
     for (const entry of sections) {
         const title = entry.section?.trim();
         if (!title || vistas.has(title)) continue;
 
-        const griegas = keys.greek.filter(g => titleNamesGreek(title, g));
+        const griegas = keys.originalForms.filter(g => titleNamesOriginalForm(title, g));
         const categorias = keys.categories.filter(c => titleNamesCategory(title, c));
         if (griegas.length === 0 && categorias.length === 0) continue;
 

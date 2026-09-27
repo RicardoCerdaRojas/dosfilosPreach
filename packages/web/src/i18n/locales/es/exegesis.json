@@ -429,7 +429,14 @@
       "saveFailed": "No se pudo guardar el encuadre. Intenta de nuevo.",
       "tooLong_one": "Sobra {{count}} carácter: recórtalo para poder guardar.",
       "tooLong_other": "Sobran {{count}} caracteres: recórtalo para poder guardar.",
-      "appliesFromNow": "Lo ya generado no cambia: el encuadre nuevo se usa desde la próxima generación."
+      "appliesFromNow": "Lo ya generado no cambia: el encuadre nuevo se usa desde la próxima generación.",
+      "gaps": {
+        "usePreachingTemplate": "Usar plantilla de predicación",
+        "gapTitle": "Este encuadre todavía no le sirve al sistema",
+        "empty": "Está vacío. Sin encuadre no se reparte la extensión, no se sabe qué pregunta responde cada sección, y la forma de cita queda al azar.",
+        "template-unfilled": "Quedan bloques de la plantilla sin llenar —los que están entre corchetes—.",
+        "no-search-keys": "No nombra ninguna forma hebrea o griega ni categoría gramatical. Sin eso, las gramáticas y los léxicos de tu corpus no tienen por dónde entrar al pasaje: no se indexan por pasaje sino por categoría y por lema."
+      }
     },
     "notFound": {
       "title": "Trabajo no encontrado",

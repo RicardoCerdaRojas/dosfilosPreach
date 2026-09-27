@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { foldKey, grammarSearchKeys, sectionsCoveredBy, sectionsForKeys, titleNamesGreek } from '../grammarSearchKeys';
+import { foldKey, grammarSearchKeys, sectionsCoveredBy, sectionsForKeys, titleNamesOriginalForm } from '../grammarSearchKeys';
 
 /** El encuadre real del trabajo de Santiago 2:1-13. */
 const ENCUADRE = `Trabajo práctico semanal de exégesis del NT sobre Santiago 2:1-13.
@@ -12,20 +12,20 @@ describe('grammarSearchKeys — con qué se le pregunta a una gramática', () =>
     const claves = grammarSearchKeys(ENCUADRE);
 
     it('saca las formas griegas que el encuadre nombra', () => {
-        expect(claves.greek).toEqual(expect.arrayContaining(['εαν', 'μεντοι', 'ελεγχομενοι']));
+        expect(claves.originalForms).toEqual(expect.arrayContaining(['εαν', 'μεντοι', 'ελεγχομενοι']));
     });
 
     it('las formas van sin diacríticos, porque el índice escribe una sola grafía', () => {
         // El encuadre dice «ἐὰν» y Porter titula «2.10. ἐάν»: son la misma
         // palabra y ninguna de las dos grafías encuentra a la otra.
-        expect(claves.greek).toContain('εαν');
-        expect(claves.greek.some(g => /[̀-ͯ]/.test(g))).toBe(false);
+        expect(claves.originalForms).toContain('εαν');
+        expect(claves.originalForms.some(g => /[̀-ͯ]/.test(g))).toBe(false);
     });
 
     it('admite las de dos letras, porque el índice les dedica secciones', () => {
         // Porter titula «2.11. εἰ (Conjunction, Conditional)»: con el tope en
         // tres se perdía εἰ y con ella media respuesta a las condicionales.
-        expect(grammarSearchKeys('la condicional εἰ y el artículo ὁ').greek).toEqual(['ει']);
+        expect(grammarSearchKeys('la condicional εἰ y el artículo ὁ').originalForms).toEqual(['ει']);
     });
 
     it('reconoce las categorías que el encuadre nombra, y NO las demás', () => {
@@ -46,13 +46,13 @@ describe('grammarSearchKeys — con qué se le pregunta a una gramática', () =>
     it('un encuadre que no habla de gramática no propone nada', () => {
         // Más honesto que ofrecer el índice entero.
         const vacio = grammarSearchKeys('Trabajo sobre el trasfondo histórico de la carta.');
-        expect(vacio.greek).toEqual([]);
+        expect(vacio.originalForms).toEqual([]);
         expect(vacio.categories).toEqual([]);
     });
 
     it('sin encuadre tampoco', () => {
-        expect(grammarSearchKeys(null)).toEqual({ greek: [], categories: [] });
-        expect(grammarSearchKeys('   ')).toEqual({ greek: [], categories: [] });
+        expect(grammarSearchKeys(null)).toEqual({ originalForms: [], categories: [] });
+        expect(grammarSearchKeys('   ')).toEqual({ originalForms: [], categories: [] });
     });
 });
 
@@ -64,19 +64,19 @@ describe('foldKey', () => {
     });
 });
 
-describe('titleNamesGreek — palabra entera, que es lo que permite dos letras', () => {
+describe('titleNamesOriginalForm — palabra entera, que es lo que permite dos letras', () => {
     it('reconoce la forma aunque el título la escriba con otros acentos', () => {
-        expect(titleNamesGreek('2.10. ἐάν (Conjunction, Conditional)', 'εαν')).toBe(true);
+        expect(titleNamesOriginalForm('2.10. ἐάν (Conjunction, Conditional)', 'εαν')).toBe(true);
     });
 
     it('no la reconoce dentro de otra palabra griega', () => {
         // Sin palabra entera, «δε» caería dentro de media gramática.
-        expect(titleNamesGreek('3.1. δείκνυμι and its compounds', 'δε')).toBe(false);
-        expect(titleNamesGreek('2.7. δέ (Conjunction, Adversative)', 'δε')).toBe(true);
+        expect(titleNamesOriginalForm('3.1. δείκνυμι and its compounds', 'δε')).toBe(false);
+        expect(titleNamesOriginalForm('2.7. δέ (Conjunction, Adversative)', 'δε')).toBe(true);
     });
 
     it('la puntuación y el paréntesis no son frontera de palabra griega', () => {
-        expect(titleNamesGreek('2.11. εἰ (Conjunction, Conditional)', 'ει')).toBe(true);
+        expect(titleNamesOriginalForm('2.11. εἰ (Conjunction, Conditional)', 'ει')).toBe(true);
     });
 });
 
@@ -95,7 +95,7 @@ describe('sectionsForKeys — qué secciones se proponen y en qué orden', () =>
         { sheet: 400, section: null },
     ];
 
-    const claves = { greek: ['εαν'], categories: ['condicional', 'conditional'] };
+    const claves = { originalForms: ['εαν'], categories: ['condicional', 'conditional'] };
 
     it('la sección que nombra la forma griega va primero, aunque no sea la primera hoja', () => {
         expect(sectionsForKeys(PORTER, claves)[0]!.sheet).toBe(209);
@@ -115,7 +115,7 @@ describe('sectionsForKeys — qué secciones se proponen y en qué orden', () =>
     });
 
     it('una sección repetida en varias hojas se propone en la PRIMERA', () => {
-        const genitivo = sectionsForKeys(PORTER, { greek: [], categories: ['genitiv'] });
+        const genitivo = sectionsForKeys(PORTER, { originalForms: [], categories: ['genitiv'] });
         expect(genitivo.filter(p => p.section.includes('Genitive Case'))).toHaveLength(1);
         expect(genitivo[0]!.sheet).toBe(92);
     });
@@ -130,7 +130,7 @@ describe('sectionsForKeys — qué secciones se proponen y en qué orden', () =>
     });
 
     it('sin claves no se propone nada, y un libro sin secciones tampoco', () => {
-        expect(sectionsForKeys(PORTER, { greek: [], categories: [] })).toEqual([]);
+        expect(sectionsForKeys(PORTER, { originalForms: [], categories: [] })).toEqual([]);
         expect(sectionsForKeys([{ sheet: 1, section: null }], claves)).toEqual([]);
     });
 });
@@ -165,5 +165,27 @@ describe('sectionsCoveredBy — qué secciones cubre un tramo de hojas', () => {
 
     it('las hojas sin sección no cuentan', () => {
         expect(sectionsCoveredBy(PORTER, { start: 399, end: 401 }).every(s => s.section)).toBe(true);
+    });
+});
+
+
+describe('el encuadre hebreo también da llaves', () => {
+    it('saca la forma hebrea, sin puntos vocálicos ni acentos', () => {
+        // La primera versión sólo leía griego: ante un encuadre de Jonás
+        // devolvía cero llaves en silencio, y Barrick y Farfan se quedaban sin
+        // entrada al pasaje.
+        const claves = grammarSearchKeys('¿Qué aporta el hitpael de וַיִּתְפַּלֵּל en 4:2?');
+        expect(claves.originalForms).toContain('ויתפלל');
+        expect(claves.categories).toContain('hitpael'.slice(0, 7));
+    });
+
+    it('el maqqef separa dos palabras en vez de pegarlas', () => {
+        // «אֶל־יוֹנָה» son dos: la preposición y el nombre.
+        const claves = grammarSearchKeys('la construcción אֶל־יוֹנָה abre el versículo');
+        expect(claves.originalForms.length).toBeGreaterThan(1);
+    });
+
+    it('una forma hebrea se reconoce en un título aunque cambien los puntos', () => {
+        expect(titleNamesOriginalForm('3.2 El hitpael de וַיִּתְפַּלֵּל', 'ויתפלל')).toBe(true);
     });
 });
