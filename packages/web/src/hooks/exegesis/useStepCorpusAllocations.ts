@@ -1,3 +1,4 @@
+import type { SourceRole } from '@dosfilos/domain';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { exegesisService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
@@ -44,6 +45,8 @@ export function useUpdateStepCorpusAllocation() {
             stepId: string;
             pinnedSources: ReadonlyArray<string>;
             note?: string | null;
+            /** Ausente conserva los roles; un mapa explícito los reemplaza. */
+            pinnedSourceRoles?: Readonly<Record<string, SourceRole>>;
         }) => {
             if (!user?.uid) throw new Error('User not authenticated');
             return exegesisService.updateStepCorpusAllocation.execute({
@@ -52,6 +55,7 @@ export function useUpdateStepCorpusAllocation() {
                 stepId: input.stepId,
                 pinnedSources: input.pinnedSources,
                 ...(input.note !== undefined && { note: input.note }),
+                ...(input.pinnedSourceRoles !== undefined && { pinnedSourceRoles: input.pinnedSourceRoles }),
             });
         },
         onSuccess: () => {

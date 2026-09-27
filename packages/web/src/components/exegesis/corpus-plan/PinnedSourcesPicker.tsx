@@ -1,3 +1,9 @@
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useMemo, useState } from 'react';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { useTranslation } from '@/i18n';
@@ -32,6 +38,15 @@ interface PinnedSourcesPickerProps {
      * render without a badge — visually backward-compatible.
      */
     roles?: Readonly<Record<string, SourceRole>>;
+    /**
+     * Cambiar el rol de una fuente pinchada. `null` se lo quita.
+     *
+     * Sin esto el rol era de sólo lectura: lo asignaba el plan y quien editaba
+     * las fuentes a mano no tenía manera de dárselo a la que agregaba. Con
+     * #698 el analizador lee el rol, así que dejarlo sin asignar no es
+     * neutral — esa fuente vuelve a clasificarse sola.
+     */
+    onChangeRole?: (sourceId: string, role: SourceRole | null) => void;
     onChange: (next: ReadonlyArray<string>) => void;
     disabled?: boolean;
 }
@@ -61,6 +76,7 @@ export function PinnedSourcesPicker({
     selected,
     roles,
     onChange,
+    onChangeRole,
     disabled = false,
 }: PinnedSourcesPickerProps) {
     const { t } = useTranslation('exegesis');
@@ -103,13 +119,37 @@ export function PinnedSourcesPicker({
                                     ? `${t(`paperSetup.subSteps.corpus-plan.role.${role}`)} · ${label}`
                                     : label}
                             >
-                                {role && (
-                                    <span
-                                        className={`shrink-0 rounded-full border px-1.5 py-0 text-[9.5px] font-semibold uppercase tracking-wide leading-tight ${ROLE_BADGE_CLASSES[role]}`}
-                                    >
-                                        {t(`paperSetup.subSteps.corpus-plan.role.${role}`)}
-                                    </span>
-                                )}
+                                {/* El rol se puede cambiar acá. Antes sólo se
+                                    mostraba: el plan lo asignaba y quien
+                                    editaba las fuentes a mano no tenía manera
+                                    de dárselo a la que agregaba. Desde #698 el
+                                    analizador LEE el rol, así que una fuente
+                                    sin él vuelve a clasificarse sola. */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild disabled={disabled}>
+                                        <button
+                                            type="button"
+                                            className={`shrink-0 rounded-full border px-1.5 py-0 text-[9.5px] font-semibold uppercase tracking-wide leading-tight ${
+                                                role ? ROLE_BADGE_CLASSES[role] : 'border-dashed border-border text-muted-foreground'
+                                            }`}
+                                            aria-label={t('paperSetup.subSteps.corpus-plan.picker.roleAria', { label })}
+                                        >
+                                            {role
+                                                ? t(`paperSetup.subSteps.corpus-plan.role.${role}`)
+                                                : t('paperSetup.subSteps.corpus-plan.role.none')}
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        {(['anchor', 'contrast', 'technical'] as const).map(r => (
+                                            <DropdownMenuItem key={r} onClick={() => onChangeRole?.(id, r)}>
+                                                {t(`paperSetup.subSteps.corpus-plan.role.${r}`)}
+                                            </DropdownMenuItem>
+                                        ))}
+                                        <DropdownMenuItem onClick={() => onChangeRole?.(id, null)}>
+                                            {t('paperSetup.subSteps.corpus-plan.role.clear')}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 <span className="truncate">{label}</span>
                                 <button
                                     type="button"

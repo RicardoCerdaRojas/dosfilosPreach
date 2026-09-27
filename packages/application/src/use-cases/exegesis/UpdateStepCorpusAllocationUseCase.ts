@@ -1,5 +1,6 @@
 import type {
     ExegeticalPaper,
+    SourceRole,
     IExegeticalPaperRepository,
     StepSourcePlan,
     StepSourcePlanEntry,
@@ -24,6 +25,17 @@ export interface UpdateStepCorpusAllocationInput {
      * replace it.
      */
     note?: string | null;
+    /**
+     * Roles elegidos a mano para las fuentes de este paso.
+     *
+     * `undefined` conserva los que ya tenía cada fuente que sigue pinchada,
+     * que es lo que hace una edición de la lista de fuentes. Un mapa explícito
+     * los REEMPLAZA, y es lo que manda el selector de rol.
+     *
+     * Las entradas que no correspondan a una fuente pinchada se descartan: su
+     * insignia no tendría dónde anclarse.
+     */
+    pinnedSourceRoles?: Readonly<Record<string, SourceRole>>;
 }
 
 /**
@@ -83,9 +95,9 @@ export class UpdateStepCorpusAllocationUseCase {
         // dejan entrada huérfana —su insignia no tendría dónde anclarse— y las
         // que entran quedan sin rol, que es el estado honesto: el plan no las
         // asignó.
-        const rolesPrevios = existing?.pinnedSourceRoles ?? {};
-        const sobreviven: Record<string, StepSourcePlanEntry['pinnedSourceRoles'] extends
-            Readonly<Record<string, infer R>> | undefined ? R : never> = {};
+        // Un mapa explícito reemplaza; su ausencia conserva lo que había.
+        const rolesPrevios = input.pinnedSourceRoles ?? existing?.pinnedSourceRoles ?? {};
+        const sobreviven: Record<string, SourceRole> = {};
         for (const id of input.pinnedSources) {
             const rol = rolesPrevios[id];
             if (rol) sobreviven[id] = rol;

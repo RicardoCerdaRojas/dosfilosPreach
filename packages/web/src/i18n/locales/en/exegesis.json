@@ -1244,7 +1244,9 @@
         "role": {
           "anchor": "Anchor",
           "contrast": "Contrast",
-          "technical": "Technical"
+          "technical": "Technical",
+          "none": "no role",
+          "clear": "Clear role"
         },
         "kind": {
           "introduction": "Introduction",
@@ -1257,7 +1259,8 @@
           "edit": "Edit ({{count}})",
           "search": "Search source…",
           "noMatches": "No matches",
-          "removeAria": "Remove {{label}}"
+          "removeAria": "Remove {{label}}",
+          "roleAria": "Change the role of {{label}}"
         },
         "toastPropose": "Plan proposed: {{count}} steps with allocations",
         "toastProposeError": "Couldn't propose the plan. Try again.",

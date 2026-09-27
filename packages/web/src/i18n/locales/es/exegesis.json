@@ -1244,7 +1244,9 @@
         "role": {
           "anchor": "Ancla",
           "contrast": "Contraste",
-          "technical": "Técnica"
+          "technical": "Técnica",
+          "none": "sin rol",
+          "clear": "Quitar el rol"
         },
         "kind": {
           "introduction": "Introducción",
@@ -1257,7 +1259,8 @@
           "edit": "Editar ({{count}})",
           "search": "Buscar fuente…",
           "noMatches": "Sin coincidencias",
-          "removeAria": "Quitar {{label}}"
+          "removeAria": "Quitar {{label}}",
+          "roleAria": "Cambiar el rol de {{label}}"
         },
         "toastPropose": "Plan propuesto: {{count}} pasos con asignaciones",
         "toastProposeError": "No se pudo proponer el plan. Intenta de nuevo.",
