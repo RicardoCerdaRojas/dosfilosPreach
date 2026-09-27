@@ -170,9 +170,15 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                                 </li>
                             ))}
                         </ul>
-                        <p className="text-[11px] text-muted-foreground">
-                            {t('canonical.review.unreadableOriginal.hint')}
-                        </p>
+                        {/* Qué hacer depende de POR QUÉ falta, y son dos cosas
+                            distintas: un libro que translitera no se
+                            re-extrae. Se agrupan las razones presentes para no
+                            repetir el mismo párrafo por cada afirmación. */}
+                        {[...new Set(r.unreadableOriginal.map(c => c.absence))].map(razon => (
+                            <p key={razon} className="text-[11px] text-muted-foreground">
+                                {t(`canonical.review.unreadableOriginal.${razon}`)}
+                            </p>
+                        ))}
                     </section>
                 )}
 
