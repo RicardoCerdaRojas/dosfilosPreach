@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, Lightbulb, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { ASSIGNMENT_BRIEF_MAX_CHARS, type ExegeticalPaper } from '@dosfilos/domain';
+import { ASSIGNMENT_BRIEF_MAX_CHARS, PREACHING_BRIEF_TEMPLATE, briefGaps, type ExegeticalPaper } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
@@ -31,6 +31,14 @@ export function PaperBriefPanel({ paper }: PaperBriefPanelProps) {
 
     const editando = borrador !== null;
     const actual = paper.assignmentBrief?.trim() ?? '';
+    /**
+     * Qué le falta al encuadre para que el sistema pueda trabajar con él.
+     *
+     * Se mira el borrador mientras se edita y el guardado cuando no: la
+     * carencia importa en los dos momentos, y esperar a guardar para avisar es
+     * avisar tarde.
+     */
+    const carencias = useMemo(() => briefGaps(editando ? borrador : actual), [editando, borrador, actual]);
     const edicion = editando ? evaluarEdicionDelEncuadre(paper.assignmentBrief, borrador) : null;
     const guardando = updatePaperBrief.isPending;
 
@@ -92,7 +100,19 @@ export function PaperBriefPanel({ paper }: PaperBriefPanelProps) {
 
             {editando && (
                 <div className="space-y-2">
-                    <AssignmentBriefPicker currentBody={borrador} onApply={setBorrador} />
+                    <div className="flex flex-wrap items-center gap-2">
+                        <AssignmentBriefPicker currentBody={borrador} onApply={setBorrador} />
+                        {/* La plantilla del sistema para una serie expositiva:
+                            cuatro bloques iguales en cada sermón y uno que hay
+                            que llenar leyendo. Sólo se ofrece sobre un lienzo
+                            vacío, para no pisar lo que ya haya escrito. */}
+                        {!borrador?.trim() && (
+                            <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]"
+                                onClick={() => setBorrador(PREACHING_BRIEF_TEMPLATE)}>
+                                {t('paperSetup.brief.gaps.usePreachingTemplate')}
+                            </Button>
+                        )}
+                    </div>
                     <label htmlFor="paper-brief-editor" className="sr-only">{t('paperSetup.brief.heading')}</label>
                     <textarea
                         id="paper-brief-editor"
@@ -112,6 +132,21 @@ export function PaperBriefPanel({ paper }: PaperBriefPanelProps) {
                             <span className="text-muted-foreground">{t('paperSetup.brief.appliesFromNow')}</span>
                         )}
                     </div>
+                    {/* Cada carencia nombra una pieza que sin ella trabaja a
+                        medias y en silencio. No es revisión de estilo. */}
+                    {carencias.length > 0 && (
+                        <div className="rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 space-y-1">
+                            <p className="text-[11px] font-medium text-warning-subtle-foreground">
+                                {t('paperSetup.brief.gaps.gapTitle')}
+                            </p>
+                            {carencias.map(g => (
+                                <p key={g} className="text-[11px] text-warning-subtle-foreground">
+                                    {t(`paperSetup.brief.gaps.${g}`)}
+                                </p>
+                            ))}
+                        </div>
+                    )}
+
                     <div className="flex justify-end gap-2">
                         <Button type="button" size="sm" variant="ghost" onClick={() => setBorrador(null)} disabled={guardando}>
                             {t('paperSetup.brief.cancel')}
