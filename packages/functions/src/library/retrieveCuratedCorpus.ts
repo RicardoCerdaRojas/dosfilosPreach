@@ -7,11 +7,21 @@ import { sanitizeExtractedTextOnly } from './sanitizeExtractedText';
 /**
  * Ranking dentro del corpus curado de un trabajo.
  *
- * La diferencia con `retrieveChunks` no es el algoritmo —es el mismo índice
- * vectorial— sino el ALCANCE: acá el resultado se recorta a las hojas que el
- * usuario admitió en cada fuente. Firestore devuelve lo más cercano de todo el
- * libro; de eso solo sirve lo que la receta declara, porque el resto son
- * páginas que el usuario decidió dejar afuera.
+ * La diferencia con `retrieveChunks` no es el algoritmo —es el mismo coseno—
+ * sino el ALCANCE: acá sólo participan las hojas que el usuario admitió en
+ * cada fuente.
+ *
+ * Dos caminos para lo mismo, y el orden importa. Cuando quien llama pudo
+ * traducir las hojas a índices de fragmento, se leen por clave los fragmentos
+ * admitidos y se ordenan acá: la búsqueda ENTRA en lo curado. Cuando no, se le
+ * pide al índice vectorial lo más cercano del libro entero y se recorta
+ * después, que es como venía.
+ *
+ * El segundo es un respaldo y no un equivalente. Medido sobre las 43 fuentes
+ * con receta de la base, la selección de una fuente es el 5-10% de sus
+ * fragmentos y en los peores casos el 0,3% —Tuggy, 4 de 1394; McComiskey, 3 de
+ * 959—, así que el recorte posterior puede vaciar una fuente por dónde cayó el
+ * corte y no por falta de material.
  *
  * Por qué existe en vez de ampliar `retrieveChunks`: esa callable sirve al
  * tutor, a Faculty y al proponente de tramos, todos con alcance "biblioteca" o
@@ -46,9 +56,10 @@ const MAX_SOURCES = 25;
  * Es la misma lección que `retrieveChunks` ya había aprendido con
  * `perResourceTopK`, por si hiciera falta una segunda confirmación.
  *
- * El pool es más grande de lo que va a entrar al prompt porque el filtro por
- * receta descarta después: la selección curada de una fuente es ~14% de sus
- * fragmentos.
+ * En el camino por clave el pool es el tope de lo que la fuente aporta, porque
+ * ya no hay recorte posterior que lo baje. En el camino del índice es el
+ * número de CANDIDATOS del libro entero, de los que sobrevive sólo lo que la
+ * receta admite —la medición de arriba dice cuán poco puede ser eso—.
  */
 const DEFAULT_POOL = 60;
 const MAX_POOL = 200;
@@ -62,6 +73,15 @@ interface SourceScope {
     resourceId: string;
     /** Hojas que el usuario admitió para esta fuente. */
     sheetRanges: SheetRange[];
+    /**
+     * Los MISMOS tramos traducidos a índices de fragmento, cuando quien llama
+     * pudo resolverlos con el índice de hojas del recurso.
+     *
+     * Con ellos la búsqueda entra en lo curado en vez de filtrarlo después.
+     * Sin ellos se cae al camino anterior, que sigue siendo correcto —sólo
+     * menos fiable— y es lo que corresponde cuando el índice no está.
+     */
+    chunkRanges?: SheetRange[];
 }
 
 interface RetrieveRequest {
@@ -74,6 +94,60 @@ interface RetrieveRequest {
 function withinRanges(sheet: unknown, ranges: SheetRange[]): boolean {
     if (typeof sheet !== 'number') return false;
     return ranges.some(r => sheet >= r.start && sheet <= r.end);
+}
+
+/**
+ * Tope de fragmentos que se leen de una fuente para ordenarlos acá.
+ *
+ * Medido sobre las 43 fuentes con receta que hay en la base: la mayor tiene
+ * 153 fragmentos dentro de sus tramos. El tope deja holgura y, por encima de
+ * él, se vuelve al camino del índice: leer un libro entero por su clave sería
+ * más caro que una búsqueda imperfecta.
+ *
+ * No es el mismo número que `MAX_CHUNKS_PER_REQUEST` de `documentStructure`,
+ * que vale 200, y la diferencia no es un descuido: aquel acota lo que CRUZA EL
+ * CABLE —y por eso mira el tope de 10 MB del transporte—, y éste lo que se lee
+ * en memoria para ordenar. De acá sólo salen los `pool` mejores.
+ */
+export const MAX_CURATED_CHUNKS = 400;
+
+/**
+ * Verifica que el llamador pueda leer un fragmento.
+ *
+ * La lectura por clave no lleva el `where('userId')` que filtraba en el camino
+ * del índice, así que la misma regla se aplica acá: el `userId` del fragmento,
+ * o su pertenencia a un store de la biblioteca compartida. Es la misma función
+ * que `documentStructure` usa para lo mismo.
+ */
+function isReadable(data: FirebaseFirestore.DocumentData, uid: string): boolean {
+    if (data.userId === uid) return true;
+    return Array.isArray(data.stores) && data.stores.length > 0;
+}
+
+/** Coseno entre dos vectores. 1 es idéntico. */
+function cosine(a: number[], b: number[]): number {
+    let dot = 0, na = 0, nb = 0;
+    const n = Math.min(a.length, b.length);
+    for (let i = 0; i < n; i++) {
+        dot += a[i]! * b[i]!;
+        na += a[i]! * a[i]!;
+        nb += b[i]! * b[i]!;
+    }
+    if (na === 0 || nb === 0) return 0;
+    return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+/** Los índices que cubren unos tramos, con tope. */
+export function indicesOf(ranges: SheetRange[]): number[] | null {
+    const out: number[] = [];
+    for (const r of ranges) {
+        if (!Number.isInteger(r.start) || !Number.isInteger(r.end) || r.start < 0 || r.end < r.start) return null;
+        for (let i = r.start; i <= r.end; i++) {
+            out.push(i);
+            if (out.length > MAX_CURATED_CHUNKS) return null;
+        }
+    }
+    return out.length > 0 ? out : null;
 }
 
 export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
@@ -107,12 +181,15 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
             throw new HttpsError('invalid-argument', `sources excede ${MAX_SOURCES} fuentes`);
         }
 
-        const byResource = new Map<string, SheetRange[]>();
+        const byResource = new Map<string, { sheetRanges: SheetRange[]; chunkRanges: SheetRange[] }>();
         for (const source of sources) {
             const id = typeof source?.resourceId === 'string' ? source.resourceId : '';
             const ranges = Array.isArray(source?.sheetRanges) ? source.sheetRanges : [];
             if (!id || ranges.length === 0) continue;
-            byResource.set(id, ranges);
+            byResource.set(id, {
+                sheetRanges: ranges,
+                chunkRanges: Array.isArray(source?.chunkRanges) ? source.chunkRanges : [],
+            });
         }
         if (byResource.size === 0) return { chunks: [], sourcesQueried: 0 };
 
@@ -131,8 +208,37 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
         // "Missing vector index configuration". `retrieveChunks` lo documenta
         // por el mismo motivo.
         const perSource = await Promise.all(
-            [...byResource.entries()].map(async ([resourceId, ranges]) => {
+            [...byResource.entries()].map(async ([resourceId, scope]) => {
+                const ranges = scope.sheetRanges;
                 try {
+                    // Buscar DENTRO de lo curado, cuando se puede.
+                    //
+                    // El camino del índice trae lo más cercano del libro
+                    // ENTERO y recorta después. Medido sobre las fuentes con
+                    // receta de la base, la selección de una fuente es el 5-10%
+                    // de sus fragmentos y en los peores casos el 0,3%: Tuggy,
+                    // 4 de 1394; McComiskey, 3 de 959. Con un pool de 60 sobre
+                    // 1394, acertar esos 4 es una lotería, y cuando sale mal la
+                    // fuente no vuelve vacía por falta de material sino por
+                    // dónde cayó el corte. Le pasó a Burt —ancla de un paso, 22
+                    // fragmentos en sus hojas, uno de ellos justo sobre la
+                    // palabra del versículo— y al contraste del mismo paso.
+                    //
+                    // Con los índices resueltos se leen por clave los
+                    // fragmentos admitidos y se ordenan acá. Es el mismo
+                    // coseno, sobre el conjunto correcto.
+                    const indices = indicesOf(scope.chunkRanges);
+                    if (indices) {
+                        const refs = indices.map(i => db.collection(CHUNK_COLLECTION).doc(`${resourceId}_chunk_${i}`));
+                        const docs = await db.getAll(...refs, {
+                            fieldMask: ['chunkIndex', 'text', 'metadata', 'userId', 'stores', 'embedding'],
+                        });
+                        const kept = rankCuratedChunks({
+                            rows: docs.filter(doc => doc.exists).map(doc => doc.data()!),
+                            resourceId, uid, ranges, vector, pool,
+                        });
+                        return { resourceId, pool: docs.length, kept, failed: false };
+                    }
                     const snapshot = await db
                         .collection(CHUNK_COLLECTION)
                         .where('userId', '==', uid)
@@ -198,3 +304,64 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
         };
     },
 );
+
+/** Lo que una fila de `document_chunks` aporta al ordenamiento. */
+export interface CuratedChunkRow {
+    chunkIndex?: unknown;
+    text?: unknown;
+    userId?: unknown;
+    stores?: unknown;
+    metadata?: { page?: unknown; section?: unknown };
+    embedding?: { toArray?: () => number[] } | number[];
+}
+
+export interface RankedCuratedChunk {
+    resourceId: string;
+    chunkIndex: number;
+    text: string;
+    sheet: number | null;
+    section: string | null;
+    score: number;
+}
+
+/**
+ * Ordena por cercanía los fragmentos leídos de las hojas que el trabajo
+ * admitió.
+ *
+ * Es el mismo coseno que aplica el índice vectorial; lo que cambia es sobre
+ * qué conjunto. El índice ordena el libro entero y el recorte por receta viene
+ * después, así que una fuente cuya selección es el 0,3% de sus fragmentos
+ * puede volver vacía por dónde cayó el corte y no por falta de material.
+ *
+ * Puro a propósito: es la regla, y la lectura por clave es sólo cómo llegan
+ * las filas.
+ */
+export function rankCuratedChunks(input: {
+    rows: ReadonlyArray<CuratedChunkRow>;
+    resourceId: string;
+    uid: string;
+    ranges: SheetRange[];
+    vector: number[];
+    pool: number;
+}): RankedCuratedChunk[] {
+    return input.rows
+        .filter(row => isReadable(row as FirebaseFirestore.DocumentData, input.uid))
+        // La receta sigue mandando: el índice de hojas puede mapear un
+        // fragmento de más en el borde de un tramo.
+        .filter(row => withinRanges(row.metadata?.page, input.ranges))
+        .map(row => ({
+            resourceId: input.resourceId,
+            chunkIndex: typeof row.chunkIndex === 'number' ? row.chunkIndex : 0,
+            text: sanitizeExtractedTextOnly(typeof row.text === 'string' ? row.text : ''),
+            sheet: typeof row.metadata?.page === 'number' ? row.metadata.page : null,
+            section: typeof row.metadata?.section === 'string' ? row.metadata.section : null,
+            score: Math.max(0, Math.min(1, cosine(embeddingOf(row.embedding), input.vector))),
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, input.pool);
+}
+
+function embeddingOf(value: CuratedChunkRow['embedding']): number[] {
+    if (Array.isArray(value)) return value;
+    return value?.toArray?.() ?? [];
+}

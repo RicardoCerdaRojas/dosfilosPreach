@@ -113,13 +113,35 @@ export class CallableCuratedCorpusRetriever implements ICuratedCorpusRetriever {
                 'retrieveCuratedCorpus',
                 { timeout: TIMEOUT_MS },
             );
+            // Las hojas admitidas, traducidas a índices de fragmento.
+            //
+            // Sin esto la callable busca en el libro entero y recorta después,
+            // y la selección de una fuente es el 5-10% de sus fragmentos —en
+            // los peores casos medidos, el 0,3%—. Con los índices resueltos la
+            // búsqueda entra en lo curado.
+            //
+            // El índice de hojas está cacheado por recurso desde que el
+            // usuario abrió el selector, igual que para los tramos fijados.
+            // Si no se puede resolver se manda sin él y la callable vuelve al
+            // camino anterior: menos fiable, nunca incorrecto.
+            const conIndices = await Promise.all(scopes.map(async s => {
+                const sheetRanges = s.sheetRanges.map(r => ({ start: r.start, end: r.end }));
+                try {
+                    const index = await fetchDocumentPageIndex(s.resourceId);
+                    const chunkRanges = chunkRangesForSheets(index.pages, s.sheetRanges as SheetRange[]);
+                    return { resourceId: s.resourceId, sheetRanges, chunkRanges };
+                } catch (err) {
+                    console.warn('[CuratedCorpus] sin índice de hojas; se busca en el libro entero', {
+                        resourceId: s.resourceId,
+                        error: (err as Error).message,
+                    });
+                    return { resourceId: s.resourceId, sheetRanges };
+                }
+            }));
             const response = await callable({
                 userId: input.userId,
                 query: input.query,
-                sources: scopes.map(s => ({
-                    resourceId: s.resourceId,
-                    sheetRanges: s.sheetRanges.map(r => ({ start: r.start, end: r.end })),
-                })),
+                sources: conIndices,
             });
             return {
                 chunks: response.data?.chunks ?? [],
