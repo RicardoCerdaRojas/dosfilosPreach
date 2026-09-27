@@ -158,6 +158,17 @@ export interface UpdateRubricInput {
 export interface ResetRubricInput {
     ownerId: string;
     paperId: string;
+    /**
+     * Cuál de las dos rúbricas del sistema se aplica.
+     *
+     * Ausente equivale a `'academic'`, que es lo que este caso de uso hacía
+     * cuando era la única: un llamador viejo sigue restableciendo la de
+     * siempre.
+     *
+     * `'preaching'` no es una versión más floja de la otra. Las dos exigen el
+     * mismo estudio y lo que cambia es la salida — ver `PREACHING_STUDY_RUBRIC`.
+     */
+    preset?: 'academic' | 'preaching';
 }
 
 // ── ExtractStyleGuideManifest ──────────────────────────────────────────

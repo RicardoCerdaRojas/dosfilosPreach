@@ -666,6 +666,10 @@
             "none": {
               "label": "Sin rúbrica formal",
               "hint": "Solo estrategia exegética — el composer trabaja sin requisitos de fuentes."
+            },
+            "preaching": {
+              "label": "Estudio para predicación",
+              "hint": "Mismo rigor, otra salida: el expositivo ancla, 3-5 páginas y cita entre paréntesis. Para una serie expositiva, no para entregar."
             }
           }
         }

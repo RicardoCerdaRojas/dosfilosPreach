@@ -135,9 +135,9 @@ export function useExegesisPapers() {
     });
 
     const resetRubric = useMutation({
-        mutationFn: async ({ paperId }: { paperId: string }) => {
+        mutationFn: async ({ paperId, preset }: { paperId: string; preset?: 'academic' | 'preaching' }) => {
             if (!user?.uid) throw new Error('User not authenticated');
-            return exegesisService.resetRubric.execute({ ownerId: user.uid, paperId });
+            return exegesisService.resetRubric.execute({ ownerId: user.uid, paperId, preset });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });

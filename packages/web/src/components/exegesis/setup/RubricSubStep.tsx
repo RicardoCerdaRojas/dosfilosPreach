@@ -13,6 +13,7 @@ import {
     Save,
     Sparkles,
     Star,
+    BookOpenCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -1305,7 +1306,7 @@ function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }: Rubric
 
     // Detect the active card so we can render an "✓ En uso" badge.
     // Mirrors the resolution rules the old templates-panel used.
-    const activeCard: 'photo' | 'paste' | 'default' | 'template' | 'none' | null = (() => {
+    const activeCard: 'photo' | 'paste' | 'default' | 'preaching' | 'template' | 'none' | null = (() => {
         if (rubric.provenance === 'extracted-from-document') return 'photo';
         if (rubric.provenance === 'extracted-from-text') return 'paste';
         if (rubric.provenance === 'from-template') {
@@ -1314,7 +1315,12 @@ function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }: Rubric
             return null;
         }
         if (rubric.provenance === 'system-default') {
-            return rubric.sourceRequirements.length === 0 ? 'none' : 'default';
+            if (rubric.sourceRequirements.length === 0) return 'none';
+            // Las dos del sistema se distinguen por lo que las hace distintas:
+            // cuál tipo de fuente ancla el versículo. Mirar la extensión sería
+            // frágil —el alumno puede cambiarla sin cambiar de rúbrica—.
+            const verso = rubric.structuralExpectations.find(e => e.section === 'verse');
+            return verso?.emphasizedTypes[0] === 'commentary-expository' ? 'preaching' : 'default';
         }
         // user-edited → don't badge any card; the user has diverged
         // from every preset.
@@ -1332,6 +1338,7 @@ function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }: Rubric
     // them all.
     const [pendingAction, setPendingAction] = useState<
         | { kind: 'default' }
+        | { kind: 'preaching' }
         | { kind: 'none' }
         | { kind: 'template'; templateId: string }
         | null
@@ -1352,6 +1359,8 @@ function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }: Rubric
         try {
             if (action.kind === 'default') {
                 await resetRubric.mutateAsync({ paperId: paper.id });
+            } else if (action.kind === 'preaching') {
+                await resetRubric.mutateAsync({ paperId: paper.id, preset: 'preaching' });
             } else if (action.kind === 'none') {
                 await applyStrategyOnly.mutateAsync({ paperId: paper.id });
             } else {
@@ -1369,7 +1378,7 @@ function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }: Rubric
     };
 
     const cards: ReadonlyArray<{
-        kind: 'photo' | 'paste' | 'default' | 'template' | 'none';
+        kind: 'photo' | 'paste' | 'default' | 'preaching' | 'template' | 'none';
         icon: React.ReactNode;
         label: string;
         hint: string;
@@ -1396,6 +1405,13 @@ function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }: Rubric
             label: t('paperSetup.subSteps.rubric.chooser.cards.default.label'),
             hint: t('paperSetup.subSteps.rubric.chooser.cards.default.hint'),
             onClick: () => requestApply({ kind: 'default' }),
+        },
+        {
+            kind: 'preaching',
+            icon: <BookOpenCheck className="h-5 w-5" />,
+            label: t('paperSetup.subSteps.rubric.chooser.cards.preaching.label'),
+            hint: t('paperSetup.subSteps.rubric.chooser.cards.preaching.hint'),
+            onClick: () => requestApply({ kind: 'preaching' }),
         },
         {
             kind: 'template',
