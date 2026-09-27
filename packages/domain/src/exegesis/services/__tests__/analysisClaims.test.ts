@@ -82,6 +82,26 @@ describe('analysisClaimsToCitations', () => {
         expect(cites[4]!.raw).toContain('hoja 206');
     });
 
+    it('sin página comparable, la HOJA sigue sirviendo para elegir la evidencia', () => {
+        // `pages` en null apaga el cotejo de página a propósito: comparar una
+        // hoja contra una página impresa reprueba lo que está bien. Pero el
+        // mismo valor elegía qué fragmentos ve el verificador, así que apagar
+        // la comparación apagaba también la selección.
+        //
+        // Medido en el estudio de Jonás 4:3: «Calvino, hoja 60» y «Burt, hoja
+        // 76» volvieron «no encontrada» con la nota de que los fragmentos
+        // recibidos cubrían «la introducción y el inicio del capítulo 1» —las
+        // hojas 7-12, las primeras de la receta—.
+        const cites = analysisClaimsToCitations(collectAnalysisClaims(analisis()), c => (c.pageKind === 'printed' ? String(c.page) : null));
+        expect(cites[4]!.pages).toBeNull();
+        expect(cites[4]!.evidencePage).toBe('206');
+    });
+
+    it('con página comparable, las dos coinciden', () => {
+        const cites = analysisClaimsToCitations(collectAnalysisClaims(analisis()), c => String(c.page));
+        expect(cites[0]).toMatchObject({ pages: '559', evidencePage: '559' });
+    });
+
     it('conserva el orden como offset, para que la interfaz pueda volver a la entrada', () => {
         const cites = analysisClaimsToCitations(collectAnalysisClaims(analisis()), () => null);
         expect(cites.map(c => c.offset)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);

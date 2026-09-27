@@ -68,6 +68,27 @@ export interface ParsedCitation {
     /** Page reference as written ("47", "47-50", "47, 50"). Null when omitted. */
     pages: string | null;
     /**
+     * Número con el que se ELIGE la evidencia, en la unidad en que están
+     * rotulados los fragmentos de esa fuente.
+     *
+     * Casi siempre es `pages`. Se separa porque `pages` gobierna el COTEJO de
+     * página, y una cita a un libro sin numeración calibrada lo deja en `null`
+     * a propósito: comparar una hoja contra una página impresa reprueba lo que
+     * está bien. El efecto no buscado era que apagar la comparación apagaba
+     * también la selección, y el verificador terminaba juzgando la afirmación
+     * contra los primeros fragmentos del libro.
+     *
+     * Medido en el estudio de Jonás 4:3: las citas a Calvino y a Burt —«hoja
+     * 60», «hoja 76»— volvieron «no encontrada» con la nota de que los
+     * fragmentos recibidos cubrían «la introducción y el inicio del capítulo
+     * 1». Eran las hojas 7-12, las primeras de su receta.
+     *
+     * La hoja es un selector perfectamente bueno aunque sea la unidad
+     * equivocada para comparar: los fragmentos de esa misma fuente se rotulan
+     * con ella.
+     */
+    evidencePage?: string | null;
+    /**
      * Character offset in the source markdown. Used by the UI to
      * highlight the cite's location and by the verifier to scope the
      * surrounding evidence window.
