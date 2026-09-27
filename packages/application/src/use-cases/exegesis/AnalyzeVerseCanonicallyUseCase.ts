@@ -1,4 +1,4 @@
-import { briefForQuery } from '@dosfilos/domain';
+import { briefForQuery, hasCuratedScope } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -305,7 +305,7 @@ export class AnalyzeVerseCanonicallyUseCase {
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
         const scopes = paper.sources
-            .filter(s => (s.excerptRecipe?.sheetRanges.length ?? 0) > 0)
+            .filter(hasCuratedScope)
             .map(s => ({
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
                 sheetRanges: s.excerptRecipe!.sheetRanges,
@@ -463,7 +463,7 @@ export class AnalyzeVerseCanonicallyUseCase {
             const priority: 'primary' | 'secondary' = pinnedIds.has(source.id) ? 'primary' : 'secondary';
             const plannedRole = plannedRoles[source.id];
             const retrieved = curated?.byResource[source.sourceLibraryResourceId ?? source.corpusId];
-            if (retrieved) {
+            if (retrieved && retrieved.length > 0) {
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt y el verificador de citas no tienen por qué notar de
                 // dónde salió el fragmento.
@@ -483,6 +483,15 @@ export class AnalyzeVerseCanonicallyUseCase {
                     excerptAnchors: retrieved.map(anchor),
                     priority,
                 });
+                continue;
+            }
+            // Una fuente con receta ya declaró qué hojas admitió el trabajo.
+            // Si la recuperación no trajo nada de ellas, las dos salidas que
+            // quedan mienten: el documento entero contradice la curaduría, y
+            // un cuerpo vacío deja la clave de cita a la vista sobre un
+            // estante pelado. Se retira, que es lo que ya hacía el resto.
+            if (hasCuratedScope(source)) {
+                silent.push(source);
                 continue;
             }
             if (source.mode === 'extracted-excerpts') {

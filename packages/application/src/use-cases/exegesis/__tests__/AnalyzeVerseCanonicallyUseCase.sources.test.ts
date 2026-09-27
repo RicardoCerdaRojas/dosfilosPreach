@@ -121,6 +121,15 @@ function buildUseCase(opts: {
     greek?: string;
     /** Chunk texts returned per retrieved source. */
     chunks?: string[];
+    /**
+     * Fuentes que el corpus devuelve con arreglo VACÍO, no ausente.
+     * Es la forma real: `CallableCuratedCorpusRetriever` siembra
+     * `byResource[resourceId] = []` para toda fuente con receta antes
+     * de repartir los fragmentos.
+     */
+    emptyFor?: string[];
+    /** Lo que el lector de contenido entrega para el documento entero. */
+    fullText?: string;
 }) {
     const appended: CanonicalVerseAnalysis[] = [];
     const paperRepository = {
@@ -136,7 +145,9 @@ function buildUseCase(opts: {
     };
     const corpusRetriever = {
         retrieve: vi.fn().mockResolvedValue({
-            byResource: Object.fromEntries(
+            byResource: {
+                ...Object.fromEntries((opts.emptyFor ?? []).map(id => [id, []])),
+                ...Object.fromEntries(
                 opts.retrievedFor.map(id => [
                     id,
                     (opts.chunks ?? ['texto real de la fuente']).map(text => ({
@@ -146,6 +157,7 @@ function buildUseCase(opts: {
                     })),
                 ]),
             ),
+            },
         }),
     };
     const originalLanguageProvider = opts.greek
@@ -157,7 +169,7 @@ function buildUseCase(opts: {
     const useCase = new AnalyzeVerseCanonicallyUseCase(
         paperRepository as never,
         { getActiveStyleGuide: vi.fn().mockResolvedValue(null) } as never,
-        { getTextContent: vi.fn().mockResolvedValue('') } as never,
+        { getTextContent: vi.fn().mockResolvedValue(opts.fullText ?? '') } as never,
         analyzer as never,
         originalLanguageProvider as never,
         corpusRetriever as never,
@@ -302,5 +314,84 @@ describe('AnalyzeVerseCanonicallyUseCase — citas a través de fragmentos', () 
         await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
 
         expect(appended[0].commentatorEngagement).toHaveLength(1);
+    });
+});
+
+/**
+ * El arreglo vacío no es la ausencia.
+ *
+ * El caso de arriba deja la fuente FUERA de `byResource`, y con esa forma
+ * el guard funcionaba. El retriever real no hace eso: siembra
+ * `byResource[resourceId] = []` para cada fuente con receta y después
+ * reparte. Un arreglo vacío es verdadero en JavaScript, así que la fuente
+ * entraba al prompt con el cuerpo vacío y la clave de cita a la vista
+ * —exactamente el estante pelado que el guard existe para evitar—.
+ *
+ * Medido en Jonás 4:1: once fuentes de biblioteca sin receta, cero
+ * comentaristas en el análisis y tres citas inventadas, una de ellas con
+ * `page: 0` y locator «tentative page, not provided».
+ */
+describe('AnalyzeVerseCanonicallyUseCase — una fuente con receta y sin fragmentos', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('no entra al prompt cuando el corpus la devuelve con arreglo vacío', async () => {
+        const paper = makePaper([makeSource('Tuggy', 'res-a'), makeSource('Kittel', 'res-b')]);
+        const { useCase, analyzer } = buildUseCase({
+            paper,
+            analysis: analysisCiting(['Tuggy']),
+            retrievedFor: ['res-a'],
+            emptyFor: ['res-b'],
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        const sentSources = analyzer.analyzeVerse.mock.calls[0][0].sources;
+        expect(sentSources.map((s: { citationKey: string }) => s.citationKey)).toEqual(['Tuggy']);
+    });
+
+    it('tampoco cae al documento entero: la curaduría manda', async () => {
+        // Es el defecto que costó el análisis de Jonás 4:1. Las fuentes
+        // estaban en `full-document`, así que al no traer fragmentos la rama
+        // de respaldo inlineaba el LIBRO COMPLETO, recortado a
+        // 220.000 / 11 ≈ 20.000 caracteres: las primeras siete páginas
+        // impresas. El modelo vio el frente de once libros y citó desde ahí.
+        const kittel = { ...makeSource('Kittel', 'res-b'), mode: 'full-document' as const };
+        const paper = makePaper([makeSource('Tuggy', 'res-a'), kittel]);
+        const { useCase, analyzer } = buildUseCase({
+            paper,
+            analysis: analysisCiting(['Tuggy']),
+            retrievedFor: ['res-a'],
+            emptyFor: ['res-b'],
+            fullText: 'PORTADA · ÍNDICE · PREFACIO — las primeras hojas del libro entero',
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        const sentSources = analyzer.analyzeVerse.mock.calls[0][0].sources;
+        expect(sentSources.map((s: { citationKey: string }) => s.citationKey)).toEqual(['Tuggy']);
+        expect(JSON.stringify(sentSources)).not.toContain('PORTADA');
+    });
+
+    it('una fuente SIN receta sigue usando el documento entero', async () => {
+        // La carga directa de un extracto acotado (Caso 3 de v1.5) no tiene
+        // receta y nunca la tuvo: ahí el documento entero ES la curaduría.
+        const suelta = {
+            ...makeSource('Directa', 'res-c'),
+            mode: 'full-document' as const,
+            excerptRecipe: null,
+        };
+        const paper = makePaper([suelta]);
+        const { useCase, analyzer } = buildUseCase({
+            paper,
+            analysis: analysisCiting(['Directa']),
+            retrievedFor: [],
+            fullText: 'el extracto que el autor subió a mano',
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        const sentSources = analyzer.analyzeVerse.mock.calls[0][0].sources;
+        expect(sentSources.map((s: { citationKey: string }) => s.citationKey)).toEqual(['Directa']);
+        expect(sentSources[0].textContent).toContain('subió a mano');
     });
 });
