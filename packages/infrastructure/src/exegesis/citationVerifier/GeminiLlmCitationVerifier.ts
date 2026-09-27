@@ -170,16 +170,24 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             parsed.evidencePage ?? parsed.pages,
         );
         if (chunks.length === 0) {
+            // «No pude comprobar» no es «no existe».
+            //
+            // Este veredicto decía `not-found` para los dos casos, y el peor
+            // de los dos es el que no se leyó: el autor borra una cita
+            // correcta porque la pantalla dice que la fuente no la respalda.
+            // Medido en Jonás 4:3, donde las citas a Calvino volvieron «no
+            // encontrada» mientras la hoja admitida decía, palabra por
+            // palabra, lo que la afirmación sostenía.
             return {
                 ...parsed,
-                status: 'not-found',
+                status: 'manual-pending',
                 matchedCorpusId: matched.corpusId,
                 matchedSourceLabel: matched.displayLabel,
                 similarityScore: null,
                 matchedPage: null,
                 note: language === 'en'
-                    ? 'Source matched but no readable chunks were available to verify against.'
-                    : 'La fuente coincide pero no hay fragmentos legibles disponibles para verificar.',
+                    ? 'The source matched but its admitted pages could not be read; review this citation by hand.'
+                    : 'No se pudo leer la evidencia admitida de esta fuente; revisa la cita a mano.',
             };
         }
 
