@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, Lightbulb, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { ASSIGNMENT_BRIEF_MAX_CHARS, PREACHING_BRIEF_TEMPLATE, briefGaps, type ExegeticalPaper } from '@dosfilos/domain';
+import {
+    ASSIGNMENT_BRIEF_MAX_CHARS,
+    briefGaps,
+    buildPreachingBrief,
+    buildSourcesAndFormatBlock,
+    previousDelivery,
+    type ExegeticalPaper,
+} from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
@@ -25,7 +32,7 @@ interface PaperBriefPanelProps {
 
 export function PaperBriefPanel({ paper }: PaperBriefPanelProps) {
     const { t } = useTranslation('exegesis');
-    const { updatePaperBrief } = useExegesisPapers();
+    const { updatePaperBrief, papers } = useExegesisPapers();
     const [expandido, setExpandido] = useState(false);
     const [borrador, setBorrador] = useState<string | null>(null);
 
@@ -102,13 +109,19 @@ export function PaperBriefPanel({ paper }: PaperBriefPanelProps) {
                 <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                         <AssignmentBriefPicker currentBody={borrador} onApply={setBorrador} />
-                        {/* La plantilla del sistema para una serie expositiva:
-                            cuatro bloques iguales en cada sermón y uno que hay
-                            que llenar leyendo. Sólo se ofrece sobre un lienzo
-                            vacío, para no pisar lo que ya haya escrito. */}
+                        {/* La plantilla del sistema para una serie expositiva.
+                            El bloque de fuentes llega ESCRITO —qué libro
+                            translitera, cuál se citó la vez pasada, qué tipo
+                            ancla— porque son cosas que el sistema ya midió y
+                            pedirlas a mano es hacerle al autor el trabajo de la
+                            máquina. En blanco queda sólo el bloque de
+                            preguntas, que es el acto exegético.
+                            Se ofrece sobre lienzo vacío para no pisar nada. */}
                         {!borrador?.trim() && (
                             <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]"
-                                onClick={() => setBorrador(PREACHING_BRIEF_TEMPLATE)}>
+                                onClick={() => setBorrador(buildPreachingBrief(
+                                    buildSourcesAndFormatBlock(paper, previousDelivery(papers, paper.id)),
+                                ))}>
                                 {t('paperSetup.brief.gaps.usePreachingTemplate')}
                             </Button>
                         )}

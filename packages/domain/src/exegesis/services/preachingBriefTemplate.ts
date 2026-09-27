@@ -45,10 +45,24 @@ LO QUE TIENE QUE QUEDAR RESUELTO
 - Qué decisión de traducción cambia el sentido, si hay alguna.
 - Qué hace este pasaje en el argumento del libro.
 
-FUENTES Y FORMATO
-Citas parentéticas (Apellido, p. N). Tercera persona.
-[Anotá acá lo que sepas de tus libros: cuál translitera y no trae el original,
-cuál no se puede repetir, cuál es el ancla de esta serie.]`;
+FUENTES Y FORMATO`;
+
+/**
+ * La plantilla con el bloque de fuentes YA ESCRITO por el sistema.
+ *
+ * El bloque de fuentes pedía anotar a mano cuál libro translitera, cuál no se
+ * puede repetir y cuál ancla. El fundador lo probó y dijo que era lo más
+ * difícil de llenar — con razón: son cosas que el sistema ya midió, y pedirle
+ * que las transcriba es hacerle a él el trabajo de la máquina.
+ *
+ * Lo que sigue en blanco es el bloque de PREGUNTAS, que es el acto exegético.
+ */
+export function buildPreachingBrief(sourcesAndFormat: string): string {
+    const bloque = sourcesAndFormat.trim();
+    return bloque
+        ? `${PREACHING_BRIEF_TEMPLATE}\n${bloque}`
+        : PREACHING_BRIEF_TEMPLATE;
+}
 
 /**
  * Qué le falta a un encuadre para que el sistema pueda trabajar con él.

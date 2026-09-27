@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PREACHING_BRIEF_TEMPLATE, briefGaps } from '../preachingBriefTemplate';
+import { PREACHING_BRIEF_TEMPLATE, briefGaps, buildPreachingBrief } from '../preachingBriefTemplate';
 import { grammarSearchKeys } from '../grammarSearchKeys';
 import { PREACHING_STUDY_RUBRIC } from '../../entities/preachingStudyRubric';
 import { DEFAULT_TMS_EXEGETICAL_RUBRIC } from '../../entities/PaperRubric';
@@ -56,8 +56,12 @@ describe('la plantilla le da al sistema lo que necesita', () => {
         expect(PREACHING_BRIEF_TEMPLATE).toContain('no se indexan por pasaje');
     });
 
-    it('declara la forma de cita, que el exportador obedece', () => {
-        expect(PREACHING_BRIEF_TEMPLATE).toContain('(Apellido, p. N)');
+    it('la forma de cita ya NO se pide a mano: la aporta el bloque generado', () => {
+        // Salía de la rúbrica y estaba escrita en la plantilla como si el
+        // autor tuviera que copiarla. Ahora la escribe el sistema.
+        expect(PREACHING_BRIEF_TEMPLATE).not.toContain('(Apellido, p. N)');
+        expect(buildPreachingBrief('Citas parentéticas (Apellido, p. N).'))
+            .toContain('(Apellido, p. N)');
     });
 });
 
