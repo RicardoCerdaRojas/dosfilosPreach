@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     MIN_CHARS_PARA_AFIRMAR_AUSENCIA,
+    classifyOriginalLanguageAbsence,
+    countTransliterationMarks,
     claimsQuotingUnreadableOriginal,
     countOriginalLanguageChars,
     sourcesWithoutOriginalLanguage,
@@ -28,7 +30,9 @@ describe('sourcesWithoutOriginalLanguage', () => {
     it('marca la fuente con texto de sobra y cero lengua original', () => {
         // El caso medido: 18.888 caracteres de Adamson, ni una letra griega.
         const sin = sourcesWithoutOriginalLanguage([{ citationKey: 'Adamson', text: relleno(18_888) }]);
-        expect([...sin]).toEqual(['Adamson']);
+        expect([...sin.keys()]).toEqual(['Adamson']);
+        // Sin original y sin transliteración: la extracción lo perdió.
+        expect(sin.get('Adamson')).toBe('lost');
     });
 
     it('no marca a la que sí la trae', () => {
@@ -67,7 +71,7 @@ describe('claimsQuotingUnreadableOriginal', () => {
     it('señala la forma griega apoyada en una fuente sin griego', () => {
         const encontradas = claimsQuotingUnreadableOriginal(
             analisis([{ sourceKey: 'Adamson', claim: 'trata μέντοι como un punto crucial' }]),
-            new Set(['Adamson']),
+            new Map([['Adamson', 'lost' as const]]),
         );
         expect(encontradas).toHaveLength(1);
         expect(encontradas[0]!.form).toBe('μέντοι');
@@ -77,7 +81,7 @@ describe('claimsQuotingUnreadableOriginal', () => {
     it('la forma también puede venir en la cita textual que dijo haber copiado', () => {
         const encontradas = claimsQuotingUnreadableOriginal(
             analisis([{ sourceKey: 'Adamson', claim: 'lo comenta', quote: 'the particle διεκρίθητε' }]),
-            new Set(['Adamson']),
+            new Map([['Adamson', 'lost' as const]]),
         );
         expect(encontradas[0]!.form).toBe('διεκρίθητε');
     });
@@ -87,21 +91,60 @@ describe('claimsQuotingUnreadableOriginal', () => {
         // atribuirle una lectura del original que su texto no contiene.
         expect(claimsQuotingUnreadableOriginal(
             analisis([{ sourceKey: 'Adamson', claim: 'subraya el trasfondo social' }]),
-            new Set(['Adamson']),
+            new Map([['Adamson', 'lost' as const]]),
         )).toEqual([]);
     });
 
     it('la misma forma apoyada en una fuente que SÍ trae griego no se señala', () => {
         expect(claimsQuotingUnreadableOriginal(
             analisis([{ sourceKey: 'Mayor', claim: 'trata μέντοι como adversativo' }]),
-            new Set(['Adamson']),
+            new Map([['Adamson', 'lost' as const]]),
         )).toEqual([]);
     });
 
     it('sin fuentes marcadas no recorre nada', () => {
         expect(claimsQuotingUnreadableOriginal(
             analisis([{ sourceKey: 'Adamson', claim: 'μέντοι' }]),
-            new Set(),
+            new Map(),
         )).toEqual([]);
+    });
+});
+
+
+describe('el libro que translitera NO está roto', () => {
+    /**
+     * Sasson discute «the root hãyâ in the G-imperfect with a waw-conversive»:
+     * morfología seria, sin caracteres hebreos, porque su colección escribe
+     * así. La primera versión de esta comprobación lo acusaba de roto.
+     */
+    const SASSON = `The root hãyâ in the G-imperfect with a waw-conversive is common. `
+        + `Discovered at Wadi Murabbaʿat and Naḥal Ḥever, the ṣādê and the šîn `
+        + `alternate; compare ʾāmar with hāyâ and the ṭêt of qûm. `.repeat(40);
+
+    it('se distingue del libro cuya extracción perdió el original', () => {
+        expect(classifyOriginalLanguageAbsence(SASSON)).toBe('transliterated');
+        expect(classifyOriginalLanguageAbsence(relleno(20_000))).toBe('lost');
+    });
+
+    it('las tildes corrientes del español no cuentan como transliteración', () => {
+        // Si contaran, cualquier comentario en castellano pasaría por semítico.
+        expect(countTransliterationMarks('según él, la acción está más allá')).toBe(0);
+    });
+
+    it('la afirmación dice POR QUÉ la fuente no la contiene', () => {
+        const sin = sourcesWithoutOriginalLanguage([
+            { citationKey: 'Sasson', text: SASSON },
+            { citationKey: 'Adamson', text: relleno(20_000) },
+        ]);
+        expect(sin.get('Sasson')).toBe('transliterated');
+        expect(sin.get('Adamson')).toBe('lost');
+    });
+
+    it('la razón viaja con cada afirmación señalada', () => {
+        const encontradas = claimsQuotingUnreadableOriginal(
+            analisis([{ sourceKey: 'Sasson', claim: 'trata הָיָה como narrativo' }]),
+            new Map([['Sasson', 'transliterated' as const]]),
+        );
+        expect(encontradas[0]!.absence).toBe('transliterated');
     });
 });

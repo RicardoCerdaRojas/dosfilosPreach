@@ -44,6 +44,53 @@ export function countOriginalLanguageChars(text: string): number {
  */
 export const MIN_CHARS_PARA_AFIRMAR_AUSENCIA = 2000;
 
+/**
+ * Marcas de transliteración académica semítica.
+ *
+ * Son las que usa un comentario que escribe el hebreo en alfabeto latino:
+ * macrones y circunflejos para las vocales largas, puntos bajo las enfáticas,
+ * y los dos signos de álef y ayin. NO incluye las tildes del español ni del
+ * inglés, que aparecen en cualquier libro y no dirían nada.
+ */
+const TRANSLITERACION = /[ḥḤṭṬṣṢśŚšŠʾʿāēīōūîêôûĕăŏḏḵṯḡ]/g;
+
+export function countTransliterationMarks(text: string): number {
+    return (text.match(TRANSLITERACION) ?? []).length;
+}
+
+/**
+ * Cuánta transliteración basta para decir que el autor escribe así.
+ *
+ * Medido sobre el corpus de producción, entre los libros que NO tienen ni un
+ * carácter en lengua original: Sasson marca 6,3 ‰, el siguiente 0,3 ‰ y todo
+ * el resto 0,0 ‰. Sasson está veinte veces por encima del segundo, así que el
+ * umbral cae en tierra de nadie y no en el borde de una distribución.
+ */
+const MIN_TRANSLITERACION = 2;
+
+/**
+ * Por qué un libro no tiene lengua original en el texto leído.
+ *
+ * `'transliterated'` — el autor escribe el hebreo en alfabeto latino. Sasson
+ * discute «the root hãyâ in the G-imperfect with a waw-conversive»: está
+ * haciendo morfología seria, sólo que sin caracteres hebreos. El libro es así
+ * y no hay nada que reparar.
+ *
+ * `'lost'` — no hay ni original ni transliteración. La extracción lo perdió.
+ * Adamson entra acá: escribe «6€§a00¢e» donde el libro imprime δέξασθε, y su
+ * transliteración mide 0,0 ‰.
+ *
+ * La distinción salió de equivocarme. La primera versión de esta comprobación
+ * marcaba los dos casos igual, y a un comentario semítico serio lo acusaba de
+ * roto por seguir la convención de su colección.
+ */
+export type OriginalLanguageAbsence = 'transliterated' | 'lost';
+
+export function classifyOriginalLanguageAbsence(text: string): OriginalLanguageAbsence {
+    const porMil = text.length > 0 ? (1000 * countTransliterationMarks(text)) / text.length : 0;
+    return porMil >= MIN_TRANSLITERACION ? 'transliterated' : 'lost';
+}
+
 export interface SourceTextSample {
     citationKey: string | null;
     /** Todo lo que el sistema leyó de esa fuente para este trabajo. */
@@ -58,12 +105,13 @@ export interface SourceTextSample {
  */
 export function sourcesWithoutOriginalLanguage(
     sources: ReadonlyArray<SourceTextSample>,
-): ReadonlySet<string> {
-    const out = new Set<string>();
+): ReadonlyMap<string, OriginalLanguageAbsence> {
+    const out = new Map<string, OriginalLanguageAbsence>();
     for (const s of sources) {
         if (!s.citationKey) continue;
         if (s.text.length < MIN_CHARS_PARA_AFIRMAR_AUSENCIA) continue;
-        if (countOriginalLanguageChars(s.text) === 0) out.add(s.citationKey);
+        if (countOriginalLanguageChars(s.text) > 0) continue;
+        out.set(s.citationKey, classifyOriginalLanguageAbsence(s.text));
     }
     return out;
 }
@@ -74,6 +122,11 @@ export interface UnreadableOriginalClaim {
     sourceKey: string;
     /** La primera forma en lengua original que la afirmación trae. */
     form: string;
+    /**
+     * Por qué la fuente no la contiene. Cambia lo que hay que hacer: un libro
+     * transliterado no se re-extrae, se cita de otro modo.
+     */
+    absence: OriginalLanguageAbsence;
 }
 
 /** La forma original más larga de un texto, para nombrar el hallazgo. */
@@ -91,17 +144,18 @@ function primeraForma(text: string): string | null {
  */
 export function claimsQuotingUnreadableOriginal(
     analysis: CanonicalVerseAnalysis,
-    sinLenguaOriginal: ReadonlySet<string>,
+    sinLenguaOriginal: ReadonlyMap<string, OriginalLanguageAbsence>,
 ): UnreadableOriginalClaim[] {
     if (sinLenguaOriginal.size === 0) return [];
     const out: UnreadableOriginalClaim[] = [];
     for (const claim of collectAnalysisClaims(analysis)) {
-        if (!sinLenguaOriginal.has(claim.sourceKey)) continue;
+        const absence = sinLenguaOriginal.get(claim.sourceKey);
+        if (!absence) continue;
         // La forma puede venir en la afirmación o en la cita textual que el
         // analizador dijo haber copiado; las dos son lectura de la fuente.
         const form = primeraForma(`${claim.claim} ${claim.verbatimQuote ?? ''}`);
         if (!form) continue;
-        out.push({ path: claim.path, sourceKey: claim.sourceKey, form });
+        out.push({ path: claim.path, sourceKey: claim.sourceKey, form, absence });
     }
     return out;
 }
