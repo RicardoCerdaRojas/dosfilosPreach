@@ -85,6 +85,20 @@ describe('verificador de citas — la página citada sobrevive al tope', () => {
         expect(out.map(c => c.pageHint)).toEqual(['p. 203', 'p. 203', 'p. 204']);
     });
 
+    it('un libro rotulado por HOJA elige igual de bien', () => {
+        // El caso de Jonás 4:3. Calvino no tiene numeración confirmada, así
+        // que sus fragmentos se rotulan «hoja N» y la cita deja la página
+        // comparable en null —a propósito—. Con el selector también en null,
+        // el verificador recibía las hojas 7-12, las primeras de la receta, y
+        // devolvía «no encontrada» con la nota de que sólo había recibido «la
+        // introducción y el inicio del capítulo 1».
+        const calvino = [7, 8, 9, 10, 11, 12, 26, 27, 35, 52, 59, 60, 61, 68]
+            .map((h, i) => ({ text: `fragmento ${i} de la hoja ${h}`, pageHint: `hoja ${h}` }));
+        const out = selectEvidenceChunks(calvino, '60', { maxChunks: 8, maxCharsPerChunk: 4000 });
+        expect(out.some(c => c.pageHint === 'hoja 60')).toBe(true);
+        expect(out.map(c => c.pageHint).slice(0, 3)).toEqual(['hoja 59', 'hoja 60', 'hoja 61']);
+    });
+
     it('quita duplicados que llegan por dos caminos', () => {
         const out = selectEvidenceChunks([craigie[6]!, { ...craigie[6]! }], '206', { maxChunks: 8, maxCharsPerChunk: 4000 });
         expect(out).toHaveLength(1);

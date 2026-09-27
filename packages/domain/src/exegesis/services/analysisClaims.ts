@@ -116,6 +116,10 @@ export function analysisClaimsToCitations(
             author: claim.sourceKey,
             title: '',
             pages,
+            // La hoja sirve para ELEGIR la evidencia aunque no sirva para
+            // cotejar la página: los fragmentos de esta misma fuente están
+            // rotulados con ella.
+            evidencePage: pages ?? String(claim.page),
             offset: index,
             evidence: claim.verbatimQuote ?? claim.claim,
             evidenceIsQuoted: claim.verbatimQuote !== null,

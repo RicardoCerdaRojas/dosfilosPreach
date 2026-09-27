@@ -159,7 +159,16 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             userId,
             numbering: matched.numbering ?? null,
         });
-        const chunks = this.prepareChunks([...matched.chunks, ...retrievedChunks], parsed.pages);
+        // `evidencePage` y no `pages`: elegir CONTRA QUÉ se coteja no es lo
+        // mismo que decidir si las páginas coinciden. Una cita a un libro sin
+        // numeración calibrada deja `pages` en null a propósito —comparar una
+        // hoja contra una página impresa reprueba lo que está bien— y con eso
+        // se perdía también la selección, dejando al verificador juzgando
+        // contra los primeros fragmentos del libro.
+        const chunks = this.prepareChunks(
+            [...matched.chunks, ...retrievedChunks],
+            parsed.evidencePage ?? parsed.pages,
+        );
         if (chunks.length === 0) {
             return {
                 ...parsed,
