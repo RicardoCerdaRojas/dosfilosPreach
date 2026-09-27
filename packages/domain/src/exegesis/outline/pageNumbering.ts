@@ -583,9 +583,24 @@ export function citationAnchorFor(
     // `printedLabelIn` y no `printedPageIn`: en un tramo romano el valor es
     // 222 y la página es «ccxxii», y acá se escribe la página.
     const printed = chunk.sheet === null ? null : printedLabelIn(numbering, chunk.sheet);
+    // Sin página impresa se rotula la HOJA, sepamos o no cómo numera el libro.
+    //
+    // Antes la hoja sólo se escribía cuando no había numeración ninguna, y un
+    // libro cuya numeración declara que NO lleva folio salía con el ancla
+    // vacía. Medido en el estudio de Jonás 4: Farfán —numeración confirmada,
+    // un solo tramo con `offset: null`— llegó al prompt sin ancla, y la cita
+    // que volvió fue «p. 0». Ortiz había hecho lo mismo, con el locator
+    // «tentative page, not provided».
+    //
+    // El silencio no produce una cita sin página: produce una inventada.
+    // Quien recibe esto tiene que escribir un número, y si no le damos
+    // ninguno lo consigue por su cuenta. La hoja es un hecho verificable del
+    // archivo —falso como página, honesto como lo que es— y es exactamente lo
+    // que ya decimos de un libro del que no sabemos nada. Saber MÁS del libro
+    // no puede dar una etiqueta peor.
     const page = printed !== null
         ? `p. ${printed}`
-        : numbering === null && chunk.sheet
+        : chunk.sheet
             ? `hoja ${chunk.sheet}`
             : '';
 

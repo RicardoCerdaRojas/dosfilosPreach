@@ -184,8 +184,14 @@ describe('AnalyzeVerseCanonicallyUseCase — el ancla que ve el modelo', () => {
         expect(anchorsSentFor(analyzer, 'Wallace')).toEqual(['hoja 55']);
     });
 
-    it('no ofrece pagina en un tramo sin numeracion arabiga', async () => {
-        // Las primeras 316 hojas de Mayor son su introduccion en romanos.
+    it('en un tramo sin numeracion arabiga ofrece la hoja, no el vacio', async () => {
+        // Las primeras 316 hojas de Mayor no declaran folio. El ancla se
+        // quedaba en «§ Intro» y el modelo tenia que escribir un numero de
+        // pagina igual: mirese el `page: 0` de este mismo fixture, que era el
+        // sintoma copiado del comportamiento real.
+        //
+        // Pasó tal cual en el estudio de Jonás 4: Farfán, con numeracion
+        // confirmada y un solo tramo sin folio, volvio citado en «p. 0».
         const paper = makePaper([makeSource('Mayor', 'res-mayor', [excerpt('p. 100, § Intro')])]);
         const { useCase, analyzer } = buildUseCase({
             paper,
@@ -195,7 +201,7 @@ describe('AnalyzeVerseCanonicallyUseCase — el ancla que ve el modelo', () => {
 
         await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
 
-        expect(anchorsSentFor(analyzer, 'Mayor')).toEqual(['§ Intro']);
+        expect(anchorsSentFor(analyzer, 'Mayor')).toEqual(['hoja 100, § Intro']);
     });
 
     it('prefiere la hoja guardada aparte sobre el rotulo ya formateado', async () => {

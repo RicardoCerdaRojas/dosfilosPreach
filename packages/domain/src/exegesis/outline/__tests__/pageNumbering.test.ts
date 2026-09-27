@@ -306,10 +306,24 @@ describe('relabelExcerptAnchor', () => {
         expect(relabelExcerptAnchor('p. 55', null)).toBe('hoja 55');
     });
 
-    it('cae en la seccion dentro de un tramo sin folio arabigo', () => {
-        // Las 316 primeras hojas de Mayor son su introduccion en romanos.
-        expect(relabelExcerptAnchor('p. 100, § Intro', mayor)).toBe('§ Intro');
-        expect(relabelExcerptAnchor('p. 100', mayor)).toBe('');
+    it('en un tramo sin folio arabigo rotula la hoja, no borra el lugar', () => {
+        // Las 316 primeras hojas de Mayor no declaran folio. El ancla
+        // guardada dice «p. 100» y ese 100 es la HOJA, no la pagina: el
+        // rotulo es falso y hay que corregirlo.
+        //
+        // Antes se corregia borrandolo, y el extracto llegaba sin lugar
+        // ninguno. Es el mismo agujero que dejo a Farfan citado en «p. 0»:
+        // quien recibe el ancla tiene que escribir un numero, y sin ninguno
+        // lo consigue por su cuenta. «hoja 100» es falso como pagina y
+        // exacto como hoja.
+        expect(relabelExcerptAnchor('p. 100, § Intro', mayor)).toBe('hoja 100, § Intro');
+        expect(relabelExcerptAnchor('p. 100', mayor)).toBe('hoja 100');
+    });
+
+    it('el tramo del mismo libro que SI resuelve sigue dando pagina impresa', () => {
+        // El invariante que el cambio de arriba no puede romper: donde el
+        // libro numera, se cita la pagina y nunca la hoja.
+        expect(relabelExcerptAnchor('p. 320', mayor)).toBe('p. 42');
     });
 
     it('deja intacta un ancla que no reconoce', () => {
@@ -390,13 +404,44 @@ describe('numeración en romanos', () => {
         expect(printedPageIn(MAYOR, 240)).toBeNull();
     });
 
-    it('una hoja sin número sigue sin tenerlo', () => {
+    it('una hoja sin número sigue sin tenerlo, y se la cita como hoja', () => {
+        // El ancla decía '' —el libro declara que no lleva folio, así que no
+        // hay página que escribir—. Pero quien recibe el ancla TIENE que
+        // escribir un número, y sin ninguno lo consigue solo: Farfán, con esta
+        // forma exacta de numeración, volvió citado en «p. 0».
+        //
+        // La hoja es falsa como página y honesta como hoja, y es lo que ya se
+        // dice de un libro sin numeración ninguna. Saber más no puede rotular
+        // peor.
         const conLamina: PageNumbering = {
             origin: 'confirmed',
             segments: [{ fromSheet: 1, toSheet: 40, offset: null }],
         };
         expect(printedLabelIn(conLamina, 12)).toBeNull();
-        expect(citationAnchorFor({ sheet: 12, section: null }, conLamina)).toBe('');
+        expect(citationAnchorFor({ sheet: 12, section: null }, conLamina)).toBe('hoja 12');
+    });
+
+    it('una hoja fuera de todo tramo declarado también se cita como hoja', () => {
+        const parcial: PageNumbering = {
+            origin: 'confirmed',
+            segments: [{ fromSheet: 1, toSheet: 40, offset: -4 }],
+        };
+        expect(citationAnchorFor({ sheet: 500, section: null }, parcial)).toBe('hoja 500');
+    });
+
+    it('sin hoja no se inventa un ancla, con numeración o sin ella', () => {
+        const parcial: PageNumbering = {
+            origin: 'confirmed',
+            segments: [{ fromSheet: 1, toSheet: 40, offset: null }],
+        };
+        expect(citationAnchorFor({ sheet: null, section: null }, parcial)).toBe('');
+        expect(citationAnchorFor({ sheet: null, section: null }, null)).toBe('');
+        expect(citationAnchorFor({ sheet: null, section: '3.2' }, parcial)).toBe('§ 3.2');
+    });
+
+    it('la página impresa sigue ganando cuando el libro sí la resuelve', () => {
+        expect(citationAnchorFor({ sheet: 240, section: null }, MAYOR)).toBe('p. ccxxii');
+        expect(citationAnchorFor({ sheet: 461, section: '2.1' }, MAYOR)).toBe('p. 183, § 2.1');
     });
 });
 
