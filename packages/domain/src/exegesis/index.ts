@@ -88,6 +88,7 @@ export * from './services/verseMorphologyBriefing';
 export * from './services/sourceMemory';
 export * from './services/oshbMorphology';
 export * from './services/preachingBriefTemplate';
+export * from './services/sourcesAndFormatBlock';
 export * from './services/lemmaPages';
 export * from './services/courseBibliography';
 export * from './entities/WorkProfile';
