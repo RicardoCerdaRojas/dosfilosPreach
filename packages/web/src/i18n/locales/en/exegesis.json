@@ -666,6 +666,10 @@
             "none": {
               "label": "No formal rubric",
               "hint": "Strategy-only — the composer works without source requirements."
+            },
+            "preaching": {
+              "label": "Preaching study",
+              "hint": "Same rigour, different output: the expository commentary anchors, 3-5 pages, parenthetical citations. For an expository series, not for submission."
             }
           }
         }
