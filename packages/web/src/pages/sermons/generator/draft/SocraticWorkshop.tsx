@@ -155,6 +155,16 @@ export function SocraticWorkshop(props: Props) {
                     texto al borde donde empieza la columna, no al medio. */}
                 <div className="w-full max-w-3xl">
                 <SectionElementsPanel
+                    /* El panel guarda lo que es DE ESTA SECCIÓN: la idea a
+                       medio escribir, las propuestas traídas y el aviso de que
+                       no se pudieron traer. Sin `key`, React reusa la misma
+                       instancia al cambiar de sección y esos tres quedan
+                       colgando bajo el título de la siguiente: las propuestas
+                       del contexto histórico aparecían como si fueran de la
+                       conexión actual, con su explicación citando versículos
+                       que la nueva sección no trata. La `key` monta un panel
+                       por sección, que es lo que ya se estaba suponiendo. */
+                    key={props.activeSection.id}
                     section={props.activeSection}
                     passage={props.passage}
                     proposition={props.proposition}
