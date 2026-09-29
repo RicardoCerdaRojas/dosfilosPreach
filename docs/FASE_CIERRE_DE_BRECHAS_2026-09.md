@@ -182,6 +182,58 @@ todos los días y no registra ninguna de esas métricas.
 **Restricción:** la ficha guarda números y perfiles derivados. Nunca páginas.
 Los libros son material con derechos.
 
+### Diseño (acordado con el fundador, 2026-09-29)
+
+**Qué hay hoy.** Los tokens de Gemini se registran agregados por día, mes y
+función (`llmUsageDaily/Monthly`, feature `library.pdfExtraction`), pero nunca
+por recurso ni por corrida. Duración y reintentos viven sólo en memoria.
+`scriptCensus` cuenta letras por escritura, no diacríticos, niqqud, U+FFFD ni
+marcas huérfanas; y el camino por cola (`extractRangeTask`) ni siquiera lo
+escribe. El informe del saneador sólo va a `console.log`.
+
+**Preguntas que la ficha tiene que contestar.**
+
+1. ¿Qué motor resuelve los libros reales, y a qué costo por libro?
+2. ¿Cuándo sale roto el texto sin que nadie se entere? Griego con pocos
+   diacríticos, hebreo sin niqqud o invertido, U+FFFD, marcas huérfanas.
+3. ¿Dónde se cae? Razón, reintentos, duración contra el tope de 540 s, cola
+   frente a pasada única.
+4. ¿El informe previo al subir predice el resultado?
+
+**La ficha: `extraction_runs/{runId}`, una por corrida.** Sólo números:
+
+- identidad: `resourceId`, `uid`, camino (única · cola · reproceso · `processWithGemini`);
+- tiempo: inicio, fin, `durationMs`;
+- cascada: cada motor intentado con su tiempo, resultado y razón; `extractionVersion` final;
+- páginas: esperadas, emitidas, cobertura, faltantes;
+- costo: tokens de Gemini (entrada, salida, pensamiento) y USD; créditos de LlamaParse;
+- reintentos de la cola;
+- desenlace: `ready` · `failed` · `stalled` · `cancelled`, con su razón;
+- `fidelity`: los números de `scriptFidelity` más la dirección del hebreo;
+- conteos del saneador;
+- el veredicto del informe previo, con sus números.
+
+**Decisiones.**
+
+- **El veredicto del informe previo se guarda al subir.** La web ya lo calcula
+  (`usePdfPreflight`); se persiste en el recurso y la corrida lo copia, para
+  poder contestar la pregunta 4.
+- **Retención indefinida.** Es un documento chico por corrida; la historia por
+  motor tiene que poder compararse en el tiempo.
+- **Sólo administración.** Quien usa la app ya ve el diagnóstico de su tarjeta
+  (`assessExtraction`); la ficha es para nosotros.
+
+**Alcance: un PR con UI.**
+
+1. `scriptFidelity` pasa del bakeoff a `domain`, con prueba de paridad.
+2. `recordExtractionRun` en `functions`, llamado en las escrituras de `ready` y
+   `failed` de los cuatro puntos de entrada, más `sweepStalledExtractions` y
+   `cancelExtraction`. Una falla al registrar nunca tumba la extracción.
+3. El camino por cola escribe `scriptCensus`, que hoy le falta.
+4. Página `/admin/extraccion`: totales por motor (costo por página, tasa de
+   fallo, alertas de fidelidad) y lista de corridas. Reglas: sólo lectura
+   para administración.
+
 ## 8 · `completeRegistration` sin rate-limit propio
 
 Residual del endurecimiento de auth previo al lanzamiento. Riesgo bajo,
