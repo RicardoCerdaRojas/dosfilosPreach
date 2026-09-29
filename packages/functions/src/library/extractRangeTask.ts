@@ -23,6 +23,9 @@ import { motivoDeLibroVacio } from './libroVacio';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { truncateUtf8 } from './truncateUtf8';
 import { consumePagesAdmin } from './processingBalance';
+import { censusOf } from './scriptCensus';
+import { conAtribucion } from '../llm/atribucionDeConsumo';
+import { anotarRango, cerrarFicha, rutaDeFicha } from './fichaDeCorrida';
 
 export const EXTRACTION_VERSION = '6.0-gemini-cola';
 const FIRESTORE_TEXT_LIMIT_BYTES = 900_000;
@@ -102,7 +105,13 @@ export const extractRangeTask = onTaskDispatched(
         }
 
         try {
-            const resultado = await procesarRango(puertasReales(apiKey), carga);
+            // Lo que cueste este rango se anota en la ficha de su corrida.
+            const resultado = await conAtribucion(rutaDeFicha(carga.runId), () =>
+                procesarRango(puertasReales(apiKey), carga));
+
+            if (resultado.estado !== 'descartado') {
+                await anotarRango(getFirestore(), carga.runId, req.retryCount > 0);
+            }
 
             if (resultado.estado === 'descartado') {
                 console.log(`[Rango] ${carga?.resourceId}: ${resultado.motivo}; se retira`);
@@ -150,6 +159,11 @@ async function marcarFalloDeRango(carga: CargaDeRango, err: unknown): Promise<vo
     } catch (escritura) {
         console.error(`[Rango] ${carga.resourceId}: tampoco se pudo escribir el fallo:`, escritura);
     }
+    await cerrarFicha(getFirestore(), carga.runId, {
+        outcome: 'failed',
+        reason: `rango ${rango}: ${motivo}`,
+        pagesExpected: carga.totalPaginas,
+    });
 }
 
 /**
@@ -296,6 +310,14 @@ async function ensamblarYGuardar(
             extractionProgress: FieldValue.delete(),
             updatedAt: new Date(),
         });
+        await cerrarFicha(getFirestore(), runId, {
+            outcome: 'failed',
+            reason: vacio,
+            extractionVersion: EXTRACTION_VERSION,
+            pagesExpected: totalPaginas,
+            pagesEmitted: libro.pageCount,
+            text: libro.text,
+        });
         await limpiarRangos(userId, resourceId, runId);
         return;
     }
@@ -329,8 +351,21 @@ async function ensamblarYGuardar(
         // libro sirve; esto deja constancia de lo que igual se perdió, para que
         // una cita a una página ausente pueda avisarse.
         paginasFaltantes: libro.faltantes.total > 0 ? libro.faltantes : FieldValue.delete(),
+        // Este camino no escribía el censo, así que un libro largo quedaba sin
+        // él —o con el de su extracción anterior— y la tarjeta juzgaba texto
+        // que ya no existía.
+        scriptCensus: censusOf(libro.text),
         extractionProgress: FieldValue.delete(),
         updatedAt: new Date(),
+    });
+
+    await cerrarFicha(getFirestore(), runId, {
+        outcome: 'ready',
+        extractionVersion: EXTRACTION_VERSION,
+        pagesExpected: totalPaginas,
+        pagesEmitted: libro.pageCount,
+        pagesMissing: libro.faltantes.total,
+        text: libro.text,
     });
 
     console.log(

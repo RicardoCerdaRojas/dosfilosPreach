@@ -109,6 +109,12 @@ export class LibraryService {
              * que ya tenía en la cabeza al elegir el archivo.
              */
             authoredByUser?: boolean;
+            /**
+             * El informe previo que el navegador calculó sobre este archivo.
+             * Viaja al recurso para que la ficha de extracción pueda decir si
+             * predijo el resultado. Sólo veredicto y números.
+             */
+            preflight?: import('@dosfilos/domain').PdfPreflightRecord;
         },
         onProgress?: (percentage: number) => void
     ): Promise<LibraryResourceEntity> {
@@ -161,6 +167,9 @@ export class LibraryService {
         }
         if (metadata.authoredByUser !== undefined) {
             resource.authoredByUser = metadata.authoredByUser;
+        }
+        if (metadata.preflight) {
+            resource.preflight = metadata.preflight;
         }
 
         // 4. Save to Firestore

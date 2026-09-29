@@ -210,6 +210,11 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         if (resource.requestedExtractionMode) {
             doc.requestedExtractionMode = resource.requestedExtractionMode;
         }
+        // El informe previo al subir: lo lee la ficha de extracción para
+        // cruzarlo con el resultado. Sólo existe en subidas nuevas.
+        if (resource.preflight) {
+            doc.preflight = { ...resource.preflight };
+        }
         // v1.7 smart-match metadata. Persist when set so the upload
         // form's autocompleted suggestion travels to Firestore; legacy
         // resources (where neither was set) read back as `[]` + 'book'

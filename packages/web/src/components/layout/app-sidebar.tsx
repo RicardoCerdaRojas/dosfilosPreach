@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import {
   Home, FileText, Sparkles, Settings, LogOut,
-  BookOpen, BookMarked, Library, ChevronUp, ChevronDown, User2, Bell, Users, CreditCard, Database, GraduationCap, BarChart3, Book, MessageSquareQuote, Bot, BookOpenText, FolderKanban, Gauge, ScrollText, NotebookPen, Zap, Download, Mail, Globe, Presentation, ShieldCheck, Coins } from 'lucide-react';
+  BookOpen, BookMarked, Library, ChevronUp, ChevronDown, User2, Bell, Users, CreditCard, Database, GraduationCap, BarChart3, Book, MessageSquareQuote, Bot, BookOpenText, FolderKanban, Gauge, ScrollText, NotebookPen, Zap, Download, Mail, Globe, Presentation, ShieldCheck, Coins, FileScan } from 'lucide-react';
 import { useFirebase } from '@/context/firebase-context';
 import { authService } from '../../../../application/src/services/AuthService';
 import { toast } from 'sonner';
@@ -177,6 +177,7 @@ export function AppSidebar() {
     { name: 'LlamaParse Monitor', href: '/dashboard/admin/llamaparse-monitoring', icon: Gauge },
     { name: 'Sombra Doxológica', href: '/dashboard/admin/doxological-shadow', icon: Gauge },
     { name: 'Consumo de modelos', href: '/dashboard/admin/llm-cost', icon: Coins },
+    { name: t('menu.extractionRuns'), href: '/dashboard/admin/extraction-runs', icon: FileScan },
     { name: 'Audit Log', href: '/dashboard/admin/audit-log', icon: ScrollText },
   ];
 
@@ -325,7 +326,7 @@ export function AppSidebar() {
                   type="button"
                   onClick={() => setAdminOpen((v) => !v)}
                   aria-expanded={adminOpen}
-                  className="group-data-[collapsible=icon]:hidden w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-amber-600 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
+                  className="group-data-[collapsible=icon]:hidden w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-warning hover:text-warning/80 transition-colors"
                 >
                   <span className="inline-flex items-center gap-1.5">
                     <Zap className="h-3.5 w-3.5" />

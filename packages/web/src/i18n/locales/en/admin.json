@@ -688,5 +688,94 @@
       "breathings": "{{count}} breathings ✎",
       "breathingsHint": "Greek breathing marks the OCR left detached before the vowel, recomposed so the word is searchable."
     }
+  },
+  "extractionRuns": {
+    "title": "Book extraction",
+    "subtitle": "One record per run: engine, cost, duration and script fidelity. Numbers only: a record never stores book text.",
+    "loadError": "We couldn't load the records.",
+    "empty": "No records yet. They're written from the next extraction on.",
+    "summary": {
+      "runs": "Runs",
+      "ready": "Ready",
+      "failed": "Failed",
+      "running": "Running",
+      "alerts": "Ready with alerts",
+      "usd": "Model cost"
+    },
+    "engines": {
+      "title": "By engine",
+      "hint": "The engine is the one that produced the text, or the last one tried if the run failed. Failure rate counts finished runs only. Cost covers the whole run, including engines that failed before the one that finished.",
+      "engine": "Engine",
+      "runs": "Runs",
+      "ready": "Ready",
+      "failRate": "Failure",
+      "degraded": "Degraded",
+      "alerts": "Alerts",
+      "usdPerPage": "USD/page",
+      "credits": "LlamaParse credits",
+      "median": "Median duration"
+    },
+    "engine": {
+      "llamaparse": "LlamaParse",
+      "gemini": "Vision (single call)",
+      "gemini-queue": "Vision (queued)",
+      "pdfjs": "Text layer",
+      "unknown": "No engine"
+    },
+    "preflight": {
+      "title": "Did the pre-upload report predict the result?",
+      "hint": "The verdict the browser saw at upload, against how the run ended.",
+      "verdict": "Verdict at upload",
+      "runs": "Finished",
+      "ready": "Ready",
+      "alerts": "Ready with alerts",
+      "verdicts": {
+        "apto": "Fit",
+        "sin-capa-de-texto": "No text layer",
+        "escritura-ausente": "Script missing",
+        "escritura-sin-diacriticos": "Script without diacritics",
+        "sin-escritura-original": "No original script",
+        "none": "No report"
+      }
+    },
+    "runs": {
+      "title": "Recent runs",
+      "filterLabel": "Show",
+      "filter": {
+        "all": "All",
+        "failed": "Failed",
+        "alerts": "With alerts"
+      },
+      "date": "Started",
+      "book": "Book",
+      "engine": "Engine",
+      "outcome": "Status",
+      "pages": "Pages",
+      "duration": "Duration",
+      "cost": "Cost",
+      "alerts": "Alerts",
+      "deletedResource": "(deleted resource)",
+      "none": "Nothing to show with this filter."
+    },
+    "outcome": {
+      "running": "Running",
+      "ready": "Ready",
+      "failed": "Failed",
+      "stalled": "Interrupted",
+      "cancelled": "Cancelled",
+      "superseded": "Superseded"
+    },
+    "path": {
+      "upload": "Upload",
+      "reprocess-premium": "Premium reprocess",
+      "reprocess-vision": "Image reprocess"
+    },
+    "alert": {
+      "reversed-hebrew": "Reversed Hebrew",
+      "greek-without-marks": "Greek without marks",
+      "replacement-chars": "Unreadable characters",
+      "orphan-marks": "Orphan marks",
+      "missing-pages": "Missing pages"
+    }
   }
 }

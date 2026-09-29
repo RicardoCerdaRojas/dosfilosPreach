@@ -10,6 +10,9 @@ import { consumePagesAdmin, readBalance } from './processingBalance';
 import { recordLlamaParseUsage, selectLlamaParseAccount } from './llamaParseAccountSelector';
 import { isMarkerOnlyMarkdown } from './indexCoverage';
 import { truncateUtf8 } from './truncateUtf8';
+import { randomUUID } from 'crypto';
+import { censusOf } from './scriptCensus';
+import { abrirFicha, cerrarFicha, cronometrar, preflightDe } from './fichaDeCorrida';
 
 const ADMIN_EMAIL = 'rdocerda@gmail.com';
 
@@ -135,6 +138,18 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
         const stats = fs.statSync(tempFilePath);
         console.log(`[Reprocess] ${data.title ?? resourceId}: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
+        const runId = randomUUID();
+        await abrirFicha(db, {
+            runId,
+            resourceId,
+            userId: data.userId,
+            path: 'reprocess-premium',
+            fileBytes: stats.size,
+            requestedMode: 'premium',
+            preflight: preflightDe(data.preflight),
+        });
+        const intento = cronometrar('llamaparse', selected.accountId);
+
         try {
             await resourceRef.update({
                 textExtractionStatus: 'processing',
@@ -203,9 +218,23 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
                 extractionWarning: null,
                 extractionError: null,
                 structuredContentUrl,
+                // El censo del texto nuevo: sin esto quedaba el de la
+                // extracción anterior y la tarjeta juzgaba otro libro.
+                scriptCensus: censusOf(extractedText),
                 needsReindex: true,
                 wasTruncated,
                 updatedAt: new Date(),
+            });
+
+            const creditos = result.jobMetadata.job_credits_usage;
+            await cerrarFicha(db, runId, {
+                outcome: 'ready',
+                extractionVersion: '3.0-llamaparse',
+                pagesExpected: typeof data.pageCount === 'number' ? data.pageCount : undefined,
+                pagesEmitted: result.pages.length,
+                text: extractedText,
+                llamaParseCredits: typeof creditos === 'number' ? creditos : undefined,
+                engines: [intento('ok')],
             });
 
             // Debit the premium processing balance for the actual pages consumed.
@@ -260,6 +289,7 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
                 extractionError: errorMessage,
                 updatedAt: new Date(),
             });
+            await cerrarFicha(db, runId, { outcome: 'failed', reason: errorMessage, engines: [intento('error', errorMessage)] });
             // Propagate the real error message so the admin UI shows useful info
             throw new HttpsError('internal', `Reprocess failed: ${errorMessage}`, {
                 originalMessage: errorMessage,

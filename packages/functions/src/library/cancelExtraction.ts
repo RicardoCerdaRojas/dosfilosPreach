@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getStorage } from 'firebase-admin/storage';
 import { getFirestore } from 'firebase-admin/firestore';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
+import { cerrarFichasAbiertas } from './fichaDeCorrida';
 
 interface CancelRequest {
     resourceId: string;
@@ -118,6 +119,10 @@ export const cancelExtraction = onCall<CancelRequest>(
         //    for "this resource is gone".
         await resourceRef.delete();
         console.log(`[CancelExtraction] ✅ Deleted resource doc ${resourceId}`);
+
+        // La ficha sobrevive al recurso a propósito: un libro que alguien
+        // cancela a los diez minutos es justamente un dato que interesa.
+        await cerrarFichasAbiertas(db, resourceId, 'cancelled');
 
         return { success: true };
     },

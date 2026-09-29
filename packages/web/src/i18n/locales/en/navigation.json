@@ -24,7 +24,8 @@
         "confessionalWitnesses": "Confessional witnesses",
         "integrations": "Integrations",
         "admin": "Admin",
-        "contactLeads": "Contact Leads"
+        "contactLeads": "Contact Leads",
+        "extractionRuns": "Book extraction"
     },
     "groups": {
         "study": "My Studies",

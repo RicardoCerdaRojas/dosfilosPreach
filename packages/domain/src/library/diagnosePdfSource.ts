@@ -152,3 +152,33 @@ export function sampleWindow(pages: number, size = 30): { from: number; to: numb
     const from = Math.max(1, Math.floor(pages / 2));
     return { from, to: Math.min(pages, from + size - 1) };
 }
+
+/**
+ * Lo que se guarda del informe previo en el recurso, al subir.
+ *
+ * Existe para cruzarlo con lo que la extracción produjo DESPUÉS: la ficha de
+ * cada corrida lo copia, y el panel de extracción contesta si el informe
+ * predijo el resultado. Sólo el veredicto y números — las razones y la muestra
+ * son texto del libro y no tienen por qué salir del navegador.
+ */
+export interface PdfPreflightRecord {
+    verdict: PdfVerdict;
+    pages: number;
+    fontCount: number;
+    greekLetters: number;
+    hebrewLetters: number;
+    diacriticRatio: number | null;
+    garbledTokenRatio: number;
+}
+
+export function toPreflightRecord(diagnosis: PdfDiagnosis, evidence: PdfEvidence): PdfPreflightRecord {
+    return {
+        verdict: diagnosis.verdict,
+        pages: evidence.pages,
+        fontCount: evidence.fontCount,
+        greekLetters: evidence.greekLetters,
+        hebrewLetters: evidence.hebrewLetters,
+        diacriticRatio: diagnosis.diacriticRatio,
+        garbledTokenRatio: evidence.garbledTokenRatio,
+    };
+}

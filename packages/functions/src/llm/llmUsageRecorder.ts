@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { estimateUsd, hasKnownPricing } from './llmCost';
+import { atribucionActual } from './atribucionDeConsumo';
 
 /**
  * Medidor de consumo LLM del servidor.
@@ -129,11 +130,33 @@ export function buildUsagePatch(record: LlmUsageRecord, now: Date = new Date()):
     };
 }
 
+/**
+ * Lo que se suma al documento del trabajo que abrió un ámbito de atribución.
+ * Mismos cuatro números que el día, bajo `llm`, para que el costo de UN libro
+ * se pueda leer sin reconstruirlo desde los contadores globales.
+ */
+export function buildAttributionPatch(record: LlmUsageRecord): Record<string, unknown> {
+    const inc = FieldValue.increment;
+    return {
+        llm: {
+            calls: inc(1),
+            inputTokens: inc(record.inputTokens || 0),
+            outputTokens: inc(record.outputTokens || 0),
+            thinkingTokens: inc(record.thinkingTokens || 0),
+            usd: inc(estimateUsd(record.model, record.inputTokens, salidaFacturable(record))),
+        },
+    };
+}
+
 export async function recordLlmUsage(record: LlmUsageRecord, now: Date = new Date()): Promise<void> {
     try {
         const usd = estimateUsd(record.model, record.inputTokens, salidaFacturable(record));
         const db = admin.firestore();
+        const atribucion = atribucionActual();
         await Promise.all([
+            ...(atribucion
+                ? [db.doc(atribucion.ruta).set(buildAttributionPatch(record), { merge: true })]
+                : []),
             db.collection('llmUsageDaily').doc(usageDayKey(now)).set(buildUsagePatch(record, now), { merge: true }),
             // El acumulado del mes: solo los totales, sin los cortes (esos se leen
             // del día). Es lo que consultan el guardia y la alerta.

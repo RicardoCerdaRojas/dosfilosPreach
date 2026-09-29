@@ -30,6 +30,12 @@ export async function arrancarExtraccionEnCola(
     resourceId: string,
     totalPaginas: number,
     tamanoConocido: number | undefined,
+    /**
+     * La corrida que ya abrió su ficha. Si viene, la cadena la continúa: el
+     * costo de cada rango y el desenlace se anotan en la ficha de quien la
+     * lanzó. Sin él se inventa uno, como antes.
+     */
+    runIdExistente?: string,
 ): Promise<ArranqueEnCola | null> {
     // Si este archivo ya se extrajo antes se reusa el tamaño medido entonces, y
     // el primer rango deja de ser una apuesta conservadora.
@@ -38,7 +44,7 @@ export async function arrancarExtraccionEnCola(
     if (!primero) return null;
 
     const rangosEstimados = planDeRangos(totalPaginas, tamano).length;
-    const runId = randomUUID();
+    const runId = runIdExistente ?? randomUUID();
 
     try {
         await resourceRef.update({
