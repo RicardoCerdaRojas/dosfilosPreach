@@ -25,7 +25,7 @@ porque el código exista: se cierra cuando alguien lo vio funcionar.
 | 5 | Fork de la guía de estilo por trabajo | ✅ hecho |
 | 6 | El binding `allUsers` del auto-indexador | ✅ quitado y verificado en producción |
 | 7 | Telemetría de extracción | pendiente · pide diseño |
-| 8 | `completeRegistration` sin rate-limit propio | pendiente |
+| 8 | `completeRegistration` sin rate-limit propio | ✅ desplegado (#495, anterior a este documento) |
 
 ---
 
@@ -186,3 +186,10 @@ Los libros son material con derechos.
 
 Residual del endurecimiento de auth previo al lanzamiento. Riesgo bajo,
 documentado desde el cierre de aquel bloqueador.
+
+**Ya estaba hecho cuando se escribió esta lista.** El PR #495 (2026-08-27)
+puso el tope por IP —20 intentos por hora, bucket `registration`— sobre el
+limitador compartido `shared/rateLimit.ts`, fail-open. La lista heredó el
+pendiente de la memoria del bloqueador de auth, que no se había actualizado.
+Queda sin ver en producción un documento `rate_limits/registration__*`; el
+código lleva un mes desplegado en todos los deploys a main.
