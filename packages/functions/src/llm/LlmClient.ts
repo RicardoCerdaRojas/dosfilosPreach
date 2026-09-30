@@ -46,6 +46,12 @@ export interface LlmGenerateOptions {
     responseMimeType?: 'text/plain' | 'application/json';
     /** Hard cap on output size. */
     maxOutputTokens?: number;
+    /**
+     * Esquema JSON de la respuesta. Lo honran los adaptadores que saben
+     * hacerlo (OpenAI, vía `esquemaEstricto`); los demás lo ignoran, y por eso
+     * el ruteo sólo manda pedidos con esquema a quien lo soporta.
+     */
+    responseSchema?: object;
 }
 
 export interface ILlmClient {

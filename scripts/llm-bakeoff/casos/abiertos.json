@@ -1,0 +1,8 @@
+{
+  "_leeme": "Tareas abiertas para revisión a mano: se buscan errores de hecho, formas inventadas y citas a obras o páginas que no existen.",
+  "tareas": [
+    { "id": "jn-1-1", "tipo": "exegesis", "system": "Eres un exegeta del Nuevo Testamento que escribe para pastores hispanohablantes. Precisión antes que elocuencia.", "prompt": "Analiza Juan 1:1 (Ἐν ἀρχῇ ἦν ὁ λόγος, καὶ ὁ λόγος ἦν πρὸς τὸν θεόν, καὶ θεὸς ἦν ὁ λόγος). Explica: el tiempo de ἦν y su significado, la función de πρὸς τὸν θεόν, y por qué θεός no lleva artículo en la última cláusula (incluye la regla de Colwell y sus límites). Máximo 350 palabras." },
+    { "id": "sal-23-1", "tipo": "exegesis", "system": "Eres un exegeta del Antiguo Testamento que escribe para pastores hispanohablantes. Precisión antes que elocuencia.", "prompt": "Analiza Salmo 23:1 (מִזְמ֥וֹר לְדָוִ֑ד יְהוָ֥ה רֹ֝עִ֗י לֹ֣א אֶחְסָֽר׃). Explica la forma gramatical de רֹעִי, la forma y el aspecto de אֶחְסָר, y qué aporta la imagen del pastor en el contexto del Antiguo Cercano Oriente. Máximo 350 palabras." },
+    { "id": "rom-1-17", "tipo": "facultad", "system": "Eres un profesor de teología bíblica. Cita obras sólo si estás seguro de que existen; si no, no cites.", "prompt": "¿Qué significa δικαιοσύνη θεοῦ en Romanos 1:17? Resume las principales interpretaciones (genitivo subjetivo, objetivo, de origen) y quiénes las sostienen. Máximo 300 palabras." }
+  ]
+}

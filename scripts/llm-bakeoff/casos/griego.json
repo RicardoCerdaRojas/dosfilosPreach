@@ -1,0 +1,27 @@
+{
+  "_leeme": "Formas del NT sin ambigüedad de análisis. voz: los deponentes aceptan 'media' o 'deponente'; el perfecto medio-pasivo acepta 'pasiva', 'media' o 'medio-pasiva'. persona se usa en formas finitas; caso+genero en participios.",
+  "formas": [
+    { "forma": "λελυμένος", "lema": "λύω", "tiempo": "perfecto", "voz": ["pasiva", "media"], "modo": "participio", "caso": "nominativo", "numero": "singular", "genero": "masculino" },
+    { "forma": "ἐπίστευσαν", "lema": "πιστεύω", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "plural" },
+    { "forma": "ἀγαπήσεις", "lema": "ἀγαπάω", "tiempo": "futuro", "voz": ["activa"], "modo": "indicativo", "persona": "2", "numero": "singular" },
+    { "forma": "ἐγένετο", "lema": "γίνομαι", "tiempo": "aoristo", "voz": ["media", "deponente"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "λέγων", "lema": "λέγω", "tiempo": "presente", "voz": ["activa"], "modo": "participio", "caso": "nominativo", "numero": "singular", "genero": "masculino" },
+    { "forma": "γέγραπται", "lema": "γράφω", "tiempo": "perfecto", "voz": ["pasiva", "media"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἀπεκρίθη", "lema": "ἀποκρίνομαι", "tiempo": "aoristo", "voz": ["pasiva", "deponente"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἐσταυρώθη", "lema": "σταυρόω", "tiempo": "aoristo", "voz": ["pasiva"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "οἴδαμεν", "lema": "οἶδα", "tiempo": "perfecto", "voz": ["activa"], "modo": "indicativo", "persona": "1", "numero": "plural" },
+    { "forma": "ἐλθέτω", "lema": "ἔρχομαι", "tiempo": "aoristo", "voz": ["activa"], "modo": "imperativo", "persona": "3", "numero": "singular" },
+    { "forma": "δοθήσεται", "lema": "δίδωμι", "tiempo": "futuro", "voz": ["pasiva"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἀναστάς", "lema": "ἀνίστημι", "tiempo": "aoristo", "voz": ["activa"], "modo": "participio", "caso": "nominativo", "numero": "singular", "genero": "masculino" },
+    { "forma": "ἠγέρθη", "lema": "ἐγείρω", "tiempo": "aoristo", "voz": ["pasiva"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἀφέωνται", "lema": "ἀφίημι", "tiempo": "perfecto", "voz": ["pasiva", "media"], "modo": "indicativo", "persona": "3", "numero": "plural" },
+    { "forma": "πιστεύσητε", "lema": "πιστεύω", "tiempo": "aoristo", "voz": ["activa"], "modo": "subjuntivo", "persona": "2", "numero": "plural" },
+    { "forma": "ποιήσωμεν", "lema": "ποιέω", "tiempo": "aoristo", "voz": ["activa"], "modo": "subjuntivo", "persona": "1", "numero": "plural" },
+    { "forma": "προσευχόμενοι", "lema": "προσεύχομαι", "tiempo": "presente", "voz": ["media", "deponente"], "modo": "participio", "caso": "nominativo", "numero": "plural", "genero": "masculino" },
+    { "forma": "ἐκλήθητε", "lema": "καλέω", "tiempo": "aoristo", "voz": ["pasiva"], "modo": "indicativo", "persona": "2", "numero": "plural" },
+    { "forma": "ἠγάπησεν", "lema": "ἀγαπάω", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἔσονται", "lema": "εἰμί", "tiempo": "futuro", "voz": ["media", "deponente"], "modo": "indicativo", "persona": "3", "numero": "plural" },
+    { "forma": "λυθῇ", "lema": "λύω", "tiempo": "aoristo", "voz": ["pasiva"], "modo": "subjuntivo", "persona": "3", "numero": "singular" },
+    { "forma": "γνώσεσθε", "lema": "γινώσκω", "tiempo": "futuro", "voz": ["media", "deponente"], "modo": "indicativo", "persona": "2", "numero": "plural" }
+  ]
+}

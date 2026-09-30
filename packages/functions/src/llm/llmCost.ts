@@ -36,6 +36,12 @@ export const LLM_PRICING: Record<string, ModelPricing> = {
         outputPer1M: 3.75,
         cambios: [{ desde: '2027-01-01', inputPer1M: 1.5, outputPer1M: 7.5 }],
     },
+    // OpenAI, para el ruteo por función (2026-09-30). Leídos por investigación
+    // automatizada en developers.openai.com/api/docs/pricing, sin confirmar a
+    // mano: con ellos el bakeoff de visión costó ~$0,70, y el panel de uso de
+    // OpenAI es donde se contrasta.
+    'gpt-6-luna': { inputPer1M: 0.1, outputPer1M: 0.5 },
+    'gpt-6.1-sol': { inputPer1M: 2, outputPer1M: 10 },
     'claude-sonnet-4-6': { inputPer1M: 3, outputPer1M: 15 },
     'claude-haiku-4-5': { inputPer1M: 1, outputPer1M: 5 },
     // Embeddings: solo cobran entrada. Sin precio propio caerían al respaldo

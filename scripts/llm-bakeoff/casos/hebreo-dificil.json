@@ -1,0 +1,21 @@
+{
+  "_leeme": "Tanda difícil: verbos débiles (I-yod, I-nun, huecos, III-he) y conjugaciones derivadas. Sin formas con dos análisis legítimos.",
+  "formas": [
+    { "forma": "וַיֵּשֶׁב", "raiz": "ישב", "conjugacion": "qal", "forma_verbal": "wayyiqtol", "pgn": "3ms" },
+    { "forma": "תֵּצֵא", "raiz": "יצא", "conjugacion": "qal", "forma_verbal": "imperfecto", "pgn": "3fs|2ms" },
+    { "forma": "הוֹשַׁעְתָּ", "raiz": "ישע", "conjugacion": "hifil", "forma_verbal": "perfecto", "pgn": "2ms" },
+    { "forma": "יִשָּׂא", "raiz": "נשא", "conjugacion": "qal", "forma_verbal": "imperfecto", "pgn": "3ms" },
+    { "forma": "נָתַתָּה", "raiz": "נתן", "conjugacion": "qal", "forma_verbal": "perfecto", "pgn": "2ms" },
+    { "forma": "וַיָּקָם", "raiz": "קום", "conjugacion": "qal", "forma_verbal": "wayyiqtol", "pgn": "3ms" },
+    { "forma": "הֵקִים", "raiz": "קום", "conjugacion": "hifil", "forma_verbal": "perfecto", "pgn": "3ms" },
+    { "forma": "וַתֵּלֶד", "raiz": "ילד", "conjugacion": "qal", "forma_verbal": "wayyiqtol", "pgn": "3fs" },
+    { "forma": "יָשׁוּב", "raiz": "שוב", "conjugacion": "qal", "forma_verbal": "imperfecto", "pgn": "3ms" },
+    { "forma": "וַיַּעַשׂ", "raiz": "עשה", "conjugacion": "qal", "forma_verbal": "wayyiqtol", "pgn": "3ms" },
+    { "forma": "נָפְלוּ", "raiz": "נפל", "conjugacion": "qal", "forma_verbal": "perfecto", "pgn": "3cp" },
+    { "forma": "הִנָּבֵא", "raiz": "נבא", "conjugacion": "nifal", "forma_verbal": "imperativo", "pgn": "2ms" },
+    { "forma": "יִבָּנֶה", "raiz": "בנה", "conjugacion": "nifal", "forma_verbal": "imperfecto", "pgn": "3ms" },
+    { "forma": "וַיִּתְפַּלֵּל", "raiz": "פלל", "conjugacion": "hitpael", "forma_verbal": "wayyiqtol", "pgn": "3ms" },
+    { "forma": "וַיִּבֶן", "raiz": "בנה", "conjugacion": "qal", "forma_verbal": "wayyiqtol", "pgn": "3ms" },
+    { "forma": "תַּעֲזֹב", "raiz": "עזב", "conjugacion": "qal", "forma_verbal": "imperfecto", "pgn": "2ms|3fs" }
+  ]
+}
