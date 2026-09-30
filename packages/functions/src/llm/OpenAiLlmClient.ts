@@ -1,5 +1,6 @@
 import type { ILlmClient, LlmGenerateOptions } from './LlmClient';
 import { recordLlmUsage, type LlmUsageContext } from './llmUsageRecorder';
+import { esquemaEstricto, quitarNulosOpcionales } from './esquemaEstricto';
 
 /**
  * Adaptador de OpenAI para el port `ILlmClient`.
@@ -44,14 +45,19 @@ export class OpenAiLlmClient implements ILlmClient {
         const quiereJson = options.responseMimeType === 'application/json';
         const cuerpo = {
             model: this.modelName,
-            input: quiereJson ? conPalabraJson(options.prompt) : options.prompt,
+            // La palabra «JSON» sólo la exige `json_object`; con esquema no hace falta.
+            input: quiereJson && !options.responseSchema ? conPalabraJson(options.prompt) : options.prompt,
             ...(options.system ? { instructions: options.system } : {}),
             reasoning: { effort: this.razonamiento },
             // OpenAI ignora `temperature` en los modelos que razonan; con
             // razonamiento apagado sí la respeta.
             ...(this.razonamiento === 'none' ? { temperature: options.temperature ?? 0.2 } : {}),
             ...(options.maxOutputTokens ? { max_output_tokens: options.maxOutputTokens } : {}),
-            ...(quiereJson ? { text: { format: { type: 'json_object' } } } : {}),
+            // Con esquema, modo estricto: la respuesta TIENE que cumplirlo. Sin
+            // esquema, JSON libre.
+            ...(options.responseSchema
+                ? { text: { format: { type: 'json_schema', name: 'respuesta', strict: true, schema: esquemaEstricto(options.responseSchema) } } }
+                : quiereJson ? { text: { format: { type: 'json_object' } } } : {}),
         };
 
         const body = await this.pedir(cuerpo);
@@ -72,7 +78,15 @@ export class OpenAiLlmClient implements ILlmClient {
         if (body.status === 'incomplete') {
             throw new Error(`OpenAI devolvió una respuesta incompleta (${body.incomplete_details?.reason ?? 'sin motivo'})`);
         }
-        return textoDe(body);
+        const texto = textoDe(body);
+        if (!options.responseSchema) return texto;
+        // Mismo contrato que con Gemini: los opcionales que el modo estricto
+        // obligó a mandar en `null` vuelven a estar ausentes.
+        try {
+            return JSON.stringify(quitarNulosOpcionales(JSON.parse(texto), options.responseSchema));
+        } catch {
+            return texto;
+        }
     }
 
     private async pedir(cuerpo: unknown): Promise<RespuestaOpenAi> {

@@ -482,6 +482,7 @@ async function porOtroProveedor(
         ...(typeof data.maxOutputTokens === 'number'
             ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
             : {}),
+        ...(data.responseSchema ? { responseSchema: data.responseSchema as object } : {}),
     };
     try {
         if (proveedor === 'openai') {

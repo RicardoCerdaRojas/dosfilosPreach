@@ -41,14 +41,17 @@ export interface NecesidadesDelPedido {
  *
  * Gemini puede todo lo que hoy se pide. Los otros no tienen la búsqueda en
  * archivos de Gemini (es un servicio de Google, con los corpus cargados ahí),
- * y el adaptador todavía no traduce imágenes ni el esquema JSON de Gemini al de
- * OpenAI. Mandarles un pedido así no fallaría: devolvería una respuesta sin el
+ * y los adaptadores todavía no mandan imágenes. El esquema JSON sí lo cumple
+ * OpenAI (ver `esquemaEstricto`); Anthropic no. Mandarles un pedido así no fallaría: devolvería una respuesta sin el
  * corpus, o sin la estructura que el llamador parsea. Por eso la ruta se
  * IGNORA y el pedido sigue por Gemini, con registro.
  */
 export function rutaCompatible(ruta: RutaDeModelo, pedido: NecesidadesDelPedido): boolean {
     if (ruta.provider === 'gemini') return true;
-    return !pedido.fileSearch && !pedido.imagen && !pedido.esquema;
+    if (pedido.fileSearch || pedido.imagen) return false;
+    // OpenAI cumple el esquema en modo estricto (`esquemaEstricto` lo traduce);
+    // el adaptador de Anthropic todavía no.
+    return !pedido.esquema || ruta.provider === 'openai';
 }
 
 const PROVEEDORES: ReadonlySet<string> = new Set(['gemini', 'openai', 'anthropic']);

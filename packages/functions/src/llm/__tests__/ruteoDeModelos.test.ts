@@ -37,13 +37,17 @@ describe('rutaCompatible', () => {
         expect(rutaCompatible({ provider: 'gemini', model: 'gemini-3.8-flash' }, { fileSearch: true, imagen: true, esquema: true })).toBe(true);
     });
 
-    it('otro proveedor sólo toma pedidos de texto: sin corpus, imagen ni esquema', () => {
+    it('otro proveedor no toma pedidos con corpus ni con imagen', () => {
         expect(rutaCompatible(openai, SIN_NADA)).toBe(true);
         // El tutor de griego con su corpus: sin la búsqueda de Gemini respondería
         // sin las fuentes, y nada fallaría.
         expect(rutaCompatible(openai, { ...SIN_NADA, fileSearch: true })).toBe(false);
         expect(rutaCompatible(openai, { ...SIN_NADA, imagen: true })).toBe(false);
-        expect(rutaCompatible(openai, { ...SIN_NADA, esquema: true })).toBe(false);
+    });
+
+    it('el esquema lo cumple OpenAI en modo estricto; Anthropic todavía no', () => {
+        expect(rutaCompatible(openai, { ...SIN_NADA, esquema: true })).toBe(true);
+        expect(rutaCompatible({ provider: 'anthropic', model: 'claude-sonnet-4-6' }, { ...SIN_NADA, esquema: true })).toBe(false);
     });
 });
 
