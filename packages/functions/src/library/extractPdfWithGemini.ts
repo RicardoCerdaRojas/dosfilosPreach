@@ -22,6 +22,7 @@ import { describeLayoutRepair, repairExtractedLayout } from './repairExtractedLa
 const pdfParse = require('pdf-parse');
 import { censusOf } from './scriptCensus';
 import { modoDeCobro, type ExtractionVersion } from './extractionVersions';
+import { salidaCortada } from './partirTanda';
 import { leerPaginasDelPdf } from './textoDelPdf';
 import { randomUUID } from 'crypto';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
@@ -448,8 +449,9 @@ export const extractPdfWithGemini = onObjectFinalized(
              * `failed` un trabajo que está avanzando bien en otro lado — y ese
              * estado falso es peor que no tener guardia.
              */
-            const intentarEncolar = async (): Promise<boolean> => {
-                if (!expectedPageCount || expectedPageCount <= BATCH_THRESHOLD_PAGES) return false;
+            const intentarEncolar = async (forzar = false): Promise<boolean> => {
+                if (!expectedPageCount) return false;
+                if (!forzar && expectedPageCount <= BATCH_THRESHOLD_PAGES) return false;
                 const encolado = await arrancarExtraccionEnCola(
                     resourceRef, resourceId, expectedPageCount,
                     typeof resourceDoc.data()?.paginasPorTanda === 'number'
@@ -473,6 +475,25 @@ export const extractPdfWithGemini = onObjectFinalized(
                 );
                 return true;
             };
+            /**
+             * Una pasada única que se cortó por falta de salida no significa
+             * que el libro no se pueda leer por imágenes: significa que no
+             * ENTRA en una respuesta. Caso real, 2026-09-29: una gramática
+             * hebrea de 78 páginas —bajo el umbral de la cola, por eso fue en
+             * una pasada— se cortó a los 4 min 38 s y cayó a la capa de texto,
+             * que traía las vocales despegadas. La cola lee de a rangos
+             * calibrados y no tiene ese techo.
+             *
+             * Sólo por corte. Cualquier otro fallo sigue cayendo a la capa de
+             * texto como antes: encolar un libro que el modelo no puede leer
+             * gastaría otra vez lo mismo para fallar igual.
+             */
+            const rescatarEnCola = async (err: unknown): Promise<boolean> => {
+                if (!salidaCortada(err)) return false;
+                console.warn(`✂️ [Extract] ${resourceId}: la pasada única se cortó; se sigue en cola en vez de caer a la capa de texto`);
+                return intentarEncolar(true);
+            };
+
             // Track which account ultimately succeeded so we can record
             // its usage after the cascade finishes. Also collected for
             // structured-failure debugging.
@@ -576,6 +597,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                             extractionVersion = '4.0-gemini-standard';
                         } catch (geminiError) {
                             motores.push(intentoGemini('error', geminiError));
+                            if (await rescatarEnCola(geminiError)) return;
                             console.warn(`⚠️ [Extract] Gemini also failed, using pdf-parse:`, geminiError);
                             const buffer = fs.readFileSync(tempFilePath);
                             const intentoPdfjs = cronometrar('pdfjs');
@@ -623,6 +645,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                     extractionVersion = '4.0-gemini-standard';
                 } catch (geminiError) {
                     motores.push(intentoGemini('error', geminiError));
+                    if (await rescatarEnCola(geminiError)) return;
                     console.warn(`⚠️ [Extract] Gemini failed, falling back to pdf-parse:`, geminiError);
                     const buffer = fs.readFileSync(tempFilePath);
                     const intentoPdfjs = cronometrar('pdfjs');
