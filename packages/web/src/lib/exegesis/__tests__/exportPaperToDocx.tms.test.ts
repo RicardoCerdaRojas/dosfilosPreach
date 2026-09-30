@@ -489,6 +489,35 @@ describe('exportPaperToDocx — formato de la guía', () => {
         expect(doc.indexOf('TRABAJO PRÁCTICO #3')).toBeLessThan(doc.indexOf('POR'));
     });
 
+    it('los renglones en blanco son los del modelo TMS: 3 · 6 · 6 · 3', async () => {
+        // Guía TMS cap. 1, «Página de título». Salía 4 · 6 · 7 · 4: un renglón
+        // vacío de arranque más los pedidos, y el curso vacío sumaba otro.
+        const doc = await xmlOf(paper({
+            cover: {
+                institution: "The Master's Seminary",
+                assignmentTitle: 'Trabajo práctico #5',
+                author: 'Ricardo Cerda',
+                place: 'Concepción, Chile',
+                date: 'Septiembre 2026',
+            },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+
+        // Los párrafos de la portada, hasta el primer cambio de sección: texto
+        // o vacío, en orden.
+        const portada = doc.slice(0, doc.indexOf('<w:sectPr'));
+        const renglones = [...portada.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)]
+            .map(m => [...m[0].matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(t => t[1]).join('').trim());
+        // «X» por renglón con texto, número por racha de vacíos.
+        const forma: Array<string | number> = [];
+        for (const r of renglones) {
+            if (r) forma.push('X');
+            else if (typeof forma[forma.length - 1] === 'number') (forma[forma.length - 1] as number)++;
+            else forma.push(1);
+        }
+        // 3 · SEMINARIO · 6 · TÍTULO (entrega + pasaje) · 6 · POR / AUTOR · 3 · LUGAR / FECHA
+        expect(forma).toEqual([3, 'X', 6, 'X', 'X', 6, 'X', 'X', 3, 'X', 'X']);
+    });
+
     it('el exportador imprime TODOS los campos de la portada, no una lista aparte', async () => {
         // El exportador arma la portada renglón por renglón, con sus
         // líneas en blanco, así que no puede recorrer la lista del

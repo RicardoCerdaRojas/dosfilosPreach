@@ -1339,14 +1339,26 @@
         "course": "Curso"
       },
       "placeholders": {
-        "institution": "The Master's Seminary",
-        "assignmentTitle": "Trabajo práctico #3",
-        "author": "Nombre y apellido",
-        "place": "Chiguayante, Concepción",
-        "date": "Septiembre 2026",
-        "course": "OT603 — Exégesis de hebreo"
+        "institution": "Ej.: The Master's Seminary",
+        "assignmentTitle": "Ej.: Trabajo práctico #3",
+        "author": "Ej.: Nombre y apellido",
+        "place": "Ej.: Chiguayante, Concepción",
+        "date": "Ej.: Septiembre 2026",
+        "course": "Ej.: OT603 — Exégesis de hebreo"
       },
-      "optional": "(opcional)"
+      "optional": "(opcional)",
+      "useFrom": "Usar portada de",
+      "useFromPlaceholder": "elegir…",
+      "originPaper": "Trabajo: {{label}}",
+      "originProfile": "Perfil: {{label}}",
+      "suggestion": "Usar la del trabajo anterior («{{label}}»)",
+      "loadedFrom": "Cargada desde «{{label}}», con el número de entrega avanzado. Revísala antes de guardar.",
+      "offerProfile": "¿Guardar esta portada en un perfil? Los próximos trabajos nacerán con ella.",
+      "offerProfileCta": "Guardar en un perfil",
+      "offerProfileDismiss": "Ahora no",
+      "profileDefaultName": "Mi portada",
+      "profileSaved": "Perfil guardado. Los próximos trabajos usarán esta portada.",
+      "profileSaveFailed": "No se pudo guardar el perfil."
     },
     "workProfile": {
       "title": "Perfil de trabajo",
@@ -2099,7 +2111,8 @@
       "tooltip": "Word con notas al pie nativas — ideal para entrega académica",
       "toast": {
         "exported": "Trabajo exportado en Word",
-        "failed": "No se pudo generar el .docx. Intenta de nuevo."
+        "failed": "No se pudo generar el .docx. Intenta de nuevo.",
+        "noCover": "El Word salió sin portada: no tiene datos de portada. Complétala en la configuración del trabajo y vuelve a exportar."
       }
     },
     "versification": {

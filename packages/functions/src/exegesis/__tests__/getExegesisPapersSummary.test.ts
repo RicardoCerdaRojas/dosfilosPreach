@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clavesCitadas } from '../getExegesisPapersSummary';
+import { clavesCitadas, portadaDelResumen } from '../getExegesisPapersSummary';
 
 describe('clavesCitadas — la memoria de fuentes entre entregas', () => {
     const paso = (accepted: unknown) => ({ accepted });
@@ -48,5 +48,17 @@ describe('clavesCitadas — la memoria de fuentes entre entregas', () => {
     it('un paso sin análisis no aporta nada', () => {
         expect(clavesCitadas([paso({ markdown: 'prosa suelta' }), paso(null)])).toEqual([]);
         expect(clavesCitadas([])).toEqual([]);
+    });
+});
+
+describe('portadaDelResumen', () => {
+    it('viajan los campos de texto de la portada, y nada más', () => {
+        expect(portadaDelResumen({ institution: 'TMS', assignmentTitle: 'TP #4', author: '', extra: 3 }))
+            .toEqual({ institution: 'TMS', assignmentTitle: 'TP #4' });
+    });
+
+    it('sin portada, o vacía, null', () => {
+        expect(portadaDelResumen(undefined)).toBeNull();
+        expect(portadaDelResumen({ author: '  ' })).toBeNull();
     });
 });

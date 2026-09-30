@@ -139,6 +139,8 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
                 // y la lista vacía deja la memoria de fuentes sin proponer
                 // nada, en vez de romper la pantalla.
                 citedSourceKeys: Array.isArray(p.citedSourceKeys) ? p.citedSourceKeys : [],
+                // Un callable viejo no la manda: sin portada no se propone nada.
+                cover: p.cover && typeof p.cover === 'object' ? p.cover : null,
             }))
             .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     }

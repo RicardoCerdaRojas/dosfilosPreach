@@ -1,5 +1,5 @@
 import type { PassageReference } from '../../bible/canon/passage-reference';
-import type { ExegeticalPaperPhase } from './ExegeticalPaper';
+import type { ExegeticalPaperPhase, PaperCover } from './ExegeticalPaper';
 import type { SourceType } from './SourceType';
 import type { SourceRole } from './StepSourcePlan';
 
@@ -56,6 +56,8 @@ export interface ExegesisPaperSummary {
      * no hacer.
      */
     sources: ResumenDeFuente[];
+    /** La portada, para proponerla en el trabajo siguiente. `null` si no tiene. */
+    cover: PaperCover | null;
 }
 
 /** Una fuente vista desde el resumen: quién es, sin nada de su contenido. */

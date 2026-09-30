@@ -1339,14 +1339,26 @@
         "course": "Course"
       },
       "placeholders": {
-        "institution": "The Master's Seminary",
-        "assignmentTitle": "Practical assignment #3",
-        "author": "Full name",
-        "place": "Chiguayante, Concepción",
-        "date": "September 2026",
-        "course": "OT603 — Hebrew Exegesis"
+        "institution": "e.g. The Master's Seminary",
+        "assignmentTitle": "e.g. Practical assignment #3",
+        "author": "e.g. Full name",
+        "place": "e.g. Chiguayante, Concepción",
+        "date": "e.g. September 2026",
+        "course": "e.g. OT603 — Hebrew Exegesis"
       },
-      "optional": "(optional)"
+      "optional": "(optional)",
+      "useFrom": "Use cover from",
+      "useFromPlaceholder": "choose…",
+      "originPaper": "Paper: {{label}}",
+      "originProfile": "Profile: {{label}}",
+      "suggestion": "Use the previous paper's («{{label}}»)",
+      "loadedFrom": "Loaded from «{{label}}», with the assignment number advanced. Review it before saving.",
+      "offerProfile": "Save this cover in a profile? Your next papers will start with it.",
+      "offerProfileCta": "Save in a profile",
+      "offerProfileDismiss": "Not now",
+      "profileDefaultName": "My cover",
+      "profileSaved": "Profile saved. Your next papers will use this cover.",
+      "profileSaveFailed": "Could not save the profile."
     },
     "workProfile": {
       "title": "Work profile",
@@ -2099,7 +2111,8 @@
       "tooltip": "Word with native footnotes — ready for academic submission",
       "toast": {
         "exported": "Paper exported as Word",
-        "failed": "Could not generate the .docx. Try again."
+        "failed": "Could not generate the .docx. Try again.",
+        "noCover": "The Word file has no cover page: this paper has no cover details. Fill them in the paper setup and export again."
       }
     },
     "versification": {

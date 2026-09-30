@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { FileText, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { PAPER_COVER_FIELDS } from '@dosfilos/domain';
-import type { ExegeticalPaper, PaperCover, PaperCoverField } from '@dosfilos/domain';
+import { PAPER_COVER_FIELDS, hasCover } from '@dosfilos/domain';
+import type { CoverOrigin, ExegeticalPaper, PaperCover, PaperCoverField } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { useCoverOrigins } from '@/hooks/exegesis/useCoverOrigins';
+import { CoverOriginPicker } from './CoverOriginPicker';
+import { SaveCoverAsProfileOffer } from './SaveCoverAsProfileOffer';
 
 // La lista es del dominio: el formulario y el normalizador que guarda
 // tienen que recorrer los mismos campos, o el que falte se pierde al
@@ -28,14 +31,30 @@ export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
     const { updatePaperCover } = useExegesisPapers();
     const [draft, setDraft] = useState<Record<Field, string> | null>(null);
+    /** De dónde se cargó el borrador, para decirlo mientras se revisa. */
+    const [cargadaDe, setCargadaDe] = useState<CoverOrigin | null>(null);
+    const [ofrecerPerfil, setOfrecerPerfil] = useState(false);
+    const origins = useCoverOrigins(paper.id);
 
     const cover = paper.cover ?? null;
     const saving = updatePaperCover.isPending;
     const editing = draft !== null;
 
-    const start = () => setDraft(Object.fromEntries(
-        FIELDS.map(f => [f, cover?.[f] ?? '']),
-    ) as Record<Field, string>);
+    const aBorrador = (c: PaperCover | null) => Object.fromEntries(
+        FIELDS.map(f => [f, c?.[f] ?? '']),
+    ) as Record<Field, string>;
+
+    // Sin portada propia, el formulario abre con la del último trabajo que
+    // la tuvo —el «#N» ya avanzado—: el fundador la reescribía en cada TP.
+    const start = () => {
+        const sugerida = !hasCover(cover) ? origins[0] ?? null : null;
+        setCargadaDe(sugerida);
+        setDraft(aBorrador(sugerida ? sugerida.cover : cover));
+    };
+    const usar = (origen: CoverOrigin) => {
+        setCargadaDe(origen);
+        setDraft(aBorrador(origen.cover));
+    };
 
     const save = async () => {
         if (!draft) return;
@@ -43,6 +62,8 @@ export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
             await updatePaperCover.mutateAsync({ paperId: paper.id, cover: draft as PaperCover });
             toast.success(t('paperSetup.cover.saved'));
             setDraft(null);
+            setCargadaDe(null);
+            setOfrecerPerfil(true);
         } catch (err) {
             console.error('[exegesis] no se pudo guardar la portada:', err);
             toast.error(t('paperSetup.cover.saveFailed'));
@@ -78,12 +99,31 @@ export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
                         ))}
                     </dl>
                 ) : (
-                    <p className="text-xs text-muted-foreground pl-7">{t('paperSetup.cover.empty')}</p>
+                    <div className="pl-7 space-y-1.5">
+                        <p className="text-xs text-muted-foreground">{t('paperSetup.cover.empty')}</p>
+                        {origins[0] && (
+                            <Button type="button" size="sm" variant="outline" onClick={start}>
+                                {t('paperSetup.cover.suggestion', { label: origins[0].label })}
+                            </Button>
+                        )}
+                    </div>
                 )
+            )}
+
+            {!editing && ofrecerPerfil && (
+                <SaveCoverAsProfileOffer paper={paper} onDone={() => setOfrecerPerfil(false)} />
             )}
 
             {editing && draft && (
                 <div className="space-y-3 pl-7">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        {cargadaDe && (
+                            <p className="text-[11px] text-muted-foreground">
+                                {t('paperSetup.cover.loadedFrom', { label: cargadaDe.label })}
+                            </p>
+                        )}
+                        <CoverOriginPicker origins={origins} onPick={usar} disabled={saving} />
+                    </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                         {FIELDS.map(f => (
                             <label key={f} className="space-y-1">
@@ -108,7 +148,7 @@ export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
                     </div>
                     <p className="text-[11px] text-muted-foreground">{t('paperSetup.cover.hint')}</p>
                     <div className="flex justify-end gap-2">
-                        <Button type="button" size="sm" variant="ghost" onClick={() => setDraft(null)} disabled={saving}>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => { setDraft(null); setCargadaDe(null); }} disabled={saving}>
                             {t('paperSetup.cover.cancel')}
                         </Button>
                         <Button type="button" size="sm" onClick={save} disabled={saving}>
