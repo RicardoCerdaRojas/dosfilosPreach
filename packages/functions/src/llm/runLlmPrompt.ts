@@ -1,7 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
-import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory, type Tool } from '@google/generative-ai';
+import { GoogleGenAI, HarmBlockThreshold, HarmCategory, type GenerateContentConfig } from '@google/genai';
+import { textoDeGemini } from './textoDeGemini';
 import { GeminiLlmClient } from './GeminiLlmClient';
 import { recordLlmUsage } from './llmUsageRecorder';
 import { LLM_PRICING } from './llmCost';
@@ -187,18 +188,29 @@ const DEFAULT_MAX_CALLS_PER_HOUR = 120;
 const WINDOW_MS = 3_600_000;
 
 /**
- * La herramienta `fileSearch` del tutor de griego.
- *
- * Los tipos del SDK `@google/generative-ai@0.21` declaran `Tool` como la unión
- * de tres herramientas y `fileSearch` no está entre ellas, aunque la API sí la
- * acepta. Se declara acá la forma que la API espera para no perder el chequeo
- * de tipos sobre el objeto que se le manda.
+ * La configuración de generación que el llamador puede pedir, en la forma del
+ * SDK nuevo, donde `systemInstruction`, seguridad y herramientas viajan juntas.
+ * Cada rama elige qué parte le aplica; ninguna la arma a mano.
  */
-interface FileSearchTool {
-    fileSearch: { fileSearchStoreNames: string[] };
+function configDeGeneracion(
+    data: Record<string, unknown>,
+    system: string | undefined,
+    opciones: { json: boolean; topPYEsquema: boolean; seguridad: boolean },
+): GenerateContentConfig {
+    return {
+        ...(system ? { systemInstruction: system } : {}),
+        ...(opciones.seguridad ? { safetySettings: STANDARD_SAFETY } : {}),
+        ...(typeof data.temperature === 'number' ? { temperature: data.temperature } : {}),
+        ...(opciones.topPYEsquema && typeof data.topP === 'number' ? { topP: data.topP } : {}),
+        ...(typeof data.maxOutputTokens === 'number'
+            ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
+            : {}),
+        ...(opciones.json && data.responseMimeType === 'application/json'
+            ? { responseMimeType: 'application/json' }
+            : {}),
+        ...(opciones.topPYEsquema && data.responseSchema ? { responseSchema: data.responseSchema as object } : {}),
+    };
 }
-
-
 
 export const runLlmPrompt = onCall(
     // 120 s alcanzaban mientras el proxy servía respuestas cortas. El compositor
@@ -261,41 +273,30 @@ export const runLlmPrompt = onCall(
         const storeId = data.fileSearchStoreId ? String(data.fileSearchStoreId) : '';
         if (storeId) {
             try {
-                const genAI = new GoogleGenerativeAI(apiKey);
-                // EL CONTRATO SE DECLARA, NO SE SILENCIA. Acá había un
-                // `@ts-ignore`, que apaga TODOS los errores de su línea —
-                // incluido un typo en `fileSearchStoreNames`, que el modelo
-                // ignoraría en silencio dejando al tutor sin su corpus. Con el
-                // tipo declarado, la forma se sigue verificando; el cast queda
-                // acotado al único punto donde el SDK 0.21 se queda corto.
-                const fileSearchTool: FileSearchTool = {
-                    fileSearch: { fileSearchStoreNames: [storeId] },
-                };
-                const toolModel = genAI.getGenerativeModel({
+                const ai = new GoogleGenAI({ apiKey });
+                // El SDK nuevo tipa `fileSearch`: el `@ts-ignore` y el cast que
+                // pedía el viejo desaparecen, y un typo en
+                // `fileSearchStoreNames` vuelve a ser un error de compilación.
+                // `responseMimeType: application/json` NO es compatible con
+                // tools — el llamador limpia el JSON del texto.
+                const result = await withGeminiRetry(feature, () => ai.models.generateContent({
                     model,
-                    tools: [fileSearchTool as unknown as Tool],
-                    // NOTA: `responseMimeType: application/json` NO es compatible
-                    // con tools — el llamador limpia el JSON del texto.
-                });
-                const result = await withGeminiRetry(feature, () => toolModel.generateContent({
                     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    ...(system ? { systemInstruction: system } : {}),
-                    generationConfig: {
-                        ...(typeof data.temperature === 'number' ? { temperature: data.temperature } : {}),
-                        ...(typeof data.maxOutputTokens === 'number'
-                            ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
-                            : {}),
+                    config: {
+                        ...configDeGeneracion(data, system, { json: false, topPYEsquema: false, seguridad: false }),
+                        tools: [{ fileSearch: { fileSearchStoreNames: [storeId] } }],
                     },
                 }));
-                const meta = result.response.usageMetadata;
+                const meta = result.usageMetadata;
                 void recordLlmUsage({
                     model,
                     feature,
                     userId: uid,
                     inputTokens: meta?.promptTokenCount ?? 0,
                     outputTokens: meta?.candidatesTokenCount ?? 0,
+                    thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: result.response.text(), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result.response) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (fileSearch) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -316,36 +317,24 @@ export const runLlmPrompt = onCall(
                 throw new HttpsError('invalid-argument', 'inlineImage.base64 vacío o demasiado grande');
             }
             try {
-                const genAI = new GoogleGenerativeAI(apiKey);
-                const visionModel = genAI.getGenerativeModel({
+                const ai = new GoogleGenAI({ apiKey });
+                const result = await ai.models.generateContent({
                     model,
-                    ...(system ? { systemInstruction: system } : {}),
-                    ...(data.safety === 'standard' ? { safetySettings: STANDARD_SAFETY } : {}),
-                    generationConfig: {
-                        ...(typeof data.temperature === 'number' ? { temperature: data.temperature } : {}),
-                        ...(typeof data.topP === 'number' ? { topP: data.topP } : {}),
-                        ...(typeof data.maxOutputTokens === 'number'
-                            ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
-                            : {}),
-                        ...(data.responseMimeType === 'application/json'
-                            ? { responseMimeType: 'application/json' }
-                            : {}),
-                        ...(data.responseSchema ? { responseSchema: data.responseSchema as object } : {}),
-                    },
+                    contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType, data: base64 } }] }],
+                    config: configDeGeneracion(data, system, {
+                        json: true, topPYEsquema: true, seguridad: data.safety === 'standard',
+                    }),
                 });
-                const result = await visionModel.generateContent([
-                    { text: prompt },
-                    { inlineData: { mimeType, data: base64 } },
-                ]);
-                const meta = result.response.usageMetadata;
+                const meta = result.usageMetadata;
                 void recordLlmUsage({
                     model,
                     feature,
                     userId: uid,
                     inputTokens: meta?.promptTokenCount ?? 0,
                     outputTokens: meta?.candidatesTokenCount ?? 0,
+                    thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: result.response.text(), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result.response) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (inlineImage) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -357,37 +346,28 @@ export const runLlmPrompt = onCall(
         // da respuestas peor formadas, que es mucho peor de detectar.
         if (data.topP !== undefined || data.responseSchema) {
             try {
-                const genAI = new GoogleGenerativeAI(apiKey);
-                const cfgModel = genAI.getGenerativeModel({
+                const ai = new GoogleGenAI({ apiKey });
+                // `safety` es un MODIFICADOR, no una rama propia: esta rama se
+                // evalúa antes que la de safety, así que sin esto un llamador que
+                // pida umbrales explícitos JUNTO con `topP` o `responseSchema` los
+                // perdería en silencio.
+                const result = await withGeminiRetry(feature, () => ai.models.generateContent({
                     model,
-                    ...(system ? { systemInstruction: system } : {}),
-                    // `safety` es un MODIFICADOR, no una rama propia: esta rama
-                    // se evalúa antes que la de safety, así que sin esto un
-                    // llamador que pida umbrales explícitos JUNTO con `topP` o
-                    // `responseSchema` los perdería en silencio.
-                    ...(data.safety === 'standard' ? { safetySettings: STANDARD_SAFETY } : {}),
-                    generationConfig: {
-                        ...(typeof data.temperature === 'number' ? { temperature: data.temperature } : {}),
-                        ...(typeof data.topP === 'number' ? { topP: data.topP } : {}),
-                        ...(typeof data.maxOutputTokens === 'number'
-                            ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
-                            : {}),
-                        ...(data.responseMimeType === 'application/json'
-                            ? { responseMimeType: 'application/json' }
-                            : {}),
-                        ...(data.responseSchema ? { responseSchema: data.responseSchema as object } : {}),
-                    },
-                });
-                const result = await withGeminiRetry(feature, () => cfgModel.generateContent(prompt));
-                const meta = result.response.usageMetadata;
+                    contents: prompt,
+                    config: configDeGeneracion(data, system, {
+                        json: true, topPYEsquema: true, seguridad: data.safety === 'standard',
+                    }),
+                }));
+                const meta = result.usageMetadata;
                 void recordLlmUsage({
                     model,
                     feature,
                     userId: uid,
                     inputTokens: meta?.promptTokenCount ?? 0,
                     outputTokens: meta?.candidatesTokenCount ?? 0,
+                    thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: result.response.text(), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result.response) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (config) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -400,35 +380,29 @@ export const runLlmPrompt = onCall(
         // acá se usa el SDK y se mide a mano (mismo trato que fileSearch).
         if (data.safety === 'standard') {
             try {
-                const genAI = new GoogleGenerativeAI(apiKey);
+                const ai = new GoogleGenAI({ apiKey });
                 // La configuración de generación DEBE viajar acá también. La
-                // primera versión de esta rama solo pasaba `safetySettings`, así
+                // primera versión de esta rama sólo pasaba `safetySettings`, así
                 // que el borrador del sermón perdía su `maxOutputTokens: 24576`
                 // y el modo JSON — y fallaba justo en el reintento, que es el
-                // camino que cae en esta rama.
-                const safeModel = genAI.getGenerativeModel({
+                // camino que cae en esta rama. Y el `system`: esta rama era la
+                // única que lo descartaba, así que el reintento del borrador
+                // corría sin sus instrucciones. Corregido en la migración.
+                const result = await withGeminiRetry(feature, () => ai.models.generateContent({
                     model,
-                    safetySettings: STANDARD_SAFETY,
-                    generationConfig: {
-                        ...(typeof data.temperature === 'number' ? { temperature: data.temperature } : {}),
-                        ...(typeof data.maxOutputTokens === 'number'
-                            ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
-                            : {}),
-                        ...(data.responseMimeType === 'application/json'
-                            ? { responseMimeType: 'application/json' }
-                            : {}),
-                    },
-                });
-                const result = await withGeminiRetry(feature, () => safeModel.generateContent(prompt));
-                const meta = result.response.usageMetadata;
+                    contents: prompt,
+                    config: configDeGeneracion(data, system, { json: true, topPYEsquema: false, seguridad: true }),
+                }));
+                const meta = result.usageMetadata;
                 void recordLlmUsage({
                     model,
                     feature,
                     userId: uid,
                     inputTokens: meta?.promptTokenCount ?? 0,
                     outputTokens: meta?.candidatesTokenCount ?? 0,
+                    thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: result.response.text(), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result.response) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (safety) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');

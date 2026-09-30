@@ -7,7 +7,7 @@
 #   2. No `defaultValue:` in i18next calls (fail-loud i18n policy).
 #   3. No raw color literals (`bg-red-500`, `text-slate-900`, etc.) in semantic JSX.
 #   4. File-size soft (>300) and hard (>500) limits for `.tsx` files under `pages/`.
-#   5. No `@google/generative-ai` imports in the packages the browser bundles.
+#   5. No Gemini SDK imports (`@google/genai`, legacy `@google/generative-ai`) in the packages the browser bundles.
 #
 # Usage:
 #   ./scripts/check-compliance.sh           # check the whole codebase

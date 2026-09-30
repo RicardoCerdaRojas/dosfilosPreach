@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import { GoogleAIFileManager } from '@google/generative-ai/server';
+import { GoogleGenAI } from '@google/genai';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -27,7 +27,7 @@ async function run() {
         process.exit(1);
     }
 
-    const fileManager = new GoogleAIFileManager(apiKey);
+    const ai = new GoogleGenAI({ apiKey });
 
     console.log('🔍 Searching for documents...');
 
@@ -89,13 +89,13 @@ async function run() {
         }
 
         console.log(`  ⬆️ Uploading to Gemini...`);
-        const uploadResult = await fileManager.uploadFile(tempFilePath, {
-            mimeType: 'application/pdf',
-            displayName: data.title
+        const subido = await ai.files.upload({
+            file: tempFilePath,
+            config: { mimeType: 'application/pdf', displayName: data.title },
         });
 
-        console.log(`  ✅ Uploaded: ${uploadResult.file.name}`);
-        uploadedFiles.push(uploadResult.file);
+        console.log(`  ✅ Uploaded: ${subido.name}`);
+        uploadedFiles.push(subido);
 
         // Cleanup temp
         fs.unlinkSync(tempFilePath);

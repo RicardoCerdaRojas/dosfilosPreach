@@ -44,12 +44,12 @@ green() { printf '\033[32m%s\033[0m' "$*"; }
 # Solo imports reales. Las menciones en comentarios (que explican justamente por
 # qué el SDK no está) no deben disparar la regla.
 HITS="$(
-    grep -rnE "(from|import|require\()[[:space:]]*['\"]@google/generative-ai" \
+    grep -rnE "(from|import|require\()[[:space:]]*['\"]@google/(generative-ai|genai)" \
         "${CLIENT_SRC[@]}" 2>/dev/null | sed "s|$ROOT/||" || true
 )"
 
 if [ -z "$HITS" ]; then
-    echo "  $(green "✓") Ningún import de @google/generative-ai en web/domain/application/infrastructure."
+    echo "  $(green "✓") Ningún import del SDK de Gemini (@google/genai ni el viejo @google/generative-ai) en web/domain/application/infrastructure."
     exit 0
 fi
 

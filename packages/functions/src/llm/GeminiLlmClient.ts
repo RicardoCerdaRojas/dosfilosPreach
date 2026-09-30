@@ -1,4 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
+import { textoDeGemini } from './textoDeGemini';
 import type { ILlmClient, LlmGenerateOptions } from './LlmClient';
 import { recordLlmUsage, type LlmUsageContext } from './llmUsageRecorder';
 import { MODEL_FAST } from './modelCatalog';
@@ -36,22 +37,20 @@ export class GeminiLlmClient implements ILlmClient {
     lastTotalTokens: number | null = null;
 
     async generate(options: LlmGenerateOptions): Promise<string> {
-        const genAI = new GoogleGenerativeAI(this.apiKey);
-        const model = genAI.getGenerativeModel({
+        const ai = new GoogleGenAI({ apiKey: this.apiKey });
+        const result = await ai.models.generateContent({
             model: this.modelName,
-            generationConfig: {
+            contents: [{ role: 'user', parts: [{ text: options.prompt }] }],
+            config: {
                 responseMimeType: options.responseMimeType ?? 'text/plain',
                 temperature: options.temperature ?? 0.2,
                 ...(options.maxOutputTokens ? { maxOutputTokens: options.maxOutputTokens } : {}),
+                ...(options.system ? { systemInstruction: options.system } : {}),
             },
-        });
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: options.prompt }] }],
-            ...(options.system ? { systemInstruction: options.system } : {}),
         });
         // El consumo viene en la respuesta y hasta ahora se descartaba.
         // Fire-and-forget: medir nunca puede romper la llamada medida.
-        const meta = result.response.usageMetadata;
+        const meta = result.usageMetadata;
         this.lastTotalTokens = typeof meta?.totalTokenCount === 'number'
             ? meta.totalTokenCount
             : (((meta?.promptTokenCount ?? 0) + (meta?.candidatesTokenCount ?? 0)) || null);
@@ -61,7 +60,10 @@ export class GeminiLlmClient implements ILlmClient {
             userId: this.usage?.userId,
             inputTokens: meta?.promptTokenCount ?? 0,
             outputTokens: meta?.candidatesTokenCount ?? 0,
+            // El razonamiento se factura como salida; el SDK viejo no lo
+            // informaba y este adaptador lo dejaba fuera del panel.
+            thinkingTokens: meta?.thoughtsTokenCount ?? 0,
         });
-        return result.response.text();
+        return textoDeGemini(result);
     }
 }

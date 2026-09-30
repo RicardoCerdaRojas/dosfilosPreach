@@ -7,7 +7,7 @@
  * `ILlmClient` shape, whose canonical home is `@dosfilos/domain`, is mirrored
  * here. Keep the two in sync.
  *
- * Los llamadores dependen de esta interfaz y NO del SDK `@google/generative-ai`,
+ * Los llamadores dependen de esta interfaz y NO del SDK de Gemini (`@google/genai`),
  * así que cambiar de modelo —o de proveedor— es escribir un adapter hermano y
  * tocar una línea de construcción. Ya hay dos adapters vivos (Gemini y
  * Anthropic), que es la prueba de que el port sirve para lo que dice servir.
