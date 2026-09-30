@@ -1,0 +1,282 @@
+{
+  "_leeme": [
+    "Contenido de config/llmRouting en Firestore: qué modelo atiende cada función del proxy runLlmPrompt.",
+    "Decidido con el fundador el 2026-09-30 a partir de los bancos de scripts/llm-bakeoff:",
+    "  - el paper (lo que ve el profesor) con GPT-6.1 Sol: el más preciso, ~20 % más barato que 2.5 Pro;",
+    "  - extractRubric (lee una imagen) con Gemini 3.8 Flash;",
+    "  - todo lo demás con GPT-6 Luna: correcto, no inventó fuentes, y la redacción del sermón la eligió el fundador a ciegas.",
+    "Un pedido con búsqueda en archivos o con imagen sigue por Gemini aunque su función diga OpenAI (rutaCompatible).",
+    "Se aplica a Firestore tal cual; esta copia es la fuente revisada. Una prueba de functions verifica que cada clave exista en PROXY_FEATURES y que cada modelo tenga precio."
+  ],
+  "features": {
+    "hebrewTutor.analyzeVerse": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.identifyForms": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.createTrainingUnit": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.evaluateResponse": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.explainMorphology": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.answerFreeQuestion": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.analyzeSyntax": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.analyzeVerse": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "greekTutor.quiz": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.generateSermon": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.generateOutline": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.expandSection": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.suggestReferences": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.refineContent": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.titleSuggestions": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.validateContext": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.judgeCompliance": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.generateExegesis": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.generateHomiletics": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.generateDraft": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.regeneratePoint": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.translateCitation": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.proposeElements": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.writeSection": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.homileticsPreview": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.developApproach": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.composeVerse": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "exegesis.composeIntroduction": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "exegesis.composeConclusion": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "exegesis.composeSermon": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.composeDevotional": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.composeStudyGuide": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.composeAcademicPaper": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "exegesis.analyzeVerse": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "exegesis.reviewCoherence": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.classifySourceType": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.verifyCitation": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.generateStep": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "exegesis.detectPericopes": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.extractRubric": {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash"
+    },
+    "exegesis.extractStyleManifest": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.readBibliography": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.planStepCorpus": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.paperToSermon": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.expository.panorama": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.expository.superMacro": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.expository.macro": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.expository.micro": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.expository.preachable": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "exegesis.expository.fidelityReview": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "series.generateObjective": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "series.generateStructure": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.repurpose.devotional": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "sermon.repurpose.study-guide": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    }
+  }
+}
