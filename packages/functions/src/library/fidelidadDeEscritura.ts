@@ -48,6 +48,14 @@ export interface FidelidadDeEscritura {
     replacementChars: number;
     /** Marcas sin letra que las lleve: el texto se ve casi bien y no se puede buscar. */
     orphanCombining: number;
+    /**
+     * Palabras con letras de dos escrituras: `كִי`, un hebreo con una kaf árabe.
+     * Medido el 2026-09-30 en el bakeoff: un modelo escribió `الْهּוֹיִם` por un
+     * versículo hebreo corriente y todas las demás métricas lo daban por sano.
+     * Cuenta la MEZCLA, no la escritura ajena: un léxico cita cognados árabes
+     * legítimos, y esos vienen como palabras enteras.
+     */
+    mixedScriptWords: number;
 }
 
 const contar = (text: string, re: RegExp): number => (text.match(re) ?? []).length;
@@ -78,7 +86,51 @@ export function fidelidadDeEscritura(text: string): FidelidadDeEscritura {
         cantillationRatio: ratio(cantillation, hebrewConsonants),
         replacementChars: contar(nfc, RE_REPLACEMENT),
         orphanCombining: marcasHuerfanas(nfd),
+        mixedScriptWords: palabrasMezcladas(nfc),
     };
+}
+
+const ESCRITURAS: ReadonlyArray<[string, RegExp]> = [
+    ['hebrew', /\p{Script=Hebrew}/u],
+    ['arabic', /\p{Script=Arabic}/u],
+    ['greek', /\p{Script=Greek}/u],
+    ['cyrillic', /\p{Script=Cyrillic}/u],
+    ['syriac', /\p{Script=Syriac}/u],
+    ['latin', /\p{Script=Latin}/u],
+];
+const RE_LETRA = /\p{L}/u;
+
+function palabrasMezcladas(nfc: string): number {
+    let mezcladas = 0;
+    // Los comandos LaTeX (`\text`, `\atop`) son marcado, no letras leídas: un
+    // modelo que escribe la masora parva en LaTeX no está mezclando escrituras.
+    for (const palabra of nfc.replace(/\\[A-Za-z]+/gu, ' ').split(/\s+/u)) {
+        const escrituras: string[] = [];
+        for (const ch of palabra) {
+            if (!RE_LETRA.test(ch)) continue;
+            const hallada = ESCRITURAS.find(([, re]) => re.test(ch));
+            if (hallada) escrituras.push(hallada[0]);
+        }
+        if (estaContaminada(escrituras)) mezcladas++;
+    }
+    return mezcladas;
+}
+
+/**
+ * Dos escrituras no latinas en una palabra es siempre contaminación. Con el
+ * latín hay que mirar DÓNDE: una sigla del aparato o una letra de nota pegada al
+ * BORDE de una palabra hebrea (`יָרִיםG`, `$^{bc}$דִּבְרֵי`) es un problema de
+ * espacio o de marcado; una letra latina DENTRO (`וְהַלְכְTֶם`) es un glifo mal
+ * leído. Medido en la BHS: sin esta distinción, el motor que mejor leyó el
+ * aparato salía con 221 «mezclas» que eran todas superíndices.
+ */
+function estaContaminada(escrituras: string[]): boolean {
+    const noLatinas = new Set(escrituras.filter((x) => x !== 'latin'));
+    if (noLatinas.size > 1) return true;
+    if (noLatinas.size === 0) return false;
+    const primera = escrituras.findIndex((x) => x !== 'latin');
+    const ultima = escrituras.length - 1 - [...escrituras].reverse().findIndex((x) => x !== 'latin');
+    return escrituras.slice(primera, ultima + 1).includes('latin');
 }
 
 /**

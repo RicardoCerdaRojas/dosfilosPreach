@@ -18,6 +18,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 
 const execFileAsync = promisify(execFile);
 
@@ -264,8 +266,22 @@ export async function runGemini(pdfPath, {
     // leyendo los números IMPRESOS del libro, que es otra convención más y no
     // sirve en un libro sin foliar.
     pageOffset = null,
+    // Los Gemini 3.x no permiten apagar el razonamiento: sólo elegir cuánto
+    // (`minimal`, `low`…). Lo que piensan se cobra como salida y además se come
+    // el tope de 65 536 — por eso cada motor fija el suyo en el registro.
+    thinkingLevel = null,
+    // El 2.5 sí se apaga con presupuesto 0, que es lo que hace producción.
+    thinkingBudget = null,
+    // Cuántos tokens cuesta cada página del PDF en 3.x (low 280, medium 560,
+    // high 1 120). Google dice que el OCR se satura en medium; el griego con
+    // espíritus es exactamente el caso donde eso puede no valer.
+    mediaResolution = null,
 } = {}) {
     if (!apiKey) return { skipped: true, reason: 'falta GEMINI_API_KEY' };
+    const generationConfig = { temperature: 0, maxOutputTokens: 65536 };
+    if (thinkingLevel) generationConfig.thinkingConfig = { thinkingLevel };
+    else if (thinkingBudget !== null) generationConfig.thinkingConfig = { thinkingBudget };
+    if (mediaResolution) generationConfig.mediaResolution = mediaResolution;
     const started = Date.now();
 
     try {
@@ -297,7 +313,7 @@ export async function runGemini(pdfPath, {
                             { inline_data: { mime_type: 'application/pdf', data: buffer.toString('base64') } },
                         ],
                     }],
-                    generationConfig: { temperature: 0, maxOutputTokens: 65536 },
+                    generationConfig,
                 }),
             },
         );
@@ -324,6 +340,7 @@ export async function runGemini(pdfPath, {
 
         const usage = body.usageMetadata ?? {};
         return {
+            model,
             markdown,
             pageCount: new Set([...markdown.matchAll(/<!--\s*page:\s*(\d+)\s*-->/g)].map(m => m[1])).size,
             costUnits: usage.totalTokenCount ?? null,
@@ -348,6 +365,166 @@ export async function runGemini(pdfPath, {
         // al primer intento.
         return { skipped: true, retryable: true, reason: `excepción: ${err.message}` };
     }
+}
+
+// ── OpenAI ─────────────────────────────────────────────────────────────────
+
+/**
+ * Visión de OpenAI, UNA PÁGINA POR LLAMADA, a partir de imágenes que
+ * renderizamos nosotros.
+ *
+ * Por qué imágenes y no el PDF: con un PDF, OpenAI le pasa al modelo la capa de
+ * texto JUNTO a la imagen de cada página, y no hay forma de apagarlo. En los
+ * libros que importan esa capa es justamente lo roto —hebreo invertido, griego
+ * en códigos latinos— y tenerla delante puede sesgar la transcripción. Con la
+ * imagen sola, el modelo sólo puede leer lo que se ve.
+ *
+ * Por qué una página por llamada: el corte por MAX_TOKENS que motivó esta
+ * comparación sale de pedir muchas páginas en una respuesta. Así no hay tope
+ * que alcanzar, y el número de página lo pone el banco, no el modelo — la
+ * métrica de integridad de páginas no mide nada en este motor, y el informe no
+ * debería leerlo como mérito.
+ */
+export async function runOpenAiVision(pdfPath, {
+    apiKey,
+    model,
+    reasoning = 'none',
+    detail = 'high',
+    dpi = 200,
+    concurrency = 4,
+} = {}) {
+    if (!apiKey) return { skipped: true, reason: 'falta OPENAI_API_KEY' };
+    const started = Date.now();
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'bakeoff-openai-'));
+
+    try {
+        await execFileAsync('pdftoppm', ['-r', String(dpi), '-png', pdfPath, path.join(dir, 'p')]);
+        const imagenes = (await fs.readdir(dir)).filter(f => f.endsWith('.png')).sort();
+        if (imagenes.length === 0) return { skipped: true, reason: 'pdftoppm no produjo imágenes' };
+
+        const paginas = new Array(imagenes.length);
+        const uso = { input: 0, output: 0, reasoning: 0 };
+        const fallos = [];
+        let siguiente = 0;
+
+        const trabajador = async () => {
+            while (siguiente < imagenes.length) {
+                const i = siguiente++;
+                const png = await fs.readFile(path.join(dir, imagenes[i]));
+                const r = await leerPaginaOpenAi({ apiKey, model, reasoning, detail, png });
+                if (r.error) {
+                    fallos.push(`pág ${i + 1}: ${r.error}`);
+                    // Sin saldo, las páginas que faltan fallarían igual: se corta
+                    // la corrida en vez de gastar tiempo en confirmarlo.
+                    if (r.fatal) siguiente = imagenes.length;
+                    continue;
+                }
+                paginas[i] = { page: i + 1, content: r.text };
+                uso.input += r.usage.input;
+                uso.output += r.usage.output;
+                uso.reasoning += r.usage.reasoning;
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(concurrency, imagenes.length) }, trabajador));
+
+        const hechas = paginas.filter(Boolean);
+        if (hechas.length === 0) return { skipped: true, reason: `ninguna página: ${fallos.slice(0, 2).join(' | ')}` };
+
+        return {
+            model,
+            markdown: joinPages(hechas),
+            pageCount: hechas.length,
+            costUnits: uso.input + uso.output,
+            costUnit: 'tokens',
+            costNote: 'tokens totales',
+            // Mismo desglose que Gemini: `totalTokens - inputTokens` es todo lo
+            // que se factura como salida, razonamiento incluido.
+            billing: {
+                inputTokens: uso.input,
+                outputTokens: uso.output - uso.reasoning,
+                totalTokens: uso.input + uso.output,
+                cacheHit: false,
+            },
+            elapsedMs: Date.now() - started,
+            ...(fallos.length ? { warnings: fallos } : {}),
+        };
+    } catch (err) {
+        return { skipped: true, reason: `excepción: ${err.message}` };
+    } finally {
+        await fs.rm(dir, { recursive: true, force: true });
+    }
+}
+
+/** Una página. Reintenta lo transitorio; lo demás lo devuelve como error. */
+async function leerPaginaOpenAi({ apiKey, model, reasoning, detail, png }) {
+    const cuerpo = {
+        model,
+        reasoning: { effort: reasoning },
+        max_output_tokens: 16000,
+        input: [{
+            role: 'user',
+            content: [
+                {
+                    type: 'input_text',
+                    text: 'Transcribe esta página a Markdown, íntegra y sin resumir.\n\n'
+                        + `REGLAS ESTRICTAS:\n1. ${PARSING_INSTRUCTION}\n`
+                        + '2. No agregues comentarios, encabezados ni notas propias.\n'
+                        + '3. No incluyas el número de página impreso.\n'
+                        + '4. Si la página está en blanco, no devuelvas nada.',
+                },
+                { type: 'input_image', image_url: `data:image/png;base64,${png.toString('base64')}`, detail },
+            ],
+        }],
+    };
+
+    for (let intento = 1; intento <= 4; intento++) {
+        let res;
+        try {
+            res = await fetch('https://api.openai.com/v1/responses', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(cuerpo),
+            });
+        } catch (err) {
+            if (intento < 4) { await sleep(2000 * intento); continue; }
+            return { error: `red: ${err.message}` };
+        }
+        if (!res.ok) {
+            const cuerpoError = await res.text();
+            // Un 429 puede ser límite de velocidad —se arregla esperando— o
+            // falta de saldo —no se arregla nunca—. OpenAI usa el mismo código
+            // para los dos; lo que los separa es el `code` del cuerpo.
+            const sinSaldo = /billing_not_active|insufficient_quota/.test(cuerpoError);
+            if (!sinSaldo && (res.status === 429 || res.status >= 500) && intento < 4) {
+                await sleep(3000 * intento);
+                continue;
+            }
+            return { error: `HTTP ${res.status}: ${cuerpoError.slice(0, 300)}`, fatal: sinSaldo };
+        }
+
+        const body = await res.json();
+        const text = body.output_text
+            ?? (body.output ?? [])
+                .flatMap(o => o.content ?? [])
+                .filter(c => c.type === 'output_text')
+                .map(c => c.text)
+                .join('');
+        // `incomplete` es el MAX_TOKENS de OpenAI: si el razonamiento se comió
+        // el tope, la respuesta puede venir vacía. Se dice, no se disimula.
+        if (body.status === 'incomplete') {
+            return { error: `incompleta (${body.incomplete_details?.reason ?? 'sin motivo'})` };
+        }
+        const u = body.usage ?? {};
+        return {
+            text: text ?? '',
+            usage: {
+                input: u.input_tokens ?? 0,
+                output: u.output_tokens ?? 0,
+                reasoning: u.output_tokens_details?.reasoning_tokens ?? 0,
+            },
+        };
+    }
+    return { error: 'agotó los reintentos' };
 }
 
 /**
@@ -377,4 +554,12 @@ export const ENGINES = [
     { id: 'llamaparse-premium', label: 'LlamaParse premium', run: (p, env, o) => runLlamaParse(p, { mode: 'premium', apiKey: env.LLAMAPARSE_API_KEY, invalidateCache: o?.invalidateCache }) },
     { id: 'mistral-ocr', label: 'Mistral OCR', run: (p, env) => runMistralOcr(p, { apiKey: env.MISTRAL_API_KEY }) },
     { id: 'gemini', label: 'Gemini Flash (tier Estándar)', run: (p, env) => runGemini(p, { apiKey: env.GEMINI_API_KEY }) },
+    // ── Comparación de modelos, 2026-09-30 ─────────────────────────────────
+    // Lo que corre en producción hoy, con su misma configuración: sin razonar.
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (PRODUCCIÓN HOY)', run: (p, env) => runGemini(p, { apiKey: env.GEMINI_API_KEY, model: 'gemini-2.5-flash', thinkingBudget: 0 }) },
+    { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite · resolución media', run: (p, env) => runGemini(p, { apiKey: env.GEMINI_API_KEY, model: 'gemini-3.5-flash-lite', thinkingLevel: 'minimal', mediaResolution: 'MEDIA_RESOLUTION_MEDIUM' }) },
+    { id: 'gemini-3.5-flash-lite-high', label: 'Gemini 3.5 Flash-Lite · resolución alta', run: (p, env) => runGemini(p, { apiKey: env.GEMINI_API_KEY, model: 'gemini-3.5-flash-lite', thinkingLevel: 'minimal', mediaResolution: 'MEDIA_RESOLUTION_HIGH' }) },
+    { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (techo de calidad)', run: (p, env) => runGemini(p, { apiKey: env.GEMINI_API_KEY, model: 'gemini-3.8-flash', thinkingLevel: 'low', mediaResolution: 'MEDIA_RESOLUTION_HIGH' }) },
+    { id: 'gpt-6-luna', label: 'GPT-6 Luna · imagen por página', run: (p, env) => runOpenAiVision(p, { apiKey: env.OPENAI_API_KEY, model: 'gpt-6-luna', reasoning: 'none', detail: 'high' }) },
+    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol (techo de calidad)', run: (p, env) => runOpenAiVision(p, { apiKey: env.OPENAI_API_KEY, model: 'gpt-6.1-sol', reasoning: 'low', detail: 'high' }) },
 ];

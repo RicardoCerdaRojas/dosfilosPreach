@@ -775,6 +775,7 @@
       "greek-without-marks": "Griego sin marcas",
       "replacement-chars": "Caracteres ilegibles",
       "orphan-marks": "Marcas huérfanas",
+      "mixed-scripts": "Escrituras mezcladas",
       "missing-pages": "Faltan páginas"
     }
   }

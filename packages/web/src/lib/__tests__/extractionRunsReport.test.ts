@@ -77,6 +77,11 @@ describe('fidelityAlerts', () => {
         expect(fidelityAlerts(run({ fidelity: f }))).toContain('reversed-hebrew');
     });
 
+    it('letras de dos escrituras en una palabra: árabe dentro del hebreo', () => {
+        expect(fidelityAlerts(run({ fidelity: { ...SANO, mixedScriptWords: 171 } }))).toContain('mixed-scripts');
+        expect(fidelityAlerts(run({ fidelity: { ...SANO, mixedScriptWords: 0 } }))).toEqual([]);
+    });
+
     it('páginas que faltan, dichas o deducidas', () => {
         expect(fidelityAlerts(run({ pages: { expected: 300, emitted: 300, missing: 4 } }))).toContain('missing-pages');
         expect(fidelityAlerts(run({ pages: { expected: 300, emitted: 40 } }))).toContain('missing-pages');

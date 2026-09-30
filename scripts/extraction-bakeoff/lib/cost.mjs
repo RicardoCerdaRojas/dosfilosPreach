@@ -54,6 +54,11 @@ export function rateProvenance(rates) {
     add('Mistral · USD/página', rates?.mistral?.usdPorPagina, rates?.mistral?._fuente);
     add('Gemini · USD/M tokens entrada', rates?.gemini?.usdPorMillonTokensEntrada, rates?.gemini?._fuente);
     add('Gemini · USD/M tokens salida', rates?.gemini?.usdPorMillonTokensSalida, rates?.gemini?._fuente);
+    for (const [modelo, t] of Object.entries(rates?.modelos ?? {})) {
+        if (modelo.startsWith('_')) continue;
+        add(`${modelo} · USD/M entrada`, t?.entrada, t?._fuente);
+        add(`${modelo} · USD/M salida`, t?.salida, t?._fuente);
+    }
     return out;
 }
 
@@ -136,13 +141,21 @@ export function computeCost(result, rates) {
         return { usd: pages * rate, basis: `${pages} páginas × ${rate} USD`, caveat: null };
     }
 
-    if (result.id === 'gemini') {
+    // Todo motor que factura por tokens: el `gemini` histórico con su tarifa
+    // propia, y los de la comparación de modelos con la de `rates.modelos`,
+    // buscada por el id del modelo que de verdad corrió.
+    const porModelo = result.model ? rates?.modelos?.[result.model] : undefined;
+    if (result.id === 'gemini' || result.model) {
         const { inputTokens: i, outputTokens: o, totalTokens: t } = b;
-        const ri = rates?.gemini?.usdPorMillonTokensEntrada;
-        const ro = rates?.gemini?.usdPorMillonTokensSalida;
+        const ri = result.id === 'gemini' ? rates?.gemini?.usdPorMillonTokensEntrada : porModelo?.entrada;
+        const ro = result.id === 'gemini' ? rates?.gemini?.usdPorMillonTokensSalida : porModelo?.salida;
         if (i == null || t == null) return { usd: null, basis: null, caveat: 'la API no reportó el desglose de tokens' };
         if (ri == null || ro == null) {
-            return { usd: null, basis: `${i} entrada, ${t} total`, caveat: 'faltan tarifas de Gemini en rates.json' };
+            return {
+                usd: null,
+                basis: `${i} entrada, ${t} total`,
+                caveat: `faltan tarifas de ${result.model ?? 'Gemini'} en rates.json`,
+            };
         }
 
         // `candidatesTokenCount` NO es todo lo que se factura como salida.

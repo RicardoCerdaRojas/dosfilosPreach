@@ -775,6 +775,7 @@
       "greek-without-marks": "Greek without marks",
       "replacement-chars": "Unreadable characters",
       "orphan-marks": "Orphan marks",
+      "mixed-scripts": "Mixed scripts",
       "missing-pages": "Missing pages"
     }
   }
