@@ -1,7 +1,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { getAuth } from 'firebase-admin/auth';
 import { getAppCheck } from 'firebase-admin/app-check';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, type GenerateContentConfig, type GenerateContentResponseUsageMetadata } from '@google/genai';
 import { recordLlmUsage } from '../llm/llmUsageRecorder';
 import { LLM_PRICING } from '../llm/llmCost';
 import { consumeRateLimitToken } from '../shared/rateLimit';
@@ -128,25 +128,25 @@ export const facultyChatStream = onRequest(
         };
 
         try {
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const options: Record<string, unknown> = {
-                model,
+            const ai = new GoogleGenAI({ apiKey });
+            const config: GenerateContentConfig = {
+                ...(body.generationConfig ?? {}),
                 systemInstruction: String(body.systemInstruction ?? ''),
-                generationConfig: body.generationConfig ?? {},
+                ...(Array.isArray(body.corpusIds) && body.corpusIds.length > 0
+                    ? { tools: [{ fileSearch: { fileSearchStoreNames: body.corpusIds } }] }
+                    : {}),
             };
-            if (Array.isArray(body.corpusIds) && body.corpusIds.length > 0) {
-                // @ts-ignore - los tipos del SDK aún no cubren fileSearch
-                options.tools = [{ fileSearch: { fileSearchStoreNames: body.corpusIds } }];
-            }
 
-            const chat = genAI.getGenerativeModel(options as never).startChat({
+            const chat = ai.chats.create({
+                model,
+                config,
                 history: (body.history ?? []).slice(-MAX_HISTORY_TURNS).map((h) => ({
                     role: h.role === 'assistant' ? 'model' : 'user',
                     parts: [{ text: String(h.text ?? '') }],
                 })),
             });
 
-            const sendArg = hasAttachments
+            const message_ = hasAttachments
                 ? [
                       { text: message },
                       ...body.attachments!.map((a) => ({
@@ -155,35 +155,38 @@ export const facultyChatStream = onRequest(
                   ]
                 : message;
 
-            const result = await chat.sendMessageStream(sendArg as never);
+            const stream = await chat.sendMessageStream({ message: message_ });
             let full = '';
-            for await (const chunk of result.stream) {
+            // El SDK nuevo no entrega una respuesta final aparte: el consumo y
+            // las fuentes de la búsqueda vienen en los últimos fragmentos, así
+            // que se guarda lo último que haya llegado de cada uno.
+            let meta: GenerateContentResponseUsageMetadata | undefined;
+            let grounding: unknown[] = [];
+            for await (const chunk of stream) {
                 for (const part of chunk.candidates?.[0]?.content?.parts ?? []) {
                     // Solo texto: las partes de "thinking" y las llamadas a
                     // función no van al pastor.
-                    if ('text' in part && typeof part.text === 'string' && !('thought' in part)) {
+                    if (typeof part.text === 'string' && !part.thought) {
                         full += part.text;
                         send('chunk', { text: part.text });
                     }
                 }
+                if (chunk.usageMetadata) meta = chunk.usageMetadata;
+                const chunks = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+                if (chunks && chunks.length > 0) grounding = chunks;
             }
 
-            const finalResponse = await result.response;
-            const meta = finalResponse.usageMetadata;
             void recordLlmUsage({
                 model,
                 feature: String(body.feature ?? 'facultyChat'),
                 userId: uid,
                 inputTokens: meta?.promptTokenCount ?? 0,
                 outputTokens: meta?.candidatesTokenCount ?? 0,
+                thinkingTokens: meta?.thoughtsTokenCount ?? 0,
             });
 
             // Metadata de grounding (solo camino legacy con fileSearch): viaja al
             // final para que el cliente arme la bibliografía sin re-parsear texto.
-            const grounding =
-                (finalResponse as unknown as {
-                    candidates?: Array<{ groundingMetadata?: { groundingChunks?: unknown[] } }>;
-                })?.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
             send('done', { text: full, grounding });
             res.end();
         } catch (err) {

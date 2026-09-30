@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
 import { recordLlmUsage } from './llmUsageRecorder';
 import { consumeRateLimitToken } from '../shared/rateLimit';
@@ -61,17 +61,23 @@ export const embedTexts = onCall(
         }
 
         try {
-            const model = new GoogleGenerativeAI(apiKey).getGenerativeModel({ model: EMBEDDING_MODEL });
+            const ai = new GoogleGenAI({ apiKey });
             // En paralelo DENTRO del servidor: el cliente hacía lo mismo pero
             // pagando latencia de red por cada chunk.
+            //
+            // Mismo modelo, misma dimensión y sin tipo de tarea, igual que con
+            // el SDK viejo: los vectores nuevos tienen que ser comparables con
+            // los que ya están en el índice, o la búsqueda mezclaría espacios.
             const embeddings = await Promise.all(
                 texts.map(async (text) => {
-                    const res = await model.embedContent({
-                        content: { role: 'user', parts: [{ text }] },
-                        // @ts-ignore - el SDK aún no tipa outputDimensionality
-                        outputDimensionality: dimension,
+                    const res = await ai.models.embedContent({
+                        model: EMBEDDING_MODEL,
+                        contents: [{ role: 'user', parts: [{ text }] }],
+                        config: { outputDimensionality: dimension },
                     });
-                    return res.embedding.values;
+                    const valores = res.embeddings?.[0]?.values;
+                    if (!valores) throw new Error('Gemini no devolvió el embedding');
+                    return valores;
                 }),
             );
 
