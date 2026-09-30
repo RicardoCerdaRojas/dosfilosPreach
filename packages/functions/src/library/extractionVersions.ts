@@ -87,3 +87,33 @@ export function isStructuredExtractionVersion(version: string | null | undefined
     if (!version) return false;
     return (STRUCTURED_EXTRACTION_VERSIONS as readonly string[]).includes(version);
 }
+
+/**
+ * Qué saldo descuenta una extracción según CÓMO se obtuvo el texto.
+ *
+ * Se cobra lo que tuvo costo de proveedor: LlamaParse descuenta premium, la
+ * visión descuenta estándar. Leer la capa de texto del PDF corre en nuestra
+ * propia función, sin proveedor, y sólo se llega ahí cuando el motor pedido
+ * falló: cobrar nuestra degradación sería cobrarle al usuario lo que no compró.
+ *
+ * Es un `Record` sobre TODAS las versiones, y no una lista de las gratuitas, a
+ * propósito. La regla vivía como `version === 'fallback-pdfparse' || version
+ * === '5.0-pdfparse-structured'`; cuando apareció `7.0-pdfjs-lineas` nadie la
+ * sumó, y cada caída a la capa de texto cobró sus páginas mientras el aviso
+ * del recurso decía «sin cobro». Con el `Record`, una versión nueva no compila
+ * hasta que alguien decide qué cobra.
+ */
+const COBRO_POR_VERSION: Record<ExtractionVersion, 'standard' | 'premium' | null> = {
+    '3.0-llamaparse': 'premium',
+    '4.0-gemini-standard': 'standard',
+    '2.0-gemini': 'standard',
+    '6.0-gemini-cola': 'standard',
+    '7.0-pdfjs-lineas': null,
+    '5.0-pdfparse-structured': null,
+    'fallback-pdfparse': null,
+    '6.0-thml-public-domain': null,
+};
+
+export function modoDeCobro(version: ExtractionVersion): 'standard' | 'premium' | null {
+    return COBRO_POR_VERSION[version];
+}

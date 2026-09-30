@@ -6,7 +6,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { LlamaParseClient, pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { recordLlamaParseUsage, selectAllLlamaParseAccounts, type SelectedLlamaParseAccount } from './llamaParseAccountSelector';
-import { consumePagesAdmin, type ProcessingMode } from './processingBalance';
+import { consumePagesAdmin } from './processingBalance';
 import { extractWithGemini, BATCH_THRESHOLD_PAGES } from './geminiExtraction';
 import { arrancarExtraccionEnCola } from './arrancarExtraccionEnCola';
 import { describeSanitization, sanitizeExtractedText } from './sanitizeExtractedText';
@@ -21,6 +21,7 @@ import { describeLayoutRepair, repairExtractedLayout } from './repairExtractedLa
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
 import { censusOf } from './scriptCensus';
+import { modoDeCobro, type ExtractionVersion } from './extractionVersions';
 import { leerPaginasDelPdf } from './textoDelPdf';
 import { randomUUID } from 'crypto';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
@@ -391,7 +392,7 @@ export const extractPdfWithGemini = onObjectFinalized(
             // forced sentinel values.
             let extractedText!: string;
             let pageCount!: number;
-            let extractionVersion!: string;
+            let extractionVersion!: ExtractionVersion;
             /**
              * Tamaño de tanda que la extracción por visión midió para ESTE
              * libro. Se guarda para que una reextracción arranque calibrada.
@@ -791,34 +792,18 @@ export const extractPdfWithGemini = onObjectFinalized(
                 engines: motores,
             });
 
-            // Debit the user's processing balance based on which engine
-            // actually ran. The user only pays for the tier they got:
+            // Se descuenta según el motor que DE VERDAD produjo el texto: el
+            // usuario paga lo que recibió, y la capa de texto —a la que sólo
+            // se llega cuando el motor pedido falló— no cobra. La regla vive
+            // en `modoDeCobro`, junto a las versiones.
             //
-            //   3.0-llamaparse              → premium  (paid Premium, got Premium)
-            //   4.0-gemini-standard         → standard (paid Standard or Premium-degraded, got Standard)
-            //   2.0-gemini (legacy)         → standard
-            //   5.0-pdfparse-structured     → FREE     (last-resort fallback, no API cost
-            //   fallback-pdfparse (legacy)  → FREE     to us, lower-quality output the user
-            //                                          didn't ask for)
-            //
-            // Why pdf-parse is free: it runs locally with no third-party
-            // API cost, and it's only reached when both LlamaParse AND
-            // Gemini failed. Charging for our own degradation would
-            // erode trust in the pipeline — the user paid for Standard
-            // or Premium quality, getting Basic isn't what they bought.
-            //
-            // Non-fatal: if the debit fails we log and proceed —
-            // billing is the source of truth, this is a UX-quota
-            // synchronization concern.
-            const isFreeFallback = extractionVersion === 'fallback-pdfparse'
-                || extractionVersion === '5.0-pdfparse-structured';
-            if (isFreeFallback) {
-                console.log(`💳 [Extract] Skipping debit for ${userId.substring(0, 8)}... — pdf-parse fallback is free`);
+            // No fatal: si el descuento falla se registra y se sigue. La
+            // extracción ya salió bien.
+            const debitMode = modoDeCobro(extractionVersion);
+            if (!debitMode) {
+                console.log(`💳 [Extract] Sin cobro para ${userId.substring(0, 8)}... — ${extractionVersion} no tiene costo de proveedor`);
             } else {
                 try {
-                    const debitMode: ProcessingMode = extractionVersion === '3.0-llamaparse'
-                        ? 'premium'
-                        : 'standard';
                     await consumePagesAdmin(userId, debitMode, pageCount);
                     console.log(`💳 [Extract] Debited ${pageCount} ${debitMode} pages from user ${userId.substring(0, 8)}...`);
                 } catch (debitErr) {
