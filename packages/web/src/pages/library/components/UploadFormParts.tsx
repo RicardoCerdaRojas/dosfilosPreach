@@ -53,7 +53,7 @@ export function ModeAdvice({ recommendation, availability, t }: {
     // le quita fuerza a la que de verdad importa.
     const tono = recommendation.recommended !== null
         ? 'consejo'
-        : recommendation.reasonKey === 'no-script-found' || recommendation.reasonKey === 'unknown'
+        : PREGUNTAS.has(recommendation.reasonKey)
             ? 'pregunta'
             : 'bloqueo';
     return (
@@ -76,6 +76,17 @@ export function ModeAdvice({ recommendation, availability, t }: {
         </p>
     );
 }
+
+/**
+ * Razones sin ruta recomendada que NO son un error: la decisión es del usuario.
+ * Una capa sin acentos que no entra en visión sirve para leer; sólo él sabe si
+ * le basta.
+ */
+const PREGUNTAS: ReadonlySet<ModeRecommendation['reasonKey']> = new Set([
+    'no-script-found',
+    'unknown',
+    'layer-without-marks-too-large',
+]);
 
 interface ModeTileProps {
     active: boolean;

@@ -80,7 +80,9 @@
       "layer-missing-script": "The file carries embedded text, but its middle pages show none of the script this book needs. That happens when letters look right while their codes point at another alphabet: reading that text would bring it in destroyed. «From the images» looks at the page and bypasses it.",
       "layer-garbled": "The file carries embedded text, but its content is not language: the letters look right and their codes are wrong. Reading it from the file would bring exactly that. «From the images» looks at the page.",
       "layer-too-large": "This file's embedded text is unusable, and it weighs more than {{standardCapMB}} MB, so it cannot be read by images. No route fixes it. Split the file before uploading.",
-      "no-script-found": "We found no Greek or Hebrew in the file. If this book does not use them, either route works. If it is a critical text, a grammar or a technical commentary that SHOULD carry them, its embedded text lost them: pick «From the images»."
+      "no-script-found": "We found no Greek or Hebrew in the file. If this book does not use them, either route works. If it is a critical text, a grammar or a technical commentary that SHOULD carry them, its embedded text lost them: pick «From the images».",
+      "layer-without-marks": "The file carries the Greek or Hebrew, but without its accents and points: it will be readable, not searchable by exact form. «From the images» looks at the page, where the marks are.",
+      "layer-without-marks-too-large": "The file carries the Greek or Hebrew without its accents and points, and weighs more than {{standardCapMB}} MB, so it cannot be read by images. Uploading it by text works for reading, not for searching forms. If you need search, split the file before uploading."
     },
     "stepModeWaiting": "Pick the file first — the right route depends on what it is."
   },

@@ -44,11 +44,34 @@ describe('recommendExtractionMode', () => {
             .toBe('standard');
     });
 
-    it('un documento con capa de texto sigue prefiriendo Premium', () => {
+    it('un documento con capa de texto SANA sigue prefiriendo Premium', () => {
         // Ahí Premium hace lo que sabe: tablas, columnas, maquetación.
-        const r = recommendExtractionMode({ sizeBytes: 20 * MB, diagnosis: dx('escritura-sin-diacriticos') });
+        const r = recommendExtractionMode({ sizeBytes: 20 * MB, diagnosis: dx('apto') });
         expect(r.recommended).toBe('premium');
         expect(r.strong).toBe(false);
+    });
+
+    /**
+     * Esta prueba decía antes lo contrario —«sin diacríticos» → Premium— y
+     * certificaba el defecto: la pantalla avisaba «vienen sin sus acentos» y
+     * debajo recomendaba el motor que lee justamente esa capa. Lo que el
+     * llamador necesita es que el aviso y la recomendación digan lo mismo.
+     */
+    it('una capa sin acentos va por imágenes, que mira la página donde las marcas sí están', () => {
+        const r = recommendExtractionMode({ sizeBytes: 12 * MB, diagnosis: dx('escritura-sin-diacriticos') });
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'layer-without-marks', strong: true });
+    });
+
+    it('si además no entra en visión, no se elige por el usuario: sólo él sabe si le basta con leer', () => {
+        const r = recommendExtractionMode({ sizeBytes: VISION_MAX_BYTES + 1, diagnosis: dx('escritura-sin-diacriticos') });
+        expect(r).toEqual({ recommended: null, reasonKey: 'layer-without-marks-too-large', strong: false });
+    });
+
+    it('ningún veredicto de alerta termina en «texto en buen estado»', () => {
+        // El invariante que faltaba: el recuadro no puede contradecir al aviso.
+        for (const verdict of ['sin-capa-de-texto', 'escritura-ausente', 'escritura-sin-diacriticos'] as const) {
+            expect(recommendExtractionMode({ sizeBytes: 12 * MB, diagnosis: dx(verdict) }).reasonKey).not.toBe('text-layer-premium');
+        }
     });
 
     it('por encima de todos los topes no hay motor que valga', () => {

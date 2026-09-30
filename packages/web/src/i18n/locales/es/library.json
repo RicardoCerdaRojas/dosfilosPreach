@@ -67,7 +67,7 @@
       "book": "cobertura: libro",
       "pericope": "cobertura: perícopa"
     },
-    "stepFile": "Elegí el archivo",
+    "stepFile": "Elige el archivo",
     "stepMode": "Qué es y cómo procesarlo",
     "stepMetadata": "Datos del libro",
     "recommendedBadge": "Recomendado",
@@ -80,9 +80,11 @@
       "layer-missing-script": "El archivo trae texto incrustado, pero en sus páginas centrales no aparece la escritura que este libro necesita. Eso pasa cuando las letras se ven bien y sus códigos apuntan a otro alfabeto: leer ese texto lo traería destruido. «Por imágenes» mira la página y lo esquiva.",
       "layer-garbled": "El archivo trae texto incrustado, pero su contenido no es lenguaje: las letras se ven bien y sus códigos están mal. Leerlo del archivo traería justamente eso. «Por imágenes» mira la página.",
       "layer-too-large": "El texto incrustado de este archivo no sirve, y pesa más de {{standardCapMB}} MB, así que no se puede leer por imágenes. Ninguna ruta lo arregla. Parte el archivo antes de subirlo.",
-      "no-script-found": "No encontramos griego ni hebreo en el archivo. Si este libro no los usa, cualquiera de las dos rutas sirve. Si es un texto crítico, una gramática o un comentario técnico que SÍ debería traerlos, entonces su texto incrustado los perdió: elige «Por imágenes»."
+      "no-script-found": "No encontramos griego ni hebreo en el archivo. Si este libro no los usa, cualquiera de las dos rutas sirve. Si es un texto crítico, una gramática o un comentario técnico que SÍ debería traerlos, entonces su texto incrustado los perdió: elige «Por imágenes».",
+      "layer-without-marks": "El archivo trae el griego o el hebreo, pero sin sus acentos ni puntos: se podrá leer, y no buscar una forma concreta. «Por imágenes» mira la página, donde las marcas sí están.",
+      "layer-without-marks-too-large": "El archivo trae el griego o el hebreo sin sus acentos ni puntos, y pesa más de {{standardCapMB}} MB, así que no se puede leer por imágenes. Subirlo por texto sirve para leerlo, no para buscar formas. Si necesitas buscar, parte el archivo antes de subirlo."
     },
-    "stepModeWaiting": "Elegí primero el archivo: la ruta correcta depende de lo que sea."
+    "stepModeWaiting": "Elige primero el archivo: la ruta correcta depende de lo que sea."
   },
   "filters": {
     "searchPlaceholder": "Buscar título o autor",
