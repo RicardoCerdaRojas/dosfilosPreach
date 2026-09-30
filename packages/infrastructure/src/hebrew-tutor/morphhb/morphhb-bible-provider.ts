@@ -67,9 +67,26 @@ function inlineSegMarkers(verseContent: string): string {
 }
 
 /**
+ * Deja sólo el QERE donde el texto trae ketiv y qere.
+ *
+ * morphhb escribe el ketiv como `<w type="x-ketiv">` y el qere dentro de la
+ * nota que lo sigue (`<note><rdg type="x-qere"><w>…</w></rdg></note>`). El
+ * lector de `<w>` los tomaba a los DOS como palabras: en Rut 1:8 el versículo
+ * tenía «יעשה יַ֣עַשׂ», cuatro consonantes que el modelo nunca escribió, y
+ * todo lo que seguía se corría. Se muestra el qere, que es lo que se lee y lo
+ * que el modelo analiza. Un ketiv sin qere (ketiv wela qere) se conserva.
+ */
+function keepQereOverKetiv(verseContent: string): string {
+  return verseContent.replace(
+    /<w\b[^>]*type="x-ketiv"[^>]*>[\s\S]*?<\/w>(?=\s*<note\b[^>]*>(?:(?!<\/note>)[\s\S])*?<rdg\s+type="x-qere">\s*<w\b)/g,
+    '',
+  );
+}
+
+/**
  * Parses a morphhb OSIS XML string into a structured map of verseId → tokens.
  */
-function parseMorphhbXml(xmlText: string): ParsedBook {
+export function parseMorphhbXml(xmlText: string): ParsedBook {
   // Simple regex-based parser (avoids a full XML DOM parser dependency)
   const verseMap = new Map<string, { hebrewText: string; words: HebrewWordToken[] }>();
   const versesPerChapter: number[] = [];
@@ -85,7 +102,7 @@ function parseMorphhbXml(xmlText: string): ParsedBook {
 
     // Inline maqaf (x-maqqef) and paseq (x-pe) seg markers into adjacent <w> elements
     // BEFORE running the word regex, so they are captured as part of the word text.
-    const verseContent = inlineSegMarkers(rawVerseContent);
+    const verseContent = inlineSegMarkers(keepQereOverKetiv(rawVerseContent));
 
     // Collect word tokens from <w> elements
     const words: HebrewWordToken[] = [];

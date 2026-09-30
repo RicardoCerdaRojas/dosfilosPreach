@@ -25,7 +25,8 @@ interface HebrewTutorContextType {
   analyzeVerse: AnalyzeVerseUseCase;
   getBibleNavigation: GetBibleNavigationUseCase;
   getVerseText: GetVerseTextUseCase;
-  checkCache: (reference: string) => Promise<import('@dosfilos/domain').VerseAnalysis | null>;
+  /** El análisis guardado, reconciliado con morphhb, sin llamar al modelo. */
+  checkCache: (input: { morphhbKey: string; chapter: number; verse: number }) => Promise<import('@dosfilos/domain').VerseAnalysis | null>;
   saveDetectiveSession: SaveDetectiveSessionUseCase;
   updateVerseTranslation: UpdateVerseTranslationUseCase;
 }
@@ -50,11 +51,13 @@ export const HebrewTutorProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Cast to include loadBook — MorphhbBibleProvider exposes it publicly
     const provider = bibleProvider as typeof bibleProvider & { loadBook(key: string): Promise<void> };
 
+    const analyzeVerse = new AnalyzeVerseUseCase(provider, analysisService, sessionRepository, lexiconRepository);
+
     return {
-      analyzeVerse: new AnalyzeVerseUseCase(provider, analysisService, sessionRepository, lexiconRepository),
+      analyzeVerse,
       getBibleNavigation: new GetBibleNavigationUseCase(provider),
       getVerseText: new GetVerseTextUseCase(provider),
-      checkCache: (ref: string) => sessionRepository.getCachedAnalysis(ref),
+      checkCache: (input) => analyzeVerse.cachedOnly(input),
       saveDetectiveSession: new SaveDetectiveSessionUseCase(detectiveRepository),
       updateVerseTranslation: new UpdateVerseTranslationUseCase(sessionRepository),
     };

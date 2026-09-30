@@ -153,10 +153,9 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
       setSelectedChapter(chapter);
       setSelectedVerse(verse);
 
-      const reference = `${book}.${chapter}.${verse}`;
       setIsLoadingVerse(true);
       try {
-        const cached = await checkCache(reference);
+        const cached = await checkCache({ morphhbKey: book, chapter, verse });
         if (cached) {
           setAnalysis(cached);
           return;

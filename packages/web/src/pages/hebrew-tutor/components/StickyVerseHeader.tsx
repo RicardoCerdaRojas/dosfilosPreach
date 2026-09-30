@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { VerseAnalysis } from '@dosfilos/domain';
+import { versePunctuationOf } from '@dosfilos/domain';
 import { getSyntacticMark, SYNTACTIC_BORDER, SYNTACTIC_DOT } from '../utils/syntacticMark';
 
 interface StickyVerseHeaderProps {
@@ -142,12 +143,16 @@ export const StickyVerseHeader: React.FC<StickyVerseHeaderProps> = ({
                             {w.hebrewText}
                           </span>
                         ) : w.morphemes && w.morphemes.length > 0 ? (
-                          <MorphemeSpan
-                            segments={w.morphemes}
-                            variant="text"
-                            disableColors={!showColors}
-                            disableNativeTooltip
-                          />
+                          <>
+                            <MorphemeSpan
+                              segments={w.morphemes}
+                              variant="text"
+                              disableColors={!showColors}
+                              disableNativeTooltip
+                            />
+                            {/* Sof pasuq: los morfemas no lo llevan, la línea sí. */}
+                            <span className="font-hebrew">{versePunctuationOf(w.hebrewText)}</span>
+                          </>
                         ) : (
                           w.hebrewText
                         )}

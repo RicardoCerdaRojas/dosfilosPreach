@@ -14,5 +14,8 @@ export * from './entities/hint.js';
 export * from './entities/lexical-entry.js';
 export * from './entities/hebrew-study-session.js';
 
+// Services
+export * from './services/reconcile-words.js';
+
 // Ports
 export * from './ports/ports.js';
