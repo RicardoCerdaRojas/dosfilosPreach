@@ -32,6 +32,8 @@ const REINTENTOS = 3;
 export class OpenAiLlmClient implements ILlmClient {
     /** Consumo total de la última llamada; mismo contrato que `GeminiLlmClient`. */
     lastTotalTokens: number | null = null;
+    /** Desglose de la última llamada: entrada y salida facturable (con razonamiento). */
+    lastUsage: { input: number; output: number } | null = null;
 
     constructor(
         private readonly apiKey: string,
@@ -63,6 +65,7 @@ export class OpenAiLlmClient implements ILlmClient {
         const body = await this.pedir(cuerpo);
         const uso = body.usage ?? {};
         this.lastTotalTokens = typeof uso.total_tokens === 'number' ? uso.total_tokens : null;
+        this.lastUsage = { input: uso.input_tokens ?? 0, output: uso.output_tokens ?? 0 };
         const razonados = uso.output_tokens_details?.reasoning_tokens ?? 0;
         void recordLlmUsage({
             model: this.modelName,
