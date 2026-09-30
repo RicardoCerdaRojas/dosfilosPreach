@@ -21,6 +21,8 @@ export interface RunFidelity {
     cantillationRatio: number;
     replacementChars: number;
     orphanCombining: number;
+    /** Ausente en fichas anteriores al 2026-09-30. */
+    mixedScriptWords?: number;
     hebrewWords: number;
     hebrewFinalAtStart: number;
 }
@@ -61,6 +63,7 @@ export type FidelityAlert =
     | 'greek-without-marks'
     | 'replacement-chars'
     | 'orphan-marks'
+    | 'mixed-scripts'
     | 'missing-pages';
 
 /**
@@ -73,6 +76,11 @@ const MIN_GREEK_MARK_RATIO = 0.1;
 /** Unos pocos U+FFFD pueden ser un glifo raro; decenas son una fuente ilegible. */
 const MIN_REPLACEMENT_CHARS = 10;
 const MIN_ORPHAN_MARKS = 50;
+/**
+ * Palabras con letras de dos escrituras. Medido en el bakeoff del 2026-09-30:
+ * el motor que metía árabe en el hebreo dio 171 en diez páginas; los sanos, 0.
+ */
+const MIN_MIXED_SCRIPT_WORDS = 5;
 /**
  * Mismo piso de cobertura que `coberturaDePaginas.ts` de functions. Una
  * prueba lee ese fuente y compara: si el piso cambia allá, el panel no puede
@@ -117,6 +125,7 @@ export function fidelityAlerts(run: ExtractionRun): FidelityAlert[] {
         }
         if (f.replacementChars >= MIN_REPLACEMENT_CHARS) alerts.push('replacement-chars');
         if (f.orphanCombining >= MIN_ORPHAN_MARKS) alerts.push('orphan-marks');
+        if ((f.mixedScriptWords ?? 0) >= MIN_MIXED_SCRIPT_WORDS) alerts.push('mixed-scripts');
     }
     const p = run.pages;
     if (p && ((p.missing ?? 0) > 0 || (p.expected && p.emitted !== undefined && p.emitted < p.expected * MIN_PAGE_COVERAGE))) {

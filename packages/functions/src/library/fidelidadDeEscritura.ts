@@ -48,6 +48,14 @@ export interface FidelidadDeEscritura {
     replacementChars: number;
     /** Marcas sin letra que las lleve: el texto se ve casi bien y no se puede buscar. */
     orphanCombining: number;
+    /**
+     * Palabras con letras de dos escrituras: `كִי`, un hebreo con una kaf árabe.
+     * Medido el 2026-09-30 en el bakeoff: un modelo escribió `الْهּוֹיִם` por un
+     * versículo hebreo corriente y todas las demás métricas lo daban por sano.
+     * Cuenta la MEZCLA, no la escritura ajena: un léxico cita cognados árabes
+     * legítimos, y esos vienen como palabras enteras.
+     */
+    mixedScriptWords: number;
 }
 
 const contar = (text: string, re: RegExp): number => (text.match(re) ?? []).length;
@@ -78,7 +86,34 @@ export function fidelidadDeEscritura(text: string): FidelidadDeEscritura {
         cantillationRatio: ratio(cantillation, hebrewConsonants),
         replacementChars: contar(nfc, RE_REPLACEMENT),
         orphanCombining: marcasHuerfanas(nfd),
+        mixedScriptWords: palabrasMezcladas(nfc),
     };
+}
+
+const ESCRITURAS: ReadonlyArray<[string, RegExp]> = [
+    ['hebrew', /\p{Script=Hebrew}/u],
+    ['arabic', /\p{Script=Arabic}/u],
+    ['greek', /\p{Script=Greek}/u],
+    ['cyrillic', /\p{Script=Cyrillic}/u],
+    ['syriac', /\p{Script=Syriac}/u],
+    ['latin', /\p{Script=Latin}/u],
+];
+const RE_LETRA = /\p{L}/u;
+
+function palabrasMezcladas(nfc: string): number {
+    let mezcladas = 0;
+    for (const palabra of nfc.split(/\s+/u)) {
+        const vistas = new Set<string>();
+        for (const ch of palabra) {
+            if (!RE_LETRA.test(ch)) continue;
+            for (const [nombre, re] of ESCRITURAS) {
+                if (re.test(ch)) { vistas.add(nombre); break; }
+            }
+            if (vistas.size > 1) break;
+        }
+        if (vistas.size > 1) mezcladas++;
+    }
+    return mezcladas;
 }
 
 /**

@@ -85,13 +85,13 @@ export function renderMarkdown(run) {
     // ── Script fidelity: the premium tier's reason to exist.
     lines.push('## Fidelidad de escritura');
     lines.push('');
-    lines.push('| Motor | Letras griegas | Ratio diacrítico | Consonantes hebreas | Ratio niqqud | Cantilación | � | Marcas huérfanas |');
-    lines.push('|---|---:|---:|---:|---:|---:|---:|---:|');
+    lines.push('| Motor | Letras griegas | Ratio diacrítico | Consonantes hebreas | Ratio niqqud | Cantilación | � | Marcas huérfanas | Palabras mezcladas |');
+    lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|');
     for (const r of ran) {
         const s = r.metrics.script;
         lines.push(
             `| ${r.label} | ${s.greekLetters} | ${fmt(s.greekDiacriticRatio)} | ${s.hebrewConsonants} `
-            + `| ${fmt(s.niqqudRatio)} | ${s.cantillation} | ${s.replacementChars} | ${s.orphanCombining} |`,
+            + `| ${fmt(s.niqqudRatio)} | ${s.cantillation} | ${s.replacementChars} | ${s.orphanCombining} | ${s.mixedScriptWords ?? '—'} |`,
         );
     }
     lines.push('');

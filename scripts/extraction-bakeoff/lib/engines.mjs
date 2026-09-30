@@ -412,7 +412,13 @@ export async function runOpenAiVision(pdfPath, {
                 const i = siguiente++;
                 const png = await fs.readFile(path.join(dir, imagenes[i]));
                 const r = await leerPaginaOpenAi({ apiKey, model, reasoning, detail, png });
-                if (r.error) { fallos.push(`pág ${i + 1}: ${r.error}`); continue; }
+                if (r.error) {
+                    fallos.push(`pág ${i + 1}: ${r.error}`);
+                    // Sin saldo, las páginas que faltan fallarían igual: se corta
+                    // la corrida en vez de gastar tiempo en confirmarlo.
+                    if (r.fatal) siguiente = imagenes.length;
+                    continue;
+                }
                 paginas[i] = { page: i + 1, content: r.text };
                 uso.input += r.usage.input;
                 uso.output += r.usage.output;
@@ -483,10 +489,18 @@ async function leerPaginaOpenAi({ apiKey, model, reasoning, detail, png }) {
             if (intento < 4) { await sleep(2000 * intento); continue; }
             return { error: `red: ${err.message}` };
         }
-        if (res.status === 429 || res.status >= 500) {
-            if (intento < 4) { await sleep(3000 * intento); continue; }
+        if (!res.ok) {
+            const cuerpoError = await res.text();
+            // Un 429 puede ser límite de velocidad —se arregla esperando— o
+            // falta de saldo —no se arregla nunca—. OpenAI usa el mismo código
+            // para los dos; lo que los separa es el `code` del cuerpo.
+            const sinSaldo = /billing_not_active|insufficient_quota/.test(cuerpoError);
+            if (!sinSaldo && (res.status === 429 || res.status >= 500) && intento < 4) {
+                await sleep(3000 * intento);
+                continue;
+            }
+            return { error: `HTTP ${res.status}: ${cuerpoError.slice(0, 300)}`, fatal: sinSaldo };
         }
-        if (!res.ok) return { error: `HTTP ${res.status}: ${(await res.text()).slice(0, 300)}` };
 
         const body = await res.json();
         const text = body.output_text

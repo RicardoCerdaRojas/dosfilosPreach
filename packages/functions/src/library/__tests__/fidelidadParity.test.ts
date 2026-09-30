@@ -26,6 +26,10 @@ const TEXTOS: Array<[string, string]> = [
     ['hebreo sin niqqud', 'בראשית ברא אלהים'],
     ['marcas huérfanas y U+FFFD', ' ́α ְב ��'],
     ['mezcla', 'Según Wallace, ἐν ἀρχῇ (Jn 1:1) y בְּרֵאשִׁית (Gn 1:1) �'],
+    // Medido en el bakeoff del 2026-09-30: árabe, griego y latín dentro de
+    // palabras hebreas. Un léxico que cita un cognado árabe entero no cuenta.
+    ['contaminación de escrituras', 'كִי־יַכְרִית الْهּוֹיִם וָμֵת וְהַלְכְTֶם'],
+    ['cognado árabe legítimo', 'hebreo עֵקֶב, cf. árabe عقب «talón»'],
 ];
 
 describe('fidelidadDeEscritura coincide con scriptFidelity del bakeoff', async () => {

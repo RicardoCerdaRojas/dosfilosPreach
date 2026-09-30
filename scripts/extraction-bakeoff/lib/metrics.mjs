@@ -79,7 +79,42 @@ export function scriptFidelity(text) {
         cantillationRatio: ratio(cantillation, hebrewConsonants),
         replacementChars: count(nfc, RE_REPLACEMENT),
         orphanCombining: countOrphanCombining(nfd),
+        mixedScriptWords: countMixedScriptWords(nfc),
     };
+}
+
+/**
+ * Words whose letters come from two scripts — `كִי`, a Hebrew word with an
+ * Arabic kaf. Measured 2026-09-30: Gemini 3.5 Flash-Lite at medium resolution
+ * wrote `كִי־يַכְרִית` and `الْهּוֹיִם` for a plain Hebrew verse, and every
+ * other metric scored it healthy — the Hebrew consonants were all there.
+ *
+ * Counts the MIXING, not the foreign script: lexicons legitimately cite Arabic
+ * and Syriac cognates, and those come as whole words.
+ */
+const SCRIPT_OF = [
+    ['hebrew', /\p{Script=Hebrew}/u],
+    ['arabic', /\p{Script=Arabic}/u],
+    ['greek', /\p{Script=Greek}/u],
+    ['cyrillic', /\p{Script=Cyrillic}/u],
+    ['syriac', /\p{Script=Syriac}/u],
+    ['latin', /\p{Script=Latin}/u],
+];
+
+function countMixedScriptWords(nfc) {
+    let mixed = 0;
+    for (const word of nfc.split(/\s+/u)) {
+        const seen = new Set();
+        for (const ch of word) {
+            if (!/\p{L}/u.test(ch)) continue;
+            for (const [name, re] of SCRIPT_OF) {
+                if (re.test(ch)) { seen.add(name); break; }
+            }
+            if (seen.size > 1) break;
+        }
+        if (seen.size > 1) mixed++;
+    }
+    return mixed;
 }
 
 /**
@@ -387,6 +422,10 @@ export function verdict(m, { expectGreek, expectHebrew }) {
 
     if (m.script.replacementChars > 0) {
         notes.push(`${m.script.replacementChars} caracteres de reemplazo (�) — fallo de decodificación`);
+        fatal = true;
+    }
+    if (m.script.mixedScriptWords > 5) {
+        notes.push(`${m.script.mixedScriptWords} palabras con letras de dos escrituras — contaminación (p. ej. árabe dentro del hebreo)`);
         fatal = true;
     }
     if (m.script.orphanCombining > 5) {
