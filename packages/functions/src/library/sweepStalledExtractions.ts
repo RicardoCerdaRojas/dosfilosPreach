@@ -1,5 +1,6 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getFirestore } from 'firebase-admin/firestore';
+import { cerrarFichasAbiertas } from './fichaDeCorrida';
 
 /**
  * Cierra las extracciones que quedaron colgadas.
@@ -130,6 +131,7 @@ export const sweepStalledExtractions = onSchedule(
                 extractionAttemptedAt: now,
                 updatedAt: now,
             });
+            await cerrarFichasAbiertas(db, doc.id, 'stalled', `${minutos ?? '?'} min sin avanzar`);
             cerrados++;
         }
 

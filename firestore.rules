@@ -542,6 +542,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Fichas de extracción: una por corrida, sólo números. Las escribe la
+    // extracción desde el admin SDK (que no pasa por estas reglas) y las lee
+    // el panel vía `getExtractionRuns`. Nadie las escribe desde un cliente.
+    match /extraction_runs/{runId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+
     // Plans collection (subscription plan definitions)
     // PUBLIC READ - Landing page needs to show plans without authentication
     // Only admin or Cloud Functions can modify

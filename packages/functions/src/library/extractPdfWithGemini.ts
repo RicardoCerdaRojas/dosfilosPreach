@@ -22,6 +22,17 @@ import { describeLayoutRepair, repairExtractedLayout } from './repairExtractedLa
 const pdfParse = require('pdf-parse');
 import { censusOf } from './scriptCensus';
 import { leerPaginasDelPdf } from './textoDelPdf';
+import { randomUUID } from 'crypto';
+import { conAtribucion } from '../llm/atribucionDeConsumo';
+import {
+    abrirFicha,
+    anotarEncolado,
+    cerrarFicha,
+    cronometrar,
+    preflightDe,
+    rutaDeFicha,
+    type IntentoDeMotor,
+} from './fichaDeCorrida';
 
 
 // Gemini file size limit is 50MB (per-call upload to the Files API).
@@ -256,6 +267,11 @@ export const extractPdfWithGemini = onObjectFinalized(
         const invocationStartedAt = Date.now();
         const elapsedSeconds = () => (Date.now() - invocationStartedAt) / 1000;
         let deadlineGuard: DeadlineGuard | null = null;
+        // La ficha de esta corrida. Se abre cuando el recurso aparece; hasta
+        // entonces no hay de qué libro hablar.
+        const runId = randomUUID();
+        let fichaAbierta = false;
+        const motores: IntentoDeMotor[] = [];
 
         console.log(`📄 [Extract] Processing file: ${filePath}`);
 
@@ -301,6 +317,17 @@ export const extractPdfWithGemini = onObjectFinalized(
                 return;
             }
 
+            await abrirFicha(db, {
+                runId,
+                resourceId,
+                userId,
+                path: 'upload',
+                fileBytes: Number(event.data.size) || undefined,
+                requestedMode: resourceDoc.data()?.requestedExtractionMode,
+                preflight: preflightDe(resourceDoc.data()?.preflight),
+            });
+            fichaAbierta = true;
+
             // Update status to processing.
             // `processingStartedAt` is the wall-clock anchor the UI uses
             // to render "Procesando hace 4m 23s" without depending on
@@ -327,6 +354,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                     extractionAttemptedAt: new Date(),
                     updatedAt: new Date(),
                 });
+                await cerrarFicha(db, runId, { outcome: 'failed', reason: 'timeout', engines: motores });
             });
 
             // Download PDF to temp file
@@ -426,10 +454,16 @@ export const extractPdfWithGemini = onObjectFinalized(
                     typeof resourceDoc.data()?.paginasPorTanda === 'number'
                         ? resourceDoc.data()!.paginasPorTanda as number
                         : undefined,
+                    // La cadena sigue la MISMA ficha: su costo y su desenlace
+                    // son los de esta subida, no los de otra corrida.
+                    runId,
                 );
                 // Si no se pudo encolar, se extrae acá mismo como antes: la
                 // cola quita el techo pero no puede ser un punto único de fallo.
                 if (!encolado) return false;
+
+                motores.push({ engine: 'gemini-queue', outcome: 'queued', ms: 0 });
+                await anotarEncolado(db, runId, motores, expectedPageCount);
 
                 deadlineGuard?.disarm();
                 try { fs.unlinkSync(tempFilePath); } catch { /* el temporal ya no importa */ }
@@ -463,7 +497,9 @@ export const extractPdfWithGemini = onObjectFinalized(
                         elapsedSeconds: elapsedSeconds(),
                         accountsRemaining: llamaAccounts.length - index,
                     });
+                    const intento = cronometrar('llamaparse', account.accountId);
                     if (pollSeconds === 0) {
+                        motores.push(intento('skipped', 'sin presupuesto de tiempo restante'));
                         console.warn(
                             `⏱️ [Extract] Sin tiempo para la cuenta ${account.accountId} (${Math.round(elapsedSeconds())}s gastados de ${EXTRACTION_TIMEOUT_SECONDS}s); se baja al fallback con aire`,
                         );
@@ -479,9 +515,11 @@ export const extractPdfWithGemini = onObjectFinalized(
                         extractionVersion = '3.0-llamaparse';
                         llamaSucceededOn = account;
                         llamaCreditsUsed = result.creditsUsed;
+                        motores.push(intento('ok'));
                         break; // Success — stop trying other accounts.
                     } catch (llamaError: any) {
                         const msg = llamaError?.message ?? String(llamaError);
+                        motores.push(intento('error', msg));
                         console.warn(`⚠️ [Extract] LlamaParse account ${account.accountId} failed: ${msg}`);
                         llamaErrors.push({ account: account.accountId, error: msg });
                         // Loop continues — try next account.
@@ -525,17 +563,23 @@ export const extractPdfWithGemini = onObjectFinalized(
                         // optimización acá, es la única forma de terminar.
                         if (await intentarEncolar()) return;
 
+                        const intentoGemini = cronometrar('gemini');
                         try {
-                            const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId });
+                            const result = await conAtribucion(rutaDeFicha(runId), () =>
+                                extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId }));
+                            motores.push(intentoGemini('ok'));
                             extractedText = result.text;
                             pageCount = result.pageCount;
                             structuredMarkdown = result.markdown;
                             paginasPorTanda = result.paginasPorTanda;
                             extractionVersion = '4.0-gemini-standard';
                         } catch (geminiError) {
+                            motores.push(intentoGemini('error', geminiError));
                             console.warn(`⚠️ [Extract] Gemini also failed, using pdf-parse:`, geminiError);
                             const buffer = fs.readFileSync(tempFilePath);
+                            const intentoPdfjs = cronometrar('pdfjs');
                             const result = await extractWithPdfParse(buffer);
+                            motores.push(intentoPdfjs('ok'));
                             extractedText = result.text;
                             pageCount = result.pageCount;
                             structuredMarkdown = result.markdown;
@@ -549,7 +593,9 @@ export const extractPdfWithGemini = onObjectFinalized(
                             `📄 [Extract] Skipping Gemini fallback (${(stats.size / 1024 / 1024).toFixed(1)} MB > 50MB Gemini cap); going straight to pdf-parse`,
                         );
                         const buffer = fs.readFileSync(tempFilePath);
+                        const intentoPdfjs = cronometrar('pdfjs');
                         const result = await extractWithPdfParse(buffer);
+                        motores.push(intentoPdfjs('ok'));
                         extractedText = result.text;
                         pageCount = result.pageCount;
                         structuredMarkdown = result.markdown;
@@ -564,17 +610,23 @@ export const extractPdfWithGemini = onObjectFinalized(
 
                 if (await intentarEncolar()) return;
 
+                const intentoGemini = cronometrar('gemini');
                 try {
-                    const result = await extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId });
+                    const result = await conAtribucion(rutaDeFicha(runId), () =>
+                        extractWithGemini(tempFilePath, resourceId, getApiKey(), expectedPageCount, { userId }));
+                    motores.push(intentoGemini('ok'));
                     extractedText = result.text;
                     pageCount = result.pageCount;
                     structuredMarkdown = result.markdown;
                     paginasPorTanda = result.paginasPorTanda;
                     extractionVersion = '4.0-gemini-standard';
                 } catch (geminiError) {
+                    motores.push(intentoGemini('error', geminiError));
                     console.warn(`⚠️ [Extract] Gemini failed, falling back to pdf-parse:`, geminiError);
                     const buffer = fs.readFileSync(tempFilePath);
+                    const intentoPdfjs = cronometrar('pdfjs');
                     const result = await extractWithPdfParse(buffer);
+                    motores.push(intentoPdfjs('ok'));
                     extractedText = result.text;
                     pageCount = result.pageCount;
                     structuredMarkdown = result.markdown;
@@ -583,7 +635,9 @@ export const extractPdfWithGemini = onObjectFinalized(
             } else {
                 console.log(`📄 [Extract] Using pdf-parse (file > 100MB or no LlamaParse)`);
                 const buffer = fs.readFileSync(tempFilePath);
+                const intentoPdfjs = cronometrar('pdfjs');
                 const result = await extractWithPdfParse(buffer);
+                motores.push(intentoPdfjs('ok'));
                 extractedText = result.text;
                 pageCount = result.pageCount;
                 structuredMarkdown = result.markdown;
@@ -712,7 +766,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                 // después porque `textContent` se guarda truncado a 800 KB por
                 // el límite de Firestore: contarlo luego daría otro número.
                 // Quien juzga si la extracción sirve es el dominio.
-                scriptCensus: censusOf(finalText),
+                scriptCensus: censusOf(extractedText),
                 needsReindex: true,
                 wasTruncated,
                 updatedAt: new Date()
@@ -725,6 +779,17 @@ export const extractPdfWithGemini = onObjectFinalized(
 
             await resourceRef.update(updateData);
             console.log(`✅ [Extract] Updated resource ${resourceId} (${extractionVersion}, status: ready)`);
+
+            await cerrarFicha(db, runId, {
+                outcome: 'ready',
+                extractionVersion,
+                pagesExpected: expectedPageCount,
+                pagesEmitted: pageCount,
+                text: extractedText,
+                sanitizer: textSan.report,
+                llamaParseCredits: usedLlamaParse ? llamaCreditsUsed : undefined,
+                engines: motores,
+            });
 
             // Debit the user's processing balance based on which engine
             // actually ran. The user only pays for the tier they got:
@@ -803,6 +868,9 @@ export const extractPdfWithGemini = onObjectFinalized(
                 console.log(`❌ [Extract] Set status to 'failed' for resource ${resourceId}`);
             } catch (updateError) {
                 console.error('Failed to update error status:', updateError);
+            }
+            if (fichaAbierta) {
+                await cerrarFicha(db, runId, { outcome: 'failed', reason: String(error instanceof Error ? error.message : error), engines: motores });
             }
 
             throw error;

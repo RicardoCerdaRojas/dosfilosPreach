@@ -7,6 +7,10 @@ import * as os from 'os';
 import * as path from 'path';
 import { extractWithGemini, BATCH_THRESHOLD_PAGES } from './geminiExtraction';
 import { arrancarExtraccionEnCola } from './arrancarExtraccionEnCola';
+import { randomUUID } from 'crypto';
+import { censusOf } from './scriptCensus';
+import { conAtribucion } from '../llm/atribucionDeConsumo';
+import { abrirFicha, anotarEncolado, cerrarFicha, cronometrar, preflightDe, rutaDeFicha } from './fichaDeCorrida';
 import { consumePagesAdmin } from './processingBalance';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
@@ -134,6 +138,17 @@ export const processWithGemini = onCall<ProcessRequest>(
             );
         }
 
+        const runId = randomUUID();
+        await abrirFicha(db, {
+            runId,
+            resourceId,
+            userId: data.userId,
+            path: 'reprocess-vision',
+            fileBytes: stats.size,
+            preflight: preflightDe(data.preflight),
+        });
+        const intentoGemini = cronometrar('gemini');
+
         try {
             await resourceRef.update({
                 textExtractionStatus: 'processing',
@@ -175,9 +190,11 @@ export const processWithGemini = onCall<ProcessRequest>(
                 const encolado = await arrancarExtraccionEnCola(
                     resourceRef, resourceId, expectedPageCount,
                     typeof data.paginasPorTanda === 'number' ? data.paginasPorTanda : undefined,
+                    runId,
                 );
                 try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }
                 if (encolado) {
+                    await anotarEncolado(db, runId, [{ engine: 'gemini-queue', outcome: 'queued', ms: 0 }], expectedPageCount);
                     return {
                         success: true, encolado: true,
                         pageCount: encolado.pageCount,
@@ -190,7 +207,7 @@ export const processWithGemini = onCall<ProcessRequest>(
                 // como estaba antes de este cambio — nunca peor.
             }
 
-            const { text: extractedText, markdown: structuredMarkdown, pageCount, paginasPorTanda } = await extractWithGemini(
+            const { text: extractedText, markdown: structuredMarkdown, pageCount, paginasPorTanda } = await conAtribucion(rutaDeFicha(runId), () => extractWithGemini(
                 tempFilePath,
                 resourceId,
                 apiKey,
@@ -203,7 +220,7 @@ export const processWithGemini = onCall<ProcessRequest>(
                     // una apuesta conservadora y el libro arranca a su ritmo.
                     paginasPorTanda: typeof data.paginasPorTanda === 'number' ? data.paginasPorTanda : undefined,
                 },
-            );
+            ));
 
             const textBytes = Buffer.byteLength(extractedText, 'utf8');
             let finalText = extractedText;
@@ -239,6 +256,9 @@ export const processWithGemini = onCall<ProcessRequest>(
                 // intento fallido y se muestra como roto estando sano.
                 extractionError: null,
                 extractionFailureReason: null,
+                // Sin esto el recurso conservaba el censo de su extracción
+                // anterior, y la tarjeta juzgaba un texto que ya no existe.
+                scriptCensus: censusOf(extractedText),
                 // Sólo lo escribe la ruta batcheada; un PDF corto se lee de una
                 // pasada y no tiene tamaño de tanda que recordar.
                 ...(paginasPorTanda ? { paginasPorTanda } : {}),
@@ -257,6 +277,15 @@ export const processWithGemini = onCall<ProcessRequest>(
                 );
             }
 
+            await cerrarFicha(db, runId, {
+                outcome: 'ready',
+                extractionVersion: EXTRACTION_VERSION,
+                pagesExpected: expectedPageCount,
+                pagesEmitted: pageCount,
+                text: extractedText,
+                engines: [intentoGemini('ok')],
+            });
+
             console.log(`[ProcessGemini] ✅ ${resourceId}: ${pageCount} pages`);
 
             return {
@@ -274,6 +303,7 @@ export const processWithGemini = onCall<ProcessRequest>(
                 extractionError: errorMessage,
                 updatedAt: new Date(),
             });
+            await cerrarFicha(db, runId, { outcome: 'failed', reason: errorMessage, engines: [intentoGemini('error', errorMessage)] });
             throw new HttpsError('internal', `Gemini standard extraction failed: ${errorMessage}`);
         } finally {
             try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }

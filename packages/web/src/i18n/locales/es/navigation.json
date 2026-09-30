@@ -24,7 +24,8 @@
         "confessionalWitnesses": "Testigos confesionales",
         "integrations": "Integraciones",
         "admin": "Admin",
-        "contactLeads": "Leads de Contacto"
+        "contactLeads": "Leads de Contacto",
+        "extractionRuns": "Extracción de libros"
     },
     "groups": {
         "study": "Mis Estudios",

@@ -190,6 +190,7 @@ export function useResourceUpload({
                     author: metadata.author,
                     type: metadata.type,
                     requestedExtractionMode: metadata.extractionMode,
+                    ...(metadata.preflight ? { preflight: metadata.preflight } : {}),
                     // Persist smart-match metadata only when the inferer
                     // produced a confident result. When scope is null,
                     // omit both fields and let the legacy default

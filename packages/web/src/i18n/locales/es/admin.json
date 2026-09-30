@@ -688,5 +688,94 @@
       "breathings": "{{count}} espíritus ✎",
       "breathingsHint": "Espíritus griegos que el OCR había dejado sueltos delante de la vocal y se volvieron a componer, para que la palabra sea buscable."
     }
+  },
+  "extractionRuns": {
+    "title": "Extracción de libros",
+    "subtitle": "Una ficha por corrida: motor, costo, duración y fidelidad de escritura. Sólo números: la ficha nunca guarda texto del libro.",
+    "loadError": "No pudimos cargar las fichas.",
+    "empty": "Todavía no hay fichas. Se escriben desde la próxima extracción.",
+    "summary": {
+      "runs": "Corridas",
+      "ready": "Listas",
+      "failed": "Fallidas",
+      "running": "En curso",
+      "alerts": "Listas con alertas",
+      "usd": "Costo del modelo"
+    },
+    "engines": {
+      "title": "Por motor",
+      "hint": "El motor es el que produjo el texto, o el último que se probó si la corrida falló. La tasa de fallo cuenta sólo corridas terminadas. El costo es el de la corrida entera, incluidos los motores que fallaron antes del que terminó.",
+      "engine": "Motor",
+      "runs": "Corridas",
+      "ready": "Listas",
+      "failRate": "Fallo",
+      "degraded": "Degradadas",
+      "alerts": "Alertas",
+      "usdPerPage": "USD/página",
+      "credits": "Créditos LlamaParse",
+      "median": "Duración mediana"
+    },
+    "engine": {
+      "llamaparse": "LlamaParse",
+      "gemini": "Visión (una invocación)",
+      "gemini-queue": "Visión (en cola)",
+      "pdfjs": "Capa de texto",
+      "unknown": "Sin motor"
+    },
+    "preflight": {
+      "title": "¿El informe previo predijo el resultado?",
+      "hint": "Veredicto que vio el navegador al subir, contra cómo terminó la corrida.",
+      "verdict": "Veredicto al subir",
+      "runs": "Terminadas",
+      "ready": "Listas",
+      "alerts": "Listas con alertas",
+      "verdicts": {
+        "apto": "Apto",
+        "sin-capa-de-texto": "Sin capa de texto",
+        "escritura-ausente": "Escritura ausente",
+        "escritura-sin-diacriticos": "Escritura sin diacríticos",
+        "sin-escritura-original": "Sin escritura original",
+        "none": "Sin informe"
+      }
+    },
+    "runs": {
+      "title": "Corridas recientes",
+      "filterLabel": "Mostrar",
+      "filter": {
+        "all": "Todas",
+        "failed": "Fallidas",
+        "alerts": "Con alertas"
+      },
+      "date": "Inicio",
+      "book": "Libro",
+      "engine": "Motor",
+      "outcome": "Estado",
+      "pages": "Páginas",
+      "duration": "Duración",
+      "cost": "Costo",
+      "alerts": "Alertas",
+      "deletedResource": "(recurso borrado)",
+      "none": "Nada que mostrar con este filtro."
+    },
+    "outcome": {
+      "running": "En curso",
+      "ready": "Lista",
+      "failed": "Fallida",
+      "stalled": "Interrumpida",
+      "cancelled": "Cancelada",
+      "superseded": "Reemplazada"
+    },
+    "path": {
+      "upload": "Subida",
+      "reprocess-premium": "Reproceso premium",
+      "reprocess-vision": "Reproceso por imágenes"
+    },
+    "alert": {
+      "reversed-hebrew": "Hebreo invertido",
+      "greek-without-marks": "Griego sin marcas",
+      "replacement-chars": "Caracteres ilegibles",
+      "orphan-marks": "Marcas huérfanas",
+      "missing-pages": "Faltan páginas"
+    }
   }
 }

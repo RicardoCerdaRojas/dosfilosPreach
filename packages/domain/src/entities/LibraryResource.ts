@@ -4,6 +4,7 @@ import type { BibliographicData } from '../exegesis/services/bibliography';
 import type { PageNumbering } from '../exegesis/outline/pageNumbering';
 import type { ScriptCensus } from './extractionHealth';
 import type { BibleBookId } from '../bible/canon/BibleCanon';
+import type { PdfPreflightRecord } from '../library/diagnosePdfSource';
 import type {
     License,
     IngestionStatus,
@@ -483,6 +484,12 @@ export class LibraryResourceEntity implements LibraryResource {
      * the default premium-first cascade.
      */
     public requestedExtractionMode?: 'standard' | 'premium';
+    /**
+     * El veredicto del informe previo, tal como lo vio el navegador al subir.
+     * Sólo se escribe; lo lee la ficha de extracción para cruzarlo con el
+     * resultado. Ver `toPreflightRecord`.
+     */
+    public preflight?: PdfPreflightRecord;
     /**
      * v1.7 smart-match metadata. Set either at upload (autocompleted by
      * `inferBibleBooksFromTitle`) or in the metadata editor. Owned by

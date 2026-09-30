@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
 import { useTranslation } from '@/i18n';
 import {
     LibraryCategory,
     ResourceType,
     type BibleBookId,
     type LibraryResourceScope,
+    type PdfPreflightRecord,
     disponibilidadDeRutas,
     recommendExtractionMode,
     requiredScriptsFor,
@@ -19,6 +19,7 @@ import { AlertTriangle, Loader2, Plus, Sparkles, Upload, Wand2 } from 'lucide-re
 import { PdfPreflightNotice } from './PdfPreflightNotice';
 import { MAX_UPLOAD_SIZE_MB } from '../hooks/useResourceUpload';
 import { usePdfPreflight } from '../hooks/usePdfPreflight';
+import { useUploadFormSync } from '../hooks/useUploadFormSync';
 import { ModeAdvice, ModeTile, Paso, SmartMatchPreview, TierCallout } from './UploadFormParts';
 
 export type ExtractionMode = 'standard' | 'premium';
@@ -28,6 +29,8 @@ export interface UploadFormMetadata {
     author: string;
     type: ResourceType;
     extractionMode: ExtractionMode;
+    /** Informe previo del archivo elegido; `null` mientras no hay uno. */
+    preflight?: PdfPreflightRecord | null;
 }
 
 /**
@@ -138,21 +141,7 @@ export function LibraryUploadForm({
         evidence: preflight.status === 'done' ? preflight.evidence : null,
     });
 
-    // Una recomendación FUERTE se aplica sola. Sin esto la pantalla decía
-    // «elegí Por imágenes» y dejaba el otro azulejo marcado en verde: ya no se
-    // contradecía en palabras, pero sí en lo que tenía seleccionado, y un
-    // azulejo verde se lee como una elección hecha.
-    //
-    // Sólo al CAMBIAR la recomendación, no en cada render: si después de verla
-    // el usuario elige lo contrario a conciencia, no se le discute.
-    const ultimaAplicada = useRef<string | null>(null);
-    useEffect(() => {
-        const firma = `${recommendation.reasonKey}:${recommendation.recommended}`;
-        if (!recommendation.strong || !recommendation.recommended) return;
-        if (ultimaAplicada.current === firma) return;
-        ultimaAplicada.current = firma;
-        onMetadataChange({ extractionMode: recommendation.recommended });
-    }, [recommendation.strong, recommendation.recommended, recommendation.reasonKey, onMetadataChange]);
+    useUploadFormSync(preflight, recommendation, onMetadataChange);
 
     return (
         <div className="bg-card border border-border/60 rounded-xl p-5 sm:p-6 space-y-6">
