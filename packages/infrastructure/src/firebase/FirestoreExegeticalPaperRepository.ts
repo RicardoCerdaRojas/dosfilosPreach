@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, resolveExegeticalStrategy, trimStepVersions } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, resolveExegeticalStrategy, trimStepVersions } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -515,6 +515,14 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             newSteps.push(buildStep({ paperId, kind: 'conclusion', order: newSteps.length + 1, now }));
             newSteps.push(buildStep({ paperId, kind: 'introduction', order: newSteps.length + 1, now }));
             newSteps.push(buildStep({ paperId, kind: 'assembly', order: newSteps.length + 1, now }));
+
+            // Con el encuadre en preguntas, el documento son las respuestas:
+            // lo que no responde ninguna nace fuera (`inclusionAtBirth`).
+            const preguntas = parseBriefQuestions(data.assignmentBrief ?? null);
+            for (const step of newSteps) {
+                const incluido = inclusionAtBirth(step, preguntas);
+                if (incluido !== undefined) step.includeInDocument = incluido;
+            }
 
             tx.update(ref, {
                 steps: newSteps.map(serializeStep),

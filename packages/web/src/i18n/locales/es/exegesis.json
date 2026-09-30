@@ -1998,12 +1998,13 @@
         "pendingMark": "falta componer",
         "pendingHint_one": "1 sección elegida todavía no tiene prosa: no va a entrar al documento hasta que la compongas.",
         "pendingHint_other": "{{count}} secciones elegidas todavía no tienen prosa: no van a entrar al documento hasta que las compongas.",
-        "hint": "Desmarca lo que no quieras en el documento. La extensión que pide la rúbrica se reparte solo entre lo marcado.",
+        "hint": "Desmarca lo que no quieras en el documento; lo que aún no se generó también se puede desmarcar. La extensión que pide la rúbrica se reparte solo entre lo marcado, por pregunta respondida.",
         "toggleFailed": "No se pudo cambiar la selección. Vuelve a intentarlo.",
         "unanswered_one": "⚠ La pregunta {{numbers}} del encuadre no la responde ninguna sección elegida.",
         "unanswered_other": "⚠ Las preguntas {{numbers}} del encuadre no las responde ninguna sección elegida."
       },
       "answersQuestion": "responde la pregunta {{numbers}}",
+      "verseBudget": "~{{count}} palabras",
       "regenerate": {
         "title": "Regenerar {{step}}",
         "description": "Se vuelve a redactar esta sección desde los análisis aceptados.",

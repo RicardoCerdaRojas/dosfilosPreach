@@ -1998,12 +1998,13 @@
         "pendingMark": "not composed",
         "pendingHint_one": "1 selected section has no prose yet: it will not enter the document until you compose it.",
         "pendingHint_other": "{{count}} selected sections have no prose yet: they will not enter the document until you compose them.",
-        "hint": "Uncheck whatever you do not want in the document. The length the rubric asks for is split only among what is checked.",
+        "hint": "Uncheck whatever you do not want in the document; steps not generated yet can be unchecked too. The length the rubric asks for is split only among what is checked, by question answered.",
         "toggleFailed": "Could not change the selection. Try again.",
         "unanswered_one": "⚠ Question {{numbers}} of the brief is not answered by any selected section.",
         "unanswered_other": "⚠ Questions {{numbers}} of the brief are not answered by any selected section."
       },
       "answersQuestion": "answers question {{numbers}}",
+      "verseBudget": "~{{count}} words",
       "regenerate": {
         "title": "Regenerate {{step}}",
         "description": "This section is written again from the accepted analyses.",

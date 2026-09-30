@@ -69,11 +69,17 @@ describe('assemblyContents', () => {
         expect(c.words).toBe(14); // 4 + 3 + 3 + 4
     });
 
-    it('un paso sin aceptar no aparece en ninguna de las dos listas', () => {
-        const p = paper(paso({ id: 'v1', kind: 'verse', order: 1, verse: 1 }));
+    it('un paso todavía sin generar se lista, para poder desmarcarlo', () => {
+        // Antes se omitía y el presupuesto sí lo contaba: la tarjeta decía
+        // «se reparte solo entre lo marcado» y no había cómo desmarcarlo.
+        const p = paper(
+            paso({ id: 'v1', kind: 'verse', order: 1, verse: 1 }),
+            { ...paso({ id: 'v2', kind: 'verse', order: 2, verse: 2 }), includeInDocument: false },
+        );
         const c = assemblyContents(p.steps, 'es');
         expect(c.included).toHaveLength(0);
-        expect(c.excluded).toHaveLength(0);
+        expect(c.pending.map(x => x.label)).toEqual(['Santiago 2:1']);
+        expect(c.excluded.map(x => x.label)).toEqual(['Santiago 2:2']);
     });
 });
 
@@ -111,7 +117,7 @@ describe('documentSections — entre cuántas secciones se reparte la extensión
         // está escrito: si sólo contara lo compuesto, el primer versículo
         // recibiría el trabajo entero para él solo.
         const s = documentSections(TRABAJO.steps);
-        expect(s).toEqual({ verses: 4, introduction: true, conclusion: true });
+        expect(s).toEqual({ verses: 4, shares: 4, introduction: true, conclusion: true });
     });
 
     it('sacar el marco lo saca del reparto', () => {
@@ -120,6 +126,6 @@ describe('documentSections — entre cuántas secciones se reparte la extensión
             { ...paso({ id: 'c', kind: 'conclusion', order: 95, body: 'x' }), includeInDocument: false },
             paso({ id: 'v1', kind: 'verse', order: 1, verse: 1, body: 'x' }),
         );
-        expect(documentSections(p.steps)).toEqual({ verses: 1, introduction: false, conclusion: false });
+        expect(documentSections(p.steps)).toEqual({ verses: 1, shares: 1, introduction: false, conclusion: false });
     });
 });

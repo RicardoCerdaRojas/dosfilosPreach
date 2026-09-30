@@ -97,12 +97,18 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
             lang === 'en'
                 ? 'This is the assignment, not background. Answer it explicitly and completely: every part of the question, including any verse it points to beyond this one. If the analysis carries the evidence, it goes in — cutting for length never cuts the answer.'
                 : 'Esto es el encargo, no trasfondo. Respondelo de forma explícita y completa: cada parte de la pregunta, incluido cualquier versículo al que remita más allá de éste. Si el análisis trae la evidencia, entra — recortar por extensión nunca recorta la respuesta.',
+            ...((input.sectionQuestions ?? []).length > 1 ? [multiQuestionHeadings(input.sectionQuestions!, lang)] : []),
         ].join('\n')
         : '';
 
+    // La cifra que el autor pide al recomponer manda sobre el reparto: si las
+    // dos llegaran, la instrucción de sistema dice una y el mensaje otra, y
+    // gana la de sistema (se pidieron 300 y salieron 52).
+    const target = input.targetWords && input.targetWords > 0 ? Math.round(input.targetWords) : null;
+
     const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, glossaryBlock,
         buildCitationFormBlock(input.citationForm ?? null, lang),
-        buildWordBudgetBlock(input.wordBudget ?? null, lang), voiceBlock]
+        buildWordBudgetBlock(target ?? input.wordBudget ?? null, lang), voiceBlock]
         .filter(Boolean)
         .join('\n');
 
@@ -149,7 +155,6 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         ].join('\n')
         : '';
 
-    const target = input.targetWords && input.targetWords > 0 ? Math.round(input.targetWords) : null;
     const lengthBlock = target
         ? (lang === 'en'
             ? `TARGET LENGTH: about ${target} words. Develop what the analysis holds — morphology, syntax, the commentators' positions and the lexical range — until it is covered. If the analysis does not hold that much, write what it holds: padding, repeating, or inventing is worse than a short paragraph.`
@@ -176,6 +181,24 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     return { systemInstruction, userMessage };
 }
 
+
+/**
+ * Un versículo que responde varias preguntas se entrega en una subsección por
+ * pregunta, con la pregunta como título. Es la única excepción a «sin
+ * encabezados», y el texto del título se da exacto: el ensamble lo busca
+ * al recomponer (`canonicalizeQuestionHeadings` corrige lo que se parafrasee).
+ */
+function multiQuestionHeadings(
+    questions: ReadonlyArray<{ number: number; text: string }>,
+    lang: 'es' | 'en',
+): string {
+    return [
+        lang === 'en'
+            ? 'This section answers more than one question. EXCEPTION to the no-headings rule: answer each question in its own block, in this order, and open each block with a line that is exactly "## " followed by the question text:'
+            : 'Esta sección responde más de una pregunta. EXCEPCIÓN a la regla de no usar encabezados: responde cada pregunta en su propio bloque, en este orden, y abre cada bloque con una línea que sea exactamente «## » seguido del texto de la pregunta:',
+        ...questions.map(q => `## ${q.text}`),
+    ].join('\n');
+}
 
 /**
  * La ficha de una fuente tal como el compositor puede citarla.

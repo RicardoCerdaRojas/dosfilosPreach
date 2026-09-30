@@ -82,22 +82,22 @@ const CON_MARCO = { introduction: true, conclusion: true };
 
 describe('sectionBudgets — el reparto por versículo', () => {
     it('doce páginas entre tres versos, dejando su parte a introducción y conclusión', () => {
-        // 12 × 250 = 3.000 palabras; 80 % para los versos = 2.400; /3 = 800.
-        expect(sectionBudgets({ unit: 'pages', min: 12, max: 15 }, { verses: 3, ...CON_MARCO }).perVerse).toBe(800);
+        // Punto medio 13,5 × 250 = 3.375 palabras; 80 % para los versos = 2.700; /3 = 900.
+        expect(sectionBudgets({ unit: 'pages', min: 12, max: 15 }, { verses: 3, ...CON_MARCO }).perShare).toBe(900);
     });
 
     it('en palabras se reparte igual', () => {
-        expect(sectionBudgets({ unit: 'words', min: 3000, max: null }, { verses: 3, ...CON_MARCO }).perVerse).toBe(800);
+        expect(sectionBudgets({ unit: 'words', min: 3000, max: null }, { verses: 3, ...CON_MARCO }).perShare).toBe(800);
     });
 
     it('redondea a cincuenta: más precisión de la que la cuenta sostiene es falsa', () => {
-        expect(sectionBudgets({ unit: 'pages', min: 10, max: null }, { verses: 3, ...CON_MARCO }).perVerse! % 50).toBe(0);
+        expect(sectionBudgets({ unit: 'pages', min: 10, max: null }, { verses: 3, ...CON_MARCO }).perShare! % 50).toBe(0);
     });
 
     it('sin extensión declarada o sin versos, no se propone nada', () => {
-        expect(sectionBudgets(null, { verses: 3, ...CON_MARCO }).perVerse).toBeNull();
-        expect(sectionBudgets({ unit: 'pages', min: 12, max: null }, { verses: 0, ...CON_MARCO }).perVerse).toBeNull();
-        expect(sectionBudgets({ unit: 'pages', min: null, max: null }, { verses: 3, ...CON_MARCO }).perVerse).toBeNull();
+        expect(sectionBudgets(null, { verses: 3, ...CON_MARCO }).perShare).toBeNull();
+        expect(sectionBudgets({ unit: 'pages', min: 12, max: null }, { verses: 0, ...CON_MARCO }).perShare).toBeNull();
+        expect(sectionBudgets({ unit: 'pages', min: null, max: null }, { verses: 3, ...CON_MARCO }).perShare).toBeNull();
     });
 });
 
@@ -162,8 +162,8 @@ describe('la extensión de un trabajo a espacio simple', () => {
 
     it('y el presupuesto por versículo deja de pedir la mitad', () => {
         const secciones = { verses: 4, introduction: false, conclusion: false };
-        const viejo = sectionBudgets({ unit: 'pages', min: 2, max: 3 }, secciones, null).perVerse!;
-        const nuevo = sectionBudgets({ unit: 'pages', min: 2, max: 3 }, secciones, formato).perVerse!;
+        const viejo = sectionBudgets({ unit: 'pages', min: 2, max: 3 }, secciones, null).perShare!;
+        const nuevo = sectionBudgets({ unit: 'pages', min: 2, max: 3 }, secciones, formato).perShare!;
         expect(viejo).toBe(150);
         expect(nuevo).toBeGreaterThan(viejo);
     });

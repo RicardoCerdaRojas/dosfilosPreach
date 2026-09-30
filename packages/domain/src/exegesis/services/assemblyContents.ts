@@ -3,6 +3,7 @@ import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
 import type { ExegeticalStep } from '../entities/ExegeticalStep';
 import { countWords } from '../../services/movementBudget';
 import type { DocumentSections } from './paperLength';
+import { parseBriefQuestions, questionsForVerse, type BriefQuestion } from './briefQuestions';
 
 /**
  * Qué entra al documento y qué se queda fuera.
@@ -57,6 +58,61 @@ export function pertenceAlDocumento(step: ExegeticalStep): boolean {
     return step.includeInDocument !== false;
 }
 
+/**
+ * Las preguntas del encuadre que responde un paso. Vacío si no es versículo.
+ */
+export function questionsOfStep(
+    step: Pick<ExegeticalStep, 'kind' | 'verseRef'>,
+    questions: ReadonlyArray<BriefQuestion>,
+): BriefQuestion[] {
+    if (step.kind !== 'verse' || !step.verseRef) return [];
+    return questionsForVerse(questions, step.verseRef.chapterStart, step.verseRef.verseStart ?? 1);
+}
+
+/**
+ * Si un paso nace dentro del documento.
+ *
+ * Cuando el encuadre viene en preguntas numeradas, el documento son las
+ * RESPUESTAS: los versículos que no responden ninguna, la introducción y la
+ * conclusión nacen fuera. En el TP de Santiago 2:14-26 —cuatro preguntas,
+ * trece versículos— el presupuesto se repartió entre los trece y cada
+ * respuesta recibió 50 palabras; la casilla para sacarlos existía, pero al
+ * final de la página y después de componer.
+ *
+ * Sin preguntas no se decide nada (`undefined`): un trabajo encargado en prosa
+ * se comporta como siempre. Nacer fuera no es perderse: el paso se sigue
+ * pudiendo estudiar y se marca con un clic.
+ */
+export function inclusionAtBirth(
+    step: Pick<ExegeticalStep, 'kind' | 'verseRef'>,
+    questions: ReadonlyArray<BriefQuestion>,
+): boolean | undefined {
+    if (questions.length === 0) return undefined;
+    if (step.kind === 'introduction' || step.kind === 'conclusion') return false;
+    if (step.kind === 'verse') return questionsOfStep(step, questions).length > 0;
+    return undefined;
+}
+
+/**
+ * Los encabezados que lleva la sección de un paso en el documento.
+ *
+ * Con preguntas en el encuadre, el título de la sección es la PREGUNTA, no la
+ * referencia: el fundador reemplazaba a mano «Santiago 2:14» por «¿Cómo
+ * funciona la partícula μή (Stg. 2:14)?» en cada Word. Un versículo que
+ * responde dos preguntas lleva dos, en orden. Sin preguntas, la etiqueta.
+ *
+ * La MISMA función la lee el ensamblador y quien busca la sección al
+ * recomponer: el rótulo que se escribe y el que se busca no pueden divergir.
+ */
+export function sectionHeadings(
+    step: Pick<ExegeticalStep, 'kind' | 'verseRef'>,
+    questions: ReadonlyArray<BriefQuestion>,
+    label: string,
+): string[] {
+    const propias = questionsOfStep(step, questions);
+    return propias.length > 0 ? propias.map(q => q.text) : [label];
+}
+
 export function assemblyContents(
     steps: ReadonlyArray<ExegeticalStep>,
     language: 'es' | 'en',
@@ -73,9 +129,12 @@ export function assemblyContents(
                 : { introduction: 'Introducción', conclusion: 'Conclusión', verse: 'Versículo', assembly: 'Ensamble' }
             )[step.kind];
 
+    // Un paso todavía sin generar también se lista. Antes se omitía, y el
+    // presupuesto sí lo contaba: la tarjeta decía «se reparte solo entre lo
+    // marcado» y el autor no tenía cómo desmarcar lo que no veía.
     const clasifica = (step: ExegeticalStep | undefined) => {
-        if (!step?.accepted) return;
-        const body = step.accepted.markdown?.trim() ?? '';
+        if (!step) return;
+        const body = step.accepted?.markdown?.trim() ?? '';
         const parte: AssemblyPart = {
             stepId: step.id,
             kind: step.kind,
@@ -119,14 +178,19 @@ export function assembleMarkdown(
 ): string {
     const passage = formatPassageReference(paper.passage, language);
     const out: string[] = [`# ${paper.title?.trim() || passage}`, ''];
+    const preguntas = parseBriefQuestions(paper.assignmentBrief);
 
     for (const parte of contents.included) {
         const step = paper.steps.find(s => s.id === parte.stepId);
         const body = step?.accepted?.markdown?.trim() ?? '';
-        if (!body) continue;
+        if (!step || !body) continue;
         out.push('---', '');
-        // Un cuerpo que ya abre con encabezado no lleva otro encima.
-        if (!/^#{1,6}\s/.test(body)) out.push(`## ${parte.label}`, '');
+        // Un cuerpo que ya abre con encabezado no lleva otro encima: es el
+        // caso del versículo que responde dos preguntas, cuya prosa trae sus
+        // dos títulos (`canonicalizeQuestionHeadings`).
+        if (!/^#{1,6}\s/.test(body)) {
+            out.push(`## ${sectionHeadings(step, preguntas, parte.label)[0]}`, '');
+        }
         out.push(body, '');
     }
     return out.join('\n');
@@ -143,11 +207,14 @@ export function assembleMarkdown(
  */
 export function documentSections(
     steps: ReadonlyArray<ExegeticalStep>,
+    questions: ReadonlyArray<BriefQuestion> = [],
 ): DocumentSections {
     const cuenta = (kind: ExegeticalStep['kind']) =>
         steps.filter(s => s.kind === kind && pertenceAlDocumento(s)).length;
+    const versiculos = steps.filter(s => s.kind === 'verse' && pertenceAlDocumento(s));
     return {
-        verses: cuenta('verse'),
+        verses: versiculos.length,
+        shares: versiculos.reduce((n, s) => n + Math.max(1, questionsOfStep(s, questions).length), 0),
         introduction: cuenta('introduction') > 0,
         conclusion: cuenta('conclusion') > 0,
     };

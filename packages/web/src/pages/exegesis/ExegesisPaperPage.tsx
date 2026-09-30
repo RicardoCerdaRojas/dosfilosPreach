@@ -72,6 +72,7 @@ import {
     type SupportedLanguage,
     assemblyDelivery,
     documentSections,
+    parseBriefQuestions,
     sectionBudgets,
 } from '@dosfilos/domain';
 
@@ -686,14 +687,16 @@ function StepsPanel({
     const steps = paper.steps ?? [];
     const hasSteps = steps.length > 0;
     const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
-    // Cuánto le toca a cada verso para llegar a la extensión que exige la
-    // rúbrica: es el número que el diálogo de recomposición propone.
+    // Cuánto le toca a cada pregunta respondida para llegar a la extensión
+    // que exige la rúbrica. Cada tarjeta lo multiplica por las suyas
+    // (`verseWordBudget`): es el número que muestra y que el diálogo de
+    // recomposición propone.
     const formatting = paper.rubric?.formatting ?? null;
-    const targetWordsPerVerse = sectionBudgets(
+    const wordsPerShare = sectionBudgets(
         paper.rubric?.expectedLength ?? null,
-        documentSections(steps),
+        documentSections(steps, parseBriefQuestions(paper.assignmentBrief)),
         formatting,
-    ).perVerse;
+    ).perShare;
 
     return (
         <section className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
@@ -753,7 +756,7 @@ function StepsPanel({
                             allSteps={paper.steps}
                             assignmentBrief={paper.assignmentBrief}
                             hasAssembly={!!paper.assembledMarkdown?.trim()}
-                            targetWordsPerVerse={targetWordsPerVerse}
+                            wordsPerShare={wordsPerShare}
                             formatting={formatting}
                         />
                     ))}

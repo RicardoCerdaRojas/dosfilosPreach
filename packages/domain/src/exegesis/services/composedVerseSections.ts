@@ -193,3 +193,78 @@ export function replaceVerseSection(
         previous.trim() === body ? null : body
     ));
 }
+
+/**
+ * Los títulos de la prosa de un versículo que responde VARIAS preguntas,
+ * reescritos con el texto exacto de cada pregunta.
+ *
+ * El compositor recibe la orden de abrir cada respuesta con su pregunta, pero
+ * un modelo parafrasea: si el título escrito no es el que el ensamble busca al
+ * recomponer, la sección no se encuentra. Aquí se deja cada título idéntico al
+ * de `sectionHeadings`.
+ *
+ * Si la prosa trae tantos títulos como preguntas, se reescriben en orden (lo
+ * que haya antes del primero queda en la primera respuesta). Si trae otra
+ * cantidad no se adivina cuál es cuál: se quitan todos y queda un solo título,
+ * el de la primera pregunta. Se pierde un título, nunca texto.
+ *
+ * Con una pregunta o ninguna, la prosa queda igual: el título lo pone el
+ * ensamblador.
+ */
+export function canonicalizeQuestionHeadings(markdown: string, questionTexts: readonly string[]): string {
+    if (questionTexts.length < 2) return markdown;
+    const lineas = markdown.split('\n');
+    const titulos = lineas
+        .map((linea, i) => (/^#{1,6}[ \t]+\S/.test(linea) ? i : -1))
+        .filter(i => i >= 0);
+
+    const bloque = (desde: number, hasta: number) => lineas.slice(desde, hasta).join('\n').trim();
+    if (titulos.length !== questionTexts.length) {
+        const sinTitulos = lineas.filter((_, i) => !titulos.includes(i)).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+        return `## ${questionTexts[0]}\n\n${sinTitulos}`;
+    }
+
+    const partes: string[] = [];
+    titulos.forEach((linea, k) => {
+        const fin = titulos[k + 1] ?? lineas.length;
+        const cuerpo = k === 0
+            ? [bloque(0, linea), bloque(linea + 1, fin)].filter(Boolean).join('\n\n')
+            : bloque(linea + 1, fin);
+        partes.push(`## ${questionTexts[k]}`, '', cuerpo, '');
+    });
+    return partes.join('\n').trim();
+}
+
+/**
+ * Cambia la prosa de un versículo que en el documento ocupa una o más
+ * secciones con título propio —las preguntas que responde—.
+ *
+ * Con un solo título es `replaceVerseSection`: se cambia el cuerpo y el
+ * título queda. Con varios, la prosa nueva trae sus títulos y reemplaza el
+ * tramo entero, del primer título al final de la última sección. Si falta
+ * alguno o están fuera de orden, `null`: como en `replaceVerseSection`,
+ * reemplazar a ciegas deja el versículo dos veces.
+ */
+export function replaceSectionsByHeadings(
+    assembled: string,
+    headings: readonly string[],
+    prose: string,
+): string | null {
+    if (headings.length <= 1) return headings[0] ? replaceVerseSection(assembled, headings[0], prose) : null;
+    const body = prose.trim();
+    if (!body) return null;
+    const located = locateVerseSections(assembled, headings);
+    if (!located) return null;
+    const tramos = headings.map(h => located.get(h)!);
+    if (tramos.some((t, i) => i > 0 && t.bodyStart <= tramos[i - 1]!.bodyStart)) return null;
+
+    const inicio = assembled.lastIndexOf('\n', tramos[0]!.bodyStart - 1) + 1;
+    const fin = tramos[tramos.length - 1]!.end;
+    const viejo = assembled.slice(inicio, fin);
+    // El separador `---` que el ensamblador pone ANTES de la sección siguiente
+    // cae dentro del tramo: se conserva.
+    const separador = /\n-{3,}\s*$/.test(viejo) ? '---\n\n' : '';
+    const nuevo = `${body}\n\n${separador}`;
+    if (viejo.trim() === nuevo.trim()) return assembled;
+    return `${assembled.slice(0, inicio)}${nuevo}${assembled.slice(fin)}`;
+}
