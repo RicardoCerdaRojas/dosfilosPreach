@@ -46,5 +46,33 @@
     "usdPorMillonTokensEntrada": null,
     "usdPorMillonTokensSalida": null,
     "_nota": "Entrada y salida separadas. Una transcripción de PDF es mayormente salida."
+  },
+  "modelos": {
+    "_leeme": "Tarifas por id de modelo (USD por 1M de tokens; la salida incluye razonamiento) para los motores gemini-2.5-flash, gemini-3.5-flash-lite(-high), gemini-3.8-flash, gpt-6-luna y gpt-6.1-sol. Cada una con su `_fuente`.",
+    "gemini-2.5-flash": {
+      "entrada": null,
+      "salida": null,
+      "_fuente": null
+    },
+    "gemini-3.5-flash-lite": {
+      "entrada": null,
+      "salida": null,
+      "_fuente": null
+    },
+    "gemini-3.8-flash": {
+      "entrada": null,
+      "salida": null,
+      "_fuente": null
+    },
+    "gpt-6-luna": {
+      "entrada": null,
+      "salida": null,
+      "_fuente": null
+    },
+    "gpt-6.1-sol": {
+      "entrada": null,
+      "salida": null,
+      "_fuente": null
+    }
   }
 }
