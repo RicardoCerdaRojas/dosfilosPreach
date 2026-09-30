@@ -25,6 +25,7 @@ import { modoDeCobro, type ExtractionVersion } from './extractionVersions';
 import { salidaCortada } from './partirTanda';
 import { leerPaginasDelPdf } from './textoDelPdf';
 import { randomUUID } from 'crypto';
+import { MODEL_VISION } from '../llm/modelCatalog';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
 import {
     abrirFicha,
@@ -786,6 +787,10 @@ export const extractPdfWithGemini = onObjectFinalized(
                 // que este archivo lleva media vida corrigiendo.
                 extractionError: null,
                 extractionFailureReason: null,
+                // Qué modelo leyó las páginas. Existe para poder encontrar después
+                // los libros que leyó un modelo peor —los hebreos leídos con 2.5
+                // Flash traen vocales cambiadas— y reprocesarlos.
+                extractionModel: usedGemini ? MODEL_VISION : null,
                 // Censo de escrituras del texto COMPLETO. Se cuenta acá y no
                 // después porque `textContent` se guarda truncado a 800 KB por
                 // el límite de Firestore: contarlo luego daría otro número.
@@ -807,6 +812,7 @@ export const extractPdfWithGemini = onObjectFinalized(
             await cerrarFicha(db, runId, {
                 outcome: 'ready',
                 extractionVersion,
+                model: usedGemini ? MODEL_VISION : undefined,
                 pagesExpected: expectedPageCount,
                 pagesEmitted: pageCount,
                 text: extractedText,

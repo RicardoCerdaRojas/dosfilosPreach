@@ -23,6 +23,14 @@ export interface LlmModel {
 export const MODEL_FAST = 'gemini-2.5-flash';
 export const MODEL_DEEP = 'gemini-2.5-pro';
 export const MODEL_EMBEDDING = 'gemini-embedding-001';
+/**
+ * Lectura de páginas por visión (extracción de PDFs). No se ofrece en ajustes:
+ * lo elige el sistema. Decidido con el bakeoff del 2026-09-30 sobre Niccacci, un
+ * léxico y la BHS: el único que leyó la BHS con vocales, cantilación y masora;
+ * 2.5 Flash cambiaba vocales y perdía el daguesh. Ver
+ * `scripts/extraction-bakeoff/` y la memoria del proyecto.
+ */
+export const MODEL_VISION = 'gemini-3.8-flash';
 export const DEFAULT_MODEL = MODEL_FAST;
 
 export const LLM_MODELS: readonly LlmModel[] = [

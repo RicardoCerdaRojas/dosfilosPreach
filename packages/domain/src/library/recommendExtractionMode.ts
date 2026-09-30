@@ -81,8 +81,12 @@ export const VISION_MAX_BYTES_EN_COLA = 300 * 1024 * 1024;
  * que no puede importar este paquete (ADR-025). Un invariante en las pruebas
  * de functions compara los dos números: dos copias que deben coincidir y nadie
  * compara terminan no coincidiendo.
+ *
+ * 40 desde el cambio a Gemini 3.8 Flash (2026-09-30), medido en el bakeoff: lee
+ * a ~9 s por página en la BHS, la obra más densa. 40 páginas son ~370 s dentro
+ * de los 540 del disparador; las 80 de antes serían ~740 s.
  */
-export const PAGINAS_PARA_LA_COLA = 80;
+export const PAGINAS_PARA_LA_COLA = 40;
 
 /**
  * Cuánto puede pesar un archivo para que la ruta estándar lo lea.

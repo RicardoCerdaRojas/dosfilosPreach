@@ -221,6 +221,7 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
                 // El censo del texto nuevo: sin esto quedaba el de la
                 // extracción anterior y la tarjeta juzgaba otro libro.
                 scriptCensus: censusOf(extractedText),
+                extractionModel: null,
                 needsReindex: true,
                 wasTruncated,
                 updatedAt: new Date(),

@@ -17,6 +17,14 @@
  * obra: la gramática hebrea es la MENOS densa por página de las tres. Elegir el
  * tamaño por «esto tiene hebreo, será pesado» habría dado justo al revés.
  *
+ * DESDE 2026-09-30 (Gemini 3.8 Flash): los 3.x no permiten apagar el
+ * razonamiento, sólo bajarlo. Se pide `LOW`, que en el bakeoff gastó CERO
+ * tokens de razonamiento sobre tres libros, y lo que gaste se suma a la
+ * densidad medida (`tokensDeSalida` incluye `thoughtsTokenCount`), así que una
+ * tanda que razone de más achica las siguientes en vez de romperlas. Con una
+ * sola copia por página, la densidad medida bajó a la mitad: Niccacci 809
+ * tokens/página, la BHS 2 244. Lo que sigue es la razón original, con 2.5.
+ *
  * POR QUÉ ESTO SÓLO FUNCIONA CON EL RAZONAMIENTO APAGADO. El razonamiento sale
  * del mismo `maxOutputTokens` que el contenido. Medido sobre Barrick en cuatro
  * tamaños, se llevó 1 190, 15 259, 32 584 y 3 657 tokens — entre el 3% y el 50%
