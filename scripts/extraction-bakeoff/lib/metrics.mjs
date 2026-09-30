@@ -90,7 +90,8 @@ export function scriptFidelity(text) {
  * other metric scored it healthy — the Hebrew consonants were all there.
  *
  * Counts the MIXING, not the foreign script: lexicons legitimately cite Arabic
- * and Syriac cognates, and those come as whole words.
+ * and Syriac cognates, and those come as whole words. See `isContaminated` for
+ * why Latin at a word edge does not count.
  */
 const SCRIPT_OF = [
     ['hebrew', /\p{Script=Hebrew}/u],
@@ -103,18 +104,33 @@ const SCRIPT_OF = [
 
 function countMixedScriptWords(nfc) {
     let mixed = 0;
-    for (const word of nfc.split(/\s+/u)) {
-        const seen = new Set();
+    // Los comandos LaTeX (`\text`, `\atop`) son marcado, no letras leídas: un
+    // modelo que escribe la masora parva en LaTeX no está mezclando escrituras.
+    for (const word of nfc.replace(/\\[A-Za-z]+/gu, ' ').split(/\s+/u)) {
+        const scripts = [];
         for (const ch of word) {
             if (!/\p{L}/u.test(ch)) continue;
-            for (const [name, re] of SCRIPT_OF) {
-                if (re.test(ch)) { seen.add(name); break; }
-            }
-            if (seen.size > 1) break;
+            const hit = SCRIPT_OF.find(([, re]) => re.test(ch));
+            if (hit) scripts.push(hit[0]);
         }
-        if (seen.size > 1) mixed++;
+        if (isContaminated(scripts)) mixed++;
     }
     return mixed;
+}
+
+/**
+ * Two non-Latin scripts in one word is always contamination. Latin is subtler:
+ * an apparatus siglum or a footnote letter glued to the EDGE of a Hebrew word
+ * (`יָרִיםG`, `$^{bc}$דִּבְרֵי`) is a spacing or markup problem, while a Latin
+ * letter INSIDE one (`וְהַלְכְTֶם`) means the model misread a glyph.
+ */
+function isContaminated(scripts) {
+    const nonLatin = new Set(scripts.filter(x => x !== 'latin'));
+    if (nonLatin.size > 1) return true;
+    if (nonLatin.size === 0) return false;
+    const first = scripts.findIndex(x => x !== 'latin');
+    const last = scripts.length - 1 - [...scripts].reverse().findIndex(x => x !== 'latin');
+    return scripts.slice(first, last + 1).includes('latin');
 }
 
 /**

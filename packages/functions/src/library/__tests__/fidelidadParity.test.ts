@@ -30,6 +30,8 @@ const TEXTOS: Array<[string, string]> = [
     // palabras hebreas. Un léxico que cita un cognado árabe entero no cuenta.
     ['contaminación de escrituras', 'كִי־יַכְרִית الْهּוֹיִם וָμֵת וְהַלְכְTֶם'],
     ['cognado árabe legítimo', 'hebreo עֵקֶב, cf. árabe عقب «talón»'],
+    ['masora parva en LaTeX', '$^{.ל}\\text{ה}$ ומל}.\\text{ג}$ ס\'\'פ}}\\atop{\\text{בסיפ\'}^2}$'],
+    ['siglas y superíndices al borde de la palabra', 'יָרִיםG מִשַׁוְעָתִיG(S) $^{bc}$דִּבְרֵי מושIs.'],
 ];
 
 describe('fidelidadDeEscritura coincide con scriptFidelity del bakeoff', async () => {

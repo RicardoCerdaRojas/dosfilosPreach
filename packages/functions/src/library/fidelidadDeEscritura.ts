@@ -102,18 +102,35 @@ const RE_LETRA = /\p{L}/u;
 
 function palabrasMezcladas(nfc: string): number {
     let mezcladas = 0;
-    for (const palabra of nfc.split(/\s+/u)) {
-        const vistas = new Set<string>();
+    // Los comandos LaTeX (`\text`, `\atop`) son marcado, no letras leídas: un
+    // modelo que escribe la masora parva en LaTeX no está mezclando escrituras.
+    for (const palabra of nfc.replace(/\\[A-Za-z]+/gu, ' ').split(/\s+/u)) {
+        const escrituras: string[] = [];
         for (const ch of palabra) {
             if (!RE_LETRA.test(ch)) continue;
-            for (const [nombre, re] of ESCRITURAS) {
-                if (re.test(ch)) { vistas.add(nombre); break; }
-            }
-            if (vistas.size > 1) break;
+            const hallada = ESCRITURAS.find(([, re]) => re.test(ch));
+            if (hallada) escrituras.push(hallada[0]);
         }
-        if (vistas.size > 1) mezcladas++;
+        if (estaContaminada(escrituras)) mezcladas++;
     }
     return mezcladas;
+}
+
+/**
+ * Dos escrituras no latinas en una palabra es siempre contaminación. Con el
+ * latín hay que mirar DÓNDE: una sigla del aparato o una letra de nota pegada al
+ * BORDE de una palabra hebrea (`יָרִיםG`, `$^{bc}$דִּבְרֵי`) es un problema de
+ * espacio o de marcado; una letra latina DENTRO (`וְהַלְכְTֶם`) es un glifo mal
+ * leído. Medido en la BHS: sin esta distinción, el motor que mejor leyó el
+ * aparato salía con 221 «mezclas» que eran todas superíndices.
+ */
+function estaContaminada(escrituras: string[]): boolean {
+    const noLatinas = new Set(escrituras.filter((x) => x !== 'latin'));
+    if (noLatinas.size > 1) return true;
+    if (noLatinas.size === 0) return false;
+    const primera = escrituras.findIndex((x) => x !== 'latin');
+    const ultima = escrituras.length - 1 - [...escrituras].reverse().findIndex((x) => x !== 'latin');
+    return escrituras.slice(primera, ultima + 1).includes('latin');
 }
 
 /**
