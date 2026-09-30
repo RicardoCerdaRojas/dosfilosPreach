@@ -30,7 +30,17 @@ export const MIN_PAGINAS_POR_TANDA = 4;
  * problema es otro.
  */
 export function convieneParir(err: unknown, paginasEnLaTanda: number): boolean {
-    const msg = String((err as Error)?.message ?? err);
-    const noEntro = /MAX_TOKENS|truncated/i.test(msg);
-    return noEntro && paginasEnLaTanda >= MIN_PAGINAS_POR_TANDA * 2;
+    return salidaCortada(err) && paginasEnLaTanda >= MIN_PAGINAS_POR_TANDA * 2;
+}
+
+/**
+ * ¿La respuesta del modelo se cortó por falta de salida?
+ *
+ * Es la señal de que las páginas pedidas no ENTRAN en una respuesta, no de que
+ * el libro sea ilegible. Quien la recibe tiene que achicar lo que pide —partir
+ * la tanda, o mandar el libro a la cola— y no caer a la capa de texto, que es
+ * justo lo que la visión venía a evitar.
+ */
+export function salidaCortada(err: unknown): boolean {
+    return /MAX_TOKENS|truncated/i.test(String((err as Error)?.message ?? err));
 }

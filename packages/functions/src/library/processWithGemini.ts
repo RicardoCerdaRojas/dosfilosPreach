@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { extractWithGemini, BATCH_THRESHOLD_PAGES } from './geminiExtraction';
 import { arrancarExtraccionEnCola } from './arrancarExtraccionEnCola';
+import { salidaCortada } from './partirTanda';
 import { randomUUID } from 'crypto';
 import { censusOf } from './scriptCensus';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
@@ -207,7 +208,7 @@ export const processWithGemini = onCall<ProcessRequest>(
                 // como estaba antes de este cambio — nunca peor.
             }
 
-            const { text: extractedText, markdown: structuredMarkdown, pageCount, paginasPorTanda } = await conAtribucion(rutaDeFicha(runId), () => extractWithGemini(
+            const extraer = () => conAtribucion(rutaDeFicha(runId), () => extractWithGemini(
                 tempFilePath,
                 resourceId,
                 apiKey,
@@ -221,6 +222,33 @@ export const processWithGemini = onCall<ProcessRequest>(
                     paginasPorTanda: typeof data.paginasPorTanda === 'number' ? data.paginasPorTanda : undefined,
                 },
             ));
+
+            // Una pasada única que se corta por falta de salida no entra en una
+            // respuesta: se sigue en cola, que lee de a rangos calibrados, en
+            // vez de fallar. Misma regla que el disparador de subida.
+            let resultado: Awaited<ReturnType<typeof extraer>>;
+            try {
+                resultado = await extraer();
+            } catch (err) {
+                if (!salidaCortada(err) || !expectedPageCount) throw err;
+                console.warn(`[ProcessGemini] ${resourceId}: la pasada única se cortó; se sigue en cola`);
+                const encolado = await arrancarExtraccionEnCola(
+                    resourceRef, resourceId, expectedPageCount,
+                    typeof data.paginasPorTanda === 'number' ? data.paginasPorTanda : undefined,
+                    runId,
+                );
+                if (!encolado) throw err;
+                await anotarEncolado(db, runId, [
+                    intentoGemini('error', err),
+                    { engine: 'gemini-queue', outcome: 'queued', ms: 0 },
+                ], expectedPageCount);
+                return {
+                    success: true, encolado: true,
+                    pageCount: encolado.pageCount,
+                    rangosEstimados: encolado.rangosEstimados,
+                };
+            }
+            const { text: extractedText, markdown: structuredMarkdown, pageCount, paginasPorTanda } = resultado;
 
             const textBytes = Buffer.byteLength(extractedText, 'utf8');
             let finalText = extractedText;
