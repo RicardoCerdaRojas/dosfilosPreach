@@ -813,7 +813,7 @@
           "inconsistent_other": "{{count}} fuentes guardaron fragmentos que su selección no declara ({{labels}}). Volvé a guardar sus páginas para dejarlos parejos."
         },
         "picker": {
-          "subtitle": "Elegí qué hojas del documento entran a este trabajo. Podés agregar la sección del pasaje y también la introducción del libro.",
+          "subtitle": "Elige qué hojas del documento entran a este trabajo. Puedes agregar la sección del pasaje y también la introducción del libro.",
           "loadingIndex": "Leyendo el índice del documento…",
           "indexFailed": "No se pudo leer el índice de este documento. Verificá que esté procesado y probá de nuevo.",
           "proposal": {
@@ -849,7 +849,7 @@
             "removeSheet": "Quitar esta hoja",
             "startRange": "Iniciar rango",
             "endRange": "Cerrar rango desde la hoja {{sheet}}",
-            "rangeHint": "Rango abierto desde la hoja {{sheet}}. Elegí la hoja final acá o en el índice."
+            "rangeHint": "Rango abierto desde la hoja {{sheet}}. Elige la hoja final aquí o en el índice."
           },
           "adjustPages": "Ajustar páginas",
           "sourceNotFound": "No encontramos esta fuente en el trabajo.",
@@ -1121,7 +1121,7 @@
           "roleDivergence": "Las obras de este tipo suelen ir de {{suggested}}. La dejo de {{chosen}} porque lo pediste — el tipo mide la rúbrica, el rol lo decides tú.",
           "typeLabel": "Tipo académico",
           "typeLabelBulk": "Tipo académico para las {{count}} fuentes",
-          "typeDescription": "Elegí el tipo que mejor describe la fuente. La rúbrica usa este tipo para decidir si cumple los mínimos.",
+          "typeDescription": "Elige el tipo que mejor describe la fuente. La rúbrica usa este tipo para decidir si cumple los mínimos.",
           "typeDescriptionBulk": "Se aplica a todas las fuentes seleccionadas. Si necesitas tipos distintos, puedes ajustarlos uno por uno desde la lista del corpus.",
           "classifying": "Clasificando automáticamente…",
           "classifierSuggested": "Sugerencia automática",
@@ -1281,7 +1281,7 @@
           "conclusion": "Sintetiza los análisis aceptados sin introducir argumentos nuevos."
         },
         "rubricSuggestion": "Sugerencia de la rúbrica",
-        "rubricEmpty": "La rúbrica no especifica énfasis para este paso. Elegí los tipos que tengan sentido para tu trabajo.",
+        "rubricEmpty": "La rúbrica no especifica énfasis para este paso. Elige los tipos que tengan sentido para tu trabajo.",
         "rubricJustification": {
           "introduction": "La introducción presenta la tesis y posiciona el pasaje. Tu voz lidera: el contexto histórico-cultural y el posicionamiento teológico la sostienen como apoyo, y el análisis técnico (léxico, gramática, aparato crítico) se reserva para el cuerpo.",
           "verse": "El trabajo verso por verso es donde el método dialéctico se ejerce plenamente. Las tres voces dialogan: el ancla (lectura base), los contrastes (otra voz crítica/teológica) y el aparato técnico (léxico, gramática, crítico) que defiende cada decisión.",

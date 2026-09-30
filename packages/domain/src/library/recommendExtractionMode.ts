@@ -148,6 +148,10 @@ export interface ModeRecommendation {
     | 'layer-garbled'
     /** La capa no sirve y el archivo no entra en visión: hay que partirlo. */
     | 'layer-too-large'
+    /** La capa trae la escritura pero sin acentos ni puntos: sirve para leer, no para buscar. */
+    | 'layer-without-marks'
+    /** Lo mismo, y además no entra en visión: la capa es lo único que hay. */
+    | 'layer-without-marks-too-large'
     /** No se halló escritura original y no se sabe si el libro la necesita. */
     | 'no-script-found'
     | 'text-layer-premium'
@@ -227,6 +231,19 @@ export function recommendExtractionMode(input: {
             // No entra en visión, y las otras dos rutas leen justamente esa capa.
             // Cambiar de motor no arregla nada: hay que partir el archivo.
             : { recommended: null, reasonKey: 'layer-too-large', strong: true };
+    }
+
+    // ── Capa con la escritura, pero sin sus marcas ─────────────────
+    // Caía al final, en «texto incrustado y en buen estado», y la pantalla se
+    // contradecía: el aviso de arriba decía «vienen sin sus acentos» y el
+    // recuadro de abajo recomendaba justo el motor que lee esa capa. La visión
+    // mira la página, donde las marcas sí están.
+    if (diagnosis.verdict === 'escritura-sin-diacriticos') {
+        return sizeBytes <= topeDeVision
+            ? { recommended: 'standard', reasonKey: 'layer-without-marks', strong: true }
+            // Sin visión, la capa es lo único que hay: sirve para leer. No se
+            // elige por el usuario porque sólo él sabe si le basta con leer.
+            : { recommended: null, reasonKey: 'layer-without-marks-too-large', strong: false };
     }
 
     // ── Capa presente, sin la escritura que el libro necesita ───────
