@@ -1,12 +1,12 @@
-import { GoogleGenerativeAI, GenerationConfig } from '@google/generative-ai';
+import { FileState, GoogleGenAI, MediaResolution, ThinkingLevel } from '@google/genai';
 import { recordLlmUsage } from '../llm/llmUsageRecorder';
-import { GoogleAIFileManager, FileState } from '@google/generative-ai/server';
 import { PDFDocument } from 'pdf-lib';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
-import { MODEL_FAST } from '../llm/modelCatalog';
+import { MODEL_VISION } from '../llm/modelCatalog';
+import { markdownAPlano } from './markdownAPlano';
 import { permitirEsperasLargas } from '../llm/esperaLargaHttp';
 import { rescatarPaginas, conMarkdown } from './rescatarPaginas';
 import { verificarCobertura, convieneReintentarTanda } from './coberturaDePaginas';
@@ -43,7 +43,7 @@ import {
 // ── Batched Gemini extraction ───────────────────────────────────────────
 //
 // Una sola llamada tiene un tope de salida de 65 536 tokens. Por encima de
-// `BATCH_THRESHOLD_PAGES` el PDF se parte con pdf-lib en recortes reales —no
+// `PAGINAS_EN_UNA_PASADA` el PDF se parte con pdf-lib en recortes reales —no
 // pidiéndole al modelo «procesá las páginas X a Y», que está documentado como
 // poco fiable— y los resultados se concatenan. La forma de la salida es la
 // misma que la de una pasada única, así que el chunker de más abajo no necesita
@@ -54,37 +54,26 @@ import {
 // techo de las tres obras medidas, y en treinta días de registros ninguna
 // extracción batcheada terminó un libro: once arrancadas, una llegó a su
 // segundo bloque, cero completadas.
-export const BATCH_THRESHOLD_PAGES = 80;
+/**
+ * Desde cuántas páginas el libro deja de leerse dentro del disparador y pasa a
+ * la cola. Es un límite de TIEMPO, no de tokens (ver `PAGINAS_PARA_LA_COLA` en
+ * domain, que lo duplica): 3.8 Flash lee ~9 s por página en la obra más densa.
+ */
+export const BATCH_THRESHOLD_PAGES = 40;
+
+/**
+ * Hasta cuántas páginas se lee en UNA llamada. Por encima, tandas calibradas.
+ *
+ * Es la primera tanda conservadora, por la misma razón: con una sola copia por
+ * página, la BHS midió 2 244 tokens/página en 3.8 Flash, y 24 páginas son
+ * ~54 000 — cerca del tope de 65 536. Un libro más largo se mide en su primera
+ * tanda y el resto se lee al tamaño que esa medida autoriza.
+ */
+export const PAGINAS_EN_UNA_PASADA = TANDA_INICIAL;
 
 // El `fetch` de Node aborta a los 300 s, y una lectura densa tarda más. Se
 // levanta al cargar el módulo, antes de cualquier llamada.
 permitirEsperasLargas();
-
-/**
- * `GenerationConfig` más el campo que el SDK 0.21 no declara.
- *
- * `@google/generative-ai` es el SDK legado y quedó congelado antes de que
- * existiera el razonamiento configurable. `generationConfig` se serializa tal
- * cual al cuerpo REST, que es donde la API espera `thinkingConfig`, así que el
- * campo viaja bien; lo único que falta es el tipo. Verificado con 14 llamadas
- * medidas: con el campo puesto, `thoughtsTokenCount` deja de venir.
- */
-interface ConfigDeGeneracion extends GenerationConfig {
-    thinkingConfig?: { thinkingBudget: number };
-}
-
-/**
- * `usageMetadata` más el contador que el SDK 0.21 tampoco declara.
- *
- * El razonamiento se factura como salida y NO aparece en `candidatesTokenCount`.
- * Sin este campo el panel de costos venía subcontando: en una de las llamadas
- * medidas fueron 32 584 tokens que nadie vio.
- */
-interface UsoConRazonamiento {
-    promptTokenCount?: number;
-    candidatesTokenCount?: number;
-    thoughtsTokenCount?: number;
-}
 
 /**
  * Single PDF page as Gemini returned it. Same shape as `LlamaParsePage`
@@ -138,10 +127,10 @@ export async function extractWithGemini(
     opciones: OpcionesDeExtraccion = {},
 ): Promise<ResultadoDeExtraccion> {
     const { userId } = opciones;
-    const useBatched = !!expectedPageCount && expectedPageCount > BATCH_THRESHOLD_PAGES;
+    const useBatched = !!expectedPageCount && expectedPageCount > PAGINAS_EN_UNA_PASADA;
     if (useBatched) {
         console.log(
-            `🤖 [Gemini] expected ${expectedPageCount} pages > ${BATCH_THRESHOLD_PAGES} — using batched extraction`,
+            `🤖 [Gemini] ${expectedPageCount} páginas > ${PAGINAS_EN_UNA_PASADA} — lectura por tandas`,
         );
         return extractWithGeminiBatched(tempFilePath, resourceId, apiKey, expectedPageCount!, opciones);
     }
@@ -176,92 +165,94 @@ async function extractGeminiPagesSinglePass(
     expectedPageCount?: number,
     userId?: string,
 ): Promise<{ pages: GeminiPage[]; tokensDeSalida: number }> {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const fileManager = new GoogleAIFileManager(apiKey);
+    const ai = new GoogleGenAI({ apiKey });
 
     console.log(`⬆️ [Gemini] Uploading to Gemini Files API...`);
-    const uploadResult = await fileManager.uploadFile(tempFilePath, {
-        mimeType: 'application/pdf',
-        displayName: `${resourceId}.pdf`,
+    const subido = await ai.files.upload({
+        file: tempFilePath,
+        config: { mimeType: 'application/pdf', displayName: `${resourceId}.pdf` },
     });
+    if (!subido.name) throw new Error('Gemini Files API no devolvió nombre de archivo');
 
     // Wait for file to be processed (Gemini converts the PDF before
     // the model can read it — non-trivial for big files).
-    let geminiFile = await fileManager.getFile(uploadResult.file.name);
+    let geminiFile = await ai.files.get({ name: subido.name });
     const fileReadyDeadline = Date.now() + 5 * 60 * 1000;
     while (geminiFile.state === FileState.PROCESSING) {
         if (Date.now() > fileReadyDeadline) {
             throw new Error('Gemini file processing exceeded 5 minutes');
         }
         await new Promise(resolve => setTimeout(resolve, 5000));
-        geminiFile = await fileManager.getFile(uploadResult.file.name);
+        geminiFile = await ai.files.get({ name: subido.name });
     }
-    if (geminiFile.state === FileState.FAILED) {
+    if (geminiFile.state === FileState.FAILED || !geminiFile.uri) {
         throw new Error('Gemini file processing failed');
     }
     console.log(`✅ [Gemini] File ready: ${geminiFile.displayName}`);
 
-    // El razonamiento sale del MISMO presupuesto que el contenido, y transcribir
-    // un PDF no lo necesita. Medido sobre la gramática de Barrick: encendido se
-    // llevó entre el 3% y el 50% del tope según la corrida, y con 30 páginas
-    // empujó la respuesta contra el techo por 16 tokens (32 936 de contenido +
-    // 32 584 de razonamiento = 65 520 de 65 536). Apagado, esas mismas 30
-    // páginas volvieron completas y en la mitad del tiempo: 274 s con fallo →
-    // 135 s con 30/30.
+    // UNA SOLA COPIA por página. Antes se pedía `text` y `md` de cada página,
+    // que es el mismo contenido dos veces: duplicaba la salida —la parte cara—
+    // y dejaba el tope de 65 536 tokens en ~42 páginas densas. Así se cortó una
+    // gramática hebrea de 78 páginas el 2026-09-29. El texto plano se deriva del
+    // markdown (`markdownAPlano`), que no cuesta nada.
     //
-    // Y sobre todo: apagado, el presupuesto se vuelve DETERMINISTA. Ésa es la
-    // condición para que calibrar el tamaño de tanda signifique algo — contra un
-    // presupuesto que se comparte con una variable aleatoria capaz de llevarse
-    // la mitad, la misma tanda del mismo libro entra o no entra según cuánto
-    // decida pensar el modelo.
-    const generationConfig: ConfigDeGeneracion = {
-        responseMimeType: 'application/json',
-        maxOutputTokens: PRESUPUESTO_SALIDA,
-        thinkingConfig: { thinkingBudget: 0 },
-    };
-    const model = genAI.getGenerativeModel({ model: MODEL_FAST, generationConfig });
-
+    // Razonamiento en `LOW`: los 3.x no permiten apagarlo, y lo que piensan sale
+    // del mismo tope que el contenido. En el bakeoff, en `LOW`, no gastó un solo
+    // token en pensar sobre tres libros. Se sigue midiendo en cada llamada
+    // (`thoughtsTokenCount`) y se suma a la densidad que calibra las tandas.
+    //
+    // Resolución ALTA: es con la que el bakeoff leyó la cantilación de la BHS.
     const prompt = `Extrae el texto completo de este PDF página por página.
 
 Reglas:
-1. Una entrada por página física. Conserva los números de página reales del PDF.
-2. Preserva la estructura: encabezados con # / ## (markdown), párrafos separados, listas con -.
-3. Preserva con precisión caracteres griegos (α-ω) y hebreos (א-ת).
+1. Una entrada por página física, en orden, numeradas desde 1 según su posición en el archivo.
+2. Preserva la estructura en markdown: encabezados con # / ##, párrafos separados, listas con -, tablas en formato markdown.
+3. Transcribe el griego y el hebreo EXACTAMENTE como aparecen: griego politónico con espíritus, acentos e iota suscrita; hebreo con niqqud y acentos de cantilación. No normalices ni corrijas ninguna forma.
 4. No traduzcas términos teológicos ni citas bíblicas.
-5. Mantén tablas en formato markdown cuando aparezcan.
-6. NO incluyas el número de página en el contenido (lo capturamos en el campo aparte).
+5. No uses LaTeX ni notación matemática: nada de $...$, \\text ni ^{...}. Escribe los superíndices y las letras de nota del aparato como caracteres Unicode (ᵃ ᵇ ᶜ ¹ ²) pegados donde aparecen.
+6. NO incluyas el número de página impreso en el contenido.
 
 Devuelve JSON con esta estructura exacta:
 {
   "pages": [
-    { "page": 1, "text": "texto plano", "md": "texto en markdown" }
+    { "page": 1, "md": "contenido de la página en markdown" }
   ]
 }
 
-Si una página está vacía, devuelve string vacío en text/md pero conserva la entrada para no romper la numeración.`;
+Si una página está vacía, devuelve "md": "" pero conserva la entrada para no romper la numeración.`;
 
-    const result = await model.generateContent([
-        prompt,
-        {
-            fileData: {
-                mimeType: geminiFile.mimeType!,
-                fileUri: geminiFile.uri,
-            },
+    const result = await ai.models.generateContent({
+        model: MODEL_VISION,
+        contents: [{
+            role: 'user',
+            parts: [
+                { text: prompt },
+                { fileData: { mimeType: geminiFile.mimeType ?? 'application/pdf', fileUri: geminiFile.uri } },
+            ],
+        }],
+        config: {
+            responseMimeType: 'application/json',
+            maxOutputTokens: PRESUPUESTO_SALIDA,
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+            mediaResolution: MediaResolution.MEDIA_RESOLUTION_HIGH,
         },
-    ]);
+    });
 
     // Se mide ANTES del guard de truncado: una respuesta truncada igual se
     // cobra, y si no se registrara aquí, los reintentos por MAX_TOKENS —que son
     // justo los caros— quedarían fuera de la contabilidad.
-    const usage = result.response.usageMetadata as UsoConRazonamiento | undefined;
-    const tokensDeSalida = usage?.candidatesTokenCount ?? 0;
+    const usage = result.usageMetadata;
+    const razonamiento = usage?.thoughtsTokenCount ?? 0;
+    // El razonamiento consume el MISMO tope: para calibrar cuántas páginas
+    // entran en una llamada, cuenta como salida.
+    const tokensDeSalida = (usage?.candidatesTokenCount ?? 0) + razonamiento;
     void recordLlmUsage({
-        model: MODEL_FAST,
+        model: MODEL_VISION,
         feature: 'library.pdfExtraction',
         userId,
         inputTokens: usage?.promptTokenCount ?? 0,
-        outputTokens: tokensDeSalida,
-        thinkingTokens: usage?.thoughtsTokenCount ?? 0,
+        outputTokens: usage?.candidatesTokenCount ?? 0,
+        thinkingTokens: razonamiento,
     });
 
     // Truncation guard #1 — Gemini sets `finishReason = 'MAX_TOKENS'`
@@ -270,12 +261,12 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     // semantically incomplete. Treat this as a hard failure so the
     // cascade falls to pdf-parse, which produces auto-indexable
     // output covering the FULL document.
-    const finishReason = result.response.candidates?.[0]?.finishReason;
+    const finishReason = result.candidates?.[0]?.finishReason;
     if (finishReason && finishReason !== 'STOP') {
         throw new Error(`Gemini stopped early (finishReason=${finishReason}); response truncated`);
     }
 
-    const responseText = result.response.text();
+    const responseText = result.text ?? '';
 
     let parsed: { pages?: Array<{ page: number; text?: string; md?: string }> };
     try {
@@ -311,11 +302,13 @@ Si una página está vacía, devuelve string vacío en text/md pero conserva la 
     }
 
     // Best-effort cleanup of the Gemini file to avoid quota waste.
-    try { await fileManager.deleteFile(geminiFile.name); } catch { /* ignore */ }
+    try { await ai.files.delete({ name: subido.name }); } catch { /* ignore */ }
 
+    // El texto plano sale del markdown. Una respuesta vieja o rescatada puede
+    // traer `text` sin `md`, y se respeta.
     const pages = parsed.pages.map((p, idx) => ({
         page: typeof p.page === 'number' ? p.page : idx + 1,
-        text: p.text ?? '',
+        text: typeof p.md === 'string' ? markdownAPlano(p.md) : (p.text ?? ''),
         md: p.md,
     }));
 

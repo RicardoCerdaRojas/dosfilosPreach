@@ -10,6 +10,7 @@ import { arrancarExtraccionEnCola } from './arrancarExtraccionEnCola';
 import { salidaCortada } from './partirTanda';
 import { randomUUID } from 'crypto';
 import { censusOf } from './scriptCensus';
+import { MODEL_VISION } from '../llm/modelCatalog';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
 import { abrirFicha, anotarEncolado, cerrarFicha, cronometrar, preflightDe, rutaDeFicha } from './fichaDeCorrida';
 import { consumePagesAdmin } from './processingBalance';
@@ -284,6 +285,7 @@ export const processWithGemini = onCall<ProcessRequest>(
                 // intento fallido y se muestra como roto estando sano.
                 extractionError: null,
                 extractionFailureReason: null,
+                extractionModel: MODEL_VISION,
                 // Sin esto el recurso conservaba el censo de su extracción
                 // anterior, y la tarjeta juzgaba un texto que ya no existe.
                 scriptCensus: censusOf(extractedText),
@@ -308,6 +310,7 @@ export const processWithGemini = onCall<ProcessRequest>(
             await cerrarFicha(db, runId, {
                 outcome: 'ready',
                 extractionVersion: EXTRACTION_VERSION,
+                model: MODEL_VISION,
                 pagesExpected: expectedPageCount,
                 pagesEmitted: pageCount,
                 text: extractedText,

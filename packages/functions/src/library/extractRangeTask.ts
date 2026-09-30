@@ -24,6 +24,7 @@ import { parseFirebaseStorageLocation } from './storageLocation';
 import { truncateUtf8 } from './truncateUtf8';
 import { consumePagesAdmin } from './processingBalance';
 import { censusOf } from './scriptCensus';
+import { MODEL_VISION } from '../llm/modelCatalog';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
 import { anotarRango, cerrarFicha, rutaDeFicha } from './fichaDeCorrida';
 
@@ -355,6 +356,7 @@ async function ensamblarYGuardar(
         // él —o con el de su extracción anterior— y la tarjeta juzgaba texto
         // que ya no existía.
         scriptCensus: censusOf(libro.text),
+        extractionModel: MODEL_VISION,
         extractionProgress: FieldValue.delete(),
         updatedAt: new Date(),
     });
@@ -362,6 +364,7 @@ async function ensamblarYGuardar(
     await cerrarFicha(getFirestore(), runId, {
         outcome: 'ready',
         extractionVersion: EXTRACTION_VERSION,
+        model: MODEL_VISION,
         pagesExpected: totalPaginas,
         pagesEmitted: libro.pageCount,
         pagesMissing: libro.faltantes.total,

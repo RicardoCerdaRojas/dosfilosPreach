@@ -88,6 +88,8 @@ export interface ResumenDeTexto extends FidelidadDeEscritura {
 export interface CierreDeFicha {
     outcome: DesenlaceDeCorrida;
     extractionVersion?: string;
+    /** Modelo que leyó las páginas, si fue por visión. */
+    model?: string;
     pagesExpected?: number;
     pagesEmitted?: number;
     pagesMissing?: number;
@@ -127,6 +129,7 @@ export function armarCierre(cierre: CierreDeFicha, startedAt: Date | null, ahora
         durationMs: startedAt ? Math.max(0, ahora.getTime() - startedAt.getTime()) : null,
     };
     if (cierre.extractionVersion) patch.extractionVersion = cierre.extractionVersion;
+    if (cierre.model) patch.model = cierre.model;
     const pages: Record<string, number> = {};
     if (typeof cierre.pagesExpected === 'number') pages.expected = cierre.pagesExpected;
     if (typeof cierre.pagesEmitted === 'number') pages.emitted = cierre.pagesEmitted;
