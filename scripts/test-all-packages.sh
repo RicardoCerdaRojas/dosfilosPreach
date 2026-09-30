@@ -38,7 +38,7 @@ done
 # se pudre en silencio es peor que no tenerla, porque igual se decide con ella.
 # Corren desde la raíz sin config propia (no necesitan jsdom).
 printf '\n\033[1m── extraction-bakeoff ─────────────────────────────\033[0m\n'
-if ! npx vitest run scripts/extraction-bakeoff; then
+if ! npx vitest run scripts/extraction-bakeoff scripts/llm-bakeoff; then
     FALLARON+=("extraction-bakeoff")
 fi
 

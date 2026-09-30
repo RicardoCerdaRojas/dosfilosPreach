@@ -1,0 +1,21 @@
+{
+  "_leeme": "Formas verbales hebreas sin ambigüedad. raiz sin vocales. conjugacion: qal, nifal, piel, pual, hifil, hofal, hitpael, polel. forma: perfecto, imperfecto, wayyiqtol, weqatal, imperativo, yusivo, participio. pgn: 3ms, 2mp, etc.; varias aceptadas separadas por |.",
+  "formas": [
+    { "forma": "וַיֹּאמֶר", "raiz": "אמר", "conjugacion": "qal", "forma_verbal": "wayyiqtol", "pgn": "3ms" },
+    { "forma": "בָּרָא", "raiz": "ברא", "conjugacion": "qal", "forma_verbal": "perfecto", "pgn": "3ms" },
+    { "forma": "יְהִי", "raiz": "היה", "conjugacion": "qal", "forma_verbal": "yusivo", "pgn": "3ms" },
+    { "forma": "הִשָּׁמֶר", "raiz": "שמר", "conjugacion": "nifal", "forma_verbal": "imperativo", "pgn": "2ms" },
+    { "forma": "יַרְבִּיצֵנִי", "raiz": "רבץ", "conjugacion": "hifil", "forma_verbal": "imperfecto", "pgn": "3ms" },
+    { "forma": "יְנַהֲלֵנִי", "raiz": "נהל", "conjugacion": "piel", "forma_verbal": "imperfecto", "pgn": "3ms" },
+    { "forma": "יְשׁוֹבֵב", "raiz": "שוב", "conjugacion": "polel", "forma_verbal": "imperfecto", "pgn": "3ms" },
+    { "forma": "אֶחְסָר", "raiz": "חסר", "conjugacion": "qal", "forma_verbal": "imperfecto", "pgn": "1cs" },
+    { "forma": "נִמְכַּר", "raiz": "מכר", "conjugacion": "nifal", "forma_verbal": "perfecto", "pgn": "3ms" },
+    { "forma": "שִׁמְעוּ", "raiz": "שמע", "conjugacion": "qal", "forma_verbal": "imperativo", "pgn": "2mp" },
+    { "forma": "וְאָהַבְתָּ", "raiz": "אהב", "conjugacion": "qal", "forma_verbal": "weqatal", "pgn": "2ms" },
+    { "forma": "הִגִּיד", "raiz": "נגד", "conjugacion": "hifil", "forma_verbal": "perfecto", "pgn": "3ms" },
+    { "forma": "תִּתְהַלֵּךְ", "raiz": "הלך", "conjugacion": "hitpael", "forma_verbal": "imperfecto", "pgn": "2ms|3fs" },
+    { "forma": "יִשְׁמְרוּ", "raiz": "שמר", "conjugacion": "qal", "forma_verbal": "imperfecto", "pgn": "3mp" },
+    { "forma": "מְדַבֵּר", "raiz": "דבר", "conjugacion": "piel", "forma_verbal": "participio", "pgn": "ms" },
+    { "forma": "הָפְקַד", "raiz": "פקד", "conjugacion": "hofal", "forma_verbal": "perfecto", "pgn": "3ms" }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "_leeme": "Tanda difícil: raíces supletivas, verbos en -μι, perfectos y pluscuamperfectos. Sin infinitivos (el puntaje pide persona o caso).",
+  "formas": [
+    { "forma": "ἤνεγκαν", "lema": "φέρω", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "plural" },
+    { "forma": "εἶπαν", "lema": "λέγω", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "plural" },
+    { "forma": "ἀπολέσῃ", "lema": "ἀπόλλυμι", "tiempo": "aoristo", "voz": ["activa"], "modo": "subjuntivo", "persona": "3", "numero": "singular" },
+    { "forma": "ἔγνωκα", "lema": "γινώσκω", "tiempo": "perfecto", "voz": ["activa"], "modo": "indicativo", "persona": "1", "numero": "singular" },
+    { "forma": "ἐπέθηκεν", "lema": "ἐπιτίθημι", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἀνέβη", "lema": "ἀναβαίνω", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἐξελθών", "lema": "ἐξέρχομαι", "tiempo": "aoristo", "voz": ["activa"], "modo": "participio", "caso": "nominativo", "numero": "singular", "genero": "masculino" },
+    { "forma": "ἑστώς", "lema": "ἵστημι", "tiempo": "perfecto", "voz": ["activa"], "modo": "participio", "caso": "nominativo", "numero": "singular", "genero": "masculino" },
+    { "forma": "ἤδει", "lema": "οἶδα", "tiempo": "pluscuamperfecto", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἀπέστειλαν", "lema": "ἀποστέλλω", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "plural" },
+    { "forma": "εἰδώς", "lema": "οἶδα", "tiempo": "perfecto", "voz": ["activa"], "modo": "participio", "caso": "nominativo", "numero": "singular", "genero": "masculino" },
+    { "forma": "δέδωκεν", "lema": "δίδωμι", "tiempo": "perfecto", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἀνελήμφθη", "lema": "ἀναλαμβάνω", "tiempo": "aoristo", "voz": ["pasiva"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "παρέδωκαν", "lema": "παραδίδωμι", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "plural" },
+    { "forma": "ἐφάνη", "lema": "φαίνω", "tiempo": "aoristo", "voz": ["pasiva"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ἀπέθνῃσκεν", "lema": "ἀποθνῄσκω", "tiempo": "imperfecto", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "ὦσιν", "lema": "εἰμί", "tiempo": "presente", "voz": ["activa"], "modo": "subjuntivo", "persona": "3", "numero": "plural" },
+    { "forma": "ἐκάθισεν", "lema": "καθίζω", "tiempo": "aoristo", "voz": ["activa"], "modo": "indicativo", "persona": "3", "numero": "singular" },
+    { "forma": "πεπληρωμένη", "lema": "πληρόω", "tiempo": "perfecto", "voz": ["pasiva", "media"], "modo": "participio", "caso": "nominativo", "numero": "singular", "genero": "femenino" }
+  ]
+}
