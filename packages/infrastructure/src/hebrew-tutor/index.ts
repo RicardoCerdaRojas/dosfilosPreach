@@ -7,7 +7,7 @@ export { MorphhbBibleProvider } from './morphhb/morphhb-bible-provider.js';
 export { HEBREW_BOOKS_CATALOG } from './morphhb/books-catalog.js';
 
 // Gemini analysis service
-export { HebrewAnalysisService, reconcileGlobalWords } from './gemini-hebrew-service.js';
+export { HebrewAnalysisService } from './gemini-hebrew-service.js';
 
 // Knowledge base (useful for testing and debugging)
 export { selectRelevantChunks } from './knowledge/knowledge-selector.js';

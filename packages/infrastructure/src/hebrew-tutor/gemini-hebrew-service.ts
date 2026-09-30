@@ -13,6 +13,7 @@
  */
 
 import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry } from '@dosfilos/domain';
+import { reconcileGlobalWords } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { GEMINI_CONFIG } from '../gemini/config.js';
 import { selectRelevantChunks } from './knowledge/knowledge-selector.js';
@@ -129,11 +130,7 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
    * such as cantillation marks (te'amim, U+0591–U+05AF). The morphhb tokens are
    * the authoritative Masoretic text and preserve all diacritics.
    *
-   * Matching strategy: positional (by index).
-   *  - If counts match exactly → direct 1-to-1 replacement.
-   *  - If Gemini returned fewer words (e.g. it merged a prefixed token) → replace
-   *    only the words that have a corresponding morphhb token; leave the rest as-is.
-   *  - If Gemini returned more words → extra words keep Gemini's text (safe fallback).
+   * Palabra por palabra: ver `reconcileGlobalWords`.
    */
   private reconcileWordTexts(
     geminiWords: VerseAnalysis['words'],
@@ -146,10 +143,7 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
       return geminiWords;
     }
 
-    console.log('--- RECONCILE START ---');
-    const mapped = reconcileGlobalWords(geminiWords, morphhbTokens);
-    console.log('--- RECONCILE END ---');
-    return mapped;
+    return reconcileGlobalWords(geminiWords, morphhbTokens);
   }
 
   /**
@@ -195,116 +189,4 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
     // Close the JSON object
     return truncated + '}';
   }
-}
-
-/**
- * Reconciles each WordAnalysis.hebrewText with its corresponding HebrewWordToken
- * from the morphhb dataset.
- *
- * Gemini normalizes Unicode when generating JSON, stripping combining characters
- * such as cantillation marks (te'amim, U+0591–U+05AF). The morphhb tokens are
- * the authoritative Masoretic text and preserve all diacritics.
- *
- * Matching strategy: positional (by index).
- *  - If counts match exactly → direct 1-to-1 replacement.
- *  - If Gemini returned fewer words (e.g. it merged a prefixed token) → replace
- *    only the words that have a corresponding morphhb token; leave the rest as-is.
- *  - If Gemini returned more words → extra words keep Gemini's text (safe fallback).
- */
-export function reconcileGlobalWords(
-  geminiWords: VerseAnalysis['words'],
-  morphhbTokens: readonly { text: string }[]
-): VerseAnalysis['words'] {
-  if (!morphhbTokens || morphhbTokens.length === 0) {
-    return geminiWords;
-  }
-
-  // Verse-level punctuation that should not appear inside word morphemes.
-  // - U+05C3 ׃ SOF PASUQ    — end-of-verse double dot
-  // - U+05C0 ׀ PASEQ        — pause separator between clauses
-  // These are attached by morphhb to the last token of a verse/clause
-  // but have no morphological significance for a single word.
-  const VERSE_PUNCT_RE = /[\u05C3\u05C0]/g;
-
-  // Flatten all morphemes from the LLM output
-  const allMorphemes = geminiWords.flatMap((w) => w.morphemes || []);
-  if (allMorphemes.length === 0) return geminiWords;
-
-  const isConsonant = (char: string) => char >= '\u05D0' && char <= '\u05EA';
-  
-  // Create a clean copy of morphemes to build up text
-  const newMorphemes = allMorphemes.map((m) => ({ ...m, text: '' }));
-  
-  // Count how many consonants Gemini generated per morpheme
-  const consCounts = allMorphemes.map((m) => Array.from(m.text).filter(isConsonant).length);
-
-  // Reconstruct authoritative text as a single continuous string
-  const authText = morphhbTokens.map((t) => t.text).join('');
-
-  let currentMorphIdx = 0;
-  let consSeen = 0;
-
-  for (const char of authText) {
-    if (isConsonant(char)) {
-      // Advance past any morphemes that have 0 consonants (e.g. prefix vowels)
-      while (currentMorphIdx < allMorphemes.length && consCounts[currentMorphIdx] === 0) {
-        currentMorphIdx++;
-      }
-      consSeen++;
-      if (currentMorphIdx < allMorphemes.length) {
-        newMorphemes[currentMorphIdx].text += char;
-        if (consSeen >= consCounts[currentMorphIdx]) {
-          currentMorphIdx++;
-          consSeen = 0;
-        }
-      } else {
-        // Excess consonants go to the last morpheme
-        if (newMorphemes.length > 0) newMorphemes[newMorphemes.length - 1].text += char;
-      }
-    } else {
-      // Non-consonant (vowel, cantillation/te'amim, dagesh, maqaf)
-      // Attach to the morpheme of the PREVIOUS consonant, or the current one if at the start
-      let attachIdx = currentMorphIdx;
-      if (consSeen === 0) {
-        attachIdx = Math.max(0, currentMorphIdx - 1);
-      }
-      if (attachIdx >= newMorphemes.length) {
-        attachIdx = newMorphemes.length - 1;
-      }
-      if (newMorphemes.length > 0) {
-        newMorphemes[attachIdx].text += char;
-      }
-    }
-  }
-
-  // Restore 0-consonant morphemes if they remained completely empty
-  for (let i = 0; i < newMorphemes.length; i++) {
-    if (newMorphemes[i].text === '') {
-      // The authoritative text already distributed its maqafs (\u05BE).
-      // We must not restore hallucinated/duplicated maqafs from the LLM.
-      newMorphemes[i].text = allMorphemes[i].text.replace(/\u05BE/g, '');
-    }
-  }
-
-  // Distribute back to the words
-  let mIdx = 0;
-  return geminiWords.map((w) => {
-    const wordMorphemes = w.morphemes ? newMorphemes.slice(mIdx, mIdx + w.morphemes.length) : [];
-    mIdx += w.morphemes?.length || 0;
-
-    // Strip verse-level punctuation from every morpheme text so sof pasuq
-    // doesn't render as a visible repeated character inside the word display.
-    const cleanMorphemes = wordMorphemes.map((m) => ({
-      ...m,
-      text: m.text.replace(VERSE_PUNCT_RE, ''),
-    }));
-
-    return {
-      ...w,
-      // wordMorphemes keeps the punctuation so it appears in the full verse display
-      hebrewText: wordMorphemes.map((m) => m.text).join(''),
-      // cleanMorphemes omits punctuation so it doesn't render inside the single-word view
-      morphemes: cleanMorphemes,
-    };
-  });
 }

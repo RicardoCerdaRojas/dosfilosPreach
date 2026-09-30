@@ -28,6 +28,7 @@ import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import { PaletteIcon, ActivityIcon, PrinterIcon, DownloadIcon, FileTextIcon, ScanTextIcon, BookOpenIcon, LayoutGridIcon, ScrollTextIcon, CopyIcon, CheckIcon, RefreshCwIcon, BookOpenTextIcon, PencilIcon, XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { VerseAnalysis, WordAnalysis, LexicalNote, LexicalNoteType } from '@dosfilos/domain';
+import { versePunctuationOf } from '@dosfilos/domain';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { generateVerseMarkdown } from '../utils/exportMarkdown';
 import { toast } from 'sonner';
@@ -364,12 +365,16 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                           </span>
                         ) : w.morphemes && w.morphemes.length > 0 ? (
                           // Morphological mode: colored spans, cantillation stripped
-                          <MorphemeSpan
-                            segments={w.morphemes}
-                            variant="text"
-                            disableColors={!showColors}
-                            disableNativeTooltip
-                          />
+                          <>
+                            <MorphemeSpan
+                              segments={w.morphemes}
+                              variant="text"
+                              disableColors={!showColors}
+                              disableNativeTooltip
+                            />
+                            {/* Sof pasuq: los morfemas no lo llevan, la línea sí. */}
+                            <span className="font-hebrew">{versePunctuationOf(w.hebrewText)}</span>
+                          </>
                         ) : (
                           w.hebrewText
                         )}

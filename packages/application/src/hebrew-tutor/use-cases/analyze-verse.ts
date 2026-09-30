@@ -23,8 +23,9 @@ import type {
   ILexicalRepository,
   VerseAnalysis,
   LexicalEntry,
+  HebrewVerse,
 } from '@dosfilos/domain';
-import { reconcileGlobalWords } from '@dosfilos/infrastructure';
+import { reconcileGlobalWords } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -59,19 +60,9 @@ export class AnalyzeVerseUseCase {
     const hebrewVerse = this.bibleProvider.getVerse(morphhbKey, chapter, verse);
 
     // 3. Check analysis cache (avoid redundant API calls)
-    if (!forceRefresh && this.sessionRepository) {
-      const cached = await this.sessionRepository.getCachedAnalysis(hebrewVerse.reference);
-      if (cached) {
-        // Retroactively reconcile cached words with authoritative morphhb tokens
-        // to restore cantillation marks (te'amim) for legacy cached entries
-        const reconciledWords = reconcileGlobalWords(cached.words, hebrewVerse.words);
-        
-        return {
-          ...cached,
-          hebrewText: hebrewVerse.hebrewText,
-          words: reconciledWords,
-        };
-      }
+    if (!forceRefresh) {
+      const cached = await this.readCache(hebrewVerse);
+      if (cached) return cached;
     }
 
     // 4. Fetch and match lexical entries for Level 2 RAG injection
@@ -91,7 +82,37 @@ export class AnalyzeVerseUseCase {
     return analysis;
   }
 
+  /**
+   * El análisis guardado de un versículo, sin llamar al modelo. `null` si no
+   * hay. Es lo que usa la navegación (◀/▶): antes leía el caché CRUDO y
+   * mostraba las letras tal como se guardaron, corridas incluidas.
+   */
+  async cachedOnly(input: Pick<AnalyzeVerseInput, 'morphhbKey' | 'chapter' | 'verse'>): Promise<VerseAnalysis | null> {
+    await this.bibleProvider.loadBook(input.morphhbKey);
+    return this.readCache(this.bibleProvider.getVerse(input.morphhbKey, input.chapter, input.verse));
+  }
+
   // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Lee el caché y vuelve a poner el texto de morphhb en cada palabra.
+   *
+   * Reconciliar al leer sana lo guardado con el reparto viejo: de cada
+   * palabra sólo se usa CUÁNTAS consonantes tiene cada morfema, y las letras
+   * salen del token. Una palabra que el modelo contó mal queda entera, sin
+   * color; las siguientes vuelven a su sitio. Por eso no se sube la versión de
+   * la clave: se perderían las traducciones que los usuarios corrigieron.
+   */
+  private async readCache(hebrewVerse: HebrewVerse): Promise<VerseAnalysis | null> {
+    if (!this.sessionRepository) return null;
+    const cached = await this.sessionRepository.getCachedAnalysis(hebrewVerse.reference);
+    if (!cached) return null;
+    return {
+      ...cached,
+      hebrewText: hebrewVerse.hebrewText,
+      words: reconcileGlobalWords(cached.words, hebrewVerse.words),
+    };
+  }
 
   /**
    * Fetches all enabled lexical entries and returns those that apply to the
