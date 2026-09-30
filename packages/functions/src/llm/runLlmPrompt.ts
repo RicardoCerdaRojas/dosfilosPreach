@@ -3,6 +3,9 @@ import * as admin from 'firebase-admin';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
 import { GoogleGenAI, HarmBlockThreshold, HarmCategory, type GenerateContentConfig } from '@google/genai';
 import { textoDeGemini } from './textoDeGemini';
+import { OpenAiLlmClient } from './OpenAiLlmClient';
+import { AnthropicLlmClient } from './AnthropicLlmClient';
+import { rutaCompatible, rutaPara } from './ruteoDeModelos';
 import { GeminiLlmClient } from './GeminiLlmClient';
 import { recordLlmUsage } from './llmUsageRecorder';
 import { LLM_PRICING } from './llmCost';
@@ -218,7 +221,7 @@ export const runLlmPrompt = onCall(
     // completo tarda varios minutos y el tope viejo lo habría cortado a la
     // mitad. Es un techo, no una espera: las llamadas cortas siguen volviendo
     // igual de rápido.
-    { ...appCheckCallableOptions(), secrets: ['GEMINI_API_KEY'], timeoutSeconds: 540 },
+    { ...appCheckCallableOptions(), secrets: ['GEMINI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY'], timeoutSeconds: 540 },
     async (request) => {
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'User must be authenticated');
@@ -244,7 +247,9 @@ export const runLlmPrompt = onCall(
 
         // Solo modelos con precio conocido: si no sabemos cuánto cuesta, no lo
         // corremos. Evita que un cliente pida un modelo caro fuera de la tabla.
-        const model = String(data.model ?? MODEL_FAST);
+        // El modelo lo pedía el navegador. Si la función tiene una ruta asignada
+        // en `config/llmRouting`, manda la ruta (ver `ruteoDeModelos`).
+        let model = String(data.model ?? MODEL_FAST);
         if (!(model in LLM_PRICING)) {
             throw new HttpsError('invalid-argument', `Modelo no autorizado: ${model}`);
         }
@@ -270,6 +275,29 @@ export const runLlmPrompt = onCall(
         // texto→texto y no las cubre, así que acá se usa el SDK directo y se
         // llama al medidor A MANO. El port es una comodidad, no un requisito: lo
         // que no es negociable es que la llamada salga del servidor y quede medida.
+        const ruta = await rutaPara(feature);
+        if (ruta) {
+            const necesidades = {
+                fileSearch: Boolean(data.fileSearchStoreId),
+                imagen: Boolean(data.inlineImage),
+                esquema: Boolean(data.responseSchema),
+            };
+            if (!(ruta.model in LLM_PRICING)) {
+                console.warn(`[runLlmPrompt] ${feature}: la ruta pide ${ruta.model}, sin precio conocido; se ignora`);
+            } else if (!rutaCompatible(ruta, necesidades)) {
+                console.warn(
+                    `[runLlmPrompt] ${feature}: la ruta ${ruta.provider}/${ruta.model} no cubre ` +
+                    `${JSON.stringify(necesidades)}; sigue por Gemini`,
+                );
+            } else if (ruta.provider === 'gemini') {
+                model = ruta.model;
+            } else {
+                return await porOtroProveedor(ruta.provider, ruta.model, ruta.reasoning, {
+                    feature, uid, system, prompt, data,
+                });
+            }
+        }
+
         const storeId = data.fileSearchStoreId ? String(data.fileSearchStoreId) : '';
         if (storeId) {
             try {
@@ -427,3 +455,48 @@ export const runLlmPrompt = onCall(
         }
     },
 );
+
+/**
+ * Un pedido de texto (o JSON simple) por OpenAI o Anthropic, vía el port.
+ *
+ * Sólo llega acá lo que `rutaCompatible` dejó pasar: sin búsqueda en archivos,
+ * sin imagen, sin esquema. `topP` y `safety` no tienen equivalente directo y se
+ * omiten; el resto de la configuración viaja igual que por Gemini.
+ */
+async function porOtroProveedor(
+    proveedor: 'openai' | 'anthropic',
+    modelo: string,
+    razonamiento: RutaRazonamiento,
+    ctx: { feature: string; uid: string; system?: string; prompt: string; data: Record<string, unknown> },
+): Promise<{ text: string; tokens: number | null; finishReason: null }> {
+    const { feature, uid, system, prompt, data } = ctx;
+    const clave = proveedor === 'openai' ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
+    if (!clave) {
+        throw new HttpsError('failed-precondition', `${proveedor.toUpperCase()}_API_KEY secret not configured`);
+    }
+    const opciones = {
+        ...(system ? { system } : {}),
+        prompt,
+        responseMimeType: data.responseMimeType === 'application/json' ? 'application/json' as const : 'text/plain' as const,
+        ...(typeof data.temperature === 'number' ? { temperature: data.temperature } : {}),
+        ...(typeof data.maxOutputTokens === 'number'
+            ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
+            : {}),
+    };
+    try {
+        if (proveedor === 'openai') {
+            const llm = new OpenAiLlmClient(clave, modelo, { feature, userId: uid }, razonamiento ?? 'none');
+            // Sin `withGeminiRetry`: el adaptador ya reintenta lo transitorio, y
+            // distingue la falta de saldo, que no se arregla reintentando.
+            const text = await llm.generate(opciones);
+            return { text, tokens: llm.lastTotalTokens, finishReason: null };
+        }
+        const llm = new AnthropicLlmClient(clave, modelo, opciones.maxOutputTokens ?? 8192, { feature, userId: uid });
+        return { text: await llm.generate(opciones), tokens: null, finishReason: null };
+    } catch (err) {
+        console.error(`[runLlmPrompt] ${feature} (${proveedor}/${modelo}) falló`, err);
+        throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
+    }
+}
+
+type RutaRazonamiento = import('./ruteoDeModelos').RutaDeModelo['reasoning'];
