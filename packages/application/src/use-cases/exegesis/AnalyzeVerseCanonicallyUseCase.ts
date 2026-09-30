@@ -129,10 +129,10 @@ export class AnalyzeVerseCanonicallyUseCase {
             // La morfología tabulada del versículo, cuando la fuente la trae.
             // Es un cálculo, no una deducción: el analizador recibía el texto
             // corrido y contaba de memoria. Medido en Santiago 2:2-3, contó
-            // cuatro subjuntivos donde hay cinco. Un fallo acá NO interrumpe
+            // cuatro subjuntivos donde hay cinco. Un fallo aquí NO interrumpe
             // el análisis: sin el bloque, trabaja como trabajaba antes.
             const verseMorphology = await this.loadVerseMorphology(step.verseRef!);
-            // Se resuelve acá y no dentro de `loadSourceContexts` porque el
+            // Se resuelve aquí y no dentro de `loadSourceContexts` porque el
             // estampado posterior necesita saber, por fuente, si el número
             // que el modelo copió es página impresa u hoja del archivo.
             const numberings = await loadSourceNumberings(
@@ -178,7 +178,7 @@ export class AnalyzeVerseCanonicallyUseCase {
 
             reservation.markLlmContacted();
             const rawResult = await this.analyzer.analyzeVerse(analyzerInput);
-            // El modelo copió el número del ancla; acá se registra QUÉ copió.
+            // El modelo copió el número del ancla; aquí se registra QUÉ copió.
             // Sin esto una cita a un libro sin calibrar sale con la hoja del
             // archivo y aspecto de página impresa, que es el defecto entero.
             const result = {
@@ -504,7 +504,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // with the page selector.
                 // Las anclas guardadas dicen «p. N» sobre la HOJA del
                 // archivo: las escribió el extractor antes de que existiera la
-                // numeración del recurso. Reetiquetarlas acá es lo que hace
+                // numeración del recurso. Reetiquetarlas aquí es lo que hace
                 // que un trabajo ya empezado cite la página impresa sin tener
                 // que volver a extraer sus fuentes.
                 const storedNumbering = numberings.get(source.id) ?? null;

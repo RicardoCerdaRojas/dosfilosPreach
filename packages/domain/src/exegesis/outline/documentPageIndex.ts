@@ -35,7 +35,7 @@ export interface PageIndexEntry {
 /**
  * Traduce hojas elegidas a rangos de fragmentos.
  *
- * La conversión vive acá y no en el servidor a propósito: el cliente ya tiene
+ * La conversión vive aquí y no en el servidor a propósito: el cliente ya tiene
  * el índice de hojas cargado para dibujar el panel, así que puede resolverlo
  * sin otra vuelta a la red, y `getDocumentChunks` sigue teniendo una sola
  * forma de pedir —por rango de fragmentos— en vez de dos.

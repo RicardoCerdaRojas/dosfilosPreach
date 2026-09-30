@@ -306,7 +306,7 @@ export interface PaperCover {
 /**
  * Los campos de la portada, en el orden en que se imprimen.
  *
- * Vive acá porque la lista estaba escrita TRES veces —la interfaz, el
+ * Vive aquí porque la lista estaba escrita TRES veces —la interfaz, el
  * formulario y el normalizador que guarda— y se desincronizaron: al
  * agregar el título del trabajo, el normalizador lo descartaba antes de
  * escribirlo. La pantalla decía «Portada guardada», el campo desaparecía

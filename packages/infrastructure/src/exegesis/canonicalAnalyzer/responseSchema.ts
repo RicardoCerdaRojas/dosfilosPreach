@@ -326,7 +326,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                         type: 'string',
                         description:
                             'OBLIGATORIA. La oración textual de la fuente que respalda "position", copiada EXACTA ' +
-                            'del texto provisto de esa fuente. Si no podés localizarla en el texto provisto, ' +
+                            'del texto provisto de esa fuente. Si no puedes localizarla en el texto provisto, ' +
                             'NO incluyas esta entrada.',
                     },
                 },
@@ -378,7 +378,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                                     description:
                                         'OBLIGATORIA. La oración textual de la fuente en la que se apoya "summary", ' +
                                         'copiada EXACTA del texto de esa fuente provisto en el mensaje del usuario. ' +
-                                        'Si no podés localizar la oración en el texto provisto, NO incluyas esta posición.',
+                                        'Si no puedes localizar la oración en el texto provisto, NO incluyas esta posición.',
                                 },
                             },
                             required: ['sourceKey', 'page', 'summary', 'supports', 'verbatimQuote'],

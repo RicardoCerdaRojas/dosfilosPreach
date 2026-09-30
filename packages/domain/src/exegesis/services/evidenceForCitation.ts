@@ -77,7 +77,7 @@ export function pagesOverlap(citedRaw: string, matchedRaw: string): boolean {
  * Qué se puede decir de la página de una cita, mirando la del fragmento que
  * la respalda.
  *
- * Vive acá, en una sola función, porque la regla estaba escrita dos veces —una
+ * Vive aquí, en una sola función, porque la regla estaba escrita dos veces —una
  * en cada verificador— y dos copias de una regla son dos reglas apenas alguien
  * toca una. El defecto que cierra vivía justamente en las dos: ambas
  * condicionaban el cotejo a que el fragmento trajera número (`&& matchedPage`),

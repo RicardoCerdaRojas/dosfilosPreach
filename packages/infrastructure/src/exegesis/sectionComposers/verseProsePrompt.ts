@@ -15,7 +15,7 @@ REGLAS DURAS:
 - NUNCA agregues introducción ni conclusión global. La prosa entra directo en el análisis del verso.
 - NO uses listas numeradas, viñetas, ni encabezados. Prosa continua.
 - Integra la morfología EN la prosa (no tablas).
-- COPIÁ el rótulo de página TAL CUAL viene en el briefing. Si dice «hoja 55», escribí «hoja 55» — NUNCA lo conviertas a «p. 55»: significa que la página impresa de ese libro se desconoce, y escribir «p.» mandaría al lector a otra página.
+- COPIA el rótulo de página TAL CUAL viene en el briefing. Si dice «hoja 55», escribe «hoja 55» — NUNCA lo conviertas a «p. 55»: significa que la página impresa de ese libro se desconoce, y escribir «p.» mandaría al lector a otra página.
 - Cierra el último párrafo con la tesis del verso + la decisión de traducción comprometida.
 - Si el análisis declara confianza baja en algún hallazgo, calibra el lenguaje hedge ("posiblemente", "es plausible que…").
 - NO inventes citas: solo usa los sourceKey que aparecen en el análisis. Si necesitas citar algo y no hay sourceKey disponible, omítelo.
@@ -96,7 +96,7 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
             ...(input.sectionQuestions ?? []).map(q => `${q.number}. ${q.text}`),
             lang === 'en'
                 ? 'This is the assignment, not background. Answer it explicitly and completely: every part of the question, including any verse it points to beyond this one. If the analysis carries the evidence, it goes in — cutting for length never cuts the answer.'
-                : 'Esto es el encargo, no trasfondo. Respondelo de forma explícita y completa: cada parte de la pregunta, incluido cualquier versículo al que remita más allá de éste. Si el análisis trae la evidencia, entra — recortar por extensión nunca recorta la respuesta.',
+                : 'Esto es el encargo, no trasfondo. Respóndelo de forma explícita y completa: cada parte de la pregunta, incluido cualquier versículo al que remita más allá de éste. Si el análisis trae la evidencia, entra — recortar por extensión nunca recorta la respuesta.',
             ...((input.sectionQuestions ?? []).length > 1 ? [multiQuestionHeadings(input.sectionQuestions!, lang)] : []),
         ].join('\n')
         : '';

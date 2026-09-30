@@ -63,7 +63,7 @@ export class ComposeIntroductionFromAnalysesUseCase {
         /** Datos de portada de las fuentes, para no inventar la bibliografía. */
         private bibliography?: IBibliographyReader,
         /**
-         * El perfil de voz del autor. Llega hasta acá por la misma razón que
+         * El perfil de voz del autor. Llega hasta aquí por la misma razón que
          * llegaba al compositor de versículos: cómo abre y cómo cierra un
          * trabajo es lo que más se lee, y salían con la voz del modelo.
          */
@@ -176,7 +176,7 @@ export class ComposeIntroductionFromAnalysesUseCase {
                 console.warn('[exegesis] intro composer missed pinned keys, retrying once:', missing);
                 const retryHint = paper.displayLanguage === 'en'
                     ? `CRITICAL: your previous output skipped pinned sources [${missing.join(', ')}]. You MUST cite each one at least once in this introduction. Use the source content provided in the registry to ground the citation. Do NOT substitute another source.`
-                    : `CRÍTICO: tu salida anterior se saltó las fuentes asignadas [${missing.join(', ')}]. DEBES citar cada una al menos una vez en esta introducción. Usá el contenido de la fuente provisto en el registro para anclar la cita. NO sustituyas por otra fuente.`;
+                    : `CRÍTICO: tu salida anterior se saltó las fuentes asignadas [${missing.join(', ')}]. DEBES citar cada una al menos una vez en esta introducción. Usa el contenido de la fuente provisto en el registro para anclar la cita. NO sustituyas por otra fuente.`;
                 try {
                     const retryResult = await this.composer.composeIntroduction({
                         ...composerInput,

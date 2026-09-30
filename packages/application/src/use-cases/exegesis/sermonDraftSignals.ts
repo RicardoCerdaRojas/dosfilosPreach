@@ -7,7 +7,7 @@ import { buildDraftCorpus } from './verifyDraftCitations';
  * Instrumentación de sombra del draft — CONTRATO COMÚN + COLECTOR DETERMINISTA.
  *
  * Dos colectores emiten la misma forma (`DraftShadowSignal[]`) al mismo recorder
- * (`recordSermonDraftShadow`), pero AISLADOS: el determinista (acá) es barato,
+ * (`recordSermonDraftShadow`), pero AISLADOS: el determinista (aquí) es barato,
  * confiable y corre siempre; el juez LLM (aparte) es caro, muestreado, y su caída
  * NUNCA afecta a este. Non-blocking, sin enforcement — solo mide.
  */

@@ -34,8 +34,8 @@ se hace entero y no se muestra. El resultado tiene que servir para predicar,
 no para entregar.
 
 PREGUNTAS DEL TEXTO
-[Este bloque lo llenás leyendo el pasaje. Una pregunta por cada cruz real, y
-en cada una nombrá la forma hebrea o griega concreta — es lo que le da entrada
+[Este bloque lo llenas leyendo el pasaje. Una pregunta por cada cruz real, y
+en cada una nombra la forma hebrea o griega concreta — es lo que le da entrada
 a las gramáticas y los léxicos, que no se indexan por pasaje.]
 1.
 2.

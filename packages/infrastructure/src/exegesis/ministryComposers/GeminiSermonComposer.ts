@@ -131,7 +131,7 @@ function buildSermonPrompt(input: ComposeSermonInput): { systemInstruction: stri
     const sourcesBlock = formatSourceRegistry(input.sources, lang);
     const briefingsHeading = lang === 'en'
         ? '### Verse analysis briefings (the structured data you compose from)'
-        : '### Briefings de análisis verso por verso (datos estructurados desde los que componés)';
+        : '### Briefings de análisis verso por verso (datos estructurados desde los que compones)';
     const sourcesHeading = lang === 'en'
         ? '### Source registry (cite only these sparingly)'
         : '### Registro de fuentes (citar con moderación)';
@@ -139,7 +139,7 @@ function buildSermonPrompt(input: ComposeSermonInput): { systemInstruction: stri
     const user = [
         lang === 'en'
             ? `Compose the sermon for **${passage}** in '${input.tone}' tone.`
-            : `Componé el sermón para **${passage}** en tono '${input.tone}'.`,
+            : `Compón el sermón para **${passage}** en tono '${input.tone}'.`,
         ``,
         briefingsHeading,
         ``,
@@ -150,7 +150,7 @@ function buildSermonPrompt(input: ComposeSermonInput): { systemInstruction: stri
         sourcesBlock,
         regenerationHintBlock(input.regenerationHint, lang),
         ``,
-        lang === 'en' ? `Now produce the full sermon markdown.` : `Ahora producí el sermón completo en markdown.`,
+        lang === 'en' ? `Now produce the full sermon markdown.` : `Ahora produce el sermón completo en markdown.`,
     ].join('\n');
 
     return { systemInstruction: system, userMessage: user };

@@ -1,4 +1,4 @@
-import { DEFAULT_PAPER_FORMATTING, type CitationForm } from '../entities/PaperRubric';
+import { DEFAULT_PAPER_FORMATTING, type CitationForm, type PaperFormatting } from '../entities/PaperRubric';
 
 /**
  * Cómo se escribe una cita dentro del párrafo, según lo que pida la entrega.
@@ -46,16 +46,38 @@ export function buildCitationFormBlock(
     return f === 'parenthetical'
         ? [
             '## Forma de cita (regla dura)',
-            'Citá como (Apellido, p. N) — sólo apellido y página. NUNCA metas el título dentro del paréntesis: este trabajo lleva bibliografía al final y ahí es donde va el título.',
+            'Cita como (Apellido, p. N) — sólo apellido y página. NUNCA metas el título dentro del paréntesis: este trabajo lleva bibliografía al final y ahí es donde va el título.',
             'El número SIEMPRE va rotulado. «(Mayor, 77)» está mal escrito: se escribe «(Mayor, p. 77)». Un número suelto no dice si es página, versículo o año.',
             'Qué rótulo lleva lo dice el briefing, y se copia tal cual: si dice «hoja 87» se escribe «(Wallace, hoja 87)» y NUNCA «(Wallace, p. 87)» —significa que la página impresa de ese libro se desconoce—.',
             'Una sola forma en toda la sección. Dos formas de cita en un mismo trabajo es un error que el corrector ve.',
         ].join('\n')
         : [
             '## Forma de cita (regla dura)',
-            'Citá como (Apellido, "Título", p. N) — el título entre comillas dobles, literal. Las comillas no son decoración: el exportador las usa para reconocer la cita y bajarla a nota al pie.',
+            'Cita como (Apellido, "Título", p. N) — el título entre comillas dobles, literal. Las comillas no son decoración: el exportador las usa para reconocer la cita y bajarla a nota al pie.',
             'El número SIEMPRE va rotulado. «(Mayor, "…", 77)» está mal escrito: se escribe «p. 77». Un número suelto no dice si es página, versículo o año.',
             'Qué rótulo lleva lo dice el briefing, y se copia tal cual: (Wallace, "Gramática Griega", hoja 87), NUNCA «p. 87».',
             'Una sola forma en toda la sección. Dos formas de cita en un mismo trabajo es un error que el corrector ve.',
         ].join('\n');
+}
+
+/**
+ * El rótulo de página que pide la entrega, aplicado al texto que se entrega.
+ *
+ * El sílabo del TP semanal de TMS pide «(Carballosa, 208)» y el compositor
+ * escribe «(Carballosa, p. 208)». No se le pide al compositor que escriba el
+ * número suelto: el reetiquetado de hojas (`relabelProsePages`) y el anclaje
+ * de citas buscan «p. N», y un número suelto no dice de qué es. Se escribe
+ * rotulado y se quita el rótulo al entregar.
+ *
+ * Sólo dentro de un paréntesis, sólo «p.»/«pp.» seguidos de número, y sólo
+ * en cita parentética: es la forma que el sílabo decide. En nota al pie el
+ * exportador arma la nota Turabian desde la ficha, sin «p.»; una fuente sin
+ * ficha repite el paréntesis tal cual, y eso no lo cambia este campo.
+ * «hoja N» queda intacta —significa que la página impresa se desconoce—.
+ */
+export function applyPageLabelStyle(markdown: string, formatting: PaperFormatting | null): string {
+    const f = formatting ?? DEFAULT_PAPER_FORMATTING;
+    if (f.citationForm !== 'parenthetical' || f.pageLabel !== 'bare') return markdown;
+    return markdown.replace(/\([^()]*\)/g, grupo =>
+        grupo.replace(/([,(;]\s*)pp?\.\s*(?=\d)/g, '$1'));
 }

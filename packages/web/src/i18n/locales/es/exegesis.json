@@ -18,7 +18,7 @@
     },
     "rubrics": {
       "title": "Mis rúbricas",
-      "subtitle": "Plantillas reutilizables. La que marques como default se aplica automáticamente cuando creés un nuevo trabajo.",
+      "subtitle": "Plantillas reutilizables. La que marques como default se aplica automáticamente cuando crees un nuevo trabajo.",
       "loading": "Cargando rúbricas...",
       "defaultBadge": "Default",
       "setDefault": "Marcar default",
@@ -226,8 +226,6 @@
     "minimumSourcesLabel_other": "fuentes mínimas",
     "minimumSourcesLabel": "fuentes mínimas",
     "breadth": "Cubre {{covered}} de {{total}} áreas académicas",
-    "scoreLabel": "Score académico: {{score}}",
-    "scoreHint": "Suma de mínimos × peso académico (rigorTier 0–3 por tipo de fuente).",
     "level": {
       "pastoral": "Pastoral / homilético",
       "seminary": "Seminario (pregrado / MDiv)",
@@ -440,7 +438,7 @@
     },
     "notFound": {
       "title": "Trabajo no encontrado",
-      "body": "No pudimos cargar este trabajo. Volvé al listado.",
+      "body": "No pudimos cargar este trabajo. Vuelve al listado.",
       "backCta": "Volver al listado"
     },
     "subSteps": {
@@ -524,7 +522,11 @@
           "blankLineLabel": "Una línea en blanco entre párrafos",
           "formattingHint": "Sólo si esta entrega pide algo distinto de la guía del seminario. El trabajo práctico semanal suele pedir espacio simple; el trabajo exegético largo, doble.",
           "citationFootnote": "Cita en nota al pie",
-          "citationParenthetical": "Cita entre paréntesis en el texto"
+          "citationParenthetical": "Cita entre paréntesis en el texto",
+          "citationFormAria": "Forma de cita",
+          "pageLabelAria": "Rótulo de página en la cita",
+          "pageLabelLabelled": "Página con «p.»: (Mayor, p. 77)",
+          "pageLabelBare": "Página sin «p.»: (Carballosa, 208)"
         },
         "requirements": {
           "title": "Requisitos del corpus",
@@ -570,7 +572,10 @@
           "qualityHint": "Dimensiones que el profesor calificará. El composer apunta al descriptor de nivel superior de cada criterio al redactar el paper.",
           "optionalCount_one": "+ {{count}} requisito recomendado opcional",
           "optionalCount_other": "+ {{count}} requisitos recomendados opcionales",
-          "optionalCount": "+ {{count}} recomendados opcionales"
+          "optionalCount": "+ {{count}} recomendados opcionales",
+          "citationInherited": "{{standard}} (de tu guía de estilo)",
+          "formattingLabel": "Maquetación",
+          "formattingDefault": "Como la guía de la casa: doble espacio, cita en nota al pie"
         },
         "templates": {
           "title": "Plantillas de rúbrica",
@@ -687,7 +692,7 @@
           "extracted": "Reglas extraídas",
           "failed": "No se pudo extraer el manifiesto",
           "overloaded": "El motor de análisis está sobrecargado. Prueba de nuevo en unos segundos.",
-          "corpusNotReady": "El texto de la guía aún no terminó de procesarse. Esperá unos segundos y reintenta."
+          "corpusNotReady": "El texto de la guía aún no terminó de procesarse. Espera unos segundos y reintenta."
         },
         "card": {
           "citationStyleLabel": "Estilo de citación",
@@ -770,7 +775,7 @@
         "description": "Sube los extractos específicos para este pasaje con tipo académico. Te avisamos qué falta según la rúbrica.",
         "gap": {
           "metTitle": "Tu corpus cumple la rúbrica",
-          "metBody": "{{count}} fuentes adjuntas — todos los mínimos están satisfechos. Podés avanzar al plan estructural.",
+          "metBody": "{{count}} fuentes adjuntas — todos los mínimos están satisfechos. Puedes avanzar al plan estructural.",
           "gapsTitle": "{{satisfied}} de {{total}} requisitos satisfechos",
           "gapsBody": "Te faltan {{missing}} fuentes para cumplir la rúbrica. Los detalles abajo indican qué tipos sumar.",
           "noRubric": "Aún no hay rúbrica asociada al trabajo. Configura la rúbrica en el primer tab antes de cargar el corpus.",
@@ -808,20 +813,20 @@
         "budget": {
           "title": "Presupuesto del trabajo",
           "stats": "{{sources}} fuentes · {{chars}} caracteres",
-          "over": "El corpus se pasa del presupuesto: la generación va a fallar. Quitá hojas de alguna fuente.",
-          "inconsistent_one": "{{labels}} guardó fragmentos que su selección no declara. Volvé a guardar sus páginas para dejarlos parejos.",
-          "inconsistent_other": "{{count}} fuentes guardaron fragmentos que su selección no declara ({{labels}}). Volvé a guardar sus páginas para dejarlos parejos."
+          "over": "El corpus se pasa del presupuesto: la generación va a fallar. Quita hojas de alguna fuente.",
+          "inconsistent_one": "{{labels}} guardó fragmentos que su selección no declara. Vuelve a guardar sus páginas para dejarlos parejos.",
+          "inconsistent_other": "{{count}} fuentes guardaron fragmentos que su selección no declara ({{labels}}). Vuelve a guardar sus páginas para dejarlos parejos."
         },
         "picker": {
           "subtitle": "Elige qué hojas del documento entran a este trabajo. Puedes agregar la sección del pasaje y también la introducción del libro.",
           "loadingIndex": "Leyendo el índice del documento…",
-          "indexFailed": "No se pudo leer el índice de este documento. Verificá que esté procesado y probá de nuevo.",
+          "indexFailed": "No se pudo leer el índice de este documento. Verifica que esté procesado y prueba de nuevo.",
           "proposal": {
             "structural": "Encontramos la sección que trata este pasaje en el índice del comentario.",
             "semantic": "Este documento no trae encabezados por referencia: la sugerencia sale de coincidencia de contenido y conviene revisarla.",
             "accept": "Aceptar sugerencia",
             "pending": "Buscando la sección que trata este pasaje…",
-            "none": "No encontramos una sección para este pasaje. Navegá el documento y elegí las hojas a mano."
+            "none": "No encontramos una sección para este pasaje. Navega el documento y elige las hojas a mano."
           },
           "rail": {
             "withHeadings": "Índice del libro",
@@ -837,8 +842,8 @@
           },
           "viewer": {
             "loading": "Abriendo el documento…",
-            "loadFailed": "No se pudo abrir el documento. Probá de nuevo en unos segundos.",
-            "pageFailed": "No se pudo mostrar esta hoja. Probá con otra o volvé a abrir el documento.",
+            "loadFailed": "No se pudo abrir el documento. Prueba de nuevo en unos segundos.",
+            "pageFailed": "No se pudo mostrar esta hoja. Prueba con otra o vuelve a abrir el documento.",
             "sheetLabel": "Hoja {{sheet}} del documento",
             "sheet": "hoja {{sheet}}",
             "printed": "· impresa {{printed}}",
@@ -859,20 +864,20 @@
             "saved_other": "Guardado: {{count}} fragmentos del documento",
             "emptySheets_one": "{{count}} hoja elegida no traía texto y quedó afuera",
             "emptySheets_other": "{{count}} hojas elegidas no traían texto y quedaron afuera",
-            "saveFailed": "No se pudo guardar la selección. Probá de nuevo.",
-            "incomplete": "Se guardaron {{saved}} de {{expected}} fragmentos. Revisá la selección antes de generar.",
-            "tooLarge": "El corpus del trabajo es demasiado grande para guardarlo. Quitá hojas de esta fuente o de otra.",
+            "saveFailed": "No se pudo guardar la selección. Prueba de nuevo.",
+            "incomplete": "Se guardaron {{saved}} de {{expected}} fragmentos. Revisa la selección antes de generar.",
+            "tooLarge": "El corpus del trabajo es demasiado grande para guardarlo. Quita hojas de esta fuente o de otra.",
             "attachedStructural_one": "Agregado: la sección del pasaje, {{count}} hoja",
             "attachedStructural_other": "Agregado: la sección del pasaje, {{count}} hojas",
             "attachedSemantic_one": "Agregado: {{count}} hoja por coincidencia de contenido. Conviene revisarla.",
             "attachedSemantic_other": "Agregado: {{count}} hojas por coincidencia de contenido. Conviene revisarlas.",
-            "attachedWhole": "Agregado el documento completo: no se encontró la sección del pasaje. Ajustá las páginas a mano."
+            "attachedWhole": "Agregado el documento completo: no se encontró la sección del pasaje. Ajusta las páginas a mano."
           },
           "cart": {
             "title": "En el trabajo",
             "rangeCount_one": "{{count}} tramo",
             "rangeCount_other": "{{count}} tramos",
-            "empty": "Nada elegido todavía. Aceptá la sugerencia, o navegá el documento y agregá hojas.",
+            "empty": "Nada elegido todavía. Acepta la sugerencia, o navega el documento y agrega hojas.",
             "sheetOne": "hoja {{sheet}}",
             "sheetRange": "hojas {{start}}–{{end}}",
             "withPrinted": "{{base}} · impresa {{printed}}",
@@ -888,7 +893,7 @@
             "statChars": "{{count}} caracteres",
             "otherSources": "Otras fuentes del trabajo ocupan {{count}} caracteres.",
             "overBudget": "Se pasa del presupuesto",
-            "overBudgetHint": "El trabajo se pasa del presupuesto. Podés guardar igual, pero antes de generar hay que bajar hojas de esta fuente o de otra.",
+            "overBudgetHint": "El trabajo se pasa del presupuesto. Puedes guardar igual, pero antes de generar hay que bajar hojas de esta fuente o de otra.",
             "saving": "Guardando…",
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
@@ -1069,9 +1074,9 @@
             "lead": "Esta fuente no tiene fragmentos seleccionados — no contribuirá a la generación.",
             "organized-by-category": "Una gramática se indexa por categorías gramaticales, no por pasajes, así que la búsqueda por pasaje no encuentra nada. En «Ajustar páginas» están las secciones de su índice que responden a tu encuadre, y las páginas donde el libro cita el pasaje como ejemplo.",
             "organized-by-lemma": "Un léxico se indexa por lemas, no por pasajes. En «Ajustar páginas» están las páginas donde el libro cita el pasaje, y las entradas de los lemas del texto.",
-            "expected-by-passage": "Este libro SÍ se organiza por pasajes, así que el cero no es su forma: probablemente la extracción quedó incompleta o su numeración de versículos salió dañada. Revisá el libro en la biblioteca antes de confiar en él.",
+            "expected-by-passage": "Este libro SÍ se organiza por pasajes, así que el cero no es su forma: probablemente la extracción quedó incompleta o su numeración de versículos salió dañada. Revisa el libro en la biblioteca antes de confiar en él.",
             "openPicker": "Ajustar páginas",
-            "ranges-without-excerpts": "Elegiste {{count}} tramo(s) de páginas, pero la extracción no dejó fragmentos. Puede estar en curso, o haber fallado. No hace falta que vuelvas a elegir páginas: revisá el libro en la biblioteca."
+            "ranges-without-excerpts": "Elegiste {{count}} tramo(s) de páginas, pero la extracción no dejó fragmentos. Puede estar en curso, o haber fallado. No hace falta que vuelvas a elegir páginas: revisa el libro en la biblioteca."
           }
         },
         "staleBanner": {
@@ -1132,7 +1137,7 @@
           },
           "citationKeyLabel": "Clave de cita",
           "citationKeyPlaceholder": "Ej. Lane",
-          "citationKeyHint": "Se usa en las notas al pie. Si lo dejás vacío, lo derivamos del corpus.",
+          "citationKeyHint": "Se usa en las notas al pie. Si lo dejas vacío, lo derivamos del corpus.",
           "citationKeyAutoderiveHint": "La etiqueta y la clave de cita se autoderivan del título y autor de cada fuente.",
           "submit": "Subir y agregar al corpus",
           "submitFromLibrary": "Agregar al corpus",
@@ -1199,7 +1204,7 @@
           "page": "p. {{printed}}",
           "sheet": "hoja {{sheet}}",
           "verses": "v. {{verses}}",
-          "hint": "Una gramática o un léxico no se organizan por pasajes, pero citan el versículo como ejemplo. Estas son las páginas donde lo nombran; vos decidís cuáles entran."
+          "hint": "Una gramática o un léxico no se organizan por pasajes, pero citan el versículo como ejemplo. Estas son las páginas donde lo nombran; tú decides cuáles entran."
         },
         "grammarSections": {
           "title": "Secciones del índice que responden al encuadre ({{count}})",
@@ -1608,7 +1613,7 @@
         "sectioningFailed": "La redacción no rotuló los versos como corresponde, así que lo faltante se agregó al final del documento en lugar de en su lugar. Conviene revisar dónde queda cada cosa antes de entregar."
       },
       "savedToast": "Composición guardada en el paper.",
-      "persistWarning": "La composición se generó pero no se pudo guardar en el paper. Copiá o descargá el markdown antes de cerrar.",
+      "persistWarning": "La composición se generó pero no se pudo guardar en el paper. Copia o descarga el markdown antes de cerrar.",
       "saveToPaper": "Guardar al paper",
       "saveToPaperTooltip": "Guarda esta composición —la que estás viendo— como el ensamble del trabajo. Reemplaza el anterior.",
       "saveToResources": "Guardar en Mis Recursos",
@@ -1629,7 +1634,7 @@
     "ministry": {
       "menuItem": "Material ministerial (sermón / devocional / guía)",
       "title": "Material ministerial desde el análisis canónico",
-      "subtitle": "Producí sermón, devocional o guía de estudio inductivo a partir de los análisis canónicos aceptados. El trabajo exegético se preserva en el formato; cambia el registro y la audiencia.",
+      "subtitle": "Produce sermón, devocional o guía de estudio inductivo a partir de los análisis canónicos aceptados. El trabajo exegético se preserva en el formato; cambia el registro y la audiencia.",
       "format": {
         "sermon": "Sermón",
         "devotional": "Devocional",
@@ -1771,7 +1776,7 @@
         "body": "Estas afirmaciones citan una forma en lengua original apoyándose en un libro cuyo texto extraído no tiene ninguna. La forma no salió de ahí: la puso el asistente.",
         "item": "{{form}} — atribuido a {{source}}",
         "lost": "Extracción incompleta. El libro no dejó ni caracteres originales ni transliteración: probablemente se perdieron al extraerlo. Revisalo en la biblioteca.",
-        "transliterated": "Este libro translitera. Escribe el original en alfabeto latino —«la raíz hāyâ»— siguiendo la convención de su colección, así que la discusión puede ser correcta; lo que no hay es la forma en caracteres. No hay nada que re-extraer: si la afirmación depende de la grafía, apoyala en una fuente que traiga el original."
+        "transliterated": "Este libro translitera. Escribe el original en alfabeto latino —«la raíz hāyâ»— siguiendo la convención de su colección, así que la discusión puede ser correcta; lo que no hay es la forma en caracteres. No hay nada que re-extraer: si la afirmación depende de la grafía, apóyala en una fuente que traiga el original."
       },
       "reviewedCount": "{{count}} revisadas a mano",
       "allReviewed": "Todas las observaciones quedaron revisadas."
@@ -1792,7 +1797,7 @@
         "done": "Verso recompuesto.",
         "assemblyUntouched": "Verso recompuesto, pero el trabajo ensamblado no tiene una sección para él: vuelve a ensamblar para que entre."
       },
-      "guidanceOptional": "Podés dejarlo vacío: recomponer sin indicación vuelve a redactar con lo que pide la entrega hoy —extensión, forma de cita y la pregunta que responde esta sección."
+      "guidanceOptional": "Puedes dejarlo vacío: recomponer sin indicación vuelve a redactar con lo que pide la entrega hoy —extensión, forma de cita y la pregunta que responde esta sección."
     }
   },
   "coherence": {
@@ -1909,7 +1914,7 @@
       "textZoomLevel3": "Texto más grande"
     },
     "stepsTitle": "Pasos del trabajo",
-    "stepsSubtitle": "Verso por verso, conclusión, introducción y ensamble. Aceptás o regenerás cada paso antes de avanzar.",
+    "stepsSubtitle": "Verso por verso, conclusión, introducción y ensamble. Aceptas o regeneras cada paso antes de avanzar.",
     "generateCta": "Generar primer paso",
     "stepsEmpty": {
       "title": "Aún sin pasos generados",
@@ -2008,9 +2013,9 @@
       "regenerate": {
         "title": "Regenerar {{step}}",
         "description": "Se vuelve a redactar esta sección desde los análisis aceptados.",
-        "analysisWarning": "Se vuelve a correr el análisis canónico de este verso. La prosa compuesta y las citas verificadas de la versión actual quedan atrás: después habrá que recomponer la prosa y volver a revisar las citas. Si sólo querés rehacer la redacción, usá «Recomponer prosa».",
+        "analysisWarning": "Se vuelve a correr el análisis canónico de este verso. La prosa compuesta y las citas verificadas de la versión actual quedan atrás: después habrá que recomponer la prosa y volver a revisar las citas. Si sólo quieres rehacer la redacción, usa «Recomponer prosa».",
         "hintLabel": "Qué cambiar (opcional)",
-        "hintOptional": "Podés dejarlo vacío. Regenerar sin indicación ya aplica lo que pide la entrega: la extensión repartida por la rúbrica, la forma de cita y la pregunta del encuadre que le toca a esta sección.",
+        "hintOptional": "Puedes dejarlo vacío. Regenerar sin indicación ya aplica lo que pide la entrega: la extensión repartida por la rúbrica, la forma de cita y la pregunta del encuadre que le toca a esta sección.",
         "submit": "Regenerar"
       }
     },
@@ -2053,7 +2058,7 @@
     },
     "notFound": {
       "title": "Trabajo no encontrado",
-      "body": "El trabajo que buscás no existe o fue archivado. Volvé al listado.",
+      "body": "El trabajo que buscas no existe o fue archivado. Vuelve al listado.",
       "backCta": "Volver al listado"
     },
     "toast": {
@@ -2136,8 +2141,8 @@
       },
       "stale": {
         "title": "Esto no es lo que se va a descargar.",
-        "body": "El archivo baja {{delivered}} palabras; en pantalla tenés {{onScreen}}. Regenerá el ensamble y aceptalo: recién ahí el archivo toma lo que ves.",
-        "toast": "Bajaste {{delivered}} palabras, y en pantalla hay {{onScreen}}. Regenerá el ensamble, aceptalo y volvé a descargar."
+        "body": "El archivo baja {{delivered}} palabras; en pantalla tienes {{onScreen}}. Regenera el ensamble y acéptalo: solo entonces el archivo toma lo que ves.",
+        "toast": "Bajaste {{delivered}} palabras, y en pantalla hay {{onScreen}}. Regenera el ensamble, acéptalo y vuelve a descargar."
       }
     },
     "bibliography": {

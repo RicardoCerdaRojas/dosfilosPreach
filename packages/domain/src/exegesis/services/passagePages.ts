@@ -104,7 +104,7 @@ export interface PassagePageHit {
  *
  * Tiene una hermana del otro lado: el callable corta en 80 hojas antes de
  * responder, por transporte. Mientras este número sea el menor, manda éste y
- * la lista que se ve es la que se decidió acá; subirlo por encima de 80 lo
+ * la lista que se ve es la que se decidió aquí; subirlo por encima de 80 lo
  * dejaría callado, recortado por la otra punta sin que nada lo diga. El
  * léxico del caso medido nombra el pasaje en 65 hojas, así que las dos cotas
  * muerden de verdad y no son decorativas.

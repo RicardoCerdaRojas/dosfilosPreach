@@ -187,7 +187,20 @@ export interface PaperFormatting {
      * renglón vacío se descuadra al editar y cuenta como párrafo—.
      */
     blankLineBetweenParagraphs: boolean;
+    /**
+     * Cómo se rotula la página dentro de una cita entre paréntesis.
+     *
+     * `'labelled'` —«(Mayor, p. 77)»— es lo que la casa escribe. `'bare'`
+     * —«(Carballosa, 208)»— es lo que pide el sílabo del TP semanal de TMS.
+     * El compositor escribe SIEMPRE «p. N» (lo necesitan el reetiquetado de
+     * hojas y el anclaje de citas) y el rótulo se ajusta al entregar
+     * (`applyPageLabelStyle`). «hoja N» no se toca nunca: dice que la página
+     * impresa se desconoce. Ausente equivale a `'labelled'`.
+     */
+    pageLabel?: PageLabelStyle;
 }
+
+export type PageLabelStyle = 'labelled' | 'bare';
 
 /** La maquetación de la casa, cuando la rúbrica no dice otra cosa. */
 export const DEFAULT_PAPER_FORMATTING: PaperFormatting = {
@@ -608,12 +621,12 @@ export interface RubricRigorAssessment {
      */
     rigorScore: number;
     /**
-     * Number of distinct `SOURCE_TYPE_GROUPS` covered by required
-     * requirements (0–5). High score with low breadth (e.g. 6
-     * critical commentaries, nothing else) flags an unbalanced
-     * rubric — the UI can warn separately if needed.
+     * Áreas ACADÉMICAS que cubren los requisitos. La metodológica (plantilla
+     * de estilo, «otro») no cuenta: no es una fuente que se cite.
      */
     groupBreadth: number;
+    /** De cuántas áreas académicas. */
+    groupTotal: number;
     /** Categorical level surfaced to the user. */
     level: RubricRigorLevel;
 }
@@ -625,25 +638,44 @@ const RIGOR_LEVEL_THRESHOLDS: ReadonlyArray<{ level: RubricRigorLevel; minScore:
     { level: 'pastoral', minScore: 0 },
 ];
 
+/** El área que no es fuente citable: plantilla de estilo y «otro». */
+const AREA_METODOLOGICA = 'methodological';
+
+/**
+ * El nivel de la rúbrica.
+ *
+ * Medía sólo CANTIDAD —suma de mínimo × peso— y un trabajo práctico corto y
+ * enfocado nunca llegaba a «seminario»: «gramática ≥1, comentario crítico ≥2»
+ * suma 9 y quedaba como «Pastoral / homilético — no diseñado para trabajo
+ * académico» (TP Santiago 2:14-26, 2026-09-30). El rigor lo da el TIPO de
+ * fuente, no cuántas: una rúbrica que exige una fuente técnica (peso 3:
+ * comentario crítico, gramática, léxico técnico…) es de seminario aunque pida
+ * dos. La cantidad sólo decide los niveles de arriba, donde sí es lo que los
+ * distingue.
+ */
 export function assessRubricRigor(rubric: PaperRubric): RubricRigorAssessment {
     let totalMinimum = 0;
     let rigorScore = 0;
+    let exigeFuenteTecnica = false;
     const groupsSeen = new Set<string>();
     for (const req of rubric.sourceRequirements) {
         if (req.minimum <= 0) continue;
         totalMinimum += req.minimum;
         const tier = SOURCE_TYPE_CATALOG[req.sourceType].rigorTier;
         rigorScore += req.minimum * tier;
+        if (tier === 3) exigeFuenteTecnica = true;
         const group = SOURCE_TYPE_GROUPS.find(
             g => (g.types as ReadonlyArray<string>).includes(req.sourceType),
         );
-        if (group) groupsSeen.add(group.groupKey);
+        if (group && group.groupKey !== AREA_METODOLOGICA) groupsSeen.add(group.groupKey);
     }
-    const level = (RIGOR_LEVEL_THRESHOLDS.find(t => rigorScore >= t.minScore) ?? RIGOR_LEVEL_THRESHOLDS[RIGOR_LEVEL_THRESHOLDS.length - 1]).level;
+    const porCantidad = (RIGOR_LEVEL_THRESHOLDS.find(t => rigorScore >= t.minScore) ?? RIGOR_LEVEL_THRESHOLDS[RIGOR_LEVEL_THRESHOLDS.length - 1]).level;
+    const level: RubricRigorLevel = porCantidad === 'pastoral' && exigeFuenteTecnica ? 'seminary' : porCantidad;
     return {
         totalMinimum,
         rigorScore,
         groupBreadth: groupsSeen.size,
+        groupTotal: SOURCE_TYPE_GROUPS.filter(g => g.groupKey !== AREA_METODOLOGICA).length,
         level,
     };
 }

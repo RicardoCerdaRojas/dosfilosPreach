@@ -120,7 +120,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         planNoteBlock,
         ``,
         `## Fundamento metodológico`,
-        `Aplicá el método histórico-gramatical-literal documentado en METODOLOGIA.md de la plataforma. Anclá tu análisis en autoridades canónicas:`,
+        `Aplica el método histórico-gramatical-literal documentado en METODOLOGIA.md de la plataforma. Ancla tu análisis en autoridades canónicas:`,
         `- ${voice.grammarsEs}`,
         `- ${voice.lexiconsEs}`,
         `- Discurso: Levinsohn, Runge`,
@@ -137,8 +137,8 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         ``,
         `## Disciplina de citación (NO NEGOCIABLE)`,
         `- Toda cita de fuente en el output estructurado debe referenciar un sourceKey que coincida con una fuente configurada listada abajo en el mensaje del usuario.`,
-        `- NUNCA inventes claves de fuente, números de página o citas verbatim. Si no podés respaldar una afirmación con una fuente configurada, marcala como tentative en confidenceFlags u omitila completamente.`,
-        `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), poné el confidenceFlag relevante en "tentative" — NO fabriques citas.`,
+        `- NUNCA inventes claves de fuente, números de página o citas verbatim. Si no puedes respaldar una afirmación con una fuente configurada, márcala como tentative en confidenceFlags u omítela completamente.`,
+        `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), pon el confidenceFlag relevante en "tentative" — NO fabriques citas.`,
         corpusGapsBlock,
         ``,
         `## Restricciones de la guía de estilo`,
@@ -147,7 +147,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `## Formato de salida`,
         `La salida DEBE ser un objeto JSON que se conforma exactamente al schema que recibiste vía responseSchema. Todos los campos requeridos deben estar presentes. Los campos opcionales pueden ser strings vacíos o arrays vacíos cuando no apliquen.`,
         ``,
-        `Tono: académico sobrio. Evitá lenguaje devocional. Igualá el registro analítico de un trabajo de investigación de seminario.`,
+        `Tono: académico sobrio. Evita lenguaje devocional. Iguala el registro analítico de un trabajo de investigación de seminario.`,
     ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
@@ -229,32 +229,32 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
     }
 
     return [
-        `Analizá ${verse} según la metodología del system instruction. Poblá cada campo del response schema.`,
+        `Analiza ${verse} según la metodología del system instruction. Puebla cada campo del response schema.`,
         ``,
         `## Recordatorios metodológicos por campo`,
         ``,
-        `**textualCriticism** — SIEMPRE poblar. Cuando no hay variantes significativas en el aparato, poné "note" confirmando la revisión explícitamente (ej. "Sin variantes significativas en el aparato para este verso.") y dejá "variants" vacío. Cuando hay variantes, documentá testigos (${voice.witnessesEs}), la lectura adoptada y la justificación anclada en cánones de crítica textual.`,
+        `**textualCriticism** — SIEMPRE poblar. Cuando no hay variantes significativas en el aparato, pon "note" confirmando la revisión explícitamente (ej. "Sin variantes significativas en el aparato para este verso.") y deja "variants" vacío. Cuando hay variantes, documenta testigos (${voice.witnessesEs}), la lectura adoptada y la justificación anclada en cánones de crítica textual.`,
         ``,
-        `**syntacticAnalysis.mainVerb** — Identificá el verbo principal de la oración que contiene este verso. Poné null cuando el verso es parte de una oración cuyo verbo principal vive en otro lado (cadenas participiales, pares μέν…δέ, oraciones periódicas); cuando es null, poblá "mainVerbNote" para explicar.`,
+        `**syntacticAnalysis.mainVerb** — Identifica el verbo principal de la oración que contiene este verso. Pon null cuando el verso es parte de una oración cuyo verbo principal vive en otro lado (cadenas participiales, pares μέν…δέ, oraciones periódicas); cuando es null, puebla "mainVerbNote" para explicar.`,
         ``,
         `**syntacticAnalysis.keyConstructions** — Cada participio, cláusula relativa, frase preposicional, construcción de genitivo. Cada entrada: text + morphology (en lenguaje natural: "${voice.morphologyEs}") + syntacticFunction (categorías de Wallace) + interpretiveSignificance.`,
         ``,
-        `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι y otras cuando su función argumentativa es notable. Usá categorías de Levinsohn / Runge.`,
+        `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι y otras cuando su función argumentativa es notable. Usa categorías de Levinsohn / Runge.`,
         ``,
-        `**lexicalAnalyses** — Una entrada por término clave. CRÍTICO: separá "generalSemanticRange" (rango lexicográfico completo con fuentes) de "verseSpecificLoading" (cómo el contexto del verso selecciona del rango). Este es el Diferenciador 1 — salvaguarda contra la falacia de "totalidad transferida" de Carson.`,
+        `**lexicalAnalyses** — Una entrada por término clave. CRÍTICO: separa "generalSemanticRange" (rango lexicográfico completo con fuentes) de "verseSpecificLoading" (cómo el contexto del verso selecciona del rango). Este es el Diferenciador 1 — salvaguarda contra la falacia de "totalidad transferida" de Carson.`,
         ``,
         `**argumentativeRole** — 1-2 oraciones. ¿Qué HACE ESTE verso en el argumento de la pericopa? (establece tesis / desarrolla / contrasta / ejemplifica / transiciona / concluye). Diferenciador 2.`,
         ``,
         `**historicalContext** — Array vacío salvo que el verso genuinamente requiera trasfondo extra-textual. NO decorativo.`,
         ``,
-        `**oldTestamentLinks** — Usá la taxonomía de Hays: 'quotation' (con fórmula tipo γέγραπται), 'allusion', 'echo'. Vacío cuando el verso no tiene resonancia canónica.`,
+        `**oldTestamentLinks** — Usa la taxonomía de Hays: 'quotation' (con fórmula tipo γέγραπται), 'allusion', 'echo'. Vacío cuando el verso no tiene resonancia canónica.`,
         ``,
-        `**commentatorEngagement** — NO es lista de citas. POSICIONES. Qué argumenta cada comentarista sobre ESTE verso, parafraseado en tu voz. El campo 'role': cuando la ficha de la fuente diga «rol asignado por el plan», COPIÁ ese rol — la estrategia ya está decidida y volver a decidirla pisa al autor en silencio. Clasificá vos ('anchor' / 'contrast' / 'technical') sólo las fuentes sin rol asignado.`,
+        `**commentatorEngagement** — NO es lista de citas. POSICIONES. Qué argumenta cada comentarista sobre ESTE verso, parafraseado en tu voz. El campo 'role': cuando la ficha de la fuente diga «rol asignado por el plan», COPIA ese rol — la estrategia ya está decidida y volver a decidirla pisa al autor en silencio. Clasifica tú ('anchor' / 'contrast' / 'technical') sólo las fuentes sin rol asignado.`,
         ``,
         `**translationCruxes** — Una entrada por decisión de traducción genuinamente contestada. Cada uno: phrase + description + options + commentatorPositions (con índice 'supports' apuntando a la opción elegida) + commitment con justificación derivada del análisis previo.`,
-        `  Cada commentatorPosition DEBE llevar \`verbatimQuote\`: la oración del texto provisto de esa fuente sobre la que se apoya tu summary, copiada EXACTA. Alistar a un autor como testigo A FAVOR de una opción es la afirmación más fuerte que hacés sobre el trabajo ajeno — tenés que poder señalar las palabras. Si el texto provisto no contiene una oración que sostenga la posición, OMITÍ la posición. No la reconstruyas de tu memoria de la obra.`,
+        `  Cada commentatorPosition DEBE llevar \`verbatimQuote\`: la oración del texto provisto de esa fuente sobre la que se apoya tu summary, copiada EXACTA. Alistar a un autor como testigo A FAVOR de una opción es la afirmación más fuerte que haces sobre el trabajo ajeno — tienes que poder señalar las palabras. Si el texto provisto no contiene una oración que sostenga la posición, OMITE la posición. No la reconstruyas de tu memoria de la obra.`,
         `  Un cruce cuyos testigos apoyan TODOS la misma opción no es un cruce: es una conclusión con adorno. O la opción contraria tiene testigo en los textos provistos y se te pasó, o la decisión nunca estuvo contestada y no va aquí. Nunca dejes un cruce con testigos de un solo lado.`,
-        `  Cuidado con la sección de trasfondo: un diccionario o comentario suele recorrer el uso más duro o más antiguo de un término ANTES de argumentar su propia conclusión. Citar ese recorrido y reportarlo como la posición del autor invierte su argumento. Leé hasta el final del texto provisto antes de asignar 'supports'.`,
+        `  Cuidado con la sección de trasfondo: un diccionario o comentario suele recorrer el uso más duro o más antiguo de un término ANTES de argumentar su propia conclusión. Citar ese recorrido y reportarlo como la posición del autor invierte su argumento. Lee hasta el final del texto provisto antes de asignar 'supports'.`,
         ``,
         `**initialTranslation** — Traducción de trabajo ANTES de resolver los cruces.`,
         ``,
@@ -264,7 +264,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
         ``,
         `**theologicalHooks** — Loci tocados (cristologia, soteriologia, etc.). Usado por composers sermón/devocional, NO por el composer académico. Vacío si no hay loci claros.`,
         ``,
-        `**confidenceFlags** — Calibrá el lenguaje hedge. Marcá cada afirmación no-trivial con high/medium/tentative + frases hedge preferidas. Obligatorio cuando huecos del corpus fuerzan afirmaciones tentativas.`,
+        `**confidenceFlags** — Calibra el lenguaje hedge. Marca cada afirmación no-trivial con high/medium/tentative + frases hedge preferidas. Obligatorio cuando huecos del corpus fuerzan afirmaciones tentativas.`,
         ``,
         `**footnoteExtensions** — Extensiones ancladas (1-3 oraciones) a frases en tus campos prosaicos. Compose-time fuzzy-match coloca los marcadores. 2-5 notas típicas.`,
         ``,
@@ -314,7 +314,7 @@ function formatPericopeBlock(text: string | null, lang: 'es' | 'en'): string {
     const heading = lang === 'en' ? '## Surrounding text' : '## Texto del entorno';
     const note = lang === 'en'
         ? 'Context ONLY. The verse to analyze is the one marked with \u25ba; do not analyze the others. Greek syntax does not respect verse divisions: use this to find antecedents and consequents \u2014 a protasis whose apodosis lands two verses later, a particle whose contrast sits just before, a participle whose argument continues after. When a construction reaches beyond the marked verse, say so and cite the verse where the evidence is.'
-        : 'Contexto SOLAMENTE. El vers\u00edculo a analizar es el marcado con \u25ba; no analices los otros. La sintaxis griega no respeta la divisi\u00f3n en vers\u00edculos: us\u00e1 esto para hallar antecedentes y consecuentes \u2014una pr\u00f3tasis cuya ap\u00f3dosis cae dos vers\u00edculos despu\u00e9s, una part\u00edcula cuyo contraste est\u00e1 justo antes, un participio cuyo argumento sigue adelante\u2014. Cuando una construcci\u00f3n se extienda m\u00e1s all\u00e1 del vers\u00edculo marcado, decilo y cit\u00e1 el vers\u00edculo donde est\u00e1 la evidencia.';
+        : 'Contexto SOLAMENTE. El vers\u00edculo a analizar es el marcado con \u25ba; no analices los otros. La sintaxis griega no respeta la divisi\u00f3n en vers\u00edculos: us\u00e1 esto para hallar antecedentes y consecuentes \u2014una pr\u00f3tasis cuya ap\u00f3dosis cae dos vers\u00edculos despu\u00e9s, una part\u00edcula cuyo contraste est\u00e1 justo antes, un participio cuyo argumento sigue adelante\u2014. Cuando una construcci\u00f3n se extienda m\u00e1s all\u00e1 del vers\u00edculo marcado, dilo y cit\u00e1 el vers\u00edculo donde est\u00e1 la evidencia.';
     return [``, heading, '```', text.trim(), '```', note].join('\n');
 }
 
@@ -322,7 +322,7 @@ function formatStyleGuide(content: string, lang: 'es' | 'en'): string {
     if (!content || !content.trim()) {
         return lang === 'en'
             ? '(No style guide attached. Default to TMS conventions for citations and footnotes.)'
-            : '(No hay guía de estilo adjunta. Aplicá por defecto convenciones TMS para citas y notas al pie.)';
+            : '(No hay guía de estilo adjunta. Aplica por defecto convenciones TMS para citas y notas al pie.)';
     }
     const truncated = truncate(content, STYLE_GUIDE_BUDGET_CHARS);
     return ['```', truncated, '```'].join('\n');
@@ -336,7 +336,7 @@ function formatSources(
     if (sources.length === 0) {
         return lang === 'en'
             ? '(No sources configured. Lean on general knowledge but mark every claim as tentative in confidenceFlags.)'
-            : '(Sin fuentes configuradas. Apoyate en conocimiento general pero marcá toda afirmación como tentative en confidenceFlags.)';
+            : '(Sin fuentes configuradas. Apóyate en conocimiento general pero marca toda afirmación como tentative en confidenceFlags.)';
     }
     const perSourceBudget = Math.floor(budgetChars / sources.length);
 
@@ -450,7 +450,7 @@ function formatStepEmphasis(
         return lines.join('\n');
     }
     const lines = [`### Énfasis para este paso (de la rúbrica/estrategia)`];
-    if (e) lines.push(`- Priorizá tipos: ${e}.`);
+    if (e) lines.push(`- Prioriza tipos: ${e}.`);
     if (d) lines.push(`- Desénfasis en tipos: ${d}.`);
     lines.push(``);
     return lines.join('\n');
@@ -463,10 +463,10 @@ function formatCorpusGaps(
     if (missing.length === 0) return '';
     const heading = lang === 'en'
         ? '## Corpus limitations (calibrate confidence flags accordingly)'
-        : '## Limitaciones del corpus (calibrá confidence flags acordemente)';
+        : '## Limitaciones del corpus (calibra confidence flags acordemente)';
     const intro = lang === 'en'
         ? 'The following source types the rubric expects are missing or insufficient. ANY claim in your output that would normally rest on a missing type MUST be flagged in confidenceFlags as "tentative" with appropriate hedge phrases. NEVER fabricate citations to replace missing sources.'
-        : 'Los siguientes tipos de fuente esperados por la rúbrica faltan o son insuficientes. CUALQUIER afirmación en tu output que normalmente descansaría en un tipo faltante DEBE flagearse en confidenceFlags como "tentative" con frases hedge apropiadas. NUNCA fabriqués citas para reemplazar fuentes faltantes.';
+        : 'Los siguientes tipos de fuente esperados por la rúbrica faltan o son insuficientes. CUALQUIER afirmación en tu output que normalmente descansaría en un tipo faltante DEBE flagearse en confidenceFlags como "tentative" con frases hedge apropiadas. NUNCA fabriques citas para reemplazar fuentes faltantes.';
     const items = missing.map(m => `- ${m.sourceType} (${m.have}/${m.minimum})`);
     return ['', heading, intro, ...items].join('\n');
 }

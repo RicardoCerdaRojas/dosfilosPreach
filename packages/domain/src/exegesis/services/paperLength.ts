@@ -291,7 +291,7 @@ function redondeaA50(words: number): number {
  *
  * Una sola redacción para los tres —versículo, introducción, conclusión— y
  * para los que vengan. Tres textos distintos diciendo lo mismo derivan solos:
- * uno se vuelve un ruego («intentá no pasarte»), otro un límite duro, y el
+ * uno se vuelve un ruego («intenta no pasarte»), otro un límite duro, y el
  * mismo trabajo sale con secciones que obedecen distinto.
  *
  * Cadena vacía cuando no hay presupuesto: sin extensión declarada, callar es
@@ -307,7 +307,7 @@ export function buildWordBudgetBlock(words: number | null, language: 'es' | 'en'
         ].join('\n')
         : [
             '## Extensión',
-            `Escribí aproximadamente ${words} palabras para esta sección. Es un presupuesto, no una sugerencia: el trabajo tiene una extensión que el curso califica, y cada sección que gasta de más se lo quita a otra.`,
-            'Recortá amplitud, nunca rigor. Menos puntos, cada uno argumentado y citado entero — no los mismos puntos dichos más corto.',
+            `Escribe aproximadamente ${words} palabras para esta sección. Es un presupuesto, no una sugerencia: el trabajo tiene una extensión que el curso califica, y cada sección que gasta de más se lo quita a otra.`,
+            'Recorta amplitud, nunca rigor. Menos puntos, cada uno argumentado y citado entero — no los mismos puntos dichos más corto.',
         ].join('\n');
 }

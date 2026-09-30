@@ -200,7 +200,7 @@ export interface SheetRange {
  * intacta y volver a correrla si cambia el pasaje.
  *
  * La receta NO es lo que se le manda al modelo: eso son los `excerpts`, que se
- * materializan desde acá. Guardar las dos cosas separadas es lo que permite
+ * materializan desde aquí. Guardar las dos cosas separadas es lo que permite
  * editar una selección sin volver a empezar, y distinguir lo que propuso el
  * sistema de lo que agregó el usuario.
  *

@@ -104,14 +104,14 @@ function buildDevotionalPrompt(input: ComposeDevotionalInput): { systemInstructi
             `  Cuerpo (3-5 párrafos de reflexión anclada en el análisis).`,
             `  Oración de cierre o prompt contemplativo (1 párrafo).`,
             ``,
-            `Evitá jerga (términos griegos solo cuando sean realmente necesarios y siempre traducidos). Evitá moralización. Anclá cada afirmación en lo que los análisis establecen.`,
+            `Evita jerga (términos griegos solo cuando sean realmente necesarios y siempre traducidos). Evita moralización. Ancla cada afirmación en lo que los análisis establecen.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 
     const briefings = input.verseAnalyses.map(a => serializeAnalysis(a, lang)).join('\n\n');
     const sourcesBlock = formatSourceRegistry(input.sources, lang);
     const briefingsHeading = lang === 'en'
         ? '### Verse analysis briefings (compose from these only)'
-        : '### Briefings de análisis (componé solo desde estos)';
+        : '### Briefings de análisis (compón solo desde estos)';
     const sourcesHeading = lang === 'en'
         ? '### Source registry (devotionals usually cite none — use only if a particular phrasing is irreplaceable)'
         : '### Registro de fuentes (los devocionales usualmente no citan — usar solo si una formulación particular es irremplazable)';
@@ -119,7 +119,7 @@ function buildDevotionalPrompt(input: ComposeDevotionalInput): { systemInstructi
     const user = [
         lang === 'en'
             ? `Compose the devotional for **${passage}** addressed to '${input.audience}' audience.`
-            : `Componé el devocional para **${passage}** dirigido a audiencia '${input.audience}'.`,
+            : `Compón el devocional para **${passage}** dirigido a audiencia '${input.audience}'.`,
         ``,
         briefingsHeading,
         ``,
@@ -130,7 +130,7 @@ function buildDevotionalPrompt(input: ComposeDevotionalInput): { systemInstructi
         sourcesBlock,
         regenerationHintBlock(input.regenerationHint, lang),
         ``,
-        lang === 'en' ? `Produce the devotional now.` : `Producí el devocional ahora.`,
+        lang === 'en' ? `Produce the devotional now.` : `Produce el devocional ahora.`,
     ].join('\n');
 
     return { systemInstruction: system, userMessage: user };

@@ -75,7 +75,7 @@ describe('buildVerseMorphologyBlock', () => {
 
     it('avisa explícitamente que se cuentan ocurrencias', () => {
         // Es la instrucción que separa «cuatro» de «cinco».
-        expect(buildVerseMorphologyBlock(verso(SANTIAGO_2_2_3), 'es')).toContain('Contá OCURRENCIAS');
+        expect(buildVerseMorphologyBlock(verso(SANTIAGO_2_2_3), 'es')).toContain('Cuenta OCURRENCIAS');
         expect(buildVerseMorphologyBlock(verso(SANTIAGO_2_2_3), 'en')).toContain('Count OCCURRENCES');
     });
 

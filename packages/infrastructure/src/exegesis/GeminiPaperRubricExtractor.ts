@@ -8,6 +8,7 @@ import {
     type SourceRequirement,
     type SourceType,
     type StructuralExpectation,
+    DEFAULT_PAPER_FORMATTING,
     SOURCE_TYPE_GROUPS,
 } from '@dosfilos/domain';
 import { withGeminiRetry } from './geminiRetry';
@@ -62,7 +63,7 @@ export class GeminiPaperRubricExtractor implements IPaperRubricExtractor {
         //
         // Es el ÚNICO adapter multimodal de exégesis; el resto es texto→texto.
         // El proxy arma las `parts` del lado del servidor a partir de este
-        // campo — acá ya no se construyen a mano.
+        // campo — aquí ya no se construyen a mano.
         //
         // Pro 2.5 hits intermittent 503s ("model experiencing high demand")
         // during peak windows. Retry transparently with exponential
@@ -133,9 +134,9 @@ function buildExtractionPrompt(input: ExtractRubricInput): BuiltPrompt {
         systemInstruction: [
             `Sos un extractor de datos estructurados para rúbricas de trabajos exegéticos académicos.`,
             ``,
-            `Leé la rúbrica de calificación del seminario (o brief de asignación) y devolvé un objeto JSON que cumpla el esquema más abajo. Mapeá el vocabulario de tipos de fuente al catálogo canónico. Devolvé null para los campos que la rúbrica no menciona — NO inventes valores.`,
+            `Lee la rúbrica de calificación del seminario (o brief de asignación) y devuelve un objeto JSON que cumpla el esquema más abajo. Mapea el vocabulario de tipos de fuente al catálogo canónico. Devuelve null para los campos que la rúbrica no menciona — NO inventes valores.`,
             ``,
-            `Devolvé SOLO JSON — sin fences markdown, sin comentarios, sin preámbulo.`,
+            `Devuelve SOLO JSON — sin fences markdown, sin comentarios, sin preámbulo.`,
         ].join('\n'),
         userMessage: buildUserMessageES(input.rawText, typeList, input.source),
     };
@@ -159,7 +160,7 @@ function buildUserMessageEN(rawText: string, typeList: string, source: 'document
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // e.g. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
-        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical" } | null,   // ONLY when the syllabus states it. null = not stated.`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical", "pageLabel": "labelled" | "bare" } | null,   // ONLY when the syllabus states it. null = not stated. pageLabel "bare" = the syllabus cites the page without "p." — e.g. "(Carballosa, 208)".`,
         `  "sourceRequirements": [                                          // one entry per source type the rubric requires`,
         `    {`,
         `      "sourceType": <one of: ${typeList}>,`,
@@ -223,23 +224,23 @@ function buildUserMessageEN(rawText: string, typeList: string, source: 'document
 
 function buildUserMessageES(rawText: string, typeList: string, source: 'document' | 'text' | 'image'): string {
     const header = source === 'image'
-        ? `Extraé la rúbrica de la imagen adjunta:`
-        : `Extraé la rúbrica de este documento:`;
+        ? `Extrae la rúbrica de la imagen adjunta:`
+        : `Extrae la rúbrica de este documento:`;
     const body = source === 'image' && !rawText.trim()
-        ? '(La fuente es la imagen adjunta — leéla directamente.)'
+        ? '(La fuente es la imagen adjunta — léela directamente.)'
         : ['```', rawText.trim(), '```'].join('\n');
     return [
         header,
         body,
         ``,
         `## Esquema de salida`,
-        `Devolvé un único objeto JSON con estos campos (usá null donde la rúbrica calle):`,
+        `Devuelve un único objeto JSON con estos campos (usa null donde la rúbrica calle):`,
         ``,
         `{`,
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // ej. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
-        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical" } | null,   // SÓLO si el sílabo lo dice. null = no lo dice.`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical", "pageLabel": "labelled" | "bare" } | null,   // SÓLO si el sílabo lo dice. null = no lo dice. pageLabel "bare" = el sílabo cita la página sin «p.» — p. ej. «(Carballosa, 208)».`,
         `  "sourceRequirements": [                                          // un entry por tipo de fuente que la rúbrica requiere`,
         `    {`,
         `      "sourceType": <uno de: ${typeList}>,`,
@@ -279,7 +280,7 @@ function buildUserMessageES(rawText: string, typeList: string, source: 'document
         `}`,
         ``,
         `## Extracción de criterios cualitativos`,
-        `Muchas rúbricas reales del seminario son grillas por niveles — filas como "Estilo y formato / Organización / Interacción académica / Coherencia / Evidencia", cada una con 4 niveles de calidad (Ejemplar / Competente / Aceptable / Deficiente), descripciones por nivel y rangos de puntos (ej. 15/13/11/7). Capturá CADA fila visible de esa grilla en \`qualityCriteria\`, UN entry por fila. Cada entry DEBE preservar las descripciones de nivel verbatim — son el texto exacto que el profesor usa para calificar. NO parafrasees. Cuando la grilla tenga columna de puntos, poné \`maxPoints\` con los puntos del nivel más alto y \`points\` por nivel correspondiente.`,
+        `Muchas rúbricas reales del seminario son grillas por niveles — filas como "Estilo y formato / Organización / Interacción académica / Coherencia / Evidencia", cada una con 4 niveles de calidad (Ejemplar / Competente / Aceptable / Deficiente), descripciones por nivel y rangos de puntos (ej. 15/13/11/7). Captura CADA fila visible de esa grilla en \`qualityCriteria\`, UN entry por fila. Cada entry DEBE preservar las descripciones de nivel verbatim — son el texto exacto que el profesor usa para calificar. NO parafrasees. Cuando la grilla tenga columna de puntos, pon \`maxPoints\` con los puntos del nivel más alto y \`points\` por nivel correspondiente.`,
         ``,
         `## Guía de mapeo`,
         `- "comentario crítico / comentario técnico / WBC / NIGTC / Hermeneia / ICC" → commentary-critical`,
@@ -454,7 +455,7 @@ function collectReviewNotes(raw: RawExtractionResult, lang: 'es' | 'en'): string
     if (raw.sourceRequirements.length === 0) {
         notes.push(lang === 'en'
             ? 'No source requirements were extracted. Verify the rubric document or add requirements manually.'
-            : 'No se extrajeron requisitos de fuente. Verificá el documento de rúbrica o agregá requisitos manualmente.',
+            : 'No se extrajeron requisitos de fuente. Verifica el documento de rúbrica o agrega requisitos manualmente.',
         );
     }
     if (raw.structuralExpectations.length === 0) {
@@ -511,14 +512,23 @@ function parseCourseBibliography(raw: unknown): CourseBibliographyEntry[] {
  */
 export function parseFormatting(raw: unknown): PaperFormatting | null {
     if (!raw || typeof raw !== 'object') return null;
-    const f = raw as { lineSpacing?: unknown; blankLineBetweenParagraphs?: unknown; citationForm?: unknown };
+    const f = raw as { lineSpacing?: unknown; blankLineBetweenParagraphs?: unknown; citationForm?: unknown; pageLabel?: unknown };
     const spacing = f.lineSpacing;
-    if (spacing !== 'single' && spacing !== 'one-and-a-half' && spacing !== 'double') return null;
+    const spacingValido = spacing === 'single' || spacing === 'one-and-a-half' || spacing === 'double';
+    // Sólo la palabra exacta cambia cada campo. Cualquier otra cosa deja lo
+    // de la casa: nota al pie, sin línea extra, «p. N».
+    const citationForm = f.citationForm === 'parenthetical' ? 'parenthetical' : 'footnote';
+    const blankLine = f.blankLineBetweenParagraphs === true;
+    const pageLabel = f.pageLabel === 'bare' ? 'bare' : 'labelled';
+    // Un sílabo que dice la forma de cita y calla el interlineado sigue
+    // diciendo algo: descartar todo por el interlineado perdía la cita
+    // parentética del TP semanal. Sin nada dicho, `null`.
+    const dijoAlgo = spacingValido || citationForm !== 'footnote' || blankLine || pageLabel !== 'labelled';
+    if (!dijoAlgo) return null;
     return {
-        lineSpacing: spacing,
-        blankLineBetweenParagraphs: f.blankLineBetweenParagraphs === true,
-        // Sólo la palabra exacta cambia la forma. Cualquier otra cosa deja la
-        // nota al pie, que es lo que el exportador hacía antes del campo.
-        citationForm: f.citationForm === 'parenthetical' ? 'parenthetical' : 'footnote',
+        lineSpacing: spacingValido ? spacing : DEFAULT_PAPER_FORMATTING.lineSpacing,
+        blankLineBetweenParagraphs: blankLine,
+        citationForm,
+        ...(pageLabel === 'bare' ? { pageLabel } : {}),
     };
 }

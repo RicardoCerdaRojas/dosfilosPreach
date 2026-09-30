@@ -28,7 +28,7 @@ export interface DocumentPageIndex {
     sections: ReadonlyArray<{ section: string; sheet: number }>;
     /**
      * `impresa = hoja + offset`, o `null` cuando no hubo evidencia suficiente.
-     * Se deduce acá y no en el servidor porque la tabla del canon y la
+     * Se deduce aquí y no en el servidor porque la tabla del canon y la
      * heurística viven en domain, que `packages/functions` no puede importar.
      */
     printedPageOffset: number | null;

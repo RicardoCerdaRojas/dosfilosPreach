@@ -164,7 +164,7 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
     const passageLine = isSpanish
         ? `**Pasaje del paper:** ${passageLabel}`
         : `**Paper passage:** ${passageLabel}`;
-    // El encuadre llega ENTERO: acá es una instrucción, no una consulta de
+    // El encuadre llega ENTERO: aquí es una instrucción, no una consulta de
     // embeddings. Con el tope de 1.000 que había, el planificador de Santiago
     // 2:1-13 nunca vio «Prohibido citar McCartney, Ropes, Varner: el plan de
     // estudios no permite repetir una fuente en semanas consecutivas» — una

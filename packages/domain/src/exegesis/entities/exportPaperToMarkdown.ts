@@ -3,6 +3,7 @@ import { esEncabezadoDeBibliografia } from '../services/paperBibliography';
 import type { BibliographyEntry } from '../services/paperBibliography';
 import type { ExegeticalPaper } from './ExegeticalPaper';
 import type { ExegeticalStep } from './ExegeticalStep';
+import { applyPageLabelStyle } from '../services/citationStyle';
 
 /**
  * Renders an `ExegeticalPaper` to a self-contained Markdown string
@@ -54,9 +55,14 @@ export function exportPaperToMarkdown(
     const passageDisplay = formatPassageReference(paper.passage, paper.displayLanguage);
     const titleDisplay = paper.title?.trim() || passageDisplay;
 
-    const body = paper.assembledMarkdown
-        ? paper.assembledMarkdown
-        : assembleFromAcceptedSteps(paper.steps, labels);
+    // El rótulo de página que pide la entrega se aplica aquí, al entregar:
+    // el Word y el .md salen de esta función.
+    const body = applyPageLabelStyle(
+        paper.assembledMarkdown
+            ? paper.assembledMarkdown
+            : assembleFromAcceptedSteps(paper.steps, labels),
+        paper.rubric?.formatting ?? null,
+    );
 
     const header = options.omitHeader ? '' : [
         `# ${titleDisplay}`,

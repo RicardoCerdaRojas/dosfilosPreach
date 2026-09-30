@@ -20,7 +20,7 @@ export type PageLabeler = (sourceKey: string, page: number, kind: CitationPageKi
  *   - `sheet` — el número es la hoja del archivo. Es lo que guardó todo
  *     análisis anterior a la calibración, y también lo que guarda hoy un
  *     recurso sin numeración conocida. Si el recurso ya tiene numeración, se
- *     convierte acá; si no, se dice «hoja N».
+ *     convierte aquí; si no, se dice «hoja N».
  *
  * Esa segunda rama es lo que permite recomponer un trabajo viejo con las
  * páginas correctas sin volver a analizarlo verso por verso.

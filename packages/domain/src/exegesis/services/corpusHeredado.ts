@@ -85,7 +85,7 @@ function recursoDe(s: Pick<ResumenDeFuente, 'sourceLibraryResourceId' | 'corpusI
 }
 
 /**
- * De qué hermano conviene heredar, y qué fuentes suyas faltan acá.
+ * De qué hermano conviene heredar, y qué fuentes suyas faltan aquí.
  *
  * Se elige el hermano con MÁS fuentes, no el más reciente: lo que se busca es
  * la base más completa, y un trabajo recién empezado puede ser el último y

@@ -12,7 +12,7 @@ import { repeatedFromPreviousDelivery } from './sourceMemory';
  * El bloque de FUENTES Y FORMATO del encuadre, escrito por el sistema.
  *
  * La plantilla de predicación lo dejaba como un corchete para llenar a mano:
- * «anotá cuál translitera, cuál no se puede repetir, cuál es el ancla». El
+ * «anota cuál translitera, cuál no se puede repetir, cuál es el ancla». El
  * fundador probó a llenarlo y dijo que era lo más difícil — y tenía razón,
  * porque le estaba pidiendo que escribiera a mano cosas que el sistema YA
  * midió:
@@ -56,7 +56,7 @@ export function buildSourcesAndFormatBlock(
 
     // 3. Qué libros TRANSLITERAN, que es un hecho positivo y verificable.
     //
-    //    Y sólo eso. Listar acá también los que «perdieron» el original sería
+    //    Y sólo eso. Listar aquí también los que «perdieron» el original sería
     //    repetir el falso positivo que #699 ya había descartado midiendo: de
     //    los 8 libros de producción sin un carácter en lengua original, 2 no
     //    tenían por qué tenerlo —una teología sistemática y una hermenéutica—.

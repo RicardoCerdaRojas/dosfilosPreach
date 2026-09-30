@@ -114,7 +114,7 @@ export interface ExegesisSourceContext {
      *
      * El plan decide, fuente por fuente, cuál ancla el paso, cuál aporta
      * contraste y cuál entra como técnica; lo persiste en
-     * `StepSourcePlanEntry.pinnedSourceRoles` y hasta acá sólo lo leía la
+     * `StepSourcePlanEntry.pinnedSourceRoles` y hasta aquí sólo lo leía la
      * interfaz para pintar insignias. Mientras tanto al analizador se le pedía
      * clasificar a cada comentarista en esos MISMOS tres roles desde cero, o
      * sea rehacer una decisión ya tomada. Medido en producción: 79 pasos

@@ -226,8 +226,6 @@
     "minimumSourcesLabel_other": "required minimums",
     "minimumSourcesLabel": "required minimums",
     "breadth": "Covers {{covered}} of {{total}} academic areas",
-    "scoreLabel": "Academic score: {{score}}",
-    "scoreHint": "Sum of minimums × academic weight (rigorTier 0–3 per source type).",
     "level": {
       "pastoral": "Pastoral / homiletical",
       "seminary": "Seminary (undergrad / MDiv)",
@@ -524,7 +522,11 @@
           "blankLineLabel": "A blank line between paragraphs",
           "formattingHint": "Only when this assignment asks for something other than the seminary guide. Weekly practicals usually ask for single spacing; the long exegetical paper, double.",
           "citationFootnote": "Footnote citation",
-          "citationParenthetical": "In-text parenthetical citation"
+          "citationParenthetical": "In-text parenthetical citation",
+          "citationFormAria": "Citation form",
+          "pageLabelAria": "Page label in the citation",
+          "pageLabelLabelled": "Page with “p.”: (Mayor, p. 77)",
+          "pageLabelBare": "Page without “p.”: (Carballosa, 208)"
         },
         "requirements": {
           "title": "Corpus requirements",
@@ -570,7 +572,10 @@
           "qualityHint": "Dimensions the professor will grade. The composer targets the top-level descriptor of each criterion when writing the paper.",
           "optionalCount_one": "+ {{count}} optional recommended requirement",
           "optionalCount_other": "+ {{count}} optional recommended requirements",
-          "optionalCount": "+ {{count}} optional recommended"
+          "optionalCount": "+ {{count}} optional recommended",
+          "citationInherited": "{{standard}} (from your style guide)",
+          "formattingLabel": "Layout",
+          "formattingDefault": "House default: double spacing, footnote citations"
         },
         "templates": {
           "title": "Rubric templates",

@@ -95,7 +95,7 @@ export function countGreekMoods(tokens: readonly GreekWordToken[]): Record<strin
  * siguen siendo del analizador, que es lo que no es calculable.
  *
  * Cadena vacía cuando no hay tokens: el hebreo y los libros fuera del corpus
- * de MorphGNT pasan por acá sin bloque, y el analizador trabaja como antes.
+ * de MorphGNT pasan por aquí sin bloque, y el analizador trabaja como antes.
  */
 export function buildVerseMorphologyBlock(
     verse: GreekVerseTokens | null,
@@ -121,7 +121,7 @@ export function buildVerseMorphologyBlock(
         : [
             '## Morfología de este versículo (DATO, no análisis — calculado, no deducido)',
             'Sale columna por columna de MorphGNT. No es una opinión ni es negociable: toda afirmación morfológica de tu análisis tiene que cuadrar con esta tabla, y todo recuento tiene que coincidir con ella.',
-            resumen ? `Modos verbales presentes: **${resumen}**. Contá OCURRENCIAS, no formas distintas: una forma repetida dos veces son dos.` : '',
+            resumen ? `Modos verbales presentes: **${resumen}**. Cuenta OCURRENCIAS, no formas distintas: una forma repetida dos veces son dos.` : '',
             ...lineas,
         ].filter(Boolean).join('\n');
 }
@@ -130,7 +130,7 @@ export function buildVerseMorphologyBlock(
 /**
  * Una palabra hebrea tal como la trae morphhb: su texto y su código OSHB.
  *
- * Se declara acá y no se importa de `hebrew-tutor` para que este servicio no
+ * Se declara aquí y no se importa de `hebrew-tutor` para que este servicio no
  * dependa del tutor: son dos usos del mismo dato, no una jerarquía.
  */
 export interface HebrewMorphToken {
@@ -181,8 +181,8 @@ export function buildHebrewMorphologyBlock(
         : [
             '## Morfología de este versículo (DATO, no análisis — calculado, no deducido)',
             'Sale de morphhb (Códice de Leningrado con etiquetado OSHB). No es una opinión ni es negociable: toda afirmación morfológica de tu análisis tiene que cuadrar con esta tabla, y todo recuento tiene que coincidir con ella.',
-            resumen ? `Formas verbales presentes: **${resumen}**. Contá OCURRENCIAS, no formas distintas: una forma repetida dos veces son dos.` : '',
-            'Un código que salga crudo (p. ej. `Vzi3ms`) es un tallo que este sistema no nombra con certeza. NO lo adivines: decí lo que el código dice.',
+            resumen ? `Formas verbales presentes: **${resumen}**. Cuenta OCURRENCIAS, no formas distintas: una forma repetida dos veces son dos.` : '',
+            'Un código que salga crudo (p. ej. `Vzi3ms`) es un tallo que este sistema no nombra con certeza. NO lo adivines: di lo que el código dice.',
             ...lineas,
         ].filter(Boolean).join('\n');
 }

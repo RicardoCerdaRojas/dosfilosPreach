@@ -122,21 +122,21 @@ function buildStudyGuidePrompt(input: ComposeStudyGuideInput): { systemInstructi
             `Un único documento markdown con esta estructura:`,
             `  # Título (claro, descriptivo — nombra la preocupación central del pasaje)`,
             `  ## Lee el pasaje`,
-            `  > {texto completo del pasaje en el idioma del usuario; marcá cada versículo}`,
+            `  > {texto completo del pasaje en el idioma del usuario; marca cada versículo}`,
             `  ## Observación`,
             `    - Pregunta 1...`,
             `    - Pregunta 2...`,
             `    (4-6 preguntas)`,
             `  ## Interpretación`,
             `    - Pregunta 1...`,
-            `    (4-6 preguntas; para cada una, indicá brevemente el análisis o compromiso que ancla la respuesta — nota del líder en itálicas)`,
+            `    (4-6 preguntas; para cada una, indica brevemente el análisis o compromiso que ancla la respuesta — nota del líder en itálicas)`,
             `  ## Aplicación`,
             `    - Pregunta 1...`,
             `    (3-4 preguntas)`,
             `  ## Notas del líder (opcional, solo si audience='small-group' o 'sunday-school')`,
             `    - Orientación breve para el líder sobre malas lecturas comunes + las respuestas que los análisis sostienen.`,
             ``,
-            `Las preguntas son abiertas (evitá sí/no). Las notas del líder nunca spoilean — orientan sin dictar respuestas.`,
+            `Las preguntas son abiertas (evita sí/no). Las notas del líder nunca spoilean — orientan sin dictar respuestas.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 
     const briefings = input.verseAnalyses.map(a => serializeAnalysis(a, lang)).join('\n\n');
@@ -151,7 +151,7 @@ function buildStudyGuidePrompt(input: ComposeStudyGuideInput): { systemInstructi
     const user = [
         lang === 'en'
             ? `Compose the inductive study guide for **${passage}** for '${input.audience}' audience.`
-            : `Componé la guía de estudio inductivo para **${passage}** para audiencia '${input.audience}'.`,
+            : `Compón la guía de estudio inductivo para **${passage}** para audiencia '${input.audience}'.`,
         ``,
         briefingsHeading,
         ``,
@@ -162,7 +162,7 @@ function buildStudyGuidePrompt(input: ComposeStudyGuideInput): { systemInstructi
         sourcesBlock,
         regenerationHintBlock(input.regenerationHint, lang),
         ``,
-        lang === 'en' ? `Now produce the study guide markdown.` : `Ahora producí la guía de estudio en markdown.`,
+        lang === 'en' ? `Now produce the study guide markdown.` : `Ahora produce la guía de estudio en markdown.`,
     ].join('\n');
 
     return { systemInstruction: system, userMessage: user };
@@ -173,7 +173,7 @@ function audienceInstructionsEs(audience: ComposeStudyGuideInput['audience']): s
         return [
             `**Pequeño grupo**: adultos con formación bíblica básica. Discusión guiada por un líder.`,
             `- Preguntas que generan conversación honesta, no sólo respuestas correctas.`,
-            `- Incluí "Notas del líder" para orientación.`,
+            `- Incluye "Notas del líder" para orientación.`,
         ].join('\n');
     }
     if (audience === 'sunday-school') {

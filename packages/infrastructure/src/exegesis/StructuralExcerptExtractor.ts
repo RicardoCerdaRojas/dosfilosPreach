@@ -93,7 +93,7 @@ export class StructuralExcerptExtractor implements IExcerptExtractor {
         }
 
         // Misma verificación de indexado que el camino semántico, y por el
-        // mismo motivo: la UI arma un panel de "prepará estos primero" con
+        // mismo motivo: la UI arma un panel de "prepara estos primero" con
         // los ids que fallan, y necesita el error antes de cualquier consulta.
         const readiness = await Promise.all(
             input.libraryResourceIds.map(id => this.indexProbe.isReady(id)),

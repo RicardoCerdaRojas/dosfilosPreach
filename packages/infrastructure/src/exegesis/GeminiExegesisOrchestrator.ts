@@ -56,7 +56,7 @@ export class GeminiExegesisOrchestrator implements IExegesisOrchestrator {
         });
 
         // Sin `withGeminiRetry`: este adapter nunca lo tuvo y no se le agrega
-        // acá — cambiar la política de reintentos de refilón, dentro de una
+        // aquí — cambiar la política de reintentos de refilón, dentro de una
         // migración de transporte, es justo lo que nadie vería en el diff.
         //
         // El respaldo de tokens que este método calculaba a mano (sumar entrada

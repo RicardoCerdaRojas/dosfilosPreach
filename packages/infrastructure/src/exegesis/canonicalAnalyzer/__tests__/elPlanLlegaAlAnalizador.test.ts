@@ -58,7 +58,7 @@ describe('el rol que decidió el plan llega al analizador', () => {
     });
 
     it('la guía de campos manda COPIAR el rol asignado, no volver a decidirlo', () => {
-        expect(buildAnalyzerPrompt(entrada({})).userMessage).toContain('COPIÁ ese rol');
+        expect(buildAnalyzerPrompt(entrada({})).userMessage).toContain('COPIA ese rol');
     });
 
     it('en inglés también', () => {

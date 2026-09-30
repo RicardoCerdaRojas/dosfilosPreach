@@ -5,7 +5,7 @@ import type { SheetRange } from '../entities/ProjectSource';
  *
  * El corpus curado de doce fuentes son ~514.000 caracteres: dos veces y media el
  * tope del prompt. Mandarlo entero es lo que hace hoy el módulo, y es la razón
- * por la que un estudio serio no entra. Acá se decide qué parte viaja.
+ * por la que un estudio serio no entra. Aquí se decide qué parte viaja.
  *
  * Dos clases de material, con reglas distintas a propósito:
  *
