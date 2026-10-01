@@ -411,3 +411,11 @@ describe('getSourceRecommendations — un comentario de otro libro del grupo no 
         expect(titulos('1TI')).toContain('Pastoral Epistles');
     });
 });
+
+describe('obras de un solo libro en otras categorías del grupo', () => {
+    it('Santiago no recibe el comentario de 1-3 Juan como monografía', () => {
+        const todo = (['theological-monograph', 'commentary-critical', 'commentary-expository'] as const)
+            .flatMap(t => getSourceRecommendations('JAS', t).map(r => r.title));
+        expect(todo).not.toContain('1, 2, and 3 John');
+    });
+});

@@ -527,6 +527,7 @@ export function parseFormatting(raw: unknown): PaperFormatting | null {
     if (!dijoAlgo) return null;
     return {
         lineSpacing: spacingValido ? spacing : DEFAULT_PAPER_FORMATTING.lineSpacing,
+        ...(spacingValido ? {} : { lineSpacingFromHouse: true }),
         blankLineBetweenParagraphs: blankLine,
         citationForm,
         ...(pageLabel === 'bare' ? { pageLabel } : {}),

@@ -198,6 +198,13 @@ export interface PaperFormatting {
      * impresa se desconoce. Ausente equivale a `'labelled'`.
      */
     pageLabel?: PageLabelStyle;
+    /**
+     * El interlineado no lo eligió la entrega: es el de la casa. Se guarda
+     * `lineSpacing` igual (lo necesitan el exportador y el cálculo de
+     * páginas), pero el formulario vuelve a mostrar «como la guía» en vez de
+     * fijar «doble» la próxima vez que se abra.
+     */
+    lineSpacingFromHouse?: boolean;
 }
 
 export type PageLabelStyle = 'labelled' | 'bare';

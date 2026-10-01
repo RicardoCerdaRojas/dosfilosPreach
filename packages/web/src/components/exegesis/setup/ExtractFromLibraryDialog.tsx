@@ -131,6 +131,16 @@ export function ExtractFromLibraryDialog({
         }
         return set;
     }, [paper.sources]);
+    /**
+     * La clave con que arranca cada fila. Si el libro YA está en el corpus,
+     * la suya: re-extraer escribe la clave que se manda, y derivarla del
+     * autor pisaría una escrita a mano («BDF» → «Blass»), dejando los
+     * análisis que la citan sin fuente.
+     */
+    const claveInicial = (resource: LibraryResource): string => {
+        const existente = paper.sources.find(s => s.sourceLibraryResourceId === resource.id)?.citationKey;
+        return existente ?? deriveCitationKeyFromAuthor(resource.author);
+    };
 
     // Quick lookup of the per-resource ranking. Built once per ranking
     // change; `null` for unranked resources (those never matched any
@@ -220,7 +230,7 @@ export function ExtractFromLibraryDialog({
             next.set(resource.id, {
                 sourceType: resource.exegeticalType ?? defaultSourceTypeFor(resource),
                 displayLabel: resource.title,
-                citationKey: deriveCitationKeyFromAuthor(resource.author),
+                citationKey: claveInicial(resource),
                 chosenRole: null,
             });
             applied++;
@@ -257,7 +267,7 @@ export function ExtractFromLibraryDialog({
                 displayLabel: resource.title,
                 // La clave sale del autor del libro desde el principio: vacía,
                 // una fuente sin autor quedaba fuera de las citas sin aviso.
-                citationKey: deriveCitationKeyFromAuthor(resource.author),
+                citationKey: claveInicial(resource),
                 chosenRole: null,
             });
             // Clear the not-indexed error when the user changes the

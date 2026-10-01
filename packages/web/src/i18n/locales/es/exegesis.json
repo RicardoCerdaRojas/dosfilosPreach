@@ -1231,7 +1231,8 @@
           "save": "Guardar",
           "cancel": "Cancelar",
           "saved": "Clave de cita guardada.",
-          "saveFailed": "No se pudo guardar la clave de cita."
+          "saveFailed": "No se pudo guardar la clave de cita.",
+          "renameWarning": "Los versículos ya analizados citan «{{key}}»: con otra clave esas citas quedan sin fuente hasta volver a analizarlos."
         }
       },
       "corpus-plan": {
@@ -1369,7 +1370,7 @@
       "originProfile": "Perfil: {{label}}",
       "suggestion": "Usar la del trabajo anterior («{{label}}»)",
       "loadedFrom": "Cargada desde «{{label}}», con el número de entrega avanzado. Revísala antes de guardar.",
-      "offerProfile": "¿Guardar esta portada en un perfil? Los próximos trabajos nacerán con ella.",
+      "offerProfile": "¿Guardar esta configuración como perfil? Guarda la portada (sin el título de la entrega) junto con la guía de estilo y la estrategia de este trabajo; los próximos trabajos nacerán con ellas.",
       "offerProfileCta": "Guardar en un perfil",
       "offerProfileDismiss": "Ahora no",
       "profileDefaultName": "Mi portada",
@@ -1708,7 +1709,9 @@
         "tooltip": "Compara cada cita inline con el contenido de tus fuentes (texto + página). Manual."
       },
       "badge": {
-        "tooltip": "{{verified}} de {{total}} citas verificadas · {{issues}} con observaciones"
+        "tooltip": "{{verified}} de {{total}} citas verificadas · {{issues}} con observaciones",
+        "prose": "prosa: {{count}}!",
+        "proseTooltip": "{{count}} citas de la prosa que se entrega no coincidieron. No bloquean; vuelve a verificar para verlas."
       },
       "status": {
         "verified": "Verificada",

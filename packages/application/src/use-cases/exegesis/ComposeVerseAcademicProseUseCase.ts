@@ -29,6 +29,8 @@ import {
     sectionHeadings,
     isCitableSourceType,
     replaceVerseSection,
+    replaceVerseSectionExact,
+    pertenceAlDocumento,
     verseSectionKey,
     verseWordBudget,
     type AcademicVoiceSample,
@@ -255,6 +257,7 @@ export class ComposeVerseAcademicProseUseCase {
                 target.canonicalAnalysis,
                 finalMarkdown,
                 propias,
+                pertenceAlDocumento(step),
             );
 
             return {
@@ -285,9 +288,13 @@ export class ComposeVerseAcademicProseUseCase {
         analysis: CanonicalVerseAnalysis,
         prose: string,
         propias: ReadonlyArray<BriefQuestion>,
+        enElDocumento: boolean,
     ): Promise<boolean> {
         const assembled = paper.assembledMarkdown?.trim();
         if (!assembled) return false;
+        // Un versículo fuera del documento no tiene sección que reemplazar.
+        // Buscarla igual podía encontrar la de otro.
+        if (!enElDocumento) return false;
 
         const key = verseSectionKey(analysis, paper.displayLanguage);
         // Con preguntas, la sección se titula con ellas. Un ensamble anterior
@@ -299,7 +306,16 @@ export class ComposeVerseAcademicProseUseCase {
                 prose,
             )
             : null;
-        const next = porPregunta ?? replaceVerseSection(assembled, key, prose);
+        // Respaldo: un versículo sin preguntas, o un ensamble anterior a los
+        // títulos por pregunta. Si el encuadre trae preguntas, título EXACTO:
+        // un título-pregunta puede nombrar este versículo sin ser su sección
+        // (ver `replaceVerseSectionExact`). Sin preguntas, el de siempre, que
+        // acepta «### Santiago 1:2 — La prueba» del compositor del trabajo
+        // entero.
+        const hayPreguntas = parseBriefQuestions(paper.assignmentBrief).length > 0;
+        const next = porPregunta ?? (hayPreguntas
+            ? replaceVerseSectionExact(assembled, key, prose)
+            : replaceVerseSection(assembled, key, prose));
         if (next === null) {
             console.warn('[ComposeVerseAcademicProseUseCase] el ensamblado no trae la sección', key);
             return false;

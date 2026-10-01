@@ -25,7 +25,7 @@ export interface FormattingDraft {
 
 export function draftFromFormatting(f: PaperFormatting | null | undefined): FormattingDraft {
     return {
-        lineSpacing: f?.lineSpacing ?? 'default',
+        lineSpacing: !f || f.lineSpacingFromHouse ? 'default' : f.lineSpacing,
         citationForm: f?.citationForm ?? DEFAULT_PAPER_FORMATTING.citationForm,
         blankLine: f?.blankLineBetweenParagraphs ?? DEFAULT_PAPER_FORMATTING.blankLineBetweenParagraphs,
         pageLabel: f?.pageLabel ?? 'labelled',
@@ -45,6 +45,7 @@ export function formattingFromDraft(d: FormattingDraft): PaperFormatting | null 
     if (comoLaCasa) return null;
     return {
         lineSpacing: d.lineSpacing === 'default' ? DEFAULT_PAPER_FORMATTING.lineSpacing : d.lineSpacing,
+        ...(d.lineSpacing === 'default' ? { lineSpacingFromHouse: true } : {}),
         citationForm: d.citationForm,
         blankLineBetweenParagraphs: d.blankLine,
         // El rótulo sólo se aplica a la cita entre paréntesis

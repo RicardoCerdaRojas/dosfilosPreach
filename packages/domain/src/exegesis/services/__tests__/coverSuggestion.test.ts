@@ -10,7 +10,7 @@ const TP4 = {
     author: 'Ricardo Cerda', place: 'Concepción, Chile', date: 'Septiembre 2026',
 };
 const trabajo = (id: string, dia: number, cover: object | null) =>
-    ({ id, title: id, updatedAt: new Date(2026, 8, dia), cover }) as never;
+    ({ id, title: id, createdAt: new Date(2026, 8, dia), updatedAt: new Date(2026, 8, 30), cover }) as never;
 
 describe('nextAssignmentTitle', () => {
     it('avanza el número de la entrega', () => {

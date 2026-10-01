@@ -161,10 +161,18 @@ function normaliza(s: string): string {
     return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
+/**
+ * Si el texto nombra a la fuente. Respeta MAYÚSCULAS a propósito: una clave
+ * de cita es un apellido, y varios son palabras comunes —«Mayor» (comentario
+ * a Santiago) contra «la mayor parte»; «Laws», «Block», «Long» en inglés—.
+ * Sin distinguirlas, cualquier afirmación con esa palabra pasaba por síntesis
+ * y el verificador la juzgaba más laxo.
+ */
 function nombra(texto: string, clave: string): boolean {
-    const k = normaliza(clave).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const sinAcentos = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const k = sinAcentos(clave).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (k.length < 3) return false;
-    return new RegExp(`(^|[^\\p{L}])${k}([^\\p{L}]|$)`, 'u').test(normaliza(texto));
+    return new RegExp(`(^|[^\\p{L}])${k}([^\\p{L}]|$)`, 'u').test(sinAcentos(texto));
 }
 
 const SITIOS: ReadonlyArray<AnalysisClaimSite> = [

@@ -1293,6 +1293,17 @@ function VerificationBadge({ summary }: { summary: VerificationSummary }) {
             {issues > 0 && (
                 <span className="opacity-70">· {issues}!</span>
             )}
+            {/* La prosa que se entrega va aparte: no bloquea, pero si algo no
+                coincidió tiene que seguir a la vista después de cerrar el
+                diálogo. */}
+            {(summary.proseCitationsWithIssues ?? 0) > 0 && (
+                <span
+                    className="ml-1 rounded-full border border-warning/40 bg-warning-subtle px-1 text-warning-subtle-foreground"
+                    title={t('canonical.verify.badge.proseTooltip', { count: summary.proseCitationsWithIssues })}
+                >
+                    {t('canonical.verify.badge.prose', { count: summary.proseCitationsWithIssues })}
+                </span>
+            )}
         </span>
     );
 }

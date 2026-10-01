@@ -56,3 +56,17 @@ describe('el rótulo interno no se muestra', () => {
         expect(citationDisplayRaw({ raw: '(Mayor, p. 77)' })).toBe('(Mayor, p. 77)');
     });
 });
+
+describe('un apellido que también es palabra común', () => {
+    it('«la mayor parte» no nombra a Mayor', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis(REF),
+            commentatorEngagement: [
+                { sourceKey: 'Ropes', page: 204, role: 'anchor', position: 'La mayor parte de los intérpretes lee pasiva' },
+                { sourceKey: 'Mayor', page: 77, role: 'contrast', position: 'Lee media' },
+            ],
+        } as never;
+        const c = analysisClaimsToCitations(collectAnalysisClaims(a), x => String(x.page));
+        expect(c.find(x => x.author === 'Ropes')).not.toHaveProperty('otherSources');
+    });
+});

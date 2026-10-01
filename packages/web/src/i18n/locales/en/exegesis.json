@@ -1231,7 +1231,8 @@
           "save": "Save",
           "cancel": "Cancel",
           "saved": "Citation key saved.",
-          "saveFailed": "Could not save the citation key."
+          "saveFailed": "Could not save the citation key.",
+          "renameWarning": "Verses already analyzed cite “{{key}}”: with another key those citations lose their source until re-analyzed."
         }
       },
       "corpus-plan": {
@@ -1369,7 +1370,7 @@
       "originProfile": "Profile: {{label}}",
       "suggestion": "Use the previous paper's («{{label}}»)",
       "loadedFrom": "Loaded from «{{label}}», with the assignment number advanced. Review it before saving.",
-      "offerProfile": "Save this cover in a profile? Your next papers will start with it.",
+      "offerProfile": "Save this setup as a profile? It saves the cover (without the assignment title) together with this paper's style guide and strategy; your next papers will start with them.",
       "offerProfileCta": "Save in a profile",
       "offerProfileDismiss": "Not now",
       "profileDefaultName": "My cover",
@@ -1708,7 +1709,9 @@
         "tooltip": "Compares each inline citation with your source content (text + page). Manual."
       },
       "badge": {
-        "tooltip": "{{verified}} of {{total}} citations verified · {{issues}} flagged"
+        "tooltip": "{{verified}} of {{total}} citations verified · {{issues}} flagged",
+        "prose": "prose: {{count}}!",
+        "proseTooltip": "{{count}} citations in the prose you hand in did not match. They do not block; verify again to see them."
       },
       "status": {
         "verified": "Verified",

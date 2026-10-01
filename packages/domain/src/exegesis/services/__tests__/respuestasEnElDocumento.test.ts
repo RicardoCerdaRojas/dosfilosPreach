@@ -8,7 +8,7 @@ import {
     sectionHeadings,
 } from '../assemblyContents';
 import { parseBriefQuestions } from '../briefQuestions';
-import { canonicalizeQuestionHeadings, replaceSectionsByHeadings } from '../composedVerseSections';
+import { canonicalizeQuestionHeadings, replaceSectionsByHeadings, replaceVerseSectionExact } from '../composedVerseSections';
 import { sectionBudgets, verseWordBudget } from '../paperLength';
 
 /**
@@ -178,5 +178,66 @@ describe('canonicalizeQuestionHeadings', () => {
 
     it('con una sola pregunta la prosa queda igual: el título lo pone el ensamblador', () => {
         expect(canonicalizeQuestionHeadings('Prosa.', ['¿Una?'])).toBe('Prosa.');
+    });
+});
+
+/**
+ * Revisión adversarial: cualquier línea numerada es «pregunta» para
+ * `parseBriefQuestions`, aunque no nombre versículos.
+ */
+describe('inclusionAtBirth — preguntas sin versículo', () => {
+    it('si ninguna nombra versículo, no decide nada', () => {
+        const sinVersiculos = parseBriefQuestions('1. Traduzca el pasaje.\n2. Mínimo tres fuentes.');
+        expect(inclusionAtBirth(versiculo(14), sinVersiculos)).toBeUndefined();
+        expect(inclusionAtBirth({ kind: 'introduction', verseRef: null }, sinVersiculos)).toBeUndefined();
+    });
+
+    it('si alguna no tiene versículo, el marco se queda para responderla', () => {
+        const mixtas = parseBriefQuestions('1. ¿Cómo funciona μή (Stg. 2:14)?\n2. Resuma el argumento del pasaje.');
+        expect(inclusionAtBirth({ kind: 'conclusion', verseRef: null }, mixtas)).toBeUndefined();
+        expect(inclusionAtBirth(versiculo(14), mixtas)).toBe(true);
+        expect(inclusionAtBirth(versiculo(15), mixtas)).toBe(false);
+    });
+});
+
+describe('recomponer un versículo sin pregunta no pisa la pregunta que lo nombra', () => {
+    const doc = [
+        '# TP', '', '---', '',
+        '## ¿Qué relación hay entre Santiago 2:17 y Santiago 2:26?', '', 'Respuesta 2.', '', '---', '',
+        '## Santiago 2:26', '', 'Prosa vieja de 2:26.', '',
+    ].join('\n');
+
+    it('busca el título EXACTO, no uno que contenga la referencia', () => {
+        const out = replaceVerseSectionExact(doc, 'Santiago 2:26', 'Prosa nueva.')!;
+        expect(out).toContain('Respuesta 2.');
+        expect(out).toContain('Prosa nueva.');
+        expect(out).not.toContain('Prosa vieja');
+    });
+
+    it('sin sección propia, no reemplaza nada', () => {
+        const sinSeccion = doc.replace('## Santiago 2:26', '## Otra cosa');
+        expect(replaceVerseSectionExact(sinSeccion, 'Santiago 2:26', 'x')).toBeNull();
+    });
+
+    it('prosa con títulos sobre un ensamble viejo: no queda el título viejo vacío', () => {
+        const viejo = '# TP\n\n---\n\n## Santiago 2:21\n\nVieja.\n';
+        const out = replaceVerseSectionExact(viejo, 'Santiago 2:21', '## ¿Q3?\n\nA.\n\n## ¿Q4?\n\nB.')!;
+        expect(out).not.toContain('## Santiago 2:21');
+        expect(out).toContain('## ¿Q3?');
+        expect(out).not.toContain('Vieja.');
+    });
+});
+
+describe('canonicalizeQuestionHeadings — títulos de otro nivel dentro de una respuesta', () => {
+    const DOS = ['¿Primera?', '¿Segunda?'];
+
+    it('un ### dentro de la primera respuesta es cuerpo, no otra pregunta', () => {
+        const out = canonicalizeQuestionHeadings('## x\n\n### detalle\n\nA.\n\n## y\n\nB.', DOS);
+        expect(out).toBe('## ¿Primera?\n\n### detalle\n\nA.\n\n## ¿Segunda?\n\nB.');
+    });
+
+    it('si el modelo usó ### para las dos, se toman ésas', () => {
+        expect(canonicalizeQuestionHeadings('### x\n\nA.\n\n### y\n\nB.', DOS))
+            .toBe('## ¿Primera?\n\nA.\n\n## ¿Segunda?\n\nB.');
     });
 });

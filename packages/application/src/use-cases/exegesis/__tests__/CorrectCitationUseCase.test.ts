@@ -24,12 +24,12 @@ const verdict = (offset: number, status: VerifiedCitation['status']): VerifiedCi
     status, matchedCorpusId: null, matchedSourceLabel: null, similarityScore: null, matchedPage: null, note: null,
 });
 
-function build(overrides: { verify?: ReturnType<typeof vi.fn> } = {}) {
+function build(overrides: { verify?: ReturnType<typeof vi.fn>; extra?: VerifiedCitation[] } = {}) {
     const version = {
         id: 'v1',
         markdown: '',
         canonicalAnalysis: analysis(),
-        citationVerdicts: [verdict(0, 'verified'), verdict(1, 'not-found')],
+        citationVerdicts: [verdict(0, 'verified'), verdict(1, 'not-found'), ...(overrides.extra ?? [])],
         citationReviews: [{ path: 'commentatorEngagement[1]', note: 'mirar la 436', reviewedAt: new Date() }],
         verifications: { lastRunAt: new Date('2026-09-17T10:00:00Z'), verifierVersion: 'analysis-v1', counts: {}, totalCitations: 2, sourcesNamedWithoutCitation: 0, witnessClaimsWithoutCitation: 0 },
     };
@@ -119,5 +119,24 @@ describe('CorrectCitationUseCase', () => {
         const { useCase, repo } = build();
         await expect(useCase.execute({ ...input, path: 'commentatorEngagement[9]', edit: { kind: 'remove' } })).rejects.toThrow();
         expect(repo.applyCitationCorrection).not.toHaveBeenCalled();
+    });
+});
+
+/**
+ * Los veredictos de la prosa se identifican por posición en el texto, no por
+ * índice de afirmación. Realinearlos con el análisis los perdía o —con un
+ * offset chico— los convertía en una cita del análisis.
+ */
+describe('CorrectCitationUseCase — los veredictos de la prosa no se tocan', () => {
+    it('vuelven intactos y no entran en los contadores del análisis', async () => {
+        const deLaProsa = { ...verdict(1, 'not-found'), raw: '(Ropes, p. 203)', origin: 'prose' as const };
+        const { useCase, repo } = build({ extra: [deLaProsa] });
+        await useCase.execute({ ...input, path: 'commentatorEngagement[1]', edit: { kind: 'page', page: 436, pageKind: 'printed' } });
+
+        const payload = repo.applyCitationCorrection.mock.calls[0]![4];
+        const verdicts = payload.verdicts as VerifiedCitation[];
+        expect(verdicts.filter(v => v.origin === 'prose')).toEqual([deLaProsa]);
+        // Dos citas del análisis; la de la prosa no se cuenta como tercera.
+        expect(payload.verifications.totalCitations).toBe(2);
     });
 });

@@ -31,7 +31,9 @@ export function RubricFormattingSummary({ paper, rubric }: { paper: ExegeticalPa
     const maquetacion = !f
         ? k('summary.formattingDefault')
         : [
-            k({ single: 'metadata.spacingSingle', 'one-and-a-half': 'metadata.spacingOneAndAHalf', double: 'metadata.spacingDouble' }[f.lineSpacing]),
+            k(f.lineSpacingFromHouse
+                ? 'metadata.spacingDefault'
+                : { single: 'metadata.spacingSingle', 'one-and-a-half': 'metadata.spacingOneAndAHalf', double: 'metadata.spacingDouble' }[f.lineSpacing]),
             k(f.citationForm === 'parenthetical' ? 'metadata.citationParenthetical' : 'metadata.citationFootnote'),
             ...(f.citationForm === 'parenthetical' ? [k(f.pageLabel === 'bare' ? 'metadata.pageLabelBare' : 'metadata.pageLabelLabelled')] : []),
             ...(f.blankLineBetweenParagraphs ? [k('metadata.blankLineLabel')] : []),

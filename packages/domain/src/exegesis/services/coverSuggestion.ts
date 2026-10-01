@@ -40,19 +40,21 @@ export interface CoverOrigin {
 /**
  * De dónde se puede tomar una portada, el más útil primero.
  *
- * Los trabajos anteriores van primero, del más reciente al más viejo: su
+ * Los trabajos anteriores van primero, del más nuevo al más viejo: su
  * portada es la última que el autor dio por buena, y trae el título de la
  * entrega para avanzarle el número. Los perfiles después: no traen título de
  * entrega (`PAPER_COVER_FIELDS_POR_ENTREGA`).
  */
 export function coverOrigins(
-    papers: ReadonlyArray<Pick<ExegesisPaperSummary, 'id' | 'title' | 'updatedAt' | 'cover'>>,
+    papers: ReadonlyArray<Pick<ExegesisPaperSummary, 'id' | 'title' | 'createdAt' | 'cover'>>,
     profiles: ReadonlyArray<Pick<WorkProfile, 'id' | 'displayName' | 'cover'>>,
     currentPaperId: string,
 ): CoverOrigin[] {
     const deTrabajos = papers
         .filter(p => p.id !== currentPaperId && hasCover(p.cover))
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+        // Por creación y no por edición: retocar el TP #3 después de crear el
+        // #4 no lo vuelve «el anterior» del #5.
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .map((p): CoverOrigin => ({
             kind: 'paper',
             id: p.id,

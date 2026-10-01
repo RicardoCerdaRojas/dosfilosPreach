@@ -79,5 +79,7 @@ export function applyPageLabelStyle(markdown: string, formatting: PaperFormattin
     const f = formatting ?? DEFAULT_PAPER_FORMATTING;
     if (f.citationForm !== 'parenthetical' || f.pageLabel !== 'bare') return markdown;
     return markdown.replace(/\([^()]*\)/g, grupo =>
-        grupo.replace(/([,(;]\s*)pp?\.\s*(?=\d)/g, '$1'));
+        // Romanos también: «(Moo, p. xiv)» quedaba con «p.» en un trabajo que
+        // la quitaba en todas las demás.
+        grupo.replace(/([,(;]\s*)pp?\.\s*(?=\d|[ivxlcdm]+\b)/g, '$1'));
 }

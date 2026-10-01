@@ -60,7 +60,7 @@ describe('parseFormatting', () => {
 describe('parseFormatting — lo dicho sin interlineado', () => {
     it('la forma de cita dicha sobrevive sin interlineado, con el de la casa', () => {
         expect(parseFormatting({ citationForm: 'parenthetical' }))
-            .toEqual({ lineSpacing: 'double', blankLineBetweenParagraphs: false, citationForm: 'parenthetical' });
+            .toEqual({ lineSpacing: 'double', lineSpacingFromHouse: true, blankLineBetweenParagraphs: false, citationForm: 'parenthetical' });
     });
 
     it('lee el rótulo de página sin «p.»', () => {

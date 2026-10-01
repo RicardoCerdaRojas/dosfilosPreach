@@ -320,6 +320,9 @@ export interface SummaryExtras {
     sourcesNamedWithoutCitation: number;
     witnessClaimsWithoutCitation: number;
     citationsWithoutVerbatim?: number;
+    /** Conteos de la prosa que se conservan (no entran en `counts`). */
+    proseCitations?: number;
+    proseCitationsWithIssues?: number;
 }
 
 export function buildSummary(citations: VerifiedCitation[], extras: SummaryExtras): VerificationSummary {
@@ -348,6 +351,10 @@ export function buildSummary(citations: VerifiedCitation[], extras: SummaryExtra
         witnessClaimsWithoutCitation: extras.witnessClaimsWithoutCitation,
         ...(extras.citationsWithoutVerbatim !== undefined
             ? { citationsWithoutVerbatim: extras.citationsWithoutVerbatim }
+            : {}),
+        ...(extras.proseCitations !== undefined ? { proseCitations: extras.proseCitations } : {}),
+        ...(extras.proseCitationsWithIssues !== undefined
+            ? { proseCitationsWithIssues: extras.proseCitationsWithIssues }
             : {}),
     };
 }

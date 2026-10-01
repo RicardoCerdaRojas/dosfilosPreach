@@ -765,9 +765,16 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             if (idx === -1) {
                 throw new Error(`Version ${versionId} not found in step ${stepId}`);
             }
+            const previa = step.versions[idx]!;
+            // Prosa nueva: lo verificado de la prosa anterior ya no aplica
+            // (mismo criterio que `buildManualEditVersion`).
             const next: ExegeticalStepVersion = {
-                ...step.versions[idx]!,
+                ...previa,
                 markdown,
+                ...(previa.citationVerdicts
+                    ? { citationVerdicts: previa.citationVerdicts.filter(v => v.origin !== 'prose') }
+                    : {}),
+                ...(previa.verifications ? { verifications: sinConteosDeProsa(previa.verifications) } : {}),
             };
             const versions = [...step.versions];
             versions[idx] = next;
@@ -1401,6 +1408,8 @@ function sinIndefinidos(valor: Record<string, unknown>): Record<string, unknown>
  */
 /** El resumen sin lo que medía la prosa anterior a una edición. */
 function sinConteosDeProsa(v: VerificationSummary): VerificationSummary {
+    // Datos viejos guardaron otra forma (hasta un arreglo vacío): se dejan igual.
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return v;
     const { proseCitations: _p, proseCitationsWithIssues: _i, ...resto } = v;
     return resto;
 }

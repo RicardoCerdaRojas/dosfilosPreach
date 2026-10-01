@@ -87,8 +87,17 @@ export function inclusionAtBirth(
     step: Pick<ExegeticalStep, 'kind' | 'verseRef'>,
     questions: ReadonlyArray<BriefQuestion>,
 ): boolean | undefined {
-    if (questions.length === 0) return undefined;
-    if (step.kind === 'introduction' || step.kind === 'conclusion') return false;
+    // Sólo cuentan las preguntas que nombran un versículo: «1. Traduzca el
+    // pasaje» o «1. Mínimo tres fuentes» también abren con número, y si
+    // ninguna tiene versículo, decidir por ellas dejaría el documento entero
+    // fuera —sin versículos, sin marco y sin presupuesto—.
+    const conVersiculo = questions.filter(q => q.verses.length > 0);
+    if (conVersiculo.length === 0) return undefined;
+    if (step.kind === 'introduction' || step.kind === 'conclusion') {
+        // Una pregunta sin versículo no tiene dueño entre los versículos: la
+        // responde el marco, que entonces se queda.
+        return conVersiculo.length === questions.length ? false : undefined;
+    }
     if (step.kind === 'verse') return questionsOfStep(step, questions).length > 0;
     return undefined;
 }

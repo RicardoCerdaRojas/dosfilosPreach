@@ -45,7 +45,7 @@ export function SourceCitationKey({ paper, source, isCitable, libraryAuthor }: {
     if (draft !== null) {
         return (
             <form
-                className="flex items-center gap-1.5"
+                className="flex flex-wrap items-center gap-1.5"
                 onSubmit={(e) => { e.preventDefault(); void guardar(draft); }}
             >
                 <label htmlFor={`clave-${source.id}`} className="text-[11px] text-muted-foreground">
@@ -65,6 +65,13 @@ export function SourceCitationKey({ paper, source, isCitable, libraryAuthor }: {
                 <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => setDraft(null)}>
                     {t(k('cancel'))}
                 </Button>
+                {/* Los análisis guardan la clave con que citaron: cambiarla
+                    deja esas citas sin fuente hasta volver a analizar. */}
+                {source.citationKey && draft.trim() !== source.citationKey && (
+                    <span className="basis-full text-[11px] text-warning-subtle-foreground">
+                        {t(k('renameWarning'), { key: source.citationKey })}
+                    </span>
+                )}
             </form>
         );
     }

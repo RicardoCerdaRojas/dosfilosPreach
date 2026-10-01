@@ -127,6 +127,7 @@ const WISDOM: GroupRecommendations = {
             {
                 author: 'Goldingay, John',
                 title: 'The Theology of the Book of Psalms',
+                covers: ['PSA'],
                 series: 'Old Testament Theology vol. 3 (porción sapiencial)',
                 publisher: 'IVP Academic',
                 year: 2009,
@@ -312,6 +313,7 @@ const GOSPELS: GroupRecommendations = {
             {
                 author: 'Hengel, Martin',
                 title: 'Studies in the Gospel of Mark',
+                covers: ['MRK'],
                 series: null,
                 publisher: 'Wipf & Stock',
                 year: 2003,
@@ -568,6 +570,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
             {
                 author: 'Painter, John',
                 title: '1, 2, and 3 John',
+                covers: ['1JN', '2JN', '3JN'],
                 series: 'Sacra Pagina 18',
                 publisher: 'Liturgical Press',
                 year: 2002,

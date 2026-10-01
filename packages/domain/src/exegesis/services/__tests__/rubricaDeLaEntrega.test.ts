@@ -58,6 +58,10 @@ describe('applyPageLabelStyle', () => {
             .toBe('Así (Carballosa, 208) y (Mayor, 77-78; Ropes, 203).');
     });
 
+    it('las páginas en romanos también, y «p. ej.» no es una página', () => {
+        expect(applyPageLabelStyle('(Moo, p. xiv) (cf. p. ej. Mayor)', PARENTETICA_SIN_P)).toBe('(Moo, xiv) (cf. p. ej. Mayor)');
+    });
+
     it('«hoja N» no se toca: dice que la página impresa se desconoce', () => {
         expect(applyPageLabelStyle('(Wallace, hoja 87)', PARENTETICA_SIN_P)).toBe('(Wallace, hoja 87)');
     });
