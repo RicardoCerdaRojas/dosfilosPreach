@@ -443,9 +443,9 @@
     },
     "subSteps": {
       "rubric": {
-        "tab": "Rubric",
+        "tab": "Rubric · what it asks",
         "heading": "Paper rubric",
-        "description": "Upload the seminary's rubric or use the academic TMS default. Sets corpus minimums and structural emphases.",
+        "description": "What THIS assignment asks for: length, citation form, cover and bibliography, and which sources it requires. Upload it from the syllabus or use the house default.",
         "loading": "Loading rubric...",
         "provenance": {
           "extracted-from-document": "Extracted from document",
@@ -676,13 +676,15 @@
               "label": "Preaching study",
               "hint": "Same rigour, different output: the expository commentary anchors, 3-5 pages, parenthetical citations. For an expository series, not for submission."
             }
-          }
+          },
+          "change": "Change where the rubric comes from",
+          "hide": "Hide the options"
         }
       },
       "manifest": {
-        "tab": "Style guide",
+        "tab": "Guide · how it is formatted",
         "heading": "Style guide manifest",
-        "description": "Verify the mechanical rules extracted from your guide (footnotes, ibid, quotation marks). Correct anything before generating.",
+        "description": "HOW everything the assignment asks for is formatted: footnotes, ibid, quotations, bibliography. Check what was read from your guide before generating.",
         "noGuide": "No active guide attached. Upload one from your profile so the manifest can be extracted.",
         "noManifest": {
           "title": "Manifest not extracted yet",
@@ -697,7 +699,6 @@
         "card": {
           "citationStyleLabel": "Citation style",
           "extractedAt": "Extracted",
-          "model": "Model",
           "confidence": {
             "label": "Confidence",
             "high": "high",
@@ -1625,7 +1626,7 @@
       "copied": "Markdown copied to clipboard.",
       "download": "Download .md",
       "recompose": "Recompose",
-      "tokensUsed": "{{tokens}} tokens · model {{model}}",
+      "tokensUsed": "{{tokens}} tokens",
       "formatterApplied": "Style guide applied (step 1: instructions to the assistant, step 2: automatic reformat).",
       "formatterSkipped": "You haven't extracted the style guide into structured rules yet. Only step 1 (instructions to the assistant) was applied. Go to the \"Style guide\" tab and extract the guide to activate step 2.",
       "formatterError": "Error during the automatic reformat. The assistant's composition is still valid.",

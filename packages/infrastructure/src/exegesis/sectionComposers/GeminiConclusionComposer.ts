@@ -53,7 +53,7 @@ export class GeminiConclusionComposer implements IConclusionComposer {
             pinnedKeysInPrompt: input.pinnedSourceKeys,
         });
 
-        const { text: markdown, tokensUsed } = await withGeminiRetry(
+        const { text: markdown, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.composeConclusion',
                 model: this.modelName,
@@ -68,7 +68,7 @@ export class GeminiConclusionComposer implements IConclusionComposer {
 
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
             // Adapter doesn't run the deterministic formatter — that's
             // the use case's job. Always reports 'skipped' here; the

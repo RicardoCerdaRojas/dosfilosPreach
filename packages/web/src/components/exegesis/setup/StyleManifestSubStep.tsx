@@ -255,11 +255,6 @@ function ManifestHeaderCard({
                         {t('paperSetup.subSteps.manifest.card.extractedAt')}:{' '}
                         <strong>{formatDate(manifest.extractedAt)}</strong>
                     </span>
-                    {manifest.extractorModelId && (
-                        <span>
-                            {t('paperSetup.subSteps.manifest.card.model')}: <strong>{manifest.extractorModelId}</strong>
-                        </span>
-                    )}
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${confidenceTone}`}>
                         {t('paperSetup.subSteps.manifest.card.confidence.label')}: {confidenceLabel}
                     </span>

@@ -40,7 +40,7 @@ export class GeminiCoherenceReviewer implements ICoherenceReviewer {
     async review(input: CoherenceReviewInput): Promise<CoherenceReviewOutput> {
         const { systemInstruction, userMessage } = buildReviewerPrompt(input);
 
-        const { text: rawJson, tokensUsed } = await withGeminiRetry(
+        const { text: rawJson, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.reviewCoherence',
                 model: this.modelName,
@@ -61,7 +61,7 @@ export class GeminiCoherenceReviewer implements ICoherenceReviewer {
             issues: parsed.issues,
             summary: parsed.summary,
             tokensUsed,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
         };
     }
 }

@@ -133,6 +133,10 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
     // open and resets back to null on close so a fresh open from a
     // different card lands on the right tab.
     const [extractOpen, setExtractOpen] = useState(false);
+    // Las seis tarjetas de «¿Cómo quieres configurar la rúbrica?» seguían a
+    // la vista con la rúbrica ya elegida y ocupaban media pantalla. Con una
+    // elegida se pliegan detrás de «Cambiar»; abiertas sólo con la de la casa.
+    const [eligiendoOrigen, setEligiendoOrigen] = useState(rubric.provenance === 'system-default');
     const [extractInitialTab, setExtractInitialTab] = useState<'text' | 'document'>('text');
 
     // Form state seeded from the persisted rubric. Re-syncs whenever
@@ -164,6 +168,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
         setRequirements([...rubric.sourceRequirements]);
         setQualityCriteria(rubric.qualityCriteria);
         setFormatting(draftFromFormatting(rubric.formatting));
+        setEligiendoOrigen(rubric.provenance === 'system-default');
         // When the rubric reference changes (template applied / extracted /
         // reset), drop edit mode so the user sees the new content first.
         setMode('summary');
@@ -288,18 +293,32 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                 header button into one obvious chooser. The active
                 option is badged so the student always knows what's in
                 effect. */}
-            <RubricSetupChooser
-                paper={paper}
-                rubric={rubric}
-                onPhotoOrPdf={() => {
-                    setExtractInitialTab('document');
-                    setExtractOpen(true);
-                }}
-                onPasteText={() => {
-                    setExtractInitialTab('text');
-                    setExtractOpen(true);
-                }}
-            />
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setEligiendoOrigen(v => !v)}
+                aria-expanded={eligiendoOrigen}
+                className="text-xs text-muted-foreground -mt-3"
+            >
+                {eligiendoOrigen
+                    ? t('paperSetup.subSteps.rubric.chooser.hide')
+                    : t('paperSetup.subSteps.rubric.chooser.change')}
+            </Button>
+            {eligiendoOrigen && (
+                <RubricSetupChooser
+                    paper={paper}
+                    rubric={rubric}
+                    onPhotoOrPdf={() => {
+                        setExtractInitialTab('document');
+                        setExtractOpen(true);
+                    }}
+                    onPasteText={() => {
+                        setExtractInitialTab('text');
+                        setExtractOpen(true);
+                    }}
+                />
+            )}
 
             <Dialog open={extractOpen} onOpenChange={setExtractOpen}>
                 <DialogContent className="sm:max-w-2xl">

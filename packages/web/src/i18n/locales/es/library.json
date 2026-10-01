@@ -405,8 +405,8 @@
       "body": "El libro sirve para leerlo, pero al buscar una palabra en griego o hebreo con sus acentos no la vas a encontrar, porque este archivo los perdió. Súbelo si te sirve para leer; para estudiar la lengua original conviene otra versión."
     },
     "sin-escritura-original": {
-      "title": "No encontramos griego ni hebreo dentro",
-      "body": "Si es un libro que no los usa, está perfecto así. Si es una gramática, un texto crítico o un comentario técnico que sí debería traerlos, entonces este archivo los perdió y entrarían ilegibles."
+      "title": "El texto incrustado del archivo no trae griego ni hebreo",
+      "body": "Esto mira el texto que el PDF guarda por dentro, no las páginas. Si el libro no usa griego ni hebreo, cualquier ruta sirve. Si es una gramática, un texto crítico o un comentario técnico que sí los trae, ese texto incrustado los perdió: por eso conviene «Por imágenes», que lee las páginas tal como se ven."
     }
   },
   "numbering": {
@@ -417,7 +417,7 @@
     "printedPlaceholder": "Número impreso (42 o ccxxii)",
     "unnumbered": "Esta página no tiene número",
     "previewTitle": "Así va a quedar",
-    "previewEmpty": "Completá al menos una hoja para ver los tramos.",
+    "previewEmpty": "Completa al menos una hoja para ver los tramos.",
     "sheetRange": "Hojas {{from}}–{{to}}",
     "offsetLabel": "la hoja {{example}} imprime {{printed}}",
     "noArabic": "sin numeración arábiga",

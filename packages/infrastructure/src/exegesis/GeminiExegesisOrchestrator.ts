@@ -62,7 +62,7 @@ export class GeminiExegesisOrchestrator implements IExegesisOrchestrator {
         // El respaldo de tokens que este método calculaba a mano (sumar entrada
         // y salida cuando falta el total) ahora vive en el proxy, así que
         // `tokensUsed` sigue llegando igual de completo.
-        const { text: markdown, tokensUsed } = await runLlmPromptWithUsage({
+        const { text: markdown, tokensUsed, model: modeloUsado } = await runLlmPromptWithUsage({
             feature: 'exegesis.generateStep',
             model: this.modelName,
             system: systemInstruction,
@@ -85,7 +85,7 @@ export class GeminiExegesisOrchestrator implements IExegesisOrchestrator {
 
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
         };
     }

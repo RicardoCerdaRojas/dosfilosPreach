@@ -56,3 +56,32 @@ describe('resolveStyleGuide', () => {
         expect(r.liveGuideDiffers).toBe(true);
     });
 });
+
+/**
+ * El aviso «la guía cambió desde que se adjuntó» salía siempre, aun con la
+ * copia tomada ese día: Firestore devuelve las claves en otro orden y las
+ * fechas como Timestamp (TP Santiago 2:14-26).
+ */
+describe('resolveStyleGuide — la misma guía no «cambió»', () => {
+    const base = { citationStyleLabel: 'TMS 2024-25', extractedAt: new Date('2026-09-30T12:00:00Z'), footnotes: { ibid: true, short: 'x' } };
+    const snapshot = { manifest: base, displayName: 'TMS', guideId: 'g', attachedAt: new Date() } as never;
+
+    it('claves en otro orden y la fecha como Timestamp: igual', () => {
+        const releida = {
+            footnotes: { short: 'x', ibid: true },
+            extractedAt: { seconds: Date.parse('2026-09-30T12:00:00Z') / 1000, nanoseconds: 0 },
+            citationStyleLabel: 'TMS 2024-25',
+        };
+        expect(resolveStyleGuide(snapshot, { displayName: 'TMS', manifest: releida as never }).liveGuideDiffers).toBe(false);
+    });
+
+    it('la fecha como texto ISO: igual', () => {
+        const releida = { ...base, extractedAt: '2026-09-30T12:00:00.000Z' };
+        expect(resolveStyleGuide(snapshot, { displayName: 'TMS', manifest: releida as never }).liveGuideDiffers).toBe(false);
+    });
+
+    it('un cambio de verdad sí se avisa', () => {
+        const otra = { ...base, citationStyleLabel: 'SBL 2' };
+        expect(resolveStyleGuide(snapshot, { displayName: 'TMS', manifest: otra as never }).liveGuideDiffers).toBe(true);
+    });
+});

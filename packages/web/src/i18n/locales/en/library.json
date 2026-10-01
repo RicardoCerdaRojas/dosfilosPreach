@@ -405,8 +405,8 @@
       "body": "The book is fine to read, but searching for a Greek or Hebrew word with its accents won't find it, because this file lost them. Upload it if reading is enough; for original-language study another version is better."
     },
     "sin-escritura-original": {
-      "title": "We found no Greek or Hebrew inside",
-      "body": "If this book doesn't use them, it's perfectly fine. If it's a grammar, a critical text or a technical commentary that should carry them, then this file lost them and they would arrive unreadable."
+      "title": "The file's embedded text has no Greek or Hebrew",
+      "body": "This checks the text the PDF stores inside, not the pages. If the book uses no Greek or Hebrew, either route works. If it is a grammar, a critical text or a technical commentary that does use them, that embedded text lost them: that is why \"By images\" is the better choice — it reads the pages as they look."
     }
   },
   "numbering": {

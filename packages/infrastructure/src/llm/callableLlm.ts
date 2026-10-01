@@ -58,6 +58,8 @@ interface LlmProxyResponse {
     tokens: number | null;
     /** `finishReason` del candidato, o `null` si el camino no lo expone. */
     finishReason: string | null;
+    /** El modelo que corrió. Ausente en servidores anteriores al campo. */
+    model?: string;
 }
 
 /**
@@ -88,6 +90,14 @@ export interface CallableLlmResult {
      * saldrían como un genérico "non-JSON output".
      */
     finishReason: string | null;
+    /**
+     * El modelo que CORRIÓ, según el servidor. No es el que se pidió: con
+     * ruteo por función (`config/llmRouting`) manda la ruta, y el adaptador
+     * guardaba su propio default como `modelId`. El análisis de Santiago 2:14
+     * quedó rotulado «gemini-2.5-pro» y había corrido en `gpt-6.1-sol`
+     * (2026-09-30). `null` con un servidor anterior a este campo.
+     */
+    model: string | null;
 }
 
 /**
@@ -129,6 +139,7 @@ async function pedirleAlProxy(
         text: res.data?.text ?? '',
         tokensUsed: res.data?.tokens ?? null,
         finishReason: res.data?.finishReason ?? null,
+        model: typeof res.data?.model === 'string' ? res.data.model : null,
     };
 }
 

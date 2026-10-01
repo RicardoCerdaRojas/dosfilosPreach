@@ -48,7 +48,7 @@ export class GeminiIntroductionComposer implements IIntroductionComposer {
             language: input.language,
         });
 
-        const { text: markdown, tokensUsed } = await withGeminiRetry(
+        const { text: markdown, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.composeIntroduction',
                 model: this.modelName,
@@ -63,7 +63,7 @@ export class GeminiIntroductionComposer implements IIntroductionComposer {
 
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
             formatterStatus: 'skipped',
         };

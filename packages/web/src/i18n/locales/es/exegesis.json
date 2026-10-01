@@ -443,9 +443,9 @@
     },
     "subSteps": {
       "rubric": {
-        "tab": "Rúbrica",
+        "tab": "Rúbrica · qué pide",
         "heading": "Rúbrica del trabajo",
-        "description": "Sube la rúbrica del seminario o usa el default académico TMS. Determina los mínimos del corpus y los énfasis estructurales.",
+        "description": "Lo que pide ESTA entrega: extensión, forma de cita, si lleva portada y bibliografía, y qué fuentes exige. Súbela desde el sílabo o usa la de la casa.",
         "loading": "Cargando rúbrica...",
         "provenance": {
           "extracted-from-document": "Extraída de documento",
@@ -676,13 +676,15 @@
               "label": "Estudio para predicación",
               "hint": "Mismo rigor, otra salida: el expositivo ancla, 3-5 páginas y cita entre paréntesis. Para una serie expositiva, no para entregar."
             }
-          }
+          },
+          "change": "Cambiar de dónde sale la rúbrica",
+          "hide": "Ocultar las opciones"
         }
       },
       "manifest": {
-        "tab": "Guía de estilo",
+        "tab": "Guía · cómo se formatea",
         "heading": "Manifiesto de la guía de estilo",
-        "description": "Verifica las reglas mecánicas extraídas de tu guía (notas al pie, ibid, comillas). Si algo está mal, corrígelo antes de generar.",
+        "description": "CÓMO se formatea todo lo que la entrega pide: notas al pie, ibid, comillas, bibliografía. Revisa lo que se leyó de tu guía antes de generar.",
         "noGuide": "No hay guía activa adjunta. Sube una desde tu perfil para que el manifiesto se pueda extraer.",
         "noManifest": {
           "title": "Manifiesto aún no extraído",
@@ -697,7 +699,6 @@
         "card": {
           "citationStyleLabel": "Estilo de citación",
           "extractedAt": "Extraído",
-          "model": "Modelo",
           "confidence": {
             "label": "Confianza",
             "high": "alta",
@@ -1625,7 +1626,7 @@
       "copied": "Markdown copiado al portapapeles.",
       "download": "Descargar .md",
       "recompose": "Recomponer",
-      "tokensUsed": "{{tokens}} tokens · modelo {{model}}",
+      "tokensUsed": "{{tokens}} tokens",
       "formatterApplied": "Guía de estilo aplicada (paso 1: instrucciones al asistente, paso 2: reformateo automático).",
       "formatterSkipped": "Aún no extrajiste la guía de estilo en formato estructurado. Solo se aplicó el paso 1 (instrucciones al asistente). Ve a la pestaña \"Guía de estilo\" y extrae la guía para activar el paso 2.",
       "formatterError": "Hubo un error al reformatear automáticamente. La composición del asistente sigue siendo válida.",
