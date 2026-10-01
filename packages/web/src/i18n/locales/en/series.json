@@ -525,6 +525,18 @@
         }
     },
     "detail": {
+        "planToast": {
+            "loadFailed": "Could not load the plan",
+            "started": "Sermon started",
+            "startFailed": "Could not start the sermon",
+            "dateUpdated": "Date updated",
+            "dateFailed": "Could not update the date",
+            "removed": "Sermon removed from the plan",
+            "removeFailed": "Could not remove the sermon",
+            "noDraft": "This sermon has no draft",
+            "markedDone": "Sermon marked as done",
+            "markFailed": "Could not mark it as done"
+        },
         "backToSeries": "Back to series",
         "header": {
             "back": "Back to plans",
@@ -577,17 +589,17 @@
             "paperCorpus": "Paper corpus",
             "askFaculty": "Ask Faculty",
             "continueDraft": "Continue editing",
-            "markComplete": "Mark as preached",
+            "markComplete": "Mark as done",
             "delete": "Delete",
             "status": {
                 "planned": "Planned",
                 "inProgress": "In progress",
-                "complete": "Preached"
+                "complete": "Published"
             },
             "stepper": {
                 "paper": "Paper",
                 "draft": "Draft",
-                "preached": "Preached"
+                "preached": "Published"
             },
             "nextStep": {
                 "createPaper": "Next: create the exegetical paper.",
@@ -596,8 +608,8 @@
                 "startDraftPaperDone": "Next: start the sermon draft (paper is ready).",
                 "continueDraft": "Next: continue editing the draft.",
                 "startDraft": "Next: start the sermon draft.",
-                "markPreached": "Next: mark as preached when you're done.",
-                "preached": "Preached ✓"
+                "markPreached": "Next: publish it, or mark it as done if you preached it without publishing.",
+                "preached": "Published ✓"
             }
         },
         "timeline": {

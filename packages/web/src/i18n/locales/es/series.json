@@ -525,6 +525,18 @@
         }
     },
     "detail": {
+        "planToast": {
+            "loadFailed": "Error al cargar el plan",
+            "started": "Sermón iniciado",
+            "startFailed": "Error al iniciar el sermón",
+            "dateUpdated": "Fecha actualizada",
+            "dateFailed": "Error al actualizar la fecha",
+            "removed": "Sermón eliminado del plan",
+            "removeFailed": "Error al eliminar el sermón",
+            "noDraft": "Este sermón no tiene un borrador asociado",
+            "markedDone": "Sermón marcado como terminado",
+            "markFailed": "No se pudo marcar como terminado"
+        },
         "backToSeries": "Volver a la serie",
         "header": {
             "back": "Volver a Planes",
@@ -577,17 +589,17 @@
             "paperCorpus": "Corpus del trabajo",
             "askFaculty": "Consultar a la Facultad",
             "continueDraft": "Continuar editando",
-            "markComplete": "Marcar como predicado",
+            "markComplete": "Marcar como terminado",
             "delete": "Eliminar",
             "status": {
                 "planned": "Planificado",
                 "inProgress": "En desarrollo",
-                "complete": "Predicado"
+                "complete": "Publicado"
             },
             "stepper": {
                 "paper": "Paper",
                 "draft": "Borrador",
-                "preached": "Predicado"
+                "preached": "Publicado"
             },
             "nextStep": {
                 "createPaper": "Próximo: crear el paper exegético.",
@@ -596,8 +608,8 @@
                 "startDraftPaperDone": "Próximo: empezar el borrador del sermón (paper listo).",
                 "continueDraft": "Próximo: continuar editando el borrador.",
                 "startDraft": "Próximo: iniciar el borrador del sermón.",
-                "markPreached": "Próximo: marcar como predicado cuando termines.",
-                "preached": "Predicado ✓"
+                "markPreached": "Próximo: publicarlo, o marcarlo como terminado si lo predicaste sin publicar.",
+                "preached": "Publicado ✓"
             }
         },
         "timeline": {

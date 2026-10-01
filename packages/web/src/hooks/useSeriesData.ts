@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { SermonSeriesEntity, SermonEntity, PlannedSermon } from '@dosfilos/domain';
+import { SermonSeriesEntity, SermonEntity, PlannedSermon, isPlannedSermonDone } from '@dosfilos/domain';
 import { seriesService, sermonService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
 import { toast } from 'sonner';
+import { useTranslation } from '@/i18n';
 
 export interface SermonItem {
     id: string;
@@ -20,6 +21,7 @@ export interface SermonItem {
 export function useSeriesData(seriesId: string | undefined) {
     const navigate = useNavigate();
     const { user } = useFirebase();
+    const { t } = useTranslation('series');
     const [series, setSeries] = useState<SermonSeriesEntity | null>(null);
     const [sermonItems, setSermonItems] = useState<SermonItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -78,8 +80,9 @@ export function useSeriesData(seriesId: string | undefined) {
             plannedSermons.forEach((planned, i) => {
                 const draft = planned.draftId ? borradoresPlanificados[i] : null;
                 if (draft) {
-                    const isComplete = draft.content && draft.content.length > 100 &&
-                        (!draft.wizardProgress || draft.wizardProgress.currentStep >= 4);
+                    // Ver `isPlannedSermonDone`: la regla vieja («paso ≥ 4»)
+                    // era inalcanzable y un sermón publicado seguía en «Borrador».
+                    const isComplete = isPlannedSermonDone(draft);
                     items.push({
                         id: planned.id,
                         title: planned.title,
@@ -144,7 +147,7 @@ export function useSeriesData(seriesId: string | undefined) {
             setSermonItems(items);
         } catch (error) {
             console.error('Error loading series details:', error);
-            toast.error('Error al cargar el plan');
+            toast.error(t('detail.planToast.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -186,11 +189,11 @@ export function useSeriesData(seriesId: string | undefined) {
                 }
             } as any);
 
-            toast.success('Sermón iniciado');
+            toast.success(t('detail.planToast.started'));
             navigate(`/dashboard/sermons/generate?id=${newSermon.id}`);
         } catch (error) {
             console.error('Error starting draft:', error);
-            toast.error('Error al iniciar sermón');
+            toast.error(t('detail.planToast.startFailed'));
         }
     };
 
@@ -221,16 +224,16 @@ export function useSeriesData(seriesId: string | undefined) {
                     plannedSermons: updatedPlanned
                 }
             } as any).then(() => {
-                toast.success('Fecha actualizada');
+                toast.success(t('detail.planToast.dateUpdated'));
             }).catch((error) => {
                 console.error('Error updating sermon date:', error);
-                toast.error('Error al actualizar fecha');
+                toast.error(t('detail.planToast.dateFailed'));
                 // Si falla, recarga para revertir
                 loadData();
             });
         } catch (error) {
             console.error('Error updating sermon date:', error);
-            toast.error('Error al actualizar fecha');
+            toast.error(t('detail.planToast.dateFailed'));
             // Recarga para revertir el cambio optimista
             await loadData();
         }
@@ -250,11 +253,11 @@ export function useSeriesData(seriesId: string | undefined) {
                 }
             } as any);
 
-            toast.success('Sermón eliminado del plan');
+            toast.success(t('detail.planToast.removed'));
             await loadData();
         } catch (error) {
             console.error('Error deleting sermon:', error);
-            toast.error('Error al eliminar sermón');
+            toast.error(t('detail.planToast.removeFailed'));
         }
     };
 
@@ -262,24 +265,30 @@ export function useSeriesData(seriesId: string | undefined) {
         // Find the sermon item to get its draftId
         const item = sermonItems.find(s => s.id === sermonId);
         if (!item?.draftId) {
-            toast.error('Este sermón no tiene un borrador asociado');
+            toast.error(t('detail.planToast.noDraft'));
             return;
         }
 
         try {
-            // Update sermon wizardProgress to step 4 (complete)
+            // Se CONSERVA lo que el asistente tenía guardado. Antes se escribía
+            // `{ currentStep: 4 }` encima de todo `wizardProgress`: se perdían
+            // la exégesis, la homilética y el borrador del asistente, y el
+            // asistente quedaba en un paso que no existe.
+            const draft = await sermonService.getSermon(item.draftId);
+            if (!draft) throw new Error('draft not found');
             await sermonService.updateSermon(item.draftId, {
                 wizardProgress: {
-                    currentStep: 4,
-                    lastSaved: new Date()
-                }
-            } as any);
+                    ...(draft.wizardProgress ?? { currentStep: 0, passage: item.passage ?? '' }),
+                    markedCompleteAt: new Date(),
+                    lastSaved: new Date(),
+                },
+            });
 
-            toast.success('Sermón marcado como completado');
+            toast.success(t('detail.planToast.markedDone'));
             await loadData(); // Reload to update status
         } catch (error) {
             console.error('Error marking sermon as complete:', error);
-            toast.error('Error al marcar como completado');
+            toast.error(t('detail.planToast.markFailed'));
         }
     };
 
