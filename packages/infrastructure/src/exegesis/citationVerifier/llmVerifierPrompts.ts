@@ -54,6 +54,11 @@ export interface LlmVerifierPromptInput {
     chunks: ReadonlyArray<{ text: string; pageHint: string | null }>;
     /** Output language for `reasoning`. */
     language: 'es' | 'en';
+    /**
+     * Las otras fuentes que la misma afirmación sintetiza. Con ellas, se
+     * juzga sólo la parte de ESTA fuente (ver `ParsedCitation.otherSources`).
+     */
+    otherSources?: ReadonlyArray<string>;
 }
 
 export function buildLlmVerifierPrompt(input: LlmVerifierPromptInput): {
@@ -79,6 +84,7 @@ export function buildLlmVerifierPrompt(input: LlmVerifierPromptInput): {
         input.citedPages
             ? (input.language === 'en' ? `Cited pages: ${input.citedPages}` : `Páginas citadas: ${input.citedPages}`)
             : (input.language === 'en' ? 'Cited pages: (none)' : 'Páginas citadas: (ninguna)'),
+        ...synthesisBlock(input),
         '',
         `${evidenceLabel}:`,
         '"""',
@@ -90,4 +96,20 @@ export function buildLlmVerifierPrompt(input: LlmVerifierPromptInput): {
     ].join('\n');
 
     return { systemInstruction, userMessage };
+}
+
+/**
+ * Una afirmación que sintetiza varias fuentes se juzga por partes.
+ *
+ * «McCartney y Ropes prefieren la pasiva», citada a una página de McCartney,
+ * no puede estar ENTERA en McCartney: la mitad es de Ropes. Exigir la
+ * comparación completa daba «no encontrada» a una nota correcta y bloqueaba
+ * aceptar el paso.
+ */
+function synthesisBlock(input: LlmVerifierPromptInput): string[] {
+    const otras = (input.otherSources ?? []).filter(Boolean);
+    if (otras.length === 0) return [];
+    return input.language === 'en'
+        ? [`This claim synthesizes several sources (${input.matchedSourceLabel} and ${otras.join(', ')}). Judge ONLY the part attributed to ${input.matchedSourceLabel}: if these chunks support that source's own position, it is "verified", even though the comparison with the other sources is not in them. The other sources are verified separately.`]
+        : [`Esta afirmación sintetiza varias fuentes (${input.matchedSourceLabel} y ${otras.join(', ')}). Juzga SÓLO la parte que corresponde a ${input.matchedSourceLabel}: si estos fragmentos sostienen la posición de esa fuente, es "verified", aunque la comparación con las otras no esté en ellos. Las otras fuentes se verifican aparte.`];
 }

@@ -32,7 +32,7 @@ export const PREACHING_STUDY_RUBRIC: PaperRubric = {
     /**
      * Tres a cinco páginas de ESTUDIO, no de sermón.
      *
-     * El trabajo académico declara la extensión que el sílabo califica. Acá
+     * El trabajo académico declara la extensión que el sílabo califica. Aquí
      * nadie califica páginas: la extensión la fija cuánto material necesita el
      * predicador para no quedarse corto en el púlpito, y doce páginas de
      * aparato para una perícopa de cuatro versículos es material que no se va
@@ -92,7 +92,7 @@ export const PREACHING_STUDY_RUBRIC: PaperRubric = {
      * Mínimos bajos y deliberados.
      *
      * El trabajo académico exige cobertura por tipo porque el método se
-     * califica. Acá lo que hace falta es una voz que siga el argumento y otra
+     * califica. Aquí lo que hace falta es una voz que siga el argumento y otra
      * que discuta; el resto entra si el texto lo pide. Un mínimo alto obliga a
      * meter un léxico en una perícopa narrativa que no lo necesita.
      */

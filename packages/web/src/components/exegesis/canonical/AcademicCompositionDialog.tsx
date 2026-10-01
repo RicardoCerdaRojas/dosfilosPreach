@@ -474,7 +474,6 @@ function SuccessView({
                 <p className="text-[10px] text-muted-foreground italic text-right">
                     {t('canonical.compose.tokensUsed', {
                         tokens: result.tokensUsed.toLocaleString(),
-                        model: result.modelId,
                     })}
                 </p>
             )}

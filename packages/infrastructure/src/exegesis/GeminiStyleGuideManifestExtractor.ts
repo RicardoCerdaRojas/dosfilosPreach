@@ -98,11 +98,11 @@ function buildExtractionPrompt(input: ExtractStyleManifestInput): BuiltPrompt {
         systemInstruction: [
             `Sos un extractor de datos estructurados para guías de estilo académicas.`,
             ``,
-            `Leé un documento de guía de estilo (TMS / Turabian / SBL Handbook / Chicago / similar) y devolvé un objeto JSON con las reglas mecánicas — plantillas de notas al pie, comportamiento de ibid, formato de bibliografía, convenciones de citación, esquema de transliteración.`,
+            `Lee un documento de guía de estilo (TMS / Turabian / SBL Handbook / Chicago / similar) y devuelve un objeto JSON con las reglas mecánicas — plantillas de notas al pie, comportamiento de ibid, formato de bibliografía, convenciones de citación, esquema de transliteración.`,
             ``,
-            `Los ejemplos concretos importan: incluí muestras renderizadas de citas para que el alumno pueda verificar "así van a verse las notas al pie de mi paper".`,
+            `Los ejemplos concretos importan: incluye muestras renderizadas de citas para que el alumno pueda verificar "así van a verse las notas al pie de mi paper".`,
             ``,
-            `Devolvé SOLO JSON — sin fences markdown, sin comentarios, sin preámbulo.`,
+            `Devuelve SOLO JSON — sin fences markdown, sin comentarios, sin preámbulo.`,
         ].join('\n'),
         userMessage: buildUserMessageES(input.rawText),
     };
@@ -177,7 +177,7 @@ function buildUserMessageEN(rawText: string): string {
 
 function buildUserMessageES(rawText: string): string {
     return [
-        `Extraé las reglas mecánicas de esta guía de estilo:`,
+        `Extrae las reglas mecánicas de esta guía de estilo:`,
         '```',
         rawText.trim(),
         '```',
@@ -222,7 +222,7 @@ function buildUserMessageES(rawText: string): string {
         ``,
         `## Placeholders de plantillas de nota al pie`,
         ``,
-        `Usá estos placeholders en las plantillas (literales — los sustituye el formateador downstream):`,
+        `Usa estos placeholders en las plantillas (literales — los sustituye el formateador downstream):`,
         ``,
         `- {author}            nombre completo del autor`,
         `- {authorShort}       solo apellido (para citas posteriores)`,
@@ -238,7 +238,7 @@ function buildUserMessageES(rawText: string): string {
         `- Comillas default: ASCII rectas (\\" y ').`,
         `- Confianza: 'high' si toda sección quedó clara; 'medium' si hubo inferencia; 'low' si quedaron gaps significativos.`,
         ``,
-        `Los ejemplos DEBEN incluir al menos: una primera cita de un comentario imaginario, una cita posterior del mismo, y un ejemplo de ibid. Usá nombres plausibles ("William L. Lane, Hebrews 1-8") para que el alumno reconozca el formato.`,
+        `Los ejemplos DEBEN incluir al menos: una primera cita de un comentario imaginario, una cita posterior del mismo, y un ejemplo de ibid. Usa nombres plausibles ("William L. Lane, Hebrews 1-8") para que el alumno reconozca el formato.`,
     ].join('\n');
 }
 

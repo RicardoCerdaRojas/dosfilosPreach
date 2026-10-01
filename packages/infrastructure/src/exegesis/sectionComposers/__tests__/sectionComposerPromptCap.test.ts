@@ -51,8 +51,8 @@ const conclusion = (pinned: number, chars: number) =>
     buildConclusionPrompt(base(pinned, chars) as unknown as ComposeConclusionInput);
 
 describe.each([
-    ['introducción', introduccion, 'Ahora producí la introducción'],
-    ['conclusión', conclusion, 'Ahora producí la conclusión'],
+    ['introducción', introduccion, 'Ahora produce la introducción'],
+    ['conclusión', conclusion, 'Ahora produce la conclusión'],
 ] as const)('%s — tope del servidor', (_nombre, build, instruccionFinal) => {
     it('no pasa el tope con dos fuentes asignadas que traen libros enteros (el caso real)', () => {
         const { userMessage } = build(2, 900_000);

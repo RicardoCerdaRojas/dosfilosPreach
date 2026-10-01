@@ -1,6 +1,5 @@
-import { Gauge, Info } from 'lucide-react';
+import { Gauge } from 'lucide-react';
 import {
-    SOURCE_TYPE_GROUPS,
     assessRubricRigor,
     type PaperRubric,
     type RubricRigorLevel,
@@ -60,21 +59,15 @@ export function RubricRigorIndicator({ rubric }: { rubric: PaperRubric }) {
                 {t(`rubricRigor.levelDescription.${assessment.level}`)}
             </p>
 
-            <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-border/60">
-                <p className="text-[10px] text-muted-foreground">
-                    {t('rubricRigor.breadth', {
-                        covered: assessment.groupBreadth,
-                        total: SOURCE_TYPE_GROUPS.length,
-                    })}
-                </p>
-                <p
-                    className="text-[10px] text-muted-foreground inline-flex items-center gap-1"
-                    title={t('rubricRigor.scoreHint')}
-                >
-                    <Info className="h-2.5 w-2.5" />
-                    {t('rubricRigor.scoreLabel', { score: assessment.rigorScore })}
-                </p>
-            </div>
+            {/* El «score» interno ya no se muestra: el nivel no sale sólo de
+                él (una fuente técnica basta para «seminario») y un número
+                sin escala enseñaba a leer la rúbrica como una suma. */}
+            <p className="pt-1.5 border-t border-border/60 text-[10px] text-muted-foreground">
+                {t('rubricRigor.breadth', {
+                    covered: assessment.groupBreadth,
+                    total: assessment.groupTotal,
+                })}
+            </p>
         </div>
     );
 }

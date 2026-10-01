@@ -41,6 +41,16 @@ export interface SourceRecommendation {
      */
     languages: ReadonlyArray<'es' | 'en' | 'de' | 'fr'>;
     /**
+     * Los libros que la obra comenta, cuando son menos que los de su grupo.
+     *
+     * Las entradas de GRUPO valen para todos los libros del grupo, y eso está
+     * bien para una obra sobre las cartas pastorales; no para un comentario
+     * de Judas y 2 Pedro, que se ofrecía para Santiago como «En tu
+     * biblioteca · Agregar al corpus» (TP Santiago 2:14-26). Ausente: la obra
+     * cubre el grupo entero.
+     */
+    covers?: ReadonlyArray<BibleBookId>;
+    /**
      * Optional one-line note explaining what this work uniquely
      * contributes. Plain string (NOT i18n key) for catalog brevity in
      * v1.7; can switch to i18n keys later if we need translations.

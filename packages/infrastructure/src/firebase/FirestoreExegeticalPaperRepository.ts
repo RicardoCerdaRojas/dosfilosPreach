@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, resolveExegeticalStrategy, trimStepVersions } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, resolveExegeticalStrategy, trimStepVersions } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -139,6 +139,8 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
                 // y la lista vacía deja la memoria de fuentes sin proponer
                 // nada, en vez de romper la pantalla.
                 citedSourceKeys: Array.isArray(p.citedSourceKeys) ? p.citedSourceKeys : [],
+                // Un callable viejo no la manda: sin portada no se propone nada.
+                cover: p.cover && typeof p.cover === 'object' ? p.cover : null,
             }))
             .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     }
@@ -516,6 +518,14 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             newSteps.push(buildStep({ paperId, kind: 'introduction', order: newSteps.length + 1, now }));
             newSteps.push(buildStep({ paperId, kind: 'assembly', order: newSteps.length + 1, now }));
 
+            // Con el encuadre en preguntas, el documento son las respuestas:
+            // lo que no responde ninguna nace fuera (`inclusionAtBirth`).
+            const preguntas = parseBriefQuestions(data.assignmentBrief ?? null);
+            for (const step of newSteps) {
+                const incluido = inclusionAtBirth(step, preguntas);
+                if (incluido !== undefined) step.includeInDocument = incluido;
+            }
+
             tx.update(ref, {
                 steps: newSteps.map(serializeStep),
                 phase: 'in-progress',
@@ -647,6 +657,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             const versioned = buildManualEditVersion(parent ?? null, markdown);
             step.versions = [...step.versions, versioned];
             step.accepted = versioned;
+            // Una vez aceptado, `current` es la misma versión que `accepted`
+            // (contrato de `ExegeticalStep.current`). Quedaba en la generada
+            // vieja: la tarjeta mostraba esa, sin veredictos, y el verificador
+            // leía la edición (Santiago 2:16, 2026-09-30).
+            step.current = versioned;
             // State stays 'accepted' if it was already; if it was
             // 'awaiting-review' or earlier and the user manually edits,
             // we count that as an implicit accept of the manual content.
@@ -750,9 +765,16 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             if (idx === -1) {
                 throw new Error(`Version ${versionId} not found in step ${stepId}`);
             }
+            const previa = step.versions[idx]!;
+            // Prosa nueva: lo verificado de la prosa anterior ya no aplica
+            // (mismo criterio que `buildManualEditVersion`).
             const next: ExegeticalStepVersion = {
-                ...step.versions[idx]!,
+                ...previa,
                 markdown,
+                ...(previa.citationVerdicts
+                    ? { citationVerdicts: previa.citationVerdicts.filter(v => v.origin !== 'prose') }
+                    : {}),
+                ...(previa.verifications ? { verifications: sinConteosDeProsa(previa.verifications) } : {}),
             };
             const versions = [...step.versions];
             versions[idx] = next;
@@ -1384,6 +1406,14 @@ function sinIndefinidos(valor: Record<string, unknown>): Record<string, unknown>
  * alguien vuelva a verificar. Ése era el motivo original de reiniciarlo, y se
  * conserva donde sigue siendo cierto.
  */
+/** El resumen sin lo que medía la prosa anterior a una edición. */
+function sinConteosDeProsa(v: VerificationSummary): VerificationSummary {
+    // Datos viejos guardaron otra forma (hasta un arreglo vacío): se dejan igual.
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return v;
+    const { proseCitations: _p, proseCitationsWithIssues: _i, ...resto } = v;
+    return resto;
+}
+
 export function buildManualEditVersion(
     parent: ExegeticalStepVersion | null,
     markdown: string,
@@ -1399,11 +1429,13 @@ export function buildManualEditVersion(
         regenerationHint: null,
         tokensUsed: null,
         verifications: analysis
-            ? (parent?.verifications ?? { ...EMPTY_VERIFICATION_SUMMARY })
+            ? sinConteosDeProsa(parent?.verifications ?? { ...EMPTY_VERIFICATION_SUMMARY })
             : { ...EMPTY_VERIFICATION_SUMMARY },
         ...(analysis ? {
             canonicalAnalysis: analysis,
-            citationVerdicts: parent?.citationVerdicts ?? [],
+            // Los veredictos de la PROSA eran de otro texto: el que se acaba
+            // de editar. Los del análisis siguen valiendo.
+            citationVerdicts: (parent?.citationVerdicts ?? []).filter(v => v.origin !== 'prose'),
             citationReviews: parent?.citationReviews ?? [],
             citationCorrections: parent?.citationCorrections ?? [],
         } : {}),

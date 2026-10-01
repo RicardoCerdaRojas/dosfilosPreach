@@ -57,7 +57,7 @@ export class GeminiAcademicComposer implements IAcademicComposer {
             language: input.language,
         });
 
-        const { text: markdown, tokensUsed } = await withGeminiRetry(
+        const { text: markdown, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.composeAcademicPaper',
                 model: this.modelName,
@@ -78,7 +78,7 @@ export class GeminiAcademicComposer implements IAcademicComposer {
         // formatter outcome; it only knows about the LLM step.
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
             formatterStatus: 'skipped',
         };

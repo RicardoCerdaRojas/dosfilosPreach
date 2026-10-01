@@ -62,7 +62,7 @@ export interface BibliographicData {
 /**
  * Todos los campos de la ficha, en el orden en que se leen de una portada.
  *
- * Vive acá y no en el formulario porque el formulario no es la única
+ * Vive aquí y no en el formulario porque el formulario no es la única
  * pantalla que los recorre, y porque `satisfies` obliga a que cada nombre
  * sea un campo real: un campo renombrado en la interfaz de datos rompe la
  * compilación en vez de desaparecer en silencio de la pantalla.

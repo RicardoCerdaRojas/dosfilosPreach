@@ -104,7 +104,7 @@ export function printedRangeOf(
     const numbering: PageNumbering = { segments: [segment], origin: 'confirmed' };
 
     // Se ROTULA, no se devuelve el número: un tramo romano tiene numeración y
-    // hay que mostrarla con sus cifras. Usar `printedPageIn` acá haría que un
+    // hay que mostrarla con sus cifras. Usar `printedPageIn` aquí haría que un
     // tramo romano se informara como «sin numeración arábiga» —esa función
     // calla ante los romanos a propósito, para que nadie escriba «p. 222» sobre
     // la página «ccxxii»— y la pantalla diría que no hay número donde sí lo hay.
@@ -177,12 +177,12 @@ export function printedPageIn(
     sheet: number,
 ): number | null {
     const found = segmentValueAt(numbering, sheet);
-    // Un tramo romano devuelve `null` ACÁ a propósito. Su valor es un número
+    // Un tramo romano devuelve `null` AQUÍ a propósito. Su valor es un número
     // —101— pero su página es «ci», y quien llame a esta función va a
     // escribir «p. 101», que no existe en el libro. Devolver null hace que un
     // llamador no migrado degrade a «hoja N», que es falso pero honesto, en
     // vez de a una página inventada. Para rotular está `printedLabelIn`.
-    // Un tramo romano o asteriscado devuelve `null` ACÁ a propósito. Su valor
+    // Un tramo romano o asteriscado devuelve `null` AQUÍ a propósito. Su valor
     // es un número —101, 142— pero su página se escribe «ci» o «142*», y quien
     // llame a esta función va a escribir «p. 101» o «p. 142», que o no existe
     // en el libro o señala OTRA página del mismo libro. Devolver null hace que
@@ -371,7 +371,7 @@ export function detectNumberingSegments(
             //
             // Un PDF que arranque a mitad de un libro sí tendría desfase
             // positivo, pero es raro y una persona puede declararlo en la
-            // calibración. Preferir el silencio acá cambia un dato falso por
+            // calibración. Preferir el silencio aquí cambia un dato falso por
             // uno faltante, que es el intercambio correcto.
             offset: detected !== null && detected > 0 ? null : detected,
         });
@@ -581,7 +581,7 @@ export function citationAnchorFor(
     numbering: PageNumbering | null,
 ): string {
     // `printedLabelIn` y no `printedPageIn`: en un tramo romano el valor es
-    // 222 y la página es «ccxxii», y acá se escribe la página.
+    // 222 y la página es «ccxxii», y aquí se escribe la página.
     const printed = chunk.sheet === null ? null : printedLabelIn(numbering, chunk.sheet);
     // Sin página impresa se rotula la HOJA, sepamos o no cómo numera el libro.
     //
@@ -683,7 +683,7 @@ export function calibrationSheets(numbering: PageNumbering | null, lastSheet: nu
  * cuando una fuente inlinea sus extractos guardados en vez de consultar el
  * corpus.
  *
- * Reetiquetar acá y no en el extractor tiene una razón concreta: los trabajos
+ * Reetiquetar aquí y no en el extractor tiene una razón concreta: los trabajos
  * ya empezados llevan sus extractos escritos, y arreglar sólo el extractor
  * dejaría mal a todo paper existente. El precio es tener que parsear una
  * cadena, que es feo pero acotado —el extractor sólo emite tres formas— y

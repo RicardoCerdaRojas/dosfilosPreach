@@ -199,7 +199,7 @@ export class ComposeAcademicPaperUseCase {
                 try {
                     const correction = paper.displayLanguage === 'en'
                         ? `\n\n[CORRECTIVE PASS] Your previous output skipped pinned sources [${missing.join(', ')}]. Cite each one at least once across the paper using the source content provided in the registry.`
-                        : `\n\n[PASE CORRECTIVO] Tu salida anterior se saltó las fuentes asignadas [${missing.join(', ')}]. Citá cada una al menos una vez en el paper usando el contenido provisto en el registro.`;
+                        : `\n\n[PASE CORRECTIVO] Tu salida anterior se saltó las fuentes asignadas [${missing.join(', ')}]. Cita cada una al menos una vez en el paper usando el contenido provisto en el registro.`;
                     const retryResult = await this.composer.composeAcademicPaper({
                         ...composerInput,
                         assignmentBrief: (composerInput.assignmentBrief ?? '') + correction,
@@ -216,7 +216,7 @@ export class ComposeAcademicPaperUseCase {
             }
 
             // ── Lo estructurado se publica, lo decida el modelo o no ────
-            // El compositor escribe la prosa; acá se comprueba verso
+            // El compositor escribe la prosa; aquí se comprueba verso
             // por verso que la prosa diga lo que el análisis afirmó, y
             // el verso que salió incompleto se publica con el render
             // determinista. Medido sobre Santiago 1:1-5: dieciocho

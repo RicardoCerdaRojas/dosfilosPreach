@@ -19,6 +19,9 @@ export function mapVerdictsByPath(
     const claims = collectAnalysisClaims(analysis);
     const out = new Map<string, VerifiedCitation>();
     for (const v of verdicts) {
+        // Las citas de la prosa se identifican por su posición en el texto,
+        // no por índice de afirmación: no tienen ruta en el análisis.
+        if (v.origin === 'prose') continue;
         const claim = claims[v.offset];
         if (claim) out.set(claim.path, v);
     }

@@ -49,7 +49,7 @@ export interface CanonicalVerseAnalysis {
      *
      * Se llamó `greekText` hasta que el módulo empezó a analizar el AT, y para
      * entonces el campo guardaba hebreo con un nombre que decía griego. Un
-     * nombre que miente es el mismo tipo de trampa que costó meses acá: la hoja
+     * nombre que miente es el mismo tipo de trampa que costó meses aquí: la hoja
      * del PDF y la página impresa eran las dos `number`, y por eso se
      * confundieron sin que nada avisara.
      */

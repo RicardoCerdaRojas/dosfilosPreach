@@ -71,7 +71,10 @@ export function getSourceRecommendations(
 ): ReadonlyArray<SourceRecommendation> {
     const bookSpecific = RECOMMENDATIONS_BY_BOOK[bookId]?.bySourceType[sourceType] ?? [];
     const groups = BOOK_TO_GROUPS[bookId] ?? [];
-    const groupEntries = groups.flatMap(g => GROUP_CATALOG[g]?.bySourceType[sourceType] ?? []);
+    const groupEntries = groups
+        .flatMap(g => GROUP_CATALOG[g]?.bySourceType[sourceType] ?? [])
+        // Un comentario de otro libro del grupo no sirve para éste.
+        .filter(rec => !rec.covers || rec.covers.includes(bookId));
     const invariantRaw = INVARIANT_RECOMMENDATIONS[sourceType] ?? [];
 
     // v1.7.1: filter invariants by the paper's testament so OT lexicons
@@ -122,25 +125,10 @@ export function getSourceRecommendations(
  * "no curation".
  */
 export function hasSourceRecommendations(bookId: BibleBookId, sourceType: SourceType): boolean {
-    const bookSpecific = RECOMMENDATIONS_BY_BOOK[bookId]?.bySourceType[sourceType];
-    if (bookSpecific && bookSpecific.length > 0) return true;
-    const groups = BOOK_TO_GROUPS[bookId] ?? [];
-    for (const g of groups) {
-        const entries = GROUP_CATALOG[g]?.bySourceType[sourceType];
-        if (entries && entries.length > 0) return true;
-    }
-    // Apply the same testament filter as `getSourceRecommendations`
-    // — without it the gap toggle shows up promising suggestions and
-    // then renders nothing once filtered.
-    const invariant = INVARIANT_RECOMMENDATIONS[sourceType];
-    if (!invariant || invariant.length === 0) return false;
-    const paperTestament = getBookById(bookId)?.testament ?? null;
-    if (paperTestament === null) return invariant.length > 0;
-    return invariant.some(rec => {
-        if (!rec.testament) return true;
-        if (rec.testament === 'whole-bible') return true;
-        return rec.testament === paperTestament;
-    });
+    // Derivada de `getSourceRecommendations` y no de una copia de sus
+    // filtros: dos copias ya se desincronizaron una vez (el filtro por
+    // testamento) y el interruptor prometía sugerencias que no aparecían.
+    return getSourceRecommendations(bookId, sourceType).length > 0;
 }
 
 /**

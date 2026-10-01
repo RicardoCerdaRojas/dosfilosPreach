@@ -105,7 +105,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
             // NOTA: las obras "paulinas-amplias" (Sanders PPJ, Wright PFG,
             // Westerholm) se movieron al catálogo de grupo `pauline-epistles`
             // — desde ahí aplican a CUALQUIER carta paulina sin necesidad
-            // de duplicarlas en cada libro. Lo que sigue acá son obras
+            // de duplicarlas en cada libro. Lo que sigue aquí son obras
             // específicas de Romanos.
             {
                 author: 'Käsemann, Ernst',

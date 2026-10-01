@@ -8,6 +8,8 @@
  * stay the user's job, which keeps the responsibility line clean and
  * mirrors how `DeterministicStyleFormatter` is plumbed elsewhere.
  */
+import type { AnalysisClaimSite } from '../services/analysisClaims';
+
 export type CitationStatus =
     /** Source matched, claim text matched (≥ verifiedThreshold), page matches or not provided. */
     | 'verified'
@@ -103,6 +105,34 @@ export interface ParsedCitation {
     evidence: string;
     /** True when `evidence` came from a `"..."` quote (high confidence claim). */
     evidenceIsQuoted: boolean;
+    /**
+     * De dónde sale la cita: del análisis estructurado o de la prosa que se
+     * entrega. Ausente equivale a `'analysis'` en las que vienen del análisis
+     * y a la prosa en el camino sin análisis.
+     *
+     * Existe porque los dos conjuntos viven en el mismo arreglo de
+     * veredictos y se identifican distinto: una cita del análisis por su
+     * índice (`offset`, que `mapVerdictsByPath` lleva a su ruta) y una de la
+     * prosa por su posición en el texto. Sin la marca, el offset de una cita
+     * de la prosa se leería como índice de otra del análisis.
+     */
+    origin?: 'analysis' | 'prose';
+    /**
+     * En qué sitio del análisis vive la afirmación (`commentator`,
+     * `lexical-loading`…). La interfaz lo nombra en español; antes iba pegado
+     * a `raw` en inglés («… · lexical-loading»).
+     */
+    site?: AnalysisClaimSite;
+    /**
+     * Las OTRAS fuentes que la misma afirmación nombra o comparte.
+     *
+     * Una nota de síntesis —«McCartney y Ropes prefieren la pasiva»— cita a
+     * cada fuente por separado, y cada una se verificaba exigiendo la
+     * comparación entera: ninguna la contiene sola, y la nota salía «no
+     * encontrada» y bloqueaba aceptar el paso (TP Santiago 2:14-26). Con esta
+     * lista el verificador juzga sólo la parte de ESTA fuente.
+     */
+    otherSources?: string[];
 }
 
 /**

@@ -102,6 +102,8 @@ export * from './services/bibliography';
 export * from './services/paperBibliography';
 export * from './services/pericopeContext';
 export * from './services/assemblyContents';
+export * from './services/coverSuggestion';
+export * from './services/citationKeyFromAuthor';
 export * from './services/curatedScope';
 export * from './services/trimStepVersions';
 export * from './services/briefQuestions';

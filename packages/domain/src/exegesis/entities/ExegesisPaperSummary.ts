@@ -1,5 +1,5 @@
 import type { PassageReference } from '../../bible/canon/passage-reference';
-import type { ExegeticalPaperPhase } from './ExegeticalPaper';
+import type { ExegeticalPaperPhase, PaperCover } from './ExegeticalPaper';
 import type { SourceType } from './SourceType';
 import type { SourceRole } from './StepSourcePlan';
 
@@ -51,11 +51,13 @@ export interface ExegesisPaperSummary {
      * Los `excerpts` son lo que engorda un trabajo —medido en la cuenta real,
      * 4,83 MB entre 22 trabajos— y por eso la lista nunca los baja. Pero la
      * herencia de corpus necesita saber QUÉ libros tiene cada hermano, y eso
-     * cabe en unos cientos de bytes por fuente. Bajarlo acá evita volver a
+     * cabe en unos cientos de bytes por fuente. Bajarlo aquí evita volver a
      * pedir los trabajos enteros, que es justo lo que este resumen existe para
      * no hacer.
      */
     sources: ResumenDeFuente[];
+    /** La portada, para proponerla en el trabajo siguiente. `null` si no tiene. */
+    cover: PaperCover | null;
 }
 
 /** Una fuente vista desde el resumen: quién es, sin nada de su contenido. */
@@ -63,7 +65,7 @@ export interface ResumenDeFuente {
     sourceLibraryResourceId: string | null;
     corpusId: string;
     sourceType: SourceType;
-    /** Opcional para que una `ProjectSource` entera encaje acá sin adaptarla. */
+    /** Opcional para que una `ProjectSource` entera encaje aquí sin adaptarla. */
     chosenRole?: SourceRole | null;
     displayLabel: string;
     citationKey: string | null;

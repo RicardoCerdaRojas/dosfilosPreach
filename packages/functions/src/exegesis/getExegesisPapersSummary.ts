@@ -54,6 +54,24 @@ interface PaperSummary {
      * responder «¿esto ya lo citaste?».
      */
     citedSourceKeys: string[];
+    /**
+     * La portada, para proponerla en el trabajo siguiente (TP #4 → TP #5).
+     * Son seis cadenas cortas; sin ellas habría que bajar el trabajo entero
+     * sólo para leer el nombre del seminario.
+     */
+    cover: Record<string, string> | null;
+}
+
+/**
+ * Los campos de texto de la portada, sin conocer cuáles son: `functions` no
+ * importa domain y copiar aquí la lista de campos sería una segunda lista
+ * que se desincroniza. Lo que no es texto no viaja.
+ */
+export function portadaDelResumen(cover: unknown): Record<string, string> | null {
+    if (!cover || typeof cover !== 'object') return null;
+    const campos = Object.entries(cover as Record<string, unknown>)
+        .filter((e): e is [string, string] => typeof e[1] === 'string' && e[1].trim().length > 0);
+    return campos.length > 0 ? Object.fromEntries(campos) : null;
 }
 
 /**
@@ -159,6 +177,7 @@ export const getExegesisPapersSummary = onCall(
                 seriesId: typeof d.seriesId === 'string' ? d.seriesId : null,
                 sources: sources.map(identidadDeFuente),
                 citedSourceKeys: clavesCitadas(steps),
+                cover: portadaDelResumen(d.cover),
             };
         });
 

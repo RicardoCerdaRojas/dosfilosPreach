@@ -34,7 +34,7 @@ export class GeminiVerseAcademicComposer implements IVerseAcademicComposer {
     async composeVerse(input: ComposeVerseInput): Promise<ComposeVerseOutput> {
         const { systemInstruction, userMessage } = buildVerseProsePrompt(input);
 
-        const { text: markdown, tokensUsed } = await withGeminiRetry(
+        const { text: markdown, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.composeVerse',
                 model: this.modelName,
@@ -49,7 +49,7 @@ export class GeminiVerseAcademicComposer implements IVerseAcademicComposer {
 
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
             formatterStatus: 'skipped',
         };

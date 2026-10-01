@@ -21,6 +21,9 @@ import {
     formatFirstNote,
     formatPassageReference,
     formatShortNote,
+    hasCover,
+    TMS_COVER_LAYOUT,
+    type CoverLayout,
     resolvesToCitedSource,
     type BibliographyEntry,
     type ExegeticalPaper,
@@ -313,29 +316,25 @@ function titleDisplayOf(paper: ExegeticalPaper): string {
     return paper.title?.trim() || formatPassageReference(paper.passage, paper.displayLanguage);
 }
 
-function coverSection(cover: PaperCover | null, fallbackTitle: string) {
-    const institution = cover?.institution?.trim();
-    const author = cover?.author?.trim();
-    if (!institution && !author) return null;
+function coverSection(cover: PaperCover | null, fallbackTitle: string, layout: CoverLayout = TMS_COVER_LAYOUT) {
+    if (!hasCover(cover)) return null;
+    const institution = cover.institution?.trim();
+    const author = cover.author?.trim();
 
-    const line = (text: string, blanks = 0) => [
-        new Paragraph({
-            alignment: AlignmentType.CENTER,
-            indent: { firstLine: 0 },
-            spacing: { line: 360, lineRule: LineRuleType.AUTO },
-            children: textRuns(text.toLocaleUpperCase('es')),
-        }),
-        ...Array.from({ length: blanks }, () => new Paragraph({
-            alignment: AlignmentType.CENTER,
-            indent: { firstLine: 0 },
-            spacing: { line: 360, lineRule: LineRuleType.AUTO },
-            children: [],
-        })),
-    ];
+    const parrafo = (text: string) => new Paragraph({
+        alignment: AlignmentType.CENTER,
+        indent: { firstLine: 0 },
+        spacing: { line: 360, lineRule: LineRuleType.AUTO },
+        children: text ? textRuns(text.toLocaleUpperCase('es')) : [],
+    });
+    const line = (text: string) => [parrafo(text)];
+    const blancos = (n: number) => Array.from({ length: n }, () => parrafo(''));
 
-    // El renglón del pasaje. Encima puede ir el nombre que le da el
-    // profesor al trabajo, que es lo que identifica la entrega.
-    const assignmentTitle = cover?.assignmentTitle?.trim();
+    // El bloque del título: el nombre que le da el profesor a la entrega, el
+    // pasaje y, si está escrito, el curso. Sin renglones en blanco entre
+    // ellos: el modelo de TMS los trata como UN título.
+    const assignmentTitle = cover.assignmentTitle?.trim();
+    const course = cover.course?.trim();
     return {
         properties: {
             page: {
@@ -347,15 +346,18 @@ function coverSection(cover: PaperCover | null, fallbackTitle: string) {
         // Sin número: la portada no se cuenta.
         footers: { first: new Footer({ children: [new Paragraph({ children: [] })] }) },
         children: [
-            ...line('', 3),
-            ...(institution ? line(institution, 6) : []),
+            ...blancos(layout.beforeInstitution),
+            ...(institution ? line(institution) : []),
+            ...blancos(layout.afterInstitution),
             ...(assignmentTitle ? line(assignmentTitle) : []),
-            ...line(fallbackTitle, 2),
-            ...(cover?.course?.trim() ? line(cover.course, 4) : line('', 4)),
+            ...line(fallbackTitle),
+            ...(course ? line(course) : []),
+            ...blancos(layout.afterTitle),
             ...line('POR'),
-            ...(author ? line(author, 4) : line('', 4)),
-            ...(cover?.place?.trim() ? line(cover.place) : []),
-            ...(cover?.date?.trim() ? line(cover.date) : []),
+            ...line(author ?? ''),
+            ...blancos(layout.afterAuthor),
+            ...(cover.place?.trim() ? line(cover.place) : []),
+            ...(cover.date?.trim() ? line(cover.date) : []),
         ],
     };
 }

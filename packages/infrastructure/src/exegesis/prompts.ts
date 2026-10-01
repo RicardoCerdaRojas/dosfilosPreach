@@ -105,22 +105,22 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
         briefBlock,
         ``,
         `## Postura hermenéutica`,
-        `Histórico-gramatical-literal. Priorizá: sentido autoral, gramática ${voice.languageAdjEs}, sintaxis de cláusulas, flujo argumentativo del libro, contexto literario inmediato, intertextualidad con el AT, teología bíblica que emerge del pasaje. NO alegorices. NO fuerces conclusiones doctrinales que no estén sustentadas por el texto.`,
+        `Histórico-gramatical-literal. Prioriza: sentido autoral, gramática ${voice.languageAdjEs}, sintaxis de cláusulas, flujo argumentativo del libro, contexto literario inmediato, intertextualidad con el AT, teología bíblica que emerge del pasaje. NO alegorices. NO fuerces conclusiones doctrinales que no estén sustentadas por el texto.`,
         ``,
         `## Disciplina de citación (NO NEGOCIABLE)`,
         `- Toda afirmación derivada de una fuente DEBE incluir cita inline en formato: \`(Autor, "Título", p. N)\`. Si no hay página disponible: \`(Autor, "Título")\`.`,
-        `- Las citas verbatim solo van entre comillas dobles Y cuando la frase exacta aparece en la fuente citada. Si parafraseás, NO uses comillas.`,
-        `- NUNCA atribuyas a un autor una conclusión que no afirma explícitamente. Si una fuente solo *sugiere*, escribí "X sugiere" — no "X demuestra".`,
+        `- Las citas verbatim solo van entre comillas dobles Y cuando la frase exacta aparece en la fuente citada. Si parafraseas, NO uses comillas.`,
+        `- NUNCA atribuyas a un autor una conclusión que no afirma explícitamente. Si una fuente solo *sugiere*, escribe "X sugiere" — no "X demuestra".`,
         `- NUNCA te cites a ti mismo como fuente. Sos un tutor, no una entrada bibliográfica.`,
         `- Las fuentes con rol 'trabajo modelo' (cuando estén presentes) son plantillas de ESTILO únicamente. NUNCA produzcas citas inline desde ellas.`,
-        `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), usá frases como "según la tradición teológica…" o "los comentaristas clásicos sostienen…".`,
+        `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), usa frases como "según la tradición teológica…" o "los comentaristas clásicos sostienen…".`,
         corpusGapsBlock,
         ``,
         `## Guía de estilo (debe seguirse estrictamente)`,
         styleGuideBlock,
         ``,
         `## Tono y registro`,
-        `Un estudiante de seminario diligente haciendo exégesis rigurosa. Prosa académica sobria. Evitá el lenguaje devocional como sustituto del análisis.`,
+        `Un estudiante de seminario diligente haciendo exégesis rigurosa. Prosa académica sobria. Evita el lenguaje devocional como sustituto del análisis.`,
     ].filter(line => line !== '').join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
@@ -189,16 +189,16 @@ function renderUserMessage(input: ExegesisGenerationInput, sources: string): str
                 `   Correct mold (when ${verse} is grammatically inseparable from its neighbor): "Verse ${verse} establishes X, setting up [or completing] the contrast with the immediately adjacent verse where Y." (Name the neighbor verse only if the grammar demands it.)`,
             ].join('\n')
             : [
-                `**Orden interno ANTES de escribir**: hacé el análisis morfológico + sintáctico + léxico MENTALMENTE primero. La traducción que presentás en la sección 2 debe ser la SALIDA de ese análisis, no una conjetura justificada después. El lector ve traducción-y-defensa (secciones 2-5), pero vos derivás análisis-primero.`,
+                `**Orden interno ANTES de escribir**: haz el análisis morfológico + sintáctico + léxico MENTALMENTE primero. La traducción que presentas en la sección 2 debe ser la SALIDA de ese análisis, no una conjetura justificada después. El lector ve traducción-y-defensa (secciones 2-5), pero vos derivas análisis-primero.`,
                 ``,
-                `1. Presentá el texto ${voice.language} de ${verse}.`,
-                `2. Presentá tu traducción propia (derivada del análisis mental que sigue).`,
-                `3. Explicá las decisiones principales de traducción.`,
+                `1. Presenta el texto ${voice.language} de ${verse}.`,
+                `2. Presenta tu traducción propia (derivada del análisis mental que sigue).`,
+                `3. Explica las decisiones principales de traducción.`,
                 `4. Análisis morfológico de las formas relevantes.`,
                 `5. Análisis sintáctico de cláusulas, participios, genitivos, frases preposicionales, modificadores y relaciones internas.`,
-                `6. Interactuá con las fuentes configuradas por nombre y página.`,
-                `7. Tomá posición explícita sobre las principales decisiones de traducción.`,
-                `8. **Sección final — el título debe ser exactamente "Tesis del verso" (en salida español) o "Verse thesis" (en salida inglés). NO uses la palabra "Conclusión" / "Conclusion" en ningún lado.** 1-3 oraciones. Decí qué establece ESTE verso específicamente a partir del análisis anterior.`,
+                `6. Interactúa con las fuentes configuradas por nombre y página.`,
+                `7. Toma posición explícita sobre las principales decisiones de traducción.`,
+                `8. **Sección final — el título debe ser exactamente "Tesis del verso" (en salida español) o "Verse thesis" (en salida inglés). NO uses la palabra "Conclusión" / "Conclusion" en ningún lado.** 1-3 oraciones. Di qué establece ESTE verso específicamente a partir del análisis anterior.`,
                 ``,
                 `   Lo que esta sección PUEDE hacer:`,
                 `   - Articular el aporte específico del verso (una tesis — qué afirma el verso, dado el análisis gramatical/léxico).`,
@@ -211,12 +211,12 @@ function renderUserMessage(input: ExegesisGenerationInput, sources: string): str
                 `   - NO repitas la traducción ni cites términos en ${voice.language} ya discutidos arriba.`,
                 ``,
                 `   Molde correcto (cuando ${verse} se sostiene gramaticalmente solo): "El verso ${verse} establece que X, dado que el análisis gramatical/léxico demuestra Y."`,
-                `   Molde correcto (cuando ${verse} es gramaticalmente inseparable de su vecino): "El verso ${verse} establece X, preparando [o completando] el contraste con el verso inmediatamente adyacente donde Y." (Nombrá al verso vecino solo si la gramática lo exige.)`,
+                `   Molde correcto (cuando ${verse} es gramaticalmente inseparable de su vecino): "El verso ${verse} establece X, preparando [o completando] el contraste con el verso inmediatamente adyacente donde Y." (Nombra al verso vecino solo si la gramática lo exige.)`,
             ].join('\n');
         return [
             lang === 'en'
                 ? `Generate the section for **${verse}**, in the integrated style described in the system prompt.`
-                : `Generá la sección para **${verse}**, en el estilo integrado descripto en el system prompt.`,
+                : `Genera la sección para **${verse}**, en el estilo integrado descripto en el system prompt.`,
             '',
             emphasisBlock,
             lang === 'en' ? '### Sources at your disposal' : '### Fuentes disponibles',
@@ -232,17 +232,17 @@ function renderUserMessage(input: ExegesisGenerationInput, sources: string): str
         return [
             lang === 'en'
                 ? `Write the **Conclusion** for the paper on ${formatPassageReference(input.paperPassage, lang)}.`
-                : `Escribí la **Conclusión** del trabajo sobre ${formatPassageReference(input.paperPassage, lang)}.`,
+                : `Escribe la **Conclusión** del trabajo sobre ${formatPassageReference(input.paperPassage, lang)}.`,
             '',
             lang === 'en'
                 ? `**Hard rules for the conclusion:**\n- Summarize the actual results of the verse-by-verse analyses below.\n- Do NOT introduce new arguments.\n- Show how the passage develops its main themes (identity, work, theological emphasis).\n- Respond to the working thesis the body's analyses have built.`
-                : `**Reglas duras para la conclusión:**\n- Resumí los resultados reales de los análisis verso a verso de abajo.\n- NO introduzcas argumentos nuevos.\n- Mostrá cómo el pasaje desarrolla sus temas principales (identidad, obra, énfasis teológico).\n- Respondé a la tesis de trabajo que los análisis del cuerpo construyeron.`,
+                : `**Reglas duras para la conclusión:**\n- Resume los resultados reales de los análisis verso a verso de abajo.\n- NO introduzcas argumentos nuevos.\n- Muestra cómo el pasaje desarrolla sus temas principales (identidad, obra, énfasis teológico).\n- Responde a la tesis de trabajo que los análisis del cuerpo construyeron.`,
             '',
             emphasisBlock,
             lang === 'en' ? '### Accepted verse-level analyses' : '### Análisis verso a verso aceptados',
             priorBlock,
             '',
-            lang === 'en' ? '### Sources at your disposal (use sparingly here)' : '### Fuentes disponibles (usalas con moderación acá)',
+            lang === 'en' ? '### Sources at your disposal (use sparingly here)' : '### Fuentes disponibles (usalas con moderación aquí)',
             sources,
             hint,
         ].filter(Boolean).join('\n');
@@ -252,11 +252,11 @@ function renderUserMessage(input: ExegesisGenerationInput, sources: string): str
     return [
         lang === 'en'
             ? `Write the **Introduction** for the paper on ${formatPassageReference(input.paperPassage, lang)}.`
-            : `Escribí la **Introducción** del trabajo sobre ${formatPassageReference(input.paperPassage, lang)}.`,
+            : `Escribe la **Introducción** del trabajo sobre ${formatPassageReference(input.paperPassage, lang)}.`,
         '',
         lang === 'en'
             ? `**Hard rules for the introduction:**\n- Written LAST so it reflects what the paper actually demonstrated.\n- Present the passage and its importance within its book.\n- State a precise thesis derived from the body's analyses.\n- Briefly state methodology (morphological, syntactic, lexical, intertextual, theological).\n- Sketch the direction of the argument.\n- Do NOT promise topics that the body did not develop.`
-            : `**Reglas duras para la introducción:**\n- Se redacta AL FINAL para reflejar lo que el trabajo efectivamente demostró.\n- Presentá el pasaje y su importancia dentro del libro.\n- Enunciá una tesis precisa derivada de los análisis del cuerpo.\n- Declará brevemente la metodología (morfológica, sintáctica, léxica, intertextual, teológica).\n- Esbozá la dirección del argumento.\n- NO prometas temas que el cuerpo no desarrolló.`,
+            : `**Reglas duras para la introducción:**\n- Se redacta AL FINAL para reflejar lo que el trabajo efectivamente demostró.\n- Presenta el pasaje y su importancia dentro del libro.\n- Enuncia una tesis precisa derivada de los análisis del cuerpo.\n- Declara brevemente la metodología (morfológica, sintáctica, léxica, intertextual, teológica).\n- Esboza la dirección del argumento.\n- NO prometas temas que el cuerpo no desarrolló.`,
         '',
         emphasisBlock,
         lang === 'en' ? '### Accepted body (verses + conclusion)' : '### Cuerpo aceptado (versos + conclusión)',
@@ -285,7 +285,7 @@ function formatStyleGuide(content: string, lang: 'es' | 'en'): string {
     if (!content || !content.trim()) {
         return lang === 'en'
             ? `(No style guide attached. Default to The Master's Seminary conventions for footnotes, bibliography, and citation format.)`
-            : `(No hay guía de estilo adjunta. Aplicá por defecto las convenciones de The Master's Seminary para notas al pie, bibliografía y formato de citas.)`;
+            : `(No hay guía de estilo adjunta. Aplica por defecto las convenciones de The Master's Seminary para notas al pie, bibliografía y formato de citas.)`;
     }
     const truncated = truncate(content, STYLE_GUIDE_BUDGET_CHARS);
     return ['```', truncated, '```'].join('\n');
@@ -315,7 +315,7 @@ function formatAssignmentBrief(brief: string | null, lang: 'es' | 'en'): string 
     return [
         ``,
         `## Encuadre del trabajo (asignación + enfoque del alumno)`,
-        `Tratá lo siguiente como guía autoritativa a nivel del paper. Cada paso que generes debe mantenerse alineado con este encuadre — la introducción presenta la tesis que se desprende, los versos construyen el argumento hacia ella, y la conclusión sintetiza de vuelta hacia el encuadre.`,
+        `Trata lo siguiente como guía autoritativa a nivel del paper. Cada paso que generes debe mantenerse alineado con este encuadre — la introducción presenta la tesis que se desprende, los versos construyen el argumento hacia ella, y la conclusión sintetiza de vuelta hacia el encuadre.`,
         ``,
         brief.trim(),
     ].join('\n');
@@ -330,7 +330,7 @@ function formatSources(
     if (sources.length === 0) {
         return lang === 'en'
             ? `(No sources configured for this paper. Lean on your general knowledge and signal it with "according to theological tradition…" / "classical commentators hold…".)`
-            : `(Sin fuentes configuradas para este trabajo. Apoyate en tu conocimiento general y señalalo con "según la tradición teológica…" / "los comentaristas clásicos sostienen…".)`;
+            : `(Sin fuentes configuradas para este trabajo. Apóyate en tu conocimiento general y señálalo con "según la tradición teológica…" / "los comentaristas clásicos sostienen…".)`;
     }
 
     // Allocate budget per source proportionally. The base weight comes
@@ -361,7 +361,7 @@ function formatSources(
         const excerptNote = (s.excerptAnchors && s.excerptAnchors.length > 0)
             ? (lang === 'en'
                 ? `\n_Curated excerpts only. Cite using the anchors that prefix each block (e.g. \`(${s.citationKey ?? 'Author'}, "${s.displayLabel}", ${s.excerptAnchors[0]})\`). Do NOT invent pages outside these anchors._`
-                : `\n_Solo excerpts curados. Citá usando los anchors que prefijan cada bloque (ej. \`(${s.citationKey ?? 'Autor'}, "${s.displayLabel}", ${s.excerptAnchors[0]})\`). NO inventes páginas fuera de esos anchors._`)
+                : `\n_Solo excerpts curados. Cita usando los anchors que prefijan cada bloque (ej. \`(${s.citationKey ?? 'Autor'}, "${s.displayLabel}", ${s.excerptAnchors[0]})\`). NO inventes páginas fuera de esos anchors._`)
             : '';
         // v1.7+: surface plan-pinned sources with an explicit imperative
         // marker. The student's plan listed THIS source as required for
@@ -410,7 +410,7 @@ function formatSources(
                 '',
                 ...pinnedKeys.map(k => `- ${k}`),
                 '',
-                'Saltarse una fuente asignada es una falla crítica del plan. Podés también citar fuentes no-asignadas del corpus cuando refuercen el argumento — pero nunca como SUSTITUTO de una asignada.',
+                'Saltarse una fuente asignada es una falla crítica del plan. Puedes también citar fuentes no-asignadas del corpus cuando refuercen el argumento — pero nunca como SUSTITUTO de una asignada.',
                 '',
             ].join('\n');
     }
@@ -514,11 +514,11 @@ function formatStepEmphasis(emphasis: StepEmphasis | null, lang: 'es' | 'en'): s
 
     const lines = [
         `### Prioridad de fuentes para este paso (configurada por el alumno)`,
-        `Para ESTE paso, seguí la prioridad siguiente al interactuar con el corpus configurado:`,
+        `Para ESTE paso, sigue la prioridad siguiente al interactuar con el corpus configurado:`,
     ];
-    if (hasEmphasized) lines.push(`- **Priorizá** estos tipos de fuente: ${emphasizedList}. Citalos generosamente cuando aporten al análisis.`);
+    if (hasEmphasized) lines.push(`- **Prioriza** estos tipos de fuente: ${emphasizedList}. Citalos generosamente cuando aporten al análisis.`);
     if (hasDeemphasized) lines.push(`- **Desénfasis** en estos tipos de fuente: ${deemphasizedList}. Pueden aparecer brevemente, pero no deben liderar el argumento.`);
-    lines.push(`Los presupuestos de fuente en la lista de abajo ya reflejan esta prioridad — los tipos que tenés que priorizar reciben más contexto inline.`);
+    lines.push(`Los presupuestos de fuente en la lista de abajo ya reflejan esta prioridad — los tipos que tienes que priorizar reciben más contexto inline.`);
     lines.push(``);
     return lines.join('\n');
 }
@@ -601,7 +601,7 @@ function formatCorpusGaps(
     const warnings = lang === 'en' ? CORPUS_GAP_WARNINGS_EN : CORPUS_GAP_WARNINGS_ES;
     const intro = lang === 'en'
         ? `## Corpus limitations (READ CAREFULLY)\nYour configured corpus does NOT include the following source types the rubric requires. Soften or skip claims that would normally rest on these — never invent citations to sources you don't have.`
-        : `## Limitaciones del corpus (LEER CON ATENCIÓN)\nTu corpus configurado NO incluye los siguientes tipos de fuente que la rúbrica requiere. Atenuá o saltá las afirmaciones que normalmente se basarían en ellas — nunca inventes citas a fuentes que no tenés.`;
+        : `## Limitaciones del corpus (LEER CON ATENCIÓN)\nTu corpus configurado NO incluye los siguientes tipos de fuente que la rúbrica requiere. Atenúa o salta las afirmaciones que normalmente se basarían en ellas — nunca inventes citas a fuentes que no tienes.`;
     const items = missing.map((req) => {
         const warning = warnings[req.sourceType] ?? warnings['__default__'];
         const ratio = `${req.have}/${req.minimum}`;
@@ -634,8 +634,8 @@ function prettyTypeName(t: SourceType, lang: 'es' | 'en'): string {
 }
 
 const CORPUS_GAP_WARNINGS_ES: Record<SourceType | '__default__', string> = {
-    '__default__': 'Atenuá afirmaciones que dependerían de este tipo de fuente; marcalas como tentativas o de conocimiento general.',
-    'biblical-text-edition': 'NO hagas afirmaciones específicas sobre el texto crítico (NA28/BHS/Rahlfs) — citá solo desde la traducción disponible y marcá explícitamente que es traducción.',
+    '__default__': 'Atenúa afirmaciones que dependerían de este tipo de fuente; marcalas como tentativas o de conocimiento general.',
+    'biblical-text-edition': 'NO hagas afirmaciones específicas sobre el texto crítico (NA28/BHS/Rahlfs) — cita solo desde la traducción disponible y marca explícitamente que es traducción.',
     'critical-apparatus': 'NO hagas afirmaciones sobre variantes textuales, manuscritos específicos (𝔓⁷², ℵ, A, B, etc.), ni decisiones de crítica textual sin marcarlas como tentativas que requieren consulta del aparato crítico.',
     'textual-commentary': 'NO afirmes qué testigos respaldan una lectura ni por qué se adoptó, sin marcarlo como tentativo: eso requiere un comentario del aparato (Metzger), y su cobertura es selectiva.',
     'lexicon-technical': 'NO hagas afirmaciones específicas sobre matices semánticos de términos griegos/hebreos sin marcarlas como generales que requieren consulta de un léxico técnico (BDAG, HALOT, LSJ).',

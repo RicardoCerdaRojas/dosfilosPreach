@@ -43,7 +43,7 @@ export function buildMicroSystemInstruction(
               '',
               'Reglas innegociables:',
               '- Las unidades exegéticas NO se solapan y cubren TODA cada macro-sección sin huecos.',
-              '- Una unidad exegética NO es necesariamente un sermón. La conversión a unidades predicables (combinar/dividir) ocurre en el siguiente paso, NO acá.',
+              '- Una unidad exegética NO es necesariamente un sermón. La conversión a unidades predicables (combinar/dividir) ocurre en el siguiente paso, NO aquí.',
               '- Tamaño objetivo: cada macro-sección debe contener entre 1 y 8 unidades exegéticas. Más sugiere que estás dividiendo por versículo en lugar de por estructura.',
               '- El género del libro guía los criterios — abajo tienes los marcadores específicos del género detectado.',
           ].join('\n')

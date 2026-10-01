@@ -251,6 +251,15 @@ export interface VerificationSummary {
      */
     citationsWithoutVerbatim?: number;
     /**
+     * Citas de la PROSA que se entrega, verificadas junto con el análisis.
+     * Ausente: no se midió (versiones anteriores, o sin prosa compuesta).
+     * No entran en `counts`: esos deciden el bloqueo de aceptación, y una
+     * cita de la prosa no bloquea (no tiene ruta para revisarla a mano).
+     */
+    proseCitations?: number;
+    /** De ellas, cuántas no salieron verificadas. */
+    proseCitationsWithIssues?: number;
+    /**
      * Afirmaciones sobre evidencia manuscrita —códices, papiros,
      * testigos— que ninguna cita de la misma oración respalda.
      *

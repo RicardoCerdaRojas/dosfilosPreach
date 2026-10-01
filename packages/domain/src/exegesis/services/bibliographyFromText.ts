@@ -574,7 +574,7 @@ const ANIO_SUELTO = /\b(1[89]\d{2}|20[0-4]\d)\b/;
  *
  * El formato lo escribe el extractor (`pagesToMarkedText`, en el paquete
  * de funciones, que no puede importar dominio). Una prueba a cada lado
- * fija el literal: si allá cambia, acá deja de haber hojas y se cae al
+ * fija el literal: si allá cambia, aquí deja de haber hojas y se cae al
  * recorte por letras sin que nadie se entere.
  */
 function hojasDe(text: string): Hoja[] {

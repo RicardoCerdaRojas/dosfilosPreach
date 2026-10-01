@@ -10,6 +10,7 @@ import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/
 import { CitationEvidencePanel } from '@/components/exegesis/review/CitationEvidencePanel';
 import { CitationStatusBadge } from '@/components/exegesis/review/CitationStatusBadge';
 import { useStepReview } from '@/components/exegesis/review/useStepReview';
+import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
 
 const FILTERS: ReadonlyArray<CitationStatus> = ['not-found', 'page-mismatch', 'fuzzy-low', 'manual-pending', 'verified'];
 
@@ -209,7 +210,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                                 {r.listed.map(([path, v]) => (
                                     <button key={path} type="button" onClick={() => select(path)}
                                         className={`w-full text-left rounded-md px-2 py-1.5 text-xs hover:bg-accent ${r.selectedPath === path ? 'bg-accent' : ''}`}>
-                                        <span className="font-mono text-foreground">{v.raw}</span>
+                                        <CitationLabel citation={v} />
                                         <span className="block text-[11px] text-muted-foreground truncate">{v.note}</span>
                                     </button>
                                 ))}

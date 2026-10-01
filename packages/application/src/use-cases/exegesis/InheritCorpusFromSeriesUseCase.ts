@@ -19,13 +19,13 @@ import {
  * Por eso las fuentes llegan listas para extraer, no extraídas.
  *
  * Qué heredar lo decide `proponerCorpusHeredado`, que es puro y está probado
- * aparte. Acá se buscan los hermanos, se le dice qué libros siguen vivos en la
+ * aparte. Aquí se buscan los hermanos, se le dice qué libros siguen vivos en la
  * biblioteca, y se escriben las fuentes.
  */
 
 /**
  * Lo único que hace falta de la biblioteca: qué libros tiene el usuario. Se
- * declara acá, angosto, en vez de depender del repositorio entero.
+ * declara aquí, angosto, en vez de depender del repositorio entero.
  */
 export interface LectorDeBiblioteca {
     findByUserId(userId: string): Promise<ReadonlyArray<{ id: string }>>;
@@ -94,7 +94,7 @@ export class InheritCorpusFromSeriesUseCase {
         const creadas: ProjectSource[] = [];
         // En serie y no en paralelo. El `order` lo fija el llamador —el
         // repositorio escribe el que se le pasa— así que se lleva la cuenta
-        // acá; y cada `addSource` reescribe el arreglo entero de fuentes
+        // aquí; y cada `addSource` reescribe el arreglo entero de fuentes
         // dentro de una transacción, de modo que en paralelo se pelearían por
         // el mismo documento.
         for (const f of aTraer) {

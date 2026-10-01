@@ -87,7 +87,7 @@ export interface ComposeConclusionInput {
      * Cuántas palabras le tocan a esta sección, derivadas de la extensión que
      * exige la rúbrica. `null` o ausente cuando el curso no la declara.
      *
-     * Llega hasta acá porque el número existía y no salía de la pantalla: lo
+     * Llega hasta aquí porque el número existía y no salía de la pantalla: lo
      * calculaba `wordsPerVerseTarget` y su único llamador era la interfaz. Un
      * trabajo que pedía 2-3 páginas salió de 16.
      */
@@ -96,7 +96,7 @@ export interface ComposeConclusionInput {
     /**
      * Cómo se escribe una cita dentro del párrafo en ESTA entrega.
      *
-     * Llega hasta acá porque sin la regla estas secciones escribían su propio
+     * Llega hasta aquí porque sin la regla estas secciones escribían su propio
      * aparato de notas como texto plano, que el exportador maqueta como
      * cuerpo y no como nota.
      */

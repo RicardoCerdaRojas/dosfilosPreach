@@ -6,7 +6,7 @@ import { findInlineCitations, type ParsedCitation } from '@dosfilos/domain';
  * El RECONOCIMIENTO —las tres formas que el sistema emite y cómo se resuelven
  * sus solapamientos— vive en el dominio (`findInlineCitations`), porque el
  * exportador Word necesita leer exactamente lo mismo y tenía su propio patrón,
- * más pobre. Lo que queda acá es lo del verificador y de nadie más: recortar
+ * más pobre. Lo que queda aquí es lo del verificador y de nadie más: recortar
  * la frase que la cita respalda.
  */
 /**

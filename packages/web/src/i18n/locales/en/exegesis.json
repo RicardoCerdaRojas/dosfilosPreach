@@ -226,8 +226,6 @@
     "minimumSourcesLabel_other": "required minimums",
     "minimumSourcesLabel": "required minimums",
     "breadth": "Covers {{covered}} of {{total}} academic areas",
-    "scoreLabel": "Academic score: {{score}}",
-    "scoreHint": "Sum of minimums × academic weight (rigorTier 0–3 per source type).",
     "level": {
       "pastoral": "Pastoral / homiletical",
       "seminary": "Seminary (undergrad / MDiv)",
@@ -436,7 +434,11 @@
         "empty": "It is empty. Without a brief the length is not allotted, no section knows which question it answers, and the citation form is left to chance.",
         "template-unfilled": "Template blocks are still unfilled — the ones in brackets.",
         "no-search-keys": "It names no Hebrew or Greek form and no grammatical category. Without those, the grammars and lexicons in your corpus have no way into the passage: they are indexed by category and lemma, not by passage."
-      }
+      },
+      "button": "Brief",
+      "missing": "missing",
+      "questionCount_one": "{{count}} question",
+      "questionCount_other": "{{count}} questions"
     },
     "notFound": {
       "title": "Paper not found",
@@ -447,7 +449,7 @@
       "rubric": {
         "tab": "Rubric",
         "heading": "Paper rubric",
-        "description": "Upload the seminary's rubric or use the academic TMS default. Sets corpus minimums and structural emphases.",
+        "description": "What THIS assignment asks for: length, citation form, cover and bibliography, and which sources it requires. Upload it from the syllabus or use the house default.",
         "loading": "Loading rubric...",
         "provenance": {
           "extracted-from-document": "Extracted from document",
@@ -524,7 +526,11 @@
           "blankLineLabel": "A blank line between paragraphs",
           "formattingHint": "Only when this assignment asks for something other than the seminary guide. Weekly practicals usually ask for single spacing; the long exegetical paper, double.",
           "citationFootnote": "Footnote citation",
-          "citationParenthetical": "In-text parenthetical citation"
+          "citationParenthetical": "In-text parenthetical citation",
+          "citationFormAria": "Citation form",
+          "pageLabelAria": "Page label in the citation",
+          "pageLabelLabelled": "Page with “p.”: (Mayor, p. 77)",
+          "pageLabelBare": "Page without “p.”: (Carballosa, 208)"
         },
         "requirements": {
           "title": "Corpus requirements",
@@ -570,7 +576,10 @@
           "qualityHint": "Dimensions the professor will grade. The composer targets the top-level descriptor of each criterion when writing the paper.",
           "optionalCount_one": "+ {{count}} optional recommended requirement",
           "optionalCount_other": "+ {{count}} optional recommended requirements",
-          "optionalCount": "+ {{count}} optional recommended"
+          "optionalCount": "+ {{count}} optional recommended",
+          "citationInherited": "{{standard}} (from your style guide)",
+          "formattingLabel": "Layout",
+          "formattingDefault": "House default: double spacing, footnote citations"
         },
         "templates": {
           "title": "Rubric templates",
@@ -671,13 +680,15 @@
               "label": "Preaching study",
               "hint": "Same rigour, different output: the expository commentary anchors, 3-5 pages, parenthetical citations. For an expository series, not for submission."
             }
-          }
+          },
+          "change": "Change where the rubric comes from",
+          "hide": "Hide the options"
         }
       },
       "manifest": {
         "tab": "Style guide",
         "heading": "Style guide manifest",
-        "description": "Verify the mechanical rules extracted from your guide (footnotes, ibid, quotation marks). Correct anything before generating.",
+        "description": "HOW everything the assignment asks for is formatted: footnotes, ibid, quotations, bibliography. Check what was read from your guide before generating.",
         "noGuide": "No active guide attached. Upload one from your profile so the manifest can be extracted.",
         "noManifest": {
           "title": "Manifest not extracted yet",
@@ -692,7 +703,6 @@
         "card": {
           "citationStyleLabel": "Citation style",
           "extractedAt": "Extracted",
-          "model": "Model",
           "confidence": {
             "label": "Confidence",
             "high": "high",
@@ -1050,7 +1060,12 @@
             "hint_textoBase": "It's the text you're studying, not a study of it. You cite it, but it doesn't count as an academic source.",
             "hint_noCitable": "Method or style material: not cited in the paper."
           },
-          "dosEjes": "Fragments say how much it discusses the passage; weight says how much it carries as authority. They are not the same."
+          "dosEjes": "Fragments say how much it discusses the passage; weight says how much it carries as authority. They are not the same.",
+          "roleLabel": "Role in the paper",
+          "roleByType": "By type: {{role}}",
+          "selectedTitle_one": "You are adding {{count}} source",
+          "selectedTitle_other": "You are adding {{count}} sources",
+          "unselect": "Remove “{{label}}” from the selection"
         },
         "excerpts": {
           "expand": "Show curated excerpts",
@@ -1211,6 +1226,17 @@
         },
         "sourceMemory": {
           "repeated": "You cited {{source}} in your previous paper ({{paper}}, {{date}}). If your syllabus forbids repeating a source in consecutive weeks, this one should stay out."
+        },
+        "citationKey": {
+          "missing": "No citation key: this source cannot be cited in the paper.",
+          "useDerived": "Use “{{key}}”",
+          "write": "Write one",
+          "edit": "Edit the citation key",
+          "save": "Save",
+          "cancel": "Cancel",
+          "saved": "Citation key saved.",
+          "saveFailed": "Could not save the citation key.",
+          "renameWarning": "Verses already analyzed cite “{{key}}”: with another key those citations lose their source until re-analyzed."
         }
       },
       "corpus-plan": {
@@ -1334,14 +1360,29 @@
         "course": "Course"
       },
       "placeholders": {
-        "institution": "The Master's Seminary",
-        "assignmentTitle": "Practical assignment #3",
-        "author": "Full name",
-        "place": "Chiguayante, Concepción",
-        "date": "September 2026",
-        "course": "OT603 — Hebrew Exegesis"
+        "institution": "e.g. The Master's Seminary",
+        "assignmentTitle": "e.g. Practical assignment #3",
+        "author": "e.g. Full name",
+        "place": "e.g. Chiguayante, Concepción",
+        "date": "e.g. September 2026",
+        "course": "e.g. OT603 — Hebrew Exegesis"
       },
-      "optional": "(optional)"
+      "optional": "(optional)",
+      "useFrom": "Use cover from",
+      "useFromPlaceholder": "choose…",
+      "originPaper": "Paper: {{label}}",
+      "originProfile": "Profile: {{label}}",
+      "suggestion": "Use the previous paper's («{{label}}»)",
+      "loadedFrom": "Loaded from «{{label}}», with the assignment number advanced. Review it before saving.",
+      "offerProfile": "Save this setup as a profile? It saves the cover (without the assignment title) together with this paper's style guide and strategy; your next papers will start with them.",
+      "offerProfileCta": "Save in a profile",
+      "offerProfileDismiss": "Not now",
+      "profileDefaultName": "My cover",
+      "profileSaved": "Profile saved. Your next papers will use this cover.",
+      "profileSaveFailed": "Could not save the profile.",
+      "button": "Cover",
+      "ready": "Cover complete",
+      "missing": "missing"
     },
     "workProfile": {
       "title": "Work profile",
@@ -1593,7 +1634,7 @@
       "copied": "Markdown copied to clipboard.",
       "download": "Download .md",
       "recompose": "Recompose",
-      "tokensUsed": "{{tokens}} tokens · model {{model}}",
+      "tokensUsed": "{{tokens}} tokens",
       "formatterApplied": "Style guide applied (step 1: instructions to the assistant, step 2: automatic reformat).",
       "formatterSkipped": "You haven't extracted the style guide into structured rules yet. Only step 1 (instructions to the assistant) was applied. Go to the \"Style guide\" tab and extract the guide to activate step 2.",
       "formatterError": "Error during the automatic reformat. The assistant's composition is still valid.",
@@ -1675,7 +1716,9 @@
         "tooltip": "Compares each inline citation with your source content (text + page). Manual."
       },
       "badge": {
-        "tooltip": "{{verified}} of {{total}} citations verified · {{issues}} flagged"
+        "tooltip": "{{verified}} of {{total}} citations verified · {{issues}} flagged",
+        "prose": "prose: {{count}}!",
+        "proseTooltip": "{{count}} citations in the prose you hand in did not match. They do not block; verify again to see them."
       },
       "status": {
         "verified": "Verified",
@@ -1696,10 +1739,22 @@
         "running": "Checking citations against sources…",
         "rerun": "Re-verify",
         "close": "Close",
-        "matchedSource": "Source"
+        "matchedSource": "Source",
+        "proseTitle_one": "In the prose you hand in · {{count}} citation",
+        "proseTitle_other": "In the prose you hand in · {{count}} citations",
+        "proseHint": "Checked separately; they do not block accepting the step. If one does not match, fix it in the prose (e.g. a page that shifted while drafting)."
       },
       "toast": {
         "failed": "Verification failed. Try again."
+      },
+      "site": {
+        "commentator": "commentator position",
+        "crux": "translation crux",
+        "lexical-range": "semantic range",
+        "lexical-loading": "sense in this verse",
+        "footnote": "note",
+        "ot-link": "OT link",
+        "historical": "historical context"
       }
     },
     "review": {
@@ -1998,12 +2053,13 @@
         "pendingMark": "not composed",
         "pendingHint_one": "1 selected section has no prose yet: it will not enter the document until you compose it.",
         "pendingHint_other": "{{count}} selected sections have no prose yet: they will not enter the document until you compose them.",
-        "hint": "Uncheck whatever you do not want in the document. The length the rubric asks for is split only among what is checked.",
+        "hint": "Uncheck whatever you do not want in the document; steps not generated yet can be unchecked too. The length the rubric asks for is split only among what is checked, by question answered.",
         "toggleFailed": "Could not change the selection. Try again.",
         "unanswered_one": "⚠ Question {{numbers}} of the brief is not answered by any selected section.",
         "unanswered_other": "⚠ Questions {{numbers}} of the brief are not answered by any selected section."
       },
       "answersQuestion": "answers question {{numbers}}",
+      "verseBudget": "~{{count}} words",
       "regenerate": {
         "title": "Regenerate {{step}}",
         "description": "This section is written again from the accepted analyses.",
@@ -2093,7 +2149,8 @@
       "tooltip": "Word with native footnotes — ready for academic submission",
       "toast": {
         "exported": "Paper exported as Word",
-        "failed": "Could not generate the .docx. Try again."
+        "failed": "Could not generate the .docx. Try again.",
+        "noCover": "The Word file has no cover page: this paper has no cover details. Fill them in the paper setup and export again."
       }
     },
     "versification": {

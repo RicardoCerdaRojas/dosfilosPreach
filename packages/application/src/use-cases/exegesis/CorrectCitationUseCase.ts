@@ -83,8 +83,14 @@ export class CorrectCitationUseCase {
         if (!claimBefore) throw new Error(`No hay cita en ${path}`);
 
         const after = editCitationAt(before, path, edit);
+        // Los veredictos de la PROSA no se identifican por índice de
+        // afirmación sino por posición en el texto: realinearlos con el
+        // análisis los perdía —o, con un offset chico, los convertía en una
+        // cita del análisis—. Se apartan y vuelven intactos al final.
+        const todos = version.citationVerdicts ?? [];
+        const deLaProsa = todos.filter(v => v.origin === 'prose');
         const marks = realignCitationMarks(before, after, {
-            verdicts: version.citationVerdicts ?? [],
+            verdicts: todos.filter(v => v.origin !== 'prose'),
             reviews: version.citationReviews ?? [],
         });
 
@@ -124,6 +130,10 @@ export class CorrectCitationUseCase {
         // números de la cabecera hablan del análisis que ahora está
         // guardado, no del que había antes de corregir.
         const summary = buildSummary([...verdicts], {
+            ...(version.verifications?.proseCitations !== undefined
+                ? { proseCitations: version.verifications.proseCitations } : {}),
+            ...(version.verifications?.proseCitationsWithIssues !== undefined
+                ? { proseCitationsWithIssues: version.verifications.proseCitationsWithIssues } : {}),
             verifierVersion: version.verifications?.verifierVersion ?? 'analysis-v1',
             sourcesNamedWithoutCitation: version.verifications?.sourcesNamedWithoutCitation ?? 0,
             witnessClaimsWithoutCitation: version.verifications?.witnessClaimsWithoutCitation ?? 0,
@@ -137,7 +147,7 @@ export class CorrectCitationUseCase {
 
         const saved = await this.paperRepository.applyCitationCorrection(ownerId, paperId, stepId, versionId, {
             analysis: after,
-            verdicts,
+            verdicts: [...verdicts, ...deLaProsa],
             reviews: marks.reviews,
             verifications: summary,
             correction,

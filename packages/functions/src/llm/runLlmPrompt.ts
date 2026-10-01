@@ -324,7 +324,7 @@ export const runLlmPrompt = onCall(
                     outputTokens: meta?.candidatesTokenCount ?? 0,
                     thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result), model };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (fileSearch) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -362,7 +362,7 @@ export const runLlmPrompt = onCall(
                     outputTokens: meta?.candidatesTokenCount ?? 0,
                     thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result), model };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (inlineImage) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -395,7 +395,7 @@ export const runLlmPrompt = onCall(
                     outputTokens: meta?.candidatesTokenCount ?? 0,
                     thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result), model };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (config) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -430,7 +430,7 @@ export const runLlmPrompt = onCall(
                     outputTokens: meta?.candidatesTokenCount ?? 0,
                     thinkingTokens: meta?.thoughtsTokenCount ?? 0,
                 });
-                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result) };
+                return { text: textoDeGemini(result), tokens: totalTokensOf(meta), finishReason: finishReasonOf(result), model };
             } catch (err) {
                 console.error(`[runLlmPrompt] ${feature} (safety) falló`, err);
                 throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -448,7 +448,7 @@ export const runLlmPrompt = onCall(
                     ? { maxOutputTokens: Math.min(data.maxOutputTokens, MAX_OUTPUT_TOKENS_CAP) }
                     : {}),
             });
-            return { text, tokens: llm.lastTotalTokens, finishReason: null };
+            return { text, tokens: llm.lastTotalTokens, finishReason: null, model };
         } catch (err) {
             console.error(`[runLlmPrompt] ${feature} falló`, err);
             throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
@@ -468,7 +468,7 @@ async function porOtroProveedor(
     modelo: string,
     razonamiento: RutaRazonamiento,
     ctx: { feature: string; uid: string; system?: string; prompt: string; data: Record<string, unknown> },
-): Promise<{ text: string; tokens: number | null; finishReason: null }> {
+): Promise<{ text: string; tokens: number | null; finishReason: null; model: string }> {
     const { feature, uid, system, prompt, data } = ctx;
     const clave = proveedor === 'openai' ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY;
     if (!clave) {
@@ -490,10 +490,10 @@ async function porOtroProveedor(
             // Sin `withGeminiRetry`: el adaptador ya reintenta lo transitorio, y
             // distingue la falta de saldo, que no se arregla reintentando.
             const text = await llm.generate(opciones);
-            return { text, tokens: llm.lastTotalTokens, finishReason: null };
+            return { text, tokens: llm.lastTotalTokens, finishReason: null, model: modelo };
         }
         const llm = new AnthropicLlmClient(clave, modelo, opciones.maxOutputTokens ?? 8192, { feature, userId: uid });
-        return { text: await llm.generate(opciones), tokens: null, finishReason: null };
+        return { text: await llm.generate(opciones), tokens: null, finishReason: null, model: modelo };
     } catch (err) {
         console.error(`[runLlmPrompt] ${feature} (${proveedor}/${modelo}) falló`, err);
         throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');

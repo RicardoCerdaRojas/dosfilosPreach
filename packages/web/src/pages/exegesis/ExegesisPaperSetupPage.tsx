@@ -8,9 +8,9 @@ import { RubricSubStep } from '@/components/exegesis/setup/RubricSubStep';
 import { StyleManifestSubStep } from '@/components/exegesis/setup/StyleManifestSubStep';
 import { CorpusSubStep } from '@/components/exegesis/setup/CorpusSubStep';
 import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPlanSubStep';
-import { PaperBriefPanel } from '@/components/exegesis/setup/PaperBriefPanel';
-import { PaperCoverPanel } from '@/components/exegesis/setup/PaperCoverPanel';
-import { SaveWorkProfileCard } from '@/components/exegesis/setup/SaveWorkProfileCard';
+import { PaperBriefButton } from '@/components/exegesis/setup/PaperBriefButton';
+import { PaperCoverButton } from '@/components/exegesis/setup/PaperCoverButton';
+import { SaveWorkProfileButton } from '@/components/exegesis/setup/SaveWorkProfileButton';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
 
@@ -139,16 +139,17 @@ export function ExegesisPaperSetupPage() {
                             {formatPassageReference(paper.passage, activeLanguage)} · {t(`list.phase.${paper.phase}`)}
                         </p>
                     </div>
+                    {/* Encuadre y portada como botones con su estado: se editan en
+                        un modal amplio y dejan la página entera a la
+                        configuración. La key descarta un borrador a medio
+                        escribir si la ruta cambia a otro trabajo. */}
+                    <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
+                    <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
+                    <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
                 </div>
             </header>
 
             <div className="max-w-7xl w-full mx-auto px-6 py-6">
-                {/* La key descarta un borrador a medio escribir si la ruta
-                    cambia a otro trabajo sin desmontar la página. */}
-                <PaperBriefPanel key={paper.id} paper={paper} />
-                <PaperCoverPanel key={`cover-${paper.id}`} paper={paper} />
-                <SaveWorkProfileCard key={`profile-${paper.id}`} paper={paper} />
-
                 <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
                     {SUB_STEPS.map((s, idx) => (
                         <SubStepTab

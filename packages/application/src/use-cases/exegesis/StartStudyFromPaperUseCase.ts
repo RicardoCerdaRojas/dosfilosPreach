@@ -45,7 +45,7 @@ import {
  *     'paper'`, que es lo que hace que el wizard cargue el material del
  *     paper como consulta al lado de cada paso
  *     (`buildPaperStudyReference`).
- *   - La semilla NO se crea acá: `PastoralSeedService.ensureForSermon`
+ *   - La semilla NO se crea aquí: `PastoralSeedService.ensureForSermon`
  *     la mintea, idempotente, cuando el pastor entra al Paso 1. Crearla
  *     por adelantado dejaría semillas vacías de pastores que nunca
  *     abrieron el estudio, y ensuciaría la métrica de abandono.
@@ -176,7 +176,7 @@ export class StartStudyFromPaperUseCase {
         const sermon = SermonEntity.create({
             userId: args.paper.ownerId,
             title: args.paper.title ?? args.passageLabel,
-            // Vacío A PROPÓSITO. Acá el caso de uso anterior escribía el
+            // Vacío A PROPÓSITO. Aquí el caso de uso anterior escribía el
             // sermón que el modelo había redactado. El cuerpo lo llena
             // el pastor al llegar al Paso 3, después del estudio.
             content: '',

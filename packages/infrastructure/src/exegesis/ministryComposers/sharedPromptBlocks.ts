@@ -26,9 +26,9 @@ export function commonGuardrails(lang: 'es' | 'en'): string {
     return [
         `## Salvaguardas (NO NEGOCIABLES)`,
         `- El trabajo exegético YA ESTÁ HECHO en los análisis estructurados de abajo. Tu tarea es COMPOSICIÓN para este formato. NO re-analizes el griego, NO introduzcas afirmaciones exegéticas nuevas, NO inventes fuentes o citas.`,
-        `- SOLO usá ideas, decisiones y citas PRESENTES en los análisis. Los compromisos de traducción deben ser los que los análisis adoptaron.`,
-        `- Calibrá el lenguaje hedge a los \`confidenceFlags\` de los análisis: high → "demuestra / establece"; medium → "sostiene / argumenta"; tentative → "sugiere / podría leerse como".`,
-        `- La síntesis teológica se informa con los \`theologicalHooks\` de cada análisis — surfaceá el locus doctrinal que el verso toca, anclado en lo que el análisis efectivamente estableció.`,
+        `- SOLO usa ideas, decisiones y citas PRESENTES en los análisis. Los compromisos de traducción deben ser los que los análisis adoptaron.`,
+        `- Calibra el lenguaje hedge a los \`confidenceFlags\` de los análisis: high → "demuestra / establece"; medium → "sostiene / argumenta"; tentative → "sugiere / podría leerse como".`,
+        `- La síntesis teológica se informa con los \`theologicalHooks\` de cada análisis — destaca el locus doctrinal que el verso toca, anclado en lo que el análisis efectivamente estableció.`,
         `- SIN inflación devocional. SIN afirmaciones doctrinales que el texto no respalda. SIN comentario político/cultural contemporáneo salvo que el encuadre del paper lo demande directamente.`,
     ].join('\n');
 }

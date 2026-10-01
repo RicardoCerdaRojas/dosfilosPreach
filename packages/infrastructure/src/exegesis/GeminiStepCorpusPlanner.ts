@@ -82,7 +82,7 @@ export class GeminiStepCorpusPlanner implements IStepCorpusPlanner {
 
 // ── Prompt construction ─────────────────────────────────────────────────
 
-function buildPlannerPrompt(input: ProposeStepCorpusInput): {
+export function buildPlannerPrompt(input: ProposeStepCorpusInput): {
     systemInstruction: string;
     userMessage: string;
 } {
@@ -164,7 +164,7 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
     const passageLine = isSpanish
         ? `**Pasaje del paper:** ${passageLabel}`
         : `**Paper passage:** ${passageLabel}`;
-    // El encuadre llega ENTERO: acá es una instrucción, no una consulta de
+    // El encuadre llega ENTERO: aquí es una instrucción, no una consulta de
     // embeddings. Con el tope de 1.000 que había, el planificador de Santiago
     // 2:1-13 nunca vio «Prohibido citar McCartney, Ropes, Varner: el plan de
     // estudios no permite repetir una fuente en semanas consecutivas» — una
@@ -178,9 +178,18 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
         : null;
 
     const sourcesSection = isSpanish ? '**Fuentes en el corpus:**' : '**Sources in the corpus:**';
-    const sourcesList = input.sources
-        .map(s => `- id="${s.id}" · type=${s.sourceType} · ${s.displayLabel}${s.citationKey ? ` (${s.citationKey})` : ''}`)
-        .join('\n');
+    // Cada fuente dice cómo se la nombra. Sin clave de cita el modelo
+    // completaba el autor por el título: llamó «gramática de
+    // Blass-Debrunner-Funk» a la de Robertson (TP Santiago 2:14-26), que no
+    // tenía autor cargado.
+    const sinAutor = isSpanish ? 'SIN AUTOR CARGADO' : 'NO AUTHOR ON FILE';
+    const sourcesList = [
+        ...input.sources.map(s =>
+            `- id="${s.id}" · type=${s.sourceType} · ${s.displayLabel} · ${s.citationKey ? `${isSpanish ? 'se nombra' : 'named'}: ${s.citationKey}` : sinAutor}`),
+        isSpanish
+            ? `Nombra cada fuente SÓLO como se indica. Si dice «${sinAutor}», nómbrala por su título y nunca le atribuyas un autor: deducirlo del título es inventarlo.`
+            : `Name each source ONLY as given. If it says "${sinAutor}", name it by its title and never attribute an author: inferring one from the title is inventing it.`,
+    ].join('\n');
 
     const stepsSection = isSpanish ? '**Pasos del paper:**' : '**Paper steps:**';
     const stepsList = input.steps

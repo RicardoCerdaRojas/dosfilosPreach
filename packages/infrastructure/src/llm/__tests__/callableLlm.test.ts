@@ -48,7 +48,7 @@ describe('runLlmPromptWithUsage', () => {
     it('devuelve la respuesta cuando no hay nada que reintentar', async () => {
         llamar.mockResolvedValue(respuesta);
         await expect(runLlmPromptWithUsage(opciones)).resolves.toEqual({
-            text: 'hola', tokensUsed: 7, finishReason: 'STOP',
+            text: 'hola', tokensUsed: 7, finishReason: 'STOP', model: null,
         });
         expect(llamar).toHaveBeenCalledTimes(1);
     });
@@ -124,5 +124,17 @@ describe('runLlmPromptWithUsage', () => {
         llamar.mockRejectedValue(faltaDeSesion);
         await expect(runLlmPromptWithUsage(opciones)).rejects.toThrow('User must be authenticated');
         expect(llamar).toHaveBeenCalledTimes(1);
+    });
+});
+
+/**
+ * El `modelId` de una versión decía el default del adaptador, no lo que
+ * corrió: el análisis de Santiago 2:14 quedó «gemini-2.5-pro» y había corrido
+ * en `gpt-6.1-sol`, por el ruteo por función.
+ */
+describe('runLlmPromptWithUsage — el modelo que corrió', () => {
+    it('trae el modelo que informa el servidor', async () => {
+        llamar.mockReset().mockResolvedValue({ data: { ...respuesta.data, model: 'gpt-6.1-sol' } });
+        await expect(runLlmPromptWithUsage(opciones)).resolves.toMatchObject({ model: 'gpt-6.1-sol' });
     });
 });

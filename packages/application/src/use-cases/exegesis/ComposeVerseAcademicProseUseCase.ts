@@ -20,14 +20,21 @@ import type {
     IPageNumberingReader,
 } from '@dosfilos/domain';
 import {
+    canonicalizeQuestionHeadings,
     documentSections,
     parseBriefQuestions,
-    questionsForVerse,
+    questionsOfStep,
+    replaceSectionsByHeadings,
     sectionBudgets,
+    sectionHeadings,
     isCitableSourceType,
     replaceVerseSection,
+    replaceVerseSectionExact,
+    pertenceAlDocumento,
     verseSectionKey,
+    verseWordBudget,
     type AcademicVoiceSample,
+    type BriefQuestion,
 } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { composerSourceOf } from './pinnedSourceContent';
@@ -159,6 +166,23 @@ export class ComposeVerseAcademicProseUseCase {
             const glossary = await this.loadGlossary(input.ownerId);
             const voiceSamples = await this.loadVoiceSamples(input.ownerId);
             const manifest = await this.loadStyleManifest(input.ownerId, paper);
+            const preguntas = parseBriefQuestions(paper.assignmentBrief);
+            const propias = questionsOfStep(step, preguntas);
+            // La cifra que el autor escribe al recomponer ES el presupuesto.
+            // Antes el presupuesto calculado iba a la instrucción de sistema
+            // («50 palabras, es un presupuesto, no una sugerencia») y la cifra
+            // al mensaje («unas 300»), y ganaba la de sistema: se pidieron 300
+            // y salieron 52 (Santiago 2:14, 2026-09-30).
+            const wordBudget = input.targetWords && input.targetWords > 0
+                ? Math.round(input.targetWords)
+                : verseWordBudget(
+                    sectionBudgets(
+                        paper.rubric?.expectedLength ?? null,
+                        documentSections(paper.steps, preguntas),
+                        paper.rubric?.formatting ?? null,
+                    ).perShare,
+                    propias.length,
+                );
 
             const composerInput: ComposeVerseInput = {
                 verseAnalysis: target.canonicalAnalysis,
@@ -171,21 +195,13 @@ export class ComposeVerseAcademicProseUseCase {
                 pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
                 ...(glossary.length > 0 ? { glossary } : {}),
                 ...(voiceSamples.length > 0 ? { voiceSamples } : {}),
-                // El presupuesto de ESTE versículo, derivado de la extensión
-                // que exige la rúbrica y repartido entre los versículos del
-                // trabajo. Sin esto el compositor no sabía que había un
-                // límite: un trabajo de 2-3 páginas salió de 16.
                 // La pregunta del encuadre que le toca a ESTE versículo.
-                sectionQuestions: questionsForVerse(
-                    parseBriefQuestions(paper.assignmentBrief),
-                    step.verseRef!.chapterStart,
-                    step.verseRef!.verseStart ?? 1,
-                ).map(q => ({ number: q.number, text: q.text })),
-                wordBudget: sectionBudgets(
-                    paper.rubric?.expectedLength ?? null,
-                    documentSections(paper.steps),
-                    paper.rubric?.formatting ?? null,
-                ).perVerse,
+                sectionQuestions: propias.map(q => ({ number: q.number, text: q.text })),
+                // El presupuesto de ESTE versículo, derivado de la extensión
+                // que exige la rúbrica y repartido por pregunta entre los
+                // versículos del documento. Sin esto el compositor no sabía
+                // que había un límite: un trabajo de 2-3 páginas salió de 16.
+                wordBudget,
                 // La forma de cita la decide la entrega, no el compositor: es
                 // la misma que el exportador va a maquetar.
                 ...(paper.rubric?.formatting?.citationForm
@@ -220,6 +236,9 @@ export class ComposeVerseAcademicProseUseCase {
                     formatterStatus = 'error';
                 }
             }
+            // Un versículo que responde varias preguntas trae un título por
+            // respuesta; se dejan idénticos a los que el ensamble busca.
+            finalMarkdown = canonicalizeQuestionHeadings(finalMarkdown, propias.map(q => q.text));
 
             await this.paperRepository.setStepVersionMarkdown(
                 input.ownerId,
@@ -237,6 +256,8 @@ export class ComposeVerseAcademicProseUseCase {
                 paper,
                 target.canonicalAnalysis,
                 finalMarkdown,
+                propias,
+                pertenceAlDocumento(step),
             );
 
             return {
@@ -266,12 +287,35 @@ export class ComposeVerseAcademicProseUseCase {
         paper: ExegeticalPaper,
         analysis: CanonicalVerseAnalysis,
         prose: string,
+        propias: ReadonlyArray<BriefQuestion>,
+        enElDocumento: boolean,
     ): Promise<boolean> {
         const assembled = paper.assembledMarkdown?.trim();
         if (!assembled) return false;
+        // Un versículo fuera del documento no tiene sección que reemplazar.
+        // Buscarla igual podía encontrar la de otro.
+        if (!enElDocumento) return false;
 
         const key = verseSectionKey(analysis, paper.displayLanguage);
-        const next = replaceVerseSection(assembled, key, prose);
+        // Con preguntas, la sección se titula con ellas. Un ensamble anterior
+        // a ese cambio sigue titulado con la referencia: se prueba después.
+        const porPregunta = propias.length > 0
+            ? replaceSectionsByHeadings(
+                assembled,
+                sectionHeadings({ kind: 'verse', verseRef: analysis.reference }, propias, key),
+                prose,
+            )
+            : null;
+        // Respaldo: un versículo sin preguntas, o un ensamble anterior a los
+        // títulos por pregunta. Si el encuadre trae preguntas, título EXACTO:
+        // un título-pregunta puede nombrar este versículo sin ser su sección
+        // (ver `replaceVerseSectionExact`). Sin preguntas, el de siempre, que
+        // acepta «### Santiago 1:2 — La prueba» del compositor del trabajo
+        // entero.
+        const hayPreguntas = parseBriefQuestions(paper.assignmentBrief).length > 0;
+        const next = porPregunta ?? (hayPreguntas
+            ? replaceVerseSectionExact(assembled, key, prose)
+            : replaceVerseSection(assembled, key, prose));
         if (next === null) {
             console.warn('[ComposeVerseAcademicProseUseCase] el ensamblado no trae la sección', key);
             return false;

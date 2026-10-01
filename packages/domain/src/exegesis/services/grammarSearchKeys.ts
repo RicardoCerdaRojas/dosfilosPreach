@@ -36,7 +36,7 @@
  *
  * Es una lista CERRADA y tiene que serlo: los títulos de sección de una
  * gramática están en su idioma —Porter titula en inglés— y el encuadre está
- * en el del alumno. Traducir con un modelo acá sería pagar una llamada para
+ * en el del alumno. Traducir con un modelo aquí sería pagar una llamada para
  * resolver un vocabulario de cincuenta palabras que no cambia nunca, y
  * arriesgar que «caso» vuelva como «case» en el sentido de «causa judicial».
  *

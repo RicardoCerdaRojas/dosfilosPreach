@@ -10,7 +10,7 @@ import type { ComposerSourceMetadata } from './IAcademicComposer';
  * paper→sermón que se retiró cuando el paper dejó de producir
  * borradores (el paper alimenta el estudio de 8 pasos; no lo saltea).
  * El único consumidor que quedaba era el composer ministerial, así que
- * el tipo se mudó acá, con su dueño. El nombre se conserva porque está
+ * el tipo se mudó aquí, con su dueño. El nombre se conserva porque está
  * persistido en `Sermon.wizardProgress.derivedContext.tone` de los
  * sermones ya generados.
  */

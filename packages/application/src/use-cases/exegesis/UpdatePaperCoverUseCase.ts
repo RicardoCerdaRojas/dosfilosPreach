@@ -38,7 +38,7 @@ export class UpdatePaperCoverUseCase {
  */
 export function normalizeCover(cover: PaperCover | null): PaperCover | null {
     if (!cover) return null;
-    // La lista es del dominio: escrita acá a mano, se quedó sin el campo
+    // La lista es del dominio: escrita aquí a mano, se quedó sin el campo
     // nuevo y la portada se guardaba incompleta sin avisar.
     const entries = PAPER_COVER_FIELDS
         .map(key => [key, cover[key]?.trim().slice(0, MAX_FIELD_CHARS) ?? ''] as const)

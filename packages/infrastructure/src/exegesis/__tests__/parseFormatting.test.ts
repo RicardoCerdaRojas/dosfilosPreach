@@ -30,6 +30,8 @@ describe('parseFormatting', () => {
 
     it('un interlineado fuera del catálogo cae a la guía de la casa', () => {
         expect(parseFormatting({ lineSpacing: 'doble' })).toBeNull();
+        // …salvo que diga otra cosa: entonces esa cosa vale y el interlineado es el de la casa.
+        expect(parseFormatting({ lineSpacing: 'doble', citationForm: 'parenthetical' })!.lineSpacing).toBe('double');
         expect(parseFormatting({ lineSpacing: '1.5' })).toBeNull();
         expect(parseFormatting({ lineSpacing: 2 })).toBeNull();
     });
@@ -47,5 +49,24 @@ describe('parseFormatting', () => {
         expect(parseFormatting({ lineSpacing: 'single' })!.blankLineBetweenParagraphs).toBe(false);
         expect(parseFormatting({ lineSpacing: 'single', blankLineBetweenParagraphs: 'sí' })!.blankLineBetweenParagraphs).toBe(false);
         expect(parseFormatting({ lineSpacing: 'single', blankLineBetweenParagraphs: true })!.blankLineBetweenParagraphs).toBe(true);
+    });
+});
+
+/**
+ * El sílabo del TP semanal de TMS dice «(Carballosa, 208)» y calla el
+ * interlineado del que se trata. Antes, sin interlineado, se descartaba TODO
+ * y la entrega volvía a nota al pie con «p.».
+ */
+describe('parseFormatting — lo dicho sin interlineado', () => {
+    it('la forma de cita dicha sobrevive sin interlineado, con el de la casa', () => {
+        expect(parseFormatting({ citationForm: 'parenthetical' }))
+            .toEqual({ lineSpacing: 'double', lineSpacingFromHouse: true, blankLineBetweenParagraphs: false, citationForm: 'parenthetical' });
+    });
+
+    it('lee el rótulo de página sin «p.»', () => {
+        expect(parseFormatting({ lineSpacing: 'single', citationForm: 'parenthetical', pageLabel: 'bare' })!.pageLabel)
+            .toBe('bare');
+        // Sin decirlo, no se escribe el campo: ausente es «p. N».
+        expect(parseFormatting({ lineSpacing: 'single' })).not.toHaveProperty('pageLabel');
     });
 });

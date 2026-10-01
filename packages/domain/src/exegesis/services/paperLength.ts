@@ -205,6 +205,15 @@ function round(n: number): number {
 export interface DocumentSections {
     /** Cuántos versículos pertenecen al documento. */
     verses: number;
+    /**
+     * Entre cuántas partes se reparte lo que les toca a los versículos.
+     *
+     * Cada versículo pesa las preguntas del encuadre que responde, y uno sin
+     * pregunta pesa una. Repartir por versículo dejó flaco a Santiago 2:21 en
+     * el TP de 2:14-26: respondía las preguntas 3 y 4 con el mismo presupuesto
+     * que los que respondían una. Ausente equivale a `verses`.
+     */
+    shares?: number;
     introduction: boolean;
     conclusion: boolean;
 }
@@ -224,6 +233,13 @@ const PARTE_DEL_MARCO = 0.1;
  * ciento entre ellos: reservarle extensión a una sección que no va escrita
  * deja el documento corto sin que nadie sepa por qué.
  *
+ * `perShare` es lo que le toca a UNA parte del reparto: un versículo que
+ * responde dos preguntas recibe el doble (`verseWordBudget`).
+ *
+ * El objetivo es el PUNTO MEDIO de lo exigido. Apuntar al mínimo dejaba el
+ * trabajo en el borde de «corto» apenas un versículo salía más breve; un TP de
+ * 2-3 páginas apunta a dos y media.
+ *
  * `null` en cada parte que no corresponde, y en todas cuando el curso no
  * declara extensión: no se inventa un objetivo.
  */
@@ -231,23 +247,38 @@ export function sectionBudgets(
     expected: ExpectedLengthRange | null,
     sections: DocumentSections,
     formatting: PaperFormatting | null = null,
-): { perVerse: number | null; introduction: number | null; conclusion: number | null } {
-    const vacio = { perVerse: null, introduction: null, conclusion: null };
+): { perShare: number | null; introduction: number | null; conclusion: number | null } {
+    const vacio = { perShare: null, introduction: null, conclusion: null };
     if (!expected) return vacio;
-    const target = expected.min ?? expected.max;
+    const target = expected.min !== null && expected.max !== null
+        ? (expected.min + expected.max) / 2
+        : expected.min ?? expected.max;
     if (target === null || target <= 0) return vacio;
 
     const totalWords = expected.unit === 'words' ? target : target * wordsPerPage(formatting);
     const marco = (sections.introduction ? PARTE_DEL_MARCO : 0)
         + (sections.conclusion ? PARTE_DEL_MARCO : 0);
+    const partes = sections.verses > 0 ? (sections.shares ?? sections.verses) : 0;
 
     return {
-        perVerse: sections.verses > 0
-            ? redondeaA50(totalWords * (1 - marco) / sections.verses)
+        perShare: partes > 0
+            ? redondeaA50(totalWords * (1 - marco) / partes)
             : null,
         introduction: sections.introduction ? redondeaA50(totalWords * PARTE_DEL_MARCO) : null,
         conclusion: sections.conclusion ? redondeaA50(totalWords * PARTE_DEL_MARCO) : null,
     };
+}
+
+/**
+ * El presupuesto de UN versículo: su parte por cada pregunta que responde.
+ *
+ * Una sola función para el compositor y para la pantalla —la tarjeta del
+ * versículo y el diálogo de recomponer—, así el número que se ve es el que el
+ * compositor recibe.
+ */
+export function verseWordBudget(perShare: number | null, questionsAnswered: number): number | null {
+    if (!perShare) return null;
+    return perShare * Math.max(1, questionsAnswered);
 }
 
 /** Un presupuesto se dice en decenas, no en unidades: «unas 150 palabras». */
@@ -260,7 +291,7 @@ function redondeaA50(words: number): number {
  *
  * Una sola redacción para los tres —versículo, introducción, conclusión— y
  * para los que vengan. Tres textos distintos diciendo lo mismo derivan solos:
- * uno se vuelve un ruego («intentá no pasarte»), otro un límite duro, y el
+ * uno se vuelve un ruego («intenta no pasarte»), otro un límite duro, y el
  * mismo trabajo sale con secciones que obedecen distinto.
  *
  * Cadena vacía cuando no hay presupuesto: sin extensión declarada, callar es
@@ -276,7 +307,7 @@ export function buildWordBudgetBlock(words: number | null, language: 'es' | 'en'
         ].join('\n')
         : [
             '## Extensión',
-            `Escribí aproximadamente ${words} palabras para esta sección. Es un presupuesto, no una sugerencia: el trabajo tiene una extensión que el curso califica, y cada sección que gasta de más se lo quita a otra.`,
-            'Recortá amplitud, nunca rigor. Menos puntos, cada uno argumentado y citado entero — no los mismos puntos dichos más corto.',
+            `Escribe aproximadamente ${words} palabras para esta sección. Es un presupuesto, no una sugerencia: el trabajo tiene una extensión que el curso califica, y cada sección que gasta de más se lo quita a otra.`,
+            'Recorta amplitud, nunca rigor. Menos puntos, cada uno argumentado y citado entero — no los mismos puntos dichos más corto.',
         ].join('\n');
 }

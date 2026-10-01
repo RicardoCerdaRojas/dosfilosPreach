@@ -53,7 +53,7 @@ export class GeminiConclusionComposer implements IConclusionComposer {
             pinnedKeysInPrompt: input.pinnedSourceKeys,
         });
 
-        const { text: markdown, tokensUsed } = await withGeminiRetry(
+        const { text: markdown, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.composeConclusion',
                 model: this.modelName,
@@ -68,7 +68,7 @@ export class GeminiConclusionComposer implements IConclusionComposer {
 
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
             // Adapter doesn't run the deterministic formatter — that's
             // the use case's job. Always reports 'skipped' here; the
@@ -138,24 +138,24 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             ``,
             `## Guía de estilo obligatoria`,
             fallback
-                ? `(SIN guía de estilo adjunta. Aplicá explícitamente convenciones The Master's Seminary / Turabian: notas al pie para citas, comillas francesas «...», itálicas para términos en lenguas extranjeras, registro académico sobrio.)`
+                ? `(SIN guía de estilo adjunta. Aplica explícitamente convenciones The Master's Seminary / Turabian: notas al pie para citas, comillas francesas «...», itálicas para términos en lenguas extranjeras, registro académico sobrio.)`
                 : styleGuideBlock,
             ``,
             citationBlock,
             ``,
             `## Reglas duras para la conclusión`,
-            `- Sintetizá lo que los análisis verso por verso EFECTIVAMENTE ESTABLECIERON. NO introduzcas argumentos nuevos, fuentes nuevas, ni líneas de indagación nuevas.`,
-            `- Reformulá la tesis del paper en la forma que el cuerpo demostró — no la forma que el autor inicialmente esperaba.`,
+            `- Sintetiza lo que los análisis verso por verso EFECTIVAMENTE ESTABLECIERON. NO introduzcas argumentos nuevos, fuentes nuevas, ni líneas de indagación nuevas.`,
+            `- Reformula la tesis del paper en la forma que el cuerpo demostró — no la forma que el autor inicialmente esperaba.`,
             `- 2-3 párrafos. NO un checklist. Prosa académica continua.`,
             `- Citas con moderación: solo al reformular un compromiso específico del cuerpo que se beneficia de cita ancla. El aparato bibliográfico pertenece al cuerpo, no a la conclusión.`,
             `- SIN lenguaje devocional, SIN aplicación pastoral, SIN relevancia contemporánea. Síntesis pura de lo que el análisis estableció.`,
             ``,
             `## Salvaguarda contra alucinación`,
-            `- Solo referenciá ideas, decisiones y citas presentes en los análisis abajo. NUNCA inventes afirmaciones, citas o compromisos.`,
+            `- Solo referencia ideas, decisiones y citas presentes en los análisis abajo. NUNCA inventes afirmaciones, citas o compromisos.`,
             `- Los compromisos de traducción mencionados deben ser los que los análisis del cuerpo efectivamente adoptaron (en su \`translationCruxes.commitment\`).`,
             ``,
             `## Salida`,
-            `Un único bloque markdown, 2-3 párrafos. Comenzá la sección con un heading "## Conclusión", después la prosa. Sin sub-headings "##" adentro.`,
+            `Un único bloque markdown, 2-3 párrafos. Comienza la sección con un heading "## Conclusión", después la prosa. Sin sub-headings "##" adentro.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 
     // La voz del autor, al final de la instrucción de sistema y no en el
@@ -177,13 +177,13 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
 
     const userPrefix = lang === 'en'
         ? `Compose the conclusion section for the paper on **${passage}**.`
-        : `Componé la sección de conclusión del paper sobre **${passage}**.`;
+        : `Compón la sección de conclusión del paper sobre **${passage}**.`;
     const briefingsHeading = lang === 'en'
         ? '### Body — accepted verse analyses (synthesize from these only)'
-        : '### Cuerpo — análisis verso por verso aceptados (sintetizá solo desde estos)';
+        : '### Cuerpo — análisis verso por verso aceptados (sintetiza solo desde estos)';
     const sourcesHeading = lang === 'en'
         ? '### Source registry (cite only these keys)'
-        : '### Registro de fuentes (citá solo estas claves)';
+        : '### Registro de fuentes (cita solo estas claves)';
 
     const renderUser = (sourcesBlock: string) => [
         userPrefix,
@@ -200,7 +200,7 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
         ``,
         lang === 'en'
             ? `Now produce the conclusion. 2-3 paragraphs of continuous academic prose, opening with "## Conclusion".`
-            : `Ahora producí la conclusión. 2-3 párrafos de prosa académica continua, abriendo con "## Conclusión".`,
+            : `Ahora produce la conclusión. 2-3 párrafos de prosa académica continua, abriendo con "## Conclusión".`,
     ].filter(Boolean).join('\n');
 
     // El contenido de las fuentes asignadas es lo único que se recorta: los
@@ -242,7 +242,7 @@ function formatStyleGuide(content: string, manifest: StyleGuideManifest | null, 
     return parts.length === 0
         ? (lang === 'en'
             ? '(Style guide present but content empty. Apply TMS / Turabian defaults.)'
-            : '(Guía de estilo presente pero contenido vacío. Aplicá defaults TMS / Turabian.)')
+            : '(Guía de estilo presente pero contenido vacío. Aplica defaults TMS / Turabian.)')
         : parts.join('\n');
 }
 
@@ -275,7 +275,7 @@ function formatSourceRegistry(
                 : indented;
             const heading = lang === 'en'
                 ? `\n  _Source content for grounding the pinned citation. Find the passage most relevant to ${s.citationKey}'s commentary on this paper's pericope and paraphrase or quote from there:_\n`
-                : `\n  _Contenido de la fuente para anclar la cita asignada. Encontrá el pasaje más relevante del comentario de ${s.citationKey} sobre la perícopa de este paper y parafraseá o citá desde ahí:_\n`;
+                : `\n  _Contenido de la fuente para anclar la cita asignada. Encuentra el pasaje más relevante del comentario de ${s.citationKey} sobre la perícopa de este paper y parafrasea o cita desde ahí:_\n`;
             lines.push(heading + '  ```\n  ' + truncated + '\n  ```');
         }
     }

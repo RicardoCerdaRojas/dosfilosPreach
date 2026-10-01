@@ -16,9 +16,9 @@ import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
  *
  * Tres propiedades no negociables de este módulo:
  *
- *   1. **Determinista.** No hay modelo acá. Cada ítem se copia de un
+ *   1. **Determinista.** No hay modelo aquí. Cada ítem se copia de un
  *      `canonicalAnalysis` que el pastor ya aceptó en su paper. Si el
- *      paper no lo tiene, acá no aparece — nunca se rellena el hueco.
+ *      paper no lo tiene, aquí no aparece — nunca se rellena el hueco.
  *
  *   2. **Es consulta, no relleno.** El resultado se MUESTRA junto al
  *      paso; jamás se escribe en los campos de la semilla. Lo que el
@@ -38,7 +38,7 @@ import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
 export interface PaperReferenceItem {
     /** Rótulo corto: el lexema, la construcción, el aspecto. */
     label: string;
-    /** El hallazgo, copiado del análisis. Nunca se redacta acá. */
+    /** El hallazgo, copiado del análisis. Nunca se redacta aquí. */
     detail: string;
     /** Verso del paper del que salió, ya formateado ("Santiago 1:2"). */
     verseLabel: string;

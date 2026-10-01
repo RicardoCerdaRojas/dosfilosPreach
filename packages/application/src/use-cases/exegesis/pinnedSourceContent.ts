@@ -1,6 +1,7 @@
 import {
     citationAnchorFor,
     isCitableSourceType,
+    workTitleFromLabel,
     type BibliographicData,
     type ComposerSourceMetadata,
     type ExegeticalPaper,
@@ -59,7 +60,9 @@ export async function composerSourceOf(
     reader?: IBibliographyReader,
 ): Promise<ComposerSourceMetadata> {
     const key = source.citationKey ?? deriveCitationKey(source.displayLabel);
-    const fallback: ComposerSourceMetadata = { citationKey: key, author: key, title: source.displayLabel };
+    // Sin título en la ficha, el rótulo sin la colección pegada.
+    const titulo = workTitleFromLabel(source.displayLabel);
+    const fallback: ComposerSourceMetadata = { citationKey: key, author: key, title: titulo };
     if (!reader) return fallback;
 
     const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
@@ -69,7 +72,7 @@ export async function composerSourceOf(
     return {
         citationKey: key,
         author: (data.author ?? '').trim() || key,
-        title: (data.title ?? '').trim() || source.displayLabel,
+        title: (data.title ?? '').trim() || titulo,
         ...(data.subtitle?.trim() ? { subtitle: data.subtitle.trim() } : {}),
         ...(seriesVolumeOf(data) ? { seriesVolume: seriesVolumeOf(data) } : {}),
         ...(data.city?.trim() ? { city: data.city.trim() } : {}),

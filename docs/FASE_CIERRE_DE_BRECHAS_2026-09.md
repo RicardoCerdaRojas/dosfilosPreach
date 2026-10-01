@@ -16,6 +16,10 @@ porque el código exista: se cierra cuando alguien lo vio funcionar.
 
 ## Estado
 
+**Fase cerrada el 2026-09-30.** Los ocho ítems están desplegados. La telemetría
+(ítem 7) se usó el mismo día para decidir el cambio de motor de extracción
+([ADR-045](pastoral-fidelity/decisions/ADR-045-extraction-reads-with-gemini-3-8-flash.md)).
+
 | # | Pendiente | Estado |
 |---|---|---|
 | 1 | Autosave del editor de recursos, sin acuse | ✅ desplegado (#543) |
@@ -24,7 +28,7 @@ porque el código exista: se cierra cuando alguien lo vio funcionar.
 | 4 | Informe previo al subir un PDF | ✅ hecho (terminal + aviso en la app) |
 | 5 | Fork de la guía de estilo por trabajo | ✅ hecho |
 | 6 | El binding `allUsers` del auto-indexador | ✅ quitado y verificado en producción |
-| 7 | Telemetría de extracción | pendiente · pide diseño |
+| 7 | Telemetría de extracción | ✅ desplegado (#718, más #719-#721 que destapó al usarla) |
 | 8 | `completeRegistration` sin rate-limit propio | ✅ desplegado (#495, anterior a este documento) |
 
 ---

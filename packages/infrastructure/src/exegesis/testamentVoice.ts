@@ -5,7 +5,7 @@ import { getBookById } from '@dosfilos/domain';
  *
  * El prompt estaba fijo en griego del Nuevo Testamento — sistema, autoridades,
  * aparato NA28, testigos 𝔓⁴⁶ ℵ A B C D, "participio aoristo activo", y un
- * "presentá el texto griego" en el mensaje del usuario. Analizando Jonás, que
+ * "presenta el texto griego" en el mensaje del usuario. Analizando Jonás, que
  * es hebreo, el modelo obedecía al prompt: sacaba la LXX de memoria e ignoraba
  * el texto masorético que se le estaba dando como base.
  *

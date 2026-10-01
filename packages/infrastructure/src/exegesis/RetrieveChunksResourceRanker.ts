@@ -136,7 +136,7 @@ function toRankedResource(bucket: ChunkBucket): RankedResource {
  */
 function buildRankingQuery(passageLabel: string, assignmentBrief: string | null): string {
     // El comentario de arriba prometía reflejar el formato del extractor y no
-    // era verdad: acá se recortaba a 800 caracteres y el extractor a 500, así
+    // era verdad: aquí se recortaba a 800 caracteres y el extractor a 500, así
     // que en 4 de los 13 trabajos con encuadre los dos rankeaban y extraían
     // contra textos distintos. Ahora comparten `BRIEF_QUERY_CHARS`.
     const briefSlice = briefForQuery(assignmentBrief);

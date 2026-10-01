@@ -285,7 +285,7 @@ export function serializeAnalysis(
 function collectPageKinds(analysis: CanonicalVerseAnalysis): Map<string, CitationPageKind> {
     const kinds = new Map<string, CitationPageKind>();
     // El recorrido de los seis sitios vive en `collectAnalysisCitations`. Tenía
-    // una copia acá y otra en el script de auditoría, y tres copias de un
+    // una copia aquí y otra en el script de auditoría, y tres copias de un
     // recorrido son tres oportunidades de olvidar un sitio en una sola.
     for (const c of collectAnalysisCitations(analysis)) {
         if (c.pageKind && !kinds.has(c.sourceKey)) kinds.set(c.sourceKey, c.pageKind);

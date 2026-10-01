@@ -48,7 +48,7 @@ export class GeminiIntroductionComposer implements IIntroductionComposer {
             language: input.language,
         });
 
-        const { text: markdown, tokensUsed } = await withGeminiRetry(
+        const { text: markdown, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.composeIntroduction',
                 model: this.modelName,
@@ -63,7 +63,7 @@ export class GeminiIntroductionComposer implements IIntroductionComposer {
 
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
             formatterStatus: 'skipped',
         };
@@ -131,25 +131,25 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             ``,
             `## Guía de estilo obligatoria`,
             fallback
-                ? `(SIN guía de estilo adjunta. Aplicá convenciones The Master's Seminary / Turabian.)`
+                ? `(SIN guía de estilo adjunta. Aplica convenciones The Master's Seminary / Turabian.)`
                 : styleGuideBlock,
             ``,
             citationBlock,
             ``,
             `## Reglas duras para la introducción`,
-            `- Presentá el pasaje y su importancia dentro del libro (1 párrafo).`,
-            `- Enunciá una tesis precisa DERIVADA de lo que el cuerpo y la conclusión efectivamente demostraron. NO la tesis que el encuadre original del paper esperaba — la tesis que el análisis estableció.`,
-            `- Declará brevemente la metodología: morfológica, sintáctica, léxica, intertextual, teológica — solo las efectivamente usadas en el cuerpo.`,
-            `- Esbozá la dirección del argumento: hacia dónde construye el paper.`,
+            `- Presenta el pasaje y su importancia dentro del libro (1 párrafo).`,
+            `- Enuncia una tesis precisa DERIVADA de lo que el cuerpo y la conclusión efectivamente demostraron. NO la tesis que el encuadre original del paper esperaba — la tesis que el análisis estableció.`,
+            `- Declara brevemente la metodología: morfológica, sintáctica, léxica, intertextual, teológica — solo las efectivamente usadas en el cuerpo.`,
+            `- Esboza la dirección del argumento: hacia dónde construye el paper.`,
             `- 2-3 párrafos. Prosa académica continua. Sin viñetas.`,
             `- NO prometas temas que el cuerpo no desarrolló. La introducción debe ser HONESTA sobre lo que el paper entrega.`,
             ``,
             `## Salvaguarda contra alucinación`,
-            `- Solo referenciá metodología efectivamente usada y temas efectivamente desarrollados en los análisis del cuerpo + conclusión aceptada.`,
+            `- Solo referencia metodología efectivamente usada y temas efectivamente desarrollados en los análisis del cuerpo + conclusión aceptada.`,
             `- Citas con moderación (o ninguna): la introducción usualmente descansa en su propio encuadre, no en engagement con comentaristas.`,
             ``,
             `## Salida`,
-            `Un único bloque markdown, 2-3 párrafos. Comenzá con "## Introducción", después la prosa. Sin sub-headings "##" adentro.`,
+            `Un único bloque markdown, 2-3 párrafos. Comienza con "## Introducción", después la prosa. Sin sub-headings "##" adentro.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 
     // La voz del autor, al final de la instrucción de sistema y no en el
@@ -171,13 +171,13 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
 
     const userPrefix = lang === 'en'
         ? `Compose the introduction section for the paper on **${passage}**.`
-        : `Componé la sección de introducción del paper sobre **${passage}**.`;
+        : `Compón la sección de introducción del paper sobre **${passage}**.`;
     const briefingsHeading = lang === 'en'
         ? '### Body — accepted verse analyses'
         : '### Cuerpo — análisis verso por verso aceptados';
     const conclusionHeading = lang === 'en'
         ? '### Accepted conclusion (already composed — read this to know the thesis)'
-        : '### Conclusión aceptada (ya compuesta — leela para conocer la tesis)';
+        : '### Conclusión aceptada (ya compuesta — léela para conocer la tesis)';
     const sourcesHeading = lang === 'en'
         ? '### Source registry (sparingly used in the introduction)'
         : '### Registro de fuentes (uso moderado en la introducción)';
@@ -201,7 +201,7 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
         ``,
         lang === 'en'
             ? `Now produce the introduction. 2-3 paragraphs of continuous academic prose, opening with "## Introduction". State the thesis the body and conclusion actually demonstrated, not the original aspiration.`
-            : `Ahora producí la introducción. 2-3 párrafos de prosa académica continua, abriendo con "## Introducción". Enunciá la tesis que el cuerpo y la conclusión efectivamente demostraron, no la aspiración original.`,
+            : `Ahora produce la introducción. 2-3 párrafos de prosa académica continua, abriendo con "## Introducción". Enuncia la tesis que el cuerpo y la conclusión efectivamente demostraron, no la aspiración original.`,
     ].filter(Boolean).join('\n');
 
     // El contenido de las fuentes asignadas es lo único que se recorta: los
@@ -243,7 +243,7 @@ function formatStyleGuide(content: string, manifest: StyleGuideManifest | null, 
     return parts.length === 0
         ? (lang === 'en'
             ? '(Style guide present but content empty. Apply TMS / Turabian defaults.)'
-            : '(Guía de estilo presente pero contenido vacío. Aplicá defaults TMS / Turabian.)')
+            : '(Guía de estilo presente pero contenido vacío. Aplica defaults TMS / Turabian.)')
         : parts.join('\n');
 }
 
@@ -276,7 +276,7 @@ function formatSourceRegistry(
                 : indented;
             const heading = lang === 'en'
                 ? `\n  _Source content for grounding the pinned citation. Find the passage most relevant to ${s.citationKey}'s commentary on this paper's pericope and paraphrase or quote from there:_\n`
-                : `\n  _Contenido de la fuente para anclar la cita asignada. Encontrá el pasaje más relevante del comentario de ${s.citationKey} sobre la perícopa de este paper y parafraseá o citá desde ahí:_\n`;
+                : `\n  _Contenido de la fuente para anclar la cita asignada. Encuentra el pasaje más relevante del comentario de ${s.citationKey} sobre la perícopa de este paper y parafrasea o cita desde ahí:_\n`;
             lines.push(heading + '  ```\n  ' + truncated + '\n  ```');
         }
     }

@@ -115,12 +115,12 @@ function buildSystemInstruction(input: ComposeAcademicPaperInput): string {
         ``,
         `## Adherencia obligatoria a la guía de estilo`,
         fallbackDeclared
-            ? `(SIN guía de estilo adjunta. Aplicá explícitamente convenciones The Master's Seminary / Turabian: notas al pie para citas, entradas bibliográficas con sangría francesa, comillas francesas «...» para citas inline, itálicas para términos en lenguas extranjeras y títulos de obras, registro académico sobrio.)`
+            ? `(SIN guía de estilo adjunta. Aplica explícitamente convenciones The Master's Seminary / Turabian: notas al pie para citas, entradas bibliográficas con sangría francesa, comillas francesas «...» para citas inline, itálicas para términos en lenguas extranjeras y títulos de obras, registro académico sobrio.)`
             : styleGuideBlock,
         ``,
         `## Reglas de prosa académica TMS (no negociables)`,
         `- PROSA CONTINUA en párrafos temáticos. NO secciones numeradas por verso ("1. Texto Griego", "2. Traducción", etc.). NO listas con viñetas. NO tablas morfológicas. La morfología se integra inline ("el nominativo masculino singular «X» funciona como participio circunstancial temporal…").`,
-        `- Cada verso se compone como varios párrafos temáticos (típicamente 4-7) cerrando con un PÁRRAFO DE SÍNTESIS que restablece compromisos de traducción + tesis del verso. Usá la fórmula: "Por esta razón, en este trabajo se adoptará la traducción «X»…" → "En conclusión, [verse] presenta…".`,
+        `- Cada verso se compone como varios párrafos temáticos (típicamente 4-7) cerrando con un PÁRRAFO DE SÍNTESIS que restablece compromisos de traducción + tesis del verso. Usa la fórmula: "Por esta razón, en este trabajo se adoptará la traducción «X»…" → "En conclusión, [verse] presenta…".`,
         `- Las citas son inline y DISTRIBUIDAS a lo largo de los párrafos, NO agrupadas. Formato según la guía de estilo; por defecto (Autor, "Título", p. N) cuando no hay reglas de la guía aplicables.`,
         `- Marcadores de nota al pie \`[^N]\` colocados en las frases ancla especificadas en "Footnote extensions" de cada verso. Las definiciones de notas \`[^N]: ...\` van AL FINAL del paper, antes de la bibliografía.`,
         `- Términos griegos entre comillas francesas «...» con traducción entre paréntesis en su primera ocurrencia.`,
@@ -131,12 +131,12 @@ function buildSystemInstruction(input: ComposeAcademicPaperInput): string {
         `- Lo que dejes afuera no desaparece: un paso determinista mide cada verso contra su análisis y, donde la prosa no dice lo que el análisis afirmó, REEMPLAZA tu sección entera de ese verso por un render mecánico de los datos estructurados. Tu prosa sobrevive sólo donde publicó todo.`,
         ``,
         `## Salvaguarda contra alucinación (NO NEGOCIABLE)`,
-        `- SOLO citá fuentes cuyas claves aparezcan en los análisis estructurados de los versos (commentator engagement / lexical sources / footnote sources / historical context / OT-link sources). NUNCA inventes fuentes, páginas o citas verbatim.`,
+        `- SOLO cita fuentes cuyas claves aparezcan en los análisis estructurados de los versos (commentator engagement / lexical sources / footnote sources / historical context / OT-link sources). NUNCA inventes fuentes, páginas o citas verbatim.`,
         `- SOLO comprometete con las traducciones documentadas en "Translation cruxes" de cada verso. El párrafo de cierre restablece ESOS compromisos — no inventes nuevos.`,
-        `- SOLO hacé afirmaciones respaldadas por los análisis estructurados. Los análisis incluyen "Confidence flags" — calibrá el lenguaje hedge al nivel provisto (high → "demuestra"; medium → "sostiene"; tentative → "sugiere").`,
+        `- SOLO haz afirmaciones respaldadas por los análisis estructurados. Los análisis incluyen "Confidence flags" — calibra el lenguaje hedge al nivel provisto (high → "demuestra"; medium → "sostiene"; tentative → "sugiere").`,
         ``,
         `## Estructura del paper`,
-        `Producí un único documento markdown con esta estructura:`,
+        `Produce un único documento markdown con esta estructura:`,
         `  # Título (el título del paper o el pasaje formateado)`,
         `  ## Introducción (1-2 párrafos presentando la significancia del pasaje y la tesis del paper derivada de las tesis de los versos)`,
         `  ## Traducción y análisis exegético (verso por verso, prosa, en orden canónico; párrafo de síntesis por verso)`,
@@ -145,7 +145,7 @@ function buildSystemInstruction(input: ComposeAcademicPaperInput): string {
         `  [^N]: cuerpos de notas al pie (anclados en los marcadores \`[^N]\` de la prosa)`,
         `  ## Bibliografía (formato Turabian/SBL según la guía de estilo; entradas completas para cada fuente citada)`,
         ``,
-        `La salida DEBE ser un único documento markdown, NO JSON. Usá headings markdown semánticos (##, ###).`,
+        `La salida DEBE ser un único documento markdown, NO JSON. Usa headings markdown semánticos (##, ###).`,
     ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
@@ -175,7 +175,7 @@ function renderUserMessage(input: ComposeAcademicPaperInput, sourcesBlock: strin
 
     const briefingsHeading = lang === 'en'
         ? '### Verse analysis briefings (the structured data you compose from)'
-        : '### Briefings de análisis verso por verso (los datos estructurados desde los que componés)';
+        : '### Briefings de análisis verso por verso (los datos estructurados desde los que compones)';
     // Las claves van junto al rótulo: sin ellas sólo se reetiquetan las
     // referencias estructuradas, y las menciones de página que el
     // análisis escribió en su prosa viajan con el número de hoja.
@@ -188,7 +188,7 @@ function renderUserMessage(input: ComposeAcademicPaperInput, sourcesBlock: strin
 
     const sourcesHeading = lang === 'en'
         ? '### Source registry (use ONLY these citation keys)'
-        : '### Registro de fuentes (usá SOLO estas claves de cita)';
+        : '### Registro de fuentes (usa SOLO estas claves de cita)';
     const pinnedBlock = formatPinnedContract(input.pinnedSourceKeys, lang);
 
     const titleLine = input.paperTitle && input.paperTitle.trim()
@@ -215,7 +215,7 @@ function renderUserMessage(input: ComposeAcademicPaperInput, sourcesBlock: strin
     }
 
     return [
-        `Componé el paper académico para **${passage}**.`,
+        `Compón el paper académico para **${passage}**.`,
         `Título: ${titleLine}`,
         ``,
         pinnedBlock,
@@ -228,7 +228,7 @@ function renderUserMessage(input: ComposeAcademicPaperInput, sourcesBlock: strin
         ``,
         sourcesBlock,
         ``,
-        `Ahora producí el documento markdown completo. Seguí la estructura y reglas del system instruction sin excepción.`,
+        `Ahora produce el documento markdown completo. Sigue la estructura y reglas del system instruction sin excepción.`,
     ].filter(Boolean).join('\n');
 }
 
@@ -333,7 +333,7 @@ export function formatStrategy(
         `- **Anclas**: comentarios expositivos que aportan la lectura base que el paper engancha.`,
         `- **Contrastes**: comentarios críticos / monografías / diccionarios teológicos que surfacean lecturas alternativas que el paper debe enganchar, no descartar.`,
         `- **Técnicas**: léxicos, gramáticas y aparato crítico que anclan decisiones léxicas y sintácticas.`,
-        `Reflejá ese engagement dialéctico en la prosa: nombrá lecturas competidoras explícitamente cuando los análisis del cuerpo lo hagan, anclá las decisiones léxicas en las fuentes técnicas, y presentá la síntesis como la resolución de una tensión interpretativa real — no como una aserción plana.`,
+        `Refleja ese engagement dialéctico en la prosa: nombra lecturas competidoras explícitamente cuando los análisis del cuerpo lo hagan, ancla las decisiones léxicas en las fuentes técnicas, y presenta la síntesis como la resolución de una tensión interpretativa real — no como una aserción plana.`,
     ].join('\n');
 }
 
@@ -375,7 +375,7 @@ export function formatPaperRubric(
         if (range) {
             lines.push(lang === 'en'
                 ? `- **Target length**: ${range}. Calibrate paragraph density to land within this range.`
-                : `- **Extensión esperada**: ${range}. Calibrá la densidad de los párrafos para caer dentro de este rango.`);
+                : `- **Extensión esperada**: ${range}. Calibra la densidad de los párrafos para caer dentro de este rango.`);
         }
     }
 
@@ -407,7 +407,7 @@ export function formatPaperRubric(
             lines.push('');
             lines.push(lang === 'en'
                 ? `**Section emphasis** (lead with these source types where applicable):`
-                : `**Énfasis por sección** (priorizá estos tipos de fuente donde aplique):`);
+                : `**Énfasis por sección** (prioriza estos tipos de fuente donde aplique):`);
             for (const exp of relevant) {
                 const types = exp.emphasizedTypes.map(t => `\`${t}\``).join(', ');
                 lines.push(`  - **${exp.section}**: ${types} — ${exp.justification}`);
@@ -430,7 +430,7 @@ export function formatPaperRubric(
             : `## Criterios cualitativos de evaluación`);
         lines.push(lang === 'en'
             ? `The professor will grade this paper against the dimensions below. Target the TOP-LEVEL descriptor (first level in each list) — write prose that visibly satisfies it. The level descriptors are verbatim from the rubric; do not paraphrase them, but use them as benchmarks.`
-            : `El profesor calificará este paper contra las siguientes dimensiones. Apuntá al descriptor de NIVEL SUPERIOR (primero de cada lista) — redactá prosa que lo satisfaga visiblemente. Los descriptores por nivel son textuales de la rúbrica; no los parafrasees, usalos como referencia.`);
+            : `El profesor calificará este paper contra las siguientes dimensiones. Apunta al descriptor de NIVEL SUPERIOR (primero de cada lista) — redacta prosa que lo satisfaga visiblemente. Los descriptores por nivel son textuales de la rúbrica; no los parafrasees, usalos como referencia.`);
         for (const crit of rubric.qualityCriteria) {
             lines.push('');
             const weight = typeof crit.maxPoints === 'number' ? ` (${crit.maxPoints} pts)` : '';
@@ -472,13 +472,13 @@ function formatStyleGuide(
         lines.push('');
         lines.push(lang === 'en'
             ? `Apply these rules in addition to the verbatim guide. The deterministic post-processor will rewrite citations per these templates after your composition — but produce prose that already follows them so the rewrites are minimal.`
-            : `Aplicá estas reglas además de la guía verbatim. El post-procesador determinístico reescribirá las citas según estos templates después de tu composición — pero producí prosa que ya las siga para que las reescrituras sean mínimas.`);
+            : `Aplica estas reglas además de la guía verbatim. El post-procesador determinístico reescribirá las citas según estos templates después de tu composición — pero produce prosa que ya las siga para que las reescrituras sean mínimas.`);
     }
 
     if (lines.length === 0) {
         return lang === 'en'
             ? '(Style guide present but content empty. Apply TMS / Turabian defaults.)'
-            : '(Guía de estilo presente pero contenido vacío. Aplicá defaults TMS / Turabian.)';
+            : '(Guía de estilo presente pero contenido vacío. Aplica defaults TMS / Turabian.)';
     }
 
     return lines.join('\n');
@@ -499,7 +499,7 @@ function formatSourceRegistry(
     if (sources.length === 0) {
         return lang === 'en'
             ? '(No sources registered. Cite only what the analyses cite — but they should also be empty.)'
-            : '(No hay fuentes registradas. Citá solamente lo que los análisis citen — aunque ellos también deberían estar vacíos.)';
+            : '(No hay fuentes registradas. Cita solamente lo que los análisis citen — aunque ellos también deberían estar vacíos.)';
     }
     const pinnedCount = sources.filter(s => s.isPinned && s.textContent?.trim()).length;
     const perPinned = pinnedCount > 0
@@ -522,7 +522,7 @@ function formatSourceRegistry(
                 : s.textContent;
             const heading = lang === 'en'
                 ? `\n  _Source content for grounding the pinned citation. Find the passage most relevant to ${s.citationKey}'s commentary on this paper's pericope and paraphrase or quote from there:_\n`
-                : `\n  _Contenido de la fuente para anclar la cita asignada. Encontrá el pasaje más relevante del comentario de ${s.citationKey} sobre la perícopa de este paper y parafraseá o citá desde ahí:_\n`;
+                : `\n  _Contenido de la fuente para anclar la cita asignada. Encuentra el pasaje más relevante del comentario de ${s.citationKey} sobre la perícopa de este paper y parafrasea o cita desde ahí:_\n`;
             blocks.push(heading + '  ```\n  ' + truncated.replace(/\n/g, '\n  ') + '\n  ```');
         }
     }

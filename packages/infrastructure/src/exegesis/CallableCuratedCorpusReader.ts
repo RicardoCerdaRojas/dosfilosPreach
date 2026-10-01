@@ -31,7 +31,7 @@ export class CallableCuratedCorpusReader implements ICuratedCorpusReader {
             text: c.text,
             sheet: c.page,
             section: c.section,
-            // No hay ranking acá: se devuelve todo lo admitido.
+            // No hay ranking aquí: se devuelve todo lo admitido.
             score: 1,
         }));
     }

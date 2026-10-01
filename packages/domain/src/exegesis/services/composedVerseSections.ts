@@ -33,6 +33,13 @@ const HEADING_LINE = /^(#{1,6})[ \t]+(.+?)[ \t]*$/gm;
 export function locateVerseSections(
     markdown: string,
     keys: readonly string[],
+    /**
+     * `exact`: el encabezado tiene que SER la clave, no contenerla. Hace falta
+     * desde que las secciones se titulan con las preguntas del encuadre, que
+     * nombran otros versículos: «¿Qué relación hay entre Santiago 2:17 y
+     * Santiago 2:26?» contiene «Santiago 2:26» y no es su sección.
+     */
+    opciones: { exact?: boolean } = {},
 ): Map<string, VerseSectionBounds> | null {
     if (keys.length === 0) return null;
 
@@ -64,7 +71,10 @@ export function locateVerseSections(
         // que saber cuál es el título.
         let idx = -1;
         for (let i = 0; i < headings.length; i += 1) {
-            if (claimed.has(i) || !headingNames(headings[i]!.text, needle)) continue;
+            const nombra = opciones.exact
+                ? normalizeHeading(headings[i]!.text) === needle
+                : headingNames(headings[i]!.text, needle);
+            if (claimed.has(i) || !nombra) continue;
             if (idx === -1 || headings[i]!.level > headings[idx]!.level) idx = i;
         }
         if (idx === -1) return null;
@@ -192,4 +202,117 @@ export function replaceVerseSection(
     return replaceVerseSectionBodies(assembled, [key], (_key, previous) => (
         previous.trim() === body ? null : body
     ));
+}
+
+/**
+ * Los títulos de la prosa de un versículo que responde VARIAS preguntas,
+ * reescritos con el texto exacto de cada pregunta.
+ *
+ * El compositor recibe la orden de abrir cada respuesta con su pregunta, pero
+ * un modelo parafrasea: si el título escrito no es el que el ensamble busca al
+ * recomponer, la sección no se encuentra. Aquí se deja cada título idéntico al
+ * de `sectionHeadings`.
+ *
+ * Si la prosa trae tantos títulos como preguntas, se reescriben en orden (lo
+ * que haya antes del primero queda en la primera respuesta). Si trae otra
+ * cantidad no se adivina cuál es cuál: se quitan todos y queda un solo título,
+ * el de la primera pregunta. Se pierde un título, nunca texto.
+ *
+ * Con una pregunta o ninguna, la prosa queda igual: el título lo pone el
+ * ensamblador.
+ */
+export function canonicalizeQuestionHeadings(markdown: string, questionTexts: readonly string[]): string {
+    if (questionTexts.length < 2) return markdown;
+    const lineas = markdown.split('\n');
+    // Se cuentan los títulos de UN nivel: el que trae exactamente uno por
+    // pregunta (el prompt pide `##`; un modelo a veces usa `###`). Un `###`
+    // interno a una respuesta es cuerpo, no otra pregunta: contarlo mandaba
+    // al plan B y se perdía el título de la segunda.
+    const deNivel = (n: number) => lineas
+        .map((linea, i) => (new RegExp(`^#{${n}}[ \\t]+\\S`).test(linea) ? i : -1))
+        .filter(i => i >= 0);
+    const titulos = [2, 3].map(deNivel).find(t => t.length === questionTexts.length) ?? deNivel(2);
+
+    const bloque = (desde: number, hasta: number) => lineas.slice(desde, hasta).join('\n').trim();
+    if (titulos.length !== questionTexts.length) {
+        const sinTitulos = lineas.filter((_, i) => !titulos.includes(i)).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+        return `## ${questionTexts[0]}\n\n${sinTitulos}`;
+    }
+
+    const partes: string[] = [];
+    titulos.forEach((linea, k) => {
+        const fin = titulos[k + 1] ?? lineas.length;
+        const cuerpo = k === 0
+            ? [bloque(0, linea), bloque(linea + 1, fin)].filter(Boolean).join('\n\n')
+            : bloque(linea + 1, fin);
+        partes.push(`## ${questionTexts[k]}`, '', cuerpo, '');
+    });
+    return partes.join('\n').trim();
+}
+
+/**
+ * Cambia la prosa de un versículo que en el documento ocupa una o más
+ * secciones con título propio —las preguntas que responde—.
+ *
+ * Con un solo título es `replaceVerseSectionExact`: se cambia el cuerpo y
+ * el título queda. Con varios, la prosa nueva trae sus títulos y reemplaza el
+ * tramo entero, del primer título al final de la última sección. Si falta
+ * alguno o están fuera de orden, `null`: como en `replaceVerseSection`,
+ * reemplazar a ciegas deja el versículo dos veces.
+ */
+export function replaceSectionsByHeadings(
+    assembled: string,
+    headings: readonly string[],
+    prose: string,
+): string | null {
+    if (headings.length <= 1) return headings[0] ? replaceVerseSectionExact(assembled, headings[0], prose) : null;
+    const body = prose.trim();
+    if (!body) return null;
+    const located = locateVerseSections(assembled, headings, { exact: true });
+    if (!located) return null;
+    const tramos = headings.map(h => located.get(h)!);
+    if (tramos.some((t, i) => i > 0 && t.bodyStart <= tramos[i - 1]!.bodyStart)) return null;
+
+    const inicio = assembled.lastIndexOf('\n', tramos[0]!.bodyStart - 1) + 1;
+    return reemplazaTramo(assembled, inicio, tramos[tramos.length - 1]!.end, body);
+}
+
+/**
+ * El respaldo para un versículo SIN preguntas propias, o para un ensamble
+ * anterior a los títulos por pregunta: busca la sección cuyo título es
+ * EXACTAMENTE la referencia.
+ *
+ * `replaceVerseSection` acepta un título que CONTENGA la clave, y con los
+ * títulos por pregunta eso reemplazaba la respuesta a «¿Qué relación hay
+ * entre Santiago 2:17 y Santiago 2:26?» con la prosa de 2:26.
+ *
+ * Si la prosa trae sus propios títulos (un versículo que responde varias
+ * preguntas sobre un ensamble viejo), reemplaza el tramo desde el título
+ * viejo: dejarlo dejaba un «## Santiago 2:21» vacío encima de las preguntas.
+ */
+export function replaceVerseSectionExact(assembled: string, key: string, prose: string): string | null {
+    const body = prose.trim();
+    if (!body) return null;
+    const located = locateVerseSections(assembled, [key], { exact: true });
+    if (!located) return null;
+    const tramo = located.get(key)!;
+    if (!/^#{1,6}\s/.test(body)) {
+        const viejo = assembled.slice(tramo.bodyStart, tramo.end);
+        if (viejo.trim() === body) return assembled;
+        return `${assembled.slice(0, tramo.bodyStart)}\n\n${body}\n\n${assembled.slice(tramo.end)}`;
+    }
+    const inicio = assembled.lastIndexOf('\n', tramo.bodyStart - 1) + 1;
+    return reemplazaTramo(assembled, inicio, tramo.end, body);
+}
+
+/**
+ * Reemplaza `[inicio, fin)` por `body`, conservando el `---` que el
+ * ensamblador pone antes de la sección siguiente y que cae dentro del tramo.
+ */
+function reemplazaTramo(assembled: string, inicio: number, fin: number, body: string): string {
+    const viejo = assembled.slice(inicio, fin);
+    const separador = /\n-{3,}\s*$/.test(viejo) ? '---\n\n' : '';
+    const nuevo = `${body}\n\n${separador}`;
+    if (viejo.trim() === nuevo.trim()) return assembled;
+    return `${assembled.slice(0, inicio)}${nuevo}${assembled.slice(fin)}`;
 }

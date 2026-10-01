@@ -56,13 +56,13 @@ export class GeminiExegesisOrchestrator implements IExegesisOrchestrator {
         });
 
         // Sin `withGeminiRetry`: este adapter nunca lo tuvo y no se le agrega
-        // acá — cambiar la política de reintentos de refilón, dentro de una
+        // aquí — cambiar la política de reintentos de refilón, dentro de una
         // migración de transporte, es justo lo que nadie vería en el diff.
         //
         // El respaldo de tokens que este método calculaba a mano (sumar entrada
         // y salida cuando falta el total) ahora vive en el proxy, así que
         // `tokensUsed` sigue llegando igual de completo.
-        const { text: markdown, tokensUsed } = await runLlmPromptWithUsage({
+        const { text: markdown, tokensUsed, model: modeloUsado } = await runLlmPromptWithUsage({
             feature: 'exegesis.generateStep',
             model: this.modelName,
             system: systemInstruction,
@@ -85,7 +85,7 @@ export class GeminiExegesisOrchestrator implements IExegesisOrchestrator {
 
         return {
             markdown,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
         };
     }

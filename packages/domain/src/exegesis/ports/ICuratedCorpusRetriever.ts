@@ -4,7 +4,7 @@ import type { CorpusChunk } from '../corpus/selectCorpusChunks';
 /**
  * Le pide al corpus del trabajo el material que sirve para un paso.
  *
- * Es el reemplazo de inlinear el corpus entero en cada prompt. Hasta acá, un
+ * Es el reemplazo de inlinear el corpus entero en cada prompt. Hasta aquí, un
  * trabajo con doce fuentes mandaba ~514.000 caracteres en CADA paso, contra un
  * tope de 200.000 — así que un estudio serio no entraba, por buena que fuera la
  * curaduría de páginas.

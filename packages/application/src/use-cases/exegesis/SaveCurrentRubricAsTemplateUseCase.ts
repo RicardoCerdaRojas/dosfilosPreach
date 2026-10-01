@@ -52,7 +52,7 @@ export class SaveCurrentRubricAsTemplateUseCase {
         // Stamp the new template's id on the paper's rubric so the
         // template picker pre-selects it on the next render — without
         // this, the user just saved "Trabajo Exegético TMS" but the
-        // dropdown still shows "— elegí una plantilla —", which reads
+        // dropdown still shows "— elige una plantilla —", which reads
         // as if nothing happened.
         await this.paperRepository.setRubric(input.ownerId, input.paperId, {
             ...paper.rubric,

@@ -60,7 +60,7 @@ import { LLM_CITATION_VERIFIER_SCHEMA } from './llmVerifierSchema';
  * que el error no se parece a un tope de tokens: se parece a un modelo que
  * responde cualquier cosa.
  *
- * 8.192 es lo que usa el resto de los adapters de exégesis. El JSON de acá
+ * 8.192 es lo que usa el resto de los adapters de exégesis. El JSON de aquí
  * ocupa unos cientos de tokens; el margen es para el razonamiento, y sólo se
  * cobra lo que se consume.
  */
@@ -199,6 +199,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             matchedSourceLabel: matched.displayLabel,
             chunks,
             language,
+            ...(parsed.otherSources?.length ? { otherSources: parsed.otherSources } : {}),
         });
 
         try {
@@ -387,7 +388,7 @@ export interface ParsedLlmResponse {
 
 /**
  * `manual-pending` significa «no pude opinar», no «hay un problema». La
- * diferencia importa: en una corrida real 29 de 32 citas cayeron acá y en la
+ * diferencia importa: en una corrida real 29 de 32 citas cayeron aquí y en la
  * interfaz se veían igual que un defecto, cuando lo que había fallado era el
  * parseo de la respuesta del modelo.
  *
@@ -414,7 +415,7 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
             confidence: null,
             bestPageHint: '',
             // `finishReason` viene del servidor justamente para no tener que
-            // adivinar acá: cuando dice MAX_TOKENS el corte es un hecho, y el
+            // adivinar aquí: cuando dice MAX_TOKENS el corte es un hecho, y el
             // arreglo es subir el presupuesto, no revisar la cita.
             reasoning: truncado
                 ? 'La respuesta se cortó por tope de tokens antes de terminar. No es un problema de la cita: hay que ampliar el presupuesto de salida.'

@@ -58,7 +58,7 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
             hasOriginalLanguageText: !!input.originalLanguageText,
         });
 
-        const { text: rawJson, tokensUsed } = await withGeminiRetry(
+        const { text: rawJson, tokensUsed, model: modeloUsado } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.analyzeVerse',
                 model: this.modelName,
@@ -86,7 +86,7 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
 
         return {
             analysis,
-            modelId: this.modelName,
+            modelId: modeloUsado ?? this.modelName,
             tokensUsed,
         };
     }

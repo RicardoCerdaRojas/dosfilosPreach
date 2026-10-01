@@ -22,8 +22,6 @@ import {
     getSourceTypeOrderIndex,
     type ExegeticalPaper,
     type PaperRubric,
-    type CitationForm,
-    type LineSpacing,
     type QualityCriterion,
     type SourceRequirement,
     type SourceType,
@@ -31,6 +29,10 @@ import {
 import { QualityCriteriaEditor } from '@/components/exegesis/rubric/QualityCriteriaEditor';
 import { RequirementRow, AddRequirementButton } from '@/components/exegesis/rubric/RequirementRow';
 import { RubricRigorIndicator } from '@/components/exegesis/rubric/RubricRigorIndicator';
+import { RubricFormattingFields } from '@/components/exegesis/rubric/RubricFormattingFields';
+import { RubricFormattingSummary } from '@/components/exegesis/rubric/RubricFormattingSummary';
+import { draftFromFormatting, formattingFromDraft, type FormattingDraft } from '@/lib/exegesis/rubricFormattingDraft';
+import { useGuideCitationStandard } from '@/hooks/exegesis/useGuideCitationStandard';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FileDropzone } from '@/components/ui/file-dropzone';
@@ -44,7 +46,6 @@ import {
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
-import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
 
 /**
  * Rubric editor.
@@ -132,6 +133,10 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
     // open and resets back to null on close so a fresh open from a
     // different card lands on the right tab.
     const [extractOpen, setExtractOpen] = useState(false);
+    // Las seis tarjetas de «¿Cómo quieres configurar la rúbrica?» seguían a
+    // la vista con la rúbrica ya elegida y ocupaban media pantalla. Con una
+    // elegida se pliegan detrás de «Cambiar»; abiertas sólo con la de la casa.
+    const [eligiendoOrigen, setEligiendoOrigen] = useState(rubric.provenance === 'system-default');
     const [extractInitialTab, setExtractInitialTab] = useState<'text' | 'document'>('text');
 
     // Form state seeded from the persisted rubric. Re-syncs whenever
@@ -147,12 +152,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
     const [qualityCriteria, setQualityCriteria] = useState<ReadonlyArray<QualityCriterion>>(rubric.qualityCriteria);
     // «Como la casa» es un valor distinto de «doble espacio»: el primero sigue
     // a la guía si algún día cambia, el segundo la fija en esta entrega.
-    const [lineSpacing, setLineSpacing] = useState<LineSpacing | 'default'>(
-        rubric.formatting?.lineSpacing ?? 'default');
-    const [blankLine, setBlankLine] = useState<boolean>(
-        rubric.formatting?.blankLineBetweenParagraphs ?? false);
-    const [citationForm, setCitationForm] = useState<CitationForm>(
-        rubric.formatting?.citationForm ?? 'footnote');
+    const [formatting, setFormatting] = useState<FormattingDraft>(draftFromFormatting(rubric.formatting));
     // Tab inside the editor: 'prescriptive' (the existing form for
     // metadata + requirements + structural) vs 'qualitative' (the
     // levels-grid criteria). Editing is shared across tabs — Save
@@ -167,9 +167,8 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
         setLengthMax(rubric.expectedLength?.max?.toString() ?? '');
         setRequirements([...rubric.sourceRequirements]);
         setQualityCriteria(rubric.qualityCriteria);
-        setLineSpacing(rubric.formatting?.lineSpacing ?? 'default');
-        setBlankLine(rubric.formatting?.blankLineBetweenParagraphs ?? false);
-        setCitationForm(rubric.formatting?.citationForm ?? 'footnote');
+        setFormatting(draftFromFormatting(rubric.formatting));
+        setEligiendoOrigen(rubric.provenance === 'system-default');
         // When the rubric reference changes (template applied / extracted /
         // reset), drop edit mode so the user sees the new content first.
         setMode('summary');
@@ -216,9 +215,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                 expectedLength,
                 sourceRequirements: requirements,
                 qualityCriteria,
-                formatting: lineSpacing === 'default'
-                    ? null
-                    : { lineSpacing, blankLineBetweenParagraphs: blankLine, citationForm },
+                formatting: formattingFromDraft(formatting),
             });
             toast.success(t('paperSetup.subSteps.rubric.actions.saved'));
             // The useEffect on [rubric] will flip mode back to
@@ -296,18 +293,32 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                 header button into one obvious chooser. The active
                 option is badged so the student always knows what's in
                 effect. */}
-            <RubricSetupChooser
-                paper={paper}
-                rubric={rubric}
-                onPhotoOrPdf={() => {
-                    setExtractInitialTab('document');
-                    setExtractOpen(true);
-                }}
-                onPasteText={() => {
-                    setExtractInitialTab('text');
-                    setExtractOpen(true);
-                }}
-            />
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setEligiendoOrigen(v => !v)}
+                aria-expanded={eligiendoOrigen}
+                className="text-xs text-muted-foreground -mt-3"
+            >
+                {eligiendoOrigen
+                    ? t('paperSetup.subSteps.rubric.chooser.hide')
+                    : t('paperSetup.subSteps.rubric.chooser.change')}
+            </Button>
+            {eligiendoOrigen && (
+                <RubricSetupChooser
+                    paper={paper}
+                    rubric={rubric}
+                    onPhotoOrPdf={() => {
+                        setExtractInitialTab('document');
+                        setExtractOpen(true);
+                    }}
+                    onPasteText={() => {
+                        setExtractInitialTab('text');
+                        setExtractOpen(true);
+                    }}
+                />
+            )}
 
             <Dialog open={extractOpen} onOpenChange={setExtractOpen}>
                 <DialogContent className="sm:max-w-2xl">
@@ -437,45 +448,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">
-                            {t('paperSetup.subSteps.rubric.metadata.formattingLabel')}
-                        </label>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <select
-                                value={lineSpacing}
-                                onChange={(e) => setLineSpacing(e.target.value as LineSpacing | 'default')}
-                                className="rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
-                            >
-                                <option value="default">{t('paperSetup.subSteps.rubric.metadata.spacingDefault')}</option>
-                                <option value="single">{t('paperSetup.subSteps.rubric.metadata.spacingSingle')}</option>
-                                <option value="one-and-a-half">{t('paperSetup.subSteps.rubric.metadata.spacingOneAndAHalf')}</option>
-                                <option value="double">{t('paperSetup.subSteps.rubric.metadata.spacingDouble')}</option>
-                            </select>
-                            <select
-                                value={citationForm}
-                                disabled={lineSpacing === 'default'}
-                                onChange={(e) => setCitationForm(e.target.value as CitationForm)}
-                                className="rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50"
-                            >
-                                <option value="footnote">{t('paperSetup.subSteps.rubric.metadata.citationFootnote')}</option>
-                                <option value="parenthetical">{t('paperSetup.subSteps.rubric.metadata.citationParenthetical')}</option>
-                            </select>
-                            <label className="inline-flex items-center gap-1.5 text-xs text-foreground">
-                                <input
-                                    type="checkbox"
-                                    checked={blankLine}
-                                    disabled={lineSpacing === 'default'}
-                                    onChange={(e) => setBlankLine(e.target.checked)}
-                                    className="rounded border-border"
-                                />
-                                {t('paperSetup.subSteps.rubric.metadata.blankLineLabel')}
-                            </label>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-1 italic">
-                            {t('paperSetup.subSteps.rubric.metadata.formattingHint')}
-                        </p>
-                    </div>
+                    <RubricFormattingFields value={formatting} onChange={setFormatting} />
                 </div>
             </section>
 
@@ -668,10 +641,7 @@ function RubricSummaryView({
             </header>
 
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <SummaryField
-                    label={t('paperSetup.subSteps.rubric.metadata.citationStandardLabel')}
-                    value={summarizeCitationStandard(rubric, paper)}
-                />
+                <RubricFormattingSummary paper={paper} rubric={rubric} />
                 <SummaryField
                     label={t('paperSetup.subSteps.rubric.metadata.lengthLabel')}
                     value={summarizeLength(rubric, t)}
@@ -835,11 +805,6 @@ function SummaryRequirementRow({ requirement }: { requirement: SourceRequirement
             )}
         </li>
     );
-}
-
-function summarizeCitationStandard(rubric: PaperRubric, _paper: ExegeticalPaper): string {
-    if (rubric.citationStandard?.trim()) return rubric.citationStandard.trim();
-    return '—';
 }
 
 function summarizeLength(rubric: PaperRubric, t: (key: string) => string): string {
@@ -1649,13 +1614,8 @@ function CitationStandardField({
     onChange: (next: string) => void;
 }) {
     const { t } = useTranslation('exegesis');
-    const { guides, activeGuide } = useUserStyleGuides();
-
-    // Resolve the same guide the manifest viewer would show.
-    const guide = paper.styleGuideId
-        ? guides.find(g => g.id === paper.styleGuideId) ?? null
-        : activeGuide;
-    const guideStandard = guide?.manifest?.citationStyleLabel ?? null;
+    // La misma guía que muestra el visor del manifiesto.
+    const guideStandard = useGuideCitationStandard(paper);
 
     const isMatchingGuide = value.trim() === '' || (guideStandard !== null && value.trim() === guideStandard.trim());
     const showMismatch = !isMatchingGuide && guideStandard !== null;

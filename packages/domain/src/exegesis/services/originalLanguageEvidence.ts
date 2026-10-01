@@ -77,7 +77,7 @@ const MIN_TRANSLITERACION = 2;
  * y no hay nada que reparar.
  *
  * `'lost'` — no hay ni original ni transliteración. La extracción lo perdió.
- * Adamson entra acá: escribe «6€§a00¢e» donde el libro imprime δέξασθε, y su
+ * Adamson entra aquí: escribe «6€§a00¢e» donde el libro imprime δέξασθε, y su
  * transliteración mide 0,0 ‰.
  *
  * La distinción salió de equivocarme. La primera versión de esta comprobación

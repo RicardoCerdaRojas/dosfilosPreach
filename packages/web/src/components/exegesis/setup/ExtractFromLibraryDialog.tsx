@@ -6,6 +6,8 @@ import { libraryService } from '@dosfilos/application';
 import {
     ResourcesNotIndexedError,
     SOURCE_TYPE_GROUPS,
+    deriveCitationKeyFromAuthor,
+    type SourceRole,
     type ExegeticalPaper,
     type LibraryResource,
     type RankedResource,
@@ -22,6 +24,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { defaultSourceTypeFor } from './tipoAcademico';
+import { RoleSelect, SelectedResourcesList } from './ExtractSelectionParts';
 import { useTranslation } from '@/i18n';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useRankedLibrary } from '@/hooks/exegesis/useRankedLibrary';
@@ -128,6 +131,16 @@ export function ExtractFromLibraryDialog({
         }
         return set;
     }, [paper.sources]);
+    /**
+     * La clave con que arranca cada fila. Si el libro YA está en el corpus,
+     * la suya: re-extraer escribe la clave que se manda, y derivarla del
+     * autor pisaría una escrita a mano («BDF» → «Blass»), dejando los
+     * análisis que la citan sin fuente.
+     */
+    const claveInicial = (resource: LibraryResource): string => {
+        const existente = paper.sources.find(s => s.sourceLibraryResourceId === resource.id)?.citationKey;
+        return existente ?? deriveCitationKeyFromAuthor(resource.author);
+    };
 
     // Quick lookup of the per-resource ranking. Built once per ranking
     // change; `null` for unranked resources (those never matched any
@@ -217,7 +230,8 @@ export function ExtractFromLibraryDialog({
             next.set(resource.id, {
                 sourceType: resource.exegeticalType ?? defaultSourceTypeFor(resource),
                 displayLabel: resource.title,
-                citationKey: '',
+                citationKey: claveInicial(resource),
+                chosenRole: null,
             });
             applied++;
         }
@@ -251,7 +265,10 @@ export function ExtractFromLibraryDialog({
                 // user classifies BDAG once and it sticks.
                 sourceType: resource.exegeticalType ?? defaultSourceTypeFor(resource),
                 displayLabel: resource.title,
-                citationKey: '',
+                // La clave sale del autor del libro desde el principio: vacía,
+                // una fuente sin autor quedaba fuera de las citas sin aviso.
+                citationKey: claveInicial(resource),
+                chosenRole: null,
             });
             // Clear the not-indexed error when the user changes the
             // selection — gives them a chance to retry without the
@@ -285,6 +302,7 @@ export function ExtractFromLibraryDialog({
             sourceType: entry.sourceType,
             displayLabel: entry.displayLabel.trim() || libraryResourceId,
             citationKey: entry.citationKey.trim() || undefined,
+            ...(entry.chosenRole ? { chosenRole: entry.chosenRole } : {}),
         }));
         try {
             const result = await extractExcerpts.mutateAsync({
@@ -482,6 +500,19 @@ export function ExtractFromLibraryDialog({
                     )}
                 </div>
 
+                <SelectedResourcesList
+                    items={Array.from(selections.entries()).map(([id, entry]) => ({
+                        id,
+                        label: entry.displayLabel || id,
+                        willReplace: alreadyExcerptedIds.has(id),
+                    }))}
+                    onRemove={(id) => {
+                        const next = new Map(selections);
+                        next.delete(id);
+                        setSelections(next);
+                    }}
+                />
+
                 <DialogFooter className="flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <p className="text-xs text-muted-foreground">
                         {selectedCount === 0
@@ -535,6 +566,8 @@ interface SelectionEntry {
     sourceType: SourceType;
     displayLabel: string;
     citationKey: string;
+    /** `null`: el rol lo deduce el tipo. */
+    chosenRole: SourceRole | null;
 }
 
 /**
@@ -658,7 +691,7 @@ function ResourceRow({
 
             {/* Per-resource type + label form (only when selected) */}
             {isSelected && entry && (
-                <div className="mt-2 pl-6 grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-2">
+                <div className="mt-2 pl-6 grid grid-cols-1 sm:grid-cols-[1fr_140px_140px] gap-2">
                     <div>
                         <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">
                             {t('paperSetup.subSteps.corpus.upload.typeLabel')}
@@ -691,6 +724,12 @@ function ResourceRow({
                             className="w-full rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
                         />
                     </div>
+                    <RoleSelect
+                        id={`rol-${resource.id}`}
+                        sourceType={entry.sourceType}
+                        value={entry.chosenRole}
+                        onChange={(chosenRole) => onUpdate({ chosenRole })}
+                    />
                 </div>
             )}
         </div>

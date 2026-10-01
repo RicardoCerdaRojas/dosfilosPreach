@@ -135,3 +135,42 @@ describe('voz del autor', () => {
         expect(buildVerseProsePrompt(promptInput()).systemInstruction).not.toMatch(/ASÍ ESCRIBE/);
     });
 });
+
+/**
+ * La cifra que el autor escribe al recomponer manda sobre el reparto.
+ *
+ * Santiago 2:14, 2026-09-30: el reparto daba 50 palabras y el autor pidió
+ * 300. El 50 iba a la instrucción de sistema («es un presupuesto, no una
+ * sugerencia») y el 300 al mensaje; ganó el de sistema y salieron 52.
+ */
+describe('la extensión pedida al recomponer', () => {
+    const base = { ...promptInput(), wordBudget: 50 };
+
+    it('reemplaza al presupuesto repartido en la instrucción de sistema', () => {
+        const { systemInstruction } = buildVerseProsePrompt({ ...base, targetWords: 300 });
+        expect(systemInstruction).toMatch(/aproximadamente 300 palabras/);
+        expect(systemInstruction).not.toMatch(/aproximadamente 50 palabras/);
+    });
+
+    it('sin cifra pedida, rige el reparto', () => {
+        expect(buildVerseProsePrompt(base).systemInstruction).toMatch(/aproximadamente 50 palabras/);
+    });
+});
+
+describe('un versículo que responde dos preguntas', () => {
+    const preguntas = [
+        { number: 3, text: '¿Qué voz tiene ἐδικαιώθη (Stg. 2:21)?' },
+        { number: 4, text: '¿Cómo se relaciona ἐξ ἔργων con el verbo en 2:21?' },
+    ];
+
+    it('pide una subsección por pregunta, con la pregunta exacta como título', () => {
+        const { systemInstruction } = buildVerseProsePrompt({ ...promptInput(), sectionQuestions: preguntas });
+        expect(systemInstruction).toContain('## ¿Qué voz tiene ἐδικαιώθη (Stg. 2:21)?');
+        expect(systemInstruction).toContain('## ¿Cómo se relaciona ἐξ ἔργων con el verbo en 2:21?');
+    });
+
+    it('con una sola pregunta, sigue sin encabezados', () => {
+        const { systemInstruction } = buildVerseProsePrompt({ ...promptInput(), sectionQuestions: [preguntas[0]!] });
+        expect(systemInstruction).not.toMatch(/EXCEPCIÓN a la regla/);
+    });
+});

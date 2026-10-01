@@ -159,7 +159,7 @@ export function resolveOutlineReferences(
  *   - desnuda — "1:1-3", "2.4", que solo significan algo dentro del libro
  *     que las contiene. Ahí se le presta el libro del contexto.
  *
- * Devuelve `null` ante cualquier duda. Un falso positivo acá arrastra
+ * Devuelve `null` ante cualquier duda. Un falso positivo aquí arrastra
  * decenas de chunks a la sección equivocada por herencia, así que el
  * módulo prefiere no reconocer un encabezado bueno antes que inventar uno.
  */
@@ -181,7 +181,7 @@ export function parseHeadingReference(
     //    "Pues el mar se embravecía más y más (1:11)",
     //    "IV. Jonah Objects to Nineveh's Survival (4:1-11)".
     //
-    //    Acá NO se aplica `MAX_HEADING_CHARS`: el paréntesis final es una
+    //    Aquí NO se aplica `MAX_HEADING_CHARS`: el paréntesis final es una
     //    señal fuerte por sí misma, y estos títulos son largos por
     //    naturaleza (citan el versículo). El tope existía para descartar
     //    líneas de cuerpo promovidas a encabezado, y esas no terminan en
