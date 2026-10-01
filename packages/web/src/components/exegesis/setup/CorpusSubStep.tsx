@@ -41,6 +41,7 @@ import {
     emptySourceReason,
     repeatedFromPreviousDelivery,
     hasResolvedNumbering,
+    deriveCitationKeyFromAuthor,
     isExcerptSetStale,
     resourceMatchesTestament,
     type ExegeticalPaper,
@@ -85,6 +86,8 @@ import { SourceSelectionModeBadge } from './SourceSelectionModeBadge';
 import { CorpusBudgetMeter } from './CorpusBudgetMeter';
 import { PageBalanceHint } from './PageBalanceHint';
 import { FileDropzone } from '@/components/ui/file-dropzone';
+import { SourceCitationKey } from './SourceCitationKey';
+import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 
 /**
  * Corpus sub-step — the main pedagogical surface of the rubric-driven
@@ -229,6 +232,11 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                         onAdd={() => openDialog(null)}
                         onExtract={() => setExtractDialogOpen(true)}
                     />
+                    {/* Los datos para citar, donde se eligen las fuentes: con
+                        la ficha incompleta la cita sale con el nombre del
+                        archivo como título, y antes eso se veía recién en la
+                        página del trabajo, ya compuesto. */}
+                    <PaperBibliographyCard paper={paper} />
                 </>
             )}
 
@@ -1002,11 +1010,12 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                         )}
                         {isExtracted && <SourceSelectionModeBadge mode={source.excerptSelectionMode} />}
                     </p>
-                    {source.citationKey && (
-                        <p className="text-[11px] text-muted-foreground">
-                            {t('paperSetup.subSteps.corpus.upload.citationKeyLabel')}: {source.citationKey}
-                        </p>
-                    )}
+                    <SourceCitationKey
+                        paper={paper}
+                        source={source}
+                        isCitable={isCitable}
+                        libraryAuthor={libraryResource?.author ?? null}
+                    />
                 </div>
                 <button
                     type="button"
@@ -2404,39 +2413,6 @@ function ResourceReadinessBadge({ status }: { status: ResourceIndexStatus }) {
     );
 }
 
-/**
- * Extracts a citation key (typical surname) from a resource's author
- * field. Used to pre-fill the corpus dialog when the student picks an
- * existing library resource. Heuristic, not authoritative — the
- * student can always tweak the result before submitting.
- *
- * Cases handled:
- *   "Daniel B. Wallace"     → "Wallace"   (last token wins)
- *   "John MacArthur"        → "MacArthur"
- *   "Bauckham, Richard"     → "Bauckham"  (before-comma wins)
- *   "Lane, William L."      → "Lane"
- *   "Barrick & Busenitz"    → "Barrick"   (first author of multi)
- *   "Watson and Callan"     → "Watson"
- *   "deSilva"               → "deSilva"
- *   ""                      → ""          (caller skips)
- */
-function deriveCitationKeyFromAuthor(author: string): string {
-    const trimmed = author.trim();
-    if (!trimmed) return '';
-    // Multi-author work: take the first author (citations conventionally
-    // use first author or "first et al.").
-    const firstAuthor = trimmed.split(/\s+(?:&|and|y)\s+/i)[0]!.trim();
-    // "Surname, Given" form is common in academic citations — take
-    // what's before the comma.
-    if (firstAuthor.includes(',')) {
-        const beforeComma = firstAuthor.split(',')[0]!.trim();
-        if (beforeComma) return beforeComma;
-    }
-    // Otherwise the LAST token is conventionally the surname.
-    const tokens = firstAuthor.split(/\s+/).filter(Boolean);
-    if (tokens.length === 0) return firstAuthor;
-    return tokens[tokens.length - 1]!;
-}
 
 /**
  * Inline chip surfaced under the SourceType picker after the

@@ -198,6 +198,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
             {
                 author: 'Smith, Ralph L.',
                 title: 'Micah-Malachi',
+                covers: ['MIC', 'NAM', 'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL'],
                 series: 'WBC 32',
                 publisher: 'Word',
                 year: 1984,
@@ -209,6 +210,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
             {
                 author: 'Stuart, Douglas',
                 title: 'Hosea-Jonah',
+                covers: ['HOS', 'JOL', 'AMO', 'OBA', 'JON'],
                 series: 'WBC 31',
                 publisher: 'Word',
                 year: 1987,
@@ -233,6 +235,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
             {
                 author: 'Achtemeier, Elizabeth',
                 title: 'Minor Prophets I (Hosea, Joel, Amos, Obadiah, Jonah, Micah)',
+                covers: ['HOS', 'JOL', 'AMO', 'OBA', 'JON', 'MIC'],
                 series: 'New International Biblical Commentary 17',
                 publisher: 'Hendrickson',
                 year: 1996,
@@ -516,6 +519,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
             {
                 author: 'Bauckham, Richard',
                 title: 'Jude, 2 Peter',
+                covers: ['JUD', '2PE'],
                 series: 'WBC 50',
                 publisher: 'Word',
                 year: 1983,
@@ -527,6 +531,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
             {
                 author: 'Davids, Peter H.',
                 title: 'The Epistle of James: A Commentary on the Greek Text',
+                covers: ['JAS'],
                 series: 'NIGTC',
                 publisher: 'Eerdmans',
                 year: 1982,
@@ -538,6 +543,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
             {
                 author: 'Yarbrough, Robert W.',
                 title: '1-3 John',
+                covers: ['1JN', '2JN', '3JN'],
                 series: 'BECNT',
                 publisher: 'Baker Academic',
                 year: 2008,
@@ -605,6 +611,7 @@ const APOCALYPTIC: GroupRecommendations = {
             {
                 author: 'Beale, G. K.',
                 title: 'The Book of Revelation: A Commentary on the Greek Text',
+                covers: ['REV'],
                 series: 'NIGTC',
                 publisher: 'Eerdmans',
                 year: 1999,
@@ -616,6 +623,7 @@ const APOCALYPTIC: GroupRecommendations = {
             {
                 author: 'Aune, David E.',
                 title: 'Revelation 1-5 / Revelation 6-16 / Revelation 17-22',
+                covers: ['REV'],
                 series: 'WBC 52A, 52B, 52C',
                 publisher: 'Word',
                 year: 1997,

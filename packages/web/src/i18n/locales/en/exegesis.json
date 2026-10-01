@@ -1055,7 +1055,12 @@
             "hint_textoBase": "It's the text you're studying, not a study of it. You cite it, but it doesn't count as an academic source.",
             "hint_noCitable": "Method or style material: not cited in the paper."
           },
-          "dosEjes": "Fragments say how much it discusses the passage; weight says how much it carries as authority. They are not the same."
+          "dosEjes": "Fragments say how much it discusses the passage; weight says how much it carries as authority. They are not the same.",
+          "roleLabel": "Role in the paper",
+          "roleByType": "By type: {{role}}",
+          "selectedTitle_one": "You are adding {{count}} source",
+          "selectedTitle_other": "You are adding {{count}} sources",
+          "unselect": "Remove “{{label}}” from the selection"
         },
         "excerpts": {
           "expand": "Show curated excerpts",
@@ -1216,6 +1221,16 @@
         },
         "sourceMemory": {
           "repeated": "You cited {{source}} in your previous paper ({{paper}}, {{date}}). If your syllabus forbids repeating a source in consecutive weeks, this one should stay out."
+        },
+        "citationKey": {
+          "missing": "No citation key: this source cannot be cited in the paper.",
+          "useDerived": "Use “{{key}}”",
+          "write": "Write one",
+          "edit": "Edit the citation key",
+          "save": "Save",
+          "cancel": "Cancel",
+          "saved": "Citation key saved.",
+          "saveFailed": "Could not save the citation key."
         }
       },
       "corpus-plan": {

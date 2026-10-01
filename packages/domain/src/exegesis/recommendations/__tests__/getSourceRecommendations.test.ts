@@ -386,3 +386,28 @@ describe('getRecommendationId', () => {
         expect(cockerill1).not.toBe(cockerill2);
     });
 });
+
+/**
+ * El catálogo de GRUPO valía para todos los libros del grupo: para Santiago
+ * se sugería Bauckham, *Jude, 2 Peter*, marcado «En tu biblioteca · Agregar
+ * al corpus» (TP Santiago 2:14-26).
+ */
+describe('getSourceRecommendations — un comentario de otro libro del grupo no se sugiere', () => {
+    const titulos = (book: Parameters<typeof getSourceRecommendations>[0]) =>
+        getSourceRecommendations(book, 'commentary-critical').map(r => r.title);
+
+    it('Santiago recibe el de Santiago, no los de Judas/2 Pedro ni 1-3 Juan', () => {
+        expect(titulos('JAS')).toContain('The Epistle of James: A Commentary on the Greek Text');
+        expect(titulos('JAS')).not.toContain('Jude, 2 Peter');
+        expect(titulos('JAS')).not.toContain('1-3 John');
+    });
+
+    it('2 Pedro sí recibe a Bauckham', () => {
+        expect(titulos('2PE')).toContain('Jude, 2 Peter');
+    });
+
+    it('una obra sin `covers` sigue valiendo para todo el grupo', () => {
+        expect(titulos('TIT')).toContain('Pastoral Epistles');
+        expect(titulos('1TI')).toContain('Pastoral Epistles');
+    });
+});

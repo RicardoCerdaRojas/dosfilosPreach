@@ -6,6 +6,7 @@ import {
     type IExegeticalPaperRepository,
     type ProjectSource,
     type ProjectSourceExcerpt,
+    type SourceRole,
     type SourceType,
 } from '@dosfilos/domain';
 
@@ -31,6 +32,12 @@ export interface ExtractExcerptsSelection {
     sourceType: SourceType;
     displayLabel: string;
     citationKey?: string;
+    /**
+     * El rol dialéctico que eligió el autor al agregarla. Ausente: lo deduce
+     * el tipo, como antes. El diálogo de extracción no dejaba elegirlo y el
+     * rol sólo se veía como «· Técnica» después de agregar.
+     */
+    chosenRole?: SourceRole | null;
 }
 
 export interface ExtractExcerptsForPaperInput {
@@ -185,6 +192,7 @@ export class ExtractExcerptsForPaperUseCase {
                         sourceType: selection.sourceType,
                         displayLabel: selection.displayLabel,
                         ...(selection.citationKey !== undefined ? { citationKey: selection.citationKey } : {}),
+                        ...(selection.chosenRole !== undefined ? { chosenRole: selection.chosenRole } : {}),
                         excerpts,
                         excerptSelectionMode: selectionMode,
                         extractedAt,
@@ -203,6 +211,7 @@ export class ExtractExcerptsForPaperUseCase {
                         sourceType: selection.sourceType,
                         displayLabel: selection.displayLabel,
                         citationKey: selection.citationKey ?? null,
+                        ...(selection.chosenRole ? { chosenRole: selection.chosenRole } : {}),
                         order: paper.sources.length + Object.keys(sourceIdsByLibraryResource).length,
                         mode: 'extracted-excerpts',
                         excerpts: fresh,

@@ -1055,7 +1055,12 @@
             "hint_textoBase": "Es el texto que estás estudiando, no un estudio sobre él. Se cita, pero no cuenta como fuente académica.",
             "hint_noCitable": "Material de método o de estilo: no se cita en el trabajo."
           },
-          "dosEjes": "Los fragmentos dicen cuánto habla del pasaje; el peso, cuánto vale como autoridad. No son lo mismo."
+          "dosEjes": "Los fragmentos dicen cuánto habla del pasaje; el peso, cuánto vale como autoridad. No son lo mismo.",
+          "roleLabel": "Rol en el trabajo",
+          "roleByType": "Según el tipo: {{role}}",
+          "selectedTitle_one": "Vas a agregar {{count}} fuente",
+          "selectedTitle_other": "Vas a agregar {{count}} fuentes",
+          "unselect": "Quitar «{{label}}» de la selección"
         },
         "excerpts": {
           "expand": "Ver fragmentos curados",
@@ -1216,6 +1221,16 @@
         },
         "sourceMemory": {
           "repeated": "Citaste {{source}} en tu entrega anterior ({{paper}}, {{date}}). Si tu plan de estudios no permite repetir fuente en semanas consecutivas, esta no debería entrar."
+        },
+        "citationKey": {
+          "missing": "Sin clave de cita: esta fuente no se puede citar en el trabajo.",
+          "useDerived": "Usar «{{key}}»",
+          "write": "Escribirla",
+          "edit": "Editar la clave de cita",
+          "save": "Guardar",
+          "cancel": "Cancelar",
+          "saved": "Clave de cita guardada.",
+          "saveFailed": "No se pudo guardar la clave de cita."
         }
       },
       "corpus-plan": {
