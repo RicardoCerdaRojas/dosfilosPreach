@@ -657,6 +657,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             const versioned = buildManualEditVersion(parent ?? null, markdown);
             step.versions = [...step.versions, versioned];
             step.accepted = versioned;
+            // Una vez aceptado, `current` es la misma versión que `accepted`
+            // (contrato de `ExegeticalStep.current`). Quedaba en la generada
+            // vieja: la tarjeta mostraba esa, sin veredictos, y el verificador
+            // leía la edición (Santiago 2:16, 2026-09-30).
+            step.current = versioned;
             // State stays 'accepted' if it was already; if it was
             // 'awaiting-review' or earlier and the user manually edits,
             // we count that as an implicit accept of the manual content.
@@ -1394,6 +1399,12 @@ function sinIndefinidos(valor: Record<string, unknown>): Record<string, unknown>
  * alguien vuelva a verificar. Ése era el motivo original de reiniciarlo, y se
  * conserva donde sigue siendo cierto.
  */
+/** El resumen sin lo que medía la prosa anterior a una edición. */
+function sinConteosDeProsa(v: VerificationSummary): VerificationSummary {
+    const { proseCitations: _p, proseCitationsWithIssues: _i, ...resto } = v;
+    return resto;
+}
+
 export function buildManualEditVersion(
     parent: ExegeticalStepVersion | null,
     markdown: string,
@@ -1409,11 +1420,13 @@ export function buildManualEditVersion(
         regenerationHint: null,
         tokensUsed: null,
         verifications: analysis
-            ? (parent?.verifications ?? { ...EMPTY_VERIFICATION_SUMMARY })
+            ? sinConteosDeProsa(parent?.verifications ?? { ...EMPTY_VERIFICATION_SUMMARY })
             : { ...EMPTY_VERIFICATION_SUMMARY },
         ...(analysis ? {
             canonicalAnalysis: analysis,
-            citationVerdicts: parent?.citationVerdicts ?? [],
+            // Los veredictos de la PROSA eran de otro texto: el que se acaba
+            // de editar. Los del análisis siguen valiendo.
+            citationVerdicts: (parent?.citationVerdicts ?? []).filter(v => v.origin !== 'prose'),
             citationReviews: parent?.citationReviews ?? [],
             citationCorrections: parent?.citationCorrections ?? [],
         } : {}),

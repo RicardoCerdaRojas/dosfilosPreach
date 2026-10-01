@@ -111,8 +111,12 @@ export function analysisClaimsToCitations(
 ): ParsedCitation[] {
     return claims.map((claim, index) => {
         const pages = pageFor(claim);
+        const otras = otherSourcesOf(claim, claims);
         return {
-            raw: `${claim.sourceKey}, ${pages ? `p. ${pages}` : `hoja ${claim.page}`} · ${claim.site}`,
+            raw: `${claim.sourceKey}, ${pages ? `p. ${pages}` : `hoja ${claim.page}`}`,
+            origin: 'analysis' as const,
+            site: claim.site,
+            ...(otras.length > 0 ? { otherSources: otras } : {}),
             author: claim.sourceKey,
             title: '',
             pages,
@@ -125,4 +129,58 @@ export function analysisClaimsToCitations(
             evidenceIsQuoted: claim.verbatimQuote !== null,
         };
     });
+}
+
+/**
+ * Las otras fuentes de una afirmación de síntesis.
+ *
+ * Dos señales. La entrada del análisis que cita VARIAS fuentes con el mismo
+ * texto (una nota con `sources: [McCartney, Ropes]`): son hermanas. Y las
+ * fuentes del análisis que el texto de la afirmación NOMBRA («McCartney y
+ * Ropes ambos…» citado sólo a McCartney).
+ */
+export function otherSourcesOf(claim: AnalysisClaim, all: ReadonlyArray<AnalysisClaim>): string[] {
+    const propia = normaliza(claim.sourceKey);
+    const entrada = entradaDe(claim.path);
+    const out = new Map<string, string>();
+    for (const c of all) {
+        const k = normaliza(c.sourceKey);
+        if (k === propia || out.has(k)) continue;
+        const hermana = entradaDe(c.path) === entrada && c.claim === claim.claim;
+        if (hermana || nombra(claim.claim, c.sourceKey)) out.set(k, c.sourceKey);
+    }
+    return [...out.values()];
+}
+
+/** La entrada del análisis sin el índice de la fuente: `footnoteExtensions[2]`. */
+function entradaDe(path: string): string {
+    return path.replace(/\.(?:sources|loadingSources)\[\d+\]$/, '').replace(/\.generalSemanticRange$/, '');
+}
+
+function normaliza(s: string): string {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function nombra(texto: string, clave: string): boolean {
+    const k = normaliza(clave).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (k.length < 3) return false;
+    return new RegExp(`(^|[^\\p{L}])${k}([^\\p{L}]|$)`, 'u').test(normaliza(texto));
+}
+
+const SITIOS: ReadonlyArray<AnalysisClaimSite> = [
+    'commentator', 'crux', 'lexical-range', 'lexical-loading', 'footnote', 'ot-link', 'historical',
+];
+const SUFIJO_DE_SITIO = new RegExp(`\\s·\\s(${SITIOS.join('|')})$`);
+
+/**
+ * El sitio de una cita del análisis. Las guardadas antes del campo `site` lo
+ * traían pegado a `raw` («Ropes, p. 204 · lexical-loading»).
+ */
+export function citationSite(c: Pick<ParsedCitation, 'raw' | 'site'>): AnalysisClaimSite | null {
+    return c.site ?? (c.raw.match(SUFIJO_DE_SITIO)?.[1] as AnalysisClaimSite | undefined) ?? null;
+}
+
+/** La cita como se muestra: sin el rótulo interno que los veredictos viejos llevan en `raw`. */
+export function citationDisplayRaw(c: Pick<ParsedCitation, 'raw'>): string {
+    return c.raw.replace(SUFIJO_DE_SITIO, '');
 }

@@ -199,6 +199,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             matchedSourceLabel: matched.displayLabel,
             chunks,
             language,
+            ...(parsed.otherSources?.length ? { otherSources: parsed.otherSources } : {}),
         });
 
         try {

@@ -112,7 +112,7 @@ export class VerifyStepCitationsUseCase {
             reservation.markLlmContacted();
 
             const { citations, summary } = target.canonicalAnalysis
-                ? await this.verifyAnalysis(target.canonicalAnalysis, sources, paper.displayLanguage, ownerId)
+                ? await this.verifyAnalysisAndProse(target, sources, paper.displayLanguage, ownerId, stepId)
                 : await this.verifyMarkdown(target.markdown, sources, ownerId, stepId);
 
             await this.paperRepository.setStepVersionVerifications(
@@ -129,6 +129,45 @@ export class VerifyStepCitationsUseCase {
             await reservation.refundIfPreLlm();
             throw err;
         }
+    }
+
+    /**
+     * Un versículo con análisis tiene DOS textos citados: el análisis y la
+     * prosa que se compuso a partir de él, y que es la que se entrega.
+     *
+     * Sólo se verificaba el análisis. La prosa heredaba sus páginas y podía
+     * torcerlas al redactar —en Santiago 2:14-26 dos citas del trabajo
+     * entregado apuntaban a la página vecina (Ropes 204 → 203)— sin que nada
+     * lo mirara.
+     *
+     * Los veredictos de la prosa van marcados `origin: 'prose'` y NO bloquean
+     * aceptar el paso: la revisión a mano se registra por ruta del análisis, y
+     * una cita de la prosa no tiene ruta. Se informan; el resumen que decide
+     * el bloqueo sigue siendo el del análisis, y suma aparte las de la prosa.
+     */
+    private async verifyAnalysisAndProse(
+        target: ExegeticalStepVersion,
+        sources: VerifierSource[],
+        language: 'es' | 'en',
+        ownerId: string,
+        stepId: string,
+    ): Promise<{ citations: VerifiedCitation[]; summary: VerificationSummary }> {
+        const analysis = await this.verifyAnalysis(target.canonicalAnalysis!, sources, language, ownerId);
+        if (!target.markdown?.trim()) return analysis;
+
+        const prosa = await this.verifyMarkdown(target.markdown, sources, ownerId, stepId);
+        const deLaProsa = prosa.citations.map(c => ({ ...c, origin: 'prose' as const }));
+        const problemas = deLaProsa.filter(c => c.status !== 'verified').length;
+        return {
+            citations: [...analysis.citations, ...deLaProsa],
+            summary: {
+                ...analysis.summary,
+                proseCitations: deLaProsa.length,
+                proseCitationsWithIssues: problemas,
+                sourcesNamedWithoutCitation: prosa.summary.sourcesNamedWithoutCitation,
+                witnessClaimsWithoutCitation: prosa.summary.witnessClaimsWithoutCitation,
+            },
+        };
     }
 
     /**

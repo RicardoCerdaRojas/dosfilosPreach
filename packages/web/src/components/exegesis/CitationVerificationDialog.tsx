@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { STATUS_TONE } from '@/components/exegesis/citation/citationStatusTone';
+import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
 import {
     Dialog,
     DialogContent,
@@ -48,7 +49,12 @@ export function CitationVerificationDialog({
 }: CitationVerificationDialogProps) {
     const { t } = useTranslation('exegesis');
 
-    const counts = countByStatus(citations);
+    // Las citas de la prosa se muestran aparte y no entran en los
+    // contadores: esos son los del análisis, que decide si el paso se puede
+    // aceptar. Una cita de la prosa informa; no bloquea.
+    const delAnalisis = citations.filter(c => c.origin !== 'prose');
+    const deLaProsa = citations.filter(c => c.origin === 'prose');
+    const counts = countByStatus(delAnalisis);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -93,9 +99,22 @@ export function CitationVerificationDialog({
                             {t('canonical.verify.dialog.running')}
                         </div>
                     )}
-                    {citations.map((c, idx) => (
+                    {delAnalisis.map((c, idx) => (
                         <CitationRow key={`${c.offset}-${idx}`} citation={c} />
                     ))}
+                    {deLaProsa.length > 0 && (
+                        <section className="pt-3 space-y-2">
+                            <h3 className="text-xs font-semibold text-foreground">
+                                {t('canonical.verify.dialog.proseTitle', { count: deLaProsa.length })}
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground">
+                                {t('canonical.verify.dialog.proseHint')}
+                            </p>
+                            {deLaProsa.map((c, idx) => (
+                                <CitationRow key={`prosa-${c.offset}-${idx}`} citation={c} />
+                            ))}
+                        </section>
+                    )}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
@@ -140,8 +159,8 @@ function CitationRow({ citation }: { citation: VerifiedCitation }) {
                             </span>
                         )}
                     </p>
-                    <p className="text-sm font-mono text-foreground truncate">
-                        {citation.raw}
+                    <p className="text-sm truncate">
+                        <CitationLabel citation={citation} />
                     </p>
                 </div>
             </header>

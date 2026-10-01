@@ -1713,10 +1713,22 @@
         "running": "Comparando citas con las fuentes…",
         "rerun": "Volver a verificar",
         "close": "Cerrar",
-        "matchedSource": "Fuente"
+        "matchedSource": "Fuente",
+        "proseTitle_one": "En la prosa que se entrega · {{count}} cita",
+        "proseTitle_other": "En la prosa que se entrega · {{count}} citas",
+        "proseHint": "Se verifican aparte y no impiden aceptar el paso. Si una no coincide, corrígela en la prosa (por ejemplo, una página que quedó corrida al redactar)."
       },
       "toast": {
         "failed": "No se pudo verificar las citas. Intenta de nuevo."
+      },
+      "site": {
+        "commentator": "postura de comentarista",
+        "crux": "cruz de traducción",
+        "lexical-range": "rango semántico",
+        "lexical-loading": "sentido en el versículo",
+        "footnote": "nota",
+        "ot-link": "vínculo con el AT",
+        "historical": "contexto histórico"
       }
     },
     "review": {

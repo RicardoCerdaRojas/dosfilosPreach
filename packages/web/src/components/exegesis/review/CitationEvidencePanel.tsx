@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { CitationCorrectionActions } from './CitationCorrectionActions';
 import { CitationStatusBadge } from './CitationStatusBadge';
+import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
 
 interface Props {
     path: string | null;
@@ -62,7 +63,7 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
         <div className="rounded-xl border border-border bg-card p-4 space-y-4">
             <header className="space-y-1">
                 <CitationStatusBadge status={verdict.status} reviewed={!!review} />
-                <p className="font-mono text-sm text-foreground">{verdict.raw}</p>
+                <p className="text-sm"><CitationLabel citation={verdict} /></p>
                 {verdict.matchedSourceLabel && (
                     <p className="text-xs text-muted-foreground">{verdict.matchedSourceLabel}</p>
                 )}

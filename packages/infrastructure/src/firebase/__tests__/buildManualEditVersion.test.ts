@@ -68,3 +68,20 @@ describe('buildManualEditVersion', () => {
         expect(v.canonicalAnalysis).toBeUndefined();
     });
 });
+
+/**
+ * Los veredictos de la PROSA eran de otro texto: el que se acaba de editar.
+ * Los del análisis siguen valiendo, porque el análisis no cambió.
+ */
+describe('buildManualEditVersion — lo verificado de la prosa no se hereda', () => {
+    it('suelta los veredictos y conteos de la prosa, y conserva los del análisis', () => {
+        const deLaProsa = { raw: '(Ropes, p. 203)', status: 'not-found', origin: 'prose' } as unknown as VerifiedCitation;
+        const editada = buildManualEditVersion(padre({
+            citationVerdicts: [veredicto, deLaProsa],
+            verifications: { proseCitations: 1, proseCitationsWithIssues: 1, totalCitations: 1 } as never,
+        }), 'prosa corregida');
+        expect(editada.citationVerdicts).toEqual([veredicto]);
+        expect(editada.verifications).not.toHaveProperty('proseCitations');
+        expect(editada.verifications).not.toHaveProperty('proseCitationsWithIssues');
+    });
+});

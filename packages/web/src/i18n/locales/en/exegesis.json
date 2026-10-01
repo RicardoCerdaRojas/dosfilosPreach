@@ -1713,10 +1713,22 @@
         "running": "Checking citations against sources…",
         "rerun": "Re-verify",
         "close": "Close",
-        "matchedSource": "Source"
+        "matchedSource": "Source",
+        "proseTitle_one": "In the prose you hand in · {{count}} citation",
+        "proseTitle_other": "In the prose you hand in · {{count}} citations",
+        "proseHint": "Checked separately; they do not block accepting the step. If one does not match, fix it in the prose (e.g. a page that shifted while drafting)."
       },
       "toast": {
         "failed": "Verification failed. Try again."
+      },
+      "site": {
+        "commentator": "commentator position",
+        "crux": "translation crux",
+        "lexical-range": "semantic range",
+        "lexical-loading": "sense in this verse",
+        "footnote": "note",
+        "ot-link": "OT link",
+        "historical": "historical context"
       }
     },
     "review": {
