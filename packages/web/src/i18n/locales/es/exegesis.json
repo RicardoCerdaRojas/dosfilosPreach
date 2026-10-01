@@ -434,7 +434,11 @@
         "empty": "Está vacío. Sin encuadre no se reparte la extensión, no se sabe qué pregunta responde cada sección, y la forma de cita queda al azar.",
         "template-unfilled": "Quedan bloques de la plantilla sin llenar —los que están entre corchetes—.",
         "no-search-keys": "No nombra ninguna forma hebrea o griega ni categoría gramatical. Sin eso, las gramáticas y los léxicos de tu corpus no tienen por dónde entrar al pasaje: no se indexan por pasaje sino por categoría y por lema."
-      }
+      },
+      "button": "Encuadre",
+      "missing": "falta",
+      "questionCount_one": "{{count}} pregunta",
+      "questionCount_other": "{{count}} preguntas"
     },
     "notFound": {
       "title": "Trabajo no encontrado",
@@ -443,7 +447,7 @@
     },
     "subSteps": {
       "rubric": {
-        "tab": "Rúbrica · qué pide",
+        "tab": "Rúbrica",
         "heading": "Rúbrica del trabajo",
         "description": "Lo que pide ESTA entrega: extensión, forma de cita, si lleva portada y bibliografía, y qué fuentes exige. Súbela desde el sílabo o usa la de la casa.",
         "loading": "Cargando rúbrica...",
@@ -682,7 +686,7 @@
         }
       },
       "manifest": {
-        "tab": "Guía · cómo se formatea",
+        "tab": "Guía de estilo",
         "heading": "Manifiesto de la guía de estilo",
         "description": "CÓMO se formatea todo lo que la entrega pide: notas al pie, ibid, comillas, bibliografía. Revisa lo que se leyó de tu guía antes de generar.",
         "noGuide": "No hay guía activa adjunta. Sube una desde tu perfil para que el manifiesto se pueda extraer.",
@@ -1375,7 +1379,10 @@
       "offerProfileDismiss": "Ahora no",
       "profileDefaultName": "Mi portada",
       "profileSaved": "Perfil guardado. Los próximos trabajos usarán esta portada.",
-      "profileSaveFailed": "No se pudo guardar el perfil."
+      "profileSaveFailed": "No se pudo guardar el perfil.",
+      "button": "Portada",
+      "ready": "Portada completa",
+      "missing": "falta"
     },
     "workProfile": {
       "title": "Perfil de trabajo",

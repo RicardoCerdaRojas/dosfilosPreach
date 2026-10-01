@@ -8,8 +8,8 @@ import { RubricSubStep } from '@/components/exegesis/setup/RubricSubStep';
 import { StyleManifestSubStep } from '@/components/exegesis/setup/StyleManifestSubStep';
 import { CorpusSubStep } from '@/components/exegesis/setup/CorpusSubStep';
 import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPlanSubStep';
-import { PaperBriefPanel } from '@/components/exegesis/setup/PaperBriefPanel';
-import { PaperCoverPanel } from '@/components/exegesis/setup/PaperCoverPanel';
+import { PaperBriefButton } from '@/components/exegesis/setup/PaperBriefButton';
+import { PaperCoverButton } from '@/components/exegesis/setup/PaperCoverButton';
 import { SaveWorkProfileButton } from '@/components/exegesis/setup/SaveWorkProfileButton';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
@@ -139,54 +139,46 @@ export function ExegesisPaperSetupPage() {
                             {formatPassageReference(paper.passage, activeLanguage)} · {t(`list.phase.${paper.phase}`)}
                         </p>
                     </div>
+                    {/* Encuadre y portada como botones con su estado: se editan en
+                        un modal amplio y dejan la página entera a la
+                        configuración. La key descarta un borrador a medio
+                        escribir si la ruta cambia a otro trabajo. */}
+                    <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
+                    <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
                     <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
                 </div>
             </header>
 
-            {/* Encuadre y portada van en un panel lateral fijo en pantallas
-                anchas: el encuadre se consulta durante TODA la configuración
-                —qué preguntas, qué extensión, qué fuentes no repetir— y
-                arriba de las pestañas quedaba fuera de la vista apenas se
-                bajaba. En pantallas angostas siguen arriba, como antes. */}
-            <div className="max-w-7xl w-full mx-auto px-6 py-6 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6">
-                <aside className="lg:order-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-                    {/* La key descarta un borrador a medio escribir si la ruta
-                        cambia a otro trabajo sin desmontar la página. */}
-                    <PaperBriefPanel key={paper.id} paper={paper} />
-                    <PaperCoverPanel key={`cover-${paper.id}`} paper={paper} />
-                </aside>
+            <div className="max-w-7xl w-full mx-auto px-6 py-6">
+                <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+                    {SUB_STEPS.map((s, idx) => (
+                        <SubStepTab
+                            key={s.key}
+                            index={idx + 1}
+                            label={t(`paperSetup.subSteps.${s.key}.tab`)}
+                            iconKey={s.iconKey}
+                            active={activeKey === s.key}
+                            onClick={() => setActiveKey(s.key)}
+                        />
+                    ))}
+                </nav>
 
-                <div className="lg:order-1 min-w-0">
-                    <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
-                        {SUB_STEPS.map((s, idx) => (
-                            <SubStepTab
-                                key={s.key}
-                                index={idx + 1}
-                                label={t(`paperSetup.subSteps.${s.key}.tab`)}
-                                iconKey={s.iconKey}
-                                active={activeKey === s.key}
-                                onClick={() => setActiveKey(s.key)}
-                            />
-                        ))}
-                    </nav>
+                <main className="rounded-2xl border border-border bg-card p-6 space-y-6">
+                    {activeKey === 'rubric' && <RubricSubStep paper={paper} />}
+                    {activeKey === 'manifest' && <StyleManifestSubStep paper={paper} />}
+                    {activeKey === 'corpus' && <CorpusSubStep paper={paper} />}
+                    {activeKey === 'corpus-plan' && <CorpusUsagePlanSubStep paper={paper} />}
+                    {activeKey === 'plan' && <StructuralPlanSubStep paper={paper} />}
+                </main>
 
-                    <main className="rounded-2xl border border-border bg-card p-6 space-y-6">
-                        {activeKey === 'rubric' && <RubricSubStep paper={paper} />}
-                        {activeKey === 'manifest' && <StyleManifestSubStep paper={paper} />}
-                        {activeKey === 'corpus' && <CorpusSubStep paper={paper} />}
-                        {activeKey === 'corpus-plan' && <CorpusUsagePlanSubStep paper={paper} />}
-                        {activeKey === 'plan' && <StructuralPlanSubStep paper={paper} />}
-                    </main>
-
-                    <footer className="flex items-center justify-end pt-6">
-                        <Button
-                            onClick={() => navigate(`/dashboard/exegesis/${paperId}`)}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                        >
-                            {t('paperSetup.goToPaper')}
-                        </Button>
-                    </footer>
-                </div>
+                <footer className="flex items-center justify-end pt-6">
+                    <Button
+                        onClick={() => navigate(`/dashboard/exegesis/${paperId}`)}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                        {t('paperSetup.goToPaper')}
+                    </Button>
+                </footer>
             </div>
         </div>
     );

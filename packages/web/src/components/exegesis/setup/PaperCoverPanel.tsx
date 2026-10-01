@@ -27,7 +27,11 @@ type Field = PaperCoverField;
  * trabajo, aquí, junto al encuadre: es donde vive todo lo que el sistema
  * no puede averiguar solo.
  */
-export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
+export function PaperCoverPanel({ paper, embedded = false }: {
+    paper: ExegeticalPaper;
+    /** Dentro de un modal: sin el marco de tarjeta ni el encabezado propio. */
+    embedded?: boolean;
+}) {
     const { t } = useTranslation('exegesis');
     const { updatePaperCover } = useExegesisPapers();
     const [draft, setDraft] = useState<Record<Field, string> | null>(null);
@@ -73,13 +77,17 @@ export function PaperCoverPanel({ paper }: { paper: ExegeticalPaper }) {
     const filled = FIELDS.filter(f => (cover?.[f] ?? '').trim().length > 0);
 
     return (
-        <section className="rounded-2xl border border-border bg-card p-4 mb-6 space-y-3">
-            <header className="flex items-start gap-3">
-                <FileText className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                    <h2 className="text-sm font-semibold text-foreground">{t('paperSetup.cover.heading')}</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('paperSetup.cover.description')}</p>
-                </div>
+        <section className={embedded ? 'space-y-3' : 'rounded-2xl border border-border bg-card p-4 mb-6 space-y-3'}>
+            <header className={embedded ? 'flex items-start justify-end gap-3' : 'flex items-start gap-3'}>
+                {!embedded && (
+                    <>
+                        <FileText className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-sm font-semibold text-foreground">{t('paperSetup.cover.heading')}</h2>
+                            <p className="text-xs text-muted-foreground mt-0.5">{t('paperSetup.cover.description')}</p>
+                        </div>
+                    </>
+                )}
                 {!editing && (
                     <Button type="button" size="sm" variant="ghost" onClick={start}>
                         <Pencil className="h-3.5 w-3.5 mr-1.5" />

@@ -434,7 +434,11 @@
         "empty": "It is empty. Without a brief the length is not allotted, no section knows which question it answers, and the citation form is left to chance.",
         "template-unfilled": "Template blocks are still unfilled — the ones in brackets.",
         "no-search-keys": "It names no Hebrew or Greek form and no grammatical category. Without those, the grammars and lexicons in your corpus have no way into the passage: they are indexed by category and lemma, not by passage."
-      }
+      },
+      "button": "Brief",
+      "missing": "missing",
+      "questionCount_one": "{{count}} question",
+      "questionCount_other": "{{count}} questions"
     },
     "notFound": {
       "title": "Paper not found",
@@ -443,7 +447,7 @@
     },
     "subSteps": {
       "rubric": {
-        "tab": "Rubric · what it asks",
+        "tab": "Rubric",
         "heading": "Paper rubric",
         "description": "What THIS assignment asks for: length, citation form, cover and bibliography, and which sources it requires. Upload it from the syllabus or use the house default.",
         "loading": "Loading rubric...",
@@ -682,7 +686,7 @@
         }
       },
       "manifest": {
-        "tab": "Guide · how it is formatted",
+        "tab": "Style guide",
         "heading": "Style guide manifest",
         "description": "HOW everything the assignment asks for is formatted: footnotes, ibid, quotations, bibliography. Check what was read from your guide before generating.",
         "noGuide": "No active guide attached. Upload one from your profile so the manifest can be extracted.",
@@ -1375,7 +1379,10 @@
       "offerProfileDismiss": "Not now",
       "profileDefaultName": "My cover",
       "profileSaved": "Profile saved. Your next papers will use this cover.",
-      "profileSaveFailed": "Could not save the profile."
+      "profileSaveFailed": "Could not save the profile.",
+      "button": "Cover",
+      "ready": "Cover complete",
+      "missing": "missing"
     },
     "workProfile": {
       "title": "Work profile",
