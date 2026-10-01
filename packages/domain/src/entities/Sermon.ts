@@ -106,6 +106,13 @@ export interface Sermon {
         publishedCopyId?: string;  // ID of the most recent published copy
         lastPublishedAt?: Date;    // When it was last published
         publishCount?: number;      // How many times it's been published
+        /**
+         * El pastor lo dio por terminado a mano desde el plan de la serie
+         * (un sermón predicado sin publicarlo en la app). Antes esa marca era
+         * `currentStep: 4` escrito ENCIMA de todo `wizardProgress`: borraba
+         * el borrador guardado y dejaba al asistente en un paso inexistente.
+         */
+        markedCompleteAt?: Date;
         planId?: string; // ID of the preaching plan this sermon belongs to
         /**
          * Provenance of any pre-population that happened at creation

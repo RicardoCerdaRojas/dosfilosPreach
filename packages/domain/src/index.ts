@@ -11,6 +11,7 @@ export * from './entities/Confession';
 export * from './entities/CreditPack';
 export * from './entities/ExegesisOperationCatalog';
 export * from './services/computeExegesisQuotaState';
+export * from './services/plannedSermonDone';
 export * from './services/aggregateRagSources';
 export * from './services/validateCitations';
 export * from './services/stripSermonCitationMarkers'; // 🌱 ADR-030/031 — sermon prose: strip junk, keep valid [N] anchors
