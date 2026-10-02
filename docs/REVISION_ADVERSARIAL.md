@@ -109,6 +109,39 @@ contenido mezclado, 3 de 5 tandas de ese tamaño parsearon limpio.
 Concluir de ahí habría bajado un límite real por evidencia sesgada. **Decir de
 dónde salió la muestra es parte del resultado.**
 
+## 8. ¿Este código ESTIMA lo que hace otro código? ¿Se escribió leyendo a ese otro código?
+
+Un medidor, un presupuesto, una vista previa, un «esto va a costar N»: todos
+modelan a un consumidor que vive en otro archivo. Se escriben **leyendo al
+consumidor de punta a punta** —qué recibe, qué recorta, qué tope aplica— y una
+prueba los compara con el consumidor real, no con una copia de su cuenta.
+
+Mordió en **#730**. El medidor del corpus sumaba todas las hojas elegidas como
+si viajaran enteras; el analizador las consulta por versículo con un tope de
+100.000 (`retrieveCurated` → `selectForPrompt`). Marcaba 129% con ~130.000
+caracteres por versículo, y el autor sacó del trabajo fuentes que no hacía
+falta sacar. La pregunta exacta —«qué se manda de verdad por paso»— estaba
+anotada en la bitácora del ejercicio ANTES de escribir el medidor, y no se
+contestó.
+
+Si hay una pregunta abierta anotada sobre esa zona, se contesta antes de
+escribir código.
+
+## 9. Lo que se le dice al usuario que VA A PASAR, ¿se comprobó contra datos y código?
+
+«Esto lo baja», «esto no falla», «con esto se arregla»: son predicciones, y
+el usuario actúa sobre ellas. Antes de darlas se mide con datos reales (de sólo
+lectura) y se lee el código que decide. En la respuesta, cada afirmación de
+efecto dice de dónde sale: **medido** (con la cifra), **leído** (archivo:línea)
+o **supuesto** (y entonces se ofrece medirlo).
+
+Mordió dos veces el mismo día (Jonás 4:5-11, 2026-10-02): «volver a guardar
+Burt y Sassom baja el 123%» —el medidor que se acababa de escribir no contaba
+esos fragmentos— y «pasar Calvino y Fretheim a páginas lo baja» —subió a 129%—.
+Las dos cuentas estaban a una consulta de distancia. Y al probar un arreglo,
+una aserción que no podía fallar pasó en verde: **toda prueba nueva se rompe a
+propósito una vez** (mutación a mano) para ver que falla.
+
 ---
 
 ## Lo que esta lista NO reemplaza
