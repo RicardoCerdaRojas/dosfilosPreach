@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { proposeSheetRanges, type ProposalKind } from '@dosfilos/infrastructure';
-import { grammarSearchKeys, lemmasOfAnalyses, normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
+import {
+    checkRecipeConsistency, grammarSearchKeys, lemmasOfAnalyses, normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -212,6 +213,9 @@ export function ExegesisSourcePagesPage() {
                 proposalPending={proposal === null}
                 initialRanges={normalizeSheetRanges(source.excerptRecipe?.sheetRanges ?? [])}
                 initialPinned={normalizeSheetRanges(source.excerptRecipe?.pinnedRanges ?? [])}
+                // El aviso del corpus pide re-guardar: el botón no puede
+                // quedar en «Guardado» con la fuente desalineada.
+                needsResave={!checkRecipeConsistency(source).consistent}
                 otherSourcesChars={otherSourcesChars}
                 onConfirm={handleConfirm}
                 isSaving={selectPages.isPending}

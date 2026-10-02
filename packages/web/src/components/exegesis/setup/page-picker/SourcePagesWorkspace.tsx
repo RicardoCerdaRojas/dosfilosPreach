@@ -50,6 +50,12 @@ interface Props {
     initialRanges: ReadonlyArray<SheetRange>;
     /** Tramos ya marcados como «siempre incluir». */
     initialPinned: ReadonlyArray<SheetRange>;
+    /**
+     * Hay que volver a guardar aunque la selección no cambió: la fuente
+     * guardó fragmentos que su receta no declara, y el aviso del corpus pide
+     * justamente re-guardar para dejarlos parejos.
+     */
+    needsResave?: boolean;
     otherSourcesChars: number;
     onConfirm: (ranges: ReadonlyArray<SheetRange>, pinned: ReadonlyArray<SheetRange>) => Promise<void>;
     isSaving: boolean;
@@ -90,6 +96,7 @@ export function SourcePagesWorkspace({
     proposalPending,
     initialRanges,
     initialPinned,
+    needsResave = false,
     otherSourcesChars,
     onConfirm,
     isSaving,
@@ -165,9 +172,10 @@ export function SourcePagesWorkspace({
     const isDirty = useMemo(() => {
         const igual = (a: ReadonlyArray<SheetRange>, b: ReadonlyArray<SheetRange>) =>
             a.length === b.length && a.every((r, i) => r.start === b[i]!.start && r.end === b[i]!.end);
-        return !igual(ranges, normalizeSheetRanges(initialRanges))
+        return needsResave
+            || !igual(ranges, normalizeSheetRanges(initialRanges))
             || !igual(normalizeSheetRanges(effectivePinned), normalizeSheetRanges(initialPinned));
-    }, [ranges, effectivePinned, initialRanges, initialPinned]);
+    }, [ranges, effectivePinned, initialRanges, initialPinned, needsResave]);
     const pinnedChars = useMemo(() => countChars(pages, effectivePinned), [pages, effectivePinned]);
     const sheetCount = useMemo(() => countSheets(ranges), [ranges]);
 

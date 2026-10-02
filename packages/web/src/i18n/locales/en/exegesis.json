@@ -818,7 +818,7 @@
         "budget": {
           "title": "Paper budget",
           "stats": "{{sources}} sources · {{chars}} characters",
-          "over": "The corpus is over budget: generation will fail. Remove sheets from a source.",
+          "over": "The corpus is over budget: each source is trimmed to fit and less of each one gets in. Remove sheets or excerpts from the sources that add least.",
           "inconsistent_one": "{{labels}} saved passages its selection does not declare. Save its pages again to line them up.",
           "inconsistent_other": "{{count}} sources saved passages their selection does not declare ({{labels}}). Save their pages again to line them up.",
           "measuring": "measuring the chosen pages…"
@@ -899,7 +899,7 @@
             "statChars": "{{count}} characters",
             "otherSources": "Other sources in this paper take {{count}} characters.",
             "overBudget": "Over budget",
-            "overBudgetHint": "The paper is over budget. You can still save, but before generating you need to drop sheets here or in another source.",
+            "overBudgetHint": "The paper is over budget. You can save anyway, but each source will reach the assistant trimmed: better to drop sheets from this source or another.",
             "saving": "Saving…",
             "confirm_one": "Add {{count}} sheet to the paper",
             "confirm_other": "Add {{count}} sheets to the paper",
