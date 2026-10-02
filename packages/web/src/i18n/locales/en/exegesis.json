@@ -820,7 +820,8 @@
           "stats": "{{sources}} sources · {{chars}} characters",
           "over": "The corpus is over budget: generation will fail. Remove sheets from a source.",
           "inconsistent_one": "{{labels}} saved passages its selection does not declare. Save its pages again to line them up.",
-          "inconsistent_other": "{{count}} sources saved passages their selection does not declare ({{labels}}). Save their pages again to line them up."
+          "inconsistent_other": "{{count}} sources saved passages their selection does not declare ({{labels}}). Save their pages again to line them up.",
+          "measuring": "measuring the chosen pages…"
         },
         "picker": {
           "subtitle": "Choose which sheets of this document go into the paper. You can take the passage section and the book's introduction too.",
@@ -902,7 +903,8 @@
             "saving": "Saving…",
             "confirm_one": "Add {{count}} sheet to the paper",
             "confirm_other": "Add {{count}} sheets to the paper",
-            "sectionsCovered": "{{section}} · covers {{count}} sections"
+            "sectionsCovered": "{{section}} · covers {{count}} sections",
+            "saved": "Saved · {{count}} sheets in the paper"
           }
         },
         "list": {
@@ -922,7 +924,9 @@
           "viewOriginal": "Open the original PDF in a new tab",
           "groupEmpty": "No sources in this role yet.",
           "groupUnrolled_one": "No role assigned ({{count}})",
-          "groupUnrolled_other": "No role assigned ({{count}})"
+          "groupUnrolled_other": "No role assigned ({{count}})",
+          "sheetsBadge_one": "{{count}} sheet",
+          "sheetsBadge_other": "{{count}} sheets"
         },
         "summary": {
           "title": "{{excerptCount}} curated fragments from {{sourceCount}} sources",

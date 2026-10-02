@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { useDocumentPageIndex } from '@/hooks/exegesis/useDocumentPageIndex';
+import { useCorpusFootprint } from '@/hooks/exegesis/useCorpusFootprint';
 import { PaperCorpusTooLargeError } from '@dosfilos/application';
 import { useSelectSourcePages } from '@/hooks/exegesis/useSelectSourcePages';
 import { SourcePagesWorkspace } from '@/components/exegesis/setup/page-picker/SourcePagesWorkspace';
@@ -116,12 +117,9 @@ export function ExegesisSourcePagesPage() {
     // las dos propuestas rotulan sus hojas con el folio impreso del libro.
     const numbering = usePageNumbering(resourceId);
 
-    const otherSourcesChars = useMemo(() => {
-        if (!paper || !source) return 0;
-        return paper.sources
-            .filter(s => s.id !== source.id)
-            .reduce((sum, s) => sum + s.excerpts.reduce((n, e) => n + e.text.length, 0), 0);
-    }, [paper, source]);
+    // Las otras fuentes cuentan con sus PÁGINAS elegidas, no sólo con sus
+    // fragmentos (ver `useCorpusFootprint`).
+    const { chars: otherSourcesChars } = useCorpusFootprint(paper?.sources ?? [], source?.id);
 
     const back = () => navigate(`/dashboard/exegesis/${paperId}/setup?tab=corpus`);
 

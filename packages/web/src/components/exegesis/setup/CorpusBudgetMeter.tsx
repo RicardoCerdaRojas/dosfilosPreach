@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
 import { MAX_PROMPT_CHARS } from '@dosfilos/infrastructure';
 import { checkRecipeConsistency, type ExegeticalPaper } from '@dosfilos/domain';
+import { useCorpusFootprint } from '@/hooks/exegesis/useCorpusFootprint';
 
 /**
  * Cuánto del presupuesto del prompt ocupa el corpus del trabajo, sumando todas
@@ -19,10 +20,9 @@ import { checkRecipeConsistency, type ExegeticalPaper } from '@dosfilos/domain';
 export function CorpusBudgetMeter({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
 
-    const totalChars = paper.sources.reduce(
-        (sum, s) => sum + s.excerpts.reduce((n, e) => n + e.text.length, 0),
-        0,
-    );
+    // Cuenta también las páginas elegidas (ver `useCorpusFootprint`): antes
+    // sólo sumaba fragmentos y una fuente con páginas valía cero.
+    const { chars: totalChars, pending } = useCorpusFootprint(paper.sources);
     const percent = Math.round((totalChars / MAX_PROMPT_CHARS) * 100);
     const over = totalChars > MAX_PROMPT_CHARS;
 
@@ -60,6 +60,7 @@ export function CorpusBudgetMeter({ paper }: { paper: ExegeticalPaper }) {
                     sources: paper.sources.length,
                     chars: totalChars,
                 })}
+                {pending && ` · ${t('paperSetup.subSteps.corpus.budget.measuring')}`}
             </p>
 
             {over && (

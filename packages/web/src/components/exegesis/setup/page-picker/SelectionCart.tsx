@@ -38,6 +38,12 @@ interface Props {
     /** Caracteres que ocupan los tramos fijados. */
     pinnedChars: number;
     onConfirm: () => void;
+    /**
+     * Si lo elegido difiere de lo guardado. Sin cambios el botón dice
+     * «Guardado» y se apaga: antes quedaba siempre encendido y, al volver a
+     * entrar, no había forma de saber si las hojas ya estaban en el trabajo.
+     */
+    isDirty: boolean;
     isSaving: boolean;
 }
 
@@ -54,6 +60,7 @@ export function SelectionCart({
     pinnedChars,
     onConfirm,
     isSaving,
+    isDirty,
 }: Props) {
     const { t } = useTranslation('exegesis');
 
@@ -102,7 +109,7 @@ export function SelectionCart({
     };
 
     return (
-        <div className="flex flex-col min-h-0 border-l border-border">
+        <div className="flex flex-col shrink-0 border-l border-border">
             <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {t('paperSetup.subSteps.corpus.picker.cart.title')}
@@ -112,7 +119,10 @@ export function SelectionCart({
                 </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+            {/* Altura propia: dentro de la columna con scroll, `flex-1` la
+                dejaba en una franja casi invisible bajo los paneles de
+                propuestas, y no se podían ver ni quitar los tramos. */}
+            <div className="min-h-[10rem] max-h-[45vh] overflow-y-auto p-2 space-y-1.5">
                 {ranges.length === 0 ? (
                     <p className="px-2 py-4 text-sm text-muted-foreground">
                         {t('paperSetup.subSteps.corpus.picker.cart.empty')}
@@ -225,12 +235,14 @@ export function SelectionCart({
                     type="button"
                     className="w-full"
                     variant={overBudget ? 'outline' : 'default'}
-                    disabled={sheetCount === 0 || isSaving}
+                    disabled={sheetCount === 0 || isSaving || !isDirty}
                     onClick={onConfirm}
                 >
                     {isSaving
                         ? t('paperSetup.subSteps.corpus.picker.cart.saving')
-                        : t('paperSetup.subSteps.corpus.picker.cart.confirm', { count: sheetCount })}
+                        : !isDirty && sheetCount > 0
+                            ? t('paperSetup.subSteps.corpus.picker.cart.saved', { count: sheetCount })
+                            : t('paperSetup.subSteps.corpus.picker.cart.confirm', { count: sheetCount })}
                 </Button>
             </div>
         </div>

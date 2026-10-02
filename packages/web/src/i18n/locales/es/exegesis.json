@@ -820,7 +820,8 @@
           "stats": "{{sources}} fuentes · {{chars}} caracteres",
           "over": "El corpus se pasa del presupuesto: la generación va a fallar. Quita hojas de alguna fuente.",
           "inconsistent_one": "{{labels}} guardó fragmentos que su selección no declara. Vuelve a guardar sus páginas para dejarlos parejos.",
-          "inconsistent_other": "{{count}} fuentes guardaron fragmentos que su selección no declara ({{labels}}). Vuelve a guardar sus páginas para dejarlos parejos."
+          "inconsistent_other": "{{count}} fuentes guardaron fragmentos que su selección no declara ({{labels}}). Vuelve a guardar sus páginas para dejarlos parejos.",
+          "measuring": "midiendo las páginas elegidas…"
         },
         "picker": {
           "subtitle": "Elige qué hojas del documento entran a este trabajo. Puedes agregar la sección del pasaje y también la introducción del libro.",
@@ -902,7 +903,8 @@
             "saving": "Guardando…",
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
-            "sectionsCovered": "{{section}} · cubre {{count}} secciones"
+            "sectionsCovered": "{{section}} · cubre {{count}} secciones",
+            "saved": "Guardado · {{count}} hojas en el trabajo"
           }
         },
         "list": {
@@ -922,7 +924,9 @@
           "viewOriginal": "Abrir el PDF original en una pestaña nueva",
           "groupEmpty": "Aún sin fuentes en este rol.",
           "groupUnrolled_one": "Sin rol asignado ({{count}})",
-          "groupUnrolled_other": "Sin rol asignado ({{count}})"
+          "groupUnrolled_other": "Sin rol asignado ({{count}})",
+          "sheetsBadge_one": "{{count}} hoja",
+          "sheetsBadge_other": "{{count}} hojas"
         },
         "summary": {
           "title": "{{excerptCount}} fragmentos curados de {{sourceCount}} fuentes",

@@ -160,6 +160,14 @@ export function SourcePagesWorkspace({
     // Lo fijado se recorta a lo elegido: quitar una hoja marcada no puede dejar
     // el medidor contando material que la fuente ya no declara.
     const effectivePinned = useMemo(() => clipRangesTo(pinned, ranges), [pinned, ranges]);
+    // Si lo elegido difiere de lo guardado (las props `initial*` son la receta
+    // guardada y se renuevan al guardar).
+    const isDirty = useMemo(() => {
+        const igual = (a: ReadonlyArray<SheetRange>, b: ReadonlyArray<SheetRange>) =>
+            a.length === b.length && a.every((r, i) => r.start === b[i]!.start && r.end === b[i]!.end);
+        return !igual(ranges, normalizeSheetRanges(initialRanges))
+            || !igual(normalizeSheetRanges(effectivePinned), normalizeSheetRanges(initialPinned));
+    }, [ranges, effectivePinned, initialRanges, initialPinned]);
     const pinnedChars = useMemo(() => countChars(pages, effectivePinned), [pages, effectivePinned]);
     const sheetCount = useMemo(() => countSheets(ranges), [ranges]);
 
@@ -467,6 +475,7 @@ export function SourcePagesWorkspace({
                         onTogglePinned={togglePinned}
                         pinnedChars={pinnedChars}
                         onConfirm={() => onConfirm(ranges, effectivePinned)}
+                        isDirty={isDirty}
                         isSaving={isSaving}
                     />
                 </div>
