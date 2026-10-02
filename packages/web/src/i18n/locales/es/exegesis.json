@@ -816,12 +816,14 @@
           }
         },
         "budget": {
-          "title": "Presupuesto del trabajo",
-          "stats": "{{sources}} fuentes · {{chars}} caracteres",
-          "over": "El corpus se pasa del presupuesto: cada fuente se recorta para caber y entra menos material de cada una. Quita hojas o fragmentos de las fuentes que menos aportan.",
+          "title": "Corpus por versículo",
+          "stats": "{{chars}} de {{space}} caracteres por versículo · {{sources}} fuentes",
+          "over": "Se pasa del espacio por versículo: las fuentes que más traen llegan recortadas. Quita fragmentos o deja de fijar hojas.",
           "inconsistent_one": "{{labels}} guardó fragmentos que su selección no declara. Vuelve a guardar sus páginas para dejarlos parejos.",
           "inconsistent_other": "{{count}} fuentes guardaron fragmentos que su selección no declara ({{labels}}). Vuelve a guardar sus páginas para dejarlos parejos.",
-          "measuring": "midiendo las páginas elegidas…"
+          "measuring": "midiendo las páginas elegidas…",
+          "consulted": "Las hojas elegidas suman {{admitted}} caracteres; en cada versículo se consulta lo que trata de él, hasta {{cap}}.",
+          "late": "En los últimos versículos, los análisis ya aceptados ocupan hasta {{prior}} caracteres del mismo espacio: las fuentes más grandes pueden llegar recortadas."
         },
         "picker": {
           "subtitle": "Elige qué hojas del documento entran a este trabajo. Puedes agregar la sección del pasaje y también la introducción del libro.",
@@ -888,7 +890,7 @@
             "sheetRange": "hojas {{start}}–{{end}}",
             "withPrinted": "{{base}} · impresa {{printed}}",
             "remove": "Quitar {{range}}",
-            "budget": "Presupuesto del trabajo",
+            "budget": "Corpus por versículo",
             "pin": "Fijar {{range}} para que entre en todos los pasos",
             "unpin": "Dejar de fijar {{range}}",
             "pinHint": "Fijado: entra en todos los pasos sin competir por cercanía. Útil para la introducción del libro, que ningún ranking traería.",
@@ -897,14 +899,15 @@
             "statSheets_one": "{{count}} hoja",
             "statSheets_other": "{{count}} hojas",
             "statChars": "{{count}} caracteres",
-            "otherSources": "Otras fuentes del trabajo ocupan {{count}} caracteres.",
             "overBudget": "Se pasa del presupuesto",
-            "overBudgetHint": "El trabajo se pasa del presupuesto. Puedes guardar igual, pero cada fuente llegará recortada al asistente: conviene bajar hojas de esta fuente o de otra.",
+            "overBudgetHint": "Se pasa del espacio por versículo. Puedes guardar igual, pero las fuentes que más traen llegarán recortadas: quita fragmentos de otras fuentes o deja de fijar hojas.",
             "saving": "Guardando…",
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
             "sectionsCovered": "{{section}} · cubre {{count}} secciones",
-            "saved": "Guardado · {{count}} hojas en el trabajo"
+            "saved": "Guardado · {{count}} hojas en el trabajo",
+            "perVerse": "Por versículo llegan {{chars}} caracteres. Las hojas elegidas del trabajo suman {{admitted}}; de ellas se consulta lo de cada versículo, hasta {{cap}}.",
+            "otherExcerpts": "Los fragmentos de otras fuentes van completos: {{chars}} caracteres."
           }
         },
         "list": {

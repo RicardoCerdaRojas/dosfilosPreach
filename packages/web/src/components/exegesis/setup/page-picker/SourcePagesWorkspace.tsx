@@ -13,6 +13,7 @@ import {
     type PassagePageHit,
     type SectionProposal,
     type PageNumbering,
+    type CorpusFootprint,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { PanelGroup } from '@/components/ui/PanelGroup';
@@ -56,7 +57,8 @@ interface Props {
      * justamente re-guardar para dejarlos parejos.
      */
     needsResave?: boolean;
-    otherSourcesChars: number;
+    /** Lo que aportan las otras fuentes del trabajo a cada versículo. */
+    otherSources: CorpusFootprint;
     onConfirm: (ranges: ReadonlyArray<SheetRange>, pinned: ReadonlyArray<SheetRange>) => Promise<void>;
     isSaving: boolean;
     /**
@@ -97,7 +99,7 @@ export function SourcePagesWorkspace({
     initialRanges,
     initialPinned,
     needsResave = false,
-    otherSourcesChars,
+    otherSources,
     onConfirm,
     isSaving,
     lemmaProposals,
@@ -475,7 +477,7 @@ export function SourcePagesWorkspace({
                         ranges={ranges}
                         sections={sections}
                         printedPageOffset={printedPageOffset}
-                        otherSourcesChars={otherSourcesChars}
+                        otherSources={otherSources}
                         selectedChars={selectedChars}
                         sheetCount={sheetCount}
                         onRemoveRange={removeRange}

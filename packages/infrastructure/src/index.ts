@@ -39,7 +39,7 @@ export * from './gemini/GeminiEmbeddingService';
 export * from './llm/proxyLlmClient'; // 🌱 Puerto ILlmClient sobre el proxy del servidor
 // Tope de caracteres del prompt. Lo consume también la interfaz, para que el
 // medidor de presupuesto del corpus mida contra el número real y no una copia.
-export { MAX_PROMPT_CHARS } from './llm/promptBudget';
+export { MAX_PROMPT_CHARS, PRIOR_ANALYSES_BUDGET_CHARS, VERSE_CORPUS_SPACE_CHARS } from './llm/promptBudget';
 // NO va acá ninguna clase que importe `@google/generative-ai`: este barrel lo
 // consume el navegador, y un solo `export *` de una clase con el SDK lo
 // empaqueta entero aunque nadie la construya. Las llamadas al modelo salen

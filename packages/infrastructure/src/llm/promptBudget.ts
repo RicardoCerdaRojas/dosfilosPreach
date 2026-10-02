@@ -78,3 +78,66 @@ export function fitPromptToCap(
 
     return message;
 }
+
+/**
+ * Lo que ocupa en el mensaje del analizador todo lo que NO es el corpus:
+ * 5.003 caracteres medidos para Jonás 4:6 (2026-10-02), redondeado hacia
+ * arriba.
+ *
+ * La guía de estilo, el encuadre, el texto base, el entorno y la morfología NO
+ * van aquí: viajan en las instrucciones de sistema, que tienen su propio tope.
+ * Los análisis previos SÍ van en el mensaje y crecen con el trabajo (hasta
+ * 40.000): el medidor lo dice en pantalla.
+ */
+const VERSE_FIXED_PARTS_CHARS = 6_000;
+
+/**
+ * Tope de los análisis ya aceptados que el analizador repite en cada versículo
+ * para dar continuidad. Ocupan el mismo mensaje que el corpus.
+ */
+export const PRIOR_ANALYSES_BUDGET_CHARS = 40_000;
+
+/**
+ * El espacio para el corpus que muestra el medidor del trabajo: hasta aquí,
+ * ninguna fuente se recorta en un versículo sin análisis previos. Lo ata a
+ * `buildAnalyzerPrompt` una prueba (`espacioDelCorpus.test.ts`), no la
+ * confianza en esta cuenta.
+ */
+export const VERSE_CORPUS_SPACE_CHARS = MAX_PROMPT_CHARS - SAFETY_MARGIN_CHARS - VERSE_FIXED_PARTS_CHARS;
+
+/**
+ * Reparte el espacio del corpus entre las fuentes sin desperdiciar nada.
+ *
+ * Antes cada fuente recibía una parte fija (igual, o según su tipo) y se
+ * recortaba a esa parte aunque sobrara espacio: en Jonás 4:5-11, con siete
+ * fuentes, cada una tenía ~26.000 (el espacio / 7); Gelston usaba 8.741 y lo
+ * que dejaba no pasaba a ninguna otra. Aquí
+ * la fuente que necesita menos que su parte se queda con lo suyo, y lo que deja
+ * se reparte entre las demás, con los mismos pesos.
+ *
+ * Si todo cabe, nadie se recorta. Si no, se recortan las que más traen.
+ */
+export function allocateSourceBudgets(
+    lengths: ReadonlyArray<number>,
+    weights: ReadonlyArray<number>,
+    totalChars: number,
+): number[] {
+    const budgets = lengths.map(() => 0);
+    let pending = lengths.map((_, i) => i).filter(i => lengths[i]! > 0 && weights[i]! > 0);
+    let left = Math.max(0, totalChars);
+    while (pending.length > 0 && left > 0) {
+        const weightSum = pending.reduce((s, i) => s + weights[i]!, 0);
+        const share = (i: number) => Math.floor(left * weights[i]! / weightSum);
+        const fit = pending.filter(i => lengths[i]! <= share(i));
+        if (fit.length === 0) {
+            for (const i of pending) budgets[i] = share(i);
+            break;
+        }
+        for (const i of fit) {
+            budgets[i] = lengths[i]!;
+            left -= lengths[i]!;
+        }
+        pending = pending.filter(i => !fit.includes(i));
+    }
+    return budgets;
+}

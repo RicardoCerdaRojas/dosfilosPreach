@@ -1,20 +1,23 @@
 import { useTranslation } from 'react-i18next';
 import { Pin, PinOff, X } from 'lucide-react';
-import { printedPageFor, sectionsCoveredBy, type SheetRange } from '@dosfilos/domain';
+import {
+    CURATED_CORPUS_BUDGET_CHARS,
+    printedPageFor,
+    sectionsCoveredBy,
+    withPageSelection,
+    type CorpusFootprint,
+    type SheetRange,
+} from '@dosfilos/domain';
+import { VERSE_CORPUS_SPACE_CHARS } from '@dosfilos/infrastructure';
 import { Button } from '@/components/ui/button';
 
 /**
- * Lo que va al trabajo, y cuánto del presupuesto ocupa.
+ * Lo que va al trabajo, y cuánto corpus llega con eso a cada versículo.
  *
- * El medidor no es decoración. El proxy corta el prompt en 200.000 caracteres
- * para TODAS las fuentes juntas, y pasarse fue exactamente el bug que originó
- * este trabajo: una fuente entera se recortaba en silencio desde el principio
- * del libro. Verlo mientras se elige convierte una falla invisible en una
- * decisión informada.
+ * Mide lo que VIAJA (ver `corpusFootprint`): las hojas elegidas de todas las
+ * fuentes se consultan por versículo hasta un tope; los fragmentos van
+ * completos. Antes sumaba todas las hojas como si viajaran enteras.
  */
-
-/** Tope de `prompt` del callable `runLlmPrompt`, para todas las fuentes juntas. */
-const BUDGET_CHARS = 200_000;
 
 interface Props {
     ranges: ReadonlyArray<SheetRange>;
@@ -27,8 +30,8 @@ interface Props {
      */
     sections: ReadonlyArray<{ sheet: number; section: string | null }>;
     printedPageOffset: number | null;
-    /** Caracteres que ya ocupan las otras fuentes del trabajo. */
-    otherSourcesChars: number;
+    /** Lo que aportan las otras fuentes del trabajo a cada versículo. */
+    otherSources: CorpusFootprint;
     selectedChars: number;
     sheetCount: number;
     onRemoveRange: (range: SheetRange) => void;
@@ -51,7 +54,7 @@ export function SelectionCart({
     ranges,
     sections,
     printedPageOffset,
-    otherSourcesChars,
+    otherSources,
     selectedChars,
     sheetCount,
     onRemoveRange,
@@ -62,11 +65,12 @@ export function SelectionCart({
     isSaving,
     isDirty,
 }: Props) {
-    const { t } = useTranslation('exegesis');
+    const { t, i18n } = useTranslation('exegesis');
 
-    const totalChars = selectedChars + otherSourcesChars;
-    const percent = Math.round((totalChars / BUDGET_CHARS) * 100);
-    const overBudget = totalChars > BUDGET_CHARS;
+    const n = (x: number) => x.toLocaleString(i18n.language);
+    const conEsta = withPageSelection(otherSources, selectedChars, pinnedChars);
+    const percent = Math.round((conEsta.perStepChars / VERSE_CORPUS_SPACE_CHARS) * 100);
+    const overBudget = conEsta.perStepChars > VERSE_CORPUS_SPACE_CHARS;
 
     /** Un tramo está fijado cuando coincide exactamente con uno marcado. */
     const isPinned = (range: SheetRange): boolean =>
@@ -214,9 +218,16 @@ export function SelectionCart({
                     </p>
                 )}
 
-                {otherSourcesChars > 0 && (
-                    <p className="text-[11px] text-muted-foreground">
-                        {t('paperSetup.subSteps.corpus.picker.cart.otherSources', { count: otherSourcesChars })}
+                <p className="text-[11px] tabular-nums text-muted-foreground">
+                    {t('paperSetup.subSteps.corpus.picker.cart.perVerse', {
+                        chars: n(conEsta.perStepChars),
+                        admitted: n(conEsta.admittedChars),
+                        cap: n(CURATED_CORPUS_BUDGET_CHARS),
+                    })}
+                </p>
+                {otherSources.excerptChars > 0 && (
+                    <p className="text-[11px] tabular-nums text-muted-foreground">
+                        {t('paperSetup.subSteps.corpus.picker.cart.otherExcerpts', { chars: n(otherSources.excerptChars) })}
                     </p>
                 )}
 

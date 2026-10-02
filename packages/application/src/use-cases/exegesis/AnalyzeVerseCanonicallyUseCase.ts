@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -332,7 +332,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                 userId: paper.ownerId,
                 query,
                 sources: scopes,
-                budgetChars: CORPUS_BUDGET_CHARS,
+                budgetChars: CURATED_CORPUS_BUDGET_CHARS,
             });
         } catch (err) {
             console.warn('[AnalyzeVerseCanonically] el corpus no respondió; se usa lo guardado', {
@@ -675,14 +675,4 @@ export interface AnalyzeVerseCanonicallyUseCaseInput {
     regenerationHint?: string | null;
 }
 
-/**
- * Cuánto del prompt puede ocupar el corpus de un paso.
- *
- * Es un presupuesto para el CORPUS, no para el prompt: las instrucciones
- * metodológicas, la guía de estilo, el texto base y los análisis previos
- * ocupan el resto, y `fitPromptToCap` recorta después si algo se desmadra.
- * Dejar la mitad del tope para el corpus da margen para todo lo demás sin que
- * el recorte final tenga que morder material que el paso sí necesitaba.
- */
-const CORPUS_BUDGET_CHARS = 100_000;
 
