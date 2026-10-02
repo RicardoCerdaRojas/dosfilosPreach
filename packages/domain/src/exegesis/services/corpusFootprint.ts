@@ -3,43 +3,109 @@ import { countChars, type PageIndexEntry } from '../outline/documentPageIndex';
 import { hasCuratedScope } from './curatedScope';
 
 /**
- * Cuántos caracteres ocupa una fuente en el presupuesto del trabajo.
+ * Cuánto corpus llega al prompt de UN paso (un versículo).
  *
- * Había dos medidores y los dos sumaban sólo los FRAGMENTOS guardados. Una
- * fuente con páginas elegidas guarda la RECETA —qué hojas entran—, no su
- * texto, así que contaba cero: en Jonás 4:5-11 (2026-10-02) el corpus decía 4%
- * con 77 hojas de un léxico y 13 de un comentario adentro, y el selector de
- * páginas decía 72% sin contar las hojas de las otras fuentes. El total real
- * pasaba el 100%.
+ * Hay dos clases de fuente y viajan distinto:
  *
- * Con receta, lo que ocupa son sus hojas (`charCount` del índice del
- * documento). Si el índice todavía no llegó, `null`: no se sabe, y decir cero
- * es exactamente el error que esto corrige.
+ *   - Con FRAGMENTOS guardados (sin páginas elegidas): van completas a cada
+ *     paso (`AnalyzeVerseCanonicallyUseCase`, rama `usesExtractedExcerpts`).
+ *   - Con PÁGINAS ELEGIDAS (receta): sus hojas NO se mandan enteras. El paso le
+ *     pregunta al corpus qué de esas hojas habla de su versículo
+ *     (`retrieveCurated` → `selectForPrompt`): lo fijado entra completo y el
+ *     resto compite por lo que sobre de `CURATED_CORPUS_BUDGET_CHARS`, para
+ *     todas esas fuentes juntas.
+ *
+ * El medidor de #730 sumaba todas las hojas admitidas como si viajaran
+ * enteras. En Jonás 4:5-11 (2026-10-02) marcaba 129% cuando lo que llega a cada
+ * versículo es ~130.000 caracteres: pasar dos comentarios de fragmentos a
+ * páginas lo hizo SUBIR, siendo que el envío real no cambiaba.
  */
-export function sourceFootprintChars(
-    source: Pick<ProjectSource, 'excerpts' | 'excerptRecipe'>,
-    pageIndex: ReadonlyArray<PageIndexEntry> | null,
-): number | null {
-    const fragmentos = source.excerpts.reduce((n, e) => n + e.text.length, 0);
-    if (!hasCuratedScope(source)) return fragmentos;
-    if (!pageIndex) return null;
-    return countChars(pageIndex, source.excerptRecipe!.sheetRanges);
+
+/**
+ * Tope de lo que el corpus de páginas elegidas aporta a un paso, sumando todas
+ * sus fuentes. Lo usan el análisis por versículo y la composición del paso; el
+ * medidor lo lee de aquí para no inventarse otro número.
+ *
+ * La mitad del tope del prompt: el resto es para las instrucciones, la guía de
+ * estilo, el texto base y los análisis previos, y `fitPromptToCap` recorta
+ * después si algo se desmadra.
+ */
+export const CURATED_CORPUS_BUDGET_CHARS = 100_000;
+
+/**
+ * Lo que aporta a un paso el grupo de fuentes con páginas elegidas: lo fijado
+ * entra entero; lo demás, hasta llenar el tope (ver `selectForPrompt`).
+ */
+export function curatedCharsPerStep(admittedChars: number, pinnedChars: number): number {
+    return Math.max(pinnedChars, Math.min(admittedChars, CURATED_CORPUS_BUDGET_CHARS));
+}
+
+export interface CorpusFootprint {
+    /** Fragmentos de las fuentes sin páginas elegidas: viajan completos. */
+    excerptChars: number;
+    /** Todas las hojas elegidas. Se CONSULTAN por versículo; no viajan enteras. */
+    admittedChars: number;
+    /** Hojas fijadas («siempre incluir»): viajan completas. */
+    pinnedChars: number;
+    /** Lo que llega, como mucho, al prompt de un versículo. */
+    perStepChars: number;
+    /** Alguna fuente con páginas todavía no tiene su índice: los totales son un mínimo. */
+    pending: boolean;
 }
 
 /**
- * El corpus entero. `pending` cuando alguna fuente con receta todavía no tiene
- * su índice: el total es un mínimo, no el número.
+ * El corpus entero, separado en lo que viaja completo y lo que se consulta.
+ *
+ * Una fuente con páginas cuyo índice todavía no llegó deja `pending`: decir
+ * cero es el error que #730 corrigió. Las fuentes sin páginas ni fragmentos no
+ * suman: no tienen nada que medir, y su problema —leer el comienzo del libro—
+ * lo avisa `SourceSinPaginas`.
  */
 export function corpusFootprint(
     sources: ReadonlyArray<Pick<ProjectSource, 'id' | 'excerpts' | 'excerptRecipe'>>,
     indexBySource: ReadonlyMap<string, ReadonlyArray<PageIndexEntry> | null>,
-): { chars: number; pending: boolean } {
-    let chars = 0;
+): CorpusFootprint {
+    let excerptChars = 0;
+    let admittedChars = 0;
+    let pinnedChars = 0;
     let pending = false;
     for (const s of sources) {
-        const c = sourceFootprintChars(s, indexBySource.get(s.id) ?? null);
-        if (c === null) pending = true;
-        else chars += c;
+        if (!hasCuratedScope(s)) {
+            excerptChars += s.excerpts.reduce((n, e) => n + e.text.length, 0);
+            continue;
+        }
+        const index = indexBySource.get(s.id) ?? null;
+        if (!index) {
+            pending = true;
+            continue;
+        }
+        admittedChars += countChars(index, s.excerptRecipe!.sheetRanges);
+        pinnedChars += countChars(index, s.excerptRecipe!.pinnedRanges ?? []);
     }
-    return { chars, pending };
+    return {
+        excerptChars,
+        admittedChars,
+        pinnedChars,
+        perStepChars: excerptChars + curatedCharsPerStep(admittedChars, pinnedChars),
+        pending,
+    };
+}
+
+/**
+ * El corpus de las OTRAS fuentes más la selección que se está editando en el
+ * selector de páginas, que todavía no está guardada.
+ */
+export function withPageSelection(
+    others: CorpusFootprint,
+    selectedChars: number,
+    pinnedChars: number,
+): CorpusFootprint {
+    const admittedChars = others.admittedChars + selectedChars;
+    const pinned = others.pinnedChars + pinnedChars;
+    return {
+        ...others,
+        admittedChars,
+        pinnedChars: pinned,
+        perStepChars: others.excerptChars + curatedCharsPerStep(admittedChars, pinned),
+    };
 }

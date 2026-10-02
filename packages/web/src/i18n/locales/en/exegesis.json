@@ -816,12 +816,14 @@
           }
         },
         "budget": {
-          "title": "Paper budget",
-          "stats": "{{sources}} sources · {{chars}} characters",
-          "over": "The corpus is over budget: each source is trimmed to fit and less of each one gets in. Remove sheets or excerpts from the sources that add least.",
+          "title": "Corpus per verse",
+          "stats": "{{chars}} of {{space}} characters per verse · {{sources}} sources",
+          "over": "Over the per-verse space: the sources that bring the most arrive trimmed. Remove excerpts or unpin sheets.",
           "inconsistent_one": "{{labels}} saved passages its selection does not declare. Save its pages again to line them up.",
           "inconsistent_other": "{{count}} sources saved passages their selection does not declare ({{labels}}). Save their pages again to line them up.",
-          "measuring": "measuring the chosen pages…"
+          "measuring": "measuring the chosen pages…",
+          "consulted": "The chosen sheets add up to {{admitted}} characters; each verse consults what is about it, up to {{cap}}.",
+          "late": "In the last verses, the analyses already accepted take up to {{prior}} characters of the same space: the largest sources may arrive trimmed."
         },
         "picker": {
           "subtitle": "Choose which sheets of this document go into the paper. You can take the passage section and the book's introduction too.",
@@ -888,7 +890,7 @@
             "sheetRange": "sheets {{start}}–{{end}}",
             "withPrinted": "{{base}} · printed {{printed}}",
             "remove": "Remove {{range}}",
-            "budget": "Paper budget",
+            "budget": "Corpus per verse",
             "pin": "Pin {{range}} so it enters every step",
             "unpin": "Unpin {{range}}",
             "pinHint": "Pinned: enters every step without competing on closeness. Useful for the book introduction, which no ranking would bring.",
@@ -897,14 +899,15 @@
             "statSheets_one": "{{count}} sheet",
             "statSheets_other": "{{count}} sheets",
             "statChars": "{{count}} characters",
-            "otherSources": "Other sources in this paper take {{count}} characters.",
             "overBudget": "Over budget",
-            "overBudgetHint": "The paper is over budget. You can save anyway, but each source will reach the assistant trimmed: better to drop sheets from this source or another.",
+            "overBudgetHint": "Over the per-verse space. You can save anyway, but the sources that bring the most will arrive trimmed: remove excerpts from other sources or unpin sheets.",
             "saving": "Saving…",
             "confirm_one": "Add {{count}} sheet to the paper",
             "confirm_other": "Add {{count}} sheets to the paper",
             "sectionsCovered": "{{section}} · covers {{count}} sections",
-            "saved": "Saved · {{count}} sheets in the paper"
+            "saved": "Saved · {{count}} sheets in the paper",
+            "perVerse": "{{chars}} characters reach each verse. The paper's chosen sheets add up to {{admitted}}; each verse consults what is about it, up to {{cap}}.",
+            "otherExcerpts": "Excerpts from other sources travel whole: {{chars}} characters."
           }
         },
         "list": {

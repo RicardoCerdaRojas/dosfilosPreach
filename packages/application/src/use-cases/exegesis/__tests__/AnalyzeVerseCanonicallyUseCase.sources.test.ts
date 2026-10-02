@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildEmptyCanonicalVerseAnalysis, EMPTY_STEP_SOURCE_PLAN } from '@dosfilos/domain';
+import { buildEmptyCanonicalVerseAnalysis, CURATED_CORPUS_BUDGET_CHARS, EMPTY_STEP_SOURCE_PLAN } from '@dosfilos/domain';
 import type {
     CanonicalVerseAnalysis,
     ExegeticalPaper,
@@ -287,6 +287,15 @@ describe('AnalyzeVerseCanonicallyUseCase — la consulta al corpus', () => {
         const { query } = retriever.retrieve.mock.calls[0][0];
         expect(query).toContain('πειρασμοῖς');
         expect(query).toContain('χαρὰν');
+    });
+
+    it('pide al corpus el mismo tope que el medidor muestra', async () => {
+        // Ver `corpusFootprint`: el medidor promete este tope por versículo.
+        const paper = makePaper([makeSource('Kittel', 'res-b')]);
+        const { useCase, retriever } = buildUseCase({ paper, analysis: analysisCiting(['Kittel']), retrievedFor: ['res-b'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(CURATED_CORPUS_BUDGET_CHARS).toBeGreaterThan(0);
+        expect(retriever.retrieve.mock.calls[0][0].budgetChars).toBe(CURATED_CORPUS_BUDGET_CHARS);
     });
 });
 

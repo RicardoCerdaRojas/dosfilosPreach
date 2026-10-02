@@ -118,9 +118,8 @@ export function ExegesisSourcePagesPage() {
     // las dos propuestas rotulan sus hojas con el folio impreso del libro.
     const numbering = usePageNumbering(resourceId);
 
-    // Las otras fuentes cuentan con sus PÁGINAS elegidas, no sólo con sus
-    // fragmentos (ver `useCorpusFootprint`).
-    const { chars: otherSourcesChars } = useCorpusFootprint(paper?.sources ?? [], source?.id);
+    // Lo que aportan las otras fuentes a cada versículo (ver `corpusFootprint`).
+    const otherSources = useCorpusFootprint(paper?.sources ?? [], source?.id);
 
     const back = () => navigate(`/dashboard/exegesis/${paperId}/setup?tab=corpus`);
 
@@ -216,7 +215,7 @@ export function ExegesisSourcePagesPage() {
                 // El aviso del corpus pide re-guardar: el botón no puede
                 // quedar en «Guardado» con la fuente desalineada.
                 needsResave={!checkRecipeConsistency(source).consistent}
-                otherSourcesChars={otherSourcesChars}
+                otherSources={otherSources}
                 onConfirm={handleConfirm}
                 isSaving={selectPages.isPending}
                 lemmaProposals={esLexico ? lemmaPages.proposals : undefined}

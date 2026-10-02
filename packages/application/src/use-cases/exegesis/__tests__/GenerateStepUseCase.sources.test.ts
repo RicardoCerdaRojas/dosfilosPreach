@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EMPTY_STEP_SOURCE_PLAN } from '@dosfilos/domain';
+import { CURATED_CORPUS_BUDGET_CHARS, EMPTY_STEP_SOURCE_PLAN } from '@dosfilos/domain';
 import type {
     ExegeticalPaper,
     ExegeticalStep,
@@ -133,11 +133,22 @@ function buildUseCase(opts: {
         undefined,
         corpusRetriever as never,
     );
-    return { useCase, orchestrator };
+    return { useCase, orchestrator, retriever: corpusRetriever };
 }
 
 describe('GenerateStepUseCase — una fuente con receta y sin fragmentos', () => {
     beforeEach(() => { vi.clearAllMocks(); });
+
+    it('pide al corpus el mismo tope que el medidor muestra', async () => {
+        // El medidor del corpus (`corpusFootprint`) promete que las hojas
+        // elegidas aportan como mucho este tope por paso. Si el paso pidiera
+        // otro número, el medidor volvería a mentir como en #730.
+        const paper = makePaper([makeSource('McComiskey', 'res-a')]);
+        const { useCase, retriever } = buildUseCase({ paper, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(CURATED_CORPUS_BUDGET_CHARS).toBeGreaterThan(0);
+        expect(retriever.retrieve.mock.calls[0][0].budgetChars).toBe(CURATED_CORPUS_BUDGET_CHARS);
+    });
 
     const ejecutar = () => ({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
 

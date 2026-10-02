@@ -6,7 +6,7 @@ import {
     type AnalyzeVerseInput,
     type CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { fitPromptToCap } from '../../llm/promptBudget';
+import { PRIOR_ANALYSES_BUDGET_CHARS, allocateSourceBudgets, fitPromptToCap } from '../../llm/promptBudget';
 import { voiceFor } from '../testamentVoice';
 
 /**
@@ -31,8 +31,6 @@ interface BuiltAnalyzerPrompt {
 
 const SOURCE_BUDGET_CHARS_TOTAL = 220_000;
 const STYLE_GUIDE_BUDGET_CHARS = 20_000;
-const PRIOR_ANALYSES_BUDGET_CHARS = 40_000;
-
 
 export function buildAnalyzerPrompt(input: AnalyzeVerseInput): BuiltAnalyzerPrompt {
     return {
@@ -338,7 +336,12 @@ function formatSources(
             ? '(No sources configured. Lean on general knowledge but mark every claim as tentative in confidenceFlags.)'
             : '(Sin fuentes configuradas. Apóyate en conocimiento general pero marca toda afirmación como tentative en confidenceFlags.)';
     }
-    const perSourceBudget = Math.floor(budgetChars / sources.length);
+    // Todas pesan lo mismo; lo que una fuente no usa pasa a las demás.
+    const budgets = allocateSourceBudgets(
+        sources.map(s => s.textContent?.length ?? 0),
+        sources.map(() => 1),
+        budgetChars,
+    );
 
     // v1.7+: lead the source block with a directive that names the
     // pinned sourceKeys so the model treats them as a contract, not a
@@ -378,8 +381,8 @@ function formatSources(
 const ROL_ES: Record<string, string> = { anchor: 'ancla', contrast: 'contraste', technical: 'técnica' };
 
 const blocks = sources
-        .map(s => {
-            const truncated = truncate(s.textContent, perSourceBudget);
+        .map((s, i) => {
+            const truncated = truncate(s.textContent, budgets[i]!);
             const keyLine = s.citationKey ? `sourceKey: \`${s.citationKey}\`` : `(no citation key)`;
             const typeLine = s.sourceType;
             const pinnedBadge = s.priority === 'primary'

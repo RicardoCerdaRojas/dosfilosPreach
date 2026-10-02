@@ -7,7 +7,7 @@ import {
     type SourceType,
     type StepEmphasis,
 } from '@dosfilos/domain';
-import { fitPromptToCap } from '../llm/promptBudget';
+import { allocateSourceBudgets, fitPromptToCap } from '../llm/promptBudget';
 import { voiceFor } from './testamentVoice';
 
 /**
@@ -339,10 +339,9 @@ function formatSources(
     // types get ~2.5x the room, deemphasized types get ~0.4x. Style-
     // only sources (`style-template-paper`) keep their small slice
     // regardless — the model only needs to absorb their SHAPE.
-    const totalBudget = budgetChars;
+    // Lo que una fuente no usa pasa a las demás, con los mismos pesos.
     const weights = sources.map(s => effectiveSourceTypeWeight(s.sourceType, emphasis));
-    const totalWeight = weights.reduce((sum, w) => sum + w, 0) || 1;
-    const budgets = weights.map(w => Math.floor(totalBudget * (w / totalWeight)));
+    const budgets = allocateSourceBudgets(sources.map(s => s.textContent?.length ?? 0), weights, budgetChars);
 
     const blocks = sources.map((s, i) => {
         const truncated = truncate(s.textContent, budgets[i]!);

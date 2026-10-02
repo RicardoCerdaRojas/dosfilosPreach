@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -242,7 +242,7 @@ export class GenerateStepUseCase {
                 userId: paper.ownerId,
                 query: brief ? `${label} — ${brief}` : label,
                 sources: scopes,
-                budgetChars: STEP_CORPUS_BUDGET_CHARS,
+                budgetChars: CURATED_CORPUS_BUDGET_CHARS,
             });
         } catch (err) {
             console.warn('[GenerateStep] el corpus no respondió; se usa lo guardado', {
@@ -589,10 +589,4 @@ function deriveCitationKey(displayLabel: string): string {
     return trimmed.split(/\s+/)[0] ?? trimmed;
 }
 
-/**
- * Cuánto del prompt puede ocupar el corpus de un paso. Mismo criterio que el
- * analizador canónico: la mitad del tope, para que las instrucciones, la guía
- * de estilo y los pasos previos tengan lugar.
- */
-const STEP_CORPUS_BUDGET_CHARS = 100_000;
 

@@ -1,21 +1,19 @@
 import { useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { corpusFootprint, hasCuratedScope, type ProjectSource, type PageIndexEntry } from '@dosfilos/domain';
+import { corpusFootprint, hasCuratedScope, type CorpusFootprint, type ProjectSource, type PageIndexEntry } from '@dosfilos/domain';
 import { fetchDocumentPageIndex } from '@dosfilos/infrastructure';
 
 /**
- * Cuánto ocupa el corpus del trabajo, contando las páginas elegidas.
+ * Cuánto corpus llega a un versículo (ver `corpusFootprint`).
  *
- * Los dos medidores —el del corpus y el del selector de páginas— sumaban sólo
- * fragmentos, y una fuente con páginas elegidas guarda las hojas, no su texto:
- * contaba cero (ver `sourceFootprintChars`). Aquí se trae el índice de cada
- * fuente con páginas para medir sus hojas. Misma clave de caché que el
+ * Trae el índice de cada fuente con páginas para medir sus hojas: una fuente
+ * con páginas guarda la receta, no el texto. Misma clave de caché que el
  * selector, así que no se pide dos veces.
  */
 export function useCorpusFootprint(
     sources: ReadonlyArray<ProjectSource>,
     excludeSourceId?: string,
-): { chars: number; pending: boolean } {
+): CorpusFootprint {
     const consideradas = useMemo(
         () => sources.filter(s => s.id !== excludeSourceId),
         [sources, excludeSourceId],
