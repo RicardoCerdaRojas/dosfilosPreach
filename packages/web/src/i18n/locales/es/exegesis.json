@@ -818,7 +818,7 @@
         "budget": {
           "title": "Presupuesto del trabajo",
           "stats": "{{sources}} fuentes · {{chars}} caracteres",
-          "over": "El corpus se pasa del presupuesto: la generación va a fallar. Quita hojas de alguna fuente.",
+          "over": "El corpus se pasa del presupuesto: cada fuente se recorta para caber y entra menos material de cada una. Quita hojas o fragmentos de las fuentes que menos aportan.",
           "inconsistent_one": "{{labels}} guardó fragmentos que su selección no declara. Vuelve a guardar sus páginas para dejarlos parejos.",
           "inconsistent_other": "{{count}} fuentes guardaron fragmentos que su selección no declara ({{labels}}). Vuelve a guardar sus páginas para dejarlos parejos.",
           "measuring": "midiendo las páginas elegidas…"
@@ -899,7 +899,7 @@
             "statChars": "{{count}} caracteres",
             "otherSources": "Otras fuentes del trabajo ocupan {{count}} caracteres.",
             "overBudget": "Se pasa del presupuesto",
-            "overBudgetHint": "El trabajo se pasa del presupuesto. Puedes guardar igual, pero antes de generar hay que bajar hojas de esta fuente o de otra.",
+            "overBudgetHint": "El trabajo se pasa del presupuesto. Puedes guardar igual, pero cada fuente llegará recortada al asistente: conviene bajar hojas de esta fuente o de otra.",
             "saving": "Guardando…",
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
