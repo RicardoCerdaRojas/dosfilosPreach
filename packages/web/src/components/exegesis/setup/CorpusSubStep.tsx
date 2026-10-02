@@ -44,6 +44,7 @@ import {
     deriveCitationKeyFromAuthor,
     usesExtractedExcerpts,
     hasCuratedScope,
+    countSheets,
     isExcerptSetStale,
     resourceMatchesTestament,
     type ExegeticalPaper,
@@ -1008,7 +1009,11 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                         {source.displayLabel}
                         {isExtracted && (
                             <span className="text-[10px] font-medium rounded-full bg-success-subtle text-success-subtle-foreground border border-success/30 px-1.5 py-0 leading-tight">
-                                {t('paperSetup.subSteps.corpus.list.excerptsBadge', { count: source.excerpts.length })}
+                                {/* Con páginas elegidas se guardan las hojas, no fragmentos:
+                                    «0 excerpts» la hacía parecer vacía. */}
+                                {hasCuratedScope(source)
+                                    ? t('paperSetup.subSteps.corpus.list.sheetsBadge', { count: countSheets(source.excerptRecipe!.sheetRanges) })
+                                    : t('paperSetup.subSteps.corpus.list.excerptsBadge', { count: source.excerpts.length })}
                             </span>
                         )}
                         {isExtracted && <SourceSelectionModeBadge mode={source.excerptSelectionMode} />}
