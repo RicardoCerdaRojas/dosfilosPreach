@@ -1237,6 +1237,10 @@
           "saved": "Citation key saved.",
           "saveFailed": "Could not save the citation key.",
           "renameWarning": "Verses already analyzed cite “{{key}}”: with another key those citations lose their source until re-analyzed."
+        },
+        "sinPaginas": {
+          "body": "No pages for this passage: the analysis would read the start of the book (cover, introduction), not what it says about these verses. Choose the pages or extract excerpts before analyzing.",
+          "cta": "Choose pages"
         }
       },
       "corpus-plan": {

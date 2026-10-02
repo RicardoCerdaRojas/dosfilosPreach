@@ -63,6 +63,8 @@ describe('applySourcePatch', () => {
     it('aplica cada campo que el tipo del parche declara', () => {
         // Un campo que se agregue a la lista y no se aplique vuelve a romper igual.
         const valores: Required<{ [K in keyof ProjectSourcePatch]: unknown }> = {
+            // Distinto del de `fuente()`, para que se note si no se aplica.
+            mode: 'full-document',
             sourceType: 'lexicon-technical',
             chosenRole: 'anchor',
             displayLabel: 'Otro',

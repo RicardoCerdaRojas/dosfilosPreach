@@ -8,7 +8,7 @@ import type {
     VerifierSource,
     VerifierSourceChunk,
 } from '@dosfilos/domain';
-import { citationAnchorFor, hasCuratedScope, isCitableSourceType, relabelExcerptAnchor } from '@dosfilos/domain';
+import { usesExtractedExcerpts, citationAnchorFor, hasCuratedScope, isCitableSourceType, relabelExcerptAnchor } from '@dosfilos/domain';
 
 /**
  * La evidencia con la que se verifica un trabajo: qué texto de cada fuente
@@ -148,7 +148,7 @@ export class VerifierSourcesBuilder {
         // de «no encontrada». No poder leer no es haber leído y no hallar.
         if (hasCuratedScope(source)) return [];
 
-        if (source.mode === 'extracted-excerpts') {
+        if (usesExtractedExcerpts(source)) {
             const excerptChunks = source.excerpts
                 .map<VerifierSourceChunk>(excerpt => ({
                     text: excerpt.text,

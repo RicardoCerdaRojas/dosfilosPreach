@@ -1237,6 +1237,10 @@
           "saved": "Clave de cita guardada.",
           "saveFailed": "No se pudo guardar la clave de cita.",
           "renameWarning": "Los versículos ya analizados citan «{{key}}»: con otra clave esas citas quedan sin fuente hasta volver a analizarlos."
+        },
+        "sinPaginas": {
+          "body": "Sin páginas para este pasaje: el análisis leería el comienzo del libro (portada, introducción), no lo que dice sobre estos versículos. Elige las páginas o extrae los fragmentos antes de analizar.",
+          "cta": "Elegir páginas"
         }
       },
       "corpus-plan": {

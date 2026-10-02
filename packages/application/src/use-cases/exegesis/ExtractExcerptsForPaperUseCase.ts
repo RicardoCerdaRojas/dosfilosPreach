@@ -189,6 +189,9 @@ export class ExtractExcerptsForPaperUseCase {
                     input.paperId,
                     existing.id,
                     {
+                        // Una fuente heredada de la serie llega como
+                        // documento completo: con fragmentos ya no lo es.
+                        mode: 'extracted-excerpts',
                         sourceType: selection.sourceType,
                         displayLabel: selection.displayLabel,
                         ...(selection.citationKey !== undefined ? { citationKey: selection.citationKey } : {}),

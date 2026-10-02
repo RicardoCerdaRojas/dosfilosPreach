@@ -1,4 +1,4 @@
-import { briefForQuery, hasCuratedScope } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -303,7 +303,7 @@ export class GenerateStepUseCase {
                 silent.push(source);
                 continue;
             }
-            if (source.mode === 'extracted-excerpts') {
+            if (usesExtractedExcerpts(source)) {
                 // v1.5: source carries pre-curated chunks (the user
                 // reviewed them in the extraction step). Concatenate
                 // with anchor separators so the orchestrator's prompt

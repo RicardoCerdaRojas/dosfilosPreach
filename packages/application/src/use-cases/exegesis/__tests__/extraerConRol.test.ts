@@ -42,3 +42,16 @@ describe('extraer fragmentos con el rol elegido', () => {
         expect(parches[0]).toMatchObject({ chosenRole: 'contrast' });
     });
 });
+
+/**
+ * Una fuente heredada de la serie llega `full-document`. Extraer sobre ella
+ * tiene que pasarla a `extracted-excerpts`: con el modo viejo el analizador
+ * ignoraba los fragmentos (Jonás 4:5-11, 2026-10-02).
+ */
+describe('extraer sobre una fuente heredada', () => {
+    it('la pasa a modo fragmentos', async () => {
+        const { uc, parches } = montar([{ id: 'x', sourceLibraryResourceId: 'r1', mode: 'full-document', excerpts: [] }]);
+        await uc.execute({ ownerId: 'u', paperId: 'p1', selections: [sel] }).catch(() => undefined);
+        expect(parches[0]).toMatchObject({ mode: 'extracted-excerpts' });
+    });
+});
