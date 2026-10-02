@@ -178,6 +178,9 @@ export class SelectSourcePagesUseCase {
                 ...(input.chosenRole !== undefined ? { chosenRole: input.chosenRole } : {}),
                 displayLabel: input.displayLabel,
                 ...(input.citationKey !== undefined ? { citationKey: input.citationKey } : {}),
+                // Igual que al extraer: con páginas elegidas, ya no es el
+                // documento completo.
+                mode: 'extracted-excerpts',
                 excerpts,
                 excerptSelectionMode: input.selectionMode ?? 'manual',
                 excerptRecipe: recipe,

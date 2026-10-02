@@ -330,11 +330,24 @@ export function computeExtractionFingerprint(
  * Caller passes the LIVE passage as a formatted string so the helper
  * stays decoupled from the `bible/canon` module.
  */
+/**
+ * Si la fuente trabaja con fragmentos extraídos y no con el documento entero.
+ *
+ * Una fuente heredada de la serie nace `'full-document'` y sin fragmentos.
+ * Antes de que extraer cambiara el modo, una extracción sobre ella dejaba
+ * fragmentos con el modo viejo, y todo lo que decidía por `mode` los ignoraba:
+ * el analizador leía el libro entero truncado desde la primera página. Decidir
+ * por esta función —modo O fragmentos presentes— cubre también esos datos.
+ */
+export function usesExtractedExcerpts(source: Pick<ProjectSource, 'mode' | 'excerpts'>): boolean {
+    return source.mode === 'extracted-excerpts' || (source.excerpts?.length ?? 0) > 0;
+}
+
 export function isExcerptSetStale(
-    source: Pick<ProjectSource, 'mode' | 'extractionFingerprint'>,
+    source: Pick<ProjectSource, 'mode' | 'excerpts' | 'extractionFingerprint'>,
     livePaper: { passageRef: string; assignmentBrief: string | null },
 ): boolean {
-    if (source.mode !== 'extracted-excerpts') return false;
+    if (!usesExtractedExcerpts(source)) return false;
     if (!source.extractionFingerprint) return false;
     return source.extractionFingerprint !== computeExtractionFingerprint(livePaper.passageRef, livePaper.assignmentBrief);
 }

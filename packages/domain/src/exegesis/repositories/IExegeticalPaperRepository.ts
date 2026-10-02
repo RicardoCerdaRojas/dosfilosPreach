@@ -36,6 +36,13 @@ export type ProjectSourcePatch = Partial<Pick<
     | 'excerptRecipe'
     | 'extractedAt'
     | 'extractionFingerprint'
+    /**
+     * Extraer sobre una fuente existente la pasa a `'extracted-excerpts'`.
+     * Sin esto, una fuente heredada de la serie (`'full-document'`) recibía
+     * sus fragmentos y el analizador los ignoraba: leía el libro entero
+     * truncado desde la primera página (Jonás 4:5-11, 2026-10-02).
+     */
+    | 'mode'
 >>;
 
 /**

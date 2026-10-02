@@ -967,6 +967,7 @@ function deserializeRecipe(raw: any): ProjectSource['excerptRecipe'] {
  * `paperId` o `createdAt`.
  */
 export const SOURCE_PATCH_KEYS = [
+    'mode',
     'sourceType',
     'chosenRole',
     'displayLabel',

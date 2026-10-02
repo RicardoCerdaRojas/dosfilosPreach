@@ -42,6 +42,8 @@ import {
     repeatedFromPreviousDelivery,
     hasResolvedNumbering,
     deriveCitationKeyFromAuthor,
+    usesExtractedExcerpts,
+    hasCuratedScope,
     isExcerptSetStale,
     resourceMatchesTestament,
     type ExegeticalPaper,
@@ -87,6 +89,7 @@ import { CorpusBudgetMeter } from './CorpusBudgetMeter';
 import { PageBalanceHint } from './PageBalanceHint';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { SourceCitationKey } from './SourceCitationKey';
+import { SourceSinPaginas } from './SourceSinPaginas';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 
 /**
@@ -281,7 +284,7 @@ function CorpusSourcesList({
     // banner reinforces the differentiator at the moment of decision
     // (just before "Plan de uso" / generation) so the user feels what
     // they actually built.
-    const excerptedSources = sorted.filter(s => s.mode === 'extracted-excerpts');
+    const excerptedSources = sorted.filter(usesExtractedExcerpts);
     const totalExcerpts = excerptedSources.reduce((sum, s) => sum + s.excerpts.length, 0);
 
     return (
@@ -905,7 +908,7 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
         && repeatedFromPreviousDelivery([source.citationKey], entregaPrevia).size > 0;
     const library = useLibrary();
     const isCitable = CITABLE_SOURCE_TYPES.has(source.sourceType);
-    const isExtracted = source.mode === 'extracted-excerpts';
+    const isExtracted = usesExtractedExcerpts(source);
     const isStale = isExcerptSetStale(source, {
         passageRef: formatPassageReference(paper.passage, paper.displayLanguage),
         assignmentBrief: paper.assignmentBrief,
@@ -1047,6 +1050,10 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                     <X className="h-3.5 w-3.5" />
                 </button>
             </div>
+
+            {isCitable && !hasCuratedScope(source) && !usesExtractedExcerpts(source) && (
+                <SourceSinPaginas paperId={paper.id} sourceId={source.id} />
+            )}
 
             {isCitable && libraryResource && !hasResolvedNumbering(libraryResource.pageNumbering) && (
                 <SinPaginaComprobable resourceId={libraryResource.id} />

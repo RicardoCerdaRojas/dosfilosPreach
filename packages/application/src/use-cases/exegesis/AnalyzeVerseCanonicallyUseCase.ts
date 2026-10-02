@@ -1,4 +1,4 @@
-import { briefForQuery, hasCuratedScope } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -494,7 +494,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                 silent.push(source);
                 continue;
             }
-            if (source.mode === 'extracted-excerpts') {
+            if (usesExtractedExcerpts(source)) {
                 // Reaching here means the corpus returned nothing for
                 // this source: either the retriever failed, or it had
                 // no chunk for this verse within the budget. The
