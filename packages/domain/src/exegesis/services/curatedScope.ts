@@ -16,3 +16,21 @@ import type { ProjectSource } from '../entities/ProjectSource';
 export function hasCuratedScope(source: Pick<ProjectSource, 'excerptRecipe'>): boolean {
     return (source.excerptRecipe?.sheetRanges.length ?? 0) > 0;
 }
+
+/**
+ * La fuente del trabajo que viene de este recurso de biblioteca.
+ *
+ * Mira el backref Y el `corpusId`: las fuentes adjuntadas por la ruta vieja
+ * guardan el id en `corpusId` y dejan el backref en null. Extraer de la
+ * biblioteca miraba sólo el backref y duplicaba esos libros; la selección de
+ * páginas y la herencia de la serie ya miraban los dos (aquí vive ahora el
+ * criterio, una sola vez).
+ */
+export function sourceForResource<S extends Pick<ProjectSource, 'sourceLibraryResourceId' | 'corpusId'>>(
+    sources: ReadonlyArray<S>,
+    libraryResourceId: string,
+): S | null {
+    return sources.find(
+        s => s.sourceLibraryResourceId === libraryResourceId || s.corpusId === libraryResourceId,
+    ) ?? null;
+}

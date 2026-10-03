@@ -1072,7 +1072,9 @@
           "roleByType": "By type: {{role}}",
           "selectedTitle_one": "You are adding {{count}} source",
           "selectedTitle_other": "You are adding {{count}} sources",
-          "unselect": "Remove “{{label}}” from the selection"
+          "unselect": "Remove “{{label}}” from the selection",
+          "hasPages": "Has chosen pages",
+          "willReplacePages": "Extracting replaces its chosen pages"
         },
         "excerpts": {
           "expand": "Show curated excerpts",

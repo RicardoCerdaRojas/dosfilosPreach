@@ -1072,7 +1072,9 @@
           "roleByType": "Según el tipo: {{role}}",
           "selectedTitle_one": "Vas a agregar {{count}} fuente",
           "selectedTitle_other": "Vas a agregar {{count}} fuentes",
-          "unselect": "Quitar «{{label}}» de la selección"
+          "unselect": "Quitar «{{label}}» de la selección",
+          "hasPages": "Con páginas elegidas",
+          "willReplacePages": "Extraer reemplaza sus páginas elegidas"
         },
         "excerpts": {
           "expand": "Ver fragmentos curados",

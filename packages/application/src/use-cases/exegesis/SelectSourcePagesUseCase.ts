@@ -4,12 +4,12 @@ import {
     computeExtractionFingerprint,
     formatPassageReference,
     normalizeSheetRanges,
+    sourceForResource,
     type ExcerptRecipe,
     type ExcerptSelectionMode,
     type IDocumentChunkReader,
     type IExegeticalPaperRepository,
     type PageIndexEntry,
-    type ProjectSource,
     type ProjectSourceExcerpt,
     type SheetRange,
     type SourceRole,
@@ -155,7 +155,7 @@ export class SelectSourcePagesUseCase {
             passageFingerprint: computeExtractionFingerprint(passageRef, paper.assignmentBrief),
         };
 
-        const existing = findExistingSource(paper.sources, input.libraryResourceId);
+        const existing = sourceForResource(paper.sources, input.libraryResourceId);
 
         // Cuánto ocuparía el paper con esta fuente ya reemplazada. Se mide antes
         // de escribir porque el fallo de Firestore llega sin explicación y deja
@@ -222,22 +222,6 @@ export class SelectSourcePagesUseCase {
     }
 }
 
-/**
- * Busca el documento entre las fuentes del trabajo.
- *
- * Mira el backref a la biblioteca Y el `corpusId`: las fuentes adjuntadas por
- * la ruta vieja —«agregar desde mi biblioteca»— guardan el id en `corpusId` y
- * dejan el backref en null. Mirar solo el backref las daría por inexistentes y
- * duplicaría el libro.
- */
-function findExistingSource(
-    sources: ReadonlyArray<ProjectSource>,
-    libraryResourceId: string,
-): ProjectSource | null {
-    return sources.find(
-        s => s.sourceLibraryResourceId === libraryResourceId || s.corpusId === libraryResourceId,
-    ) ?? null;
-}
 
 
 /**
