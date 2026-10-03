@@ -1,7 +1,10 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
     chunkRangesForSheets,
+    isWholeDocumentScope,
     selectForPrompt,
+    WHOLE_DOCUMENT_RANGE,
+    wholeDocumentTravelsEntire,
     type CorpusChunk,
     type CuratedCorpusResult,
     type ICuratedCorpusRetriever,
@@ -44,15 +47,25 @@ interface RankedResponse {
 
 const TIMEOUT_MS = 60_000;
 
+/**
+ * Fuentes por llamada a `retrieveCuratedCorpus`. Es el `MAX_SOURCES` de la
+ * callable (functions no importa nada de aquí: si cambia allá, cambia acá).
+ */
+export const MAX_SOURCES_PER_CALL = 25;
+
 export class CallableCuratedCorpusRetriever implements ICuratedCorpusRetriever {
     private chunkReader = new CallableDocumentChunkReader();
 
     async retrieve(input: RetrieveCuratedCorpusInput): Promise<CuratedCorpusResult> {
-        const scopes = input.sources.filter(s => s.sheetRanges.length > 0);
+        const scopes = await Promise.all(
+            input.sources.filter(s => s.sheetRanges.length > 0).map(s => this.smallDocumentAsPinned(s)),
+        );
         if (scopes.length === 0) return empty();
 
+        // Lo que ya viaja entero no compite en el ranking.
+        const aRankear = scopes.filter(s => !(s.pinnedRanges.length > 0 && isWholeDocumentScope(s.pinnedRanges)));
         const [ranked, pinned] = await Promise.all([
-            this.rank(input, scopes),
+            aRankear.length > 0 ? this.rank(input, aRankear) : Promise.resolve({ chunks: [], failed: [], empty: [] }),
             this.readPinned(scopes),
         ]);
 
@@ -98,6 +111,22 @@ export class CallableCuratedCorpusRetriever implements ICuratedCorpusRetriever {
     }
 
     /**
+     * Un documento completo chico (`wholeDocumentTravelsEntire`) va fijado:
+     * entero, sin competir. Sin índice se queda como estaba —consultado—.
+     */
+    private async smallDocumentAsPinned(
+        s: RetrieveCuratedCorpusInput['sources'][number],
+    ): Promise<RetrieveCuratedCorpusInput['sources'][number]> {
+        if (!isWholeDocumentScope(s.sheetRanges) || s.pinnedRanges.length > 0) return s;
+        try {
+            const index = await fetchDocumentPageIndex(s.resourceId);
+            return wholeDocumentTravelsEntire(index.pages) ? { ...s, pinnedRanges: [WHOLE_DOCUMENT_RANGE] } : s;
+        } catch {
+            return s;
+        }
+    }
+
+    /**
      * El ranking. Un fallo NO tumba el paso: se devuelve vacío y el material se
      * arma solo con lo fijado, informando qué fuentes quedaron afuera. Un paso
      * con menos material es peor que uno completo; un paso que no se genera es
@@ -138,15 +167,34 @@ export class CallableCuratedCorpusRetriever implements ICuratedCorpusRetriever {
                     return { resourceId: s.resourceId, sheetRanges };
                 }
             }));
-            const response = await callable({
-                userId: input.userId,
-                query: input.query,
-                sources: conIndices,
-            });
+            // En tandas: la callable rechaza más de `MAX_SOURCES_PER_CALL`
+            // fuentes, y un rechazo dejaba en silencio a TODAS. Desde que el
+            // documento completo y los fragmentos también se consultan, un
+            // corpus grande pasa ese número. Una tanda caída sólo apaga sus
+            // fuentes.
+            const tandas: typeof conIndices[] = [];
+            for (let i = 0; i < conIndices.length; i += MAX_SOURCES_PER_CALL) {
+                tandas.push(conIndices.slice(i, i + MAX_SOURCES_PER_CALL));
+            }
+            const respuestas = await Promise.all(tandas.map(async tanda => {
+                try {
+                    const response = await callable({ userId: input.userId, query: input.query, sources: tanda });
+                    return {
+                        chunks: response.data?.chunks ?? [],
+                        failed: response.data?.failedSources ?? [],
+                        empty: response.data?.emptySources ?? [],
+                    };
+                } catch (err) {
+                    console.warn('[CuratedCorpus] una tanda del ranking no respondió; se sigue con lo fijado', {
+                        error: (err as Error).message,
+                    });
+                    return { chunks: [], failed: tanda.map(s => s.resourceId), empty: [] };
+                }
+            }));
             return {
-                chunks: response.data?.chunks ?? [],
-                failed: response.data?.failedSources ?? [],
-                empty: response.data?.emptySources ?? [],
+                chunks: respuestas.flatMap(r => r.chunks),
+                failed: respuestas.flatMap(r => r.failed),
+                empty: respuestas.flatMap(r => r.empty),
             };
         } catch (err) {
             console.warn('[CuratedCorpus] el ranking no respondió; se sigue con lo fijado', {

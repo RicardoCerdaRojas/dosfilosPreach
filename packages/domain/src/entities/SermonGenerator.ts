@@ -290,6 +290,8 @@ export interface GenerationRules {
     tone?: 'pastoral' | 'expositivo' | 'narrativo';
     targetAudience?: 'general' | 'youth' | 'children' | 'adults' | 'seniors';
     customInstructions?: string; // User-defined prompt additions
+    /** El estilo del manuscrito del usuario (`PhaseConfiguration.manuscriptStyle`). Ausente = el del sistema. */
+    manuscriptStyle?: string;
     /**
      * Optional pastoral personalization (situational context,
      * congregation description, illustrations, preacher notes…).

@@ -11,7 +11,8 @@ import { useTranslation } from '@/i18n';
  * páginas, lee el libro entero TRUNCADO desde la primera página —portada,
  * prólogo, introducción—. En Jonás 4:5-11 (2026-10-02) ningún versículo tuvo
  * diálogo con comentaristas y la crítica textual citó la introducción de la
- * BHQ, sin un solo aviso.
+ * BHQ, sin un solo aviso. Hoy se busca en el libro entero lo que habla de cada
+ * versículo (`retrievalScopeOf`); elegir las páginas sigue siendo más preciso.
  */
 export function SourceSinPaginas({ paperId, sourceId }: { paperId: string; sourceId: string }) {
     const { t } = useTranslation('exegesis');

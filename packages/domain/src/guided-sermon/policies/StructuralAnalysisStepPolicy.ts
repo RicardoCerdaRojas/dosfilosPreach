@@ -45,10 +45,10 @@ export class StructuralAnalysisStepPolicy implements IStepPolicy {
 PASO ACTUAL: Análisis Estructural (paso 3 de 8).
 Pasaje: ${ctx.passage}
 
-Lo que pedís al pastor: que IDENTIFIQUE LA CLÁUSULA PRINCIPAL del pasaje (con su referencia, ej. "Juan 1:1c") + escriba qué AFIRMA esa cláusula y CÓMO LAS DEMÁS LA SOSTIENEN. Mínimo ${MIN} caracteres en la nota.
+Lo que pides al pastor: que IDENTIFIQUE LA CLÁUSULA PRINCIPAL del pasaje (con su referencia, ej. "Juan 1:1c") + escriba qué AFIRMA esa cláusula y CÓMO LAS DEMÁS LA SOSTIENEN. Mínimo ${MIN} caracteres en la nota.
 
 Reglas duras de este paso:
-- ESTRUCTURA, no léxico. Si el pastor se mete en "predicado nominal sin artículo griego" / "verbo θεός" → CONFRONTÁ con "kind: confront", errorLabel "lexical-leakage", explicale que el léxico va en el paso 4 (Palabras clave) y reformulalo: "¿qué AFIRMA esta cláusula sobre el argumento del pasaje?".
+- ESTRUCTURA, no léxico. Si el pastor se mete en "predicado nominal sin artículo griego" / "verbo θεός" → CONFRONTA con "kind: confront", errorLabel "lexical-leakage", explícale que el léxico va en el paso 4 (Palabras clave) y reformulalo: "¿qué AFIRMA esta cláusula sobre el argumento del pasaje?".
 - Si dice algo razonable sobre estructura pero corto (< ${MIN}) → "orient" pidiendo más detalle estructural (qué cláusula es climática, cuál prepara, cuál desarrolla).
 - Si su nota es estructural y suficiente → "accepted" con pastorTextToPersist verbatim.
 - Si no incluye referencia de la cláusula principal → "orient" pidiéndola.
@@ -56,14 +56,14 @@ Reglas duras de este paso:
 Trabajo previo del pastor:
 ${priorStepsBlock(ctx)}
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): que identificó la cláusula principal correcta y mostró cómo las demás la sostienen — nombrá la cláusula. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): que identificó la cláusula principal correcta y mostró cómo las demás la sostienen — nombra la cláusula. Nada genérico.
 ${this.buildGenreStructuralHelp(ctx)}${this.buildMovementsNudge(ctx)}${buildInformationalFeatureNudge(
             ctx,
             'structuralAnalysis',
             'parallelism',
             'DATO DEL PERFIL — paralelismos poéticos del texto:',
             (f) => (f.typeKey === 'parallelism' ? `- "${f.summary}" (${f.verseRef})` : ''),
-            'Si es poesía/sabiduría, ayudá al pastor a leer la estructura por el paralelismo; él escribe el análisis.',
+            'Si es poesía/sabiduría, ayuda al pastor a leer la estructura por el paralelismo; él escribe el análisis.',
         )}
 Intento ${ctx.attemptIndex + 1} en este paso.`;
     }
@@ -82,7 +82,7 @@ Intento ${ctx.attemptIndex + 1} en este paso.`;
         return `
 DATO DEL PERFIL — este pasaje tiene ${movements.length} movimientos (insumo estructural):
 ${lines}
-Ayudá al pastor a ver cómo la cláusula principal se relaciona con estos bloques y a no aplanar el argumento a una sola cláusula. Él escribe la estructura; no se la des hecha.`;
+Ayuda al pastor a ver cómo la cláusula principal se relaciona con estos bloques y a no aplanar el argumento a una sola cláusula. Él escribe la estructura; no se la des hecha.`;
     }
 
     /**
@@ -101,7 +101,7 @@ Ayudá al pastor a ver cómo la cláusula principal se relaciona con estos bloqu
         return `
 AYUDA SENSIBLE AL GÉNERO (el pastor confirmó "${ctx.genre}" en el paso 2) — cómo leer la estructura de este género:
 ${guidance}
-Usá esto para ORIENTAR su lectura estructural (qué mirar en este género); él escribe el análisis, no se lo des hecho.`;
+Usa esto para ORIENTAR su lectura estructural (qué mirar en este género); él escribe el análisis, no se lo des hecho.`;
     }
 
     parseLlmReply(raw: string, pastorMessage: string): SocraticTurnOutput {

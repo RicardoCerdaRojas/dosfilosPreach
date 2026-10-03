@@ -94,7 +94,9 @@ export function useDraftGeneration(input: DraftGenerationInput) {
                 : [];
 
             const rulesWithContext = await buildRulesWithContext({
-                rules: input.rules,
+                // El estilo del manuscrito que el usuario guardó en Ajustes
+                // (#5 del ejercicio de Jonás); sin él, el del sistema.
+                rules: { ...input.rules, manuscriptStyle: input.config?.[WorkflowPhase.DRAFTING]?.manuscriptStyle },
                 derivedContext: input.derivedContext,
                 sermonId: input.sermonId,
                 userId: input.userId,

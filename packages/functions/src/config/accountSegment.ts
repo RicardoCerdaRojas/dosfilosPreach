@@ -11,7 +11,7 @@ import * as admin from 'firebase-admin';
  * Precedencia: super_admin (role) → ambassador (allowlist) → team (allowlist) → real.
  *
  * SSOT de la segmentación de shadow/telemetría (grieta doxológica + perfil del
- * pasaje + futuros). No dupliques los uids: importá de aquí.
+ * pasaje + futuros). No dupliques los uids: importa de aquí.
  */
 export type AccountSegment = 'super_admin' | 'ambassador' | 'team' | 'real';
 
@@ -28,7 +28,7 @@ const TEAM_UIDS: ReadonlySet<string> = new Set<string>([]);
  * Flags que CAMBIAN LO QUE EL PASTOR VIVE durante el estudio, y que por eso
  * cambian lo que la sombra mide.
  *
- * Criterio para agregar uno acá: ¿altera lo que el pastor ve, se le pide o se le
+ * Criterio para agregar uno aquí: ¿altera lo que el pastor ve, se le pide o se le
  * confronta mientras produce el dato? Si sí, va. Los flags que solo encienden
  * medición NO van: no mueven la conducta, y listarlos haría ruido.
  *
@@ -38,7 +38,7 @@ const TEAM_UIDS: ReadonlySet<string> = new Set<string>([]);
  * 2026-08-21, cuando las ÚNICAS filas `userConfirmed` de toda la base resultaron
  * venir de dos cuentas que corrían con `passage_profile_enforce` encendido — o
  * sea, el dato con el que se iba a decidir el flip a enforce estaba generado
- * bajo enforce. Retroactivamente no hay forma de separarlas; desde acá sí.
+ * bajo enforce. Retroactivamente no hay forma de separarlas; desde aquí sí.
  */
 export const BEHAVIOR_FLAGS = [
     'passage_profile_enforce',

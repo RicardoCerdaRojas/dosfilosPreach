@@ -1,4 +1,6 @@
+import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
+import { getBookById } from '../../bible/canon/BibleCanon';
 import type { PastoralSeedStepKey } from '../../entities/PastoralSeed';
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
 import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
@@ -42,6 +44,20 @@ export interface PaperReferenceItem {
     detail: string;
     /** Verso del paper del que salió, ya formateado ("Santiago 1:2"). */
     verseLabel: string;
+    /**
+     * Sólo en el estudio de palabras: lo que hace falta para empezar un
+     * estudio de esta palabra desde la tarjeta (#28). La explicación va
+     * entera, sin recortar, para que el pastor la ADAPTE en el modal; sólo
+     * lo que él deja pasa a «Tu descubrimiento» (decisión del fundador,
+     * 2026-10-03).
+     */
+    wordStudySeed?: {
+        word: string;
+        lemma: string;
+        reference: string;
+        language: 'greek' | 'hebrew';
+        explanation: string;
+    };
 }
 
 export type PaperStudyReferenceByStep = Partial<
@@ -222,6 +238,13 @@ function collectWordStudies(a: CanonicalVerseAnalysis, verseLabel: string, push:
             label: `${lex.term} (${lex.lemma})`,
             detail,
             verseLabel,
+            wordStudySeed: {
+                word: lex.term,
+                lemma: lex.lemma,
+                reference: verseLabel,
+                language: getBookById(a.reference.bookId)?.testament === 'NT' ? 'greek' : 'hebrew',
+                explanation: detail,
+            },
         });
     }
 }
@@ -240,7 +263,8 @@ function collectRecognition(
 ): void {
     for (const commentator of a.commentatorEngagement) {
         push('recognition', {
-            label: `${resolveSourceLabel(paper, commentator.sourceKey)}, p. ${commentator.page}`,
+            // Con su tipo: antes decía «p.» también sobre una hoja del PDF.
+            label: `${resolveSourceLabel(paper, commentator.sourceKey)}, ${citedLocation(commentator, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}`,
             detail: commentator.position,
             verseLabel,
         });

@@ -87,3 +87,69 @@ describe('withPageSelection', () => {
         expect(conEsta.perStepChars).toBe(30_000 + CURATED_CORPUS_BUDGET_CHARS);
     });
 });
+
+/** Desde A4 también se consultan el documento completo y las hojas de los fragmentos. */
+describe('corpusFootprint — las fuentes que ahora se consultan por versículo', () => {
+    const ex = (chars: number, sheet?: number, userEdited = false) =>
+        ({ text: 'x'.repeat(chars), sourceLocation: '', relevanceScore: 1, userEdited, ...(sheet ? { sheet } : {}) });
+
+    it('un documento completo llena el tope del grupo consultado', () => {
+        const heredada = { id: 'burt', sourceType: 'commentary-expository', mode: 'full-document', excerpts: [], excerptRecipe: null } as never;
+        const r = corpusFootprint([heredada, conFragmentos('g', 8741)], new Map());
+        expect(r.wholeDocuments).toBe(1);
+        expect(r.perStepChars).toBe(8741 + CURATED_CORPUS_BUDGET_CHARS);
+    });
+
+    it('los fragmentos con hoja se consultan; los editados viajan completos', () => {
+        const farfan = { id: 'farfan', sourceType: 'grammar-syntax', mode: 'extracted-excerpts', excerptRecipe: null,
+            excerpts: [ex(30_000, 12), ex(20_000, 13), ex(500, 14, true)] } as never;
+        const r = corpusFootprint([farfan], new Map());
+        expect(r.admittedChars).toBe(50_000);
+        expect(r.excerptChars).toBe(500);
+        expect(r.perStepChars).toBe(50_500);
+    });
+});
+
+/**
+ * Revisión adversarial de A4 (pregunta 8): con el índice a mano, el medidor
+ * cuenta lo que el recuperador CONSULTA, no lo que el usuario guardó.
+ */
+describe('corpusFootprint — con índice, lo mismo que el recuperador', () => {
+    const ex = (chars: number, sheet?: number) => ({ text: 'x'.repeat(chars), sourceLocation: '', relevanceScore: 1, userEdited: false, ...(sheet ? { sheet } : {}) });
+
+    it('fragmentos con hoja: cuentan las hojas enteras (el recuperador no distingue los guardados de sus vecinos)', () => {
+        const f = { id: 'f', sourceType: 'commentary-expository', mode: 'extracted-excerpts', excerptRecipe: null,
+            excerpts: [ex(1500, 3), ex(1500, 5)] } as never;
+        const r = corpusFootprint([f], new Map([['f', indice(10, 4500)]]));
+        expect(r.admittedChars).toBe(2 * 4500);
+        expect(r.pending).toBe(false);
+    });
+
+    it('sin índice, los fragmentos son un mínimo y lo dice', () => {
+        const f = { id: 'f', sourceType: 'commentary-expository', mode: 'extracted-excerpts', excerptRecipe: null,
+            excerpts: [ex(1500, 3)] } as never;
+        expect(corpusFootprint([f], new Map()).pending).toBe(true);
+    });
+
+    it('documento completo chico: viaja entero y no llena el tope', () => {
+        const chico = { id: 'nota', sourceType: 'commentary-expository', mode: 'full-document', excerpts: [], excerptRecipe: null } as never;
+        const r = corpusFootprint([chico], new Map([['nota', indice(3, 2000)]]));
+        expect(r.wholeDocuments).toBe(0);
+        expect(r.pinnedChars).toBe(6000);
+        expect(r.perStepChars).toBe(6000);
+    });
+
+    it('un libro sigue llenando el tope', () => {
+        const libro = { id: 'libro', sourceType: 'commentary-expository', mode: 'full-document', excerpts: [], excerptRecipe: null } as never;
+        const r = corpusFootprint([libro], new Map([['libro', indice(400, 3000)]]));
+        expect(r.wholeDocuments).toBe(1);
+        expect(r.perStepChars).toBe(CURATED_CORPUS_BUDGET_CHARS);
+    });
+});
+
+describe('umbral del documento chico contra el tope', () => {
+    it('varios documentos chicos enteros caben en el tope del grupo', async () => {
+        const { SMALL_DOCUMENT_CHARS } = await import('../curatedScope');
+        expect(SMALL_DOCUMENT_CHARS * 4).toBeLessThanOrEqual(CURATED_CORPUS_BUDGET_CHARS);
+    });
+});

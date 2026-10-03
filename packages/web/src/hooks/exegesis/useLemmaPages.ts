@@ -1,5 +1,5 @@
-import { useQueries } from '@tanstack/react-query';
-import { searchDocumentText } from '@dosfilos/infrastructure';
+import { useQuery } from '@tanstack/react-query';
+import { searchLemmasInDocument } from '@dosfilos/infrastructure';
 import { rankLemmaSheets, type LemmaPageProposal } from '@dosfilos/domain';
 
 const KEY = 'exegesis-lemma-pages';
@@ -7,33 +7,33 @@ const KEY = 'exegesis-lemma-pages';
 /**
  * Las páginas del léxico donde vive cada lema del pasaje.
  *
- * Una consulta por lema, en paralelo: son pocos —siete en un estudio de
- * tres versos— y así la primera propuesta aparece sin esperar a la
- * última. Se cachean porque el lema no cambia mientras el análisis no
- * cambie, y recorrer un léxico de 807 páginas cuesta segundos.
+ * UNA consulta para todos los lemas (modo `'lemas'` de la callable): cada
+ * búsqueda lee todos los fragmentos del léxico, y con los lemas del pasaje
+ * entero —decenas— una consulta por lema era leer el libro decenas de veces
+ * por cada apertura del selector. Se cachea porque los lemas no cambian
+ * mientras el pasaje no cambie.
  */
 export function useLemmaPages(
     resourceId: string | null,
     lemmas: ReadonlyArray<{ lemma: string; term: string }>,
     enabled: boolean,
 ) {
-    const results = useQueries({
-        queries: lemmas.map(({ lemma, term }) => ({
-            queryKey: [KEY, resourceId, lemma],
-            queryFn: async (): Promise<LemmaPageProposal> => {
-                const { hits } = await searchDocumentText(resourceId!, lemma, 'lema');
-                return { lemma, term, sheets: rankLemmaSheets(hits) };
-            },
-            enabled: enabled && !!resourceId && lemma.trim().length > 0,
-            staleTime: 30 * 60 * 1000,
-            gcTime: 60 * 60 * 1000,
-            retry: 1,
-        })),
+    const terms = lemmas.map(l => l.lemma).filter(l => l.trim().length > 0);
+    const query = useQuery({
+        queryKey: [KEY, resourceId, terms.join('|')],
+        queryFn: async (): Promise<LemmaPageProposal[]> => {
+            const byTerm = await searchLemmasInDocument(resourceId!, terms);
+            return lemmas.map(({ lemma, term }) => ({ lemma, term, sheets: rankLemmaSheets(byTerm[lemma] ?? []) }));
+        },
+        enabled: enabled && !!resourceId && terms.length > 0,
+        staleTime: 30 * 60 * 1000,
+        gcTime: 60 * 60 * 1000,
+        retry: 1,
     });
 
     return {
-        proposals: results.map(r => r.data).filter((p): p is LemmaPageProposal => !!p),
-        isLoading: results.some(r => r.isLoading),
-        isError: results.length > 0 && results.every(r => r.isError),
+        proposals: query.data ?? [],
+        isLoading: query.isLoading && query.fetchStatus !== 'idle',
+        isError: query.isError,
     };
 }

@@ -261,3 +261,38 @@ describe('AnalyzeVerseCanonicallyUseCase — que clase de numero quedo guardado'
         expect(appended[0]!.commentatorEngagement[0]!.pageKind).toBe('sheet');
     });
 });
+
+describe('AnalyzeVerseCanonicallyUseCase — la cita por sección sobrevive al saneado', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    /** Wallace confirmado sin folios: se cita por sección («§ 2.3»), con página 0. */
+    const SIN_FOLIOS: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 711, offset: null }] };
+
+    it('página 0 con sección no es «el modelo se calló la página»', async () => {
+        // Revisión adversarial de E3: el saneado tiraba toda cita con página
+        // 0 de una fuente con anclas, y «§ 2.3» cuenta como ancla. La cita por
+        // sección nunca llegaba al análisis guardado.
+        const paper = makePaper([makeSource('Wallace', 'res-wallace', [excerpt('§ 2.3', { sheet: 87 } as never)])]);
+        const analysis = analysisCiting([{ key: 'Wallace', page: 0 }]);
+        (analysis.commentatorEngagement[0] as { locator?: string }).locator = '2.3';
+        const { useCase, appended } = buildUseCase({ paper, analysis, numberings: { 'res-wallace': SIN_FOLIOS } });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        const [cita] = appended[0]!.commentatorEngagement;
+        expect(cita).toMatchObject({ sourceKey: 'Wallace', page: 0, pageKind: 'section', locator: '2.3' });
+    });
+
+    it('página 0 SIN sección de una fuente con anclas sigue saliendo', async () => {
+        const paper = makePaper([makeSource('Wallace', 'res-wallace', [excerpt('§ 2.3', { sheet: 87 } as never)])]);
+        const { useCase, appended } = buildUseCase({
+            paper,
+            analysis: analysisCiting([{ key: 'Wallace', page: 0 }]),
+            numberings: { 'res-wallace': SIN_FOLIOS },
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        expect(appended[0]!.commentatorEngagement).toEqual([]);
+    });
+});

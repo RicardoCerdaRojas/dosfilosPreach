@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from '@/i18n';
+import { exegesisDefaultsToSave, rubricIdFromOption } from './exegesisDefaultsToSave';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { exegesisService, libraryService, seriesService } from '@dosfilos/application';
@@ -90,8 +91,10 @@ export function ExegesisDefaultsCard({ seriesId, ownerId, defaults }: ExegesisDe
     }, [editing, ownerId, t]);
 
     const rubricName = useMemo(() => {
-        if (defaults?.rubricTemplateId === null) return t('detail.exegesisDefaults.systemRubric') as string;
-        if (!defaults?.rubricTemplateId) return t('detail.exegesisDefaults.autoRubric') as string;
+        // Sin plantilla elegida, un trabajo de la serie nace con la rúbrica de
+        // predicación (`CreateExegeticalPaperUseCase`): `null` y ausente
+        // significan lo mismo.
+        if (!defaults?.rubricTemplateId) return t('detail.exegesisDefaults.systemRubric') as string;
         return rubrics?.find((r) => r.id === defaults.rubricTemplateId)?.displayName
             ?? t('detail.exegesisDefaults.unknownRubric') as string;
     }, [defaults, rubrics, t]);
@@ -229,11 +232,7 @@ export function ExegesisDefaultsForm({
     const handleSave = async () => {
         setSaving(true);
         try {
-            const next: SeriesExegesisDefaults = {
-                ...(rubricId !== undefined ? { rubricTemplateId: rubricId } : {}),
-                ...(styleGuideId !== undefined ? { styleGuideId } : {}),
-                sourceRefs,
-            };
+            const next = exegesisDefaultsToSave({ rubricId, styleGuideId, sourceRefs });
             await seriesService.updateExegesisDefaults(seriesId, next);
             toast.success(t('detail.exegesisDefaults.savedToast') as string);
             onSaved();
@@ -274,18 +273,15 @@ export function ExegesisDefaultsForm({
                             {t('detail.exegesisDefaults.rubricHelp')}
                         </p>
                         <select
-                            value={rubricId === null ? '__none' : rubricId ?? '__auto'}
+                            value={rubricId ?? '__auto'}
                             onChange={(e) => {
                                 const v = e.target.value;
-                                if (v === '__none') setRubricId(null);
-                                else if (v === '__auto') setRubricId(undefined);
-                                else setRubricId(v);
+                                setRubricId(rubricIdFromOption(v));
                             }}
                             disabled={isLoadingOptions || saving}
                             className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50"
                         >
-                            <option value="__auto">{t('detail.exegesisDefaults.autoRubricOption')}</option>
-                            <option value="__none">{t('detail.exegesisDefaults.systemRubricOption')}</option>
+                            <option value="__auto">{t('detail.exegesisDefaults.systemRubricOption')}</option>
                             {rubrics.map((r) => (
                                 <option key={r.id} value={r.id}>
                                     {r.displayName}
@@ -673,7 +669,7 @@ function RecommendationsForSeries({
                                                         </Badge>
                                                     )}
                                                     {owned ? (
-                                                        <Badge variant="outline" className="text-[9.5px] border-emerald-400 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5">
+                                                        <Badge variant="outline" className="text-[9.5px] border-success text-success inline-flex items-center gap-0.5">
                                                             <Check className="h-2.5 w-2.5" />
                                                             {t('detail.exegesisDefaults.alreadyAdded')}
                                                         </Badge>

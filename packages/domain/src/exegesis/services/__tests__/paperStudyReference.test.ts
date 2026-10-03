@@ -184,7 +184,7 @@ describe('buildPaperStudyReference', () => {
                 },
             ],
             commentatorEngagement: [
-                { sourceKey: 'Moo', page: 54, role: 'anchor', position: 'Lee el gozo como decisión.' },
+                { sourceKey: 'Moo', page: 54, pageKind: 'printed', role: 'anchor', position: 'Lee el gozo como decisión.' },
             ],
         });
 
@@ -216,8 +216,9 @@ describe('buildPaperStudyReference', () => {
         });
         const ref = buildPaperStudyReference(makePaper({ steps: [makeStep(1, analysis)] }));
 
-        // Mejor una clave que un hueco: el pastor puede rastrearla.
-        expect(ref.byStep.recognition?.[0]?.label).toBe('Adamson, p. 12');
+        // Mejor una clave que un hueco: el pastor puede rastrearla. Sin tipo
+        // es una hoja del archivo, y se dice así: antes decía «p. 12».
+        expect(ref.byStep.recognition?.[0]?.label).toBe('Adamson, hoja 12');
     });
 
     it('ignora lo generado que el pastor todavía no aceptó', () => {
@@ -276,5 +277,19 @@ describe('buildPaperStudyReference', () => {
         expect(ref.assignmentBrief).toBe('Argumentar que el gozo es volitivo.');
         expect(ref.analyzedVerses).toEqual(['Santiago 1:2', 'Santiago 1:3']);
         expect(paperHasStudyMaterial(paper)).toBe(true);
+    });
+});
+
+
+/** Pendiente 8: un libro sin páginas impresas se cita por su sección. */
+describe('buildPaperStudyReference — la cita lleva su tipo', () => {
+    it('citada por sección dice «§ …»', () => {
+        const analysis = makeAnalysis(2, {
+            commentatorEngagement: [
+                { sourceKey: 'Wallace', page: 0, pageKind: 'section', locator: '2.3', role: 'technical', position: 'Genitivo subjetivo.' },
+            ],
+        });
+        const ref = buildPaperStudyReference(makePaper({ steps: [makeStep(1, analysis)] }));
+        expect(ref.byStep.recognition?.[0]?.label).toBe('Wallace, § 2.3');
     });
 });

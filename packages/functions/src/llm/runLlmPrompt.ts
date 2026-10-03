@@ -139,6 +139,10 @@ export const PROXY_FEATURES = [
     // contra el texto que se le dio, así que no puede colar un dato de
     // memoria.
     'exegesis.readBibliography',
+    // Preguntas CANDIDATAS para el encuadre de un estudio para predicar
+    // (#11 del ejercicio de Jonás). El pastor las marca o descarta, y el
+    // cliente descarta las que citan formas que el pasaje no tiene.
+    'exegesis.suggestBriefQuestions',
     'exegesis.planStepCorpus',
     'exegesis.paperToSermon',
     'exegesis.expository.panorama',

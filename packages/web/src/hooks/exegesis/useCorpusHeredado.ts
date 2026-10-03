@@ -1,6 +1,11 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { exegesisService } from '@dosfilos/application';
+import { fetchDocumentPageIndex, proposeSheetRanges } from '@dosfilos/infrastructure';
+import type { ExegeticalPaper } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
+import { useSelectSourcePages } from './useSelectSourcePages';
+import { heredarConPaginas } from './heredarConPaginas';
 
 /**
  * El corpus que este trabajo puede heredar de sus hermanos de serie.
@@ -26,16 +31,59 @@ export function useCorpusHeredado(paperId: string | null | undefined) {
         refetchOnWindowFocus: false,
     });
 
+    const selectPages = useSelectSourcePages();
+    const [avance, setAvance] = useState<{ hechas: number; total: number } | null>(null);
+
+    /**
+     * Trae las fuentes Y les propone páginas para este pasaje
+     * (`heredarConPaginas`). Sin la segunda parte, el análisis leía cada
+     * libro heredado desde la portada.
+     */
     const heredar = useMutation({
-        mutationFn: async (soloEstos?: ReadonlyArray<string>) => {
+        mutationFn: async (input: { soloEstos?: ReadonlyArray<string>; paper: ExegeticalPaper }) => {
             if (!user?.uid || !paperId) throw new Error('User not authenticated');
-            return exegesisService.inheritCorpus.aplicar({ ownerId: user.uid, paperId, soloEstos });
+            const uid = user.uid;
+            setAvance(null);
+            return heredarConPaginas({
+                heredar: () => exegesisService.inheritCorpus.aplicar({ ownerId: uid, paperId, soloEstos: input.soloEstos }),
+                proponer: async resourceId => {
+                    const index = await fetchDocumentPageIndex(resourceId);
+                    const p = await proposeSheetRanges({
+                        resourceId,
+                        userId: uid,
+                        passage: input.paper.passage,
+                        assignmentBrief: input.paper.assignmentBrief,
+                        language: input.paper.displayLanguage,
+                        pageIndex: index.pages,
+                    });
+                    return { ranges: p.ranges, kind: p.kind, pageIndex: index.pages };
+                },
+                guardar: async (fuente, propuesta, hojas, fijadas) => {
+                    await selectPages.mutateAsync({
+                        paperId,
+                        libraryResourceId: fuente.sourceLibraryResourceId ?? fuente.corpusId,
+                        displayLabel: fuente.displayLabel,
+                        sourceType: fuente.sourceType,
+                        chosenRole: fuente.chosenRole ?? null,
+                        citationKey: fuente.citationKey ?? null,
+                        sheetRanges: hojas,
+                        proposedRanges: propuesta.ranges,
+                        pinnedRanges: fijadas,
+                        pageIndex: propuesta.pageIndex,
+                        // La propuesta se aceptó sin pasar por ojo humano, y
+                        // queda dicho para que el corpus pueda mostrarlo.
+                        selectionMode: propuesta.kind === 'structural' ? 'structural' : 'semantic',
+                    });
+                },
+                alAvanzar: (hechas, total) => setAvance({ hechas, total }),
+            });
         },
-        onSuccess: () => {
+        onSettled: () => {
+            setAvance(null);
             queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
             queryClient.invalidateQueries({ queryKey: ['exegesis', 'corpusHeredado', user?.uid, paperId] });
         },
     });
 
-    return { propuesta, heredar };
+    return { propuesta, heredar, avance };
 }

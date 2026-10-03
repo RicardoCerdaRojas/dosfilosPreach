@@ -190,21 +190,12 @@
   "homiletics": {
     "title": "Análisis Homilético",
     "subtitle": "Desarrolla la estructura y propósito de tu sermón basándote en la exégesis.",
-    "selectionTitle": "Elige el Enfoque de tu Sermón",
-    "selectionDesc": "Se han generado <strong>{{count}} enfoques diferentes</strong> para predicar este pasaje. Selecciona el que mejor se ajuste a tu contexto y audiencia.",
-    "regenerateBtn": "Regenerar Enfoques",
     "regeneratingBtn": "Regenerando...",
-    "selectedApproach": "Enfoque Seleccionado:",
-    "developBtn": "Desarrollar este Enfoque",
-    "developingBtn": "Desarrollando Enfoque...",
-    "clickToSelect": "Haz clic en una tarjeta para seleccionar ese enfoque",
     "phase1Loading": "Generando enfoques homiléticos...",
     "phase1Sub": "📋 Fase 1: Creando 4-5 opciones",
     "phase2Loading": "Desarrollando enfoque seleccionado...",
     "phase2Sub": "🎨 Fase 2: Generando proposición y bosquejo detallado",
     "errorNoExegesis": "Error: Falta el estudio exegético.",
-    "infoTitle": "Selección de Enfoque",
-    "infoDesc": "Cada enfoque ofrece una perspectiva única para predicar este pasaje. Considera tu contexto y audiencia al elegir.",
     "typesTitle": "Tipos de Enfoque",
     "typesDesc": "Temático, Pastoral, Teológico, Apologético, Evangelístico y Narrativo. Cada uno con su propósito único.",
     "audienceTitle": "Audiencia Objetivo",
@@ -293,6 +284,28 @@
       "addNote": "Agregar",
       "removeNote": "Quitar",
       "save": "Guardar mis indicaciones"
+    },
+    "selection": {
+      "title": "Elige el enfoque de tu sermón",
+      "desc_one": "Hay {{count}} manera de predicar este pasaje.",
+      "desc_other": "Hay {{count}} maneras de predicar este pasaje. Compáralas y elige la que mejor sirva a tu iglesia.",
+      "thesisLabel": "Tu idea central",
+      "thesisNote": "Todos los enfoques predican esta idea: cambia el camino, no la tesis.",
+      "groupLabel": "Enfoques para predicar el pasaje",
+      "helpToggle": "¿Cómo elegir?",
+      "regenerate": "Otros enfoques",
+      "regenerating": "Buscando otros enfoques…",
+      "regenerateConfirmTitle": "¿Buscar otros enfoques?",
+      "regenerateConfirmDesc": "Se reemplazan los enfoques de esta lista. Si ya habías elegido uno, se pierde la elección.",
+      "cancel": "Cancelar",
+      "confirm": "Buscar otros",
+      "audience": "Para",
+      "route": "Recorrido",
+      "why": "Por qué funciona",
+      "chosen": "Enfoque elegido",
+      "none": "Elige una tarjeta para continuar.",
+      "develop": "Desarrollar este enfoque",
+      "developing": "Desarrollando el enfoque…"
     }
   },
   "drafting": {
@@ -586,7 +599,7 @@
       "failed": "No se pudo escribir. Tus decisiones siguen guardadas.",
       "emptyNoDecisions": "Primero decide qué va en esta sección. La prosa se escribe a partir de eso.",
       "emptyReady": "Ya decidiste. Pulsa «Escribir esta sección» para redactarla.",
-      "propositionOpens": "En el sermón, tu proposición abre esta sección con tus palabras exactas. Acá se escribe sólo lo que la desarrolla."
+      "propositionOpens": "En el sermón, tu proposición abre esta sección con tus palabras exactas. Aquí se escribe sólo lo que la desarrolla."
     },
     "assemble": {
       "writingProgress": "Escribiendo {{hechas}} de {{total}}…",
@@ -632,7 +645,14 @@
       "generated": "Generado — refínalo en el taller"
     },
     "emptyDraftTitle": "Todavía no has armado el borrador",
-    "emptyDraftDesc": "Decide las secciones en el Taller y pulsa «Armar borrador», o genera el sermón completo desde la banda de arriba."
+    "emptyDraftDesc": "Decide las secciones en el Taller y pulsa «Armar borrador», o genera el sermón completo desde la banda de arriba.",
+    "republish": {
+      "unchanged": "Sin cambios desde la última publicación: no se creó otra copia.",
+      "seePublished": "Ver publicado",
+      "newVersionTitle": "Vas a crear una versión nueva (la {{n}})",
+      "newVersionBody": "Ya publicaste este sermón y cambió desde entonces. La copia anterior se conserva; ésta será la versión {{n}}.",
+      "newVersionConfirm": "Crear la versión {{n}}"
+    }
   },
   "pastoralContext": {
     "title": "Contexto Pastoral (Opcional)",
@@ -662,7 +682,7 @@
   },
   "paperReference": {
     "title": "De tu paper «{{paperTitle}}» · {{count}} para este paso",
-    "disclaimer": "Esto es lo que tú ya estableciste en tu paper. Está acá para consultarlo, no para copiarlo: lo que escribas en este paso tiene que ser tuyo."
+    "disclaimer": "Esto es lo que tú ya estableciste en tu paper. Está aquí para consultarlo: lo que escribas en este paso tiene que ser tuyo. En el estudio de palabras, toca una palabra para adaptar su explicación a tu estudio."
   },
   "citations": {
     "translate": "Ver en español",
@@ -671,5 +691,57 @@
     "translating": "Traduciendo…",
     "ownTranslation": "Traducción propia · el original está a un clic",
     "translateFailed": "No se pudo traducir. El original sigue arriba."
+  },
+  "insightStep": {
+    "title": "Insight",
+    "subtitle": "Tu voz pastoral, sin asistente. Esto es lo que se desarrollará en el sermón.",
+    "help": {
+      "label": "¿Qué escribo en cada campo? Ver guía rápida",
+      "exampleCentralIdeaTitle": "Idea central",
+      "exampleCentralIdea": "«Cristo nos liberó de la condena por la obra perfecta del Espíritu en nuestra carne mortal.»",
+      "exampleDoxologyTitle": "Aplicación doxológica",
+      "exampleDoxology": "«Adorar al Dios cuya justicia cumplió en Cristo lo que nuestra carne nunca pudo. Vivir la libertad evangélica con santidad gozosa, no con resignación legalista.»",
+      "intro": "Este paso es tu voz pastoral. Aquí no hay asistente: el sermón se construye sobre lo que TÚ escribas en esta pantalla.",
+      "centralIdea": "Idea central: una oración que sintetiza el sermón. Aparecerá tal cual en el borrador final.",
+      "observations": "Observaciones: 3 o más verdades que el texto afirma. Cada una será una sección del sermón.",
+      "openQuestion": "Pregunta abierta: la pregunta que tu sermón responde.",
+      "anecdote": "Anécdota pastoral: historia o ejemplo que conecta el texto con la vida real.",
+      "doxology": "Aplicación doxológica: a qué adoración, vida santa o ministerio fiel debe llevar este sermón."
+    },
+    "noAssistant": {
+      "title": "Sin asistente en este paso",
+      "body": "El borrador se construye sobre tus palabras exactas en esta pantalla. Si las pegas desde otra herramienta, lo registramos para tu propia revisión: no para juzgarte, sino para que sepas cuánto de tu sermón es realmente tuyo.",
+      "pastes_one": "{{count}} evento de pegado registrado en esta sesión.",
+      "pastes_other": "{{count}} eventos de pegado registrados en esta sesión."
+    },
+    "centralIdea": {
+      "label": "Idea central (1 oración, mínimo {{min}} caracteres)",
+      "hint": "Aparecerá tal cual en tu sermón final. Sé preciso."
+    },
+    "tripwire": {
+      "title": "Revisa esta afirmación antes de seguir",
+      "dismiss": "Entendido"
+    },
+    "observations": {
+      "label": "Observaciones",
+      "hint": "Qué afirma el texto, qué exige, qué descarta. Cada una con al menos {{minChars}} caracteres; cada una será una sección del sermón.",
+      "progress": "{{ready}} de {{total}}",
+      "slotLabel": "Observación {{n}}",
+      "placeholder": "Observación {{n}}: una verdad que el texto afirma.",
+      "add": "Agregar otra observación",
+      "remove": "Quitar la observación {{n}}"
+    },
+    "openQuestion": {
+      "label": "Pregunta abierta (mínimo {{min}} caracteres)",
+      "hint": "La pregunta que tu sermón ayudará a responder."
+    },
+    "anecdote": {
+      "label": "Anécdota pastoral (mínimo {{min}} caracteres)",
+      "hint": "Una historia, ejemplo o ilustración que conecta el texto con la vida real."
+    },
+    "doxology": {
+      "label": "Aplicación doxológica (mínimo {{min}} caracteres)",
+      "hint": "¿A qué adoración, vida santa o ministerio fiel debe llevar este sermón?"
+    }
   }
 }

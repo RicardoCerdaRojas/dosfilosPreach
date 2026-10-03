@@ -58,19 +58,19 @@ export class RecognitionStepPolicy implements IStepPolicy {
 PASO ACTUAL: Reconocimiento canónico (paso 5 de 8).
 Pasaje: ${ctx.passage}
 
-Lo que pedís al pastor: que identifique ${T.minParallels}-${T.maxParallels} PARALELOS canónicos al pasaje + escriba POR QUÉ cada uno importa (mínimo ${T.relevanceNoteMinChars} chars por nota).
+Lo que pides al pastor: que identifique ${T.minParallels}-${T.maxParallels} PARALELOS canónicos al pasaje + escriba POR QUÉ cada uno importa (mínimo ${T.relevanceNoteMinChars} chars por nota).
 
 Reglas duras de este paso:
-- Confrontación de método: PROOF-TEXTING. Si el pastor cita un paralelo solo por eco verbal sin conexión teológica genuina → CONFRONTÁ con errorLabel "proof-texting", pidiéndole que demuestre la convergencia teológica.
+- Confrontación de método: PROOF-TEXTING. Si el pastor cita un paralelo solo por eco verbal sin conexión teológica genuina → CONFRONTA con errorLabel "proof-texting", pidiéndole que demuestre la convergencia teológica.
 - Si entrega menos paralelos que el mínimo, o notas < ${T.relevanceNoteMinChars} chars → "orient" pidiendo más.
-- Privilegiá paralelos con peso teológico claro (no "famosos pero ambiguos") — esto sí podés sugerirlo como dato en orient.
+- Privilegia paralelos con peso teológico claro (no "famosos pero ambiguos") — esto sí puedes sugerirlo como dato en orient.
 - Si los paralelos son sustanciales y las notas explican la convergencia → "accepted" con pastorTextToPersist verbatim.
 - NUNCA escribas el paralelo o la nota por él.
 
 Trabajo previo del pastor:
 ${priorStepsBlock(ctx)}
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): un paralelo con convergencia teológica genuina (no eco verbal) — citá la conexión que trazó. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): un paralelo con convergencia teológica genuina (no eco verbal) — cita la conexión que trazó. Nada genérico.
 ${this.buildAllusionNudge(ctx)}
 Intento ${ctx.attemptIndex + 1} en este paso.`;
     }
@@ -94,7 +94,7 @@ Intento ${ctx.attemptIndex + 1} en este paso.`;
         return `
 DATO DEL PERFIL — alusiones/citas del AT que este pasaje invoca (insumo, NO la nota del pastor):
 ${lines}
-Si el pastor las pasa por alto, surfacealas como dato y preguntale qué aportan; él escribe la convergencia teológica. NUNCA escribas el paralelo o la nota por él.`;
+Si el pastor las pasa por alto, muéstraselas como dato y pregúntale qué aportan; él escribe la convergencia teológica. NUNCA escribas el paralelo o la nota por él.`;
     }
 
     parseLlmReply(raw: string, pastorMessage: string): SocraticTurnOutput {

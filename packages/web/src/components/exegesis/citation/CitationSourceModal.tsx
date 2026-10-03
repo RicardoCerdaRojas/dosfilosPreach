@@ -49,6 +49,8 @@ export interface CitationTarget {
      * lector a otro capítulo.
      */
     pageKind?: CitationPageKind;
+    /** La sección citada, en un libro sin páginas impresas (`pageKind: 'section'`). */
+    locator?: string;
     /** Frase textual registrada, cuando el análisis guardó una. */
     verbatimQuote?: string | null;
 }

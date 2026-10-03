@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -225,13 +225,16 @@ export class GenerateStepUseCase {
         step: ExegeticalStep,
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
-        const scopes = paper.sources
-            .filter(hasCuratedScope)
-            .map(s => ({
+        // Toda fuente con algo que consultar (`retrievalScopeOf`): también el
+        // documento completo y los fragmentos se buscan para este paso.
+        const scopes = paper.sources.flatMap(s => {
+            const scope = retrievalScopeOf(s);
+            return scope ? [{
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
-                sheetRanges: s.excerptRecipe!.sheetRanges,
-                pinnedRanges: s.excerptRecipe!.pinnedRanges,
-            }));
+                sheetRanges: scope.sheetRanges,
+                pinnedRanges: scope.pinnedRanges,
+            }] : [];
+        });
         if (scopes.length === 0) return null;
 
         const target = step.verseRef ?? paper.passage;
@@ -276,11 +279,18 @@ export class GenerateStepUseCase {
         for (const source of sorted) {
             const priority: 'primary' | 'secondary' =
                 pinnedIds.has(source.id) ? 'primary' : 'secondary';
-            const retrieved = curated?.byResource[source.sourceLibraryResourceId ?? source.corpusId];
+            const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
+            const retrieved = curated?.byResource[resourceId];
+            const scope = retrievalScopeOf(source);
             if (retrieved && retrieved.length > 0) {
                 const numbering = numberings.get(source.id) ?? null;
                 const anchor = (c: { sheet: number | null; section: string | null }) =>
                     citationAnchorFor(c, numbering);
+                // Los fragmentos editados (o sin hoja) no están en el corpus:
+                // van siempre, después de lo recuperado.
+                const siempre = scope?.kind === 'excerpt-sheets' ? scope.alwaysExcerpts : [];
+                const anchorOf = (e: { sourceLocation: string; sheet?: number; section?: string }) =>
+                    relabelExcerptAnchor(e.sourceLocation, numbering, e);
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt no tiene por qué notar de dónde salió el fragmento.
                 contexts.push({
@@ -288,12 +298,21 @@ export class GenerateStepUseCase {
                     sourceType: source.sourceType,
                     displayLabel: source.displayLabel,
                     citationKey: source.citationKey,
-                    textContent: retrieved.map(c => `--- ${anchor(c)} ---\n${c.text}`).join('\n\n'),
-                    excerptAnchors: retrieved.map(anchor),
+                    textContent: [
+                        ...retrieved.map(c => `--- ${anchor(c)} ---\n${c.text}`),
+                        ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
+                    ].join('\n\n'),
+                    excerptAnchors: [...retrieved.map(anchor), ...siempre.map(anchorOf)],
                     priority,
                 });
                 continue;
             }
+            // Un documento completo del que el corpus no trajo nada sigue el
+            // camino de siempre: el texto entero. Retirarlo sería peor en el
+            // caso que ese camino existe para —un extracto corto subido a
+            // mano, donde el documento ES la curaduría—; un libro grande, en
+            // cambio, casi nunca llega aquí, porque la búsqueda sí encuentra
+            // lo que habla del versículo.
             // Una fuente con receta ya declaró qué hojas admitió el trabajo.
             // Si la recuperación no trajo nada de ellas, las dos salidas que
             // quedan mienten: el documento entero contradice la curaduría, y
@@ -312,12 +331,11 @@ export class GenerateStepUseCase {
                 // resource.
                 contexts.push({ ...buildExcerptContext(source, numberings.get(source.id) ?? null), priority });
             } else {
-                // 'full-document' (or legacy sources without `mode`):
-                // historical behavior — pull the entire textContent.
-                // Stays untouched so existing papers and the direct-
-                // upload flow (Caso 3 of v1.5) generate identically
-                // to v1.
-                const text = await this.contentReader.getTextContent(source.corpusId);
+                // Documento completo del que el corpus no trajo nada (o una
+                // fuente sin alcance de consulta): el texto entero. Un
+                // documento chico ya llegó entero por el recuperador
+                // (`wholeDocumentTravelsEntire`); esto es el respaldo.
+                const text = await readFullText(this.contentReader, source.corpusId);
                 contexts.push({
                     corpusId: source.corpusId,
                     sourceType: source.sourceType,

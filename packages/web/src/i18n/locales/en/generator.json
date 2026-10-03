@@ -190,21 +190,12 @@
   "homiletics": {
     "title": "Homiletical Analysis",
     "subtitle": "Develop the structure and purpose of your sermon based on the exegesis.",
-    "selectionTitle": "Choose Your Sermon Approach",
-    "selectionDesc": "<strong>{{count}} different approaches</strong> have been generated to preach this passage. Select the one that best fits your context and audience.",
-    "regenerateBtn": "Regenerate Approaches",
     "regeneratingBtn": "Regenerating...",
-    "selectedApproach": "Selected Approach:",
-    "developBtn": "Develop this Approach",
-    "developingBtn": "Developing Approach...",
-    "clickToSelect": "Click on a card to select that approach",
     "phase1Loading": "Generating homiletical approaches...",
     "phase1Sub": "📋 Phase 1: Creating 4-5 options",
     "phase2Loading": "Developing selected approach...",
     "phase2Sub": "🎨 Phase 2: Generating proposition and detailed outline",
     "errorNoExegesis": "Error: Exegetical study is missing.",
-    "infoTitle": "Approach Selection",
-    "infoDesc": "Each approach offers a unique perspective to preach this passage. Consider your context and audience when choosing.",
     "typesTitle": "Approach Types",
     "typesDesc": "Thematic, Pastoral, Theological, Apologetic, Evangelistic and Narrative. Each with its own purpose.",
     "audienceTitle": "Target Audience",
@@ -293,6 +284,28 @@
       "addNote": "Add",
       "removeNote": "Remove",
       "save": "Save my directions"
+    },
+    "selection": {
+      "title": "Choose your sermon approach",
+      "desc_one": "There is {{count}} way to preach this passage.",
+      "desc_other": "There are {{count}} ways to preach this passage. Compare them and choose the one that best serves your church.",
+      "thesisLabel": "Your central idea",
+      "thesisNote": "Every approach preaches this idea: the route changes, not the thesis.",
+      "groupLabel": "Approaches to preach the passage",
+      "helpToggle": "How to choose?",
+      "regenerate": "Other approaches",
+      "regenerating": "Finding other approaches…",
+      "regenerateConfirmTitle": "Find other approaches?",
+      "regenerateConfirmDesc": "The approaches in this list are replaced. If you had already chosen one, the choice is lost.",
+      "cancel": "Cancel",
+      "confirm": "Find others",
+      "audience": "For",
+      "route": "Route",
+      "why": "Why it works",
+      "chosen": "Chosen approach",
+      "none": "Choose a card to continue.",
+      "develop": "Develop this approach",
+      "developing": "Developing the approach…"
     }
   },
   "drafting": {
@@ -632,7 +645,14 @@
       "generated": "Generated — refine it in the workshop"
     },
     "emptyDraftTitle": "You have not assembled the draft yet",
-    "emptyDraftDesc": "Decide the sections in the Workshop and press “Assemble draft”, or generate the full sermon from the band above."
+    "emptyDraftDesc": "Decide the sections in the Workshop and press “Assemble draft”, or generate the full sermon from the band above.",
+    "republish": {
+      "unchanged": "No changes since the last publication: no new copy was created.",
+      "seePublished": "See published",
+      "newVersionTitle": "You are about to create a new version (number {{n}})",
+      "newVersionBody": "You already published this sermon and it has changed since. The previous copy is kept; this will be version {{n}}.",
+      "newVersionConfirm": "Create version {{n}}"
+    }
   },
   "pastoralContext": {
     "title": "Pastoral context (optional)",
@@ -662,7 +682,7 @@
   },
   "paperReference": {
     "title": "From your paper \u201c{{paperTitle}}\u201d \u00b7 {{count}} for this step",
-    "disclaimer": "This is what you already established in your paper. It is here to consult, not to copy: what you write in this step has to be yours."
+    "disclaimer": "This is what you already established in your paper. It is here to consult: what you write in this step has to be yours. In word studies, tap a word to adapt its explanation into your study."
   },
   "citations": {
     "translate": "View in English",
@@ -671,5 +691,57 @@
     "translating": "Translating…",
     "ownTranslation": "Our translation · the original is one click away",
     "translateFailed": "Couldn't translate. The original is still above."
+  },
+  "insightStep": {
+    "title": "Insight",
+    "subtitle": "Your pastoral voice, without the assistant. This is what the sermon will develop.",
+    "help": {
+      "label": "What goes in each field? See quick guide",
+      "exampleCentralIdeaTitle": "Central idea",
+      "exampleCentralIdea": "“Christ freed us from condemnation through the perfect work of the Spirit in our mortal flesh.”",
+      "exampleDoxologyTitle": "Doxological application",
+      "exampleDoxology": "“Worship the God whose righteousness accomplished in Christ what our flesh never could. Live evangelical freedom with joyful holiness, not legalistic resignation.”",
+      "intro": "This step is your pastoral voice. There is no assistant here: the sermon is built on what YOU write on this screen.",
+      "centralIdea": "Central idea: one sentence that sums up the sermon. It will appear as written in the final draft.",
+      "observations": "Observations: 3 or more truths the text affirms. Each becomes a section of the sermon.",
+      "openQuestion": "Open question: the question your sermon answers.",
+      "anecdote": "Pastoral anecdote: a story or example that connects the text with real life.",
+      "doxology": "Doxological application: what worship, holy living or faithful ministry this sermon should lead to."
+    },
+    "noAssistant": {
+      "title": "No assistant in this step",
+      "body": "The draft is built on your exact words on this screen. If you paste them from another tool, we log it for your own review: not to judge you, but so you know how much of your sermon is truly yours.",
+      "pastes_one": "{{count}} paste event logged in this session.",
+      "pastes_other": "{{count}} paste events logged in this session."
+    },
+    "centralIdea": {
+      "label": "Central idea (1 sentence, at least {{min}} characters)",
+      "hint": "It will appear as written in your final sermon. Be precise."
+    },
+    "tripwire": {
+      "title": "Review this claim before moving on",
+      "dismiss": "Got it"
+    },
+    "observations": {
+      "label": "Observations",
+      "hint": "What the text affirms, demands, rules out. Each at least {{minChars}} characters; each becomes a section of the sermon.",
+      "progress": "{{ready}} of {{total}}",
+      "slotLabel": "Observation {{n}}",
+      "placeholder": "Observation {{n}}: a truth the text affirms.",
+      "add": "Add another observation",
+      "remove": "Remove observation {{n}}"
+    },
+    "openQuestion": {
+      "label": "Open question (at least {{min}} characters)",
+      "hint": "The question your sermon will help answer."
+    },
+    "anecdote": {
+      "label": "Pastoral anecdote (at least {{min}} characters)",
+      "hint": "A story, example or illustration that connects the text with real life."
+    },
+    "doxology": {
+      "label": "Doxological application (at least {{min}} characters)",
+      "hint": "What worship, holy living or faithful ministry should this sermon lead to?"
+    }
   }
 }

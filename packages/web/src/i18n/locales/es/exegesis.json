@@ -136,7 +136,8 @@
           "bibliography": "Bibliografía",
           "quotations": "Citas",
           "transliteration": "Transliteración",
-          "additional": "Reglas adicionales"
+          "additional": "Reglas adicionales",
+          "cover": "Portada"
         },
         "validation": {
           "empty-template": "El template no puede estar vacío.",
@@ -145,7 +146,8 @@
           "empty-quote-mark": "Las comillas no pueden estar vacías.",
           "duplicate-additional-rule": "Esta regla está duplicada.",
           "empty-additional-rule": "Esta regla está vacía.",
-          "transliteration-empty-scheme": "Indica un nombre para el esquema de transliteración."
+          "transliteration-empty-scheme": "Indica un nombre para el esquema de transliteración.",
+          "cover-blank-lines-out-of-range": "Entre 0 y 20 renglones."
         },
         "footnotes": {
           "intro": "Templates que el post-procesador usa para reformatear las citas que emite el LLM. Los placeholders se sustituyen con datos de cada fuente al renderizar.",
@@ -204,6 +206,21 @@
           "placeholder": "Ej. \"Usar comas seriadas en listas de tres elementos.\"",
           "add": "Agregar regla",
           "remove": "Quitar regla"
+        },
+        "cover": {
+          "intro": "Cómo se arma la portada al descargar el Word: renglones en blanco entre los bloques, mayúsculas y la palabra antes del autor. Los datos (seminario, título, autor) se escriben en la portada de cada trabajo.",
+          "enabledLabel": "Esta guía dice cómo va la portada",
+          "enabledHint": "Apagado, se usa el modelo de TMS.",
+          "layout": {
+            "beforeInstitution": "Antes del seminario",
+            "afterInstitution": "Después del seminario",
+            "afterTitle": "Después del título",
+            "afterAuthor": "Después del autor"
+          },
+          "uppercase": "Todo en mayúsculas",
+          "byLine": "Antes del autor",
+          "byLineHint": "«POR», «PRESENTADO POR»… Vacío: no lleva esa línea.",
+          "usingTms": "Modelo de TMS: {{before}} · seminario · {{institution}} · título · {{title}} · POR / autor · {{author}} · lugar y fecha."
         }
       }
     }
@@ -438,7 +455,33 @@
       "button": "Encuadre",
       "missing": "falta",
       "questionCount_one": "{{count}} pregunta",
-      "questionCount_other": "{{count}} preguntas"
+      "questionCount_other": "{{count}} preguntas",
+      "genre": {
+        "label": "Género del pasaje",
+        "narrative": "Narrativa",
+        "poetry": "Poesía",
+        "prophecy": "Profecía",
+        "wisdom": "Sabiduría",
+        "law": "Ley",
+        "gospel": "Evangelio",
+        "parable": "Parábola",
+        "epistle": "Epístola",
+        "apocalypse": "Apocalíptica",
+        "mixed": "General"
+      },
+      "suggest": {
+        "cta": "Sugerir preguntas",
+        "intro": "Candidatas que el asistente encontró en el texto. Marca las que te sirvan: se agregan al borrador para que las edites.",
+        "none": "Ninguna candidata pasó el cotejo con el texto.",
+        "dropped_one": "1 pregunta descartada: citaba una forma que no está en el pasaje ({{forms}}).",
+        "dropped_other": "{{count}} preguntas descartadas: citaban formas que no están en el pasaje ({{forms}}).",
+        "close": "Cerrar",
+        "add_one": "Agregar 1 al encuadre",
+        "add_other": "Agregar {{count}} al encuadre",
+        "added_one": "Se agregó 1 pregunta al borrador.",
+        "added_other": "Se agregaron {{count}} preguntas al borrador.",
+        "error": "No se pudieron sugerir preguntas. Intenta de nuevo."
+      }
     },
     "notFound": {
       "title": "Trabajo no encontrado",
@@ -449,7 +492,7 @@
       "rubric": {
         "tab": "Rúbrica",
         "heading": "Rúbrica del trabajo",
-        "description": "Lo que pide ESTA entrega: extensión, forma de cita, si lleva portada y bibliografía, y qué fuentes exige. Súbela desde el sílabo o usa la de la casa.",
+        "description": "Lo que pide ESTA entrega: extensión, forma de cita, si lleva portada y bibliografía, y qué fuentes exige. De dónde sale se cambia con el botón «Rúbrica» de arriba.",
         "loading": "Cargando rúbrica...",
         "provenance": {
           "extracted-from-document": "Extraída de documento",
@@ -497,6 +540,10 @@
             "extracting": "Extrayendo texto del documento…",
             "analyzing": "Analizando rúbrica…",
             "encoding": "Preparando imagen…"
+          },
+          "languageName": {
+            "es": "Español",
+            "en": "English"
           }
         },
         "metadata": {
@@ -683,7 +730,14 @@
           },
           "change": "Cambiar de dónde sale la rúbrica",
           "hide": "Ocultar las opciones"
-        }
+        },
+        "preset": {
+          "academic": "Trabajo académico",
+          "preaching": "Estudio para predicación",
+          "strategy-only": "Sólo estrategia"
+        },
+        "presetEdited": "{{preset}} · editada",
+        "presetSystem": "{{preset}} · sistema"
       },
       "manifest": {
         "tab": "Guía de estilo",
@@ -772,6 +826,9 @@
           "usingCopy": "Este trabajo usa la copia que se tomó el {{date}}. Editar la guía después no lo afecta.",
           "guideChanged": "La guía cambió desde que se adjuntó. Este trabajo sigue con su copia; puedes traer la versión actual si quieres.",
           "refresh": "Actualizar a la versión actual"
+        },
+        "cover": {
+          "own": "Esta guía: {{before}} · seminario · {{institution}} · título · {{title}} · «{{byLine}}» / autor · {{author}} · lugar y fecha."
         }
       },
       "corpus": {
@@ -887,7 +944,7 @@
             "rangeCount_other": "{{count}} tramos",
             "empty": "Nada elegido todavía. Acepta la sugerencia, o navega el documento y agrega hojas.",
             "sheetOne": "hoja {{sheet}}",
-            "sheetRange": "hojas {{start}}–{{end}}",
+            "sheetRange": "hojas {{start}}–{{end}} ({{count}})",
             "withPrinted": "{{base}} · impresa {{printed}}",
             "remove": "Quitar {{range}}",
             "budget": "Corpus por versículo",
@@ -905,10 +962,21 @@
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
             "sectionsCovered": "{{section}} · cubre {{count}} secciones",
-            "saved": "Guardado · {{count}} hojas en el trabajo",
             "perVerse": "Por versículo llegan {{chars}} caracteres. Las hojas elegidas del trabajo suman {{admitted}}; de ellas se consulta lo de cada versículo, hasta {{cap}}.",
-            "otherExcerpts": "Los fragmentos de otras fuentes van completos: {{chars}} caracteres."
-          }
+            "otherExcerpts": "Los fragmentos de otras fuentes van completos: {{chars}} caracteres.",
+            "saved_one": "Guardado · {{count}} hoja en el trabajo",
+            "saved_other": "Guardado · {{count}} hojas en el trabajo",
+            "resave": "Volver a guardar",
+            "update_one": "Guardar cambios · {{count}} hoja",
+            "update_other": "Guardar cambios · {{count}} hojas",
+            "clear": "Vaciar",
+            "cleared_one": "Se quitó 1 tramo.",
+            "cleared_other": "Se quitaron {{count}} tramos.",
+            "undo": "Deshacer",
+            "replaced_one": "La selección quedó en 1 hoja.",
+            "replaced_other": "La selección quedó en {{count}} hojas."
+          },
+          "numberingLegend": "h. = hoja del PDF (la columna de la izquierda) · p. = página impresa del libro"
         },
         "list": {
           "title": "Fuentes adjuntas",
@@ -1072,7 +1140,9 @@
           "roleByType": "Según el tipo: {{role}}",
           "selectedTitle_one": "Vas a agregar {{count}} fuente",
           "selectedTitle_other": "Vas a agregar {{count}} fuentes",
-          "unselect": "Quitar «{{label}}» de la selección"
+          "unselect": "Quitar «{{label}}» de la selección",
+          "hasPages": "Con páginas elegidas",
+          "willReplacePages": "Extraer reemplaza sus páginas elegidas"
         },
         "excerpts": {
           "expand": "Ver fragmentos curados",
@@ -1185,19 +1255,29 @@
           "yaPresentes_other": "{{count}} de ellas ya están en este trabajo.",
           "cta_one": "Traer 1 fuente",
           "cta_other": "Traer {{count}} fuentes",
-          "nota": "Llegan completas: los fragmentos se eligen contra este pasaje, no contra el anterior.",
+          "nota": "Las páginas del pasaje anterior no viajan: al traerlas se proponen las de este pasaje en cada comentario. Léxicos y gramáticas se eligen después en el selector.",
           "toast_one": "Se agregó 1 fuente de la serie.",
           "toast_other": "Se agregaron {{count}} fuentes de la serie.",
-          "error": "No se pudieron traer las fuentes. Intenta de nuevo."
+          "error": "No se pudieron traer las fuentes. Intenta de nuevo.",
+          "toastConPaginas_one": "1 con páginas propuestas para este pasaje.",
+          "toastConPaginas_other": "{{count}} con páginas propuestas para este pasaje.",
+          "toastPorLema_one": "1 léxico o gramática para elegir en el selector.",
+          "toastPorLema_other": "{{count}} léxicos o gramáticas para elegir en el selector.",
+          "toastSinPropuesta_one": "1 sin propuesta: elige sus páginas.",
+          "toastSinPropuesta_other": "{{count}} sin propuesta: elige sus páginas.",
+          "proponiendo": "Proponiendo páginas {{hechas}}/{{total}}…"
         },
         "lemmas": {
           "title": "Páginas por lema",
           "addAll": "Agregar las {{count}} principales",
-          "empty": "Todavía no hay lemas: salen del análisis canónico de los versos.",
+          "empty": "Todavía no hay lemas: salen de la morfología del pasaje y del análisis de los versos.",
           "notFound": "no aparece en este libro",
-          "page": "p. {{printed}}",
-          "sheet": "hoja {{sheet}}",
-          "hint": "La primera hoja es la que más veces nombra el lema, que casi siempre es su entrada. Pasa el cursor para ver el renglón."
+          "page": "h. {{sheet}} · p. {{printed}}",
+          "sheet": "h. {{sheet}}",
+          "hint": "La primera hoja es la que más veces nombra el lema, que casi siempre es su entrada. Pasa el cursor para ver el renglón.",
+          "keepOnly_one": "Quedarse sólo con esta hoja",
+          "keepOnly_other": "Quedarse sólo con estas {{count}} hojas",
+          "excess": "Este léxico admite {{selected}} hojas; las entradas de sus lemas están en {{entries}}."
         },
         "courseBib": {
           "title": "Bibliografía del curso",
@@ -1218,8 +1298,8 @@
           "title": "Páginas que nombran el pasaje ({{count}})",
           "addAll": "Agregar las {{count}}",
           "empty": "Este libro no nombra el pasaje en ninguna página. Es lo normal en un comentario: su página entera ya es el pasaje, y esas páginas entran por el otro camino.",
-          "page": "p. {{printed}}",
-          "sheet": "hoja {{sheet}}",
+          "page": "h. {{sheet}} · p. {{printed}}",
+          "sheet": "h. {{sheet}}",
           "verses": "v. {{verses}}",
           "hint": "Una gramática o un léxico no se organizan por pasajes, pero citan el versículo como ejemplo. Estas son las páginas donde lo nombran; tú decides cuáles entran."
         },
@@ -1227,8 +1307,8 @@
           "title": "Secciones del índice que responden al encuadre ({{count}})",
           "count": "· {{count}} secciones",
           "corroborated": "nombra la forma griega",
-          "page": "p. {{printed}}",
-          "sheet": "hoja {{sheet}}",
+          "page": "h. {{sheet}} · p. {{printed}}",
+          "sheet": "h. {{sheet}}",
           "hint": "Una gramática se indexa por categorías, no por pasajes. Estas son las secciones que nombran lo que tu encuadre pregunta; la lista va en el orden del libro y no se recorta."
         },
         "sourceMemory": {
@@ -1246,9 +1326,36 @@
           "renameWarning": "Los versículos ya analizados citan «{{key}}»: con otra clave esas citas quedan sin fuente hasta volver a analizarlos."
         },
         "sinPaginas": {
-          "body": "Sin páginas para este pasaje: el análisis leería el comienzo del libro (portada, introducción), no lo que dice sobre estos versículos. Elige las páginas o extrae los fragmentos antes de analizar.",
+          "body": "Sin páginas para este pasaje: el análisis busca en el libro entero lo que habla de cada versículo. Elegir las páginas del pasaje es más preciso y deja ver qué entra.",
           "cta": "Elegir páginas"
-        }
+        },
+        "suggestion": {
+          "cta_one": "Selección sugerida · 1 hoja",
+          "cta_other": "Selección sugerida · {{count}} hojas",
+          "title": "Selección sugerida para este pasaje",
+          "body": "Una hoja por palabra o categoría del pasaje, la que más la trata. Primero las palabras raras en la Biblia y las que el pasaje repite; los verbos de todos los días, al final. Tú decides qué entra.",
+          "reason": {
+            "rare_one": "aparece 1 vez en {{corpus}}",
+            "rare_other": "aparece {{n}} veces en {{corpus}}",
+            "repeated_one": "1 vez en el pasaje",
+            "repeated_other": "{{count}} veces en el pasaje",
+            "common": "común: {{n}} veces en {{corpus}}",
+            "section": "sección «{{title}}»"
+          },
+          "corpus": {
+            "OT": "el Antiguo Testamento",
+            "NT": "el Nuevo Testamento",
+            "bible": "la Biblia"
+          },
+          "leftOut_one": "Fuera por presupuesto: {{list}}.",
+          "leftOut_other": "Fuera por presupuesto ({{count}}): {{list}}.",
+          "notFound_one": "Sin entrada en este libro: {{list}}.",
+          "notFound_other": "Sin entrada en este libro ({{count}}): {{list}}.",
+          "cancel": "Cerrar",
+          "add": "Agregar a mi selección",
+          "replace": "Reemplazar mi selección"
+        },
+        "citaPorSeccion": "Este libro no tiene páginas impresas: sus citas van por sección (§), que se encuentra en el ejemplar."
       },
       "corpus-plan": {
         "tab": "Plan de uso",
@@ -1348,6 +1455,11 @@
             "technical": "Técnica",
             "unrolled": "Sin rol"
           }
+        },
+        "rubricJustificationPreaching": {
+          "introduction": "La introducción sitúa la perícopa en el argumento del libro: dónde está el oyente cuando empieza esta escena y qué se juega en ella.",
+          "verse": "El expositivo ancla porque sigue el flujo del argumento, que es lo que se predica; el crítico contrasta cuando hay lecturas rivales; lo técnico entra donde hay una cruz que decidir, no en cada versículo.",
+          "conclusion": "La conclusión dice la intención del autor en una oración y qué hace esa intención con quien escucha. No es un resumen de hallazgos: es el puente."
         }
       }
     },
@@ -1436,6 +1548,10 @@
         "tamano": "El archivo pasa de 250 MB, que es el máximo de la biblioteca.",
         "consentimiento": "Falta aceptar las condiciones de subida."
       }
+    },
+    "rubricButton": {
+      "label": "Rúbrica",
+      "back": "Volver a las opciones"
     }
   },
   "setup": {
@@ -1623,7 +1739,10 @@
         "syntax": "Sin análisis sintáctico para este verso.",
         "lexis": "Sin análisis léxicos para este verso.",
         "commentators": "Sin engagement con comentaristas para este verso.",
-        "cruxes": "Sin decisiones contestadas en este verso."
+        "cruxes": "Sin decisiones de traducción registradas en este versículo. Sólo se registra una cuando los textos del corpus traen testigos para opciones distintas, con cita textual de cada lado: si el corpus no alcanza para sostenerla, queda vacía aunque haya una cruz."
+      },
+      "status": {
+        "noVariants": "revisado · sin variantes"
       }
     },
     "compose": {
@@ -2070,7 +2189,7 @@
         "unanswered_other": "⚠ Las preguntas {{numbers}} del encuadre no las responde ninguna sección elegida."
       },
       "answersQuestion": "responde la pregunta {{numbers}}",
-      "verseBudget": "~{{count}} palabras",
+      "verseBudget": "objetivo ~{{count}} palabras",
       "regenerate": {
         "title": "Regenerar {{step}}",
         "description": "Se vuelve a redactar esta sección desde los análisis aceptados.",
@@ -2101,7 +2220,9 @@
       "title": "Corpus del trabajo",
       "none": "Sin fuentes todavía. Agrégalas para que el orquestador pueda interactuar con ellas.",
       "addCta": "Editar en configuración",
-      "remove": "Quitar fuente"
+      "remove": "Quitar fuente",
+      "seriesOffer_one": "Hay 1 fuente en otros trabajos de esta serie · Traerla",
+      "seriesOffer_other": "Hay {{count}} fuentes en otros trabajos de esta serie · Traerlas"
     },
     "derived": {
       "title": "Artefactos derivados",
@@ -2205,7 +2326,9 @@
         "title": "Esto no es lo que se va a descargar.",
         "body": "El archivo baja {{delivered}} palabras; en pantalla tienes {{onScreen}}. Regenera el ensamble y acéptalo: solo entonces el archivo toma lo que ves.",
         "toast": "Bajaste {{delivered}} palabras, y en pantalla hay {{onScreen}}. Regenera el ensamble, acéptalo y vuelve a descargar."
-      }
+      },
+      "orientative": "Estudio para predicar: la extensión orienta, no se califica. La rúbrica sugiere {{target}}.",
+      "noProse": "sin prosa"
     },
     "bibliography": {
       "title": "Datos para citar",
@@ -2265,7 +2388,28 @@
       "readNothingNew": "El libro no agrega nada a lo que ya escribiste.",
       "notEditable": "La ficha de esta fuente no se edita desde aquí: el libro no es tuyo.",
       "incompleteToast_one": "La bibliografía salió con 1 ficha incompleta: {{sources}}. Complétala antes de entregar.",
-      "incompleteToast_other": "La bibliografía salió con {{count}} fichas incompletas: {{sources}}. Complétalas antes de entregar."
+      "incompleteToast_other": "La bibliografía salió con {{count}} fichas incompletas: {{sources}}. Complétalas antes de entregar.",
+      "bulk": {
+        "cta_one": "Leer la portada que falta",
+        "cta_other": "Leer las portadas de los {{count}} que faltan",
+        "title": "Datos para citar desde las portadas",
+        "body": "Se lee la portada y la página de créditos de cada libro al que le faltan datos. Revisa lo que propone cada uno: sólo se guarda lo que marques, y lo que ya escribiste no se toca. La ficha queda guardada en el LIBRO y sirve para todos tus trabajos.",
+        "start": "Leer las portadas",
+        "reading": "Leyendo {{hechas}}/{{total}}…",
+        "close": "Cerrar",
+        "save_one": "Guardar 1 ficha",
+        "save_other": "Guardar {{count}} fichas",
+        "saved_one": "Se guardó 1 ficha.",
+        "saved_other": "Se guardaron {{count}} fichas.",
+        "saveFailed_one": "Se guardó 1 ficha y después falló el resto.",
+        "saveFailed_other": "Se guardaron {{count}} fichas y después falló el resto.",
+        "status": {
+          "nothing-new": "La portada no trae nada que falte.",
+          "no-text": "El libro todavía no tiene texto extraído.",
+          "error": "No se pudo leer la portada."
+        }
+      },
+      "savedOnBook": "Se guarda en el libro: sirve para todos los trabajos que lo usen."
     },
     "glossary": {
       "title": "Palabras que no uso",
@@ -2282,6 +2426,11 @@
       "settingsDescription": "Se aplican a todos tus trabajos. En cada trabajo verás si alguna aparece en lo que vas a entregar.",
       "emptyInPaper": "No tienes palabras en tu glosario.",
       "goToSettings": "Configurarlo en Ajustes"
+    },
+    "sourcesWithoutScope": {
+      "title_one": "1 fuente no tiene páginas elegidas ni fragmentos: el análisis busca en el libro entero. Elegir sus páginas es más preciso.",
+      "title_other": "{{count}} fuentes no tienen páginas elegidas ni fragmentos: el análisis busca en cada libro entero. Elegir sus páginas es más preciso.",
+      "choose": "Elegir páginas de {{label}}"
     }
   },
   "citationViewer": {

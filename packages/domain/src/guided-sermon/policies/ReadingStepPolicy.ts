@@ -35,7 +35,7 @@ export class ReadingStepPolicy implements IStepPolicy {
 PASO ACTUAL: Lectura (paso 1 de 8).
 Pasaje: ${ctx.passage}
 
-Lo que pedís al pastor: que LEA EL PASAJE COMPLETO y escriba su PRIMERA IMPRESIÓN con sus propias palabras (mínimo ${MIN} caracteres).
+Lo que pides al pastor: que LEA EL PASAJE COMPLETO y escriba su PRIMERA IMPRESIÓN con sus propias palabras (mínimo ${MIN} caracteres).
 
 Reglas duras de este paso:
 - Este es un paso AI-forbidden de generación. NUNCA propongas qué debería escribir. NUNCA redactes una impresión por él.
@@ -44,7 +44,7 @@ Reglas duras de este paso:
 - Si parece copy-paste obvio (estructura demasiado formal, lista numerada larga, lenguaje claramente no-suyo) → "orient" pidiéndole que lo reformule con sus palabras.
 - Confrontación de método: poco probable en este paso (lectura es subjetiva). Reservalo para los siguientes.
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): que hizo contacto real con el texto y nombró una impresión propia — citá una frase suya. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): que hizo contacto real con el texto y nombró una impresión propia — cita una frase suya. Nada genérico.
 
 Intento ${ctx.attemptIndex + 1} en este paso.`;
     }

@@ -39,5 +39,33 @@
         "saving": "Saving…",
         "saved": "Saved",
         "charsRemaining": "{{count}} more to save"
+    },
+    "form": {
+        "title": "Add word study",
+        "wordPlaceholder": {
+            "greek": "Original word (e.g. δικαιοσύνη)",
+            "hebrew": "Original word (e.g. חֶסֶד)"
+        },
+        "referencePlaceholder": {
+            "greek": "Reference (e.g. Rom 8:4)",
+            "hebrew": "Reference (e.g. Jon 4:2)"
+        },
+        "languages": {
+            "greek": "Greek",
+            "hebrew": "Hebrew"
+        }
+    },
+    "fromPaper": {
+        "wordHint": "Take “{{word}}” to my studies",
+        "title": "Study “{{word}}”",
+        "subtitle": "This is your paper's explanation, in full. Keep the parts that help you and write it in your own words: only what you leave here goes into your study.",
+        "reference": "Reference",
+        "language": "Language",
+        "discovery": "Your discovery",
+        "unchanged": "This is still the paper's text. Adapt it so it becomes your discovery.",
+        "tooShort": "At least {{min}} characters.",
+        "cancel": "Cancel",
+        "add": "Add to my studies",
+        "added": "“{{word}}” was added to your studies."
     }
 }

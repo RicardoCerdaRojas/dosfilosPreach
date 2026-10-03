@@ -95,6 +95,28 @@ export function CreditsPage() {
                     </li>
                 </ul>
 
+                <p>
+                    Para encontrar en los léxicos las páginas de cada palabra hebrea del pasaje,
+                    se usa la tabla de lemas del diccionario de Strong preparada por el
+                    <strong> Open Scriptures Hebrew Bible Project</strong>:
+                </p>
+                <ul>
+                    <li>
+                        <a
+                            href="https://github.com/openscriptures/HebrewLexicon"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1"
+                        >
+                            openscriptures/HebrewLexicon en GitHub <ExternalLink className="h-3 w-3" />
+                        </a>
+                    </li>
+                    <li>
+                        Licencia: Creative Commons Attribution 4.0 International (CC BY 4.0). El
+                        texto del diccionario de Strong es de dominio público.
+                    </li>
+                </ul>
+
                 <h2>Modelos de IA</h2>
                 <p>
                     El análisis exegético y la conversión a unidades predicables usa modelos

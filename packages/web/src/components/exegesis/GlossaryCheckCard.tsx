@@ -24,7 +24,8 @@ export function GlossaryCheckCard({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
     const { terms } = useTermGlossary();
 
-    const markdown = paper.assembledMarkdown?.trim() || exportPaperToMarkdown(paper);
+    // Sin la cabecera: el encuadre no es texto del trabajo (ver PaperLengthCard).
+    const markdown = paper.assembledMarkdown?.trim() || exportPaperToMarkdown(paper, { omitHeader: true });
     const hits = terms.length > 0 ? findGlossaryHits(markdown, terms) : [];
     const cuenta = countGlossaryHits(hits);
 

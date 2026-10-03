@@ -40,25 +40,25 @@ PASO ACTUAL: Contexto y Género (paso 2 de 8).
 Pasaje: ${ctx.passage}
 ${ctx.genre ? `Género identificado por el sistema: ${ctx.genre}` : 'Género: aún por confirmar con el pastor.'}
 
-Lo que pedís al pastor: que escriba LA IMPLICANCIA INTERPRETATIVA del género para su lectura del pasaje (mínimo ${MIN} caracteres). Ej. "es Evangelio → narración teológica, leo buscando lo que afirma de Jesús" (no para copiar — solo para que entiendas el espíritu).
+Lo que pides al pastor: que escriba LA IMPLICANCIA INTERPRETATIVA del género para su lectura del pasaje (mínimo ${MIN} caracteres). Ej. "es Evangelio → narración teológica, leo buscando lo que afirma de Jesús" (no para copiar — solo para que entiendas el espíritu).
 
 Confrontación de método ALTA prioridad en este paso:
-- Si el pastor escribe algo que asume un GÉNERO DISTINTO al identificado (ej. trata un Evangelio como profecía apocalíptica con "todo se cumplirá") → CONFRONTÁ con "kind: confront", errorLabel "genre-mismatch", nombrale el género real + preguntale cómo cambia su regla de lectura.
-- Si el género no fue confirmado todavía y el pastor escribe la implicancia → aceptá si tiene sentido para el género real.
+- Si el pastor escribe algo que asume un GÉNERO DISTINTO al identificado (ej. trata un Evangelio como profecía apocalíptica con "todo se cumplirá") → CONFRONTA con "kind: confront", errorLabel "genre-mismatch", nómbrale el género real + pregúntale cómo cambia su regla de lectura.
+- Si el género no fue confirmado todavía y el pastor escribe la implicancia → acepta si tiene sentido para el género real.
 - Si lo que escribió es muy corto (< ${MIN}) → "orient" pidiendo que profundice.
 - Si es satisfactorio → "accepted" con pastorTextToPersist = su mensaje verbatim (sin tu redacción).
 
 Trabajo previo del pastor:
 ${priorStepsBlock(ctx)}
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): que conectó el género con una regla de lectura coherente — citá cómo cambia su forma de leer el pasaje. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): que conectó el género con una regla de lectura coherente — cita cómo cambia su forma de leer el pasaje. Nada genérico.
 ${buildInformationalFeatureNudge(
             ctx,
             'contextGenre',
             'named-entity',
             'DATO DEL PERFIL — personas/lugares que piden trasfondo:',
             (f) => (f.typeKey === 'named-entity' ? `- ${f.name} (${f.verseRef})${f.note ? `: ${f.note}` : ''}` : ''),
-            'Si el pastor no los ubica, recordale consultar su trasfondo histórico-cultural; él escribe qué aportan.',
+            'Si el pastor no los ubica, recuérdale consultar su trasfondo histórico-cultural; él escribe qué aportan.',
         )}
 Intento ${ctx.attemptIndex + 1} en este paso.`;
     }
@@ -95,7 +95,7 @@ Intento ${ctx.attemptIndex + 1} en este paso.`;
 
     detectMethodError(pastorMessage: string, ctx: TurnContext): MethodErrorReport | null {
         // Delega al catálogo compartido: la misma vara la usa el wizard. Vivía
-        // acá y el wizard tenía la suya; dos copias de una regla derivan.
+        // aquí y el wizard tenía la suya; dos copias de una regla derivan.
         return detectMethodErrorForStep(this.stepKey, pastorMessage, { genre: ctx.genre });
     }
 

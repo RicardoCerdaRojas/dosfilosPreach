@@ -74,7 +74,7 @@ export const GENRE_SERMON_STRUCTURE: Record<LiteraryGenre, GenreSermonStructure 
             'Desglosa el argumento cláusula por cláusula siguiendo los conectores lógicos. Máximo peso a la explicación exegética gramatical.',
         proposicion: {
             sustantivo: 'plural',
-            nota: 'El género es intrínsecamente proposicional (Terry, Romanos 1:16 como tema del que cuelga todo). Verdades / razones / advertencias / exhortaciones, según lo que hace el argumento. El elemento 8 (armonía puntos↔texto) muerde fuerte acá porque el argumento es explícito.',
+            nota: 'El género es intrínsecamente proposicional (Terry, Romanos 1:16 como tema del que cuelga todo). Verdades / razones / advertencias / exhortaciones, según lo que hace el argumento. El elemento 8 (armonía puntos↔texto) muerde fuerte aquí porque el argumento es explícito.',
         },
         fuente: 'Redacción v2 §6.1 (Zuck, Terry)',
     },

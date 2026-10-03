@@ -1,10 +1,11 @@
 import {
     computeExtractionFingerprint,
     formatPassageReference,
+    hasCuratedScope,
+    sourceForResource,
     type ExegeticalPaper,
     type IExcerptExtractor,
     type IExegeticalPaperRepository,
-    type ProjectSource,
     type ProjectSourceExcerpt,
     type SourceRole,
     type SourceType,
@@ -84,8 +85,8 @@ export interface ExtractExcerptsForPaperOutput {
  *
  * Idempotency:
  *   Re-running with the same `libraryResourceId` REPLACES the
- *   existing `ProjectSource` for that resource (matched by
- *   `sourceLibraryResourceId === libraryResourceId`). This is the
+ *   existing `ProjectSource` for that resource (matched by backref OR
+ *   `corpusId`, see `sourceForResource`). This is the
  *   "I edited my brief and want fresh excerpts" workflow. Sources
  *   not in the current selection are NOT touched (other excerpted
  *   sources stay as-is, full-document sources stay as-is).
@@ -137,17 +138,10 @@ export class ExtractExcerptsForPaperUseCase {
         });
 
         // Idempotency: for each selection, find any existing source
-        // pointing at the same library resource and replace it. The
-        // identity is `sourceLibraryResourceId === libraryResourceId`
-        // — we don't match by displayLabel or citationKey because
-        // those are user-editable.
+        // pointing at the same library resource and replace it. Se mira el
+        // backref Y el `corpusId` (`sourceForResource`): mirando sólo el
+        // backref, una fuente adjuntada por la ruta vieja se duplicaba.
         const sourceIdsByLibraryResource: Record<string, string> = {};
-        const existingByLibraryResource = new Map<string, ProjectSource>();
-        for (const source of paper.sources) {
-            if (source.sourceLibraryResourceId) {
-                existingByLibraryResource.set(source.sourceLibraryResourceId, source);
-            }
-        }
 
         // Stale tracking: every source extracted in this run carries
         // the same fingerprint of (passage + brief). The UI uses it to
@@ -161,7 +155,7 @@ export class ExtractExcerptsForPaperUseCase {
 
         for (const selection of input.selections) {
             const fresh = extraction.excerptsByResource[selection.libraryResourceId] ?? [];
-            const existing = existingByLibraryResource.get(selection.libraryResourceId);
+            const existing = sourceForResource(paper.sources, selection.libraryResourceId);
             // Cómo se eligieron ESTOS fragmentos. Se persiste por fuente
             // porque una misma extracción mezcla los dos caminos según la
             // calidad de extracción de cada documento.
@@ -200,6 +194,12 @@ export class ExtractExcerptsForPaperUseCase {
                         excerptSelectionMode: selectionMode,
                         extractedAt,
                         extractionFingerprint: fingerprint,
+                        // La última acción gana. Si la fuente tenía páginas
+                        // elegidas y el usuario extrae, manda la extracción:
+                        // dejar la receta mezclaba las dos cosas (Burt y
+                        // Sassom en Jonás 4:5-11, con receta Y 50/60
+                        // fragmentos) y el análisis seguía la receta.
+                        ...(hasCuratedScope(existing) ? { excerptRecipe: null } : {}),
                     },
                 );
                 sourceIdsByLibraryResource[selection.libraryResourceId] = existing.id;

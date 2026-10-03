@@ -188,6 +188,7 @@ function deserialize(id: string, data: DocumentData): UserRubric {
         displayName: data.displayName ?? '',
         isDefault: !!data.isDefault,
         rubric: {
+            preset: inner.preset ?? null,
             provenance: inner.provenance ?? 'system-default',
             description: inner.description ?? null,
             expectedLength: inner.expectedLength ?? null,

@@ -180,7 +180,9 @@ export class ComposeConclusionFromAnalysesUseCase {
                     : `CRÍTICO: tu salida anterior se saltó las fuentes asignadas [${missing.join(', ')}]. DEBES citar cada una al menos una vez en esta conclusión. Usa el contenido de la fuente provisto en el registro para anclar la cita. NO sustituyas por otra fuente.`;
                 const retryInput: ComposeConclusionInput = {
                     ...composerInput,
-                    regenerationHint: retryHint,
+                    // Se SUMA a la indicación del pastor: reemplazarla borraba
+                    // lo que él había pedido justo en el reintento.
+                    regenerationHint: [input.regenerationHint?.trim(), retryHint].filter(Boolean).join('\n\n'),
                 };
                 try {
                     const retryResult = await this.composer.composeConclusion(retryInput);

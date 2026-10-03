@@ -132,7 +132,7 @@
     },
     "extraction": {
       "missingScript": "Sin {{script}}",
-      "missingScriptHint": "La extracción no recuperó texto en {{script}}. Esta obra lo necesita para poder citarse: revisá el resultado o volvé a procesarla en modo Estándar, que lee las páginas como imagen.",
+      "missingScriptHint": "La extracción no recuperó texto en {{script}}. Esta obra lo necesita para poder citarse: revisa el resultado o vuelve a procesarla en modo Estándar, que lee las páginas como imagen.",
       "script": {
         "hebrew": "hebreo",
         "greek": "griego"
@@ -380,7 +380,7 @@
     "reextractSuccess": "Empezamos a leer las páginas como imagen. Un libro largo tarda un rato; el avance se ve en la tarjeta.",
     "reextractNoBalance": "No te alcanzan las páginas estándar para volver a extraer este documento.",
     "reextractDenied": "Este recurso no es tuyo.",
-    "reextractError": "No se pudo volver a extraer. Revisá que el archivo siga disponible."
+    "reextractError": "No se pudo volver a extraer. Revisa que el archivo siga disponible."
   },
   "citedResourceMissing": "La fuente que citaste ya no está en tu biblioteca. Puede que la hayas eliminado después de preparar ese sermón.",
   "citedResourceDismiss": "Entendido",
@@ -426,8 +426,8 @@
     "calibrate": "Calibrar numeración",
     "uncalibrated": "Sin calibrar",
     "uncalibratedHint": "Las citas de este recurso van a decir «hoja N» hasta que confirmes su numeración.",
-    "pageIntro": "Andá mirando cada hoja y decinos qué número lleva impreso, normalmente al pie. Con eso las citas de este libro pueden decir «p. 28» en vez de «hoja 32».",
-    "alreadyConfirmed": "Ya confirmaste la numeración de este libro. Podés corregirla.",
+    "pageIntro": "Ve mirando cada hoja y dinos qué número lleva impreso, normalmente al pie. Con eso las citas de este libro pueden decir «p. 28» en vez de «hoja 32».",
+    "alreadyConfirmed": "Ya confirmaste la numeración de este libro. Puedes corregirla.",
     "printedQuestion": "¿Qué número tiene impreso la hoja {{sheet}}?",
     "lookForFolio": "El folio suele estar al pie, a veces en el encabezado. Puede ser arábigo o romano; escríbelo tal como aparece. Si esta hoja no lo muestra, mira la siguiente en vez de marcar que no tiene número.",
     "unnumberedHint": "Marca esto sólo si la página no tiene ningún número impreso, como una lámina o una hoja de cortesía. Si tiene número romano, escríbelo: «ccxxii» es una página tan citable como la 222.",
@@ -443,8 +443,8 @@
     "printedRange": "pp. {{from}}–{{to}}",
     "frontMatter": "las primeras {{count}} hojas caen en las preliminares",
     "goToStep": "Ir al paso {{step}}, hoja {{sheet}}",
-    "missingSteps_one": "Falta responder la hoja {{sheets}}. Escribí su número impreso o marcá que no tiene.",
-    "missingSteps_other": "Faltan responder las hojas {{sheets}}. Escribí su número impreso o marcá que no tienen.",
+    "missingSteps_one": "Falta responder la hoja {{sheets}}. Escribe su número impreso o marca que no tiene.",
+    "missingSteps_other": "Faltan responder las hojas {{sheets}}. Escribe su número impreso o marca que no tienen.",
     "nothingToSave": "No hay ninguna hoja respondida todavía."
   },
   "calibrationCallout": {

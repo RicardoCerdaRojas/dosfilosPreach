@@ -18,7 +18,7 @@
   },
   "activation": {
     "title": "Construye tu sermón paso a paso",
-    "description": "Te voy a guiar por los 8 pasos del estudio. Vos escribís cada paso con tus palabras; yo aporto datos y preguntas, y confronto si detecto error de método. Nunca escribo tu respuesta.",
+    "description": "Te voy a guiar por los 8 pasos del estudio. Tú escribes cada paso con tus palabras; yo aporto datos y preguntas, y confronto si detecto error de método. Nunca escribo tu respuesta.",
     "passageLabel": "Pasaje a estudiar",
     "passagePlaceholder": "Ej. Juan 1:1",
     "passageHint": "Pasaje completo (libro + capítulo + verso). El resto del estudio se construye sobre este.",
@@ -29,11 +29,11 @@
   },
   "cta": {
     "startGuided": "Construir sermón guiado",
-    "startGuidedDescription": "Construí tu sermón paso a paso con un agente socrático que orienta y confronta."
+    "startGuidedDescription": "Construye tu sermón paso a paso con un agente socrático que orienta y confronta."
   },
   "error": {
-    "activate": "No se pudo activar la guía. Intentá de nuevo.",
-    "runTurn": "No se pudo procesar tu respuesta. Intentá de nuevo."
+    "activate": "No se pudo activar la guía. Inténtalo de nuevo.",
+    "runTurn": "No se pudo procesar tu respuesta. Inténtalo de nuevo."
   },
   "coverage": {
     "closeNudge": "Cerraste el estudio, pero hay temas del pasaje que no abordaste: {{items}}. Puedes volver a tratarlos."

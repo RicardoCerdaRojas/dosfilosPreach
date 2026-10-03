@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, ListTree, Plus } from 'lucide-react';
-import { printedLabelIn, type PageNumbering, type SectionProposal } from '@dosfilos/domain';
+import { printedLabelForSheet, type PageNumbering, type SectionProposal } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 
 interface Props {
     proposals: ReadonlyArray<SectionProposal>;
     numbering: PageNumbering | null;
+    /** Respaldo cuando el recurso no tiene numeración (`printedLabelForSheet`). */
+    printedPageOffset: number | null;
     selected: ReadonlySet<number>;
     onAdd: (sheet: number) => void;
 }
@@ -28,7 +30,7 @@ interface Props {
  * Tampoco se descarta nada. Un grupo son diez o cuarenta filas de índice
  * —revisables de un vistazo— contra las 465 del libro entero.
  */
-export function GrammarSectionsPanel({ proposals, numbering, selected, onAdd }: Props) {
+export function GrammarSectionsPanel({ proposals, numbering, printedPageOffset, selected, onAdd }: Props) {
     const { t } = useTranslation('exegesis');
     const [abierto, setAbierto] = useState<string | null>(null);
 
@@ -77,7 +79,7 @@ export function GrammarSectionsPanel({ proposals, numbering, selected, onAdd }: 
                             {desplegado && (
                                 <ul className="ml-4 mt-0.5 space-y-0.5">
                                     {items.map(p => {
-                                        const printed = numbering ? printedLabelIn(numbering, p.sheet) : null;
+                                        const printed = printedLabelForSheet(p.sheet, numbering, printedPageOffset);
                                         const ya = selected.has(p.sheet);
                                         return (
                                             <li key={p.section} className="flex items-start gap-1.5">
@@ -89,7 +91,7 @@ export function GrammarSectionsPanel({ proposals, numbering, selected, onAdd }: 
                                                 >
                                                     {!ya && <Plus className="h-2.5 w-2.5" />}
                                                     {printed !== null
-                                                        ? t('paperSetup.subSteps.corpus.grammarSections.page', { printed })
+                                                        ? t('paperSetup.subSteps.corpus.grammarSections.page', { printed, sheet: p.sheet })
                                                         : t('paperSetup.subSteps.corpus.grammarSections.sheet', { sheet: p.sheet })}
                                                 </button>
                                                 <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground" title={p.section}>

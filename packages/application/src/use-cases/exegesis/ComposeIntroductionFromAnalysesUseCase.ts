@@ -180,7 +180,9 @@ export class ComposeIntroductionFromAnalysesUseCase {
                 try {
                     const retryResult = await this.composer.composeIntroduction({
                         ...composerInput,
-                        regenerationHint: retryHint,
+                        // Se SUMA a la indicación del pastor: reemplazarla borraba
+                        // lo que él había pedido justo en el reintento.
+                        regenerationHint: [input.regenerationHint?.trim(), retryHint].filter(Boolean).join('\n\n'),
                     });
                     const stillMissing = pinnedSourceKeys.filter(
                         key => !retryResult.markdown.toLowerCase().includes(key.toLowerCase()),

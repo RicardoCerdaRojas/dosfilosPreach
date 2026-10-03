@@ -1,3 +1,4 @@
+import { expectationJustification } from './rubricLabel';
 import {
     useMemo,
     useState } from 'react';
@@ -109,14 +110,9 @@ export function StepKindEmphasisCard({ paper, kind, icon }: StepKindEmphasisCard
     //      render the literal text as authored. Extracted rubrics
     //      come back from the LLM in the user's chosen language;
     //      from-template / user-edited reflect the author's wording.
-    const justification = (() => {
-        if (!expectation) return undefined;
-        if (expectation.justificationKey) return t(expectation.justificationKey);
-        if (paper.rubric?.provenance === 'system-default') {
-            return t(`paperSetup.subSteps.plan.rubricJustification.${kind}`);
-        }
-        return expectation.justification;
-    })();
+    const justification = expectation && paper.rubric
+        ? expectationJustification(paper.rubric, kind, expectation, t)
+        : expectation?.justification;
 
     const handleSave = async () => {
         const nextEmphasis: StepEmphasis = {

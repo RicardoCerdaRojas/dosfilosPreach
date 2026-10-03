@@ -1,4 +1,5 @@
 import type { WordStudyLanguage } from '../entities/PastoralWordAnalysis';
+import { parsePassageReference } from './canon/passage-reference';
 
 /**
  * Heuristic: which original language carries the canonical text of a
@@ -53,3 +54,17 @@ const NT_BOOK_PREFIXES = [
     'judas', 'jud',
     'apocalipsis', 'apoc', 'ap', 'rev',
 ];
+
+/**
+ * La lengua original de un pasaje, por el testamento de su libro.
+ *
+ * El estudio de palabras arrancaba siempre en «Griego» y en Jonás había que
+ * cambiarlo a mano en cada palabra (#29 del ejercicio). El canon sabe el
+ * testamento de cada libro; la heurística por prefijos queda de respaldo para
+ * un pasaje que no se pueda leer.
+ */
+export function languageForPassage(passage: string): WordStudyLanguage {
+    const parsed = parsePassageReference(passage);
+    if (parsed.ok) return parsed.book.testament === 'NT' ? 'greek' : 'hebrew';
+    return inferLanguageFromBook(passage.replace(/\s*\d+[:.].*$/, ''));
+}

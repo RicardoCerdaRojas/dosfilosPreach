@@ -136,7 +136,8 @@
           "bibliography": "Bibliography",
           "quotations": "Quotations",
           "transliteration": "Transliteration",
-          "additional": "Additional rules"
+          "additional": "Additional rules",
+          "cover": "Title page"
         },
         "validation": {
           "empty-template": "Template can't be empty.",
@@ -145,7 +146,8 @@
           "empty-quote-mark": "Quote marks can't be empty.",
           "duplicate-additional-rule": "This rule is duplicated.",
           "empty-additional-rule": "This rule is empty.",
-          "transliteration-empty-scheme": "Provide a name for the transliteration scheme."
+          "transliteration-empty-scheme": "Provide a name for the transliteration scheme.",
+          "cover-blank-lines-out-of-range": "Between 0 and 20 lines."
         },
         "footnotes": {
           "intro": "Templates the post-processor uses to reformat citations the LLM emits. Placeholders get substituted with each source's data at render time.",
@@ -204,6 +206,21 @@
           "placeholder": "E.g. \"Use serial commas in lists of three items.\"",
           "add": "Add rule",
           "remove": "Remove rule"
+        },
+        "cover": {
+          "intro": "How the title page is laid out when downloading the Word file: blank lines between blocks, capitals and the word before the author. The data (school, title, author) is written on each paper's title page.",
+          "enabledLabel": "This guide defines the title page",
+          "enabledHint": "Off: the TMS model is used.",
+          "layout": {
+            "beforeInstitution": "Before the school",
+            "afterInstitution": "After the school",
+            "afterTitle": "After the title",
+            "afterAuthor": "After the author"
+          },
+          "uppercase": "All capitals",
+          "byLine": "Before the author",
+          "byLineHint": "“BY”, “SUBMITTED BY”… Empty: no such line.",
+          "usingTms": "TMS model: {{before}} · school · {{institution}} · title · {{title}} · BY / author · {{author}} · place and date."
         }
       }
     }
@@ -438,7 +455,33 @@
       "button": "Brief",
       "missing": "missing",
       "questionCount_one": "{{count}} question",
-      "questionCount_other": "{{count}} questions"
+      "questionCount_other": "{{count}} questions",
+      "genre": {
+        "label": "Passage genre",
+        "narrative": "Narrative",
+        "poetry": "Poetry",
+        "prophecy": "Prophecy",
+        "wisdom": "Wisdom",
+        "law": "Law",
+        "gospel": "Gospel",
+        "parable": "Parable",
+        "epistle": "Epistle",
+        "apocalypse": "Apocalyptic",
+        "mixed": "General"
+      },
+      "suggest": {
+        "cta": "Suggest questions",
+        "intro": "Candidates the assistant found in the text. Check the ones that help: they go into the draft so you can edit them.",
+        "none": "No candidate passed the check against the text.",
+        "dropped_one": "1 question dropped: it cited a form that is not in the passage ({{forms}}).",
+        "dropped_other": "{{count}} questions dropped: they cited forms that are not in the passage ({{forms}}).",
+        "close": "Close",
+        "add_one": "Add 1 to the framing",
+        "add_other": "Add {{count}} to the framing",
+        "added_one": "1 question added to the draft.",
+        "added_other": "{{count}} questions added to the draft.",
+        "error": "Could not suggest questions. Try again."
+      }
     },
     "notFound": {
       "title": "Paper not found",
@@ -449,7 +492,7 @@
       "rubric": {
         "tab": "Rubric",
         "heading": "Paper rubric",
-        "description": "What THIS assignment asks for: length, citation form, cover and bibliography, and which sources it requires. Upload it from the syllabus or use the house default.",
+        "description": "What THIS assignment asks for: length, citation form, cover and bibliography, and which sources it requires. Change where it comes from with the «Rubric» button above.",
         "loading": "Loading rubric...",
         "provenance": {
           "extracted-from-document": "Extracted from document",
@@ -497,6 +540,10 @@
             "extracting": "Extracting text from document…",
             "analyzing": "Analyzing rubric…",
             "encoding": "Preparing image…"
+          },
+          "languageName": {
+            "es": "Español",
+            "en": "English"
           }
         },
         "metadata": {
@@ -683,7 +730,14 @@
           },
           "change": "Change where the rubric comes from",
           "hide": "Hide the options"
-        }
+        },
+        "preset": {
+          "academic": "Academic paper",
+          "preaching": "Study for preaching",
+          "strategy-only": "Strategy only"
+        },
+        "presetEdited": "{{preset}} · edited",
+        "presetSystem": "{{preset}} · system"
       },
       "manifest": {
         "tab": "Style guide",
@@ -772,6 +826,9 @@
           "usingCopy": "This paper uses the copy taken on {{date}}. Editing the guide later does not affect it.",
           "guideChanged": "The guide changed since it was attached. This paper keeps its copy; you can pull the current version if you want.",
           "refresh": "Update to the current version"
+        },
+        "cover": {
+          "own": "This guide: {{before}} · school · {{institution}} · title · {{title}} · “{{byLine}}” / author · {{author}} · place and date."
         }
       },
       "corpus": {
@@ -887,7 +944,7 @@
             "rangeCount_other": "{{count}} ranges",
             "empty": "Nothing chosen yet. Accept the suggestion, or browse the document and add sheets.",
             "sheetOne": "sheet {{sheet}}",
-            "sheetRange": "sheets {{start}}–{{end}}",
+            "sheetRange": "sheets {{start}}–{{end}} ({{count}})",
             "withPrinted": "{{base}} · printed {{printed}}",
             "remove": "Remove {{range}}",
             "budget": "Corpus per verse",
@@ -905,10 +962,21 @@
             "confirm_one": "Add {{count}} sheet to the paper",
             "confirm_other": "Add {{count}} sheets to the paper",
             "sectionsCovered": "{{section}} · covers {{count}} sections",
-            "saved": "Saved · {{count}} sheets in the paper",
             "perVerse": "{{chars}} characters reach each verse. The paper's chosen sheets add up to {{admitted}}; each verse consults what is about it, up to {{cap}}.",
-            "otherExcerpts": "Excerpts from other sources travel whole: {{chars}} characters."
-          }
+            "otherExcerpts": "Excerpts from other sources travel whole: {{chars}} characters.",
+            "saved_one": "Saved · {{count}} sheet in the paper",
+            "saved_other": "Saved · {{count}} sheets in the paper",
+            "resave": "Save again",
+            "update_one": "Save changes · {{count}} sheet",
+            "update_other": "Save changes · {{count}} sheets",
+            "clear": "Clear",
+            "cleared_one": "1 range removed.",
+            "cleared_other": "{{count}} ranges removed.",
+            "undo": "Undo",
+            "replaced_one": "The selection is now 1 sheet.",
+            "replaced_other": "The selection is now {{count}} sheets."
+          },
+          "numberingLegend": "s. = PDF sheet (the left column) · p. = the book's printed page"
         },
         "list": {
           "title": "Attached sources",
@@ -1072,7 +1140,9 @@
           "roleByType": "By type: {{role}}",
           "selectedTitle_one": "You are adding {{count}} source",
           "selectedTitle_other": "You are adding {{count}} sources",
-          "unselect": "Remove “{{label}}” from the selection"
+          "unselect": "Remove “{{label}}” from the selection",
+          "hasPages": "Has chosen pages",
+          "willReplacePages": "Extracting replaces its chosen pages"
         },
         "excerpts": {
           "expand": "Show curated excerpts",
@@ -1185,19 +1255,29 @@
           "yaPresentes_other": "{{count}} of them are already in this paper.",
           "cta_one": "Bring 1 source",
           "cta_other": "Bring {{count}} sources",
-          "nota": "They arrive whole: excerpts are selected against this passage, not the previous one.",
+          "nota": "Pages from the previous passage do not travel: pages for this passage are proposed for each commentary. Lexicons and grammars are chosen later in the selector.",
           "toast_one": "Added 1 source from the series.",
           "toast_other": "Added {{count}} sources from the series.",
-          "error": "Couldn't bring the sources. Try again."
+          "error": "Couldn't bring the sources. Try again.",
+          "toastConPaginas_one": "1 with pages proposed for this passage.",
+          "toastConPaginas_other": "{{count}} with pages proposed for this passage.",
+          "toastPorLema_one": "1 lexicon or grammar to choose in the selector.",
+          "toastPorLema_other": "{{count}} lexicons or grammars to choose in the selector.",
+          "toastSinPropuesta_one": "1 without a proposal: choose its pages.",
+          "toastSinPropuesta_other": "{{count}} without a proposal: choose their pages.",
+          "proponiendo": "Proposing pages {{hechas}}/{{total}}…"
         },
         "lemmas": {
           "title": "Pages by lemma",
           "addAll": "Add the top {{count}}",
-          "empty": "No lemmas yet: they come from the verses' canonical analysis.",
+          "empty": "No lemmas yet: they come from the passage morphology and the verse analysis.",
           "notFound": "does not appear in this book",
-          "page": "p. {{printed}}",
-          "sheet": "sheet {{sheet}}",
-          "hint": "The first sheet is the one that names the lemma most often, which is usually its entry. Hover to see the line."
+          "page": "s. {{sheet}} · p. {{printed}}",
+          "sheet": "s. {{sheet}}",
+          "hint": "The first sheet is the one that names the lemma most often, which is usually its entry. Hover to see the line.",
+          "keepOnly_one": "Keep only this sheet",
+          "keepOnly_other": "Keep only these {{count}} sheets",
+          "excess": "This lexicon admits {{selected}} sheets; its lemmas' entries are on {{entries}}."
         },
         "courseBib": {
           "title": "Course bibliography",
@@ -1218,8 +1298,8 @@
           "title": "Pages naming the passage ({{count}})",
           "addAll": "Add all {{count}}",
           "empty": "This book never names the passage. That is normal in a commentary: its whole page already is the passage, and those pages come in through the other path.",
-          "page": "p. {{printed}}",
-          "sheet": "sheet {{sheet}}",
+          "page": "s. {{sheet}} · p. {{printed}}",
+          "sheet": "s. {{sheet}}",
           "verses": "v. {{verses}}",
           "hint": "A grammar or a lexicon is not organised by passage, but it cites the verse as an example. These are the pages where it names it; you decide which ones come in."
         },
@@ -1227,8 +1307,8 @@
           "title": "Index sections that answer the brief ({{count}})",
           "count": "· {{count}} sections",
           "corroborated": "names the Greek form",
-          "page": "p. {{printed}}",
-          "sheet": "sheet {{sheet}}",
+          "page": "s. {{sheet}} · p. {{printed}}",
+          "sheet": "s. {{sheet}}",
           "hint": "A grammar is indexed by category, not by passage. These are the sections naming what your brief asks about; the list follows the book order and is not trimmed."
         },
         "sourceMemory": {
@@ -1246,9 +1326,36 @@
           "renameWarning": "Verses already analyzed cite “{{key}}”: with another key those citations lose their source until re-analyzed."
         },
         "sinPaginas": {
-          "body": "No pages for this passage: the analysis would read the start of the book (cover, introduction), not what it says about these verses. Choose the pages or extract excerpts before analyzing.",
+          "body": "No pages for this passage: the analysis searches the whole book for what bears on each verse. Choosing the passage pages is more precise and shows what goes in.",
           "cta": "Choose pages"
-        }
+        },
+        "suggestion": {
+          "cta_one": "Suggested selection · 1 sheet",
+          "cta_other": "Suggested selection · {{count}} sheets",
+          "title": "Suggested selection for this passage",
+          "body": "One sheet per word or category in the passage, the one that treats it most. Words rare in the Bible and words the passage repeats come first; everyday verbs come last. You decide what goes in.",
+          "reason": {
+            "rare_one": "appears once in {{corpus}}",
+            "rare_other": "appears {{n}} times in {{corpus}}",
+            "repeated_one": "once in the passage",
+            "repeated_other": "{{count}} times in the passage",
+            "common": "common: {{n}} times in {{corpus}}",
+            "section": "section “{{title}}”"
+          },
+          "corpus": {
+            "OT": "the Old Testament",
+            "NT": "the New Testament",
+            "bible": "the Bible"
+          },
+          "leftOut_one": "Left out by budget: {{list}}.",
+          "leftOut_other": "Left out by budget ({{count}}): {{list}}.",
+          "notFound_one": "No entry in this book: {{list}}.",
+          "notFound_other": "No entry in this book ({{count}}): {{list}}.",
+          "cancel": "Close",
+          "add": "Add to my selection",
+          "replace": "Replace my selection"
+        },
+        "citaPorSeccion": "This book has no printed pages: its citations go by section (§), which can be found in the copy."
       },
       "corpus-plan": {
         "tab": "Usage plan",
@@ -1348,6 +1455,11 @@
             "technical": "Technical",
             "unrolled": "No role"
           }
+        },
+        "rubricJustificationPreaching": {
+          "introduction": "The introduction places the pericope in the book's argument: where the listener stands when this scene begins and what is at stake in it.",
+          "verse": "The expository commentary anchors because it follows the flow of the argument, which is what gets preached; the critical one contrasts where there are rival readings; technical sources come in where there is a crux to decide, not in every verse.",
+          "conclusion": "The conclusion states the author's intent in one sentence and what that intent does to the listener. It is not a summary of findings: it is the bridge."
         }
       }
     },
@@ -1436,6 +1548,10 @@
         "tamano": "The file is over 250 MB, the library's maximum.",
         "consentimiento": "The upload terms still need to be accepted."
       }
+    },
+    "rubricButton": {
+      "label": "Rubric",
+      "back": "Back to the options"
     }
   },
   "setup": {
@@ -1623,7 +1739,10 @@
         "syntax": "No syntactic analysis for this verse yet.",
         "lexis": "No lexical analyses for this verse yet.",
         "commentators": "No commentator engagement for this verse yet.",
-        "cruxes": "No contested decisions in this verse."
+        "cruxes": "No translation decisions recorded for this verse. One is recorded only when the corpus texts bring witnesses for different options, with a verbatim quote on each side: if the corpus cannot sustain it, this stays empty even when there is a crux."
+      },
+      "status": {
+        "noVariants": "reviewed · no variants"
       }
     },
     "compose": {
@@ -2070,7 +2189,7 @@
         "unanswered_other": "⚠ Questions {{numbers}} of the brief are not answered by any selected section."
       },
       "answersQuestion": "answers question {{numbers}}",
-      "verseBudget": "~{{count}} words",
+      "verseBudget": "target ~{{count}} words",
       "regenerate": {
         "title": "Regenerate {{step}}",
         "description": "This section is written again from the accepted analyses.",
@@ -2101,7 +2220,9 @@
       "title": "Project corpus",
       "none": "No sources yet. Add them so the orchestrator can interact with them.",
       "addCta": "Edit in setup",
-      "remove": "Remove source"
+      "remove": "Remove source",
+      "seriesOffer_one": "1 source in other papers of this series · Bring it",
+      "seriesOffer_other": "{{count}} sources in other papers of this series · Bring them"
     },
     "derived": {
       "title": "Derived artifacts",
@@ -2205,7 +2326,9 @@
         "title": "This is not what will be downloaded.",
         "body": "The file carries {{delivered}} words; the screen shows {{onScreen}}. Regenerate the assembly and accept it — only then does the file take what you see.",
         "toast": "You downloaded {{delivered}} words, and the screen shows {{onScreen}}. Regenerate the assembly, accept it, and download again."
-      }
+      },
+      "orientative": "Study for preaching: length is a guide, not a grade. The rubric suggests {{target}}.",
+      "noProse": "no prose"
     },
     "bibliography": {
       "title": "Citation data",
@@ -2265,7 +2388,28 @@
       "readNothingNew": "The book adds nothing to what you already typed.",
       "notEditable": "This source's record is not edited here: the book is not yours.",
       "incompleteToast_one": "The bibliography has 1 incomplete entry: {{sources}}. Complete it before submitting.",
-      "incompleteToast_other": "The bibliography has {{count}} incomplete entries: {{sources}}. Complete them before submitting."
+      "incompleteToast_other": "The bibliography has {{count}} incomplete entries: {{sources}}. Complete them before submitting.",
+      "bulk": {
+        "cta_one": "Read the missing title page",
+        "cta_other": "Read the title pages of the {{count}} missing",
+        "title": "Citation data from the title pages",
+        "body": "The title page and copyright page of each book missing data is read. Review what each one proposes: only what you check is saved, and what you already wrote is not touched. The record is saved on the BOOK and serves all your papers.",
+        "start": "Read the title pages",
+        "reading": "Reading {{hechas}}/{{total}}…",
+        "close": "Close",
+        "save_one": "Save 1 record",
+        "save_other": "Save {{count}} records",
+        "saved_one": "1 record saved.",
+        "saved_other": "{{count}} records saved.",
+        "saveFailed_one": "1 record saved, then the rest failed.",
+        "saveFailed_other": "{{count}} records saved, then the rest failed.",
+        "status": {
+          "nothing-new": "The title page brings nothing missing.",
+          "no-text": "The book has no extracted text yet.",
+          "error": "Could not read the title page."
+        }
+      },
+      "savedOnBook": "Saved on the book: it serves every paper that uses it."
     },
     "glossary": {
       "title": "Words I don't use",
@@ -2282,6 +2426,11 @@
       "settingsDescription": "They apply to all your papers. In each paper you'll see whether any shows up in what you're about to hand in.",
       "emptyInPaper": "Your glossary is empty.",
       "goToSettings": "Set it up in Settings"
+    },
+    "sourcesWithoutScope": {
+      "title_one": "1 source has no chosen pages or excerpts: the analysis searches the whole book. Choosing its pages is more precise.",
+      "title_other": "{{count}} sources have no chosen pages or excerpts: the analysis searches each whole book. Choosing their pages is more precise.",
+      "choose": "Choose pages of {{label}}"
     }
   },
   "citationViewer": {

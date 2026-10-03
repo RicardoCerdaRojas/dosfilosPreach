@@ -6,8 +6,8 @@ import { libraryService } from '@dosfilos/application';
 import {
     ResourcesNotIndexedError,
     SOURCE_TYPE_GROUPS,
-    deriveCitationKeyFromAuthor,
-    type SourceRole,
+    hasCuratedScope,
+    usesExtractedExcerpts,
     type ExegeticalPaper,
     type LibraryResource,
     type RankedResource,
@@ -23,7 +23,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { defaultSourceTypeFor } from './tipoAcademico';
+import { autoSelection, initialSelectionFor, resourceIdsOf, type SelectionEntry } from './extractionDefaults';
 import { RoleSelect, SelectedResourcesList } from './ExtractSelectionParts';
 import { useTranslation } from '@/i18n';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
@@ -122,25 +122,15 @@ export function ExtractFromLibraryDialog({
     // Resources already excerpted on this paper, by sourceLibraryResourceId.
     // Used to warn the user that selecting these will REPLACE their existing
     // excerpts (consistent with the use case's idempotency model).
-    const alreadyExcerptedIds = useMemo(() => {
-        const set = new Set<string>();
-        for (const source of paper.sources) {
-            if (source.mode === 'extracted-excerpts' && source.sourceLibraryResourceId) {
-                set.add(source.sourceLibraryResourceId);
-            }
-        }
-        return set;
-    }, [paper.sources]);
+    // Una fuente apunta al libro por el backref o por `corpusId` (ruta vieja).
+    const alreadyExcerptedIds = useMemo(() => resourceIdsOf(paper.sources, usesExtractedExcerpts), [paper.sources]);
     /**
-     * La clave con que arranca cada fila. Si el libro YA está en el corpus,
-     * la suya: re-extraer escribe la clave que se manda, y derivarla del
-     * autor pisaría una escrita a mano («BDF» → «Blass»), dejando los
-     * análisis que la citan sin fuente.
+     * Libros que ya tienen páginas elegidas en este trabajo. Extraer sobre
+     * ellos reemplaza las páginas (la última acción gana), así que no se
+     * preseleccionan y la fila lo dice.
      */
-    const claveInicial = (resource: LibraryResource): string => {
-        const existente = paper.sources.find(s => s.sourceLibraryResourceId === resource.id)?.citationKey;
-        return existente ?? deriveCitationKeyFromAuthor(resource.author);
-    };
+    const withPagesIds = useMemo(() => resourceIdsOf(paper.sources, hasCuratedScope), [paper.sources]);
+    const entradaInicial = (resource: LibraryResource): SelectionEntry => initialSelectionFor(resource, paper.sources);
 
     // Quick lookup of the per-resource ranking. Built once per ranking
     // change; `null` for unranked resources (those never matched any
@@ -208,7 +198,8 @@ export function ExtractFromLibraryDialog({
     useEffect(() => {
         if (autoSelectionApplied) return;
         if (ranking.isLoading) return;
-        if (ranking.ranked.length === 0) return;
+        // Un ranking vacío ya no corta: las fuentes sin alcance se
+        // preseleccionan igual.
         if (resources.length === 0) return; // wait for the library list too
         if (selections.size > 0) {
             // User clicked something while the ranking was pending —
@@ -216,28 +207,16 @@ export function ExtractFromLibraryDialog({
             setAutoSelectionApplied(true);
             return;
         }
-        const next = new Map<string, SelectionEntry>();
-        const idToResource = new Map(resources.map(r => [r.id, r]));
-        let applied = 0;
-        for (const ranked of ranking.ranked) {
-            if (applied >= AUTO_SELECT_TOP_N) break;
-            const resource = idToResource.get(ranked.resourceId);
-            if (!resource) continue;
-            // Only auto-pick indexed resources — picking a non-indexed
-            // one would just produce a ResourcesNotIndexedError when
-            // the user clicks Extract.
-            if (libraryService.getResourceIndexStatus(resource) !== 'indexed') continue;
-            next.set(resource.id, {
-                sourceType: resource.exegeticalType ?? defaultSourceTypeFor(resource),
-                displayLabel: resource.title,
-                citationKey: claveInicial(resource),
-                chosenRole: null,
-            });
-            applied++;
-        }
+        const next = autoSelection({
+            sources: paper.sources,
+            resources,
+            ranked: ranking.ranked,
+            isIndexed: r => libraryService.getResourceIndexStatus(r) === 'indexed',
+            topN: AUTO_SELECT_TOP_N,
+        });
         if (next.size > 0) setSelections(next);
         setAutoSelectionApplied(true);
-    }, [ranking.isLoading, ranking.ranked, resources, selections.size, autoSelectionApplied]);
+    }, [ranking.isLoading, ranking.ranked, resources, selections.size, autoSelectionApplied, paper.sources]);
 
     // Count cached vs uncached for the "All" chip caption — gives the
     // user a sense of how much classification investment exists.
@@ -258,18 +237,7 @@ export function ExtractFromLibraryDialog({
         if (next.has(resource.id)) {
             next.delete(resource.id);
         } else {
-            next.set(resource.id, {
-                // Pre-fill priority: cached `exegeticalType` from a
-                // previous extraction wins over the coarse-type
-                // mapping. This is the v1.5 commit 6 payoff — the
-                // user classifies BDAG once and it sticks.
-                sourceType: resource.exegeticalType ?? defaultSourceTypeFor(resource),
-                displayLabel: resource.title,
-                // La clave sale del autor del libro desde el principio: vacía,
-                // una fuente sin autor quedaba fuera de las citas sin aviso.
-                citationKey: claveInicial(resource),
-                chosenRole: null,
-            });
+            next.set(resource.id, entradaInicial(resource));
             // Clear the not-indexed error when the user changes the
             // selection — gives them a chance to retry without the
             // stale error blocking the footer.
@@ -433,6 +401,7 @@ export function ExtractFromLibraryDialog({
                                                         isSelectable={isSelectable}
                                                         isSelected={isSelected}
                                                         willReplace={willReplace}
+                                                        hasPages={withPagesIds.has(r.id)}
                                                         entry={selections.get(r.id) ?? null}
                                                         onToggle={() => toggleResource(r)}
                                                         onUpdate={(patch) => updateSelection(r.id, patch)}
@@ -486,6 +455,7 @@ export function ExtractFromLibraryDialog({
                                                     isSelectable={isSelectable}
                                                     isSelected={isSelected}
                                                     willReplace={willReplace}
+                                                    hasPages={withPagesIds.has(r.id)}
                                                     entry={selections.get(r.id) ?? null}
                                                     onToggle={() => toggleResource(r)}
                                                     onUpdate={(patch) => updateSelection(r.id, patch)}
@@ -562,13 +532,6 @@ export function ExtractFromLibraryDialog({
 
 // ── Per-resource row ────────────────────────────────────────────────────
 
-interface SelectionEntry {
-    sourceType: SourceType;
-    displayLabel: string;
-    citationKey: string;
-    /** `null`: el rol lo deduce el tipo. */
-    chosenRole: SourceRole | null;
-}
 
 /**
  * El peso académico de un libro, en una palabra.
@@ -596,6 +559,7 @@ function ResourceRow({
     isSelectable,
     isSelected,
     willReplace,
+    hasPages,
     entry,
     onToggle,
     onUpdate,
@@ -606,6 +570,8 @@ function ResourceRow({
     isSelectable: boolean;
     isSelected: boolean;
     willReplace: boolean;
+    /** El libro ya tiene páginas elegidas en este trabajo. */
+    hasPages: boolean;
     entry: SelectionEntry | null;
     onToggle: () => void;
     onUpdate: (patch: Partial<SelectionEntry>) => void;
@@ -683,6 +649,13 @@ function ResourceRow({
                         {willReplace && (
                             <span className="text-[10px] text-warning-subtle-foreground inline-flex items-center gap-0.5">
                                 · {t('paperSetup.subSteps.corpus.extract.willReplace')}
+                            </span>
+                        )}
+                        {hasPages && (
+                            <span className={`text-[10px] inline-flex items-center gap-0.5 ${isSelected ? 'text-warning-subtle-foreground' : 'text-muted-foreground italic'}`}>
+                                · {t(isSelected
+                                    ? 'paperSetup.subSteps.corpus.extract.willReplacePages'
+                                    : 'paperSetup.subSteps.corpus.extract.hasPages')}
                             </span>
                         )}
                     </div>

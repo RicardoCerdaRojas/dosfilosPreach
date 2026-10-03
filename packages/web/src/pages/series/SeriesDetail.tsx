@@ -14,6 +14,7 @@ import {
     NotebookPen,
     Pencil,
     Library,
+    Link2,
     Sparkles,
     Trash2,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AddSermonDialog } from '@/components/plan/AddSermonDialog';
 import { EditSermonDialog } from '@/components/plan/EditSermonDialog';
+import { LinkExistingSermonDialog } from './components/LinkExistingSermonDialog';
 import { ExegesisDefaultsCard } from '@/components/plan/ExegesisDefaultsCard';
 import { InlineDateEditor } from '@/components/plan/InlineDateEditor';
 import { SeriesTimelineModal } from '@/components/plan/SeriesTimelineModal';
@@ -49,6 +51,7 @@ import { toast } from 'sonner';
 import { exegesisService, seriesService } from '@dosfilos/application';
 import {
     findBooksByAlias,
+    paperDefaultsFromSeries,
     parsePassageReference,
     type ExegeticalPaperPhase,
     type PlannedSermon,
@@ -66,6 +69,7 @@ export function SeriesDetail() {
     const lang: 'es' | 'en' = i18n.language?.split('-')[0] === 'en' ? 'en' : 'es';
 
     const [editingSermon, setEditingSermon] = useState<SermonItem | null>(null);
+    const [linkingSermon, setLinkingSermon] = useState<SermonItem | null>(null);
     const [timelineOpen, setTimelineOpen] = useState(false);
     const [creatingPaperFor, setCreatingPaperFor] = useState<string | null>(null);
     const [generatingSermonFor, setGeneratingSermonFor] = useState<string | null>(null);
@@ -75,6 +79,7 @@ export function SeriesDetail() {
         sermonItems,
         loading,
         handleStartDraft,
+        handleLinkExisting,
         handleContinueEditing,
         handleUpdateSermonDate,
         handleDeleteSermon,
@@ -92,6 +97,12 @@ export function SeriesDetail() {
         }
         return map;
     }, [series]);
+
+    // Los borradores que ya ocupan una perícopa: no se ofrecen al vincular.
+    const linkedDraftIds = useMemo(
+        () => new Set((series?.metadata?.plannedSermons ?? []).map(p => p.draftId).filter((x): x is string => !!x)),
+        [series],
+    );
 
     // Paper phase per pericope. The pipeline stepper needs the actual
     // ExegeticalPaper phase (configuring / in-progress / assembled),
@@ -192,7 +203,9 @@ export function SeriesDetail() {
                 displayLanguage: lang,
                 title: planned.title,
                 assignmentBrief: planned.syntacticUnit.justification ?? null,
-                styleGuideId: null,
+                // La guía, la rúbrica y el corpus de la serie: antes este
+                // camino los ignoraba y el trabajo nacía académico.
+                ...paperDefaultsFromSeries(series.metadata?.exegesisDefaults),
                 // Stamp back-reference so sermon generation can patch
                 // this pericope's draftId without scanning all series.
                 seriesId: series.id,
@@ -370,6 +383,7 @@ export function SeriesDetail() {
                                     seriesId={series.id}
                                     onUpdateDate={(d) => handleUpdateSermonDate(item.id, d)}
                                     onStartDraft={() => handleStartDraft(item)}
+                                    onLinkExisting={() => setLinkingSermon(item)}
                                     onStartStudyFromPaper={() => planned?.paperId && handleStartStudyFromPaper(planned as PlannedSermon & { paperId: string })}
                                     onContinueEditing={() => item.draftId && handleContinueEditing(item.draftId)}
                                     onEdit={() => setEditingSermon(item)}
@@ -391,6 +405,18 @@ export function SeriesDetail() {
                     </div>
                 )}
             </section>
+
+            {linkingSermon && user && (
+                <LinkExistingSermonDialog
+                    pericopeLabel={linkingSermon.passage || linkingSermon.title}
+                    pericopePassage={linkingSermon.passage ?? ''}
+                    seriesId={series.id}
+                    userId={user.uid}
+                    linkedIds={linkedDraftIds}
+                    onLink={sermonId => handleLinkExisting(linkingSermon, sermonId)}
+                    onClose={() => setLinkingSermon(null)}
+                />
+            )}
 
             <EditSermonDialog
                 series={series}
@@ -453,6 +479,7 @@ interface SermonRowProps {
     seriesId: string;
     onUpdateDate: (d: Date | null) => Promise<void>;
     onStartDraft: () => Promise<void>;
+    onLinkExisting: () => void;
     onStartStudyFromPaper: () => Promise<void> | void;
     onContinueEditing: () => void;
     onEdit: () => void;
@@ -476,6 +503,7 @@ function SermonRow({
     paperPhase,
     onUpdateDate,
     onStartDraft,
+    onLinkExisting,
     onStartStudyFromPaper,
     onContinueEditing,
     onEdit,
@@ -686,6 +714,12 @@ function SermonRow({
                                 <Pencil className="h-3.5 w-3.5 mr-2" />
                                 {t('detail.table.editFull')}
                             </DropdownMenuItem>
+                            {!item.draftId && item.plannedSermonId && (
+                                <DropdownMenuItem onClick={onLinkExisting}>
+                                    <Link2 className="h-3.5 w-3.5 mr-2" />
+                                    {t('detail.table.linkExisting.menu')}
+                                </DropdownMenuItem>
+                            )}
                             {hasSyntacticUnit && (
                                 <DropdownMenuItem onClick={onOpenFaculty}>
                                     <MessageCircle className="h-3.5 w-3.5 mr-2" />

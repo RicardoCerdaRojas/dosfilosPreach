@@ -55,3 +55,34 @@ describe('extraer sobre una fuente heredada', () => {
         expect(parches[0]).toMatchObject({ mode: 'extracted-excerpts' });
     });
 });
+
+/**
+ * Burt y Sassom (Jonás 4:5-11) quedaron con páginas elegidas Y 50/60
+ * fragmentos: «Extraer de mi biblioteca» sobre una fuente con receta no
+ * tocaba la receta, y el análisis la seguía.
+ */
+describe('extraer sobre una fuente con páginas elegidas', () => {
+    const receta = { sheetRanges: [{ start: 79, end: 91 }], proposedRanges: [], pinnedRanges: [], passageFingerprint: '' };
+
+    it('la última acción gana: la receta se borra', async () => {
+        const { uc, parches } = montar([{ id: 'x', sourceLibraryResourceId: 'r1', excerpts: [], excerptRecipe: receta }]);
+        await uc.execute({ ownerId: 'u', paperId: 'p1', selections: [sel] }).catch(() => undefined);
+        expect(parches[0]).toHaveProperty('excerptRecipe', null);
+    });
+
+    it('sin receta, no se escribe nada sobre ella', async () => {
+        const { uc, parches } = montar([{ id: 'x', sourceLibraryResourceId: 'r1', excerpts: [] }]);
+        await uc.execute({ ownerId: 'u', paperId: 'p1', selections: [sel] }).catch(() => undefined);
+        expect(parches[0]).not.toHaveProperty('excerptRecipe');
+    });
+});
+
+/** Las fuentes de la ruta vieja guardan el id del libro en `corpusId`. */
+describe('una fuente adjuntada por la ruta vieja', () => {
+    it('se reemplaza, no se duplica', async () => {
+        const { uc, parches, agregadas } = montar([{ id: 'x', sourceLibraryResourceId: null, corpusId: 'r1', excerpts: [] }]);
+        await uc.execute({ ownerId: 'u', paperId: 'p1', selections: [sel] }).catch(() => undefined);
+        expect(agregadas).toHaveLength(0);
+        expect(parches).toHaveLength(1);
+    });
+});

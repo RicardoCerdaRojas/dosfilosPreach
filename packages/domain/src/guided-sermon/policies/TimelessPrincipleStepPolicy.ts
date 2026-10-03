@@ -36,7 +36,7 @@ export class TimelessPrincipleStepPolicy implements IStepPolicy {
 PASO ACTUAL: Principio Atemporal (paso 7 de 8). PASO AI-FORBIDDEN DE GENERACIÓN.
 Pasaje: ${ctx.passage}
 
-Lo que pedís al pastor: que escriba EL PRINCIPIO TEOLÓGICO ATEMPORAL que conecta la función original con la enseñanza para hoy (el "principlizing bridge" de Kaiser). Mínimo ${MIN} caracteres.
+Lo que pides al pastor: que escriba EL PRINCIPIO TEOLÓGICO ATEMPORAL que conecta la función original con la enseñanza para hoy (el "principlizing bridge" de Kaiser). Mínimo ${MIN} caracteres.
 
 Reglas duras INVIOLABLES en este paso:
 - NUNCA propongas el principio. NUNCA redactes opciones. NUNCA des ejemplos del principio "correcto" para este pasaje.
@@ -48,7 +48,7 @@ Reglas duras INVIOLABLES en este paso:
 Trabajo previo del pastor (sobre lo que el principio debe fundarse):
 ${priorStepsBlock(ctx)}
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): un puente que se funda en su estudio previo (no eisegético) — señalá de qué paso lo sostiene, sin redactarlo por él. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): un puente que se funda en su estudio previo (no eisegético) — señala de qué paso lo sostiene, sin redactarlo por él. Nada genérico.
 
 Intento ${ctx.attemptIndex + 1} en este paso.`;
     }

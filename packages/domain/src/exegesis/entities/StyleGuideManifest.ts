@@ -1,3 +1,4 @@
+import type { CoverStyle } from '../services/coverSuggestion';
 /**
  * Structured distillation of a style guide's mechanical rules.
  *
@@ -62,6 +63,12 @@ export interface StyleGuideManifest {
 
     /** Greek/Hebrew transliteration if the guide specifies one. */
     transliteration: TransliterationRules | null;
+
+    /**
+     * Cómo se arma la portada (`CoverStyle`). Ausente en los manifiestos
+     * anteriores al campo: se usa la de TMS (`coverStyleOf`).
+     */
+    cover?: CoverStyle | null;
 
     /**
      * Free-form rules the extractor couldn't structure. Rendered into
@@ -287,7 +294,8 @@ export type ManifestValidationCode =
     | 'empty-quote-mark'
     | 'duplicate-additional-rule'
     | 'empty-additional-rule'
-    | 'transliteration-empty-scheme';
+    | 'transliteration-empty-scheme'
+    | 'cover-blank-lines-out-of-range';
 
 /**
  * Placeholders recognized by `IStyleFormatter`. The editor warns the
@@ -411,6 +419,16 @@ export function validateStyleGuideManifest(manifest: StyleGuideManifest): Readon
             seenRules.add(normalized);
         }
     });
+
+    // ── Portada ────────────────────────────────────────────────────────
+    if (manifest.cover) {
+        const { layout } = manifest.cover;
+        for (const [campo, n] of Object.entries(layout)) {
+            if (!Number.isInteger(n) || n < 0 || n > 20) {
+                issues.push({ path: `cover.layout.${campo}`, severity: 'error', code: 'cover-blank-lines-out-of-range' });
+            }
+        }
+    }
 
     return issues;
 }

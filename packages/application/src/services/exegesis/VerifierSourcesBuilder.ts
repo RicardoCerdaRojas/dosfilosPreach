@@ -8,7 +8,9 @@ import type {
     VerifierSource,
     VerifierSourceChunk,
 } from '@dosfilos/domain';
-import { usesExtractedExcerpts, citationAnchorFor, hasCuratedScope, isCitableSourceType, relabelExcerptAnchor } from '@dosfilos/domain';
+import { usesExtractedExcerpts, citationAnchorFor, hasCuratedScope, isCitableSourceType, relabelExcerptAnchor,
+    readFullText,
+} from '@dosfilos/domain';
 
 /**
  * La evidencia con la que se verifica un trabajo: qué texto de cada fuente
@@ -109,7 +111,7 @@ export class VerifierSourcesBuilder {
             // Mismo respaldo que el camino anterior: una cita a material fuera
             // de lo curado no debe volver como "no encontrada" solo porque el
             // usuario no eligió esa página para escribir.
-            const fullText = await this.contentReader.getTextContent(resourceId);
+            const fullText = await readFullText(this.contentReader, resourceId);
             if (fullText && fullText.trim().length > 0) {
                 out.push({ text: fullText, pageHint: null });
             }
@@ -176,7 +178,7 @@ export class VerifierSourcesBuilder {
             // writing. The fallback chunk has no `pageHint` so any
             // match against it doesn't trigger page-mismatch.
             if (source.sourceLibraryResourceId) {
-                const fullText = await this.contentReader.getTextContent(
+                const fullText = await readFullText(this.contentReader,
                     source.sourceLibraryResourceId,
                 );
                 if (fullText && fullText.trim().length > 0) {
@@ -188,7 +190,7 @@ export class VerifierSourcesBuilder {
         // 'full-document' (or legacy sources without `mode`): pull the
         // whole corpus text. Page-mismatch detection is impossible
         // here — the verifier handles a null `pageHint` gracefully.
-        const text = await this.contentReader.getTextContent(source.corpusId);
+        const text = await readFullText(this.contentReader, source.corpusId);
         if (!text) return [];
         return [{ text, pageHint: null }];
     }

@@ -98,7 +98,7 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
     }
 
     return [
-        `Sos un asistente académico experto en exégesis ${voice.testamentEs}, ${voice.expertEs}, análisis morfológico/sintáctico, crítica textual, teología bíblica y redacción académica en estilo The Master's Seminary.`,
+        `Eres un asistente académico experto en exégesis ${voice.testamentEs}, ${voice.expertEs}, análisis morfológico/sintáctico, crítica textual, teología bíblica y redacción académica en estilo The Master's Seminary.`,
         ``,
         `## Tu tarea`,
         `Producir traducción y análisis exegético integrado sobre **${passage}**, trabajando ${stepKindDescription(input.kind, lang)}.`,
@@ -111,7 +111,7 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
         `- Toda afirmación derivada de una fuente DEBE incluir cita inline en formato: \`(Autor, "Título", p. N)\`. Si no hay página disponible: \`(Autor, "Título")\`.`,
         `- Las citas verbatim solo van entre comillas dobles Y cuando la frase exacta aparece en la fuente citada. Si parafraseas, NO uses comillas.`,
         `- NUNCA atribuyas a un autor una conclusión que no afirma explícitamente. Si una fuente solo *sugiere*, escribe "X sugiere" — no "X demuestra".`,
-        `- NUNCA te cites a ti mismo como fuente. Sos un tutor, no una entrada bibliográfica.`,
+        `- NUNCA te cites a ti mismo como fuente. Eres un tutor, no una entrada bibliográfica.`,
         `- Las fuentes con rol 'trabajo modelo' (cuando estén presentes) son plantillas de ESTILO únicamente. NUNCA produzcas citas inline desde ellas.`,
         `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), usa frases como "según la tradición teológica…" o "los comentaristas clásicos sostienen…".`,
         corpusGapsBlock,

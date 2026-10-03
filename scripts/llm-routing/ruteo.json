@@ -218,6 +218,11 @@
       "model": "gpt-6-luna",
       "reasoning": "none"
     },
+    "exegesis.suggestBriefQuestions": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
     "exegesis.planStepCorpus": {
       "provider": "openai",
       "model": "gpt-6-luna",

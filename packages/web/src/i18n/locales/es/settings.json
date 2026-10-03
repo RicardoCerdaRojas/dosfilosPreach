@@ -32,5 +32,14 @@
             "mailchimp": "Envía tus devocionales o sermones como newsletter.",
             "substack": "Publica tus reflexiones en tu boletín semanal."
         }
+    },
+    "manuscriptStyle": {
+        "title": "Estilo del manuscrito",
+        "description": "Cómo se escribe la prosa de tus sermones: cuánto desarrollar cada idea y qué evitar. Se usa al redactar una sección y al generar el borrador completo.",
+        "usingSystem": "Usas el estilo del sistema.",
+        "usingOwn": "Usas tu propio estilo.",
+        "register": "El registro del español (latinoamericano neutro, sin voseo ni vosotros) se aplica siempre y no se edita aquí.",
+        "reset": "Usar el del sistema",
+        "saveHint": "Se guarda con «Guardar Cambios», abajo."
     }
 }

@@ -47,6 +47,7 @@ export function StepDraft() {
             elements={paso.sectionElements}
             prose={paso.sectionProse}
             audienceRigor={paso.rules.audienceRigor}
+            manuscriptStyle={paso.manuscriptStyle}
             passage={paso.passage}
             onSelectSection={paso.setActiveSectionId}
             onChangeElements={paso.setSectionElements}
@@ -78,6 +79,7 @@ export function StepDraft() {
                     elements={paso.sectionElements}
                     prose={paso.sectionProse}
                     audienceRigor={paso.rules.audienceRigor}
+                    manuscriptStyle={paso.manuscriptStyle}
                     hasDraft={!!draft}
                     onProseChange={paso.setSectionProse}
                     onAssemble={paso.armarBorrador}
@@ -151,6 +153,9 @@ export function StepDraft() {
                 fullContent={paso.showPreview ? paso.getFullContent() : ''}
                 authorName={paso.user?.displayName}
             />
+
+            {/* «Versión nueva (la N)» al re-publicar algo que cambió (#2). */}
+            {publicacion.confirmDialog}
 
             {/* Compuerta 1 — contra-scan antes de publicar (Fase 4 PR 1, ADR-033) */}
             <ContraScanModal

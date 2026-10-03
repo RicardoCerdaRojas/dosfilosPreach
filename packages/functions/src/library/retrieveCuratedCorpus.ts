@@ -40,6 +40,10 @@ const CHUNK_COLLECTION = 'document_chunks';
  * Fuentes por consulta. El `IN` de Firestore corta en 30; el tope real de
  * corpus que se diseñó son doce fuentes, así que hay margen y el error llega
  * como mensaje claro en vez de como fallo de la consulta.
+ *
+ * El cliente parte el pedido en tandas de este tamaño
+ * (`MAX_SOURCES_PER_CALL` en `infrastructure/.../CallableCuratedCorpusRetriever.ts`):
+ * si cambia acá, cambia allá.
  */
 const MAX_SOURCES = 25;
 

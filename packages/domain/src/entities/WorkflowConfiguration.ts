@@ -16,6 +16,11 @@ export interface PhaseConfiguration {
     cachedResources?: Array<{ title: string; author: string }>; // Metadata of cached resources
     fileSearchStoreId?: string; // 🎯 NEW: ID of the File Search Store to use
     temperature?: number; // Creativity level
+    /**
+     * Sólo en la fase de redacción: el estilo del manuscrito que el usuario
+     * guardó. Ausente = el del sistema (`manuscriptStyleFor`).
+     */
+    manuscriptStyle?: string;
 }
 
 export interface WorkflowConfiguration {

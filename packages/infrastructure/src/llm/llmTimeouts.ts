@@ -19,6 +19,6 @@
  * —los dos tutores, el generador de sermones, el asistente expositivo y el
  * analizador griego— terminaron sin ella.
  *
- * REGLA: si pedís `maxOutputTokens` por encima de ~8.000, pasá este tope.
+ * REGLA: si pides `maxOutputTokens` por encima de ~8.000, pasa este tope.
  */
 export const LONG_GENERATION_TIMEOUT_MS = 540_000;

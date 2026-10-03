@@ -5,7 +5,7 @@ import { useFirebase } from '@/context/firebase-context';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useContentHistory } from '@/hooks/useContentHistory';
 import { useGeneratorChat } from '@/hooks/useGeneratorChat';
-import { deriveSectionWalk, hasDecisions, type SermonContent } from '@dosfilos/domain';
+import { deriveSectionWalk, hasDecisions, WorkflowPhase, type SermonContent } from '@dosfilos/domain';
 import { useWizard } from '../WizardContext';
 import { buildFullContent } from './sermonContent';
 import { useDraftRefinement } from './useDraftRefinement';
@@ -163,6 +163,8 @@ export function useDraftStep(t: TFunction, activeLanguage: 'es' | 'en') {
     return {
         // Datos del sermón
         homiletics, exegesis, rules, draft, passage, sermonId, saving, user,
+        // El estilo del manuscrito del usuario, para el redactor por sección.
+        manuscriptStyle: config?.[WorkflowPhase.DRAFTING]?.manuscriptStyle || undefined,
         sectionElements, setSectionElements, sectionProse, setSectionProse,
         // Estado de la pantalla
         activeTab, setActiveTab, showPreview, setShowPreview,

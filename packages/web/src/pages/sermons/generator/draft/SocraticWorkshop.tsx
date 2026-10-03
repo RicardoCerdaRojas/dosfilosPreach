@@ -19,6 +19,7 @@ interface Props {
     prose: Record<string, string>;
     onChangeProse: (sectionId: string, prose: string) => void;
     audienceRigor?: 'beginner' | 'seminary';
+    manuscriptStyle?: string;
     passage: string;
     proposition?: string;
     points?: readonly string[];
@@ -195,6 +196,7 @@ export function SocraticWorkshop(props: Props) {
                                     scriptureLookupRef(props.activeSection.scriptureRef) ?? '',
                                 ) ?? undefined,
                             audienceRigor: props.audienceRigor,
+                            manuscriptStyle: props.manuscriptStyle,
                         });
                         if (texto) props.onChangeProse(props.activeSection.id, texto);
                     }}

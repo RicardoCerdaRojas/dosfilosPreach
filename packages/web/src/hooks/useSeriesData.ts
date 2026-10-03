@@ -197,6 +197,40 @@ export function useSeriesData(seriesId: string | undefined) {
         }
     };
 
+    /**
+     * Vincula a la perícopa un sermón que ya existe (#3 del ejercicio de
+     * Jonás: el de Jonás 1:1-3 se escribió antes de la serie y se vinculó a
+     * mano en Firestore). Escribe lo mismo que «Iniciar sermón» —`draftId` en
+     * la perícopa y el id en `draftIds`— y marca la serie en el borrador y en
+     * sus copias publicadas, como quedó el vínculo hecho a mano.
+     */
+    const handleLinkExisting = async (item: SermonItem, sermonId: string): Promise<boolean> => {
+        if (!series || !item.plannedSermonId || !user) return false;
+        try {
+            const plannedSermons = series.metadata?.plannedSermons || [];
+            const updatedPlanned = plannedSermons.map(p =>
+                p.id === item.plannedSermonId ? { ...p, draftId: sermonId } : p
+            );
+            const draftIds = series.draftIds?.includes(sermonId)
+                ? series.draftIds
+                : [...(series.draftIds || []), sermonId];
+            await seriesService.updateSeries(series.id, {
+                draftIds,
+                metadata: { ...series.metadata, plannedSermons: updatedPlanned },
+            } as any);
+            await sermonService.updateSermon(sermonId, { seriesId: series.id });
+            const copias = await sermonService.getPublishedVersions(sermonId, user.uid).catch(() => []);
+            await Promise.all(copias.map(c => sermonService.updateSermon(c.id, { seriesId: series.id })));
+            toast.success(t('detail.planToast.linked'));
+            await loadData();
+            return true;
+        } catch (error) {
+            console.error('Error linking sermon:', error);
+            toast.error(t('detail.planToast.linkFailed'));
+            return false;
+        }
+    };
+
     const handleContinueEditing = (draftId: string) => {
         navigate(`/dashboard/sermons/generate?id=${draftId}`);
     };
@@ -301,6 +335,7 @@ export function useSeriesData(seriesId: string | undefined) {
         sermonItems,
         loading,
         handleStartDraft,
+        handleLinkExisting,
         handleContinueEditing,
         handleUpdateSermonDate,
         handleDeleteSermon,

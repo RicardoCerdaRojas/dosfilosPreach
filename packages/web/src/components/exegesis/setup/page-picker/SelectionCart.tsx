@@ -2,14 +2,16 @@ import { useTranslation } from 'react-i18next';
 import { Pin, PinOff, X } from 'lucide-react';
 import {
     CURATED_CORPUS_BUDGET_CHARS,
-    printedPageFor,
+    printedLabelForSheet,
     sectionsCoveredBy,
     withPageSelection,
     type CorpusFootprint,
+    type PageNumbering,
     type SheetRange,
 } from '@dosfilos/domain';
 import { VERSE_CORPUS_SPACE_CHARS } from '@dosfilos/infrastructure';
 import { Button } from '@/components/ui/button';
+import type { CartSaveMode } from './cartSaveMode';
 
 /**
  * Lo que va al trabajo, y cuánto corpus llega con eso a cada versículo.
@@ -35,20 +37,27 @@ interface Props {
     selectedChars: number;
     sheetCount: number;
     onRemoveRange: (range: SheetRange) => void;
+    /** Quitar todos los tramos de una vez (con deshacer). */
+    onClear: () => void;
     /** Tramos marcados como «siempre incluir». */
     pinnedRanges: ReadonlyArray<SheetRange>;
     onTogglePinned: (range: SheetRange) => void;
     /** Caracteres que ocupan los tramos fijados. */
     pinnedChars: number;
     onConfirm: () => void;
-    /**
-     * Si lo elegido difiere de lo guardado. Sin cambios el botón dice
-     * «Guardado» y se apaga: antes quedaba siempre encendido y, al volver a
-     * entrar, no había forma de saber si las hojas ya estaban en el trabajo.
-     */
-    isDirty: boolean;
-    isSaving: boolean;
+    /** Qué hace el botón (`cartSaveMode`), y por lo tanto qué dice. */
+    saveMode: CartSaveMode;
+    /** La numeración confirmada del recurso; manda sobre el desfase. */
+    numbering: PageNumbering | null;
 }
+
+const SAVE_LABEL: Record<CartSaveMode, string> = {
+    saving: 'paperSetup.subSteps.corpus.picker.cart.saving',
+    saved: 'paperSetup.subSteps.corpus.picker.cart.saved',
+    resave: 'paperSetup.subSteps.corpus.picker.cart.resave',
+    update: 'paperSetup.subSteps.corpus.picker.cart.update',
+    add: 'paperSetup.subSteps.corpus.picker.cart.confirm',
+};
 
 export function SelectionCart({
     ranges,
@@ -58,12 +67,13 @@ export function SelectionCart({
     selectedChars,
     sheetCount,
     onRemoveRange,
+    onClear,
     pinnedRanges,
     onTogglePinned,
     pinnedChars,
     onConfirm,
-    isSaving,
-    isDirty,
+    saveMode,
+    numbering,
 }: Props) {
     const { t, i18n } = useTranslation('exegesis');
 
@@ -100,15 +110,17 @@ export function SelectionCart({
     };
 
     const rangeLabel = (range: SheetRange): string => {
-        const printedStart = printedPageFor(range.start, printedPageOffset);
-        const printedEnd = printedPageFor(range.end, printedPageOffset);
+        const printedStart = printedLabelForSheet(range.start, numbering, printedPageOffset);
+        const printedEnd = printedLabelForSheet(range.end, numbering, printedPageOffset);
         const base = range.start === range.end
             ? t('paperSetup.subSteps.corpus.picker.cart.sheetOne', { sheet: range.start })
-            : t('paperSetup.subSteps.corpus.picker.cart.sheetRange', { start: range.start, end: range.end });
+            : t('paperSetup.subSteps.corpus.picker.cart.sheetRange', {
+                start: range.start, end: range.end, count: range.end - range.start + 1,
+            });
         if (printedStart === null) return base;
         const printed = range.start === range.end
-            ? String(printedStart)
-            : `${printedStart}–${printedEnd}`;
+            ? printedStart
+            : `${printedStart}–${printedEnd ?? '?'}`;
         return t('paperSetup.subSteps.corpus.picker.cart.withPrinted', { base, printed });
     };
 
@@ -118,8 +130,18 @@ export function SelectionCart({
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {t('paperSetup.subSteps.corpus.picker.cart.title')}
                 </span>
-                <span className="text-[11px] text-muted-foreground tabular-nums">
+                <span className="flex items-center gap-2 text-[11px] text-muted-foreground tabular-nums">
                     {t('paperSetup.subSteps.corpus.picker.cart.rangeCount', { count: ranges.length })}
+                    {/* 33 tramos se quitaban de a uno (Jonás 4:5-11). */}
+                    {ranges.length > 1 && (
+                        <button
+                            type="button"
+                            onClick={onClear}
+                            className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                            {t('paperSetup.subSteps.corpus.picker.cart.clear')}
+                        </button>
+                    )}
                 </span>
             </div>
 
@@ -246,14 +268,10 @@ export function SelectionCart({
                     type="button"
                     className="w-full"
                     variant={overBudget ? 'outline' : 'default'}
-                    disabled={sheetCount === 0 || isSaving || !isDirty}
+                    disabled={sheetCount === 0 || saveMode === 'saving' || saveMode === 'saved'}
                     onClick={onConfirm}
                 >
-                    {isSaving
-                        ? t('paperSetup.subSteps.corpus.picker.cart.saving')
-                        : !isDirty && sheetCount > 0
-                            ? t('paperSetup.subSteps.corpus.picker.cart.saved', { count: sheetCount })
-                            : t('paperSetup.subSteps.corpus.picker.cart.confirm', { count: sheetCount })}
+                    {t(SAVE_LABEL[saveMode], { count: sheetCount })}
                 </Button>
             </div>
         </div>

@@ -10,6 +10,7 @@ import { CorpusSubStep } from '@/components/exegesis/setup/CorpusSubStep';
 import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPlanSubStep';
 import { PaperBriefButton } from '@/components/exegesis/setup/PaperBriefButton';
 import { PaperCoverButton } from '@/components/exegesis/setup/PaperCoverButton';
+import { PaperRubricButton } from '@/components/exegesis/setup/PaperRubricButton';
 import { SaveWorkProfileButton } from '@/components/exegesis/setup/SaveWorkProfileButton';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
@@ -144,6 +145,7 @@ export function ExegesisPaperSetupPage() {
                         configuración. La key descarta un borrador a medio
                         escribir si la ruta cambia a otro trabajo. */}
                     <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
+                    <PaperRubricButton key={`rubric-${paper.id}`} paper={paper} />
                     <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
                     <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
                 </div>

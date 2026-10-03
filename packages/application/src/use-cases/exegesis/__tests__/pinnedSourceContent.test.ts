@@ -91,3 +91,17 @@ describe('buildComposerSourcesWithPinnedContent', () => {
         expect(r.corpusReader.readAdmitted).toHaveBeenCalledTimes(1);
     });
 });
+
+/** Una fuente asignada CON FRAGMENTOS mandaba el libro entero, no sus fragmentos. */
+describe('buildComposerSourcesWithPinnedContent — fuente con fragmentos', () => {
+    it('trae sus fragmentos, no el comienzo del libro', async () => {
+        const bruce = {
+            ...CRAIGIE, id: 'src-bruce', citationKey: 'Bruce', mode: 'extracted-excerpts',
+            excerpts: [{ text: 'Jonás se sentó al oriente', sourceLocation: 'p. 40', relevanceScore: 1, userEdited: false }],
+        };
+        const r = readers();
+        const [fuente] = await buildComposerSourcesWithPinnedContent({ sources: [bruce] } as never, new Set(['src-bruce']), r);
+        expect(fuente!.textContent).toContain('al oriente');
+        expect(fuente!.textContent).not.toContain('INICIO DEL LIBRO');
+    });
+});

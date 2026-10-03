@@ -128,7 +128,7 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             `Single markdown block, 2-3 paragraphs. Start the section with a heading "## Conclusion" (English) or "## Conclusión" (Spanish), then the prose. No "##" sub-headings within.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n')
         : [
-            `Sos un redactor académico componiendo la sección de CONCLUSIÓN de un trabajo exegético TMS-style.`,
+            `Eres un redactor académico componiendo la sección de CONCLUSIÓN de un trabajo exegético TMS-style.`,
             ``,
             `## Paper`,
             `Pasaje: **${passage}**`,

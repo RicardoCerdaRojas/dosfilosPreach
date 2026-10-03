@@ -1,115 +1,98 @@
 /**
- * Approach Card Component
- * 
- * Displays a single homiletical approach option in a visually appealing card
- * @layer Presentation - Pure UI component
+ * Una opción de enfoque homilético, como radio dentro de la grilla de
+ * `ApproachSelectionView`.
+ *
+ * Rediseño de #31 (ejercicio de Jonás 4:5-11): las tarjetas iban apiladas en
+ * una columna angosta y no se podían comparar. Ahora caben dos por fila; el
+ * recorrido va como pasos numerados y «Por qué funciona» se abre a pedido.
  */
 
-import { HomileticalApproach } from '@dosfilos/domain';
-import { Card } from '@/components/ui/card';
+import type { HomileticalApproachPreview } from '@dosfilos/domain';
+import { CheckCircle2, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Target, Users, TrendingUp } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { approachRoute } from './approachRoute';
 
 interface ApproachCardProps {
-    approach: HomileticalApproach;
+    approach: Pick<
+        HomileticalApproachPreview,
+        'type' | 'tone' | 'direction' | 'purpose' | 'targetAudience' | 'suggestedStructure' | 'rationale'
+    >;
     isSelected: boolean;
     onSelect: () => void;
 }
 
 export function ApproachCard({ approach, isSelected, onSelect }: ApproachCardProps) {
-    // Map types to colors (six-form catalog)
-    const typeColors: Record<string, string> = {
-        'temático': 'bg-amber-100 text-amber-800',
-        pastoral: 'bg-blue-100 text-blue-800',
-        'teológico': 'bg-purple-100 text-purple-800',
-        'apologético': 'bg-red-100 text-red-800',
-        'evangelístico': 'bg-green-100 text-green-800',
-        narrativo: 'bg-pink-100 text-pink-800',
-    };
+    const { t } = useTranslation('generator');
+    const route = approachRoute(approach.suggestedStructure);
 
     return (
-        <Card
-            className={cn(
-                "p-6 cursor-pointer transition-all hover:shadow-lg",
-                isSelected && "ring-2 ring-primary shadow-md"
-            )}
+        <div
+            role="radio"
+            aria-checked={isSelected}
+            tabIndex={0}
             onClick={onSelect}
+            onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect();
+                }
+            }}
+            className={cn(
+                'h-full rounded-xl border bg-card p-5 text-left transition-colors cursor-pointer',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                isSelected ? 'border-primary ring-2 ring-primary/40 bg-primary/5' : 'hover:border-primary/40',
+            )}
         >
-            <div className="space-y-4">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <Badge className={cn(typeColors[approach.type] || 'bg-gray-100 text-gray-800')}>
-                                {approach.type}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                                {approach.tone}
-                            </Badge>
-                        </div>
-                        <h4 className="font-semibold text-lg leading-tight">
-                            {approach.direction}
-                        </h4>
-                    </div>
-                    {isSelected && (
-                        <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0" />
-                    )}
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/10 capitalize">{approach.type}</Badge>
+                    <Badge variant="outline" className="text-xs capitalize">{approach.tone}</Badge>
                 </div>
-
-                {/* Purpose */}
-                <div className="flex gap-2">
-                    <Target className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-muted-foreground">
-                        {approach.purpose}
-                    </p>
-                </div>
-
-                {/* Target Audience */}
-                <div className="flex gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Para:</span> {approach.targetAudience}
-                    </p>
-                </div>
-
-                {/* Structure Preview */}
-                {approach.suggestedStructure && (
-                    <div className="flex gap-2">
-                        <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-muted-foreground italic">
-                            {approach.suggestedStructure}
-                        </p>
-                    </div>
-                )}
-
-                {/* Rationale */}
-                <div className="pt-3 border-t">
-                    <p className="text-xs italic text-muted-foreground">
-                        💡 <span className="font-medium">Por qué funciona:</span> {approach.rationale}
-                    </p>
-                </div>
-
-                {/* Applications Preview */}
-                {approach.contemporaryApplication && approach.contemporaryApplication.length > 0 && (
-                    <div className="pt-2">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Aplicaciones:</p>
-                        <ul className="text-xs text-muted-foreground space-y-0.5">
-                            {approach.contemporaryApplication.slice(0, 2).map((app, i) => (
-                                <li key={i} className="flex gap-1">
-                                    <span>•</span>
-                                    <span className="line-clamp-1">{app}</span>
-                                </li>
-                            ))}
-                            {approach.contemporaryApplication.length > 2 && (
-                                <li className="text-xs text-muted-foreground/60">
-                                    +{approach.contemporaryApplication.length - 2} más...
-                                </li>
-                            )}
-                        </ul>
-                    </div>
-                )}
+                <CheckCircle2
+                    className={cn('h-5 w-5 shrink-0', isSelected ? 'text-primary' : 'text-muted-foreground/30')}
+                    aria-hidden
+                />
             </div>
-        </Card>
+
+            <h3 className="mt-3 text-base font-semibold leading-snug">{approach.direction}</h3>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{approach.purpose}</p>
+
+            <p className="mt-3 flex gap-2 text-xs text-muted-foreground">
+                <Users className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden />
+                <span>
+                    <span className="font-medium text-foreground">{t('homiletics.selection.audience')}:</span>{' '}
+                    {approach.targetAudience}
+                </span>
+            </p>
+
+            {route.length > 0 && (
+                <div className="mt-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {t('homiletics.selection.route')}
+                    </p>
+                    <ol className="mt-2 space-y-1.5">
+                        {route.map((paso, i) => (
+                            <li key={i} className="flex gap-2 text-sm">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                                    {i + 1}
+                                </span>
+                                <span className="leading-snug">{paso}</span>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+            )}
+
+            {approach.rationale && (
+                <details className="mt-4 border-t pt-3 group" onClick={e => e.stopPropagation()}>
+                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
+                        {t('homiletics.selection.why')}
+                    </summary>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{approach.rationale}</p>
+                </details>
+            )}
+        </div>
     );
 }

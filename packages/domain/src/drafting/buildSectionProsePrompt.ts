@@ -1,5 +1,5 @@
 import type { SermonElement } from './SermonElement';
-import { SERMON_MANUSCRIPT_STYLE } from './sermonManuscriptStyle';
+import { manuscriptStyleFor } from './sermonManuscriptStyle';
 import type { WalkSection } from './deriveSectionWalk';
 
 export interface SectionProseInput {
@@ -33,6 +33,8 @@ export interface SectionProseInput {
     scriptureText?: string;
     /** Registro del sermón: cómo habla este pastor a su congregación. */
     audienceRigor?: 'beginner' | 'seminary';
+    /** El estilo del manuscrito que guardó el usuario. Ausente = el del sistema. */
+    manuscriptStyle?: string;
 }
 
 const VINETA = (t: string) => `- ${t}`;
@@ -68,7 +70,7 @@ export function buildSectionProsePrompt(input: SectionProseInput): string {
         ? `\nIDEAS QUE ÉL DECIDIÓ (desarróllalas; NO las reemplaces ni las corrijas):\n${ideas.map((e) => VINETA(e.text)).join('\n')}\n`
         : '';
     const bloqueTemas = temas.length
-        ? `\nTEMAS QUE ÉL MANDÓ CUBRIR (acá SÍ aportas el contenido, porque eso te pidió):\n${temas.map((e) => VINETA(e.text)).join('\n')}\n`
+        ? `\nTEMAS QUE ÉL MANDÓ CUBRIR (aquí SÍ aportas el contenido, porque eso te pidió):\n${temas.map((e) => VINETA(e.text)).join('\n')}\n`
         : '';
 
     /**
@@ -105,11 +107,11 @@ export function buildSectionProsePrompt(input: SectionProseInput): string {
           ? `   LOS MOVIMIENTOS SALEN DE LA PROPOSICIÓN, NO DE LA LISTA DE IDEAS.
 
    NO REPITAS LA PROPOSICIÓN: ya está escrita justo antes de este texto en el
-   sermón. Enunciarla acá la haría aparecer dos veces seguidas. Escribe SÓLO
+   sermón. Enunciarla aquí la haría aparecer dos veces seguidas. Escribe SÓLO
    lo que la desarrolla.
 
    NO CITES EL TEXTO BÍBLICO al abrir: el sermón ya lo pone antes de esta
-   sección, con la Biblia real. Escribirlo acá lo duplicaría — y de memoria.
+   sección, con la Biblia real. Escribirlo aquí lo duplicaría — y de memoria.
    Puedes citar FRAGMENTOS dentro de un movimiento cuando estás comentando
    esas palabras.
 
@@ -168,7 +170,7 @@ ${estructura}
 
 5. ${registro}
 
-6. ${SERMON_MANUSCRIPT_STYLE}
+6. ${manuscriptStyleFor(input.manuscriptStyle)}
 
 7. Frases cortas, sin subtítulos, sin encabezados. Nada de meta-comentarios
    ("en esta sección veremos", "a continuación analizaremos").

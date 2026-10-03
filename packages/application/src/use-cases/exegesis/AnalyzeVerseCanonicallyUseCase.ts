@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -304,13 +304,17 @@ export class AnalyzeVerseCanonicallyUseCase {
         originalLanguageText: string | null,
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
-        const scopes = paper.sources
-            .filter(hasCuratedScope)
-            .map(s => ({
+        // Toda fuente con algo que consultar (`retrievalScopeOf`), no sólo las
+        // de páginas elegidas: el documento completo y los fragmentos también
+        // se buscan por versículo.
+        const scopes = paper.sources.flatMap(s => {
+            const scope = retrievalScopeOf(s);
+            return scope ? [{
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
-                sheetRanges: s.excerptRecipe!.sheetRanges,
-                pinnedRanges: s.excerptRecipe!.pinnedRanges,
-            }));
+                sheetRanges: scope.sheetRanges,
+                pinnedRanges: scope.pinnedRanges,
+            }] : [];
+        });
         if (scopes.length === 0) return null;
 
         const label = formatPassageReference(verseRef, paper.displayLanguage);
@@ -462,7 +466,9 @@ export class AnalyzeVerseCanonicallyUseCase {
         for (const source of sorted) {
             const priority: 'primary' | 'secondary' = pinnedIds.has(source.id) ? 'primary' : 'secondary';
             const plannedRole = plannedRoles[source.id];
-            const retrieved = curated?.byResource[source.sourceLibraryResourceId ?? source.corpusId];
+            const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
+            const retrieved = curated?.byResource[resourceId];
+            const scope = retrievalScopeOf(source);
             if (retrieved && retrieved.length > 0) {
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt y el verificador de citas no tienen por qué notar de
@@ -470,9 +476,15 @@ export class AnalyzeVerseCanonicallyUseCase {
                 const numbering = numberings.get(source.id) ?? null;
                 const anchor = (c: { sheet: number | null; section: string | null }) =>
                     citationAnchorFor(c, numbering);
-                const textContent = retrieved
-                    .map(c => `--- ${anchor(c)} ---\n${c.text}`)
-                    .join('\n\n');
+                // Los fragmentos que el usuario editó (o sin hoja) no están en
+                // el corpus: van siempre, después de lo recuperado.
+                const siempre = scope?.kind === 'excerpt-sheets' ? scope.alwaysExcerpts : [];
+                const anchorOf = (e: { sourceLocation: string; sheet?: number; section?: string }) =>
+                    relabelExcerptAnchor(e.sourceLocation, numbering, e);
+                const textContent = [
+                    ...retrieved.map(c => `--- ${anchor(c)} ---\n${c.text}`),
+                    ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
+                ].join('\n\n');
                 contexts.push({
                     corpusId: source.corpusId,
                     sourceType: source.sourceType,
@@ -480,11 +492,18 @@ export class AnalyzeVerseCanonicallyUseCase {
                     citationKey: source.citationKey,
                     ...(plannedRole ? { plannedRole } : {}),
                     textContent,
-                    excerptAnchors: retrieved.map(anchor),
+                    excerptAnchors: [...retrieved.map(anchor), ...siempre.map(anchorOf)],
                     priority,
                 });
                 continue;
             }
+            // Un documento completo del que el corpus no trajo nada sigue el
+            // camino de siempre: el texto entero. El extracto corto subido a
+            // mano —donde el documento ES la curaduría— no depende de esto: el
+            // recuperador ya lo trae entero si está indexado
+            // (`wholeDocumentTravelsEntire`); esto lo cubre cuando no lo está.
+            // Un libro grande casi nunca llega aquí, porque la búsqueda sí
+            // encuentra lo que habla del versículo.
             // Una fuente con receta ya declaró qué hojas admitió el trabajo.
             // Si la recuperación no trajo nada de ellas, las dos salidas que
             // quedan mienten: el documento entero contradice la curaduría, y
@@ -531,7 +550,7 @@ export class AnalyzeVerseCanonicallyUseCase {
             } else {
                 // 'full-document' (or legacy without `mode`): pull the
                 // full extracted text via the content reader.
-                const text = await this.contentReader.getTextContent(source.corpusId);
+                const text = await readFullText(this.contentReader, source.corpusId);
                 if (!text?.trim()) {
                     silent.push(source);
                     continue;
@@ -607,10 +626,16 @@ function sanitizeSourceReferences(
      */
     anchoredKeys: Set<string> = new Set(),
 ): CanonicalVerseAnalysis {
+    // Página 0 de una fuente con anclas es el modelo callándose la página…
+    // salvo que cite por sección: un libro sin folios se cita «§ 2.3» con
+    // página 0 (E3), y su ancla es justamente esa sección. Corre después de
+    // `stampCitationPageKind`, que es quien pone `section`.
+    const missingPage = (c: { sourceKey: string; page: number; pageKind?: string; locator?: string }) =>
+        c.page <= 0
+        && anchoredKeys.has(c.sourceKey)
+        && !(c.pageKind === 'section' && c.locator?.trim());
     const cleanCitations = (citations: ReadonlyArray<SourceCitation>): SourceCitation[] =>
-        citations.filter(c =>
-            validKeys.has(c.sourceKey)
-            && !(c.page <= 0 && anchoredKeys.has(c.sourceKey)));
+        citations.filter(c => validKeys.has(c.sourceKey) && !missingPage(c));
 
     return {
         ...analysis,
@@ -634,16 +659,14 @@ function sanitizeSourceReferences(
         // a configured source — those would render as unverifiable
         // citations downstream.
         commentatorEngagement: analysis.commentatorEngagement.filter(ce =>
-            validKeys.has(ce.sourceKey)
-            && !(ce.page <= 0 && anchoredKeys.has(ce.sourceKey))),
+            validKeys.has(ce.sourceKey) && !missingPage(ce)),
         // Translation cruxes can keep entries even if some commentator
         // positions reference invalid keys (we just drop those
         // positions). The crux itself remains usable.
         translationCruxes: analysis.translationCruxes.map(tc => ({
             ...tc,
             commentatorPositions: tc.commentatorPositions.filter(cp =>
-                validKeys.has(cp.sourceKey)
-                && !(cp.page <= 0 && anchoredKeys.has(cp.sourceKey))),
+                validKeys.has(cp.sourceKey) && !missingPage(cp)),
         })),
         footnoteExtensions: analysis.footnoteExtensions.map(fe => ({
             ...fe,

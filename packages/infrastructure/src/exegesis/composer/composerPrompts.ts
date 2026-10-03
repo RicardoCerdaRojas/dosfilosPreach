@@ -105,7 +105,7 @@ function buildSystemInstruction(input: ComposeAcademicPaperInput): string {
     }
 
     return [
-        `Sos un redactor académico produciendo un trabajo exegético en estilo TMS a partir de análisis estructurados PRE-COMPLETADOS por verso. El trabajo exegético YA ESTÁ HECHO — tu tarea es composición, no análisis.`,
+        `Eres un redactor académico produciendo un trabajo exegético en estilo TMS a partir de análisis estructurados PRE-COMPLETADOS por verso. El trabajo exegético YA ESTÁ HECHO — tu tarea es composición, no análisis.`,
         ``,
         `## Paper`,
         `Pasaje: **${passage}**`,

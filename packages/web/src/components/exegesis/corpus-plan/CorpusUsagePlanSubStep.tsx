@@ -121,8 +121,8 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
      * Cambiar el rol de una fuente sin tocar la lista de fuentes.
      *
      * Se manda el mapa ENTERO —el que había con este cambio aplicado— porque
-     * el caso de uso distingue «ausente, conservá lo que hay» de «acá está el
-     * mapa, reemplazá». Mandar sólo el par cambiado borraría los otros dos.
+     * el caso de uso distingue «ausente, conserva lo que hay» de «aquí está el
+     * mapa, reemplaza». Mandar sólo el par cambiado borraría los otros dos.
      */
     const handleUpdateRole = async (
         stepId: string, sourceId: string, role: SourceRole | null,

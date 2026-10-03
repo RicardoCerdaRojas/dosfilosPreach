@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { proposeSheetRanges, type ProposalKind } from '@dosfilos/infrastructure';
 import {
-    checkRecipeConsistency, grammarSearchKeys, lemmasOfAnalyses, normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
+    checkRecipeConsistency, grammarKeysFromMorphology, grammarSearchKeys, lemmasOfAnalyses, mergeGrammarKeys, mergeLemmas,
+    normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -17,6 +18,8 @@ import { SourcePagesWorkspace } from '@/components/exegesis/setup/page-picker/So
 import { useLemmaPages } from '@/hooks/exegesis/useLemmaPages';
 import { usePassagePages } from '@/hooks/exegesis/usePassagePages';
 import { usePageNumbering } from '@/hooks/library/usePageNumbering';
+import { usePassageLemmas } from '@/hooks/exegesis/usePassageLemmas';
+import { useLexiconSuggestion } from '@/hooks/exegesis/useLexiconSuggestion';
 
 /**
  * Elegir qué hojas de una fuente entran al trabajo.
@@ -79,16 +82,23 @@ export function ExegesisSourcePagesPage() {
      * los análisis aceptados, que es donde el lema existe como dato.
      */
     const esLexico = source ? TIPOS_CON_ENTRADA_POR_LEMA.has(source.sourceType) : false;
+    const esGramatica = source?.sourceType === 'grammar-syntax';
+    // La morfología del pasaje: lemas para el léxico, categorías para la gramática.
+    const morfologia = usePassageLemmas(paper, esLexico || esGramatica);
     const lemmas = useMemo(() => {
         if (!paper || !esLexico) return [];
         const analyses = paper.steps
             .filter(step => step.kind === 'verse')
             .map(step => (step.accepted ?? step.current)?.canonicalAnalysis)
             .filter((a): a is NonNullable<typeof a> => !!a);
-        return lemmasOfAnalyses(analyses);
-    }, [paper, esLexico]);
+        // Primero los que el análisis eligió como términos clave; después el
+        // resto del pasaje, de la morfología (`usePassageLemmas`).
+        return mergeLemmas(lemmasOfAnalyses(analyses), morfologia.data?.lemmas ?? []);
+    }, [paper, esLexico, morfologia.data]);
 
-    const lemmaPages = useLemmaPages(resourceId, lemmas, esLexico);
+    // Espera a la morfología: buscar antes con los lemas del análisis y
+    // después con todos sería leer el léxico dos veces.
+    const lemmaPages = useLemmaPages(resourceId, lemmas, esLexico && !morfologia.isLoading);
 
     /**
      * Dónde nombra ESTE libro al pasaje del trabajo.
@@ -109,10 +119,24 @@ export function ExegesisSourcePagesPage() {
      * No cuesta una consulta: el índice del documento ya viaja para pintar el
      * selector, y ahora trae el índice de secciones entero. El cruce es local.
      */
+    // Y las que tratan las categorías que el TEXTO tiene: un encuadre para
+    // predicar no nombra ninguna, y la gramática no proponía nada.
     const sectionProposals = useMemo(
-        () => sectionsForKeys(index.data?.sections ?? [], grammarSearchKeys(paper?.assignmentBrief ?? null)),
-        [index.data?.sections, paper?.assignmentBrief],
+        () => sectionsForKeys(index.data?.sections ?? [], mergeGrammarKeys(
+            grammarSearchKeys(paper?.assignmentBrief ?? null),
+            grammarKeysFromMorphology(esGramatica ? morfologia.data?.entries ?? [] : []),
+        )),
+        [index.data?.sections, paper?.assignmentBrief, esGramatica, morfologia.data],
     );
+
+    const suggestion = useLexiconSuggestion({
+        kind: esLexico ? 'lexicon' : esGramatica ? 'grammar' : null,
+        hebrew: morfologia.data?.hebrew ?? false,
+        lemmas: morfologia.data?.lemmas ?? [],
+        lemmaProposals: lemmaPages.proposals,
+        sectionProposals,
+        pages: index.data?.pages ?? [],
+    });
 
     // La numeración se pide para cualquier fuente, no sólo para los léxicos:
     // las dos propuestas rotulan sus hojas con el folio impreso del libro.
@@ -223,6 +247,7 @@ export function ExegesisSourcePagesPage() {
                 passageProposals={passagePages.proposals}
                 passageLoading={passagePages.isLoading}
                 sectionProposals={sectionProposals}
+                suggestion={suggestion}
                 sections={index.data?.sections ?? []}
                 numbering={numbering.data?.numbering ?? null}
             />

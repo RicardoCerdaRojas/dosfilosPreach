@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { ChevronDown, FileText } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import type { PaperStudyReference, PastoralSeedStepKey } from '@dosfilos/domain';
+import type { PaperReferenceItem, PaperStudyReference, PastoralSeedStepKey, WordStudy } from '@dosfilos/domain';
+import { AdaptWordStudyDialog } from './wordStudy/AdaptWordStudyDialog';
 
 interface Props {
     reference: PaperStudyReference;
     stepKey: PastoralSeedStepKey;
+    /** En el estudio de palabras: la palabra del paper abre el modal para adaptarla. */
+    onAddWordStudy?: (study: WordStudy) => Promise<void>;
 }
 
 /**
@@ -14,10 +17,13 @@ interface Props {
  *
  * Tres decisiones que definen el componente:
  *
- *   1. **Es consulta, no relleno.** No hay botón de "usar esto". Ningún
- *      texto de acá se copia a los campos de la semilla. El pastor lo
- *      lee y escribe lo suyo — que es de lo que vive la métrica de
- *      autoría verbatim y, antes que eso, el sentido del estudio.
+ *   1. **Es consulta, no relleno.** Ningún texto de aquí se copia tal
+ *      cual a los campos de la semilla. El pastor lo lee y escribe lo
+ *      suyo — que es de lo que vive la métrica de autoría verbatim y,
+ *      antes que eso, el sentido del estudio. La única puerta es el
+ *      estudio de palabras (#28 del ejercicio de Jonás): la palabra abre
+ *      un modal con la explicación entera para ADAPTARLA, y sólo pasa si
+ *      el pastor la cambió (`adaptedDiscoveryState`).
  *
  *   2. **Empieza plegado.** Si el material se abriera solo, el paso
  *      arrancaría con la respuesta a la vista y la pregunta abajo. El
@@ -29,9 +35,11 @@ interface Props {
  *      `function`, `timelessPrinciple` e `insight` nunca reciben
  *      material a propósito, y ahí el silencio es la respuesta correcta.
  */
-export function PaperStudyReferencePanel({ reference, stepKey }: Props) {
+export function PaperStudyReferencePanel({ reference, stepKey, onAddWordStudy }: Props) {
     const { t } = useTranslation('generator');
+    const { t: tw } = useTranslation('wordStudy');
     const [open, setOpen] = useState(false);
+    const [adapting, setAdapting] = useState<NonNullable<PaperReferenceItem['wordStudySeed']> | null>(null);
 
     const items = reference.byStep[stepKey] ?? [];
     if (items.length === 0) return null;
@@ -68,9 +76,20 @@ export function PaperStudyReferencePanel({ reference, stepKey }: Props) {
                                 className="rounded-md bg-background/70 border border-warning/20 px-3 py-2"
                             >
                                 <div className="flex items-baseline gap-2 flex-wrap">
-                                    <span className="text-xs font-semibold text-foreground">
-                                        {item.label}
-                                    </span>
+                                    {item.wordStudySeed && onAddWordStudy ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setAdapting(item.wordStudySeed!)}
+                                            title={tw('fromPaper.wordHint', { word: item.wordStudySeed.word })}
+                                            className="text-xs font-semibold text-primary underline decoration-dotted underline-offset-2 hover:decoration-solid"
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ) : (
+                                        <span className="text-xs font-semibold text-foreground">
+                                            {item.label}
+                                        </span>
+                                    )}
                                     <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
                                         {item.verseLabel}
                                     </span>
@@ -82,6 +101,9 @@ export function PaperStudyReferencePanel({ reference, stepKey }: Props) {
                         ))}
                     </ul>
                 </div>
+            )}
+            {adapting && onAddWordStudy && (
+                <AdaptWordStudyDialog seed={adapting} onClose={() => setAdapting(null)} onAdd={onAddWordStudy} />
             )}
         </div>
     );

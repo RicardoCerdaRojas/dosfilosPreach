@@ -650,3 +650,19 @@ describe('buildSermonDraftPrompt — segundo smoke del fundador (viñetas y conc
         expect(p()).toContain('UNA VIÑETA POR CADA');
     });
 });
+
+describe('buildSermonDraftPrompt — estilo del manuscrito del usuario (#5 del ejercicio de Jonás)', () => {
+    it('usa el estilo guardado y conserva el registro del español', () => {
+        const prompt = buildSermonDraftPrompt(baseAnalysis, {
+            ...baseRules,
+            manuscriptStyle: 'Escribe párrafos largos, con una ilustración por idea.',
+        });
+        expect(prompt).toContain('Escribe párrafos largos, con una ilustración por idea.');
+        expect(prompt).toContain('ESPAÑOL LATINOAMERICANO NEUTRO');
+        expect(prompt).not.toContain('EL MANUSCRITO NO ES LA PREDICACIÓN');
+    });
+
+    it('sin estilo guardado, el del sistema', () => {
+        expect(buildSermonDraftPrompt(baseAnalysis, baseRules)).toContain('EL MANUSCRITO NO ES LA PREDICACIÓN');
+    });
+});

@@ -14,7 +14,7 @@ import {
     SermonSeriesEntity,
     findBooksByAlias,
     getBookById,
-    type AddProjectSourceInput,
+    paperDefaultsFromSeries,
     type BibleBookId,
     type IBibleVersionRepository,
     type IOriginalLanguageBibleProvider,
@@ -562,13 +562,7 @@ export class SeriesService {
         // pastor doesn't reconfigure rubric/style/corpus per pericope.
         // Snapshot semantics: paper inherits and then owns its copy —
         // editing series defaults later doesn't touch existing papers.
-        const initialSources = (exegesisDefaults?.sourceRefs ?? []).map((ref) => ({
-            corpusId: ref.corpusId,
-            sourceType: ref.sourceType as AddProjectSourceInput['sourceType'],
-            displayLabel: ref.displayLabel,
-            mode: ref.mode,
-            sourceLibraryResourceId: ref.libraryResourceId,
-        }));
+        const defaults = paperDefaultsFromSeries(exegesisDefaults);
         const enriched = await Promise.all(
             plannedSermons.map(async (planned) => {
                 if (!planned.syntacticUnit || planned.paperId) return planned;
@@ -586,16 +580,12 @@ export class SeriesService {
                         displayLanguage,
                         title: planned.title,
                         assignmentBrief: planned.syntacticUnit.justification ?? null,
-                        styleGuideId: exegesisDefaults?.styleGuideId ?? null,
+                        ...defaults,
                         // Denormalized back-reference so the sermon-
                         // generation use case can patch this series'
                         // planned-sermon entry without an O(N) scan.
                         seriesId,
                         pericopeId: planned.id,
-                        ...(exegesisDefaults?.rubricTemplateId !== undefined
-                            ? { rubricTemplateId: exegesisDefaults.rubricTemplateId }
-                            : {}),
-                        ...(initialSources.length > 0 ? { initialSources } : {}),
                     });
                     return {
                         ...planned,

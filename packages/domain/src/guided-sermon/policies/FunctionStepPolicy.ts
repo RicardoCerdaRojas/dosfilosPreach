@@ -36,17 +36,17 @@ export class FunctionStepPolicy implements IStepPolicy {
 PASO ACTUAL: Función para la audiencia original (paso 6 de 8).
 Pasaje: ${ctx.passage}
 
-Lo que pedís al pastor: que escriba qué HACÍA EL TEXTO PARA SU AUDIENCIA ORIGINAL — qué afirmaba, qué exigía, qué descartaba, qué consolaba. Mínimo ${MIN} caracteres.
+Lo que pides al pastor: que escriba qué HACÍA EL TEXTO PARA SU AUDIENCIA ORIGINAL — qué afirmaba, qué exigía, qué descartaba, qué consolaba. Mínimo ${MIN} caracteres.
 
 Reglas duras de este paso:
-- Confrontación de método: SALTO A APLICACIÓN MODERNA. Si el pastor escribe "para nosotros hoy / aplicado a la iglesia actual" sin primero anclar la función original → CONFRONTÁ con errorLabel "modern-application-leap", pidiéndole que primero responda qué le hacía AL LECTOR ORIGINAL.
+- Confrontación de método: SALTO A APLICACIÓN MODERNA. Si el pastor escribe "para nosotros hoy / aplicado a la iglesia actual" sin primero anclar la función original → CONFRONTA con errorLabel "modern-application-leap", pidiéndole que primero responda qué le hacía AL LECTOR ORIGINAL.
 - Si su respuesta es < ${MIN} chars o muy vaga → "orient" pidiendo más concreción (qué exigía a CÓMO leían, qué confrontaba en su contexto).
 - Si responde bien sobre función original → "accepted" con pastorTextToPersist verbatim.
 
 Trabajo previo del pastor:
 ${priorStepsBlock(ctx)}
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): que ancló la función en la audiencia ORIGINAL antes de cualquier salto a hoy — citá qué les hacía el texto. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): que ancló la función en la audiencia ORIGINAL antes de cualquier salto a hoy — cita qué les hacía el texto. Nada genérico.
 ${this.buildMisreadingNudge(ctx)}${this.buildIllustrationNudge(ctx)}
 Intento ${ctx.attemptIndex + 1} en este paso.`;
     }
@@ -78,7 +78,7 @@ Intento ${ctx.attemptIndex + 1} en este paso.`;
         return `
 DATO DEL PERFIL — lecturas erróneas frecuentes de este pasaje:
 ${lines}
-Si la respuesta del pastor CAE en una de estas lecturas, CONFRONTÁ con errorLabel "common-misreading": nombrá el ancla y preguntale si su lectura la sostiene o la contradice — SIN darle la respuesta. Si no toca el tema o lo trata bien, no confrontes por esto.`;
+Si la respuesta del pastor CAE en una de estas lecturas, CONFRONTA con errorLabel "common-misreading": nombra el ancla y pregúntale si su lectura la sostiene o la contradice — SIN darle la respuesta. Si no toca el tema o lo trata bien, no confrontes por esto.`;
     }
 
     /**
@@ -100,7 +100,7 @@ Si la respuesta del pastor CAE en una de estas lecturas, CONFRONTÁ con errorLab
         return `
 DATO DEL PERFIL — ilustraciones/metáforas directas de este pasaje:
 ${lines}
-Si el pastor explica la función sin tratarlas, surfacealas como dato y preguntale qué aporta cada imagen al mensaje. Él escribe el aporte; no se lo des hecho.`;
+Si el pastor explica la función sin tratarlas, muéstraselas como dato y pregúntale qué aporta cada imagen al mensaje. Él escribe el aporte; no se lo des hecho.`;
     }
 
     parseLlmReply(raw: string, pastorMessage: string): SocraticTurnOutput {

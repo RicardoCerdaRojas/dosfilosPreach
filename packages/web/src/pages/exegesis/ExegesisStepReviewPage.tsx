@@ -81,7 +81,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
     const openSource = () => {
         const claim = r.selectedPath ? r.claims.get(r.selectedPath) : null;
         if (!claim) return;
-        setOpenCitation({ sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, verbatimQuote: claim.verbatimQuote });
+        setOpenCitation({ sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator, verbatimQuote: claim.verbatimQuote });
     };
 
     return (

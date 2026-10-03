@@ -90,3 +90,42 @@ export const TMS_COVER_LAYOUT: CoverLayout = {
     afterTitle: 6,
     afterAuthor: 3,
 };
+
+/**
+ * Cómo se arma la portada, según la guía de estilo.
+ *
+ * La portada salía del perfil de trabajo con renglones, mayúsculas y la línea
+ * «POR» fijos en el exportador, mientras la bibliografía y las notas sí
+ * vivían en la guía. El fundador espera que el formato de la portada también
+ * lo diga la guía (pendiente 21 de la fase del TP de Santiago). Los DATOS
+ * —seminario, autor, título— siguen en la portada del trabajo; la guía dice
+ * dónde y cómo van.
+ */
+export interface CoverStyle {
+    layout: CoverLayout;
+    /** Todo en mayúsculas, como el modelo de TMS. */
+    uppercase: boolean;
+    /** La palabra que va antes del autor («POR», «PRESENTADO POR»). Vacía: sin línea. */
+    byLine: string;
+}
+
+export const TMS_COVER_STYLE: CoverStyle = { layout: TMS_COVER_LAYOUT, uppercase: true, byLine: 'POR' };
+
+/** La de la guía si la declara; la de TMS si no. */
+export function coverStyleOf(manifest: { cover?: CoverStyle | null } | null | undefined): CoverStyle {
+    return manifest?.cover ?? TMS_COVER_STYLE;
+}
+
+/**
+ * La portada de UN trabajo: la guía congelada en el trabajo (`styleGuideSnapshot`)
+ * manda, como en toda la composición; la guía viva sólo si no hay foto. Sin
+ * esto, editar o borrar la guía después de entregar cambiaba la portada al
+ * re-exportar, y el cuerpo seguía la foto (revisión adversarial de C5).
+ */
+export function paperCoverStyle(
+    paper: { styleGuideSnapshot?: { manifest?: { cover?: CoverStyle | null } | null } | null },
+    liveManifest: { cover?: CoverStyle | null } | null | undefined,
+): CoverStyle {
+    return coverStyleOf(paper.styleGuideSnapshot?.manifest ?? liveManifest);
+}
+

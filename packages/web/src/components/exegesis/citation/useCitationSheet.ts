@@ -34,7 +34,8 @@ export function useCitationSheet(paperId: string, citation: CitationTarget | nul
     const ctx: SheetContext = useMemo(() => ({
         numbering: numberingState.data?.numbering ?? null,
         offset: index.data?.printedPageOffset ?? null,
-    }), [numberingState.data?.numbering, index.data?.printedPageOffset]);
+        sections: index.data?.sections ?? [],
+    }), [numberingState.data?.numbering, index.data?.printedPageOffset, index.data?.sections]);
 
     const totalSheets = useMemo(() => {
         const fromNumbering = numberingState.data?.lastSheet ?? 0;

@@ -81,9 +81,9 @@ Reglas:
   * "preparatory": cláusulas que preceden y preparan la climática.
   * "development": cláusulas que siguen y desarrollan o aplican la climática.
 - Para cada cláusula escribe UNA pista socrática accionable, estructurada en DOS partes en UNA sola frase:
-  (a) qué observar en la cláusula misma (conjunción coordinante, verbo subordinado, posición, paralelo, etc.) — referenciá un rasgo CONCRETO del texto de esa cláusula, no algo genérico que aplique a varias.
+  (a) qué observar en la cláusula misma (conjunción coordinante, verbo subordinado, posición, paralelo, etc.) — referencia un rasgo CONCRETO del texto de esa cláusula, no algo genérico que aplique a varias.
   (b) una pregunta que el pastor pueda hacerse para reclasificarla, SIN nombrar el rol correcto.
-  Ejemplo de forma: "Fijate en X (rasgo concreto): ¿qué te indica eso sobre Y?"
+  Ejemplo de forma: "Fíjate en X (rasgo concreto): ¿qué te indica eso sobre Y?"
 - La pista NUNCA debe revelar el rol correcto. NUNCA debe ser genérica al punto que sirva para varias cláusulas del mismo pasaje. Si dos cláusulas comparten un rasgo (p. ej. ambas empiezan con "y"), la pista debe distinguirlas por otro rasgo.
 - Estilo: español neutral latinoamericano, "tú", pastoral. Una frase, máximo dos.
 

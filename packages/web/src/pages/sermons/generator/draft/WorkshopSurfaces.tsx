@@ -12,6 +12,8 @@ interface WorkshopBaseProps {
     elements: Record<string, SermonElement[]>;
     prose: Record<string, string>;
     audienceRigor: any;
+    /** El estilo del manuscrito que guardó el usuario; ausente = el del sistema. */
+    manuscriptStyle?: string;
 }
 
 /**
@@ -43,6 +45,7 @@ export function WorkshopPanel(props: WorkshopPanelProps) {
             prose={props.prose}
             onChangeProse={props.onChangeProse}
             audienceRigor={props.audienceRigor}
+            manuscriptStyle={props.manuscriptStyle}
             passage={props.passage}
             proposition={props.homiletics.homileticalProposition}
             points={(props.homiletics.outline?.mainPoints ?? []).map((p: any) => p.title)}
@@ -71,6 +74,7 @@ export function WorkshopActions(props: WorkshopActionsProps) {
                 points={(props.homiletics.outline?.mainPoints ?? []) as any[]}
                 proposition={props.homiletics.homileticalProposition}
                 audienceRigor={props.audienceRigor}
+                manuscriptStyle={props.manuscriptStyle}
                 onProseChange={props.onProseChange}
                 onAssemble={props.onAssemble}
                 hasDraft={props.hasDraft}

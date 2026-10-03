@@ -1,4 +1,5 @@
 import {
+    buildPreachingStudyRubric,
     buildStrategyOnlyRubric,
     STRATEGY_ONLY_RUBRIC_PRESET_ID,
     type CreateExegeticalPaperInput,
@@ -95,6 +96,15 @@ export class CreateExegeticalPaperUseCase {
                 created.id,
                 buildStrategyOnlyRubric(),
             );
+        }
+
+        // Un trabajo de una serie de predicación es un estudio para predicar:
+        // nace con esa rúbrica, no con la académica ni con la plantilla por
+        // defecto del usuario (que suele ser la de su curso). Jonás 4:5-11 nació
+        // con doce páginas y notas al pie. Una plantilla elegida para la serie
+        // (`exegesisDefaults.rubricTemplateId`) sí manda.
+        if (input.seriesId && !input.rubricTemplateId) {
+            return this.paperRepository.setRubric(input.ownerId, created.id, buildPreachingStudyRubric());
         }
 
         // Resolve and apply rubric template if needed. The repo

@@ -221,7 +221,7 @@ export class GeminiSermonGenerator implements ISermonGenerator {
                 // Sólo strings con contenido: el esquema los pide así, pero un
                 // modelo puede emitir objetos ({original, significance}) y el
                 // renderizador hace `.trim()` sobre cada entrada — un objeto
-                // acá revienta el lienzo entero, no una línea.
+                // aquí revienta el lienzo entero, no una línea.
                 keyWords: Array.isArray(b?.keyWords)
                     ? b.keyWords.filter((k: unknown): k is string => typeof k === 'string' && k.trim().length > 0)
                     : undefined,
@@ -262,7 +262,7 @@ export class GeminiSermonGenerator implements ISermonGenerator {
     ): Promise<any> {
         try {
             // El prompt vive en `prompts-generator` como el del borrador
-            // completo. Tenerlo acá embebido fue lo que dejó que divergiera:
+            // completo. Tenerlo aquí embebido fue lo que dejó que divergiera:
             // el punto regenerado salía sin la voz del predicador, sin nivel de
             // rigor, sin bosquejo y sin las directivas del pastor.
             const fullPrompt = buildRegeneratePointPrompt(point, rules, context, language);
@@ -406,7 +406,7 @@ WHENEVER you use information from these books, CITE the source (Author, Title).
 ## 📚 ACCESO COMPLETO A BIBLIOTECA DEL PASTOR:
 Tienes acceso al CONTENIDO COMPLETO de estos libros en tu contexto:
 ${resourcesList}
-SIEMPRE que uses información de estos libros, CITÁ la fuente (Autor, Título).
+SIEMPRE que uses información de estos libros, CITA la fuente (Autor, Título).
 `;
             }
 

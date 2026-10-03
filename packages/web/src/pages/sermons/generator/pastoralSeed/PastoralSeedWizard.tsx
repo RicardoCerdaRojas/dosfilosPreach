@@ -153,7 +153,7 @@ export function PastoralSeedWizard({
             }
         } catch (err) {
             console.error('[PastoralSeedWizard] failed to persist snapshot', err);
-            toast.error('No se pudo guardar la nota del estudio, pero podés seguir.');
+            toast.error('No se pudo guardar la nota del estudio, pero puedes seguir.');
         } finally {
             setGateOpen(false);
             if (seed) onSeedCompleted(seed);
@@ -237,7 +237,7 @@ export function PastoralSeedWizard({
             <div className="max-w-7xl mx-auto py-3 px-2 space-y-4">
                 <header className="space-y-2">
                     <div className="flex items-center gap-2">
-                        <Scale className="h-4 w-4 text-emerald-600" />
+                        <Scale className="h-4 w-4 text-success" />
                         <h1 className="text-base font-semibold">Validación final</h1>
                         <span className="text-xs text-muted-foreground hidden md:inline">
                             · Tres testigos antes del borrador.
@@ -433,7 +433,7 @@ export function PastoralSeedWizard({
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-2">
-                            <Sprout className="h-4 w-4 text-emerald-600" />
+                            <Sprout className="h-4 w-4 text-success" />
                             <h1 className="text-base font-semibold">Estudio personal</h1>
                         </div>
                         {passage && (
@@ -464,7 +464,7 @@ export function PastoralSeedWizard({
                     )}
                 </div>
                 {derivedSuggestions && (
-                    <Card className="p-3 bg-amber-50 border-amber-300 text-sm dark:bg-amber-950/30 dark:border-amber-700">
+                    <Card className="p-3 bg-warning/10 border-warning/40 text-sm">
                         <p className="font-medium mb-1">Pre-llenado parcial disponible</p>
                         <p className="text-muted-foreground">{derivedSuggestions.note}</p>
                     </Card>
@@ -498,7 +498,11 @@ export function PastoralSeedWizard({
                         defecto, y ausente en los pasos que el paper no
                         alimenta. */}
                     {paperReference && currentKey && (
-                        <PaperStudyReferencePanel reference={paperReference} stepKey={currentKey} />
+                        <PaperStudyReferencePanel
+                            reference={paperReference}
+                            stepKey={currentKey}
+                            onAddWordStudy={currentKey === 'wordStudies' ? addWordStudy : undefined}
+                        />
                     )}
 
                     {methodError && <MethodErrorNote description={methodError.description} />}
@@ -554,7 +558,7 @@ export function PastoralSeedWizard({
                                 <Button
                                     onClick={handleAdvance}
                                     disabled={!seedCompleted}
-                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                    className="bg-success text-success-foreground hover:bg-success/90"
                                 >
                                     {seedCompleted
                                         ? threeWitnesses.enabled

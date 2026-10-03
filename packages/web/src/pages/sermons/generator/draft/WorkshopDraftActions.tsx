@@ -23,6 +23,7 @@ interface Props {
     homiletics: HomileticalAnalysis;
     proposition?: string;
     audienceRigor?: 'beginner' | 'seminary';
+    manuscriptStyle?: string;
     onProseChange: (sectionId: string, prose: string) => void;
     onAssemble: (draft: SermonContent) => void | Promise<void>;
     /** Ya existe un borrador: entonces esta acción lo REHACE, no lo crea. */
@@ -186,6 +187,7 @@ export function WorkshopDraftActions(props: Props) {
                 scriptureText:
                     LocalBibleService.getVerses(scriptureLookupRef(seccion.scriptureRef) ?? '') ?? undefined,
                 audienceRigor: props.audienceRigor,
+                manuscriptStyle: props.manuscriptStyle,
             });
             if (texto) {
                 escritas[seccion.id] = texto;

@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { sanitizeExtractedTextOnly } from './sanitizeExtractedText';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
@@ -258,3 +259,49 @@ export const getDocumentPdfUrl = onCall<PdfUrlRequest>(
         };
     },
 );
+
+/**
+ * El texto COMPLETO de un documento, armado desde sus fragmentos en orden.
+ *
+ * `library_resources.textContent` es una copia con huecos: el documento de
+ * Firestore tiene tope de 1 MB, así que en un comentario largo se corta (la
+ * gramática de Robertson llega sólo a la hoja 354 de 1528) y a veces a mitad
+ * de párrafo. La verdad está en `document_chunks`, que es lo que lee el
+ * análisis cuando recupera por pasaje. Pendiente 15 de la fase del TP de
+ * Santiago.
+ *
+ * Proyectado sin el vector de embeddings, que es lo que pesa.
+ */
+/** Los fragmentos en orden, unidos por párrafo. Vacíos fuera. */
+export function textFromChunks(chunks: ReadonlyArray<{ chunkIndex?: number; text?: unknown }>): string {
+    return [...chunks]
+        .sort((a, b) => (a.chunkIndex ?? 0) - (b.chunkIndex ?? 0))
+        // Saneado al leer, como `retrieveCuratedCorpus`: los fragmentos
+        // indexados antes del saneador traen invisibles.
+        .map(d => (typeof d.text === 'string' ? sanitizeExtractedTextOnly(d.text).trim() : ''))
+        .filter(Boolean)
+        .join('\n\n');
+}
+
+export const getDocumentText = onCall<PageIndexRequest>(
+    { ...appCheckCallableOptions(), region: 'us-central1', memory: '1GiB' },
+    async (request) => {
+        if (!request.auth) throw new HttpsError('unauthenticated', 'Sign-in required');
+        const uid = request.auth.uid;
+        const resourceId = requireResourceId(request.data?.resourceId);
+
+        const snapshot = await getFirestore()
+            .collection(CHUNK_COLLECTION)
+            .where('resourceId', '==', resourceId)
+            .select('chunkIndex', 'text', 'userId', 'stores')
+            .get();
+        if (snapshot.empty) return { text: '', chunkCount: 0 };
+
+        const readable = snapshot.docs.map(d => d.data()).filter(data => canRead(data, uid));
+        if (readable.length === 0) {
+            throw new HttpsError('permission-denied', 'Resource not readable by this user');
+        }
+        return { text: textFromChunks(readable), chunkCount: readable.length };
+    },
+);
+

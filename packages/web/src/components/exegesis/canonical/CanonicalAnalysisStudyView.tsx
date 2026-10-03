@@ -15,6 +15,7 @@ import {
     Tag,
 } from 'lucide-react';
 import {
+    citedLocation,
     formatPassageReference,
     type CanonicalVerseAnalysis,
     type CitationPageKind,
@@ -57,6 +58,8 @@ type OpenCitation = (citation: {
     sourceKey: string;
     page: number;
     pageKind?: CitationPageKind;
+    /** La sección, en un libro citado por sección. */
+    locator?: string;
     verbatimQuote?: string | null;
 }) => void;
 
@@ -91,6 +94,7 @@ function CitationChip({
     sourceKey,
     page,
     pageKind,
+    locator,
     verbatimQuote,
     onOpen,
     path,
@@ -99,13 +103,17 @@ function CitationChip({
     sourceKey: string;
     page: number;
     pageKind?: CitationPageKind;
+    locator?: string;
     verbatimQuote?: string | null;
     onOpen?: OpenCitation;
     path?: string;
     marks?: CitationMarks;
 }) {
     const { t } = useTranslation('exegesis');
-    const label = `${sourceKey} p. ${page}`;
+    // Con su tipo: decía «p.» también sobre una hoja del PDF, y ahora puede
+    // ser una sección («§ 2.3») en un libro sin páginas impresas.
+    const ubicacion = citedLocation({ sourceKey, page, pageKind, locator }, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`));
+    const label = `${sourceKey} ${ubicacion}`;
     if (marks && path) {
         const verdict = marks.verdicts.get(path) ?? null;
         return (
@@ -121,7 +129,7 @@ function CitationChip({
             >
                 {verdict && <CitationStatusDot status={verdict.status} reviewed={marks.reviewed.has(path)} />}
                 <span className="text-xs font-semibold text-foreground">{sourceKey}</span>
-                <span className="text-[11px] text-muted-foreground">p. {page}</span>
+                <span className="text-[11px] text-muted-foreground">{ubicacion}</span>
             </button>
         );
     }
@@ -129,19 +137,19 @@ function CitationChip({
         return (
             <>
                 <span className="text-xs font-semibold text-foreground">{sourceKey}</span>
-                <span className="text-[11px] text-muted-foreground">p. {page}</span>
+                <span className="text-[11px] text-muted-foreground">{ubicacion}</span>
             </>
         );
     }
     return (
         <button
             type="button"
-            onClick={() => onOpen({ sourceKey, page, pageKind, verbatimQuote })}
+            onClick={() => onOpen({ sourceKey, page, pageKind, locator, verbatimQuote })}
             title={t('citationViewer.openSource')}
             className="inline-flex items-baseline gap-1 rounded px-1 -mx-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
             <span className="text-xs font-semibold text-foreground underline decoration-dotted underline-offset-2">{sourceKey}</span>
-            <span className="text-[11px] text-muted-foreground">p. {page}</span>
+            <span className="text-[11px] text-muted-foreground">{ubicacion}</span>
             <span className="sr-only">{t('citationViewer.openSource', { label })}</span>
         </button>
     );
@@ -250,6 +258,9 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                 title={t('canonical.study.textualCriticism')}
                 hint={t('canonical.study.textualCriticismHint')}
                 count={analysis.textualCriticism.variants.length}
+                status={analysis.textualCriticism.variants.length === 0 && analysis.textualCriticism.note.trim()
+                    ? t('canonical.study.status.noVariants')
+                    : undefined}
             >
                 <p className="text-xs italic text-foreground/85 leading-relaxed mb-2">
                     {analysis.textualCriticism.note || <em className="text-muted-foreground">—</em>}
@@ -344,6 +355,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                         sourceKey={c.sourceKey}
                                         page={c.page}
                                         pageKind={c.pageKind}
+                                        locator={c.locator}
                                         verbatimQuote={c.verbatimQuote}
                                         onOpen={onOpenCitation}
                                         path={`commentatorEngagement[${idx}]`}
@@ -403,6 +415,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                                         sourceKey={p.sourceKey}
                                                         page={p.page}
                                                         pageKind={p.pageKind}
+                                                        locator={p.locator}
                                                         verbatimQuote={p.verbatimQuote}
                                                         onOpen={onOpenCitation}
                                                         path={`translationCruxes[${idx}].commentatorPositions[${pidx}]`}
@@ -513,6 +526,7 @@ function Section({
     title,
     hint,
     count,
+    status,
     defaultOpen = false,
     children,
 }: {
@@ -520,6 +534,8 @@ function Section({
     title: string;
     hint?: string;
     count?: number;
+    /** Estado que se lee cerrado, p. ej. «revisado · sin variantes». */
+    status?: string;
     defaultOpen?: boolean;
     children: React.ReactNode;
 }) {
@@ -535,8 +551,13 @@ function Section({
                 <span className="text-success shrink-0">{icon}</span>
                 <span className="text-xs font-semibold text-foreground flex-1">
                     {title}
-                    {typeof count === 'number' && (
+                    {/* El número sólo cuando hay algo: «Crítica textual (0)» con la
+                        nota adentro se leía como «vacío» (Jonás 4:5-11). */}
+                    {typeof count === 'number' && count > 0 && (
                         <span className="ml-1.5 text-muted-foreground/70 font-normal">({count})</span>
+                    )}
+                    {status && (
+                        <span className="ml-1.5 text-muted-foreground/70 font-normal">· {status}</span>
                     )}
                 </span>
             </button>
@@ -709,26 +730,37 @@ function SourceList({
 }) {
     const { t } = useTranslation('exegesis');
     if (citations.length === 0) return null;
+    // El mismo rótulo que el chip (`citedLocation`): estas citas decían «p.»
+    // sobre una hoja y «p. 0 (2.3)» sobre una sección.
+    const rotulo = (c: SourceCitation) =>
+        `${c.sourceKey} ${citedLocation(c, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}`;
     return (
         <p className="text-[10.5px] text-muted-foreground italic mt-1">
             {citations.map((c, i) => (
                 <span key={i}>
                     {i > 0 && '; '}
                     {marks && pathFor ? (
-                        <CitationChip sourceKey={c.sourceKey} page={c.page} path={pathFor(i)} marks={marks} />
+                        <CitationChip
+                            sourceKey={c.sourceKey}
+                            page={c.page}
+                            pageKind={c.pageKind}
+                            locator={c.locator}
+                            path={pathFor(i)}
+                            marks={marks}
+                        />
                     ) : onOpenCitation ? (
                         <button
                             type="button"
-                            onClick={() => onOpenCitation({ sourceKey: c.sourceKey, page: c.page, pageKind: c.pageKind })}
+                            onClick={() => onOpenCitation({ sourceKey: c.sourceKey, page: c.page, pageKind: c.pageKind, locator: c.locator })}
                             title={t('citationViewer.openSource')}
                             className="rounded px-0.5 -mx-0.5 underline decoration-dotted underline-offset-2 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         >
-                            {c.sourceKey} p. {c.page}
+                            {rotulo(c)}
                         </button>
                     ) : (
-                        <>{c.sourceKey} p. {c.page}</>
+                        <>{rotulo(c)}</>
                     )}
-                    {c.locator ? ` (${c.locator})` : ''}
+                    {c.locator && c.pageKind !== 'section' ? ` (${c.locator})` : ''}
                 </span>
             ))}
         </p>

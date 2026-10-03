@@ -581,7 +581,7 @@ export class RunSocraticTurnUseCase {
     ): string {
         if (output.kind === 'accepted') {
             if (sermonReady) {
-                return `${output.agentReply}\n\n¡Tu sermón está listo! Has completado los 8 pasos del estudio. Hacé click en **"Pasar al sermón"** para abrir el wizard y comenzar la homilética.`;
+                return `${output.agentReply}\n\n¡Tu sermón está listo! Has completado los 8 pasos del estudio. Haz clic en **"Pasar al sermón"** para abrir el wizard y comenzar la homilética.`;
             }
             const nextIdx = PASTORAL_SEED_STEP_ORDER.indexOf(nextState.currentStep) + 1;
             return `${output.agentReply}\n\n**Paso ${nextIdx} de 8 — ${stepDisplayName(nextState.currentStep)}.**\n${STEP_INSTRUCTIONS[nextState.currentStep]}`;

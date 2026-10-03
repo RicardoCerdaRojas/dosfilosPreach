@@ -1,19 +1,15 @@
 import type { ProjectSource } from '../entities/ProjectSource';
 import { countChars, type PageIndexEntry } from '../outline/documentPageIndex';
-import { hasCuratedScope } from './curatedScope';
+import { retrievalScopeOf, wholeDocumentTravelsEntire } from './curatedScope';
 
 /**
  * Cuánto corpus llega al prompt de UN paso (un versículo).
  *
- * Hay dos clases de fuente y viajan distinto:
- *
- *   - Con FRAGMENTOS guardados (sin páginas elegidas): van completas a cada
- *     paso (`AnalyzeVerseCanonicallyUseCase`, rama `usesExtractedExcerpts`).
- *   - Con PÁGINAS ELEGIDAS (receta): sus hojas NO se mandan enteras. El paso le
- *     pregunta al corpus qué de esas hojas habla de su versículo
- *     (`retrieveCurated` → `selectForPrompt`): lo fijado entra completo y el
- *     resto compite por lo que sobre de `CURATED_CORPUS_BUDGET_CHARS`, para
- *     todas esas fuentes juntas.
+ * Lo que viaja lo decide `retrievalScopeOf`, la misma función que usa el
+ * analizador: las páginas elegidas, las hojas de los fragmentos y el documento
+ * completo se CONSULTAN por versículo (`retrieveCurated` → `selectForPrompt`),
+ * y entre todas aportan como mucho `CURATED_CORPUS_BUDGET_CHARS`; lo fijado,
+ * los fragmentos editados y los que no dicen de qué hoja son viajan completos.
  *
  * El medidor de #730 sumaba todas las hojas admitidas como si viajaran
  * enteras. En Jonás 4:5-11 (2026-10-02) marcaba 129% cuando lo que llega a cada
@@ -22,8 +18,8 @@ import { hasCuratedScope } from './curatedScope';
  */
 
 /**
- * Tope de lo que el corpus de páginas elegidas aporta a un paso, sumando todas
- * sus fuentes. Lo usan el análisis por versículo y la composición del paso; el
+ * Tope de lo que el corpus consultado (páginas elegidas, hojas de fragmentos,
+ * documentos completos) aporta a un paso, sumando todas sus fuentes. Lo usan el análisis por versículo y la composición del paso; el
  * medidor lo lee de aquí para no inventarse otro número.
  *
  * La mitad del tope del prompt: el resto es para las instrucciones, la guía de
@@ -41,12 +37,18 @@ export function curatedCharsPerStep(admittedChars: number, pinnedChars: number):
 }
 
 export interface CorpusFootprint {
-    /** Fragmentos de las fuentes sin páginas elegidas: viajan completos. */
+    /** Lo que viaja completo: fragmentos sin hoja y fragmentos editados. */
     excerptChars: number;
-    /** Todas las hojas elegidas. Se CONSULTAN por versículo; no viajan enteras. */
+    /**
+     * Lo que se CONSULTA por versículo: las hojas elegidas y las hojas de los
+     * fragmentos. Un documento completo suma el libro entero, que no se
+     * conoce sin su índice: ver `wholeDocuments`.
+     */
     admittedChars: number;
     /** Hojas fijadas («siempre incluir»): viajan completas. */
     pinnedChars: number;
+    /** Fuentes sin páginas ni fragmentos: se consulta el libro entero. */
+    wholeDocuments: number;
     /** Lo que llega, como mucho, al prompt de un versículo. */
     perStepChars: number;
     /** Alguna fuente con páginas todavía no tiene su índice: los totales son un mínimo. */
@@ -56,39 +58,69 @@ export interface CorpusFootprint {
 /**
  * El corpus entero, separado en lo que viaja completo y lo que se consulta.
  *
- * Una fuente con páginas cuyo índice todavía no llegó deja `pending`: decir
- * cero es el error que #730 corrigió. Las fuentes sin páginas ni fragmentos no
- * suman: no tienen nada que medir, y su problema —leer el comienzo del libro—
- * lo avisa `SourceSinPaginas`.
+ * Cada fuente cuenta según `retrievalScopeOf`, la misma pregunta que se hace
+ * el analizador para decidir qué buscar:
+ *
+ *   - Páginas elegidas: sus hojas, del índice del documento. Sin índice
+ *     todavía, `pending` —decir cero es el error que #730 corrigió—.
+ *   - Fragmentos con hoja: se consultan TODAS las hojas de donde salieron
+ *     (el recuperador no distingue los fragmentos guardados de sus vecinos de
+ *     hoja), así que con índice se cuentan las hojas; sin índice, el texto de
+ *     los fragmentos, como mínimo. Los editados o sin hoja viajan completos.
+ *   - Documento completo: chico, viaja entero (`wholeDocumentTravelsEntire`,
+ *     lo mismo que decide el recuperador); un libro pasa siempre el tope del
+ *     grupo, así que alcanza con contarlo.
+ *   - Sin nada que consultar: sus fragmentos viajan completos.
  */
 export function corpusFootprint(
-    sources: ReadonlyArray<Pick<ProjectSource, 'id' | 'excerpts' | 'excerptRecipe'>>,
+    sources: ReadonlyArray<Pick<ProjectSource, 'id' | 'sourceType' | 'mode' | 'excerpts' | 'excerptRecipe'>>,
     indexBySource: ReadonlyMap<string, ReadonlyArray<PageIndexEntry> | null>,
 ): CorpusFootprint {
     let excerptChars = 0;
     let admittedChars = 0;
     let pinnedChars = 0;
+    let wholeDocuments = 0;
     let pending = false;
+    const chars = (xs: ReadonlyArray<{ text: string }>) => xs.reduce((n, e) => n + e.text.length, 0);
     for (const s of sources) {
-        if (!hasCuratedScope(s)) {
-            excerptChars += s.excerpts.reduce((n, e) => n + e.text.length, 0);
+        const scope = retrievalScopeOf(s);
+        if (!scope) {
+            excerptChars += chars(s.excerpts);
             continue;
         }
         const index = indexBySource.get(s.id) ?? null;
+        if (scope.kind === 'whole-document') {
+            if (index && wholeDocumentTravelsEntire(index)) {
+                pinnedChars += index.reduce((n, p) => n + p.charCount, 0);
+            } else {
+                wholeDocuments++;
+            }
+            continue;
+        }
+        if (scope.kind === 'excerpt-sheets') {
+            excerptChars += chars(scope.alwaysExcerpts);
+            if (index) {
+                admittedChars += countChars(index, scope.sheetRanges);
+            } else {
+                admittedChars += chars(s.excerpts) - chars(scope.alwaysExcerpts);
+                pending = true;
+            }
+            continue;
+        }
         if (!index) {
             pending = true;
             continue;
         }
-        admittedChars += countChars(index, s.excerptRecipe!.sheetRanges);
-        pinnedChars += countChars(index, s.excerptRecipe!.pinnedRanges ?? []);
+        admittedChars += countChars(index, scope.sheetRanges);
+        pinnedChars += countChars(index, scope.pinnedRanges);
     }
-    return {
-        excerptChars,
-        admittedChars,
-        pinnedChars,
-        perStepChars: excerptChars + curatedCharsPerStep(admittedChars, pinnedChars),
-        pending,
-    };
+    return finish({ excerptChars, admittedChars, pinnedChars, wholeDocuments, pending });
+}
+
+function finish(f: Omit<CorpusFootprint, 'perStepChars'>): CorpusFootprint {
+    // Con un documento completo en el grupo, lo consultado llena el tope.
+    const consultado = f.wholeDocuments > 0 ? Math.max(f.admittedChars, CURATED_CORPUS_BUDGET_CHARS) : f.admittedChars;
+    return { ...f, perStepChars: f.excerptChars + curatedCharsPerStep(consultado, f.pinnedChars) };
 }
 
 /**
@@ -100,12 +132,9 @@ export function withPageSelection(
     selectedChars: number,
     pinnedChars: number,
 ): CorpusFootprint {
-    const admittedChars = others.admittedChars + selectedChars;
-    const pinned = others.pinnedChars + pinnedChars;
-    return {
+    return finish({
         ...others,
-        admittedChars,
-        pinnedChars: pinned,
-        perStepChars: others.excerptChars + curatedCharsPerStep(admittedChars, pinned),
-    };
+        admittedChars: others.admittedChars + selectedChars,
+        pinnedChars: others.pinnedChars + pinnedChars,
+    });
 }

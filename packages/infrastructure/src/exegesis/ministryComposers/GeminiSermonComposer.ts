@@ -101,7 +101,7 @@ function buildSermonPrompt(input: ComposeSermonInput): { systemInstruction: stri
             `Tone-faithful, doctrinally grounded, exegetically honest. Citations sparingly when a commentator's specific contribution helps the explanation; otherwise let the text speak.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n')
         : [
-            `Sos un homileta componiendo un sermón expositivo a partir de análisis canónicos PRE-COMPLETADOS. El trabajo exegético está hecho — tu tarea es composición homilética fiel para el tono escogido.`,
+            `Eres un homileta componiendo un sermón expositivo a partir de análisis canónicos PRE-COMPLETADOS. El trabajo exegético está hecho — tu tarea es composición homilética fiel para el tono escogido.`,
             ``,
             `## Pasaje`,
             `**${passage}**`,

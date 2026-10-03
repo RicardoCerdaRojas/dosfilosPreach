@@ -14,6 +14,8 @@ import {
 export interface SheetContext {
     numbering: PageNumbering | null;
     offset: number | null;
+    /** El índice de secciones del libro, para las citas por sección. */
+    sections?: ReadonlyArray<{ section: string; sheet: number }>;
 }
 
 /**
@@ -25,9 +27,17 @@ export interface SheetContext {
  * la calibración. Sin `pageKind` el número es hoja.
  */
 export function resolveCitationSheet(
-    citation: { page: number; pageKind?: CitationPageKind },
+    citation: { page: number; pageKind?: CitationPageKind; locator?: string },
     ctx: SheetContext,
 ): number {
+    // Por sección (libro sin páginas impresas): la hoja donde empieza esa
+    // sección en el índice del libro.
+    if (citation.pageKind === 'section' && citation.locator?.trim()) {
+        const buscada = plegar(citation.locator.replace(/^§\s*/, ''));
+        const hallada = ctx.sections?.find(s => plegar(s.section) === buscada)
+            ?? ctx.sections?.find(s => plegar(s.section).startsWith(buscada));
+        return hallada?.sheet ?? 1;
+    }
     if (citation.pageKind !== 'printed') return Math.max(1, citation.page);
     return sheetForPrintedIn(ctx.numbering, citation.page)
         ?? sheetForPrintedPage(citation.page, ctx.offset)
@@ -58,4 +68,9 @@ export function printedOfSheet(sheet: number, ctx: SheetContext): string | numbe
 export function clampSheet(sheet: number, total: number | null): number {
     const lo = Math.max(1, sheet);
     return total && total >= 1 ? Math.min(lo, total) : lo;
+}
+
+/** Sin tildes, mayúsculas ni espacios repetidos: «2.3  El Genitivo» = «2.3 el genitivo». */
+function plegar(text: string): string {
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }

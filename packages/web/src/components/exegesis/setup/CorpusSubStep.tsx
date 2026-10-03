@@ -44,6 +44,8 @@ import {
     deriveCitationKeyFromAuthor,
     usesExtractedExcerpts,
     hasCuratedScope,
+    isSourceWithoutScope,
+    declaresNoFolios,
     countSheets,
     isExcerptSetStale,
     resourceMatchesTestament,
@@ -294,7 +296,7 @@ function CorpusSourcesList({
                 trabajo tiene dos y la serie tiene once, traer las nueve que
                 faltan sigue siendo lo más útil de esta pantalla. La tarjeta se
                 esconde sola cuando no hay nada que ofrecer. */}
-            <HerenciaDeSerie paperId={paper.id} />
+            <HerenciaDeSerie paper={paper} />
             {/* Header only when there are sources to label. The empty
                 state's hero card is doing the entry-point work and
                 the "(0)" header was just noise on first paint. */}
@@ -1056,11 +1058,19 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 </button>
             </div>
 
-            {isCitable && !hasCuratedScope(source) && !usesExtractedExcerpts(source) && (
+            {isSourceWithoutScope(source) && (
                 <SourceSinPaginas paperId={paper.id} sourceId={source.id} />
             )}
 
-            {isCitable && libraryResource && !hasResolvedNumbering(libraryResource.pageNumbering) && (
+            {isCitable && libraryResource && declaresNoFolios(libraryResource.pageNumbering) && (
+                // Un libro que declara no tener páginas impresas se cita por
+                // sección (§): la cita sí se puede encontrar en el ejemplar.
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                    {t('paperSetup.subSteps.corpus.citaPorSeccion')}
+                </p>
+            )}
+            {isCitable && libraryResource && !hasResolvedNumbering(libraryResource.pageNumbering)
+                && !declaresNoFolios(libraryResource.pageNumbering) && (
                 <SinPaginaComprobable resourceId={libraryResource.id} />
             )}
 

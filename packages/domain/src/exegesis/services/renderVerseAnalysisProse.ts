@@ -1,3 +1,4 @@
+import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { relabelProsePages } from './relabelProsePages';
 import { verseSectionKey } from './verseAnalysisCoverage';
@@ -58,11 +59,12 @@ export function renderVerseAnalysisProse(
         ?? ((_key: string, value: number, kind: CitationPageKind) =>
             kind === 'printed' ? `p. ${value}` : `hoja ${value}`);
     /** Rotula una cita con el tipo de página que registró el análisis. */
-    const cited = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind }) =>
-        pageOf(c.sourceKey, c.page, c.pageKind ?? 'sheet');
+    const cited = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind; locator?: string }) =>
+        citedLocation(c, pageOf);
     const kindBySource = new Map<string, CitationPageKind>();
     for (const c of analysis.commentatorEngagement) {
-        if (c.pageKind && !kindBySource.has(c.sourceKey)) kindBySource.set(c.sourceKey, c.pageKind);
+        // Una cita por sección no tiene número: no decide cómo se rotulan los de la prosa.
+        if (c.pageKind && c.pageKind !== 'section' && !kindBySource.has(c.sourceKey)) kindBySource.set(c.sourceKey, c.pageKind);
     }
     const citableKeys = options.citableKeys ?? [];
     const prose = options.pageLabel && citableKeys.length > 0
@@ -75,7 +77,8 @@ export function renderVerseAnalysisProse(
 
     const cite = (sources: readonly SourceCitation[]): string => {
         const rendered = sources
-            .map(s => `${s.sourceKey}, ${cited(s)}${s.locator ? `, ${s.locator}` : ''}`)
+            // Por sección, `cited` ya es «§ 2.3»: repetir el locator decía «§ 2.3, 2.3».
+            .map(s => `${s.sourceKey}, ${cited(s)}${s.locator && s.pageKind !== 'section' ? `, ${s.locator}` : ''}`)
             .join('; ');
         return rendered ? ` (${rendered})` : '';
     };

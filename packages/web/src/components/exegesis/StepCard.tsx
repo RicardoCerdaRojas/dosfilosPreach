@@ -16,6 +16,7 @@ import {
     NotebookPen,
     ShieldCheck,
     MoreVertical,
+    Undo2,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,6 +29,7 @@ import { useReopenStep } from '@/hooks/exegesis/useReopenStep';
 import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/CanonicalAnalysisStudyView';
 import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
+import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { Link, useNavigate } from 'react-router-dom';
 import { assemblyContents, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
@@ -354,7 +356,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         return { awaitingReview, noAnalysis, conclusionMissing };
     };
 
-    const handleComposeConclusion = async () => {
+    const handleComposeConclusion = async (regenerationHint?: string) => {
         const missing = buildPrecheckMissing('conclusion');
         if (missing) {
             setPrecheckMissing(missing);
@@ -362,7 +364,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             return;
         }
         try {
-            await composeConclusionFromAnalyses.mutateAsync({ paperId });
+            await composeConclusionFromAnalyses.mutateAsync({ paperId, regenerationHint: regenerationHint ?? null });
         } catch (err) {
             if (handleQuotaError(err)) return;
             console.error('[exegesis] compose conclusion failed:', err);
@@ -371,7 +373,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             }));
         }
     };
-    const handleComposeIntroduction = async () => {
+    const handleComposeIntroduction = async (regenerationHint?: string) => {
         const missing = buildPrecheckMissing('introduction');
         if (missing) {
             setPrecheckMissing(missing);
@@ -379,7 +381,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             return;
         }
         try {
-            await composeIntroductionFromAnalyses.mutateAsync({ paperId });
+            await composeIntroductionFromAnalyses.mutateAsync({ paperId, regenerationHint: regenerationHint ?? null });
         } catch (err) {
             if (handleQuotaError(err)) return;
             console.error('[exegesis] compose introduction failed:', err);
@@ -492,16 +494,15 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         if (shouldRegenerateCanonically) {
             return handleAnalyzeCanonically(regenerationHint);
         }
-        // Hint flow keeps the legacy generateStep path because the
-        // composer use cases don't accept regenerationHint yet — TODO
-        // in issue #126 follow-up. Plain "Regenerar" (no hint) goes
-        // through the composer so the pinned-source contract +
-        // textContent injection apply.
-        if (isConclusion && !regenerationHint) {
-            return handleComposeConclusion();
+        // Con indicación o sin ella, por el compositor: lee el ESTUDIO
+        // aceptado de cada versículo. Con indicación se iba por el camino
+        // viejo, que lee la PROSA, y cambiaba de fuente sin decirlo (#25 del
+        // ejercicio de Jonás); los compositores ya aceptaban la indicación.
+        if (isConclusion) {
+            return handleComposeConclusion(regenerationHint);
         }
-        if (isIntroduction && !regenerationHint) {
-            return handleComposeIntroduction();
+        if (isIntroduction) {
+            return handleComposeIntroduction(regenerationHint);
         }
         return handleGenerate(regenerationHint);
     };
@@ -560,6 +561,57 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         }
     };
 
+    /**
+     * Las acciones del paso como íconos en el encabezado (#26). Se arman
+     * acá, una vez, con los mismos handlers y guardas que los pies: si se
+     * duplicaran las condiciones, divergirían.
+     */
+    const accionesDelEncabezado: StepHeaderAction[] = (() => {
+        const ic = 'h-3.5 w-3.5';
+        if (isReview && !editing) {
+            return [
+                { key: 'regenerate', label: t('detail.steps.action.regenerate'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: versionEnVuelo, pending: anyPipelinePending },
+                { key: 'edit', label: t('detail.steps.action.editManual'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: versionEnVuelo },
+                { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo || !step.current, pending: verifyStepCitations.isPending },
+            ];
+        }
+        if (showAccepted && !editing) {
+            const acciones: StepHeaderAction[] = [
+                { key: 'edit', label: t('detail.steps.action.editAccepted'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: anyPipelinePending },
+                { key: 'redo', label: t('detail.steps.action.redo'), icon: <Undo2 className={ic} />, onClick: () => reopenStep.mutate({ paperId, stepId: step.id }), disabled: reopenStep.isPending || anyPipelinePending },
+                canonicalAnalysis
+                    ? { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath }
+                    : { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo, pending: verifyStepCitations.isPending },
+            ];
+            if (isVerse && canonicalAnalysis) {
+                acciones.push(
+                    {
+                        key: 'prose',
+                        label: previewMarkdown.trim().length > 0 ? t('canonical.verseProse.button.recompose') : t('canonical.verseProse.button.compose'),
+                        icon: <Wand2 className={ic} />,
+                        onClick: () => (previewMarkdown.trim().length > 0 ? setRecomposeOpen(true) : handleComposeVerseProse()),
+                        disabled: anyPipelinePending,
+                        pending: composeVerseAcademicProse.isPending,
+                    },
+                    { key: 'regen', label: t('canonical.actions.regenAnalysis'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: anyPipelinePending, pending: analyzeVerseCanonically.isPending },
+                );
+            }
+            if (isConclusion || isIntroduction) {
+                acciones.push({
+                    key: 'recompose',
+                    label: t('canonical.actions.recomposeFromAnalyses'),
+                    icon: <RotateCcw className={ic} />,
+                    onClick: () => (isConclusion ? handleComposeConclusion() : handleComposeIntroduction()),
+                    disabled: anyPipelinePending,
+                    pending: composeConclusionFromAnalyses.isPending || composeIntroductionFromAnalyses.isPending,
+                });
+            }
+            return acciones;
+        }
+        return [];
+    })();
+
+
     // Display-only summary lookup — picks from the version the UI is
     // showing so the badge in the header reflects the same content the
     // user is reading. Null until verification has ever run.
@@ -593,6 +645,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 role={collapsible ? 'button' : undefined}
                 tabIndex={collapsible ? 0 : undefined}
                 onKeyDown={collapsible ? (e) => {
+                    // Sólo el encabezado mismo: Enter sobre un botón de adentro es de ese botón.
+                    if (e.target !== e.currentTarget) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         setCollapsed(c => !c);
@@ -677,7 +731,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <>
                                 <Button
                                     size="sm"
-                                    onClick={handleComposeConclusion}
+                                    onClick={() => handleComposeConclusion()}
                                     disabled={anyPipelinePending}
                                     title={t('canonical.actions.composeConclusionTooltip')}
                                     className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
@@ -696,7 +750,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <>
                                 <Button
                                     size="sm"
-                                    onClick={handleComposeIntroduction}
+                                    onClick={() => handleComposeIntroduction()}
                                     disabled={anyPipelinePending}
                                     title={t('canonical.actions.composeIntroductionTooltip')}
                                     className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
@@ -755,7 +809,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <>
                                 <Button
                                     size="sm"
-                                    onClick={handleComposeConclusion}
+                                    onClick={() => handleComposeConclusion()}
                                     disabled={anyPipelinePending}
                                     title={t('canonical.actions.composeConclusionTooltip')}
                                     className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
@@ -774,7 +828,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <>
                                 <Button
                                     size="sm"
-                                    onClick={handleComposeIntroduction}
+                                    onClick={() => handleComposeIntroduction()}
                                     disabled={anyPipelinePending}
                                     title={t('canonical.actions.composeIntroductionTooltip')}
                                     className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
@@ -803,6 +857,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         )}
                     </div>
                 )}
+                <StepHeaderActions actions={accionesDelEncabezado} />
                 {/* Awaiting-review + collapsed → expose Accept in the
                     header so the user can move the queue forward
                     without expanding each card. Stop propagation so the
@@ -1108,7 +1163,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     {(isConclusion || isIntroduction) && (
                         <button
                             type="button"
-                            onClick={isConclusion ? handleComposeConclusion : handleComposeIntroduction}
+                            onClick={() => (isConclusion ? handleComposeConclusion() : handleComposeIntroduction())}
                             disabled={anyPipelinePending}
                             className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                             title={t(isConclusion

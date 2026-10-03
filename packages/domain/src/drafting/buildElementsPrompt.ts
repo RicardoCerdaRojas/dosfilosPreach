@@ -122,7 +122,7 @@ export function buildElementsPrompt(input: ElementsPromptInput): string {
    ese concepto. El orden de tu salida sigue el orden de la frase.
 
 NO propongas ideas que no correspondan a un concepto de la proposición, por
-buenas que sean: acá él ya decidió de qué se trata este punto.
+buenas que sean: aquí él ya decidió de qué se trata este punto.
 
 SI UN CONCEPTO NO TIENE APOYO EN EL TEXTO, DILO — propón igual un elemento para
 ese concepto y marca ese elemento con "unsupported": true. Callarlo lo dejaría

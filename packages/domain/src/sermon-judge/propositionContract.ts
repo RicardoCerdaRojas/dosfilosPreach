@@ -67,7 +67,7 @@ export const PROPOSITION_ELEMENTS: readonly ElementoDeProposicion[] = [
     // Único opcional del catálogo: el diseño lo permite implícito.
     { n: 6, id: 'pronombrePrimeraPlural', nombre: 'Pronombre de 1ª plural', descripcion: 'Vivimos, confiamos… Puede quedar implícito; es gramática y la resuelve el sistema.', origen: 'sistema', obligatorio: false },
     { n: 7, id: 'ideaCentral', nombre: 'Idea central del pasaje', descripcion: 'VERBATIM del paso 7 del estudio: no se reescribe ni se resume.', origen: 'estudio', obligatorio: true },
-    { n: 8, id: 'puntos', nombre: 'Puntos en armonía', descripcion: 'Los puntos armonizan con el llamado a la acción y con la idea central del texto. Acá siempre manda el flujo del texto: no se inventan ni se introducen ideas fuera de contexto.', origen: 'bosquejo', obligatorio: true },
+    { n: 8, id: 'puntos', nombre: 'Puntos en armonía', descripcion: 'Los puntos armonizan con el llamado a la acción y con la idea central del texto. Aquí siempre manda el flujo del texto: no se inventan ni se introducen ideas fuera de contexto.', origen: 'bosquejo', obligatorio: true },
 ] as const;
 
 /** Lo que el estudio y el bosquejo pueden pre-sembrar. */
@@ -86,7 +86,7 @@ export interface SeedInput {
  * decisión pastoral, y rellenarlos con una sugerencia convierte al tutor en el
  * autor de la proposición. El sistema pide; no decide.
  *
- * La idea central se copia VERBATIM del paso 7. Reescribirla acá abriría una
+ * La idea central se copia VERBATIM del paso 7. Reescribirla aquí abriría una
  * segunda versión de la idea central del pasaje, y la proposición dejaría de ser
  * un contrato con el estudio para ser una paráfrasis de él.
  */
@@ -239,7 +239,7 @@ export function confrontProposition(input: ConfrontacionInput): ReporteDeProposi
                         clase: 'punto-sin-llamado',
                         // GUÍA, no violación (2026-08-23). La herencia del
                         // llamado es real —"tres verdades que debes obedecer" ⇒
-                        // títulos que empiezan con "Debes"— pero acá se coteja
+                        // títulos que empiezan con "Debes"— pero aquí se coteja
                         // con una raíz verbal, y esa es una vara tosca sobre una
                         // relación sutil.
                         //

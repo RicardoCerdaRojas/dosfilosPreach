@@ -161,7 +161,12 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{t('detail.bibliography.dialogTitle')}</DialogTitle>
-                    <DialogDescription>{displayLabel}</DialogDescription>
+                    <DialogDescription>
+                        {displayLabel}
+                        {/* Al fundador no le quedaba claro (Jonás 4:5-11): la ficha
+                            no es del trabajo, es del libro. */}
+                        <span className="block text-[11px] mt-0.5">{t('detail.bibliography.savedOnBook')}</span>
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">

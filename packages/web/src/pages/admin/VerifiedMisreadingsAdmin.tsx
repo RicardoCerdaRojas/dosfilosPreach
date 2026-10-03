@@ -289,7 +289,7 @@ function CurateForm({
         try {
             if (editing) {
                 await update({ ...args, id: editing.id });
-                toast.success('Entrada actualizada (vuelve a la cola: re-verificá)');
+                toast.success('Entrada actualizada (vuelve a la cola: re-verifica)');
             } else {
                 await ingest(args);
                 toast.success('Entrada creada (pendiente de revisión)');
