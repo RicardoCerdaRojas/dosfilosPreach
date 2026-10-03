@@ -1,6 +1,8 @@
 import {
     citationAnchorFor,
     isCitableSourceType,
+    relabelExcerptAnchor,
+    usesExtractedExcerpts,
     workTitleFromLabel,
     type BibliographicData,
     type ComposerSourceMetadata,
@@ -106,6 +108,16 @@ export async function buildComposerSourcesWithPinnedContent(
 
         const admitted = await readAdmittedText(s, readers.corpusReader, numberings.get(s.id) ?? null);
         if (admitted) return { ...base, textContent: admitted };
+
+        // Con fragmentos, los fragmentos: el texto completo era el comienzo
+        // del libro, no lo que el usuario extrajo para este pasaje.
+        if (usesExtractedExcerpts(s) && s.excerpts.length > 0) {
+            const numbering = numberings.get(s.id) ?? null;
+            const textContent = s.excerpts
+                .map(e => `--- ${relabelExcerptAnchor(e.sourceLocation, numbering, e)} ---\n${e.text}`)
+                .join('\n\n');
+            return { ...base, textContent };
+        }
 
         try {
             const text = await readers.contentReader.getTextContent(s.corpusId);

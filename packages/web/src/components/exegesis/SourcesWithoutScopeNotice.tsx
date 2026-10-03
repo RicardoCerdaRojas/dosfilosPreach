@@ -9,7 +9,9 @@ import { useTranslation } from '@/i18n';
  *
  * El aviso por fuente vivía sólo en Configuración → Corpus. En Jonás 4:5-11
  * (2026-10-02) el fundador analizó tres versículos desde la página del trabajo
- * con once fuentes heredadas sin páginas, y nada en esa página lo decía.
+ * con once fuentes heredadas sin páginas, y nada en esa página lo decía; el
+ * análisis las leía desde la portada. Hoy se busca en el libro entero
+ * (`retrievalScopeOf`), pero elegir las páginas sigue siendo más preciso.
  * Informa y enlaza; no bloquea: un trabajo viejo sin receta tiene que poder
  * seguir analizándose.
  */

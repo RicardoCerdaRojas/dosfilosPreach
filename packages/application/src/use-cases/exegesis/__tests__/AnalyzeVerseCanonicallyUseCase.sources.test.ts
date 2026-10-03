@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildEmptyCanonicalVerseAnalysis, CURATED_CORPUS_BUDGET_CHARS, EMPTY_STEP_SOURCE_PLAN } from '@dosfilos/domain';
+import { buildEmptyCanonicalVerseAnalysis, CURATED_CORPUS_BUDGET_CHARS, EMPTY_STEP_SOURCE_PLAN, WHOLE_DOCUMENT_RANGE } from '@dosfilos/domain';
 import type {
     CanonicalVerseAnalysis,
     ExegeticalPaper,
@@ -402,5 +402,78 @@ describe('AnalyzeVerseCanonicallyUseCase — una fuente con receta y sin fragmen
         const sentSources = analyzer.analyzeVerse.mock.calls[0][0].sources;
         expect(sentSources.map((s: { citationKey: string }) => s.citationKey)).toEqual(['Directa']);
         expect(sentSources[0].textContent).toContain('subió a mano');
+    });
+});
+
+/**
+ * Jonás 4:5-11 (2026-10-02): las fuentes heredadas sin páginas viajaban
+ * enteras, truncadas desde la portada, y ningún versículo tuvo diálogo con
+ * comentaristas. Ahora toda fuente con algo que consultar se busca por
+ * versículo (`retrievalScopeOf`).
+ */
+describe('AnalyzeVerseCanonicallyUseCase — se busca por versículo también sin páginas', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('un documento completo se consulta en el libro entero y viaja lo encontrado, no la portada', async () => {
+        const heredada = { ...makeSource('Burt', 'res-burt'), sourceType: 'commentary-expository' as SourceType, mode: 'full-document' as const, excerptRecipe: null };
+        const { useCase, analyzer, retriever } = buildUseCase({
+            paper: makePaper([heredada]),
+            analysis: analysisCiting(['Burt']),
+            retrievedFor: ['res-burt'],
+            chunks: ['Jonás se sentó al oriente de la ciudad'],
+            fullText: 'PORTADA · PRÓLOGO',
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        const pedido = retriever.retrieve.mock.calls[0][0].sources;
+        expect(pedido).toEqual([{ resourceId: 'res-burt', sheetRanges: [WHOLE_DOCUMENT_RANGE], pinnedRanges: [] }]);
+        const enviada = analyzer.analyzeVerse.mock.calls[0][0].sources[0];
+        expect(enviada.textContent).toContain('al oriente de la ciudad');
+        expect(enviada.textContent).not.toContain('PORTADA');
+    });
+
+    it('los fragmentos se consultan por sus hojas, y los editados viajan siempre', async () => {
+        const conFragmentos = {
+            ...makeSource('Bruce', 'res-bruce'),
+            sourceType: 'commentary-critical' as SourceType,
+            excerptRecipe: null,
+            excerpts: [
+                { text: 'de la hoja 40', sourceLocation: 'p. 40', sheet: 40, relevanceScore: 0.9, userEdited: false },
+                { text: 'MI NOTA EDITADA', sourceLocation: 'p. 41', sheet: 41, relevanceScore: 0.9, userEdited: true },
+            ],
+        };
+        const { useCase, analyzer, retriever } = buildUseCase({
+            paper: makePaper([conFragmentos as never]),
+            analysis: analysisCiting(['Bruce']),
+            retrievedFor: ['res-bruce'],
+            chunks: ['lo de la hoja 40 que habla del versículo'],
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        expect(retriever.retrieve.mock.calls[0][0].sources[0].sheetRanges).toEqual([{ start: 40, end: 40 }]);
+        const texto = analyzer.analyzeVerse.mock.calls[0][0].sources[0].textContent;
+        expect(texto).toContain('que habla del versículo');
+        expect(texto).toContain('MI NOTA EDITADA');
+    });
+
+    it('si el corpus no trae nada de los fragmentos, viajan todos como antes', async () => {
+        const conFragmentos = {
+            ...makeSource('Bruce', 'res-bruce'),
+            sourceType: 'commentary-critical' as SourceType,
+            excerptRecipe: null,
+            excerpts: [{ text: 'fragmento guardado', sourceLocation: 'p. 40', sheet: 40, relevanceScore: 0.9, userEdited: false }],
+        };
+        const { useCase, analyzer } = buildUseCase({
+            paper: makePaper([conFragmentos as never]),
+            analysis: analysisCiting(['Bruce']),
+            retrievedFor: [],
+            emptyFor: ['res-bruce'],
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        expect(analyzer.analyzeVerse.mock.calls[0][0].sources[0].textContent).toContain('fragmento guardado');
     });
 });

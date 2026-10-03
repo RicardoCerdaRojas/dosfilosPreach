@@ -74,18 +74,26 @@ Para cada hallazgo se indica su número de la bitácora
 
 ### A4 · Fuentes completas y fragmentos se consultan por versículo (#12c, #16)
 
-**Domain:** `retrievalScopeOf(source)`.
+**Domain:** `retrievalScopeOf(source)`. Es la misma función que usan el analizador, el paso y el medidor.
 
 - **Con receta:** devuelve la receta.
-- **Documento completo citable:** todas las hojas.
-- **Fragmentos:** las hojas de los fragmentos. Los fragmentos que editó el usuario van siempre, como si estuvieran fijados.
-
-**Dónde se usa:** en el analizador y en el paso. Así el corpus busca lo del versículo en vez de truncar desde el inicio o mandar todos los fragmentos en cada paso.
+- **Documento completo citable:** todas las hojas (`WHOLE_DOCUMENT_RANGE`).
+- **Fragmentos:** las hojas de los fragmentos. Los editados y los que no tienen hoja van siempre (`alwaysExcerpts`).
 
 **Respaldos:**
 
-- Si la recuperación vuelve vacía, se cae al camino de hoy.
-- Si hay más de 25 fuentes, que es el tope de la callable, se reparten en tandas.
+- **Si la búsqueda no trae nada:**
+  - un documento completo sigue el camino de siempre, el texto entero;
+  - los fragmentos viajan todos, como antes.
+- **Por qué el documento completo no se retira** (cambio respecto del plan): una prueba existente protege el extracto corto subido a mano, donde el documento ES la curaduría. Retirarlo ahí sería peor.
+
+**Tandas:** el recuperador parte el pedido en tandas de 25 fuentes (`MAX_SOURCES_PER_CALL`, igual al `MAX_SOURCES` de la callable). Una tanda caída solo apaga sus fuentes.
+
+**Medidor:** cuenta con los mismos alcances.
+
+**Compositores:** una fuente asignada con fragmentos trae sus fragmentos, no el libro entero.
+
+**Límite conocido:** un documento completo asignado a la introducción o la conclusión sigue llegando entero, recortado a 80.000. Consultarlo pediría una búsqueda con consulta dentro del compositor.
 
 ---
 

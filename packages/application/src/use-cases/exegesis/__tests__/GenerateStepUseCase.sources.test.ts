@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CURATED_CORPUS_BUDGET_CHARS, EMPTY_STEP_SOURCE_PLAN } from '@dosfilos/domain';
+import { CURATED_CORPUS_BUDGET_CHARS, EMPTY_STEP_SOURCE_PLAN, WHOLE_DOCUMENT_RANGE } from '@dosfilos/domain';
 import type {
     ExegeticalPaper,
     ExegeticalStep,
@@ -194,5 +194,25 @@ describe('GenerateStepUseCase — una fuente con receta y sin fragmentos', () =>
         const enviadas = orchestrator.generateStep.mock.calls[0][0].sources;
         expect(enviadas.map((s: { citationKey: string }) => s.citationKey)).toEqual(['Directa']);
         expect(enviadas[0].textContent).toContain('subió a mano');
+    });
+});
+
+/** Ver la prueba hermana del analizador: lo heredado sin páginas viajaba desde la portada. */
+describe('GenerateStepUseCase — se busca por paso también sin páginas', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('un documento completo se consulta en el libro entero y viaja lo encontrado', async () => {
+        const heredada = makeSource('Burt', 'res-burt', { sourceType: 'commentary-expository', mode: 'full-document', excerptRecipe: null });
+        const { useCase, orchestrator, retriever } = buildUseCase({
+            paper: makePaper([heredada]),
+            retrievedFor: ['res-burt'],
+            fullText: 'PORTADA · PRÓLOGO',
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        expect(retriever.retrieve.mock.calls[0][0].sources[0].sheetRanges).toEqual([WHOLE_DOCUMENT_RANGE]);
+        const enviada = orchestrator.generateStep.mock.calls[0][0].sources[0];
+        expect(enviada.textContent).not.toContain('PORTADA');
     });
 });

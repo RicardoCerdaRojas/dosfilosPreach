@@ -1255,7 +1255,7 @@
           "renameWarning": "Verses already analyzed cite “{{key}}”: with another key those citations lose their source until re-analyzed."
         },
         "sinPaginas": {
-          "body": "No pages for this passage: the analysis would read the start of the book (cover, introduction), not what it says about these verses. Choose the pages or extract excerpts before analyzing.",
+          "body": "No pages for this passage: the analysis searches the whole book for what bears on each verse. Choosing the passage pages is more precise and shows what goes in.",
           "cta": "Choose pages"
         }
       },
@@ -2295,8 +2295,8 @@
       "goToSettings": "Set it up in Settings"
     },
     "sourcesWithoutScope": {
-      "title_one": "1 source has no chosen pages or excerpts: the analysis reads it from the start of the book.",
-      "title_other": "{{count}} sources have no chosen pages or excerpts: the analysis reads them from the start of each book.",
+      "title_one": "1 source has no chosen pages or excerpts: the analysis searches the whole book. Choosing its pages is more precise.",
+      "title_other": "{{count}} sources have no chosen pages or excerpts: the analysis searches each whole book. Choosing their pages is more precise.",
       "choose": "Choose pages of {{label}}"
     }
   },

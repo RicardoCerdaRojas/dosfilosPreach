@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -304,13 +304,17 @@ export class AnalyzeVerseCanonicallyUseCase {
         originalLanguageText: string | null,
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
-        const scopes = paper.sources
-            .filter(hasCuratedScope)
-            .map(s => ({
+        // Toda fuente con algo que consultar (`retrievalScopeOf`), no sólo las
+        // de páginas elegidas: el documento completo y los fragmentos también
+        // se buscan por versículo.
+        const scopes = paper.sources.flatMap(s => {
+            const scope = retrievalScopeOf(s);
+            return scope ? [{
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
-                sheetRanges: s.excerptRecipe!.sheetRanges,
-                pinnedRanges: s.excerptRecipe!.pinnedRanges,
-            }));
+                sheetRanges: scope.sheetRanges,
+                pinnedRanges: scope.pinnedRanges,
+            }] : [];
+        });
         if (scopes.length === 0) return null;
 
         const label = formatPassageReference(verseRef, paper.displayLanguage);
@@ -462,7 +466,9 @@ export class AnalyzeVerseCanonicallyUseCase {
         for (const source of sorted) {
             const priority: 'primary' | 'secondary' = pinnedIds.has(source.id) ? 'primary' : 'secondary';
             const plannedRole = plannedRoles[source.id];
-            const retrieved = curated?.byResource[source.sourceLibraryResourceId ?? source.corpusId];
+            const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
+            const retrieved = curated?.byResource[resourceId];
+            const scope = retrievalScopeOf(source);
             if (retrieved && retrieved.length > 0) {
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt y el verificador de citas no tienen por qué notar de
@@ -470,9 +476,15 @@ export class AnalyzeVerseCanonicallyUseCase {
                 const numbering = numberings.get(source.id) ?? null;
                 const anchor = (c: { sheet: number | null; section: string | null }) =>
                     citationAnchorFor(c, numbering);
-                const textContent = retrieved
-                    .map(c => `--- ${anchor(c)} ---\n${c.text}`)
-                    .join('\n\n');
+                // Los fragmentos que el usuario editó (o sin hoja) no están en
+                // el corpus: van siempre, después de lo recuperado.
+                const siempre = scope?.kind === 'excerpt-sheets' ? scope.alwaysExcerpts : [];
+                const anchorOf = (e: { sourceLocation: string; sheet?: number; section?: string }) =>
+                    relabelExcerptAnchor(e.sourceLocation, numbering, e);
+                const textContent = [
+                    ...retrieved.map(c => `--- ${anchor(c)} ---\n${c.text}`),
+                    ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
+                ].join('\n\n');
                 contexts.push({
                     corpusId: source.corpusId,
                     sourceType: source.sourceType,
@@ -480,11 +492,18 @@ export class AnalyzeVerseCanonicallyUseCase {
                     citationKey: source.citationKey,
                     ...(plannedRole ? { plannedRole } : {}),
                     textContent,
-                    excerptAnchors: retrieved.map(anchor),
+                    excerptAnchors: [...retrieved.map(anchor), ...siempre.map(anchorOf)],
                     priority,
                 });
                 continue;
             }
+            // Un documento completo del que el corpus no trajo nada sigue el
+            // camino de siempre: el texto entero. El extracto corto subido a
+            // mano —donde el documento ES la curaduría— no depende de esto: el
+            // recuperador ya lo trae entero si está indexado
+            // (`wholeDocumentTravelsEntire`); esto lo cubre cuando no lo está.
+            // Un libro grande casi nunca llega aquí, porque la búsqueda sí
+            // encuentra lo que habla del versículo.
             // Una fuente con receta ya declaró qué hojas admitió el trabajo.
             // Si la recuperación no trajo nada de ellas, las dos salidas que
             // quedan mienten: el documento entero contradice la curaduría, y

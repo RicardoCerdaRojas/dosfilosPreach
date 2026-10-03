@@ -1255,7 +1255,7 @@
           "renameWarning": "Los versículos ya analizados citan «{{key}}»: con otra clave esas citas quedan sin fuente hasta volver a analizarlos."
         },
         "sinPaginas": {
-          "body": "Sin páginas para este pasaje: el análisis leería el comienzo del libro (portada, introducción), no lo que dice sobre estos versículos. Elige las páginas o extrae los fragmentos antes de analizar.",
+          "body": "Sin páginas para este pasaje: el análisis busca en el libro entero lo que habla de cada versículo. Elegir las páginas del pasaje es más preciso y deja ver qué entra.",
           "cta": "Elegir páginas"
         }
       },
@@ -2295,8 +2295,8 @@
       "goToSettings": "Configurarlo en Ajustes"
     },
     "sourcesWithoutScope": {
-      "title_one": "1 fuente no tiene páginas elegidas ni fragmentos: el análisis la lee desde el comienzo del libro.",
-      "title_other": "{{count}} fuentes no tienen páginas elegidas ni fragmentos: el análisis las lee desde el comienzo de cada libro.",
+      "title_one": "1 fuente no tiene páginas elegidas ni fragmentos: el análisis busca en el libro entero. Elegir sus páginas es más preciso.",
+      "title_other": "{{count}} fuentes no tienen páginas elegidas ni fragmentos: el análisis busca en cada libro entero. Elegir sus páginas es más preciso.",
       "choose": "Elegir páginas de {{label}}"
     }
   },

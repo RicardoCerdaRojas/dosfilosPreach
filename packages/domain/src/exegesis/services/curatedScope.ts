@@ -1,4 +1,5 @@
-import { usesExtractedExcerpts, type ProjectSource } from '../entities/ProjectSource';
+import { usesExtractedExcerpts, type ProjectSource, type ProjectSourceExcerpt, type SheetRange } from '../entities/ProjectSource';
+import { normalizeSheetRanges } from '../outline/documentPageIndex';
 import { emptySourceReason, isCitableSourceType } from '../entities/SourceType';
 
 /**
@@ -61,4 +62,78 @@ export function isSourceWithoutScope(
  */
 export function isPickedByPages(source: Pick<ProjectSource, 'sourceType'>): boolean {
     return emptySourceReason(source.sourceType, 0) !== 'expected-by-passage';
+}
+
+/**
+ * Dónde buscar el material de una fuente para UN versículo.
+ *
+ * Antes, sólo las fuentes con páginas elegidas se consultaban por versículo.
+ * Las demás viajaban enteras: el documento completo, truncado desde la portada
+ * (Jonás 4:5-11, 2026-10-02: ningún versículo tuvo diálogo con
+ * comentaristas), y los fragmentos, todos en cada paso aunque hablaran de otro
+ * versículo.
+ *
+ *   - `recipe` — las páginas que eligió el usuario, con sus fijadas.
+ *   - `excerpt-sheets` — las hojas de donde salieron los fragmentos. Los que
+ *     el usuario editó, o los que no dicen de qué hoja son, van siempre
+ *     (`alwaysExcerpts`): el texto editado no está en el corpus.
+ *   - `whole-document` — una fuente citable sin páginas ni fragmentos: se
+ *     busca en el libro entero lo que habla del versículo.
+ *
+ * `null`: nada que consultar (una plantilla de estilo, una fuente vacía).
+ */
+export type RetrievalScope =
+    | { kind: 'recipe'; sheetRanges: SheetRange[]; pinnedRanges: SheetRange[] }
+    | { kind: 'excerpt-sheets'; sheetRanges: SheetRange[]; pinnedRanges: SheetRange[]; alwaysExcerpts: ProjectSourceExcerpt[] }
+    | { kind: 'whole-document'; sheetRanges: SheetRange[]; pinnedRanges: SheetRange[] };
+
+/** Todas las hojas: el filtro de la búsqueda deja pasar cualquiera. */
+export const WHOLE_DOCUMENT_RANGE: SheetRange = { start: 1, end: Number.MAX_SAFE_INTEGER };
+
+/**
+ * Un documento completo así de chico viaja entero, como lo fijado, en vez de
+ * consultarse por versículo. Es el caso del extracto corto subido a mano,
+ * donde el documento ES la curaduría: consultado, competía por el tope con el
+ * resto y le tocaba un piso de unos 4.000 caracteres en un trabajo de 12
+ * fuentes (revisión adversarial de A4). Un libro nunca entra acá.
+ */
+export const SMALL_DOCUMENT_CHARS = 20_000;
+
+/** Si un documento completo, por lo que dice su índice de hojas, viaja entero. */
+export function wholeDocumentTravelsEntire(pages: ReadonlyArray<{ charCount: number }>): boolean {
+    const total = pages.reduce((n, p) => n + (p.charCount ?? 0), 0);
+    return total > 0 && total <= SMALL_DOCUMENT_CHARS;
+}
+
+/** Si un alcance es «el documento entero» (sin páginas, sin fragmentos). */
+export function isWholeDocumentScope(sheetRanges: ReadonlyArray<SheetRange>): boolean {
+    return sheetRanges.length === 1
+        && sheetRanges[0]!.start === WHOLE_DOCUMENT_RANGE.start
+        && sheetRanges[0]!.end === WHOLE_DOCUMENT_RANGE.end;
+}
+
+export function retrievalScopeOf(
+    source: Pick<ProjectSource, 'sourceType' | 'excerptRecipe' | 'mode' | 'excerpts'>,
+): RetrievalScope | null {
+    if (hasCuratedScope(source)) {
+        return {
+            kind: 'recipe',
+            sheetRanges: [...source.excerptRecipe!.sheetRanges],
+            pinnedRanges: [...(source.excerptRecipe!.pinnedRanges ?? [])],
+        };
+    }
+    if (usesExtractedExcerpts(source)) {
+        const conHoja = source.excerpts.filter(e => !e.userEdited && typeof e.sheet === 'number');
+        if (conHoja.length === 0) return null;
+        return {
+            kind: 'excerpt-sheets',
+            sheetRanges: normalizeSheetRanges(conHoja.map(e => ({ start: e.sheet!, end: e.sheet! }))),
+            pinnedRanges: [],
+            alwaysExcerpts: source.excerpts.filter(e => e.userEdited || typeof e.sheet !== 'number'),
+        };
+    }
+    if (isSourceWithoutScope(source)) {
+        return { kind: 'whole-document', sheetRanges: [WHOLE_DOCUMENT_RANGE], pinnedRanges: [] };
+    }
+    return null;
 }
