@@ -295,7 +295,7 @@ function CorpusSourcesList({
                 trabajo tiene dos y la serie tiene once, traer las nueve que
                 faltan sigue siendo lo más útil de esta pantalla. La tarjeta se
                 esconde sola cuando no hay nada que ofrecer. */}
-            <HerenciaDeSerie paperId={paper.id} />
+            <HerenciaDeSerie paper={paper} />
             {/* Header only when there are sources to label. The empty
                 state's hero card is doing the entry-point work and
                 the "(0)" header was just noise on first paint. */}

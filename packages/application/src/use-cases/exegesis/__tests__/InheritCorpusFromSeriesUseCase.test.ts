@@ -36,7 +36,9 @@ function makeBiblioteca(ids = ['lib-sasson', 'lib-stuart']) {
 function makeRepo(actual: unknown, todos: unknown[]) {
     let creadas = 0;
     return {
-        getPaper: vi.fn().mockImplementation(async () => actual),
+        // El trabajo actual, o el hermano cuando se lo pide por id.
+        getPaper: vi.fn().mockImplementation(async (_o: string, id: string) =>
+            (todos as Array<{ id: string }>).find(t => t.id === id && t !== actual && id !== (actual as { id: string }).id) ?? actual),
         listPaperSummaries: vi.fn().mockResolvedValue(todos),
         addSource: vi.fn().mockImplementation(async (_o, _p, s) => ({ ...s, id: `nueva-${creadas++}` })),
     };
@@ -105,7 +107,7 @@ describe('InheritCorpusFromSeriesUseCase', () => {
         const repo = makeRepo(JONAS_3, [JONAS_3, JONAS_2]);
         const uc = new InheritCorpusFromSeriesUseCase(repo as never, makeBiblioteca() as never);
 
-        const creadas = await uc.aplicar({
+        const { creadas } = await uc.aplicar({
             ownerId: 'owner-1', paperId: 'p3',
             soloEstos: ['lib-stuart'],
         });
@@ -132,7 +134,7 @@ describe('InheritCorpusFromSeriesUseCase', () => {
         const repo = makeRepo(yaConSasson, [yaConSasson, JONAS_2]);
         const uc = new InheritCorpusFromSeriesUseCase(repo as never, makeBiblioteca() as never);
 
-        const creadas = await uc.aplicar({
+        const { creadas } = await uc.aplicar({
             ownerId: 'owner-1', paperId: 'p3',
             soloEstos: ['lib-sasson', 'lib-stuart'],
         });
@@ -160,5 +162,34 @@ describe('InheritCorpusFromSeriesUseCase', () => {
         return uc.proponer('owner-1', 'p3').then(p => {
             expect(p?.fuentes.map(f => f.sourceLibraryResourceId)).toEqual(['lib-stuart']);
         });
+    });
+});
+
+/**
+ * Las hojas fijadas del hermano (la introducción del libro, por ejemplo) son
+ * lo único de su receta que sirve en el pasaje nuevo: sus demás páginas son de
+ * otra perícopa.
+ */
+describe('InheritCorpusFromSeriesUseCase — hojas fijadas del hermano', () => {
+    it('devuelve, por fuente creada, las hojas que el hermano tenía fijadas', async () => {
+        const conIntro = {
+            ...JONAS_2,
+            sources: [
+                fuente({ excerptRecipe: { sheetRanges: [{ start: 150, end: 160 }], proposedRanges: [], pinnedRanges: [{ start: 3, end: 9 }], passageFingerprint: '' } }),
+                fuente({ id: 's2', sourceLibraryResourceId: 'lib-stuart', excerptRecipe: null }),
+            ],
+        };
+        const repo = makeRepo(JONAS_3, [JONAS_3, conIntro]);
+        const uc = new InheritCorpusFromSeriesUseCase(repo as never, makeBiblioteca() as never);
+
+        const { creadas, fijadasDelHermano } = await uc.aplicar({ ownerId: 'owner-1', paperId: 'p3' });
+
+        const sasson = creadas.find(c => c.sourceLibraryResourceId === 'lib-sasson')!;
+        expect(fijadasDelHermano[sasson.id]).toEqual([{ start: 3, end: 9 }]);
+        // Sin fijadas en el hermano, nada: ni sus páginas de otra perícopa.
+        const stuart = creadas.find(c => c.sourceLibraryResourceId === 'lib-stuart')!;
+        expect(fijadasDelHermano[stuart.id]).toBeUndefined();
+        // Y la fuente sigue llegando sin receta: las páginas las propone quien hereda.
+        expect(repo.addSource.mock.calls[0][2].excerptRecipe).toBeNull();
     });
 });

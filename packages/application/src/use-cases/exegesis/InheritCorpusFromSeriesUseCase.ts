@@ -1,8 +1,10 @@
 import {
     proponerCorpusHeredado,
+    sourceForResource,
     type IExegeticalPaperRepository,
     type PropuestaDeHerencia,
     type ProjectSource,
+    type SheetRange,
 } from '@dosfilos/domain';
 
 /**
@@ -29,6 +31,18 @@ import {
  */
 export interface LectorDeBiblioteca {
     findByUserId(userId: string): Promise<ReadonlyArray<{ id: string }>>;
+}
+
+/** Lo que deja una herencia aplicada. */
+export interface HerenciaAplicada {
+    creadas: ProjectSource[];
+    /**
+     * Por id de fuente creada, las hojas que el trabajo hermano tenía FIJADAS
+     * para ese libro (la introducción, por ejemplo). Son lo único de la receta
+     * del hermano que sirve en el pasaje nuevo: sus demás páginas son de otra
+     * perícopa. Quien hereda las suma a las que proponga para este pasaje.
+     */
+    fijadasDelHermano: Record<string, SheetRange[]>;
 }
 
 export class InheritCorpusFromSeriesUseCase {
@@ -77,19 +91,24 @@ export class InheritCorpusFromSeriesUseCase {
         paperId: string;
         /** Qué recursos traer. Vacío o ausente significa todos los propuestos. */
         soloEstos?: ReadonlyArray<string>;
-    }): Promise<ProjectSource[]> {
+    }): Promise<HerenciaAplicada> {
         const { ownerId, paperId } = input;
         if (!ownerId || !paperId) throw new Error('InheritCorpusFromSeries: ownerId y paperId requeridos');
 
         const propuesta = await this.proponer(ownerId, paperId);
-        if (!propuesta) return [];
+        if (!propuesta) return { creadas: [], fijadasDelHermano: {} };
 
         const pedidos = input.soloEstos?.length ? new Set(input.soloEstos) : null;
         const aTraer = propuesta.fuentes.filter(f => !pedidos || pedidos.has(f.sourceLibraryResourceId));
 
-        const paper = await this.paperRepository.getPaper(ownerId, paperId);
-        if (!paper) return [];
+        const [paper, hermano] = await Promise.all([
+            this.paperRepository.getPaper(ownerId, paperId),
+            // Una lectura más, para las hojas fijadas: el resumen no trae recetas.
+            this.paperRepository.getPaper(ownerId, propuesta.origenId),
+        ]);
+        if (!paper) return { creadas: [], fijadasDelHermano: {} };
         let orden = paper.sources.length;
+        const fijadasDelHermano: Record<string, SheetRange[]> = {};
 
         const creadas: ProjectSource[] = [];
         // En serie y no en paralelo. El `order` lo fija el llamador —el
@@ -98,7 +117,7 @@ export class InheritCorpusFromSeriesUseCase {
         // dentro de una transacción, de modo que en paralelo se pelearían por
         // el mismo documento.
         for (const f of aTraer) {
-            creadas.push(await this.paperRepository.addSource(ownerId, paperId, {
+            const creada = await this.paperRepository.addSource(ownerId, paperId, {
                 // El corpus del origen, no uno nuevo: el texto ya está ingerido
                 // y volver a subirlo cobraría cuota por el mismo libro.
                 corpusId: f.corpusId,
@@ -118,8 +137,14 @@ export class InheritCorpusFromSeriesUseCase {
                 // inventada le haría decir que están al día.
                 extractedAt: null,
                 extractionFingerprint: null,
-            }));
+            });
+            creadas.push(creada);
+            const delHermano = hermano ? sourceForResource(hermano.sources, f.sourceLibraryResourceId) : null;
+            const fijadas = delHermano?.excerptRecipe?.pinnedRanges ?? [];
+            if (fijadas.length > 0) {
+                fijadasDelHermano[creada.id] = fijadas.map(r => ({ start: r.start, end: r.end }));
+            }
         }
-        return creadas;
+        return { creadas, fijadasDelHermano };
     }
 }

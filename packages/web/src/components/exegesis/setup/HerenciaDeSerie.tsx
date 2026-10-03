@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layers, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { ExegeticalPaper } from '@dosfilos/domain';
 import { useCorpusHeredado } from '@/hooks/exegesis/useCorpusHeredado';
 
 /**
@@ -15,12 +16,13 @@ import { useCorpusHeredado } from '@/hooks/exegesis/useCorpusHeredado';
  * cuando no hay serie, no hay hermanos o ya está todo presente. Una tarjeta
  * vacía enseñaría a ignorar el aviso cuando sí tenga algo.
  *
- * Llegan sin fragmentos a propósito: los excerpts se extraen contra un pasaje
- * concreto, y traer los de Jonás 2 a Jonás 3 metería citas fuera de lugar.
+ * Los fragmentos y las páginas del hermano no viajan: son de otra perícopa.
+ * Al traerlas se proponen páginas para ESTE pasaje en cada comentario
+ * (`heredarConPaginas`); léxicos y gramáticas quedan para el selector.
  */
-export function HerenciaDeSerie({ paperId }: { paperId: string }) {
+export function HerenciaDeSerie({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
-    const { propuesta, heredar } = useCorpusHeredado(paperId);
+    const { propuesta, heredar, avance } = useCorpusHeredado(paper.id);
     const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
 
     const datos = propuesta.data;
@@ -38,11 +40,14 @@ export function HerenciaDeSerie({ paperId }: { paperId: string }) {
 
     const traer = async () => {
         try {
-            const creadas = await heredar.mutateAsync(elegidos.map(f => f.sourceLibraryResourceId));
+            const r = await heredar.mutateAsync({ soloEstos: elegidos.map(f => f.sourceLibraryResourceId), paper });
             // Se informa cuántas ENTRARON, no cuántas se pidieron: si alguien
-            // adjuntó una a mano mientras tanto, el caso de uso no la duplica y
-            // el número tiene que reflejar eso.
-            toast.success(t('paperSetup.subSteps.corpus.herencia.toast', { count: creadas.length }));
+            // adjuntó una a mano mientras tanto, el caso de uso no la duplica.
+            const partes = [t('paperSetup.subSteps.corpus.herencia.toast', { count: r.creadas })];
+            if (r.conPaginas > 0) partes.push(t('paperSetup.subSteps.corpus.herencia.toastConPaginas', { count: r.conPaginas }));
+            if (r.porLema > 0) partes.push(t('paperSetup.subSteps.corpus.herencia.toastPorLema', { count: r.porLema }));
+            if (r.sinPropuesta > 0) partes.push(t('paperSetup.subSteps.corpus.herencia.toastSinPropuesta', { count: r.sinPropuesta }));
+            toast.success(partes.join(' '));
             setExcluidos(new Set());
         } catch {
             toast.error(t('paperSetup.subSteps.corpus.herencia.error'));
@@ -107,7 +112,9 @@ export function HerenciaDeSerie({ paperId }: { paperId: string }) {
                     className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {heredar.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
-                    {t('paperSetup.subSteps.corpus.herencia.cta', { count: elegidos.length })}
+                    {heredar.isPending && avance
+                        ? t('paperSetup.subSteps.corpus.herencia.proponiendo', { hechas: avance.hechas, total: avance.total })
+                        : t('paperSetup.subSteps.corpus.herencia.cta', { count: elegidos.length })}
                 </button>
                 <p className="mt-3 text-[11.5px] text-muted-foreground">
                     {t('paperSetup.subSteps.corpus.herencia.nota')}

@@ -1187,10 +1187,17 @@
           "yaPresentes_other": "{{count}} de ellas ya están en este trabajo.",
           "cta_one": "Traer 1 fuente",
           "cta_other": "Traer {{count}} fuentes",
-          "nota": "Llegan completas: los fragmentos se eligen contra este pasaje, no contra el anterior.",
+          "nota": "Las páginas del pasaje anterior no viajan: al traerlas se proponen las de este pasaje en cada comentario. Léxicos y gramáticas se eligen después en el selector.",
           "toast_one": "Se agregó 1 fuente de la serie.",
           "toast_other": "Se agregaron {{count}} fuentes de la serie.",
-          "error": "No se pudieron traer las fuentes. Intenta de nuevo."
+          "error": "No se pudieron traer las fuentes. Intenta de nuevo.",
+          "toastConPaginas_one": "1 con páginas propuestas para este pasaje.",
+          "toastConPaginas_other": "{{count}} con páginas propuestas para este pasaje.",
+          "toastPorLema_one": "1 léxico o gramática para elegir en el selector.",
+          "toastPorLema_other": "{{count}} léxicos o gramáticas para elegir en el selector.",
+          "toastSinPropuesta_one": "1 sin propuesta: elige sus páginas.",
+          "toastSinPropuesta_other": "{{count}} sin propuesta: elige sus páginas.",
+          "proponiendo": "Proponiendo páginas {{hechas}}/{{total}}…"
         },
         "lemmas": {
           "title": "Páginas por lema",
@@ -2103,7 +2110,9 @@
       "title": "Corpus del trabajo",
       "none": "Sin fuentes todavía. Agrégalas para que el orquestador pueda interactuar con ellas.",
       "addCta": "Editar en configuración",
-      "remove": "Quitar fuente"
+      "remove": "Quitar fuente",
+      "seriesOffer_one": "Hay 1 fuente en otros trabajos de esta serie · Traerla",
+      "seriesOffer_other": "Hay {{count}} fuentes en otros trabajos de esta serie · Traerlas"
     },
     "derived": {
       "title": "Artefactos derivados",

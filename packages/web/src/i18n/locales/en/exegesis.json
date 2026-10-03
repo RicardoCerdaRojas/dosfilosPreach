@@ -1187,10 +1187,17 @@
           "yaPresentes_other": "{{count}} of them are already in this paper.",
           "cta_one": "Bring 1 source",
           "cta_other": "Bring {{count}} sources",
-          "nota": "They arrive whole: excerpts are selected against this passage, not the previous one.",
+          "nota": "Pages from the previous passage do not travel: pages for this passage are proposed for each commentary. Lexicons and grammars are chosen later in the selector.",
           "toast_one": "Added 1 source from the series.",
           "toast_other": "Added {{count}} sources from the series.",
-          "error": "Couldn't bring the sources. Try again."
+          "error": "Couldn't bring the sources. Try again.",
+          "toastConPaginas_one": "1 with pages proposed for this passage.",
+          "toastConPaginas_other": "{{count}} with pages proposed for this passage.",
+          "toastPorLema_one": "1 lexicon or grammar to choose in the selector.",
+          "toastPorLema_other": "{{count}} lexicons or grammars to choose in the selector.",
+          "toastSinPropuesta_one": "1 without a proposal: choose its pages.",
+          "toastSinPropuesta_other": "{{count}} without a proposal: choose their pages.",
+          "proponiendo": "Proposing pages {{hechas}}/{{total}}…"
         },
         "lemmas": {
           "title": "Pages by lemma",
@@ -2103,7 +2110,9 @@
       "title": "Project corpus",
       "none": "No sources yet. Add them so the orchestrator can interact with them.",
       "addCta": "Edit in setup",
-      "remove": "Remove source"
+      "remove": "Remove source",
+      "seriesOffer_one": "1 source in other papers of this series · Bring it",
+      "seriesOffer_other": "{{count}} sources in other papers of this series · Bring them"
     },
     "derived": {
       "title": "Derived artifacts",

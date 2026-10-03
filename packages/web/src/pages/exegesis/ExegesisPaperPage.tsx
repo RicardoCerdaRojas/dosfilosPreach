@@ -1,4 +1,5 @@
 import { SourcesWithoutScopeNotice } from '@/components/exegesis/SourcesWithoutScopeNotice';
+import { SeriesCorpusOffer } from '@/components/exegesis/SeriesCorpusOffer';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -950,6 +951,8 @@ function SourcesCard({
                     {paper.sources.length}
                 </span>
             </header>
+
+            <SeriesCorpusOffer paperId={paper.id} />
 
             {paper.sources.length === 0 ? (
                 <p className="text-xs text-slate-500 dark:text-slate-400 italic">
