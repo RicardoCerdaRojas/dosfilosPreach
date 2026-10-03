@@ -14,6 +14,8 @@ interface Props {
     selected: ReadonlySet<number>;
     onAdd: (sheet: number) => void;
     onAddAll: (sheets: ReadonlyArray<number>) => void;
+    /** Reemplaza la selección por estas hojas (con deshacer). */
+    onKeepOnly: (sheets: ReadonlyArray<number>) => void;
 }
 
 /**
@@ -31,11 +33,17 @@ interface Props {
  */
 const HEBREO = /[\u05D0-\u05EA]/;
 
-export function LemmaPagesPanel({ proposals, isLoading, numbering, printedPageOffset, selected, onAdd, onAddAll }: Props) {
+export function LemmaPagesPanel({ proposals, isLoading, numbering, printedPageOffset, selected, onAdd, onAddAll, onKeepOnly }: Props) {
     const { t } = useTranslation('exegesis');
 
-    const primeras = proposals.map(p => p.sheets[0]?.sheet).filter((s): s is number => typeof s === 'number');
+    const primeras = [...new Set(proposals.map(p => p.sheets[0]?.sheet).filter((s): s is number => typeof s === 'number'))];
     const faltantes = primeras.filter(s => !selected.has(s));
+    // Hojas elegidas que no son la entrada de ningún lema. Un léxico con 77
+    // hojas cuando las entradas están en ~20 (Ortiz, Jonás 4:5-11) manda al
+    // análisis páginas que no tratan ninguna palabra del pasaje.
+    const entradas = new Set(primeras);
+    const fuera = [...selected].filter(s => !entradas.has(s)).length;
+    const excede = primeras.length > 0 && fuera > Math.max(10, 2 * primeras.length);
 
     return (
         <section className="rounded-xl border border-border bg-card p-3 space-y-2">
@@ -49,6 +57,19 @@ export function LemmaPagesPanel({ proposals, isLoading, numbering, printedPageOf
                     </Button>
                 )}
             </header>
+
+            {fuera > 0 && primeras.length > 0 && (
+                <div className={`flex flex-wrap items-center gap-2 rounded-md px-2 py-1.5 text-[11px] ${excede ? 'bg-warning-subtle/50 text-warning-subtle-foreground' : 'text-muted-foreground'}`}>
+                    {excede && (
+                        <span className="flex-1 min-w-0">
+                            {t('paperSetup.subSteps.corpus.lemmas.excess', { selected: selected.size, entries: primeras.length })}
+                        </span>
+                    )}
+                    <Button type="button" size="sm" variant="outline" className="h-6 text-[11px]" onClick={() => onKeepOnly(primeras)}>
+                        {t('paperSetup.subSteps.corpus.lemmas.keepOnly', { count: primeras.length })}
+                    </Button>
+                </div>
+            )}
 
             {proposals.length === 0 && !isLoading ? (
                 <p className="text-[11px] text-muted-foreground">{t('paperSetup.subSteps.corpus.lemmas.empty')}</p>

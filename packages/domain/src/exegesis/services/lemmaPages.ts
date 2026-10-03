@@ -133,6 +133,8 @@ export interface PassageLemma {
     occurrences: number;
     /** «4:6», la primera vez. */
     firstVerse: string;
+    /** Número de Strong, para los lemas hebreos (de morphhb). */
+    strong?: number;
 }
 
 /** Sustantivo común, verbo o adjetivo: lo que un léxico explica. */
@@ -159,12 +161,12 @@ export function passageLemmas(
     strongToLemma: (strong: number) => string | undefined = () => undefined,
 ): PassageLemma[] {
     const out = new Map<string, PassageLemma>();
-    const add = (lemma: string, term: string, ref: string) => {
+    const add = (lemma: string, term: string, ref: string, strong?: number) => {
         const key = lemmaKey(lemma);
         if (key.length < 2) return;
         const prev = out.get(key);
         if (prev) prev.occurrences++;
-        else out.set(key, { lemma, term, occurrences: 1, firstVerse: ref });
+        else out.set(key, { lemma, term, occurrences: 1, firstVerse: ref, ...(strong ? { strong } : {}) });
     };
     for (const v of verses) {
         const ref = `${v.chapter}:${v.verse}`;
@@ -180,7 +182,7 @@ export function passageLemmas(
             const strong = t.lemma.split('/').map(p => p.trim()).find(p => /^\d+/.test(p));
             const n = strong ? parseInt(strong, 10) : NaN;
             const surface = t.text.replace(/\//g, '');
-            add((Number.isFinite(n) && strongToLemma(n)) || surface, surface, ref);
+            add((Number.isFinite(n) && strongToLemma(n)) || surface, surface, ref, Number.isFinite(n) ? n : undefined);
         }
     }
     return [...out.values()];

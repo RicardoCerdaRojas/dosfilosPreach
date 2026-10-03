@@ -915,7 +915,9 @@
             "clear": "Clear",
             "cleared_one": "1 range removed.",
             "cleared_other": "{{count}} ranges removed.",
-            "undo": "Undo"
+            "undo": "Undo",
+            "replaced_one": "The selection is now 1 sheet.",
+            "replaced_other": "The selection is now {{count}} sheets."
           },
           "numberingLegend": "s. = PDF sheet (the left column) · p. = the book's printed page"
         },
@@ -1215,7 +1217,10 @@
           "notFound": "does not appear in this book",
           "page": "s. {{sheet}} · p. {{printed}}",
           "sheet": "s. {{sheet}}",
-          "hint": "The first sheet is the one that names the lemma most often, which is usually its entry. Hover to see the line."
+          "hint": "The first sheet is the one that names the lemma most often, which is usually its entry. Hover to see the line.",
+          "keepOnly_one": "Keep only this sheet",
+          "keepOnly_other": "Keep only these {{count}} sheets",
+          "excess": "This lexicon admits {{selected}} sheets; its lemmas' entries are on {{entries}}."
         },
         "courseBib": {
           "title": "Course bibliography",
@@ -1266,6 +1271,32 @@
         "sinPaginas": {
           "body": "No pages for this passage: the analysis searches the whole book for what bears on each verse. Choosing the passage pages is more precise and shows what goes in.",
           "cta": "Choose pages"
+        },
+        "suggestion": {
+          "cta_one": "Suggested selection · 1 sheet",
+          "cta_other": "Suggested selection · {{count}} sheets",
+          "title": "Suggested selection for this passage",
+          "body": "One sheet per word or category in the passage, the one that treats it most. Words rare in the Bible and words the passage repeats come first; everyday verbs come last. You decide what goes in.",
+          "reason": {
+            "rare_one": "appears once in {{corpus}}",
+            "rare_other": "appears {{n}} times in {{corpus}}",
+            "repeated_one": "once in the passage",
+            "repeated_other": "{{count}} times in the passage",
+            "common": "common: {{n}} times in {{corpus}}",
+            "section": "section “{{title}}”"
+          },
+          "corpus": {
+            "OT": "the Old Testament",
+            "NT": "the New Testament",
+            "bible": "the Bible"
+          },
+          "leftOut_one": "Left out by budget: {{list}}.",
+          "leftOut_other": "Left out by budget ({{count}}): {{list}}.",
+          "notFound_one": "No entry in this book: {{list}}.",
+          "notFound_other": "No entry in this book ({{count}}): {{list}}.",
+          "cancel": "Close",
+          "add": "Add to my selection",
+          "replace": "Replace my selection"
         }
       },
       "corpus-plan": {

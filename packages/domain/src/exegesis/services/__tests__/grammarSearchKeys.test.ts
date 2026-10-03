@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { foldKey, grammarSearchKeys, sectionsCoveredBy, sectionsForKeys, titleNamesOriginalForm } from '../grammarSearchKeys';
+import { foldKey, grammarKeysFromMorphology, grammarSearchKeys, sectionsCoveredBy, sectionsForKeys, titleNamesOriginalForm } from '../grammarSearchKeys';
 
 /** El encuadre real del trabajo de Santiago 2:1-13. */
 const ENCUADRE = `Trabajo práctico semanal de exégesis del NT sobre Santiago 2:1-13.
@@ -187,5 +187,39 @@ describe('el encuadre hebreo también da llaves', () => {
 
     it('una forma hebrea se reconoce en un título aunque cambien los puntos', () => {
         expect(titleNamesOriginalForm('3.2 El hitpael de וַיִּתְפַּלֵּל', 'ויתפלל')).toBe(true);
+    });
+});
+
+/**
+ * Un encuadre para predicar no nombra categorías: con Jonás 4:5-11 la
+ * gramática de Farfan no proponía ninguna sección. Tokens reales de 4:6.
+ */
+describe('grammarKeysFromMorphology', () => {
+    const verso = (codes: string[]) => ({ morphology: { tokens: codes.map(c => ({ text: '', lemma: '', oshbMorphCode: c })) } });
+
+    it('Jonás 4:6: wayyiqtol, infinitivo constructo, hifil — y no qal', () => {
+        const k = grammarKeysFromMorphology([verso(['HC/Vpw3ms', 'HR/Vqc', 'HR/Vhc', 'HNcmsa'])]);
+        expect(k.categories).toEqual(expect.arrayContaining(['piel', 'hifil', 'hiphil', 'wayyiqtol', 'consecutiv', 'infinitiv']));
+        expect(k.categories).not.toContain('qal');
+        // El infinitivo constructo NO es el estado constructo nominal: antes
+        // traía las secciones de «construct chain» (revisión adversarial de B3).
+        expect(k.categories).not.toContain('constructo');
+    });
+
+    it('un sustantivo en estado constructo sí trae «constructo»', () => {
+        const k = grammarKeysFromMorphology([verso(['HNcmsc', 'HNcmsa'])]);
+        expect(k.categories).toEqual(expect.arrayContaining(['constructo', 'construct chain']));
+    });
+
+    it('en arameo, «h» no es hifil', () => {
+        const k = grammarKeysFromMorphology([verso(['AVhp3ms'])]);
+        expect(k.categories).not.toContain('hifil');
+    });
+
+    it('griego: participio e infinitivo sí, indicativo no', () => {
+        const g = (mood: string) => ({ text: '', lemma: '', pos: 'V', tag: { mood }, transliteration: '' });
+        const k = grammarKeysFromMorphology([{ morphology: { tokens: [g('P'), g('N'), g('I')] } }]);
+        expect(k.categories).toEqual(expect.arrayContaining(['participi', 'participl', 'infinitiv']));
+        expect(k.categories).not.toContain('indicativ');
     });
 });

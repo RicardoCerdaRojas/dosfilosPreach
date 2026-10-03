@@ -915,7 +915,9 @@
             "clear": "Vaciar",
             "cleared_one": "Se quitó 1 tramo.",
             "cleared_other": "Se quitaron {{count}} tramos.",
-            "undo": "Deshacer"
+            "undo": "Deshacer",
+            "replaced_one": "La selección quedó en 1 hoja.",
+            "replaced_other": "La selección quedó en {{count}} hojas."
           },
           "numberingLegend": "h. = hoja del PDF (la columna de la izquierda) · p. = página impresa del libro"
         },
@@ -1215,7 +1217,10 @@
           "notFound": "no aparece en este libro",
           "page": "h. {{sheet}} · p. {{printed}}",
           "sheet": "h. {{sheet}}",
-          "hint": "La primera hoja es la que más veces nombra el lema, que casi siempre es su entrada. Pasa el cursor para ver el renglón."
+          "hint": "La primera hoja es la que más veces nombra el lema, que casi siempre es su entrada. Pasa el cursor para ver el renglón.",
+          "keepOnly_one": "Quedarse sólo con esta hoja",
+          "keepOnly_other": "Quedarse sólo con estas {{count}} hojas",
+          "excess": "Este léxico admite {{selected}} hojas; las entradas de sus lemas están en {{entries}}."
         },
         "courseBib": {
           "title": "Bibliografía del curso",
@@ -1266,6 +1271,32 @@
         "sinPaginas": {
           "body": "Sin páginas para este pasaje: el análisis busca en el libro entero lo que habla de cada versículo. Elegir las páginas del pasaje es más preciso y deja ver qué entra.",
           "cta": "Elegir páginas"
+        },
+        "suggestion": {
+          "cta_one": "Selección sugerida · 1 hoja",
+          "cta_other": "Selección sugerida · {{count}} hojas",
+          "title": "Selección sugerida para este pasaje",
+          "body": "Una hoja por palabra o categoría del pasaje, la que más la trata. Primero las palabras raras en la Biblia y las que el pasaje repite; los verbos de todos los días, al final. Tú decides qué entra.",
+          "reason": {
+            "rare_one": "aparece 1 vez en {{corpus}}",
+            "rare_other": "aparece {{n}} veces en {{corpus}}",
+            "repeated_one": "1 vez en el pasaje",
+            "repeated_other": "{{count}} veces en el pasaje",
+            "common": "común: {{n}} veces en {{corpus}}",
+            "section": "sección «{{title}}»"
+          },
+          "corpus": {
+            "OT": "el Antiguo Testamento",
+            "NT": "el Nuevo Testamento",
+            "bible": "la Biblia"
+          },
+          "leftOut_one": "Fuera por presupuesto: {{list}}.",
+          "leftOut_other": "Fuera por presupuesto ({{count}}): {{list}}.",
+          "notFound_one": "Sin entrada en este libro: {{list}}.",
+          "notFound_other": "Sin entrada en este libro ({{count}}): {{list}}.",
+          "cancel": "Cerrar",
+          "add": "Agregar a mi selección",
+          "replace": "Reemplazar mi selección"
         }
       },
       "corpus-plan": {

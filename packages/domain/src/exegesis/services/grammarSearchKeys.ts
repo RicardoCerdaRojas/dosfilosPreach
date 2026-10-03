@@ -63,6 +63,8 @@ export const GRAMMAR_TERMS: ReadonlyArray<{ es: string; en: string }> = [
     { es: 'yiqtol', en: 'yiqtol' },
     { es: 'qatal', en: 'qatal' },
     { es: 'consecutiv', en: 'consecutive' },
+    { es: 'cohortativ', en: 'cohortativ' },
+    { es: 'yusiv', en: 'jussiv' },
     // Casos
     { es: 'nominativ', en: 'nominativ' },
     { es: 'genitiv', en: 'genitiv' },
@@ -98,6 +100,9 @@ export const GRAMMAR_TERMS: ReadonlyArray<{ es: string; en: string }> = [
     { es: 'atributiv', en: 'attributiv' },
     { es: 'predicativ', en: 'predicat' },
     { es: 'absoluto', en: 'absolute' },
+    // «construct» a secas calza con «construction», que titula media
+    // gramática inglesa; el infinitivo constructo ya entra por «infinitiv».
+    { es: 'constructo', en: 'construct chain' },
     // Partes de la oración
     { es: 'conjuncion', en: 'conjunction' },
     { es: 'particula', en: 'particle' },
@@ -330,4 +335,74 @@ export function sectionsCoveredBy(
     const adentro = ordenadas.filter(s => s.sheet >= range.start && s.sheet <= range.end);
     const corriendo = [...ordenadas].reverse().find(s => s.sheet < range.start);
     return corriendo ? [corriendo, ...adentro] : adentro;
+}
+
+/** Tallo hebreo (código OSHB) → término del glosario. Qal no: está en todas partes. */
+const TALLO_OSHB: Record<string, string> = {
+    N: 'nifal', p: 'piel', P: 'pual', h: 'hifil', H: 'hofal', t: 'hitpael', o: 'polel',
+};
+/** Tipo de forma verbal hebrea (código OSHB) → términos del glosario. */
+const TIPO_OSHB: Record<string, string[]> = {
+    w: ['wayyiqtol', 'consecutiv'], q: ['consecutiv'],
+    // «constructo» es el estado constructo NOMINAL (`construct chain`): el
+    // infinitivo constructo entra por «infinitiv» (revisión adversarial de B3).
+    c: ['infinitiv'], a: ['infinitiv', 'absoluto'],
+    r: ['participi'], s: ['participi'], v: ['imperativ'], h: ['cohortativ'], j: ['yusiv'],
+};
+/** Modo griego (MorphGNT) → término del glosario. El indicativo no: es lo común. */
+const MODO_GRIEGO: Record<string, string> = {
+    P: 'participi', N: 'infinitiv', S: 'subjuntiv', O: 'optativ', D: 'imperativ',
+};
+
+/**
+ * Qué buscar en el índice de una gramática, leído de la MORFOLOGÍA del pasaje.
+ *
+ * `grammarSearchKeys` sólo lee el encuadre, y un encuadre para predicar no
+ * nombra categorías gramaticales: con Jonás 4:5-11 la gramática de Farfan no
+ * proponía ninguna sección. El texto sí las tiene —wayyiqtol, infinitivos
+ * constructos, un hifil— y la morfología las dice sin interpretar nada.
+ *
+ * Sólo las categorías MARCADAS: qal, presente o indicativo inundarían la
+ * propuesta con secciones que no le enseñan nada al pasaje.
+ */
+export function grammarKeysFromMorphology(
+    verses: ReadonlyArray<{ morphology: { tokens: ReadonlyArray<object> } }>,
+): GrammarSearchKeys {
+    const es = new Set<string>();
+    for (const v of verses) {
+        for (const t of v.morphology.tokens) {
+            if ('oshbMorphCode' in t && typeof t.oshbMorphCode === 'string') {
+                // El arameo (prefijo A) usa otros tallos con las mismas letras:
+                // su «h» es haphel, no hifil.
+                const arameo = t.oshbMorphCode.startsWith('A');
+                for (const seg of t.oshbMorphCode.replace(/^[HA]/, '').split('/')) {
+                    // Sustantivo o adjetivo en estado constructo: N/A + tipo +
+                    // género + número + estado («Ncmsc»).
+                    if ((seg[0] === 'N' || seg[0] === 'A') && seg[1] !== 'p' && seg[4] === 'c') es.add('constructo');
+                    if (seg[0] !== 'V') continue;
+                    const tallo = arameo ? undefined : TALLO_OSHB[seg[1] ?? ''];
+                    if (tallo) es.add(tallo);
+                    for (const termino of TIPO_OSHB[seg[2] ?? ''] ?? []) es.add(termino);
+                }
+            } else if ('tag' in t) {
+                const modo = (t as { tag?: { mood?: string } }).tag?.mood;
+                if (modo && MODO_GRIEGO[modo]) es.add(MODO_GRIEGO[modo]!);
+            }
+        }
+    }
+    const categories: string[] = [];
+    for (const term of GRAMMAR_TERMS) {
+        if (!es.has(term.es)) continue;
+        categories.push(term.es);
+        if (term.en !== term.es) categories.push(term.en);
+    }
+    return { originalForms: [], categories };
+}
+
+/** Une dos juegos de claves sin repetir; las del encuadre van primero. */
+export function mergeGrammarKeys(a: GrammarSearchKeys, b: GrammarSearchKeys): GrammarSearchKeys {
+    return {
+        originalForms: [...new Set([...a.originalForms, ...b.originalForms])],
+        categories: [...new Set([...a.categories, ...b.categories])],
+    };
 }

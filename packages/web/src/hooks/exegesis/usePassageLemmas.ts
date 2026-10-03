@@ -44,21 +44,30 @@ export function passageVerses(
     }));
 }
 
+export interface PassageMorphology {
+    entries: VerseMorphologyEntry[];
+    lemmas: PassageLemma[];
+    /** El pasaje es hebreo (morphhb); si no, griego (MorphGNT). */
+    hebrew: boolean;
+}
+
 /**
- * Los lemas de TODO el pasaje, de la morfología (MorphGNT / morphhb).
+ * La morfología de TODO el pasaje y sus lemas (MorphGNT / morphhb).
  *
- * «Páginas por lema» los sacaba de los versículos ya analizados, y era
+ * «Páginas por lema» sacaba los lemas de los versículos ya analizados, y era
  * circular: para analizar bien hacen falta las hojas del léxico, y las hojas
  * salían del análisis (Jonás 4:5-11: nada de 4:8-11 con 4:5-4:7 analizados).
+ * La gramática usa la misma morfología para saber qué categorías tiene el
+ * texto (`grammarKeysFromMorphology`).
  */
 export function usePassageLemmas(paper: ExegeticalPaper | null | undefined, enabled: boolean) {
     const versos = useMemo(() => (paper ? passageVerses(paper) : []), [paper]);
     const clave = versos.map(v => `${v.bookId}.${v.chapter}.${v.verse}`).join(',');
     return useQuery({
         queryKey: ['exegesis-passage-lemmas', clave],
-        queryFn: async (): Promise<PassageLemma[]> => {
+        queryFn: async (): Promise<PassageMorphology> => {
             const p = proveedorDeMorfologia();
-            const entradas = await Promise.all(versos.map(async v => {
+            const leidas = await Promise.all(versos.map(async v => {
                 try {
                     const morphology = await p.getVerseMorphology?.(v.bookId, v.chapter, v.verse);
                     return morphology ? [{ chapter: v.chapter, verse: v.verse, morphology } satisfies VerseMorphologyEntry] : [];
@@ -67,10 +76,10 @@ export function usePassageLemmas(paper: ExegeticalPaper | null | undefined, enab
                     return [];
                 }
             }));
-            const verses = entradas.flat();
-            const hebreo = verses.some(e => e.morphology.tokens.some(t => 'oshbMorphCode' in t));
-            const tabla = hebreo ? await tablaDeStrong() : null;
-            return passageLemmas(verses, n => tabla?.[String(n)]);
+            const entries = leidas.flat();
+            const hebrew = entries.some(e => e.morphology.tokens.some(t => 'oshbMorphCode' in t));
+            const tabla = hebrew ? await tablaDeStrong() : null;
+            return { entries, lemmas: passageLemmas(entries, n => tabla?.[String(n)]), hebrew };
         },
         enabled: enabled && versos.length > 0,
         staleTime: Infinity,

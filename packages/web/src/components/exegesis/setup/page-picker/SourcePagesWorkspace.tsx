@@ -15,6 +15,7 @@ import {
     type SectionProposal,
     type PageNumbering,
     type CorpusFootprint,
+    type LexiconSuggestion,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { PanelGroup } from '@/components/ui/PanelGroup';
@@ -22,6 +23,7 @@ import { PanelDivider } from '@/components/ui/PanelDivider';
 import { useDocumentPdfUrl } from '@/hooks/exegesis/useDocumentPageIndex';
 import { PageRail, sheetsInRanges } from './PageRail';
 import { cartSaveMode } from './cartSaveMode';
+import { SuggestedSelection } from './SuggestedSelection';
 import { PdfPageViewer } from './PdfPageViewer';
 import { SelectionCart } from './SelectionCart';
 import { LemmaPagesPanel } from './LemmaPagesPanel';
@@ -85,6 +87,8 @@ interface Props {
      * no lo tienen— o cuando el encuadre no nombra ninguna categoría.
      */
     sectionProposals?: ReadonlyArray<SectionProposal>;
+    /** «Selección sugerida» para léxicos y gramáticas (`useLexiconSuggestion`). */
+    suggestion?: LexiconSuggestion | null;
     /** El índice de secciones del libro, para rotular los tramos del carrito. */
     sections?: ReadonlyArray<{ sheet: number; section: string | null }>;
     /** Numeración confirmada del libro, para nombrar las hojas por su folio. */
@@ -105,6 +109,7 @@ export function SourcePagesWorkspace({
     onConfirm,
     isSaving,
     lemmaProposals,
+    suggestion = null,
     lemmaLoading = false,
     passageProposals,
     passageLoading = false,
@@ -219,6 +224,16 @@ export function SourcePagesWorkspace({
         rebuild(sheets => { for (const h of hojas) sheets.add(h); });
         if (hojas[0]) setCurrentSheet(hojas[0]);
     }, []);
+
+    /** Reemplaza la selección por estas hojas, con deshacer. */
+    const keepOnly = useCallback((hojas: ReadonlyArray<number>) => {
+        const antes = ranges;
+        setRanges(normalizeSheetRanges(hojas.map(h => ({ start: h, end: h }))));
+        if (hojas[0]) setCurrentSheet(Math.min(...hojas));
+        toast(t('paperSetup.subSteps.corpus.picker.cart.replaced', { count: hojas.length }), {
+            action: { label: t('paperSetup.subSteps.corpus.picker.cart.undo'), onClick: () => setRanges(antes) },
+        });
+    }, [ranges, t]);
 
     /**
      * Agrega el tramo entre el ancla y esta hoja, ambos inclusive.
@@ -353,6 +368,17 @@ export function SourcePagesWorkspace({
                             {t('paperSetup.subSteps.corpus.picker.proposal.accept')}
                         </Button>
                     </>
+                )}
+                {suggestion && (
+                    <div className="ml-auto">
+                        <SuggestedSelection
+                            suggestion={suggestion}
+                            numbering={numbering}
+                            printedPageOffset={printedPageOffset}
+                            onReplace={keepOnly}
+                            onAdd={addLemmaSheets}
+                        />
+                    </div>
                 )}
             </div>
 
@@ -497,6 +523,7 @@ export function SourcePagesWorkspace({
                             selected={selectedSheets}
                             onAdd={addLemmaSheet}
                             onAddAll={addLemmaSheets}
+                            onKeepOnly={keepOnly}
                         />
                     )}
                     <SelectionCart
