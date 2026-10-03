@@ -47,6 +47,7 @@ export function StepDraft() {
             elements={paso.sectionElements}
             prose={paso.sectionProse}
             audienceRigor={paso.rules.audienceRigor}
+            manuscriptStyle={paso.manuscriptStyle}
             passage={paso.passage}
             onSelectSection={paso.setActiveSectionId}
             onChangeElements={paso.setSectionElements}
@@ -78,6 +79,7 @@ export function StepDraft() {
                     elements={paso.sectionElements}
                     prose={paso.sectionProse}
                     audienceRigor={paso.rules.audienceRigor}
+                    manuscriptStyle={paso.manuscriptStyle}
                     hasDraft={!!draft}
                     onProseChange={paso.setSectionProse}
                     onAssemble={paso.armarBorrador}

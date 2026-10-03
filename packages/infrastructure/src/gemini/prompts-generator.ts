@@ -6,7 +6,7 @@ import type { SupportedLanguage } from '@dosfilos/domain';
 // líneas dispersas ("relevante", "memorable", "no repitas categoría") y ninguna
 // describía la forma que el pastor de verdad usa.
 import illustrationGuidelinesMD from '../../config/prompts/homiletics/illustration-guidelines.md?raw';
-import { SERMON_INTRO_HEADINGS, SERMON_MANUSCRIPT_STYLE } from '@dosfilos/domain';
+import { SERMON_INTRO_HEADINGS, manuscriptStyleFor } from '@dosfilos/domain';
 
 const JSON_INSTRUCTION = `IMPORTANTE: Tu respuesta debe ser EXCLUSIVAMENTE un objeto JSON válido. No incluyas NADA de texto antes ni después del JSON (ni "Aquí está el JSON", ni bloques de código markdown como \`\`\`json). Solo el objeto JSON crudo.`;
 
@@ -932,7 +932,7 @@ ${openingIllustrationRule(rules)}${bookOrientationRule(analysis)}
   
   6. **AUDIENCIA**: ${rules.targetAudience || 'General'}
 
-  7. ${SERMON_MANUSCRIPT_STYLE}
+  7. ${manuscriptStyleFor(rules.manuscriptStyle)}
 
   Reglas Personalizadas del Usuario:
   ${rules.customInstructions || 'Ninguna'}

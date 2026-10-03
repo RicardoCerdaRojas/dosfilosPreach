@@ -32,5 +32,14 @@
             "mailchimp": "Send your devotionals or sermons as a newsletter.",
             "substack": "Publish your reflections in your weekly bulletin."
         }
+    },
+    "manuscriptStyle": {
+        "title": "Manuscript style",
+        "description": "How the prose of your sermons is written: how much to develop each idea and what to avoid. It is used when writing a section and when generating the full draft.",
+        "usingSystem": "You are using the system style.",
+        "usingOwn": "You are using your own style.",
+        "register": "The Spanish register (neutral Latin American, no voseo or vosotros) always applies and is not edited here.",
+        "reset": "Use the system style",
+        "saveHint": "It is saved with “Guardar Cambios” below."
     }
 }

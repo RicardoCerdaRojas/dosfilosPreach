@@ -33,6 +33,7 @@ import { IntegrationsSettings } from './IntegrationsSettings';
 import { useAuthorization } from '@/hooks/useAuthorization';
 import { AcademicVoiceCard } from '@/components/exegesis/setup/AcademicVoiceCard';
 import { GlossaryEditorCard } from '@/components/exegesis/setup/GlossaryEditorCard';
+import { ManuscriptStyleCard } from '@/components/settings/ManuscriptStyleCard';
 
 // Subscription page is heavy (Stripe + plan grid). Lazy-load so users who never
 // open the Suscripción tab don't pay the cost.
@@ -234,7 +235,11 @@ export function SettingsPage() {
                 libraryDocIds: Array.isArray(phaseConfig?.libraryDocIds) 
                     ? phaseConfig.libraryDocIds.filter((id: any) => typeof id === 'string' && id.length > 0)
                     : [],
-                temperature: Number(phaseConfig?.temperature) || 0.5
+                temperature: Number(phaseConfig?.temperature) || 0.5,
+                // Sólo la redacción lo trae; ausente = el estilo del sistema.
+                ...(typeof phaseConfig?.manuscriptStyle === 'string' && phaseConfig.manuscriptStyle.trim()
+                    ? { manuscriptStyle: phaseConfig.manuscriptStyle }
+                    : {}),
             });
 
             // Construct the clean object explicitly
@@ -559,6 +564,16 @@ export function SettingsPage() {
                             </Accordion>
                         </CardContent>
                     </Card>
+
+                    <ManuscriptStyleCard
+                        value={(config[WorkflowPhase.DRAFTING] as { manuscriptStyle?: string }).manuscriptStyle}
+                        onChange={manuscriptStyle =>
+                            setConfig(prev => ({
+                                ...prev,
+                                [WorkflowPhase.DRAFTING]: { ...prev[WorkflowPhase.DRAFTING], manuscriptStyle },
+                            }))
+                        }
+                    />
                 </TabsContent>
 
                 {/* ==================== SERIES TAB ==================== */}

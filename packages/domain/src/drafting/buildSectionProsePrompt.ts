@@ -1,5 +1,5 @@
 import type { SermonElement } from './SermonElement';
-import { SERMON_MANUSCRIPT_STYLE } from './sermonManuscriptStyle';
+import { manuscriptStyleFor } from './sermonManuscriptStyle';
 import type { WalkSection } from './deriveSectionWalk';
 
 export interface SectionProseInput {
@@ -33,6 +33,8 @@ export interface SectionProseInput {
     scriptureText?: string;
     /** Registro del sermón: cómo habla este pastor a su congregación. */
     audienceRigor?: 'beginner' | 'seminary';
+    /** El estilo del manuscrito que guardó el usuario. Ausente = el del sistema. */
+    manuscriptStyle?: string;
 }
 
 const VINETA = (t: string) => `- ${t}`;
@@ -168,7 +170,7 @@ ${estructura}
 
 5. ${registro}
 
-6. ${SERMON_MANUSCRIPT_STYLE}
+6. ${manuscriptStyleFor(input.manuscriptStyle)}
 
 7. Frases cortas, sin subtítulos, sin encabezados. Nada de meta-comentarios
    ("en esta sección veremos", "a continuación analizaremos").

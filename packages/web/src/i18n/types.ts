@@ -59,5 +59,6 @@ export type TranslationNamespace =
     | 'admin'
     | 'wordStudy'
     | 'studyDepth'
-    | 'guidedSermon';
+    | 'guidedSermon'
+    | 'settings';
 
