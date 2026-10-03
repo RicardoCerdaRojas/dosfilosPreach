@@ -37,6 +37,8 @@ interface Props {
     selectedChars: number;
     sheetCount: number;
     onRemoveRange: (range: SheetRange) => void;
+    /** Quitar todos los tramos de una vez (con deshacer). */
+    onClear: () => void;
     /** Tramos marcados como «siempre incluir». */
     pinnedRanges: ReadonlyArray<SheetRange>;
     onTogglePinned: (range: SheetRange) => void;
@@ -65,6 +67,7 @@ export function SelectionCart({
     selectedChars,
     sheetCount,
     onRemoveRange,
+    onClear,
     pinnedRanges,
     onTogglePinned,
     pinnedChars,
@@ -127,8 +130,18 @@ export function SelectionCart({
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                     {t('paperSetup.subSteps.corpus.picker.cart.title')}
                 </span>
-                <span className="text-[11px] text-muted-foreground tabular-nums">
+                <span className="flex items-center gap-2 text-[11px] text-muted-foreground tabular-nums">
                     {t('paperSetup.subSteps.corpus.picker.cart.rangeCount', { count: ranges.length })}
+                    {/* 33 tramos se quitaban de a uno (Jonás 4:5-11). */}
+                    {ranges.length > 1 && (
+                        <button
+                            type="button"
+                            onClick={onClear}
+                            className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                            {t('paperSetup.subSteps.corpus.picker.cart.clear')}
+                        </button>
+                    )}
                 </span>
             </div>
 

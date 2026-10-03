@@ -40,6 +40,12 @@ const SNIPPET_AFTER = 200;
  */
 const MIN_TERM_LENGTH = 2;
 
+/** Tope de lemas por pedido en modo `'lemas'`: los de un pasaje largo. */
+const MAX_TERMS = 150;
+
+/** Hojas que se devuelven por lema en modo `'lemas'`; el cliente muestra tres. */
+const SHEETS_PER_TERM = 10;
+
 interface SearchRequest {
     resourceId: string;
     term: string;
@@ -54,7 +60,13 @@ interface SearchRequest {
      * porque el análisis escribe «שׁוּב» y el léxico encabeza «שוב»: son la
      * misma entrada y ninguna de las dos grafías encuentra a la otra.
      */
-    mode?: 'texto' | 'lema' | 'referencia';
+    mode?: 'texto' | 'lema' | 'lemas' | 'referencia';
+
+    /**
+     * Sólo en modo `'lemas'`: todos los lemas a buscar, en UNA lectura del
+     * libro (`lemmaSheetsIn`). Devuelve `byTerm` en vez de `hits`.
+     */
+    terms?: string[];
 
     /**
      * Sólo en modo `'referencia'`: el pasaje que hay que buscar nombrado
@@ -131,22 +143,97 @@ function fold(char: string): string {
  * Dónde cae cada aparición del término dentro de un fragmento, en
  * posiciones del texto ORIGINAL.
  */
-/** Consonantes hebreas o griegas, sin vocales ni cantilación. */
+/** Consonantes hebreas, sin vocales ni cantilación. */
 export function soloConsonantes(text: string): string {
     return (text.match(/[\u05D0-\u05EA]/g) ?? []).join('');
 }
 
+/** Una palabra griega sin acentos, espíritus ni mayúsculas, con sigma única. */
+export function griegoPlegado(text: string): string {
+    return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        // Sigma final y sigma lunada (ϲ, la de muchas ediciones críticas) son σ.
+        .replace(/[ςϲ]/g, 'σ')
+        .replace(/[^\u03B1-\u03C9]/g, '');
+}
+
 /**
- * Dónde aparece un lema como PALABRA ENTERA, comparando consonantes.
+ * La clave con que se compara un lema: consonantes si es hebreo, la palabra
+ * plegada si es griego.
+ *
+ * Sólo existía la hebrea, así que un lema griego quedaba en cadena vacía y
+ * «Páginas por lema» no encontraba nada en BDAG (Jonás 4:5-11, 2026-10-03).
+ * Debe plegar IGUAL que `lemmaKey` de `@dosfilos/domain`: hay una prueba de
+ * paridad.
+ */
+export function lemmaKey(text: string): string {
+    const hebreo = soloConsonantes(text);
+    return hebreo || griegoPlegado(text);
+}
+
+/**
+ * Dónde aparece un lema como PALABRA ENTERA, comparando su clave
+ * (`lemmaKey`).
  *
  * Devuelve posiciones aproximadas —la del comienzo de la palabra en el
  * texto original— que bastan para el renglón de contexto.
  */
-export function lemmaOccurrencesIn(text: string, consonantes: string): number[] {
-    if (!consonantes || !text) return [];
-    const out: number[] = [];
-    for (const m of text.matchAll(/[\u0590-\u05FF]+/g)) {
-        if (soloConsonantes(m[0]) === consonantes) out.push(m.index ?? 0);
+export function lemmaOccurrencesIn(text: string, clave: string): number[] {
+    if (!clave || !text) return [];
+    return wordKeysIn(text).get(clave)?.at ?? [];
+}
+
+/**
+ * Cada palabra hebrea o griega del texto con su clave (`lemmaKey`), y dónde
+ * aparece. En NFC: un léxico guardado en NFD partía cada palabra griega en sus
+ * acentos y no encontraba ningún lema (revisión adversarial de B2).
+ */
+function wordKeysIn(text: string): Map<string, { at: number[] }> {
+    const out = new Map<string, { at: number[] }>();
+    const nfc = text.normalize('NFC');
+    for (const m of nfc.matchAll(/[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F]+/g)) {
+        const clave = /[\u05D0-\u05EA]/.test(m[0]) ? soloConsonantes(m[0]) : griegoPlegado(m[0]);
+        if (!clave) continue;
+        const hit = out.get(clave);
+        if (hit) hit.at.push(m.index ?? 0);
+        else out.set(clave, { at: [m.index ?? 0] });
+    }
+    return out;
+}
+
+/**
+ * Las hojas de cada lema, recorriendo el libro UNA vez.
+ *
+ * «Páginas por lema» pedía una búsqueda por lema, y cada una lee todos los
+ * fragmentos del léxico. Con los lemas del pasaje entero —decenas— eso era
+ * leer el libro decenas de veces por cada apertura del selector. Y cada
+ * fragmento se parte en palabras una sola vez, no una por lema: 150 lemas
+ * sobre 3.000 fragmentos tardaban 12 s (revisión adversarial de B2).
+ */
+export function lemmaSheetsIn(
+    chunks: ReadonlyArray<{ text: string; sheet: number; section: string | null }>,
+    claves: ReadonlyArray<string>,
+    perTerm: number,
+): Record<string, Array<{ sheet: number; count: number; snippet: string; section: string | null }>> {
+    const porClave = new Map<string, Map<number, { sheet: number; count: number; snippet: string; section: string | null }>>();
+    for (const c of claves) if (c) porClave.set(c, new Map());
+    for (const chunk of chunks) {
+        const palabras = wordKeysIn(chunk.text);
+        for (const [clave, hojas] of porClave) {
+            const at = palabras.get(clave)?.at;
+            if (!at) continue;
+            const hoja = hojas.get(chunk.sheet);
+            if (hoja) hoja.count += at.length;
+            else hojas.set(chunk.sheet, { sheet: chunk.sheet, count: at.length, snippet: snippetAround(chunk.text.normalize('NFC'), at[0]!), section: chunk.section });
+        }
+    }
+    const out: Record<string, Array<{ sheet: number; count: number; snippet: string; section: string | null }>> = {};
+    for (const [clave, hojas] of porClave) {
+        out[clave] = [...hojas.values()]
+            .sort((a, b) => (b.count - a.count) || (a.sheet - b.sheet))
+            .slice(0, perTerm);
     }
     return out;
 }
@@ -242,8 +329,36 @@ export const searchDocumentText = onCall<SearchRequest>(
         if (!resourceId) throw new HttpsError('invalid-argument', 'resourceId is required');
 
         const pedido = request.data?.mode;
-        const modo: 'texto' | 'lema' | 'referencia' =
-            pedido === 'lema' || pedido === 'referencia' ? pedido : 'texto';
+        const modo: 'texto' | 'lema' | 'lemas' | 'referencia' =
+            pedido === 'lema' || pedido === 'lemas' || pedido === 'referencia' ? pedido : 'texto';
+
+        if (modo === 'lemas') {
+            const terms = Array.isArray(request.data?.terms)
+                ? request.data!.terms!.filter((x): x is string => typeof x === 'string').slice(0, MAX_TERMS)
+                : [];
+            const claves = terms.map(lemmaKey);
+            if (claves.every(c => c.length < MIN_TERM_LENGTH)) return { byTerm: {}, scannedChunks: 0 };
+            const snapshot = await getFirestore()
+                .collection(CHUNK_COLLECTION)
+                .where('resourceId', '==', resourceId)
+                .select('text', 'metadata', 'userId', 'stores')
+                .get();
+            const readable = snapshot.docs.map(d => d.data()).filter(data => isReadable(data, uid));
+            if (!snapshot.empty && readable.length === 0) {
+                throw new HttpsError('permission-denied', 'Resource not readable by this user');
+            }
+            const chunks = readable.flatMap(data => {
+                const text = typeof data.text === 'string' ? data.text : '';
+                const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : null;
+                const section = typeof data.metadata?.section === 'string' ? data.metadata.section : null;
+                return text && sheet !== null ? [{ text, sheet, section }] : [];
+            });
+            const porClave = lemmaSheetsIn(chunks, claves.filter(c => c.length >= MIN_TERM_LENGTH), SHEETS_PER_TERM);
+            const byTerm: Record<string, unknown> = {};
+            terms.forEach((t, i) => { byTerm[t] = porClave[claves[i]!] ?? []; });
+            console.log(`[DocumentTextSearch] ${resourceId} lemas: ${terms.length} términos, ${readable.length} chunks, una lectura`);
+            return { byTerm, scannedChunks: readable.length };
+        }
 
         // En modo referencia la aguja es el pasaje, no un término escrito.
         const ref = modo === 'referencia' ? request.data?.reference : undefined;
@@ -262,7 +377,7 @@ export const searchDocumentText = onCall<SearchRequest>(
             return true;
         };
 
-        const aguja = modo === 'lema' ? soloConsonantes(term)
+        const aguja = modo === 'lema' ? lemmaKey(term)
             : modo === 'texto' ? foldForSearch(term).text
             : '';
         if (modo !== 'referencia' && aguja.length < MIN_TERM_LENGTH) {
@@ -319,7 +434,12 @@ export const searchDocumentText = onCall<SearchRequest>(
         }
 
         const all = [...bySheet.values()].sort((a, b) => a.sheet - b.sheet);
-        const hits = all.slice(0, MAX_SHEETS);
+        // En modo lema se recorta por APARICIONES y no por número de hoja: la
+        // entrada de un verbo común (אמר, λέγω) puede caer después de la hoja
+        // 80 y quedaba afuera antes de ordenarse por cantidad.
+        const hits = modo === 'lema'
+            ? [...all].sort((a, b) => (b.count - a.count) || (a.sheet - b.sheet)).slice(0, MAX_SHEETS).sort((a, b) => a.sheet - b.sheet)
+            : all.slice(0, MAX_SHEETS);
         const etiqueta = modo === 'referencia' ? `referencia ${names[0]} ${ref!.chapterStart}` : `«${term}»`;
         console.log(`[DocumentTextSearch] ${resourceId} ${etiqueta} (${modo}): ${readable.length} chunks → ${all.length} hojas`);
         return { hits, truncated: all.length > hits.length, scannedChunks: readable.length };

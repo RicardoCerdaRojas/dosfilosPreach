@@ -911,7 +911,11 @@
             "saved_other": "Guardado · {{count}} hojas en el trabajo",
             "resave": "Volver a guardar",
             "update_one": "Guardar cambios · {{count}} hoja",
-            "update_other": "Guardar cambios · {{count}} hojas"
+            "update_other": "Guardar cambios · {{count}} hojas",
+            "clear": "Vaciar",
+            "cleared_one": "Se quitó 1 tramo.",
+            "cleared_other": "Se quitaron {{count}} tramos.",
+            "undo": "Deshacer"
           },
           "numberingLegend": "h. = hoja del PDF (la columna de la izquierda) · p. = página impresa del libro"
         },
@@ -1207,7 +1211,7 @@
         "lemmas": {
           "title": "Páginas por lema",
           "addAll": "Agregar las {{count}} principales",
-          "empty": "Todavía no hay lemas: salen del análisis canónico de los versos.",
+          "empty": "Todavía no hay lemas: salen de la morfología del pasaje y del análisis de los versos.",
           "notFound": "no aparece en este libro",
           "page": "h. {{sheet}} · p. {{printed}}",
           "sheet": "h. {{sheet}}",

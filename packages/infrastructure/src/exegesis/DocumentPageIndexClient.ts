@@ -151,7 +151,7 @@ export interface DocumentTextSearchResult {
 export async function searchDocumentText(
     resourceId: string,
     term: string,
-    /** `'lema'` exige palabra entera y compara sólo consonantes. */
+    /** `'lema'` exige palabra entera y compara su clave (consonantes en hebreo, plegada en griego). */
     mode: 'texto' | 'lema' = 'texto',
 ): Promise<DocumentTextSearchResult> {
     const callable = httpsCallable<{ resourceId: string; term: string; mode: string }, DocumentTextSearchResult>(
@@ -162,6 +162,35 @@ export async function searchDocumentText(
     const response = await callable({ resourceId, term, mode });
     return response.data;
 }
+
+/**
+ * Las hojas de MUCHOS lemas, en una sola lectura del libro.
+ *
+ * Una búsqueda por lema lee todos los fragmentos del léxico cada vez; con los
+ * lemas del pasaje entero eran decenas de lecturas por apertura del selector.
+ * Devuelve, por cada término pedido, sus hojas con más apariciones primero.
+ */
+export async function searchLemmasInDocument(
+    resourceId: string,
+    terms: ReadonlyArray<string>,
+): Promise<Record<string, DocumentSheetHit[]>> {
+    if (terms.length === 0) return {};
+    const callable = httpsCallable<{ resourceId: string; terms: string[]; mode: 'lemas' }, { byTerm: Record<string, DocumentSheetHit[]> }>(
+        getFunctions(),
+        'searchDocumentText',
+        { timeout: INDEX_TIMEOUT_MS },
+    );
+    // En tandas: la callable atiende hasta `LEMMA_TERMS_PER_CALL` términos y
+    // descartaba el resto en silencio, que el panel mostraba como «sin
+    // entrada en este libro» (revisión adversarial de B2).
+    const tandas: string[][] = [];
+    for (let i = 0; i < terms.length; i += LEMMA_TERMS_PER_CALL) tandas.push(terms.slice(i, i + LEMMA_TERMS_PER_CALL));
+    const respuestas = await Promise.all(tandas.map(t => callable({ resourceId, terms: t, mode: 'lemas' })));
+    return Object.assign({}, ...respuestas.map(r => r.data?.byTerm ?? {}));
+}
+
+/** El `MAX_TERMS` de `searchDocumentText` (functions no importa nada de aquí; hay prueba de paridad). */
+export const LEMMA_TERMS_PER_CALL = 150;
 
 /**
  * Dónde nombra el libro al pasaje del trabajo.

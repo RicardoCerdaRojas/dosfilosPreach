@@ -23,6 +23,7 @@ export {
     fetchDocumentPageIndex,
     searchDocumentByReference,
     searchDocumentText,
+    searchLemmasInDocument,
     fetchDocumentPdfUrl,
     invalidateDocumentCaches,
 } from './DocumentPageIndexClient';

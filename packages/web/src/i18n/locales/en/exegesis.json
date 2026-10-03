@@ -911,7 +911,11 @@
             "saved_other": "Saved · {{count}} sheets in the paper",
             "resave": "Save again",
             "update_one": "Save changes · {{count}} sheet",
-            "update_other": "Save changes · {{count}} sheets"
+            "update_other": "Save changes · {{count}} sheets",
+            "clear": "Clear",
+            "cleared_one": "1 range removed.",
+            "cleared_other": "{{count}} ranges removed.",
+            "undo": "Undo"
           },
           "numberingLegend": "s. = PDF sheet (the left column) · p. = the book's printed page"
         },
@@ -1207,7 +1211,7 @@
         "lemmas": {
           "title": "Pages by lemma",
           "addAll": "Add the top {{count}}",
-          "empty": "No lemmas yet: they come from the verses' canonical analysis.",
+          "empty": "No lemmas yet: they come from the passage morphology and the verse analysis.",
           "notFound": "does not appear in this book",
           "page": "s. {{sheet}} · p. {{printed}}",
           "sheet": "s. {{sheet}}",

@@ -1,3 +1,4 @@
+import { usePassageLemmas } from '@/hooks/exegesis/usePassageLemmas';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -5,7 +6,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { proposeSheetRanges, type ProposalKind } from '@dosfilos/infrastructure';
 import {
-    checkRecipeConsistency, grammarSearchKeys, lemmasOfAnalyses, normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
+    checkRecipeConsistency, grammarSearchKeys, lemmasOfAnalyses, mergeLemmas, normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -79,14 +80,17 @@ export function ExegesisSourcePagesPage() {
      * los análisis aceptados, que es donde el lema existe como dato.
      */
     const esLexico = source ? TIPOS_CON_ENTRADA_POR_LEMA.has(source.sourceType) : false;
+    const lemasDelPasaje = usePassageLemmas(paper, esLexico);
     const lemmas = useMemo(() => {
         if (!paper || !esLexico) return [];
         const analyses = paper.steps
             .filter(step => step.kind === 'verse')
             .map(step => (step.accepted ?? step.current)?.canonicalAnalysis)
             .filter((a): a is NonNullable<typeof a> => !!a);
-        return lemmasOfAnalyses(analyses);
-    }, [paper, esLexico]);
+        // Primero los que el análisis eligió como términos clave; después el
+        // resto del pasaje, de la morfología (`usePassageLemmas`).
+        return mergeLemmas(lemmasOfAnalyses(analyses), lemasDelPasaje.data ?? []);
+    }, [paper, esLexico, lemasDelPasaje.data]);
 
     const lemmaPages = useLemmaPages(resourceId, lemmas, esLexico);
 

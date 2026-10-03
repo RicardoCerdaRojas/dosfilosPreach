@@ -1,6 +1,6 @@
-import { cartSaveMode } from './cartSaveMode';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 import {
     clipRangesTo,
@@ -21,6 +21,7 @@ import { PanelGroup } from '@/components/ui/PanelGroup';
 import { PanelDivider } from '@/components/ui/PanelDivider';
 import { useDocumentPdfUrl } from '@/hooks/exegesis/useDocumentPageIndex';
 import { PageRail, sheetsInRanges } from './PageRail';
+import { cartSaveMode } from './cartSaveMode';
 import { PdfPageViewer } from './PdfPageViewer';
 import { SelectionCart } from './SelectionCart';
 import { LemmaPagesPanel } from './LemmaPagesPanel';
@@ -263,6 +264,15 @@ export function SourcePagesWorkspace({
         rebuild(sheets => { for (let s = range.start; s <= range.end; s++) sheets.delete(s); });
     }, []);
 
+    // Vaciar, con deshacer: es una acción grande y fácil de tocar por error.
+    const clearAll = useCallback(() => {
+        const antes = ranges;
+        setRanges([]);
+        toast(t('paperSetup.subSteps.corpus.picker.cart.cleared', { count: antes.length }), {
+            action: { label: t('paperSetup.subSteps.corpus.picker.cart.undo'), onClick: () => setRanges(antes) },
+        });
+    }, [ranges, t]);
+
     const togglePinned = useCallback((range: SheetRange) => {
         setPinned(prev => {
             const already = prev.some(p => p.start === range.start && p.end === range.end);
@@ -497,6 +507,7 @@ export function SourcePagesWorkspace({
                         selectedChars={selectedChars}
                         sheetCount={sheetCount}
                         onRemoveRange={removeRange}
+                        onClear={clearAll}
                         pinnedRanges={effectivePinned}
                         onTogglePinned={togglePinned}
                         pinnedChars={pinnedChars}

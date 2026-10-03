@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { findQuoteInPageText } from '@dosfilos/domain';
-import { foldForSearch, lemmaOccurrencesIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp } from '../documentTextSearch';
+import { findQuoteInPageText, lemmaKey as lemmaKeyDelDominio } from '@dosfilos/domain';
+import { foldForSearch, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp } from '../documentTextSearch';
 
 /**
  * Los dos buscadores tienen que plegar IGUAL.
@@ -136,5 +136,57 @@ describe('modo referencia — dónde nombra el libro al pasaje', () => {
         // Sin escapar, «s.g» de un alias con punto haría de «sog 2:9» una cita.
         expect(referenceOccurrencesIn('sxg 2:9', referenceRegExp(['s.g']), santiago2).verses).toEqual([]);
         expect(referenceOccurrencesIn('s.g 2:9', referenceRegExp(['s.g']), santiago2).verses).toEqual([9]);
+    });
+});
+
+
+/**
+ * «Páginas por lema» no funcionaba con léxicos griegos: la clave del lema sólo
+ * reconocía consonantes hebreas y un lema griego quedaba vacío.
+ */
+describe('lemas griegos', () => {
+    it('la clave pliega acentos, espíritus, mayúsculas y sigma final', () => {
+        expect(lemmaKey('ἐλέγχω')).toBe('ελεγχω');
+        expect(lemmaKey('Κόσμος')).toBe(lemmaKey('κοσμος'));
+    });
+
+    it('encuentra la entrada de BDAG como palabra entera', () => {
+        const pagina = 'ἐλέγχω fut. ἐλέγξω … 1. to scrutinize … cp. ἐλεγχόμενος';
+        expect(lemmaOccurrencesIn(pagina, lemmaKey('ἐλέγχω'))).toHaveLength(1);
+    });
+
+    it('un léxico guardado en NFD también encuentra el lema (revisión adversarial de B2)', () => {
+        const pagina = 'ἐλέγχω fut. ἐλέγξω'.normalize('NFD');
+        expect(lemmaOccurrencesIn(pagina, lemmaKey('ἐλέγχω'))).toHaveLength(1);
+    });
+
+    it('la sigma lunada es σ', () => {
+        expect(lemmaKey('κόϲμοϲ')).toBe(lemmaKey('κόσμος'));
+    });
+
+    it('paridad con el dominio: las dos claves pliegan igual', () => {
+        for (const w of ['ἐλέγχω', 'Λόγος', 'κόσμος', 'שׁוּב', 'קִיקָיוֹן', 'πίστις', 'κόϲμοϲ', 'ἐλέγχω'.normalize('NFD'), 'חָרָה־לְךָ', 'הַקִּיקָיֽוֹן׃']) {
+            expect(lemmaKey(w)).toBe(lemmaKeyDelDominio(w));
+        }
+    });
+});
+
+/** Una lectura del libro para todos los lemas, en vez de una por lema. */
+describe('lemmaSheetsIn', () => {
+    const chunks = [
+        { text: 'קִיקָיוֹן n.m. a plant … קִיקָיוֹן', sheet: 440, section: null },
+        { text: 'see קיקיון', sheet: 12, section: null },
+        { text: 'חוּס vb. pity, look upon with compassion', sheet: 120, section: null },
+    ];
+
+    it('devuelve las hojas de cada lema, la de más apariciones primero', () => {
+        const r = lemmaSheetsIn(chunks, [lemmaKey('קִיקָיוֹן'), lemmaKey('חוּס')], 10);
+        expect(r[lemmaKey('קִיקָיוֹן')]!.map(h => h.sheet)).toEqual([440, 12]);
+        expect(r[lemmaKey('חוּס')]!.map(h => h.sheet)).toEqual([120]);
+    });
+
+    it('respeta el tope por lema', () => {
+        const r = lemmaSheetsIn(chunks, [lemmaKey('קִיקָיוֹן')], 1);
+        expect(r[lemmaKey('קִיקָיוֹן')]).toHaveLength(1);
     });
 });

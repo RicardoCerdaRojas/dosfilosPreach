@@ -29,6 +29,8 @@ interface Props {
  * lema, que casi siempre es su entrada; el renglón de contexto está
  * para reconocerla sin abrir el libro.
  */
+const HEBREO = /[\u05D0-\u05EA]/;
+
 export function LemmaPagesPanel({ proposals, isLoading, numbering, printedPageOffset, selected, onAdd, onAddAll }: Props) {
     const { t } = useTranslation('exegesis');
 
@@ -54,7 +56,15 @@ export function LemmaPagesPanel({ proposals, isLoading, numbering, printedPageOf
                 <ul className="space-y-1.5">
                     {proposals.map(p => (
                         <li key={p.lemma} className="flex items-start gap-2">
-                            <span className="text-sm text-foreground shrink-0 w-20 truncate" dir="rtl" lang="he">{p.lemma}</span>
+                            {/* La dirección según la lengua: con `rtl` fijo, un lema griego se
+                                leía al revés. */}
+                            <span
+                                className="text-sm text-foreground shrink-0 w-20 truncate"
+                                dir={HEBREO.test(p.lemma) ? 'rtl' : 'ltr'}
+                                lang={HEBREO.test(p.lemma) ? 'he' : 'el'}
+                            >
+                                {p.lemma}
+                            </span>
                             <span className="flex flex-wrap gap-1 flex-1 min-w-0">
                                 {p.sheets.length === 0 ? (
                                     <span className="text-[11px] text-muted-foreground">{t('paperSetup.subSteps.corpus.lemmas.notFound')}</span>
