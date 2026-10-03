@@ -671,5 +671,57 @@
     "translating": "Traduciendo…",
     "ownTranslation": "Traducción propia · el original está a un clic",
     "translateFailed": "No se pudo traducir. El original sigue arriba."
+  },
+  "insightStep": {
+    "title": "Insight",
+    "subtitle": "Tu voz pastoral, sin asistente. Esto es lo que se desarrollará en el sermón.",
+    "help": {
+      "label": "¿Qué escribo en cada campo? Ver guía rápida",
+      "exampleCentralIdeaTitle": "Idea central",
+      "exampleCentralIdea": "«Cristo nos liberó de la condena por la obra perfecta del Espíritu en nuestra carne mortal.»",
+      "exampleDoxologyTitle": "Aplicación doxológica",
+      "exampleDoxology": "«Adorar al Dios cuya justicia cumplió en Cristo lo que nuestra carne nunca pudo. Vivir la libertad evangélica con santidad gozosa, no con resignación legalista.»",
+      "intro": "Este paso es tu voz pastoral. Aquí no hay asistente: el sermón se construye sobre lo que TÚ escribas en esta pantalla.",
+      "centralIdea": "Idea central: una oración que sintetiza el sermón. Aparecerá tal cual en el borrador final.",
+      "observations": "Observaciones: 3 o más verdades que el texto afirma. Cada una será una sección del sermón.",
+      "openQuestion": "Pregunta abierta: la pregunta que tu sermón responde.",
+      "anecdote": "Anécdota pastoral: historia o ejemplo que conecta el texto con la vida real.",
+      "doxology": "Aplicación doxológica: a qué adoración, vida santa o ministerio fiel debe llevar este sermón."
+    },
+    "noAssistant": {
+      "title": "Sin asistente en este paso",
+      "body": "El borrador se construye sobre tus palabras exactas en esta pantalla. Si las pegas desde otra herramienta, lo registramos para tu propia revisión: no para juzgarte, sino para que sepas cuánto de tu sermón es realmente tuyo.",
+      "pastes_one": "{{count}} evento de pegado registrado en esta sesión.",
+      "pastes_other": "{{count}} eventos de pegado registrados en esta sesión."
+    },
+    "centralIdea": {
+      "label": "Idea central (1 oración, mínimo {{min}} caracteres)",
+      "hint": "Aparecerá tal cual en tu sermón final. Sé preciso."
+    },
+    "tripwire": {
+      "title": "Revisa esta afirmación antes de seguir",
+      "dismiss": "Entendido"
+    },
+    "observations": {
+      "label": "Observaciones",
+      "hint": "Qué afirma el texto, qué exige, qué descarta. Cada una con al menos {{minChars}} caracteres; cada una será una sección del sermón.",
+      "progress": "{{ready}} de {{total}}",
+      "slotLabel": "Observación {{n}}",
+      "placeholder": "Observación {{n}}: una verdad que el texto afirma.",
+      "add": "Agregar otra observación",
+      "remove": "Quitar la observación {{n}}"
+    },
+    "openQuestion": {
+      "label": "Pregunta abierta (mínimo {{min}} caracteres)",
+      "hint": "La pregunta que tu sermón ayudará a responder."
+    },
+    "anecdote": {
+      "label": "Anécdota pastoral (mínimo {{min}} caracteres)",
+      "hint": "Una historia, ejemplo o ilustración que conecta el texto con la vida real."
+    },
+    "doxology": {
+      "label": "Aplicación doxológica (mínimo {{min}} caracteres)",
+      "hint": "¿A qué adoración, vida santa o ministerio fiel debe llevar este sermón?"
+    }
   }
 }

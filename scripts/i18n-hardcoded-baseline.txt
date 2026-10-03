@@ -124,7 +124,6 @@
 2 packages/web/src/pages/sermons/generator/exegesis/greek-tutor/dashboard/components/SessionFilters.tsx
 6 packages/web/src/pages/sermons/generator/pastoralSeed/ContextGenreStep.tsx
 8 packages/web/src/pages/sermons/generator/pastoralSeed/FunctionStep.tsx
-5 packages/web/src/pages/sermons/generator/pastoralSeed/InsightStep.tsx
 3 packages/web/src/pages/sermons/generator/pastoralSeed/PastoralSeedWizard.tsx
 6 packages/web/src/pages/sermons/generator/pastoralSeed/ReadingStep.tsx
 4 packages/web/src/pages/sermons/generator/pastoralSeed/RecognitionStep.tsx

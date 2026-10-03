@@ -671,5 +671,57 @@
     "translating": "Translating…",
     "ownTranslation": "Our translation · the original is one click away",
     "translateFailed": "Couldn't translate. The original is still above."
+  },
+  "insightStep": {
+    "title": "Insight",
+    "subtitle": "Your pastoral voice, without the assistant. This is what the sermon will develop.",
+    "help": {
+      "label": "What goes in each field? See quick guide",
+      "exampleCentralIdeaTitle": "Central idea",
+      "exampleCentralIdea": "“Christ freed us from condemnation through the perfect work of the Spirit in our mortal flesh.”",
+      "exampleDoxologyTitle": "Doxological application",
+      "exampleDoxology": "“Worship the God whose righteousness accomplished in Christ what our flesh never could. Live evangelical freedom with joyful holiness, not legalistic resignation.”",
+      "intro": "This step is your pastoral voice. There is no assistant here: the sermon is built on what YOU write on this screen.",
+      "centralIdea": "Central idea: one sentence that sums up the sermon. It will appear as written in the final draft.",
+      "observations": "Observations: 3 or more truths the text affirms. Each becomes a section of the sermon.",
+      "openQuestion": "Open question: the question your sermon answers.",
+      "anecdote": "Pastoral anecdote: a story or example that connects the text with real life.",
+      "doxology": "Doxological application: what worship, holy living or faithful ministry this sermon should lead to."
+    },
+    "noAssistant": {
+      "title": "No assistant in this step",
+      "body": "The draft is built on your exact words on this screen. If you paste them from another tool, we log it for your own review: not to judge you, but so you know how much of your sermon is truly yours.",
+      "pastes_one": "{{count}} paste event logged in this session.",
+      "pastes_other": "{{count}} paste events logged in this session."
+    },
+    "centralIdea": {
+      "label": "Central idea (1 sentence, at least {{min}} characters)",
+      "hint": "It will appear as written in your final sermon. Be precise."
+    },
+    "tripwire": {
+      "title": "Review this claim before moving on",
+      "dismiss": "Got it"
+    },
+    "observations": {
+      "label": "Observations",
+      "hint": "What the text affirms, demands, rules out. Each at least {{minChars}} characters; each becomes a section of the sermon.",
+      "progress": "{{ready}} of {{total}}",
+      "slotLabel": "Observation {{n}}",
+      "placeholder": "Observation {{n}}: a truth the text affirms.",
+      "add": "Add another observation",
+      "remove": "Remove observation {{n}}"
+    },
+    "openQuestion": {
+      "label": "Open question (at least {{min}} characters)",
+      "hint": "The question your sermon will help answer."
+    },
+    "anecdote": {
+      "label": "Pastoral anecdote (at least {{min}} characters)",
+      "hint": "A story, example or illustration that connects the text with real life."
+    },
+    "doxology": {
+      "label": "Doxological application (at least {{min}} characters)",
+      "hint": "What worship, holy living or faithful ministry should this sermon lead to?"
+    }
   }
 }
