@@ -250,6 +250,9 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                 title={t('canonical.study.textualCriticism')}
                 hint={t('canonical.study.textualCriticismHint')}
                 count={analysis.textualCriticism.variants.length}
+                status={analysis.textualCriticism.variants.length === 0 && analysis.textualCriticism.note.trim()
+                    ? t('canonical.study.status.noVariants')
+                    : undefined}
             >
                 <p className="text-xs italic text-foreground/85 leading-relaxed mb-2">
                     {analysis.textualCriticism.note || <em className="text-muted-foreground">—</em>}
@@ -513,6 +516,7 @@ function Section({
     title,
     hint,
     count,
+    status,
     defaultOpen = false,
     children,
 }: {
@@ -520,6 +524,8 @@ function Section({
     title: string;
     hint?: string;
     count?: number;
+    /** Estado que se lee cerrado, p. ej. «revisado · sin variantes». */
+    status?: string;
     defaultOpen?: boolean;
     children: React.ReactNode;
 }) {
@@ -535,8 +541,13 @@ function Section({
                 <span className="text-success shrink-0">{icon}</span>
                 <span className="text-xs font-semibold text-foreground flex-1">
                     {title}
-                    {typeof count === 'number' && (
+                    {/* El número sólo cuando hay algo: «Crítica textual (0)» con la
+                        nota adentro se leía como «vacío» (Jonás 4:5-11). */}
+                    {typeof count === 'number' && count > 0 && (
                         <span className="ml-1.5 text-muted-foreground/70 font-normal">({count})</span>
+                    )}
+                    {status && (
+                        <span className="ml-1.5 text-muted-foreground/70 font-normal">· {status}</span>
                     )}
                 </span>
             </button>

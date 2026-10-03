@@ -1738,7 +1738,10 @@
         "syntax": "No syntactic analysis for this verse yet.",
         "lexis": "No lexical analyses for this verse yet.",
         "commentators": "No commentator engagement for this verse yet.",
-        "cruxes": "No contested decisions in this verse."
+        "cruxes": "No translation decisions recorded for this verse. One is recorded only when the corpus texts bring witnesses for different options, with a verbatim quote on each side: if the corpus cannot sustain it, this stays empty even when there is a crux."
+      },
+      "status": {
+        "noVariants": "reviewed · no variants"
       }
     },
     "compose": {

@@ -1738,7 +1738,10 @@
         "syntax": "Sin análisis sintáctico para este verso.",
         "lexis": "Sin análisis léxicos para este verso.",
         "commentators": "Sin engagement con comentaristas para este verso.",
-        "cruxes": "Sin decisiones contestadas en este verso."
+        "cruxes": "Sin decisiones de traducción registradas en este versículo. Sólo se registra una cuando los textos del corpus traen testigos para opciones distintas, con cita textual de cada lado: si el corpus no alcanza para sostenerla, queda vacía aunque haya una cruz."
+      },
+      "status": {
+        "noVariants": "revisado · sin variantes"
       }
     },
     "compose": {
