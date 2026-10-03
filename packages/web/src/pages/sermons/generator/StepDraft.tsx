@@ -154,6 +154,9 @@ export function StepDraft() {
                 authorName={paso.user?.displayName}
             />
 
+            {/* «Versión nueva (la N)» al re-publicar algo que cambió (#2). */}
+            {publicacion.confirmDialog}
+
             {/* Compuerta 1 — contra-scan antes de publicar (Fase 4 PR 1, ADR-033) */}
             <ContraScanModal
                 open={publicacion.contraScan.modalOpen}

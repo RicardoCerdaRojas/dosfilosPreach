@@ -16,6 +16,7 @@ import {
     SermonEntity,
     buildPaperStudyReference,
     evaluatePastoralSeed,
+    PublicationUnchangedError,
     type Sermon,
 } from '@dosfilos/domain';
 import { migrateLegacyWizardProgress } from './migrateLegacyWizardProgress';
@@ -25,6 +26,7 @@ import { PastoralSeedWizard } from './pastoralSeed/PastoralSeedWizard';
 import { seedToExegesis } from './pastoralSeed/seedToExegesis';
 import { pastoralSeedService } from '@dosfilos/application';
 import { toast } from 'sonner';
+import { useConfirm } from '@/hooks/useConfirm';
 
 function WizardContent() {
     // El flujo del sermón usa el ancho completo; el menú se pliega al entrar
@@ -32,6 +34,7 @@ function WizardContent() {
     useCollapsedSidebar();
     const { step, setStep, passage, setPassage, setExegesis, setHomiletics, setDraft, sermonId, setSermonId, derivedContext, setDerivedContext, restoreSectionElements, restoreSectionProse, rules, setRules, reset } = useWizard();
     const { t } = useTranslation('generator');
+    const { confirm, confirmDialog } = useConfirm();
     const { user } = useFirebase();
     const [searchParams] = useSearchParams();
     const [inProgressSermons, setInProgressSermons] = useState<SermonEntity[]>([]);
@@ -343,13 +346,34 @@ function WizardContent() {
     const handlePublish = async (sermon: SermonEntity) => {
         try {
             setPublishingSermonId(sermon.id);
+            // Ya publicado y cambió: es una versión nueva, y se avisa (#2).
+            const estado = await sermonService.publicationStatus(sermon.id);
+            if (estado.change === 'unchanged') {
+                toast.info(t('drafting.republish.unchanged'));
+                return;
+            }
+            if (estado.change === 'changed') {
+                const n = estado.version;
+                const ok = await confirm({
+                    title: t('drafting.republish.newVersionTitle', { n }),
+                    body: t('drafting.republish.newVersionBody', { n }),
+                    confirmLabel: t('drafting.republish.newVersionConfirm', { n }),
+                    destructive: false,
+                });
+                if (!ok) return;
+            }
             await sermonService.publishSermonAsCopy(sermon.id);
             // Refresh the list to show updated publish status
             const sermons = await sermonService.getInProgressSermons(user!.uid);
             setInProgressSermons(sermons);
         } catch (error) {
+            // Igual a la última copia: no se crea otra (#2 del ejercicio de Jonás).
+            if (error instanceof PublicationUnchangedError) {
+                toast.info(t('drafting.republish.unchanged'));
+                return;
+            }
             console.error('Error publishing sermon:', error);
-            // You can add a toast notification here if you have a toast library
+            toast.error(t('drafting.errors.publishing'));
         } finally {
             setPublishingSermonId(null);
         }
@@ -527,6 +551,7 @@ function WizardContent() {
                     onNewSermon={handleNewSermon}
                     publishingSermonId={publishingSermonId}
                 />
+                {confirmDialog}
             </div>
         );
     }

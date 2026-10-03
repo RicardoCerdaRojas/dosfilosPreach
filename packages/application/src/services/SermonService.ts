@@ -7,6 +7,9 @@ import {
     FidelityGateError,
     evaluateContraScanGate,
     ContraScanGateError,
+    publicationChange,
+    PublicationUnchangedError,
+    type PublicationChange,
     type GateOverride,
     type PublishOverrideInput,
     type ContraScanReport,
@@ -290,6 +293,26 @@ export class SermonService {
     }
 
     /**
+     * Qué pasaría al publicar el borrador ahora: la primera copia, una versión
+     * nueva (la `version`), o nada porque es igual a la última copia
+     * (`publicationChange`, #2 del ejercicio de Jonás). Se compara contra la
+     * copia publicada más reciente que salió de este borrador.
+     */
+    async publicationStatus(
+        draftId: string,
+    ): Promise<{ change: PublicationChange; version: number; lastCopyId: string | null }> {
+        const draft = await this.sermonRepository.findById(draftId);
+        if (!draft) throw new Error('Borrador no encontrado');
+        const copies = await this.sermonRepository.findByDraftId(draftId, draft.userId);
+        const last = copies[0] ?? null;
+        return {
+            change: publicationChange(draft.publishAsCopy(), last),
+            version: copies.length + 1,
+            lastCopyId: last?.id ?? null,
+        };
+    }
+
+    /**
      * Creates a published COPY of the draft sermon.
      * The original draft remains untouched (status='working')but tracks the publication.
      * The copy has a new ID and status='published'.
@@ -313,6 +336,15 @@ export class SermonService {
             // Create a published copy using the entity method
             const publishedCopy = draft.publishAsCopy();
 
+            // Igual a la última copia: no se crea otra (#2 del ejercicio de
+            // Jonás). Quien llama avisa con `PublicationUnchangedError`. Si la
+            // consulta falla se publica como antes: una copia de más es mejor
+            // que un pastor que no puede publicar el domingo.
+            const [last] = await this.sermonRepository.findByDraftId(draftId, draft.userId).catch(() => []);
+            if (last && publicationChange(publishedCopy, last) === 'unchanged') {
+                throw new PublicationUnchangedError(last.id);
+            }
+
             // Save the copy as a new sermon
             const createdCopy = await this.sermonRepository.create(publishedCopy);
 
@@ -334,6 +366,7 @@ export class SermonService {
         } catch (error: any) {
             if (error instanceof FidelityGateError) throw error;
             if (error instanceof ContraScanGateError) throw error;
+            if (error instanceof PublicationUnchangedError) throw error;
             throw new Error(error.message || 'Error al publicar el sermón');
         }
     }

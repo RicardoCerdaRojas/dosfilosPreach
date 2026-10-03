@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { TFunction } from 'i18next';
 import { exegesisService, sermonService, type VerifySermonCitationsOutput } from '@dosfilos/application';
+import { PublicationUnchangedError } from '@dosfilos/domain';
 import { useSermonContraScan } from '@/hooks/useSermonContraScan';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export interface DraftPublishingInput {
     draft: any;
@@ -45,6 +47,12 @@ export function useDraftPublishing(input: DraftPublishingInput) {
     const [verificationResult, setVerificationResult] = useState<VerifySermonCitationsOutput | null>(null);
 
     const contraScan = useSermonContraScan({ onCleared: () => verificarCitas() });
+    const { confirm, confirmDialog } = useConfirm();
+
+    const avisarSinCambios = (copyId: string | null) =>
+        toast.info(t('drafting.republish.unchanged'), copyId
+            ? { action: { label: t('drafting.republish.seePublished'), onClick: () => navigate(`/dashboard/sermons/${copyId}`) } }
+            : undefined);
 
     /** ¿Hay con qué guardar o publicar? Los cuatro se necesitan siempre. */
     const listo = () => Boolean(input.draft && input.userId && input.exegesis && input.sermonId);
@@ -84,6 +92,31 @@ export function useDraftPublishing(input: DraftPublishingInput) {
         // La idea central es la tesis del pastor (prohibida al modelo); si el
         // sermón no la tiene, el título es lo más cercano que hay.
         const ideaCentral = input.draft.pastoralSeed?.centralIdea?.trim() || input.draft.title;
+
+        // RE-PUBLICAR SÓLO SI CAMBIÓ ALGO (#2 del ejercicio de Jonás). Se
+        // pregunta antes de las compuertas para no correrlas por nada. Si la
+        // consulta falla se sigue: el servicio igual se niega a duplicar.
+        try {
+            await sermonService.updateSermon(input.sermonId!, camposDelSermon());
+            const estado = await sermonService.publicationStatus(input.sermonId!);
+            if (estado.change === 'unchanged') {
+                avisarSinCambios(estado.lastCopyId);
+                return;
+            }
+            if (estado.change === 'changed') {
+                const n = estado.version;
+                const ok = await confirm({
+                    title: t('drafting.republish.newVersionTitle', { n }),
+                    body: t('drafting.republish.newVersionBody', { n }),
+                    confirmLabel: t('drafting.republish.newVersionConfirm', { n }),
+                    destructive: false,
+                });
+                if (!ok) return;
+            }
+        } catch (error) {
+            console.warn('[draft] no se pudo saber si cambió desde la última publicación', error);
+        }
+
         await contraScan.attempt(input.sermonId!, ideaCentral);
     };
 
@@ -132,6 +165,10 @@ export function useDraftPublishing(input: DraftPublishingInput) {
             input.reset();
             navigate(`/dashboard/sermons/${publicado.id}`);
         } catch (error) {
+            if (error instanceof PublicationUnchangedError) {
+                avisarSinCambios(error.copyId);
+                return;
+            }
             console.error(error);
             toast.error(t('drafting.errors.publishing'));
         } finally {
@@ -149,5 +186,7 @@ export function useDraftPublishing(input: DraftPublishingInput) {
         guardarYSalir,
         publicar,
         publicarAhora,
+        /** El diálogo de «versión nueva»; quien usa el hook lo renderiza. */
+        confirmDialog,
     };
 }

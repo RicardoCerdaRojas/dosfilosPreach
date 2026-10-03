@@ -645,7 +645,14 @@
       "generated": "Generado — refínalo en el taller"
     },
     "emptyDraftTitle": "Todavía no has armado el borrador",
-    "emptyDraftDesc": "Decide las secciones en el Taller y pulsa «Armar borrador», o genera el sermón completo desde la banda de arriba."
+    "emptyDraftDesc": "Decide las secciones en el Taller y pulsa «Armar borrador», o genera el sermón completo desde la banda de arriba.",
+    "republish": {
+      "unchanged": "Sin cambios desde la última publicación: no se creó otra copia.",
+      "seePublished": "Ver publicado",
+      "newVersionTitle": "Vas a crear una versión nueva (la {{n}})",
+      "newVersionBody": "Ya publicaste este sermón y cambió desde entonces. La copia anterior se conserva; ésta será la versión {{n}}.",
+      "newVersionConfirm": "Crear la versión {{n}}"
+    }
   },
   "pastoralContext": {
     "title": "Contexto Pastoral (Opcional)",

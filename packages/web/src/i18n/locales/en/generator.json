@@ -645,7 +645,14 @@
       "generated": "Generated — refine it in the workshop"
     },
     "emptyDraftTitle": "You have not assembled the draft yet",
-    "emptyDraftDesc": "Decide the sections in the Workshop and press “Assemble draft”, or generate the full sermon from the band above."
+    "emptyDraftDesc": "Decide the sections in the Workshop and press “Assemble draft”, or generate the full sermon from the band above.",
+    "republish": {
+      "unchanged": "No changes since the last publication: no new copy was created.",
+      "seePublished": "See published",
+      "newVersionTitle": "You are about to create a new version (number {{n}})",
+      "newVersionBody": "You already published this sermon and it has changed since. The previous copy is kept; this will be version {{n}}.",
+      "newVersionConfirm": "Create version {{n}}"
+    }
   },
   "pastoralContext": {
     "title": "Pastoral context (optional)",
