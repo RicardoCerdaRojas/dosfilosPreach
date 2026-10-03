@@ -51,22 +51,16 @@ export interface ParsedSermonCitation {
 const BLOCK_CITATION_REGEX =
     /^>\s*[""]([\s\S]+?)["""](?:\s*\n>\s*)?\s*\n?>\s*(?:[—–]|--)\s*[*_]?([^*_\n]+?)[*_]?\s*$/gm;
 
-/**
- * Inline attribution embedded in a paragraph (single line):
- *
- *   "Quote text" — *Author, Source*
- *
- * Less common in sermon manuscripts but the legacy
- * `prompts-generator.ts` template can produce it.
- */
-const INLINE_CITATION_REGEX =
-    /[""]([^""\n]{15,})["""](?:\s*\n?\s*)?(?:[—–]|--)\s*[*_]?([^*_\n.!?]+?)[*_]?(?=[.!?\n]|$)/g;
-
 export function parseSermonCitations(markdown: string): ParsedSermonCitation[] {
     if (!markdown) return [];
 
     const found: ParsedSermonCitation[] = [];
     const seenOffsets = new Set<number>();
+    // Tramos ya leídos: una cita con comillas internas no puede volver a
+    // entrar, partida, por la regla en línea (salía «David F» como otra cita).
+    const cubiertos: Array<[number, number]> = [];
+    const cubierto = (desde: number, largo: number) =>
+        cubiertos.some(([a, b]) => desde < b && desde + largo > a);
 
     // Block style first (more specific shape, wins on overlap).
     const blockRe = new RegExp(BLOCK_CITATION_REGEX.source, 'gm');
@@ -85,29 +79,15 @@ export function parseSermonCitations(markdown: string): ParsedSermonCitation[] {
             offset: m.index,
         });
         seenOffsets.add(m.index);
+        cubiertos.push([m.index, m.index + raw.length]);
     }
 
-    // Inline style — skip ranges already covered by a block match to
-    // avoid double-counting the same quote.
-    const inlineRe = new RegExp(INLINE_CITATION_REGEX.source, 'g');
-    while ((m = inlineRe.exec(markdown)) !== null) {
-        if ([...seenOffsets].some(off => Math.abs(off - m!.index) < 50)) continue;
-        const [raw, quoteRaw, attributionRaw] = m;
-        if (!quoteRaw || !attributionRaw) continue;
-        const quote = normalizeQuote(quoteRaw);
-        const { author, source } = splitAttribution(attributionRaw);
-        if (!quote || !author) continue;
-        // Filter out scripture quotes — they're not "authority quotes"
-        // and don't need verification. Heuristic: author looks like a
-        // Bible reference (e.g. "Juan 3:16", "Romanos 8:28").
-        if (looksLikeScriptureReference(author)) continue;
-        found.push({
-            raw,
-            quote,
-            author,
-            source,
-            offset: m.index,
-        });
+    // En línea: por marcas «comilla de cierre + guion» (`inlineCitations`).
+    for (const c of inlineCitations(markdown)) {
+        if (cubierto(c.offset, c.raw.length)) continue;
+        if (looksLikeScriptureReference(c.author)) continue;
+        found.push(c);
+        cubiertos.push([c.offset, c.offset + c.raw.length]);
     }
 
     // Sort by offset so the dialog renders citations in document order.
@@ -123,6 +103,7 @@ export function parseSermonCitations(markdown: string): ParsedSermonCitation[] {
 function normalizeQuote(text: string): string {
     return text
         .replace(/\n\s*>\s*/g, ' ')  // blockquote continuation → space
+        .replace(/\\([\[\]*_()])/g, '$1')  // escapes de markdown: «\[…]» → «[…]»
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -158,3 +139,72 @@ const SCRIPTURE_REF_REGEX = /^(\d?\s*[A-ZÁÉÍÓÚÑa-záéíóúñ]+)\s+\d+(:\
 function looksLikeScriptureReference(text: string): boolean {
     return SCRIPTURE_REF_REGEX.test(text.trim());
 }
+
+const COMILLA = /["“”«»]/;
+/** Una comilla de cierre seguida de guion largo: donde termina una cita atribuida. */
+const MARCA_CIERRE = /["”»]\s*(?:—|–|--)\s*/g;
+
+/**
+ * Las citas atribuidas EN LÍNEA: «"Texto…" — Autor, Obra, p. 89».
+ *
+ * Reemplaza dos reglas que fallaban con lo que escribe nuestro motor
+ * (sermón 6 de Jonás, 2026-10-03, y su revisión adversarial):
+ *   - una cortaba el autor en el primer punto: «David F. Burt» → «David F»;
+ *   - la que la corrigió se tragaba la línea: dos citas en una línea salían
+ *     como una, y el autor de una cita a mitad de párrafo era el resto del
+ *     párrafo.
+ *
+ * Se parte de cada marca de cierre. La comilla de apertura es la más cercana
+ * hacia atrás que abre (precedida por inicio, espacio o puntuación) con un
+ * número PAR de comillas en medio: así una cita con «la muerte "injusta" de
+ * la planta» adentro no se parte. La atribución termina en el salto de línea,
+ * en la próxima comilla o en el fin de una oración que no sea una inicial
+ * («F.») ni la página («p.»).
+ */
+export function inlineCitations(markdown: string): ParsedSermonCitation[] {
+    const out: ParsedSermonCitation[] = [];
+    let limite = 0;
+    for (const m of markdown.matchAll(MARCA_CIERRE)) {
+        const cierre = m.index!;
+        const inicioDeLinea = markdown.lastIndexOf('\n', cierre) + 1;
+        const desde = Math.max(inicioDeLinea, limite);
+        let apertura = -1;
+        let entre = 0;
+        for (let i = cierre - 1; i >= desde; i--) {
+            if (!COMILLA.test(markdown[i]!)) continue;
+            const antes = i === 0 ? ' ' : markdown[i - 1]!;
+            const despues = markdown[i + 1] ?? ' ';
+            const abre = /[\s(\[:—–>*_¡¿]/.test(antes) || i === inicioDeLinea;
+            if (abre && !/\s/.test(despues) && entre % 2 === 0) { apertura = i; break; }
+            entre++;
+        }
+        if (apertura < 0) continue;
+        const quoteRaw = markdown.slice(apertura + 1, cierre);
+        const resto = markdown.slice(cierre + m[0].length).split('\n')[0]!;
+        const atribucion = finDeAtribucion(resto);
+        if (quoteRaw.trim().length < 15 || !atribucion) continue;
+        const quote = normalizeQuote(quoteRaw);
+        const { author, source } = splitAttribution(atribucion);
+        if (!quote || !author) continue;
+        const raw = markdown.slice(apertura, cierre + m[0].length + atribucion.length);
+        out.push({ raw, quote, author, source, offset: apertura });
+        limite = cierre + m[0].length + atribucion.length;
+    }
+    return out;
+}
+
+/** Hasta dónde llega la atribución dentro del resto de la línea. */
+function finDeAtribucion(resto: string): string {
+    let fin = resto.length;
+    const comilla = resto.search(COMILLA);
+    if (comilla >= 0) fin = comilla;
+    for (const m of resto.slice(0, fin).matchAll(/\.\s+(?=[A-ZÁÉÍÓÚÑ¿¡])/g)) {
+        const palabra = resto.slice(0, m.index).split(/[\s,]+/).pop() ?? '';
+        // «F.» (inicial) y «p.»/«pp.» (página) no cierran la atribución.
+        if (palabra.length <= 2 || /^pp?$/i.test(palabra)) continue;
+        fin = Math.min(fin, m.index!);
+        break;
+    }
+    return resto.slice(0, fin).replace(/[\s.;,]+$/, '').replace(/^[*_]+|[*_]+$/g, '').trim();
+}
+
