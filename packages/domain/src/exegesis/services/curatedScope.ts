@@ -1,4 +1,5 @@
-import type { ProjectSource } from '../entities/ProjectSource';
+import { usesExtractedExcerpts, type ProjectSource } from '../entities/ProjectSource';
+import { emptySourceReason, isCitableSourceType } from '../entities/SourceType';
 
 /**
  * ¿Esta fuente declara qué hojas admitió el trabajo?
@@ -33,4 +34,31 @@ export function sourceForResource<S extends Pick<ProjectSource, 'sourceLibraryRe
     return sources.find(
         s => s.sourceLibraryResourceId === libraryResourceId || s.corpusId === libraryResourceId,
     ) ?? null;
+}
+
+/**
+ * Una fuente citable que no dice qué leer: sin páginas elegidas y sin
+ * fragmentos.
+ *
+ * Así llegan las fuentes heredadas de la serie. En Jonás 4:5-11 (2026-10-02)
+ * el análisis las leyó desde la primera página —portada, prólogo— y ningún
+ * versículo tuvo diálogo con comentaristas, sin un solo aviso fuera de
+ * Configuración → Corpus. Aquí vive la pregunta para que el corpus, el panel
+ * de pasos y el diálogo de extracción hagan la misma.
+ */
+export function isSourceWithoutScope(
+    source: Pick<ProjectSource, 'sourceType' | 'excerptRecipe' | 'mode' | 'excerpts'>,
+): boolean {
+    return isCitableSourceType(source.sourceType)
+        && !hasCuratedScope(source)
+        && !usesExtractedExcerpts(source);
+}
+
+/**
+ * ¿Esta fuente se organiza por lema o por categoría (léxico, diccionario,
+ * gramática)? Esas no se extraen por cercanía al pasaje: se eligen sus páginas
+ * en el selector, por las formas del texto.
+ */
+export function isPickedByPages(source: Pick<ProjectSource, 'sourceType'>): boolean {
+    return emptySourceReason(source.sourceType, 0) !== 'expected-by-passage';
 }

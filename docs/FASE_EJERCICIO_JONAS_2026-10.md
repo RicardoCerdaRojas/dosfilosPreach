@@ -57,9 +57,10 @@ Para cada hallazgo se indica su número de la bitácora
 
 ### A2 · Ninguna fuente lee el comienzo del libro sin aviso (#12b, #15)
 
-- **Domain:** `fuenteSinAlcance(s)` = citable, sin páginas y sin fragmentos.
-- **Antes de analizar o generar:** un diálogo de confirmación, no un bloqueo, que dice «N fuentes leerían el comienzo del libro», con las opciones «Elegir páginas» y «Analizar igual». También un aviso en el panel de pasos.
-- **Preselección del diálogo de extracción:** primero todas las fuentes sin alcance, luego el top-N. Las gramáticas y los léxicos no se preseleccionan: se remiten al selector de páginas, según `emptySourceReason`.
+- **Domain:** `isSourceWithoutScope(s)` (citable, sin páginas y sin fragmentos) e `isPickedByPages(s)` (léxico, diccionario o gramática).
+- **Panel de pasos:** muestra un aviso fijo con un enlace «Elegir páginas de X» por cada fuente sin alcance.
+- **Por qué no es un modal antes de analizar** (cambio respecto del plan, al implementarlo): después de A4 esas fuentes ya no leen el comienzo del libro, sino que buscan por versículo. Un modal en cada análisis frenaría sin necesidad, y su texto dejaría de ser cierto.
+- **Preselección del diálogo de extracción** (`autoSelection`, función pura con pruebas): primero todas las fuentes sin alcance, después el top-N. Las gramáticas y los léxicos no se preseleccionan, y tampoco los libros que ya tienen páginas elegidas.
 
 ### A3 · Heredar trae páginas, y la oferta se ve en la página del trabajo (#12a, #1)
 

@@ -44,6 +44,7 @@ import {
     deriveCitationKeyFromAuthor,
     usesExtractedExcerpts,
     hasCuratedScope,
+    isSourceWithoutScope,
     countSheets,
     isExcerptSetStale,
     resourceMatchesTestament,
@@ -1056,7 +1057,7 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 </button>
             </div>
 
-            {isCitable && !hasCuratedScope(source) && !usesExtractedExcerpts(source) && (
+            {isSourceWithoutScope(source) && (
                 <SourceSinPaginas paperId={paper.id} sourceId={source.id} />
             )}
 

@@ -1,6 +1,10 @@
 import {
     deriveCitationKeyFromAuthor,
+    hasCuratedScope,
+    isPickedByPages,
+    isSourceWithoutScope,
     sourceForResource,
+    type RankedResource,
     type LibraryResource,
     type ProjectSource,
     type SourceRole,
@@ -68,4 +72,47 @@ export function resourceIdsOf(
         if (s.corpusId) ids.add(s.corpusId);
     }
     return ids;
+}
+
+/**
+ * Qué libros arrancan marcados al abrir el diálogo.
+ *
+ * 1. Las fuentes del trabajo que no dicen qué leer (heredadas de la serie,
+ *    típicamente): extraerlas es para lo que se abre el diálogo. Antes sólo
+ *    entraba el top del ranking, y de once heredadas en Jonás 4:5-11 quedaron
+ *    seis sin extraer y sin aviso. Léxicos y gramáticas no: se eligen por
+ *    páginas en el selector.
+ * 2. Después, los `topN` mejor rankeados.
+ *
+ * Nunca un libro que ya tiene páginas elegidas: extraer las reemplazaría, y
+ * eso lo decide el usuario. Ni uno sin indexar: fallaría al extraer.
+ */
+export function autoSelection(input: {
+    sources: ReadonlyArray<ProjectSource>;
+    resources: ReadonlyArray<LibraryResource>;
+    ranked: ReadonlyArray<RankedResource>;
+    isIndexed: (r: LibraryResource) => boolean;
+    topN: number;
+}): Map<string, SelectionEntry> {
+    const next = new Map<string, SelectionEntry>();
+    const byId = new Map(input.resources.map(r => [r.id, r]));
+    const withPages = resourceIdsOf(input.sources, hasCuratedScope);
+
+    for (const source of input.sources) {
+        if (!isSourceWithoutScope(source) || isPickedByPages(source)) continue;
+        const resource = byId.get(source.sourceLibraryResourceId ?? source.corpusId);
+        if (!resource || !input.isIndexed(resource)) continue;
+        next.set(resource.id, initialSelectionFor(resource, input.sources));
+    }
+
+    let applied = 0;
+    for (const r of input.ranked) {
+        if (applied >= input.topN) break;
+        const resource = byId.get(r.resourceId);
+        if (!resource || !input.isIndexed(resource)) continue;
+        if (withPages.has(resource.id) || next.has(resource.id)) continue;
+        next.set(resource.id, initialSelectionFor(resource, input.sources));
+        applied++;
+    }
+    return next;
 }

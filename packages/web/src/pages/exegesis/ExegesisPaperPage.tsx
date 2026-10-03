@@ -1,3 +1,4 @@
+import { SourcesWithoutScopeNotice } from '@/components/exegesis/SourcesWithoutScopeNotice';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -727,6 +728,8 @@ function StepsPanel({
                     </Button>
                 )}
             </header>
+
+            <SourcesWithoutScopeNotice paper={paper} />
 
             {!hasSteps ? (
                 <div className="rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900/40 px-6 py-10 text-center">

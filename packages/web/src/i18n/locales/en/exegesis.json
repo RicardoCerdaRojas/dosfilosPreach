@@ -2284,6 +2284,11 @@
       "settingsDescription": "They apply to all your papers. In each paper you'll see whether any shows up in what you're about to hand in.",
       "emptyInPaper": "Your glossary is empty.",
       "goToSettings": "Set it up in Settings"
+    },
+    "sourcesWithoutScope": {
+      "title_one": "1 source has no chosen pages or excerpts: the analysis reads it from the start of the book.",
+      "title_other": "{{count}} sources have no chosen pages or excerpts: the analysis reads them from the start of each book.",
+      "choose": "Choose pages of {{label}}"
     }
   },
   "citationViewer": {

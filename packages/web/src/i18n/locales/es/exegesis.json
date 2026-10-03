@@ -2284,6 +2284,11 @@
       "settingsDescription": "Se aplican a todos tus trabajos. En cada trabajo verás si alguna aparece en lo que vas a entregar.",
       "emptyInPaper": "No tienes palabras en tu glosario.",
       "goToSettings": "Configurarlo en Ajustes"
+    },
+    "sourcesWithoutScope": {
+      "title_one": "1 fuente no tiene páginas elegidas ni fragmentos: el análisis la lee desde el comienzo del libro.",
+      "title_other": "{{count}} fuentes no tienen páginas elegidas ni fragmentos: el análisis las lee desde el comienzo de cada libro.",
+      "choose": "Elegir páginas de {{label}}"
     }
   },
   "citationViewer": {

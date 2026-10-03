@@ -23,7 +23,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { initialSelectionFor, resourceIdsOf, type SelectionEntry } from './extractionDefaults';
+import { autoSelection, initialSelectionFor, resourceIdsOf, type SelectionEntry } from './extractionDefaults';
 import { RoleSelect, SelectedResourcesList } from './ExtractSelectionParts';
 import { useTranslation } from '@/i18n';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
@@ -198,7 +198,8 @@ export function ExtractFromLibraryDialog({
     useEffect(() => {
         if (autoSelectionApplied) return;
         if (ranking.isLoading) return;
-        if (ranking.ranked.length === 0) return;
+        // Un ranking vacío ya no corta: las fuentes sin alcance se
+        // preseleccionan igual.
         if (resources.length === 0) return; // wait for the library list too
         if (selections.size > 0) {
             // User clicked something while the ranking was pending —
@@ -206,26 +207,16 @@ export function ExtractFromLibraryDialog({
             setAutoSelectionApplied(true);
             return;
         }
-        const next = new Map<string, SelectionEntry>();
-        const idToResource = new Map(resources.map(r => [r.id, r]));
-        let applied = 0;
-        for (const ranked of ranking.ranked) {
-            if (applied >= AUTO_SELECT_TOP_N) break;
-            const resource = idToResource.get(ranked.resourceId);
-            if (!resource) continue;
-            // Only auto-pick indexed resources — picking a non-indexed
-            // one would just produce a ResourcesNotIndexedError when
-            // the user clicks Extract.
-            if (libraryService.getResourceIndexStatus(resource) !== 'indexed') continue;
-            // Con páginas elegidas, extraer las reemplazaría: que lo decida el usuario.
-            if (withPagesIds.has(resource.id)) continue;
-            next.set(resource.id, entradaInicial(resource));
-            applied++;
-        }
+        const next = autoSelection({
+            sources: paper.sources,
+            resources,
+            ranked: ranking.ranked,
+            isIndexed: r => libraryService.getResourceIndexStatus(r) === 'indexed',
+            topN: AUTO_SELECT_TOP_N,
+        });
         if (next.size > 0) setSelections(next);
         setAutoSelectionApplied(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `entradaInicial` lee `paper.sources`, que ya cambia con `withPagesIds`.
-    }, [ranking.isLoading, ranking.ranked, resources, selections.size, autoSelectionApplied, withPagesIds]);
+    }, [ranking.isLoading, ranking.ranked, resources, selections.size, autoSelectionApplied, paper.sources]);
 
     // Count cached vs uncached for the "All" chip caption — gives the
     // user a sense of how much classification investment exists.
