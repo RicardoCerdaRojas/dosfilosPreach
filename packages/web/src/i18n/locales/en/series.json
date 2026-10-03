@@ -535,7 +535,9 @@
             "removeFailed": "Could not remove the sermon",
             "noDraft": "This sermon has no draft",
             "markedDone": "Sermon marked as done",
-            "markFailed": "Could not mark it as done"
+            "markFailed": "Could not mark it as done",
+            "linked": "Sermon linked to the pericope",
+            "linkFailed": "Could not link the sermon"
         },
         "backToSeries": "Back to series",
         "header": {
@@ -587,6 +589,21 @@
             "actionsLabel": "Actions",
             "editFull": "Edit details",
             "paperCorpus": "Paper corpus",
+            "linkExisting": {
+                "menu": "Link existing sermon…",
+                "title": "Link a sermon to “{{pericope}}”",
+                "description": "For a sermon you wrote outside the series. Those matching the passage come first; if you choose a published one, its draft is linked.",
+                "search": "Search by title or passage",
+                "loading": "Loading your sermons…",
+                "empty": "There are no sermons to link.",
+                "noResults": "No sermon matches the search.",
+                "matchOverlap": "Same passage",
+                "matchSameBook": "Same book",
+                "otherSeries": "In another series",
+                "noPassage": "No passage",
+                "cancel": "Cancel",
+                "confirm": "Link"
+            },
             "askFaculty": "Ask Faculty",
             "continueDraft": "Continue editing",
             "markComplete": "Mark as done",
