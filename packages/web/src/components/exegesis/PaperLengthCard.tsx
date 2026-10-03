@@ -6,6 +6,7 @@ import {
     estimateLength,
     exportPaperToMarkdown,
     formatPassageReference,
+    paperIsDelivered,
     type ExegeticalPaper,
     type SupportedLanguage,
 } from '@dosfilos/domain';
@@ -24,12 +25,19 @@ import { cn } from '@/lib/utils';
 export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; language: SupportedLanguage }) {
     const { t } = useTranslation('exegesis');
 
-    const markdown = paper.assembledMarkdown?.trim() || exportPaperToMarkdown(paper);
+    // Sin la cabecera: incluía el ENCUADRE completo como si fuera texto del
+    // trabajo, y en Jonás 4:5-11 el panel sumaba 590 palabras de las que casi
+    // todas eran el encuadre y la prosa de un solo versículo.
+    const markdown = paper.assembledMarkdown?.trim() || exportPaperToMarkdown(paper, { omitHeader: true });
+    // Un estudio para predicar no se califica por páginas: la extensión
+    // orienta, no avisa (`paperIsDelivered`).
+    const seEntrega = paperIsDelivered(paper);
     // El formato de la entrega decide cuántas palabras entran en la página:
     // el mismo campo que el exportador obedece.
     const formatting = paper.rubric?.formatting ?? null;
     const check = checkLength(markdown, paper.rubric?.expectedLength ?? null, formatting);
     if (check.words === 0) return null;
+    const avisa = seEntrega && (check.verdict === 'short' || check.verdict === 'long');
 
     const perStep = paper.steps
         .filter(s => s.kind === 'verse' && (s.accepted ?? s.current))
@@ -39,6 +47,9 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
                 id: s.id,
                 label: s.verseRef ? formatPassageReference(s.verseRef, language) : t(`detail.steps.kind.${s.kind}`),
                 pages: estimateLength(version.markdown ?? '', formatting).estimatedPages,
+                // Un versículo aceptado sólo con su análisis no tiene prosa:
+                // «≈ 0 p.» se leía como «no hiciste nada».
+                hasProse: !!version.markdown?.trim(),
             };
         });
     // Un verso escrito a la mitad del más largo es el síntoma de la ficha
@@ -54,7 +65,7 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
 
     const tone = desfasado
         ? 'border-warning/40 bg-warning-subtle/40'
-        : check.verdict === 'short' || check.verdict === 'long'
+        : avisa
             ? 'border-warning/30 bg-warning-subtle/40'
             : 'border-border bg-card';
 
@@ -84,22 +95,27 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
                 {t('detail.length.estimate', { pages: check.estimatedPages, words: check.words })}
             </p>
 
-            {check.verdict === 'unknown' && (
+            {!seEntrega && check.expected && (
+                <p className="text-xs text-muted-foreground">
+                    {t('detail.length.orientative', { target: describeTarget(check.expected, t) })}
+                </p>
+            )}
+            {seEntrega && check.verdict === 'unknown' && (
                 <p className="text-xs text-muted-foreground">{t('detail.length.noTarget')}</p>
             )}
-            {check.verdict === 'ok' && check.expected && (
+            {seEntrega && check.verdict === 'ok' && check.expected && (
                 <p className="inline-flex items-center gap-1.5 text-xs text-success">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     {t('detail.length.ok', { target: describeTarget(check.expected, t) })}
                 </p>
             )}
-            {check.verdict === 'short' && check.expected && (
+            {seEntrega && check.verdict === 'short' && check.expected && (
                 <p className="inline-flex items-start gap-1.5 text-xs text-warning-subtle-foreground">
                     <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     <span>{t(`detail.length.short.${check.expected.unit}`, { missing: check.missing, target: describeTarget(check.expected, t) })}</span>
                 </p>
             )}
-            {check.verdict === 'long' && check.expected && (
+            {seEntrega && check.verdict === 'long' && check.expected && (
                 <p className="inline-flex items-start gap-1.5 text-xs text-warning-subtle-foreground">
                     <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     <span>{t('detail.length.long', { target: describeTarget(check.expected, t) })}</span>
@@ -114,7 +130,9 @@ export function PaperLengthCard({ paper, language }: { paper: ExegeticalPaper; l
                             <dd className="flex-1 flex items-center gap-2">
                                 <span className="h-1.5 rounded-full bg-primary/60" style={{ width: `${longest > 0 ? Math.max(4, (s.pages / longest) * 100) : 4}%` }} />
                                 <span className="tabular-nums text-muted-foreground">
-                                    {t('detail.length.pagesShort', { pages: s.pages })}
+                                    {s.hasProse
+                                        ? t('detail.length.pagesShort', { pages: s.pages })
+                                        : t('detail.length.noProse')}
                                 </span>
                             </dd>
                         </div>

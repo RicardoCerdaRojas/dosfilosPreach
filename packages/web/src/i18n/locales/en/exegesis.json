@@ -2131,7 +2131,7 @@
         "unanswered_other": "⚠ Questions {{numbers}} of the brief are not answered by any selected section."
       },
       "answersQuestion": "answers question {{numbers}}",
-      "verseBudget": "~{{count}} words",
+      "verseBudget": "target ~{{count}} words",
       "regenerate": {
         "title": "Regenerate {{step}}",
         "description": "This section is written again from the accepted analyses.",
@@ -2268,7 +2268,9 @@
         "title": "This is not what will be downloaded.",
         "body": "The file carries {{delivered}} words; the screen shows {{onScreen}}. Regenerate the assembly and accept it — only then does the file take what you see.",
         "toast": "You downloaded {{delivered}} words, and the screen shows {{onScreen}}. Regenerate the assembly, accept it, and download again."
-      }
+      },
+      "orientative": "Study for preaching: length is a guide, not a grade. The rubric suggests {{target}}.",
+      "noProse": "no prose"
     },
     "bibliography": {
       "title": "Citation data",

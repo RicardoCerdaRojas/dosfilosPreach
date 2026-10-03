@@ -2131,7 +2131,7 @@
         "unanswered_other": "⚠ Las preguntas {{numbers}} del encuadre no las responde ninguna sección elegida."
       },
       "answersQuestion": "responde la pregunta {{numbers}}",
-      "verseBudget": "~{{count}} palabras",
+      "verseBudget": "objetivo ~{{count}} palabras",
       "regenerate": {
         "title": "Regenerar {{step}}",
         "description": "Se vuelve a redactar esta sección desde los análisis aceptados.",
@@ -2268,7 +2268,9 @@
         "title": "Esto no es lo que se va a descargar.",
         "body": "El archivo baja {{delivered}} palabras; en pantalla tienes {{onScreen}}. Regenera el ensamble y acéptalo: solo entonces el archivo toma lo que ves.",
         "toast": "Bajaste {{delivered}} palabras, y en pantalla hay {{onScreen}}. Regenera el ensamble, acéptalo y vuelve a descargar."
-      }
+      },
+      "orientative": "Estudio para predicar: la extensión orienta, no se califica. La rúbrica sugiere {{target}}.",
+      "noProse": "sin prosa"
     },
     "bibliography": {
       "title": "Datos para citar",

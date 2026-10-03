@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle2, FileText } from 'lucide-react';
-import { hasCover, type ExegeticalPaper } from '@dosfilos/domain';
+import { hasCover, paperIsDelivered, type ExegeticalPaper } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -32,7 +32,12 @@ export function PaperCoverButton({ paper }: { paper: ExegeticalPaper }) {
                 {t('paperSetup.cover.button')}
                 {lista
                     ? <CheckCircle2 className="h-3.5 w-3.5 text-success" aria-label={t('paperSetup.cover.ready')} />
-                    : <span className="text-[11px] text-warning-subtle-foreground">· {t('paperSetup.cover.missing')}</span>}
+                    // Un estudio para predicar no se entrega: sin portada no
+                    // «falta» nada (Jonás 4:5-11). El botón queda para quien
+                    // quiera imprimirlo con portada igual.
+                    : paperIsDelivered(paper)
+                        ? <span className="text-[11px] text-warning-subtle-foreground">· {t('paperSetup.cover.missing')}</span>
+                        : null}
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">

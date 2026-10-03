@@ -669,7 +669,7 @@ function RecommendationsForSeries({
                                                         </Badge>
                                                     )}
                                                     {owned ? (
-                                                        <Badge variant="outline" className="text-[9.5px] border-emerald-400 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5">
+                                                        <Badge variant="outline" className="text-[9.5px] border-success text-success inline-flex items-center gap-0.5">
                                                             <Check className="h-2.5 w-2.5" />
                                                             {t('detail.exegesisDefaults.alreadyAdded')}
                                                         </Badge>

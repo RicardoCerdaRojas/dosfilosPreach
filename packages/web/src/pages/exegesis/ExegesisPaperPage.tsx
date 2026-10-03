@@ -76,6 +76,7 @@ import {
     assemblyDelivery,
     documentSections,
     hasCover,
+    paperIsDelivered,
     parseBriefQuestions,
     sectionBudgets,
 } from '@dosfilos/domain';
@@ -301,7 +302,7 @@ export function ExegesisPaperPage() {
             triggerDownload(blob, buildSafeFilename('docx'));
             toast.success(t('detail.exportDocx.toast.exported'));
             // Sin datos de portada el Word sale sin portada, y nada lo decía.
-            if (!hasCover(paper.cover)) toast.warning(t('detail.exportDocx.toast.noCover'));
+            if (!hasCover(paper.cover) && paperIsDelivered(paper)) toast.warning(t('detail.exportDocx.toast.noCover'));
             avisarEnsambleDesfasado();
             avisarFichasIncompletas();
         } catch (err) {

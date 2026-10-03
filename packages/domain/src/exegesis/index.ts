@@ -92,6 +92,7 @@ export * from './services/sourcesAndFormatBlock';
 export * from './services/lemmaPages';
 export * from './services/lexiconSuggestion';
 export * from './services/seriesPaperDefaults';
+export * from './services/paperDelivery';
 export * from './services/courseBibliography';
 export * from './entities/WorkProfile';
 export * from './entities/preachingStudyRubric';
