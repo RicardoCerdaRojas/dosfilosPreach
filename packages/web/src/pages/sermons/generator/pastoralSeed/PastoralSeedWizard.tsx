@@ -153,7 +153,7 @@ export function PastoralSeedWizard({
             }
         } catch (err) {
             console.error('[PastoralSeedWizard] failed to persist snapshot', err);
-            toast.error('No se pudo guardar la nota del estudio, pero podés seguir.');
+            toast.error('No se pudo guardar la nota del estudio, pero puedes seguir.');
         } finally {
             setGateOpen(false);
             if (seed) onSeedCompleted(seed);

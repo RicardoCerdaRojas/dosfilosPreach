@@ -599,7 +599,7 @@
       "failed": "No se pudo escribir. Tus decisiones siguen guardadas.",
       "emptyNoDecisions": "Primero decide qué va en esta sección. La prosa se escribe a partir de eso.",
       "emptyReady": "Ya decidiste. Pulsa «Escribir esta sección» para redactarla.",
-      "propositionOpens": "En el sermón, tu proposición abre esta sección con tus palabras exactas. Acá se escribe sólo lo que la desarrolla."
+      "propositionOpens": "En el sermón, tu proposición abre esta sección con tus palabras exactas. Aquí se escribe sólo lo que la desarrolla."
     },
     "assemble": {
       "writingProgress": "Escribiendo {{hechas}} de {{total}}…",

@@ -129,7 +129,7 @@ export class ActivateGuidedSermonUseCase {
         const welcomeMessage: AIChatMessage = {
             id: generateId('msg'),
             role: 'model',
-            content: `Vamos a construir tu sermón sobre **${input.passage.trim()}** paso a paso. Yo te oriento; tú escribís cada parte con tus palabras.
+            content: `Vamos a construir tu sermón sobre **${input.passage.trim()}** paso a paso. Yo te oriento; tú escribes cada parte con tus palabras.
 
 **Paso 1 de 8 — Lectura.**
 Lee el pasaje completo y compartime tu primera impresión: ¿qué te llamó la atención, qué sentiste, qué preguntas surgen? Mínimo ${minChars} caracteres, con tus propias palabras.`,

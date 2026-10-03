@@ -512,7 +512,7 @@ function buildOutlineBlock(outline: HomileticalAnalysis['outline']): string {
       `   Referencias: ${refs}`,
     ];
     // El pastor decide CUÁNTAS implicaciones separando con líneas en blanco.
-    // Se parten acá, en dominio, y llegan numeradas: pedirle al modelo que
+    // Se parten aquí, en dominio, y llegan numeradas: pedirle al modelo que
     // "respete los saltos de línea" es pedirle que haga algo calculable.
     const aplicaciones = splitApplication(p.application);
     if (aplicaciones.length === 1) {
@@ -635,7 +635,7 @@ function openingIllustrationRule(rules: GenerationRules): string {
        —puedes pulir la redacción, no cambiar la historia— y cierra con un puente
        de una o dos frases hacia el texto.
      - **NO la repitas en ningún punto del cuerpo.** Si aparece también en
-       "ILUSTRACIONES DEL PREDICADOR", es la misma y ya está usada acá. La
+       "ILUSTRACIONES DEL PREDICADOR", es la misma y ya está usada aquí. La
        ilustración de cada punto se genera DESDE ese punto.
 `;
 }
@@ -652,7 +652,7 @@ function openingIllustrationRule(rules: GenerationRules): string {
  * libros contemporáneos son terreno DISPUTADO —Jonás es el caso de manual: hay
  * quien lo fecha en el siglo VIII y quien lo hace postexílico—. Pedir un dato
  * verificable como obligatorio es el mecanismo por el que se fabrica uno falso;
- * es la misma lección que la cita de autoridad. Por eso acá se pide el rango y
+ * es la misma lección que la cita de autoridad. Por eso aquí se pide el rango y
  * el nombre del debate, nunca una fecha única presentada como hecho.
  */
 function bookOrientationRule(analysis: HomileticalAnalysis): string {
@@ -1048,7 +1048,7 @@ function audienceRigorBlock(tier?: 'beginner' | 'seminary'): string {
 /**
  * El prompt para REGENERAR UN PUNTO SUELTO.
  *
- * POR QUÉ SE MUDÓ ACÁ: vivía embebido en `GeminiSermonGenerator` y había
+ * POR QUÉ SE MUDÓ AQUÍ: vivía embebido en `GeminiSermonGenerator` y había
  * divergido del prompt del borrador completo. El punto regenerado salía sin la
  * voz del predicador, sin el nivel de rigor, sin el bosquejo y sin las
  * directivas del pastor — o sea, desentonando con los demás puntos del mismo

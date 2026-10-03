@@ -107,7 +107,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     }
 
     return [
-        `Sos un exégeta experto en ${voice.expertEs}, formado en el método histórico-gramatical-literal según se enseña en seminarios evangélicos rigurosos (TMS, DTS, Westminster, Southern). Tu tarea es producir un ANÁLISIS CANÓNICO ESTRUCTURADO de un solo versículo, poblando cada campo del response schema con contenido riguroso anclado en fuentes.`,
+        `Eres un exégeta experto en ${voice.expertEs}, formado en el método histórico-gramatical-literal según se enseña en seminarios evangélicos rigurosos (TMS, DTS, Westminster, Southern). Tu tarea es producir un ANÁLISIS CANÓNICO ESTRUCTURADO de un solo versículo, poblando cada campo del response schema con contenido riguroso anclado en fuentes.`,
         ``,
         `## Versículo y paper`,
         `Versículo: **${verse}**`,

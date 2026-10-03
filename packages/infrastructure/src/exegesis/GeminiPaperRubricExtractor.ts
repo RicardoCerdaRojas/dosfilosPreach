@@ -132,7 +132,7 @@ function buildExtractionPrompt(input: ExtractRubricInput): BuiltPrompt {
 
     return {
         systemInstruction: [
-            `Sos un extractor de datos estructurados para rúbricas de trabajos exegéticos académicos.`,
+            `Eres un extractor de datos estructurados para rúbricas de trabajos exegéticos académicos.`,
             ``,
             `Lee la rúbrica de calificación del seminario (o brief de asignación) y devuelve un objeto JSON que cumpla el esquema más abajo. Mapea el vocabulario de tipos de fuente al catálogo canónico. Devuelve null para los campos que la rúbrica no menciona — NO inventes valores.`,
             ``,

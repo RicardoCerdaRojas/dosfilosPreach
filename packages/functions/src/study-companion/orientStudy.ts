@@ -55,10 +55,10 @@ Reglas inviolables:
 const SYSTEM_SIMPLIFIED = `${SYSTEM_BASE}
 
 MODO SIMPLIFICADO (segundo nivel de ayuda, ZPD/scaffolding):
-- El pastor pidió que se lo expliques más sencillo. Bajá el registro técnico: cero jerga (sin "predicado nominal", "cláusula subordinada", "convergencia canónica" — explicá la idea con palabras llanas).
-- Mantené las mismas reglas inviolables (verificador, no generador; no escribís la respuesta).
-- Agregá UN ejemplo concreto del MÉTODO en otro pasaje conocido (no en el pasaje en estudio, así no le das la respuesta). El ejemplo ilustra CÓMO se hace, no QUÉ debe concluir aquí.
-- Si confrontás, hacelo con una analogía cotidiana (no con términos técnicos).`;
+- El pastor pidió que se lo expliques más sencillo. Baja el registro técnico: cero jerga (sin "predicado nominal", "cláusula subordinada", "convergencia canónica" — explica la idea con palabras llanas).
+- Mantén las mismas reglas inviolables (verificador, no generador; no escribes la respuesta).
+- Agrega UN ejemplo concreto del MÉTODO en otro pasaje conocido (no en el pasaje en estudio, así no le das la respuesta). El ejemplo ilustra CÓMO se hace, no QUÉ debe concluir aquí.
+- Si confrontas, hazlo con una analogía cotidiana (no con términos técnicos).`;
 
 interface OrientStudyResult {
     /** Factual data points relevant to the step. */
@@ -121,7 +121,7 @@ export const orientStudy = onCall(
             ? `,\n  "example": "ejemplo concreto del MÉTODO aplicado a OTRO pasaje (no este), 2-4 frases, ilustrando el cómo sin dar la respuesta de este pasaje"`
             : '';
         const simplifyDirective = simplify
-            ? `\n\nIMPORTANTE: el pastor pidió que se lo expliques MÁS SENCILLO. Bajá el registro técnico, sin jerga. Incluí el campo "example" con un ejemplo del método en otro pasaje conocido.`
+            ? `\n\nIMPORTANTE: el pastor pidió que se lo expliques MÁS SENCILLO. Baja el registro técnico, sin jerga. Incluye el campo "example" con un ejemplo del método en otro pasaje conocido.`
             : '';
 
         const prompt = `Pasaje en estudio: ${passage}

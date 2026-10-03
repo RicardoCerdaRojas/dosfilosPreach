@@ -97,7 +97,7 @@ function buildExtractionPrompt(input: ExtractStyleManifestInput): BuiltPrompt {
 
     return {
         systemInstruction: [
-            `Sos un extractor de datos estructurados para guías de estilo académicas.`,
+            `Eres un extractor de datos estructurados para guías de estilo académicas.`,
             ``,
             `Lee un documento de guía de estilo (TMS / Turabian / SBL Handbook / Chicago / similar) y devuelve un objeto JSON con las reglas mecánicas — plantillas de notas al pie, comportamiento de ibid, formato de bibliografía, convenciones de citación, esquema de transliteración.`,
             ``,

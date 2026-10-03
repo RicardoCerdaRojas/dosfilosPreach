@@ -30,7 +30,7 @@ export function buildVoiceBlock(samples: readonly VoiceSample[]): string {
 
 ## CÓMO ESCRIBE ESTE PREDICADOR
 
-Abajo hay fragmentos de sermones que ESTE MISMO PASTOR armó y predicó. Están acá
+Abajo hay fragmentos de sermones que ESTE MISMO PASTOR armó y predicó. Están aquí
 para que el borrador suene a él y no a un texto genérico.
 
 ${fragmentos}

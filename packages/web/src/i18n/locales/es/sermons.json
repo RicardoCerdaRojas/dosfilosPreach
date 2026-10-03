@@ -38,7 +38,7 @@
       "reanalyze": "Re-analizar"
     },
     "handoff": {
-      "explainer": "El pasaje abre tu estudio de 8 pasos. La idea que trabajaste acá viaja como nota tuya, para que la tengas a mano cuando redactes — después del estudio.",
+      "explainer": "El pasaje abre tu estudio de 8 pasos. La idea que trabajaste aquí viaja como nota tuya, para que la tengas a mano cuando redactes — después del estudio.",
       "cta": "Llevar al estudio"
     },
     "notes": {
@@ -166,6 +166,6 @@
   },
   "studies": {
     "finishedTab": "Estudios terminados ({{count}})",
-    "finishedEmpty": "Todavía no terminas ningún estudio. Cuando publiques un sermón, su estudio quedará acá."
+    "finishedEmpty": "Todavía no terminas ningún estudio. Cuando publiques un sermón, su estudio quedará aquí."
   }
 }

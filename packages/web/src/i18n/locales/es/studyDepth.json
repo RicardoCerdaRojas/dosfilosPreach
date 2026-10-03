@@ -50,7 +50,7 @@
     "intro": "Esto es lo que rastreamos de tu estudio en este pasaje. No es un puntaje: es la cobertura real de tu trabajo.",
     "expertBadge": "Modo experto",
     "weakDimsTitle": "Hay dimensiones que no quedaron cubiertas",
-    "weakDimsHint": "Te recomiendo profundizar antes de predicar. Acá hay puntos concretos por dónde empezar:",
+    "weakDimsHint": "Te recomiendo profundizar antes de predicar. Aquí hay puntos concretos por dónde empezar:",
     "promptFor": {
       "D1_lectura": "¿Volviste a leer el pasaje completo y registraste tu primera impresión?",
       "D2_contextoGenero": "Confirma el género literario y escribe cómo cambia tu regla de lectura.",

@@ -94,14 +94,14 @@ export class WordStudiesStepPolicy implements IStepPolicy {
     buildSystemPrompt(ctx: TurnContext): string {
         const existingCount = (ctx.existingWordStudies ?? []).filter(isCompleteWordStudy).length;
         const accumulatedBlock = existingCount > 0
-            ? `\nESTUDIOS YA GUARDADOS: ${existingCount} de ${T.minWordStudies} mínimos. Las palabras se ACUMULAN entre mensajes — NO le pidas repetir las que ya hizo. Si este mensaje agrega una palabra NUEVA válida y el total llega a ${T.minWordStudies}, aceptá. Si todavía falta, "orient" pidiendo UNA palabra más (no todas de nuevo).\n`
+            ? `\nESTUDIOS YA GUARDADOS: ${existingCount} de ${T.minWordStudies} mínimos. Las palabras se ACUMULAN entre mensajes — NO le pidas repetir las que ya hizo. Si este mensaje agrega una palabra NUEVA válida y el total llega a ${T.minWordStudies}, acepta. Si todavía falta, "orient" pidiendo UNA palabra más (no todas de nuevo).\n`
             : '';
         return `${BASE_SYSTEM_GUARDS}
 
 PASO ACTUAL: Estudio de Palabras (paso 4 de 8).
 Pasaje: ${ctx.passage}
 ${accumulatedBlock}
-Lo que pedís al pastor: que produzca ≥${T.minWordStudies} ESTUDIOS DE PALABRAS clave del pasaje EN TOTAL (puede ser de a uno por mensaje). Cada uno con:
+Lo que pides al pastor: que produzca ≥${T.minWordStudies} ESTUDIOS DE PALABRAS clave del pasaje EN TOTAL (puede ser de a uno por mensaje). Cada uno con:
 - Palabra original (griega/hebrea, transliterada está bien)
 - Referencia (en qué versículo aparece)
 - Descubrimiento PROPIO del pastor (≥${T.pastorDiscoveryMinChars} caracteres por estudio)
@@ -109,18 +109,18 @@ Lo que pedís al pastor: que produzca ≥${T.minWordStudies} ESTUDIOS DE PALABRA
 Reglas duras de este paso:
 - Si el pastor entrega < ${T.minWordStudies} estudios o algún descubrimiento es < ${T.pastorDiscoveryMinChars} chars → "orient" pidiendo más.
 - Confrontación de método: si copia definiciones genéricas de diccionario sin descubrimiento PASTORAL/EXEGÉTICO propio → "orient" pidiendo aplicación al pasaje en estudio. (No es "confront" hard porque el método no está mal, solo está superficial.)
-- Confrontá (kind: "confront", errorLabel "word-study-fallacy") si el descubrimiento comete una FALACIA de estudio de palabra:
+- Confronta (kind: "confront", errorLabel "word-study-fallacy") si el descubrimiento comete una FALACIA de estudio de palabra:
   · falacia de la raíz / etimológica (deducir el significado de la raíz o etimología, ej. "dýnamis significa 'dinamita'");
   · transferencia ilegítima de totalidad (importar TODOS los sentidos del rango semántico a este versículo en vez del que el contexto exige);
   · anacronismo (leer en la palabra un significado posterior al texto).
-  Nombrá la falacia + preguntá cómo el CONTEXTO del versículo gobierna el sentido. NUNCA le des el significado correcto.
+  Nombra la falacia + pregunta cómo el CONTEXTO del versículo gobierna el sentido. NUNCA le des el significado correcto.
 - Si entrega ≥${T.minWordStudies} con descubrimientos sustanciales y sin falacias → "accepted" con pastorTextToPersist = su mensaje verbatim (el sistema parsea los estudios).
-- NUNCA propongas qué palabras estudiar (sí podés sugerirle EN orient "considera ἀρχή y λόγος" como datos, nunca como redacción).
+- NUNCA propongas qué palabras estudiar (sí puedes sugerirle EN orient "considera ἀρχή y λόγος" como datos, nunca como redacción).
 
 Trabajo previo del pastor:
 ${priorStepsBlock(ctx)}
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): un descubrimiento exegético propio gobernado por el contexto (no copia de diccionario) — nombrá la palabra. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): un descubrimiento exegético propio gobernado por el contexto (no copia de diccionario) — nombra la palabra. Nada genérico.
 ${buildInformationalFeatureNudge(
             ctx,
             'wordStudies',

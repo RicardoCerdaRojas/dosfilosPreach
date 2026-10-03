@@ -407,7 +407,7 @@
         "emptyState": "Selecciona un recurso de la lista para verlo.",
         "empty": {
             "title": "Aún no tienes recursos guardados",
-            "body": "Cuando converses con un tutor podrás extraer bosquejos, guías de estudio, devocionales y más. Todos quedan acá organizados por sesión.",
+            "body": "Cuando converses con un tutor podrás extraer bosquejos, guías de estudio, devocionales y más. Todos quedan aquí organizados por sesión.",
             "cta": "Iniciar una sesión"
         },
         "projectLibraryFallbackTitle": "Recursos del proyecto",

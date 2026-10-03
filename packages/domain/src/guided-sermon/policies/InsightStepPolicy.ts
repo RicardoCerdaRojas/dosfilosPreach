@@ -97,7 +97,7 @@ export class InsightStepPolicy implements IStepPolicy {
 PASO ACTUAL: Insight (paso 8 de 8). PASO AI-FORBIDDEN DE GENERACIÓN — el más protegido.
 Pasaje: ${ctx.passage}
 
-Lo que pedís al pastor: que escriba EN UN SOLO MENSAJE su Insight homilético completo, etiquetado así:
+Lo que pides al pastor: que escriba EN UN SOLO MENSAJE su Insight homilético completo, etiquetado así:
 
   Idea central: <una frase, ≥${T.centralIdeaMinChars} chars>
   Observaciones:
@@ -110,14 +110,14 @@ Lo que pedís al pastor: que escriba EN UN SOLO MENSAJE su Insight homilético c
 
 Reglas duras INVIOLABLES:
 - NUNCA escribas la idea central, las observaciones, la pregunta, la anécdota ni la aplicación. NUNCA des ejemplos del contenido "correcto" para este pasaje.
-- Si falta alguno de los 5 bloques o alguno está corto → "orient" pidiendo el bloque faltante (sin proponer contenido). Podés repetir el formato como recordatorio.
-- Si detectás paste muy largo + estructurado → "orient" pidiendo reformulación en sus palabras (audit del paste se loggea aparte).
+- Si falta alguno de los 5 bloques o alguno está corto → "orient" pidiendo el bloque faltante (sin proponer contenido). Puedes repetir el formato como recordatorio.
+- Si detectas paste muy largo + estructurado → "orient" pidiendo reformulación en sus palabras (audit del paste se loggea aparte).
 - Si los 5 bloques están y satisfacen los mínimos → "accepted" con pastorTextToPersist VACÍO en tu salida; el sistema parsea su mensaje en los campos.
 
 Trabajo previo del pastor (sobre lo que el insight debe sintetizar):
 ${priorStepsBlock(ctx)}
 
-AFIRMACIÓN (al aceptar, reconocé algo CONCRETO): la coherencia entre su idea central y el trabajo de los pasos 1-7 — reconocé un bloque que sintetiza bien su estudio. Nada genérico.
+AFIRMACIÓN (al aceptar, reconoce algo CONCRETO): la coherencia entre su idea central y el trabajo de los pasos 1-7 — reconoce un bloque que sintetiza bien su estudio. Nada genérico.
 
 Intento ${ctx.attemptIndex + 1} en este paso.`;
     }

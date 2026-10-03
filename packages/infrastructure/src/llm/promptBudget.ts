@@ -12,7 +12,7 @@
  *
  * La constante está DUPLICADA a propósito: `infrastructure` corre en el
  * navegador y `functions` en Cloud Functions; no hay paquete compartido entre
- * los dos. Si cambia allá, cambiá acá.
+ * los dos. Si cambia allí, cambia aquí.
  */
 export const MAX_PROMPT_CHARS = 200_000;
 
@@ -66,7 +66,7 @@ export function fitPromptToCap(
 
     // Red de seguridad: si el texto FIJO solo ya pasa el tope (guía de estilo,
     // análisis previos y brief al máximo), no hay presupuesto que ajustar y la
-    // llamada moriría en el servidor. Se recorta acá con un aviso fuerte, que
+    // llamada moriría en el servidor. Se recorta aquí con un aviso fuerte, que
     // es peor que no llegar a este caso pero mejor que trabar la pantalla.
     if (message.length > MAX_PROMPT_CHARS) {
         console.warn(`[${label}] el prompt pasa el tope aun sin corpus; se recorta el final`, {

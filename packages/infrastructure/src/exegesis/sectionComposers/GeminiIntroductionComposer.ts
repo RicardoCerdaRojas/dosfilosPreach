@@ -121,7 +121,7 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             `Single markdown block, 2-3 paragraphs. Start with "## Introduction" (English) or "## Introducción" (Spanish), then the prose. No "##" sub-headings within.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n')
         : [
-            `Sos un redactor académico componiendo la sección de INTRODUCCIÓN de un trabajo exegético TMS-style. La introducción se escribe AL FINAL para que refleje lo que el paper efectivamente demostró.`,
+            `Eres un redactor académico componiendo la sección de INTRODUCCIÓN de un trabajo exegético TMS-style. La introducción se escribe AL FINAL para que refleje lo que el paper efectivamente demostró.`,
             ``,
             `## Paper`,
             `Pasaje: **${passage}**`,
