@@ -1,3 +1,4 @@
+import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import type { PastoralSeedStepKey } from '../../entities/PastoralSeed';
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
@@ -240,7 +241,8 @@ function collectRecognition(
 ): void {
     for (const commentator of a.commentatorEngagement) {
         push('recognition', {
-            label: `${resolveSourceLabel(paper, commentator.sourceKey)}, p. ${commentator.page}`,
+            // Con su tipo: antes decía «p.» también sobre una hoja del PDF.
+            label: `${resolveSourceLabel(paper, commentator.sourceKey)}, ${citedLocation(commentator, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}`,
             detail: commentator.position,
             verseLabel,
         });

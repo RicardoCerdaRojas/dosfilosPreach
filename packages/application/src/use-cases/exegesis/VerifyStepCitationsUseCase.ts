@@ -304,6 +304,9 @@ function escapeRegExp(text: string): string {
  * cotejo en vez de reprobar lo que está bien.
  */
 export function pageInEvidenceUnit(claim: AnalysisClaim, numbering: PageNumbering | null): string | null {
+    // Citada por sección (libro sin páginas impresas): no hay número que
+    // cotejar; se verifica por el texto.
+    if (claim.pageKind === 'section') return null;
     const printed = claim.pageKind === 'printed';
     if (numbering) {
         return printed ? String(claim.page) : printedLabelIn(numbering, claim.page);

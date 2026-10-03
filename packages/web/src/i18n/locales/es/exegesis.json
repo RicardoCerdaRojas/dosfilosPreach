@@ -1354,7 +1354,8 @@
           "cancel": "Cerrar",
           "add": "Agregar a mi selección",
           "replace": "Reemplazar mi selección"
-        }
+        },
+        "citaPorSeccion": "Este libro no tiene páginas impresas: sus citas van por sección (§), que se encuentra en el ejemplar."
       },
       "corpus-plan": {
         "tab": "Plan de uso",

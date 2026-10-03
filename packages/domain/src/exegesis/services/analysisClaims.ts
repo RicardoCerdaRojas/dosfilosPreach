@@ -112,8 +112,13 @@ export function analysisClaimsToCitations(
     return claims.map((claim, index) => {
         const pages = pageFor(claim);
         const otras = otherSourcesOf(claim, claims);
+        // Por sección no hay hoja: «hoja 0» llevaba al verificador a priorizar
+        // los fragmentos rotulados con 0 o 1 en vez de la sección citada.
+        const seccion = claim.pageKind === 'section' ? claim.locator?.trim() : undefined;
         return {
-            raw: `${claim.sourceKey}, ${pages ? `p. ${pages}` : `hoja ${claim.page}`}`,
+            raw: seccion
+                ? `${claim.sourceKey}, § ${seccion.replace(/^§\s*/, '')}`
+                : `${claim.sourceKey}, ${pages ? `p. ${pages}` : `hoja ${claim.page}`}`,
             origin: 'analysis' as const,
             site: claim.site,
             ...(otras.length > 0 ? { otherSources: otras } : {}),
@@ -123,7 +128,7 @@ export function analysisClaimsToCitations(
             // La hoja sirve para ELEGIR la evidencia aunque no sirva para
             // cotejar la página: los fragmentos de esta misma fuente están
             // rotulados con ella.
-            evidencePage: pages ?? String(claim.page),
+            evidencePage: seccion ? null : pages ?? String(claim.page),
             offset: index,
             evidence: claim.verbatimQuote ?? claim.claim,
             evidenceIsQuoted: claim.verbatimQuote !== null,

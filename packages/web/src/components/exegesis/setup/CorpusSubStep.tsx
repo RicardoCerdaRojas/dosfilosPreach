@@ -45,6 +45,7 @@ import {
     usesExtractedExcerpts,
     hasCuratedScope,
     isSourceWithoutScope,
+    declaresNoFolios,
     countSheets,
     isExcerptSetStale,
     resourceMatchesTestament,
@@ -1061,7 +1062,15 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 <SourceSinPaginas paperId={paper.id} sourceId={source.id} />
             )}
 
-            {isCitable && libraryResource && !hasResolvedNumbering(libraryResource.pageNumbering) && (
+            {isCitable && libraryResource && declaresNoFolios(libraryResource.pageNumbering) && (
+                // Un libro que declara no tener páginas impresas se cita por
+                // sección (§): la cita sí se puede encontrar en el ejemplar.
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                    {t('paperSetup.subSteps.corpus.citaPorSeccion')}
+                </p>
+            )}
+            {isCitable && libraryResource && !hasResolvedNumbering(libraryResource.pageNumbering)
+                && !declaresNoFolios(libraryResource.pageNumbering) && (
                 <SinPaginaComprobable resourceId={libraryResource.id} />
             )}
 

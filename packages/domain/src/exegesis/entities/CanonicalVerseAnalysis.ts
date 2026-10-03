@@ -485,7 +485,11 @@ export interface OldTestamentLink {
  * como «hoja N» es incompleto pero verdadero; rendirlas como «p. N» sería
  * repetir el error sobre trabajos ya entregados.
  */
-export type CitationPageKind = 'printed' | 'sheet';
+export type CitationPageKind = 'printed' | 'sheet' | 'section';
+// 'section': un libro que declara no tener páginas impresas (Wallace en
+// español, Farfán) se cita por su sección o su lema —«§ 2.3», «§ חוּס»—,
+// que el lector SÍ encuentra en el ejemplar. El número de `page` queda en 0
+// y la sección va en `locator` (pendiente 8 de la fase del TP de Santiago).
 
 /**
  * A commentator's position on this verse, anchored to the dialectical
@@ -504,6 +508,8 @@ export interface CommentatorPosition {
     page: number;
     /** Si `page` es la página impresa o la hoja del archivo. Ausente = hoja. */
     pageKind?: CitationPageKind;
+    /** La sección o el lema citado, cuando el libro no tiene páginas (`pageKind: 'section'`). */
+    locator?: string;
     /**
      * Dialectical role of this engagement on this verse. Maps to the
      * platform's anchor / contrast / technical strategy.
@@ -561,6 +567,8 @@ export interface TranslationCrux {
         page: number;
         /** Si `page` es la página impresa o la hoja del archivo. Ausente = hoja. */
         pageKind?: CitationPageKind;
+        /** La sección citada en un libro sin páginas impresas (`pageKind: 'section'`). */
+        locator?: string;
         /** 1-2 sentence summary of the position. */
         summary: string;
         /** Index into `options` indicating which option this commentator supports. */
@@ -738,4 +746,18 @@ export function buildEmptyCanonicalVerseAnalysis(reference: PassageReference): C
         createdAt: now,
         updatedAt: now,
     };
+}
+
+/**
+ * Dónde está la cita, como se escribe. Con `pageKind: 'section'` y su
+ * `locator`, la sección («§ 2.3»); si no, el rótulo de página que corresponda
+ * (`pageLabel`). Un solo lugar para que el análisis serializado, la prosa y
+ * las afirmaciones no difieran.
+ */
+export function citedLocation(
+    c: { sourceKey: string; page: number; pageKind?: CitationPageKind; locator?: string },
+    pageLabel: (sourceKey: string, page: number, kind: CitationPageKind) => string,
+): string {
+    if (c.pageKind === 'section' && c.locator?.trim()) return `§ ${c.locator.trim().replace(/^§\s*/, '')}`;
+    return pageLabel(c.sourceKey, c.page, c.pageKind === 'section' ? 'sheet' : (c.pageKind ?? 'sheet'));
 }

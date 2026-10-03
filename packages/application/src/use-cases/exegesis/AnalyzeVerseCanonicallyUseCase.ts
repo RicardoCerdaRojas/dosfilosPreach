@@ -626,10 +626,16 @@ function sanitizeSourceReferences(
      */
     anchoredKeys: Set<string> = new Set(),
 ): CanonicalVerseAnalysis {
+    // Página 0 de una fuente con anclas es el modelo callándose la página…
+    // salvo que cite por sección: un libro sin folios se cita «§ 2.3» con
+    // página 0 (E3), y su ancla es justamente esa sección. Corre después de
+    // `stampCitationPageKind`, que es quien pone `section`.
+    const missingPage = (c: { sourceKey: string; page: number; pageKind?: string; locator?: string }) =>
+        c.page <= 0
+        && anchoredKeys.has(c.sourceKey)
+        && !(c.pageKind === 'section' && c.locator?.trim());
     const cleanCitations = (citations: ReadonlyArray<SourceCitation>): SourceCitation[] =>
-        citations.filter(c =>
-            validKeys.has(c.sourceKey)
-            && !(c.page <= 0 && anchoredKeys.has(c.sourceKey)));
+        citations.filter(c => validKeys.has(c.sourceKey) && !missingPage(c));
 
     return {
         ...analysis,
@@ -653,16 +659,14 @@ function sanitizeSourceReferences(
         // a configured source — those would render as unverifiable
         // citations downstream.
         commentatorEngagement: analysis.commentatorEngagement.filter(ce =>
-            validKeys.has(ce.sourceKey)
-            && !(ce.page <= 0 && anchoredKeys.has(ce.sourceKey))),
+            validKeys.has(ce.sourceKey) && !missingPage(ce)),
         // Translation cruxes can keep entries even if some commentator
         // positions reference invalid keys (we just drop those
         // positions). The crux itself remains usable.
         translationCruxes: analysis.translationCruxes.map(tc => ({
             ...tc,
             commentatorPositions: tc.commentatorPositions.filter(cp =>
-                validKeys.has(cp.sourceKey)
-                && !(cp.page <= 0 && anchoredKeys.has(cp.sourceKey))),
+                validKeys.has(cp.sourceKey) && !missingPage(cp)),
         })),
         footnoteExtensions: analysis.footnoteExtensions.map(fe => ({
             ...fe,

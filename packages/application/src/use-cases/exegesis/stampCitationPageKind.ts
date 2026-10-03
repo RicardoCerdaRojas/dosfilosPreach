@@ -1,4 +1,4 @@
-import { hasResolvedNumbering } from '@dosfilos/domain';
+import { declaresNoFolios, hasResolvedNumbering } from '@dosfilos/domain';
 import type {
     CanonicalVerseAnalysis,
     CitationPageKind,
@@ -39,8 +39,12 @@ export function stampCitationPageKind(
 
     const kindOf = (sourceKey: string): CitationPageKind =>
         kindByCitationKey.get(sourceKey) ?? 'sheet';
-    const stamp = <T extends { sourceKey: string }>(cite: T): T =>
-        ({ ...cite, pageKind: kindOf(cite.sourceKey) });
+    // Por sección sólo si la cita trae su sección: sin ella, una cita de un
+    // libro sin folios queda como hoja, que es lo que el número dice.
+    const stamp = <T extends { sourceKey: string; locator?: string }>(cite: T): T => {
+        const kind = kindOf(cite.sourceKey);
+        return { ...cite, pageKind: kind === 'section' && !cite.locator?.trim() ? 'sheet' : kind };
+    };
 
     return {
         ...analysis,
@@ -87,6 +91,9 @@ export function stampCitationPageKind(
  * una sola página —un tramo único, hojas 1-711, sin folio—.
  */
 function kindFor(source: ProjectSource, numbering: PageNumbering | null | undefined): CitationPageKind {
+    // Un libro que declara no tener páginas impresas se cita por sección
+    // (`citationAnchorFor` le dio al analizador anclas «§ …»).
+    if (declaresNoFolios(numbering)) return 'section';
     const ranges = source.excerptRecipe?.sheetRanges ?? [];
     if (ranges.length === 0) return hasResolvedNumbering(numbering) ? 'printed' : 'sheet';
     if (!numbering) return 'sheet';

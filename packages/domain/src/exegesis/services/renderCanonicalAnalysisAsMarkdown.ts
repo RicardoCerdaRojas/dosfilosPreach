@@ -1,3 +1,4 @@
+import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
 import type { PassageReference } from '../../bible/canon/passage-reference';
@@ -66,7 +67,7 @@ export function renderCanonicalAnalysisAsMarkdown(
         for (const c of analysis.commentatorEngagement) {
             const text = c.position?.trim() || '';
             if (c.sourceKey && text) {
-                sections.push(`- ${c.sourceKey} (p. ${c.page}): ${text}`);
+                sections.push(`- ${c.sourceKey} (${citedLocation(c, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}): ${text}`);
             }
         }
         sections.push('');

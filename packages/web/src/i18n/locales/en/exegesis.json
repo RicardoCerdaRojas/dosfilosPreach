@@ -1354,7 +1354,8 @@
           "cancel": "Close",
           "add": "Add to my selection",
           "replace": "Replace my selection"
-        }
+        },
+        "citaPorSeccion": "This book has no printed pages: its citations go by section (§), which can be found in the copy."
       },
       "corpus-plan": {
         "tab": "Usage plan",

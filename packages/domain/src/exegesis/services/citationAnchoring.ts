@@ -91,7 +91,10 @@ export function summarizeCitationAnchoring(
             total++;
             // `printed` ya es la página impresa: el recurso declaraba su
             // numeración cuando se analizó el verso.
+            // `section` también: «§ 2.3» se encuentra en el ejemplar de un
+            // libro sin páginas impresas.
             const anclada = cita.pageKind === 'printed'
+                || cita.pageKind === 'section'
                 || printedLabelIn(source.numbering, cita.page) !== null;
             if (anclada) continue;
             unanchored++;

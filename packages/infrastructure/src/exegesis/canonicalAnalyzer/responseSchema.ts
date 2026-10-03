@@ -316,7 +316,8 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                         type: 'string',
                         description: 'Clave de cita que coincide con una fuente configurada en el paper.',
                     },
-                    page: { type: 'integer', description: 'Página donde se articula la posición.' },
+                    page: { type: 'integer', description: 'Página donde se articula la posición. Si el ancla del fragmento es «§ …» (libro sin páginas impresas), usa 0 y copia la sección (sin «§») en locator.' },
+                    locator: { type: 'string', description: 'La sección o el lema citado cuando el libro no tiene páginas (ancla «§ …»). Vacío si no aplica.' },
                     role: { type: 'string', enum: ['anchor', 'contrast', 'technical'] },
                     position: {
                         type: 'string',
@@ -367,7 +368,8 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                             type: 'object',
                             properties: {
                                 sourceKey: { type: 'string' },
-                                page: { type: 'integer' },
+                                page: { type: 'integer', description: 'Si el ancla es «§ …», 0 y la sección en locator.' },
+                                locator: { type: 'string' },
                                 summary: { type: 'string', description: 'Resumen de 1-2 oraciones de la posición.' },
                                 supports: {
                                     type: 'integer',
@@ -536,7 +538,7 @@ function SOURCE_CITATION_SCHEMA() {
             },
             page: {
                 type: 'integer',
-                description: 'Número de página. Usar 0 solo cuando la fuente no tiene paginación.',
+                description: 'Número de página. Usar 0 solo cuando la fuente no tiene paginación. Si el ancla del fragmento es «§ …» (libro sin páginas impresas), usa 0 y copia la sección (sin «§») en locator.',
             },
             locator: {
                 type: 'string',

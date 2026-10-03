@@ -1,3 +1,4 @@
+import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { relabelProsePages } from './relabelProsePages';
 import { collectAnalysisCitations } from './citationAnchoring';
@@ -108,8 +109,8 @@ export function serializeAnalysis(
         ?? ((_key: string, value: number, kind: CitationPageKind) =>
             kind === 'printed' ? `p. ${value}` : `hoja ${value}`);
     /** Rotula una cita usando el tipo que quedó registrado al analizarla. */
-    const cite = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind }) =>
-        page(c.sourceKey, c.page, c.pageKind ?? 'sheet');
+    const cite = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind; locator?: string }) =>
+        citedLocation(c, page);
     // Las menciones sueltas dentro de la prosa —«Adamson (p. 59) lo conecta
     // con…»— no llevan tipo propio, pero el tipo es homogéneo por fuente: el
     // ancla que vio el modelo fue la misma para todos los fragmentos de un
@@ -277,10 +278,13 @@ export function serializeAnalysis(
 }
 
 /**
- * Tipo de página por fuente, leído de las citas estructuradas del análisis.
+ * Tipo de página por fuente, leído de las citas estructuradas del análisis,
+ * para rotular los números de página que aparecen en la prosa.
  *
- * `citationAnchorFor` nunca mezcla las dos formas dentro de una misma fuente,
- * así que la primera cita que declara su tipo lo declara para todas.
+ * `citationAnchorFor` no mezcla «p.» y «hoja» dentro de una fuente, así que la
+ * primera cita con número declara el tipo para todas. Un libro sin folios sí
+ * mezcla «§ 2.3» y «hoja N» (sección cuando la hay): las citas por sección no
+ * llevan número y no cuentan.
  */
 function collectPageKinds(analysis: CanonicalVerseAnalysis): Map<string, CitationPageKind> {
     const kinds = new Map<string, CitationPageKind>();
@@ -288,7 +292,7 @@ function collectPageKinds(analysis: CanonicalVerseAnalysis): Map<string, Citatio
     // una copia aquí y otra en el script de auditoría, y tres copias de un
     // recorrido son tres oportunidades de olvidar un sitio en una sola.
     for (const c of collectAnalysisCitations(analysis)) {
-        if (c.pageKind && !kinds.has(c.sourceKey)) kinds.set(c.sourceKey, c.pageKind);
+        if (c.pageKind && c.pageKind !== 'section' && !kinds.has(c.sourceKey)) kinds.set(c.sourceKey, c.pageKind);
     }
     return kinds;
 }
