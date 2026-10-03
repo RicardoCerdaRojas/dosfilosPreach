@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useArrivingProposals } from './externalProposalsContext';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -113,6 +114,10 @@ export function SectionElementsPanel(props: Props) {
     const esItemsFinales = Boolean(section.definition?.itemsAreFinal);
     const [mine, setMine] = useState('');
     const [proposals, setProposals] = useState<ProposedElement[]>([]);
+
+    // Lo que llega del chat de consulta («Llevar a mis ideas») entra como
+    // propuesta de ESTA sección: se elige, se edita o se descarta.
+    useArrivingProposals(section.id, llegadas => setProposals(prev => [...prev, ...llegadas]));
 
     const decided = props.elements.filter((e) => e.provenance !== 'descartado');
 

@@ -652,6 +652,30 @@
       "newVersionTitle": "You are about to create a new version (number {{n}})",
       "newVersionBody": "You already published this sermon and it has changed since. The previous copy is kept; this will be version {{n}}.",
       "newVersionConfirm": "Create version {{n}}"
+    },
+    "consult": {
+      "open": "Ask",
+      "title": "Ask",
+      "subtitle": "Quick questions to find material: passages that illustrate, verses on a theme, characters. It does not write your sermon.",
+      "context": "Working on: {{section}}",
+      "placeholder": "E.g.: which passages or characters illustrate Jonah’s attitude and God’s?",
+      "send": "Ask",
+      "thinking": "Searching…",
+      "empty": "Ask whatever you need while you build the point.",
+      "examples": [
+        "Which passages or characters illustrate Jonah’s attitude and God’s?",
+        "Give me verses about God’s mercy."
+      ],
+      "verses": "Cited verses (RVR1960)",
+      "verseMissing": "Not found in the Bible: check the reference before using it.",
+      "bringToIdeas": "Add to my ideas",
+      "bringHint": "It enters as a proposal in the active section: you choose it, edit it or discard it.",
+      "noSection": "Open a Workshop section to bring ideas to it.",
+      "brought": "Added to the proposals of “{{section}}”.",
+      "proposalWhy": "From the ask chat",
+      "error": "Could not ask. Try again.",
+      "clear": "Start over",
+      "verseUnreadable": "This reference could not be read: look it up in your Bible."
     }
   },
   "pastoralContext": {

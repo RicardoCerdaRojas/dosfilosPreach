@@ -129,6 +129,11 @@
       "model": "gpt-6-luna",
       "reasoning": "none"
     },
+    "sermon.consult": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
     "sermon.homileticsPreview": {
       "provider": "openai",
       "model": "gpt-6-luna",

@@ -114,6 +114,7 @@ export * from './greek-analyzer';
 export * from './shared/spanishRegister';
 export * from './drafting/sermonManuscriptStyle';
 export * from './drafting/sermonDocument';
+export * from './drafting/buildConsultPrompt';
 export * from './drafting/attachMainPassageRefs';
 export * from './drafting/buildSectionProsePrompt';
 export * from './drafting/scriptureLookupRef';
