@@ -1,3 +1,4 @@
+import { expectationJustification, rubricLabel } from './rubricLabel';
 import { useEffect, useMemo, useState } from 'react';
 import {
     AlertTriangle,
@@ -20,6 +21,7 @@ import {
     SOURCE_TYPE_GROUPS,
     getEffectiveStructuralExpectations,
     getSourceTypeOrderIndex,
+    rubricPreset,
     type ExegeticalPaper,
     type PaperRubric,
     type QualityCriterion,
@@ -279,7 +281,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                     <h2 className="text-lg font-semibold text-foreground inline-flex items-center gap-2">
                         {t('paperSetup.subSteps.rubric.heading')}
                         <span className="text-[10px] uppercase tracking-wide font-semibold rounded-full bg-muted text-muted-foreground px-2 py-0.5">
-                            {t(`paperSetup.subSteps.rubric.provenance.${rubric.provenance}`)}
+                            {rubricLabel(rubric, t)}
                         </span>
                     </h2>
                     <p className="text-sm text-muted-foreground mt-0.5">
@@ -513,15 +515,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                                                 : exp.emphasizedTypes.map(typ => t(`sourceTypes.${typ}.label`)).join(', ')}
                                         </p>
                                         <p className="text-muted-foreground italic">
-                                            {(() => {
-                                                if (exp.justificationKey) return t(exp.justificationKey);
-                                                // Same migration-friendly fallback as StepKindEmphasisCard:
-                                                // pre-key system-default rubrics persisted English literals.
-                                                if (rubric.provenance === 'system-default') {
-                                                    return t(`paperSetup.subSteps.plan.rubricJustification.${section}`);
-                                                }
-                                                return exp.justification;
-                                            })()}
+                                            {expectationJustification(rubric, section, exp, t)}
                                         </p>
                                     </>
                                 ) : (
@@ -1280,12 +1274,10 @@ function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }: Rubric
             return null;
         }
         if (rubric.provenance === 'system-default') {
-            if (rubric.sourceRequirements.length === 0) return 'none';
-            // Las dos del sistema se distinguen por lo que las hace distintas:
-            // cuál tipo de fuente ancla el versículo. Mirar la extensión sería
-            // frágil —el alumno puede cambiarla sin cambiar de rúbrica—.
-            const verso = rubric.structuralExpectations.find(e => e.section === 'verse');
-            return verso?.emphasizedTypes[0] === 'commentary-expository' ? 'preaching' : 'default';
+            // Cuál de las del sistema: `rubricPreset` (campo guardado, o la
+            // heurística del ancla en documentos viejos).
+            const preset = rubricPreset(rubric);
+            return preset === 'strategy-only' ? 'none' : preset === 'preaching' ? 'preaching' : 'default';
         }
         // user-edited → don't badge any card; the user has diverged
         // from every preset.

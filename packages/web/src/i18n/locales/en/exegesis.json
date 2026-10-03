@@ -683,7 +683,14 @@
           },
           "change": "Change where the rubric comes from",
           "hide": "Hide the options"
-        }
+        },
+        "preset": {
+          "academic": "Academic paper",
+          "preaching": "Study for preaching",
+          "strategy-only": "Strategy only"
+        },
+        "presetEdited": "{{preset}} · edited",
+        "presetSystem": "{{preset}} · system"
       },
       "manifest": {
         "tab": "Style guide",
@@ -1397,6 +1404,11 @@
             "technical": "Technical",
             "unrolled": "No role"
           }
+        },
+        "rubricJustificationPreaching": {
+          "introduction": "The introduction places the pericope in the book's argument: where the listener stands when this scene begins and what is at stake in it.",
+          "verse": "The expository commentary anchors because it follows the flow of the argument, which is what gets preached; the critical one contrasts where there are rival readings; technical sources come in where there is a crux to decide, not in every verse.",
+          "conclusion": "The conclusion states the author's intent in one sentence and what that intent does to the listener. It is not a summary of findings: it is the bridge."
         }
       }
     },

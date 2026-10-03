@@ -683,7 +683,14 @@
           },
           "change": "Cambiar de dónde sale la rúbrica",
           "hide": "Ocultar las opciones"
-        }
+        },
+        "preset": {
+          "academic": "Trabajo académico",
+          "preaching": "Estudio para predicación",
+          "strategy-only": "Sólo estrategia"
+        },
+        "presetEdited": "{{preset}} · editada",
+        "presetSystem": "{{preset}} · sistema"
       },
       "manifest": {
         "tab": "Guía de estilo",
@@ -1397,6 +1404,11 @@
             "technical": "Técnica",
             "unrolled": "Sin rol"
           }
+        },
+        "rubricJustificationPreaching": {
+          "introduction": "La introducción sitúa la perícopa en el argumento del libro: dónde está el oyente cuando empieza esta escena y qué se juega en ella.",
+          "verse": "El expositivo ancla porque sigue el flujo del argumento, que es lo que se predica; el crítico contrasta cuando hay lecturas rivales; lo técnico entra donde hay una cruz que decidir, no en cada versículo.",
+          "conclusion": "La conclusión dice la intención del autor en una oración y qué hace esa intención con quien escucha. No es un resumen de hallazgos: es el puente."
         }
       }
     },

@@ -49,6 +49,7 @@ import { toast } from 'sonner';
 import { exegesisService, seriesService } from '@dosfilos/application';
 import {
     findBooksByAlias,
+    paperDefaultsFromSeries,
     parsePassageReference,
     type ExegeticalPaperPhase,
     type PlannedSermon,
@@ -192,7 +193,9 @@ export function SeriesDetail() {
                 displayLanguage: lang,
                 title: planned.title,
                 assignmentBrief: planned.syntacticUnit.justification ?? null,
-                styleGuideId: null,
+                // La guía, la rúbrica y el corpus de la serie: antes este
+                // camino los ignoraba y el trabajo nacía académico.
+                ...paperDefaultsFromSeries(series.metadata?.exegesisDefaults),
                 // Stamp back-reference so sermon generation can patch
                 // this pericope's draftId without scanning all series.
                 seriesId: series.id,

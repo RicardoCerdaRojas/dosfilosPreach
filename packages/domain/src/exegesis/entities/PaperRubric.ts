@@ -25,7 +25,20 @@ import type { CourseBibliographyEntry } from '../services/courseBibliography';
  * students know whether the requirements come from their seminary or
  * from a sensible default.
  */
+/**
+ * Cuál de las rúbricas del sistema es (o de cuál partió una editada).
+ *
+ * `provenance` dice DE DÓNDE salió la rúbrica y las dos del sistema decían lo
+ * mismo, «Default del sistema»: el fundador no podía saber si la suya era la de
+ * predicación (Jonás 4:5-11, 2026-10-01). Sobrevive a las ediciones: una
+ * rúbrica de predicación retocada sigue siendo de predicación.
+ */
+export type RubricPreset = 'academic' | 'preaching' | 'strategy-only';
+
 export interface PaperRubric {
+    /** Ver `RubricPreset`. Ausente en documentos anteriores: `rubricPreset()` lo deduce. */
+    preset?: RubricPreset | null;
+
     /**
      * Where the rubric came from. Drives the UI hint shown alongside
      * each requirement (a system-default requirement is presented as
@@ -352,6 +365,7 @@ export interface QualityCriterionLevel {
  * runtime behavior.
  */
 export const DEFAULT_TMS_EXEGETICAL_RUBRIC: PaperRubric = {
+    preset: 'academic',
     provenance: 'system-default',
     description:
         'Applied when no seminary-specific rubric is provided. Reflects the academic-rigor expectations of a Master\'s-level TMS / Turabian exegetical paper.',
@@ -504,6 +518,7 @@ export const STRATEGY_ONLY_RUBRIC_PRESET_ID = '__strategy-only';
 export function buildStrategyOnlyRubric(): PaperRubric {
     const now = new Date();
     return {
+        preset: 'strategy-only',
         provenance: 'system-default',
         description:
             'Sin minimums por tipo. La estrategia dialéctica (anclas + contrastes + técnicas) actúa como guía única; el alumno arma el corpus por rol según el método.',
@@ -685,4 +700,27 @@ export function assessRubricRigor(rubric: PaperRubric): RubricRigorAssessment {
         groupTotal: SOURCE_TYPE_GROUPS.filter(g => g.groupKey !== AREA_METODOLOGICA).length,
         level,
     };
+}
+
+/**
+ * Cuál rúbrica del sistema es esta, o `null` si no viene de ninguna (extraída
+ * de un sílabo, de una plantilla del usuario).
+ *
+ * Con el campo guardado, ése. En documentos anteriores al campo se deduce de
+ * lo que hace distintas a las del sistema —cuál tipo de fuente ancla el
+ * versículo—, y sólo mientras sigan siendo del sistema: una editada vieja ya
+ * no se puede reconocer con seguridad.
+ */
+export function rubricPreset(rubric: PaperRubric | null | undefined): RubricPreset | null {
+    if (!rubric) return null;
+    // Una plantilla del usuario lleva el `preset` de la rúbrica de la que se
+    // guardó, y después se puede editar en otra cosa (un curso marcado como
+    // estudio para predicar dejaba de pedir portada). De una plantilla no se
+    // sabe qué es (revisión adversarial de C1).
+    if (rubric.provenance === 'from-template') return null;
+    if (rubric.preset) return rubric.preset;
+    if (rubric.provenance !== 'system-default') return null;
+    if (rubric.sourceRequirements.length === 0) return 'strategy-only';
+    const verso = rubric.structuralExpectations.find(e => e.section === 'verse');
+    return verso?.emphasizedTypes[0] === 'commentary-expository' ? 'preaching' : 'academic';
 }

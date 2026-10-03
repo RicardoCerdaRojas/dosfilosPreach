@@ -1135,6 +1135,8 @@ function serializeExcerpt(excerpt: ProjectSourceExcerpt): Serialized<ProjectSour
 function deserializeRubric(raw: any): ExegeticalPaper['rubric'] {
     if (!raw) return null;
     return {
+        // Ausente antes del campo: `rubricPreset()` lo deduce del ancla.
+        preset: raw.preset ?? null,
         provenance: raw.provenance ?? 'system-default',
         description: raw.description ?? null,
         expectedLength: raw.expectedLength ?? null,

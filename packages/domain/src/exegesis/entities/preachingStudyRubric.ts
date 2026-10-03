@@ -24,6 +24,7 @@ import { DEFAULT_TMS_EXEGETICAL_RUBRIC } from './PaperRubric';
  */
 export const PREACHING_STUDY_RUBRIC: PaperRubric = {
     ...DEFAULT_TMS_EXEGETICAL_RUBRIC,
+    preset: 'preaching',
     provenance: 'system-default',
     description:
         'Estudio exegético para predicación expositiva. Mismo rigor que un trabajo académico, '
@@ -60,6 +61,9 @@ export const PREACHING_STUDY_RUBRIC: PaperRubric = {
     structuralExpectations: [
         {
             section: 'introduction',
+            // Clave propia: sin ella la pantalla mostraba la justificación de la
+            // rúbrica ACADÉMICA, que no dice lo mismo.
+            justificationKey: 'paperSetup.subSteps.plan.rubricJustificationPreaching.introduction',
             emphasizedTypes: ['historical-background', 'commentary-expository', 'theological-monograph'],
             justification:
                 'La introducción sitúa la perícopa en el argumento del libro: dónde está el oyente '
@@ -67,6 +71,9 @@ export const PREACHING_STUDY_RUBRIC: PaperRubric = {
         },
         {
             section: 'verse',
+            // Clave propia: sin ella la pantalla mostraba la justificación de la
+            // rúbrica ACADÉMICA, que no dice lo mismo.
+            justificationKey: 'paperSetup.subSteps.plan.rubricJustificationPreaching.verse',
             emphasizedTypes: [
                 'commentary-expository',
                 'commentary-critical',
@@ -81,6 +88,9 @@ export const PREACHING_STUDY_RUBRIC: PaperRubric = {
         },
         {
             section: 'conclusion',
+            // Clave propia: sin ella la pantalla mostraba la justificación de la
+            // rúbrica ACADÉMICA, que no dice lo mismo.
+            justificationKey: 'paperSetup.subSteps.plan.rubricJustificationPreaching.conclusion',
             emphasizedTypes: ['commentary-expository', 'theological-monograph', 'commentary-critical'],
             justification:
                 'La conclusión dice la intención del autor en una oración y qué hace esa intención '

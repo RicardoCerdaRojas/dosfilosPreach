@@ -1,5 +1,6 @@
 import { SourcesWithoutScopeNotice } from '@/components/exegesis/SourcesWithoutScopeNotice';
 import { SeriesCorpusOffer } from '@/components/exegesis/SeriesCorpusOffer';
+import { rubricLabel } from '@/components/exegesis/setup/rubricLabel';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -808,7 +809,7 @@ function RubricCard({ paper, t }: { paper: ExegeticalPaper; t: (key: string, opt
     const headline = sourceTemplate
         ? sourceTemplate.displayName
         : rubric
-            ? t(`paperSetup.subSteps.rubric.provenance.${rubric.provenance}`)
+            ? rubricLabel(rubric, t)
             : null;
 
     // Show provenance as hint only when (a) the headline is the
