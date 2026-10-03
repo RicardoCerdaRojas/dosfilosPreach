@@ -4,6 +4,7 @@ import {
     type IStyleGuideManifestExtractor,
     type StyleGuideManifest,
     type FootnoteExample,
+    type CoverStyle,
 } from '@dosfilos/domain';
 import { withGeminiRetry } from './geminiRetry';
 import { runLlmPromptWithUsage } from '../llm/callableLlm';
@@ -148,6 +149,14 @@ function buildUserMessageEN(rawText: string): string {
         `    "useDiacritics": boolean,`,
         `    "bodyRequiresTransliteration": boolean`,
         `  } | null,`,
+        `  "cover": {                                                       // null if the guide does not describe the title page`,
+        `    "blankLinesBeforeInstitution": number,                         // blank lines before the school name`,
+        `    "blankLinesAfterInstitution": number,`,
+        `    "blankLinesAfterTitle": number,`,
+        `    "blankLinesAfterAuthor": number,`,
+        `    "uppercase": boolean,                                          // everything in capitals?`,
+        `    "byLine": string                                               // word before the author ("BY", "SUBMITTED BY"); "" if none`,
+        `  } | null,`,
         `  "additionalRules": string[],                                     // free-form rules in English`,
         `  "confidence": "high" | "medium" | "low",`,
         `  "extractionNotes": string[]                                      // ambiguities you encountered, in English`,
@@ -215,6 +224,14 @@ function buildUserMessageES(rawText: string): string {
         `    "useDiacritics": boolean,`,
         `    "bodyRequiresTransliteration": boolean`,
         `  } | null,`,
+        `  "cover": {                                                       // null si la guía no describe la portada`,
+        `    "blankLinesBeforeInstitution": number,                         // renglones en blanco antes del seminario`,
+        `    "blankLinesAfterInstitution": number,`,
+        `    "blankLinesAfterTitle": number,`,
+        `    "blankLinesAfterAuthor": number,`,
+        `    "uppercase": boolean,                                          // ¿todo en mayúsculas?`,
+        `    "byLine": string                                               // palabra antes del autor ("POR", "PRESENTADO POR"); "" si no lleva`,
+        `  } | null,`,
         `  "additionalRules": string[],                                     // reglas libres en español`,
         `  "confidence": "high" | "medium" | "low",`,
         `  "extractionNotes": string[]                                      // ambigüedades en español`,
@@ -269,6 +286,7 @@ interface RawExtractionResult {
         useDiacritics: boolean;
         bodyRequiresTransliteration: boolean;
     } | null;
+    cover: CoverStyle | null;
     additionalRules: string[];
     confidence: 'high' | 'medium' | 'low';
     extractionNotes: string[];
@@ -329,11 +347,34 @@ function parseExtractorJson(rawJson: string): RawExtractionResult {
                 bodyRequiresTransliteration: !!parsed.transliteration.bodyRequiresTransliteration,
             }
             : null,
+        cover: parseCover(parsed.cover),
         additionalRules: Array.isArray(parsed.additionalRules) ? parsed.additionalRules.filter((r: any) => typeof r === 'string') : [],
         confidence: parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low'
             ? parsed.confidence
             : 'medium',
         extractionNotes: Array.isArray(parsed.extractionNotes) ? parsed.extractionNotes.filter((n: any) => typeof n === 'string') : [],
+    };
+}
+
+/**
+ * La portada que describe la guía, o `null` si no la describe o si algún
+ * número no es un conteo razonable de renglones: una portada inventada es peor
+ * que la de TMS, que es el respaldo (`coverStyleOf`).
+ */
+export function parseCover(raw: any): CoverStyle | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const n = (v: unknown) => (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 20 ? (v as number) : null);
+    const layout = {
+        beforeInstitution: n(raw.blankLinesBeforeInstitution),
+        afterInstitution: n(raw.blankLinesAfterInstitution),
+        afterTitle: n(raw.blankLinesAfterTitle),
+        afterAuthor: n(raw.blankLinesAfterAuthor),
+    };
+    if (Object.values(layout).some(v => v === null)) return null;
+    return {
+        layout: layout as CoverStyle['layout'],
+        uppercase: raw.uppercase !== false,
+        byLine: typeof raw.byLine === 'string' ? raw.byLine.trim() : 'POR',
     };
 }
 
@@ -374,6 +415,7 @@ function mapToDomain(raw: RawExtractionResult, modelId: string): StyleGuideManif
             interpolationBrackets: raw.quotations?.interpolationBrackets ?? '[]',
         },
         transliteration: raw.transliteration,
+        cover: raw.cover,
         additionalRules: raw.additionalRules,
         confidence: raw.confidence,
         extractionNotes: raw.extractionNotes,

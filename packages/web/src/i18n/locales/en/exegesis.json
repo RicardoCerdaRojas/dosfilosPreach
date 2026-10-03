@@ -136,7 +136,8 @@
           "bibliography": "Bibliography",
           "quotations": "Quotations",
           "transliteration": "Transliteration",
-          "additional": "Additional rules"
+          "additional": "Additional rules",
+          "cover": "Title page"
         },
         "validation": {
           "empty-template": "Template can't be empty.",
@@ -145,7 +146,8 @@
           "empty-quote-mark": "Quote marks can't be empty.",
           "duplicate-additional-rule": "This rule is duplicated.",
           "empty-additional-rule": "This rule is empty.",
-          "transliteration-empty-scheme": "Provide a name for the transliteration scheme."
+          "transliteration-empty-scheme": "Provide a name for the transliteration scheme.",
+          "cover-blank-lines-out-of-range": "Between 0 and 20 lines."
         },
         "footnotes": {
           "intro": "Templates the post-processor uses to reformat citations the LLM emits. Placeholders get substituted with each source's data at render time.",
@@ -204,6 +206,21 @@
           "placeholder": "E.g. \"Use serial commas in lists of three items.\"",
           "add": "Add rule",
           "remove": "Remove rule"
+        },
+        "cover": {
+          "intro": "How the title page is laid out when downloading the Word file: blank lines between blocks, capitals and the word before the author. The data (school, title, author) is written on each paper's title page.",
+          "enabledLabel": "This guide defines the title page",
+          "enabledHint": "Off: the TMS model is used.",
+          "layout": {
+            "beforeInstitution": "Before the school",
+            "afterInstitution": "After the school",
+            "afterTitle": "After the title",
+            "afterAuthor": "After the author"
+          },
+          "uppercase": "All capitals",
+          "byLine": "Before the author",
+          "byLineHint": "“BY”, “SUBMITTED BY”… Empty: no such line.",
+          "usingTms": "TMS model: {{before}} · school · {{institution}} · title · {{title}} · BY / author · {{author}} · place and date."
         }
       }
     }
@@ -809,6 +826,9 @@
           "usingCopy": "This paper uses the copy taken on {{date}}. Editing the guide later does not affect it.",
           "guideChanged": "The guide changed since it was attached. This paper keeps its copy; you can pull the current version if you want.",
           "refresh": "Update to the current version"
+        },
+        "cover": {
+          "own": "This guide: {{before}} · school · {{institution}} · title · {{title}} · “{{byLine}}” / author · {{author}} · place and date."
         }
       },
       "corpus": {

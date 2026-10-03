@@ -9,10 +9,11 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type {
-    ExegeticalPaper,
-    StyleGuideManifest,
-    UserStyleGuide,
+import {
+    coverStyleOf,
+    type ExegeticalPaper,
+    type StyleGuideManifest,
+    type UserStyleGuide,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -202,6 +203,7 @@ function ManifestViewer({ guide, paper }: { guide: UserStyleGuide; paper: Exeget
             <BibliographySection manifest={manifest} />
             <QuotationsSection manifest={manifest} />
             <TransliterationSection manifest={manifest} />
+            <CoverSection manifest={manifest} />
             <AdditionalRulesSection manifest={manifest} />
             {manifest.extractionNotes.length > 0 && <ExtractionNotesSection manifest={manifest} />}
 
@@ -420,6 +422,23 @@ function TransliterationSection({ manifest }: { manifest: StyleGuideManifest }) 
                 {tr.bodyRequiresTransliteration
                     ? t('paperSetup.subSteps.manifest.transliteration.bodyRequired')
                     : t('paperSetup.subSteps.manifest.transliteration.bodyOptional')}
+            </p>
+        </section>
+    );
+}
+
+/** Cómo arma la portada esta guía (o la de TMS si no lo dice). */
+function CoverSection({ manifest }: { manifest: StyleGuideManifest }) {
+    const { t } = useTranslation('exegesis');
+    const estilo = coverStyleOf(manifest);
+    const l = estilo.layout;
+    return (
+        <section className="space-y-2">
+            <h4 className="text-xs font-semibold text-foreground">{t('directory.styleGuides.editor.tabs.cover')}</h4>
+            <p className="text-[11px] text-muted-foreground">
+                {manifest.cover
+                    ? t('paperSetup.subSteps.manifest.cover.own', { before: l.beforeInstitution, institution: l.afterInstitution, title: l.afterTitle, author: l.afterAuthor, byLine: estilo.byLine || '—' })
+                    : t('directory.styleGuides.editor.cover.usingTms', { before: l.beforeInstitution, institution: l.afterInstitution, title: l.afterTitle, author: l.afterAuthor })}
             </p>
         </section>
     );

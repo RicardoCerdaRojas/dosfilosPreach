@@ -136,7 +136,8 @@
           "bibliography": "Bibliografía",
           "quotations": "Citas",
           "transliteration": "Transliteración",
-          "additional": "Reglas adicionales"
+          "additional": "Reglas adicionales",
+          "cover": "Portada"
         },
         "validation": {
           "empty-template": "El template no puede estar vacío.",
@@ -145,7 +146,8 @@
           "empty-quote-mark": "Las comillas no pueden estar vacías.",
           "duplicate-additional-rule": "Esta regla está duplicada.",
           "empty-additional-rule": "Esta regla está vacía.",
-          "transliteration-empty-scheme": "Indica un nombre para el esquema de transliteración."
+          "transliteration-empty-scheme": "Indica un nombre para el esquema de transliteración.",
+          "cover-blank-lines-out-of-range": "Entre 0 y 20 renglones."
         },
         "footnotes": {
           "intro": "Templates que el post-procesador usa para reformatear las citas que emite el LLM. Los placeholders se sustituyen con datos de cada fuente al renderizar.",
@@ -204,6 +206,21 @@
           "placeholder": "Ej. \"Usar comas seriadas en listas de tres elementos.\"",
           "add": "Agregar regla",
           "remove": "Quitar regla"
+        },
+        "cover": {
+          "intro": "Cómo se arma la portada al descargar el Word: renglones en blanco entre los bloques, mayúsculas y la palabra antes del autor. Los datos (seminario, título, autor) se escriben en la portada de cada trabajo.",
+          "enabledLabel": "Esta guía dice cómo va la portada",
+          "enabledHint": "Apagado, se usa el modelo de TMS.",
+          "layout": {
+            "beforeInstitution": "Antes del seminario",
+            "afterInstitution": "Después del seminario",
+            "afterTitle": "Después del título",
+            "afterAuthor": "Después del autor"
+          },
+          "uppercase": "Todo en mayúsculas",
+          "byLine": "Antes del autor",
+          "byLineHint": "«POR», «PRESENTADO POR»… Vacío: no lleva esa línea.",
+          "usingTms": "Modelo de TMS: {{before}} · seminario · {{institution}} · título · {{title}} · POR / autor · {{author}} · lugar y fecha."
         }
       }
     }
@@ -809,6 +826,9 @@
           "usingCopy": "Este trabajo usa la copia que se tomó el {{date}}. Editar la guía después no lo afecta.",
           "guideChanged": "La guía cambió desde que se adjuntó. Este trabajo sigue con su copia; puedes traer la versión actual si quieres.",
           "refresh": "Actualizar a la versión actual"
+        },
+        "cover": {
+          "own": "Esta guía: {{before}} · seminario · {{institution}} · título · {{title}} · «{{byLine}}» / autor · {{author}} · lugar y fecha."
         }
       },
       "corpus": {

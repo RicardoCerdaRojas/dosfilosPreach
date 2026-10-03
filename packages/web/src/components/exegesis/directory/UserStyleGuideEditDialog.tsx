@@ -23,6 +23,7 @@ import { FootnotesTab } from '../style-guide-editor/FootnotesTab';
 import { BibliographyTab } from '../style-guide-editor/BibliographyTab';
 import { QuotationsTab } from '../style-guide-editor/QuotationsTab';
 import { TransliterationTab } from '../style-guide-editor/TransliterationTab';
+import { CoverTab } from '../style-guide-editor/CoverTab';
 import { AdditionalRulesTab } from '../style-guide-editor/AdditionalRulesTab';
 
 /**
@@ -53,7 +54,7 @@ export interface UserStyleGuideEditDialogProps {
     guide: UserStyleGuide;
 }
 
-type TabKey = 'datos' | 'footnotes' | 'bibliography' | 'quotations' | 'transliteration' | 'additional';
+type TabKey = 'datos' | 'footnotes' | 'bibliography' | 'quotations' | 'transliteration' | 'cover' | 'additional';
 
 const TABS: ReadonlyArray<TabKey> = [
     'datos',
@@ -61,6 +62,7 @@ const TABS: ReadonlyArray<TabKey> = [
     'bibliography',
     'quotations',
     'transliteration',
+    'cover',
     'additional',
 ];
 
@@ -138,7 +140,7 @@ export function UserStyleGuideEditDialog({ open, onOpenChange, guide }: UserStyl
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="mt-2">
-                    <TabsList className="grid grid-cols-6 w-full text-[11px]">
+                    <TabsList className="grid grid-cols-7 w-full text-[11px]">
                         {TABS.map(key => (
                             <TabsTrigger key={key} value={key} className="text-[11px] gap-1">
                                 {errorTabs.has(key) && (
@@ -191,6 +193,14 @@ export function UserStyleGuideEditDialog({ open, onOpenChange, guide }: UserStyl
                                 <TransliterationTab
                                     value={draft.transliteration}
                                     onChange={(transliteration) => setDraft({ ...draft, transliteration })}
+                                    issues={issues}
+                                    disabled={saving}
+                                />
+                            </TabsContent>
+                            <TabsContent value="cover" className="mt-4">
+                                <CoverTab
+                                    value={draft.cover ?? null}
+                                    onChange={(cover) => setDraft({ ...draft, cover })}
                                     issues={issues}
                                     disabled={saving}
                                 />
@@ -352,6 +362,7 @@ function collectErrorTabs(issues: ReadonlyArray<StyleManifestValidationIssue>): 
             case 'bibliography': out.add('bibliography'); break;
             case 'quotations': out.add('quotations'); break;
             case 'transliteration': out.add('transliteration'); break;
+            case 'cover': out.add('cover'); break;
             case 'additionalRules': out.add('additional'); break;
         }
     }

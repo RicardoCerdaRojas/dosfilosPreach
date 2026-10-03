@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
 import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS, buildCitationFormBlock } from '@dosfilos/domain';
-import type { ExegeticalPaper, PaperCover } from '@dosfilos/domain';
+import type { CoverStyle, ExegeticalPaper, PaperCover } from '@dosfilos/domain';
 import { EMPTY_VERIFICATION_SUMMARY } from '@dosfilos/domain';
 import { exportPaperToDocx } from '../exportPaperToDocx';
 
@@ -563,5 +563,50 @@ describe('exportPaperToDocx — formato de la guía', () => {
         const withPage = parts.filter(p => p.xml.includes('PAGE'));
         expect(withPage.some(p => p.name.includes('header') && /w:jc w:val="right"/.test(p.xml))).toBe(true);
         expect(withPage.some(p => p.name.includes('footer') && /w:jc w:val="center"/.test(p.xml))).toBe(true);
+    });
+});
+
+
+/**
+ * La portada se arma como dice la guía del trabajo (pendiente 21 de la fase
+ * del TP de Santiago): antes, renglones, mayúsculas y «POR» estaban fijos.
+ */
+describe('exportPaperToDocx — la portada sigue la guía de estilo', () => {
+    const conPortada = paper({
+        cover: { institution: 'Seminario Bíblico', author: 'Ricardo Cerda', place: 'Concepción', date: 'Octubre 2026' },
+    } as Partial<ExegeticalPaper>);
+    const portadaDe = async (coverStyle?: CoverStyle) => {
+        const blob = await exportPaperToDocx(conPortada, { exportedAt: new Date('2026-10-03'), coverStyle });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const doc = await zip.file('word/document.xml')!.async('string');
+        const portada = doc.slice(0, doc.indexOf('<w:sectPr'));
+        return [...portada.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)]
+            .map(m => [...m[0].matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(t => t[1]).join('').trim());
+    };
+
+    it('sin estilo de la guía, la de TMS: mayúsculas y «POR»', async () => {
+        const r = await portadaDe();
+        expect(r).toContain('SEMINARIO BÍBLICO');
+        expect(r).toContain('POR');
+    });
+
+    it('con el de la guía: sus renglones, sin mayúsculas y su palabra antes del autor', async () => {
+        const r = await portadaDe({ layout: { beforeInstitution: 1, afterInstitution: 2, afterTitle: 2, afterAuthor: 1 }, uppercase: false, byLine: 'Presentado por' });
+        expect(r).toContain('Seminario Bíblico');
+        expect(r).toContain('Presentado por');
+        expect(r).not.toContain('POR');
+        expect(r.slice(0, 2)).toEqual(['', 'Seminario Bíblico']);
+    });
+
+    it('palabra con sólo espacios cuenta como vacía: no corre la portada un renglón', async () => {
+        const vacia = await portadaDe({ layout: { beforeInstitution: 3, afterInstitution: 6, afterTitle: 6, afterAuthor: 3 }, uppercase: true, byLine: '' });
+        const espacios = await portadaDe({ layout: { beforeInstitution: 3, afterInstitution: 6, afterTitle: 6, afterAuthor: 3 }, uppercase: true, byLine: '   ' });
+        expect(espacios).toEqual(vacia);
+    });
+
+    it('palabra vacía: no lleva esa línea', async () => {
+        const r = await portadaDe({ layout: { beforeInstitution: 3, afterInstitution: 6, afterTitle: 6, afterAuthor: 3 }, uppercase: true, byLine: '' });
+        expect(r).not.toContain('POR');
+        expect(r).toContain('RICARDO CERDA');
     });
 });

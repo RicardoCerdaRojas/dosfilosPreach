@@ -22,8 +22,8 @@ import {
     formatPassageReference,
     formatShortNote,
     hasCover,
-    TMS_COVER_LAYOUT,
-    type CoverLayout,
+    TMS_COVER_STYLE,
+    type CoverStyle,
     resolvesToCitedSource,
     type BibliographyEntry,
     type ExegeticalPaper,
@@ -70,13 +70,18 @@ import {
  */
 export async function exportPaperToDocx(
     paper: ExegeticalPaper,
-    options: { exportedAt?: Date; bibliography?: ReadonlyArray<BibliographyEntry> } = {},
+    options: {
+        exportedAt?: Date;
+        bibliography?: ReadonlyArray<BibliographyEntry>;
+        /** Cómo arma la portada la guía del trabajo; sin ella, la de TMS. */
+        coverStyle?: CoverStyle;
+    } = {},
 ): Promise<Blob> {
     const exportedAt = options.exportedAt ?? new Date();
     // La portada manda: si se va a imprimir, el cuerpo NO lleva la cabecera de
     // trabajo. Se pregunta antes de componer el markdown porque es lo que
     // decide qué se compone.
-    const cover = coverSection(paper.cover ?? null, titleDisplayOf(paper));
+    const cover = coverSection(paper.cover ?? null, titleDisplayOf(paper), options.coverStyle ?? TMS_COVER_STYLE);
     const markdown = exportPaperToMarkdown(paper, {
         exportedAt,
         bibliography: options.bibliography,
@@ -316,8 +321,9 @@ function titleDisplayOf(paper: ExegeticalPaper): string {
     return paper.title?.trim() || formatPassageReference(paper.passage, paper.displayLanguage);
 }
 
-function coverSection(cover: PaperCover | null, fallbackTitle: string, layout: CoverLayout = TMS_COVER_LAYOUT) {
+function coverSection(cover: PaperCover | null, fallbackTitle: string, style: CoverStyle = TMS_COVER_STYLE) {
     if (!hasCover(cover)) return null;
+    const { layout } = style;
     const institution = cover.institution?.trim();
     const author = cover.author?.trim();
 
@@ -325,7 +331,7 @@ function coverSection(cover: PaperCover | null, fallbackTitle: string, layout: C
         alignment: AlignmentType.CENTER,
         indent: { firstLine: 0 },
         spacing: { line: 360, lineRule: LineRuleType.AUTO },
-        children: text ? textRuns(text.toLocaleUpperCase('es')) : [],
+        children: text ? textRuns(style.uppercase ? text.toLocaleUpperCase('es') : text) : [],
     });
     const line = (text: string) => [parrafo(text)];
     const blancos = (n: number) => Array.from({ length: n }, () => parrafo(''));
@@ -353,7 +359,7 @@ function coverSection(cover: PaperCover | null, fallbackTitle: string, layout: C
             ...line(fallbackTitle),
             ...(course ? line(course) : []),
             ...blancos(layout.afterTitle),
-            ...line('POR'),
+            ...(style.byLine.trim() ? line(style.byLine.trim()) : []),
             ...line(author ?? ''),
             ...blancos(layout.afterAuthor),
             ...(cover.place?.trim() ? line(cover.place) : []),

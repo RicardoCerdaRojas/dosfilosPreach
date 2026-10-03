@@ -51,7 +51,7 @@ import { usePaperDerivedArtifacts } from '@/hooks/exegesis/usePaperDerivedArtifa
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { usePaperBibliographyEntries } from '@/hooks/exegesis/usePaperBibliography';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
-import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
+import { useEffectiveStyleGuide } from '@/hooks/exegesis/useEffectiveStyleGuide';
 import { StepCard } from '@/components/exegesis/StepCard';
 import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
@@ -75,6 +75,7 @@ import {
     type SupportedLanguage,
     assemblyDelivery,
     documentSections,
+    paperCoverStyle,
     hasCover,
     paperIsDelivered,
     parseBriefQuestions,
@@ -123,6 +124,7 @@ export function ExegesisPaperPage() {
     // de un retorno temprano. El hook tolera `paper` nulo y devuelve lista
     // vacía.
     const bibliography = usePaperBibliographyEntries(paper);
+    const { guide: guiaDelTrabajo } = useEffectiveStyleGuide(paper);
 
     const [facultyDrawerOpen, setFacultyDrawerOpen] = useState(false);
     const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
@@ -298,7 +300,9 @@ export function ExegesisPaperPage() {
 
     const handleExportDocx = async () => {
         try {
-            const blob = await exportPaperToDocx(paper, { bibliography });
+            // La portada se arma como dice la guía del trabajo (renglones,
+            // mayúsculas, «POR»); sin guía o sin portada en ella, la de TMS.
+            const blob = await exportPaperToDocx(paper, { bibliography, coverStyle: paperCoverStyle(paper, guiaDelTrabajo?.manifest) });
             triggerDownload(blob, buildSafeFilename('docx'));
             toast.success(t('detail.exportDocx.toast.exported'));
             // Sin datos de portada el Word sale sin portada, y nada lo decía.
@@ -879,20 +883,9 @@ function formatExpectedLength(
 // ── Sidebar — Style guide ───────────────────────────────────────────────
 
 function StyleGuideCard({ paper, t }: { paper: ExegeticalPaper; t: (key: string) => string }) {
-    const { guides, activeGuide } = useUserStyleGuides();
-    // Resolution order matches the orchestrator + setup view: a paper
-    // may pin a specific guide via `paper.styleGuideId`; if not, it
-    // inherits the user-level active guide. The detail card has to
-    // mirror this — otherwise the user sees "no guide" here while the
-    // setup shows one, contradicting itself.
-    const pinned = paper.styleGuideId
-        ? guides.find(g => g.id === paper.styleGuideId) ?? null
-        : null;
-    const effective = pinned ?? activeGuide;
-    // Distinguish "explicitly chosen for this paper" from "inherited
-    // because it's your active guide" — both work for generation but
-    // the user should know which they're looking at.
-    const isInherited = !pinned && effective !== null;
+    // La fijada o la activa, igual que el orquestador y el setup; distinguir
+    // las dos le dice al usuario cuál está mirando.
+    const { guide: effective, isInherited } = useEffectiveStyleGuide(paper);
 
     return (
         <section className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
