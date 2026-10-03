@@ -438,7 +438,33 @@
       "button": "Brief",
       "missing": "missing",
       "questionCount_one": "{{count}} question",
-      "questionCount_other": "{{count}} questions"
+      "questionCount_other": "{{count}} questions",
+      "genre": {
+        "label": "Passage genre",
+        "narrative": "Narrative",
+        "poetry": "Poetry",
+        "prophecy": "Prophecy",
+        "wisdom": "Wisdom",
+        "law": "Law",
+        "gospel": "Gospel",
+        "parable": "Parable",
+        "epistle": "Epistle",
+        "apocalypse": "Apocalyptic",
+        "mixed": "General"
+      },
+      "suggest": {
+        "cta": "Suggest questions",
+        "intro": "Candidates the assistant found in the text. Check the ones that help: they go into the draft so you can edit them.",
+        "none": "No candidate passed the check against the text.",
+        "dropped_one": "1 question dropped: it cited a form that is not in the passage ({{forms}}).",
+        "dropped_other": "{{count}} questions dropped: they cited forms that are not in the passage ({{forms}}).",
+        "close": "Close",
+        "add_one": "Add 1 to the framing",
+        "add_other": "Add {{count}} to the framing",
+        "added_one": "1 question added to the draft.",
+        "added_other": "{{count}} questions added to the draft.",
+        "error": "Could not suggest questions. Try again."
+      }
     },
     "notFound": {
       "title": "Paper not found",

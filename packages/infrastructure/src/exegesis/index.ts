@@ -49,3 +49,4 @@ export { GeminiSourceTypeClassifier } from './sourceTypeClassifier/GeminiSourceT
 // Exposed so the application layer can use it as part of the cache
 // document key without re-declaring the same string.
 export { EXPOSITORY_PIPELINE_VERSION } from './expository-prompts/shared';
+export { suggestBriefQuestions, type SuggestBriefQuestionsInput } from './BriefQuestionSuggester';

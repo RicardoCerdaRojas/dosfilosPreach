@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PREACHING_BRIEF_TEMPLATE, briefGaps, buildPreachingBrief } from '../preachingBriefTemplate';
+import { PREACHING_BRIEF_TEMPLATE, briefGaps, buildPreachingBrief, preachingBriefTemplateFor } from '../preachingBriefTemplate';
 import { grammarSearchKeys } from '../grammarSearchKeys';
 import { PREACHING_STUDY_RUBRIC } from '../../entities/preachingStudyRubric';
 import { DEFAULT_TMS_EXEGETICAL_RUBRIC } from '../../entities/PaperRubric';
@@ -94,5 +94,43 @@ describe('la rúbrica de predicación NO es una rúbrica más floja', () => {
     it('un encuadre lleno con esta plantilla produce llaves de búsqueda reales', () => {
         const claves = grammarSearchKeys('¿Qué aporta el hitpael de וַיִּתְפַּלֵּל y el infinitivo absoluto de 4:4?');
         expect(claves.originalForms.length + claves.categories.length).toBeGreaterThan(0);
+    });
+});
+
+/**
+ * Pregunta del fundador: ¿encuadres por género, testamento o uno general? Uno
+ * general, y sólo el bloque de preguntas cambia según el género.
+ */
+describe('preachingBriefTemplateFor — el bloque de preguntas según el género', () => {
+    it('Jonás (narrativa) pide leer la escena y la cadena de wayyiqtol', () => {
+        const t = preachingBriefTemplateFor('narrative');
+        expect(t).toContain('wayyiqtol');
+        expect(t).not.toContain('Este bloque lo llenas leyendo el pasaje');
+    });
+
+    it('una epístola pide el argumento y sus conectores', () => {
+        expect(preachingBriefTemplateFor('epistle')).toContain('γάρ');
+    });
+
+    it('lo demás no cambia: pasaje, destino, lo resuelto', () => {
+        const t = preachingBriefTemplateFor('narrative');
+        for (const bloque of ['PASAJE Y UNIDAD', 'DESTINO', 'LO QUE TIENE QUE QUEDAR RESUELTO', 'FUENTES Y FORMATO']) {
+            expect(t).toContain(bloque);
+        }
+    });
+
+    it('sigue siendo una plantilla sin llenar, con su lista numerada', () => {
+        const t = preachingBriefTemplateFor('poetry');
+        expect(briefGaps(t)).toContain('template-unfilled');
+        expect(t).toMatch(/\n1\.\n2\.\n/);
+    });
+
+    it('sin género (o mixto), la de siempre', () => {
+        expect(preachingBriefTemplateFor()).toBe(PREACHING_BRIEF_TEMPLATE);
+        expect(preachingBriefTemplateFor('mixed')).toBe(PREACHING_BRIEF_TEMPLATE);
+    });
+
+    it('buildPreachingBrief usa el género', () => {
+        expect(buildPreachingBrief('FUENTES', 'prophecy')).toContain('oráculo');
     });
 });

@@ -166,18 +166,18 @@ Igual que Encuadre y Portada. El elegidor (`RubricSetupChooser`) sale a su propi
 
 ### C4 · Encuadres por género y preguntas candidatas (#10, #11)
 
-**#10 · Encuadres por género.** El bloque «PREGUNTAS DEL TEXTO» de la plantilla de predicación cambia según el género del libro (`inferGenreFromBook`), con un selector para cambiarlo.
+**#10 · Plantilla por género.** `preachingBriefTemplateFor(genre)` cambia solo el bloque «PREGUNTAS DEL TEXTO»: en la narrativa, la escena y la cadena de wayyiqtol; en la epístola, el argumento y sus conectores; y así para cada género. El editor ofrece un selector de género junto a «Usar plantilla de predicación»; arranca con el del libro (`inferGenreFromBook`) y Jonás queda en «Narrativa».
 
 **#11 · Preguntas candidatas.**
 
-- «Sugerir preguntas» propone 5-8 candidatas.
-- El pastor las marca, edita o descarta. Nunca se llena el encuadre sin su intervención.
-- Cada forma hebrea o griega citada se coteja contra la morfología real del pasaje, y la pregunta se descarta si la forma no está.
-- **Contexto que recibe:** el pasaje, la morfología, el género y la proposición del plan si existe.
-- **Requisitos técnicos:**
-  - Feature nueva en el proxy.
-  - Ruteo en `config/llmRouting`. **Escribirlo en producción requiere el OK del fundador.**
-- **Banco de prueba:** Jonás 4:5-11 y Santiago 2:14-26.
+- «Sugerir preguntas» propone entre 5 y 8 candidatas. El pastor las marca y se agregan al borrador, para editarlas (`insertQuestionsIntoBrief`).
+- Las que citan una forma que el pasaje no tiene se descartan antes de mostrarse (`filterQuestionCandidates`, que coteja contra la morfología real y los lemas de Strong), y la pantalla dice cuántas se descartaron.
+- **Implementación:** la función nueva del proxy es `exegesis.suggestBriefQuestions`. El cliente pide `MODEL_FAST`.
+
+**Pendiente:**
+
+- **Ruta a Luna.** Ya está en `scripts/llm-routing/ruteo.json`, pero aplicarla a `config/llmRouting` en producción requiere el OK del fundador. Mientras tanto la atiende Gemini 2.5 Flash.
+- **Banco de comparación** (Jonás 4:5-11 y Santiago 2:14-26). No se corrió: no hay claves de la API en local, y leer el secreto de Firebase requiere el OK del fundador.
 
 ### C5 · La portada vive en la guía de estilo (pendiente 21 de la fase anterior)
 

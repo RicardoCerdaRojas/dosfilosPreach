@@ -1,4 +1,5 @@
 import { grammarSearchKeys } from './grammarSearchKeys';
+import type { LiteraryGenre } from '../expository/BookPanorama';
 
 /**
  * El encuadre de un estudio para predicar, cuando nadie dio las preguntas.
@@ -57,11 +58,45 @@ FUENTES Y FORMATO`;
  *
  * Lo que sigue en blanco es el bloque de PREGUNTAS, que es el acto exegético.
  */
-export function buildPreachingBrief(sourcesAndFormat: string): string {
+export function buildPreachingBrief(sourcesAndFormat: string, genre?: LiteraryGenre): string {
+    const plantilla = preachingBriefTemplateFor(genre);
     const bloque = sourcesAndFormat.trim();
-    return bloque
-        ? `${PREACHING_BRIEF_TEMPLATE}\n${bloque}`
-        : PREACHING_BRIEF_TEMPLATE;
+    return bloque ? `${plantilla}\n${bloque}` : plantilla;
+}
+
+/**
+ * Qué mirar para encontrar las preguntas, según el género del pasaje.
+ *
+ * Pregunta del fundador (2026-10-01): ¿encuadres por género, por testamento o
+ * uno general? Uno general —pasaje, destino, lo resuelto y las fuentes no
+ * cambian— y SÓLO el bloque de preguntas por género: una narrativa se lee por
+ * la acción y la escena, una epístola por el argumento y sus conectores. El
+ * testamento no es eje: sólo cambia la lengua, que el sistema ya sabe.
+ *
+ * Cada pista conserva el corchete de instrucción (`briefGaps` lo usa para
+ * saber que la plantilla está sin llenar) y la lista numerada que lee
+ * `parseBriefQuestions`.
+ */
+const PISTA_POR_GENERO: Record<LiteraryGenre, string> = {
+    narrative: 'Lee la escena: quién actúa, qué verbos llevan la acción (en hebreo, la cadena de wayyiqtol), qué palabra se repite y dónde está la tensión que la escena no resuelve. Una pregunta por cruz real, con la forma hebrea o griega concreta.',
+    poetry: 'Lee el paralelismo: qué dice la segunda línea de la primera, qué imagen sostiene el poema y qué término carga el peso. Una pregunta por cruz real, con la forma hebrea o griega concreta.',
+    prophecy: 'Lee el oráculo: a quién se dirige, qué fórmula lo abre, qué acusación, qué juicio y qué esperanza. Una pregunta por cruz real, con la forma hebrea o griega concreta.',
+    wisdom: 'Lee el dicho: qué contrasta, qué consecuencia promete y qué palabra lo resume. Una pregunta por cruz real, con la forma hebrea o griega concreta.',
+    epistle: 'Lee el argumento: cuál es el verbo principal, qué conectores lo encadenan (γάρ, οὖν, ἵνα), qué es indicativo y qué imperativo. Una pregunta por cruz real, con la forma griega concreta.',
+    gospel: 'Lee la perícopa: qué dice o hace Jesús, cómo reaccionan los demás y qué cambia en los paralelos. Una pregunta por cruz real, con la forma griega concreta.',
+    apocalypse: 'Lee la visión: qué símbolos aparecen, de qué pasaje del AT vienen y qué se revela de Dios. Una pregunta por cruz real, con la forma griega concreta.',
+    law: 'Lee el mandamiento: qué manda, con qué motivo, para quién y en qué circunstancia. Una pregunta por cruz real, con la forma hebrea concreta.',
+    parable: 'Lee la parábola: qué imagen la sostiene, dónde está el giro inesperado y a quién interpela. Una pregunta por cruz real, con la forma griega concreta.',
+    mixed: 'Este bloque lo llenas leyendo el pasaje. Una pregunta por cada cruz real, y en cada una nombra la forma hebrea o griega concreta — es lo que le da entrada a las gramáticas y los léxicos, que no se indexan por pasaje.',
+};
+
+/** La plantilla con el bloque de preguntas del género del pasaje. */
+export function preachingBriefTemplateFor(genre?: LiteraryGenre): string {
+    if (!genre || genre === 'mixed') return PREACHING_BRIEF_TEMPLATE;
+    return PREACHING_BRIEF_TEMPLATE.replace(
+        /\[Este bloque lo llenas leyendo el pasaje\.[^\]]*\]/,
+        `[${PISTA_POR_GENERO[genre]}]`,
+    );
 }
 
 /**

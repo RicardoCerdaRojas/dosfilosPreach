@@ -6,9 +6,12 @@ import {
     briefGaps,
     buildPreachingBrief,
     buildSourcesAndFormatBlock,
+    inferGenreFromBook,
     parseBriefQuestions,
     previousDelivery,
+    type BibleBookId,
     type ExegeticalPaper,
+    type LiteraryGenre,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +25,7 @@ import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { AssignmentBriefPicker } from './AssignmentBriefPicker';
 import { evaluarEdicionDelEncuadre } from './edicionDelEncuadre';
+import { BriefQuestionSuggestions } from './BriefQuestionSuggestions';
 
 /**
  * El encuadre del trabajo, a la vista desde cualquier pestaña de la
@@ -43,11 +47,18 @@ interface PaperBriefButtonProps {
     paper: ExegeticalPaper;
 }
 
+const GENEROS: ReadonlyArray<LiteraryGenre> = [
+    'narrative', 'poetry', 'prophecy', 'wisdom', 'law', 'gospel', 'parable', 'epistle', 'apocalypse', 'mixed',
+];
+
 export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
     const { t } = useTranslation('exegesis');
     const { updatePaperBrief, papers } = useExegesisPapers();
     const [abierto, setAbierto] = useState(false);
     const [borrador, setBorrador] = useState<string | null>(null);
+    // El bloque de preguntas de la plantilla cambia según el género; arranca
+    // con el del libro del pasaje y se puede cambiar.
+    const [genero, setGenero] = useState<LiteraryGenre>(() => inferGenreFromBook(paper.passage.bookId as BibleBookId));
 
     const editando = borrador !== null;
     const actual = paper.assignmentBrief?.trim() ?? '';
@@ -138,14 +149,34 @@ export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
                                     preguntas, que es el acto exegético.
                                     Se ofrece sobre lienzo vacío para no pisar nada. */}
                                 {!borrador?.trim() && (
-                                    <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]"
-                                        onClick={() => setBorrador(buildPreachingBrief(
-                                            buildSourcesAndFormatBlock(paper, previousDelivery(papers, paper.id)),
-                                        ))}>
-                                        {t('paperSetup.brief.gaps.usePreachingTemplate')}
-                                    </Button>
+                                    <span className="inline-flex items-center gap-1">
+                                        <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]"
+                                            onClick={() => setBorrador(buildPreachingBrief(
+                                                buildSourcesAndFormatBlock(paper, previousDelivery(papers, paper.id)),
+                                                genero,
+                                            ))}>
+                                            {t('paperSetup.brief.gaps.usePreachingTemplate')}
+                                        </Button>
+                                        <label className="sr-only" htmlFor="brief-genre">{t('paperSetup.brief.genre.label')}</label>
+                                        <select
+                                            id="brief-genre"
+                                            value={genero}
+                                            onChange={e => setGenero(e.target.value as LiteraryGenre)}
+                                            className="h-7 rounded-md border border-border bg-card px-1.5 text-[11px] text-foreground"
+                                        >
+                                            {GENEROS.map(g => (
+                                                <option key={g} value={g}>{t(`paperSetup.brief.genre.${g}`)}</option>
+                                            ))}
+                                        </select>
+                                    </span>
                                 )}
                             </div>
+                            <BriefQuestionSuggestions
+                                paper={paper}
+                                genreLabel={t(`paperSetup.brief.genre.${genero}`)}
+                                draft={borrador}
+                                onDraftChange={setBorrador}
+                            />
                             <label htmlFor="paper-brief-editor" className="sr-only">{t('paperSetup.brief.heading')}</label>
                             <textarea
                                 id="paper-brief-editor"

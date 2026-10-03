@@ -75,7 +75,7 @@ export function SuggestedSelection({ suggestion, numbering, printedPageOffset, o
                                 <div className="flex flex-wrap items-baseline gap-x-2">
                                     <span className="tabular-nums font-medium text-foreground">{rotulo(p.sheet)}</span>
                                     {p.lemmas.map(l => (
-                                        <span key={l} className="text-sm text-foreground" dir={/[א-ת]/.test(l) ? 'rtl' : 'ltr'}>{l}</span>
+                                        <span key={l} className="text-sm text-foreground" dir={/[\u05D0-\u05EA]/.test(l) ? 'rtl' : 'ltr'}>{l}</span>
                                     ))}
                                 </div>
                                 {p.reasons.length > 0 && (

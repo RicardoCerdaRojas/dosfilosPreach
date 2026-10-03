@@ -438,7 +438,33 @@
       "button": "Encuadre",
       "missing": "falta",
       "questionCount_one": "{{count}} pregunta",
-      "questionCount_other": "{{count}} preguntas"
+      "questionCount_other": "{{count}} preguntas",
+      "genre": {
+        "label": "Género del pasaje",
+        "narrative": "Narrativa",
+        "poetry": "Poesía",
+        "prophecy": "Profecía",
+        "wisdom": "Sabiduría",
+        "law": "Ley",
+        "gospel": "Evangelio",
+        "parable": "Parábola",
+        "epistle": "Epístola",
+        "apocalypse": "Apocalíptica",
+        "mixed": "General"
+      },
+      "suggest": {
+        "cta": "Sugerir preguntas",
+        "intro": "Candidatas que el asistente encontró en el texto. Marca las que te sirvan: se agregan al borrador para que las edites.",
+        "none": "Ninguna candidata pasó el cotejo con el texto.",
+        "dropped_one": "1 pregunta descartada: citaba una forma que no está en el pasaje ({{forms}}).",
+        "dropped_other": "{{count}} preguntas descartadas: citaban formas que no están en el pasaje ({{forms}}).",
+        "close": "Cerrar",
+        "add_one": "Agregar 1 al encuadre",
+        "add_other": "Agregar {{count}} al encuadre",
+        "added_one": "Se agregó 1 pregunta al borrador.",
+        "added_other": "Se agregaron {{count}} preguntas al borrador.",
+        "error": "No se pudieron sugerir preguntas. Intenta de nuevo."
+      }
     },
     "notFound": {
       "title": "Trabajo no encontrado",
