@@ -449,7 +449,7 @@
       "rubric": {
         "tab": "Rubric",
         "heading": "Paper rubric",
-        "description": "What THIS assignment asks for: length, citation form, cover and bibliography, and which sources it requires. Upload it from the syllabus or use the house default.",
+        "description": "What THIS assignment asks for: length, citation form, cover and bibliography, and which sources it requires. Change where it comes from with the «Rubric» button above.",
         "loading": "Loading rubric...",
         "provenance": {
           "extracted-from-document": "Extracted from document",
@@ -497,6 +497,10 @@
             "extracting": "Extracting text from document…",
             "analyzing": "Analyzing rubric…",
             "encoding": "Preparing image…"
+          },
+          "languageName": {
+            "es": "Español",
+            "en": "English"
           }
         },
         "metadata": {
@@ -1497,6 +1501,10 @@
         "tamano": "The file is over 250 MB, the library's maximum.",
         "consentimiento": "The upload terms still need to be accepted."
       }
+    },
+    "rubricButton": {
+      "label": "Rubric",
+      "back": "Back to the options"
     }
   },
   "setup": {

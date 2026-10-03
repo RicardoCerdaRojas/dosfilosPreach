@@ -449,7 +449,7 @@
       "rubric": {
         "tab": "Rúbrica",
         "heading": "Rúbrica del trabajo",
-        "description": "Lo que pide ESTA entrega: extensión, forma de cita, si lleva portada y bibliografía, y qué fuentes exige. Súbela desde el sílabo o usa la de la casa.",
+        "description": "Lo que pide ESTA entrega: extensión, forma de cita, si lleva portada y bibliografía, y qué fuentes exige. De dónde sale se cambia con el botón «Rúbrica» de arriba.",
         "loading": "Cargando rúbrica...",
         "provenance": {
           "extracted-from-document": "Extraída de documento",
@@ -497,6 +497,10 @@
             "extracting": "Extrayendo texto del documento…",
             "analyzing": "Analizando rúbrica…",
             "encoding": "Preparando imagen…"
+          },
+          "languageName": {
+            "es": "Español",
+            "en": "English"
           }
         },
         "metadata": {
@@ -1497,6 +1501,10 @@
         "tamano": "El archivo pasa de 250 MB, que es el máximo de la biblioteca.",
         "consentimiento": "Falta aceptar las condiciones de subida."
       }
+    },
+    "rubricButton": {
+      "label": "Rúbrica",
+      "back": "Volver a las opciones"
     }
   },
   "setup": {
