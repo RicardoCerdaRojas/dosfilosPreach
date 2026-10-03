@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { countReadySections } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { CitationManifestContext } from '@/lib/citationMarkers';
@@ -14,6 +15,8 @@ import { DraftStepHeader } from './draft/DraftStepHeader';
 import { DraftCanvasPanel } from './draft/DraftCanvasPanel';
 import { DraftPreviewDialog } from './draft/DraftPreviewDialog';
 import { DraftWorkspace } from './draft/DraftWorkspace';
+import { ConsultPanel } from './draft/ConsultPanel';
+import { ExternalProposalsProvider } from './draft/externalProposals';
 import { DraftLoadingScreen } from './draft/DraftLoadingScreen';
 import { EmptyDraftNotice } from './draft/EmptyDraftNotice';
 
@@ -34,6 +37,8 @@ export function StepDraft() {
     const { t, language } = useTranslation('generator');
     const paso = useDraftStep(t, language === 'en' ? 'en' : 'es');
     const { homiletics, exegesis, draft, canvas, publicacion } = paso;
+    // El chat de consulta (hallazgo 32): antes de los retornos tempranos.
+    const [consultando, setConsultando] = useState(false);
 
     if (!homiletics) return <div>{t('drafting.errors.noHomiletics')}</div>;
     if (paso.loading) return <DraftLoadingScreen />;
@@ -85,6 +90,7 @@ export function StepDraft() {
                     onAssemble={paso.armarBorrador}
                 />
             }
+            onConsult={() => setConsultando(true)}
             onBack={() => paso.setStep(2)}
             onPreview={() => paso.setShowPreview(true)}
             onSaveAndExit={publicacion.guardarYSalir}
@@ -132,9 +138,24 @@ export function StepDraft() {
         />
     );
 
+    const seccionAbierta = paso.hayTaller && paso.activeSection
+        ? {
+              id: paso.activeSection.id,
+              label: t(paso.activeSection.labelKey, paso.activeSection.labelParams),
+              pointTitle: paso.activeSection.parentLabel,
+          }
+        : null;
+
     return (
-        <>
+        <ExternalProposalsProvider>
             <HomileticsSavedIndicator visible={paso.saving} />
+            <ConsultPanel
+                open={consultando}
+                onOpenChange={setConsultando}
+                passage={paso.passage}
+                proposition={homiletics.homileticalProposition}
+                section={seccionAbierta}
+            />
 
             <WizardStepShell banner={<DerivedContextBanner stepHintKey="draftHint" />}>
                 {/* ADR-031 — el manifiesto de citas hace que las anclas [N] del
@@ -178,6 +199,6 @@ export function StepDraft() {
                 onProceedAnyway={publicacion.publicarAhora}
                 onEditSermon={() => publicacion.setVerificationDialogOpen(false)}
             />
-        </>
+        </ExternalProposalsProvider>
     );
 }

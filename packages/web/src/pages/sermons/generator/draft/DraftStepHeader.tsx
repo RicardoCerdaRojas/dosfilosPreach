@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, Eye, Loader2, Save, Upload } from 'lucide-react';
+import { MessageCircleQuestion, ArrowLeft, BookOpen, Eye, Loader2, Save, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/i18n';
@@ -24,6 +24,8 @@ export interface DraftStepHeaderProps {
     /** Las acciones propias del taller (hoja de estudio + armar borrador). */
     workshopActions: React.ReactNode;
     onBack: () => void;
+    /** Abre el chat de consulta (hallazgo 32): transversal a las pestañas. */
+    onConsult: () => void;
     onPreview: () => void;
     onSaveAndExit: () => void;
     onPublish: () => void;
@@ -118,6 +120,10 @@ export function DraftStepHeader(props: DraftStepHeaderProps) {
                         primaria. Abreviar no es ocultar: los tres son
                         universales (volver, ver, guardar) y el nombre vive en el
                         tooltip. */}
+                    <ToolbarIconButton label={t('drafting.consult.open')} onClick={props.onConsult}>
+                        <MessageCircleQuestion className="h-4 w-4" />
+                    </ToolbarIconButton>
+
                     <ToolbarIconButton label={t('drafting.backToHomiletics')} onClick={props.onBack}>
                         <ArrowLeft className="h-4 w-4" />
                     </ToolbarIconButton>

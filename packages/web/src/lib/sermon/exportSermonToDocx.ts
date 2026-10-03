@@ -1,223 +1,184 @@
 import {
+    AlignmentType,
+    BorderStyle,
     Document,
+    Footer,
     HeadingLevel,
+    LevelFormat,
     Packer,
+    PageNumber,
     Paragraph,
+    TabStopType,
     TextRun,
 } from 'docx';
 import {
     aggregateRequiredAttributions,
-    type CitationManifest,
-    type RAGSource,
+    parseSermonDocument,
+    sermonBibliographyEntries,
+    type InlineRun,
     type Sermon,
 } from '@dosfilos/domain';
 
 /**
- * Renders a `Sermon` to a Word `.docx` Blob, preserving the inline
- * `[N]` citation markers as visible footnote-style references and
- * appending a "Fuentes consultadas" section that matches their
- * numbering.
+ * El sermón en Word, para entregarlo o imprimirlo.
  *
- * Numbering precedence mirrors `SermonBibliographySection`:
- *   1. `sermon.citationManifest.entries` — Phase B authoritative source.
- *      Bibliography numbered to line up 1:1 with prose markers.
- *   2. `sermon.bibliography` (legacy ragSources) — numbered in order
- *      the sermon was published with.
+ * Se dibuja desde `parseSermonDocument`, el mismo modelo que usa el PDF. Antes
+ * se partía el markdown por líneas y quedaban `<br />`, `>` y `*` literales, y
+ * los títulos pegados al texto (sermón 6 de Jonás, 2026-10-03).
  *
- * Out of scope for v1 (acceptable since pastors hand the file off as a
- * read-only handout, not a Word document they edit further):
- *   - True Word footnotes (parens stay inline as `[1]`).
- *   - Markdown formatting beyond headings/paragraphs (no bold/italic
- *     run extraction — the raw markdown reads clearly enough).
- *   - Blockquotes / lists (rendered as plain paragraphs).
+ * Las marcas `[N]` de la prosa quedan en línea y se numeran igual que
+ * «Fuentes consultadas», al final.
  */
-export async function exportSermonToDocx(sermon: Sermon): Promise<Blob> {
-    const paragraphs: Paragraph[] = [];
+const FUENTE = 'Georgia';
+const GRIS = '666666';
+const TINTA = '1F2937';
 
-    // Title block.
-    paragraphs.push(new Paragraph({
-        heading: HeadingLevel.TITLE,
-        children: [new TextRun({ text: sermon.title })],
+const runsDe = (runs: ReadonlyArray<InlineRun>, extra: { italics?: boolean; color?: string; size?: number } = {}) =>
+    runs.map(r => new TextRun({
+        text: r.text,
+        bold: r.bold,
+        italics: r.italic || extra.italics,
+        ...(extra.color ? { color: extra.color } : {}),
+        ...(extra.size ? { size: extra.size } : {}),
     }));
 
-    // Metadata line (date + bible references).
-    const meta: string[] = [];
-    if (sermon.createdAt) {
-        meta.push(new Date(sermon.createdAt).toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        }));
-    }
-    if (sermon.bibleReferences && sermon.bibleReferences.length > 0) {
-        meta.push(`Referencias: ${sermon.bibleReferences.join(', ')}`);
-    }
-    if (meta.length > 0) {
-        paragraphs.push(new Paragraph({
-            children: [new TextRun({ text: meta.join(' • '), italics: true, color: '666666' })],
-            spacing: { after: 240 },
+function fechaDe(sermon: Sermon): string | null {
+    if (!sermon.createdAt) return null;
+    return new Date(sermon.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+export async function exportSermonToDocx(sermon: Sermon): Promise<Blob> {
+    const p: Paragraph[] = [];
+
+    p.push(new Paragraph({
+        heading: HeadingLevel.TITLE,
+        children: [new TextRun({ text: sermon.title })],
+        spacing: { after: 120 },
+    }));
+    const meta = [
+        sermon.bibleReferences?.length ? sermon.bibleReferences.join(', ') : null,
+        fechaDe(sermon),
+    ].filter(Boolean).join('  ·  ');
+    if (meta) {
+        p.push(new Paragraph({
+            children: [new TextRun({ text: meta, italics: true, color: GRIS })],
+            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'D1D5DB', space: 8 } },
+            spacing: { after: 360 },
         }));
     }
 
-    // Content body. Split on blank lines for paragraph breaks; treat
-    // heading-leading lines (`#`, `##`, `###`) as Heading2/3/4.
-    const blocks = sermon.content.split(/\n+/);
-    for (const block of blocks) {
-        const trimmed = block.trim();
-        if (!trimmed) continue;
-
-        const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)$/);
-        if (headingMatch) {
-            const level = headingMatch[1].length;
-            const text = headingMatch[2];
-            paragraphs.push(new Paragraph({
-                heading:
-                    level === 1 ? HeadingLevel.HEADING_1
-                    : level === 2 ? HeadingLevel.HEADING_2
-                    : level === 3 ? HeadingLevel.HEADING_3
-                    : HeadingLevel.HEADING_4,
-                children: [new TextRun({ text: stripMarkdownEmphasis(text) })],
-            }));
-            continue;
+    let listas = 0;
+    for (const b of parseSermonDocument(sermon.content)) {
+        switch (b.kind) {
+            case 'heading':
+                p.push(new Paragraph({
+                    heading: b.level === 1 ? HeadingLevel.HEADING_1 : b.level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
+                    children: runsDe(b.runs),
+                    keepNext: true,
+                }));
+                break;
+            case 'paragraph':
+                // Espaciado explícito: algunos lectores ignoran el del estilo por defecto.
+                p.push(new Paragraph({ children: runsDe(b.runs), spacing: { after: 200, line: 300 } }));
+                break;
+            case 'list': {
+                // Viñetas con la numeración de Word; las numeradas escriben su
+                // número: una lista cortada por un párrafo sigue en el suyo
+                // (`start`), y la numeración de Word volvía a 1.
+                const instance = listas++;
+                b.items.forEach((item, i) => {
+                    p.push(b.ordered
+                        ? new Paragraph({
+                            children: [new TextRun({ text: `${b.start + i}.\t` }), ...runsDe(item)],
+                            indent: { left: 567, hanging: 340 },
+                            tabStops: [{ type: TabStopType.LEFT, position: 567 }],
+                            spacing: { after: 80, line: 300 },
+                        })
+                        : new Paragraph({
+                            children: runsDe(item),
+                            numbering: { reference: 'vinetas', level: 0, instance },
+                            spacing: { after: 80, line: 300 },
+                        }));
+                });
+                break;
+            }
+            case 'quote':
+                for (const par of b.paragraphs) {
+                    p.push(new Paragraph({
+                        children: runsDe(par, { color: '374151' }),
+                        indent: { left: 567, right: 283 },
+                        border: { left: { style: BorderStyle.SINGLE, size: 18, color: 'C7D2FE', space: 12 } },
+                        spacing: { before: 120, after: 200, line: 300 },
+                    }));
+                }
+                break;
         }
-
-        paragraphs.push(new Paragraph({
-            children: [new TextRun({ text: stripMarkdownEmphasis(trimmed) })],
-            spacing: { after: 160 },
-        }));
     }
 
-    // Bibliography section. Same logic as PDF + the on-screen
-    // SermonBibliographySection: manifest is authoritative when
-    // present, ragSources is the legacy fallback.
-    const entries = buildBibliographyEntries(sermon.citationManifest, sermon.bibliography);
-    if (entries.length > 0) {
-        paragraphs.push(new Paragraph({
-            heading: HeadingLevel.HEADING_2,
-            children: [new TextRun({ text: 'Fuentes consultadas' })],
-            spacing: { before: 480, after: 120 },
-        }));
-        paragraphs.push(new Paragraph({
-            children: [new TextRun({
-                text: 'Recursos de la biblioteca usados para construir el sermón.',
-                italics: true,
-                color: '666666',
-            })],
-            spacing: { after: 160 },
-        }));
-        entries.forEach((entry, idx) => {
-            const ordinal = idx + 1;
-            const author = entry.author?.trim() ? ` — ${entry.author}` : '';
-            const page = entry.page?.trim() ? ` (p. ${entry.page})` : '';
-            paragraphs.push(new Paragraph({
-                children: [
-                    new TextRun({ text: `[${ordinal}] `, bold: true }),
-                    new TextRun({ text: `${entry.title}${author}${page}` }),
-                ],
-                spacing: { after: entry.usedFor ? 60 : 120 },
+    const fuentes = sermonBibliographyEntries(sermon.citationManifest, sermon.bibliography);
+    if (fuentes.length > 0) {
+        p.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: 'Fuentes consultadas' })], pageBreakBefore: false }));
+        fuentes.forEach((f, i) => {
+            const autor = f.author?.trim() ? ` — ${f.author}` : '';
+            const pagina = f.page?.trim() ? ` (p. ${f.page})` : '';
+            p.push(new Paragraph({
+                children: [new TextRun({ text: `[${i + 1}] `, bold: true }), new TextRun({ text: `${f.title}${autor}${pagina}` })],
+                spacing: { after: f.usedFor ? 40 : 100 },
             }));
-            if (entry.usedFor) {
-                paragraphs.push(new Paragraph({
-                    children: [new TextRun({
-                        text: entry.usedFor,
-                        italics: true,
-                        color: '666666',
-                    })],
+            if (f.usedFor) {
+                p.push(new Paragraph({
+                    children: [new TextRun({ text: f.usedFor, italics: true, color: GRIS, size: 20 })],
                     indent: { left: 360 },
-                    spacing: { after: 120 },
+                    spacing: { after: 100 },
                 }));
             }
         });
     }
 
-    // PR 0.3 (ADR-006): mandatory attribution footer for licences that
-    // require explicit attribution (CC BY 4.0 → SBLGNT, etc.). Rendered
-    // as a final section after the bibliography so the legal block is
-    // surfaced in the same document the pastor distributes.
-    const attributionBlocks = aggregateRequiredAttributions(sermon.citationManifest);
-    if (attributionBlocks.length > 0) {
-        paragraphs.push(new Paragraph({
-            heading: HeadingLevel.HEADING_2,
-            children: [new TextRun({ text: 'Atribuciones' })],
-            spacing: { before: 480, after: 120 },
-        }));
-        paragraphs.push(new Paragraph({
-            children: [new TextRun({
-                text: 'Atribuciones obligatorias por licencia para las fuentes citadas en este documento.',
-                italics: true,
-                color: '666666',
-            })],
-            spacing: { after: 200 },
-        }));
-        for (const block of attributionBlocks) {
-            paragraphs.push(new Paragraph({
-                children: [new TextRun({ text: block.title, bold: true })],
-                spacing: { after: 80 },
-            }));
-            for (const line of block.lines) {
-                paragraphs.push(new Paragraph({
-                    children: [new TextRun({ text: line })],
-                    spacing: { after: 60 },
-                }));
+    const atribuciones = aggregateRequiredAttributions(sermon.citationManifest);
+    if (atribuciones.length > 0) {
+        p.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: 'Atribuciones' })] }));
+        for (const a of atribuciones) {
+            p.push(new Paragraph({ children: [new TextRun({ text: a.title, bold: true, size: 20 })], spacing: { after: 40 } }));
+            for (const linea of a.lines) {
+                p.push(new Paragraph({ children: [new TextRun({ text: linea, size: 20, color: GRIS })], spacing: { after: 40 } }));
             }
-            paragraphs.push(new Paragraph({
-                children: [new TextRun({ text: '' })],
-                spacing: { after: 160 },
-            }));
         }
     }
 
     const doc = new Document({
-        sections: [{ properties: {}, children: paragraphs }],
+        creator: 'Preach',
+        title: sermon.title,
+        styles: {
+            default: {
+                document: { run: { font: FUENTE, size: 24, color: TINTA }, paragraph: { spacing: { after: 160, line: 300 } } },
+                title: { run: { font: FUENTE, size: 48, bold: true, color: '111827' } },
+                heading1: { run: { font: FUENTE, size: 30, bold: true, color: '111827' }, paragraph: { spacing: { before: 400, after: 160 } } },
+                heading2: { run: { font: FUENTE, size: 26, bold: true, color: '1E3A8A' }, paragraph: { spacing: { before: 280, after: 120 } } },
+                heading3: { run: { font: FUENTE, size: 24, bold: true, italics: true, color: '374151' }, paragraph: { spacing: { before: 200, after: 80 } } },
+            },
+        },
+        numbering: {
+            config: [
+                {
+                    reference: 'vinetas',
+                    levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 567, hanging: 283 } } } }],
+                },
+            ],
+        },
+        sections: [{
+            properties: { page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } } },
+            footers: {
+                default: new Footer({
+                    children: [new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [new TextRun({ children: [PageNumber.CURRENT], color: '9CA3AF', size: 18 })],
+                    })],
+                }),
+            },
+            children: p,
+        }],
     });
 
     return Packer.toBlob(doc);
-}
-
-interface BibliographyEntry {
-    title: string;
-    author?: string;
-    page?: string;
-    usedFor?: string;
-}
-
-function buildBibliographyEntries(
-    manifest: CitationManifest | undefined,
-    bibliography: RAGSource[] | undefined,
-): BibliographyEntry[] {
-    if (manifest && manifest.entries.length > 0) {
-        const ragBySourceId = new Map<string, RAGSource>();
-        for (const rag of bibliography ?? []) {
-            if (rag.sourceId) ragBySourceId.set(rag.sourceId, rag);
-        }
-        return manifest.entries.map((entry) => {
-            const rag = ragBySourceId.get(entry.sourceId);
-            return {
-                title: rag?.title || entry.title,
-                author: rag?.author || entry.author,
-                page: rag?.page || entry.page,
-                usedFor: rag?.usedFor,
-            };
-        });
-    }
-    return (bibliography ?? [])
-        .filter((s) => s?.title?.trim())
-        .map((s) => ({
-            title: s.title,
-            author: s.author,
-            page: s.page,
-            usedFor: s.usedFor,
-        }));
-}
-
-// Minimal markdown emphasis stripper — removes `**`, `*`, `__`, `_`
-// around runs but leaves the visible text alone. Docx authoring of
-// proper bold/italic runs is a v2 lift; the current shape preserves
-// readability without burying the words inside Markdown syntax.
-function stripMarkdownEmphasis(text: string): string {
-    return text
-        .replace(/\*\*([^*]+)\*\*/g, '$1')
-        .replace(/__([^_]+)__/g, '$1')
-        .replace(/\*([^*\n]+)\*/g, '$1')
-        .replace(/_([^_\n]+)_/g, '$1');
 }

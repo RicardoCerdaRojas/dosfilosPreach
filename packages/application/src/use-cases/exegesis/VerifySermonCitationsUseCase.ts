@@ -77,11 +77,25 @@ export interface VerifySermonCitationsOutput {
     citations: VerifiedSermonCitation[];
 }
 
+/**
+ * El texto de un libro de la biblioteca del pastor, buscado por el título con
+ * que lo atribuye el sermón y su autor. `null` si no está.
+ *
+ * Las citas que eligió en el Taller («Buscar citas en mi biblioteca») y las
+ * del borrador llevan el título EXACTO del recurso, porque la atribución la
+ * ponemos nosotros. Sin esto el verificador cotejaba sólo contra el paper y el
+ * manifiesto, y marcaba «probable cita inventada» a citas literales de su
+ * propia biblioteca (sermón 6 de Jonás, 2026-10-03: Burt p. 89 ×2 y Calvino
+ * p. 66, las tres verificadas a mano contra los fragmentos indexados).
+ */
+export type LibraryWorkText = (userId: string, workTitle: string, author: string) => Promise<{ author: string; text: string } | null>;
+
 export class VerifySermonCitationsUseCase {
     constructor(
         private sermonRepository: ISermonRepository,
         private paperRepository: IExegeticalPaperRepository,
         private chatRepository: IAIChatRepository,
+        private libraryWorkText?: LibraryWorkText,
     ) { }
 
     async execute(input: VerifySermonCitationsInput): Promise<VerifySermonCitationsOutput> {
@@ -101,11 +115,25 @@ export class VerifySermonCitationsUseCase {
         const sermonMarkdown = this.resolveSermonMarkdown(sermon);
 
         const citations = parseSermonCitations(sermonMarkdown);
-        const verified = citations.map((citation) => verifyOne(citation, sourceCorpus.text));
+        const obras = await this.libraryWorksFor(sermon.userId, citations);
+        // Normalizado UNA vez: con varios libros, hacerlo por cita costaba
+        // medio segundo (revisión adversarial de R1).
+        const general = { text: sourceCorpus.text, normalized: normalizeForSearch(sourceCorpus.text) };
+        const verified = citations.map((citation) => {
+            const obra = obras.get(obraKey(citation));
+            // La obra citada, si su autor REAL es el citado: una frase de Burt
+            // atribuida a otro no se verifica con el libro de Burt.
+            if (obra && sameAuthor(obra.author, citation.author)) {
+                const enLaObra = verifyInWork(citation, obra.normalized);
+                if (enLaObra) return enLaObra;
+            }
+            return verifyOne(citation, general.text, general.normalized);
+        });
+        const largoObras = [...obras.values()].reduce((n, o) => n + o.normalized.length, 0);
 
         return {
-            sourceKind: sourceCorpus.kind,
-            sourceCorpusLength: sourceCorpus.text.length,
+            sourceKind: sourceCorpus.kind ?? (obras.size > 0 ? 'library' : null),
+            sourceCorpusLength: sourceCorpus.text.length + largoObras,
             hasLibraryManifest: sourceCorpus.hasManifest,
             citations: verified,
         };
@@ -179,6 +207,29 @@ export class VerifySermonCitationsUseCase {
         return { kind, text: parts.join('\n\n'), hasManifest: entries.length > 0 };
     }
 
+    /** Los libros citados (por obra y autor), cada uno por separado y ya normalizado. */
+    private async libraryWorksFor(
+        userId: string,
+        citations: ParsedSermonCitation[],
+    ): Promise<Map<string, { author: string; normalized: string }>> {
+        const out = new Map<string, { author: string; normalized: string }>();
+        if (!this.libraryWorkText) return out;
+        const pedidos = new Map<string, { title: string; author: string }>();
+        for (const c of citations) {
+            const title = workTitleOf(c.source);
+            if (title) pedidos.set(obraKey(c), { title, author: c.author });
+        }
+        await Promise.all([...pedidos.entries()].map(async ([clave, o]) => {
+            try {
+                const obra = await this.libraryWorkText!(userId, o.title, o.author);
+                if (obra?.text) out.set(clave, { author: obra.author, normalized: normalizeForSearch(obra.text) });
+            } catch {
+                // Sin el libro se coteja como antes: contra el paper y el manifiesto.
+            }
+        }));
+        return out;
+    }
+
     private resolveSermonMarkdown(sermon: {
         content?: string;
         wizardProgress?: { draft?: any } | undefined;
@@ -227,7 +278,7 @@ export class VerifySermonCitationsUseCase {
  * latter is rare in sermon citation context (sermons either reuse
  * paper quotes verbatim or invent them wholesale).
  */
-export function verifyOne(citation: ParsedSermonCitation, corpus: string): VerifiedSermonCitation {
+export function verifyOne(citation: ParsedSermonCitation, corpus: string, normalized?: string): VerifiedSermonCitation {
     if (!corpus.trim()) {
         return {
             citation,
@@ -250,10 +301,11 @@ export function verifyOne(citation: ParsedSermonCitation, corpus: string): Verif
         };
     }
 
-    // Stage 2: literal substring of the quote
-    const normalizedQuote = normalizeForSearch(citation.quote);
-    const normalizedCorpus = normalizeForSearch(corpus);
-    if (normalizedCorpus.includes(normalizedQuote)) {
+    // Stage 2: literal substring of the quote. A quote trimmed with «[…]»
+    // is checked piece by piece, like the quote finder does: the whole quote
+    // with the cut mark can never match the source.
+    const normalizedCorpus = normalized ?? normalizeForSearch(corpus);
+    if (literalInOrder(citation.quote, normalizedCorpus)) {
         return {
             citation,
             status: 'verified',
@@ -300,7 +352,9 @@ function normalizeForSearch(text: string): string {
         .toLowerCase()
         .normalize('NFD')
         .replace(/[̀-ͯ]/g, '')  // strip diacritics
-        .replace(/[""'']/g, '"')
+        // Quotes of every style and markdown emphasis out: the sermon writes
+        // «», “”, or "" and the extracted book whatever its edition had.
+        .replace(/[“”«»"'’‘*_]/g, '')
         .replace(/[—–]/g, '-')
         .replace(/\s+/g, ' ')
         .trim();
@@ -346,3 +400,56 @@ function tokenize(text: string): Set<string> {
             .filter((t) => t.length >= 4 && !STOPWORDS.has(t)),
     );
 }
+
+/** «Comentario Jonás, p. 89» → «Comentario Jonás». */
+export function workTitleOf(source: string | null): string | null {
+    const t = (source ?? '').replace(/,?\s*pp?\.\s*[\divxlc–\-]+\s*$/i, '').trim();
+    return t || null;
+}
+
+/** Cuánto puede haber entre dos trozos de una cita recortada con «[…]». */
+export const MAX_GAP_BETWEEN_CUTS = 3000;
+/** Una cita más corta que esto no se da por literal: frases así aparecen en cualquier libro. */
+export const MIN_LITERAL_CHARS = 25;
+
+/**
+ * La cita está, literal, en el texto: sus trozos (cortados SÓLO por «[…]» o
+ * «[...]»), en ORDEN y CERCA uno del otro. Revisión adversarial de R1: trozos
+ * sueltos de un libro de varios MB, en cualquier orden o separados por un
+ * «…» suelto, aprobaban una frase inventada.
+ */
+export function literalInOrder(quote: string, normalizedText: string): boolean {
+    const trozos = quote
+        .split(/\[\s*(?:\.\.\.|…)\s*\]/)
+        .map(normalizeForSearch)
+        .filter(t => t.length > 0);
+    if (trozos.length === 0 || trozos.join(' ').length < MIN_LITERAL_CHARS) return false;
+    // Cada aparición del primer trozo es un comienzo posible.
+    for (let inicio = normalizedText.indexOf(trozos[0]!); inicio >= 0; inicio = normalizedText.indexOf(trozos[0]!, inicio + 1)) {
+        let fin = inicio + trozos[0]!.length;
+        let ok = true;
+        for (const t of trozos.slice(1)) {
+            const at = normalizedText.indexOf(t, fin);
+            if (at < 0 || at - fin > MAX_GAP_BETWEEN_CUTS) { ok = false; break; }
+            fin = at + t.length;
+        }
+        if (ok) return true;
+    }
+    return false;
+}
+
+function verifyInWork(citation: ParsedSermonCitation, normalizedWork: string): VerifiedSermonCitation | null {
+    if (!literalInOrder(citation.quote, normalizedWork)) return null;
+    return { citation, status: 'verified', similarity: 1, note: 'Cita encontrada literalmente en el libro citado de tu biblioteca.' };
+}
+
+function obraKey(c: ParsedSermonCitation): string {
+    return `${workTitleOf(c.source) ?? ''}|${c.author}`;
+}
+
+/** El apellido citado está en el autor real del libro. */
+export function sameAuthor(realAuthor: string, citedAuthor: string): boolean {
+    const apellido = normalizeForSearch(extractSurname(citedAuthor));
+    return apellido.length > 1 && normalizeForSearch(realAuthor).split(/[^\p{L}]+/u).includes(apellido);
+}
+

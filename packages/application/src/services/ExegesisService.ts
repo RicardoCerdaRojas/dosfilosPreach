@@ -52,6 +52,7 @@ import type {
     IResourceIndexProbe,
 } from '@dosfilos/domain';
 import { readResourceFullText } from './resourceFullText';
+import { sameAuthor } from '../use-cases/exegesis/VerifySermonCitationsUseCase';
 import { LibraryService } from './LibraryService';
 import { VerbatimFirstCitationVerifier } from './exegesis/VerbatimFirstCitationVerifier';
 
@@ -732,6 +733,29 @@ class ExegesisService {
             sermonRepository,
             paperRepository,
             chatRepositoryForVerifier,
+            // El libro citado, por su título exacto (lo pone nuestro motor) y
+            // del autor citado: si ninguno de ese título es suyo, no hay libro
+            // —antes se tomaba el primero, y una frase de Burt atribuida a
+            // otro salía verificada (revisión adversarial de R1)—. El
+            // verificador compara el autor real con el citado (`sameAuthor`).
+            async (userId, workTitle, author) => {
+                // El título puede estar guardado en NFC o NFD (Firestore compara
+                // bytes): se prueba la forma recibida y, si no, las otras dos.
+                const formas = [...new Set([workTitle, workTitle.normalize('NFC'), workTitle.normalize('NFD')])];
+                let candidatos: Awaited<ReturnType<typeof libraryRepository.findByUserIdAndTitle>> = [];
+                for (const forma of formas) {
+                    candidatos = await libraryRepository.findByUserIdAndTitle(userId, forma);
+                    if (candidatos.length > 0) break;
+                }
+                const libro = candidatos.find(r => sameAuthor(r.author ?? '', author));
+                if (!libro) return null;
+                const text = await readResourceFullText(libro.id, {
+                    findResource: async id =>
+                        (await libraryRepository.findById(id)) as { textContent?: string | null; characterCount?: number } | null,
+                    fetchFromChunks: fetchDocumentText,
+                });
+                return text ? { author: libro.author ?? '', text } : null;
+            },
         );
     }
 }

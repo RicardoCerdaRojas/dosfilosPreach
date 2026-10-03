@@ -1,367 +1,394 @@
 import { jsPDF } from 'jspdf';
+import anclas from './hebrewMarkAnchors.json';
 import {
     IExportService,
     SermonEntity,
     aggregateRequiredAttributions,
-    type AttributionBlock,
-    type CitationManifest,
-    type RAGSource,
+    parseSermonDocument,
+    sermonBibliographyEntries,
+    type InlineRun,
 } from '@dosfilos/domain';
 
-export class PdfExportService implements IExportService {
-    async exportSermonToPdf(sermon: SermonEntity): Promise<void> {
-        const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 20;
-        const contentWidth = pageWidth - (margin * 2);
-        let yPosition = margin;
+/**
+ * El sermón en PDF, con fuentes incrustadas.
+ *
+ * El exportador anterior imprimía el markdown crudo (`**Puntos:**`, `* I.`,
+ * `<br />`), adivinaba los títulos por el largo de la línea y usaba las fuentes
+ * estándar de jsPDF, que no tienen hebreo: las etiquetas salían como
+ * «™,¾ê°ä…» (sermón 6 de Jonás, 2026-10-03). Ahora dibuja el mismo modelo que
+ * el Word (`parseSermonDocument`) con Noto Serif (latín y griego) y Noto Serif
+ * Hebrew (decisión del fundador: archivo con fuentes incrustadas).
+ *
+ * jsPDF no ordena de derecha a izquierda ni aplica el posicionamiento de
+ * marcas: el hebreo se invierte aquí por grupos (letra + sus vocales) y cada
+ * vocal va en el ancla de su letra (`hebrewMarkAnchors.json`). La puntuación
+ * pegada a una palabra hebrea va con la fuente latina, en su lugar.
+ */
 
-        // Helper to check page break
-        const checkPageBreak = (height: number) => {
-            if (yPosition + height > pageHeight - margin) {
-                doc.addPage();
-                yPosition = margin;
-                return true;
-            }
-            return false;
-        };
+const ANCLAS = anclas as unknown as {
+    upm: number;
+    marks: Record<string, Array<[number, number, number, number]>>;
+    bases: Record<string, Record<string, Record<string, [number, number]>>>;
+};
 
-        // Header / Branding
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text('DosFilos.Preach', pageWidth - margin, 15, { align: 'right' });
+/** Las cinco fuentes, en base64. Inyectable: el navegador las pide, la prueba las lee del disco. */
+export type PdfFontLoader = (file: string) => Promise<string>;
 
-        // Title
-        doc.setFontSize(24);
-        doc.setTextColor(0);
-        doc.setFont('helvetica', 'bold');
+const FUENTES = {
+    normal: 'NotoSerif-Regular.ttf',
+    bold: 'NotoSerif-Bold.ttf',
+    italic: 'NotoSerif-Italic.ttf',
+    bolditalic: 'NotoSerif-BoldItalic.ttf',
+    hebreo: 'NotoSerifHebrew-Regular.ttf',
+} as const;
 
-        const titleLines = doc.splitTextToSize(sermon.title, contentWidth);
-        doc.text(titleLines, margin, yPosition + 10);
-        yPosition += (titleLines.length * 10) + 15;
+/** Las pide al sitio la primera vez que se exporta; quedan en memoria. */
+const cache = new Map<string, Promise<string>>();
+export const fetchPdfFont: PdfFontLoader = file => {
+    const hit = cache.get(file);
+    if (hit) return hit;
+    const p = fetch(`/fonts/pdf/${file}`)
+        .then(r => {
+            if (!r.ok) throw new Error(`No se pudo cargar la fuente ${file}`);
+            return r.arrayBuffer();
+        })
+        .then(buf => {
+            let bin = '';
+            const bytes = new Uint8Array(buf);
+            for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+            return btoa(bin);
+        });
+    cache.set(file, p);
+    p.catch(() => cache.delete(file));
+    return p;
+};
 
-        // Metadata
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.setFont('helvetica', 'normal');
+const HEBREO = /[֐-׿יִ-ﭏ]/;
+/** Sólo signos que se combinan con su letra: maqaf, paseq y sof pasuq son letras de pleno derecho. */
+const MARCAS = '\\u0591-\\u05BD\\u05BF\\u05C1\\u05C2\\u05C4\\u05C5\\u05C7';
+const MARCA = new RegExp(`[${MARCAS}]`);
+/** Una letra con sus vocales y acentos: la unidad que se invierte y se dibuja. */
+const GRUPO = new RegExp(`[^${MARCAS}][${MARCAS}]*`, 'g');
 
-        const dateStr = sermon.createdAt ? new Date(sermon.createdAt).toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }) : '';
+/** El hebreo en orden visual: grupos (letra + marcas) al revés. */
+export function visualHebrew(word: string): string {
+    const grupos: string[] = [];
+    for (const ch of word) {
+        if (MARCA.test(ch) && grupos.length > 0) grupos[grupos.length - 1] += ch;
+        else grupos.push(ch);
+    }
+    return grupos.reverse().join('');
+}
 
-        doc.text(`Fecha: ${dateStr}`, margin, yPosition);
-        yPosition += 6;
+interface Pieza {
+    text: string; font: 'serif' | 'hebreo'; bold: boolean; italic: boolean; hebreo: boolean; espacio: boolean;
+    /** Sigue pegada a la próxima pieza (misma palabra): no se corta la línea entre ellas. */
+    pegado?: boolean;
+}
 
-        if (sermon.bibleReferences && sermon.bibleReferences.length > 0) {
-            doc.text(`Referencias: ${sermon.bibleReferences.join(', ')}`, margin, yPosition);
-            yPosition += 6;
-        }
+/**
+ * Signos que Noto Serif no tiene, por uno que sí: sin esto salían huecos.
+ * Lo demás que no esté en la fuente sale en blanco (emoji).
+ */
+const SUSTITUTOS: Record<string, string> = { '→': '›', '←': '‹', '⇒': '›', '≈': '~', '≥': '>=', '≤': '<=', '✓': '•', '✔': '•' };
+function sinGlifo(t: string): string {
+    return t.replace(/[→←⇒≈≥≤✓✔]/g, c => SUSTITUTOS[c] ?? c);
+}
 
-        if (sermon.tags && sermon.tags.length > 0) {
-            doc.text(`Etiquetas: ${sermon.tags.join(', ')}`, margin, yPosition);
-            yPosition += 6;
-        }
-
-        // Separator line
-        yPosition += 5;
-        doc.setDrawColor(200);
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 15;
-
-        // Content
-        doc.setFontSize(12);
-        doc.setTextColor(0);
-        doc.setFont('times', 'roman'); // Serif font for better readability of long text
-
-        // Split content by paragraphs to handle spacing better
-        const paragraphs = sermon.content.split('\n');
-
-        for (const paragraph of paragraphs) {
-            if (!paragraph.trim()) {
-                yPosition += 5; // Spacing for empty lines
+/** Palabras y espacios con su fuente, en orden lógico. */
+function piezasDe(runs: ReadonlyArray<InlineRun>): Pieza[] {
+    const out: Pieza[] = [];
+    for (const r of runs) {
+        for (const parte of r.text.split(/(\s+)/)) {
+            if (!parte) continue;
+            if (/^\s+$/.test(parte)) {
+                out.push({ text: ' ', font: 'serif', bold: !!r.bold, italic: !!r.italic, hebreo: false, espacio: true });
                 continue;
             }
-
-            // Check if it's a header (simple heuristic: short line, no punctuation at end, or starts with #)
-            const isHeader = paragraph.length < 50 && !paragraph.match(/[.,;:]$/) || paragraph.startsWith('#');
-
-            let text = paragraph;
-            if (paragraph.startsWith('#')) {
-                text = paragraph.replace(/^#+\s*/, '');
+            // Dentro de una palabra, el hebreo y lo demás van por separado: la
+            // fuente hebrea no tiene paréntesis, comillas, comas ni dígitos, y
+            // «(חֶסֶד)» salía con huecos (revisión adversarial de R2).
+            for (const trozo of parte.split(/([\u0590-\u05FF\uFB1D-\uFB4F]+)/)) {
+                if (!trozo) continue;
+                const hebreo = HEBREO.test(trozo);
+                out.push({ text: hebreo ? trozo : sinGlifo(trozo), font: hebreo ? 'hebreo' : 'serif', bold: !!r.bold, italic: !!r.italic, hebreo, espacio: false, pegado: true });
             }
-
-            if (isHeader) {
-                checkPageBreak(15);
-                doc.setFont('times', 'bold');
-                doc.setFontSize(14);
-                yPosition += 5;
-            } else {
-                doc.setFont('times', 'roman');
-                doc.setFontSize(12);
-            }
-
-            const lines = doc.splitTextToSize(text, contentWidth);
-
-            // Check if whole paragraph fits, if not check line by line?
-            // Actually splitTextToSize handles wrapping, we just need to check vertical space
-            const paragraphHeight = lines.length * 7;
-
-            if (checkPageBreak(paragraphHeight)) {
-                // If we added a page, we are at top margin.
-                // If it was a header, we might want to re-apply header style if we reset?
-                // No, styles persist.
-            }
-
-            doc.text(lines, margin, yPosition);
-            yPosition += paragraphHeight + 3; // Line height + paragraph spacing
+            out[out.length - 1]!.pegado = false;
         }
+    }
+    return out;
+}
 
-        // Phase C.1: bibliography section. Numbered list matches the
-        // inline `[N]` markers in the prose above. Manifest is the
-        // authoritative source when present (set on Phase-B sermons);
-        // we fall back to `sermon.bibliography` for legacy sermons so
-        // the export keeps showing sources either way.
-        renderBibliography(doc, {
-            margin,
-            pageWidth,
-            pageHeight,
-            contentWidth,
-            yPosition,
-            manifest: sermon.citationManifest,
-            bibliography: sermon.bibliography,
-        });
+/** Una línea en orden visual: los tramos hebreos seguidos van de derecha a izquierda. */
+function ordenVisual(linea: Pieza[]): Pieza[] {
+    const out: Pieza[] = [];
+    let i = 0;
+    while (i < linea.length) {
+        if (!linea[i]!.hebreo) { out.push(linea[i]!); i++; continue; }
+        let j = i;
+        while (j + 1 < linea.length && (linea[j + 1]!.hebreo || (linea[j + 1]!.espacio && linea[j + 2]?.hebreo))) j++;
+        const tramo = linea.slice(i, j + 1).reverse().map(p => (p.hebreo ? { ...p, text: visualHebrew(p.text) } : p));
+        out.push(...tramo);
+        i = j + 1;
+    }
+    return out;
+}
 
-        // PR 0.3 (ADR-006): mandatory attribution footer for sources
-        // under licences that require explicit attribution (CC BY 4.0,
-        // CC BY-SA, etc.). Aggregates blocks from the manifest +
-        // injects SBLGNT compliance when any Greek text from
-        // `SBLGNTBibleProvider` made it into the manifest.
-        renderAttributions(doc, {
-            margin,
-            pageWidth,
-            pageHeight,
-            contentWidth,
-            blocks: aggregateRequiredAttributions(sermon.citationManifest),
-        });
+export class PdfExportService implements IExportService {
+    constructor(
+        private loadFont: PdfFontLoader = fetchPdfFont,
+        /** Inyectable para que una prueba observe lo que se dibuja. */
+        private crearDoc: () => jsPDF = () => new jsPDF({ unit: 'mm', format: 'a4' }),
+    ) { }
 
-        // Footer with page numbers
-        const pageCount = doc.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(9);
-            doc.setTextColor(150);
-            doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    /** Arma el PDF sin descargarlo (lo usan las pruebas). */
+    async buildSermonPdf(sermon: SermonEntity): Promise<jsPDF> {
+        const doc = this.crearDoc();
+        for (const [estilo, file] of Object.entries(FUENTES)) {
+            doc.addFileToVFS(file, await this.loadFont(file));
+            if (estilo === 'hebreo') doc.addFont(file, 'NotoHebrew', 'normal', 'Identity-H');
+            else doc.addFont(file, 'NotoSerif', estilo, 'Identity-H');
         }
+        new Dibujo(doc).sermon(sermon);
+        return doc;
+    }
 
-        // Save
-        const filename = `${sermon.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
-        doc.save(filename);
+    async exportSermonToPdf(sermon: SermonEntity): Promise<void> {
+        const doc = await this.buildSermonPdf(sermon);
+        doc.save(`${sermon.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
     }
 }
 
-interface BibliographyRenderArgs {
-    margin: number;
-    pageWidth: number;
-    pageHeight: number;
-    contentWidth: number;
-    yPosition: number;
-    manifest?: CitationManifest;
-    bibliography?: RAGSource[];
-}
-
+const PT = 0.3528; // mm por punto
 /**
- * Append a "Fuentes consultadas" section to the PDF. Returns nothing —
- * mutates the jsPDF doc in place (adding pages as needed).
- *
- * Numbering precedence:
- *   1. `manifest.entries` — authoritative for Phase B sermons. Numbers
- *      match the inline `[N]` markers in the prose.
- *   2. `bibliography` (legacy ragSources) — numbered 1..N in the same
- *      order the sermon was published with.
- *
- * Silently returns when neither source has anything to render so
- * non-RAG sermons don't get an empty section appended.
+ * Dónde va una marca respecto del origen de su letra, en unidades de la
+ * fuente: la primera tabla de anclas que tenga a las dos. `null` si la fuente
+ * no la ubica sobre esa letra (no se dibuja: una vocal flotando en otro lado
+ * es peor que la letra sola).
  */
-function renderBibliography(doc: jsPDF, args: BibliographyRenderArgs): number {
-    const entries = buildBibliographyEntries(args.manifest, args.bibliography);
-    if (entries.length === 0) return args.yPosition;
-
-    let yPosition = args.yPosition;
-    const { margin, pageWidth, pageHeight, contentWidth } = args;
-
-    const checkPageBreak = (height: number): number => {
-        if (yPosition + height > pageHeight - margin) {
-            doc.addPage();
-            return margin;
-        }
-        return yPosition;
-    };
-
-    // Section divider + heading.
-    yPosition += 15;
-    yPosition = checkPageBreak(40);
-    doc.setDrawColor(180);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 10;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(0);
-    doc.text('Fuentes consultadas', margin, yPosition);
-    yPosition += 9;
-
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9);
-    doc.setTextColor(110);
-    doc.text(
-        'Recursos de la biblioteca usados para construir el sermón.',
-        margin,
-        yPosition,
-    );
-    yPosition += 8;
-
-    doc.setFont('times', 'roman');
-    doc.setFontSize(11);
-    doc.setTextColor(20);
-
-    entries.forEach((entry, idx) => {
-        const ordinal = idx + 1;
-        const author = entry.author?.trim() ? ` — ${entry.author}` : '';
-        const page = entry.page?.trim() ? ` (p. ${entry.page})` : '';
-        const usedFor = entry.usedFor?.trim() ? `   ${entry.usedFor}` : '';
-
-        const headline = `[${ordinal}] ${entry.title}${author}${page}`;
-        const headlineLines = doc.splitTextToSize(headline, contentWidth);
-        const usedForLines = usedFor
-            ? doc.splitTextToSize(usedFor, contentWidth - 6)
-            : [];
-        const blockHeight = (headlineLines.length * 6) + (usedForLines.length * 5) + 4;
-
-        yPosition = checkPageBreak(blockHeight);
-
-        doc.setFont('times', 'roman');
-        doc.setFontSize(11);
-        doc.setTextColor(20);
-        doc.text(headlineLines, margin, yPosition);
-        yPosition += headlineLines.length * 6;
-
-        if (usedForLines.length > 0) {
-            doc.setFont('times', 'italic');
-            doc.setFontSize(9);
-            doc.setTextColor(110);
-            doc.text(usedForLines, margin + 6, yPosition);
-            yPosition += usedForLines.length * 5;
-        }
-        yPosition += 3;
-    });
-
-    return yPosition;
-}
-
-interface AttributionRenderArgs {
-    margin: number;
-    pageWidth: number;
-    pageHeight: number;
-    contentWidth: number;
-    blocks: AttributionBlock[];
-}
-
-/**
- * Render the "Atribuciones" section for licences that require it
- * (CC BY 4.0 for SBLGNT, CC BY-SA, etc.). Always starts on its own page
- * so the legal block reads cleanly without competing with bibliography
- * entries — the legal compliance benefit outweighs the extra page.
- *
- * Returns nothing — mutates the jsPDF doc in place. Silently no-ops
- * when there are no attribution blocks to render.
- */
-function renderAttributions(doc: jsPDF, args: AttributionRenderArgs): void {
-    if (args.blocks.length === 0) return;
-
-    const { margin, pageWidth, pageHeight, contentWidth } = args;
-    doc.addPage();
-    let yPosition = margin;
-
-    const checkPageBreak = (height: number) => {
-        if (yPosition + height > pageHeight - margin) {
-            doc.addPage();
-            yPosition = margin;
-        }
-    };
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(0);
-    doc.text('Atribuciones', margin, yPosition);
-    yPosition += 9;
-
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9);
-    doc.setTextColor(110);
-    const introLines = doc.splitTextToSize(
-        'Atribuciones obligatorias por licencia para las fuentes citadas en este documento.',
-        contentWidth,
-    );
-    doc.text(introLines, margin, yPosition);
-    yPosition += introLines.length * 5 + 6;
-
-    for (const block of args.blocks) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(20);
-        const titleLines = doc.splitTextToSize(block.title, contentWidth);
-        checkPageBreak(titleLines.length * 6 + 4);
-        doc.text(titleLines, margin, yPosition);
-        yPosition += titleLines.length * 6 + 2;
-
-        doc.setFont('times', 'roman');
-        doc.setFontSize(10);
-        doc.setTextColor(50);
-        for (const line of block.lines) {
-            const wrapped = doc.splitTextToSize(line, contentWidth);
-            checkPageBreak(wrapped.length * 5 + 2);
-            doc.text(wrapped, margin, yPosition);
-            yPosition += wrapped.length * 5 + 1;
-        }
-        yPosition += 5;
+export function desplazamientoDeMarca(letra: string, marca: string): { dx: number; dy: number } | null {
+    const base = ANCLAS.bases[letra];
+    for (const [lookup, clase, mx, my] of ANCLAS.marks[marca] ?? []) {
+        const a = base?.[String(lookup)]?.[String(clase)];
+        if (a) return { dx: a[0] - mx, dy: a[1] - my };
     }
+    return null;
 }
+const TINTA: [number, number, number] = [31, 41, 55];
+const GRIS: [number, number, number] = [107, 114, 128];
 
-interface BibliographyEntry {
-    title: string;
-    author?: string;
-    page?: string;
-    usedFor?: string;
-}
+class Dibujo {
+    private y: number;
+    private readonly ancho: number;
+    private readonly alto: number;
+    private readonly m = { izq: 24, der: 24, sup: 24, inf: 24 };
 
-function buildBibliographyEntries(
-    manifest: CitationManifest | undefined,
-    bibliography: RAGSource[] | undefined,
-): BibliographyEntry[] {
-    if (manifest && manifest.entries.length > 0) {
-        const ragBySourceId = new Map<string, RAGSource>();
-        for (const rag of bibliography ?? []) {
-            if (rag.sourceId) ragBySourceId.set(rag.sourceId, rag);
+    constructor(private doc: jsPDF) {
+        this.ancho = doc.internal.pageSize.getWidth();
+        this.alto = doc.internal.pageSize.getHeight();
+        this.y = this.m.sup;
+    }
+
+    private get util() { return this.ancho - this.m.izq - this.m.der; }
+
+    private fuente(p: Pick<Pieza, 'font' | 'bold' | 'italic'>, size: number) {
+        if (p.font === 'hebreo') this.doc.setFont('NotoHebrew', 'normal');
+        else this.doc.setFont('NotoSerif', p.bold && p.italic ? 'bolditalic' : p.bold ? 'bold' : p.italic ? 'italic' : 'normal');
+        this.doc.setFontSize(size);
+    }
+
+    private ancho_(p: Pieza, size: number) {
+        this.fuente(p, size);
+        return this.doc.getTextWidth(p.font === 'hebreo' ? visualHebrew(p.text) : p.text);
+    }
+
+    private salto(necesita: number) {
+        if (this.y + necesita > this.alto - this.m.inf) {
+            this.doc.addPage();
+            this.y = this.m.sup;
         }
-        return manifest.entries.map((entry) => {
-            const rag = ragBySourceId.get(entry.sourceId);
-            return {
-                title: rag?.title || entry.title,
-                author: rag?.author || entry.author,
-                page: rag?.page || entry.page,
-                usedFor: rag?.usedFor,
-            };
+    }
+
+    /**
+     * Un párrafo con estilos mezclados, palabra por palabra. `forzar` aplica
+     * negrita/cursiva a todo (títulos, notas).
+     */
+    private parrafo(
+        runs: ReadonlyArray<InlineRun>,
+        o: { size: number; color?: [number, number, number]; izq?: number; despues?: number; interlinea?: number; forzar?: { bold?: boolean; italic?: boolean }; marca?: string; barra?: boolean },
+    ) {
+        const izq = this.m.izq + (o.izq ?? 0);
+        const util = this.util - (o.izq ?? 0);
+        const alto = o.size * PT * (o.interlinea ?? 1.5);
+        const piezas = piezasDe(runs).map(p => ({ ...p, bold: p.bold || !!o.forzar?.bold, italic: p.italic || !!o.forzar?.italic }));
+
+        // Palabras = piezas pegadas (hebreo + su puntuación); la línea se
+        // corta sólo entre palabras. Una palabra más ancha que la línea (una
+        // URL) se parte por letras: antes se salía de la página.
+        const palabras: Pieza[][] = [];
+        let abierta: Pieza[] = [];
+        for (const p of piezas) {
+            if (p.espacio) { if (abierta.length) palabras.push(abierta); abierta = []; palabras.push([p]); continue; }
+            abierta.push(p);
+            if (!p.pegado) { palabras.push(abierta); abierta = []; }
+        }
+        if (abierta.length) palabras.push(abierta);
+
+        const lineas: Pieza[][] = [[]];
+        let usado = 0;
+        const cortar = () => {
+            const actual = lineas[lineas.length - 1]!;
+            while (actual.length && actual[actual.length - 1]!.espacio) actual.pop();
+            lineas.push([]);
+            usado = 0;
+        };
+        for (const palabra of palabras) {
+            const actual = () => lineas[lineas.length - 1]!;
+            if (palabra.length === 1 && palabra[0]!.espacio) {
+                if (actual().length > 0) { actual().push(palabra[0]!); usado += this.ancho_(palabra[0]!, o.size); }
+                continue;
+            }
+            const w = palabra.reduce((n, p) => n + this.ancho_(p, o.size), 0);
+            if (usado + w > util && actual().length > 0) cortar();
+            if (w <= util) {
+                actual().push(...palabra);
+                usado += w;
+                continue;
+            }
+            for (const p of palabra) {
+                for (const letra of p.hebreo ? [p.text] : Array.from(p.text)) {
+                    const trozo = { ...p, text: letra };
+                    const wl = this.ancho_(trozo, o.size);
+                    if (usado + wl > util && actual().length > 0) cortar();
+                    actual().push(trozo);
+                    usado += wl;
+                }
+            }
+        }
+        if (lineas.length > 1 && lineas[lineas.length - 1]!.length === 0) lineas.pop();
+
+        this.doc.setTextColor(...(o.color ?? TINTA));
+        lineas.forEach((linea, n) => {
+            this.salto(alto);
+            if (n === 0 && o.marca) {
+                this.fuente({ font: 'serif', bold: false, italic: false }, o.size);
+                this.doc.text(o.marca, izq - 5, this.y + o.size * PT);
+            }
+            if (o.barra) {
+                // La barra de la cita, línea por línea: un párrafo que cruza de
+                // página la conserva en las dos (antes desaparecía entera).
+                this.doc.setDrawColor(199, 210, 254);
+                this.doc.setLineWidth(0.9);
+                this.doc.line(this.m.izq + 2, this.y, this.m.izq + 2, this.y + alto);
+            }
+            let x = izq;
+            const base = this.y + o.size * PT;
+            for (const p of ordenVisual(linea)) {
+                this.fuente(p, o.size);
+                if (p.hebreo) x = this.hebreo(p.text, x, base);
+                else {
+                    this.doc.text(p.text, x, base);
+                    x += this.doc.getTextWidth(p.text);
+                }
+            }
+            this.y += alto;
         });
+        this.y += o.despues ?? 0;
     }
-    return (bibliography ?? [])
-        .filter((s) => s?.title?.trim())
-        .map((s) => ({
-            title: s.title,
-            author: s.author,
-            page: s.page,
-            usedFor: s.usedFor,
-        }));
+
+    /**
+     * Una palabra hebrea ya en orden visual, letra por letra. jsPDF no aplica
+     * el posicionamiento de marcas (GPOS) y cada vocal caía sobre la letra
+     * vecina: cada marca va en «ancla de la letra − ancla de la marca», con
+     * las anclas de la fuente (`hebrewMarkAnchors.json`).
+     */
+    private hebreo(texto: string, x: number, base: number): number {
+        const escala = this.doc.getFontSize() * PT / ANCLAS.upm;
+        for (const grupo of texto.match(GRUPO) ?? []) {
+            const letra = grupo[0]!;
+            this.doc.text(letra, x, base);
+            for (const marca of grupo.slice(1)) {
+                const d = desplazamientoDeMarca(letra, marca);
+                if (d) this.doc.text(marca, x + d.dx * escala, base - d.dy * escala);
+            }
+            x += this.doc.getTextWidth(letra);
+        }
+        return x;
+    }
+
+    sermon(sermon: SermonEntity) {
+        // Encabezado: título, pasaje y fecha, una raya.
+        this.parrafo([{ text: sermon.title }], { size: 22, interlinea: 1.25, forzar: { bold: true }, color: [17, 24, 39], despues: 2 });
+        const fecha = sermon.createdAt
+            ? new Date(sermon.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
+            : null;
+        const meta = [sermon.bibleReferences?.length ? sermon.bibleReferences.join(', ') : null, fecha].filter(Boolean).join('  ·  ');
+        if (meta) this.parrafo([{ text: meta }], { size: 10.5, color: GRIS, forzar: { italic: true }, despues: 1 });
+        this.doc.setDrawColor(209, 213, 219);
+        this.doc.setLineWidth(0.3);
+        this.doc.line(this.m.izq, this.y, this.ancho - this.m.der, this.y);
+        this.y += 8;
+
+        for (const b of parseSermonDocument(sermon.content)) {
+            switch (b.kind) {
+                case 'heading': {
+                    const size = b.level === 1 ? 15 : b.level === 2 ? 12.5 : 11.5;
+                    // Un título no queda solo al pie de la página.
+                    this.salto(size * PT * 1.4 + 16);
+                    this.y += b.level === 1 ? 5 : 3;
+                    this.parrafo(b.runs, {
+                        size, interlinea: 1.3, despues: 2,
+                        forzar: { bold: true, italic: b.level === 3 },
+                        color: b.level === 2 ? [30, 58, 138] : [17, 24, 39],
+                    });
+                    break;
+                }
+                case 'paragraph':
+                    this.parrafo(b.runs, { size: 11, despues: 3 });
+                    break;
+                case 'list':
+                    b.items.forEach((item, i) => this.parrafo(item, {
+                        size: 11, izq: 7, despues: 1.2, marca: b.ordered ? `${b.start + i}.` : '•',
+                    }));
+                    this.y += 2;
+                    break;
+                case 'quote':
+                    for (const par of b.paragraphs) {
+                        this.parrafo(par, { size: 10.5, izq: 7, color: [55, 65, 81], despues: 3, barra: true });
+                    }
+                    break;
+            }
+        }
+
+        const fuentes = sermonBibliographyEntries(sermon.citationManifest, sermon.bibliography);
+        if (fuentes.length > 0) {
+            this.salto(30);
+            this.y += 6;
+            this.parrafo([{ text: 'Fuentes consultadas' }], { size: 13, forzar: { bold: true }, despues: 2 });
+            fuentes.forEach((f, i) => {
+                const autor = f.author?.trim() ? ` — ${f.author}` : '';
+                const pagina = f.page?.trim() ? ` (p. ${f.page})` : '';
+                this.parrafo([{ text: `[${i + 1}] `, bold: true }, { text: `${f.title}${autor}${pagina}` }], { size: 10, despues: f.usedFor ? 0.5 : 2 });
+                if (f.usedFor) this.parrafo([{ text: f.usedFor, italic: true }], { size: 9.5, izq: 6, color: GRIS, despues: 2 });
+            });
+        }
+
+        const atribuciones = aggregateRequiredAttributions(sermon.citationManifest);
+        if (atribuciones.length > 0) {
+            this.y += 4;
+            this.parrafo([{ text: 'Atribuciones' }], { size: 12, forzar: { bold: true }, despues: 2 });
+            for (const a of atribuciones) {
+                this.parrafo([{ text: a.title, bold: true }], { size: 9.5, despues: 0.5 });
+                for (const l of a.lines) this.parrafo([{ text: l }], { size: 9, color: GRIS, despues: 0.5 });
+            }
+        }
+
+        const total = this.doc.getNumberOfPages();
+        for (let i = 1; i <= total; i++) {
+            this.doc.setPage(i);
+            this.fuente({ font: 'serif', bold: false, italic: false }, 8.5);
+            this.doc.setTextColor(156, 163, 175);
+            this.doc.text(`${i} / ${total}`, this.ancho / 2, this.alto - 12, { align: 'center' });
+        }
+    }
 }

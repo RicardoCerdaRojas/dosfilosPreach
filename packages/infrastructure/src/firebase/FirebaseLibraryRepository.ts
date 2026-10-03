@@ -9,6 +9,7 @@ import {
     query,
     where,
     orderBy,
+    limit,
     Timestamp,
     onSnapshot
 } from 'firebase/firestore';
@@ -50,6 +51,23 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
             orderBy('createdAt', 'desc')
         );
 
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => this.firestoreToResource(doc.id, doc.data()));
+    }
+
+    /**
+     * Los recursos del usuario con ESE título exacto. Lo usa el verificador
+     * de citas del sermón: la atribución la arma nuestro motor con el título
+     * del recurso, así que la igualdad alcanza, y traer sólo ese documento
+     * evita bajar la biblioteca entera (cada uno pesa hasta 800 KB).
+     */
+    async findByUserIdAndTitle(userId: string, title: string): Promise<LibraryResourceEntity[]> {
+        const q = query(
+            collection(db, this.collectionName),
+            where('userId', '==', userId),
+            where('title', '==', title),
+            limit(3),
+        );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => this.firestoreToResource(doc.id, doc.data()));
     }

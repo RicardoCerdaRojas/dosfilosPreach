@@ -96,6 +96,10 @@ export const PROXY_FEATURES = [
     // Corte propio en el panel de costos para poder distinguirla de las
     // llamadas grandes del wizard, con las que no tiene nada que ver.
     'sermon.translateCitation',
+    // Chat de consulta del Taller (hallazgo 32 del ejercicio de Jonás):
+    // preguntas rápidas mientras se arma un punto —pasajes que ilustran,
+    // versículos sobre un tema—. Corto y frecuente; no escribe el sermón.
+    'sermon.consult',
     // ADR-037 — el acompañante socrático propone ELEMENTOS (ideas decidibles)
     // para una sección, no prosa. Llamada corta y MUY frecuente: se dispara una
     // vez por sección y por "propóneme más", así que su costo escala con las
