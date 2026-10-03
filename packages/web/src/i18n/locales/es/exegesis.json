@@ -887,7 +887,7 @@
             "rangeCount_other": "{{count}} tramos",
             "empty": "Nada elegido todavía. Acepta la sugerencia, o navega el documento y agrega hojas.",
             "sheetOne": "hoja {{sheet}}",
-            "sheetRange": "hojas {{start}}–{{end}}",
+            "sheetRange": "hojas {{start}}–{{end}} ({{count}})",
             "withPrinted": "{{base}} · impresa {{printed}}",
             "remove": "Quitar {{range}}",
             "budget": "Corpus por versículo",
@@ -905,10 +905,15 @@
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
             "sectionsCovered": "{{section}} · cubre {{count}} secciones",
-            "saved": "Guardado · {{count}} hojas en el trabajo",
             "perVerse": "Por versículo llegan {{chars}} caracteres. Las hojas elegidas del trabajo suman {{admitted}}; de ellas se consulta lo de cada versículo, hasta {{cap}}.",
-            "otherExcerpts": "Los fragmentos de otras fuentes van completos: {{chars}} caracteres."
-          }
+            "otherExcerpts": "Los fragmentos de otras fuentes van completos: {{chars}} caracteres.",
+            "saved_one": "Guardado · {{count}} hoja en el trabajo",
+            "saved_other": "Guardado · {{count}} hojas en el trabajo",
+            "resave": "Volver a guardar",
+            "update_one": "Guardar cambios · {{count}} hoja",
+            "update_other": "Guardar cambios · {{count}} hojas"
+          },
+          "numberingLegend": "h. = hoja del PDF (la columna de la izquierda) · p. = página impresa del libro"
         },
         "list": {
           "title": "Fuentes adjuntas",
@@ -1204,8 +1209,8 @@
           "addAll": "Agregar las {{count}} principales",
           "empty": "Todavía no hay lemas: salen del análisis canónico de los versos.",
           "notFound": "no aparece en este libro",
-          "page": "p. {{printed}}",
-          "sheet": "hoja {{sheet}}",
+          "page": "h. {{sheet}} · p. {{printed}}",
+          "sheet": "h. {{sheet}}",
           "hint": "La primera hoja es la que más veces nombra el lema, que casi siempre es su entrada. Pasa el cursor para ver el renglón."
         },
         "courseBib": {
@@ -1227,8 +1232,8 @@
           "title": "Páginas que nombran el pasaje ({{count}})",
           "addAll": "Agregar las {{count}}",
           "empty": "Este libro no nombra el pasaje en ninguna página. Es lo normal en un comentario: su página entera ya es el pasaje, y esas páginas entran por el otro camino.",
-          "page": "p. {{printed}}",
-          "sheet": "hoja {{sheet}}",
+          "page": "h. {{sheet}} · p. {{printed}}",
+          "sheet": "h. {{sheet}}",
           "verses": "v. {{verses}}",
           "hint": "Una gramática o un léxico no se organizan por pasajes, pero citan el versículo como ejemplo. Estas son las páginas donde lo nombran; tú decides cuáles entran."
         },
@@ -1236,8 +1241,8 @@
           "title": "Secciones del índice que responden al encuadre ({{count}})",
           "count": "· {{count}} secciones",
           "corroborated": "nombra la forma griega",
-          "page": "p. {{printed}}",
-          "sheet": "hoja {{sheet}}",
+          "page": "h. {{sheet}} · p. {{printed}}",
+          "sheet": "h. {{sheet}}",
           "hint": "Una gramática se indexa por categorías, no por pasajes. Estas son las secciones que nombran lo que tu encuadre pregunta; la lista va en el orden del libro y no se recorta."
         },
         "sourceMemory": {

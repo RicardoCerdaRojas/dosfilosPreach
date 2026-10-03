@@ -1,5 +1,5 @@
 import { BookA, Loader2, Plus } from 'lucide-react';
-import { printedLabelIn, type LemmaPageProposal, type PageNumbering } from '@dosfilos/domain';
+import { printedLabelForSheet, type LemmaPageProposal, type PageNumbering } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 
@@ -8,6 +8,8 @@ interface Props {
     isLoading: boolean;
     /** Qué folio lleva impreso cada hoja, para nombrarla como el libro. */
     numbering: PageNumbering | null;
+    /** Respaldo cuando el recurso no tiene numeración (`printedLabelForSheet`). */
+    printedPageOffset: number | null;
     /** Hojas ya elegidas, para no ofrecer lo que ya está. */
     selected: ReadonlySet<number>;
     onAdd: (sheet: number) => void;
@@ -27,7 +29,7 @@ interface Props {
  * lema, que casi siempre es su entrada; el renglón de contexto está
  * para reconocerla sin abrir el libro.
  */
-export function LemmaPagesPanel({ proposals, isLoading, numbering, selected, onAdd, onAddAll }: Props) {
+export function LemmaPagesPanel({ proposals, isLoading, numbering, printedPageOffset, selected, onAdd, onAddAll }: Props) {
     const { t } = useTranslation('exegesis');
 
     const primeras = proposals.map(p => p.sheets[0]?.sheet).filter((s): s is number => typeof s === 'number');
@@ -57,7 +59,7 @@ export function LemmaPagesPanel({ proposals, isLoading, numbering, selected, onA
                                 {p.sheets.length === 0 ? (
                                     <span className="text-[11px] text-muted-foreground">{t('paperSetup.subSteps.corpus.lemmas.notFound')}</span>
                                 ) : p.sheets.map(hit => {
-                                    const printed = numbering ? printedLabelIn(numbering, hit.sheet) : null;
+                                    const printed = printedLabelForSheet(hit.sheet, numbering, printedPageOffset);
                                     const ya = selected.has(hit.sheet);
                                     return (
                                         <button

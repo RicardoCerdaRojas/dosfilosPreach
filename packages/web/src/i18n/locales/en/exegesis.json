@@ -887,7 +887,7 @@
             "rangeCount_other": "{{count}} ranges",
             "empty": "Nothing chosen yet. Accept the suggestion, or browse the document and add sheets.",
             "sheetOne": "sheet {{sheet}}",
-            "sheetRange": "sheets {{start}}–{{end}}",
+            "sheetRange": "sheets {{start}}–{{end}} ({{count}})",
             "withPrinted": "{{base}} · printed {{printed}}",
             "remove": "Remove {{range}}",
             "budget": "Corpus per verse",
@@ -905,10 +905,15 @@
             "confirm_one": "Add {{count}} sheet to the paper",
             "confirm_other": "Add {{count}} sheets to the paper",
             "sectionsCovered": "{{section}} · covers {{count}} sections",
-            "saved": "Saved · {{count}} sheets in the paper",
             "perVerse": "{{chars}} characters reach each verse. The paper's chosen sheets add up to {{admitted}}; each verse consults what is about it, up to {{cap}}.",
-            "otherExcerpts": "Excerpts from other sources travel whole: {{chars}} characters."
-          }
+            "otherExcerpts": "Excerpts from other sources travel whole: {{chars}} characters.",
+            "saved_one": "Saved · {{count}} sheet in the paper",
+            "saved_other": "Saved · {{count}} sheets in the paper",
+            "resave": "Save again",
+            "update_one": "Save changes · {{count}} sheet",
+            "update_other": "Save changes · {{count}} sheets"
+          },
+          "numberingLegend": "s. = PDF sheet (the left column) · p. = the book's printed page"
         },
         "list": {
           "title": "Attached sources",
@@ -1204,8 +1209,8 @@
           "addAll": "Add the top {{count}}",
           "empty": "No lemmas yet: they come from the verses' canonical analysis.",
           "notFound": "does not appear in this book",
-          "page": "p. {{printed}}",
-          "sheet": "sheet {{sheet}}",
+          "page": "s. {{sheet}} · p. {{printed}}",
+          "sheet": "s. {{sheet}}",
           "hint": "The first sheet is the one that names the lemma most often, which is usually its entry. Hover to see the line."
         },
         "courseBib": {
@@ -1227,8 +1232,8 @@
           "title": "Pages naming the passage ({{count}})",
           "addAll": "Add all {{count}}",
           "empty": "This book never names the passage. That is normal in a commentary: its whole page already is the passage, and those pages come in through the other path.",
-          "page": "p. {{printed}}",
-          "sheet": "sheet {{sheet}}",
+          "page": "s. {{sheet}} · p. {{printed}}",
+          "sheet": "s. {{sheet}}",
           "verses": "v. {{verses}}",
           "hint": "A grammar or a lexicon is not organised by passage, but it cites the verse as an example. These are the pages where it names it; you decide which ones come in."
         },
@@ -1236,8 +1241,8 @@
           "title": "Index sections that answer the brief ({{count}})",
           "count": "· {{count}} sections",
           "corroborated": "names the Greek form",
-          "page": "p. {{printed}}",
-          "sheet": "sheet {{sheet}}",
+          "page": "s. {{sheet}} · p. {{printed}}",
+          "sheet": "s. {{sheet}}",
           "hint": "A grammar is indexed by category, not by passage. These are the sections naming what your brief asks about; the list follows the book order and is not trimmed."
         },
         "sourceMemory": {

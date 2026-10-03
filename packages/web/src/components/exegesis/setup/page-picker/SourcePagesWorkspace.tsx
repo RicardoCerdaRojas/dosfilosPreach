@@ -1,3 +1,4 @@
+import { cartSaveMode } from './cartSaveMode';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-react';
@@ -6,7 +7,7 @@ import {
     countChars,
     countSheets,
     normalizeSheetRanges,
-    printedPageFor,
+    printedLabelForSheet,
     type PageIndexEntry,
     type SheetRange,
     type LemmaPageProposal,
@@ -171,13 +172,18 @@ export function SourcePagesWorkspace({
     const effectivePinned = useMemo(() => clipRangesTo(pinned, ranges), [pinned, ranges]);
     // Si lo elegido difiere de lo guardado (las props `initial*` son la receta
     // guardada y se renuevan al guardar).
-    const isDirty = useMemo(() => {
+    const selectionChanged = useMemo(() => {
         const igual = (a: ReadonlyArray<SheetRange>, b: ReadonlyArray<SheetRange>) =>
             a.length === b.length && a.every((r, i) => r.start === b[i]!.start && r.end === b[i]!.end);
-        return needsResave
-            || !igual(ranges, normalizeSheetRanges(initialRanges))
+        return !igual(ranges, normalizeSheetRanges(initialRanges))
             || !igual(normalizeSheetRanges(effectivePinned), normalizeSheetRanges(initialPinned));
-    }, [ranges, effectivePinned, initialRanges, initialPinned, needsResave]);
+    }, [ranges, effectivePinned, initialRanges, initialPinned]);
+    const saveMode = cartSaveMode({
+        isSaving,
+        selectionChanged,
+        needsResave,
+        hadSaved: initialRanges.length > 0,
+    });
     const pinnedChars = useMemo(() => countChars(pages, effectivePinned), [pages, effectivePinned]);
     const sheetCount = useMemo(() => countSheets(ranges), [ranges]);
 
@@ -308,7 +314,7 @@ export function SourcePagesWorkspace({
         lastPicked.current = sheet;
     }, [pickSheet]);
 
-    const printedCurrent = printedPageFor(currentSheet, printedPageOffset);
+    const printedCurrent = printedLabelForSheet(currentSheet, numbering, printedPageOffset);
     const isCurrentSelected = selectedSheets.has(currentSheet);
 
     return (
@@ -349,6 +355,7 @@ export function SourcePagesWorkspace({
                         <PageRail
                             pages={pages}
                             printedPageOffset={printedPageOffset}
+                            numbering={numbering}
                             selected={selectedSheets}
                             proposed={proposedSheets}
                             anchor={anchor}
@@ -445,10 +452,17 @@ export function SourcePagesWorkspace({
                     title={t('paperSetup.subSteps.corpus.picker.cart.resize')}
                 />
                 <div className="flex flex-col gap-2 min-w-0 shrink-0 overflow-y-auto" style={{ width: `${cartWidth}px` }}>
+                    {/* La columna de la izquierda numera hojas del PDF; los
+                        paneles, páginas impresas. El fundador preguntó cuál
+                        era cuál (Jonás 4:5-11): se dice una vez, arriba. */}
+                    <p className="px-1 pt-1 text-[10.5px] text-muted-foreground">
+                        {t('paperSetup.subSteps.corpus.picker.numberingLegend')}
+                    </p>
                     {sectionProposals && sectionProposals.length > 0 && (
                         <GrammarSectionsPanel
                             proposals={sectionProposals}
                             numbering={numbering}
+                            printedPageOffset={printedPageOffset}
                             selected={selectedSheets}
                             onAdd={addLemmaSheet}
                         />
@@ -458,6 +472,7 @@ export function SourcePagesWorkspace({
                             proposals={passageProposals}
                             isLoading={passageLoading}
                             numbering={numbering}
+                            printedPageOffset={printedPageOffset}
                             selected={selectedSheets}
                             onAdd={addLemmaSheet}
                             onAddAll={addLemmaSheets}
@@ -468,6 +483,7 @@ export function SourcePagesWorkspace({
                             proposals={lemmaProposals}
                             isLoading={lemmaLoading}
                             numbering={numbering}
+                            printedPageOffset={printedPageOffset}
                             selected={selectedSheets}
                             onAdd={addLemmaSheet}
                             onAddAll={addLemmaSheets}
@@ -485,8 +501,8 @@ export function SourcePagesWorkspace({
                         onTogglePinned={togglePinned}
                         pinnedChars={pinnedChars}
                         onConfirm={() => onConfirm(ranges, effectivePinned)}
-                        isDirty={isDirty}
-                        isSaving={isSaving}
+                        saveMode={saveMode}
+                        numbering={numbering}
                     />
                 </div>
             </PanelGroup>

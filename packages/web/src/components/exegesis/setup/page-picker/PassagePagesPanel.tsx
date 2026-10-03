@@ -1,5 +1,5 @@
 import { Loader2, Plus, Quote } from 'lucide-react';
-import { printedLabelIn, type PassagePageHit, type PageNumbering } from '@dosfilos/domain';
+import { printedLabelForSheet, type PassagePageHit, type PageNumbering } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 
@@ -8,6 +8,8 @@ interface Props {
     isLoading: boolean;
     /** Qué folio lleva impreso cada hoja, para nombrarla como el libro. */
     numbering: PageNumbering | null;
+    /** Respaldo cuando el recurso no tiene numeración (`printedLabelForSheet`). */
+    printedPageOffset: number | null;
     /** Hojas ya elegidas, para no ofrecer lo que ya está. */
     selected: ReadonlySet<number>;
     onAdd: (sheet: number) => void;
@@ -28,7 +30,7 @@ interface Props {
  * quedaron en cero: Wallace tenía trece fragmentos y le faltaban justo los
  * dos que contestaban la pregunta difícil.
  */
-export function PassagePagesPanel({ proposals, isLoading, numbering, selected, onAdd, onAddAll }: Props) {
+export function PassagePagesPanel({ proposals, isLoading, numbering, printedPageOffset, selected, onAdd, onAddAll }: Props) {
     const { t } = useTranslation('exegesis');
 
     const faltantes = proposals.map(p => p.sheet).filter(s => !selected.has(s));
@@ -53,7 +55,7 @@ export function PassagePagesPanel({ proposals, isLoading, numbering, selected, o
             ) : (
                 <ul className="space-y-1">
                     {proposals.map(hit => {
-                        const printed = numbering ? printedLabelIn(numbering, hit.sheet) : null;
+                        const printed = printedLabelForSheet(hit.sheet, numbering, printedPageOffset);
                         const ya = selected.has(hit.sheet);
                         return (
                             <li key={hit.sheet} className="flex items-start gap-2">

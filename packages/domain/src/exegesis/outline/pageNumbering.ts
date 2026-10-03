@@ -25,6 +25,7 @@
 
 import {
     detectPrintedPageOffsetStaged,
+    printedPageFor,
     type PageTextSample,
 } from './printedPageOffset';
 
@@ -714,4 +715,30 @@ export function relabelExcerptAnchor(
     const section = match[2]?.trim() || null;
 
     return citationAnchorFor({ sheet, section }, numbering);
+}
+
+/**
+ * La página impresa de una hoja, con UNA sola regla para todo el selector.
+ *
+ * La columna de hojas, el visor y el carrito usaban el desfase único del
+ * recurso (`printedPageFor`); los paneles de lemas, pasaje y secciones, la
+ * numeración confirmada por tramos (`printedLabelIn`), que admite romanos y
+ * series con asterisco. Para la misma hoja podían decir números distintos
+ * (Jonás 4:5-11, 2026-10-02). Manda la numeración; el desfase es el respaldo
+ * de los recursos que todavía no la tienen.
+ */
+export function printedLabelForSheet(
+    sheet: number,
+    numbering: PageNumbering | null | undefined,
+    fallbackOffset: number | null,
+): string | null {
+    const fromNumbering = printedLabelIn(numbering, sheet);
+    if (fromNumbering !== null) return fromNumbering;
+    // Un tramo que cubre la hoja y no tiene folio (láminas, cortesía) dice
+    // «hoja N», como el ancla de la cita: el desfase único inventaba una
+    // página ahí (revisión adversarial de B1). El respaldo es sólo para las
+    // hojas que la numeración no describe.
+    if (numbering?.segments.some(g => sheet >= g.fromSheet && sheet <= g.toSheet)) return null;
+    const printed = printedPageFor(sheet, fallbackOffset);
+    return printed === null ? null : String(printed);
 }

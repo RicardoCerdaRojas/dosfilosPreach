@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { printedPageFor, type PageIndexEntry, type SheetRange } from '@dosfilos/domain';
+import { printedLabelForSheet, type PageIndexEntry, type PageNumbering, type SheetRange } from '@dosfilos/domain';
 
 /**
  * Panel de navegación del documento.
@@ -17,6 +17,8 @@ import { printedPageFor, type PageIndexEntry, type SheetRange } from '@dosfilos/
 interface Props {
     pages: ReadonlyArray<PageIndexEntry>;
     printedPageOffset: number | null;
+    /** La numeración confirmada; manda sobre el desfase (`printedLabelForSheet`). */
+    numbering: PageNumbering | null;
     selected: ReadonlySet<number>;
     proposed: ReadonlySet<number>;
     /** Hoja desde la que se está tendiendo un rango, si hay una. */
@@ -29,6 +31,7 @@ interface Props {
 export function PageRail({
     pages,
     printedPageOffset,
+    numbering,
     selected,
     proposed,
     anchor,
@@ -71,7 +74,7 @@ export function PageRail({
                     const isProposed = proposed.has(page.sheet);
                     const isCurrent = page.sheet === currentSheet;
                     const isAnchor = page.sheet === anchor;
-                    const printed = printedPageFor(page.sheet, printedPageOffset);
+                    const printed = printedLabelForSheet(page.sheet, numbering, printedPageOffset);
 
                     return (
                         <div
