@@ -24,7 +24,6 @@ import { WorkflowPhase, HomileticalAnalysis, CoachingStyle } from '@dosfilos/dom
 import { useContentHistory } from '@/hooks/useContentHistory';
 import { useGeneratorChat } from '@/hooks/useGeneratorChat';
 import { ApproachSelectionView } from './homiletics/ApproachSelectionView';
-import { ApproachSelectionInfo } from './homiletics/ApproachSelectionInfo';
 import { BibleReaderPanel } from '@/components/bible/BibleReaderPanel';
 import {
     AlertDialog,
@@ -40,6 +39,7 @@ import {
 import { HomileticsLoadingScreen, HomileticsSavedIndicator } from './homiletics/HomileticsLoadingScreen';
 import { useHomileticsRefinement } from './homiletics/useHomileticsRefinement';
 import { useHomileticsVersions } from './homiletics/useHomileticsVersions';
+import { useSeedThesis } from './homiletics/useSeedThesis';
 
 /**
  * Sub-steps within the Homiletics phase.
@@ -55,6 +55,7 @@ enum HomileticsSubStep {
 export function StepHomiletics() {
     const { exegesis, rules, setHomiletics, setStep, homiletics, saving, config, sermonId, selectHomileticalApproach } = useWizard();
     const { user } = useFirebase();
+    const semilla = useSeedThesis(sermonId, user?.uid);
     const { t, language } = useTranslation('generator');
     const activeLanguage = language === 'en' ? 'en' : 'es';
 
@@ -335,21 +336,21 @@ export function StepHomiletics() {
 
     // ── Sub-step 2a: approach selection ─────────────────────────────────
     if (currentSubStep === HomileticsSubStep.APPROACH_SELECTION) {
-        const leftPanel = (
-            <ApproachSelectionView
-                previews={approachPreviews}
-                selectedId={tempSelectedApproachId}
-                onSelect={setTempSelectedApproachId}
-                onConfirm={handleconfirmApproach}
-                onRegenerate={handleGenerate}
-                developing={developingApproach}
-                regenerating={loading}
-            />
-        );
+        // A todo el ancho: la ayuda que ocupaba la columna derecha se abre a
+        // pedido dentro de la vista (#31 del ejercicio de Jonás).
         return (
             <>
                 <HomileticsSavedIndicator visible={saving} />
-                <WizardLayout leftPanel={leftPanel} rightPanel={<ApproachSelectionInfo />} />
+                <ApproachSelectionView
+                    previews={approachPreviews}
+                    selectedId={tempSelectedApproachId}
+                    onSelect={setTempSelectedApproachId}
+                    onConfirm={handleconfirmApproach}
+                    onRegenerate={handleGenerate}
+                    developing={developingApproach}
+                    regenerating={loading}
+                    thesis={semilla.centralIdea}
+                />
             </>
         );
     }
@@ -468,7 +469,7 @@ export function StepHomiletics() {
                                       <PropositionContractPanel
                                           homiletics={homiletics}
                                           sermonPassage={passage}
-                                          {...(rules?.pastoralSeed?.genre ? { genre: rules.pastoralSeed.genre } : {})}
+                                          {...(semilla.genre ? { genre: semilla.genre } : {})}
                                           onApply={applyContract}
                                       />
                                   ),

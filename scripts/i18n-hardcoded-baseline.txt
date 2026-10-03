@@ -14,8 +14,6 @@
 1 packages/web/src/components/expository/methodology-svgs.tsx
 5 packages/web/src/components/faculty/FacultyDocumentEditor.tsx
 1 packages/web/src/components/faculty/FacultySessionSidebar.tsx
-1 packages/web/src/components/homiletics/ApproachCard.tsx
-1 packages/web/src/components/homiletics/ApproachSelector.tsx
 1 packages/web/src/components/library/LibraryStatusBadge.tsx
 2 packages/web/src/components/library/UploadConsentModal.tsx
 3 packages/web/src/components/onboarding/CelebrationModal.tsx
