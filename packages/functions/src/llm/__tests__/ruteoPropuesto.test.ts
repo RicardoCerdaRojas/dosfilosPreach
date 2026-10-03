@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { leerTabla } from '../ruteoDeModelos';
+import { leerRutaPorDefecto, leerTabla } from '../ruteoDeModelos';
 import { PROXY_FEATURES } from '../runLlmPrompt';
 import { LLM_PRICING } from '../llmCost';
 
@@ -36,5 +36,11 @@ describe('la tabla de ruteo propuesta', () => {
         for (const f of ['exegesis.analyzeVerse', 'exegesis.composeAcademicPaper']) {
             expect(tabla[f]?.model).toBe('gpt-6.1-sol');
         }
+    });
+
+    it('la ruta por defecto es Luna y tiene precio', () => {
+        const porDefecto = leerRutaPorDefecto(doc);
+        expect(porDefecto?.model).toBe('gpt-6-luna');
+        expect(porDefecto!.model in LLM_PRICING).toBe(true);
     });
 });

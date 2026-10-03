@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { leerTabla, rutaCompatible } from '../ruteoDeModelos';
+import { leerRutaPorDefecto, leerTabla, rutaCompatible, rutaEn } from '../ruteoDeModelos';
 
 const SIN_NADA = { fileSearch: false, imagen: false, esquema: false };
 
@@ -27,6 +27,30 @@ describe('leerTabla', () => {
     it('un esfuerzo de razonamiento desconocido se omite, no rompe la entrada', () => {
         const t = leerTabla({ features: { f: { provider: 'openai', model: 'gpt-6-luna', reasoning: 'muchísimo' } } });
         expect(t.f).toEqual({ provider: 'openai', model: 'gpt-6-luna' });
+    });
+});
+
+describe('la ruta por defecto', () => {
+    const luna = { provider: 'openai' as const, model: 'gpt-6-luna', reasoning: 'none' as const };
+    const sol = { provider: 'openai' as const, model: 'gpt-6.1-sol', reasoning: 'low' as const };
+
+    it('una función sin entrada propia toma `porDefecto`', () => {
+        const doc = { porDefecto: luna, features: { 'exegesis.analyzeVerse': sol } };
+        const ruteo = { tabla: leerTabla(doc), porDefecto: leerRutaPorDefecto(doc) };
+        expect(rutaEn(ruteo, 'funcion.nueva')).toEqual(luna);
+    });
+
+    it('la entrada propia manda sobre `porDefecto`', () => {
+        const doc = { porDefecto: luna, features: { 'exegesis.analyzeVerse': sol } };
+        const ruteo = { tabla: leerTabla(doc), porDefecto: leerRutaPorDefecto(doc) };
+        expect(rutaEn(ruteo, 'exegesis.analyzeVerse')).toEqual(sol);
+    });
+
+    it('sin `porDefecto`, o mal escrito, una función sin entrada sigue como antes', () => {
+        expect(leerRutaPorDefecto({ features: {} })).toBeNull();
+        expect(leerRutaPorDefecto(undefined)).toBeNull();
+        expect(leerRutaPorDefecto({ porDefecto: { provider: 'openai' } })).toBeNull();
+        expect(rutaEn({ tabla: {}, porDefecto: null }, 'funcion.nueva')).toBeNull();
     });
 });
 

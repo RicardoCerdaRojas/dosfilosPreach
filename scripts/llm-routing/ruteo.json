@@ -5,9 +5,15 @@
     "  - el paper (lo que ve el profesor) con GPT-6.1 Sol: el más preciso, ~20 % más barato que 2.5 Pro;",
     "  - extractRubric (lee una imagen) con Gemini 3.8 Flash;",
     "  - todo lo demás con GPT-6 Luna: correcto, no inventó fuentes, y la redacción del sermón la eligió el fundador a ciegas.",
+    "porDefecto (desde 2026-10-03, con OK del fundador): la ruta de las funciones SIN entrada propia, para que una función nueva nazca con Luna. Si el documento no se puede leer, no rige ni ésta: todo sigue por Gemini.",
     "Un pedido con búsqueda en archivos o con imagen sigue por Gemini aunque su función diga OpenAI (rutaCompatible).",
     "Se aplica a Firestore tal cual; esta copia es la fuente revisada. Una prueba de functions verifica que cada clave exista en PROXY_FEATURES y que cada modelo tenga precio."
   ],
+  "porDefecto": {
+    "provider": "openai",
+    "model": "gpt-6-luna",
+    "reasoning": "none"
+  },
   "features": {
     "hebrewTutor.analyzeVerse": {
       "provider": "openai",
