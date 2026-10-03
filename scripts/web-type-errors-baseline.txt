@@ -1,7 +1,7 @@
 # Baseline de errores de tipo de packages/web — NO editar a mano.
 # Regenerar con: ./scripts/check-web-types.sh --update
 # Formato: <cantidad>\t<archivo relativo a packages/web>
-# Total: 534
+# Total: 531
 1	../application/src/greek-tutor/use-cases/AddPassageWordToUnitsUseCase.ts
 1	../application/src/greek-tutor/use-cases/GenerateTrainingUnitsUseCase.ts
 1	../application/src/greek-tutor/use-cases/SaveInsightUseCase.ts
@@ -43,7 +43,6 @@
 2	../domain/src/teaching-suite/validatePlan.ts
 1	../infrastructure/src/bible/repositories/ASVRepository.ts
 2	../infrastructure/src/bible/repositories/RVR1960Repository.ts
-1	../infrastructure/src/export/PdfExportService.ts
 2	../infrastructure/src/firebase/FirebaseChunkRepository.ts
 3	../infrastructure/src/firebase/FirebaseGeoEventRepository.ts
 1	../infrastructure/src/firebase/FirebaseLibraryCategoryRepository.ts
@@ -132,7 +131,6 @@
 2	src/lib/analytics/init.ts
 6	src/lib/citations.tsx
 1	src/lib/doxologicalShadowReport.ts
-2	src/lib/sermon/exportSermonToDocx.ts
 5	src/pages/admin/CoreLibraryAdmin.tsx
 1	src/pages/admin/HintCatalogPage.tsx
 1	src/pages/admin/PastoralSeedInspector.tsx
