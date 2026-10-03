@@ -130,7 +130,7 @@
 4 packages/web/src/pages/sermons/generator/pastoralSeed/RecognitionStep.tsx
 9 packages/web/src/pages/sermons/generator/pastoralSeed/StructuralAnalysisStep.tsx
 6 packages/web/src/pages/sermons/generator/pastoralSeed/TimelessPrincipleStep.tsx
-3 packages/web/src/pages/sermons/generator/pastoralSeed/WordStudiesStep.tsx
+2 packages/web/src/pages/sermons/generator/pastoralSeed/WordStudiesStep.tsx
 2 packages/web/src/pages/sermons/generator/pastoralSeed/witnesses/WitnessGate.tsx
 1 packages/web/src/pages/sermons/generator/pastoralSeed/wordStudy/PastoralWordStudyModal.tsx
 4 packages/web/src/pages/sermons/tutor.tsx

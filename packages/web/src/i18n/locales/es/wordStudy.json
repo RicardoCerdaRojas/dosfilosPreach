@@ -39,5 +39,33 @@
         "saving": "Guardando…",
         "saved": "Guardado",
         "charsRemaining": "{{count}} más para guardar"
+    },
+    "form": {
+        "title": "Agregar estudio de palabra",
+        "wordPlaceholder": {
+            "greek": "Palabra original (ej. δικαιοσύνη)",
+            "hebrew": "Palabra original (ej. חֶסֶד)"
+        },
+        "referencePlaceholder": {
+            "greek": "Referencia (ej. Rom 8:4)",
+            "hebrew": "Referencia (ej. Jon 4:2)"
+        },
+        "languages": {
+            "greek": "Griego",
+            "hebrew": "Hebreo"
+        }
+    },
+    "fromPaper": {
+        "wordHint": "Llevar «{{word}}» a mis estudios",
+        "title": "Estudiar «{{word}}»",
+        "subtitle": "Esta es la explicación de tu paper, completa. Quédate con las partes que te sirvan y escríbelo con tus palabras: sólo lo que dejes aquí va a tu estudio.",
+        "reference": "Referencia",
+        "language": "Idioma",
+        "discovery": "Tu descubrimiento",
+        "unchanged": "Todavía es el texto del paper. Adáptalo para que sea tu descubrimiento.",
+        "tooShort": "Mínimo {{min}} caracteres.",
+        "cancel": "Cancelar",
+        "add": "Agregar a mis estudios",
+        "added": "«{{word}}» se agregó a tus estudios."
     }
 }

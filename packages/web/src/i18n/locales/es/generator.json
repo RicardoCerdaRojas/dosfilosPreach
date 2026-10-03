@@ -662,7 +662,7 @@
   },
   "paperReference": {
     "title": "De tu paper «{{paperTitle}}» · {{count}} para este paso",
-    "disclaimer": "Esto es lo que tú ya estableciste en tu paper. Está acá para consultarlo, no para copiarlo: lo que escribas en este paso tiene que ser tuyo."
+    "disclaimer": "Esto es lo que tú ya estableciste en tu paper. Está aquí para consultarlo: lo que escribas en este paso tiene que ser tuyo. En el estudio de palabras, toca una palabra para adaptar su explicación a tu estudio."
   },
   "citations": {
     "translate": "Ver en español",

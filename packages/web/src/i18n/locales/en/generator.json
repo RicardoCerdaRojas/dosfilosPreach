@@ -662,7 +662,7 @@
   },
   "paperReference": {
     "title": "From your paper \u201c{{paperTitle}}\u201d \u00b7 {{count}} for this step",
-    "disclaimer": "This is what you already established in your paper. It is here to consult, not to copy: what you write in this step has to be yours."
+    "disclaimer": "This is what you already established in your paper. It is here to consult: what you write in this step has to be yours. In word studies, tap a word to adapt its explanation into your study."
   },
   "citations": {
     "translate": "View in English",

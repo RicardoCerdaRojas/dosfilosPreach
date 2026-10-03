@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { GraduationCap, Plus, Trash2, ExternalLink, BookOpen } from 'lucide-react';
 import {
     AiAssistType,
+    languageForPassage,
     PASTORAL_SEED_THRESHOLDS,
     PastoralSeedTool,
     StepValidationResult,
@@ -60,12 +61,15 @@ export function WordStudiesStep({
     const wordStudyGate = usePastoralWordStudyGate();
     const [greekOpen, setGreekOpen] = useState(false);
     const [wordStudyOpen, setWordStudyOpen] = useState(false);
-    const [draft, setDraft] = useState<WordStudy>({
+    // El idioma sale del testamento del pasaje: en Jonás arrancaba en
+    // «Griego» y había que cambiarlo en cada palabra (#29 del ejercicio).
+    const [draft, setDraft] = useState<WordStudy>(() => ({
         word: '',
         reference: '',
         pastorDiscovery: '',
-        language: 'greek',
-    });
+        language: languageForPassage(passage),
+    }));
+    const lang = draft.language ?? 'greek';
 
     useStepTimer({
         enabled: true,
@@ -176,27 +180,27 @@ export function WordStudiesStep({
                 </div>
 
                 <div className="border rounded-md p-4 space-y-3 bg-muted/20">
-                    <p className="text-sm font-medium">Agregar estudio de palabra</p>
+                    <p className="text-sm font-medium">{t('form.title')}</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <Input
-                            placeholder="Palabra original (ej. δικαιοσύνη)"
+                            placeholder={t(`form.wordPlaceholder.${lang}`)}
                             value={draft.word}
                             onChange={(e) => setDraft((d) => ({ ...d, word: e.target.value }))}
                         />
                         <Input
-                            placeholder="Referencia (ej. Rom 8:4)"
+                            placeholder={t(`form.referencePlaceholder.${lang}`)}
                             value={draft.reference}
                             onChange={(e) => setDraft((d) => ({ ...d, reference: e.target.value }))}
                         />
                         <select
-                            value={draft.language ?? 'greek'}
+                            value={lang}
                             onChange={(e) =>
                                 setDraft((d) => ({ ...d, language: e.target.value as 'greek' | 'hebrew' }))
                             }
                             className="border rounded-md px-2 text-sm bg-background"
                         >
-                            <option value="greek">Griego</option>
-                            <option value="hebrew">Hebreo</option>
+                            <option value="greek">{t('form.languages.greek')}</option>
+                            <option value="hebrew">{t('form.languages.hebrew')}</option>
                         </select>
                     </div>
                     <Textarea
