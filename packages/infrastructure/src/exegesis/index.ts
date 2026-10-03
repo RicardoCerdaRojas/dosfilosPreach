@@ -24,6 +24,7 @@ export {
     searchDocumentByReference,
     searchDocumentText,
     searchLemmasInDocument,
+    fetchDocumentText,
     fetchDocumentPdfUrl,
     invalidateDocumentCaches,
 } from './DocumentPageIndexClient';

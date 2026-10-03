@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -335,7 +335,7 @@ export class GenerateStepUseCase {
                 // fuente sin alcance de consulta): el texto entero. Un
                 // documento chico ya llegó entero por el recuperador
                 // (`wholeDocumentTravelsEntire`); esto es el respaldo.
-                const text = await this.contentReader.getTextContent(source.corpusId);
+                const text = await readFullText(this.contentReader, source.corpusId);
                 contexts.push({
                     corpusId: source.corpusId,
                     sourceType: source.sourceType,

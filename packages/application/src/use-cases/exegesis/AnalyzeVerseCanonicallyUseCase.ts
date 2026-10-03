@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -550,7 +550,7 @@ export class AnalyzeVerseCanonicallyUseCase {
             } else {
                 // 'full-document' (or legacy without `mode`): pull the
                 // full extracted text via the content reader.
-                const text = await this.contentReader.getTextContent(source.corpusId);
+                const text = await readFullText(this.contentReader, source.corpusId);
                 if (!text?.trim()) {
                     silent.push(source);
                     continue;

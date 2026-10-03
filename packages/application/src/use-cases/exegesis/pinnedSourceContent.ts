@@ -12,6 +12,7 @@ import {
     type IPageNumberingReader,
     type IResourceContentReader,
     type ProjectSource,
+    readFullText,
 } from '@dosfilos/domain';
 import { loadSourceNumberings } from './sourceNumberings';
 
@@ -120,7 +121,7 @@ export async function buildComposerSourcesWithPinnedContent(
         }
 
         try {
-            const text = await readers.contentReader.getTextContent(s.corpusId);
+            const text = await readFullText(readers.contentReader, s.corpusId);
             return { ...base, textContent: text ?? '' };
         } catch (err) {
             console.warn('[compose] failed to load pinned source textContent:', s.corpusId, err);

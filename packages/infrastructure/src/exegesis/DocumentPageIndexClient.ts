@@ -226,4 +226,35 @@ export async function searchDocumentByReference(
 export function invalidateDocumentCaches(resourceId: string): void {
     indexCache.delete(resourceId);
     pdfCache.delete(resourceId);
+    textCache.delete(resourceId);
 }
+
+const textCache = new Map<string, Promise<string>>();
+
+/**
+ * El texto completo de un documento, desde sus fragmentos indexados (callable
+ * `getDocumentText`). Cacheado por recurso durante la sesión: el análisis de
+ * un pasaje lo pide una vez por versículo y el texto no cambia.
+ */
+export function fetchDocumentText(resourceId: string): Promise<string> {
+    const cached = textCache.get(resourceId);
+    if (cached) return cached;
+    const pending = (async () => {
+        const callable = httpsCallable<{ resourceId: string }, { text: string; chunkCount: number }>(
+            getFunctions(),
+            'getDocumentText',
+            { timeout: INDEX_TIMEOUT_MS },
+        );
+        const response = await callable({ resourceId });
+        return response.data?.text ?? '';
+    })();
+    textCache.set(resourceId, pending);
+    // Un fallo no se cachea, ni un vacío: un documento todavía sin indexar
+    // devuelve '' y puede tener texto en el próximo pedido.
+    pending.then(
+        text => { if (!text.trim()) textCache.delete(resourceId); },
+        () => textCache.delete(resourceId),
+    );
+    return pending;
+}
+

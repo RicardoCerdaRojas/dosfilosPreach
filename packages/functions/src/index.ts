@@ -39,7 +39,7 @@ export { retrieveChunks } from './library/retrieveChunks';
 export { getDocumentOutline, getDocumentChunks } from './library/documentStructure';
 export { searchDocumentText } from './library/documentTextSearch';
 // Selector de páginas: índice de hojas del documento y URL firmada del PDF.
-export { getDocumentPageIndex, getDocumentPdfUrl } from './library/documentPageIndex';
+export { getDocumentPageIndex, getDocumentPdfUrl, getDocumentText } from './library/documentPageIndex';
 // Corpus consultable: ranking dentro de las hojas que el trabajo admitió.
 export { retrieveCuratedCorpus } from './library/retrieveCuratedCorpus';
 export { auditIndexing } from './library/auditIndexing';

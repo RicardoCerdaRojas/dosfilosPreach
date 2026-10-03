@@ -477,3 +477,18 @@ describe('AnalyzeVerseCanonicallyUseCase — se busca por versículo también si
         expect(analyzer.analyzeVerse.mock.calls[0][0].sources[0].textContent).toContain('fragmento guardado');
     });
 });
+
+
+/** El texto de un documento completo sale de los fragmentos: `textContent` se corta en 1 MB. */
+describe('AnalyzeVerseCanonicallyUseCase — texto completo desde los fragmentos', () => {
+    it('si el lector sabe dar el texto completo, se usa ése', async () => {
+        const suelta = { ...makeSource('Directa', 'res-c'), mode: 'full-document' as const, excerptRecipe: null };
+        const { useCase, analyzer } = buildUseCase({ paper: makePaper([suelta]), analysis: analysisCiting(['Directa']), retrievedFor: [], fullText: 'COPIA CORTADA' });
+        const lector = (useCase as unknown as { contentReader: Record<string, unknown> }).contentReader;
+        lector.getFullText = vi.fn().mockResolvedValue('el texto entero desde los fragmentos');
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const texto = analyzer.analyzeVerse.mock.calls[0][0].sources[0].textContent;
+        expect(texto).toContain('desde los fragmentos');
+        expect(texto).not.toContain('COPIA CORTADA');
+    });
+});

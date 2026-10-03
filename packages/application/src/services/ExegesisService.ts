@@ -34,6 +34,7 @@ import {
     CallableDocumentChunkReader,
     CallableCuratedCorpusRetriever,
     CallableCuratedCorpusReader,
+    fetchDocumentText,
     RetrieveChunksResourceRanker,
     GeminiStepCorpusPlanner,
     MorphhbOriginalLanguageProvider,
@@ -50,6 +51,7 @@ import type {
     IResourceContentReader,
     IResourceIndexProbe,
 } from '@dosfilos/domain';
+import { readResourceFullText } from './resourceFullText';
 import { LibraryService } from './LibraryService';
 import { VerbatimFirstCitationVerifier } from './exegesis/VerbatimFirstCitationVerifier';
 
@@ -332,6 +334,14 @@ class ExegesisService {
                 const resource = await libraryRepository.findById(resourceId);
                 return resource?.textContent ?? null;
             },
+            // Ver `readResourceFullText`: el guardado si está entero; los
+            // fragmentos sólo para lo que la extracción cortó.
+            getFullText: (resourceId: string) =>
+                readResourceFullText(resourceId, {
+                    findResource: async id =>
+                        (await libraryRepository.findById(id)) as { textContent?: string | null; characterCount?: number } | null,
+                    fetchFromChunks: fetchDocumentText,
+                }),
         };
 
         // Papers
