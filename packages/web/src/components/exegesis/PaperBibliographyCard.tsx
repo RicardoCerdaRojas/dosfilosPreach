@@ -4,6 +4,8 @@ import { formatBibliographyEntry, type ExegeticalPaper } from '@dosfilos/domain'
 import { useTranslation } from '@/i18n';
 import { usePaperBibliography, type PaperBibliographyRow } from '@/hooks/exegesis/usePaperBibliography';
 import { BibliographyEditDialog } from './BibliographyEditDialog';
+import { BulkBibliographyDialog } from './BulkBibliographyDialog';
+import { Button } from '@/components/ui/button';
 
 /**
  * Qué libro se puede citar con sus datos y cuál todavía no.
@@ -18,9 +20,11 @@ export function PaperBibliographyCard({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
     const rows = usePaperBibliography(paper);
     const [editing, setEditing] = useState<PaperBibliographyRow | null>(null);
+    const [enLote, setEnLote] = useState(false);
 
     if (rows.length === 0) return null;
     const incomplete = rows.filter(r => r.missing.length > 0).length;
+    const legibles = rows.filter(r => r.missing.length > 0 && r.editable).length;
 
     return (
         <section className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -37,6 +41,12 @@ export function PaperBibliographyCard({ paper }: { paper: ExegeticalPaper }) {
                     ? t('detail.bibliography.allComplete')
                     : t('detail.bibliography.someMissing', { count: incomplete })}
             </p>
+
+            {legibles > 1 && (
+                <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setEnLote(true)}>
+                    {t('detail.bibliography.bulk.cta', { count: legibles })}
+                </Button>
+            )}
 
             <ul className="space-y-2">
                 {rows.map(row => (
@@ -65,6 +75,7 @@ export function PaperBibliographyCard({ paper }: { paper: ExegeticalPaper }) {
                 ))}
             </ul>
 
+            {enLote && <BulkBibliographyDialog rows={rows} open={enLote} onOpenChange={setEnLote} />}
             {editing && (
                 <BibliographyEditDialog
                     open={!!editing}

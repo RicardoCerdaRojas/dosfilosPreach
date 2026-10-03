@@ -2387,7 +2387,28 @@
       "readNothingNew": "El libro no agrega nada a lo que ya escribiste.",
       "notEditable": "La ficha de esta fuente no se edita desde aquí: el libro no es tuyo.",
       "incompleteToast_one": "La bibliografía salió con 1 ficha incompleta: {{sources}}. Complétala antes de entregar.",
-      "incompleteToast_other": "La bibliografía salió con {{count}} fichas incompletas: {{sources}}. Complétalas antes de entregar."
+      "incompleteToast_other": "La bibliografía salió con {{count}} fichas incompletas: {{sources}}. Complétalas antes de entregar.",
+      "bulk": {
+        "cta_one": "Leer la portada que falta",
+        "cta_other": "Leer las portadas de los {{count}} que faltan",
+        "title": "Datos para citar desde las portadas",
+        "body": "Se lee la portada y la página de créditos de cada libro al que le faltan datos. Revisa lo que propone cada uno: sólo se guarda lo que marques, y lo que ya escribiste no se toca. La ficha queda guardada en el LIBRO y sirve para todos tus trabajos.",
+        "start": "Leer las portadas",
+        "reading": "Leyendo {{hechas}}/{{total}}…",
+        "close": "Cerrar",
+        "save_one": "Guardar 1 ficha",
+        "save_other": "Guardar {{count}} fichas",
+        "saved_one": "Se guardó 1 ficha.",
+        "saved_other": "Se guardaron {{count}} fichas.",
+        "saveFailed_one": "Se guardó 1 ficha y después falló el resto.",
+        "saveFailed_other": "Se guardaron {{count}} fichas y después falló el resto.",
+        "status": {
+          "nothing-new": "La portada no trae nada que falte.",
+          "no-text": "El libro todavía no tiene texto extraído.",
+          "error": "No se pudo leer la portada."
+        }
+      },
+      "savedOnBook": "Se guarda en el libro: sirve para todos los trabajos que lo usen."
     },
     "glossary": {
       "title": "Palabras que no uso",
