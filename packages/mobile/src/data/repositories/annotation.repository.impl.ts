@@ -112,11 +112,23 @@ export class AnnotationRepositoryImpl implements AnnotationRepository {
             .filter((n): n is InkNote => n !== null && n.exact.length > 0);
     }
 
+    /**
+     * Un id de nota nuevo, generado en el cliente. La tinta lo usa desde el
+     * primer instante: con un id provisorio, deshacer antes de que volviera
+     * la recarga borraba un documento que no existía y el trazo resucitaba
+     * (revisión adversarial de «Atril: tinta y lectura»).
+     */
+    newInkNoteId(sermonId: string): string {
+        return doc(annotationsRef(sermonId)).id;
+    }
+
     async appendInkStroke(
         sermonId: string,
         anchor: SermonAnnotationAnchor,
         stroke: InkStroke,
         existingId?: string,
+        /** El id con que crear la nota, si ya se generó (`newInkNoteId`). */
+        newId?: string,
     ): Promise<string> {
         // Un trazo por documento sería más simple pero multiplicaría las
         // lecturas; una nota agrupa los trazos que comparten ancla.
@@ -131,7 +143,7 @@ export class AnnotationRepositoryImpl implements AnnotationRepository {
             );
             return existingId;
         }
-        const ref = doc(annotationsRef(sermonId));
+        const ref = newId ? doc(annotationsRef(sermonId), newId) : doc(annotationsRef(sermonId));
         settleOffline(
             setDoc(ref, {
                 ...anchor,

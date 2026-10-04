@@ -40,20 +40,34 @@ export function redoInk(state: InkHistoryState): { action: InkAction | null; sta
     return { action, state: { past: [...state.past, action], future: state.future.slice(1) } };
 }
 
-export function useInkHistory() {
-    const [history, setHistory] = useState<InkHistoryState>(emptyInkHistory);
+/**
+ * El historial de la pantalla que se está viendo, y no de otra.
+ *
+ * `scope` es el movimiento del sermón o el capítulo de la Biblia. Al cambiar,
+ * el historial empieza de cero. Si no, rehacer en otro movimiento recreaba
+ * el trazo ahí, con el texto de ese movimiento, y deshacer actuaba sobre
+ * tinta que no se veía (revisión adversarial).
+ */
+export function useInkHistory(scope: string) {
+    const [stored, setStored] = useState<{ scope: string; history: InkHistoryState }>({
+        scope,
+        history: emptyInkHistory,
+    });
+    const history = stored.scope === scope ? stored.history : emptyInkHistory;
+    const set = (next: InkHistoryState) => setStored({ scope, history: next });
     return {
-        record: (action: InkAction) => setHistory((h) => recordInk(h, action)),
+        record: (action: InkAction) =>
+            setStored((s) => ({ scope, history: recordInk(s.scope === scope ? s.history : emptyInkHistory, action) })),
         undo: () => {
             const { action, state } = undoInk(history);
             if (!action) return;
-            setHistory(state);
+            set(state);
             action.undo();
         },
         redo: () => {
             const { action, state } = redoInk(history);
             if (!action) return;
-            setHistory(state);
+            set(state);
             action.redo();
         },
         canUndo: history.past.length > 0,

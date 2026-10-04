@@ -67,6 +67,9 @@ interface Props {
     onFingerGesture?: (startX: number, endX: number) => void;
 }
 
+/** Lo más que dura el trazo puente: el hueco que tapa es de un cuadro. */
+const BRIDGE_MAX_MS = 600;
+
 /** El resaltador se lee a través: translúcido. */
 const HIGHLIGHTER_OPACITY = 0.3;
 const opacityOf = (tool: InkTool | undefined) => (tool === 'highlighter' ? HIGHLIGHTER_OPACITY : 1);
@@ -242,7 +245,12 @@ export function InkLayer({
         // Un trazo sin ancla no se guarda: mejor perder un garabato suelto que
         // guardar tinta que no sabe a qué se refiere.
         if (!held || captured.length < 2) return;
-        setPending({ path: buildPath(captured.map(toCanvas)), signature });
+        const bridge = { path: buildPath(captured.map(toCanvas)), signature };
+        setPending(bridge);
+        // El puente tapa un cuadro, no más. Antes vivía hasta que la firma
+        // cambiara, y deshacer, ocultar o limpiar la devolvían a la de ese
+        // momento: el trazo fantasma volvía (revisión adversarial).
+        setTimeout(() => setPending((current) => (current === bridge ? null : current)), BRIDGE_MAX_MS);
         onFinishStroke(held.offset, {
             points: captured.map((p) => toNoteSpace(p, held.rect, bodySize)),
             width: strokeWidthEm,
@@ -256,6 +264,10 @@ export function InkLayer({
      * con el dedo falla, y su toque se le pasa a la navegación del atril.
      */
     const fingerStart = useRef<number | null>(null);
+    /** El toque del lápiz que escribe (su id), o `null`. La palma no lo corta ni lo mueve. */
+    const pencilTouch = useRef<number | null>(null);
+    /** En este gesto hubo más de un toque (palma apoyada): no es un toque de navegación. */
+    const multiTouch = useRef(false);
     // Los callbacks del gesto leen refs, pero corren en el gesto y no en el
     // render: el compilador no puede verlo a través del constructor encadenado.
     /* eslint-disable react-hooks/refs */
@@ -266,24 +278,45 @@ export function InkLayer({
         .onTouchesDown((e, manager) => {
             const touch = e.changedTouches[0];
             if (!touch) return;
+            if (e.numberOfTouches > 1) multiTouch.current = true;
+            if (pencilTouch.current !== null) return;
             if (touchWrites(e.pointerType === PointerType.STYLUS, true)) {
+                pencilTouch.current = touch.id;
                 manager.activate();
                 beginAt(touch.absoluteX, touch.absoluteY);
-            } else {
+            } else if (fingerStart.current === null) {
                 fingerStart.current = touch.absoluteX;
             }
         })
-        .onUpdate((e) => extendAt(e.absoluteX, e.absoluteY))
-        .onEnd(() => finish())
-        .onTouchesUp((e, manager) => {
-            const start = fingerStart.current;
-            if (start === null) return;
-            fingerStart.current = null;
-            onFingerGesture?.(start, e.changedTouches[0]?.absoluteX ?? start);
-            manager.fail();
+        // Se sigue el toque del lápiz, no el centro de todos los toques: con
+        // la palma apoyada, el centro cae entre los dos.
+        .onTouchesMove((e) => {
+            const touch = e.allTouches.find((t) => t.id === pencilTouch.current);
+            if (touch) extendAt(touch.absoluteX, touch.absoluteY);
         })
-        .onTouchesCancelled(() => {
+        .onTouchesUp((e, manager) => {
+            // Se levantó el lápiz: el trazo termina, aunque la palma siga apoyada.
+            if (pencilTouch.current !== null && e.changedTouches.some((t) => t.id === pencilTouch.current)) {
+                pencilTouch.current = null;
+                finish();
+                return;
+            }
+            const start = fingerStart.current;
+            const lastTouch = e.numberOfTouches <= 1;
+            if (lastTouch) fingerStart.current = null;
+            // Mientras el lápiz escribe, levantar la palma no hace nada.
+            if (pencilTouch.current !== null || start === null || !lastTouch) return;
+            const wasMulti = multiTouch.current;
+            multiTouch.current = false;
+            manager.fail();
+            // Un toque de navegación es de UN dedo: la palma no pasa página.
+            if (!wasMulti) onFingerGesture?.(start, e.changedTouches[0]?.absoluteX ?? start);
+        })
+        .onFinalize(() => {
+            if (pencilTouch.current !== null) finish();
+            pencilTouch.current = null;
             fingerStart.current = null;
+            multiTouch.current = false;
         });
     /* eslint-enable react-hooks/refs */
 

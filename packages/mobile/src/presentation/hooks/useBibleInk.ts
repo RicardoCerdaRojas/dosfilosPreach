@@ -81,7 +81,8 @@ function persist(note: BibleInkNote | undefined, id: string) {
  */
 export function useBibleInk(bookId: string, chapter: number, layoutKey: string) {
     const queryClient = useQueryClient();
-    const history = useInkHistory();
+    // El historial es del capítulo que se está viendo.
+    const history = useInkHistory(`${bookId}.${chapter}`);
     const [penActive, setPenActive] = useState(false);
     const [penColor, setPenColor] = useState<InkColor>('ink');
     const [tool, setTool] = useState<InkTool>('pen');

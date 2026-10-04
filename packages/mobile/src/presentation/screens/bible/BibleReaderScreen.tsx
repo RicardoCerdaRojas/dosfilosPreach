@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -24,7 +24,7 @@ import { InkLayer } from '@/presentation/components/preach/InkLayer';
 import { InkToolbar } from '@/presentation/components/preach/InkToolbar';
 import { MarkPopover } from '@/presentation/components/preach/MarkPopover';
 import { useBibleInk } from '@/presentation/hooks/useBibleInk';
-import { useSharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { formatSelectionForSermon } from '@/presentation/components/bible/passageFormat';
 import { BiblePickerSheet } from '@/presentation/components/bible/BiblePickerSheet';
 import { BibleSearchSheet } from '@/presentation/components/bible/BibleSearchSheet';
@@ -115,6 +115,9 @@ export default function BibleReaderScreen() {
     // Cuánto bajó el capítulo. La tinta vive en coordenadas del TEXTO (las de
     // pantalla más esto): antes quedaba fija mientras el capítulo se movía.
     const scrollY = useSharedValue(0);
+    const onScroll = useAnimatedScrollHandler((e) => {
+        scrollY.value = e.contentOffset.y;
+    });
 
     const repo = BibleVersionFactory.getByVersion(versionId);
     const parallelRepo = parallelId ? BibleVersionFactory.getByVersion(parallelId) : null;
@@ -344,11 +347,11 @@ export default function BibleReaderScreen() {
 
             </View>
 
-            <ScrollView
+            <Animated.ScrollView
                 onLayout={(e) => setAvailableWidth(e.nativeEvent.layout.width - 48)}
-                onScroll={(e) => {
-                    scrollY.value = e.nativeEvent.contentOffset.y;
-                }}
+                // En el hilo de la interfaz: con `onScroll` de JS la tinta iba
+                // uno o dos cuadros detrás del texto (revisión adversarial).
+                onScroll={onScroll}
                 scrollEventThrottle={16}
                 contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 120 }}
             >
@@ -449,7 +452,7 @@ export default function BibleReaderScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
-            </ScrollView>
+            </Animated.ScrollView>
 
             {ink.penActive ? (
                 // El gesto hay que enseñarlo: nadie adivina que dos dedos

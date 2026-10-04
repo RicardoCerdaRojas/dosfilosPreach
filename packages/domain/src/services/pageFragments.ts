@@ -70,7 +70,12 @@ export function fragmentHeight(
     const trail = m.height - units[n - 1]!.bottom;
     const top = fragment.from === 0 ? 0 : units[fragment.from]!.top - lead;
     const bottom = fragment.to === n ? m.height : units[fragment.to - 1]!.bottom + trail;
-    return Math.max(0, bottom - top);
+    // Una cola que arranca en el PRIMER renglón del bloque: ese renglón tenía
+    // más ancho (la sangría francesa lo saca al margen) y la cola, que ya no
+    // es comienzo de párrafo, no lo tiene. Puede necesitar un renglón más.
+    const startsOnFirstLine = fragment.from > 0 && units[fragment.from]!.top === units[0]!.top;
+    const slack = startsOnFirstLine ? units[0]!.bottom - units[0]!.top : 0;
+    return Math.max(0, bottom - top + slack);
 }
 
 /** El bloque de un fragmento, listo para dibujar. `continued`: no es el comienzo del bloque. */
@@ -81,8 +86,9 @@ export function fragmentBlock(block: ReadingBlock, fragment: PageFragment): Read
 }
 
 /**
- * Arma las páginas. Mismo contrato que `packPages` —grupos que no se separan,
- * primera página con menos lugar por los títulos— más una regla: si un grupo
+ * Arma las páginas, con las reglas de la paginación por párrafo —grupos que no se separan,
+ * primera página con menos lugar por los títulos, que puede quedar con los
+ * títulos solos (A7)— más una: si un grupo
  * no entra en lo que queda, se corta su ÚLTIMO bloque entre oraciones para
  * llenar la página, en vez de mandarlo entero a la siguiente.
  *
@@ -116,8 +122,11 @@ export function packFragments(
                 used += fh;
                 continue;
             }
+            // Para rellenar sólo se corta un párrafo, solo o con su subtítulo.
+            // Una introducción con sus viñetas no se reparte.
+            const onlyTitlesBefore = group.slice(0, j).every((g) => blocks[g.block]!.kind === 'subheading');
             const canCut =
-                (anywhere || j === group.length - 1) &&
+                (anywhere || (j === group.length - 1 && onlyTitlesBefore)) &&
                 isSplittable(blocks[f.block]!) &&
                 f.to - f.from >= 2;
             if (canCut) {
@@ -183,6 +192,15 @@ export function packFragments(
             current.push(...forced.head);
             flush();
             queue.unshift(forced.tail);
+            continue;
+        }
+        // Debajo de los títulos no entra ni una oración: la primera página
+        // queda con los títulos solos y el texto va a páginas enteras. Sin
+        // esto, un bloque que no se puede partir terminaba montado encima de
+        // los títulos (la regla A7, que sólo cubría `packPages`).
+        if (pages.length === 0 && room() < capacity) {
+            flush();
+            queue.unshift(group);
             continue;
         }
         // Ni una oración entra en una página vacía: va sola y esa página se

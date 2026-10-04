@@ -95,6 +95,31 @@ describe('paginación por oración (L-1)', () => {
         expect(layout(packFragments(blocks, m, 400))).toEqual([['0:0-1'], ['1:0-1']]);
     });
 
+    it('REGRESIÓN A7: un bloque que no se parte y no entra bajo los títulos no se monta encima', () => {
+        // Primer grupo (introducción + viñeta) más alto que una página, con
+        // una introducción de una sola oración (no se parte) más alta que el
+        // lugar bajo los títulos.
+        const blocks = buildReadingBlocks('Puntos del sermón:\n\n- Uno.');
+        const m: BlockMetrics[] = [{ height: 80 }, { height: 60 }];
+        const pages = packFragments(blocks, m, 100, 50);
+        expect(pages[0]).toEqual([]);
+        expect(pages.slice(1).map((p) => p.map((f) => f.block))).toEqual([[0], [1]]);
+    });
+
+    it('REGRESIÓN: el último punto de una lista no se corta para rellenar', () => {
+        const md = `${sentences(5, 'A')}\n\nPuntos:\n\n- I. Uno.\n- II. Dos.`;
+        const real = buildReadingBlocks(md);
+        // El último punto, fingido de tres oraciones medidas, para que SE PUEDA cortar.
+        const last = real.length - 1;
+        const blocks = real.map((b, i) => (i === last ? { ...b, units: [b.units[0]!, b.units[0]!, b.units[0]!] } : b));
+        const m = metricsOf(blocks);
+        // A ocupa 220; quedan 180: entra la introducción (60), el punto I (60)
+        // y la primera oración del punto II (60). No se debe cortar.
+        const pages = packFragments(blocks, m, 400);
+        expect(pages[0]!.map((f) => f.block)).toEqual([0]);
+        expect(pages[1]!.find((f) => f.block === last)).toEqual({ block: last, from: 0, to: 3 });
+    });
+
     it('sin bloques no hay páginas', () => {
         expect(packFragments([], [], 400)).toEqual([]);
     });
@@ -108,6 +133,13 @@ describe('altura de un fragmento', () => {
         expect(fragmentHeight(blocks, m, { block: 0, from: 0, to: 1 })).toBe(LINE + GAP);
         expect(fragmentHeight(blocks, m, { block: 0, from: 3, to: 4 })).toBe(LINE + GAP);
         expect(fragmentHeight(blocks, m, { block: 0, from: 1, to: 3 })).toBe(2 * LINE + GAP);
+    });
+
+    it('una cola que arranca en el primer renglón del bloque lleva un renglón de margen (sangría francesa)', () => {
+        // Dos oraciones en el mismo primer renglón: «No. Sigue…».
+        const two = buildReadingBlocks('No. Sigue la idea larga.');
+        const shared: BlockMetrics[] = [{ height: 2 * LINE + GAP, units: [{ top: 0, bottom: LINE }, { top: 0, bottom: 2 * LINE }] }];
+        expect(fragmentHeight(two, shared, { block: 0, from: 1, to: 2 })).toBe(2 * LINE + GAP + LINE);
     });
 
     it('el fragmento lleva sólo sus oraciones y sabe si es continuación', () => {

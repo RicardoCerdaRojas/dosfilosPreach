@@ -196,8 +196,13 @@ export default function PreachModeScreen({
     const { measure, probe } = useDeliveryMeasure(fontSize);
 
     // Capa de tinta: anclada al texto, no a la pantalla. Ver InkNote en domain.
-    const inkLayoutKey = `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}`;
-    const ink = useInkNotes(id ?? '', section, inkLayoutKey);
+    const inkLayoutKey = `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}`;
+    const ink = useInkNotes(
+        id ?? '',
+        section,
+        inkLayoutKey,
+        blocks.flatMap((b) => b.units.map((u) => u.sourceStart)),
+    );
 
     // El presupuesto de tiempo por movimiento alimenta el riel (D2). Por
     // defecto se reparte proporcional a las palabras; lo que el pastor fija a
@@ -245,7 +250,13 @@ export default function PreachModeScreen({
                 : 12
             : 0;
     const chromeTop = (chromeVisible ? insets.top + 44 : insets.top + 16) + statusBarHeight;
-    const readableHeight = screenHeight - chromeTop - insets.bottom;
+    // La paginación usa SIEMPRE el alto con los controles a la vista. Si no,
+    // tocar el centro para mostrarlos o esconderlos repaginaba: el texto
+    // saltaba de página con cada toque y la tinta quedaba sobre otra oración
+    // (revisión adversarial de «Atril: tinta y lectura»). Sin controles,
+    // sobra un poco de aire abajo; es el precio de que la página no se mueva.
+    const layoutStatusBar = budgets.length > 0 && statusBarMode !== 'off' ? (statusBarMode === 'full' ? 34 : 12) : 0;
+    const readableHeight = screenHeight - (insets.top + 44 + layoutStatusBar) - insets.bottom;
     // El tablero ya no es un tercio fijo: el reloj y el riel entran en poco
     // más de cien puntos, y lo que sobraba se lo estaba comiendo al texto.
     const panelHeight =
@@ -903,6 +914,8 @@ export default function PreachModeScreen({
                                     key={s.slug}
                                     onPress={() => {
                                         setOnReadingPage(false);
+                                        // Saltar a un movimiento: el foco arranca arriba.
+                                        setFocus({ index: null, arrival: 1 });
                                         goTo(i);
                                         setShowSections(false);
                                     }}

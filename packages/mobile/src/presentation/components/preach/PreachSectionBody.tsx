@@ -1,6 +1,6 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { Text, TouchableOpacity, View, type LayoutChangeEvent } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { HighlightColor, MarkStyle, PreacherGlyph, ReadingBlock, ReadingUnit, UnitMetric } from '@dosfilos/domain';
 
@@ -154,6 +154,9 @@ export function PreachSectionBody({
         });
     };
 
+    // Qué se muestra, como texto: `blocks` es un arreglo nuevo en cada render
+    // (el reloj re-renderiza cada segundo) y no sirve de dependencia.
+    const blocksKey = blocks.map((b) => `${b.units[0]?.sourceStart ?? -1}:${b.units.length}`).join(',');
     useEffect(() => {
         if (!onBlockLayout) return;
         // En el frame siguiente: al correr el efecto, el layout nativo puede
@@ -163,7 +166,19 @@ export function PreachSectionBody({
         });
         return () => cancelAnimationFrame(frame);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [layoutKey, blocks]);
+    }, [layoutKey, blocksKey]);
+
+    /** Lo que cada párrafo informa al montarse y al desmontarse. */
+    const registry: ParagraphRegistry = {
+        attach: (first, node) => blockNodes.current.set(first, node),
+        setUnits: (first, units) => paragraphUnits.current.set(first, units),
+        detach: (first) => {
+            blockNodes.current.delete(first);
+            paragraphUnits.current.delete(first);
+            paragraphLines.current.delete(first);
+            paragraphY.current.delete(first);
+        },
+    };
 
     /** Las métricas del bloque para la paginación, cuando están todos sus párrafos. */
     const reportedMetrics = useRef('');
@@ -207,21 +222,11 @@ export function PreachSectionBody({
     };
 
     const paragraph = (units: ReadingUnit[], key: React.Key, style?: object, continued = false) => (
-        <View
+        <MeasuredParagraph
             key={key}
+            units={units}
+            registry={registry}
             style={style}
-            ref={(node) => {
-                const first = units[0];
-                if (!first || !node) return;
-                blockNodes.current.set(first.sourceStart, node);
-                paragraphUnits.current.set(first.sourceStart, units);
-                return () => {
-                    blockNodes.current.delete(first.sourceStart);
-                    paragraphUnits.current.delete(first.sourceStart);
-                    paragraphLines.current.delete(first.sourceStart);
-                    paragraphY.current.delete(first.sourceStart);
-                };
-            }}
             onLayout={(e) => {
                 const first = units[0];
                 if (!first) return;
@@ -259,7 +264,7 @@ export function PreachSectionBody({
                     if (node) reportParagraph(first.sourceStart, node);
                 }}
             />
-        </View>
+        </MeasuredParagraph>
     );
 
     return (
@@ -361,5 +366,59 @@ export function PreachSectionBody({
                 );
             })}
         </>
+    );
+}
+
+interface ParagraphRegistry {
+    attach: (first: number, node: View) => void;
+    setUnits: (first: number, units: ReadingUnit[]) => void;
+    detach: (first: number) => void;
+}
+
+/**
+ * La vista de un párrafo, con un callback de ref ESTABLE.
+ *
+ * En React 19 un ref en línea se limpia y se vuelve a llamar en cada render.
+ * Esa limpieza borraba los renglones de cada oración, que no vuelven a llegar
+ * porque `onLayout` no se repite: la tinta caía al párrafo entero (revisión
+ * adversarial de «Atril: tinta y lectura»). Acá el callback cambia sólo si
+ * cambia el párrafo.
+ */
+function MeasuredParagraph({
+    units,
+    registry,
+    style,
+    onLayout,
+    children,
+}: {
+    units: ReadingUnit[];
+    registry: ParagraphRegistry;
+    style?: object;
+    onLayout: (e: LayoutChangeEvent) => void;
+    children: React.ReactNode;
+}) {
+    const first = units[0]?.sourceStart;
+    const latest = useRef(registry);
+    useEffect(() => {
+        latest.current = registry;
+    });
+    useEffect(() => {
+        if (first !== undefined) latest.current.setUnits(first, units);
+    }, [first, units]);
+    const ref = useCallback(
+        (node: View | null) => {
+            if (first === undefined || !node) return;
+            latest.current.attach(first, node);
+            latest.current.setUnits(first, units);
+            return () => latest.current.detach(first);
+        },
+        // Sólo cuando cambia el párrafo: las oraciones se actualizan aparte.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [first],
+    );
+    return (
+        <View ref={ref} style={style} onLayout={onLayout}>
+            {children}
+        </View>
     );
 }
