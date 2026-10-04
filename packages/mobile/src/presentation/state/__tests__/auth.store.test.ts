@@ -20,6 +20,7 @@ jest.mock('@/data/repositories/auth.repository.impl', () => {
         AuthRepositoryImpl: jest.fn().mockImplementation(() => ({
             signIn,
             signOut: async () => undefined,
+            deleteAccount: async () => ({ purgeAfter: '2026-10-11T00:00:00.000Z', graceDays: 7 }),
             onAuthStateChanged: () => () => undefined,
         })),
     };
@@ -86,5 +87,17 @@ describe('cerrar sesión — revisión adversarial de A8', () => {
         await useAuthStore.getState().signOut();
         expect(useReaderSettingsStore.getState().lastPreachingPlace).toBe('');
         expect(useReaderSettingsStore.getState().deliveryFontSize).toBe(32);
+    });
+});
+
+describe('borrar la cuenta (B2)', () => {
+    it('pide el borrado y deja la tablet limpia aunque haya cambios sin subir (ya no van a subir)', async () => {
+        useAuthStore.setState({ user: { id: 'pastor' } as never, isLoading: false });
+        queryClient.setQueryData(['bibleMarks'], ['marca']);
+        synced.mockResolvedValueOnce(false);
+        const r = await useAuthStore.getState().deleteAccount();
+        expect(r.purgeAfter).toBe('2026-10-11T00:00:00.000Z');
+        expect(useAuthStore.getState().user).toBeNull();
+        expect(queryClient.getQueryData(['bibleMarks'])).toBeUndefined();
     });
 });

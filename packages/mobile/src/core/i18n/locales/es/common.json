@@ -31,5 +31,13 @@
     "undo": "Deshacer",
     "pending_sync_title": "Hay cambios sin sincronizar",
     "pending_sync_body": "Registros de predicación, marcas o tinta todavía no subieron. Si cierras sesión ahora, se pierden. Conéctate a internet y espera unos segundos.",
-    "logout_anyway": "Cerrar sesión igual"
+    "logout_anyway": "Cerrar sesión igual",
+    "delete_account": "Eliminar mi cuenta",
+    "delete_account_working": "Eliminando…",
+    "delete_account_title": "¿Eliminar tu cuenta?",
+    "delete_account_body": "Tu cuenta se desactiva ahora y se cancela tu suscripción. En {{days}} días se borran por completo tus sermones, estudios, biblioteca, marcas y todos tus datos, y ya no se pueden recuperar. Si cambias de opinión antes, escribe a privacy@dosfilos.app.",
+    "delete_account_confirm": "Eliminar cuenta",
+    "delete_account_done_title": "Cuenta desactivada",
+    "delete_account_done_body": "Tus datos se borrarán por completo el {{date}}.",
+    "delete_account_failed": "No se pudo eliminar la cuenta. Revisa tu conexión y vuelve a intentarlo."
 }

@@ -1,7 +1,11 @@
 import { User } from '@/domain/entities/user';
 import { AuthRepository } from '@/domain/repositories/auth.repository';
 import { getFirebaseAuth } from '@/data/sources/firebase.source';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser, sendPasswordResetEmail, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, AppleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser, sendPasswordResetEmail, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, AppleAuthProvider, signInWithCredential, revokeToken } from '@react-native-firebase/auth';
+import { getApp } from '@react-native-firebase/app';
+import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { Platform } from 'react-native';
 import { signOutGoogle } from '@/core/config/socialAuth';
 
 export class AuthRepositoryImpl implements AuthRepository {
@@ -97,6 +101,38 @@ export class AuthRepositoryImpl implements AuthRepository {
         const auth = getFirebaseAuth();
         await signOut(auth);
         await signOutGoogle();
+    }
+
+    /**
+     * Borrar la cuenta (B2).
+     *
+     * Apple exige revocar el token de «Iniciar sesión con Apple» al borrar la
+     * cuenta. La revocación necesita un código de autorización fresco, así que
+     * a quien entró con Apple se le vuelve a pedir la autorización (en iOS,
+     * que es donde la librería la implementa). Si la revocación falla —p. ej.
+     * el proveedor de Apple sin configurar en Firebase—, el borrado sigue: lo
+     * que la persona pidió es que se borre su cuenta.
+     */
+    async deleteAccount(): Promise<{ purgeAfter: string; graceDays: number }> {
+        const auth = getFirebaseAuth();
+        const fbUser = auth.currentUser;
+        if (!fbUser) throw new Error('not-signed-in');
+        const usesApple = fbUser.providerData.some((p) => p.providerId === 'apple.com');
+        if (usesApple && Platform.OS === 'ios') {
+            // Si la persona cancela este diálogo, el borrado se cancela.
+            const credential = await AppleAuthentication.signInAsync({ requestedScopes: [] });
+            if (credential.authorizationCode) {
+                await revokeToken(auth, credential.authorizationCode).catch((error) =>
+                    console.warn('[deleteAccount] Apple revoke failed:', error),
+                );
+            }
+        }
+        const callable = httpsCallable<void, { purgeAfter: string; graceDays: number }>(
+            getFunctions(getApp()),
+            'requestAccountDeletion',
+        );
+        const result = await callable();
+        return result.data;
     }
 
     async getCurrentUser(): Promise<User | null> {

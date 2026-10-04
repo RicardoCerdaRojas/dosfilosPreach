@@ -11,3 +11,10 @@ export const TABLET_EDITING = false;
 
 /** Rutas de desarrollo (`/dev/*`): sólo en desarrollo, nunca en la tienda. */
 export const DEV_ROUTES = __DEV__;
+
+/**
+ * Días entre pedir el borrado de la cuenta y el borrado definitivo. Copia de
+ * `ACCOUNT_DELETION_GRACE_DAYS` del servidor (functions no comparte código con
+ * la app); una prueba de paridad las ata.
+ */
+export const ACCOUNT_DELETION_GRACE_DAYS = 7;

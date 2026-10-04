@@ -5,6 +5,8 @@ initializeApp();
 
 // Export library functions
 export { extractPdfWithGemini } from './library/extractPdfWithGemini';
+export { requestAccountDeletion } from './account/requestAccountDeletion';
+export { processAccountDeletions } from './account/processAccountDeletions';
 export { reprocessWithLlamaParse } from './library/reprocessWithLlamaParse';
 export { cancelExtraction } from './library/cancelExtraction';
 export { processWithGemini } from './library/processWithGemini';

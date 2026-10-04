@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { TABLET_EDITING } from '../features';
+import { ACCOUNT_DELETION_GRACE_DAYS, TABLET_EDITING } from '../features';
 
 /**
  * Reglas de las tiendas que el código tiene que cumplir solo (B1).
@@ -31,5 +31,19 @@ describe('cumplimiento de tiendas', () => {
 
     it('editar en la tablet está apagado en la v1 (D5)', () => {
         expect(TABLET_EDITING).toBe(false);
+    });
+});
+
+describe('borrado de cuenta — paridad con el servidor', () => {
+    it('la gracia que se le promete al pastor es la que aplica el servidor', () => {
+        const fuente = readFileSync(join(ROOT, '../functions/src/account/requestAccountDeletion.ts'), 'utf8');
+        const m = /export const ACCOUNT_DELETION_GRACE_DAYS = (\d+);/.exec(fuente);
+        expect(m).not.toBeNull();
+        expect(Number(m![1])).toBe(ACCOUNT_DELETION_GRACE_DAYS);
+    });
+
+    it('la página web del borrado (la que pide Google Play) dice el mismo plazo', () => {
+        const pagina = readFileSync(join(ROOT, '../web/src/pages/legal/DeleteAccount.tsx'), 'utf8');
+        expect(pagina).toContain(`A los ${ACCOUNT_DELETION_GRACE_DAYS} días`);
     });
 });
