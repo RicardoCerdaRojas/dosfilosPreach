@@ -18,3 +18,14 @@ export const DEV_ROUTES = __DEV__;
  * la app); una prueba de paridad las ata.
  */
 export const ACCOUNT_DELETION_GRACE_DAYS = 7;
+
+/**
+ * Páginas legales (B3: Apple 5.1.1(i) pide la política de privacidad DENTRO
+ * de la app). Son las únicas páginas de la web a las que la app enlaza: no
+ * venden nada. Ver storeCompliance.test.
+ */
+export const LEGAL_URLS = {
+    privacy: 'https://app.preach.dosfilos.com/privacy',
+    terms: 'https://app.preach.dosfilos.com/terms',
+    deleteAccount: 'https://app.preach.dosfilos.com/delete-account',
+} as const;

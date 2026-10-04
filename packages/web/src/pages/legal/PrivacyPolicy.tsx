@@ -10,9 +10,9 @@ export function PrivacyPolicyPage() {
                 Volver
             </Link>
 
-            <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-4 flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="text-sm text-amber-800 dark:text-amber-300">
+            <div className="mb-6 rounded-md border border-warning/30 bg-warning/10 p-4 flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                <div className="text-sm text-foreground">
                     <strong>Borrador — pendiente de revisión legal.</strong>
                 </div>
             </div>
@@ -76,8 +76,8 @@ export function PrivacyPolicyPage() {
                 <p>
                     Su contenido permanece almacenado mientras su cuenta esté activa. Al eliminar
                     un documento individual, éste se borra permanentemente junto con sus embeddings
-                    y chunks asociados. Al cancelar su cuenta, todo su contenido se elimina dentro
-                    de los 30 días siguientes, salvo requisitos legales específicos de retención.
+                    y chunks asociados. Al eliminar su cuenta, todo su contenido se borra a los 7 días
+                    (ver sección 9), salvo requisitos legales específicos de retención.
                 </p>
 
                 <h2>7. Derechos del Usuario</h2>
@@ -92,13 +92,45 @@ export function PrivacyPolicyPage() {
                     <li>Presentar una queja ante la autoridad de protección de datos aplicable.</li>
                 </ul>
 
-                <h2>8. Cookies</h2>
+                <h2>8. Aplicación para tablet (Dos Filos Preach)</h2>
+                <p>
+                    La aplicación para tablet usa la misma cuenta y los mismos datos que la web. Además:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Inicio de sesión con Google o Apple:</strong> recibimos su nombre y correo
+                        electrónico (Apple puede entregarnos un correo de reenvío) para crear o abrir su cuenta.
+                    </li>
+                    <li>
+                        <strong>Lo que usted crea en la tablet:</strong> subrayados y marcas, tinta, notas y el
+                        registro de sus predicaciones (fecha, duración y, si lo escribe, el lugar). Se guardan en su
+                        cuenta.
+                    </li>
+                    <li>
+                        <strong>Copias en el dispositivo:</strong> los sermones que usted prepara para usar sin
+                        conexión se guardan en la tablet. Se borran al cerrar sesión.
+                    </li>
+                    <li>
+                        <strong>Datos técnicos:</strong> una verificación de que la solicitud viene de la aplicación
+                        legítima (App Check) y reportes de fallos sin datos personales.
+                    </li>
+                    <li>No mostramos publicidad ni rastreamos su actividad en otras aplicaciones.</li>
+                </ul>
+
+                <h2>9. Eliminar su cuenta</h2>
+                <p>
+                    Puede pedir que se borre su cuenta desde la aplicación (Perfil → «Eliminar mi cuenta») o como
+                    se explica en <Link to="/delete-account">esta página</Link>. La cuenta se desactiva en el momento
+                    y sus datos se borran por completo a los 7 días.
+                </p>
+
+                <h2>10. Cookies</h2>
                 <p>
                     Usamos cookies esenciales para mantener la sesión del usuario y cookies
                     analíticas agregadas (sin identificar individuos) para mejorar el servicio.
                 </p>
 
-                <h2>9. Contacto</h2>
+                <h2>11. Contacto</h2>
                 <p>
                     Para consultas sobre privacidad: <a href="mailto:privacy@dosfilos.app">privacy@dosfilos.app</a>
                 </p>

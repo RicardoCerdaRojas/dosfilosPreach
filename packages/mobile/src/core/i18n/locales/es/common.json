@@ -39,5 +39,8 @@
     "delete_account_confirm": "Eliminar cuenta",
     "delete_account_done_title": "Cuenta desactivada",
     "delete_account_done_body": "Tus datos se borrarán por completo el {{date}}.",
-    "delete_account_failed": "No se pudo eliminar la cuenta. Revisa tu conexión y vuelve a intentarlo."
+    "delete_account_failed": "No se pudo eliminar la cuenta. Revisa tu conexión y vuelve a intentarlo.",
+    "terms": "Términos",
+    "privacy": "Política de privacidad",
+    "and": "y"
 }

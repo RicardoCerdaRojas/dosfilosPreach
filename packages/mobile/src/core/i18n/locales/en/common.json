@@ -39,5 +39,8 @@
     "delete_account_confirm": "Delete account",
     "delete_account_done_title": "Account deactivated",
     "delete_account_done_body": "Your data will be permanently deleted on {{date}}.",
-    "delete_account_failed": "The account couldn't be deleted. Check your connection and try again."
+    "delete_account_failed": "The account couldn't be deleted. Check your connection and try again.",
+    "terms": "Terms",
+    "privacy": "Privacy Policy",
+    "and": "and"
 }

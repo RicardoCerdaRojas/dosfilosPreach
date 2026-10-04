@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { ACCOUNT_DELETION_GRACE_DAYS, TABLET_EDITING } from '../features';
+import { ACCOUNT_DELETION_GRACE_DAYS, LEGAL_URLS, TABLET_EDITING } from '../features';
 
 /**
  * Reglas de las tiendas que el código tiene que cumplir solo (B1).
@@ -22,11 +22,22 @@ const archivos = (dir: string): string[] =>
     });
 
 describe('cumplimiento de tiendas', () => {
-    it('ningún archivo de la app enlaza a la web de Preach', () => {
+    it('la app sólo enlaza a las páginas legales de la web, nunca a registro, planes o precios', () => {
         const fuentes = [...archivos(join(ROOT, 'app')), ...archivos(join(ROOT, 'src'))];
         expect(fuentes.length).toBeGreaterThan(30);
-        const conEnlace = fuentes.filter((f) => /app\.preach\.dosfilos\.com|preach\.dosfilos\.com\/(register|dashboard|pricing)/.test(readFileSync(f, 'utf8')));
-        expect(conEnlace).toEqual([]);
+        const enlaces = fuentes.flatMap((f) =>
+            [...readFileSync(f, 'utf8').matchAll(/https?:\/\/[a-z.]*dosfilos\.[a-z]+(\/[a-z-]*)?/g)].map((m) => `${m[0]} (${f.split('/src/').pop()})`),
+        );
+        const permitidos = new Set<string>(Object.values(LEGAL_URLS));
+        const prohibidos = enlaces.filter((e) => !permitidos.has(e.split(' ')[0]!));
+        expect(prohibidos).toEqual([]);
+    });
+
+    it('las páginas legales existen en la web', () => {
+        const app = readFileSync(join(ROOT, '../web/src/App.tsx'), 'utf8');
+        for (const url of Object.values(LEGAL_URLS)) {
+            expect(app).toContain(`path="${new URL(url).pathname}"`);
+        }
     });
 
     it('editar en la tablet está apagado en la v1 (D5)', () => {
@@ -45,5 +56,12 @@ describe('borrado de cuenta — paridad con el servidor', () => {
     it('la página web del borrado (la que pide Google Play) dice el mismo plazo', () => {
         const pagina = readFileSync(join(ROOT, '../web/src/pages/legal/DeleteAccount.tsx'), 'utf8');
         expect(pagina).toContain(`A los ${ACCOUNT_DELETION_GRACE_DAYS} días`);
+    });
+
+    it('la política de privacidad dice el mismo plazo, y ningún otro', () => {
+        const politica = readFileSync(join(ROOT, '../web/src/pages/legal/PrivacyPolicy.tsx'), 'utf8');
+        const plazos = [...politica.matchAll(/(\d+) días/g)].map((m) => Number(m[1]));
+        expect(plazos.length).toBeGreaterThan(0);
+        expect(plazos.every((d) => d === ACCOUNT_DELETION_GRACE_DAYS)).toBe(true);
     });
 });

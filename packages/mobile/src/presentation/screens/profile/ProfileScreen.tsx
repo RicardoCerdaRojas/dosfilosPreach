@@ -12,6 +12,7 @@ import { READING_MODES, READING_MODE_LABEL_KEYS } from '@/core/theme/readingMode
 import type { ReadingMode } from '@/core/theme/readingModes';
 import { PendingWritesError, useAuthStore } from '@/presentation/state/auth.store';
 import { ACCOUNT_DELETION_GRACE_DAYS } from '@/core/config/features';
+import { LegalLinks } from '@/presentation/components/LegalLinks';
 import { useThemeStore, ThemeMode } from '@/presentation/state/theme.store';
 import { useLanguageStore, Language } from '@/presentation/state/language.store';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
@@ -323,6 +324,10 @@ export default function ProfileScreen() {
                             {deleting ? t('common:delete_account_working') : t('common:delete_account')}
                         </Text>
                     </TouchableOpacity>
+
+                    <View className="mt-6">
+                        <LegalLinks />
+                    </View>
 
                     <View className="items-center mt-10">
                         <SectionLabel theme={theme}>Dos Filos Preach</SectionLabel>

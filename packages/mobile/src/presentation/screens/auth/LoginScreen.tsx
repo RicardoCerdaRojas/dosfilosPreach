@@ -15,6 +15,7 @@ import { useAppTheme } from '@/core/theme/appTheme';
 import { useAuthStore } from '@/presentation/state/auth.store';
 import { useUIStore } from '@/presentation/state/ui.store';
 import { getGoogleIdToken } from '@/core/config/socialAuth';
+import { LegalLinks } from '@/presentation/components/LegalLinks';
 
 /**
  * El registro NO ocurre en la app: la política es payment-first en la web
@@ -274,6 +275,10 @@ export const LoginScreen = () => {
                         {resetMode ? t('auth:back_to_sign_in') : t('auth:forgot_password')}
                     </Text>
                 </TouchableOpacity>
+
+                <View className="mt-10">
+                    <LegalLinks prefix={t('auth:legal_prefix')} />
+                </View>
 
             </View>
         </View>
