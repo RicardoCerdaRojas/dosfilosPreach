@@ -35,10 +35,11 @@
     "check_offline_done": "Saved for offline use",
     "check_offline_todo": "Not saved for offline use yet",
     "check_offline_action": "Save",
-    "check_duration_done": "Duration set: {{minutes}} min",
-    "check_duration_todo": "Duration not set (estimated from the text)",
-    "check_duration_action": "Set",
     "check_reading_done": "Reading ready: {{passage}}",
-    "check_reading_todo": "“{{passage}}” was not found in the app's Bible",
-    "sunday_pending": "Left to do: {{count}}"
+    "check_reading_todo": "“{{passage}}” couldn't be opened in the app's Bible",
+    "sunday_pending": "Left to do: {{count}}",
+    "duration_from_text": "Duration: {{minutes}} min, from the text",
+    "duration_chosen": "Duration: {{minutes}} min, your choice",
+    "duration_adjust": "Adjust",
+    "minutes_short": "{{minutes}} min"
 }

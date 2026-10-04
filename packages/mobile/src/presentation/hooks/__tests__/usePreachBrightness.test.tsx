@@ -66,8 +66,10 @@ describe('brillo del atril', () => {
         });
         await flush();
         await act(async () => appStateListener?.('background'));
+        await flush();
         expect(brightness.setBrightnessAsync).toHaveBeenLastCalledWith(0.35);
         await act(async () => appStateListener?.('active'));
+        await flush();
         expect(brightness.setBrightnessAsync).toHaveBeenLastCalledWith(0.8);
         act(() => renderer.unmount());
     });
@@ -82,6 +84,38 @@ describe('brillo del atril', () => {
         act(() => renderer.unmount());
         await flush();
         expect(brightness.restoreSystemBrightnessAsync).toHaveBeenCalled();
+    });
+
+    it('REGRESIÓN: cambiar el nivel no guarda la luz del atril como «original»', async () => {
+        Object.defineProperty(Platform, 'OS', { value: 'ios', configurable: true });
+        act(() => {
+            renderer = create(<Sonda level={0.55} />);
+        });
+        await flush();
+        // Lo que lea el sistema ahora ya es la luz del atril.
+        brightness.getBrightnessAsync.mockImplementation(() => Promise.resolve(0.55));
+        act(() => renderer.update(<Sonda level={0.8} />));
+        await flush();
+        expect(brightness.setBrightnessAsync).toHaveBeenLastCalledWith(0.8);
+        act(() => renderer.unmount());
+        await flush();
+        expect(brightness.setBrightnessAsync).toHaveBeenLastCalledWith(0.35);
+        expect(brightness.getBrightnessAsync).toHaveBeenCalledTimes(1);
+        brightness.getBrightnessAsync.mockImplementation(() => Promise.resolve(0.35));
+    });
+
+    it('REGRESIÓN: el Centro de Control (inactive → active) no pisa el brillo que el pastor subió a mano', async () => {
+        Object.defineProperty(Platform, 'OS', { value: 'ios', configurable: true });
+        act(() => {
+            renderer = create(<Sonda level={0.8} />);
+        });
+        await flush();
+        brightness.setBrightnessAsync.mockClear();
+        await act(async () => appStateListener?.('inactive'));
+        await act(async () => appStateListener?.('active'));
+        await flush();
+        expect(brightness.setBrightnessAsync).not.toHaveBeenCalled();
+        act(() => renderer.unmount());
     });
 
     it('sin brillo propio no toca nada', async () => {

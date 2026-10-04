@@ -44,6 +44,15 @@ interface Props {
 /** Tope de resultados: más que esto no se lee, se refina la búsqueda. */
 const RESULT_LIMIT = 40;
 
+/**
+ * Se piden UNO más de los que se muestran: es la única forma de saber si hay
+ * más. Con el tope como detector, exactamente 40 decía «más de 40» (revisión
+ * adversarial de C1).
+ */
+export function capResults<T>(found: T[], limit: number): { shown: T[]; more: boolean } {
+    return { shown: found.slice(0, limit), more: found.length > limit };
+}
+
 export function BibleSearchSheet({
     visible,
     tokens,
@@ -63,14 +72,14 @@ export function BibleSearchSheet({
 
     const repo = BibleVersionFactory.getByVersion(versionId);
     const scopeIds = repo ? bookIdsForScope(scope, repo.getBooks(), versionId) : null;
-    // Sin debounce: con el índice (C1) cada búsqueda tarda 1-4 ms (medido en
-    // Node). Esperar acá sería fingir una latencia que no existe.
-    const results =
-        query.trim().length >= 3
-            ? (repo?.search(query.trim(), RESULT_LIMIT, scopeIds ?? undefined) ?? [])
-            : [];
+    // Sin debounce: con el índice (C1) cada búsqueda tarda 1-4 ms MEDIDO en
+    // Node; en Hermes (sin JIT) no está medido.
+    const { shown: results, more } = capResults(
+        query.trim().length >= 3 ? (repo?.search(query.trim(), RESULT_LIMIT + 1, scopeIds ?? undefined) ?? []) : [],
+        RESULT_LIMIT,
+    );
 
-    // El índice se arma al ABRIR la hoja (~300 ms una vez), no en la primera
+    // El índice se arma al ABRIR la hoja (~300 ms en Node; en Hermes sin medir), no en la primera
     // tecla: así el pastor no ve el primer carácter trabarse.
     useEffect(() => {
         if (!visible || !repo) return;
@@ -202,7 +211,7 @@ export function BibleSearchSheet({
                             style={{ color: tokens.textSecondary }}
                             className={`${FACE_CLASS[face].regular} text-xs mt-2`}
                         >
-                            {results.length >= RESULT_LIMIT
+                            {more
                                 ? t('bible:results_in_scope_more', { count: RESULT_LIMIT })
                                 : t('bible:results_in_scope', { count: results.length })}
                         </Text>

@@ -4,12 +4,15 @@
  *
  * Sólo lo que la app puede saber y el pastor puede resolver desde acá:
  * - SIN CONEXIÓN: el sermón está en el maletín (no «probablemente en caché»).
- * - DURACIÓN: la fijó él, no es la estimación de las palabras.
+ *
+ * La DURACIÓN no es un pendiente: si el pastor no elige, el atril usa la del
+ * texto, que ya es una respuesta (revisión adversarial de C7: «fijar» la
+ * estimación no cambiaba nada y la congelaba). El inicio la muestra como dato.
  * - LECTURA: el pasaje del sermón se encontró en la Biblia de la app, así que
  *   la página de Lectura del atril va a tener texto. Si el pastor apagó esa
  *   página, o el sermón no cita pasaje, no hay nada que revisar.
  */
-export type ReadinessKey = 'offline' | 'duration' | 'reading';
+export type ReadinessKey = 'offline' | 'reading';
 
 export interface ReadinessItem {
     key: ReadinessKey;
@@ -18,18 +21,14 @@ export interface ReadinessItem {
 
 export interface ReadinessInput {
     offline: boolean;
-    durationSet: boolean;
     /** La página de Lectura está encendida y el sermón cita algún pasaje. */
     readingWanted: boolean;
     /** El pasaje se encontró; `null` mientras se busca. */
     readingFound: boolean | null;
 }
 
-export function sundayReadiness({ offline, durationSet, readingWanted, readingFound }: ReadinessInput): ReadinessItem[] {
-    const items: ReadinessItem[] = [
-        { key: 'offline', done: offline },
-        { key: 'duration', done: durationSet },
-    ];
+export function sundayReadiness({ offline, readingWanted, readingFound }: ReadinessInput): ReadinessItem[] {
+    const items: ReadinessItem[] = [{ key: 'offline', done: offline }];
     // Mientras se busca el pasaje no se afirma nada: ni listo ni faltante.
     if (readingWanted && readingFound !== null) items.push({ key: 'reading', done: readingFound });
     return items;

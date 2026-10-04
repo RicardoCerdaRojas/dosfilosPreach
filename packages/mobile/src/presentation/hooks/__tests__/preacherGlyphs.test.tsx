@@ -3,7 +3,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { usePreachHighlights } from '../usePreachHighlights';
+import { firstWordOf, usePreachHighlights } from '../usePreachHighlights';
 
 jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(), ImpactFeedbackStyle: { Light: 'light' } }));
 jest.mock('@/data/repositories/annotation.repository.impl', () => {
@@ -96,5 +96,31 @@ describe('marcas de predicador en el atril', () => {
         expect(api.pendingGlyph).toBe('emphasis');
         act(() => api.endSelection({ start: 6, end: 11 }, 100));
         expect(api.pendingGlyph).toBeNull();
+    });
+
+    it('REGRESIÓN: con varias palabras elegidas, el glifo se ancla sólo a la primera', async () => {
+        act(() => api.endSelection({ start: 0, end: 19 }, 100)); // «Jonás huyó a Tarsis»
+        act(() => api.applyGlyph('look'));
+        await flush();
+        expect(repo.createGlyph).toHaveBeenCalledWith('s1', expect.objectContaining({ exact: 'Jonás', offset: 0, length: 5 }), 'look');
+    });
+
+    it('REGRESIÓN: un glifo en otra palabra de la selección no se reemplaza', async () => {
+        // Glifo en «huyó» (6), luego se eligen «Jonás huyó»: va a «Jonás».
+        act(() => api.endSelection({ start: 6, end: 10 }, 100));
+        act(() => api.applyGlyph('pause'));
+        await flush();
+        act(() => api.endSelection({ start: 0, end: 10 }, 100));
+        expect(api.pendingGlyph).toBeNull();
+        act(() => api.applyGlyph('look'));
+        await flush();
+        expect(repo.updateGlyph).not.toHaveBeenCalled();
+        expect(repo.createGlyph).toHaveBeenCalledTimes(2);
+    });
+
+    it('la primera palabra salta espacios y corta en el siguiente', () => {
+        const body = 'Jonás huyó';
+        expect(firstWordOf(body, { start: 0, end: 10 })).toEqual({ start: 0, end: 5 });
+        expect(firstWordOf(body, { start: 5, end: 10 })).toEqual({ start: 6, end: 10 });
     });
 });

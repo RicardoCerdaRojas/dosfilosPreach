@@ -53,16 +53,30 @@ interface Options {
      */
     budgetsFor: (targetSeconds: number) => MovementBudget[];
     haptics: boolean;
-    /** Se retomó una sesión: llevar al pastor a ese lugar. */
-    onRestore: (place: { sectionIndex: number; pageIndex: number }) => void;
+    /**
+     * Se retomó una sesión: llevar al pastor a ese lugar. `onReading`: estaba
+     * en la página de Lectura.
+     */
+    onRestore: (place: { sectionIndex: number; pageIndex: number; onReading: boolean }) => void;
 }
 
-const pulse = (cue: string) => {
-    if (cue === EIGHTY_PERCENT_CUE || cue === FIVE_MINUTES_CUE) {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    } else {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+/** Slug de la página de Lectura en el reloj: su tiempo no es de ningún movimiento. */
+export const READING_SLUG = 'lectura';
+
+/**
+ * Un pulso por tic, no uno por aviso: con objetivo de 25 min el 80 % y los
+ * 5 minutos caen en el mismo segundo y eran dos pulsos seguidos (revisión
+ * adversarial de C7). El de tiempo total manda sobre el de movimiento.
+ */
+export function pulseFor(cues: string[]): 'warning' | 'light' | null {
+    if (cues.some((cue) => cue === EIGHTY_PERCENT_CUE || cue === FIVE_MINUTES_CUE)) return 'warning';
+    return cues.length ? 'light' : null;
+}
+
+const pulse = (cues: string[]) => {
+    const kind = pulseFor(cues);
+    if (kind === 'warning') void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    else if (kind === 'light') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 };
 
 export function usePreachClock({
@@ -88,27 +102,33 @@ export function usePreachClock({
     // perdería la fracción en curso.
     const live = useRef({ clock, targetSeconds, budgets, haptics, sectionSlug, pageIndex, endAt });
     const lastSaveRef = useRef(0);
+    /** Al salir del atril se deja de guardar: si no, el tic recreaba la sesión borrada. */
+    const finishedRef = useRef(false);
     useEffect(() => {
         live.current = { clock, targetSeconds, budgets, haptics, sectionSlug, pageIndex, endAt };
     });
 
+    // Con hora de término, lo que queda baja aunque el reloj esté en pausa:
+    // el tic sigue, sólo para repintar (revisión adversarial de C7).
+    const ticking = clock.running || endAt !== null;
     useEffect(() => {
-        if (!clock.running) return;
+        if (!ticking) return;
         const timer = setInterval(() => {
             const t1 = Date.now();
             setNow(t1);
             const cur = live.current;
+            if (!cur.clock.running) return;
             const due = dueCues(cur.clock, t1, cur.targetSeconds, cur.budgets);
             if (due.length) {
                 // Marcado en el ref YA: si dos tics corren antes de volver a
                 // pintar, el segundo no repite el pulso (revisión de A4).
                 live.current = { ...cur, clock: markCues(cur.clock, due) };
-                if (cur.haptics) due.forEach(pulse);
+                if (cur.haptics) pulse(due);
                 setClock((c) => markCues(c, due));
             }
             // Guardado periódico: al retomar, lo que pasó desde el último
             // guardado decide si la app estuvo predicando o muerta.
-            if (sermonId && t1 - lastSaveRef.current >= SESSION_SAVE_EVERY_MS) {
+            if (sermonId && !finishedRef.current && t1 - lastSaveRef.current >= SESSION_SAVE_EVERY_MS) {
                 lastSaveRef.current = t1;
                 void savePreachSession(sermonId, {
                     clock: live.current.clock,
@@ -126,7 +146,7 @@ export function usePreachClock({
             clearInterval(timer);
             sub.remove();
         };
-    }, [clock.running, sermonId]);
+    }, [ticking, sermonId]);
 
     // Retomar: si la app se cerró a mitad del sermón, vuelve al lugar y con
     // el reloj. Una sola vez, cuando ya se conocen los movimientos.
@@ -141,15 +161,19 @@ export function usePreachClock({
                 if (!session) return;
                 const t0 = Date.now();
                 const at = known.indexOf(session.sectionSlug ?? '');
-                if (at >= 0) onRestore({ sectionIndex: at, pageIndex: session.pageIndex });
-                else onRestore({ sectionIndex: 0, pageIndex: 0 });
+                const onReading = session.sectionSlug === READING_SLUG;
+                if (at >= 0) onRestore({ sectionIndex: at, pageIndex: session.pageIndex, onReading: false });
+                else onRestore({ sectionIndex: 0, pageIndex: 0, onReading });
                 // Si la app estuvo muerta, vuelve PAUSADO en el último guardado
                 // (resumeClock). Si el movimiento ya no existe (se editó), el
                 // tiempo sigue en el primero.
                 const resumed = resumeClock(session, t0);
-                const slug = at >= 0 ? session.sectionSlug : (known[0] ?? null);
+                const slug = at >= 0 || onReading ? session.sectionSlug : (known[0] ?? null);
                 setClock(slug ? moveClockTo(resumed, slug, t0) : resumed);
-                setEndAt(session.endAt ?? null);
+                // Una hora de término ya pasada es de OTRO culto (la app murió
+                // sin pasar por la salida): con ella el objetivo quedaba en
+                // un minuto y todo salía pasado (revisión adversarial de C7).
+                setEndAt(session.endAt && session.endAt > t0 ? session.endAt : null);
                 setNow(t0);
             })
             // Sin esto, una falla de lectura dejaba la sesión sin guardarse
@@ -162,7 +186,7 @@ export function usePreachClock({
 
     // Se guarda en cada cambio de estado del reloj o de lugar.
     useEffect(() => {
-        if (!sermonId || !restored) return;
+        if (!sermonId || !restored || finishedRef.current) return;
         if (clock.accumulatedMs === 0 && !clock.running) return;
         void savePreachSession(sermonId, { clock, sectionSlug, pageIndex, endAt }).then(() => {
             lastSaveRef.current = Date.now();
@@ -190,6 +214,18 @@ export function usePreachClock({
         setNow(t0);
     };
 
+    /** Poner o quitar la hora de término, con la hora de AHORA (no la del último tic). */
+    const setEnd = (update: number | null | ((current: number | null) => number | null)) => {
+        setEndAt(update);
+        setNow(Date.now());
+    };
+
+    /** Salir del atril: la sesión se borra y no se vuelve a guardar. */
+    const finish = () => {
+        finishedRef.current = true;
+        if (sermonId) void clearPreachSession(sermonId);
+    };
+
     const reset = () => {
         setClock(newClock(sectionSlug));
         setEndAt(null);
@@ -206,7 +242,8 @@ export function usePreachClock({
         targetSeconds,
         budgets,
         endAt,
-        setEndAt,
+        setEndAt: setEnd,
+        finish,
         moveTo,
         ensureStarted,
         toggle,

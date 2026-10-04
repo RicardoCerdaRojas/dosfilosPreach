@@ -6,6 +6,17 @@ El análisis se hizo leyendo el código y ejecutando los chequeos; **no se prob�
 
 Plan anterior y decisiones vigentes: `docs/app-mobile/pulpito-plan.md` (M-01…M-09, roadmap F0–F4).
 
+**Avance (2026-10-04):** Etapa 0 en #738, Etapa A en #739 y Etapa B en #740, todas mergeadas y desplegadas. La Etapa C (C1–C7) va en el PR de `feat/pulpito-etapa-c`, con su revisión adversarial: 6 MEDIO y 8 BAJO, corregidos salvo los que lista el PR.
+
+Queda lo que pide un dispositivo:
+- capturas en iPad y en una tablet Android;
+- la BOOX real;
+- VoiceOver con el texto al máximo;
+- el tiempo de búsqueda en Hermes;
+- el tamaño del bundle.
+
+Sigue la Etapa D (beta).
+
 ---
 
 ## 1. Estado en una página

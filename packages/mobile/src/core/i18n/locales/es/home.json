@@ -35,10 +35,11 @@
     "check_offline_done": "Guardado sin conexión",
     "check_offline_todo": "Todavía no está guardado sin conexión",
     "check_offline_action": "Guardar",
-    "check_duration_done": "Duración fijada: {{minutes}} min",
-    "check_duration_todo": "Duración sin fijar (se estima del texto)",
-    "check_duration_action": "Fijar",
     "check_reading_done": "Lectura lista: {{passage}}",
-    "check_reading_todo": "«{{passage}}» no se encontró en la Biblia de la app",
-    "sunday_pending": "Pendientes: {{count}}"
+    "check_reading_todo": "«{{passage}}» no se pudo abrir en la Biblia de la app",
+    "sunday_pending": "Pendientes: {{count}}",
+    "duration_from_text": "Duración: {{minutes}} min, según el texto",
+    "duration_chosen": "Duración: {{minutes}} min, la que elegiste",
+    "duration_adjust": "Ajustar",
+    "minutes_short": "{{minutes}} min"
 }

@@ -18,6 +18,15 @@ import { SelectionRange } from '@/presentation/components/preach/SelectableParag
  * Un rango de offsets no tiene ese problema — es la misma coordenada que usa
  * el ancla que se guarda.
  */
+/** La primera palabra de un rango del cuerpo: hasta el primer espacio. */
+export function firstWordOf(body: string, range: SelectionRange): SelectionRange {
+    let start = range.start;
+    while (start < range.end && /\s/.test(body[start] ?? '')) start++;
+    let end = start;
+    while (end < range.end && !/\s/.test(body[end] ?? '')) end++;
+    return { start, end: Math.max(end, Math.min(start + 1, range.end)) };
+}
+
 export function usePreachHighlights(
     sermonId: string,
     section: SermonSection | undefined,
@@ -76,10 +85,14 @@ export function usePreachHighlights(
           ) ?? null)
         : null;
 
-    // El glifo va sobre la PRIMERA palabra de lo elegido: el que ya esté ahí
-    // se cambia o se quita, no se apila otro.
-    const pendingGlyph = pending
-        ? (glyphs.find((g) => g.start >= pending.range.start && g.start < pending.range.end) ?? null)
+    // El glifo va sobre la PRIMERA palabra de lo elegido, y se ancla sólo a
+    // ella: anclado a toda la selección, editar en la web otra palabra de esa
+    // selección lo hacía desaparecer (revisión adversarial de C7). El que ya
+    // esté en esa palabra se cambia o se quita; uno en otra palabra de la
+    // selección no se toca.
+    const firstWord = pending && section ? firstWordOf(section.body, pending.range) : null;
+    const pendingGlyph = firstWord
+        ? (glyphs.find((g) => g.start >= firstWord.start && g.start < firstWord.end) ?? null)
         : null;
 
     const applyGlyph = (glyph: PreacherGlyph) => {
@@ -87,9 +100,9 @@ export function usePreachHighlights(
         const action = glyphAction(pendingGlyph?.glyph ?? null, glyph);
         if (action === 'remove' && pendingGlyph) glyphMutations.remove.mutate(pendingGlyph.id);
         else if (action === 'update' && pendingGlyph) glyphMutations.change.mutate({ id: pendingGlyph.id, glyph });
-        else if (action === 'create') {
+        else if (action === 'create' && firstWord) {
             glyphMutations.create.mutate({
-                anchor: buildAnnotationAnchor(section.slug, section.body, pending.range.start, pending.range.end),
+                anchor: buildAnnotationAnchor(section.slug, section.body, firstWord.start, firstWord.end),
                 glyph,
             });
         }

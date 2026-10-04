@@ -45,7 +45,7 @@ import { PreachSettingsSheet } from '@/presentation/components/preach/PreachSett
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
 import { usePagination } from '@/presentation/hooks/usePagination';
-import { usePreachClock } from '@/presentation/hooks/usePreachClock';
+import { READING_SLUG, usePreachClock } from '@/presentation/hooks/usePreachClock';
 import { usePreachBrightness } from '@/presentation/hooks/usePreachBrightness';
 import { PreachReadingPage } from '@/presentation/components/preach/PreachReadingPage';
 import { PreachOutline } from '@/presentation/components/preach/PreachOutline';
@@ -53,7 +53,6 @@ import { readingPassageFor, verseTextFor } from '@/data/repositories/bible/Bible
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 import { useUIStore } from '@/presentation/state/ui.store';
 import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
-import { clearPreachSession } from '@/data/offline/preachSession';
 
 interface PreachModeScreenProps {
     /** Id inyectado: lo usa la vista previa de dev, que no llega por ruta. */
@@ -140,6 +139,8 @@ export default function PreachModeScreen({
 
     const sections = sermon?.content ? extractSectionsWithBody(sermon.content) : [];
     // El pasaje para la página de Lectura: el primero que la Biblia local lee.
+    // No corre en cada tic: el React Compiler (app.json) memoiza por sus
+    // entradas, y el atril compila sin rendirse (lo vigila el lint).
     const passage = readingPageOn ? readingPassageFor(sermon?.bibleReferences ?? []) : null;
     const showReading = onReadingPage && passage !== null;
     const section = sections[sectionIndex];
@@ -194,7 +195,9 @@ export default function PreachModeScreen({
     const preachClock = usePreachClock({
         sermonId: id,
         sectionSlugs: sections.map((sec) => sec.slug),
-        sectionSlug: section?.slug ?? null,
+        // En la Lectura el tiempo es de la Lectura: antes se cargaba a la
+        // introducción y su aviso de pasado sonaba antes de tiempo.
+        sectionSlug: showReading ? READING_SLUG : (section?.slug ?? null),
         pageIndex,
         targetMinutes,
         haptics: readingMode !== 'eink',
@@ -208,8 +211,8 @@ export default function PreachModeScreen({
                         .filter(([, value]) => typeof value === 'number'),
                 ),
             ),
-        onRestore: ({ sectionIndex: at, pageIndex: page }) => {
-            setOnReadingPage(false);
+        onRestore: ({ sectionIndex: at, pageIndex: page, onReading }) => {
+            setOnReadingPage(onReading);
             setSectionIndex(at);
             setPageIndex(page);
         },
@@ -360,7 +363,7 @@ export default function PreachModeScreen({
         // Desde la primera página del sermón, atrás vuelve a la Lectura.
         if (delta < 0 && passage && sectionIndex === 0 && safePageIndex === 0) {
             setOnReadingPage(true);
-            preachClock.moveTo('lectura');
+            preachClock.moveTo(READING_SLUG);
             return;
         }
         const next = safePageIndex + delta;
@@ -406,7 +409,7 @@ export default function PreachModeScreen({
             setShowExit(true);
             return;
         }
-        if (id) void clearPreachSession(id);
+        preachClock.finish();
         router.back();
     };
 
@@ -1111,7 +1114,7 @@ export default function PreachModeScreen({
                 onClose={() => setShowExit(false)}
                 onLeave={() => {
                     setShowExit(false);
-                    if (id) void clearPreachSession(id);
+                    preachClock.finish();
                     router.back();
                 }}
             />

@@ -8,6 +8,8 @@ import { join, relative } from 'path';
  * `TouchableOpacity`/`Pressable` sin texto adentro lleva `accessibilityLabel`.
  *
  * Se lee el código fuente: es un invariante, no una prueba de una pantalla.
+ * LÍMITE: sólo ve íconos escritos dentro del botón. Un botón que recibe su
+ * contenido por parámetro (las celdas de los ajustes de la Biblia) no lo ve.
  */
 const ROOT = join(__dirname, '../../../..');
 const DIRS = ['src', 'app'];
@@ -56,7 +58,7 @@ export function unlabeledIconButtons(source: string): number[] {
         }
         const body = source.slice(openingEnd, i);
         if (/accessibilityLabel|accessible=\{false\}/.test(opening)) continue;
-        if (body.includes('MaterialIcons') && !/<Text\b|Label\b/.test(body)) {
+        if (body.includes('MaterialIcons') && !/<Text\b|<\w*Label\b/.test(body)) {
             lines.push(source.slice(0, m.index).split('\n').length);
         }
     }
@@ -71,6 +73,9 @@ describe('accesibilidad — botones de ícono', () => {
         expect(unlabeledIconButtons(sin)).toEqual([1]);
         expect(unlabeledIconButtons(con)).toEqual([]);
         expect(unlabeledIconButtons(texto)).toEqual([]);
+        // «Label» en otra cosa (una variable, una prop) no es un texto.
+        const disfrazado = `<Pressable onPress={go} style={hasLabel}><MaterialIcons name="add" /></Pressable>`;
+        expect(unlabeledIconButtons(disfrazado)).toEqual([1]);
     });
 
     it('ningún botón de ícono de la app queda mudo', () => {

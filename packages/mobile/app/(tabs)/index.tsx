@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { defaultTargetMinutes, estimateSpokenMinutes } from '@dosfilos/domain';
+import { defaultTargetMinutes, estimateSpokenMinutes, targetMinuteOptions } from '@dosfilos/domain';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAppTheme, type AppTheme } from '@/core/theme/appTheme';
@@ -212,19 +212,22 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
 
     const minutes = full?.content ? estimateSpokenMinutes(full.content) : 0;
 
-    // «Listo para el domingo» (C7). La lectura se busca DIFERIDA: abrir la
-    // Biblia de la app cuesta, y el inicio no puede trabarse por eso.
+    // «Listo para el domingo» (C7). La lectura se busca DESPUÉS del primer
+    // pintado: abrir la Biblia de la app (un JSON de varios MB) traba el hilo
+    // un momento, pero la tarjeta ya está en pantalla. No es gratis: es tarde.
     const targetBySermon = useReaderSettingsStore((s) => s.targetMinutesBySermon);
     const setTargetMinutes = useReaderSettingsStore((s) => s.setTargetMinutes);
     const readingPageOn = useReaderSettingsStore((s) => s.readingPage);
     const prepare = usePrepareBriefcase(sermon.id);
     const refs = sermon.bibleReferences;
     const readingWanted = readingPageOn && refs.length > 0;
-    const { data: readingFound } = useQuery({
+    const { data: readingTitle } = useQuery({
         queryKey: ['reading-ready', refs.join('|')],
         queryFn: async () => {
             await new Promise((resolve) => setTimeout(resolve, 0));
-            return readingPassageFor(refs) !== null;
+            // El título del pasaje que de verdad se va a leer, no el de la
+            // primera referencia: puede ser otra (revisión adversarial).
+            return readingPassageFor(refs)?.title ?? '';
         },
         enabled: readingWanted,
         staleTime: Infinity,
@@ -232,9 +235,8 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
     const fixedMinutes = targetBySermon[sermon.id];
     const items = sundayReadiness({
         offline: !!briefcase,
-        durationSet: fixedMinutes !== undefined,
         readingWanted,
-        readingFound: readingFound ?? null,
+        readingFound: readingTitle === undefined ? null : readingTitle !== '',
     });
     const ready = isReady(items);
     const pending = items.filter((item) => !item.done).length;
@@ -293,12 +295,20 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
 
             <SundayChecklist
                 items={items}
-                fixedMinutes={fixedMinutes}
-                passageTitle={refs[0] ?? ''}
+                passageTitle={readingTitle || (refs[0] ?? '')}
                 preparing={prepare.isPending}
                 onPrepare={() => prepare.mutate()}
-                onFixDuration={() =>
-                    setTargetMinutes(sermon.id, defaultTargetMinutes(full?.content ?? ''))
+                // La duración es un DATO, no un pendiente: la del texto ya es
+                // la que usa el atril. Ajustar es elegir otra (revisión
+                // adversarial: «Fijar» guardaba la misma y la congelaba).
+                duration={
+                    full?.content
+                        ? {
+                              minutes: fixedMinutes ?? defaultTargetMinutes(full.content),
+                              chosen: fixedMinutes !== undefined,
+                              onPick: (min: number) => setTargetMinutes(sermon.id, min),
+                          }
+                        : null
                 }
             />
 
@@ -337,52 +347,30 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
 
 /**
  * Lo que falta para subir tranquilo, cada cosa con su arreglo a un toque.
- * Ícono además de color: en tinta electrónica el color no existe.
+ * Ícono además de color: en tinta electrónica el color no existe. Abajo, la
+ * duración que va a usar el atril, con «Ajustar» para elegir otra.
  */
 function SundayChecklist({
     items,
-    fixedMinutes,
     passageTitle,
     preparing,
     onPrepare,
-    onFixDuration,
+    duration,
 }: {
     items: ReadinessItem[];
-    fixedMinutes: number | undefined;
     passageTitle: string;
     preparing: boolean;
     onPrepare: () => void;
-    onFixDuration: () => void;
+    duration: { minutes: number; chosen: boolean; onPick: (minutes: number) => void } | null;
 }) {
     const theme = useAppTheme();
     const { t } = useTranslation();
+    const [adjusting, setAdjusting] = useState(false);
 
-    const label = (item: ReadinessItem) => {
-        switch (item.key) {
-            case 'offline':
-                return t(item.done ? 'home:check_offline_done' : 'home:check_offline_todo');
-            case 'duration':
-                return item.done
-                    ? t('home:check_duration_done', { minutes: fixedMinutes })
-                    : t('home:check_duration_todo');
-            case 'reading':
-                return t(item.done ? 'home:check_reading_done' : 'home:check_reading_todo', { passage: passageTitle });
-        }
-    };
-    const action = (item: ReadinessItem) => {
-        if (item.done) return null;
-        if (item.key === 'offline') {
-            return preparing ? (
-                <ActivityIndicator size="small" color={theme.accent} />
-            ) : (
-                <ChecklistAction label={t('home:check_offline_action')} onPress={onPrepare} />
-            );
-        }
-        if (item.key === 'duration') {
-            return <ChecklistAction label={t('home:check_duration_action')} onPress={onFixDuration} />;
-        }
-        return null;
-    };
+    const label = (item: ReadinessItem) =>
+        item.key === 'offline'
+            ? t(item.done ? 'home:check_offline_done' : 'home:check_offline_todo')
+            : t(item.done ? 'home:check_reading_done' : 'home:check_reading_todo', { passage: passageTitle });
 
     return (
         <View className="mt-5" accessibilityLabel={t('home:sunday_title')}>
@@ -403,9 +391,60 @@ function SundayChecklist({
                     >
                         {label(item)}
                     </Text>
-                    {action(item)}
+                    {!item.done && item.key === 'offline' ? (
+                        preparing ? (
+                            <ActivityIndicator size="small" color={theme.accent} />
+                        ) : (
+                            <ChecklistAction label={t('home:check_offline_action')} onPress={onPrepare} />
+                        )
+                    ) : null}
                 </View>
             ))}
+            {duration ? (
+                <View className="py-2" style={{ borderTopWidth: 1, borderTopColor: theme.border }}>
+                    <View className="flex-row items-center">
+                        <MaterialIcons name="schedule" size={18} color={theme.textSecondary} />
+                        <Text style={{ color: theme.textSecondary, fontSize: 14, flex: 1 }} className="font-lexend ml-2.5">
+                            {t(duration.chosen ? 'home:duration_chosen' : 'home:duration_from_text', {
+                                minutes: duration.minutes,
+                            })}
+                        </Text>
+                        <ChecklistAction
+                            label={t(adjusting ? 'common:close' : 'home:duration_adjust')}
+                            onPress={() => setAdjusting((v) => !v)}
+                        />
+                    </View>
+                    {adjusting ? (
+                        <View className="flex-row flex-wrap mt-2">
+                            {targetMinuteOptions(duration.minutes).map((min) => (
+                                <View key={min} className="mr-2 mb-2">
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            duration.onPick(min);
+                                            setAdjusting(false);
+                                        }}
+                                        accessibilityRole="button"
+                                        accessibilityState={{ selected: min === duration.minutes }}
+                                        className="px-4 py-2 rounded-full"
+                                        style={{
+                                            backgroundColor: min === duration.minutes ? theme.accent : 'transparent',
+                                            borderWidth: 1,
+                                            borderColor: min === duration.minutes ? theme.accent : theme.border,
+                                        }}
+                                    >
+                                        <Text
+                                            style={{ color: min === duration.minutes ? theme.onAccent : theme.textPrimary, fontSize: 14 }}
+                                            className="font-lexend"
+                                        >
+                                            {t('home:minutes_short', { minutes: min })}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </View>
+                    ) : null}
+                </View>
+            ) : null}
         </View>
     );
 }
