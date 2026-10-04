@@ -16,13 +16,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useKeepAwake } from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
-import type { CitationManifestEntry, ReadingBlock } from '@dosfilos/domain';
+import type { CitationManifestEntry, ReadingBlock, UnitMetric } from '@dosfilos/domain';
 import {
     aggregateRequiredAttributions,
     buildMovementBudgets,
     buildReadingBlocks,
     buildOutline,
     buildRehearsalReport,
+    fragmentBlock,
     defaultTargetMinutes,
     shiftEndAt,
     suggestedEndAt,
@@ -34,7 +35,7 @@ import { extractSectionsWithBody } from '@/core/utils/sermonSections';
 import { READING_MODES, shownSeconds } from '@/core/theme/readingModes';
 import { GAZE_LINE_RATIO, TYPE_SCALE } from '@/core/theme/typography';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
-import { PreachSectionBody } from '@/presentation/components/preach/PreachSectionBody';
+import { PreachSectionBody, type PageBlock } from '@/presentation/components/preach/PreachSectionBody';
 import { useDeliveryMeasure } from '@/presentation/hooks/useDeliveryMeasure';
 import { MarkPopover } from '@/presentation/components/preach/MarkPopover';
 import { PreachExitSheet } from '@/presentation/components/preach/PreachExitSheet';
@@ -248,9 +249,14 @@ export default function PreachModeScreen({
     const peekHeight = fontSize * 0.6 + PEEK_LINES * fontSize * 1.4;
     const pageHeight = readableHeight - panelHeight - 16 - peekHeight;
 
-    const renderBlockForMeasure = (block: ReadingBlock, index: number) => (
+    const renderBlockForMeasure = (
+        block: ReadingBlock,
+        _index: number,
+        onUnitMetrics: (metrics: UnitMetric[]) => void,
+    ) => (
         <PreachSectionBody
             blocks={[block]}
+            onUnitMetrics={onUnitMetrics}
             highlights={[]}
             fontSize={fontSize}
             tokens={tokens}
@@ -313,17 +319,17 @@ export default function PreachModeScreen({
 
     const pageCount = outlineOn ? 1 : Math.max(1, pages.length);
     const safePageIndex = Math.min(pageIndex, pageCount - 1);
-    const pageBlocks = pages.length && !outlineOn
-        ? pages[safePageIndex].map((i) => blocks[i])
-        : blocks;
+    // Con la paginación por oración (L-1) una página lleva fragmentos: un
+    // bloque entero o un tramo de sus oraciones.
+    const pageBlocks: PageBlock[] =
+        pages.length && !outlineOn
+            ? (pages[safePageIndex] ?? []).map((f) => fragmentBlock(blocks[f.block]!, f))
+            : blocks;
 
-    // Texto de la página siguiente para el asomo. Sale del primer bloque que
-    // viene: alcanza para saber si la idea sigue o si acá cerró.
-
-    const nextPeek =
-        !outlineOn && pages.length && safePageIndex < pages.length - 1
-            ? blocks[pages[safePageIndex + 1][0]]?.text ?? null
-            : null;
+    // Texto de la página siguiente para el asomo. Sale del primer fragmento
+    // que viene: alcanza para saber si la idea sigue o si acá cerró.
+    const nextFragment = !outlineOn ? pages[safePageIndex + 1]?.[0] : undefined;
+    const nextPeek = nextFragment ? fragmentBlock(blocks[nextFragment.block]!, nextFragment).text : null;
 
     // El resaltado por tap largo vive en su propio hook: la pantalla ya
     // carga timer, modos de luz, navegación por secciones y citas.

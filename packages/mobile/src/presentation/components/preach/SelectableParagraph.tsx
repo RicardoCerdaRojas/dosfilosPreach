@@ -14,6 +14,42 @@ interface PlacedWord {
     ordinals: number[] | null;
     /** La referencia bíblica de la que es parte («Jonás 4:2»), si alguna. */
     reference: string | null;
+    /** A qué oración pertenece. */
+    unit: number;
+}
+
+/** Renglones de una oración, desde el borde de arriba del párrafo. */
+export interface UnitLines {
+    top: number;
+    bottom: number;
+}
+
+/**
+ * Dónde empieza y termina cada oración, con los rectángulos de sus palabras.
+ * Una oración sin palabras (no debería haberla) se pega al final de la
+ * anterior, con alto cero. `null` si falta medir alguna palabra.
+ */
+export function unitLinesFrom(
+    wordUnits: readonly number[],
+    unitCount: number,
+    rects: ReadonlyMap<number, { y: number; height: number }>,
+): UnitLines[] | null {
+    const lines: (UnitLines | null)[] = Array.from({ length: unitCount }, () => null);
+    for (let i = 0; i < wordUnits.length; i += 1) {
+        const rect = rects.get(i);
+        if (!rect) return null;
+        const u = wordUnits[i]!;
+        const current = lines[u];
+        const top = rect.y;
+        const bottom = rect.y + rect.height;
+        lines[u] = current ? { top: Math.min(current.top, top), bottom: Math.max(current.bottom, bottom) } : { top, bottom };
+    }
+    let previous = 0;
+    return lines.map((line) => {
+        const resolved = line ?? { top: previous, bottom: previous };
+        previous = resolved.bottom;
+        return resolved;
+    });
 }
 
 /** Umbral del long press propio. El de RN son ~500 ms y no se puede bajar. */
@@ -60,6 +96,17 @@ interface Props {
      * lo que el ojo busca al volver del público.
      */
     hangingIndent?: number;
+    /**
+     * Es la continuación de un párrafo que empezó en la página anterior
+     * (paginación por oración): su primer renglón no sale de la sangría.
+     */
+    continued?: boolean;
+    /**
+     * Renglones de cada oración, cuando todas las palabras ya se ubicaron. Lo
+     * usan la paginación (para cortar entre oraciones) y la tinta (para
+     * anclar a la oración).
+     */
+    onUnitLines?: (lines: UnitLines[]) => void;
 }
 
 /**
@@ -94,8 +141,11 @@ export function SelectableParagraph({
     selectionColor,
     faceClass,
     hangingIndent = 0,
+    continued = false,
+    onUnitLines,
 }: Props) {
     const rects = useRef<Map<number, LayoutRectangle>>(new Map());
+    const reportedLines = useRef('');
     const anchor = useRef<PlacedWord | null>(null);
     const container = useRef<View | null>(null);
     /**
@@ -113,7 +163,7 @@ export function SelectableParagraph({
     const pressStart = useRef<{ x: number; y: number } | null>(null);
 
     const words: PlacedWord[] = [];
-    units.forEach((unit) => {
+    units.forEach((unit, unitIndex) => {
         const references = onPressReference ? findBibleReferences(unit.text) : [];
         splitWords(unit.text).forEach((w) => {
             const tokens = tokenizeCitations(w.text);
@@ -125,6 +175,7 @@ export function SelectableParagraph({
                 sourceEnd: unit.sourceStart + w.end,
                 ordinals: citation && citation.kind === 'citation' ? citation.ordinals : null,
                 reference: reference?.reference ?? null,
+                unit: unitIndex,
             });
         });
     });
@@ -147,6 +198,20 @@ export function SelectableParagraph({
             }
         }
         return closest;
+    };
+
+    const reportLines = () => {
+        if (!onUnitLines) return;
+        const lines = unitLinesFrom(
+            words.map((w) => w.unit),
+            units.length,
+            rects.current,
+        );
+        if (!lines) return;
+        const signature = lines.map((l) => `${l.top}:${l.bottom}`).join('|');
+        if (signature === reportedLines.current) return;
+        reportedLines.current = signature;
+        onUnitLines(lines);
     };
 
     const rangeBetween = (a: PlacedWord, b: PlacedWord): SelectionRange => ({
@@ -252,7 +317,10 @@ export function SelectableParagraph({
                 return (
                     <View
                         key={index}
-                        onLayout={(e) => rects.current.set(index, e.nativeEvent.layout)}
+                        onLayout={(e) => {
+                            rects.current.set(index, e.nativeEvent.layout);
+                            reportLines();
+                        }}
                         style={{
                             backgroundColor: selected
                                 ? selectionColor
@@ -263,7 +331,7 @@ export function SelectableParagraph({
                             paddingRight: fontSize * 0.28,
                             // La primera palabra sale de la sangría: es lo que
                             // deja la primera línea afuera y el resto adentro.
-                            marginLeft: index === 0 ? -hangingIndent : 0,
+                            marginLeft: index === 0 && !continued ? -hangingIndent : 0,
                         }}
                     >
                         <Text

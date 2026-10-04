@@ -1,7 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import type { ReadingBlock } from '@dosfilos/domain';
-import { groupUnbreakableBlocks, packPages } from '@dosfilos/domain';
+import type { BlockMetrics, PageFragment, ReadingBlock, UnitMetric } from '@dosfilos/domain';
+import { isSplittable, packFragments } from '@dosfilos/domain';
 
 /**
  * Paginación real del púlpito (D7, P1).
@@ -30,8 +30,11 @@ import { groupUnbreakableBlocks, packPages } from '@dosfilos/domain';
  * scrollear. Es preferible a perder texto, y en prosa de sermón es raro.
  */
 export interface Pagination {
-    /** Páginas, cada una con los índices de bloque que le tocan. */
-    pages: number[][];
+    /**
+     * Páginas, cada una con los fragmentos que le tocan: un bloque entero o
+     * un tramo de sus oraciones (paginación por oración, L-1).
+     */
+    pages: PageFragment[][];
     /** `true` mientras faltan alturas por medir. */
     measuring: boolean;
     /** Nodo de medición: montarlo una vez, fuera de la vista. */
@@ -42,8 +45,11 @@ interface Options {
     blocks: ReadingBlock[];
     /** Alto útil de la página, ya descontado el tablero inferior. */
     availableHeight: number;
-    /** Render de un bloque, el MISMO que usa la página real. */
-    renderBlock: (block: ReadingBlock, index: number) => React.ReactNode;
+    /**
+     * Render de un bloque, el MISMO que usa la página real. `onUnitMetrics`
+     * recibe los renglones de cada oración: sin ellos el bloque no se parte.
+     */
+    renderBlock: (block: ReadingBlock, index: number, onUnitMetrics: (metrics: UnitMetric[]) => void) => React.ReactNode;
     /**
      * Cambia cuando cambia cualquier cosa que altere las alturas (cuerpo,
      * colometría, sección). Fuerza volver a medir.
@@ -65,6 +71,13 @@ export function usePagination({
     header,
 }: Options): Pagination {
     const [heights, setHeights] = useState<Record<string, number[]>>({});
+    const [unitMetrics, setUnitMetrics] = useState<Record<string, (UnitMetric[] | undefined)[]>>({});
+    /**
+     * Si las métricas de oraciones no llegan, no se espera para siempre: el
+     * bloque no se parte y listo. Una página que se queda «midiendo» es una
+     * página invisible (lo aprendimos en A7).
+     */
+    const [metricsGrace, setMetricsGrace] = useState<Record<string, boolean>>({});
     const [headerHeights, setHeaderHeights] = useState<Record<string, number>>({});
 
     const measured = heights[layoutKey];
@@ -74,7 +87,26 @@ export function usePagination({
     // nunca y la página quedaba invisible, título incluido (A7).
     const bodyMeasured =
         blocks.length === 0 || (measured?.length === blocks.length && measured.every((h) => h > 0));
-    const complete = bodyMeasured && headerHeight !== undefined;
+    const unitsForKey = unitMetrics[layoutKey];
+    const unitsMeasured = blocks.every((block, i) => !isSplittable(block) || unitsForKey?.[i] !== undefined);
+    const complete = bodyMeasured && headerHeight !== undefined && (unitsMeasured || metricsGrace[layoutKey] === true);
+
+    useEffect(() => {
+        if (!bodyMeasured || unitsMeasured || metricsGrace[layoutKey]) return;
+        const timer = setTimeout(() => setMetricsGrace((g) => ({ ...g, [layoutKey]: true })), 400);
+        return () => clearTimeout(timer);
+    }, [bodyMeasured, unitsMeasured, metricsGrace, layoutKey]);
+
+    const onUnitMetrics = useCallback(
+        (index: number, metrics: UnitMetric[]) => {
+            setUnitMetrics((current) => {
+                const forKey = current[layoutKey] ? [...current[layoutKey]] : [];
+                forKey[index] = metrics;
+                return { ...current, [layoutKey]: forKey };
+            });
+        },
+        [layoutKey],
+    );
 
     const onMeasured = useCallback(
         (index: number, height: number) => {
@@ -90,13 +122,12 @@ export function usePagination({
 
     const pages = useMemo(() => {
         if (!complete || availableHeight <= 0 || blocks.length === 0) return [];
-        return packPages(
-            groupUnbreakableBlocks(blocks),
-            measured,
-            availableHeight,
-            availableHeight - (headerHeight ?? 0),
-        );
-    }, [blocks, measured, complete, availableHeight, headerHeight]);
+        const metrics: BlockMetrics[] = blocks.map((_, i) => ({
+            height: measured?.[i] ?? 0,
+            units: unitsForKey?.[i],
+        }));
+        return packFragments(blocks, metrics, availableHeight, availableHeight - (headerHeight ?? 0));
+    }, [blocks, measured, unitsForKey, complete, availableHeight, headerHeight]);
 
     const probe = complete ? null : (
         <View
@@ -121,7 +152,7 @@ export function usePagination({
                     key={`${layoutKey}-${index}`}
                     onLayout={(e) => onMeasured(index, e.nativeEvent.layout.height)}
                 >
-                    {renderBlock(block, index)}
+                    {renderBlock(block, index, (metrics) => onUnitMetrics(index, metrics))}
                 </View>
             ))}
         </View>

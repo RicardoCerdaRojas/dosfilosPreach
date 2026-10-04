@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import type { HighlightColor, MarkStyle, PreacherGlyph, ReadingBlock, ReadingUnit } from '@dosfilos/domain';
+import type { HighlightColor, MarkStyle, PreacherGlyph, ReadingBlock, ReadingUnit, UnitMetric } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
 import { GLYPH_SYMBOL } from '@/core/theme/preacherGlyphs';
@@ -14,7 +14,7 @@ import {
     PARAGRAPH_GAP_EM,
     TYPE_SCALE,
 } from '@/core/theme/typography';
-import { SelectableParagraph, SelectionRange } from './SelectableParagraph';
+import { SelectableParagraph, SelectionRange, type UnitLines } from './SelectableParagraph';
 
 /** Marca ya reanclada al cuerpo crudo de ESTA sección. */
 export interface ResolvedGlyph {
@@ -31,8 +31,11 @@ export interface ResolvedHighlight {
     end: number;
 }
 
+/** Un bloque, o el tramo de sus oraciones que cae en esta página. */
+export type PageBlock = ReadingBlock & { continued?: boolean };
+
 interface Props {
-    blocks: ReadingBlock[];
+    blocks: PageBlock[];
     highlights: ResolvedHighlight[];
     /** Marcas de predicador ya resueltas (C7): dónde empieza cada una. */
     glyphs?: ResolvedGlyph[];
@@ -78,6 +81,11 @@ interface Props {
      * corren. Medir explícitamente no deja a nadie sin posición.
      */
     layoutKey?: string;
+    /**
+     * Renglones de cada oración del (único) bloque, medidos desde su borde de
+     * arriba. Lo usa la medición fuera de pantalla de la paginación (L-1).
+     */
+    onUnitMetrics?: (metrics: UnitMetric[]) => void;
 }
 
 /** Marca que cubre un punto del cuerpo crudo. La unidad ahora es la palabra. */
@@ -106,24 +114,69 @@ export function PreachSectionBody({
     hangingIndent,
     onBlockLayout,
     layoutKey,
+    onUnitMetrics,
 }: Props) {
-    /** Vista de cada bloque, para poder medirla sin depender de `onLayout`. */
+    /** Vista de cada párrafo (por el comienzo de su primera oración), para medirla sin depender de `onLayout`. */
     const blockNodes = useRef<Map<number, View>>(new Map());
+    /** Oraciones de cada párrafo y sus renglones, cuando ya se midieron. */
+    const paragraphUnits = useRef<Map<number, ReadingUnit[]>>(new Map());
+    const paragraphLines = useRef<Map<number, UnitLines[]>>(new Map());
+    /** Dónde está cada párrafo dentro del bloque (colometría: uno por oración). */
+    const paragraphY = useRef<Map<number, number>>(new Map());
+
+    /**
+     * La tinta se ancla a la ORACIÓN (T-4): con la paginación por oración un
+     * párrafo puede seguir en otra página, y una nota anclada al párrafo
+     * entero se dibujaba en la página donde el párrafo empieza. Se informa la
+     * posición de cada oración: su primer renglón. Las notas viejas, ancladas
+     * al comienzo del párrafo, caen en su primera oración, que está en el
+     * mismo lugar de siempre.
+     */
+    const reportParagraph = (first: number, node: View) => {
+        if (!onBlockLayout) return;
+        node.measureInWindow((x, y, _width, height) => {
+            const units = paragraphUnits.current.get(first) ?? [];
+            const lines = paragraphLines.current.get(first);
+            if (!lines || lines.length !== units.length) {
+                onBlockLayout(first, { x, y, height });
+                return;
+            }
+            units.forEach((unit, i) => {
+                const line = lines[i]!;
+                onBlockLayout(unit.sourceStart, { x, y: y + line.top, height: Math.max(1, line.bottom - line.top) });
+            });
+        });
+    };
 
     useEffect(() => {
         if (!onBlockLayout) return;
         // En el frame siguiente: al correr el efecto, el layout nativo puede
         // no haber bajado todavía y se mediría la posición vieja.
         const frame = requestAnimationFrame(() => {
-            for (const [offset, node] of blockNodes.current.entries()) {
-                node.measureInWindow((x, y, _width, height) => {
-                    onBlockLayout(offset, { x, y, height });
-                });
-            }
+            for (const [first, node] of blockNodes.current.entries()) reportParagraph(first, node);
         });
         return () => cancelAnimationFrame(frame);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [layoutKey, blocks]);
+
+    /** Las métricas del bloque para la paginación, cuando están todos sus párrafos. */
+    const reportedMetrics = useRef('');
+    const reportBlockMetrics = () => {
+        if (!onUnitMetrics || blocks.length !== 1) return;
+        const firsts = [...paragraphUnits.current.keys()].sort((a, b) => a - b);
+        const metrics: UnitMetric[] = [];
+        for (const first of firsts) {
+            const lines = paragraphLines.current.get(first);
+            const top = paragraphY.current.get(first);
+            if (!lines || top === undefined) return;
+            for (const line of lines) metrics.push({ top: top + line.top, bottom: top + line.bottom });
+        }
+        if (metrics.length !== blocks[0]!.units.length) return;
+        const signature = metrics.map((m) => `${m.top}:${m.bottom}`).join('|');
+        if (signature === reportedMetrics.current) return;
+        reportedMetrics.current = signature;
+        onUnitMetrics(metrics);
+    };
     /**
      * Traduce las marcas guardadas al trazo que le toca a cada palabra.
      * En tinta electrónica el color no existe, así que toda marca cae a
@@ -147,7 +200,7 @@ export function PreachSectionBody({
         };
     };
 
-    const paragraph = (units: ReadingUnit[], key: React.Key, style?: object) => (
+    const paragraph = (units: ReadingUnit[], key: React.Key, style?: object, continued = false) => (
         <View
             key={key}
             style={style}
@@ -155,16 +208,21 @@ export function PreachSectionBody({
                 const first = units[0];
                 if (!first || !node) return;
                 blockNodes.current.set(first.sourceStart, node);
+                paragraphUnits.current.set(first.sourceStart, units);
                 return () => {
                     blockNodes.current.delete(first.sourceStart);
+                    paragraphUnits.current.delete(first.sourceStart);
+                    paragraphLines.current.delete(first.sourceStart);
+                    paragraphY.current.delete(first.sourceStart);
                 };
             }}
             onLayout={(e) => {
                 const first = units[0];
-                if (!first || !onBlockLayout) return;
-                e.currentTarget.measureInWindow((x, y, _width, height) => {
-                    onBlockLayout(first.sourceStart, { x, y, height });
-                });
+                if (!first) return;
+                paragraphY.current.set(first.sourceStart, e.nativeEvent.layout.y);
+                reportBlockMetrics();
+                const node = blockNodes.current.get(first.sourceStart);
+                if (node) reportParagraph(first.sourceStart, node);
             }}
         >
             <SelectableParagraph
@@ -185,6 +243,15 @@ export function PreachSectionBody({
                 referenceColor={tokens.accent}
                 faceClass={FACE_CLASS[face].regular}
                 hangingIndent={hangingIndent ? fontSize * HANGING_INDENT_EM : 0}
+                continued={continued}
+                onUnitLines={(lines) => {
+                    const first = units[0];
+                    if (!first) return;
+                    paragraphLines.current.set(first.sourceStart, lines);
+                    reportBlockMetrics();
+                    const node = blockNodes.current.get(first.sourceStart);
+                    if (node) reportParagraph(first.sourceStart, node);
+                }}
             />
         </View>
     );
@@ -244,9 +311,9 @@ export function PreachSectionBody({
                             }}
                             className={FACE_CLASS[face].regular}
                         >
-                            {'•'}
+                            {block.continued ? '' : '•'}
                         </Text>
-                        <View style={{ flex: 1 }}>{paragraph(block.units, 'li')}</View>
+                        <View style={{ flex: 1 }}>{paragraph(block.units, 'li', undefined, block.continued)}</View>
                     </View>
                 ) : block.kind === 'subheading' ? (
                     <Text
@@ -273,9 +340,12 @@ export function PreachSectionBody({
                         )}
                     </View>
                 ) : (
-                    paragraph(block.units, blockIndex, {
-                        marginBottom: fontSize * PARAGRAPH_GAP_EM,
-                    })
+                    paragraph(
+                        block.units,
+                        blockIndex,
+                        { marginBottom: fontSize * PARAGRAPH_GAP_EM },
+                        block.continued,
+                    )
                 ),
             )}
         </>
