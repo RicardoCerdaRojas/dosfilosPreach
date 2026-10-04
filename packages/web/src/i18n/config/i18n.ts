@@ -58,6 +58,8 @@ import studyDepthEn from '../locales/en/studyDepth.json';
 import studyDepthEs from '../locales/es/studyDepth.json';
 import guidedSermonEn from '../locales/en/guidedSermon.json';
 import guidedSermonEs from '../locales/es/guidedSermon.json';
+import legalEn from '../locales/en/legal.json';
+import legalEs from '../locales/es/legal.json';
 
 /**
  * Initialize i18next with best practices:
@@ -100,6 +102,7 @@ export const initI18n = () => {
                     wordStudy: wordStudyEn,
                     studyDepth: studyDepthEn,
                     guidedSermon: guidedSermonEn,
+                    legal: legalEn,
                 },
                 es: {
                     common: commonEs,
@@ -125,6 +128,7 @@ export const initI18n = () => {
                     wordStudy: wordStudyEs,
                     studyDepth: studyDepthEs,
                     guidedSermon: guidedSermonEs,
+                    legal: legalEs,
                 },
             },
 

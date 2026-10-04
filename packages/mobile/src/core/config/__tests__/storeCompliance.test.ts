@@ -53,18 +53,29 @@ describe('borrado de cuenta — paridad con el servidor', () => {
         expect(Number(m![1])).toBe(ACCOUNT_DELETION_GRACE_DAYS);
     });
 
-    it('la página web del borrado (la que pide Google Play) dice el mismo plazo', () => {
-        const pagina = readFileSync(join(ROOT, '../web/src/pages/legal/DeleteAccount.tsx'), 'utf8');
-        expect(pagina).toContain(`A los ${ACCOUNT_DELETION_GRACE_DAYS} días`);
+    // Los textos legales viven en i18n (`legal.json`), en los dos idiomas.
+    const legal = (lang: 'es' | 'en') =>
+        JSON.parse(readFileSync(join(ROOT, `../web/src/i18n/locales/${lang}/legal.json`), 'utf8')) as {
+            deleteAccount: unknown;
+            privacy: unknown;
+        };
+    const plazosEn = (texto: unknown) =>
+        [...JSON.stringify(texto).matchAll(/(\d+) (días|days)/g)].map((m) => Number(m[1]));
+
+    it('la página web del borrado (la que pide Google Play) dice el mismo plazo, en los dos idiomas', () => {
+        expect(JSON.stringify(legal('es').deleteAccount)).toContain(`A los ${ACCOUNT_DELETION_GRACE_DAYS} días`);
+        expect(JSON.stringify(legal('en').deleteAccount)).toContain(`After ${ACCOUNT_DELETION_GRACE_DAYS} days`);
         // Y ningún OTRO plazo en la página (antes pasaba aunque dijera otro).
-        const plazos = [...pagina.matchAll(/(\d+) días/g)].map((m) => Number(m[1]));
-        expect(plazos.every((d) => d === ACCOUNT_DELETION_GRACE_DAYS)).toBe(true);
+        for (const lang of ['es', 'en'] as const) {
+            expect(plazosEn(legal(lang).deleteAccount).every((d) => d === ACCOUNT_DELETION_GRACE_DAYS)).toBe(true);
+        }
     });
 
     it('la política de privacidad dice el mismo plazo, y ningún otro', () => {
-        const politica = readFileSync(join(ROOT, '../web/src/pages/legal/PrivacyPolicy.tsx'), 'utf8');
-        const plazos = [...politica.matchAll(/(\d+) días/g)].map((m) => Number(m[1]));
-        expect(plazos.length).toBeGreaterThan(0);
-        expect(plazos.every((d) => d === ACCOUNT_DELETION_GRACE_DAYS)).toBe(true);
+        for (const lang of ['es', 'en'] as const) {
+            const plazos = plazosEn(legal(lang).privacy);
+            expect(plazos.length).toBeGreaterThan(0);
+            expect(plazos.every((d) => d === ACCOUNT_DELETION_GRACE_DAYS)).toBe(true);
+        }
     });
 });

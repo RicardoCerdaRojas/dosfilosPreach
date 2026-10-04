@@ -1,0 +1,106 @@
+{
+    "back": "Back",
+    "deleteAccount": {
+        "title": "Delete your Dos Filos Preach account",
+        "lead": "You can ask for your account and all your data to be deleted at any time.",
+        "howTitle": "How to request it",
+        "how": [
+            "<strong>From the tablet app:</strong> Profile → “Delete my account”.",
+            "<strong>By email:</strong> write to <mail>privacy@dosfilos.app</mail> from your account's email address."
+        ],
+        "afterTitle": "What happens next",
+        "after": [
+            "<strong>Right away:</strong> your account is disabled, your sessions are signed out and your subscription is cancelled.",
+            "<strong>After 7 days:</strong> your sermons, series and plans, studies and exegetical papers, your library and its files, your marks, ink and preaching log, and your account data are deleted completely. That period exists so a mistake can be undone: if you change your mind, write to the address above before it ends.",
+            "<strong>What is kept:</strong> the fact that the account was deleted and when (without your email), the audit records the security of the service requires, and the payment receipts the payment processor keeps by legal obligation."
+        ]
+    },
+    "privacy": {
+        "draft": "Draft — pending legal review.",
+        "title": "Privacy Policy",
+        "updated": "Last updated: (pending)",
+        "sections": [
+            {
+                "title": "1. Information We Collect",
+                "items": [
+                    "<strong>Account:</strong> name, email address, subscription data.",
+                    "<strong>Uploaded content:</strong> documents you upload to your personal library.",
+                    "<strong>Queries:</strong> questions you ask the AI tutors and the generated answers.",
+                    "<strong>Usage:</strong> usage metrics (pages processed, queries per month) to apply plan limits.",
+                    "<strong>Technical data:</strong> IP address, browser, minimal logs needed for operation and security."
+                ]
+            },
+            {
+                "title": "2. How We Use Your Information",
+                "items": [
+                    "Providing the service (document processing, generating answers).",
+                    "Billing and customer support.",
+                    "Improving the quality of the service (aggregate metrics, not individual content).",
+                    "Legal compliance when required by law."
+                ]
+            },
+            {
+                "title": "3. Content Isolation",
+                "intro": "Your personal library is <strong>private and isolated</strong>. Technically:",
+                "items": [
+                    "All content is tagged with your <code>userId</code> and every query filters by that identifier.",
+                    "Other users of the Platform cannot see, search or access your library.",
+                    "The Dos Filos team does not access users' content except when strictly necessary for technical support that you explicitly request."
+                ]
+            },
+            {
+                "title": "4. AI Model Training",
+                "intro": "<strong>Dos Filos does NOT train artificial intelligence models on users' content.</strong> The models used (Google Gemini) are pre-trained by their respective providers; Dos Filos consumes them via API and does not send them user data for training."
+            },
+            {
+                "title": "5. Third-Party Providers",
+                "intro": "Dos Filos uses the following service providers:",
+                "items": [
+                    "<strong>Google Cloud / Firebase:</strong> storage, authentication, serverless functions.",
+                    "<strong>Google Gemini API:</strong> natural language processing. Google commits through its API terms not to retain or train on paying customers' inputs.",
+                    "<strong>LlamaParse (LlamaIndex):</strong> structured PDF extraction.",
+                    "<strong>Stripe:</strong> payment processing. We do not store credit card data."
+                ],
+                "outro": "Each provider has its own privacy policy. By using the Service you also accept the processing of data by these providers to the extent necessary."
+            },
+            {
+                "title": "6. Retention and Deletion",
+                "intro": "Your content stays stored while your account is active. When you delete an individual document, it is permanently erased along with its associated embeddings and chunks. When you delete your account, all your content is erased after 7 days (see section 9), except for specific legal retention requirements."
+            },
+            {
+                "title": "7. User Rights",
+                "intro": "You have the right to:",
+                "items": [
+                    "Access the data we hold about you.",
+                    "Correct inaccurate data.",
+                    "Request the deletion of your account and all your content.",
+                    "Export your content in a standard format.",
+                    "File a complaint with the applicable data protection authority."
+                ]
+            },
+            {
+                "title": "8. Tablet app (Dos Filos Preach)",
+                "intro": "The tablet app uses the same account and the same data as the web. In addition:",
+                "items": [
+                    "<strong>Sign in with Google or Apple:</strong> we receive your name and email address (Apple may give us a relay address) to create or open your account.",
+                    "<strong>What you create on the tablet:</strong> highlights and marks, ink, notes and your preaching log (date, duration and, if you enter it, the place). They are saved to your account.",
+                    "<strong>Copies on the device:</strong> sermons you prepare for offline use are stored on the tablet. They are erased when you sign out.",
+                    "<strong>Technical data:</strong> a check that the request comes from the legitimate app (App Check) and crash reports without personal data.",
+                    "We do not show ads or track your activity in other apps."
+                ]
+            },
+            {
+                "title": "9. Deleting your account",
+                "intro": "You can ask for your account to be deleted from the app (Profile → “Delete my account”) or as explained on <page>this page</page>. The account is disabled right away and your data is erased completely after 7 days."
+            },
+            {
+                "title": "10. Cookies",
+                "intro": "We use essential cookies to keep the user's session and aggregate analytics cookies (without identifying individuals) to improve the service."
+            },
+            {
+                "title": "11. Contact",
+                "intro": "For privacy questions: <mail>privacy@dosfilos.app</mail>"
+            }
+        ]
+    }
+}
