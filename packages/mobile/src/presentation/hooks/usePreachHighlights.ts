@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { buildAnnotationAnchor, resolveAnnotationAnchor } from '@dosfilos/domain';
-import type { HighlightColor, MarkStyle } from '@dosfilos/domain';
+import { buildAnnotationAnchor, glyphAction, resolveAnnotationAnchor } from '@dosfilos/domain';
+import type { HighlightColor, MarkStyle, PreacherGlyph } from '@dosfilos/domain';
 
 import { SermonSection } from '@/core/utils/sermonSections';
-import { useAnnotations, useHighlightMutations } from '@/presentation/hooks/useAnnotations';
-import { ResolvedHighlight } from '@/presentation/components/preach/PreachSectionBody';
+import { useAnnotations, useGlyphMutations, useGlyphs, useHighlightMutations } from '@/presentation/hooks/useAnnotations';
+import { ResolvedGlyph, ResolvedHighlight } from '@/presentation/components/preach/PreachSectionBody';
 import { SelectionRange } from '@/presentation/components/preach/SelectableParagraph';
 
 /**
@@ -30,6 +30,8 @@ export function usePreachHighlights(
 
     const { data: annotations } = useAnnotations(sermonId);
     const { create, recolor, remove } = useHighlightMutations(sermonId);
+    const { data: glyphMarks } = useGlyphs(sermonId);
+    const glyphMutations = useGlyphMutations(sermonId);
 
     // Las marcas se reanclan contra el cuerpo CRUDO de la sección: el sermón
     // pudo editarse en la web después de que se hicieron, y una que ya no
@@ -52,6 +54,17 @@ export function usePreachHighlights(
               .filter((h): h is ResolvedHighlight => h !== null)
         : [];
 
+    // Marcas de predicador (C7): se reanclan igual que los resaltados.
+    const glyphs: ResolvedGlyph[] = section
+        ? (glyphMarks ?? [])
+              .filter((g) => g.sectionSlug === section.slug)
+              .map((g) => {
+                  const at = resolveAnnotationAnchor(g, section.body);
+                  return at ? { id: g.id, glyph: g.glyph, start: at.start } : null;
+              })
+              .filter((g): g is ResolvedGlyph => g !== null)
+        : [];
+
     /** Marca que cubre a la vez el punto dado. Para pintar palabra por palabra. */
     const markAt = (sourceStart: number): ResolvedHighlight | null =>
         highlights.find((h) => sourceStart >= h.start && sourceStart < h.end) ?? null;
@@ -62,6 +75,26 @@ export function usePreachHighlights(
                   Math.min(h.end, pending.range.end) - Math.max(h.start, pending.range.start) > 0,
           ) ?? null)
         : null;
+
+    // El glifo va sobre la PRIMERA palabra de lo elegido: el que ya esté ahí
+    // se cambia o se quita, no se apila otro.
+    const pendingGlyph = pending
+        ? (glyphs.find((g) => g.start >= pending.range.start && g.start < pending.range.end) ?? null)
+        : null;
+
+    const applyGlyph = (glyph: PreacherGlyph) => {
+        if (!section || !pending) return;
+        const action = glyphAction(pendingGlyph?.glyph ?? null, glyph);
+        if (action === 'remove' && pendingGlyph) glyphMutations.remove.mutate(pendingGlyph.id);
+        else if (action === 'update' && pendingGlyph) glyphMutations.change.mutate({ id: pendingGlyph.id, glyph });
+        else if (action === 'create') {
+            glyphMutations.create.mutate({
+                anchor: buildAnnotationAnchor(section.slug, section.body, pending.range.start, pending.range.end),
+                glyph,
+            });
+        }
+        close();
+    };
 
     const beginSelection = (range: SelectionRange | null) => {
         // El pulso confirma que el texto quedó agarrado: en el púlpito nadie
@@ -110,6 +143,9 @@ export function usePreachHighlights(
 
     return {
         highlights,
+        glyphs,
+        pendingGlyph: pendingGlyph?.glyph ?? null,
+        applyGlyph,
         markAt,
         selection,
         beginSelection,

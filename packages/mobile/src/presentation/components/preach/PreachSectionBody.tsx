@@ -2,9 +2,10 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import type { HighlightColor, MarkStyle, ReadingBlock, ReadingUnit } from '@dosfilos/domain';
+import type { HighlightColor, MarkStyle, PreacherGlyph, ReadingBlock, ReadingUnit } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
+import { GLYPH_SYMBOL } from '@/core/theme/preacherGlyphs';
 import type { DeliveryFace } from '@/core/theme/typography';
 import {
     DELIVERY_LINE_HEIGHT,
@@ -16,6 +17,12 @@ import {
 import { SelectableParagraph, SelectionRange } from './SelectableParagraph';
 
 /** Marca ya reanclada al cuerpo crudo de ESTA sección. */
+export interface ResolvedGlyph {
+    id: string;
+    glyph: PreacherGlyph;
+    start: number;
+}
+
 export interface ResolvedHighlight {
     id: string;
     color: HighlightColor;
@@ -27,6 +34,8 @@ export interface ResolvedHighlight {
 interface Props {
     blocks: ReadingBlock[];
     highlights: ResolvedHighlight[];
+    /** Marcas de predicador ya resueltas (C7): dónde empieza cada una. */
+    glyphs?: ResolvedGlyph[];
     fontSize: number;
     tokens: ReadingModeTokens;
     /** Colometría: cada oración abre renglón, con sangría francesa (D6). */
@@ -82,6 +91,7 @@ function highlightAt(
 export function PreachSectionBody({
     blocks,
     highlights,
+    glyphs,
     fontSize,
     tokens,
     senseLines,
@@ -119,6 +129,11 @@ export function PreachSectionBody({
      * En tinta electrónica el color no existe, así que toda marca cae a
      * subrayado — es la degradación honesta, no un bug.
      */
+    const glyphAt = (start: number, end: number) => {
+        const found = glyphs?.find((g) => g.start >= start && g.start < end);
+        return found ? GLYPH_SYMBOL[found.glyph] : null;
+    };
+
     const styleAt = (at: number) => {
         const mark = highlightAt(at, highlights);
         if (!mark) return null;
@@ -160,6 +175,8 @@ export function PreachSectionBody({
                 selection={selection}
                 selectionColor={tokens.selection}
                 styleAt={styleAt}
+                glyphAt={glyphAt}
+                glyphColor={tokens.accent}
                 onSelectionChange={onSelectionChange}
                 onSelectionEnd={onSelectionEnd}
                 onTapAt={onTapAt}

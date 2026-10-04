@@ -85,5 +85,10 @@
     "view_outline": "Ver el bosquejo",
     "view_manuscript": "Ver el manuscrito",
     "brightness": "Brillo del atril",
-    "brightness_system": "El del sistema"
+    "brightness_system": "El del sistema",
+    "glyph_pause": "Pausa",
+    "glyph_emphasis": "Énfasis",
+    "glyph_soft": "Bajar la voz",
+    "glyph_look": "Mirar a la congregación",
+    "glyph_illustration": "Aquí la ilustración"
 }

@@ -1,5 +1,7 @@
 import type {
+    GlyphMark,
     HighlightColor,
+    PreacherGlyph,
     MarkStyle,
     SermonAnnotation,
     SermonAnnotationAnchor,
@@ -27,6 +29,10 @@ export interface AnnotationRepository {
         style: MarkStyle,
     ): Promise<void>;
     remove(sermonId: string, annotationId: string): Promise<void>;
+    /** Marcas de predicador (C7): `type: 'glyph'` en la misma subcolección. */
+    listGlyphs(sermonId: string): Promise<GlyphMark[]>;
+    createGlyph(sermonId: string, anchor: SermonAnnotationAnchor, glyph: PreacherGlyph): Promise<GlyphMark>;
+    updateGlyph(sermonId: string, annotationId: string, glyph: PreacherGlyph): Promise<void>;
     /** Borra cualquier anotación por id — marca o nota de tinta. */
     deleteAnnotation(sermonId: string, annotationId: string): Promise<void>;
 }

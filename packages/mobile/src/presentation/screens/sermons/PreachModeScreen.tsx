@@ -694,6 +694,7 @@ export default function PreachModeScreen({
                     {showReading || outlineOn ? null : <PreachSectionBody
                         blocks={pageBlocks}
                         highlights={highlighting.highlights}
+                        glyphs={highlighting.glyphs}
                         fontSize={fontSize}
                         tokens={tokens}
                         senseLines={senseLines}
@@ -1003,6 +1004,7 @@ export default function PreachModeScreen({
                 onPick={highlighting.applyMark}
                 onRemove={highlighting.removeMark}
                 onClose={highlighting.close}
+                glyphs={{ current: highlighting.pendingGlyph, onPick: highlighting.applyGlyph }}
             />
 
             {/* Tinta encima de todo. Con el lápiz apagado la capa es

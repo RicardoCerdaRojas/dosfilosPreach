@@ -2,10 +2,11 @@ import React from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { HIGHLIGHT_COLORS } from '@dosfilos/domain';
-import type { HighlightColor, MarkStyle } from '@dosfilos/domain';
+import { HIGHLIGHT_COLORS, PREACHER_GLYPHS } from '@dosfilos/domain';
+import type { HighlightColor, MarkStyle, PreacherGlyph } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
+import { GLYPH_SYMBOL } from '@/core/theme/preacherGlyphs';
 
 interface Props {
     visible: boolean;
@@ -26,6 +27,11 @@ interface Props {
      * que marcarlo, es llevárselo. En el púlpito no existe.
      */
     extraAction?: { icon: keyof typeof MaterialIcons.glyphMap; label: string; onPress: () => void };
+    /**
+     * Marcas de predicador (C7): una segunda fila con los glifos. Sólo en el
+     * púlpito; la Biblia no la tiene.
+     */
+    glyphs?: { current: PreacherGlyph | null; onPick: (glyph: PreacherGlyph) => void };
 }
 
 const STYLE_ICONS: Record<MarkStyle, keyof typeof MaterialIcons.glyphMap> = {
@@ -56,6 +62,7 @@ export function MarkPopover({
     onRemove,
     onClose,
     extraAction,
+    glyphs,
 }: Props) {
     const { t } = useTranslation();
     const below = anchorY < screenHeight * 0.6;
@@ -185,6 +192,36 @@ export function MarkPopover({
                             </Pressable>
                         ) : null}
                     </View>
+                    {glyphs ? (
+                        <View
+                            className="flex-row items-center rounded-2xl px-3 py-2 mt-2"
+                            style={{ backgroundColor: tokens.surface, borderWidth: 1, borderColor: tokens.border }}
+                        >
+                            {PREACHER_GLYPHS.map((glyph) => {
+                                const on = glyph === glyphs.current;
+                                return (
+                                    <Pressable
+                                        key={glyph}
+                                        onPress={() => glyphs.onPick(glyph)}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={t(`preach:glyph_${glyph}`)}
+                                        accessibilityState={{ selected: on }}
+                                        className="items-center justify-center mx-1"
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 10,
+                                            backgroundColor: on ? tokens.accent : 'transparent',
+                                        }}
+                                    >
+                                        <Text style={{ color: on ? tokens.background : tokens.textPrimary, fontSize: 20 }}>
+                                            {GLYPH_SYMBOL[glyph]}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    ) : null}
                 </View>
             </Pressable>
         </Modal>

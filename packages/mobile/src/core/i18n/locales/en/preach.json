@@ -85,5 +85,10 @@
     "view_outline": "Show the outline",
     "view_manuscript": "Show the manuscript",
     "brightness": "Lectern brightness",
-    "brightness_system": "System"
+    "brightness_system": "System",
+    "glyph_pause": "Pause",
+    "glyph_emphasis": "Emphasis",
+    "glyph_soft": "Lower your voice",
+    "glyph_look": "Look at the congregation",
+    "glyph_illustration": "Illustration here"
 }

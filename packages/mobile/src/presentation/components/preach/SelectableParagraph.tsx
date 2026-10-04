@@ -33,6 +33,12 @@ interface Props {
     selection: SelectionRange | null;
     /** Estilo por palabra ya resuelto desde las marcas guardadas. */
     styleAt: (sourceStart: number) => { background?: string; underline?: boolean; strike?: boolean } | null;
+    /**
+     * Marca de predicador sobre la palabra que EMPIEZA en este rango (C7), o
+     * `null`. Se dibuja encima, sin ocupar lugar: la paginación no cambia.
+     */
+    glyphAt?: (sourceStart: number, sourceEnd: number) => string | null;
+    glyphColor?: string;
     onSelectionChange: (range: SelectionRange | null) => void;
     onSelectionEnd: (range: SelectionRange, atY: number) => void;
     onTapAt: (pageX: number) => void;
@@ -77,6 +83,8 @@ export function SelectableParagraph({
     color,
     selection,
     styleAt,
+    glyphAt,
+    glyphColor,
     onSelectionChange,
     onSelectionEnd,
     onTapAt,
@@ -240,6 +248,7 @@ export function SelectableParagraph({
                     word.sourceStart >= selection.start &&
                     word.sourceEnd <= selection.end;
                 const mark = styleAt(word.sourceStart);
+                const glyph = glyphAt?.(word.sourceStart, word.sourceEnd) ?? null;
                 return (
                     <View
                         key={index}
@@ -278,6 +287,22 @@ export function SelectableParagraph({
                         >
                             {word.text}
                         </Text>
+                        {glyph ? (
+                            <Text
+                                pointerEvents="none"
+                                accessible={false}
+                                style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: -fontSize * 0.42,
+                                    fontSize: fontSize * 0.5,
+                                    lineHeight: fontSize * 0.6,
+                                    color: glyphColor ?? color,
+                                }}
+                            >
+                                {glyph}
+                            </Text>
+                        ) : null}
                     </View>
                 );
             })}
