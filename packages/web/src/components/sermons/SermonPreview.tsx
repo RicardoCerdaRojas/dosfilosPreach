@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import remarkGfm from 'remark-gfm';
+import { SERMON_REMARK_PLUGINS } from '@/lib/sermonMarkdown';
 import rehypeRaw from 'rehype-raw';
 import { LocalBibleService } from '@/services/LocalBibleService';
 import type { CitationManifest } from '@dosfilos/domain';
@@ -256,7 +256,7 @@ export function SermonPreview({
           <CitationManifestContext.Provider value={citationManifest}>
             <ReactMarkdown
               components={components}
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={SERMON_REMARK_PLUGINS}
               rehypePlugins={[rehypeRaw]}
             >
               {processContent(content)}

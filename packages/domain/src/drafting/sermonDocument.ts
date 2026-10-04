@@ -1,3 +1,4 @@
+import { decodeEntity } from '../services/sermonReading';
 /**
  * El sermón como DOCUMENTO: lo que el Word y el PDF dibujan.
  *
@@ -18,6 +19,11 @@ export interface InlineRun {
     text: string;
     bold?: boolean;
     italic?: boolean;
+    /**
+     * Un salto de línea dentro del párrafo (`LINE_BREAK_RULE`): el pastor
+     * cortó la línea a mano. Va con `text` vacío.
+     */
+    lineBreak?: boolean;
 }
 
 export type SermonBlock =
@@ -30,12 +36,15 @@ export type SermonBlock =
 /** `<br>` en cualquiera de sus formas: un salto de línea, nunca texto. */
 const BR = /<br\s*\/?>/gi;
 
-/** Quita los escapes de markdown (`\[`, `\*`, …) y entidades sueltas. */
+/**
+ * Quita los escapes de markdown (`\[`, `\*`, …) y resuelve las entidades.
+ * Antes sólo `&nbsp;` y `&amp;`: el `&#x20;` que deja el editor al final de
+ * un renglón salía literal en el Word y el PDF, igual que en el atril.
+ */
 function unescape(text: string): string {
     return text
         .replace(/\\([\\`*_{}[\]()#+\-.!>|])/g, '$1')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&');
+        .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, entity: string) => decodeEntity(entity) ?? whole);
 }
 
 /**
@@ -43,7 +52,22 @@ function unescape(text: string): string {
  * suelto queda como texto. Los espacios se conservan tal cual.
  */
 export function parseInline(text: string): InlineRun[] {
-    const fuente = text.replace(BR, ' ');
+    // Cada renglón por separado, con un salto entre uno y otro: es la regla
+    // de los saltos de línea (`LINE_BREAK_RULE`), la misma del atril y la web.
+    // La barra del salto estándar (`\` al final del renglón) no se lee.
+    const renglones = text.split(/\n|<br\s*\/?>/gi).map((r) => r.replace(/\\$/, ''));
+    const runs: InlineRun[] = [];
+    renglones.forEach((renglon, i) => {
+        if (i > 0) runs.push({ text: '', lineBreak: true });
+        runs.push(...parseInlineLine(renglon));
+    });
+    // Un salto al principio o al final del párrafo no es un renglón.
+    while (runs[0]?.lineBreak) runs.shift();
+    while (runs[runs.length - 1]?.lineBreak) runs.pop();
+    return runs;
+}
+
+function parseInlineLine(fuente: string): InlineRun[] {
     const runs: InlineRun[] = [];
     // `***a***` (negrita y cursiva) primero: si no, la rama de negrita deja
     // asteriscos sueltos.
@@ -78,7 +102,7 @@ function mergeRuns(runs: InlineRun[]): InlineRun[] {
 
 /** El texto plano de unos runs (para medir, buscar o probar). */
 export function runsText(runs: ReadonlyArray<InlineRun>): string {
-    return runs.map(r => r.text).join('');
+    return runs.map(r => (r.lineBreak ? '\n' : r.text)).join('');
 }
 
 export function parseSermonDocument(markdown: string): SermonBlock[] {
@@ -94,7 +118,8 @@ export function parseSermonDocument(markdown: string): SermonBlock[] {
     let cita: string[][] | null = null;
 
     const cerrarParrafo = () => {
-        const t = parrafo.join(' ').trim();
+        // Los renglones del párrafo se conservan (LINE_BREAK_RULE).
+        const t = parrafo.join('\n').trim();
         if (t) bloques.push({ kind: 'paragraph', runs: parseInline(t) });
         parrafo = [];
     };
@@ -106,7 +131,7 @@ export function parseSermonDocument(markdown: string): SermonBlock[] {
     };
     const cerrarCita = () => {
         if (cita) {
-            const ps = cita.map(p => p.join(' ').trim()).filter(Boolean).map(p => parseInline(p));
+            const ps = cita.map(p => p.join('\n').trim()).filter(Boolean).map(p => parseInline(p));
             if (ps.length > 0) bloques.push({ kind: 'quote', paragraphs: ps });
         }
         cita = null;
@@ -170,7 +195,7 @@ export function parseSermonDocument(markdown: string): SermonBlock[] {
         if (lista) {
             // Continuación con sangría de un ítem; si no, la lista terminó.
             if (/^\s{2,}\S/.test(linea)) {
-                lista.items[lista.items.length - 1] += ` ${t}`;
+                lista.items[lista.items.length - 1] += `\n${t}`;
                 continue;
             }
             cerrarLista();

@@ -73,6 +73,7 @@
     "react-simple-maps": "^3.0.0",
     "react-textarea-autosize": "^8.5.9",
     "rehype-raw": "^7.0.0",
+    "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",

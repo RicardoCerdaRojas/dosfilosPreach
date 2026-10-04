@@ -82,7 +82,9 @@ export function fragmentHeight(
 export function fragmentBlock(block: ReadingBlock, fragment: PageFragment): ReadingBlock & { continued: boolean } {
     if (fragment.from === 0 && fragment.to === block.units.length) return { ...block, continued: false };
     const units = block.units.slice(fragment.from, fragment.to);
-    return { ...block, units, text: units.map((u) => u.text).join(' '), continued: fragment.from > 0 };
+    // El primer renglón de un fragmento no lleva salto delante: ya empieza arriba.
+    const text = units.map((u, i) => (i === 0 ? '' : u.lineBreak ? '\n' : ' ') + u.text).join('');
+    return { ...block, units, text, continued: fragment.from > 0 };
 }
 
 /**

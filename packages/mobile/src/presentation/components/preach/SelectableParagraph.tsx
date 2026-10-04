@@ -16,6 +16,8 @@ interface PlacedWord {
     reference: string | null;
     /** A qué oración pertenece. */
     unit: number;
+    /** Es la primera palabra de un renglón que el pastor cortó a mano. */
+    breaksLine: boolean;
 }
 
 /** Renglones de una oración, desde el borde de arriba del párrafo. */
@@ -165,7 +167,7 @@ export function SelectableParagraph({
     const words: PlacedWord[] = [];
     units.forEach((unit, unitIndex) => {
         const references = onPressReference ? findBibleReferences(unit.text) : [];
-        splitWords(unit.text).forEach((w) => {
+        splitWords(unit.text).forEach((w, wordIndex) => {
             const tokens = tokenizeCitations(w.text);
             const citation = tokens.find((t) => t.kind === 'citation');
             const reference = references.find((r) => w.start < r.end && w.end > r.start);
@@ -176,6 +178,7 @@ export function SelectableParagraph({
                 ordinals: citation && citation.kind === 'citation' ? citation.ordinals : null,
                 reference: reference?.reference ?? null,
                 unit: unitIndex,
+                breaksLine: wordIndex === 0 && !!unit.lineBreak && unitIndex > 0,
             });
         });
     });
@@ -308,13 +311,19 @@ export function SelectableParagraph({
             onResponderTerminate={handleTerminate}
         >
             {words.map((word, index) => {
+                // Salto a mano (LINE_BREAK_RULE): un elemento de ancho completo
+                // fuerza el renglón nuevo en la fila que envuelve.
+                const lineBreak = word.breaksLine ? (
+                    <View key={`br-${index}`} style={{ width: '100%', height: 0 }} pointerEvents="none" />
+                ) : null;
                 const selected =
                     selection !== null &&
                     word.sourceStart >= selection.start &&
                     word.sourceEnd <= selection.end;
                 const mark = styleAt(word.sourceStart);
                 const glyph = glyphAt?.(word.sourceStart, word.sourceEnd) ?? null;
-                return (
+                return [
+                    lineBreak,
                     <View
                         key={index}
                         onLayout={(e) => {
@@ -331,7 +340,9 @@ export function SelectableParagraph({
                             paddingRight: fontSize * 0.28,
                             // La primera palabra sale de la sangría: es lo que
                             // deja la primera línea afuera y el resto adentro.
-                            marginLeft: index === 0 && !continued ? -hangingIndent : 0,
+                            // La primera palabra sale de la sangría, y también la
+                            // de un renglón cortado a mano: empieza en el margen.
+                            marginLeft: (index === 0 && !continued) || word.breaksLine ? -hangingIndent : 0,
                         }}
                     >
                         <Text
@@ -371,8 +382,8 @@ export function SelectableParagraph({
                                 {glyph}
                             </Text>
                         ) : null}
-                    </View>
-                );
+                    </View>,
+                ];
             })}
         </View>
     );

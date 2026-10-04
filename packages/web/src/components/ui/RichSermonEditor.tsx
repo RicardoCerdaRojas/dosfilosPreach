@@ -21,6 +21,7 @@ import {
   DiffSourceToggleWrapper
 } from '@mdxeditor/editor';
 import '@mdxeditor/editor/style.css';
+import { hardLineBreakPlugin } from '@/lib/sermonEditor/hardLineBreak';
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +47,8 @@ export const RichSermonEditor = forwardRef<MDXEditorMethods, RichSermonEditorPro
           placeholder={placeholder}
           contentEditableClassName="prose prose-sm max-w-none focus:outline-none min-h-[500px] px-8 py-4"
           plugins={[
+            // El salto (Mayúsculas+Enter) se guarda estándar (LINE_BREAK_RULE).
+            hardLineBreakPlugin(),
             headingsPlugin(),
             listsPlugin(),
             quotePlugin(),

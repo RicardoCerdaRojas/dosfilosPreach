@@ -38,6 +38,19 @@ async function xml(): Promise<string> {
 }
 
 describe('exportSermonToDocx — prolijo', () => {
+    it('REGRESIÓN: el salto que puso el pastor es un salto en el Word, dentro del mismo párrafo (LINE_BREAK_RULE)', async () => {
+        const blob = await exportSermonToDocx({
+            id: 's', userId: 'u', title: 'Saltos', content: '**A nivel institucional**\nHace muchos años observé algo.',
+            bibleReferences: [], tags: [], status: 'published',
+            createdAt: new Date('2026-10-04'), updatedAt: new Date('2026-10-04'), isShared: false, authorName: 'P', preachingHistory: [],
+        } as Sermon);
+        const doc = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/document.xml')!.async('string');
+        const parrafo = [...doc.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)].map((m) => m[0]).find((p) => p.includes('institucional'))!;
+        expect(parrafo).toContain('Hace muchos');
+        expect(parrafo.indexOf('<w:br/>')).toBeGreaterThan(parrafo.indexOf('institucional'));
+        expect(parrafo.indexOf('<w:br/>')).toBeLessThan(parrafo.indexOf('Hace muchos'));
+    });
+
     it('sin markdown ni HTML literal', async () => {
         const doc = await xml();
         const texto = [...doc.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(m => m[1]).join('|');

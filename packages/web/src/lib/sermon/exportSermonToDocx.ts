@@ -49,7 +49,10 @@ const MARGEN = 1587;
 const ANCHO_UTIL = 11906 - 2 * MARGEN;
 
 const runsDe = (runs: ReadonlyArray<InlineRun>, extra: { italics?: boolean; color?: string; size?: number } = {}) =>
-    runs.map(r => new TextRun({
+    runs.map(r => r.lineBreak
+        // El salto que puso el pastor dentro del párrafo (LINE_BREAK_RULE).
+        ? new TextRun({ text: '', break: 1 })
+        : new TextRun({
         text: r.text,
         bold: r.bold,
         italics: r.italic || extra.italics,

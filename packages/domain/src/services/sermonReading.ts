@@ -47,7 +47,27 @@ export interface ReadingUnit {
     /** Half-open range `[sourceStart, sourceEnd)` in the raw section body. */
     sourceStart: number;
     sourceEnd: number;
+    /**
+     * Empieza un renglón nuevo: el pastor cortó la línea a mano dentro del
+     * párrafo (Mayúsculas+Enter en el editor). Ver `LINE_BREAK_RULE`.
+     */
+    lineBreak?: boolean;
 }
+
+/**
+ * LA REGLA DE LOS SALTOS DE LÍNEA, una sola para todo el producto.
+ *
+ * Un salto de línea que el pastor puso DENTRO de un párrafo se ve como salto,
+ * en todas partes: la web, el atril y Word/PDF. Es lo que ya le muestra el
+ * editor. El markdown estándar (CommonMark) dice lo contrario —un salto suelto
+ * es un espacio— y el editor (MDXEditor) los guardaba así: los tres lectores
+ * los convertían en espacio y el texto se pegaba («A nivel institucional Hace
+ * muchos años…»). Lo vio el fundador el 2026-10-04.
+ *
+ * Valen igual el salto suelto (`\n`), el estándar (`\` + salto) y `<br>`.
+ * Una línea en blanco sigue separando párrafos.
+ */
+export const LINE_BREAK_RULE = 'un salto dentro de un párrafo se ve como salto';
 
 export interface ReadingBlock {
     kind: ReadingBlockKind;
@@ -113,6 +133,8 @@ const RULES: RewriteRule[] = [
     { re: /(?<!\\)\*(\S(?:.*?[^\s\\])?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
     // Al final, después del énfasis: `\*` no abre ni cierra nada.
     { re: ESCAPABLE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
+    // El salto de línea estándar (`\` al final del renglón): la barra no se lee.
+    { re: /\\(?=\n)/g, emit: () => null },
 ];
 
 /** El texto plano de un fragmento de markdown, con entidades y escapes resueltos. */
@@ -244,11 +266,22 @@ export function buildReadingBlocks(body: string): ReadingBlock[] {
     }
     chunkBounds.push({ start: cursor, end: normalized.text.length });
 
+    // Cada renglón se parte en oraciones por separado: un salto a mano corta
+    // también la unidad (una etiqueta como «A nivel institucional», sin punto,
+    // no se funde con la oración que sigue). Ver LINE_BREAK_RULE.
     const push = (kind: ReadingBlockKind, lines: { start: number; end: number }[]) => {
-        if (!lines.length) return;
-        const joined = trimMapped(joinLines(normalized, lines));
-        if (!joined.text) return;
-        blocks.push({ kind, text: joined.text, units: toUnits(joined) });
+        const units: ReadingUnit[] = [];
+        const texts: string[] = [];
+        for (const line of lines) {
+            const mapped = trimMapped(joinLines(normalized, [line]));
+            if (!mapped.text) continue;
+            const lineUnits = toUnits(mapped);
+            if (units.length && lineUnits[0]) lineUnits[0] = { ...lineUnits[0], lineBreak: true };
+            units.push(...lineUnits);
+            texts.push(mapped.text);
+        }
+        if (!units.length) return;
+        blocks.push({ kind, text: texts.join('\n'), units });
     };
 
     for (const chunk of chunkBounds) {

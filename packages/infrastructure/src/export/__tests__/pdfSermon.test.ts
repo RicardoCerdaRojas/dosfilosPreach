@@ -64,7 +64,16 @@ describe('PdfExportService — lo que se dibuja (revisión adversarial de R2)', 
         return llamadas;
     }
 
-    it('la puntuación pegada al hebreo va con la fuente latina, y el hebreo con la suya', async () => {
+    it('REGRESIÓN: el salto que puso el pastor corta la línea (LINE_BREAK_RULE)', async () => {
+        const l = await dibujado('**A nivel institucional**\nHace muchos años.');
+        const etiqueta = l.find((x) => x.text === 'institucional')!;
+        const hace = l.find((x) => x.text === 'Hace')!;
+        // «Hace» va en el renglón siguiente y arranca en el margen, como la etiqueta.
+        expect(hace.y).toBeGreaterThan(etiqueta.y);
+        expect(hace.x).toBeCloseTo(l.find((x) => x.text === 'A')!.x, 1);
+    }, 60000);
+
+        it('la puntuación pegada al hebreo va con la fuente latina, y el hebreo con la suya', async () => {
         const l = await dibujado('La palabra (חֶסֶד) significa.');
         expect(l.find(x => x.text === '(')?.font).toBe('EBGaramond');
         expect(l.find(x => x.text === ')')?.font).toBe('EBGaramond');

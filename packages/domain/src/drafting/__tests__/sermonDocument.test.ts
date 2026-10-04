@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseInline, parseSermonDocument, runsText, type InlineRun } from '../sermonDocument';
+import { LINE_BREAK_FIXTURES } from '../../services/lineBreakFixtures';
 
 /**
  * El modelo que dibujan el Word y el PDF. Las formas salen del sermón 6 de
@@ -36,8 +37,8 @@ describe('parseSermonDocument', () => {
         expect(JSON.stringify(b)).not.toMatch(/<br|\\\[|^>/);
     });
 
-    it('las líneas seguidas son un solo párrafo', () => {
-        expect(runsText((b[1] as { runs: InlineRun[] }).runs)).toBe('El 14 de julio de 1789, el pueblo de París asaltó la Bastilla. Sigue la misma oración.');
+    it('las líneas seguidas son un solo párrafo, con el salto que puso el pastor (LINE_BREAK_RULE)', () => {
+        expect(runsText((b[1] as { runs: InlineRun[] }).runs)).toBe('El 14 de julio de 1789, el pueblo de París asaltó la Bastilla.\nSigue la misma oración.');
     });
 
     it('viñetas y numeradas, cada una con su tipo', () => {
@@ -74,14 +75,14 @@ describe('parseSermonDocument — revisión adversarial de R2', () => {
     const texto = (b: ReturnType<typeof parseSermonDocument>[number]) =>
         b.kind === 'list' ? b.items.map(runsText).join('|') : b.kind === 'quote' ? b.paragraphs.map(runsText).join('|') : runsText(b.runs);
 
-    it('`<br>` dentro de la línea es salto: dos separan párrafos, uno junta con espacio', () => {
+    it('`<br>` dentro de la línea es salto: dos separan párrafos, uno es salto de renglón (como en la web)', () => {
         const b = parseSermonDocument('Párrafo uno.<br/><br/>Párrafo dos.<br/>sigue.');
-        expect(b.map(texto)).toEqual(['Párrafo uno.', 'Párrafo dos. sigue.']);
+        expect(b.map(texto)).toEqual(['Párrafo uno.', 'Párrafo dos.\nsigue.']);
     });
 
     it('la cita sigue en la línea perezosa que deja un `<br>`', () => {
         const [q] = parseSermonDocument('> **Jonás 4:6**<br/>6 Y preparó Jehová Dios una calabacera.');
-        expect(texto(q!)).toBe('Jonás 4:6 6 Y preparó Jehová Dios una calabacera.');
+        expect(texto(q!)).toBe('Jonás 4:6\n6 Y preparó Jehová Dios una calabacera.');
     });
 
     it('una numerada cortada por un párrafo sigue en su número', () => {
@@ -100,3 +101,30 @@ describe('parseSermonDocument — revisión adversarial de R2', () => {
         expect(parseInline('***a***')).toEqual([{ text: 'a', bold: true, italic: true }]);
     });
 });
+
+describe('saltos de línea en Word y PDF (LINE_BREAK_RULE)', () => {
+    /** Lo que se ve, bloque por bloque y renglón por renglón. */
+    const lines = (markdown: string) =>
+        parseSermonDocument(markdown).flatMap((block) => {
+            if (block.kind === 'list') return block.items.map((item) => runsText(item).split('\n'));
+            if (block.kind === 'quote') return block.paragraphs.map((p) => runsText(p).split('\n'));
+            return [runsText(block.runs).split('\n')];
+        });
+
+    it.each(LINE_BREAK_FIXTURES)('$name', ({ markdown, lines: expected }) => {
+        expect(lines(markdown)).toEqual(expected);
+    });
+
+    it('el salto es un tramo propio, sin texto (para que Word y PDF corten la línea)', () => {
+        const [p] = parseSermonDocument('**A nivel institucional**\nHace muchos años.');
+        const runs = (p as { runs: InlineRun[] }).runs;
+        expect(runs.map((r) => (r.lineBreak ? 'SALTO' : r.text))).toEqual(['A nivel institucional', 'SALTO', 'Hace muchos años.']);
+        expect(runs[0]!.bold).toBe(true);
+    });
+
+    it('REGRESIÓN: «&#x20;» del editor no sale literal en el Word', () => {
+        const [p] = parseSermonDocument('Una inclinación precaminosa.&#x20;');
+        expect(runsText((p as { runs: InlineRun[] }).runs).trim()).toBe('Una inclinación precaminosa.');
+    });
+});
+

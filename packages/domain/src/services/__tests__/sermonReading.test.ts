@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { buildReadingBlocks, decodeMarkdownText, normalizeSectionBody } from '../sermonReading';
+import { LINE_BREAK_FIXTURES } from '../lineBreakFixtures';
 import { splitSentences } from '../sentenceSegmentation';
 import {
     buildAnnotationAnchor,
@@ -76,13 +77,12 @@ describe('buildReadingBlocks', () => {
         'Nadie discute con el fuego [1].',
     ].join('\n');
 
-    it('splits subheadings from paragraphs and joins wrapped lines', () => {
+    it('splits subheadings from paragraphs and KEEPS the pastor\'s line breaks (LINE_BREAK_RULE)', () => {
         const blocks = buildReadingBlocks(body);
         expect(blocks.map((b) => b.kind)).toEqual(['subheading', 'paragraph', 'paragraph']);
         expect(blocks[0].text).toBe('El primer punto');
-        expect(blocks[1].text).toBe(
-            'Dios llama a Moisés desde la zarza. La zarza arde y no se consume.',
-        );
+        expect(blocks[1].text).toBe('Dios llama a Moisés desde la zarza.\nLa zarza arde y no se consume.');
+        expect(blocks[1].units.map((u) => !!u.lineBreak)).toEqual([false, true]);
     });
 
     it('gives every unit a range that still reads correctly in the RAW body', () => {
@@ -136,7 +136,7 @@ describe('buildReadingBlocks', () => {
         const wrapped = ['- Primer punto que sigue', '  en la línea de abajo.', '- Segundo punto.'].join('\n');
         const blocks = buildReadingBlocks(wrapped);
         expect(blocks.map((b) => b.kind)).toEqual(['listitem', 'listitem']);
-        expect(blocks[0].text).toBe('Primer punto que sigue en la línea de abajo.');
+        expect(blocks[0].text).toBe('Primer punto que sigue\nen la línea de abajo.');
     });
 
     it('does not let a star bullet open emphasis and swallow the next item', () => {
@@ -247,3 +247,25 @@ describe('texto limpio en el atril (fase «Atril: tinta y lectura»)', () => {
         expect(decodeMarkdownText('a &foo; b')).toBe('a &foo; b');
     });
 });
+
+describe('saltos de línea del pastor (LINE_BREAK_RULE)', () => {
+    it.each(LINE_BREAK_FIXTURES)('$name', ({ markdown, lines }) => {
+        const blocks = buildReadingBlocks(markdown);
+        // Cada bloque, renglón por renglón, como lo escribió el pastor.
+        expect(blocks.map((b) => b.text.split('\n'))).toEqual(lines);
+    });
+
+    it('una etiqueta sin punto no se funde con la oración que sigue: es su propia unidad', () => {
+        const [block] = buildReadingBlocks('**A nivel institucional**\nHace muchos años observé algo.');
+        expect(block!.units.map((u) => u.text)).toEqual(['A nivel institucional', 'Hace muchos años observé algo.']);
+        expect(block!.units[1]!.lineBreak).toBe(true);
+    });
+
+    it('los offsets siguen apuntando al texto original después del salto', () => {
+        const body = 'Uno.\\\nDos.';
+        const [block] = buildReadingBlocks(body);
+        const second = block!.units[1]!;
+        expect(body.slice(second.sourceStart, second.sourceEnd)).toBe('Dos.');
+    });
+});
+
