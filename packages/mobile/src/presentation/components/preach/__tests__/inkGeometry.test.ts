@@ -2,7 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 import type { InkStroke } from '@dosfilos/domain';
 import { toNoteSpace } from '@dosfilos/domain';
 
-import { inkSignature, nearestStroke, noteWithStroke, showsBridge, touchWrites, withStrokeRestored, withoutStroke } from '../inkGeometry';
+import { READING_MODES } from '@/core/theme/readingModes';
+
+import { inkColorFor, inkSignature, inkTouchMode, nearestStroke, noteWithStroke, showsBridge, touchWrites, withStrokeRestored, withoutStroke } from '../inkGeometry';
 
 const RECT = { x: 100, y: 200, height: 40 };
 const BODY = 28;
@@ -87,5 +89,33 @@ describe('sólo Apple Pencil (T-9)', () => {
     it('sin la opción, escribe cualquiera (como siempre)', () => {
         expect(touchWrites(false, false)).toBe(true);
         expect(touchWrites(true, false)).toBe(true);
+    });
+});
+
+describe('con la tinta activa en la Biblia: escribir o desplazar', () => {
+    it('REGRESIÓN: dos dedos desplazan siempre (antes la capa se los tragaba)', () => {
+        expect(inkTouchMode(2, false, false)).toBe('scroll');
+        expect(inkTouchMode(2, true, true)).toBe('scroll');
+    });
+
+    it('el lápiz escribe; un dedo escribe salvo con «sólo Apple Pencil», que desplaza', () => {
+        expect(inkTouchMode(1, true, true)).toBe('draw');
+        expect(inkTouchMode(1, false, false)).toBe('draw');
+        expect(inkTouchMode(1, false, true)).toBe('scroll');
+    });
+});
+
+
+describe('colores de la tinta', () => {
+    const tokens = { ...READING_MODES.claro };
+    it('verde y amarillo existen, y el resaltador amarillo es amarillo de verdad (no ámbar)', () => {
+        expect(inkColorFor('green', tokens)).toBe(tokens.timerOk);
+        expect(inkColorFor('yellow', tokens)).toBe(tokens.timerWarn);
+        expect(inkColorFor('yellow', tokens, true)).toBe('#facc15');
+        expect(inkColorFor('ink', tokens, true)).toBe(tokens.textPrimary);
+    });
+
+    it('en tinta electrónica todo es negro', () => {
+        expect(inkColorFor('yellow', READING_MODES.eink, true)).toBe(READING_MODES.eink.textPrimary);
     });
 });

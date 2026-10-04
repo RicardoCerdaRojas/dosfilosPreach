@@ -48,7 +48,8 @@ export interface InkStroke {
     tool?: InkTool;
 }
 
-export const INK_COLORS = ['ink', 'red', 'blue'] as const;
+/** Verde y amarillo desde la fase «Atril: tinta y lectura» (pedido del fundador). */
+export const INK_COLORS = ['ink', 'red', 'blue', 'green', 'yellow'] as const;
 export type InkColor = (typeof INK_COLORS)[number];
 
 /** Lápiz o resaltador: el resaltador es ancho y translúcido, se lee a través. */

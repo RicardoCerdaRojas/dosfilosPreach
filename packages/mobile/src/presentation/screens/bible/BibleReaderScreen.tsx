@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +24,7 @@ import { InkLayer } from '@/presentation/components/preach/InkLayer';
 import { InkToolbar } from '@/presentation/components/preach/InkToolbar';
 import { MarkPopover } from '@/presentation/components/preach/MarkPopover';
 import { useBibleInk } from '@/presentation/hooks/useBibleInk';
-import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedRef, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { formatSelectionForSermon } from '@/presentation/components/bible/passageFormat';
 import { BiblePickerSheet } from '@/presentation/components/bible/BiblePickerSheet';
 import { BibleSearchSheet } from '@/presentation/components/bible/BibleSearchSheet';
@@ -118,6 +118,24 @@ export default function BibleReaderScreen() {
     const onScroll = useAnimatedScrollHandler((e) => {
         scrollY.value = e.contentOffset.y;
     });
+    const scrollRef = useAnimatedRef<Animated.ScrollView>();
+    const contentHeight = useRef(0);
+    const viewportHeight = useRef(0);
+    /**
+     * Con la tinta activa la capa tapa la lista y la desplaza ella misma
+     * (dos dedos; con «sólo Apple Pencil», uno). Sin pasarse del final.
+     */
+    const scrollInkTo = (y: number) => {
+        const max = Math.max(0, contentHeight.current - viewportHeight.current);
+        scrollRef.current?.scrollTo({ y: Math.min(Math.max(0, y), max), animated: false });
+    };
+    // Otro capítulo empieza ARRIBA. Antes conservaba la altura del anterior,
+    // y al volver a la tinta parecía devolver al lugar de las últimas notas.
+    useEffect(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [bookId, chapter, scrollRef]);
+    const pencilOnly = useReaderSettingsStore((s) => s.pencilOnly);
+    const setPencilOnly = useReaderSettingsStore((s) => s.setPencilOnly);
 
     const repo = BibleVersionFactory.getByVersion(versionId);
     const parallelRepo = parallelId ? BibleVersionFactory.getByVersion(parallelId) : null;
@@ -348,7 +366,14 @@ export default function BibleReaderScreen() {
             </View>
 
             <Animated.ScrollView
-                onLayout={(e) => setAvailableWidth(e.nativeEvent.layout.width - 48)}
+                ref={scrollRef}
+                onLayout={(e) => {
+                    setAvailableWidth(e.nativeEvent.layout.width - 48);
+                    viewportHeight.current = e.nativeEvent.layout.height;
+                }}
+                onContentSizeChange={(_w, h) => {
+                    contentHeight.current = h;
+                }}
                 // En el hilo de la interfaz: con `onScroll` de JS la tinta iba
                 // uno o dos cuadros detrás del texto (revisión adversarial).
                 onScroll={onScroll}
@@ -471,7 +496,7 @@ export default function BibleReaderScreen() {
                         style={{ color: tokens.textSecondary }}
                         className={`${FACE_CLASS[face].regular} text-xs`}
                     >
-                        {ink.eraser ? t('bible:eraser_hint') : t('bible:pen_hint')}
+                        {ink.eraser ? t('bible:eraser_hint') : t(pencilOnly ? 'bible:pen_hint_pencil' : 'bible:pen_hint')}
                     </Text>
                 </View>
             ) : null}
@@ -492,6 +517,11 @@ export default function BibleReaderScreen() {
                 eraser={ink.eraser}
                 onErase={ink.eraseStroke}
                 scrollOffset={scrollY}
+                onScrollTo={scrollInkTo}
+                pencilOnly={pencilOnly}
+                // La primera vez que se ve el Apple Pencil, escribe sólo él y
+                // el dedo desplaza (se puede apagar en la barra).
+                onStylusDetected={() => setPencilOnly(true)}
                 top={headerHeight + hintHeight}
                 bottom={0}
             />
@@ -503,6 +533,15 @@ export default function BibleReaderScreen() {
                     visible={inkVisible}
                     onToggleVisible={() => setInkVisible(!inkVisible)}
                     clearOptions={[{ label: t('preach:ink_clear_chapter'), onPress: () => ink.clearNotes(ink.notes) }]}
+                    pencilOnly={{ on: pencilOnly, toggle: () => setPencilOnly(!pencilOnly) }}
+                    // Cambiar de capítulo sin cerrar la tinta: los botones del
+                    // final quedan debajo de la capa.
+                    navigation={{
+                        onPrevious: () => goChapter(-1),
+                        onNext: () => goChapter(1),
+                        canPrevious: chapter > 1,
+                        canNext: chapter < chapterCount,
+                    }}
                     onDone={() => {
                         ink.setPenActive(false);
                         ink.setEraser(false);

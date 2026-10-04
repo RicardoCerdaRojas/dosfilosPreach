@@ -105,5 +105,7 @@
     "ink_clear_chapter": "Este capítulo",
     "reading_focus": "Foco de lectura",
     "reading_focus_hint": "El párrafo en curso a pleno y el resto atenuado. Avanzar recorre las ideas antes de pasar la página.",
-    "ink_pencil_only": "Sólo el Apple Pencil escribe; el dedo pasa página"
+    "ink_pencil_only": "Sólo el Apple Pencil escribe; el dedo pasa página",
+    "ink_green": "Verde",
+    "ink_yellow": "Amarillo"
 }

@@ -1,5 +1,7 @@
 import type { InkStroke } from '@dosfilos/domain';
 import { sameStroke, toScreenSpace } from '@dosfilos/domain';
+import type { InkColor } from '@dosfilos/domain';
+import type { ReadingModeTokens } from '@/core/theme/readingModes';
 
 /** Lo mínimo que la goma necesita de una nota: su id y sus trazos. */
 export interface ErasableNote {
@@ -103,4 +105,53 @@ export function showsBridge(bridgeSignature: string | null, current: string): bo
  */
 export function touchWrites(isStylus: boolean, pencilOnly: boolean): boolean {
     return !pencilOnly || isStylus;
+}
+
+/**
+ * Qué hace un toque sobre la capa de tinta cuando el texto de abajo se
+ * desplaza (la Biblia): escribir o desplazar. Con el lápiz activo la capa tapa
+ * la lista, y el «dos dedos desplazan» que se prometía no podía funcionar: los
+ * toques nunca llegaban a la lista. Ahora la capa la mueve ella misma.
+ *
+ * - Dos dedos o más: desplazar, siempre.
+ * - El lápiz: escribir.
+ * - Un dedo: escribir, salvo con «sólo Apple Pencil», que desplaza.
+ */
+export function inkTouchMode(touches: number, isStylus: boolean, pencilOnly: boolean): 'draw' | 'scroll' {
+    if (touches >= 2) return 'scroll';
+    return touchWrites(isStylus, pencilOnly) ? 'draw' : 'scroll';
+}
+
+/**
+ * El color de pantalla de una tinta, en el modo de luz vigente. Uno solo para
+ * la capa y para la barra: si no, el punto de la barra y el trazo podían no
+ * coincidir. En tinta electrónica todo es negro (no hay color).
+ */
+/**
+ * Tonos vivos para el resaltador: va al 30 %, y con los del lápiz (pensados
+ * para leerse sobre blanco) el amarillo salía marrón.
+ */
+const HIGHLIGHTER: Record<InkColor, string | null> = {
+    ink: null,
+    red: '#f87171',
+    blue: '#60a5fa',
+    green: '#22c55e',
+    yellow: '#facc15',
+};
+
+export function inkColorFor(color: InkColor, tokens: ReadingModeTokens, highlighter = false): string {
+    if (tokens.highlightUnderline) return tokens.textPrimary;
+    if (highlighter && HIGHLIGHTER[color]) return HIGHLIGHTER[color]!;
+    switch (color) {
+        case 'red':
+            return tokens.timerOver;
+        case 'blue':
+            return tokens.accent;
+        case 'green':
+            return tokens.timerOk;
+        case 'yellow':
+            return tokens.timerWarn;
+        default:
+            return tokens.textPrimary;
+    }
 }

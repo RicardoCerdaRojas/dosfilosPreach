@@ -7,7 +7,7 @@ import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
 import { Gesture, GestureDetector, PointerType } from 'react-native-gesture-handler';
-import { inkSignature, nearestStroke, showsBridge, touchWrites } from './inkGeometry';
+import { inkColorFor, inkSignature, inkTouchMode, nearestStroke, showsBridge, touchWrites } from './inkGeometry';
 
 /**
  * Lo ÚNICO que la capa necesita de una nota: su id y sus trazos.
@@ -65,6 +65,14 @@ interface Props {
      */
     pencilOnly?: boolean;
     onFingerGesture?: (startX: number, endX: number) => void;
+    /**
+     * El texto de abajo se desplaza (la Biblia): con la tinta activa, la capa
+     * lo mueve ella misma, a esta altura. Dos dedos desplazan siempre; con
+     * «sólo Apple Pencil», también uno.
+     */
+    onScrollTo?: (y: number) => void;
+    /** Se vio el Apple Pencil por primera vez: la pantalla puede encender «sólo Apple Pencil». */
+    onStylusDetected?: () => void;
 }
 
 /** Lo más que dura el trazo puente: el hueco que tapa es de un cuadro. */
@@ -76,12 +84,8 @@ const opacityOf = (tool: InkTool | undefined) => (tool === 'highlighter' ? HIGHL
 /** Puntos más juntos que esto son ruido del dedo, no intención. */
 const MIN_POINT_DISTANCE = 1.5;
 
-function inkColor(color: InkColor, tokens: ReadingModeTokens): string {
-    if (tokens.highlightUnderline) return tokens.textPrimary;
-    if (color === 'red') return tokens.timerOver;
-    if (color === 'blue') return tokens.accent;
-    return tokens.textPrimary;
-}
+const inkColor = (color: InkColor, tokens: ReadingModeTokens, highlighter = false) =>
+    inkColorFor(color, tokens, highlighter);
 
 /**
  * Construye el trazo con curvas cuadráticas entre puntos medios.
@@ -146,6 +150,8 @@ export function InkLayer({
     scrollOffset,
     pencilOnly = false,
     onFingerGesture,
+    onScrollTo,
+    onStylusDetected,
 }: Props) {
     // Fuera del React Compiler: el gesto del lápiz (T-9) se arma en el render
     // con callbacks que leen refs, y el compilador no distingue que corren
@@ -235,6 +241,13 @@ export function InkLayer({
         livePath.value = buildPath(points.current.map(toCanvas));
     };
 
+    /** Descarta el trazo en curso sin guardarlo (llegó un segundo dedo: era desplazar). */
+    const cancelStroke = () => {
+        anchor.current = null;
+        points.current = [];
+        livePath.value = Skia.Path.Make();
+    };
+
     const finish = () => {
         if (eraser) return;
         const held = anchor.current;
@@ -318,6 +331,79 @@ export function InkLayer({
             fingerStart.current = null;
             multiTouch.current = false;
         });
+
+    /**
+     * La tinta sobre un texto que se desplaza (la Biblia). Toque a toque se
+     * decide escribir o desplazar (`inkTouchMode`), y si se desplaza la capa
+     * mueve la lista ella misma: los toques no le llegan, porque la capa está
+     * encima.
+     */
+    const scroll = useRef<{ startOffset: number; startY: number } | null>(null);
+    const drawTouch = useRef<number | null>(null);
+    const drawIsStylus = useRef(false);
+    const averageY = (touches: { absoluteY: number }[]) =>
+        touches.reduce((sum, t) => sum + t.absoluteY, 0) / Math.max(1, touches.length);
+    const scrollGesture = Gesture.Pan()
+        .enabled(penActive && !!onScrollTo)
+        .manualActivation(true)
+        .runOnJS(true)
+        .onTouchesDown((e, manager) => {
+            const touch = e.changedTouches[0];
+            if (!touch) return;
+            const stylus = e.pointerType === PointerType.STYLUS;
+            if (stylus && !pencilOnly) onStylusDetected?.();
+            // Un trazo de lápiz en curso no lo corta nada: ni la palma ni otro dedo.
+            if (drawIsStylus.current) return;
+            // El lápiz escribe siempre, aunque haya una palma apoyada desplazando.
+            if (stylus) {
+                scroll.current = null;
+                drawTouch.current = touch.id;
+                drawIsStylus.current = true;
+                manager.activate();
+                beginAt(touch.absoluteX, touch.absoluteY);
+                return;
+            }
+            if (inkTouchMode(e.numberOfTouches, false, pencilOnly) === 'scroll') {
+                // Un trazo de dedo empezado era el comienzo de un desplazamiento.
+                if (drawTouch.current !== null) {
+                    drawTouch.current = null;
+                    cancelStroke();
+                }
+                scroll.current = { startOffset: scrollOffset?.value ?? 0, startY: averageY(e.allTouches) };
+                manager.activate();
+                return;
+            }
+            if (scroll.current || drawTouch.current !== null) return;
+            drawTouch.current = touch.id;
+            manager.activate();
+            beginAt(touch.absoluteX, touch.absoluteY);
+        })
+        .onTouchesMove((e) => {
+            if (scroll.current) {
+                onScrollTo?.(Math.max(0, scroll.current.startOffset + scroll.current.startY - averageY(e.allTouches)));
+                return;
+            }
+            const touch = e.allTouches.find((t) => t.id === drawTouch.current);
+            if (touch) extendAt(touch.absoluteX, touch.absoluteY);
+        })
+        .onTouchesUp((e) => {
+            if (drawTouch.current !== null && e.changedTouches.some((t) => t.id === drawTouch.current)) {
+                drawTouch.current = null;
+                drawIsStylus.current = false;
+                finish();
+            }
+            // Al levantar un dedo de dos, se sigue desplazando desde donde quedó.
+            if (scroll.current && e.numberOfTouches > 1) {
+                const rest = e.allTouches.filter((t) => !e.changedTouches.some((c) => c.id === t.id));
+                scroll.current = { startOffset: scrollOffset?.value ?? 0, startY: averageY(rest) };
+            }
+        })
+        .onFinalize(() => {
+            if (drawTouch.current !== null) finish();
+            drawTouch.current = null;
+            drawIsStylus.current = false;
+            scroll.current = null;
+        });
     /* eslint-enable react-hooks/refs */
 
     const layer = (
@@ -338,8 +424,8 @@ export function InkLayer({
             // al versículo 10 dibujaba una raya en vez de desplazar. Al no
             // reclamar el gesto de dos dedos, éste baja al lector que está
             // debajo.
-            onStartShouldSetResponder={(e) => penActive && !pencilOnly && e.nativeEvent.touches.length === 1}
-            onMoveShouldSetResponder={(e) => penActive && !pencilOnly && e.nativeEvent.touches.length === 1}
+            onStartShouldSetResponder={(e) => penActive && !pencilOnly && !onScrollTo && e.nativeEvent.touches.length === 1}
+            onMoveShouldSetResponder={(e) => penActive && !pencilOnly && !onScrollTo && e.nativeEvent.touches.length === 1}
             onResponderGrant={begin}
             onResponderMove={extend}
             onResponderRelease={finish}
@@ -358,7 +444,7 @@ export function InkLayer({
                                     toCanvas(toScreenSpace(p, rect, bodySize)),
                                 ),
                             )}
-                            color={inkColor(stroke.color, tokens)}
+                            color={inkColor(stroke.color, tokens, stroke.tool === 'highlighter')}
                             opacity={opacityOf(stroke.tool)}
                             style="stroke"
                             strokeWidth={stroke.width * bodySize}
@@ -371,7 +457,7 @@ export function InkLayer({
                 {pending && showsBridge(pending.signature, signature) ? (
                     <Path
                         path={pending.path}
-                        color={inkColor(color, tokens)}
+                        color={inkColor(color, tokens, tool === 'highlighter')}
                         opacity={opacityOf(tool)}
                         style="stroke"
                         strokeWidth={strokeWidthEm * bodySize}
@@ -382,7 +468,7 @@ export function InkLayer({
 
                 <Path
                     path={livePath}
-                    color={inkColor(color, tokens)}
+                    color={inkColor(color, tokens, tool === 'highlighter')}
                     opacity={opacityOf(tool)}
                     style="stroke"
                     strokeWidth={strokeWidthEm * bodySize}
@@ -394,5 +480,6 @@ export function InkLayer({
         </View>
     );
 
+    if (onScrollTo) return <GestureDetector gesture={scrollGesture}>{layer}</GestureDetector>;
     return pencilOnly ? <GestureDetector gesture={pencilGesture}>{layer}</GestureDetector> : layer;
 }

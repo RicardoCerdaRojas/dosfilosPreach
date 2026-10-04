@@ -1,11 +1,12 @@
 import React from 'react';
-import { Alert, Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Alert, Pressable, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { InkColor, InkTool } from '@dosfilos/domain';
 
 import type { ReadingModeTokens } from '@/core/theme/readingModes';
 import type { PenWidth } from '@/presentation/hooks/useInkNotes';
+import { inkColorFor } from './inkGeometry';
 
 /** Lo que la barra necesita de la tinta, sea del sermón o de la Biblia. */
 export interface InkControls {
@@ -38,10 +39,12 @@ interface Props {
      * capítulo por debajo de la capa, y eso queda para después.
      */
     pencilOnly?: { on: boolean; toggle: () => void };
+    /** Cambiar de capítulo sin cerrar la tinta (la Biblia). */
+    navigation?: { onPrevious: () => void; onNext: () => void; canPrevious: boolean; canNext: boolean };
     style?: StyleProp<ViewStyle>;
 }
 
-const COLORS: InkColor[] = ['ink', 'blue', 'red'];
+const COLORS: InkColor[] = ['ink', 'blue', 'red', 'green', 'yellow'];
 
 /**
  * La barra de la tinta, la misma en el púlpito y en la Biblia (T-5 a T-8).
@@ -51,9 +54,20 @@ const COLORS: InkColor[] = ['ink', 'blue', 'red'];
  * lápiz: ahora es una goma. Deshacer y rehacer están siempre a mano, y
  * limpiar pide confirmación pero también se puede deshacer.
  */
-export function InkToolbar({ tokens, ink, visible, onToggleVisible, clearOptions, onDone, pencilOnly, style }: Props) {
+export function InkToolbar({
+    tokens,
+    ink,
+    visible,
+    onToggleVisible,
+    clearOptions,
+    onDone,
+    pencilOnly,
+    navigation,
+    style,
+}: Props) {
     const { t } = useTranslation();
-    const colorOf = (c: InkColor) => (c === 'red' ? tokens.timerOver : c === 'blue' ? tokens.accent : tokens.textPrimary);
+    const { width } = useWindowDimensions();
+    const colorOf = (c: InkColor) => inkColorFor(c, tokens, ink.tool === 'highlighter' && !ink.eraser);
 
     const toolButton = (
         key: string,
@@ -100,8 +114,24 @@ export function InkToolbar({ tokens, ink, visible, onToggleVisible, clearOptions
 
     return (
         <View
-            className="flex-row items-center rounded-full px-2 py-1.5"
-            style={[{ backgroundColor: tokens.surface, borderWidth: 1, borderColor: tokens.border }, style]}
+            className="px-2 py-1.5"
+            style={[
+                {
+                    // Por estilo y no por clase: dirección y envoltura son layout
+                    // crítico (trampa de NativeWind registrada).
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    // Cinco colores y la navegación no entran en un iPad mini en
+                    // un solo renglón: pasa a dos en vez de salirse de la pantalla.
+                    maxWidth: width - 40,
+                    borderRadius: 24,
+                    backgroundColor: tokens.surface,
+                    borderWidth: 1,
+                    borderColor: tokens.border,
+                },
+                style,
+            ]}
         >
             {toolButton('pen', 'pen', t('preach:pen'), !ink.eraser && ink.tool === 'pen', () => pick('pen'))}
             {toolButton('marker', 'marker', t('preach:ink_highlighter'), !ink.eraser && ink.tool === 'highlighter', () =>
@@ -133,7 +163,6 @@ export function InkToolbar({ tokens, ink, visible, onToggleVisible, clearOptions
                                 height: 28,
                                 borderRadius: 14,
                                 backgroundColor: colorOf(c),
-                                opacity: ink.tool === 'highlighter' ? 0.55 : 1,
                                 borderWidth: c === ink.penColor ? 3 : 0,
                                 borderColor: tokens.background,
                             }}
@@ -158,6 +187,14 @@ export function InkToolbar({ tokens, ink, visible, onToggleVisible, clearOptions
                 onToggleVisible,
             )}
             {toolButton('clear', 'delete-sweep-outline', t('preach:ink_clear'), false, clear, clearOptions.length === 0)}
+
+            {navigation ? (
+                <>
+                    {divider('d-nav')}
+                    {toolButton('previous', 'chevron-left', t('bible:previous_chapter'), false, navigation.onPrevious, !navigation.canPrevious)}
+                    {toolButton('next', 'chevron-right', t('bible:next_chapter'), false, navigation.onNext, !navigation.canNext)}
+                </>
+            ) : null}
 
             <Pressable onPress={onDone} accessibilityRole="button" accessibilityLabel={t('preach:pen_done')} className="px-3 py-1">
                 <Text style={{ color: tokens.accent }} className="font-lexend-semibold text-sm">
