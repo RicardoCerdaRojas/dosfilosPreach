@@ -313,6 +313,8 @@ export const validateSeedWitnesses = onCall(
             await cacheRef.set({
                 sermonId,
                 seedId,
+                // El dueño: sin él, borrar la cuenta no lo encontraba (B2).
+                userId: request.auth?.uid ?? null,
                 confessionalWitnessesEnabled,
                 promptVersion: WITNESS_PROMPT_VERSION,
                 witnesses,

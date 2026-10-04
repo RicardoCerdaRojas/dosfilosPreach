@@ -47,8 +47,9 @@ export function DeleteAccountPage() {
                         escribe al correo de arriba antes de que termine.
                     </li>
                     <li>
-                        <strong>Lo que se conserva:</strong> un registro mínimo de que la cuenta se borró (sin tus datos)
-                        y los comprobantes de pago que la ley obliga a guardar.
+                        <strong>Lo que se conserva:</strong> que la cuenta se borró y cuándo (sin tu correo), los
+                        registros de auditoría que la seguridad del servicio obliga a guardar, y los comprobantes de
+                        pago que conserva el procesador de pagos por obligación legal.
                     </li>
                 </ul>
             </div>

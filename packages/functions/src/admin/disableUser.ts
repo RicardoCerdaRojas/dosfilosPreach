@@ -4,6 +4,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { stripe } from '../config/stripe';
 import { writeAuditLog } from './auditLog';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
+import { stripeRefsOf } from '../account/deletionState';
 
 /**
  * Cloud Function: Disable User (Soft)
@@ -48,16 +49,19 @@ export const disableUser = onCall(
         }
 
         const userData = userDoc.data()!;
+        // El cliente de Stripe del registro con pago primero vive en
+        // `subscription.stripeCustomerId` (ver account/deletionState).
+        const stripeCustomerId = stripeRefsOf(userData).customerId;
 
         // 1. Disable Firebase Auth account
         await admin.auth().updateUser(userId, { disabled: true });
         console.log(`Disabled Firebase Auth account for ${userId}`);
 
         // 2. Pause Stripe subscription (if active)
-        if (userData.stripeCustomerId) {
+        if (stripeCustomerId) {
             try {
                 const subscriptions = await stripe.subscriptions.list({
-                    customer: userData.stripeCustomerId,
+                    customer: stripeCustomerId,
                     status: 'active',
                     limit: 1,
                 });
@@ -66,7 +70,7 @@ export const disableUser = onCall(
                     await stripe.subscriptions.update(subscriptions.data[0].id, {
                         pause_collection: { behavior: 'void' },
                     });
-                    console.log(`Paused Stripe subscription for customer ${userData.stripeCustomerId}`);
+                    console.log(`Paused Stripe subscription for customer ${stripeCustomerId}`);
                 }
             } catch (stripeError) {
                 // Log but don't block — subscription pause is best-effort
@@ -89,7 +93,7 @@ export const disableUser = onCall(
             action: 'user.disable',
             targetUid: userId,
             targetEmail: userData.email,
-            details: { hadStripeCustomer: !!userData.stripeCustomerId },
+            details: { hadStripeCustomer: !!stripeCustomerId },
         });
         return { success: true, message: `User ${userId} has been disabled.` };
 

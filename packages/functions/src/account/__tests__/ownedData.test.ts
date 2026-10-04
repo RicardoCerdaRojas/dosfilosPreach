@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
-import { NOT_PERSONAL, OWNED_BY_DOC_ID, OWNED_BY_EMAIL, OWNED_BY_FIELD } from '../ownedData';
+import {
+    NOT_PERSONAL,
+    OWNED_BY_DOC_ID,
+    OWNED_BY_EMAIL,
+    OWNED_BY_FIELD,
+    OWNED_IN_MAP,
+    OWNED_VIA_PARENT,
+    SUBCOLLECTIONS_OF_USERS,
+} from '../ownedData';
 
 /**
  * Invariante del borrado de cuenta: TODA colección de `firestore.rules` está
@@ -39,6 +47,38 @@ function topLevelBlocks(): RuleBlock[] {
 const byField = new Map(OWNED_BY_FIELD.map((o) => [o.collection, o.field]));
 const byEmail = new Set(OWNED_BY_EMAIL.map((o) => o.collection));
 const byDocId = new Set(OWNED_BY_DOC_ID);
+const clasificadas = new Set<string>([
+    ...byField.keys(),
+    ...byEmail,
+    ...byDocId,
+    ...OWNED_VIA_PARENT.map((o) => o.collection),
+    ...OWNED_IN_MAP.map((o) => o.collection),
+    ...SUBCOLLECTIONS_OF_USERS,
+    ...Object.keys(NOT_PERSONAL),
+]);
+
+/** Toda colección que el código nombra en `collection('x')` / `.collection('x')`. */
+function coleccionesDelCodigo(): Map<string, string> {
+    const PACKAGES = join(__dirname, '../../../../');
+    const raices = ['functions/src', 'infrastructure/src', 'application/src', 'web/src', 'mobile/src', 'mobile/app'];
+    // Primer argumento opcional: un identificador o una llamada sin
+    // argumentos (`db`, `getFirebaseDb()`); si no, se cuela el `'in'` de un
+    // `.where(campo, 'in', …)` que venga después.
+    const patron = /collection(?:Group)?\(\s*(?:[A-Za-z_]+(?:\(\))?\s*,\s*)?['"]([A-Za-z_]+)['"]/g;
+    const found = new Map<string, string>();
+    const recorrer = (dir: string) => {
+        for (const name of readdirSync(dir)) {
+            const p = join(dir, name);
+            if (name === 'node_modules' || name === '__tests__') continue;
+            if (statSync(p).isDirectory()) recorrer(p);
+            else if (/\.(ts|tsx)$/.test(name)) {
+                for (const m of readFileSync(p, 'utf8').matchAll(patron)) if (!found.has(m[1]!)) found.set(m[1]!, p);
+            }
+        }
+    };
+    for (const r of raices) recorrer(join(PACKAGES, r));
+    return found;
+}
 
 describe('borrado de cuenta ↔ firestore.rules', () => {
     const blocks = topLevelBlocks();
@@ -75,6 +115,13 @@ describe('borrado de cuenta ↔ firestore.rules', () => {
             .map((b) => b.collection)
             .filter((c) => !byDocId.has(c));
         expect([...new Set(mal)]).toEqual([]);
+    });
+
+    it('toda colección que el CÓDIGO escribe también está clasificada (no sólo las de las reglas)', () => {
+        const codigo = coleccionesDelCodigo();
+        expect(codigo.size).toBeGreaterThan(40);
+        const sinClasificar = [...codigo.entries()].filter(([c]) => !clasificadas.has(c)).map(([c, f]) => `${c} (${f.split('packages/')[1]})`);
+        expect(sinClasificar, `Clasificar en account/ownedData.ts: ${sinClasificar.join(', ')}`).toEqual([]);
     });
 
     it('nada está en dos listas a la vez', () => {

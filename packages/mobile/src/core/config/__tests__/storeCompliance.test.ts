@@ -56,6 +56,9 @@ describe('borrado de cuenta — paridad con el servidor', () => {
     it('la página web del borrado (la que pide Google Play) dice el mismo plazo', () => {
         const pagina = readFileSync(join(ROOT, '../web/src/pages/legal/DeleteAccount.tsx'), 'utf8');
         expect(pagina).toContain(`A los ${ACCOUNT_DELETION_GRACE_DAYS} días`);
+        // Y ningún OTRO plazo en la página (antes pasaba aunque dijera otro).
+        const plazos = [...pagina.matchAll(/(\d+) días/g)].map((m) => Number(m[1]));
+        expect(plazos.every((d) => d === ACCOUNT_DELETION_GRACE_DAYS)).toBe(true);
     });
 
     it('la política de privacidad dice el mismo plazo, y ningún otro', () => {

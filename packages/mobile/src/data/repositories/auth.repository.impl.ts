@@ -119,21 +119,25 @@ export class AuthRepositoryImpl implements AuthRepository {
         const fbUser = auth.currentUser;
         if (!fbUser) throw new Error('not-signed-in');
         const usesApple = fbUser.providerData.some((p) => p.providerId === 'apple.com');
-        if (usesApple && Platform.OS === 'ios') {
-            // Si la persona cancela este diálogo, el borrado se cancela.
-            const credential = await AppleAuthentication.signInAsync({ requestedScopes: [] });
-            if (credential.authorizationCode) {
-                await revokeToken(auth, credential.authorizationCode).catch((error) =>
-                    console.warn('[deleteAccount] Apple revoke failed:', error),
-                );
-            }
-        }
+        // PRIMERO el servidor: si el pedido falla, la cuenta sigue viva con su
+        // vínculo de Apple intacto. Al revés quedaba viva y desvinculada
+        // (revisión adversarial de B2).
         await appCheckReady();
         const callable = httpsCallable<void, { purgeAfter: string; graceDays: number }>(
             getFunctions(getApp()),
             'requestAccountDeletion',
         );
         const result = await callable();
+        if (usesApple && Platform.OS === 'ios') {
+            try {
+                const credential = await AppleAuthentication.signInAsync({ requestedScopes: [] });
+                if (credential.authorizationCode) await revokeToken(auth, credential.authorizationCode);
+            } catch (error) {
+                // Cancelar el diálogo o una revocación fallida no deshacen el
+                // borrado, que ya está pedido.
+                console.warn('[deleteAccount] Apple revoke skipped:', error);
+            }
+        }
         return result.data;
     }
 

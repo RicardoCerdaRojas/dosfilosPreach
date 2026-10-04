@@ -4,6 +4,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { stripe } from '../config/stripe';
 import { writeAuditLog } from '../admin/auditLog';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
+import { BILLING_STATUSES, stripeRefsOf } from './deletionState';
 
 /**
  * El usuario pide borrar su cuenta (B2 de la fase Púlpito premium).
@@ -15,13 +16,15 @@ import { appCheckCallableOptions } from '../config/appCheckOptions';
  *    sesiones y se cancela el cobro — nada sigue facturándose.
  * 2. A LOS `ACCOUNT_DELETION_GRACE_DAYS` días: `processAccountDeletions`
  *    borra todo (`purgeUserData`) y la cuenta de Auth. La gracia permite
- *    deshacer un error escribiendo a soporte; pasado ese plazo no hay vuelta.
+ *    deshacer un error escribiendo a soporte (reactivar la cuenta cancela el
+ *    pedido); pasado ese plazo no hay vuelta.
+ *
+ * EL ORDEN IMPORTA (revisión adversarial de B2): primero se desactiva, al
+ * final se anota el pedido. Al revés, si desactivar fallaba quedaba un pedido
+ * «pendiente» sobre una cuenta ACTIVA, y a los 7 días se purgaba igual.
  */
 export const ACCOUNT_DELETION_GRACE_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Estados de una suscripción que siguen cobrando. */
-const BILLING_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid']);
 
 export const requestAccountDeletion = onCall(
     { ...appCheckCallableOptions(), secrets: ['STRIPE_SECRET_KEY'] },
@@ -40,11 +43,44 @@ export const requestAccountDeletion = onCall(
         const authUser = await admin.auth().getUser(uid);
         const email: string | null = authUser.email ?? user?.email ?? null;
         const purgeAfter = new Date(Date.now() + ACCOUNT_DELETION_GRACE_DAYS * DAY_MS);
+        const stripeRefs = stripeRefsOf(user);
 
+        // 1. Nadie entra más.
+        await admin.auth().updateUser(uid, { disabled: true });
+        await admin.auth().revokeRefreshTokens(uid);
+
+        // 2. Nada se cobra más: la suscripción conocida y cualquier otra del
+        //    cliente que siga facturando. El cliente se borra con la purga.
+        let cancelled = 0;
+        try {
+            const ids = new Set<string>();
+            if (stripeRefs.subscriptionId) ids.add(stripeRefs.subscriptionId);
+            if (stripeRefs.customerId) {
+                const subs = await stripe.subscriptions.list({ customer: stripeRefs.customerId, status: 'all', limit: 20 });
+                for (const sub of subs.data) if (BILLING_STATUSES.has(sub.status)) ids.add(sub.id);
+            }
+            for (const id of ids) {
+                try {
+                    await stripe.subscriptions.cancel(id);
+                    cancelled++;
+                } catch (error: any) {
+                    // Ya cancelada o inexistente: no es un fallo.
+                    if (error?.code !== 'resource_missing' && error?.raw?.code !== 'resource_missing') throw error;
+                }
+            }
+        } catch (error) {
+            // No bloquea el pedido: la purga reintenta borrar el cliente de
+            // Stripe, y eso cancela lo que haya quedado.
+            console.error(`[requestAccountDeletion] Stripe ${uid}:`, error);
+        }
+
+        // 3. Recién ahora el pedido: la purga lo necesita para encontrar el
+        //    cliente de Stripe aunque `users/{uid}` ya se haya borrado.
         await db.collection('account_deletions').doc(uid).set(
             {
                 uid,
                 email,
+                stripeCustomerId: stripeRefs.customerId,
                 requestedAt: FieldValue.serverTimestamp(),
                 purgeAfter: Timestamp.fromDate(purgeAfter),
                 status: 'pending',
@@ -52,33 +88,12 @@ export const requestAccountDeletion = onCall(
             { merge: true },
         );
 
-        // Cobro: se cancelan YA las suscripciones que facturan. El cliente de
-        // Stripe se borra al final, con todo lo demás.
-        let cancelled = 0;
-        if (user?.stripeCustomerId) {
-            try {
-                const subs = await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: 'all', limit: 20 });
-                for (const sub of subs.data) {
-                    if (!BILLING_STATUSES.has(sub.status)) continue;
-                    await stripe.subscriptions.cancel(sub.id);
-                    cancelled++;
-                }
-            } catch (error) {
-                // No bloquea el pedido: el borrado definitivo elimina el
-                // cliente, y eso cancela lo que haya quedado.
-                console.error(`[requestAccountDeletion] Stripe ${uid}:`, error);
-            }
-        }
-
-        await admin.auth().updateUser(uid, { disabled: true });
-        await admin.auth().revokeRefreshTokens(uid);
-
+        // Sin correo: el registro de auditoría se conserva y no debe guardar
+        // los datos de quien pidió borrarlos.
         writeAuditLog({
             actorUid: uid,
-            actorEmail: email ?? undefined,
             action: 'user.self_delete_requested',
             targetUid: uid,
-            targetEmail: email ?? undefined,
             details: { purgeAfter: purgeAfter.toISOString(), cancelledSubscriptions: cancelled },
         });
 

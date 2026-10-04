@@ -74,7 +74,8 @@ Sale del código; ver `docs/app-mobile/FASE_PULPITO_PREMIUM_2026-10.md` §3.
 | Correo y nombre (cuenta, Google/Apple) | Funcionamiento de la app | Sí | No |
 | ID de usuario | Funcionamiento de la app | Sí | No |
 | Contenido del usuario: sermones, marcas, tinta, registro de predicación (puede incluir un lugar escrito a mano) | Funcionamiento de la app | Sí | No |
-| Datos de fallos (Crashlytics) | Diagnóstico | No (sin uid ni correo) | No |
+| Registros de fallos (Crashlytics): pila y mensaje del error | Diagnóstico | No: la app no le da el uid ni el correo, pero el mensaje de un error podría contener datos del contenido | No |
+| Identificador de instalación (Crashlytics) | Diagnóstico | No | No |
 | Datos de rendimiento | No se recogen | — | — |
 | Ubicación, contactos, fotos, micrófono | No se recogen | — | — |
 
@@ -99,9 +100,13 @@ Sus credenciales van en *App Review Information* (App Store) y en *App access* (
 
 **Notas para el revisor (borrador):**
 
-> Dos Filos Preach es la app complementaria de Preach (web) para predicar desde una tablet. Los sermones se crean en la web; la app los muestra en modo atril. Para revisarla, inicia sesión con la cuenta demo de arriba, abre «Sermones», elige uno y toca «Modo púlpito». Para probar sin conexión, activa el modo avión después de abrir el sermón «…» (ya está guardado). La cuenta se puede eliminar desde Perfil → «Eliminar mi cuenta».
+> Dos Filos Preach es la app complementaria de Preach (web) para predicar desde una tablet. Los sermones se crean en la web; la app los muestra en modo atril. Para revisarla, inicia sesión con la cuenta demo de arriba, abre «Sermones», elige uno y toca «Modo púlpito». Para probar sin conexión, activa el modo avión después de abrir el sermón «…» (ya está guardado).
+
+**Cuidado con la cuenta demo:** si el revisor prueba «Eliminar mi cuenta», queda desactivada en el momento y se borra a los 7 días. Antes de cada envío, verificar que siga activa; si no, reactivarla desde el panel de administración (eso cancela el borrado) o recrearla.
 
 ---
+
+**Mac con Apple Silicon:** una app sólo para iPad queda disponible en Mac por defecto, y App Attest no funciona ahí (todas las llamadas al servidor fallarían). En App Store Connect → Precios y disponibilidad, desmarcar «Disponible en Mac».
 
 ## 5. Capturas
 

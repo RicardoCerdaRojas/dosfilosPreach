@@ -6,9 +6,11 @@
  * `users/{uid}` y la cuenta de Auth: los sermones viven en `sermons` con
  * `userId`, los papers en `exegeticalPapers` con `ownerId`, y así unas
  * veinticinco colecciones más. Esta lista es la fuente de verdad, y una prueba
- * (`ownedData.test.ts`) lee `firestore.rules` y exige que cada colección con
- * dueño esté acá o en la lista de excepciones con su motivo: una colección
- * nueva con datos de usuario no puede quedar fuera sin que falle.
+ * (`ownedData.test.ts`) exige que TODA colección esté clasificada: las de
+ * `firestore.rules` y también las que el CÓDIGO escribe (functions,
+ * infrastructure, application, web, mobile) — la primera versión sólo miraba
+ * las reglas y se le escaparon las que escriben sólo las funciones (revisión
+ * adversarial de B2).
  */
 
 /** Colecciones donde un campo nombra al dueño. */
@@ -32,8 +34,16 @@ export const OWNED_BY_FIELD: ReadonlyArray<{ collection: string; field: string }
     // las reglas porque el cliente no las lee).
     { collection: 'user_activities', field: 'userId' },
     { collection: 'cancellation_feedback', field: 'userId' },
-    { collection: 'witnessResults', field: 'userId' },
     { collection: 'doxologicalGateShadow', field: 'userId' },
+    { collection: 'funnel_events', field: 'userId' },
+    { collection: 'geo_events', field: 'userId' },
+    { collection: 'extraction_runs', field: 'userId' },
+    { collection: 'passageProfileShadow', field: 'userId' },
+    { collection: 'sermonDraftShadow', field: 'userId' },
+    // Desde B2 llevan `userId`; las anteriores se borran por su sermón o su
+    // sesión (OWNED_VIA_PARENT).
+    { collection: 'witnessResults', field: 'userId' },
+    { collection: 'heartExamResults', field: 'userId' },
     // ownerId
     { collection: 'teachingClasses', field: 'ownerId' },
     { collection: 'teachingPlans', field: 'ownerId' },
@@ -45,6 +55,41 @@ export const OWNED_BY_FIELD: ReadonlyArray<{ collection: string; field: string }
     { collection: 'workProfiles', field: 'ownerId' },
     { collection: 'userRubrics', field: 'ownerId' },
     { collection: 'userAssignmentBriefs', field: 'ownerId' },
+    { collection: 'teachingCanvasForms', field: 'ownerId' },
+];
+
+/**
+ * Cachés que NO guardaban el dueño, sólo el sermón, la semilla o la sesión de
+ * la que salieron. Se borran por esos ids, que se leen ANTES de borrar los
+ * documentos padre.
+ */
+export const OWNED_VIA_PARENT: ReadonlyArray<{
+    collection: string;
+    field: string;
+    parent: 'sermons' | 'pastoralSeeds' | 'ai_sessions';
+}> = [
+    { collection: 'witnessResults', field: 'sermonId', parent: 'sermons' },
+    { collection: 'witnessResults', field: 'seedId', parent: 'pastoralSeeds' },
+    { collection: 'heartExamResults', field: 'estudioId', parent: 'ai_sessions' },
+];
+
+/** Contadores donde el usuario es una CLAVE de un mapa (`byUser.{uid}`). */
+export const OWNED_IN_MAP: ReadonlyArray<{ collection: string; map: string }> = [
+    { collection: 'llmUsageDaily', map: 'byUser' },
+    { collection: 'llmUsageMonthly', map: 'byUser' },
+];
+
+/** Subcolecciones de `users/{uid}`: caen con `recursiveDelete` del usuario. */
+export const SUBCOLLECTIONS_OF_USERS: readonly string[] = [
+    'bibleMarks',
+    'bibleInk',
+    'greekFindings',
+    'ai_sessions',
+    'bonus_grants',
+    'credit_pack_purchases',
+    'monthly_grants',
+    'quota_warnings',
+    'wp_publishes_hourly',
 ];
 
 /** Colecciones donde el id del documento ES el uid (con sus subcolecciones). */
@@ -87,12 +132,12 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = {
     plans: 'catálogo de planes de pago',
     plan_translations: 'catálogo de planes de pago',
     llamaparseAccounts: 'cuentas del sistema',
-    extraction_runs: 'telemetría del sistema por recurso',
     rate_limits: 'contadores por IP, caducan solos',
     daily_metrics: 'métricas agregadas, sin datos personales',
     global_metrics: 'métricas agregadas, sin datos personales',
     global_metrics_daily: 'métricas agregadas, sin datos personales',
-    geo_events: 'eventos geográficos sin uid',
-    admin_audit_log: 'registro de auditoría: se conserva por obligación (el borrado mismo queda anotado)',
+    admin_audit_log: 'registro de auditoría: se conserva por obligación (el borrado mismo queda anotado, sin correo)',
+    sections: 'subcolección de las confesiones del sistema',
+    config: 'configuración del sistema',
     account_deletions: 'registro del propio borrado: queda sólo el uid y las fechas',
 };

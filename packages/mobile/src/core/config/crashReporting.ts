@@ -13,8 +13,11 @@ import { onWriteFailure } from '@/core/errors/writeFailures';
  *
  * Antes no había ninguno: si la app se caía en el púlpito, nadie se enteraba.
  * - Sólo en builds publicados: en desarrollo la consola ya muestra el error.
- * - SIN datos personales: no se manda el uid ni el correo. Los atributos son
- *   del build (canal y actualización OTA), para saber qué versión falla.
+ * - La app no le da a Crashlytics el uid ni el correo. Los atributos son del
+ *   build (canal y actualización OTA), para saber qué versión falla. OJO: el
+ *   manejador automático de la librería manda el MENSAJE de los errores no
+ *   manejados, que podría contener datos del contenido; está declarado así en
+ *   la ficha de tienda (revisión adversarial de B5).
  * - Las escrituras que el servidor rechazó también se reportan (sin su
  *   contenido): son la clase de fallo que el pastor ve como «se borró lo que
  *   marqué».
