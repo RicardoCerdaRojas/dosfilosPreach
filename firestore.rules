@@ -68,9 +68,16 @@ service cloud.firestore {
       // Allow reading individual sermons
       allow get: if isOwner(resource.data.userId) || resource.data.isShared == true || isSuperAdmin();
       
-      // Allow listing/querying sermons (for collections, version history, analytics)
-      // Security is enforced by requiring userId in the query itself or being super admin
-      allow list: if isAuthenticated() || isSuperAdmin();
+      // Listar: la consulta tiene que limitarse a lo que el usuario podría leer
+      // uno por uno. Antes era `isAuthenticated()` y el comentario decía que la
+      // consulta llevaba `userId`, pero la regla no lo exigía: cualquiera con
+      // sesión podía listar los sermones de todos (hallado 2026-10-04 en la
+      // revisión de la app mobile). Firestore evalúa esto contra los filtros
+      // de la consulta: sin `where('userId', '==', uid)` o
+      // `where('isShared', '==', true)` se rechaza entera.
+      allow list: if isOwner(resource.data.userId)
+                  || (isAuthenticated() && resource.data.isShared == true)
+                  || isSuperAdmin();
       
       allow create: if isAuthenticated() && 
                        request.auth.uid == request.resource.data.userId &&
