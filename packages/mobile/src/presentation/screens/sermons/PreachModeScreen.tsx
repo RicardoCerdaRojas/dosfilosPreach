@@ -56,6 +56,10 @@ import { readingPassageFor, verseTextFor } from '@/data/repositories/bible/Bible
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 import { useUIStore } from '@/presentation/state/ui.store';
 import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
+import { focusOnArrival, isDimmed, stepFocus } from './readingFocus';
+
+/** Cuánto dura la marca de reanudación al pasar página (L-2). */
+const RESUME_MARK_MS = 2500;
 
 interface PreachModeScreenProps {
     /** Id inyectado: lo usa la vista previa de dev, que no llega por ruta. */
@@ -174,6 +178,10 @@ export default function PreachModeScreen({
     const outlineOn = useReaderSettingsStore((s) => s.outlineView);
     const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
     const outline = outlineOn && section ? buildOutline(section.body) : [];
+    const readingFocus = useReaderSettingsStore((s) => s.readingFocus);
+    const setReadingFocus = useReaderSettingsStore((s) => s.setReadingFocus);
+    const [focus, setFocus] = useState<{ index: number | null; arrival: 1 | -1 }>({ index: null, arrival: 1 });
+    const [resumeMark, setResumeMark] = useState<string | null>(null);
     const inkVisible = useReaderSettingsStore((s) => s.inkVisible);
     const setInkVisible = useReaderSettingsStore((s) => s.setInkVisible);
     const preachBrightness = useReaderSettingsStore((s) => s.preachBrightness);
@@ -330,6 +338,15 @@ export default function PreachModeScreen({
             ? (pages[safePageIndex] ?? []).map((f) => fragmentBlock(blocks[f.block]!, f))
             : blocks;
 
+    // Foco de lectura (L-3).
+    const focusOn = readingFocus && !outlineOn;
+    const pageKinds = pageBlocks.map((b) => b.kind);
+    const effectiveFocus = !focusOn
+        ? null
+        : focus.index !== null && focus.index < pageBlocks.length
+          ? focus.index
+          : focusOnArrival(pageKinds, focus.arrival);
+
     // Texto de la página siguiente para el asomo. Sale del primer fragmento
     // que viene: alcanza para saber si la idea sigue o si acá cerró.
     const nextFragment = !outlineOn ? pages[safePageIndex + 1]?.[0] : undefined;
@@ -362,6 +379,18 @@ export default function PreachModeScreen({
 
     const step = (delta: number) => {
         ensureClockStarted();
+        const towards: 1 | -1 = delta > 0 ? 1 : -1;
+        // Foco de lectura (L-3): avanzar recorre las ideas de la página antes
+        // de pasarla.
+        if (focusOn && !showReading) {
+            const moved = stepFocus(pageKinds, effectiveFocus, towards);
+            if (moved.turn === 0) {
+                setFocus({ index: moved.focus, arrival: towards });
+                return;
+            }
+        }
+        // Al pasar de página, el foco cae arriba (avanzando) o abajo (volviendo).
+        setFocus({ index: null, arrival: towards });
         // Desde la Lectura, adelante entra al primer movimiento.
         if (showReading) {
             if (delta > 0) {
@@ -379,6 +408,14 @@ export default function PreachModeScreen({
         const next = safePageIndex + delta;
         if (next >= 0 && next < pageCount) {
             setPageIndex(next);
+            // Marca de reanudación (L-2): la primera línea de la página nueva
+            // es la que se veía en el asomo. Un instante, para que el ojo que
+            // vuelve del público sepa dónde seguir.
+            if (delta > 0) {
+                const mark = `${sectionIndex}|${next}`;
+                setResumeMark(mark);
+                setTimeout(() => setResumeMark((current) => (current === mark ? null : current)), RESUME_MARK_MS);
+            }
             scrollRef.current?.scrollTo({ y: 0, animated: tokens.animations });
             return;
         }
@@ -693,6 +730,21 @@ export default function PreachModeScreen({
                             />
                         ) : null}
                         {!showReading && safePageIndex === 0 ? pageHeader : null}
+                        {!showReading && resumeMark === `${sectionIndex}|${safePageIndex}` ? (
+                            <View
+                                pointerEvents="none"
+                                accessible={false}
+                                style={{
+                                    position: 'absolute',
+                                    left: -fontSize * 0.55,
+                                    top: fontSize * 0.2,
+                                    width: 4,
+                                    height: fontSize * 1.15,
+                                    borderRadius: 2,
+                                    backgroundColor: tokens.accent,
+                                }}
+                            />
+                        ) : null}
 
                     {!showReading && outlineOn ? (
                         <PreachOutline
@@ -706,6 +758,7 @@ export default function PreachModeScreen({
 
                     {showReading || outlineOn ? null : <PreachSectionBody
                         blocks={pageBlocks}
+                        isBlockDimmed={focusOn ? (i) => isDimmed(pageKinds, effectiveFocus, i) : undefined}
                         highlights={highlighting.highlights}
                         glyphs={highlighting.glyphs}
                         fontSize={fontSize}
@@ -927,6 +980,8 @@ export default function PreachModeScreen({
                 setHangingIndent={setHangingIndent}
                 readingPage={readingPageOn}
                 setReadingPage={setReadingPageOn}
+                readingFocus={readingFocus}
+                setReadingFocus={setReadingFocus}
                 brightness={preachBrightness}
                 setBrightness={setPreachBrightness}
                 targetMinutes={targetMinutes}

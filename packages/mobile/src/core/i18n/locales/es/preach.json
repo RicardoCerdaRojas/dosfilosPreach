@@ -102,5 +102,7 @@
     "ink_clear_hint": "Se puede deshacer mientras sigas en esta pantalla.",
     "ink_clear_page": "Esta página",
     "ink_clear_sermon": "Todo el sermón",
-    "ink_clear_chapter": "Este capítulo"
+    "ink_clear_chapter": "Este capítulo",
+    "reading_focus": "Foco de lectura",
+    "reading_focus_hint": "El párrafo en curso a pleno y el resto atenuado. Avanzar recorre las ideas antes de pasar la página."
 }

@@ -38,6 +38,9 @@ interface Props {
     hangingIndent: boolean;
     readingPage: boolean;
     setReadingPage: (on: boolean) => void;
+    /** Foco de lectura (L-3). */
+    readingFocus: boolean;
+    setReadingFocus: (on: boolean) => void;
     /** Brillo propio del atril (C7); `null` es el del sistema. */
     brightness: number | null;
     setBrightness: (level: number | null) => void;
@@ -103,6 +106,8 @@ export function PreachSettingsSheet({
     hangingIndent,
     readingPage,
     setReadingPage,
+    readingFocus,
+    setReadingFocus,
     brightness,
     setBrightness,
     setHangingIndent,
@@ -373,6 +378,15 @@ export function PreachSettingsSheet({
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    {/* Foco de lectura (L-3): volver del público al lugar exacto. */}
+                    <OnOffSetting
+                        tokens={tokens}
+                        title={t('preach:reading_focus')}
+                        hint={t('preach:reading_focus_hint')}
+                        value={readingFocus}
+                        onChange={setReadingFocus}
+                    />
 
                     {/* DOS INSTRUMENTOS, DOS CONTROLES. La franja de arriba y
                         el tablero de abajo no son dos vistas de lo mismo: quien
@@ -668,5 +682,53 @@ export function PreachSettingsSheet({
                 </Pressable>
             </Pressable>
         </Modal>
+    );
+}
+
+/** Un ajuste de sí o no, con su explicación: el mismo formato en toda la hoja. */
+function OnOffSetting({
+    tokens,
+    title,
+    hint,
+    value,
+    onChange,
+}: {
+    tokens: ReadingModeTokens;
+    title: string;
+    hint: string;
+    value: boolean;
+    onChange: (on: boolean) => void;
+}) {
+    const { t } = useTranslation();
+    return (
+        <>
+            <Text style={{ color: tokens.textSecondary }} className="font-lexend-semibold text-xs uppercase tracking-widest mb-1">
+                {title}
+            </Text>
+            <Text style={{ color: tokens.textSecondary }} className="font-lexend text-xs mb-2">
+                {hint}
+            </Text>
+            <View className="flex-row flex-wrap mb-5">
+                {[true, false].map((on) => (
+                    <TouchableOpacity
+                        key={String(on)}
+                        onPress={() => onChange(on)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${title}: ${t(on ? 'common:on' : 'common:off')}`}
+                        accessibilityState={{ selected: on === value }}
+                        className="px-4 py-2 rounded-full mr-2 mb-2"
+                        style={{
+                            backgroundColor: on === value ? tokens.accent : 'transparent',
+                            borderWidth: 1,
+                            borderColor: on === value ? tokens.accent : tokens.border,
+                        }}
+                    >
+                        <Text style={{ color: on === value ? tokens.background : tokens.textPrimary }} className="font-lexend text-sm">
+                            {t(on ? 'common:on' : 'common:off')}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        </>
     );
 }

@@ -86,7 +86,12 @@ interface Props {
      * arriba. Lo usa la medición fuera de pantalla de la paginación (L-1).
      */
     onUnitMetrics?: (metrics: UnitMetric[]) => void;
+    /** Foco de lectura (L-3): los bloques fuera de foco van atenuados. */
+    isBlockDimmed?: (index: number) => boolean;
 }
+
+/** Cuánto se atenúa lo que no está en foco: se lee, pero no llama la vista. */
+const DIMMED_OPACITY = 0.38;
 
 /** Marca que cubre un punto del cuerpo crudo. La unidad ahora es la palabra. */
 function highlightAt(
@@ -115,6 +120,7 @@ export function PreachSectionBody({
     onBlockLayout,
     layoutKey,
     onUnitMetrics,
+    isBlockDimmed,
 }: Props) {
     /** Vista de cada párrafo (por el comienzo de su primera oración), para medirla sin depender de `onLayout`. */
     const blockNodes = useRef<Map<number, View>>(new Map());
@@ -258,8 +264,8 @@ export function PreachSectionBody({
 
     return (
         <>
-            {blocks.map((block, blockIndex) =>
-                block.kind === 'quote' ? (
+            {blocks.map((block, blockIndex) => {
+                const rendered = block.kind === 'quote' ? (
                     // P5 — el aparato de estudio se colapsa a una marca al
                     // margen. Es el comentario que se leyó el martes: en el
                     // púlpito ocupaba una pantalla entera de algo que nadie
@@ -346,8 +352,14 @@ export function PreachSectionBody({
                         { marginBottom: fontSize * PARAGRAPH_GAP_EM },
                         block.continued,
                     )
-                ),
-            )}
+                );
+                if (!isBlockDimmed) return rendered;
+                return (
+                    <View key={`focus-${blockIndex}`} style={{ opacity: isBlockDimmed(blockIndex) ? DIMMED_OPACITY : 1 }}>
+                        {rendered}
+                    </View>
+                );
+            })}
         </>
     );
 }

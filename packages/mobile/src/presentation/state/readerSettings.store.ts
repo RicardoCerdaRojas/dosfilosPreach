@@ -160,6 +160,12 @@ interface ReaderSettingsState {
      */
     inkVisible: boolean;
     setInkVisible: (on: boolean) => void;
+    /**
+     * Foco de lectura (L-3): el párrafo en curso a pleno contraste y el resto
+     * atenuado; avanzar recorre las ideas antes de pasar la página.
+     */
+    readingFocus: boolean;
+    setReadingFocus: (on: boolean) => void;
     /** Brillo propio del atril (C7), de 0 a 1; `null` deja el del sistema. */
     preachBrightness: number | null;
     setPreachBrightness: (level: number | null) => void;
@@ -247,6 +253,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
             setOutlineView: (on: boolean) => set({ outlineView: on }),
             inkVisible: true,
             setInkVisible: (on: boolean) => set({ inkVisible: on }),
+            readingFocus: false,
+            setReadingFocus: (on: boolean) => set({ readingFocus: on }),
             preachBrightness: null,
             setPreachBrightness: (level: number | null) => set({ preachBrightness: level }),
             lastPreachingPlace: '',
