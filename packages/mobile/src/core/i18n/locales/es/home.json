@@ -29,5 +29,16 @@
     "offline_ready_count": "{{count}} listos sin conexión",
     "week_summary": "Tu semana",
     "sermons_total": "{{count}} sermones publicados",
-    "marks_total": "{{count}} versículos marcados"
+    "marks_total": "{{count}} versículos marcados",
+    "sunday_title": "Listo para el domingo",
+    "sunday_ready": "Listo para el domingo",
+    "check_offline_done": "Guardado sin conexión",
+    "check_offline_todo": "Todavía no está guardado sin conexión",
+    "check_offline_action": "Guardar",
+    "check_duration_done": "Duración fijada: {{minutes}} min",
+    "check_duration_todo": "Duración sin fijar (se estima del texto)",
+    "check_duration_action": "Fijar",
+    "check_reading_done": "Lectura lista: {{passage}}",
+    "check_reading_todo": "«{{passage}}» no se encontró en la Biblia de la app",
+    "sunday_pending": "Pendientes: {{count}}"
 }

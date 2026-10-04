@@ -1,10 +1,11 @@
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { estimateSpokenMinutes } from '@dosfilos/domain';
+import { defaultTargetMinutes, estimateSpokenMinutes } from '@dosfilos/domain';
+import { useQuery } from '@tanstack/react-query';
 
 import { useAppTheme, type AppTheme } from '@/core/theme/appTheme';
 import { useLayout } from '@/core/theme/layout';
@@ -13,10 +14,11 @@ import { useAuthStore } from '@/presentation/state/auth.store';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 import { usePublishedSermons, useSermon } from '@/presentation/hooks/useSermons';
 import { usePlanBoard, type PlanBoard } from '@/presentation/hooks/usePlanBoard';
-import { useBriefcase } from '@/presentation/hooks/useSermonBriefcase';
+import { useBriefcase, usePrepareBriefcase } from '@/presentation/hooks/useSermonBriefcase';
 import { OfflineNotice } from '@/presentation/components/OfflineNotice';
 import { useBibleMarks } from '@/presentation/hooks/useBibleMarks';
-import { BibleVersionFactory } from '@/data/repositories/bible/BibleVersionFactory';
+import { BibleVersionFactory, readingPassageFor } from '@/data/repositories/bible/BibleVersionFactory';
+import { isReady, sundayReadiness, type ReadinessItem } from '@/core/utils/sundayReadiness';
 import { SermonCard } from '@/presentation/components/SermonCard';
 import { UserAvatar } from '@/presentation/components/UserAvatar';
 import { Card, Chip, EmptyState, SectionLabel, Skeleton } from '@/presentation/components/ui/kit';
@@ -210,6 +212,33 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
 
     const minutes = full?.content ? estimateSpokenMinutes(full.content) : 0;
 
+    // «Listo para el domingo» (C7). La lectura se busca DIFERIDA: abrir la
+    // Biblia de la app cuesta, y el inicio no puede trabarse por eso.
+    const targetBySermon = useReaderSettingsStore((s) => s.targetMinutesBySermon);
+    const setTargetMinutes = useReaderSettingsStore((s) => s.setTargetMinutes);
+    const readingPageOn = useReaderSettingsStore((s) => s.readingPage);
+    const prepare = usePrepareBriefcase(sermon.id);
+    const refs = sermon.bibleReferences;
+    const readingWanted = readingPageOn && refs.length > 0;
+    const { data: readingFound } = useQuery({
+        queryKey: ['reading-ready', refs.join('|')],
+        queryFn: async () => {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            return readingPassageFor(refs) !== null;
+        },
+        enabled: readingWanted,
+        staleTime: Infinity,
+    });
+    const fixedMinutes = targetBySermon[sermon.id];
+    const items = sundayReadiness({
+        offline: !!briefcase,
+        durationSet: fixedMinutes !== undefined,
+        readingWanted,
+        readingFound: readingFound ?? null,
+    });
+    const ready = isReady(items);
+    const pending = items.filter((item) => !item.done).length;
+
     return (
         <Card theme={theme} style={{ padding: 24 }}>
             <View className="flex-row items-center justify-between">
@@ -232,13 +261,13 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
                     ) : null}
                     <Chip
                         theme={theme}
-                        tone={briefcase ? 'positive' : 'neutral'}
-                        label={t(briefcase ? 'home:ready_offline_short' : 'sermons:prepare_offline')}
+                        tone={ready ? 'positive' : 'neutral'}
+                        label={ready ? t('home:sunday_ready') : t('home:sunday_pending', { count: pending })}
                         icon={
                             <MaterialIcons
-                                name={briefcase ? 'offline-pin' : 'cloud-off'}
+                                name={ready ? 'check-circle' : 'radio-button-unchecked'}
                                 size={13}
-                                color={briefcase ? theme.positive : theme.textSecondary}
+                                color={ready ? theme.positive : theme.textSecondary}
                             />
                         }
                     />
@@ -261,6 +290,17 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
             >
                 {sermon.title}
             </Text>
+
+            <SundayChecklist
+                items={items}
+                fixedMinutes={fixedMinutes}
+                passageTitle={refs[0] ?? ''}
+                preparing={prepare.isPending}
+                onPrepare={() => prepare.mutate()}
+                onFixDuration={() =>
+                    setTargetMinutes(sermon.id, defaultTargetMinutes(full?.content ?? ''))
+                }
+            />
 
             <View className="flex-row items-center mt-6">
                 <TouchableOpacity
@@ -292,6 +332,92 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
                 </TouchableOpacity>
             </View>
         </Card>
+    );
+}
+
+/**
+ * Lo que falta para subir tranquilo, cada cosa con su arreglo a un toque.
+ * Ícono además de color: en tinta electrónica el color no existe.
+ */
+function SundayChecklist({
+    items,
+    fixedMinutes,
+    passageTitle,
+    preparing,
+    onPrepare,
+    onFixDuration,
+}: {
+    items: ReadinessItem[];
+    fixedMinutes: number | undefined;
+    passageTitle: string;
+    preparing: boolean;
+    onPrepare: () => void;
+    onFixDuration: () => void;
+}) {
+    const theme = useAppTheme();
+    const { t } = useTranslation();
+
+    const label = (item: ReadinessItem) => {
+        switch (item.key) {
+            case 'offline':
+                return t(item.done ? 'home:check_offline_done' : 'home:check_offline_todo');
+            case 'duration':
+                return item.done
+                    ? t('home:check_duration_done', { minutes: fixedMinutes })
+                    : t('home:check_duration_todo');
+            case 'reading':
+                return t(item.done ? 'home:check_reading_done' : 'home:check_reading_todo', { passage: passageTitle });
+        }
+    };
+    const action = (item: ReadinessItem) => {
+        if (item.done) return null;
+        if (item.key === 'offline') {
+            return preparing ? (
+                <ActivityIndicator size="small" color={theme.accent} />
+            ) : (
+                <ChecklistAction label={t('home:check_offline_action')} onPress={onPrepare} />
+            );
+        }
+        if (item.key === 'duration') {
+            return <ChecklistAction label={t('home:check_duration_action')} onPress={onFixDuration} />;
+        }
+        return null;
+    };
+
+    return (
+        <View className="mt-5" accessibilityLabel={t('home:sunday_title')}>
+            {items.map((item) => (
+                <View
+                    key={item.key}
+                    className="flex-row items-center py-2"
+                    style={{ borderTopWidth: 1, borderTopColor: theme.border }}
+                >
+                    <MaterialIcons
+                        name={item.done ? 'check-circle' : 'radio-button-unchecked'}
+                        size={18}
+                        color={item.done ? theme.positive : theme.textSecondary}
+                    />
+                    <Text
+                        style={{ color: item.done ? theme.textSecondary : theme.textPrimary, fontSize: 14, flex: 1 }}
+                        className="font-lexend ml-2.5"
+                    >
+                        {label(item)}
+                    </Text>
+                    {action(item)}
+                </View>
+            ))}
+        </View>
+    );
+}
+
+function ChecklistAction({ label, onPress }: { label: string; onPress: () => void }) {
+    const theme = useAppTheme();
+    return (
+        <TouchableOpacity onPress={onPress} accessibilityRole="button" hitSlop={8} className="pl-3">
+            <Text style={{ color: theme.accent, fontSize: 14 }} className="font-lexend-semibold">
+                {label}
+            </Text>
+        </TouchableOpacity>
     );
 }
 

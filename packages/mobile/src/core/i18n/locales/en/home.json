@@ -29,5 +29,16 @@
     "offline_ready_count": "{{count}} ready offline",
     "week_summary": "Your week",
     "sermons_total": "{{count}} published sermons",
-    "marks_total": "{{count}} marked verses"
+    "marks_total": "{{count}} marked verses",
+    "sunday_title": "Ready for Sunday",
+    "sunday_ready": "Ready for Sunday",
+    "check_offline_done": "Saved for offline use",
+    "check_offline_todo": "Not saved for offline use yet",
+    "check_offline_action": "Save",
+    "check_duration_done": "Duration set: {{minutes}} min",
+    "check_duration_todo": "Duration not set (estimated from the text)",
+    "check_duration_action": "Set",
+    "check_reading_done": "Reading ready: {{passage}}",
+    "check_reading_todo": "“{{passage}}” was not found in the app's Bible",
+    "sunday_pending": "Left to do: {{count}}"
 }
