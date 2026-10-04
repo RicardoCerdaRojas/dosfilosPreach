@@ -131,6 +131,27 @@ export function targetSecondsUntil(clock: PreachClock, now: number, endAt: numbe
     return Math.max(60, Math.round(elapsedMs(clock, now) / 1000 + (endAt - now) / 1000));
 }
 
+const FIVE_MIN_MS = 5 * 60 * 1000;
+
+/**
+ * La hora de término que se le propone al pastor al encenderla (C7): ahora más
+ * lo que le queda del objetivo, llevada al próximo múltiplo de 5 minutos del
+ * reloj de pared — «a las 11:45», no «a las 11:43:20».
+ */
+export function suggestedEndAt(now: number, remainingSeconds: number): number {
+    const raw = now + Math.max(60, remainingSeconds) * 1000;
+    return Math.ceil(raw / FIVE_MIN_MS) * FIVE_MIN_MS;
+}
+
+/**
+ * Correr la hora de término de a 5 minutos. Nunca queda antes del próximo
+ * minuto: una hora ya pasada no es un objetivo, es un error de toque.
+ */
+export function shiftEndAt(endAt: number, deltaMinutes: number, now: number): number {
+    const floor = Math.ceil((now + 60 * 1000) / 60000) * 60000;
+    return Math.max(floor, endAt + deltaMinutes * 60 * 1000);
+}
+
 export function markCues(clock: PreachClock, cues: string[]): PreachClock {
     if (!cues.length) return clock;
     return { ...clock, cuesFired: [...new Set([...clock.cuesFired, ...cues])] };

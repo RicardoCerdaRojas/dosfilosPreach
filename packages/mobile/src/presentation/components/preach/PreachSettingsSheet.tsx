@@ -9,6 +9,7 @@ import { DELIVERY_FACES, DELIVERY_SIZE } from '@/core/theme/typography';
 import type { DeliveryFace } from '@/core/theme/typography';
 import { targetMinuteOptions, type MovementBudget } from '@dosfilos/domain';
 import type { InstrumentMode } from '@/presentation/state/readerSettings.store';
+import { formatWallTime } from '@/core/utils/wallTime';
 
 const MODES: ReadingMode[] = ['claro', 'sepia', 'oscuro', 'atril', 'eink'];
 /** Guías de mirada, EXCLUYENTES entre sí. Ver el comentario del render. */
@@ -40,6 +41,13 @@ interface Props {
     setHangingIndent: (on: boolean) => void;
     targetMinutes: number;
     onPickDuration: (minutes: number) => void;
+    /**
+     * Hora de término (C7), en ms de reloj de pared, o `null`. Mientras esté
+     * puesta, la duración sale de ella y las cifras de minutos no mandan.
+     */
+    endAt: number | null;
+    onToggleEndAt: () => void;
+    onShiftEndAt: (deltaMinutes: number) => void;
     onResetClock: () => void;
     /** Reparto vigente, ya resuelto (automático + lo fijado a mano). */
     budgets: MovementBudget[];
@@ -92,6 +100,9 @@ export function PreachSettingsSheet({
     setHangingIndent,
     targetMinutes,
     onPickDuration,
+    endAt,
+    onToggleEndAt,
+    onShiftEndAt,
     onResetClock,
     budgets,
     onSetBudget,
@@ -438,11 +449,12 @@ export function PreachSettingsSheet({
                     >
                         {t('preach:target_duration')}
                     </Text>
-                    <View className="flex-row flex-wrap">
+                    <View className="flex-row flex-wrap" style={{ opacity: endAt !== null ? 0.4 : 1 }}>
                         {targetMinuteOptions(targetMinutes).map((min) => (
                             <TouchableOpacity
                                 key={min}
                                 onPress={() => onPickDuration(min)}
+                                disabled={endAt !== null}
                                 className="px-4 py-2 rounded-full mr-2 mb-2"
                                 style={{
                                     backgroundColor: min === targetMinutes ? tokens.accent : 'transparent',
@@ -459,6 +471,70 @@ export function PreachSettingsSheet({
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    {/* Hora de término (C7): el culto no empieza a horario y el
+                        pastor no decide cuándo sube; «termino a las 11:45» es
+                        lo que de verdad sabe. */}
+                    <Text
+                        style={{ color: tokens.textSecondary }}
+                        className="font-lexend-semibold text-xs uppercase tracking-widest mt-3 mb-2"
+                    >
+                        {t('preach:end_time')}
+                    </Text>
+                    {endAt === null ? (
+                        <TouchableOpacity
+                            onPress={onToggleEndAt}
+                            accessibilityRole="button"
+                            className="flex-row items-center self-start px-4 py-2 rounded-full mb-2"
+                            style={{ borderWidth: 1, borderColor: tokens.border }}
+                        >
+                            <MaterialIcons name="schedule" size={18} color={tokens.textPrimary} />
+                            <Text style={{ color: tokens.textPrimary }} className="font-lexend text-sm ml-1.5">
+                                {t('preach:end_time_on')}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <>
+                            <View className="flex-row items-center mb-1">
+                                <TouchableOpacity
+                                    onPress={() => onShiftEndAt(-5)}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t('preach:end_time_earlier')}
+                                    hitSlop={8}
+                                    className="w-10 h-10 rounded-full items-center justify-center"
+                                    style={{ borderWidth: 1, borderColor: tokens.border }}
+                                >
+                                    <MaterialIcons name="remove" size={20} color={tokens.textPrimary} />
+                                </TouchableOpacity>
+                                <Text
+                                    style={{ color: tokens.textPrimary, fontVariant: ['tabular-nums'] }}
+                                    className="font-lexend-semibold text-2xl mx-4"
+                                    accessibilityLiveRegion="polite"
+                                >
+                                    {formatWallTime(endAt)}
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => onShiftEndAt(5)}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t('preach:end_time_later')}
+                                    hitSlop={8}
+                                    className="w-10 h-10 rounded-full items-center justify-center"
+                                    style={{ borderWidth: 1, borderColor: tokens.border }}
+                                >
+                                    <MaterialIcons name="add" size={20} color={tokens.textPrimary} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={onToggleEndAt} accessibilityRole="button" className="ml-4">
+                                    <Text style={{ color: tokens.textSecondary }} className="font-lexend text-sm">
+                                        {t('preach:end_time_off')}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                            <Text style={{ color: tokens.textSecondary }} className="font-lexend text-xs mb-2">
+                                {t('preach:end_time_hint')}
+                            </Text>
+                        </>
+                    )}
+
                     <TouchableOpacity
                         onPress={() =>
                             Alert.alert(t('preach:reset_clock'), t('preach:reset_clock_confirm'), [

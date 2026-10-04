@@ -13,6 +13,8 @@ import {
     targetMinuteOptions,
     FIVE_MINUTES_CUE,
     overrunCue,
+    shiftEndAt,
+    suggestedEndAt,
     targetSecondsUntil,
 } from '../preachClock';
 
@@ -118,5 +120,26 @@ describe('avisos y hora de término (C7)', () => {
         expect(targetSecondsUntil(newClock('a'), 0, 25 * MIN)).toBe(25 * 60);
         expect(targetSecondsUntil(c, 50 * MIN, 40 * MIN)).toBe(40 * 60);
         expect(targetSecondsUntil(newClock('a'), 10 * MIN, 0)).toBe(60);
+    });
+});
+
+describe('hora de término (C7)', () => {
+    // 10:00:00 de un día cualquiera, en ms desde la época (múltiplo de 5 min).
+    const TEN = 1_800_000_000_000 - (1_800_000_000_000 % (5 * MIN));
+
+    it('propone el próximo múltiplo de 5 minutos después de lo que queda', () => {
+        expect(suggestedEndAt(TEN, 30 * 60)).toBe(TEN + 30 * MIN);
+        expect(suggestedEndAt(TEN + 20_000, 30 * 60)).toBe(TEN + 35 * MIN);
+        expect(suggestedEndAt(TEN + 3 * MIN, 30 * 60)).toBe(TEN + 35 * MIN);
+    });
+
+    it('con el objetivo ya vencido propone al menos un minuto más', () => {
+        expect(suggestedEndAt(TEN + 2 * MIN, -600)).toBe(TEN + 5 * MIN);
+    });
+
+    it('corre de a 5 minutos y nunca a una hora ya pasada', () => {
+        expect(shiftEndAt(TEN + 30 * MIN, 5, TEN)).toBe(TEN + 35 * MIN);
+        expect(shiftEndAt(TEN + 30 * MIN, -5, TEN)).toBe(TEN + 25 * MIN);
+        expect(shiftEndAt(TEN + 3 * MIN, -5, TEN + 30_000)).toBe(TEN + 2 * MIN);
     });
 });

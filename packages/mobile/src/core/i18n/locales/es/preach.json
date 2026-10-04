@@ -74,5 +74,12 @@
     "reading_page": "Página de lectura al inicio",
     "reading_page_hint": "El pasaje del sermón, para leerlo antes de predicar.",
     "verse_unreadable": "No se encontró este versículo en la Biblia de la app.",
-    "open_in_bible": "Abrir en la Biblia"
+    "open_in_bible": "Abrir en la Biblia",
+    "end_time": "Hora de término",
+    "end_time_on": "Terminar a una hora",
+    "end_time_off": "Quitar",
+    "end_time_hint": "La duración sale de la hora: lo ya predicado más lo que falta hasta entonces.",
+    "end_time_until": "hasta las {{time}}",
+    "end_time_later": "5 minutos más tarde",
+    "end_time_earlier": "5 minutos más temprano"
 }

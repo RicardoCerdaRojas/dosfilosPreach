@@ -74,5 +74,12 @@
     "reading_page": "Reading page at the start",
     "reading_page_hint": "The sermon's passage, to read it before preaching.",
     "verse_unreadable": "This verse wasn't found in the app's Bible.",
-    "open_in_bible": "Open in the Bible"
+    "open_in_bible": "Open in the Bible",
+    "end_time": "End time",
+    "end_time_on": "Finish at a set time",
+    "end_time_off": "Remove",
+    "end_time_hint": "The duration comes from the time: what you have preached plus what is left until then.",
+    "end_time_until": "until {{time}}",
+    "end_time_later": "5 minutes later",
+    "end_time_earlier": "5 minutes earlier"
 }
