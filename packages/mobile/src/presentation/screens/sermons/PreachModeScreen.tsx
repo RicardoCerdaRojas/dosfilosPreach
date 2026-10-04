@@ -31,7 +31,7 @@ import {
 import { useSermon } from '@/presentation/hooks/useSermons';
 import { usePreachHighlights } from '@/presentation/hooks/usePreachHighlights';
 import { extractSectionsWithBody } from '@/core/utils/sermonSections';
-import { READING_MODES } from '@/core/theme/readingModes';
+import { READING_MODES, shownSeconds } from '@/core/theme/readingModes';
 import { GAZE_LINE_RATIO, TYPE_SCALE } from '@/core/theme/typography';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 import { PreachSectionBody } from '@/presentation/components/preach/PreachSectionBody';
@@ -609,7 +609,7 @@ export default function PreachModeScreen({
                 <PreachStatusBar
                     tokens={tokens}
                     budgets={budgets}
-                    elapsedSeconds={elapsed}
+                    elapsedSeconds={shownSeconds(tokens, elapsed)}
                     readingIndex={sectionIndex}
                     pageIndex={safePageIndex}
                     pageCount={pageCount}
@@ -771,7 +771,7 @@ export default function PreachModeScreen({
                         tokens={tokens}
                         fontSize={fontSize}
                         budgets={budgets}
-                        elapsedSeconds={elapsed}
+                        elapsedSeconds={shownSeconds(tokens, elapsed)}
                         readingIndex={sectionIndex}
                         pageIndex={safePageIndex}
                         pageCount={pageCount}

@@ -46,6 +46,12 @@ export interface ReadingModeTokens {
     timerOver: string;
     /** Animaciones permitidas en este modo. */
     animations: boolean;
+    /**
+     * Cada cuántos segundos cambia el tiempo que muestran los instrumentos
+     * (C3). En tinta electrónica, 60: un reloj que avanza por segundo es un
+     * refresco de pantalla por segundo, con su parpadeo y su gasto de batería.
+     */
+    clockStep: number;
     /** keep-awake incondicional (atril) — los demás siguen la sesión de lectura. */
     keepAwakeAlways: boolean;
     /** Estilo de status bar que no ensucia el modo. */
@@ -69,6 +75,7 @@ export const READING_MODES: Record<ReadingMode, ReadingModeTokens> = {
         timerWarn: '#b45309',
         timerOver: '#b91c1c',
         animations: true,
+        clockStep: 1,
         keepAwakeAlways: false,
         statusBarStyle: 'dark',
     },
@@ -86,6 +93,7 @@ export const READING_MODES: Record<ReadingMode, ReadingModeTokens> = {
         timerWarn: '#b45309',
         timerOver: '#b91c1c',
         animations: true,
+        clockStep: 1,
         keepAwakeAlways: false,
         statusBarStyle: 'dark',
     },
@@ -103,6 +111,7 @@ export const READING_MODES: Record<ReadingMode, ReadingModeTokens> = {
         timerWarn: '#fbbf24',
         timerOver: '#f87171',
         animations: true,
+        clockStep: 1,
         keepAwakeAlways: false,
         statusBarStyle: 'light',
     },
@@ -125,6 +134,7 @@ export const READING_MODES: Record<ReadingMode, ReadingModeTokens> = {
         timerWarn: '#facc15',
         timerOver: '#ef4444',
         animations: false,
+        clockStep: 1,
         keepAwakeAlways: true,
         statusBarStyle: 'light',
     },
@@ -142,6 +152,7 @@ export const READING_MODES: Record<ReadingMode, ReadingModeTokens> = {
         timerWarn: '#000000',
         timerOver: '#000000',
         animations: false,
+        clockStep: 60,
         keepAwakeAlways: false,
         statusBarStyle: 'dark',
     },
@@ -161,3 +172,8 @@ export const READING_MODE_LABEL_KEYS: Record<ReadingMode, string> = {
     atril: 'preach:mode_atril',
     eink: 'preach:mode_eink',
 };
+
+/** El tiempo que se MUESTRA en este modo: al paso de `clockStep`. */
+export function shownSeconds(tokens: Pick<ReadingModeTokens, 'clockStep'>, seconds: number): number {
+    return Math.floor(seconds / tokens.clockStep) * tokens.clockStep;
+}
