@@ -119,3 +119,18 @@ Todo en un PR, un commit por unidad, con revisión adversarial antes de abrirlo.
 - **L-3** foco de lectura, **L-5** movimientos de corrido y **T-9** sólo Apple Pencil, los tres como opciones.
 
 **Queda para después:** **L-4** (pasador Bluetooth).
+
+## 6. Estado
+
+**Hecho en esta fase:**
+- T-1/T-2, R-1, T-3, L-1 + T-4, T-5 a T-8, L-2, L-3 y T-9;
+- de paso, la selección de la Biblia, que también perdía la posición al desplazar.
+
+**L-5 (movimientos de corrido): aplazado, con razón.**
+- Hoy cada movimiento se pagina por separado. La tinta, las marcas, los glifos, el reloj y la sesión ubican todo por posición dentro del texto de ESE movimiento.
+- Que el siguiente empiece en la misma página obliga a paginar el sermón entero de una vez. Además, esas cinco piezas tendrían que convivir con dos movimientos en pantalla: es una reforma de casi todo el atril.
+- Con L-1 las páginas dentro de un movimiento ya salen llenas. Quedan cortas sólo las de cierre de cada movimiento, que además marcan la estructura del sermón.
+- Se propone como fase propia («paginación del sermón entero»), si después de probar L-1 en el iPad las colas cortas siguen molestando.
+
+**T-9:** sólo en el atril. En la Biblia el dedo tendría que desplazar el capítulo por debajo de la capa de tinta.
+
