@@ -10,7 +10,7 @@ import { PreachSectionBody } from '../PreachSectionBody';
 const noop = () => undefined;
 const PUNTO = '> **Jonás 4:5-8** — 5 Y salió Jonás de la ciudad. 6 Y preparó Jehová Dios una calabacera.';
 
-function render(collapseQuotes: boolean, onPressApparatus = noop) {
+function render(collapseQuotes: boolean, onPressApparatus: (text: string) => void = noop) {
     let r!: ReactTestRenderer;
     act(() => {
         r = create(
