@@ -147,6 +147,30 @@ export class AnnotationRepositoryImpl implements AnnotationRepository {
         return ref.id;
     }
 
+    /**
+     * Vuelve a poner una nota de tinta con su MISMO id (deshacer un borrado o
+     * una limpieza, T-5/T-6). Si todavía existe, la deja con estos trazos.
+     */
+    async restoreInkNote(sermonId: string, note: InkNote): Promise<void> {
+        settleOffline(
+            setDoc(doc(annotationsRef(sermonId), note.id), {
+                sectionSlug: note.sectionSlug,
+                offset: note.offset,
+                length: note.length,
+                exact: note.exact,
+                prefix: note.prefix,
+                suffix: note.suffix,
+                type: 'ink',
+                strokes: note.strokes,
+                userId: getFirebaseAuth().currentUser?.uid ?? null,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                updatedBy: 'mobile',
+            }),
+            `ink restore ${note.id}`,
+        );
+    }
+
     /** Deja la nota con exactamente estos trazos. Lo usa la goma. */
     async replaceInkStrokes(
         sermonId: string,

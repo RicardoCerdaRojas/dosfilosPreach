@@ -154,6 +154,12 @@ interface ReaderSettingsState {
      */
     outlineView: boolean;
     setOutlineView: (on: boolean) => void;
+    /**
+     * La tinta se ve (T-8). Ocultarla no la borra: es para predicar con el
+     * texto limpio sin perder lo anotado. Vale para el púlpito y la Biblia.
+     */
+    inkVisible: boolean;
+    setInkVisible: (on: boolean) => void;
     /** Brillo propio del atril (C7), de 0 a 1; `null` deja el del sistema. */
     preachBrightness: number | null;
     setPreachBrightness: (level: number | null) => void;
@@ -239,6 +245,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
             setReadingPage: (on: boolean) => set({ readingPage: on }),
             outlineView: false,
             setOutlineView: (on: boolean) => set({ outlineView: on }),
+            inkVisible: true,
+            setInkVisible: (on: boolean) => set({ inkVisible: on }),
             preachBrightness: null,
             setPreachBrightness: (level: number | null) => set({ preachBrightness: level }),
             lastPreachingPlace: '',

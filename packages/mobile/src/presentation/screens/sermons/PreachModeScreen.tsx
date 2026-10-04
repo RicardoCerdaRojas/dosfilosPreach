@@ -23,6 +23,7 @@ import {
     buildReadingBlocks,
     buildOutline,
     buildRehearsalReport,
+    INK_WIDTH,
     fragmentBlock,
     defaultTargetMinutes,
     shiftEndAt,
@@ -41,6 +42,7 @@ import { MarkPopover } from '@/presentation/components/preach/MarkPopover';
 import { PreachExitSheet } from '@/presentation/components/preach/PreachExitSheet';
 import { PreachStatusBar } from '@/presentation/components/preach/PreachStatusBar';
 import { InkLayer } from '@/presentation/components/preach/InkLayer';
+import { InkToolbar } from '@/presentation/components/preach/InkToolbar';
 import { useInkNotes } from '@/presentation/hooks/useInkNotes';
 import { PreachSettingsSheet } from '@/presentation/components/preach/PreachSettingsSheet';
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
@@ -172,6 +174,8 @@ export default function PreachModeScreen({
     const outlineOn = useReaderSettingsStore((s) => s.outlineView);
     const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
     const outline = outlineOn && section ? buildOutline(section.body) : [];
+    const inkVisible = useReaderSettingsStore((s) => s.inkVisible);
+    const setInkVisible = useReaderSettingsStore((s) => s.setInkVisible);
     const preachBrightness = useReaderSettingsStore((s) => s.preachBrightness);
     const setPreachBrightness = useReaderSettingsStore((s) => s.setPreachBrightness);
     usePreachBrightness(preachBrightness);
@@ -1021,13 +1025,15 @@ export default function PreachModeScreen({
                 capa de dibujo. */}
             {outlineOn ? null : <InkLayer
                 tokens={tokens}
-                notes={ink.notes}
+                notes={inkVisible ? ink.notes : []}
                 anchorRectFor={ink.anchorRectFor}
                 bodySize={fontSize}
-                penActive={ink.penActive}
+                penActive={ink.penActive && inkVisible}
                 anchorAt={ink.anchorAt}
                 onFinishStroke={ink.addStroke}
                 color={ink.penColor}
+                tool={ink.tool}
+                strokeWidthEm={ink.tool === 'highlighter' ? INK_WIDTH.highlighter : INK_WIDTH[ink.width]}
                 eraser={ink.eraser}
                 onErase={ink.eraseStroke}
                 top={chromeTop}
@@ -1038,74 +1044,26 @@ export default function PreachModeScreen({
                 para quedar por encima — si quedara debajo, la propia capa
                 taparía el botón de salir y no habría cómo apagar el lápiz. */}
             {ink.penActive ? (
-                <View
-                    className="absolute flex-row items-center rounded-full px-3 py-2"
-                    style={{
-                        right: 20,
-                        bottom: panelHeight + insets.bottom + 20,
-                        backgroundColor: tokens.surface,
-                        borderWidth: 1,
-                        borderColor: tokens.border,
+                <InkToolbar
+                    tokens={tokens}
+                    ink={ink}
+                    visible={inkVisible}
+                    onToggleVisible={() => setInkVisible(!inkVisible)}
+                    clearOptions={[
+                        {
+                            label: t('preach:ink_clear_page'),
+                            // Lo que está dibujado en ESTA página: las notas
+                            // cuya oración se ve ahora.
+                            onPress: () => ink.clearNotes(ink.notes.filter((n) => ink.anchorRectFor(n) !== null)),
+                        },
+                        { label: t('preach:ink_clear_sermon'), onPress: () => ink.clearNotes(ink.allNotes) },
+                    ]}
+                    onDone={() => {
+                        ink.setPenActive(false);
+                        ink.setEraser(false);
                     }}
-                >
-                    {(['ink', 'blue', 'red'] as const).map((c) => (
-                        <TouchableOpacity
-                            key={c}
-                            onPress={() => {
-                                ink.setPenColor(c);
-                                ink.setEraser(false);
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel={t(`preach:ink_${c}`)}
-                            className="mr-2"
-                            style={{
-                                width: 30,
-                                height: 30,
-                                borderRadius: 15,
-                                backgroundColor:
-                                    c === 'red'
-                                        ? tokens.timerOver
-                                        : c === 'blue'
-                                          ? tokens.accent
-                                          : tokens.textPrimary,
-                                borderWidth: c === ink.penColor && !ink.eraser ? 3 : 0,
-                                borderColor: tokens.background,
-                            }}
-                        />
-                    ))}
-                    <TouchableOpacity
-                        onPress={() => ink.setEraser(!ink.eraser)}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('preach:eraser')}
-                        className="items-center justify-center mr-1"
-                        style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 10,
-                            backgroundColor: ink.eraser ? tokens.accent : 'transparent',
-                        }}
-                    >
-                        <MaterialIcons
-                            name="auto-fix-normal"
-                            size={20}
-                            color={ink.eraser ? tokens.background : tokens.textPrimary}
-                        />
-                    </TouchableOpacity>
-                    <View style={{ width: 1, height: 24, backgroundColor: tokens.border }} className="mx-1" />
-                    <TouchableOpacity
-                        onPress={() => {
-                            ink.setPenActive(false);
-                            ink.setEraser(false);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('preach:pen_done')}
-                        className="px-3 py-1"
-                    >
-                        <Text style={{ color: tokens.accent }} className="font-lexend-semibold text-sm">
-                            {t('preach:pen_done')}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                    style={{ position: 'absolute', right: 20, bottom: panelHeight + insets.bottom + 20 }}
+                />
             ) : null}
 
             {/* Salida: informe del ensayo y registro de la predicación (F3).

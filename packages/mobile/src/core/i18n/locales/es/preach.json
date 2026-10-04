@@ -90,5 +90,17 @@
     "glyph_emphasis": "Énfasis",
     "glyph_soft": "Bajar la voz",
     "glyph_look": "Mirar a la congregación",
-    "glyph_illustration": "Aquí la ilustración"
+    "glyph_illustration": "Aquí la ilustración",
+    "ink_highlighter": "Resaltador",
+    "ink_fine": "Trazo fino",
+    "ink_bold": "Trazo grueso",
+    "ink_undo": "Deshacer",
+    "ink_redo": "Rehacer",
+    "ink_hide": "Ocultar la tinta",
+    "ink_show": "Mostrar la tinta",
+    "ink_clear": "Borrar tinta",
+    "ink_clear_hint": "Se puede deshacer mientras sigas en esta pantalla.",
+    "ink_clear_page": "Esta página",
+    "ink_clear_sermon": "Todo el sermón",
+    "ink_clear_chapter": "Este capítulo"
 }

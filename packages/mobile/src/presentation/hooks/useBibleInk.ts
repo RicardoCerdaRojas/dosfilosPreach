@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     collection,
     deleteDoc,
@@ -8,11 +8,14 @@ import {
     serverTimestamp,
     setDoc,
 } from '@react-native-firebase/firestore';
-import type { InkColor, InkStroke } from '@dosfilos/domain';
+import type { InkColor, InkStroke, InkTool } from '@dosfilos/domain';
 
+import { reportWriteFailure } from '@/core/errors/writeFailures';
 import { getFirebaseAuth, getFirebaseDb } from '@/data/sources/firebase.source';
 import type { AnchorRect } from '@/presentation/components/preach/InkLayer';
-import { withoutStroke } from '@/presentation/components/preach/inkGeometry';
+import { noteWithStroke, withStrokeRestored, withoutStroke } from '@/presentation/components/preach/inkGeometry';
+import { useInkHistory } from '@/presentation/hooks/useInkHistory';
+import type { PenWidth } from '@/presentation/hooks/useInkNotes';
 
 /**
  * Una nota manuscrita sobre el texto bíblico, anclada a un VERSÍCULO.
@@ -36,27 +39,60 @@ const inkRef = () => {
     return collection(getFirebaseDb(), 'users', uid, 'bibleInk');
 };
 
-const noteId = (bookId: string, chapter: number, verse: number) =>
-    `${bookId}.${chapter}.${verse}`;
+const noteId = (bookId: string, chapter: number, verse: number) => `${bookId}.${chapter}.${verse}`;
+
+const KEY = ['bibleInk'];
+
+/**
+ * Sin red, la promesa de una escritura de Firestore no se resuelve hasta que
+ * el servidor confirma. Esperarla congelaba la goma; se observa aparte, sólo
+ * para avisar si falla.
+ */
+const settle = (write: Promise<unknown>, label: string) =>
+    void write.catch((error) => reportWriteFailure('annotation', { label, error }));
+
+/** Guarda la nota tal como está en la caché, o la borra si ya no tiene trazos. */
+function persist(note: BibleInkNote | undefined, id: string) {
+    const ref = inkRef();
+    if (!ref) return;
+    if (!note || !note.strokes.length) {
+        settle(deleteDoc(doc(ref, id)), `bibleInk delete ${id}`);
+        return;
+    }
+    settle(
+        setDoc(doc(ref, id), {
+            bookId: note.bookId,
+            chapter: note.chapter,
+            verse: note.verse,
+            strokes: note.strokes,
+            updatedAt: serverTimestamp(),
+        }),
+        `bibleInk set ${id}`,
+    );
+}
 
 /**
  * Tinta sobre la Biblia.
  *
  * Guarda un documento por versículo escrito, igual que el sermón guarda uno
- * por párrafo: trazos seguidos sobre el mismo versículo se acumulan en la
- * misma nota en vez de dejar documentos sueltos.
+ * por oración: trazos seguidos sobre el mismo versículo se acumulan en la
+ * misma nota en vez de dejar documentos sueltos. Con historial (deshacer y
+ * rehacer) y limpieza del capítulo, como el púlpito.
  */
 export function useBibleInk(bookId: string, chapter: number, layoutKey: string) {
     const queryClient = useQueryClient();
+    const history = useInkHistory();
     const [penActive, setPenActive] = useState(false);
     const [penColor, setPenColor] = useState<InkColor>('ink');
+    const [tool, setTool] = useState<InkTool>('pen');
+    const [width, setWidth] = useState<PenWidth>('fine');
     const [eraser, setEraser] = useState(false);
 
-    /** layoutKey → (versículo → rectángulo en pantalla). */
+    /** layoutKey → (versículo → rectángulo en coordenadas del texto). */
     const verseRects = useRef<Map<string, Map<number, AnchorRect>>>(new Map());
 
     const { data: notes } = useQuery({
-        queryKey: ['bibleInk'],
+        queryKey: KEY,
         queryFn: async (): Promise<BibleInkNote[]> => {
             const ref = inkRef();
             if (!ref) return [];
@@ -75,9 +111,11 @@ export function useBibleInk(bookId: string, chapter: number, layoutKey: string) 
         staleTime: Infinity,
     });
 
-    const chapterNotes = (notes ?? []).filter(
-        (n) => n.bookId === bookId && n.chapter === chapter,
-    );
+    const chapterNotes = (notes ?? []).filter((n) => n.bookId === bookId && n.chapter === chapter);
+    const current = () => queryClient.getQueryData<BibleInkNote[]>(KEY) ?? [];
+    const write = (update: (list: BibleInkNote[]) => BibleInkNote[]) =>
+        queryClient.setQueryData<BibleInkNote[]>(KEY, (list) => update(list ?? []));
+    const saved = (id: string) => persist(current().find((n) => n.id === id), id);
 
     const rectsForLayout = () => {
         let map = verseRects.current.get(layoutKey);
@@ -118,68 +156,64 @@ export function useBibleInk(bookId: string, chapter: number, layoutKey: string) 
         return rectsForLayout().get(note.verse) ?? null;
     };
 
-    const append = useMutation({
-        // El trazo entra a la caché ANTES de que Firestore conteste: sin esto
-        // desaparece al soltar el dedo y vuelve cuando responde la consulta.
-        onMutate: ({ verse, stroke }: { verse: number; stroke: InkStroke }) => {
-            const id = noteId(bookId, chapter, verse);
-            queryClient.setQueryData<BibleInkNote[]>(['bibleInk'], (current) => {
-                const list = current ?? [];
-                const existing = list.find((n) => n.id === id);
-                if (existing) {
-                    return list.map((n) =>
-                        n.id === id ? { ...n, strokes: [...n.strokes, stroke] } : n,
-                    );
-                }
-                return [...list, { id, bookId, chapter, verse, strokes: [stroke] }];
-            });
-        },
-        mutationFn: async ({ verse, stroke }: { verse: number; stroke: InkStroke }) => {
-            const ref = inkRef();
-            if (!ref) return;
-            const id = noteId(bookId, chapter, verse);
-            const existing =
-                queryClient
-                    .getQueryData<BibleInkNote[]>(['bibleInk'])
-                    ?.find((n) => n.id === id)?.strokes ?? [stroke];
-            await setDoc(doc(ref, id), {
-                bookId,
-                chapter,
-                verse,
-                strokes: existing,
-                updatedAt: serverTimestamp(),
-            });
-        },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bibleInk'] }),
-    });
+    /** Agrega un trazo a la nota del versículo. Sin historial. */
+    const appendStroke = (verse: number, stroke: InkStroke) => {
+        const id = noteId(bookId, chapter, verse);
+        write((list) =>
+            list.some((n) => n.id === id)
+                ? list.map((n) => (n.id === id ? { ...n, strokes: [...n.strokes, stroke] } : n))
+                : [...list, { id, bookId, chapter, verse, strokes: [stroke] }],
+        );
+        saved(id);
+    };
 
-    /** Quita un trazo; si era el último, el documento se va con él. */
-    const erase = useMutation({
-        onMutate: ({ id, stroke }: { id: string; stroke: InkStroke }) => {
-            queryClient.setQueryData<BibleInkNote[]>(['bibleInk'], (current) =>
-                withoutStroke(current ?? [], id, stroke),
-            );
-        },
-        mutationFn: async ({ id }: { id: string; stroke: InkStroke }) => {
-            const ref = inkRef();
-            if (!ref) return;
-            const remaining =
-                queryClient.getQueryData<BibleInkNote[]>(['bibleInk'])?.find((n) => n.id === id)
-                    ?.strokes ?? [];
-            if (!remaining.length) {
-                await deleteDoc(doc(ref, id));
-                return;
-            }
-            await setDoc(doc(ref, id), {
-                bookId,
-                chapter,
-                verse: Number(id.split('.').pop() ?? 0),
-                strokes: remaining,
-                updatedAt: serverTimestamp(),
-            });
-        },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bibleInk'] }),
-    });
+    /** Quita un trazo de su nota (o la nota, si era el último). Sin historial. */
+    const removeStroke = (stroke: InkStroke) => {
+        const note = noteWithStroke(current(), stroke);
+        if (!note) return null;
+        const index = note.strokes.findIndex((s) => s === stroke);
+        write((list) => withoutStroke(list, note.id, stroke));
+        saved(note.id);
+        return { note, index: Math.max(0, index) };
+    };
+
+    const restoreStroke = (note: BibleInkNote, stroke: InkStroke, index: number) => {
+        write((list) => withStrokeRestored(list, note, stroke, index));
+        saved(note.id);
+    };
+
+    const removeNotes = (ids: Set<string>) => {
+        write((list) => list.filter((n) => !ids.has(n.id)));
+        ids.forEach((id) => saved(id));
+    };
+
+    const restoreNotes = (restored: BibleInkNote[]) => {
+        write((list) => [...list.filter((n) => !restored.some((r) => r.id === n.id)), ...restored]);
+        restored.forEach((n) => saved(n.id));
+    };
+
+    const addStroke = (verse: number, stroke: InkStroke) => {
+        appendStroke(verse, stroke);
+        history.record({ undo: () => removeStroke(stroke), redo: () => appendStroke(verse, stroke) });
+    };
+
+    const eraseStroke = (_id: string, stroke: InkStroke) => {
+        const removed = removeStroke(stroke);
+        if (!removed) return;
+        history.record({
+            undo: () => restoreStroke(removed.note, stroke, removed.index),
+            redo: () => removeStroke(stroke),
+        });
+    };
+
+    /** Borra la tinta de estas notas (el capítulo). Se puede deshacer. */
+    const clearNotes = (targets: BibleInkNote[]) => {
+        if (!targets.length) return;
+        const snapshot = targets.map((n) => ({ ...n, strokes: [...n.strokes] }));
+        const ids = new Set(snapshot.map((n) => n.id));
+        removeNotes(ids);
+        history.record({ undo: () => restoreNotes(snapshot), redo: () => removeNotes(ids) });
+    };
 
     return {
         notes: chapterNotes,
@@ -187,12 +221,21 @@ export function useBibleInk(bookId: string, chapter: number, layoutKey: string) 
         setPenActive,
         penColor,
         setPenColor,
+        tool,
+        setTool,
+        width,
+        setWidth,
         eraser,
         setEraser,
         rememberVerse,
         anchorAt,
         anchorRectFor,
-        addStroke: (verse: number, stroke: InkStroke) => append.mutate({ verse, stroke }),
-        eraseStroke: (id: string, stroke: InkStroke) => erase.mutate({ id, stroke }),
+        addStroke,
+        eraseStroke,
+        clearNotes,
+        undo: history.undo,
+        redo: history.redo,
+        canUndo: history.canUndo,
+        canRedo: history.canRedo,
     };
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import type { InkStroke } from '@dosfilos/domain';
 import { toNoteSpace } from '@dosfilos/domain';
 
-import { inkSignature, nearestStroke, showsBridge, withoutStroke } from '../inkGeometry';
+import { inkSignature, nearestStroke, noteWithStroke, showsBridge, withStrokeRestored, withoutStroke } from '../inkGeometry';
 
 const RECT = { x: 100, y: 200, height: 40 };
 const BODY = 28;
@@ -52,5 +52,28 @@ describe('trazo puente', () => {
         const afterErase = inkSignature([{ id: 'n1', strokes: [stroke(210)] }]);
         expect(showsBridge(before, afterErase)).toBe(false);
         expect(showsBridge(null, afterErase)).toBe(false);
+    });
+});
+
+describe('deshacer necesita reconocer el trazo', () => {
+    const a = stroke(210);
+    const b = stroke(260);
+
+    it('un trazo releído de Firestore (otro objeto, mismos puntos) es el mismo trazo', () => {
+        const copy = JSON.parse(JSON.stringify(a)) as InkStroke;
+        expect(noteWithStroke([{ id: 'n1', strokes: [copy] }], a)?.id).toBe('n1');
+        expect(withoutStroke([{ id: 'n1', strokes: [copy, b] }], 'n1', a)[0]!.strokes).toEqual([b]);
+    });
+
+    it('lápiz y resaltador con los mismos puntos no son el mismo trazo', () => {
+        const highlighter: InkStroke = { ...a, tool: 'highlighter' };
+        expect(noteWithStroke([{ id: 'n1', strokes: [highlighter] }], a)).toBeNull();
+    });
+
+    it('vuelve a poner el trazo donde estaba, o la nota entera si se había ido', () => {
+        expect(withStrokeRestored([{ id: 'n1', strokes: [b] }], { id: 'n1', strokes: [] }, a, 0)[0]!.strokes).toEqual([a, b]);
+        expect(withStrokeRestored([], { id: 'n1', strokes: [a, b] }, a, 0)).toEqual([{ id: 'n1', strokes: [a] }]);
+        // Si ya está, no lo duplica.
+        expect(withStrokeRestored([{ id: 'n1', strokes: [a] }], { id: 'n1', strokes: [] }, a, 0)[0]!.strokes).toEqual([a]);
     });
 });

@@ -1,5 +1,5 @@
 import type { InkStroke } from '@dosfilos/domain';
-import { toScreenSpace } from '@dosfilos/domain';
+import { sameStroke, toScreenSpace } from '@dosfilos/domain';
 
 /** Lo mínimo que la goma necesita de una nota: su id y sus trazos. */
 export interface ErasableNote {
@@ -52,11 +52,31 @@ export function nearestStroke(
     return best;
 }
 
-/** La lista de notas sin ese trazo; una nota que se queda sin trazos se va. */
+/**
+ * La lista de notas sin ese trazo; una nota que se queda sin trazos se va.
+ * El trazo se reconoce aunque sea otro objeto (releído de Firestore).
+ */
 export function withoutStroke<T extends ErasableNote>(notes: T[], noteId: string, stroke: InkStroke): T[] {
     return notes
-        .map((note) => (note.id === noteId ? { ...note, strokes: note.strokes.filter((s) => s !== stroke) } : note))
+        .map((note) =>
+            note.id === noteId ? { ...note, strokes: note.strokes.filter((s) => !sameStroke(s, stroke)) } : note,
+        )
         .filter((note) => note.strokes.length > 0);
+}
+
+/** La nota que tiene ese trazo, si alguna. */
+export function noteWithStroke<T extends ErasableNote>(notes: readonly T[], stroke: InkStroke): T | null {
+    return notes.find((note) => note.strokes.some((s) => sameStroke(s, stroke))) ?? null;
+}
+
+/** Vuelve a poner un trazo en su nota, en el lugar que tenía; o la nota entera si ya no estaba. */
+export function withStrokeRestored<T extends ErasableNote>(notes: T[], snapshot: T, stroke: InkStroke, index: number): T[] {
+    const current = notes.find((n) => n.id === snapshot.id);
+    if (!current) return [...notes, { ...snapshot, strokes: [stroke] }];
+    if (current.strokes.some((s) => sameStroke(s, stroke))) return notes;
+    const strokes = [...current.strokes];
+    strokes.splice(Math.min(index, strokes.length), 0, stroke);
+    return notes.map((n) => (n.id === snapshot.id ? { ...n, strokes } : n));
 }
 
 /** Firma de lo que hay dibujado: qué notas y cuántos trazos. */

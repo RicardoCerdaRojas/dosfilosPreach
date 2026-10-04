@@ -90,5 +90,17 @@
     "glyph_emphasis": "Emphasis",
     "glyph_soft": "Lower your voice",
     "glyph_look": "Look at the congregation",
-    "glyph_illustration": "Illustration here"
+    "glyph_illustration": "Illustration here",
+    "ink_highlighter": "Highlighter",
+    "ink_fine": "Fine stroke",
+    "ink_bold": "Bold stroke",
+    "ink_undo": "Undo",
+    "ink_redo": "Redo",
+    "ink_hide": "Hide the ink",
+    "ink_show": "Show the ink",
+    "ink_clear": "Clear ink",
+    "ink_clear_hint": "You can undo it while you stay on this screen.",
+    "ink_clear_page": "This page",
+    "ink_clear_sermon": "The whole sermon",
+    "ink_clear_chapter": "This chapter"
 }

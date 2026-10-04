@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { GestureResponderEvent, View } from 'react-native';
 import { Canvas, Group, Path, Skia, type SkPath } from '@shopify/react-native-skia';
 import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-reanimated';
-import type { InkColor, InkStroke } from '@dosfilos/domain';
+import type { InkColor, InkStroke, InkTool } from '@dosfilos/domain';
 import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
@@ -38,6 +38,10 @@ interface Props {
     anchorAt: (screenX: number, screenY: number) => { offset: number; rect: AnchorRect } | null;
     onFinishStroke: (offset: number, stroke: InkStroke) => void;
     color: InkColor;
+    /** Lápiz o resaltador (T-7). */
+    tool: InkTool;
+    /** Grosor del trazo nuevo, en unidades del cuerpo. */
+    strokeWidthEm: number;
     eraser: boolean;
     /** Borra UN trazo, no la nota entera. Va el trazo mismo, no su número. */
     onErase: (noteId: string, stroke: InkStroke) => void;
@@ -55,7 +59,9 @@ interface Props {
     scrollOffset?: SharedValue<number>;
 }
 
-const STROKE_WIDTH_EM = 0.07;
+/** El resaltador se lee a través: translúcido. */
+const HIGHLIGHTER_OPACITY = 0.3;
+const opacityOf = (tool: InkTool | undefined) => (tool === 'highlighter' ? HIGHLIGHTER_OPACITY : 1);
 /** Puntos más juntos que esto son ruido del dedo, no intención. */
 const MIN_POINT_DISTANCE = 1.5;
 
@@ -120,6 +126,8 @@ export function InkLayer({
     anchorAt,
     onFinishStroke,
     color,
+    tool,
+    strokeWidthEm,
     eraser,
     onErase,
     top,
@@ -221,8 +229,9 @@ export function InkLayer({
         setPending({ path: buildPath(captured.map(toCanvas)), signature });
         onFinishStroke(held.offset, {
             points: captured.map((p) => toNoteSpace(p, held.rect, bodySize)),
-            width: STROKE_WIDTH_EM,
+            width: strokeWidthEm,
             color,
+            tool,
         });
     };
 
@@ -265,6 +274,7 @@ export function InkLayer({
                                 ),
                             )}
                             color={inkColor(stroke.color, tokens)}
+                            opacity={opacityOf(stroke.tool)}
                             style="stroke"
                             strokeWidth={stroke.width * bodySize}
                             strokeCap="round"
@@ -277,8 +287,9 @@ export function InkLayer({
                     <Path
                         path={pending.path}
                         color={inkColor(color, tokens)}
+                        opacity={opacityOf(tool)}
                         style="stroke"
-                        strokeWidth={STROKE_WIDTH_EM * bodySize}
+                        strokeWidth={strokeWidthEm * bodySize}
                         strokeCap="round"
                         strokeJoin="round"
                     />
@@ -287,8 +298,9 @@ export function InkLayer({
                 <Path
                     path={livePath}
                     color={inkColor(color, tokens)}
+                    opacity={opacityOf(tool)}
                     style="stroke"
-                    strokeWidth={STROKE_WIDTH_EM * bodySize}
+                    strokeWidth={strokeWidthEm * bodySize}
                     strokeCap="round"
                     strokeJoin="round"
                 />

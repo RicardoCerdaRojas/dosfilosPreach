@@ -46,7 +46,9 @@ function measure(renderer: ReactTestRenderer) {
 }
 
 let renderer: ReactTestRenderer;
-beforeEach(() => jest.useFakeTimers());
+beforeEach(() => {
+    jest.useFakeTimers();
+});
 afterEach(() => {
     act(() => renderer.unmount());
     jest.useRealTimers();

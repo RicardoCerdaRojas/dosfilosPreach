@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { INK_COLORS } from '@dosfilos/domain';
+import { INK_WIDTH } from '@dosfilos/domain';
 import type { HighlightColor, MarkStyle } from '@dosfilos/domain';
 import { TABLET_EDITING } from '@/core/config/features';
 
@@ -21,6 +21,7 @@ import {
     type WordSelection,
 } from '@/presentation/components/bible/SelectableVerses';
 import { InkLayer } from '@/presentation/components/preach/InkLayer';
+import { InkToolbar } from '@/presentation/components/preach/InkToolbar';
 import { MarkPopover } from '@/presentation/components/preach/MarkPopover';
 import { useBibleInk } from '@/presentation/hooks/useBibleInk';
 import { useSharedValue } from 'react-native-reanimated';
@@ -109,6 +110,8 @@ export default function BibleReaderScreen() {
      */
     const inkLayoutKey = `${bookId}|${chapter}|${fontSize}|${parallelId ?? ''}|${readingMode}|${fullWidth}|${lineSpacing}|${verseNumbers}|${face}`;
     const ink = useBibleInk(bookId, chapter, inkLayoutKey);
+    const inkVisible = useReaderSettingsStore((s) => s.inkVisible);
+    const setInkVisible = useReaderSettingsStore((s) => s.setInkVisible);
     // Cuánto bajó el capítulo. La tinta vive en coordenadas del TEXTO (las de
     // pantalla más esto): antes quedaba fija mientras el capítulo se movía.
     const scrollY = useSharedValue(0);
@@ -339,47 +342,6 @@ export default function BibleReaderScreen() {
                     />
                 </TouchableOpacity>
 
-                {ink.penActive ? (
-                    <>
-                        {INK_COLORS.map((color) => (
-                            <TouchableOpacity
-                                key={color}
-                                onPress={() => {
-                                    ink.setPenColor(color);
-                                    ink.setEraser(false);
-                                }}
-                                accessibilityRole="button"
-                                accessibilityLabel={t(`preach:ink_${color}`)}
-                                className="ml-3"
-                                style={{
-                                    width: 22,
-                                    height: 22,
-                                    borderRadius: 11,
-                                    backgroundColor:
-                                        color === 'red'
-                                            ? tokens.timerOver
-                                            : color === 'blue'
-                                              ? tokens.accent
-                                              : tokens.textPrimary,
-                                    borderWidth: ink.penColor === color && !ink.eraser ? 2 : 0,
-                                    borderColor: tokens.background,
-                                }}
-                            />
-                        ))}
-                        <TouchableOpacity
-                            onPress={() => ink.setEraser(!ink.eraser)}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('preach:eraser')}
-                            className="ml-3"
-                        >
-                            <MaterialIcons
-                                name="auto-fix-normal"
-                                size={22}
-                                color={ink.eraser ? tokens.accent : tokens.textSecondary}
-                            />
-                        </TouchableOpacity>
-                    </>
-                ) : null}
             </View>
 
             <ScrollView
@@ -515,19 +477,36 @@ export default function BibleReaderScreen() {
                 tapara, no habría cómo apagar el lápiz. */}
             <InkLayer
                 tokens={tokens}
-                notes={ink.notes}
+                notes={inkVisible ? ink.notes : []}
                 anchorRectFor={ink.anchorRectFor}
                 bodySize={fontSize}
-                penActive={ink.penActive}
+                penActive={ink.penActive && inkVisible}
                 anchorAt={ink.anchorAt}
                 onFinishStroke={ink.addStroke}
                 color={ink.penColor}
+                tool={ink.tool}
+                strokeWidthEm={ink.tool === 'highlighter' ? INK_WIDTH.highlighter : INK_WIDTH[ink.width]}
                 eraser={ink.eraser}
                 onErase={ink.eraseStroke}
                 scrollOffset={scrollY}
                 top={headerHeight + hintHeight}
                 bottom={0}
             />
+
+            {ink.penActive ? (
+                <InkToolbar
+                    tokens={tokens}
+                    ink={ink}
+                    visible={inkVisible}
+                    onToggleVisible={() => setInkVisible(!inkVisible)}
+                    clearOptions={[{ label: t('preach:ink_clear_chapter'), onPress: () => ink.clearNotes(ink.notes) }]}
+                    onDone={() => {
+                        ink.setPenActive(false);
+                        ink.setEraser(false);
+                    }}
+                    style={{ position: 'absolute', right: 20, bottom: insets.bottom + 20 }}
+                />
+            ) : null}
 
             {/* Popover contextual, igual que en el púlpito: aparece al lado
                 de lo que se eligió. La barra inferior obligaba a mirar al
