@@ -197,6 +197,7 @@ Una etapa por PR y un commit por unidad, como en las fases anteriores. Cada unid
 
 ### Etapa A — El domingo no falla (confiabilidad del atril)
 
+- **A0 · Pruebas en mobile, primero.** `jest-expo` con un script `test` y el job de CI de mobile corriéndolo. Sin esto, cada arreglo de abajo quedaría sin prueba (hoy hay 0).
 - **A1 · Offline real.**
   - Guardar la caché de react-query en disco.
   - Que el atril y el detalle lean del maletín cuando Firestore no responde.
@@ -277,6 +278,15 @@ Una etapa por PR y un commit por unidad, como en las fases anteriores. Cada unid
 - **C4 · Pruebas de mobile.** `jest-expo` en CI para la paginación, el cronómetro, los toques, el maletín y los repositorios de la Biblia.
 - **C5 · Textos.** `common:cancel`, `+not-found` y los textos fijos.
 - **C6 · Partir las pantallas grandes** (atril, Biblia, inicio), sacando la lógica a hooks y dominio. Se hace junto con A y C, no como una unidad aparte.
+- **C7 · Lo que enamora al pastor** (pedido del fundador el 2026-10-04: «una versión que sorprenda y enamore a los pastores»). Las ideas salen de lo que pasa de verdad en el púlpito, no de lo que se ve bien en una demo:
+  - **Lectura pública del texto.** Antes del primer movimiento, una página «Lectura» con el pasaje del sermón tomado de la Biblia de la app, a cuerpo de púlpito y con los números de versículo discretos. Hoy el pastor tiene que salir del sermón, abrir la Biblia y buscar el pasaje con la congregación esperando.
+  - **Referencias tocables.** «Jonás 4:2» dentro del manuscrito se toca y muestra el versículo en una capa, sin salir de la página. El plan lo pedía y hoy sólo existe el botón de la cabecera.
+  - **Bosquejo en un toque.** Cambio entre el manuscrito completo y un bosquejo (títulos, viñetas y frases en negrita). Muchos pastores preparan en manuscrito y predican desde el bosquejo; perder el lugar al cambiar es lo que lo hace inusable, así que el cambio conserva el movimiento.
+  - **Hora de término.** Además de la duración, «termino a las 11:45». La línea de vuelo calcula contra el reloj de pared: el culto no empieza a la hora y el pastor no controla cuándo sube.
+  - **Avisos que no se oyen.** Un pulso háptico a los 5 minutos del final y otro cuando un movimiento se pasa de su presupuesto. Se sienten en la mano y no distraen a nadie.
+  - **Marcas de predicador.** Glifos al margen sobre una palabra: pausa, énfasis, bajar la voz, mirar a la congregación, «aquí la ilustración». Es lo que el pastor hace a lápiz en el papel, y se sincroniza como el subrayado. Pasa de «después de la v1» a la v1.
+  - **Listo para el domingo.** En el inicio, el sermón de la semana con lo que falta para subir tranquilo: guardado sin conexión, duración fijada, lectura lista.
+  - **Brillo del atril.** Brillo propio del modo atril, sin tocar el del sistema.
 
 ### Etapa D — Beta y publicación
 
@@ -286,7 +296,6 @@ Una etapa por PR y un commit por unidad, como en las fases anteriores. Cada unid
 
 ### Después de la v1
 
-- Glifos de predicador.
 - Modo ensayo que aprende los presupuestos.
 - Pasadores BT y teclas de volumen.
 - Redactor F4 (editar borradores por secciones).
