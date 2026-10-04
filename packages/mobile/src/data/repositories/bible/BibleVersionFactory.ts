@@ -46,3 +46,19 @@ export class BibleVersionFactory {
         return VERSIONS.map(({ id, name, language }) => ({ id, name, language }));
     }
 }
+
+/**
+ * El mismo libro en otra versión (C1).
+ *
+ * Los ids NO cruzan entre versiones: en la RVR Jonás es `jn`, y en la ASV
+ * `Jn` resuelve como alias de Juan. Cambiar de versión sin traducir por el
+ * id canónico abría Juan en vez de Jonás —pasaba en la Biblia dentro del
+ * atril—, o Génesis si el id no existía. El lector ya lo hacía bien; ahora
+ * los dos usan esta función.
+ */
+export function bookIdInVersion(fromVersionId: string, toVersionId: string, bookId: string): string | null {
+    const from = BibleVersionFactory.getByVersion(fromVersionId);
+    const to = BibleVersionFactory.getByVersion(toVersionId);
+    if (!from || !to) return null;
+    return to.getBookIdForCanonical(from.getCanonicalBookId(bookId));
+}

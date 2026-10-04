@@ -27,7 +27,7 @@ import { formatSelectionForSermon } from '@/presentation/components/bible/passag
 import { BiblePickerSheet } from '@/presentation/components/bible/BiblePickerSheet';
 import { BibleSearchSheet } from '@/presentation/components/bible/BibleSearchSheet';
 import { BibleSettingsSheet } from '@/presentation/components/bible/BibleSettingsSheet';
-import { BibleVersionFactory } from '@/data/repositories/bible/BibleVersionFactory';
+import { BibleVersionFactory, bookIdInVersion } from '@/data/repositories/bible/BibleVersionFactory';
 
 /**
  * El lector — la PUERTA 1 de la Biblia: cuando el pastor va a leer.
@@ -214,8 +214,7 @@ export default function BibleReaderScreen() {
      * lector volvía a Génesis.
      */
     const changeVersion = (nextVersionId: string) => {
-        const next = BibleVersionFactory.getByVersion(nextVersionId);
-        const translated = next.getBookIdForCanonical(repo.getCanonicalBookId(bookId));
+        const translated = bookIdInVersion(versionId, nextVersionId, bookId);
         setVersionId(nextVersionId);
         if (translated) setBookId(translated);
         if (parallelId === nextVersionId) setParallelId(null);

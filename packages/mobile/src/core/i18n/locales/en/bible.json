@@ -73,5 +73,6 @@
     "keep_awake": "Keep the screen on",
     "keep_awake_hint": "Reading is not touching: the tablet sleeps after thirty seconds.",
     "pen_hint": "One finger writes · two fingers scroll",
-    "eraser_hint": "Eraser: tap or drag over a stroke to remove it"
+    "eraser_hint": "Eraser: tap or drag over a stroke to remove it",
+    "results_in_scope_more": "More than {{count}} results: add a word to narrow it down"
 }

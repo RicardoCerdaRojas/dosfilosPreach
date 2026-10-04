@@ -1,6 +1,5 @@
 import { BaseJSONRepository, BibleJSONData } from './BaseJSONRepository';
 import { BibleReference } from '@/domain/bible/entities/BibleEntities';
-import asvBible from '../../../../assets/bible/asv.json';
 
 interface ASVVerse {
     book: number;
@@ -19,7 +18,6 @@ interface ASVData {
 export class ASVRepository extends BaseJSONRepository {
     protected readonly versionId = 'ASV';
     protected readonly language = 'en';
-    protected readonly bibleData: BibleJSONData[];
     protected readonly bookMapping: Record<string, string> = {
         // Old Testament
         'Genesis': '1', 'Gen': '1', 'Gn': '1',
@@ -81,7 +79,7 @@ export class ASVRepository extends BaseJSONRepository {
         '2 Timothy': '55', '2Timothy': '55', '2Tim': '55', '2 Tim': '55', '2Ti': '55',
         'Titus': '56', 'Tit': '56', 'Ti': '56',
         'Philemon': '57', 'Phlm': '57', 'Phm': '57',
-        'Hebreos': '58', 'Heb': '58', 'He': '58',
+        'Hebrews': '58', 'Heb': '58', 'He': '58',
         'James': '59', 'Jas': '59', 'Jm': '59',
         '1 Peter': '60', '1Peter': '60', '1Pet': '60', '1 Ped': '60', '1Pe': '60', '1P': '60',
         '2 Peter': '61', '2Peter': '61', '2Pet': '61', '2 Ped': '61', '2Pe': '61', '2P': '61',
@@ -92,9 +90,9 @@ export class ASVRepository extends BaseJSONRepository {
         'Revelation': '66', 'Rev': '66', 'Re': '66'
     };
 
-    constructor() {
-        super();
-        this.bibleData = this.transformData(asvBible as ASVData);
+    protected loadBibleData(): BibleJSONData[] {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return this.transformData(require('../../../../assets/bible/asv.json') as ASVData);
     }
 
     private transformData(asv: ASVData): BibleJSONData[] {

@@ -51,4 +51,6 @@ export interface IBibleVersionRepository {
      * donde salió el bug de caer siempre en Génesis.
      */
     search(query: string, limit?: number, bookIds?: string[]): BibleSearchResult[];
+    /** Arma el índice de búsqueda por adelantado (al abrir la hoja), no en la primera tecla. */
+    warmSearch(): void;
 }

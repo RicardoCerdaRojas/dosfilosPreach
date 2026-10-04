@@ -1,6 +1,5 @@
 import { BaseJSONRepository, BibleJSONData } from './BaseJSONRepository';
 import { BibleReference } from '@/domain/bible/entities/BibleEntities';
-import rvrBible from '../../../../assets/bible/rvr1960.json';
 
 /**
  * RVR1960 Repository - Adapter for Spanish Reina-Valera 1960 Bible
@@ -8,7 +7,10 @@ import rvrBible from '../../../../assets/bible/rvr1960.json';
 export class RVR1960Repository extends BaseJSONRepository {
     protected readonly versionId = 'RVR1960';
     protected readonly language = 'es';
-    protected readonly bibleData = rvrBible as BibleJSONData[];
+    protected loadBibleData(): BibleJSONData[] {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require('../../../../assets/bible/rvr1960.json') as BibleJSONData[];
+    }
     protected readonly bookMapping: Record<string, string> = {
         // Antiguo Testamento
         'Génesis': 'gn', 'Genesis': 'gn', 'Gn': 'gn', 'Gen': 'gn',

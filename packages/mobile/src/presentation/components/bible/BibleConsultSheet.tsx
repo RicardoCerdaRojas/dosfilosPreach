@@ -11,7 +11,7 @@ import type { DeliveryFace } from '@/core/theme/typography';
 import { useBibleMarks } from '@/presentation/hooks/useBibleMarks';
 import { SelectableVerses } from '@/presentation/components/bible/SelectableVerses';
 import { BiblePickerSheet } from '@/presentation/components/bible/BiblePickerSheet';
-import { BibleVersionFactory } from '@/data/repositories/bible/BibleVersionFactory';
+import { BibleVersionFactory, bookIdInVersion } from '@/data/repositories/bible/BibleVersionFactory';
 
 interface Props {
     visible: boolean;
@@ -182,7 +182,13 @@ export function BibleConsultSheet({
                             setChapter(nextChapter);
                             setShowPicker(false);
                         }}
-                        onPickVersion={setVersionId}
+                        // Conserva el libro: sin traducir, con Jonás abierto la
+                        // ASV mostraba Juan (C1).
+                        onPickVersion={(next) => {
+                            const translated = bookIdInVersion(versionId, next, bookId);
+                            setVersionId(next);
+                            if (translated) setBookId(translated);
+                        }}
                         onClose={() => setShowPicker(false)}
                     />
                 </Pressable>

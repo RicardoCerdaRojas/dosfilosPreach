@@ -73,5 +73,6 @@
     "keep_awake": "Mantener la pantalla encendida",
     "keep_awake_hint": "Leer no es tocar: la tablet se apaga sola a los treinta segundos.",
     "pen_hint": "Un dedo escribe · dos dedos desplazan",
-    "eraser_hint": "Goma: toca o arrastra sobre un trazo para borrarlo"
+    "eraser_hint": "Goma: toca o arrastra sobre un trazo para borrarlo",
+    "results_in_scope_more": "Más de {{count}} resultados: agrega una palabra para afinar"
 }
