@@ -516,7 +516,9 @@ function SeriesProgress({ title, sermons }: { title: string | null; sermons: Ser
     const router = useRouter();
     const { t } = useTranslation();
 
-    const preached = sermons.filter((s) => s.publishedAt).length;
+    // Predicados, no publicados: contaba `publishedAt`, que en la lista de
+    // publicados tienen todos — la serie salía siempre «N de N» (A6).
+    const preached = sermons.filter((s) => s.timesPreached > 0).length;
 
     return (
         <SupportCard

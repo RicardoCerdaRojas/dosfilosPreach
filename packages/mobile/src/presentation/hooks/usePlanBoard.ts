@@ -1,4 +1,4 @@
-import { nextInPlan, pickCurrentPlan, planOrder, planStatus } from '@dosfilos/domain';
+import { nextInPlan, pickCurrentPlan, planOrder, planStatus, publishedForDraft } from '@dosfilos/domain';
 import type { PlanStatus } from '@dosfilos/domain';
 
 import { SermonSummary } from '@/domain/models/sermon.model';
@@ -40,15 +40,14 @@ export function usePlanBoard() {
         refetch: refetchSermons,
     } = usePublishedSermons();
 
-    const published = new Map<string, SermonSummary>();
-    for (const group of groups ?? []) {
-        for (const sermon of group.sermons) published.set(sermon.id, sermon);
-    }
+    const published: SermonSummary[] = (groups ?? []).flatMap((group) => group.sermons);
 
     const boards: PlanBoard[] = (plans ?? []).map((plan) => {
         const items: PlanBoardItem[] = plan.items
             .map((item) => {
-                const sermon = item.draftId ? published.get(item.draftId) : undefined;
+                // El plan guarda el BORRADOR; la lista trae la COPIA publicada,
+                // que apunta a él (A6, mismo defecto que #728 en la web).
+                const sermon = item.draftId ? publishedForDraft(item.draftId, published) : undefined;
                 return {
                     ...item,
                     sermon,

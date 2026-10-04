@@ -26,3 +26,34 @@ export function isPlannedSermonDone(
     if (wp && wp.currentStep >= 4) return true;
     return !wp && (draft.content?.length ?? 0) > 100;
 }
+
+/** Lo mínimo de un sermón publicado para enlazarlo con el plan. */
+export interface PublishedLink {
+    id: string;
+    /** La copia publicada guarda acá el borrador del que salió. */
+    sourceSermonId?: string;
+    /** «Crear versión» guarda acá el sermón raíz. */
+    versionOf?: string;
+    publishedAt?: Date;
+}
+
+/**
+ * El sermón publicado que corresponde a la perícopa del plan.
+ *
+ * El plan guarda el id del BORRADOR (`draftId`), y publicar crea una COPIA
+ * con id propio que apunta al borrador en `sourceSermonId`. La tablet buscaba
+ * el `draftId` entre los ids de las copias y no lo encontraba nunca: las
+ * semanas del plan salían «sin escribir» y «Púlpito» deshabilitado aunque el
+ * sermón estuviera publicado (mismo defecto que #728 en la web).
+ *
+ * Vale el propio documento (sermones sin asistente) o cualquier copia que
+ * apunte a él; si hay varias publicaciones, la más reciente.
+ */
+export function publishedForDraft<T extends PublishedLink>(draftId: string, published: readonly T[]): T | undefined {
+    let best: T | undefined;
+    for (const s of published) {
+        if (s.id !== draftId && s.sourceSermonId !== draftId && s.versionOf !== draftId) continue;
+        if (!best || (s.publishedAt?.getTime() ?? 0) > (best.publishedAt?.getTime() ?? 0)) best = s;
+    }
+    return best;
+}

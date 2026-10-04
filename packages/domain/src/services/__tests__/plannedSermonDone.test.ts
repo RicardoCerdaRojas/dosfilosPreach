@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isPlannedSermonDone } from '../plannedSermonDone';
+import { isPlannedSermonDone, publishedForDraft } from '../plannedSermonDone';
 
 /**
  * Serie de Jonás (2026-10-01): tres sermones publicados figuraban «Borrador»
@@ -31,5 +31,29 @@ describe('isPlannedSermonDone', () => {
     it('un sermón anterior al asistente cuenta si tiene contenido', () => {
         expect(isPlannedSermonDone(borrador(undefined))).toBe(true);
         expect(isPlannedSermonDone(borrador(undefined, { content: 'corto' }))).toBe(false);
+    });
+});
+
+describe('publishedForDraft — el plan encuentra la copia publicada', () => {
+    const d = (iso: string) => new Date(iso);
+    it('REGRESIÓN tablet: la copia publicada se encuentra por el borrador del que salió', () => {
+        const copia = { id: 'copia-1', sourceSermonId: 'borrador-1', publishedAt: d('2026-10-03') };
+        expect(publishedForDraft('borrador-1', [copia])).toBe(copia);
+    });
+
+    it('si se publicó varias veces, la más reciente', () => {
+        const vieja = { id: 'a', sourceSermonId: 'b1', publishedAt: d('2026-09-01') };
+        const nueva = { id: 'b', sourceSermonId: 'b1', publishedAt: d('2026-10-01') };
+        expect(publishedForDraft('b1', [nueva, vieja])).toBe(nueva);
+        expect(publishedForDraft('b1', [vieja, nueva])).toBe(nueva);
+    });
+
+    it('un sermón sin asistente es su propio documento', () => {
+        const propio = { id: 'b1', publishedAt: d('2026-10-01') };
+        expect(publishedForDraft('b1', [propio])).toBe(propio);
+    });
+
+    it('sin publicación, nada', () => {
+        expect(publishedForDraft('b1', [{ id: 'otro', sourceSermonId: 'otro-borrador' }])).toBeUndefined();
     });
 });
