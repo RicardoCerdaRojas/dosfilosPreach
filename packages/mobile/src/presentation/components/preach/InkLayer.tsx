@@ -6,6 +6,7 @@ import type { InkColor, InkStroke } from '@dosfilos/domain';
 import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
+import { inkSignature, nearestStroke, showsBridge } from './inkGeometry';
 
 /**
  * Lo ÚNICO que la capa necesita de una nota: su id y sus trazos.
@@ -38,8 +39,8 @@ interface Props {
     onFinishStroke: (offset: number, stroke: InkStroke) => void;
     color: InkColor;
     eraser: boolean;
-    /** Borra UN trazo, no la nota entera. */
-    onErase: (noteId: string, strokeIndex: number) => void;
+    /** Borra UN trazo, no la nota entera. Va el trazo mismo, no su número. */
+    onErase: (noteId: string, stroke: InkStroke) => void;
     /** Alto del chrome superior: la capa arranca debajo para no taparlo. */
     top: number;
     /** Alto del tablero inferior, por la misma razón. */
@@ -142,50 +143,33 @@ export function InkLayer({
      * nota aparece — no con un efecto ni un temporizador, sino comparando
      * cuántos trazos había cuando se soltó contra cuántos hay ahora.
      */
-    const [pending, setPending] = useState<{ path: SkPath; baseline: number } | null>(null);
+    const [pending, setPending] = useState<{ path: SkPath; signature: string } | null>(null);
+    /** Trazos que el gesto de goma en curso ya borró: no se borran dos veces. */
+    const erasedInGesture = useRef(new Set<InkStroke>());
 
-    // Cuántos trazos hay guardados AHORA. Si superan a los que había al
-    // soltar, la nota ya llegó y el trazo puente sobra.
-    const strokeCount = notes.reduce((total, note) => total + note.strokes.length, 0);
+    // Lo dibujado AHORA. Si cambió desde que se soltó el dedo —llegó la nota,
+    // se borró algo, se pasó de página—, el trazo puente sobra.
+    const signature = inkSignature(notes);
 
     const toCanvas = (p: { x: number; y: number }) => ({
         x: p.x - origin.x,
         y: p.y - origin.y,
     });
 
-    /**
-     * El trazo más cercano al punto, si hay alguno al alcance.
-     *
-     * Devuelve el TRAZO y no la nota: una nota agrupa todo lo escrito sobre el
-     * mismo párrafo o versículo, así que borrar la nota entera se llevaba
-     * puesto medio margen por tocar una raya. La goma borra lo que toca.
-     */
-    const strokeNear = (x: number, y: number): { noteId: string; index: number } | null => {
-        const RADIUS = 28;
-        let best: { noteId: string; index: number } | null = null;
-        let bestDistance = RADIUS;
-        for (const note of notes) {
-            const rect = anchorRectFor(note);
-            if (!rect) continue;
-            note.strokes.forEach((stroke, index) => {
-                for (const point of stroke.points) {
-                    const screen = toScreenSpace(point, rect, bodySize);
-                    const distance = Math.hypot(screen.x - x, screen.y - y);
-                    if (distance < bestDistance) {
-                        bestDistance = distance;
-                        best = { noteId: note.id, index };
-                    }
-                }
-            });
-        }
-        return best;
+    const eraseAt = (x: number, y: number) => {
+        const hit = nearestStroke(notes, anchorRectFor, bodySize, x, y, erasedInGesture.current);
+        if (!hit) return;
+        erasedInGesture.current.add(hit.stroke);
+        onErase(hit.noteId, hit.stroke);
     };
 
     const begin = (e: GestureResponderEvent) => {
         const { pageX, pageY } = e.nativeEvent;
+        // Un gesto nuevo: el puente del trazo anterior ya cumplió.
+        setPending(null);
         if (eraser) {
-            const hit = strokeNear(pageX, pageY);
-            if (hit) onErase(hit.noteId, hit.index);
+            erasedInGesture.current = new Set();
+            eraseAt(pageX, pageY);
             return;
         }
         anchor.current = anchorAt(pageX, pageY);
@@ -197,8 +181,7 @@ export function InkLayer({
         // Con la goma, arrastrar sigue borrando: se pasa por encima de varios
         // trazos como se pasaría una goma de verdad.
         if (eraser) {
-            const hit = strokeNear(e.nativeEvent.pageX, e.nativeEvent.pageY);
-            if (hit) onErase(hit.noteId, hit.index);
+            eraseAt(e.nativeEvent.pageX, e.nativeEvent.pageY);
             return;
         }
         if (!anchor.current) return;
@@ -220,10 +203,7 @@ export function InkLayer({
         // Un trazo sin ancla no se guarda: mejor perder un garabato suelto que
         // guardar tinta que no sabe a qué se refiere.
         if (!held || captured.length < 2) return;
-        setPending({
-            path: buildPath(captured.map(toCanvas)),
-            baseline: notes.reduce((total, note) => total + note.strokes.length, 0),
-        });
+        setPending({ path: buildPath(captured.map(toCanvas)), signature });
         onFinishStroke(held.offset, {
             points: captured.map((p) => toNoteSpace(p, held.rect, bodySize)),
             width: STROKE_WIDTH_EM,
@@ -277,7 +257,7 @@ export function InkLayer({
                     ));
                 })}
 
-                {pending && strokeCount <= pending.baseline ? (
+                {pending && showsBridge(pending.signature, signature) ? (
                     <Path
                         path={pending.path}
                         color={inkColor(color, tokens)}

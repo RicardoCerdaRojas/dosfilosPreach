@@ -6,6 +6,7 @@ import type { InkColor, InkNote, InkStroke } from '@dosfilos/domain';
 import { SermonSection } from '@/core/utils/sermonSections';
 import { AnnotationRepositoryImpl } from '@/data/repositories/annotation.repository.impl';
 import type { AnchorRect } from '@/presentation/components/preach/InkLayer';
+import { withoutStroke } from '@/presentation/components/preach/inkGeometry';
 
 const repository = new AnnotationRepositoryImpl();
 
@@ -152,24 +153,19 @@ export function useInkNotes(
     });
 
     /**
-     * Borra UN trazo. Si era el último de la nota, se va la nota.
+     * Borra UN trazo —el trazo mismo, no su número—. Si era el último de la
+     * nota, se va la nota.
      *
      * Antes la goma se llevaba la nota entera —todo lo escrito sobre ese
      * párrafo— por tocar una sola raya. Una goma borra lo que toca.
      */
     const erase = useMutation({
-        onMutate: ({ noteId, index }: { noteId: string; index: number }) => {
+        onMutate: ({ noteId, stroke }: { noteId: string; stroke: InkStroke }) => {
             queryClient.setQueryData<InkNote[]>(['ink', sermonId], (current) =>
-                (current ?? [])
-                    .map((n) =>
-                        n.id === noteId
-                            ? { ...n, strokes: n.strokes.filter((_, i) => i !== index) }
-                            : n,
-                    )
-                    .filter((n) => n.strokes.length > 0),
+                withoutStroke(current ?? [], noteId, stroke),
             );
         },
-        mutationFn: async ({ noteId }: { noteId: string; index: number }) => {
+        mutationFn: async ({ noteId }: { noteId: string; stroke: InkStroke }) => {
             const remaining =
                 queryClient
                     .getQueryData<InkNote[]>(['ink', sermonId])
@@ -194,7 +190,7 @@ export function useInkNotes(
         setPenColor,
         eraser,
         setEraser,
-        eraseStroke: (noteId: string, index: number) => erase.mutate({ noteId, index }),
+        eraseStroke: (noteId: string, stroke: InkStroke) => erase.mutate({ noteId, stroke }),
         rememberBlock,
         anchorAt,
         anchorRectFor,

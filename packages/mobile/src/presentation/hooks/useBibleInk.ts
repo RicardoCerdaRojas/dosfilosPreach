@@ -12,6 +12,7 @@ import type { InkColor, InkStroke } from '@dosfilos/domain';
 
 import { getFirebaseAuth, getFirebaseDb } from '@/data/sources/firebase.source';
 import type { AnchorRect } from '@/presentation/components/preach/InkLayer';
+import { withoutStroke } from '@/presentation/components/preach/inkGeometry';
 
 /**
  * Una nota manuscrita sobre el texto bíblico, anclada a un VERSÍCULO.
@@ -154,18 +155,12 @@ export function useBibleInk(bookId: string, chapter: number, layoutKey: string) 
 
     /** Quita un trazo; si era el último, el documento se va con él. */
     const erase = useMutation({
-        onMutate: ({ id, index }: { id: string; index: number }) => {
+        onMutate: ({ id, stroke }: { id: string; stroke: InkStroke }) => {
             queryClient.setQueryData<BibleInkNote[]>(['bibleInk'], (current) =>
-                (current ?? [])
-                    .map((n) =>
-                        n.id === id
-                            ? { ...n, strokes: n.strokes.filter((_, i) => i !== index) }
-                            : n,
-                    )
-                    .filter((n) => n.strokes.length > 0),
+                withoutStroke(current ?? [], id, stroke),
             );
         },
-        mutationFn: async ({ id }: { id: string; index: number }) => {
+        mutationFn: async ({ id }: { id: string; stroke: InkStroke }) => {
             const ref = inkRef();
             if (!ref) return;
             const remaining =
@@ -198,6 +193,6 @@ export function useBibleInk(bookId: string, chapter: number, layoutKey: string) 
         anchorAt,
         anchorRectFor,
         addStroke: (verse: number, stroke: InkStroke) => append.mutate({ verse, stroke }),
-        eraseStroke: (id: string, index: number) => erase.mutate({ id, index }),
+        eraseStroke: (id: string, stroke: InkStroke) => erase.mutate({ id, stroke }),
     };
 }
