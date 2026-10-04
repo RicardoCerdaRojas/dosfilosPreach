@@ -133,22 +133,37 @@ export function PreachSettingsSheet({
             {/* Cajón lateral derecho, no hoja inferior. En una tablet el ancho
                 sobra y el alto no: una hoja desde abajo tapaba justo el tablero
                 y dejaba media pantalla vacía a los costados. */}
-            <Pressable className="flex-1 flex-row bg-black/40" onPress={onClose}>
-                <View className="flex-1" />
+            {/* El fondo y el cajón son HERMANOS. Antes el cajón era un
+                Pressable dentro del fondo, y el Pressable se quedaba con el
+                toque: la lista no se desplazaba y lo de abajo («Citas
+                plegadas») quedaba fuera de alcance en el iPad. Layout por
+                estilo, no por clase (trampa de NativeWind registrada). */}
+            <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)' }}>
                 <Pressable
-                    className="px-6 pt-6"
-                    onPress={() => undefined}
+                    style={{ flex: 1 }}
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common:close')}
+                    testID="settings-backdrop"
+                />
+                <View
                     style={{
                         backgroundColor: tokens.surface,
                         width: 420,
                         maxWidth: '85%',
                         height: '100%',
-                        paddingBottom: insets.bottom + 20,
+                        paddingTop: 24,
+                        paddingHorizontal: 24,
                         borderLeftWidth: 1,
                         borderLeftColor: tokens.border,
                     }}
                 >
-                    <ScrollView showsVerticalScrollIndicator={false}>
+                    <ScrollView
+                        testID="settings-scroll"
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+                        showsVerticalScrollIndicator
+                    >
                     <Text
                         style={{ color: tokens.textSecondary }}
                         className="font-lexend-semibold text-xs uppercase tracking-widest mb-2"
@@ -692,8 +707,8 @@ export function PreachSettingsSheet({
                         </>
                     ) : null}
                     </ScrollView>
-                </Pressable>
-            </Pressable>
+                </View>
+            </View>
         </Modal>
     );
 }
