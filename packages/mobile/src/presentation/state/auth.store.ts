@@ -29,6 +29,8 @@ interface AuthState {
     signInWithApple: (identityToken: string, rawNonce: string) => Promise<void>;
     /** `force`: salir aunque haya escrituras sin subir (el pastor lo confirmó). */
     signOut: (options?: { force?: boolean }) => Promise<void>;
+    /** Pide borrar la cuenta y deja la tablet limpia. Devuelve la fecha del borrado definitivo. */
+    deleteAccount: () => Promise<{ purgeAfter: string; graceDays: number }>;
     resetPassword: (email: string) => Promise<void>;
     setUser: (user: User | null) => void;
 }
@@ -81,6 +83,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             useReaderSettingsStore.getState().resetPersonal();
             set({ user: null });
         }
+    },
+    deleteAccount: async () => {
+        const result = await authRepository.deleteAccount();
+        // La cuenta ya está desactivada en el servidor: lo pendiente no va a
+        // subir nunca, así que se sale sin esperar.
+        await get().signOut({ force: true });
+        return result;
     },
     resetPassword: async (email) => {
         await authRepository.sendPasswordResetEmail(email);

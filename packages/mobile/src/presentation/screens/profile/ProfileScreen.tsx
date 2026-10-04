@@ -11,6 +11,8 @@ import { DELIVERY_SIZE } from '@/core/theme/typography';
 import { READING_MODES, READING_MODE_LABEL_KEYS } from '@/core/theme/readingModes';
 import type { ReadingMode } from '@/core/theme/readingModes';
 import { PendingWritesError, useAuthStore } from '@/presentation/state/auth.store';
+import { ACCOUNT_DELETION_GRACE_DAYS } from '@/core/config/features';
+import { LegalLinks } from '@/presentation/components/LegalLinks';
 import { useThemeStore, ThemeMode } from '@/presentation/state/theme.store';
 import { useLanguageStore, Language } from '@/presentation/state/language.store';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
@@ -34,9 +36,43 @@ export default function ProfileScreen() {
     const insets = useSafeAreaInsets();
     const theme = useAppTheme();
     const { gutter } = useLayout();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
-    const { user, signOut } = useAuthStore();
+    const { user, signOut, deleteAccount } = useAuthStore();
+    const [deleting, setDeleting] = React.useState(false);
+
+    /**
+     * Borrar la cuenta (B2). Dos pasos a propósito: es irreversible pasado el
+     * plazo, y un toque no puede bastar. El texto dice qué pasa ahora, qué
+     * pasa después y cómo arrepentirse.
+     */
+    const confirmDelete = () =>
+        Alert.alert(t('common:delete_account_title'), t('common:delete_account_body', { days: ACCOUNT_DELETION_GRACE_DAYS }), [
+            { text: t('common:cancel'), style: 'cancel' },
+            {
+                text: t('common:delete_account_confirm'),
+                style: 'destructive',
+                onPress: async () => {
+                    setDeleting(true);
+                    try {
+                        const { purgeAfter } = await deleteAccount();
+                        const date = new Date(purgeAfter).toLocaleDateString(i18n.language, {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                        });
+                        Alert.alert(t('common:delete_account_done_title'), t('common:delete_account_done_body', { date }));
+                    } catch (error) {
+                        // Cancelar el diálogo de Apple también llega acá: no es un error.
+                        if ((error as { code?: string })?.code !== 'ERR_REQUEST_CANCELED') {
+                            Alert.alert(t('common:delete_account_title'), t('common:delete_account_failed'));
+                        }
+                    } finally {
+                        setDeleting(false);
+                    }
+                },
+            },
+        ]);
     const { themeMode, setThemeMode } = useThemeStore();
     const { language, setLanguage } = useLanguageStore();
     const readingMode = useReaderSettingsStore((s) => s.readingMode);
@@ -275,6 +311,23 @@ export default function ProfileScreen() {
                             {t('common:logout')}
                         </Text>
                     </TouchableOpacity>
+
+                    {/* Borrar la cuenta (Apple 5.1.1(v), política de Play). Discreto,
+                        no escondido: se encuentra donde se busca. */}
+                    <TouchableOpacity
+                        onPress={confirmDelete}
+                        disabled={deleting}
+                        accessibilityRole="button"
+                        className="self-center mt-5 px-4 py-2"
+                    >
+                        <Text style={{ color: theme.textMuted, fontSize: 14 }} className="font-lexend underline">
+                            {deleting ? t('common:delete_account_working') : t('common:delete_account')}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <View className="mt-6">
+                        <LegalLinks />
+                    </View>
 
                     <View className="items-center mt-10">
                         <SectionLabel theme={theme}>Dos Filos Preach</SectionLabel>

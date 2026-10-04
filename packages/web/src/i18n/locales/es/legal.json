@@ -1,0 +1,106 @@
+{
+    "back": "Volver",
+    "deleteAccount": {
+        "title": "Eliminar tu cuenta de Dos Filos Preach",
+        "lead": "Puedes pedir que se borre tu cuenta y todos tus datos en cualquier momento.",
+        "howTitle": "Cómo pedirlo",
+        "how": [
+            "<strong>Desde la app para tablet:</strong> Perfil → «Eliminar mi cuenta».",
+            "<strong>Por correo:</strong> escribe a <mail>privacy@dosfilos.app</mail> desde el correo de tu cuenta."
+        ],
+        "afterTitle": "Qué pasa después",
+        "after": [
+            "<strong>En el momento:</strong> tu cuenta se desactiva, se cierran tus sesiones y se cancela tu suscripción.",
+            "<strong>A los 7 días:</strong> se borran por completo tus sermones, series y planes, estudios y trabajos exegéticos, tu biblioteca y sus archivos, tus marcas, tinta y registros de predicación, y los datos de tu cuenta. Ese plazo existe para poder deshacer un error: si cambias de opinión, escribe al correo de arriba antes de que termine.",
+            "<strong>Lo que se conserva:</strong> que la cuenta se borró y cuándo (sin tu correo), los registros de auditoría que la seguridad del servicio obliga a guardar, y los comprobantes de pago que conserva el procesador de pagos por obligación legal."
+        ]
+    },
+    "privacy": {
+        "draft": "Borrador — pendiente de revisión legal.",
+        "title": "Política de Privacidad",
+        "updated": "Última actualización: (pendiente)",
+        "sections": [
+            {
+                "title": "1. Información que Recopilamos",
+                "items": [
+                    "<strong>Cuenta:</strong> nombre, correo electrónico, datos de suscripción.",
+                    "<strong>Contenido subido:</strong> documentos que usted sube a su biblioteca personal.",
+                    "<strong>Consultas:</strong> preguntas que hace a los tutores IA y respuestas generadas.",
+                    "<strong>Uso:</strong> métricas de uso (páginas procesadas, consultas por mes) para aplicar límites de plan.",
+                    "<strong>Datos técnicos:</strong> dirección IP, navegador, logs mínimos necesarios para operación y seguridad."
+                ]
+            },
+            {
+                "title": "2. Cómo Usamos su Información",
+                "items": [
+                    "Proveer el servicio (procesamiento de documentos, generación de respuestas).",
+                    "Facturación y soporte al cliente.",
+                    "Mejorar la calidad del servicio (métricas agregadas, no contenido individual).",
+                    "Cumplimiento legal cuando sea requerido por ley."
+                ]
+            },
+            {
+                "title": "3. Aislamiento del Contenido",
+                "intro": "Su biblioteca personal es <strong>privada y aislada</strong>. Técnicamente:",
+                "items": [
+                    "Todo contenido está etiquetado con su <code>userId</code> y todas las consultas filtran por este identificador.",
+                    "Otros usuarios de la Plataforma no pueden ver, buscar ni acceder a su biblioteca.",
+                    "El equipo de Dos Filos no accede al contenido de los usuarios excepto cuando sea estrictamente necesario para soporte técnico que usted solicite explícitamente."
+                ]
+            },
+            {
+                "title": "4. Entrenamiento de Modelos de IA",
+                "intro": "<strong>Dos Filos NO entrena modelos de inteligencia artificial con el contenido de los usuarios.</strong> Los modelos utilizados (Google Gemini) son pre-entrenados por sus respectivos proveedores; Dos Filos los consume vía API y no les envía datos de usuario para entrenamiento."
+            },
+            {
+                "title": "5. Proveedores Terceros",
+                "intro": "Dos Filos utiliza los siguientes proveedores de servicios:",
+                "items": [
+                    "<strong>Google Cloud / Firebase:</strong> almacenamiento, autenticación, funciones serverless.",
+                    "<strong>Google Gemini API:</strong> procesamiento de lenguaje natural. Google se compromete por API a no retener ni entrenar con inputs de clientes de pago.",
+                    "<strong>LlamaParse (LlamaIndex):</strong> extracción estructurada de PDFs.",
+                    "<strong>Stripe:</strong> procesamiento de pagos. No almacenamos datos de tarjetas de crédito."
+                ],
+                "outro": "Cada proveedor tiene sus propias políticas de privacidad. Al usar el Servicio usted acepta también el procesamiento de datos por estos proveedores dentro del alcance necesario."
+            },
+            {
+                "title": "6. Retención y Eliminación",
+                "intro": "Su contenido permanece almacenado mientras su cuenta esté activa. Al eliminar un documento individual, éste se borra permanentemente junto con sus embeddings y chunks asociados. Al eliminar su cuenta, todo su contenido se borra a los 7 días (ver sección 9), salvo requisitos legales específicos de retención."
+            },
+            {
+                "title": "7. Derechos del Usuario",
+                "intro": "Usted tiene derecho a:",
+                "items": [
+                    "Acceder a los datos que tenemos sobre usted.",
+                    "Rectificar datos inexactos.",
+                    "Solicitar la eliminación de su cuenta y todo su contenido.",
+                    "Exportar su contenido en un formato estándar.",
+                    "Presentar una queja ante la autoridad de protección de datos aplicable."
+                ]
+            },
+            {
+                "title": "8. Aplicación para tablet (Dos Filos Preach)",
+                "intro": "La aplicación para tablet usa la misma cuenta y los mismos datos que la web. Además:",
+                "items": [
+                    "<strong>Inicio de sesión con Google o Apple:</strong> recibimos su nombre y correo electrónico (Apple puede entregarnos un correo de reenvío) para crear o abrir su cuenta.",
+                    "<strong>Lo que usted crea en la tablet:</strong> subrayados y marcas, tinta, notas y el registro de sus predicaciones (fecha, duración y, si lo escribe, el lugar). Se guardan en su cuenta.",
+                    "<strong>Copias en el dispositivo:</strong> los sermones que usted prepara para usar sin conexión se guardan en la tablet. Se borran al cerrar sesión.",
+                    "<strong>Datos técnicos:</strong> una verificación de que la solicitud viene de la aplicación legítima (App Check) y reportes de fallos sin datos personales.",
+                    "No mostramos publicidad ni rastreamos su actividad en otras aplicaciones."
+                ]
+            },
+            {
+                "title": "9. Eliminar su cuenta",
+                "intro": "Puede pedir que se borre su cuenta desde la aplicación (Perfil → «Eliminar mi cuenta») o como se explica en <page>esta página</page>. La cuenta se desactiva en el momento y sus datos se borran por completo a los 7 días."
+            },
+            {
+                "title": "10. Cookies",
+                "intro": "Usamos cookies esenciales para mantener la sesión del usuario y cookies analíticas agregadas (sin identificar individuos) para mejorar el servicio."
+            },
+            {
+                "title": "11. Contacto",
+                "intro": "Para consultas sobre privacidad: <mail>privacy@dosfilos.app</mail>"
+            }
+        ]
+    }
+}

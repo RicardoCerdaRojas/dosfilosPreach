@@ -60,5 +60,6 @@ export type TranslationNamespace =
     | 'wordStudy'
     | 'studyDepth'
     | 'guidedSermon'
+    | 'legal'
     | 'settings';
 

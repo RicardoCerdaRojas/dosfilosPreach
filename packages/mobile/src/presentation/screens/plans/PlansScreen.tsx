@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -11,7 +11,6 @@ import { usePlanBoard, type PlanBoard } from '@/presentation/hooks/usePlanBoard'
 import { Card, Chip, EmptyState, SectionLabel, Skeleton } from '@/presentation/components/ui/kit';
 
 /** Dónde termina de escribirse un sermón: la tablet no genera, acompaña. */
-const WEB_PLAN_URL = 'https://app.preach.dosfilos.com/dashboard/plans';
 
 /** Ancho de la lista de planes en panel dividido. */
 const LIST_PANE = 300;
@@ -112,21 +111,6 @@ export default function PlansScreen() {
                     theme={theme}
                     title={t('plans:empty_title')}
                     hint={t('plans:empty_hint')}
-                    action={
-                        <TouchableOpacity
-                            onPress={() => Linking.openURL(WEB_PLAN_URL)}
-                            accessibilityRole="button"
-                            className="px-6 py-3 rounded-full active:opacity-85"
-                            style={{ backgroundColor: theme.accent }}
-                        >
-                            <Text
-                                style={{ color: theme.onAccent }}
-                                className="font-lexend-semibold"
-                            >
-                                {t('plans:open_web')}
-                            </Text>
-                        </TouchableOpacity>
-                    }
                 />
             </View>
         );
@@ -425,32 +409,25 @@ function PlanDetail({ plan, standalone }: { plan: PlanBoard; standalone: boolean
                                     ) : (
                                         // No se apaga y se calla: se dice dónde
                                         // se termina. La tablet no escribe
-                                        // sermones, los predica.
-                                        <TouchableOpacity
-                                            onPress={() =>
-                                                Linking.openURL(`${WEB_PLAN_URL}/${plan.id}`)
-                                            }
-                                            accessibilityRole="button"
-                                            className="flex-row items-center px-5 py-2.5 rounded-full"
-                                            style={{
-                                                borderWidth: 1,
-                                                borderColor: theme.borderStrong,
-                                            }}
-                                        >
+                                        // sermones, los predica. Sin enlace a
+                                        // la web: para una cuenta sin plan
+                                        // puede terminar en una página de pago,
+                                        // y las tiendas no lo permiten (B1).
+                                        <View className="flex-row items-center px-1 py-2.5">
                                             <MaterialIcons
-                                                name="open-in-new"
+                                                name="laptop"
                                                 size={16}
-                                                color={theme.textSecondary}
+                                                color={theme.textMuted}
                                             />
                                             <Text
-                                                style={{ color: theme.textSecondary, fontSize: 14 }}
-                                                className="font-lexend-semibold ml-2"
+                                                style={{ color: theme.textMuted, fontSize: 14 }}
+                                                className="font-lexend ml-2"
                                             >
                                                 {item.status === 'in_progress'
-                                                    ? t('plans:finish_on_web')
-                                                    : t('plans:start_on_web')}
+                                                    ? t('plans:finish_on_computer')
+                                                    : t('plans:start_on_computer')}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </View>
                                     )}
                                 </View>
                             </Card>

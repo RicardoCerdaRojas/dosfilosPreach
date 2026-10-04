@@ -3,6 +3,9 @@ import { GestureResponderEvent, View } from 'react-native';
 import { Canvas, Path, Skia, type SkPath } from '@shopify/react-native-skia';
 import { useSharedValue } from 'react-native-reanimated';
 import type { InkColor, InkStroke } from '@dosfilos/domain';
+import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
+
+import { ReadingModeTokens } from '@/core/theme/readingModes';
 
 /**
  * Lo ÚNICO que la capa necesita de una nota: su id y sus trazos.
@@ -16,9 +19,6 @@ export interface InkDrawable {
     id: string;
     strokes: InkStroke[];
 }
-import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
-
-import { ReadingModeTokens } from '@/core/theme/readingModes';
 
 /** Dónde está en pantalla el párrafo al que se ancla una nota. */
 export interface AnchorRect {

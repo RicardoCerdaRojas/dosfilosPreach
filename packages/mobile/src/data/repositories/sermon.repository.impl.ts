@@ -14,6 +14,7 @@ import { Sermon, SermonSummary } from '@/domain/models/sermon.model';
 import { SermonRepository } from '@/domain/repositories/sermon.repository';
 import { getFirebaseDb } from '@/data/sources/firebase.source';
 import { reportWriteFailure } from '@/core/errors/writeFailures';
+import { appCheckReady } from '@/core/config/appCheck';
 import { toFirestoreLog } from './preachingLogMapping';
 
 /** Item crudo del callable getSermonsListSummary (fechas en milisegundos). */
@@ -41,6 +42,7 @@ const toDate = (v: unknown): Date | undefined => {
 
 export class SermonRepositoryImpl implements SermonRepository {
     async getPublishedSummaries(): Promise<SermonSummary[]> {
+        await appCheckReady();
         const callable = httpsCallable<{ status: string }, { sermons: RawSummary[] }>(
             getFunctions(getApp()),
             'getSermonsListSummary',

@@ -14,6 +14,7 @@ import { useAddPreachingLog, useRemovePreachingLog, useSermon } from '@/presenta
 import { useUIStore } from '@/presentation/state/ui.store';
 import { useBriefcase, usePrepareBriefcase, useRemoveBriefcase } from '@/presentation/hooks/useSermonBriefcase';
 import { OfflineNotice } from '@/presentation/components/OfflineNotice';
+import { TABLET_EDITING } from '@/core/config/features';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
 import { Chip, EmptyState, SectionLabel, Skeleton } from '@/presentation/components/ui/kit';
@@ -417,22 +418,25 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                 }}
             >
                 {/* Editar vive acá, en la vista de estudio — no en el púlpito.
-                    Predicando no se corrige: se predica. */}
-                <TouchableOpacity
-                    onPress={() => router.push(`/sermon/edit/${sermon.id}`)}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('sermons:edit')}
-                    className="flex-row items-center px-6 py-3.5 rounded-full mr-3 active:opacity-80"
-                    style={{ borderWidth: 1, borderColor: theme.borderStrong }}
-                >
-                    <MaterialIcons name="edit" size={18} color={theme.textSecondary} />
-                    <Text
-                        style={{ color: theme.textPrimary, fontSize: 15 }}
-                        className="font-lexend-semibold ml-2"
+                    Predicando no se corrige: se predica. Apagado en la v1
+                    (TABLET_EDITING, decisión D5). */}
+                {TABLET_EDITING ? (
+                    <TouchableOpacity
+                        onPress={() => router.push(`/sermon/edit/${sermon.id}`)}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('sermons:edit')}
+                        className="flex-row items-center px-6 py-3.5 rounded-full mr-3 active:opacity-80"
+                        style={{ borderWidth: 1, borderColor: theme.borderStrong }}
                     >
-                        {t('sermons:edit')}
-                    </Text>
-                </TouchableOpacity>
+                        <MaterialIcons name="edit" size={18} color={theme.textSecondary} />
+                        <Text
+                            style={{ color: theme.textPrimary, fontSize: 15 }}
+                            className="font-lexend-semibold ml-2"
+                        >
+                            {t('sermons:edit')}
+                        </Text>
+                    </TouchableOpacity>
+                ) : null}
 
                 <TouchableOpacity
                     onPress={() => router.push(`/preach/${sermon.id}`)}

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
-    Linking,
     Platform,
     Text,
     TextInput,
@@ -16,13 +15,15 @@ import { useAppTheme } from '@/core/theme/appTheme';
 import { useAuthStore } from '@/presentation/state/auth.store';
 import { useUIStore } from '@/presentation/state/ui.store';
 import { getGoogleIdToken } from '@/core/config/socialAuth';
+import { LegalLinks } from '@/presentation/components/LegalLinks';
 
 /**
  * El registro NO ocurre en la app: la política es payment-first en la web
- * (M-08). Google y Apple son SOLO login — abren la sesión de una cuenta que
- * ya existe.
+ * (M-08). Ojo: Google y Apple NO son sólo login — con una cuenta nueva,
+ * `signInWithCredential` la CREA. Por eso la app ofrece borrar la cuenta
+ * (Perfil) y no enlaza al registro: esa página cobra, y las tiendas no
+ * permiten llevar a pagar fuera de ellas (B1, decisión D3 del fundador).
  */
-const WEB_REGISTER_URL = 'https://app.preach.dosfilos.com/register';
 
 /**
  * La puerta de entrada.
@@ -275,24 +276,10 @@ export const LoginScreen = () => {
                     </Text>
                 </TouchableOpacity>
 
-                {!resetMode && (
-                    <TouchableOpacity
-                        onPress={() => Linking.openURL(WEB_REGISTER_URL)}
-                        className="self-center mt-8"
-                        disabled={localLoading}
-                        accessibilityRole="button"
-                    >
-                        <Text
-                            style={{ color: theme.textSecondary, fontSize: 14 }}
-                            className="font-lexend text-center"
-                        >
-                            {t('auth:no_account')}{' '}
-                            <Text style={{ color: theme.accent }} className="font-lexend-semibold">
-                                {t('auth:register_on_web')}
-                            </Text>
-                        </Text>
-                    </TouchableOpacity>
-                )}
+                <View className="mt-10">
+                    <LegalLinks prefix={t('auth:legal_prefix')} />
+                </View>
+
             </View>
         </View>
     );

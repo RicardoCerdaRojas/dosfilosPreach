@@ -107,3 +107,6 @@ scripts/extraction-bakeoff/rates.json
 # incluido JS minificado que eslint intenta analizar y produce ~1.000 errores.
 # Sin esta regla, cualquier `git add -A` después de correr la app los versiona.
 packages/web/public/pdfjs/
+
+# Clave de la cuenta de servicio de Google Play (eas submit). Nunca al repo.
+packages/mobile/play-service-account.json

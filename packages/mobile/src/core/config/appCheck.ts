@@ -29,7 +29,25 @@ import {
  * interna, nunca para producción. El token NO se commitea: entra por variable
  * de entorno de EAS, porque quien lo tenga pasa App Check.
  */
-export async function initAppCheck(): Promise<void> {
+let ready: Promise<void> | null = null;
+
+/**
+ * Configura App Check UNA vez y devuelve la misma promesa a quien la pida.
+ * La raíz lo lanza al arrancar sin esperar; las llamadas al servidor esperan
+ * `appCheckReady()` antes de salir (B4): la primera llamada competía con la
+ * configuración y podía salir con el token de relleno.
+ */
+export function initAppCheck(): Promise<void> {
+    if (!ready) ready = configureAppCheck();
+    return ready;
+}
+
+/** Espera la configuración (nunca falla: un fallo ya quedó en el log). */
+export function appCheckReady(): Promise<void> {
+    return (ready ?? initAppCheck()).catch(() => undefined);
+}
+
+async function configureAppCheck(): Promise<void> {
     const debugToken = process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN;
     const forceDebug = process.env.EXPO_PUBLIC_APPCHECK_DEBUG === '1';
     const useDebug = __DEV__ || forceDebug;

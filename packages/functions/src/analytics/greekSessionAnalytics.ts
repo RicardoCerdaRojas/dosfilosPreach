@@ -5,6 +5,7 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { isAccountBeingPurged } from '../account/deletionState';
 
 const db = admin.firestore();
 
@@ -118,6 +119,8 @@ export const onGreekSessionDeleted = functions.firestore
     .document('greek_sessions/{sessionId}')
     .onDelete(async (snap, context) => {
         const session = snap.data();
+        // Borrar la cuenta borra sus sesiones: no se recrea su analítica (B2).
+        if (await isAccountBeingPurged(session?.userId)) return;
         const batch = db.batch();
         const userId = session.userId;
         const today = getTodayString();

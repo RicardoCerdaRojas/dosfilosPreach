@@ -208,6 +208,8 @@ export const examenCorazon = onCall(
             try {
                 await cacheRef.set({
                     estudioId,
+                    // El dueño: sin él, borrar la cuenta no lo encontraba (B2).
+                    userId: request.auth?.uid ?? null,
                     promptVersion: HEART_PROMPT_VERSION,
                     examenes,
                     createdAt: FieldValue.serverTimestamp(),

@@ -5,6 +5,7 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { isAccountBeingPurged } from '../account/deletionState';
 
 const db = admin.firestore();
 
@@ -137,6 +138,8 @@ export const onSermonDeleted = functions.firestore
     .document('sermons/{sermonId}')
     .onDelete(async (snap, context) => {
         const sermon = snap.data();
+        // Borrar la cuenta borra sus sermones: no se recrea su analítica (B2).
+        if (await isAccountBeingPurged(sermon?.userId)) return;
 
         // Only count sermons with wizardProgress
         if (!sermon.wizardProgress) {

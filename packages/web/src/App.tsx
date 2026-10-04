@@ -28,6 +28,7 @@ import { PublicSermonPage } from '@/pages/public/sermon';
 import { PricingPage } from '@/pages/public/pricing';
 import { TermsOfServicePage } from '@/pages/legal/TermsOfService';
 import { PrivacyPolicyPage } from '@/pages/legal/PrivacyPolicy';
+import { DeleteAccountPage } from '@/pages/legal/DeleteAccount';
 import { DMCAPolicyPage } from '@/pages/legal/DMCAPolicy';
 import { CreditsPage } from '@/pages/legal/Credits';
 
@@ -202,6 +203,8 @@ function App() {
           {/* Legal pages (publicly accessible — linked from upload consent modal and footer) */}
           <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          {/* Borrar la cuenta: URL pública que pide Google Play (B2). */}
+          <Route path="/delete-account" element={<DeleteAccountPage />} />
           <Route path="/dmca" element={<DMCAPolicyPage />} />
           <Route path="/credits" element={<CreditsPage />} />
 

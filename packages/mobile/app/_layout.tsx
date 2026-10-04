@@ -22,27 +22,27 @@ import { useColorScheme } from 'nativewind';
 import 'react-native-reanimated';
 
 
+import { useTranslation } from 'react-i18next';
+
 import { AppQueryClientProvider } from '@/core/providers/query-client.provider';
 import { useThemeStore } from '@/presentation/state/theme.store';
 import { useAuthStore } from '@/presentation/state/auth.store';
+import { useLanguageStore } from '@/presentation/state/language.store';
 import { ToastNotification } from '@/presentation/components/ui/ToastNotification';
-import { Colors } from '@/constants/theme';
+import { APP_DARK, APP_LIGHT } from '@/core/theme/appTheme';
+import { initAppCheck } from '@/core/config/appCheck';
+import { initCrashReporting } from '@/core/config/crashReporting';
+import { configureGoogleSignIn } from '@/core/config/socialAuth';
+import '@/core/i18n';
 import '../global.css';
 
-// Initialize i18n
-import '@/core/i18n';
-
-// App Check antes de cualquier llamada al backend (M-04)
-import { initAppCheck } from '@/core/config/appCheck';
+// Arranque, en este orden y antes de montar nada:
+// - App Check antes de cualquier llamada al backend (M-04).
+// - Reporte de fallos (B5): sólo en builds publicados, sin datos personales.
+// - Google Sign-In nativo (M-08): configurado antes de que se monte el login.
 initAppCheck().catch((err) => console.error('[appCheck] init failed:', err));
-
-// Google Sign-In nativo (M-08) — configurar antes de que se monte el login
-import { configureGoogleSignIn } from '@/core/config/socialAuth';
+initCrashReporting().catch((err) => console.error('[crashlytics] init failed:', err));
 configureGoogleSignIn();
-import { useLanguageStore } from '@/presentation/state/language.store';
-import { useTranslation } from 'react-i18next';
-
-import { APP_DARK, APP_LIGHT } from '@/core/theme/appTheme';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -83,7 +83,7 @@ const CustomDefaultTheme = {
 
 function RootLayoutNav() {
   const deviceColorScheme = useDeviceColorScheme();
-  const { colorScheme, setColorScheme } = useColorScheme();
+  const { setColorScheme } = useColorScheme();
   const themeMode = useThemeStore((state) => state.themeMode);
   const { language } = useLanguageStore();
   const { i18n } = useTranslation();
@@ -106,7 +106,7 @@ function RootLayoutNav() {
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
     }
-  }, [language]);
+  }, [language, i18n]);
 
   const isDark = useMemo(() => {
     if (themeMode === 'system') return deviceColorScheme === 'dark';
@@ -116,7 +116,7 @@ function RootLayoutNav() {
   // Sync our theme store with NativeWind
   useEffect(() => {
     setColorScheme(isDark ? 'dark' : 'light');
-  }, [isDark]);
+  }, [isDark, setColorScheme]);
 
   useEffect(() => {
     // Si las fuentes fallan (p.ej. asset no resoluble en dev) NO se bloquea el
@@ -140,7 +140,7 @@ function RootLayoutNav() {
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [user, isLoading, segments]);
+  }, [user, isLoading, segments, router]);
 
   if (isLoading) {
     return null; // or a dedicated loading component

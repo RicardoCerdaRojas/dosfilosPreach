@@ -7,6 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { INK_COLORS } from '@dosfilos/domain';
 import type { HighlightColor, MarkStyle } from '@dosfilos/domain';
+import { TABLET_EDITING } from '@/core/config/features';
 
 import { READING_MODES } from '@/core/theme/readingModes';
 import { FACE_CLASS } from '@/core/theme/typography';
@@ -531,11 +532,12 @@ export default function BibleReaderScreen() {
                 onPick={applyMark}
                 onRemove={removeMark}
                 onClose={closePopover}
-                extraAction={{
-                    icon: 'post-add',
-                    label: t('bible:to_sermon'),
-                    onPress: copyToSermon,
-                }}
+                extraAction={
+                    // Agrega al sermón PUBLICADO: apagado en la v1 (D5).
+                    TABLET_EDITING
+                        ? { icon: 'post-add', label: t('bible:to_sermon'), onPress: copyToSermon }
+                        : undefined
+                }
             />
 
             <BibleSettingsSheet

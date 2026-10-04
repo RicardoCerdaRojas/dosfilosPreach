@@ -19,6 +19,8 @@ export type AdminAuditAction =
     | 'user.set_feature_flags'
     | 'user.impersonate'
     | 'user.stop_impersonate'
+    | 'user.self_delete_requested'
+    | 'user.self_delete_completed'
     | 'core_library.ingest'
     | 'core_library.seed_ingest'
     | 'core_library.tag_doctrine_levels'

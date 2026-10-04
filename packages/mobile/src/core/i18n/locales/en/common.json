@@ -31,5 +31,16 @@
     "undo": "Undo",
     "pending_sync_title": "Unsynced changes",
     "pending_sync_body": "Preaching logs, marks or ink haven't uploaded yet. If you sign out now they'll be lost. Connect to the internet and wait a few seconds.",
-    "logout_anyway": "Sign out anyway"
+    "logout_anyway": "Sign out anyway",
+    "delete_account": "Delete my account",
+    "delete_account_working": "Deleting…",
+    "delete_account_title": "Delete your account?",
+    "delete_account_body": "Your account is deactivated now and your subscription is cancelled. In {{days}} days your sermons, studies, library, marks and all your data are permanently deleted and can't be recovered. If you change your mind before then, write to privacy@dosfilos.app.",
+    "delete_account_confirm": "Delete account",
+    "delete_account_done_title": "Account deactivated",
+    "delete_account_done_body": "Your data will be permanently deleted on {{date}}.",
+    "delete_account_failed": "The account couldn't be deleted. Check your connection and try again.",
+    "terms": "Terms",
+    "privacy": "Privacy Policy",
+    "and": "and"
 }

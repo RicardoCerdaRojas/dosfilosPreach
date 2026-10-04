@@ -9,15 +9,13 @@ estructurales (M-01..M-09) y el roadmap F0–F4 están ahí.
 - **Bundle id / package**: `com.dosfilos.preach` (iOS y Android)
 - **Plataformas**: iOS y Android desde F0. Soporte e-ink de primera clase (BOOX) — ver M-09.
 
-## Estado (F0 — cimientos)
+## Estado
 
-Fase F0 en curso. Base actual: Expo SDK 52 / React Native 0.76 (herencia del fork de
-febrero 2026). Pendiente en F0: upgrade a Expo 56, `@react-native-firebase` + App Check,
-Metro configurado para el workspace (`@dosfilos/domain` importable), tokens de tema con 5
-modos (incluido tinta electrónica) y CI job mobile.
-
-Qué quedó del fork y qué se eliminó: ver §3 del plan. Los módulos Eventos, Tutor, Study y
-Donate fueron eliminados en F0; el módulo Biblia y el patrón de auth se rescatan.
+Expo SDK 57, React Native 0.86, `@react-native-firebase` 26 con App Check. F0–F2 del plan
+están hechos; la fase en curso es **Púlpito premium**
+([`docs/app-mobile/FASE_PULPITO_PREMIUM_2026-10.md`](../../docs/app-mobile/FASE_PULPITO_PREMIUM_2026-10.md)):
+confiabilidad del atril, requisitos de tienda y lo que la vuelve premium antes de publicarla.
+La v1 en tiendas es **sólo tablet**.
 
 ## Desarrollo
 
@@ -26,11 +24,43 @@ Donate fueron eliminados en F0; el módulo Biblia y el patrón de auth se rescat
 npm run mobile            # expo start
 npm run mobile:ios        # build + run iOS
 npm run mobile:android    # build + run Android
+
+# desde packages/mobile
+npx jest                  # pruebas (también corren en CI)
+npx tsc --noEmit -p tsconfig.json
+npx expo lint
 ```
 
-> **Nota**: a partir de la adopción de `@react-native-firebase` + App Check (F0) la app no
-> corre en Expo Go: se usan dev builds (EAS). Los debug tokens de App Check para
-> dispositivos internos se documentarán aquí cuando se provisionen.
+La app no corre en Expo Go: usa dev builds (EAS). La pantalla del atril sin sesión se puede
+mirar en desarrollo en `/dev/preach` (en release redirige).
+
+## App Check
+
+- **Release:** iOS pide App Attest (con el entitlement de producción en `app.json`) y Android
+  Play Integrity. Ojo, medido en el iPad (2026-08-28): con `@react-native-firebase` 26 el
+  cliente de iOS termina usando **DeviceCheck** aunque se configure App Attest. Por eso en la
+  consola de Firebase hay que registrar **los dos** proveedores para la app de iOS.
+- **Builds internos (`preview`):** `eas.json` enciende `EXPO_PUBLIC_APPCHECK_DEBUG=1`. El token
+  de debug entra por la variable de EAS `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN` (nunca se commitea:
+  quien lo tenga pasa App Check) y se registra a mano en la consola. `production` nunca lo lleva.
+- Las llamadas al servidor esperan `appCheckReady()` antes de salir.
+
+## Trámites de consola (los hace el fundador)
+
+Ninguno se puede hacer desde el código; sin ellos la app firmada no funciona o la tienda la
+rechaza.
+
+1. **Firebase → App Check → app iOS:** registrar DeviceCheck (clave `.p8` con DeviceCheck,
+   Key ID y Team ID `9UHZPU2WCK`) además de App Attest.
+2. **Firebase → configuración de la app Android:** agregar el SHA-1 y el SHA-256 de la firma
+   de EAS (`eas credentials -p android`) y, después de la primera subida, los de Play App
+   Signing. Volver a descargar `google-services.json` (sin esto Google Sign-In falla en
+   Android). Vincular Play Integrity en Play Console.
+3. **Firebase → Authentication → Apple:** configurar el proveedor (Services ID, Team ID, Key ID
+   y clave privada) para que «Eliminar mi cuenta» pueda revocar el token de Apple.
+4. **EAS:** variable `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN` sólo para `preview`.
+5. **Correo:** que `privacy@dosfilos.app` reciba correo (lo nombran el borrado de cuenta y la
+   política de privacidad).
 
 ## Estructura
 
