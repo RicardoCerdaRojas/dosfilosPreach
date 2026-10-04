@@ -7,6 +7,7 @@ import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import { signOutGoogle } from '@/core/config/socialAuth';
+import { appCheckReady } from '@/core/config/appCheck';
 
 export class AuthRepositoryImpl implements AuthRepository {
     async signIn(email: string, password: string): Promise<User> {
@@ -127,6 +128,7 @@ export class AuthRepositoryImpl implements AuthRepository {
                 );
             }
         }
+        await appCheckReady();
         const callable = httpsCallable<void, { purgeAfter: string; graceDays: number }>(
             getFunctions(getApp()),
             'requestAccountDeletion',
