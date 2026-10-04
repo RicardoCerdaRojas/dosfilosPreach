@@ -1,5 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { appCheckReady, initAppCheck } from '../appCheck';
+
+// jest sube los mocks por encima de los imports.
+
 jest.mock('@react-native-firebase/app', () => ({ getApp: () => ({}) }));
 jest.mock('@react-native-firebase/app-check', () => {
     const initializeAppCheck = jest.fn(async () => ({}));
@@ -10,8 +14,6 @@ jest.mock('@react-native-firebase/app-check', () => {
         ReactNativeFirebaseAppCheckProvider: jest.fn().mockImplementation(() => ({ configure: () => undefined })),
     };
 });
-
-import { appCheckReady, initAppCheck } from '../appCheck';
 
 const init = (jest.requireMock('@react-native-firebase/app-check') as { __init: jest.Mock<any> }).__init;
 

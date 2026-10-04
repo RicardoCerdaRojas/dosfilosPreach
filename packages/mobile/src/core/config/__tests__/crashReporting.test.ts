@@ -1,5 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { initCrashReporting } from '../crashReporting';
+import { reportWriteFailure } from '@/core/errors/writeFailures';
+
+// jest sube los mocks por encima de los imports.
+
 jest.mock('expo-updates', () => ({ channel: 'production', runtimeVersion: 'abc', updateId: null }));
 jest.mock('@react-native-firebase/crashlytics', () => {
     const calls: unknown[][] = [];
@@ -12,9 +17,6 @@ jest.mock('@react-native-firebase/crashlytics', () => {
         recordError: jest.fn((_c: unknown, error: Error, name: string) => void calls.push(['recordError', error.message, name])),
     };
 });
-
-import { initCrashReporting } from '../crashReporting';
-import { reportWriteFailure } from '@/core/errors/writeFailures';
 
 const calls = (jest.requireMock('@react-native-firebase/crashlytics') as { __calls: unknown[][] }).__calls;
 

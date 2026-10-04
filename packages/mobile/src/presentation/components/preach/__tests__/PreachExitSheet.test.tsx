@@ -63,7 +63,7 @@ describe('registro al bajar del púlpito', () => {
     });
 
     it('un lugar nuevo queda recordado para la próxima', () => {
-        const { tree, guardar } = abrir();
+        const { tree } = abrir();
         const lugar = tree.root
             .findAllByType(TextInput)
             .find((n) => n.props.placeholder === 'preach:log_place')!;

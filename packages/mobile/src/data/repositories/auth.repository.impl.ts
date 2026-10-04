@@ -1,7 +1,7 @@
 import { User } from '@/domain/entities/user';
 import { AuthRepository } from '@/domain/repositories/auth.repository';
 import { getFirebaseAuth } from '@/data/sources/firebase.source';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser, sendPasswordResetEmail, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, AppleAuthProvider, signInWithCredential, revokeToken } from '@react-native-firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, AppleAuthProvider, signInWithCredential, revokeToken } from '@react-native-firebase/auth';
 import { getApp } from '@react-native-firebase/app';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import * as AppleAuthentication from 'expo-apple-authentication';
