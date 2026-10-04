@@ -79,3 +79,44 @@ describe('exportSermonToDocx — numeradas (revisión adversarial de R2)', () =>
         expect(texto.indexOf('2.')).toBeGreaterThan(texto.indexOf('Un párrafo'));
     });
 });
+
+describe('exportSermonToDocx — diseño para imprimir', () => {
+    async function partes(opciones: Parameters<typeof exportSermonToDocx>[1] = {}) {
+        const blob = await exportSermonToDocx({
+            id: 's', userId: 'u', title: 'La sombra de Jonás', content: CONTENIDO,
+            bibleReferences: ['Jonás 4:5-11'], tags: [], status: 'published',
+            createdAt: new Date('2026-10-03'), updatedAt: new Date('2026-10-03'), isShared: false, authorName: 'Pastor', preachingHistory: [],
+        } as Sermon, opciones);
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const leer = (re: RegExp) => Promise.all(Object.keys(zip.files).filter(n => re.test(n)).map(n => zip.file(n)!.async('string')));
+        return {
+            doc: await zip.file('word/document.xml')!.async('string'),
+            cabeceras: (await leer(/^word\/header\d*\.xml$/)).join('\n'),
+            estilos: await zip.file('word/styles.xml')!.async('string'),
+            core: await zip.file('docProps/core.xml')!.async('string'),
+        };
+    }
+
+    it('la portada y la cornisa nombran al autor y la serie', async () => {
+        const { doc, cabeceras, core } = await partes({ author: 'Ricardo Cerda', series: 'Jonás' });
+        expect(doc).toContain('Ricardo Cerda');
+        expect(doc).toContain('Serie · Jonás');
+        expect(cabeceras).toContain('Ricardo Cerda');
+        expect(cabeceras).toContain('La sombra de Jonás');
+        expect(core).toContain('Ricardo Cerda');
+        // La portada no lleva cornisa.
+        expect(doc).toMatch(/<w:titlePg\/>/);
+    });
+
+    it('sin autor la hoja no nombra a nadie (ni «Pastor»)', async () => {
+        const { doc, cabeceras } = await partes();
+        expect(doc + cabeceras).not.toMatch(/Pastor/);
+    });
+
+    it('Garamond y el acento vino; sin el azul de antes', async () => {
+        const { doc, estilos } = await partes();
+        expect(estilos).toContain('w:ascii="Garamond"');
+        expect(estilos + doc).toContain('7C2626');
+        expect(estilos + doc).not.toMatch(/1E3A8A/i);
+    });
+});

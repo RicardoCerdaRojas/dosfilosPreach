@@ -40,7 +40,8 @@ import { useSermonPublishGate } from '@/hooks/useSermonPublishGate';
 import { useSermonContraScan } from '@/hooks/useSermonContraScan';
 import { useState, useEffect } from 'react';
 import { exportService, sermonService, seriesService } from '@dosfilos/application';
-import { SermonSeriesEntity, PreachingLog } from '@dosfilos/domain';
+import { SermonSeriesEntity, PreachingLog, sermonFileName, sermonPrintAuthor, type SermonPrintOptions } from '@dosfilos/domain';
+import { useFirebase } from '@/context/firebase-context';
 import { toast } from 'sonner';
 import { SermonPreview } from '@/components/sermons/SermonPreview';
 import { SermonRepurposeSection } from '@/components/sermons/SermonRepurposeSection';
@@ -61,6 +62,7 @@ export function SermonDetailPage() {
   const { t } = useTranslation('sermonDetail');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useFirebase();
 
   // Validate ID - if it's a route param placeholder, redirect
   if (!id || id === ':id' || id.startsWith(':')) {
@@ -195,11 +197,18 @@ export function SermonDetailPage() {
     mutate();
   };
 
+  // La portada nombra a quien predica: el nombre que escribió el pastor o, si
+  // quedó el «Pastor» de fábrica, el de su cuenta.
+  const opcionesDeImpresion = (): SermonPrintOptions => ({
+    author: sermonPrintAuthor(sermon?.authorName, user?.displayName),
+    series: series?.title ?? null,
+  });
+
   const handleExport = async () => {
     if (!sermon) return;
     try {
       setExporting(true);
-      await exportService.exportSermonToPdf(sermon);
+      await exportService.exportSermonToPdf(sermon, opcionesDeImpresion());
       toast.success(t('toast.exportSuccess'));
     } catch (error) {
       console.error('Error exporting sermon:', error);
@@ -214,11 +223,11 @@ export function SermonDetailPage() {
     try {
       setExporting(true);
       const { exportSermonToDocx } = await import('@/lib/sermon/exportSermonToDocx');
-      const blob = await exportSermonToDocx(sermon);
+      const blob = await exportSermonToDocx(sermon, opcionesDeImpresion());
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${sermon.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.docx`;
+      a.download = sermonFileName(sermon.title, 'docx');
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
