@@ -20,6 +20,7 @@ import {
 import { useEffect, useMemo } from 'react';
 import { useColorScheme } from 'nativewind';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
 import { useTranslation } from 'react-i18next';
@@ -188,9 +189,13 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  // Raíz de react-native-gesture-handler: la tinta distingue el Apple Pencil
+  // del dedo con sus gestos (T-9 de la fase «Atril: tinta y lectura»).
   return (
-    <AppQueryClientProvider>
-      <RootLayoutNav />
-    </AppQueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppQueryClientProvider>
+        <RootLayoutNav />
+      </AppQueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

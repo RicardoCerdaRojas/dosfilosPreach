@@ -166,6 +166,9 @@ interface ReaderSettingsState {
      */
     readingFocus: boolean;
     setReadingFocus: (on: boolean) => void;
+    /** Sólo el Apple Pencil escribe en el atril; el dedo sigue pasando página (T-9). */
+    pencilOnly: boolean;
+    setPencilOnly: (on: boolean) => void;
     /** Brillo propio del atril (C7), de 0 a 1; `null` deja el del sistema. */
     preachBrightness: number | null;
     setPreachBrightness: (level: number | null) => void;
@@ -255,6 +258,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
             setInkVisible: (on: boolean) => set({ inkVisible: on }),
             readingFocus: false,
             setReadingFocus: (on: boolean) => set({ readingFocus: on }),
+            pencilOnly: false,
+            setPencilOnly: (on: boolean) => set({ pencilOnly: on }),
             preachBrightness: null,
             setPreachBrightness: (level: number | null) => set({ preachBrightness: level }),
             lastPreachingPlace: '',

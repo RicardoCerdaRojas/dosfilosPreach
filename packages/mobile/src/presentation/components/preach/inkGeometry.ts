@@ -96,3 +96,11 @@ export function inkSignature(notes: ErasableNote[]): string {
 export function showsBridge(bridgeSignature: string | null, current: string): boolean {
     return bridgeSignature !== null && bridgeSignature === current;
 }
+
+/**
+ * ¿Este toque escribe? Con «sólo Apple Pencil» (T-9) escribe el lápiz y el
+ * dedo sigue navegando; si no, escribe cualquiera.
+ */
+export function touchWrites(isStylus: boolean, pencilOnly: boolean): boolean {
+    return !pencilOnly || isStylus;
+}

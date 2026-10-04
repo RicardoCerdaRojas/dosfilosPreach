@@ -179,6 +179,8 @@ export default function PreachModeScreen({
     const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
     const outline = outlineOn && section ? buildOutline(section.body) : [];
     const readingFocus = useReaderSettingsStore((s) => s.readingFocus);
+    const pencilOnly = useReaderSettingsStore((s) => s.pencilOnly);
+    const setPencilOnly = useReaderSettingsStore((s) => s.setPencilOnly);
     const setReadingFocus = useReaderSettingsStore((s) => s.setReadingFocus);
     const [focus, setFocus] = useState<{ index: number | null; arrival: 1 | -1 }>({ index: null, arrival: 1 });
     const [resumeMark, setResumeMark] = useState<string | null>(null);
@@ -445,6 +447,23 @@ export default function PreachModeScreen({
             return;
         }
         const zone = tapZone(x, width);
+        if (zone === 'back') step(-1);
+        else if (zone === 'forward') step(1);
+        else setChromeVisible((v) => !v);
+    };
+
+    /**
+     * Con «sólo Apple Pencil» el dedo toca la capa de tinta: su toque o su
+     * deslizamiento hace lo mismo que sobre el texto (T-9).
+     */
+    const handleFingerOnInk = (startX: number, endX: number) => {
+        ensureClockStarted();
+        const swipe = swipeDirection(startX, endX);
+        if (swipe !== 0) {
+            step(swipe);
+            return;
+        }
+        const zone = tapZone(endX, width);
         if (zone === 'back') step(-1);
         else if (zone === 'forward') step(1);
         else setChromeVisible((v) => !v);
@@ -1089,6 +1108,8 @@ export default function PreachModeScreen({
                 color={ink.penColor}
                 tool={ink.tool}
                 strokeWidthEm={ink.tool === 'highlighter' ? INK_WIDTH.highlighter : INK_WIDTH[ink.width]}
+                pencilOnly={pencilOnly}
+                onFingerGesture={handleFingerOnInk}
                 eraser={ink.eraser}
                 onErase={ink.eraseStroke}
                 top={chromeTop}
@@ -1104,6 +1125,7 @@ export default function PreachModeScreen({
                     ink={ink}
                     visible={inkVisible}
                     onToggleVisible={() => setInkVisible(!inkVisible)}
+                    pencilOnly={{ on: pencilOnly, toggle: () => setPencilOnly(!pencilOnly) }}
                     clearOptions={[
                         {
                             label: t('preach:ink_clear_page'),

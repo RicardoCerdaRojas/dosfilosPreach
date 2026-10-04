@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import type { InkStroke } from '@dosfilos/domain';
 import { toNoteSpace } from '@dosfilos/domain';
 
-import { inkSignature, nearestStroke, noteWithStroke, showsBridge, withStrokeRestored, withoutStroke } from '../inkGeometry';
+import { inkSignature, nearestStroke, noteWithStroke, showsBridge, touchWrites, withStrokeRestored, withoutStroke } from '../inkGeometry';
 
 const RECT = { x: 100, y: 200, height: 40 };
 const BODY = 28;
@@ -75,5 +75,17 @@ describe('deshacer necesita reconocer el trazo', () => {
         expect(withStrokeRestored([], { id: 'n1', strokes: [a, b] }, a, 0)).toEqual([{ id: 'n1', strokes: [a] }]);
         // Si ya está, no lo duplica.
         expect(withStrokeRestored([{ id: 'n1', strokes: [a] }], { id: 'n1', strokes: [] }, a, 0)[0]!.strokes).toEqual([a]);
+    });
+});
+
+describe('sólo Apple Pencil (T-9)', () => {
+    it('con la opción, escribe el lápiz y el dedo navega', () => {
+        expect(touchWrites(true, true)).toBe(true);
+        expect(touchWrites(false, true)).toBe(false);
+    });
+
+    it('sin la opción, escribe cualquiera (como siempre)', () => {
+        expect(touchWrites(false, false)).toBe(true);
+        expect(touchWrites(true, false)).toBe(true);
     });
 });

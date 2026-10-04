@@ -6,7 +6,8 @@ import type { InkColor, InkStroke, InkTool } from '@dosfilos/domain';
 import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
-import { inkSignature, nearestStroke, showsBridge } from './inkGeometry';
+import { Gesture, GestureDetector, PointerType } from 'react-native-gesture-handler';
+import { inkSignature, nearestStroke, showsBridge, touchWrites } from './inkGeometry';
 
 /**
  * Lo ÚNICO que la capa necesita de una nota: su id y sus trazos.
@@ -57,6 +58,13 @@ interface Props {
      * quedaba fija en la pantalla mientras el capítulo se movía debajo.
      */
     scrollOffset?: SharedValue<number>;
+    /**
+     * Sólo el Apple Pencil escribe (T-9). El dedo sigue navegando: su toque
+     * o su deslizamiento se le pasan a `onFingerGesture` con la X donde
+     * empezó y donde terminó.
+     */
+    pencilOnly?: boolean;
+    onFingerGesture?: (startX: number, endX: number) => void;
 }
 
 /** El resaltador se lee a través: translúcido. */
@@ -133,7 +141,14 @@ export function InkLayer({
     top,
     bottom,
     scrollOffset,
+    pencilOnly = false,
+    onFingerGesture,
 }: Props) {
+    // Fuera del React Compiler: el gesto del lápiz (T-9) se arma en el render
+    // con callbacks que leen refs, y el compilador no distingue que corren
+    // DESPUÉS, en el gesto. La capa ya evita re-renders a mano (el trazo vive
+    // en un valor compartido de Skia), así que no pierde nada.
+    'use no memo';
     /** Un toque en pantalla, llevado a coordenadas del texto. */
     const toDoc = (pageX: number, pageY: number) => ({ x: pageX, y: pageY + (scrollOffset?.value ?? 0) });
     // El lienzo se corre con el texto en el hilo de la interfaz, sin pasar por React.
@@ -185,8 +200,8 @@ export function InkLayer({
         onErase(hit.noteId, hit.stroke);
     };
 
-    const begin = (e: GestureResponderEvent) => {
-        const { pageX, pageY } = e.nativeEvent;
+    const begin = (e: GestureResponderEvent) => beginAt(e.nativeEvent.pageX, e.nativeEvent.pageY);
+    const beginAt = (pageX: number, pageY: number) => {
         // Un gesto nuevo: el puente del trazo anterior ya cumplió.
         setPending(null);
         if (eraser) {
@@ -200,15 +215,16 @@ export function InkLayer({
         livePath.value = buildPath(points.current.map(toCanvas));
     };
 
-    const extend = (e: GestureResponderEvent) => {
+    const extend = (e: GestureResponderEvent) => extendAt(e.nativeEvent.pageX, e.nativeEvent.pageY);
+    const extendAt = (pageX: number, pageY: number) => {
         // Con la goma, arrastrar sigue borrando: se pasa por encima de varios
         // trazos como se pasaría una goma de verdad.
         if (eraser) {
-            eraseAt(e.nativeEvent.pageX, e.nativeEvent.pageY);
+            eraseAt(pageX, pageY);
             return;
         }
         if (!anchor.current) return;
-        const at = toDoc(e.nativeEvent.pageX, e.nativeEvent.pageY);
+        const at = toDoc(pageX, pageY);
         const last = points.current[points.current.length - 1];
         if (last && Math.hypot(at.x - last.x, at.y - last.y) < MIN_POINT_DISTANCE) return;
         points.current.push(at);
@@ -235,7 +251,43 @@ export function InkLayer({
         });
     };
 
-    return (
+    /**
+     * Sólo Apple Pencil (T-9). El gesto se activa a mano y sólo con el lápiz;
+     * con el dedo falla, y su toque se le pasa a la navegación del atril.
+     */
+    const fingerStart = useRef<number | null>(null);
+    // Los callbacks del gesto leen refs, pero corren en el gesto y no en el
+    // render: el compilador no puede verlo a través del constructor encadenado.
+    /* eslint-disable react-hooks/refs */
+    const pencilGesture = Gesture.Pan()
+        .enabled(penActive && pencilOnly)
+        .manualActivation(true)
+        .runOnJS(true)
+        .onTouchesDown((e, manager) => {
+            const touch = e.changedTouches[0];
+            if (!touch) return;
+            if (touchWrites(e.pointerType === PointerType.STYLUS, true)) {
+                manager.activate();
+                beginAt(touch.absoluteX, touch.absoluteY);
+            } else {
+                fingerStart.current = touch.absoluteX;
+            }
+        })
+        .onUpdate((e) => extendAt(e.absoluteX, e.absoluteY))
+        .onEnd(() => finish())
+        .onTouchesUp((e, manager) => {
+            const start = fingerStart.current;
+            if (start === null) return;
+            fingerStart.current = null;
+            onFingerGesture?.(start, e.changedTouches[0]?.absoluteX ?? start);
+            manager.fail();
+        })
+        .onTouchesCancelled(() => {
+            fingerStart.current = null;
+        });
+    /* eslint-enable react-hooks/refs */
+
+    const layer = (
         <View
             ref={canvas}
             onLayout={() =>
@@ -253,8 +305,8 @@ export function InkLayer({
             // al versículo 10 dibujaba una raya en vez de desplazar. Al no
             // reclamar el gesto de dos dedos, éste baja al lector que está
             // debajo.
-            onStartShouldSetResponder={(e) => penActive && e.nativeEvent.touches.length === 1}
-            onMoveShouldSetResponder={(e) => penActive && e.nativeEvent.touches.length === 1}
+            onStartShouldSetResponder={(e) => penActive && !pencilOnly && e.nativeEvent.touches.length === 1}
+            onMoveShouldSetResponder={(e) => penActive && !pencilOnly && e.nativeEvent.touches.length === 1}
             onResponderGrant={begin}
             onResponderMove={extend}
             onResponderRelease={finish}
@@ -308,4 +360,6 @@ export function InkLayer({
             </Canvas>
         </View>
     );
+
+    return pencilOnly ? <GestureDetector gesture={pencilGesture}>{layer}</GestureDetector> : layer;
 }

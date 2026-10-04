@@ -79,4 +79,27 @@ describe('barra de la tinta', () => {
         expect(page).toHaveBeenCalled();
         alert.mockRestore();
     });
+
+    it('el botón de «sólo Apple Pencil» aparece sólo donde se puede usar', () => {
+        expect(button(render(controls()), 'preach:ink_pencil_only')).toBeUndefined();
+        const toggle = jest.fn();
+        let r!: ReactTestRenderer;
+        act(() => {
+            r = create(
+                <InkToolbar
+                    tokens={READING_MODES.claro}
+                    ink={controls()}
+                    visible
+                    onToggleVisible={jest.fn()}
+                    clearOptions={[]}
+                    onDone={jest.fn()}
+                    pencilOnly={{ on: true, toggle }}
+                />,
+            );
+        });
+        const pencil = button(r, 'preach:ink_pencil_only');
+        expect(pencil.props.accessibilityState.selected).toBe(true);
+        act(() => pencil.props.onPress());
+        expect(toggle).toHaveBeenCalled();
+    });
 });

@@ -32,6 +32,12 @@ interface Props {
     /** Qué se puede limpiar acá: «esta página», «todo el sermón», «este capítulo»… */
     clearOptions: { label: string; onPress: () => void }[];
     onDone: () => void;
+    /**
+     * Sólo Apple Pencil (T-9): el lápiz escribe y el dedo navega. Sólo donde
+     * se puede: en el atril. En la Biblia el dedo tendría que desplazar el
+     * capítulo por debajo de la capa, y eso queda para después.
+     */
+    pencilOnly?: { on: boolean; toggle: () => void };
     style?: StyleProp<ViewStyle>;
 }
 
@@ -45,7 +51,7 @@ const COLORS: InkColor[] = ['ink', 'blue', 'red'];
  * lápiz: ahora es una goma. Deshacer y rehacer están siempre a mano, y
  * limpiar pide confirmación pero también se puede deshacer.
  */
-export function InkToolbar({ tokens, ink, visible, onToggleVisible, clearOptions, onDone, style }: Props) {
+export function InkToolbar({ tokens, ink, visible, onToggleVisible, clearOptions, onDone, pencilOnly, style }: Props) {
     const { t } = useTranslation();
     const colorOf = (c: InkColor) => (c === 'red' ? tokens.timerOver : c === 'blue' ? tokens.accent : tokens.textPrimary);
 
@@ -141,6 +147,9 @@ export function InkToolbar({ tokens, ink, visible, onToggleVisible, clearOptions
             {toolButton('redo', 'redo', t('preach:ink_redo'), false, ink.redo, !ink.canRedo)}
 
             {divider('d-page')}
+            {pencilOnly
+                ? toolButton('pencil-only', 'pencil-lock', t('preach:ink_pencil_only'), pencilOnly.on, pencilOnly.toggle)
+                : null}
             {toolButton(
                 'visible',
                 visible ? 'eye-outline' : 'eye-off-outline',

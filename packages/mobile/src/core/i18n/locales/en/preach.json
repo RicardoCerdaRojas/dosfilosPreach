@@ -104,5 +104,6 @@
     "ink_clear_sermon": "The whole sermon",
     "ink_clear_chapter": "This chapter",
     "reading_focus": "Reading focus",
-    "reading_focus_hint": "The current paragraph at full contrast, the rest dimmed. Moving forward goes idea by idea before turning the page."
+    "reading_focus_hint": "The current paragraph at full contrast, the rest dimmed. Moving forward goes idea by idea before turning the page.",
+    "ink_pencil_only": "Only Apple Pencil writes; your finger turns the page"
 }
