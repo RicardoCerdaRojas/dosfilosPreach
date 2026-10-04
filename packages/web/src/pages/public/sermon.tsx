@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sermonService, exportService } from '@dosfilos/application';
-import { SermonEntity } from '@dosfilos/domain';
+import { SermonEntity, sermonPrintAuthor } from '@dosfilos/domain';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, BookOpen, Minus, Plus, Type } from 'lucide-react';
@@ -110,7 +110,7 @@ export function PublicSermonPage() {
                     </span>
                 );
             }
-            return <a {...props} className="text-blue-500 underline" />;
+            return <a {...props} className="text-primary underline" />;
         }
     };
 
@@ -118,7 +118,8 @@ export function PublicSermonPage() {
         if (!sermon) return;
         try {
             setExporting(true);
-            await exportService.exportSermonToPdf(sermon);
+            // Quien abre el enlace no es el autor: sólo el nombre guardado en el sermón.
+            await exportService.exportSermonToPdf(sermon, { author: sermonPrintAuthor(sermon.authorName) });
             toast.success('Sermón exportado correctamente');
         } catch (error) {
             console.error('Error exporting sermon:', error);
@@ -200,10 +201,10 @@ export function PublicSermonPage() {
                             {sermon.bibleReferences.map((ref, index) => (
                                 <div 
                                     key={index} 
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-sm font-medium shadow-sm cursor-pointer hover:bg-amber-100 transition-colors"
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 text-foreground border border-warning/30 text-sm font-medium shadow-sm cursor-pointer hover:bg-warning/15 transition-colors"
                                     onClick={() => setSelectedReference(ref)}
                                 >
-                                    <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                                    <BookOpen className="h-3.5 w-3.5 text-warning" />
                                     {ref}
                                 </div>
                             ))}
