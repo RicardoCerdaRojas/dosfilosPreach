@@ -118,6 +118,7 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                     <TouchableOpacity
                         onPress={() => router.back()}
                         accessibilityRole="button"
+                        accessibilityLabel={t('common:back')}
                         className="p-2 active:opacity-60"
                     >
                         <MaterialIcons name="arrow-back" size={23} color={theme.textSecondary} />

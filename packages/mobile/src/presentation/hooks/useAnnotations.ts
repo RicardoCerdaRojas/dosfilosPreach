@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+    GlyphMark,
     HighlightColor,
+    PreacherGlyph,
     MarkStyle,
     SermonAnnotation,
     SermonAnnotationAnchor,
@@ -92,4 +94,65 @@ export const useHighlightMutations = (sermonId: string) => {
     });
 
     return { create, recolor, remove };
+};
+
+const glyphKeyOf = (sermonId: string) => ['glyphs', sermonId];
+
+/** Marcas de predicador sobre un sermón (C7). */
+export const useGlyphs = (sermonId: string) =>
+    useQuery({
+        queryKey: glyphKeyOf(sermonId),
+        queryFn: () => (isPreview(sermonId) ? [] : repository.listGlyphs(sermonId)),
+        enabled: !!sermonId,
+        staleTime: Infinity,
+    });
+
+/**
+ * Poner, cambiar y quitar glifos. Igual que los resaltados: la caché de
+ * react-query primero, para que el glifo aparezca bajo el dedo sin red.
+ */
+export const useGlyphMutations = (sermonId: string) => {
+    const queryClient = useQueryClient();
+    const key = glyphKeyOf(sermonId);
+    const write = (updater: (current: GlyphMark[]) => GlyphMark[]) =>
+        queryClient.setQueryData<GlyphMark[]>(key, (current) => updater(current ?? []));
+
+    const create = useMutation({
+        mutationFn: async ({ anchor, glyph }: { anchor: SermonAnnotationAnchor; glyph: PreacherGlyph }) => {
+            if (isPreview(sermonId)) {
+                const now = new Date();
+                previewSeq += 1;
+                const mark: GlyphMark = {
+                    ...anchor,
+                    id: `preview-glyph-${previewSeq}`,
+                    type: 'glyph',
+                    glyph,
+                    createdAt: now,
+                    updatedAt: now,
+                    updatedBy: 'mobile',
+                };
+                return mark;
+            }
+            return repository.createGlyph(sermonId, anchor, glyph);
+        },
+        onSuccess: (created) => write((current) => [...current, created]),
+    });
+
+    const change = useMutation({
+        mutationFn: ({ id, glyph }: { id: string; glyph: PreacherGlyph }) =>
+            isPreview(sermonId) ? Promise.resolve() : repository.updateGlyph(sermonId, id, glyph),
+        onMutate: ({ id, glyph }) => {
+            write((current) => current.map((g) => (g.id === id ? { ...g, glyph } : g)));
+        },
+    });
+
+    const remove = useMutation({
+        mutationFn: (id: string) =>
+            isPreview(sermonId) ? Promise.resolve() : repository.deleteAnnotation(sermonId, id),
+        onMutate: (id) => {
+            write((current) => current.filter((g) => g.id !== id));
+        },
+    });
+
+    return { create, change, remove };
 };

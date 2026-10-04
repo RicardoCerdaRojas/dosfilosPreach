@@ -11,6 +11,11 @@ import {
     spentSeconds,
     startClock,
     targetMinuteOptions,
+    FIVE_MINUTES_CUE,
+    overrunCue,
+    shiftEndAt,
+    suggestedEndAt,
+    targetSecondsUntil,
 } from '../preachClock';
 
 const MIN = 60_000;
@@ -59,7 +64,7 @@ describe('reloj del púlpito', () => {
         expect(dueCues(c, 23 * MIN, 30 * 60)).toEqual([]);
         expect(dueCues(c, 24 * MIN, 30 * 60)).toEqual([EIGHTY_PERCENT_CUE]);
         c = markCues(c, [EIGHTY_PERCENT_CUE]);
-        expect(dueCues(c, 26 * MIN, 30 * 60)).toEqual([]);
+        expect(dueCues(c, 26 * MIN, 30 * 60)).not.toContain(EIGHTY_PERCENT_CUE);
     });
 
     it('la duración por defecto sale del texto, en múltiplos de 5 y entre 10 y 60', () => {
@@ -83,5 +88,58 @@ describe('opciones de duración (revisión adversarial de A4)', () => {
     it('sin duplicar ni desordenar', () => {
         expect(targetMinuteOptions(30)).toEqual([20, 25, 30, 35, 40, 45]);
         expect(targetMinuteOptions(55)).toEqual([20, 25, 30, 35, 40, 45, 55]);
+    });
+});
+
+describe('avisos y hora de término (C7)', () => {
+    it('a los 5 minutos del final, una vez; no en un sermón de 10 o menos', () => {
+        let c = startClock(newClock('a'), 0);
+        expect(dueCues(c, 24 * MIN, 30 * 60)).not.toContain(FIVE_MINUTES_CUE);
+        expect(dueCues(c, 25 * MIN, 30 * 60)).toContain(FIVE_MINUTES_CUE);
+        c = markCues(c, [FIVE_MINUTES_CUE]);
+        expect(dueCues(c, 26 * MIN, 30 * 60)).not.toContain(FIVE_MINUTES_CUE);
+        expect(dueCues(startClock(newClock('a'), 0), 6 * MIN, 10 * 60)).not.toContain(FIVE_MINUTES_CUE);
+    });
+
+    it('el movimiento que se pasa de su presupuesto avisa una vez, y sólo el que se lee', () => {
+        let c = startClock(newClock('intro'), 0);
+        const budgets = [
+            { slug: 'intro', seconds: 180 },
+            { slug: 'punto-1', seconds: 600 },
+        ];
+        expect(dueCues(c, 2 * MIN, 30 * 60, budgets)).toEqual([]);
+        expect(dueCues(c, 4 * MIN, 30 * 60, budgets)).toEqual([overrunCue('intro')]);
+        c = markCues(c, [overrunCue('intro')]);
+        c = moveClockTo(c, 'punto-1', 4 * MIN);
+        expect(dueCues(c, 6 * MIN, 30 * 60, budgets)).toEqual([]);
+    });
+
+    it('«termino a las 11:45»: lo predicado más lo que queda; nunca menos de un minuto', () => {
+        const c = startClock(newClock('a'), 0);
+        expect(targetSecondsUntil(c, 10 * MIN, 40 * MIN)).toBe(40 * 60);
+        expect(targetSecondsUntil(newClock('a'), 0, 25 * MIN)).toBe(25 * 60);
+        expect(targetSecondsUntil(c, 50 * MIN, 40 * MIN)).toBe(40 * 60);
+        expect(targetSecondsUntil(newClock('a'), 10 * MIN, 0)).toBe(60);
+    });
+});
+
+describe('hora de término (C7)', () => {
+    // 10:00:00 de un día cualquiera, en ms desde la época (múltiplo de 5 min).
+    const TEN = 1_800_000_000_000 - (1_800_000_000_000 % (5 * MIN));
+
+    it('propone el próximo múltiplo de 5 minutos después de lo que queda', () => {
+        expect(suggestedEndAt(TEN, 30 * 60)).toBe(TEN + 30 * MIN);
+        expect(suggestedEndAt(TEN + 20_000, 30 * 60)).toBe(TEN + 35 * MIN);
+        expect(suggestedEndAt(TEN + 3 * MIN, 30 * 60)).toBe(TEN + 35 * MIN);
+    });
+
+    it('con el objetivo ya vencido propone al menos un minuto más', () => {
+        expect(suggestedEndAt(TEN + 2 * MIN, -600)).toBe(TEN + 5 * MIN);
+    });
+
+    it('corre de a 5 minutos y nunca a una hora ya pasada', () => {
+        expect(shiftEndAt(TEN + 30 * MIN, 5, TEN)).toBe(TEN + 35 * MIN);
+        expect(shiftEndAt(TEN + 30 * MIN, -5, TEN)).toBe(TEN + 25 * MIN);
+        expect(shiftEndAt(TEN + 3 * MIN, -5, TEN + 30_000)).toBe(TEN + 2 * MIN);
     });
 });

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { buildAnnotationAnchor, resolveAnnotationAnchor } from '@dosfilos/domain';
-import type { HighlightColor, MarkStyle } from '@dosfilos/domain';
+import { buildAnnotationAnchor, glyphAction, resolveAnnotationAnchor } from '@dosfilos/domain';
+import type { HighlightColor, MarkStyle, PreacherGlyph } from '@dosfilos/domain';
 
 import { SermonSection } from '@/core/utils/sermonSections';
-import { useAnnotations, useHighlightMutations } from '@/presentation/hooks/useAnnotations';
-import { ResolvedHighlight } from '@/presentation/components/preach/PreachSectionBody';
+import { useAnnotations, useGlyphMutations, useGlyphs, useHighlightMutations } from '@/presentation/hooks/useAnnotations';
+import { ResolvedGlyph, ResolvedHighlight } from '@/presentation/components/preach/PreachSectionBody';
 import { SelectionRange } from '@/presentation/components/preach/SelectableParagraph';
 
 /**
@@ -18,6 +18,15 @@ import { SelectionRange } from '@/presentation/components/preach/SelectableParag
  * Un rango de offsets no tiene ese problema — es la misma coordenada que usa
  * el ancla que se guarda.
  */
+/** La primera palabra de un rango del cuerpo: hasta el primer espacio. */
+export function firstWordOf(body: string, range: SelectionRange): SelectionRange {
+    let start = range.start;
+    while (start < range.end && /\s/.test(body[start] ?? '')) start++;
+    let end = start;
+    while (end < range.end && !/\s/.test(body[end] ?? '')) end++;
+    return { start, end: Math.max(end, Math.min(start + 1, range.end)) };
+}
+
 export function usePreachHighlights(
     sermonId: string,
     section: SermonSection | undefined,
@@ -30,6 +39,8 @@ export function usePreachHighlights(
 
     const { data: annotations } = useAnnotations(sermonId);
     const { create, recolor, remove } = useHighlightMutations(sermonId);
+    const { data: glyphMarks } = useGlyphs(sermonId);
+    const glyphMutations = useGlyphMutations(sermonId);
 
     // Las marcas se reanclan contra el cuerpo CRUDO de la sección: el sermón
     // pudo editarse en la web después de que se hicieron, y una que ya no
@@ -52,6 +63,17 @@ export function usePreachHighlights(
               .filter((h): h is ResolvedHighlight => h !== null)
         : [];
 
+    // Marcas de predicador (C7): se reanclan igual que los resaltados.
+    const glyphs: ResolvedGlyph[] = section
+        ? (glyphMarks ?? [])
+              .filter((g) => g.sectionSlug === section.slug)
+              .map((g) => {
+                  const at = resolveAnnotationAnchor(g, section.body);
+                  return at ? { id: g.id, glyph: g.glyph, start: at.start } : null;
+              })
+              .filter((g): g is ResolvedGlyph => g !== null)
+        : [];
+
     /** Marca que cubre a la vez el punto dado. Para pintar palabra por palabra. */
     const markAt = (sourceStart: number): ResolvedHighlight | null =>
         highlights.find((h) => sourceStart >= h.start && sourceStart < h.end) ?? null;
@@ -62,6 +84,30 @@ export function usePreachHighlights(
                   Math.min(h.end, pending.range.end) - Math.max(h.start, pending.range.start) > 0,
           ) ?? null)
         : null;
+
+    // El glifo va sobre la PRIMERA palabra de lo elegido, y se ancla sólo a
+    // ella: anclado a toda la selección, editar en la web otra palabra de esa
+    // selección lo hacía desaparecer (revisión adversarial de C7). El que ya
+    // esté en esa palabra se cambia o se quita; uno en otra palabra de la
+    // selección no se toca.
+    const firstWord = pending && section ? firstWordOf(section.body, pending.range) : null;
+    const pendingGlyph = firstWord
+        ? (glyphs.find((g) => g.start >= firstWord.start && g.start < firstWord.end) ?? null)
+        : null;
+
+    const applyGlyph = (glyph: PreacherGlyph) => {
+        if (!section || !pending) return;
+        const action = glyphAction(pendingGlyph?.glyph ?? null, glyph);
+        if (action === 'remove' && pendingGlyph) glyphMutations.remove.mutate(pendingGlyph.id);
+        else if (action === 'update' && pendingGlyph) glyphMutations.change.mutate({ id: pendingGlyph.id, glyph });
+        else if (action === 'create' && firstWord) {
+            glyphMutations.create.mutate({
+                anchor: buildAnnotationAnchor(section.slug, section.body, firstWord.start, firstWord.end),
+                glyph,
+            });
+        }
+        close();
+    };
 
     const beginSelection = (range: SelectionRange | null) => {
         // El pulso confirma que el texto quedó agarrado: en el púlpito nadie
@@ -110,6 +156,9 @@ export function usePreachHighlights(
 
     return {
         highlights,
+        glyphs,
+        pendingGlyph: pendingGlyph?.glyph ?? null,
+        applyGlyph,
         markAt,
         selection,
         beginSelection,

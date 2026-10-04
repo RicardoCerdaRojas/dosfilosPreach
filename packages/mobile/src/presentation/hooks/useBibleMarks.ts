@@ -61,25 +61,71 @@ export const useBibleMarks = () => {
     return query;
 };
 
+export interface SetMarksInput {
+    versionId: string;
+    bookId: string;
+    chapter: number;
+    /** Un rango por versículo; sin extremos, el versículo entero. */
+    ranges: VerseWordRange[];
+    color: HighlightColor;
+    style: MarkStyle;
+}
+
+/** Las marcas con el cambio aplicado: lo que la pantalla muestra YA (C1). */
+export function withMarks(current: Map<string, BibleMark> | undefined, input: SetMarksInput, now: Date): Map<string, BibleMark> {
+    const next = new Map(current ?? []);
+    for (const range of input.ranges) {
+        const id = verseKey(input.bookId, input.chapter, range.verse);
+        next.set(id, {
+            id,
+            versionId: input.versionId,
+            bookId: input.bookId,
+            chapter: input.chapter,
+            verse: range.verse,
+            color: input.color,
+            style: input.style,
+            from: range.from,
+            to: range.to,
+            createdAt: now,
+        });
+    }
+    return next;
+}
+
+/** Las marcas sin esos versículos. */
+export function withoutMarks(
+    current: Map<string, BibleMark> | undefined,
+    input: { bookId: string; chapter: number; verses: number[] },
+): Map<string, BibleMark> {
+    const next = new Map(current ?? []);
+    for (const verse of input.verses) next.delete(verseKey(input.bookId, input.chapter, verse));
+    return next;
+}
+
+/**
+ * Marcar en la Biblia SIN RED (C1): antes se esperaba la escritura, y sin red
+ * la promesa no resuelve hasta que el servidor confirma — la marca no
+ * aparecía hasta reconectar. Ahora la caché se actualiza primero y la
+ * escritura sube cuando haya red (como las marcas del sermón). Si el servidor
+ * la rechaza, se avisa y se vuelve a leer.
+ */
 export const useBibleMarkMutations = () => {
     const queryClient = useQueryClient();
     const refresh = () => queryClient.invalidateQueries({ queryKey: ['bibleMarks'] });
 
     const set = useMutation({
-        mutationFn: async (input: {
-            versionId: string;
-            bookId: string;
-            chapter: number;
-            /** Un rango por versículo; sin extremos, el versículo entero. */
-            ranges: VerseWordRange[];
-            color: HighlightColor;
-            style: MarkStyle;
-        }) => {
+        onMutate: (input: SetMarksInput) => {
+            queryClient.setQueryData<Map<string, BibleMark>>(['bibleMarks'], (current) =>
+                withMarks(current, input, new Date()),
+            );
+        },
+        mutationFn: async (input: SetMarksInput) => {
             const ref = marksRef();
             if (!ref) return;
             // Un documento por versículo: el id ES la dirección, así que
             // volver a marcar el mismo versículo reemplaza en vez de duplicar.
-            await Promise.all(
+            // Sin `await`: sin red no resuelve hasta que el servidor confirma.
+            void Promise.all(
                 input.ranges.map((range) => {
                     const id = verseKey(input.bookId, input.chapter, range.verse);
                     return setDoc(doc(ref, id), {
@@ -95,26 +141,33 @@ export const useBibleMarkMutations = () => {
                         from: range.from ?? null,
                         to: range.to ?? null,
                         createdAt: serverTimestamp(),
-                    }).catch((error) => reportWriteFailure('bible_mark', { id, error }));
+                    }).catch((error) => {
+                        reportWriteFailure('bible_mark', { id, error });
+                        refresh();
+                    });
                 }),
             );
         },
-        onSuccess: refresh,
     });
 
     const clear = useMutation({
+        onMutate: (input: { bookId: string; chapter: number; verses: number[] }) => {
+            queryClient.setQueryData<Map<string, BibleMark>>(['bibleMarks'], (current) =>
+                withoutMarks(current, input),
+            );
+        },
         mutationFn: async (input: { bookId: string; chapter: number; verses: number[] }) => {
             const ref = marksRef();
             if (!ref) return;
-            await Promise.all(
+            void Promise.all(
                 input.verses.map((verse) =>
-                    deleteDoc(doc(ref, verseKey(input.bookId, input.chapter, verse))).catch(
-                        () => undefined,
-                    ),
+                    deleteDoc(doc(ref, verseKey(input.bookId, input.chapter, verse))).catch((error) => {
+                        reportWriteFailure('bible_mark', { verse, error });
+                        refresh();
+                    }),
                 ),
             );
         },
-        onSuccess: refresh,
     });
 
     return { set, clear };

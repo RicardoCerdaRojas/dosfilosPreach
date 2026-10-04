@@ -100,6 +100,7 @@ export default function SermonListScreen() {
                         <TouchableOpacity
                             onPress={() => setSearchQuery('')}
                             accessibilityRole="button"
+                            accessibilityLabel={t('sermons:clear_search')}
                         >
                             <MaterialIcons name="close" size={18} color={theme.textMuted} />
                         </TouchableOpacity>

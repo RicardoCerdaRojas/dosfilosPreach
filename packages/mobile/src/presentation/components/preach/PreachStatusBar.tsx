@@ -3,7 +3,10 @@ import { Text, View } from 'react-native';
 import { expectedElapsed, totalBudget } from '@dosfilos/domain';
 import type { MovementBudget } from '@dosfilos/domain';
 
+import { useTranslation } from 'react-i18next';
+
 import { ReadingModeTokens } from '@/core/theme/readingModes';
+import { formatWallTime } from '@/core/utils/wallTime';
 
 interface Props {
     tokens: ReadingModeTokens;
@@ -22,6 +25,8 @@ interface Props {
      * el que quiere el dato exacto lo enciende.
      */
     numbers: boolean;
+    /** Hora de término (C7): «hasta las 11:45» junto a lo que queda. */
+    endAt?: number | null;
 }
 
 /** mm:ss, con signo cuando el número es un desfase. */
@@ -63,7 +68,9 @@ export function PreachStatusBar({
     pageCount,
     running,
     numbers,
+    endAt = null,
 }: Props) {
+    const { t } = useTranslation();
     const total = totalBudget(budgets);
     const remaining = total - elapsedSeconds;
     const over = remaining < 0;
@@ -100,6 +107,15 @@ export function PreachStatusBar({
                 >
                     {over ? `−${clock(remaining)}` : clock(remaining)}
                 </Text>
+
+                {endAt !== null ? (
+                    <Text
+                        style={{ color: tokens.textSecondary, fontSize: 13, marginLeft: 6, fontVariant: ['tabular-nums'] }}
+                        className="font-lexend"
+                    >
+                        {t('preach:end_time_until', { time: formatWallTime(endAt) })}
+                    </Text>
+                ) : null}
 
                 {behind || ahead ? (
                     <Text

@@ -34,6 +34,37 @@ export type HighlightColor = (typeof HIGHLIGHT_COLORS)[number];
 export const MARK_STYLES = ['highlight', 'underline', 'strike'] as const;
 export type MarkStyle = (typeof MARK_STYLES)[number];
 
+/**
+ * Marcas de predicador (C7 de la fase Púlpito premium): lo que el pastor
+ * escribe a lápiz sobre una palabra del manuscrito para acordarse de CÓMO
+ * decirla. Pausa, énfasis, bajar la voz, mirar a la congregación, «aquí va la
+ * ilustración». Viven en la misma subcolección, con `type: 'glyph'`.
+ */
+export const PREACHER_GLYPHS = ['pause', 'emphasis', 'soft', 'look', 'illustration'] as const;
+export type PreacherGlyph = (typeof PREACHER_GLYPHS)[number];
+
+export interface GlyphMark extends SermonAnnotationAnchor {
+    id: string;
+    type: 'glyph';
+    glyph: PreacherGlyph;
+    createdAt: Date;
+    updatedAt: Date;
+    updatedBy: 'mobile' | 'web';
+}
+
+/**
+ * Qué hace elegir un glifo sobre una palabra que ya puede tener uno: el mismo
+ * lo quita (es un interruptor, como el lápiz), otro lo reemplaza, y sobre una
+ * palabra sin glifo lo pone. Una palabra lleva un glifo, no una pila.
+ */
+export function glyphAction(
+    existing: PreacherGlyph | null,
+    picked: PreacherGlyph,
+): 'create' | 'update' | 'remove' {
+    if (existing === null) return 'create';
+    return existing === picked ? 'remove' : 'update';
+}
+
 /** Characters of context kept on each side of the highlighted text. */
 export const ANCHOR_CONTEXT_CHARS = 40;
 

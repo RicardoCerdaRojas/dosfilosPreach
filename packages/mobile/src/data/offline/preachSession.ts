@@ -14,6 +14,8 @@ export interface PreachSession {
     clock: PreachClock;
     sectionSlug: string | null;
     pageIndex: number;
+    /** Hora de término puesta por el pastor (C7), si alguna. */
+    endAt?: number | null;
     savedAt: number;
 }
 

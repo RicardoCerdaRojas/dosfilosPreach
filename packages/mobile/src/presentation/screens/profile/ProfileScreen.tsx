@@ -140,6 +140,7 @@ export default function ProfileScreen() {
                         <TouchableOpacity
                             onPress={() => router.back()}
                             accessibilityRole="button"
+                            accessibilityLabel={t('common:back')}
                             className="p-2 -ml-2 active:opacity-60"
                         >
                             <MaterialIcons name="arrow-back" size={23} color={theme.textSecondary} />

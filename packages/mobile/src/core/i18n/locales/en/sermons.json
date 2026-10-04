@@ -44,5 +44,6 @@
     "offline_update": "Update copy",
     "offline_remove": "Remove from briefcase",
     "offline_ready_badge": "Ready offline",
-    "marked_preached": "Marked as preached."
+    "marked_preached": "Marked as preached.",
+    "clear_search": "Clear search"
 }

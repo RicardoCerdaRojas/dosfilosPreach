@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
-    AppState,
     BackHandler,
     Modal,
     Pressable,
@@ -16,29 +15,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useKeepAwake } from 'expo-keep-awake';
-import * as Haptics from 'expo-haptics';
 import { StatusBar } from 'expo-status-bar';
-import type { CitationManifestEntry, PreachClock, ReadingBlock } from '@dosfilos/domain';
+import type { CitationManifestEntry, ReadingBlock } from '@dosfilos/domain';
 import {
     aggregateRequiredAttributions,
     buildMovementBudgets,
     buildReadingBlocks,
+    buildOutline,
     buildRehearsalReport,
     defaultTargetMinutes,
-    dueCues,
-    elapsedMs,
-    markCues,
-    moveClockTo,
-    newClock,
-    pauseClock,
-    spentSeconds,
-    startClock,
+    shiftEndAt,
+    suggestedEndAt,
 } from '@dosfilos/domain';
 
 import { useSermon } from '@/presentation/hooks/useSermons';
 import { usePreachHighlights } from '@/presentation/hooks/usePreachHighlights';
 import { extractSectionsWithBody } from '@/core/utils/sermonSections';
-import { READING_MODES } from '@/core/theme/readingModes';
+import { READING_MODES, shownSeconds } from '@/core/theme/readingModes';
 import { GAZE_LINE_RATIO, TYPE_SCALE } from '@/core/theme/typography';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 import { PreachSectionBody } from '@/presentation/components/preach/PreachSectionBody';
@@ -52,16 +45,14 @@ import { PreachSettingsSheet } from '@/presentation/components/preach/PreachSett
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
 import { usePagination } from '@/presentation/hooks/usePagination';
+import { READING_SLUG, usePreachClock } from '@/presentation/hooks/usePreachClock';
+import { usePreachBrightness } from '@/presentation/hooks/usePreachBrightness';
+import { PreachReadingPage } from '@/presentation/components/preach/PreachReadingPage';
+import { PreachOutline } from '@/presentation/components/preach/PreachOutline';
+import { readingPassageFor, verseTextFor } from '@/data/repositories/bible/BibleVersionFactory';
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 import { useUIStore } from '@/presentation/state/ui.store';
 import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
-import {
-    SESSION_SAVE_EVERY_MS,
-    clearPreachSession,
-    readPreachSession,
-    resumeClock,
-    savePreachSession,
-} from '@/data/offline/preachSession';
 
 interface PreachModeScreenProps {
     /** Id inyectado: lo usa la vista previa de dev, que no llega por ruta. */
@@ -101,6 +92,8 @@ export default function PreachModeScreen({
     const panelRatio = useReaderSettingsStore((s) => s.panelRatio);
     const setPanelRatio = useReaderSettingsStore((s) => s.setPanelRatio);
     const budgetOverrides = useReaderSettingsStore((s) => s.budgetOverrides);
+    const readingPageOn = useReaderSettingsStore((s) => s.readingPage);
+    const setReadingPageOn = useReaderSettingsStore((s) => s.setReadingPage);
     const targetBySermon = useReaderSettingsStore((s) => s.targetMinutesBySermon);
     const setTargetMinutes = useReaderSettingsStore((s) => s.setTargetMinutes);
     const setBudgetOverride = useReaderSettingsStore((s) => s.setBudgetOverride);
@@ -129,17 +122,13 @@ export default function PreachModeScreen({
     );
     /** Cita de bloque abierta desde su marca al margen (P5). */
     const [apparatus, setApparatus] = useState<string | null>(null);
+    /** Referencia bíblica tocada en el manuscrito: su versículo en capa (C7). */
+    const [verseRef, setVerseRef] = useState<string | null>(null);
+    /** La Biblia del atril abierta en una referencia tocada (C7). */
+    const [bibleRefs, setBibleRefs] = useState<string[] | null>(null);
+    /** En la página de Lectura, antes del primer movimiento (C7). */
+    const [onReadingPage, setOnReadingPage] = useState(initialSectionIndex === 0);
 
-    /**
-     * El reloj (A4): estado + hora de pared, del dominio. El intervalo de
-     * abajo sólo repinta; si el sistema lo duerme (pantalla bloqueada, otra
-     * app), al volver el tiempo es el correcto. Acumula por movimiento: al
-     * terminar, el pastor ve que la introducción le comió 12 de sus 35.
-     */
-    const [clock, setClock] = useState<PreachClock>(() => newClock(null));
-    const [now, setNow] = useState(() => Date.now());
-    const running = clock.running;
-    const elapsed = Math.floor(elapsedMs(clock, now) / 1000);
     const [showExit, setShowExit] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
     // Toques: un dedo pasa página, dos dedos dos veces apagan (A3).
@@ -147,54 +136,13 @@ export default function PreachModeScreen({
     const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
 
-    // El tic repinta y revisa los avisos. Lee el reloj y la duración por ref:
-    // recrear el intervalo en cada cambio perdería la fracción en curso.
-    const clockRef = useRef(clock);
-    const targetRef = useRef(30);
-    const hapticsRef = useRef(true);
-    /** Lugar actual y último guardado, para el guardado periódico del tic. */
-    const positionRef = useRef<{ slug: string | null; page: number }>({ slug: null, page: 0 });
-    const lastSaveRef = useRef(0);
-    useEffect(() => {
-        clockRef.current = clock;
-    });
-    useEffect(() => {
-        if (!running) return;
-        const timer = setInterval(() => {
-            const t1 = Date.now();
-            setNow(t1);
-            // Aviso del 80 %: un pulso que se siente en la mano y nadie más
-            // oye. En tinta electrónica no hay motor háptico.
-            const due = dueCues(clockRef.current, t1, targetRef.current * 60);
-            if (due.length) {
-                // Marcado en el ref YA: si dos tics corren antes de volver a
-                // pintar, el segundo no repite el pulso (revisión de A4).
-                clockRef.current = markCues(clockRef.current, due);
-                if (hapticsRef.current) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                setClock((c) => markCues(c, due));
-            }
-            // Guardado periódico: al retomar, lo que pasó desde el último
-            // guardado decide si la app estuvo predicando o muerta.
-            if (id && t1 - lastSaveRef.current >= SESSION_SAVE_EVERY_MS) {
-                lastSaveRef.current = t1;
-                void savePreachSession(id, {
-                    clock: clockRef.current,
-                    sectionSlug: positionRef.current.slug,
-                    pageIndex: positionRef.current.page,
-                });
-            }
-        }, 1000);
-        // Al volver a la app, repintar ya: no esperar al próximo segundo.
-        const sub = AppState.addEventListener('change', (state) => {
-            if (state === 'active') setNow(Date.now());
-        });
-        return () => {
-            clearInterval(timer);
-            sub.remove();
-        };
-    }, [running, id]);
 
     const sections = sermon?.content ? extractSectionsWithBody(sermon.content) : [];
+    // El pasaje para la página de Lectura: el primero que la Biblia local lee.
+    // No corre en cada tic: el React Compiler (app.json) memoiza por sus
+    // entradas, y el atril compila sin rendirse (lo vigila el lint).
+    const passage = readingPageOn ? readingPassageFor(sermon?.bibleReferences ?? []) : null;
+    const showReading = onReadingPage && passage !== null;
     const section = sections[sectionIndex];
     const manifest = sermon?.citationManifest;
     const attributions = aggregateRequiredAttributions(manifest);
@@ -202,10 +150,6 @@ export default function PreachModeScreen({
     // Duración: la que el pastor fijó para ESTE sermón, o la del texto.
     const targetMinutes =
         (id ? targetBySermon[id] : undefined) ?? defaultTargetMinutes(sermon?.content ?? '');
-    useEffect(() => {
-        targetRef.current = targetMinutes;
-        hapticsRef.current = readingMode !== 'eink';
-    });
 
     /**
      * Cambiar de movimiento carga lo corrido al que se dejaba. Se hace al
@@ -216,63 +160,20 @@ export default function PreachModeScreen({
         setSectionIndex(index);
         setPageIndex(page);
         const slug = sections[index]?.slug;
-        if (slug) setClock((c) => moveClockTo(c, slug, Date.now()));
+        if (slug) preachClock.moveTo(slug);
     };
 
-    /** Arrancar con el movimiento a la vista ya anotado. */
-    const startWithSlug = (c: PreachClock, t0: number) =>
-        startClock(c.slug || !section?.slug ? c : moveClockTo(c, section.slug, t0), t0);
-
-    // Retomar: si la app se cerró a mitad del sermón, vuelve al lugar y con
-    // el reloj (que siguió contando: se calcula contra la hora).
-    const [restored, setRestored] = useState(false);
-    const restoringRef = useRef(false);
-    const content = sermon?.content;
-    useEffect(() => {
-        if (!id || restoringRef.current || !content) return;
-        restoringRef.current = true;
-        const known = extractSectionsWithBody(content);
-        void readPreachSession(id, Date.now())
-            .then((session) => {
-                if (session) {
-                    const t0 = Date.now();
-                    const at = known.findIndex((sec) => sec.slug === session.sectionSlug);
-                    if (at >= 0) {
-                        setSectionIndex(at);
-                        setPageIndex(session.pageIndex);
-                    }
-                    // Si la app estuvo muerta, vuelve PAUSADO en el último
-                    // guardado (resumeClock). Si el movimiento ya no existe
-                    // (se editó), el tiempo sigue en el primero.
-                    const resumed = resumeClock(session, t0);
-                    const slug = at >= 0 ? session.sectionSlug : (known[0]?.slug ?? null);
-                    setClock(slug ? moveClockTo(resumed, slug, t0) : resumed);
-                    setNow(t0);
-                }
-            })
-            // Sin esto, una falla de lectura dejaba la sesión sin guardarse
-            // en toda la predicación.
-            .catch(() => undefined)
-            .finally(() => setRestored(true));
-    }, [id, content]);
-
-    // Se guarda en cada cambio de estado del reloj o de lugar; no en cada
-    // segundo, porque el tiempo se recalcula contra la hora al volver.
-    useEffect(() => {
-        positionRef.current = { slug: section?.slug ?? null, page: pageIndex };
-        if (!id || !restored) return;
-        if (clock.accumulatedMs === 0 && !clock.running) return;
-        void savePreachSession(id, {
-            clock,
-            sectionSlug: section?.slug ?? null,
-            pageIndex,
-        }).then(() => {
-            lastSaveRef.current = Date.now();
-        });
-    }, [id, restored, clock, section?.slug, pageIndex]);
 
 
     const blocks = section ? buildReadingBlocks(section.body) : [];
+    // Bosquejo (C7): el mismo movimiento, derivado del manuscrito. Una página
+    // por movimiento; las marcas y la tinta, ancladas al manuscrito, no van.
+    const outlineOn = useReaderSettingsStore((s) => s.outlineView);
+    const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
+    const outline = outlineOn && section ? buildOutline(section.body) : [];
+    const preachBrightness = useReaderSettingsStore((s) => s.preachBrightness);
+    const setPreachBrightness = useReaderSettingsStore((s) => s.setPreachBrightness);
+    usePreachBrightness(preachBrightness);
 
     // La caja de medida abarca TODO lo que se lee — título, título de
     // movimiento, cuerpo y atribuciones. Cuando sólo la usaba el cuerpo, los
@@ -287,15 +188,36 @@ export default function PreachModeScreen({
     // defecto se reparte proporcional a las palabras; lo que el pastor fija a
     // mano se respeta y el resto se reacomoda, así que ajustar uno no
     // descuadra el total. F3 lo reemplazará con tiempos reales del ensayo.
-    const budgets = buildMovementBudgets(
-        sections.map((sec) => ({ slug: sec.slug, title: sec.title || t('preach:opening'), body: sec.body })),
-        targetMinutes * 60,
-        Object.fromEntries(
-            sections
-                .map((sec) => [sec.slug, budgetOverrides[`${id}|${sec.slug}`]] as const)
-                .filter(([, value]) => typeof value === 'number'),
-        ),
-    );
+    // El reloj y su sesión (A4, C7), en su hook (C6). Los presupuestos por
+    // movimiento alimentan el riel (D2): proporcionales a las palabras, con lo
+    // que el pastor fijó a mano respetado; dependen de la duración, que con
+    // hora de término sale del propio reloj.
+    const preachClock = usePreachClock({
+        sermonId: id,
+        sectionSlugs: sections.map((sec) => sec.slug),
+        // En la Lectura el tiempo es de la Lectura: antes se cargaba a la
+        // introducción y su aviso de pasado sonaba antes de tiempo.
+        sectionSlug: showReading ? READING_SLUG : (section?.slug ?? null),
+        pageIndex,
+        targetMinutes,
+        haptics: readingMode !== 'eink',
+        budgetsFor: (targetSeconds) =>
+            buildMovementBudgets(
+                sections.map((sec) => ({ slug: sec.slug, title: sec.title || t('preach:opening'), body: sec.body })),
+                targetSeconds,
+                Object.fromEntries(
+                    sections
+                        .map((sec) => [sec.slug, budgetOverrides[`${id}|${sec.slug}`]] as const)
+                        .filter(([, value]) => typeof value === 'number'),
+                ),
+            ),
+        onRestore: ({ sectionIndex: at, pageIndex: page, onReading }) => {
+            setOnReadingPage(onReading);
+            setSectionIndex(at);
+            setPageIndex(page);
+        },
+    });
+    const { budgets, elapsed, running } = preachClock;
 
     // P7 — el tercio inferior no se llena de prosa: leerlo obliga a bajar el
     // mentón y la cara sale de la congregación. Ahí va el tablero.
@@ -389,8 +311,9 @@ export default function PreachModeScreen({
         layoutKey: `${section?.slug ?? ''}|${fontSize}|${senseLines}|${deliveryFace}|${hangingIndent}|${measure ?? 0}`,
     });
 
-    const safePageIndex = Math.min(pageIndex, Math.max(0, pages.length - 1));
-    const pageBlocks = pages.length
+    const pageCount = outlineOn ? 1 : Math.max(1, pages.length);
+    const safePageIndex = Math.min(pageIndex, pageCount - 1);
+    const pageBlocks = pages.length && !outlineOn
         ? pages[safePageIndex].map((i) => blocks[i])
         : blocks;
 
@@ -398,7 +321,7 @@ export default function PreachModeScreen({
     // viene: alcanza para saber si la idea sigue o si acá cerró.
 
     const nextPeek =
-        pages.length && safePageIndex < pages.length - 1
+        !outlineOn && pages.length && safePageIndex < pages.length - 1
             ? blocks[pages[safePageIndex + 1][0]]?.text ?? null
             : null;
 
@@ -425,17 +348,26 @@ export default function PreachModeScreen({
      * el primer avance, y entonces la primera página no contaba nunca: el
      * informe decía «introducción 0:00» (revisión adversarial de A4).
      */
-    const ensureClockStarted = () => {
-        if (clock.running || clock.accumulatedMs > 0) return;
-        const t0 = Date.now();
-        setClock((c) => startWithSlug(c, t0));
-        setNow(t0);
-    };
+    const ensureClockStarted = preachClock.ensureStarted;
 
     const step = (delta: number) => {
         ensureClockStarted();
+        // Desde la Lectura, adelante entra al primer movimiento.
+        if (showReading) {
+            if (delta > 0) {
+                setOnReadingPage(false);
+                enterSection(0, 0);
+            }
+            return;
+        }
+        // Desde la primera página del sermón, atrás vuelve a la Lectura.
+        if (delta < 0 && passage && sectionIndex === 0 && safePageIndex === 0) {
+            setOnReadingPage(true);
+            preachClock.moveTo(READING_SLUG);
+            return;
+        }
         const next = safePageIndex + delta;
-        if (next >= 0 && next < pages.length) {
+        if (next >= 0 && next < pageCount) {
             setPageIndex(next);
             scrollRef.current?.scrollTo({ y: 0, animated: tokens.animations });
             return;
@@ -477,7 +409,7 @@ export default function PreachModeScreen({
             setShowExit(true);
             return;
         }
-        if (id) void clearPreachSession(id);
+        preachClock.finish();
         router.back();
     };
 
@@ -593,11 +525,7 @@ export default function PreachModeScreen({
                         {/* El timer vive abajo, en el tablero (P7). Acá queda
                             sólo arrancarlo y pararlo. */}
                         <TouchableOpacity
-                            onPress={() => {
-                                const t0 = Date.now();
-                                setClock((c) => (c.running ? pauseClock(c, t0) : startWithSlug(c, t0)));
-                                setNow(t0);
-                            }}
+                            onPress={preachClock.toggle}
                             accessibilityRole="button"
                             accessibilityLabel={t(running ? 'preach:pause_timer' : 'preach:start_timer')}
                             className="mr-5"
@@ -608,7 +536,24 @@ export default function PreachModeScreen({
                                 color={running ? tokens.accent : tokens.textSecondary}
                             />
                         </TouchableOpacity>
+                        {/* Manuscrito o bosquejo (C7), a un toque: se cambia
+                            en medio del sermón, cuando la idea ya está dicha. */}
                         <TouchableOpacity
+                            onPress={() => {
+                                ink.setPenActive(false);
+                                setOutlineView(!outlineOn);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel={t(outlineOn ? 'preach:view_manuscript' : 'preach:view_outline')}
+                            className="mr-4"
+                        >
+                            <MaterialIcons
+                                name={outlineOn ? 'article' : 'format-list-bulleted'}
+                                size={22}
+                                color={outlineOn ? tokens.accent : tokens.textSecondary}
+                            />
+                        </TouchableOpacity>
+                        {outlineOn ? null : <TouchableOpacity
                             onPress={() => ink.setPenActive(!ink.penActive)}
                             accessibilityRole="button"
                             accessibilityLabel={t('preach:pen')}
@@ -619,7 +564,7 @@ export default function PreachModeScreen({
                                 size={22}
                                 color={ink.penActive ? tokens.accent : tokens.textSecondary}
                             />
-                        </TouchableOpacity>
+                        </TouchableOpacity>}
                         <TouchableOpacity
                             onPress={() => setShowBible(true)}
                             accessibilityRole="button"
@@ -667,12 +612,13 @@ export default function PreachModeScreen({
                 <PreachStatusBar
                     tokens={tokens}
                     budgets={budgets}
-                    elapsedSeconds={elapsed}
+                    elapsedSeconds={shownSeconds(tokens, elapsed)}
                     readingIndex={sectionIndex}
                     pageIndex={safePageIndex}
-                    pageCount={Math.max(1, pages.length)}
+                    pageCount={pageCount}
                     running={running}
                     numbers={statusBarMode === 'full'}
+                    endAt={preachClock.endAt}
                 />
             )}
 
@@ -706,7 +652,7 @@ export default function PreachModeScreen({
                             alignSelf: 'center',
                             // Sin esto, mientras se miden las alturas se ve el
                             // movimiento entero de un flash antes de paginar.
-                            opacity: measure && !measuring ? 1 : 0,
+                            opacity: showReading || (measure && (outlineOn || !measuring)) ? 1 : 0,
                         }}
                     >
                         {pageProbe}
@@ -727,11 +673,31 @@ export default function PreachModeScreen({
                                 }}
                             />
                         ) : null}
-                        {safePageIndex === 0 ? pageHeader : null}
+                        {showReading && passage ? (
+                            <PreachReadingPage
+                                passage={passage}
+                                tokens={tokens}
+                                fontSize={fontSize}
+                                face={deliveryFace}
+                                onTapAt={handleTap}
+                            />
+                        ) : null}
+                        {!showReading && safePageIndex === 0 ? pageHeader : null}
 
-                    <PreachSectionBody
+                    {!showReading && outlineOn ? (
+                        <PreachOutline
+                            items={outline}
+                            tokens={tokens}
+                            fontSize={fontSize}
+                            face={deliveryFace}
+                            onTapAt={handleTap}
+                        />
+                    ) : null}
+
+                    {showReading || outlineOn ? null : <PreachSectionBody
                         blocks={pageBlocks}
                         highlights={highlighting.highlights}
+                        glyphs={highlighting.glyphs}
                         fontSize={fontSize}
                         tokens={tokens}
                         senseLines={senseLines}
@@ -745,12 +711,13 @@ export default function PreachModeScreen({
                         onSelectionChange={highlighting.beginSelection}
                         onSelectionEnd={highlighting.endSelection}
                         onPressCitation={openCitation}
-                    />
+                        onPressReference={setVerseRef}
+                    />}
 
                     {/* Asomo: dos renglones de lo que viene, atenuados. Avisa
                         que el bloque sigue, y quita la duda de si la página
                         terminó la idea o la cortó. */}
-                    {nextPeek ? (
+                    {nextPeek && !showReading ? (
                         <View
                             pointerEvents="none"
                             style={{ marginTop: fontSize * 0.6, opacity: 0.32 }}
@@ -769,8 +736,9 @@ export default function PreachModeScreen({
                         </View>
                     ) : null}
 
-                    {sectionIndex === sections.length - 1 &&
-                        safePageIndex === Math.max(0, pages.length - 1) &&
+                    {!showReading &&
+                        sectionIndex === sections.length - 1 &&
+                        safePageIndex === pageCount - 1 &&
                         attributions.length > 0 && (
                         <View style={{ borderTopWidth: 1, borderTopColor: tokens.border }} className="mt-8 pt-4">
                             {attributions.map((block) => (
@@ -806,10 +774,10 @@ export default function PreachModeScreen({
                         tokens={tokens}
                         fontSize={fontSize}
                         budgets={budgets}
-                        elapsedSeconds={elapsed}
+                        elapsedSeconds={shownSeconds(tokens, elapsed)}
                         readingIndex={sectionIndex}
                         pageIndex={safePageIndex}
-                        pageCount={Math.max(1, pages.length)}
+                        pageCount={pageCount}
                         height={panelHeight}
                         numbers={panelMode === 'full'}
                     />
@@ -832,17 +800,34 @@ export default function PreachModeScreen({
                             {t('preach:sections')}
                         </Text>
                         <ScrollView>
+                            {passage ? (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setOnReadingPage(true);
+                                        setShowSections(false);
+                                    }}
+                                    className="py-3"
+                                >
+                                    <Text
+                                        style={{ color: showReading ? tokens.accent : tokens.textPrimary }}
+                                        className="font-lexend text-base"
+                                    >
+                                        {t('preach:reading_label')} · {passage.title}
+                                    </Text>
+                                </TouchableOpacity>
+                            ) : null}
                             {sections.map((s, i) => (
                                 <TouchableOpacity
                                     key={s.slug}
                                     onPress={() => {
+                                        setOnReadingPage(false);
                                         goTo(i);
                                         setShowSections(false);
                                     }}
                                     className="py-3"
                                 >
                                     <Text
-                                        style={{ color: i === sectionIndex ? tokens.accent : tokens.textPrimary }}
+                                        style={{ color: !showReading && i === sectionIndex ? tokens.accent : tokens.textPrimary }}
                                         className="font-lexend text-base"
                                     >
                                         {s.title || t('preach:opening')}
@@ -856,13 +841,56 @@ export default function PreachModeScreen({
 
             {/* La Biblia sin salir del sermón: abre en la referencia propia. */}
             <BibleConsultSheet
+                // Abre en la referencia tocada, o en la del sermón. La key la
+                // remonta: el cajón fija su libro al montarse.
+                key={bibleRefs?.join('|') ?? 'sermon'}
                 visible={showBible}
                 tokens={tokens}
                 face={deliveryFace}
                 fontSize={fontSize}
-                references={sermon.bibleReferences ?? []}
-                onClose={() => setShowBible(false)}
+                references={bibleRefs ?? sermon.bibleReferences ?? []}
+                onClose={() => {
+                    setShowBible(false);
+                    setBibleRefs(null);
+                }}
             />
+
+            {/* El versículo de una referencia tocada en el manuscrito (C7):
+                sin salir de la página. «Abrir en la Biblia» lleva al cajón. */}
+            <Modal
+                visible={verseRef !== null}
+                transparent
+                animationType={tokens.animations ? 'fade' : 'none'}
+                onRequestClose={() => setVerseRef(null)}
+            >
+                <Pressable className="flex-1 bg-black/50 items-center justify-center px-8" onPress={() => setVerseRef(null)}>
+                    <View className="rounded-2xl p-6 w-full max-w-2xl" style={{ backgroundColor: tokens.surface }}>
+                        <Text style={{ color: tokens.accent }} className="font-lexend-semibold text-base mb-2">
+                            {verseRef}
+                        </Text>
+                        <Text
+                            style={{ color: tokens.textPrimary, fontSize: Math.max(18, fontSize * 0.75), lineHeight: Math.max(18, fontSize * 0.75) * 1.45 }}
+                            className="font-lexend"
+                        >
+                            {(verseRef && verseTextFor(verseRef)) ?? t('preach:verse_unreadable')}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (verseRef) setBibleRefs([verseRef]);
+                                setVerseRef(null);
+                                setShowBible(true);
+                            }}
+                            accessibilityRole="button"
+                            className="self-end mt-4 px-4 py-2 rounded-full"
+                            style={{ borderWidth: 1, borderColor: tokens.border }}
+                        >
+                            <Text style={{ color: tokens.textPrimary }} className="font-lexend-semibold text-sm">
+                                {t('preach:open_in_bible')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </Pressable>
+            </Modal>
 
             {/* Ajustes: modo de luz, tipografía, corte de línea, duración */}
             <PreachSettingsSheet
@@ -887,16 +915,25 @@ export default function PreachModeScreen({
                 setDeliveryFace={setDeliveryFace}
                 hangingIndent={hangingIndent}
                 setHangingIndent={setHangingIndent}
+                readingPage={readingPageOn}
+                setReadingPage={setReadingPageOn}
+                brightness={preachBrightness}
+                setBrightness={setPreachBrightness}
                 targetMinutes={targetMinutes}
                 // Cambiar la duración ya no pone el reloj en cero (A4).
                 onPickDuration={(min) => id && setTargetMinutes(id, min)}
+                endAt={preachClock.endAt}
+                onToggleEndAt={() =>
+                    preachClock.setEndAt((at) =>
+                        at !== null ? null : suggestedEndAt(Date.now(), targetMinutes * 60 - elapsed),
+                    )
+                }
+                onShiftEndAt={(delta) =>
+                    preachClock.setEndAt((at) => (at === null ? at : shiftEndAt(at, delta, Date.now())))
+                }
                 // Volver a cero, a mano: para un ensayo que se repite, o si el
                 // reloj quedó mal. Antes no había forma.
-                onResetClock={() => {
-                    setClock(newClock(section?.slug ?? null));
-                    setNow(Date.now());
-                    if (id) void clearPreachSession(id);
-                }}
+                onResetClock={preachClock.reset}
                 budgets={budgets}
                 onSetBudget={(slug, seconds) => setBudgetOverride(`${id}|${slug}`, seconds)}
             />
@@ -970,12 +1007,13 @@ export default function PreachModeScreen({
                 onPick={highlighting.applyMark}
                 onRemove={highlighting.removeMark}
                 onClose={highlighting.close}
+                glyphs={{ current: highlighting.pendingGlyph, onPick: highlighting.applyGlyph }}
             />
 
             {/* Tinta encima de todo. Con el lápiz apagado la capa es
                 transparente al tacto: predicar no puede quedar detrás de una
                 capa de dibujo. */}
-            <InkLayer
+            {outlineOn ? null : <InkLayer
                 tokens={tokens}
                 notes={ink.notes}
                 anchorRectFor={ink.anchorRectFor}
@@ -988,7 +1026,7 @@ export default function PreachModeScreen({
                 onErase={ink.eraseStroke}
                 top={chromeTop}
                 bottom={panelHeight + insets.bottom}
-            />
+            />}
 
             {/* Barra del lápiz: colores, goma y salida. Va DESPUÉS de la capa
                 para quedar por encima — si quedara debajo, la propia capa
@@ -1070,13 +1108,13 @@ export default function PreachModeScreen({
             <PreachExitSheet
                 visible={showExit}
                 tokens={tokens}
-                report={buildRehearsalReport(budgets, spentSeconds(clock, now))}
+                report={buildRehearsalReport(budgets, preachClock.spent)}
                 sermonId={id ?? ''}
                 elapsedSeconds={elapsed}
                 onClose={() => setShowExit(false)}
                 onLeave={() => {
                     setShowExit(false);
-                    if (id) void clearPreachSession(id);
+                    preachClock.finish();
                     router.back();
                 }}
             />

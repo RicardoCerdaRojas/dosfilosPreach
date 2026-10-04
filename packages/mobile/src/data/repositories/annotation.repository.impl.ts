@@ -8,12 +8,14 @@ import {
     setDoc,
     updateDoc,
 } from '@react-native-firebase/firestore';
-import { HIGHLIGHT_COLORS, MARK_STYLES } from '@dosfilos/domain';
+import { HIGHLIGHT_COLORS, MARK_STYLES, PREACHER_GLYPHS } from '@dosfilos/domain';
 import type { InkNote, InkStroke } from '@dosfilos/domain';
 import { reportWriteFailure } from '@/core/errors/writeFailures';
 import type {
+    GlyphMark,
     HighlightColor,
     MarkStyle,
+    PreacherGlyph,
     SermonAnnotation,
     SermonAnnotationAnchor,
 } from '@dosfilos/domain';
@@ -208,6 +210,63 @@ export class AnnotationRepositoryImpl implements AnnotationRepository {
                 updatedBy: 'mobile',
             }),
             `updateMark ${annotationId}`,
+        );
+    }
+
+    /**
+     * Marcas de predicador (C7). Un glifo desconocido (de una versión más
+     * nueva de la app) se ignora en vez de dibujarse mal.
+     */
+    async listGlyphs(sermonId: string): Promise<GlyphMark[]> {
+        const snap = await getDocs(annotationsRef(sermonId));
+        return snap.docs
+            .map((d): GlyphMark | null => {
+                const data = d.data() as any;
+                if (data?.type !== 'glyph' || !PREACHER_GLYPHS.includes(data.glyph)) return null;
+                return {
+                    id: d.id,
+                    type: 'glyph',
+                    glyph: data.glyph as PreacherGlyph,
+                    sectionSlug: String(data.sectionSlug ?? ''),
+                    offset: Number(data.offset ?? 0),
+                    length: Number(data.length ?? 0),
+                    exact: String(data.exact ?? ''),
+                    prefix: String(data.prefix ?? ''),
+                    suffix: String(data.suffix ?? ''),
+                    createdAt: toDate(data.createdAt),
+                    updatedAt: toDate(data.updatedAt),
+                    updatedBy: data.updatedBy === 'web' ? 'web' : 'mobile',
+                };
+            })
+            .filter((g): g is GlyphMark => g !== null && g.exact.length > 0);
+    }
+
+    async createGlyph(sermonId: string, anchor: SermonAnnotationAnchor, glyph: PreacherGlyph): Promise<GlyphMark> {
+        const now = new Date();
+        const ref = doc(annotationsRef(sermonId));
+        settleOffline(
+            setDoc(ref, {
+                ...anchor,
+                type: 'glyph',
+                glyph,
+                userId: getFirebaseAuth().currentUser?.uid ?? null,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                updatedBy: 'mobile',
+            }),
+            `glyph create ${ref.id}`,
+        );
+        return { ...anchor, id: ref.id, type: 'glyph', glyph, createdAt: now, updatedAt: now, updatedBy: 'mobile' };
+    }
+
+    async updateGlyph(sermonId: string, annotationId: string, glyph: PreacherGlyph): Promise<void> {
+        settleOffline(
+            updateDoc(doc(annotationsRef(sermonId), annotationId), {
+                glyph,
+                updatedAt: serverTimestamp(),
+                updatedBy: 'mobile',
+            }),
+            `glyph update ${annotationId}`,
         );
     }
 

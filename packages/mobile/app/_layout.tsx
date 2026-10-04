@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { AppQueryClientProvider } from '@/core/providers/query-client.provider';
 import { useThemeStore } from '@/presentation/state/theme.store';
 import { useAuthStore } from '@/presentation/state/auth.store';
+import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 import { useLanguageStore } from '@/presentation/state/language.store';
 import { ToastNotification } from '@/presentation/components/ui/ToastNotification';
 import { APP_DARK, APP_LIGHT } from '@/core/theme/appTheme';
@@ -82,6 +83,7 @@ const CustomDefaultTheme = {
 };
 
 function RootLayoutNav() {
+  const einkPulpit = useReaderSettingsStore((state) => state.readingMode === 'eink');
   const deviceColorScheme = useDeviceColorScheme();
   const { setColorScheme } = useColorScheme();
   const themeMode = useThemeStore((state) => state.themeMode);
@@ -165,7 +167,9 @@ function RootLayoutNav() {
           <Stack.Screen name="sermon/paste" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen
             name="preach/[id]"
-            options={{ headerShown: false, animation: 'fade', gestureEnabled: false }}
+            // En tinta electrónica, sin fundido (C3): cada cuadro de la
+            // animación es un refresco de pantalla con su parpadeo.
+            options={{ headerShown: false, animation: einkPulpit ? 'none' : 'fade', gestureEnabled: false }}
           />
           {/* Grupo solo de desarrollo: sin header, como el púlpito real. */}
           {/* El perfil dibuja su propia cabecera. Sin esto encima quedaba la
