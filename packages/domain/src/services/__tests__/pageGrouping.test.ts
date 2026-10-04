@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { buildReadingBlocks } from '../sermonReading';
-import { groupUnbreakableBlocks } from '../pageGrouping';
+import { groupUnbreakableBlocks, packPages } from '../pageGrouping';
 
 const groupsOf = (markdown: string) => {
     const blocks = buildReadingBlocks(markdown);
@@ -53,5 +53,29 @@ describe('groupUnbreakableBlocks', () => {
 
     it('no explota sin bloques', () => {
         expect(groupUnbreakableBlocks([])).toEqual([]);
+    });
+});
+
+describe('packPages — las páginas del atril', () => {
+    it('empaqueta grupos enteros hasta llenar la página', () => {
+        expect(packPages([[0], [1], [2]], [40, 40, 40], 100)).toEqual([[0, 1], [2]]);
+    });
+
+    it('REGRESIÓN: la primera página descuenta los títulos', () => {
+        // Sin descontar, [0,1] entraban en 100 y la página se pasaba del alto
+        // real (los títulos ocupaban 30).
+        expect(packPages([[0], [1], [2]], [40, 40, 40], 100, 70)).toEqual([[0], [1, 2]]);
+    });
+
+    it('si el primer grupo no entra bajo los títulos, la primera página es sólo de títulos', () => {
+        expect(packPages([[0, 1]], [40, 40], 100, 50)).toEqual([[], [0, 1]]);
+    });
+
+    it('un grupo que no entra ni en una página vacía se reparte por bloques', () => {
+        expect(packPages([[0, 1, 2]], [60, 60, 60], 100)).toEqual([[0], [1], [2]]);
+    });
+
+    it('sin bloques no hay páginas (el movimiento se muestra con su título)', () => {
+        expect(packPages([], [], 100, 60)).toEqual([]);
     });
 });

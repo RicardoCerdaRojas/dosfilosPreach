@@ -282,7 +282,13 @@ export default function PreachModeScreen({
               ? // Sólo el riel: no hace falta más que su alto y un poco de aire.
                 44
               : Math.max(96, Math.round(readableHeight * panelRatio));
-    const pageHeight = readableHeight - panelHeight - fontSize * 2;
+    // Lo que queda para el texto: el alto visible menos el respiro de arriba
+    // (16) y el asomo de la página siguiente (0,6 de margen + 2 renglones de
+    // 1,4). Antes se reservaban 2 cuerpos y el asomo ocupa ~3,4: la última
+    // línea de cada página quedaba bajo el borde (A7).
+    const PEEK_LINES = 2;
+    const peekHeight = fontSize * 0.6 + PEEK_LINES * fontSize * 1.4;
+    const pageHeight = readableHeight - panelHeight - 16 - peekHeight;
 
     const renderBlockForMeasure = (block: ReadingBlock, index: number) => (
         <PreachSectionBody
@@ -302,7 +308,43 @@ export default function PreachModeScreen({
         />
     );
 
+    // Lo que va arriba de la primera página del movimiento. Se mide para
+    // descontarlo de esa página (A7).
+    const pageHeader =
+        (sectionIndex === 0 && sermon?.title) || section?.title ? (
+            <View>
+                {sectionIndex === 0 && sermon?.title ? (
+                    <Text
+                        style={{
+                            color: tokens.textPrimary,
+                            fontSize: Math.min(fontSize * 1.4, 46),
+                            marginBottom: fontSize * 0.8,
+                        }}
+                        className="font-lexend-bold leading-tight"
+                    >
+                        {sermon.title}
+                    </Text>
+                ) : null}
+                {section?.title ? (
+                    // Ubica, no compite: 0.6× en versalitas y color
+                    // secundario. A 1.15× le disputaba la pantalla al
+                    // título del sermón.
+                    <Text
+                        style={{
+                            color: tokens.textSecondary,
+                            fontSize: fontSize * TYPE_SCALE.movementTitle,
+                            marginBottom: fontSize * 0.5,
+                        }}
+                        className="font-lexend-semibold uppercase tracking-widest"
+                    >
+                        {section.title}
+                    </Text>
+                ) : null}
+            </View>
+        ) : null;
+
     const { pages, measuring, probe: pageProbe } = usePagination({
+        header: pageHeader ?? undefined,
         blocks,
         availableHeight: pageHeight,
         renderBlock: renderBlockForMeasure,
@@ -643,33 +685,7 @@ export default function PreachModeScreen({
                                 }}
                             />
                         ) : null}
-                        {sectionIndex === 0 && safePageIndex === 0 && (
-                            <Text
-                                style={{
-                                    color: tokens.textPrimary,
-                                    fontSize: Math.min(fontSize * 1.4, 46),
-                                    marginBottom: fontSize * 0.8,
-                                }}
-                                className="font-lexend-bold leading-tight"
-                            >
-                                {sermon.title}
-                            </Text>
-                        )}
-                        {section?.title && safePageIndex === 0 ? (
-                            // Ubica, no compite: 0.6× en versalitas y color
-                            // secundario. A 1.15× le disputaba la pantalla al
-                            // título del sermón.
-                            <Text
-                                style={{
-                                    color: tokens.textSecondary,
-                                    fontSize: fontSize * TYPE_SCALE.movementTitle,
-                                    marginBottom: fontSize * 0.5,
-                                }}
-                                className="font-lexend-semibold uppercase tracking-widest"
-                            >
-                                {section.title}
-                            </Text>
-                        ) : null}
+                        {safePageIndex === 0 ? pageHeader : null}
 
                     <PreachSectionBody
                         blocks={pageBlocks}

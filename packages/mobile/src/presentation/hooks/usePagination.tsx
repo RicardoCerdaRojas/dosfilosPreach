@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import type { ReadingBlock } from '@dosfilos/domain';
-import { groupUnbreakableBlocks } from '@dosfilos/domain';
+import { groupUnbreakableBlocks, packPages } from '@dosfilos/domain';
 
 /**
  * Paginación real del púlpito (D7, P1).
@@ -49,6 +49,12 @@ interface Options {
      * colometría, sección). Fuerza volver a medir.
      */
     layoutKey: string;
+    /**
+     * Lo que va arriba de la primera página (título del sermón y del
+     * movimiento). Se mide como un bloque más y se descuenta de la primera
+     * página (A7): antes no se contaba y esa página se pasaba del alto.
+     */
+    header?: React.ReactNode;
 }
 
 export function usePagination({
@@ -56,12 +62,19 @@ export function usePagination({
     availableHeight,
     renderBlock,
     layoutKey,
+    header,
 }: Options): Pagination {
     const [heights, setHeights] = useState<Record<string, number[]>>({});
+    const [headerHeights, setHeaderHeights] = useState<Record<string, number>>({});
 
     const measured = heights[layoutKey];
-    const complete =
-        blocks.length > 0 && measured?.length === blocks.length && measured.every((h) => h > 0);
+    const headerHeight = header ? headerHeights[layoutKey] : 0;
+    // Un movimiento SIN CUERPO (un `##` seguido de otro) es completo de
+    // entrada: antes `complete` exigía bloques, la medición no terminaba
+    // nunca y la página quedaba invisible, título incluido (A7).
+    const bodyMeasured =
+        blocks.length === 0 || (measured?.length === blocks.length && measured.every((h) => h > 0));
+    const complete = bodyMeasured && headerHeight !== undefined;
 
     const onMeasured = useCallback(
         (index: number, height: number) => {
@@ -76,48 +89,14 @@ export function usePagination({
     );
 
     const pages = useMemo(() => {
-        if (!complete || availableHeight <= 0) return [];
-        const result: number[][] = [];
-        let current: number[] = [];
-        let used = 0;
-
-        const flush = () => {
-            if (current.length) result.push(current);
-            current = [];
-            used = 0;
-        };
-
-        for (const group of groupUnbreakableBlocks(blocks)) {
-            const groupHeight = group.reduce((sum, i) => sum + measured[i], 0);
-
-            // El grupo entra entero en lo que queda: va junto.
-            if (used + groupHeight <= availableHeight) {
-                current.push(...group);
-                used += groupHeight;
-                continue;
-            }
-
-            // No entra acá pero sí en una página vacía: se pasa entero.
-            if (groupHeight <= availableHeight) {
-                flush();
-                current.push(...group);
-                used = groupHeight;
-                continue;
-            }
-
-            // Ni siquiera en una página vacía: se parte por bloques. Perder el
-            // agrupamiento es peor que perder el texto, pero sólo un poco.
-            for (const index of group) {
-                const height = measured[index];
-                if (current.length > 0 && used + height > availableHeight) flush();
-                current.push(index);
-                used += height;
-            }
-        }
-
-        flush();
-        return result;
-    }, [blocks, measured, complete, availableHeight]);
+        if (!complete || availableHeight <= 0 || blocks.length === 0) return [];
+        return packPages(
+            groupUnbreakableBlocks(blocks),
+            measured,
+            availableHeight,
+            availableHeight - (headerHeight ?? 0),
+        );
+    }, [blocks, measured, complete, availableHeight, headerHeight]);
 
     const probe = complete ? null : (
         <View
@@ -126,6 +105,17 @@ export function usePagination({
             style={{ position: 'absolute', opacity: 0, left: 0, right: 0 }}
             pointerEvents="none"
         >
+            {header ? (
+                <View
+                    key={`${layoutKey}-header`}
+                    onLayout={(e) => {
+                        const h = e.nativeEvent.layout.height;
+                        setHeaderHeights((cur) => (cur[layoutKey] === h ? cur : { ...cur, [layoutKey]: h }));
+                    }}
+                >
+                    {header}
+                </View>
+            ) : null}
             {blocks.map((block, index) => (
                 <View
                     key={`${layoutKey}-${index}`}
