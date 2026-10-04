@@ -18,12 +18,12 @@
         "resourceClass": "m-medium"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "env": {
+          "EXPO_PUBLIC_APPCHECK_DEBUG": "1"
+        }
       },
-      "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_APPCHECK_DEBUG": "1"
-      }
+      "channel": "preview"
     },
     "production": {
       "distribution": "store",
