@@ -40,9 +40,12 @@ mirar en desarrollo en `/dev/preach` (en release redirige).
   Play Integrity. Ojo, medido en el iPad (2026-08-28): con `@react-native-firebase` 26 el
   cliente de iOS termina usando **DeviceCheck** aunque se configure App Attest. Por eso en la
   consola de Firebase hay que registrar **los dos** proveedores para la app de iOS.
-- **Builds internos (`preview`):** `eas.json` enciende `EXPO_PUBLIC_APPCHECK_DEBUG=1`. El token
-  de debug entra por la variable de EAS `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN` (nunca se commitea:
-  quien lo tenga pasa App Check) y se registra a mano en la consola. `production` nunca lo lleva.
+- **Builds internos (`preview`):**
+  - **iOS** usa el mismo App Check que la tienda: un build ad hoc firmado tiene DeviceCheck de verdad, y así funcionó en el iPad el 2026-08-28.
+  - Con el modo de depuración encendido y sin token registrado, la app abría con las listas vacías. Por eso se quitó del perfil iOS el 2026-10-04.
+  - **Android** (APK instalado a mano) no tiene Play Integrity. Ahí sí va `EXPO_PUBLIC_APPCHECK_DEBUG=1`, con el token en la variable de EAS `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN`.
+  - Ese token nunca se commitea: quien lo tenga pasa App Check. Se registra a mano en la consola.
+  - `production` nunca lleva el modo de depuración.
 - Las llamadas al servidor esperan `appCheckReady()` antes de salir.
 
 ## Trámites de consola (los hace el fundador)
@@ -58,7 +61,7 @@ rechaza.
    Android). Vincular Play Integrity en Play Console.
 3. **Firebase → Authentication → Apple:** configurar el proveedor (Services ID, Team ID, Key ID
    y clave privada) para que «Eliminar mi cuenta» pueda revocar el token de Apple.
-4. **EAS:** variable `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN` sólo para `preview`.
+4. **EAS:** variable `EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN` sólo para `preview` de Android.
 5. **Correo:** que `privacy@dosfilos.app` reciba correo (lo nombran el borrado de cuenta y la
    política de privacidad).
 
