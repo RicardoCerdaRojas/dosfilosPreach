@@ -34,9 +34,15 @@ export interface PlanItemState {
 export function planStatus(items: PlanItemState[], now: Date = new Date()): PlanStatus {
     if (!items.length) return 'empty';
     if (items.every((item) => item.preached)) return 'finished';
+    const today = localDay(now);
+    // Por calendario: si todo lo que falta tenía fecha y ya pasó, la serie se
+    // predicó aunque no se haya registrado. Si no, quedaba «activa» para
+    // siempre y tapaba al plan siguiente (revisión adversarial).
+    const pending = items.filter((item) => !item.preached);
+    if (pending.every((item) => item.scheduledDate && calendarDay(item.scheduledDate) < today)) return 'finished';
     const started =
         items.some((item) => item.preached) ||
-        items.some((item) => item.scheduledDate && item.scheduledDate.getTime() <= now.getTime());
+        items.some((item) => item.scheduledDate && calendarDay(item.scheduledDate) <= today);
     return started ? 'active' : 'upcoming';
 }
 
@@ -97,15 +103,22 @@ const localDay = (now: Date) => now.getFullYear() * 10000 + (now.getMonth() + 1)
  *
  * Si el plan tiene fechas, manda el calendario: el primero sin predicar cuya
  * fecha es hoy o después. Lo que quedó atrás sin registrar ya pasó: no es lo
- * que se predica el domingo. Sin fechas (plan flexible), o con todas ya
- * pasadas, vale la regla de siempre.
+ * que se predica el domingo. Si ya no queda nada por delante, sólo lo que no
+ * tiene fecha. Un plan sin ninguna fecha (flexible) sigue la regla de siempre.
  */
 export function nextByCalendar<T extends PlanItemState>(items: T[], now: Date = new Date()): T | null {
     const today = localDay(now);
-    const upcoming = items
-        .filter((item) => !item.preached && item.scheduledDate && calendarDay(item.scheduledDate) >= today)
+    const pending = items.filter((item) => !item.preached);
+    const upcoming = pending
+        .filter((item) => item.scheduledDate && calendarDay(item.scheduledDate) >= today)
         .sort(planOrder);
-    return upcoming[0] ?? nextInPlan(items);
+    if (upcoming[0]) return upcoming[0];
+    // Sin nada por delante en el calendario: lo que queda sin fecha, si hay.
+    // Lo fechado que quedó atrás ya pasó; ofrecerlo era la semana 2 para
+    // siempre (revisión adversarial).
+    const undated = pending.filter((item) => !item.scheduledDate);
+    if (pending.some((item) => item.scheduledDate)) return nextInPlan(undated);
+    return nextInPlan(items);
 }
 
 /**

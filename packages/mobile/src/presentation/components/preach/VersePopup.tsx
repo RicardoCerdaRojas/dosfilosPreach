@@ -90,7 +90,11 @@ export function VersePopup({ reference, passage, tokens, fontSize, face, onOpenI
                             </Text>
                         )}
                     </ScrollView>
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+                        {/* Cerrar con un botón: VoiceOver no puede «tocar el fondo». */}
+                        <TouchableOpacity onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 8, paddingRight: 16 }}>
+                            <Text style={{ color: tokens.textSecondary, fontFamily: 'Lexend-SemiBold', fontSize: 14 }}>{t('common:close')}</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity
                             onPress={onOpenInBible}
                             accessibilityRole="button"

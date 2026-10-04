@@ -50,7 +50,9 @@
     "next_this_sunday": "This Sunday · {{date}}",
     "next_on": "For {{date}}",
     "choose_next_title": "What are you preaching this Sunday?",
-    "choose_next_hint": "The app infers it from the plan, but you decide. Your choice holds until you preach it.",
+    "choose_next_hint": "The app infers it from the plan, but you decide. Your choice holds for this Sunday.",
     "follow_plan": "Go back to what the plan says",
-    "already_preached": "Already preached"
+    "already_preached": "Already preached",
+    "next_past": "Was {{date}}",
+    "unwritten_hint": "Week {{week}} isn't written yet. Publish it from Preach on your computer, or pick another sermon with “Change”."
 }

@@ -47,3 +47,21 @@ export function daysBetween(a: Date, b: Date): number {
 export function addDays(date: Date, days: number): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 0, 0, 0, 0);
 }
+
+/**
+ * Una fecha GUARDADA, llevada a la medianoche local de SU día.
+ *
+ * Las fechas viejas se guardaron a medianoche UTC (`new Date('2026-10-04')`):
+ * en Chile eso es el sábado 3 a las 21:00, y pasarlas por `addDays(_, 0)`
+ * las «curaba» a la medianoche del sábado. Cada guardado del formulario de
+ * series corría el domingo al sábado, y la app del púlpito leía esa semana
+ * como ya pasada. Una fecha a medianoche UTC exacta es una fecha SIN hora:
+ * se toma su día UTC. Cualquier otra conserva su día local.
+ */
+export function fromStoredDate(date: Date): Date {
+    const dateOnly = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0;
+    return dateOnly
+        ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+        : new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+

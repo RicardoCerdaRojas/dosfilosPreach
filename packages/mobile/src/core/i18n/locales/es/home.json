@@ -50,7 +50,9 @@
     "next_this_sunday": "Este domingo · {{date}}",
     "next_on": "Para el {{date}}",
     "choose_next_title": "¿Qué predicas este domingo?",
-    "choose_next_hint": "La app lo deduce del plan, pero tú decides. Tu elección vale hasta que lo prediques.",
+    "choose_next_hint": "La app lo deduce del plan, pero tú decides. Tu elección vale para este domingo.",
     "follow_plan": "Volver a lo que dice el plan",
-    "already_preached": "Ya predicado"
+    "already_preached": "Ya predicado",
+    "next_past": "Era el {{date}}",
+    "unwritten_hint": "La semana {{week}} todavía no está escrita. Publícala desde Preach en tu computadora, o elige otro sermón con «Cambiar»."
 }
