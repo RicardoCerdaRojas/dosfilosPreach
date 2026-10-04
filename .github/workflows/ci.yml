@@ -113,6 +113,13 @@ jobs:
         working-directory: packages/mobile
         run: npx expo lint
 
+      # Pruebas de la app (jest-expo). Hasta la fase Púlpito premium no había
+      # ninguna: la paginación, el cronómetro y los gestos del atril se
+      # verificaban sólo a mano en el iPad.
+      - name: Tests
+        working-directory: packages/mobile
+        run: npx jest --ci
+
       # El bundle de Metro atrapa lo que tsc no ve: imports rotos en runtime,
       # assets faltantes, config de Metro inválida. No necesita SDKs nativos.
       - name: Metro bundle (android)

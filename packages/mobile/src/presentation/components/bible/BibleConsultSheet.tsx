@@ -75,7 +75,7 @@ export function BibleConsultSheet({
     };
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'} onRequestClose={onClose}>
             <Pressable className="flex-1 flex-row bg-black/40" onPress={onClose}>
                 <View className="flex-1" />
                 <Pressable

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,11 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { READING_MODE_LABEL_KEYS, ReadingMode, ReadingModeTokens } from '@/core/theme/readingModes';
 import { DELIVERY_FACES, DELIVERY_SIZE } from '@/core/theme/typography';
 import type { DeliveryFace } from '@/core/theme/typography';
-import type { MovementBudget } from '@dosfilos/domain';
+import { targetMinuteOptions, type MovementBudget } from '@dosfilos/domain';
 import type { InstrumentMode } from '@/presentation/state/readerSettings.store';
 
 const MODES: ReadingMode[] = ['claro', 'sepia', 'oscuro', 'atril', 'eink'];
-const DURATIONS = [20, 25, 30, 35, 40, 45];
 /** Guías de mirada, EXCLUYENTES entre sí. Ver el comentario del render. */
 const GAZE_GUIDES = ['none', 'sense', 'line'] as const;
 
@@ -39,6 +38,7 @@ interface Props {
     setHangingIndent: (on: boolean) => void;
     targetMinutes: number;
     onPickDuration: (minutes: number) => void;
+    onResetClock: () => void;
     /** Reparto vigente, ya resuelto (automático + lo fijado a mano). */
     budgets: MovementBudget[];
     /** Fija o suelta el presupuesto de un movimiento. `null` vuelve al automático. */
@@ -88,6 +88,7 @@ export function PreachSettingsSheet({
     setHangingIndent,
     targetMinutes,
     onPickDuration,
+    onResetClock,
     budgets,
     onSetBudget,
 }: Props) {
@@ -95,7 +96,7 @@ export function PreachSettingsSheet({
     const insets = useSafeAreaInsets();
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'} onRequestClose={onClose}>
             {/* Cajón lateral derecho, no hoja inferior. En una tablet el ancho
                 sobra y el alto no: una hoja desde abajo tapaba justo el tablero
                 y dejaba media pantalla vacía a los costados. */}
@@ -400,7 +401,7 @@ export function PreachSettingsSheet({
                         {t('preach:target_duration')}
                     </Text>
                     <View className="flex-row flex-wrap">
-                        {DURATIONS.map((min) => (
+                        {targetMinuteOptions(targetMinutes).map((min) => (
                             <TouchableOpacity
                                 key={min}
                                 onPress={() => onPickDuration(min)}
@@ -420,6 +421,21 @@ export function PreachSettingsSheet({
                             </TouchableOpacity>
                         ))}
                     </View>
+                    <TouchableOpacity
+                        onPress={() =>
+                            Alert.alert(t('preach:reset_clock'), t('preach:reset_clock_confirm'), [
+                                { text: t('common:cancel'), style: 'cancel' },
+                                { text: t('preach:reset_clock'), style: 'destructive', onPress: onResetClock },
+                            ])
+                        }
+                        accessibilityRole="button"
+                        className="flex-row items-center self-start mt-1"
+                    >
+                        <MaterialIcons name="restart-alt" size={18} color={tokens.textSecondary} />
+                        <Text style={{ color: tokens.textSecondary }} className="font-lexend text-sm ml-1.5">
+                            {t('preach:reset_clock')}
+                        </Text>
+                    </TouchableOpacity>
 
                     {budgets.length > 1 ? (
                         <>
@@ -460,7 +476,7 @@ export function PreachSettingsSheet({
                                             }}
                                             className="font-lexend text-sm"
                                         >
-                                            {Math.round(budget.seconds / 60)} min
+                                            {t('preach:minutes_short', { count: Math.round(budget.seconds / 60) })}
                                         </Text>
                                         <TouchableOpacity
                                             onPress={() => onSetBudget(budget.slug, budget.seconds + 60)}

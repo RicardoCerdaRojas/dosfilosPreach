@@ -16,4 +16,5 @@ export interface SermonRepository {
     updateSermonDraft(id: string, patch: { title: string; content: string }): Promise<void>;
     /** Suma una predicación al historial (F3). El campo existía sin cliente. */
     addPreachingLog(id: string, log: PreachingLog): Promise<void>;
+    removePreachingLog(id: string, log: PreachingLog): Promise<void>;
 }

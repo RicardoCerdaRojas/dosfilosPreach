@@ -33,7 +33,7 @@
     "exit_title": "Cómo fue el tiempo",
     "exit_total": "En total {{actual}} sobre {{budget}} presupuestados",
     "log_title": "Registrar la predicación",
-    "log_place": "Lugar (iglesia, ocasión)",
+    "log_place": "Lugar (opcional)",
     "log_notes": "Notas — qué aterrizó y qué no",
     "log_hint": "La fecha y la duración salen del cronómetro.",
     "log_save": "Guardar y salir",
@@ -61,5 +61,13 @@
     "status_bar": "Franja de arriba",
     "instrument_full": "Con números",
     "instrument_minimal": "Sólo la marca",
-    "instrument_off": "Oculto"
+    "instrument_off": "Oculto",
+    "offline_copy": "Sin conexión: copia del maletín",
+    "settings": "Ajustes de lectura",
+    "blackout": "Pantalla negra (toca para volver)",
+    "start_timer": "Iniciar el reloj",
+    "pause_timer": "Pausar el reloj",
+    "reset_clock": "Reiniciar el reloj",
+    "reset_clock_confirm": "El reloj y los tiempos por movimiento vuelven a cero.",
+    "minutes_short": "{{count}} min"
 }

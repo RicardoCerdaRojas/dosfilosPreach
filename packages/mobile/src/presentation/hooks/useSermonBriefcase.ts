@@ -1,50 +1,50 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Sermon } from '@dosfilos/domain';
 
 import { SermonRepositoryImpl } from '@/data/repositories/sermon.repository.impl';
 import { AnnotationRepositoryImpl } from '@/data/repositories/annotation.repository.impl';
+import {
+    listBriefcase,
+    readBriefcase,
+    removeBriefcase,
+    writeBriefcase,
+    type BriefcaseEntry,
+} from '@/data/offline/offlineSermons';
+import { useAuthStore } from '@/presentation/state/auth.store';
 
 const sermons = new SermonRepositoryImpl();
 const annotations = new AnnotationRepositoryImpl();
 
-const key = (sermonId: string) => `briefcase:${sermonId}`;
+export type { BriefcaseEntry };
 
 /**
  * El maletín (M-03): offline EXPLÍCITO, no caché con suerte.
  *
  * El sermón del domingo no puede depender de que la caché de Firestore
- * "probablemente" lo tenga. La caché del SDK nativo es buena pero es una
- * promesa que nadie firmó: se puede desalojar, y el pastor se entera parado
- * frente a la congregación. "Preparar para predicar" baja el documento
- * entero —cuerpo, manifiesto de citas y marcas— y lo guarda en una copia
- * propia que nadie más va a tocar.
+ * "probablemente" lo tenga. "Preparar para predicar" baja el documento entero
+ * —cuerpo, manifiesto de citas y marcas— y lo guarda en una copia propia.
  *
- * Lo que importa del diseño no es la copia: es que el pastor VEA el check
- * verde antes de subir al púlpito. Un estado que se puede mirar vale más que
- * una garantía que hay que creer.
+ * Desde A1 esa copia SE LEE: el atril y el detalle la usan cuando la red no
+ * contesta (`loadSermon`), y la lista la muestra aunque nunca se haya visto
+ * con red (`loadPublishedList`). Antes sólo pintaba el check verde.
  */
-export interface BriefcaseEntry {
-    sermon: Sermon;
-    savedAt: string;
-}
-
 export const useBriefcase = (sermonId: string) =>
     useQuery({
         queryKey: ['briefcase', sermonId],
-        queryFn: async (): Promise<BriefcaseEntry | null> => {
-            const raw = await AsyncStorage.getItem(key(sermonId));
-            if (!raw) return null;
-            try {
-                return JSON.parse(raw) as BriefcaseEntry;
-            } catch {
-                // Una entrada corrupta es como no tenerla: se re-prepara.
-                return null;
-            }
-        },
+        queryFn: () => readBriefcase(sermonId),
         enabled: !!sermonId,
         staleTime: Infinity,
     });
+
+/** Los ids guardados: la lista y el inicio marcan cuáles están listos. */
+export const useBriefcaseIds = () => {
+    const uid = useAuthStore((s) => s.user?.id);
+    return useQuery({
+        queryKey: ['briefcase', 'ids', uid],
+        queryFn: async () => new Set((await listBriefcase(uid ?? '')).map((e) => e.sermon.id)),
+        enabled: !!uid,
+        staleTime: Infinity,
+    });
+};
 
 export const usePrepareBriefcase = (sermonId: string) => {
     const queryClient = useQueryClient();
@@ -57,19 +57,23 @@ export const usePrepareBriefcase = (sermonId: string) => {
             // el domingo sin ella.
             await annotations.list(sermonId).catch(() => []);
             const entry: BriefcaseEntry = { sermon, savedAt: new Date().toISOString() };
-            await AsyncStorage.setItem(key(sermonId), JSON.stringify(entry));
+            await writeBriefcase(entry);
             return entry;
         },
         onSuccess: (entry) => {
             queryClient.setQueryData(['briefcase', sermonId], entry);
+            queryClient.invalidateQueries({ queryKey: ['briefcase', 'ids'] });
         },
     });
 };
 
-export const useClearBriefcase = (sermonId: string) => {
+export const useRemoveBriefcase = (sermonId: string) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: () => AsyncStorage.removeItem(key(sermonId)),
-        onSuccess: () => queryClient.setQueryData(['briefcase', sermonId], null),
+        mutationFn: () => removeBriefcase(sermonId),
+        onSuccess: () => {
+            queryClient.setQueryData(['briefcase', sermonId], null);
+            queryClient.invalidateQueries({ queryKey: ['briefcase', 'ids'] });
+        },
     });
 };

@@ -14,6 +14,7 @@ import { useReaderSettingsStore } from '@/presentation/state/readerSettings.stor
 import { usePublishedSermons, useSermon } from '@/presentation/hooks/useSermons';
 import { usePlanBoard, type PlanBoard } from '@/presentation/hooks/usePlanBoard';
 import { useBriefcase } from '@/presentation/hooks/useSermonBriefcase';
+import { OfflineNotice } from '@/presentation/components/OfflineNotice';
 import { useBibleMarks } from '@/presentation/hooks/useBibleMarks';
 import { BibleVersionFactory } from '@/data/repositories/bible/BibleVersionFactory';
 import { SermonCard } from '@/presentation/components/SermonCard';
@@ -45,7 +46,7 @@ export default function HomeScreen() {
     const { gutter, isTablet } = useLayout();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const { data: groups, isLoading } = usePublishedSermons();
+    const { data: groups, isLoading, error, refetch } = usePublishedSermons();
     const { current: plan } = usePlanBoard();
 
     const all = (groups ?? []).flatMap((g) => g.sermons);
@@ -105,6 +106,8 @@ export default function HomeScreen() {
                     {isTablet ? null : <UserAvatar />}
                 </View>
 
+                <OfflineNotice />
+
                 {isLoading ? (
                     <Card theme={theme} style={{ padding: 24 }}>
                         <Skeleton theme={theme} height={12} width={120} />
@@ -114,6 +117,28 @@ export default function HomeScreen() {
                     </Card>
                 ) : next ? (
                     <NextSermon sermon={next} />
+                ) : error ? (
+                    // Falló la carga: se dice. Antes se veía «no tienes
+                    // sermones», que parece un problema de datos (A2).
+                    <Card theme={theme}>
+                        <EmptyState
+                            theme={theme}
+                            title={t('common:load_failed')}
+                            hint={t('common:load_failed_hint')}
+                            action={
+                                <TouchableOpacity
+                                    onPress={() => refetch()}
+                                    accessibilityRole="button"
+                                    className="px-6 py-3 rounded-full active:opacity-85"
+                                    style={{ backgroundColor: theme.accent }}
+                                >
+                                    <Text style={{ color: theme.onAccent }} className="font-lexend-semibold">
+                                        {t('common:retry')}
+                                    </Text>
+                                </TouchableOpacity>
+                            }
+                        />
+                    </Card>
                 ) : (
                     <Card theme={theme}>
                         <EmptyState
@@ -491,7 +516,9 @@ function SeriesProgress({ title, sermons }: { title: string | null; sermons: Ser
     const router = useRouter();
     const { t } = useTranslation();
 
-    const preached = sermons.filter((s) => s.publishedAt).length;
+    // Predicados, no publicados: contaba `publishedAt`, que en la lista de
+    // publicados tienen todos — la serie salía siempre «N de N» (A6).
+    const preached = sermons.filter((s) => s.timesPreached > 0).length;
 
     return (
         <SupportCard

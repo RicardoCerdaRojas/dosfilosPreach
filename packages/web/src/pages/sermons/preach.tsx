@@ -39,17 +39,13 @@ import { useHighlights } from '@/hooks/useHighlights';
 import { HighlightToolbar } from '@/components/preach/HighlightToolbar';
 import { applyHighlights as applyHighlightsRenderer } from './preach/highlightRenderer';
 import { FloatingTimer } from './preach/FloatingTimer';
+import { extractSections, slugifyHeader } from '@dosfilos/domain';
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
-
-interface PreachSection {
-  title: string;
-  slug: string;
-}
 
 function extractText(children: any): string {
   if (typeof children === 'string') return children;
@@ -60,45 +56,8 @@ function extractText(children: any): string {
   return '';
 }
 
-function slugifyHeader(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .substring(0, 80);
-}
-
-function extractSections(markdown: string): PreachSection[] {
-  if (!markdown) return [];
-  const lines = markdown.split('\n');
-  const sections: PreachSection[] = [];
-  const seenSlugs = new Set<string>();
-  for (const line of lines) {
-    // Only level-2 headers ("## Introducción", "## Punto I", etc.).
-    // Level-1 is the sermon title (rendered separately), level-3+ are
-    // sub-sections within a point and would clutter the nav.
-    const match = line.match(/^##\s+(.+?)\s*$/);
-    if (!match) continue;
-    const title = match[1].trim();
-    if (!title) continue;
-    let slug = slugifyHeader(title);
-    if (!slug) continue;
-    // Dedupe slugs on collision (rare — same header text twice) by
-    // appending a counter so jump-to picks the first occurrence
-    // reliably without DOM duplicate-id warnings.
-    let suffix = 1;
-    let candidate = slug;
-    while (seenSlugs.has(candidate)) {
-      candidate = `${slug}-${++suffix}`;
-    }
-    seenSlugs.add(candidate);
-    sections.push({ title, slug: candidate });
-  }
-  return sections;
-}
-
+// Secciones y slugs: del dominio, la misma copia que usa la tablet. Las
+// marcas se anclan por slug y antes había dos copias a mano (A7).
 export function PreachModePage() {
   const { t } = useTranslation('sermonDetail');
   const { id } = useParams<{ id: string }>();
@@ -483,7 +442,7 @@ export function PreachModePage() {
           {highlights.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                <div className="h-2 w-2 rounded-full bg-yellow-400" />
+                <div className="h-2 w-2 rounded-full bg-warning" />
                 <span>{t('preachMode.highlights', { count: highlights.length })}</span>
               </div>
               <Button 

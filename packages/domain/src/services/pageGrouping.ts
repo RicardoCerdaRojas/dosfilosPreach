@@ -48,3 +48,64 @@ export function groupUnbreakableBlocks(blocks: ReadingBlock[]): number[][] {
 
     return groups;
 }
+
+/**
+ * Arma las páginas del atril con las alturas ya medidas.
+ *
+ * Empaqueta GRUPOS (`groupUnbreakableBlocks`), nunca parte uno que entra en
+ * una página vacía, y si un grupo no entra ni así lo reparte por bloques.
+ *
+ * `firstPageCapacity`: la primera página lleva arriba el título del sermón y
+ * el del movimiento, y antes no se descontaban — la primera página de cada
+ * movimiento se pasaba del alto y había que scrollear (A7). Si el primer
+ * grupo no entra debajo de los títulos pero sí en una página entera, la
+ * primera página queda sólo con los títulos: mejor eso que cortar la idea.
+ *
+ * Sin bloques no hay páginas; el que llama muestra el movimiento con su
+ * título igual.
+ */
+export function packPages(
+    groups: readonly number[][],
+    heights: readonly number[],
+    capacity: number,
+    firstPageCapacity: number = capacity,
+): number[][] {
+    if (capacity <= 0) return [];
+    const pages: number[][] = [];
+    let current: number[] = [];
+    let used = 0;
+    const room = () => (pages.length === 0 ? firstPageCapacity : capacity);
+    const flush = () => {
+        pages.push(current);
+        current = [];
+        used = 0;
+    };
+
+    for (const group of groups) {
+        const groupHeight = group.reduce((sum, i) => sum + (heights[i] ?? 0), 0);
+        if (used + groupHeight <= room()) {
+            current.push(...group);
+            used += groupHeight;
+            continue;
+        }
+        if (groupHeight <= capacity) {
+            flush();
+            current.push(...group);
+            used = groupHeight;
+            continue;
+        }
+        // Ni en una página vacía: se reparte por bloques.
+        for (const index of group) {
+            const height = heights[index] ?? 0;
+            // También acá la primera página puede quedar sólo con los títulos:
+            // un bloque que no entra debajo de ellos pero sí en una página
+            // entera no se monta encima (revisión adversarial de A7).
+            const titlesOnly = pages.length === 0 && current.length === 0 && height > room() && height <= capacity;
+            if ((used + height > room() && current.length > 0) || titlesOnly) flush();
+            current.push(index);
+            used += height;
+        }
+    }
+    if (current.length) pages.push(current);
+    return pages;
+}

@@ -38,5 +38,11 @@
     "preached_times": "Preached {{count}} times",
     "not_preached_yet": "Not preached",
     "mark_preached_confirm": "Recorded with today's date. You can add place and notes when leaving the pulpit.",
-    "mark_preached_again": "Already marked as preached. Record another one?"
+    "mark_preached_again": "Already marked as preached. Record another one?",
+    "offline_notice": "Offline: you're seeing what's saved on this tablet.",
+    "offline_saved_on": "Saved for offline use on {{date}}.",
+    "offline_update": "Update copy",
+    "offline_remove": "Remove from briefcase",
+    "offline_ready_badge": "Ready offline",
+    "marked_preached": "Marked as preached."
 }

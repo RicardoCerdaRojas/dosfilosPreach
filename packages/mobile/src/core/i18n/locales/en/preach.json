@@ -33,7 +33,7 @@
     "exit_title": "How the time went",
     "exit_total": "{{actual}} in total, out of {{budget}} budgeted",
     "log_title": "Log this preaching",
-    "log_place": "Place (church, occasion)",
+    "log_place": "Place (optional)",
     "log_notes": "Notes — what landed and what didn't",
     "log_hint": "Date and duration come from the timer.",
     "log_save": "Save and exit",
@@ -61,5 +61,13 @@
     "status_bar": "Top strip",
     "instrument_full": "With numbers",
     "instrument_minimal": "Marker only",
-    "instrument_off": "Hidden"
+    "instrument_off": "Hidden",
+    "offline_copy": "Offline: briefcase copy",
+    "settings": "Reading settings",
+    "blackout": "Black screen (tap to return)",
+    "start_timer": "Start the clock",
+    "pause_timer": "Pause the clock",
+    "reset_clock": "Reset the clock",
+    "reset_clock_confirm": "The clock and the per-movement times go back to zero.",
+    "minutes_short": "{{count}} min"
 }

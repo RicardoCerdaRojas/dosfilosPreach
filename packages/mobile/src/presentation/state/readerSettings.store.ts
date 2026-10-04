@@ -138,6 +138,24 @@ interface ReaderSettingsState {
     setPanelRatio: (ratio: number) => void;
     budgetOverrides: Record<string, number>;
     setBudgetOverride: (key: string, seconds: number | null) => void;
+    /**
+     * Duración objetivo por sermón, en minutos (A4). Antes era 30 fijos para
+     * todos y se olvidaba al salir del atril: un sermón de 45 había que
+     * reajustarlo cada vez. Lo que no se fija sale del texto.
+     */
+    targetMinutesBySermon: Record<string, number>;
+    setTargetMinutes: (sermonId: string, minutes: number) => void;
+    /** Dónde predicó la última vez: casi siempre es el mismo lugar (A5). */
+    lastPreachingPlace: string;
+    setLastPreachingPlace: (place: string) => void;
+    /**
+     * Borra lo que es DE LA PERSONA (lugar de predicación, duraciones y
+     * presupuestos por sermón, búsquedas, dónde quedó leyendo) y conserva lo
+     * que es del aparato (tamaño, modo de luz). Al cerrar sesión (revisión
+     * adversarial de A8): el siguiente pastor encontraba el lugar del anterior
+     * ya escrito y lo registraba sin darse cuenta.
+     */
+    resetPersonal: () => void;
 }
 
 export const useReaderSettingsStore = create<ReaderSettingsState>()(
@@ -197,6 +215,21 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
                     else next[key] = seconds;
                     return { budgetOverrides: next };
                 }),
+            resetPersonal: () =>
+                set({
+                    lastPreachingPlace: '',
+                    targetMinutesBySermon: {},
+                    budgetOverrides: {},
+                    recentSearches: [],
+                    lastRead: null,
+                }),
+            lastPreachingPlace: '',
+            setLastPreachingPlace: (place: string) => set({ lastPreachingPlace: place }),
+            targetMinutesBySermon: {},
+            setTargetMinutes: (sermonId: string, minutes: number) =>
+                set((state) => ({
+                    targetMinutesBySermon: { ...state.targetMinutesBySermon, [sermonId]: minutes },
+                })),
         }),
         {
             name: 'reader-settings-storage',

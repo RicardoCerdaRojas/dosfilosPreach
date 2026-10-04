@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '@/core/theme/appTheme';
 import { useLayout } from '@/core/theme/layout';
 import { usePublishedSermons } from '@/presentation/hooks/useSermons';
+import { OfflineNotice } from '@/presentation/components/OfflineNotice';
 import { SermonCard } from '@/presentation/components/SermonCard';
 import { SermonDetailView } from '@/presentation/screens/sermons/SermonDetailView';
 import { EmptyState, SectionLabel, Skeleton } from '@/presentation/components/ui/kit';
@@ -103,6 +104,9 @@ export default function SermonListScreen() {
                             <MaterialIcons name="close" size={18} color={theme.textMuted} />
                         </TouchableOpacity>
                     ) : null}
+                </View>
+                <View style={{ marginTop: 12 }}>
+                    <OfflineNotice />
                 </View>
             </View>
 

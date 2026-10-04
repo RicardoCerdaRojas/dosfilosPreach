@@ -36,7 +36,7 @@ export default function PlansScreen() {
     const { t } = useTranslation();
     const { isSplit, gutter } = useLayout();
 
-    const { plans, current, isLoading } = usePlanBoard();
+    const { plans, current, isLoading, error, refetch } = usePlanBoard();
     const [openId, setOpenId] = useState<string | null>(null);
 
     /**
@@ -72,6 +72,32 @@ export default function PlansScreen() {
                         <Skeleton theme={theme} key={i} height={78} style={{ marginTop: 12 }} />
                     ))}
                 </View>
+            </View>
+        );
+    }
+
+    if (error && !ordered.length) {
+        return (
+            <View
+                className="flex-1 justify-center"
+                style={{ backgroundColor: theme.background, paddingTop: insets.top }}
+            >
+                <EmptyState
+                    theme={theme}
+                    title={t('common:load_failed')}
+                    action={
+                        <TouchableOpacity
+                            onPress={refetch}
+                            accessibilityRole="button"
+                            className="px-6 py-3 rounded-full active:opacity-85"
+                            style={{ backgroundColor: theme.accent }}
+                        >
+                            <Text style={{ color: theme.onAccent }} className="font-lexend-semibold">
+                                {t('common:retry')}
+                            </Text>
+                        </TouchableOpacity>
+                    }
+                />
             </View>
         );
     }
@@ -118,6 +144,15 @@ export default function PlansScreen() {
             }}
         >
             {header}
+            {/* Los planes cargaron pero la lista de sermones no: sin aviso,
+                todas las semanas se veían «sin escribir» (revisión de A2). */}
+            {error ? (
+                <View style={{ paddingHorizontal: isSplit ? 16 : gutter }}>
+                    <Text style={{ color: theme.warning, fontSize: 13 }} className="font-lexend mb-2">
+                        {t('plans:sermons_unavailable')}
+                    </Text>
+                </View>
+            ) : null}
             <ScrollView
                 contentContainerStyle={{
                     paddingHorizontal: isSplit ? 16 : gutter,

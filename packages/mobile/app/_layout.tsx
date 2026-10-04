@@ -1,5 +1,5 @@
 import { DarkTheme as navigationDarkTheme, DefaultTheme as navigationDefaultTheme, ThemeProvider } from 'expo-router';
-import { LogBox, View, useColorScheme as useDeviceColorScheme } from 'react-native';
+import { View, useColorScheme as useDeviceColorScheme } from 'react-native';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -21,8 +21,6 @@ import { useEffect, useMemo } from 'react';
 import { useColorScheme } from 'nativewind';
 import 'react-native-reanimated';
 
-// Ignore specific warnings
-LogBox.ignoreLogs(['Sign in failed', 'Sign up failed', 'Google sign in failed']);
 
 import { AppQueryClientProvider } from '@/core/providers/query-client.provider';
 import { useThemeStore } from '@/presentation/state/theme.store';

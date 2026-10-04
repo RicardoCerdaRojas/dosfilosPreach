@@ -6,6 +6,7 @@ import type { RehearsalReport } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
 import { useAddPreachingLog } from '@/presentation/hooks/useSermons';
+import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 
 interface Props {
     visible: boolean;
@@ -52,7 +53,10 @@ export function PreachExitSheet({
     const insets = useSafeAreaInsets();
     const addLog = useAddPreachingLog(sermonId);
 
-    const [location, setLocation] = useState('');
+    // El lugar del registro anterior: casi siempre se predica en el mismo.
+    const lastPlace = useReaderSettingsStore((s) => s.lastPreachingPlace);
+    const setLastPlace = useReaderSettingsStore((s) => s.setLastPreachingPlace);
+    const [location, setLocation] = useState(lastPlace);
     const [notes, setNotes] = useState('');
 
     /**
@@ -64,6 +68,7 @@ export function PreachExitSheet({
      * opcionales: son detalle del registro, no la condición para que exista.
      */
     const saveAndLeave = () => {
+        if (location.trim()) setLastPlace(location.trim());
         addLog.mutate({
             date: new Date(),
             location: location.trim(),
@@ -74,7 +79,7 @@ export function PreachExitSheet({
     };
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'slide' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'slide' : 'none'} onRequestClose={onClose}>
             <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
                 <Pressable
                     className="rounded-t-3xl px-7 pt-6"
@@ -204,14 +209,14 @@ export function PreachExitSheet({
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
+                            // El lugar es opcional: el comentario de arriba lo
+                            // decía y el botón lo exigía (A5).
                             onPress={saveAndLeave}
-                            disabled={!location.trim()}
                             accessibilityRole="button"
                             accessibilityLabel={t('preach:log_save')}
                             className="flex-1 py-3 rounded-full items-center"
                             style={{
                                 backgroundColor: tokens.accent,
-                                opacity: location.trim() ? 1 : 0.4,
                             }}
                         >
                             <Text
