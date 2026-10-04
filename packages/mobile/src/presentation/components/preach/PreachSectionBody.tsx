@@ -38,6 +38,8 @@ interface Props {
     /** Tap sobre el texto: la navegación por zonas ⅓ sigue viva encima del cuerpo. */
     onTapAt: (pageX: number) => void;
     onPressCitation: (ordinals: number[]) => void;
+    /** Tocar una referencia bíblica del manuscrito (C7). */
+    onPressReference?: (reference: string) => void;
     /** Abre una cita de bloque colapsada (aparato de estudio, P5). */
     onPressApparatus: (text: string) => void;
     /** Familia de entrega elegida por el predicador. */
@@ -88,6 +90,7 @@ export function PreachSectionBody({
     onSelectionEnd,
     onTapAt,
     onPressCitation,
+    onPressReference,
     onPressApparatus,
     face,
     hangingIndent,
@@ -161,6 +164,8 @@ export function PreachSectionBody({
                 onSelectionEnd={onSelectionEnd}
                 onTapAt={onTapAt}
                 onPressCitation={onPressCitation}
+                onPressReference={onPressReference}
+                referenceColor={tokens.accent}
                 faceClass={FACE_CLASS[face].regular}
                 hangingIndent={hangingIndent ? fontSize * HANGING_INDENT_EM : 0}
             />

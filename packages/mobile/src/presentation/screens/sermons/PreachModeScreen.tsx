@@ -52,6 +52,8 @@ import { PreachSettingsSheet } from '@/presentation/components/preach/PreachSett
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
 import { usePagination } from '@/presentation/hooks/usePagination';
+import { PreachReadingPage } from '@/presentation/components/preach/PreachReadingPage';
+import { readingPassageFor, verseTextFor } from '@/data/repositories/bible/BibleVersionFactory';
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 import { useUIStore } from '@/presentation/state/ui.store';
 import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
@@ -101,6 +103,8 @@ export default function PreachModeScreen({
     const panelRatio = useReaderSettingsStore((s) => s.panelRatio);
     const setPanelRatio = useReaderSettingsStore((s) => s.setPanelRatio);
     const budgetOverrides = useReaderSettingsStore((s) => s.budgetOverrides);
+    const readingPageOn = useReaderSettingsStore((s) => s.readingPage);
+    const setReadingPageOn = useReaderSettingsStore((s) => s.setReadingPage);
     const targetBySermon = useReaderSettingsStore((s) => s.targetMinutesBySermon);
     const setTargetMinutes = useReaderSettingsStore((s) => s.setTargetMinutes);
     const setBudgetOverride = useReaderSettingsStore((s) => s.setBudgetOverride);
@@ -129,6 +133,12 @@ export default function PreachModeScreen({
     );
     /** Cita de bloque abierta desde su marca al margen (P5). */
     const [apparatus, setApparatus] = useState<string | null>(null);
+    /** Referencia bíblica tocada en el manuscrito: su versículo en capa (C7). */
+    const [verseRef, setVerseRef] = useState<string | null>(null);
+    /** La Biblia del atril abierta en una referencia tocada (C7). */
+    const [bibleRefs, setBibleRefs] = useState<string[] | null>(null);
+    /** En la página de Lectura, antes del primer movimiento (C7). */
+    const [onReadingPage, setOnReadingPage] = useState(initialSectionIndex === 0);
 
     /**
      * El reloj (A4): estado + hora de pared, del dominio. El intervalo de
@@ -195,6 +205,9 @@ export default function PreachModeScreen({
     }, [running, id]);
 
     const sections = sermon?.content ? extractSectionsWithBody(sermon.content) : [];
+    // El pasaje para la página de Lectura: el primero que la Biblia local lee.
+    const passage = readingPageOn ? readingPassageFor(sermon?.bibleReferences ?? []) : null;
+    const showReading = onReadingPage && passage !== null;
     const section = sections[sectionIndex];
     const manifest = sermon?.citationManifest;
     const attributions = aggregateRequiredAttributions(manifest);
@@ -235,6 +248,7 @@ export default function PreachModeScreen({
         void readPreachSession(id, Date.now())
             .then((session) => {
                 if (session) {
+                    setOnReadingPage(false);
                     const t0 = Date.now();
                     const at = known.findIndex((sec) => sec.slug === session.sectionSlug);
                     if (at >= 0) {
@@ -434,6 +448,20 @@ export default function PreachModeScreen({
 
     const step = (delta: number) => {
         ensureClockStarted();
+        // Desde la Lectura, adelante entra al primer movimiento.
+        if (showReading) {
+            if (delta > 0) {
+                setOnReadingPage(false);
+                enterSection(0, 0);
+            }
+            return;
+        }
+        // Desde la primera página del sermón, atrás vuelve a la Lectura.
+        if (delta < 0 && passage && sectionIndex === 0 && safePageIndex === 0) {
+            setOnReadingPage(true);
+            setClock((c) => moveClockTo(c, 'lectura', Date.now()));
+            return;
+        }
         const next = safePageIndex + delta;
         if (next >= 0 && next < pages.length) {
             setPageIndex(next);
@@ -706,7 +734,7 @@ export default function PreachModeScreen({
                             alignSelf: 'center',
                             // Sin esto, mientras se miden las alturas se ve el
                             // movimiento entero de un flash antes de paginar.
-                            opacity: measure && !measuring ? 1 : 0,
+                            opacity: showReading || (measure && !measuring) ? 1 : 0,
                         }}
                     >
                         {pageProbe}
@@ -727,9 +755,18 @@ export default function PreachModeScreen({
                                 }}
                             />
                         ) : null}
-                        {safePageIndex === 0 ? pageHeader : null}
+                        {showReading && passage ? (
+                            <PreachReadingPage
+                                passage={passage}
+                                tokens={tokens}
+                                fontSize={fontSize}
+                                face={deliveryFace}
+                                onTapAt={handleTap}
+                            />
+                        ) : null}
+                        {!showReading && safePageIndex === 0 ? pageHeader : null}
 
-                    <PreachSectionBody
+                    {showReading ? null : <PreachSectionBody
                         blocks={pageBlocks}
                         highlights={highlighting.highlights}
                         fontSize={fontSize}
@@ -745,12 +782,13 @@ export default function PreachModeScreen({
                         onSelectionChange={highlighting.beginSelection}
                         onSelectionEnd={highlighting.endSelection}
                         onPressCitation={openCitation}
-                    />
+                        onPressReference={setVerseRef}
+                    />}
 
                     {/* Asomo: dos renglones de lo que viene, atenuados. Avisa
                         que el bloque sigue, y quita la duda de si la página
                         terminó la idea o la cortó. */}
-                    {nextPeek ? (
+                    {nextPeek && !showReading ? (
                         <View
                             pointerEvents="none"
                             style={{ marginTop: fontSize * 0.6, opacity: 0.32 }}
@@ -769,7 +807,8 @@ export default function PreachModeScreen({
                         </View>
                     ) : null}
 
-                    {sectionIndex === sections.length - 1 &&
+                    {!showReading &&
+                        sectionIndex === sections.length - 1 &&
                         safePageIndex === Math.max(0, pages.length - 1) &&
                         attributions.length > 0 && (
                         <View style={{ borderTopWidth: 1, borderTopColor: tokens.border }} className="mt-8 pt-4">
@@ -832,17 +871,34 @@ export default function PreachModeScreen({
                             {t('preach:sections')}
                         </Text>
                         <ScrollView>
+                            {passage ? (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setOnReadingPage(true);
+                                        setShowSections(false);
+                                    }}
+                                    className="py-3"
+                                >
+                                    <Text
+                                        style={{ color: showReading ? tokens.accent : tokens.textPrimary }}
+                                        className="font-lexend text-base"
+                                    >
+                                        {t('preach:reading_label')} · {passage.title}
+                                    </Text>
+                                </TouchableOpacity>
+                            ) : null}
                             {sections.map((s, i) => (
                                 <TouchableOpacity
                                     key={s.slug}
                                     onPress={() => {
+                                        setOnReadingPage(false);
                                         goTo(i);
                                         setShowSections(false);
                                     }}
                                     className="py-3"
                                 >
                                     <Text
-                                        style={{ color: i === sectionIndex ? tokens.accent : tokens.textPrimary }}
+                                        style={{ color: !showReading && i === sectionIndex ? tokens.accent : tokens.textPrimary }}
                                         className="font-lexend text-base"
                                     >
                                         {s.title || t('preach:opening')}
@@ -856,13 +912,56 @@ export default function PreachModeScreen({
 
             {/* La Biblia sin salir del sermón: abre en la referencia propia. */}
             <BibleConsultSheet
+                // Abre en la referencia tocada, o en la del sermón. La key la
+                // remonta: el cajón fija su libro al montarse.
+                key={bibleRefs?.join('|') ?? 'sermon'}
                 visible={showBible}
                 tokens={tokens}
                 face={deliveryFace}
                 fontSize={fontSize}
-                references={sermon.bibleReferences ?? []}
-                onClose={() => setShowBible(false)}
+                references={bibleRefs ?? sermon.bibleReferences ?? []}
+                onClose={() => {
+                    setShowBible(false);
+                    setBibleRefs(null);
+                }}
             />
+
+            {/* El versículo de una referencia tocada en el manuscrito (C7):
+                sin salir de la página. «Abrir en la Biblia» lleva al cajón. */}
+            <Modal
+                visible={verseRef !== null}
+                transparent
+                animationType={tokens.animations ? 'fade' : 'none'}
+                onRequestClose={() => setVerseRef(null)}
+            >
+                <Pressable className="flex-1 bg-black/50 items-center justify-center px-8" onPress={() => setVerseRef(null)}>
+                    <View className="rounded-2xl p-6 w-full max-w-2xl" style={{ backgroundColor: tokens.surface }}>
+                        <Text style={{ color: tokens.accent }} className="font-lexend-semibold text-base mb-2">
+                            {verseRef}
+                        </Text>
+                        <Text
+                            style={{ color: tokens.textPrimary, fontSize: Math.max(18, fontSize * 0.75), lineHeight: Math.max(18, fontSize * 0.75) * 1.45 }}
+                            className="font-lexend"
+                        >
+                            {(verseRef && verseTextFor(verseRef)) ?? t('preach:verse_unreadable')}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (verseRef) setBibleRefs([verseRef]);
+                                setVerseRef(null);
+                                setShowBible(true);
+                            }}
+                            accessibilityRole="button"
+                            className="self-end mt-4 px-4 py-2 rounded-full"
+                            style={{ borderWidth: 1, borderColor: tokens.border }}
+                        >
+                            <Text style={{ color: tokens.textPrimary }} className="font-lexend-semibold text-sm">
+                                {t('preach:open_in_bible')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </Pressable>
+            </Modal>
 
             {/* Ajustes: modo de luz, tipografía, corte de línea, duración */}
             <PreachSettingsSheet
@@ -887,6 +986,8 @@ export default function PreachModeScreen({
                 setDeliveryFace={setDeliveryFace}
                 hangingIndent={hangingIndent}
                 setHangingIndent={setHangingIndent}
+                readingPage={readingPageOn}
+                setReadingPage={setReadingPageOn}
                 targetMinutes={targetMinutes}
                 // Cambiar la duración ya no pone el reloj en cero (A4).
                 onPickDuration={(min) => id && setTargetMinutes(id, min)}

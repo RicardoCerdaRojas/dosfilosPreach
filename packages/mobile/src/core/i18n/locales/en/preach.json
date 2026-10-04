@@ -69,5 +69,10 @@
     "pause_timer": "Pause the clock",
     "reset_clock": "Reset the clock",
     "reset_clock_confirm": "The clock and the per-movement times go back to zero.",
-    "minutes_short": "{{count}} min"
+    "minutes_short": "{{count}} min",
+    "reading_label": "Reading",
+    "reading_page": "Reading page at the start",
+    "reading_page_hint": "The sermon's passage, to read it before preaching.",
+    "verse_unreadable": "This verse wasn't found in the app's Bible.",
+    "open_in_bible": "Open in the Bible"
 }

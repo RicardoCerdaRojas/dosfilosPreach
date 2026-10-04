@@ -42,5 +42,7 @@
     "delete_account_failed": "No se pudo eliminar la cuenta. Revisa tu conexión y vuelve a intentarlo.",
     "terms": "Términos",
     "privacy": "Política de privacidad",
-    "and": "y"
+    "and": "y",
+    "on": "Sí",
+    "off": "No"
 }

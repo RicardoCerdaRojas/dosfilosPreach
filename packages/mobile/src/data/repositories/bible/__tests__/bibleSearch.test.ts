@@ -70,3 +70,40 @@ describe('libros entre versiones y abreviaturas (C1)', () => {
         expect(nombre(asv, '58')).toBe('Hebrews');
     });
 });
+
+describe('el versículo de una referencia del manuscrito (C7)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { verseTextFor } = require('../BibleVersionFactory');
+
+    it.each(['Jonás 4:2', 'Jon 4:2', '1 Jn 3:16-18', 'Sal 103.8', 'Mt 5:3', 'Stg 1:19', 'Gén 1:1'])(
+        'se lee: «%s»',
+        (ref) => {
+            expect(verseTextFor(ref)).toBeTruthy();
+        },
+    );
+
+    it('una referencia que no existe da null (no inventa)', () => {
+        expect(verseTextFor('Jonás 9:99')).toBeNull();
+    });
+});
+
+describe('la página de Lectura (C7)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readingPassageFor } = require('../BibleVersionFactory');
+
+    it('el pasaje del sermón con sus números de versículo', () => {
+        const p = readingPassageFor(['Jonás 4:5-11']);
+        expect(p.title).toBe('Jonás 4:5-11');
+        expect(p.verses.map((v: { number: number }) => v.number)).toEqual([5, 6, 7, 8, 9, 10, 11]);
+        expect(p.verses[0].text).toMatch(/^Y salió Jonás/);
+    });
+
+    it('salta las referencias que no se leen y toma la primera que sí', () => {
+        expect(readingPassageFor(['texto libre', 'Salmo 23'])?.verses.length).toBe(6);
+    });
+
+    it('sin referencias legibles, no hay página de lectura', () => {
+        expect(readingPassageFor([])).toBeNull();
+        expect(readingPassageFor(['Jonás 9:1'])).toBeNull();
+    });
+});

@@ -145,6 +145,9 @@ interface ReaderSettingsState {
      */
     targetMinutesBySermon: Record<string, number>;
     setTargetMinutes: (sermonId: string, minutes: number) => void;
+    /** Página de «Lectura» con el pasaje antes del primer movimiento (C7). */
+    readingPage: boolean;
+    setReadingPage: (on: boolean) => void;
     /** Dónde predicó la última vez: casi siempre es el mismo lugar (A5). */
     lastPreachingPlace: string;
     setLastPreachingPlace: (place: string) => void;
@@ -223,6 +226,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
                     recentSearches: [],
                     lastRead: null,
                 }),
+            readingPage: true,
+            setReadingPage: (on: boolean) => set({ readingPage: on }),
             lastPreachingPlace: '',
             setLastPreachingPlace: (place: string) => set({ lastPreachingPlace: place }),
             targetMinutesBySermon: {},

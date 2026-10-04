@@ -13,8 +13,8 @@ export class RVR1960Repository extends BaseJSONRepository {
     }
     protected readonly bookMapping: Record<string, string> = {
         // Antiguo Testamento
-        'Génesis': 'gn', 'Genesis': 'gn', 'Gn': 'gn', 'Gen': 'gn',
-        'Éxodo': 'ex', 'Exodo': 'ex', 'Ex': 'ex',
+        'Génesis': 'gn', 'Genesis': 'gn', 'Gn': 'gn', 'Gen': 'gn', 'Gén': 'gn',
+        'Éxodo': 'ex', 'Exodo': 'ex', 'Ex': 'ex', 'Éx': 'ex',
         'Levítico': 'lv', 'Levitico': 'lv', 'Lv': 'lv', 'Lev': 'lv',
         'Números': 'nm', 'Numeros': 'nm', 'Nm': 'nm', 'Num': 'nm',
         'Deuteronomio': 'dt', 'Dt': 'dt', 'Deut': 'dt',

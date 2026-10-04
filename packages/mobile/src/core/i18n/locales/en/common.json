@@ -42,5 +42,7 @@
     "delete_account_failed": "The account couldn't be deleted. Check your connection and try again.",
     "terms": "Terms",
     "privacy": "Privacy Policy",
-    "and": "and"
+    "and": "and",
+    "on": "On",
+    "off": "Off"
 }

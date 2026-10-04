@@ -35,6 +35,8 @@ interface Props {
     deliveryFace: DeliveryFace;
     setDeliveryFace: (face: DeliveryFace) => void;
     hangingIndent: boolean;
+    readingPage: boolean;
+    setReadingPage: (on: boolean) => void;
     setHangingIndent: (on: boolean) => void;
     targetMinutes: number;
     onPickDuration: (minutes: number) => void;
@@ -85,6 +87,8 @@ export function PreachSettingsSheet({
     deliveryFace,
     setDeliveryFace,
     hangingIndent,
+    readingPage,
+    setReadingPage,
     setHangingIndent,
     targetMinutes,
     onPickDuration,
@@ -274,6 +278,40 @@ export function PreachSettingsSheet({
                                     className="font-lexend text-sm"
                                 >
                                     {t(on ? 'preach:indent_on' : 'preach:indent_off')}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    {/* Página de Lectura (C7): el pasaje antes del sermón. */}
+                    <Text
+                        style={{ color: tokens.textSecondary }}
+                        className="font-lexend-semibold text-xs uppercase tracking-widest mb-1"
+                    >
+                        {t('preach:reading_page')}
+                    </Text>
+                    <Text style={{ color: tokens.textSecondary }} className="font-lexend text-xs mb-2">
+                        {t('preach:reading_page_hint')}
+                    </Text>
+                    <View className="flex-row flex-wrap mb-5">
+                        {[true, false].map((on) => (
+                            <TouchableOpacity
+                                key={String(on)}
+                                onPress={() => setReadingPage(on)}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: on === readingPage }}
+                                className="px-4 py-2 rounded-full mr-2 mb-2"
+                                style={{
+                                    backgroundColor: on === readingPage ? tokens.accent : 'transparent',
+                                    borderWidth: 1,
+                                    borderColor: on === readingPage ? tokens.accent : tokens.border,
+                                }}
+                            >
+                                <Text
+                                    style={{ color: on === readingPage ? tokens.background : tokens.textPrimary }}
+                                    className="font-lexend text-sm"
+                                >
+                                    {t(on ? 'common:on' : 'common:off')}
                                 </Text>
                             </TouchableOpacity>
                         ))}

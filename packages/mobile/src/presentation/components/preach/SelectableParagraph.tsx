@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { GestureResponderEvent, LayoutRectangle, Text, View } from 'react-native';
 import type { ReadingUnit } from '@dosfilos/domain';
-import { splitWords } from '@dosfilos/domain';
+import { findBibleReferences, splitWords } from '@dosfilos/domain';
 
 import { tokenizeCitations } from '@/core/utils/sermonSections';
 
@@ -12,6 +12,8 @@ interface PlacedWord {
     sourceEnd: number;
     /** Marcadores `[N]` que contiene, si es que la palabra es uno. */
     ordinals: number[] | null;
+    /** La referencia bíblica de la que es parte («Jonás 4:2»), si alguna. */
+    reference: string | null;
 }
 
 /** Umbral del long press propio. El de RN son ~500 ms y no se puede bajar. */
@@ -35,6 +37,14 @@ interface Props {
     onSelectionEnd: (range: SelectionRange, atY: number) => void;
     onTapAt: (pageX: number) => void;
     onPressCitation: (ordinals: number[]) => void;
+    /**
+     * Tocar una referencia bíblica del manuscrito muestra el versículo sin
+     * salir de la página (C7). Antes sólo había el botón de la cabecera, que
+     * abría la primera referencia del sermón.
+     */
+    onPressReference?: (reference: string) => void;
+    /** Color de las referencias que se pueden tocar. */
+    referenceColor?: string;
     selectionColor: string;
     /** Clase de NativeWind de la familia elegida (font-lexend, font-literata…). */
     faceClass: string;
@@ -71,6 +81,8 @@ export function SelectableParagraph({
     onSelectionEnd,
     onTapAt,
     onPressCitation,
+    onPressReference,
+    referenceColor,
     selectionColor,
     faceClass,
     hangingIndent = 0,
@@ -94,14 +106,17 @@ export function SelectableParagraph({
 
     const words: PlacedWord[] = [];
     units.forEach((unit) => {
+        const references = onPressReference ? findBibleReferences(unit.text) : [];
         splitWords(unit.text).forEach((w) => {
             const tokens = tokenizeCitations(w.text);
             const citation = tokens.find((t) => t.kind === 'citation');
+            const reference = references.find((r) => w.start < r.end && w.end > r.start);
             words.push({
                 text: w.text,
                 sourceStart: unit.sourceStart + w.start,
                 sourceEnd: unit.sourceStart + w.end,
                 ordinals: citation && citation.kind === 'citation' ? citation.ordinals : null,
+                reference: reference?.reference ?? null,
             });
         });
     });
@@ -245,11 +260,12 @@ export function SelectableParagraph({
                         <Text
                             onPress={(e) => {
                                 if (word.ordinals) onPressCitation(word.ordinals);
+                                else if (word.reference && onPressReference) onPressReference(word.reference);
                                 else onTapAt(e.nativeEvent.pageX);
                             }}
                             suppressHighlighting
                             style={{
-                                color: word.ordinals ? undefined : color,
+                                color: word.ordinals ? undefined : word.reference ? (referenceColor ?? color) : color,
                                 fontSize,
                                 lineHeight,
                                 textDecorationLine: mark?.strike
