@@ -48,3 +48,14 @@ describe('secciones del sermón', () => {
         ]);
     });
 });
+
+describe('slugs únicos (revisión adversarial de A7)', () => {
+    it('un título «Preámbulo» con texto antes no repite el slug de la sección sin título', () => {
+        const s = extractSectionsWithBody('Texto suelto.\n\n## Preámbulo\nCuerpo.');
+        expect(s.map((x) => x.slug)).toEqual(['preambulo', 'preambulo-2']);
+    });
+
+    it('sin texto antes, «Preámbulo» conserva su slug (no cambian las marcas que ya existen)', () => {
+        expect(extractSectionsWithBody('## Preámbulo\nCuerpo.').map((x) => x.slug)).toEqual(['preambulo']);
+    });
+});

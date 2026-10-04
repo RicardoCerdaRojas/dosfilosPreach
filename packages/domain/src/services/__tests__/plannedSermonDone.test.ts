@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isPlannedSermonDone, publishedForDraft } from '../plannedSermonDone';
+import { isPlannedSermonDone, publishedForDraft, timesPreachedForDraft } from '../plannedSermonDone';
 
 /**
  * Serie de Jonás (2026-10-01): tres sermones publicados figuraban «Borrador»
@@ -55,5 +55,22 @@ describe('publishedForDraft — el plan encuentra la copia publicada', () => {
 
     it('sin publicación, nada', () => {
         expect(publishedForDraft('b1', [{ id: 'otro', sourceSermonId: 'otro-borrador' }])).toBeUndefined();
+    });
+});
+
+describe('plan ↔ publicados — versiones y republicaciones (revisión adversarial de A6)', () => {
+    const d = (iso: string) => new Date(iso);
+
+    it('la copia de una VERSIÓN (versionOf = borrador) no se toma por la del plan', () => {
+        const delPlan = { id: 'c1', sourceSermonId: 'D', publishedAt: d('2026-09-01') };
+        const deLaVersion = { id: 'cv', sourceSermonId: 'V', versionOf: 'D', publishedAt: d('2026-10-01') };
+        expect(publishedForDraft('D', [delPlan, deLaVersion])).toBe(delPlan);
+    });
+
+    it('republicar no «despredica» la semana: cuentan todas las copias', () => {
+        const predicada = { id: 'c1', sourceSermonId: 'D', publishedAt: d('2026-09-01'), timesPreached: 1 };
+        const republicada = { id: 'c2', sourceSermonId: 'D', publishedAt: d('2026-10-01'), timesPreached: 0 };
+        expect(publishedForDraft('D', [predicada, republicada])).toBe(republicada);
+        expect(timesPreachedForDraft('D', [predicada, republicada])).toBe(1);
     });
 });

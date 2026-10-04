@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { PreachClock } from '@dosfilos/domain';
+import { pauseClock, type PreachClock } from '@dosfilos/domain';
 
 /**
  * La sesión del atril, para retomarla (A4).
@@ -20,7 +20,28 @@ export interface PreachSession {
 /** Más vieja que esto, no es la misma predicación: se descarta. */
 export const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
-const key = (sermonId: string) => `preach-session:${sermonId}`;
+/** Prefijo de las claves: cerrar sesión las borra (clearOfflineData). */
+export const SESSION_PREFIX = 'preach-session:';
+const key = (sermonId: string) => `${SESSION_PREFIX}${sermonId}`;
+
+/** Mientras el reloj corre, la sesión se guarda al menos cada tanto. */
+export const SESSION_SAVE_EVERY_MS = 30 * 1000;
+/**
+ * Si al retomar pasó más que esto desde el último guardado, la app estuvo
+ * MUERTA, no predicando: el reloj vuelve pausado en el último guardado.
+ * Antes volvía corriendo y sumaba las horas con la app cerrada — el pulso del
+ * 80 % sonaba en el primer segundo y el registro salía inflado (revisión
+ * adversarial de A4). Tiene que ser bastante mayor que SESSION_SAVE_EVERY_MS.
+ */
+export const RESUME_GAP_MS = 5 * 60 * 1000;
+
+/** El reloj de una sesión retomada. */
+export function resumeClock(session: PreachSession, now: number): PreachClock {
+    if (session.clock.running && now - session.savedAt > RESUME_GAP_MS) {
+        return pauseClock(session.clock, session.savedAt);
+    }
+    return session.clock;
+}
 
 export async function savePreachSession(
     sermonId: string,

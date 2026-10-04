@@ -66,5 +66,8 @@
     "settings": "Ajustes de lectura",
     "blackout": "Pantalla negra (toca para volver)",
     "start_timer": "Iniciar el reloj",
-    "pause_timer": "Pausar el reloj"
+    "pause_timer": "Pausar el reloj",
+    "reset_clock": "Reiniciar el reloj",
+    "reset_clock_confirm": "El reloj y los tiempos por movimiento vuelven a cero.",
+    "minutes_short": "{{count}} min"
 }

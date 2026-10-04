@@ -28,5 +28,8 @@
     "load_failed": "No se pudo cargar. Revisa tu conexión.",
     "load_failed_hint": "Si preparaste este sermón para usarlo sin conexión, aparecerá igual.",
     "go_back": "Volver",
-    "undo": "Deshacer"
+    "undo": "Deshacer",
+    "pending_sync_title": "Hay cambios sin sincronizar",
+    "pending_sync_body": "Registros de predicación, marcas o tinta todavía no subieron. Si cierras sesión ahora, se pierden. Conéctate a internet y espera unos segundos.",
+    "logout_anyway": "Cerrar sesión igual"
 }

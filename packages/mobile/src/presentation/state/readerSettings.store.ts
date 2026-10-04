@@ -148,6 +148,14 @@ interface ReaderSettingsState {
     /** Dónde predicó la última vez: casi siempre es el mismo lugar (A5). */
     lastPreachingPlace: string;
     setLastPreachingPlace: (place: string) => void;
+    /**
+     * Borra lo que es DE LA PERSONA (lugar de predicación, duraciones y
+     * presupuestos por sermón, búsquedas, dónde quedó leyendo) y conserva lo
+     * que es del aparato (tamaño, modo de luz). Al cerrar sesión (revisión
+     * adversarial de A8): el siguiente pastor encontraba el lugar del anterior
+     * ya escrito y lo registraba sin darse cuenta.
+     */
+    resetPersonal: () => void;
 }
 
 export const useReaderSettingsStore = create<ReaderSettingsState>()(
@@ -206,6 +214,14 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
                     if (seconds === null) delete next[key];
                     else next[key] = seconds;
                     return { budgetOverrides: next };
+                }),
+            resetPersonal: () =>
+                set({
+                    lastPreachingPlace: '',
+                    targetMinutesBySermon: {},
+                    budgetOverrides: {},
+                    recentSearches: [],
+                    lastRead: null,
                 }),
             lastPreachingPlace: '',
             setLastPreachingPlace: (place: string) => set({ lastPreachingPlace: place }),

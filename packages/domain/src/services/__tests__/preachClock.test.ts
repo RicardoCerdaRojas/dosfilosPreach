@@ -10,6 +10,7 @@ import {
     pauseClock,
     spentSeconds,
     startClock,
+    targetMinuteOptions,
 } from '../preachClock';
 
 const MIN = 60_000;
@@ -67,5 +68,20 @@ describe('reloj del púlpito', () => {
         expect(defaultTargetMinutes(palabras(130 * 4))).toBe(10);
         expect(defaultTargetMinutes(palabras(130 * 90))).toBe(60);
         expect(defaultTargetMinutes('')).toBe(30);
+    });
+});
+
+describe('opciones de duración (revisión adversarial de A4)', () => {
+    it('invariante: la duración por defecto de CUALQUIER texto está entre las opciones del atril', () => {
+        for (let words = 0; words <= 130 * 120; words += 130) {
+            const texto = Array.from({ length: words }, () => 'p').join(' ');
+            const d = defaultTargetMinutes(texto);
+            expect(targetMinuteOptions(d)).toContain(d);
+        }
+    });
+
+    it('sin duplicar ni desordenar', () => {
+        expect(targetMinuteOptions(30)).toEqual([20, 25, 30, 35, 40, 45]);
+        expect(targetMinuteOptions(55)).toEqual([20, 25, 30, 35, 40, 45, 55]);
     });
 });

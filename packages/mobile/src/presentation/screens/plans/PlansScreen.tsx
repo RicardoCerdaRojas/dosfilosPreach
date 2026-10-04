@@ -144,6 +144,15 @@ export default function PlansScreen() {
             }}
         >
             {header}
+            {/* Los planes cargaron pero la lista de sermones no: sin aviso,
+                todas las semanas se veían «sin escribir» (revisión de A2). */}
+            {error ? (
+                <View style={{ paddingHorizontal: isSplit ? 16 : gutter }}>
+                    <Text style={{ color: theme.warning, fontSize: 13 }} className="font-lexend mb-2">
+                        {t('plans:sermons_unavailable')}
+                    </Text>
+                </View>
+            ) : null}
             <ScrollView
                 contentContainerStyle={{
                     paddingHorizontal: isSplit ? 16 : gutter,

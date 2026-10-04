@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -10,7 +10,7 @@ import { STUDY_COLUMN, useLayout } from '@/core/theme/layout';
 import { DELIVERY_SIZE } from '@/core/theme/typography';
 import { READING_MODES, READING_MODE_LABEL_KEYS } from '@/core/theme/readingModes';
 import type { ReadingMode } from '@/core/theme/readingModes';
-import { useAuthStore } from '@/presentation/state/auth.store';
+import { PendingWritesError, useAuthStore } from '@/presentation/state/auth.store';
 import { useThemeStore, ThemeMode } from '@/presentation/state/theme.store';
 import { useLanguageStore, Language } from '@/presentation/state/language.store';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
@@ -247,7 +247,22 @@ export default function ProfileScreen() {
                     </Card>
 
                     <TouchableOpacity
-                        onPress={signOut}
+                        onPress={() =>
+                            signOut().catch((error) => {
+                                // Cambios sin subir: el pastor decide. Antes
+                                // se perdían en silencio (revisión de A8).
+                                if (error instanceof PendingWritesError) {
+                                    Alert.alert(t('common:pending_sync_title'), t('common:pending_sync_body'), [
+                                        { text: t('common:cancel'), style: 'cancel' },
+                                        {
+                                            text: t('common:logout_anyway'),
+                                            style: 'destructive',
+                                            onPress: () => void signOut({ force: true }),
+                                        },
+                                    ]);
+                                }
+                            })
+                        }
                         accessibilityRole="button"
                         className="flex-row items-center justify-center py-4 rounded-2xl active:opacity-80"
                         style={{ borderWidth: 1, borderColor: theme.border }}

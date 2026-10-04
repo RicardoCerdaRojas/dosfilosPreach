@@ -32,9 +32,18 @@ export interface PublishedLink {
     id: string;
     /** La copia publicada guarda acá el borrador del que salió. */
     sourceSermonId?: string;
-    /** «Crear versión» guarda acá el sermón raíz. */
-    versionOf?: string;
     publishedAt?: Date;
+    /** Cuántas veces se predicó ESTA copia. */
+    timesPreached?: number;
+}
+
+/** Las copias publicadas de un borrador: el propio documento o las que apuntan a él. */
+function copiesOf<T extends PublishedLink>(draftId: string, published: readonly T[]): T[] {
+    // SÓLO `id` y `sourceSermonId`, como la web (findByDraftId). `versionOf`
+    // NO: «crear versión» desde el borrador raíz deja `versionOf = borrador`
+    // en la versión, y su copia publicada se tomaba por la del plan — el plan
+    // de Jonás abría la versión «Retiro jóvenes» (revisión adversarial de A6).
+    return published.filter((s) => s.id === draftId || s.sourceSermonId === draftId);
 }
 
 /**
@@ -46,14 +55,23 @@ export interface PublishedLink {
  * semanas del plan salían «sin escribir» y «Púlpito» deshabilitado aunque el
  * sermón estuviera publicado (mismo defecto que #728 en la web).
  *
- * Vale el propio documento (sermones sin asistente) o cualquier copia que
- * apunte a él; si hay varias publicaciones, la más reciente.
+ * Si se publicó varias veces, la copia más reciente. Recibe la lista ENTERA
+ * de publicados, no la deduplicada por cadena de versiones de la pantalla de
+ * sermones: esa ya descartó copias.
  */
 export function publishedForDraft<T extends PublishedLink>(draftId: string, published: readonly T[]): T | undefined {
     let best: T | undefined;
-    for (const s of published) {
-        if (s.id !== draftId && s.sourceSermonId !== draftId && s.versionOf !== draftId) continue;
+    for (const s of copiesOf(draftId, published)) {
         if (!best || (s.publishedAt?.getTime() ?? 0) > (best.publishedAt?.getTime() ?? 0)) best = s;
     }
     return best;
+}
+
+/**
+ * ¿Se predicó la perícopa? Cuenta TODAS las copias: republicar crea una copia
+ * con el historial vacío, y mirar sólo la última hacía que una semana ya
+ * predicada volviera a «sin predicar».
+ */
+export function timesPreachedForDraft<T extends PublishedLink>(draftId: string, published: readonly T[]): number {
+    return copiesOf(draftId, published).reduce((n, s) => n + (s.timesPreached ?? 0), 0);
 }

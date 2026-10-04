@@ -110,3 +110,16 @@ export function defaultTargetMinutes(content: string): number {
     if (!estimate) return 30;
     return Math.min(60, Math.max(10, Math.round(estimate / 5) * 5));
 }
+
+/** Las duraciones que ofrece el atril de entrada. */
+export const BASE_TARGET_OPTIONS = [20, 25, 30, 35, 40, 45] as const;
+
+/**
+ * Las opciones de duración, con la vigente SIEMPRE incluida. La duración por
+ * defecto sale del texto (10 a 60) y la hoja ofrecía sólo 20-45: un sermón de
+ * 55 no marcaba ninguna y, si el pastor cambiaba a 45, ya no podía volver
+ * (revisión adversarial de A4).
+ */
+export function targetMinuteOptions(current: number): number[] {
+    return [...new Set([...BASE_TARGET_OPTIONS, current])].sort((a, b) => a - b);
+}

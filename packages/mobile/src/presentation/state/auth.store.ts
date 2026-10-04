@@ -3,6 +3,19 @@ import { User } from '@/domain/entities/user';
 import { AuthRepositoryImpl } from '@/data/repositories/auth.repository.impl';
 import { clearOfflineData } from '@/data/offline/offlineSermons';
 import { queryClient } from '@/core/providers/query-client.provider';
+import { pendingWritesSynced } from '@/data/sources/firebase.source';
+import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
+
+/** Hay escrituras sin subir: cerrar sesión las perdería. */
+export class PendingWritesError extends Error {
+    constructor() {
+        super('pending-writes');
+        this.name = 'PendingWritesError';
+    }
+}
+
+/** Cuánto se espera a que suban antes de avisar. */
+export const SIGN_OUT_SYNC_WAIT_MS = 5000;
 
 // Instantiate repository - in a reel app, this might be injected
 const authRepository = new AuthRepositoryImpl();
@@ -14,7 +27,8 @@ interface AuthState {
     signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
     signInWithGoogle: (idToken: string) => Promise<void>;
     signInWithApple: (identityToken: string, rawNonce: string) => Promise<void>;
-    signOut: () => Promise<void>;
+    /** `force`: salir aunque haya escrituras sin subir (el pastor lo confirmó). */
+    signOut: (options?: { force?: boolean }) => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     setUser: (user: User | null) => void;
 }
@@ -49,11 +63,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
      * el maletín del anterior. Ahora se vacía la caché y se borra todo lo
      * guardado para usar sin conexión.
      */
-    signOut: async () => {
-        await authRepository.signOut();
-        queryClient.clear();
-        await clearOfflineData();
-        set({ user: null });
+    signOut: async ({ force = false } = {}) => {
+        // Lo que no subió todavía (registro, tinta, marcas) se perdería: se
+        // espera un poco y, si sigue pendiente, se avisa (revisión de A8).
+        if (!force && !(await pendingWritesSynced(SIGN_OUT_SYNC_WAIT_MS))) {
+            throw new PendingWritesError();
+        }
+        try {
+            await authRepository.signOut();
+        } finally {
+            // Pase lo que pase, la tablet queda limpia: las consultas en
+            // vuelo se cancelan antes de vaciar, o reescribirían el maletín
+            // del usuario que se va.
+            await queryClient.cancelQueries();
+            queryClient.clear();
+            await clearOfflineData().catch(() => undefined);
+            useReaderSettingsStore.getState().resetPersonal();
+            set({ user: null });
+        }
     },
     resetPassword: async (email) => {
         await authRepository.sendPasswordResetEmail(email);

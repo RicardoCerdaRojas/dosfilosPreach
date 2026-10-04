@@ -14,6 +14,7 @@ import { Sermon, SermonSummary } from '@/domain/models/sermon.model';
 import { SermonRepository } from '@/domain/repositories/sermon.repository';
 import { getFirebaseDb } from '@/data/sources/firebase.source';
 import { reportWriteFailure } from '@/core/errors/writeFailures';
+import { toFirestoreLog } from './preachingLogMapping';
 
 /** Item crudo del callable getSermonsListSummary (fechas en milisegundos). */
 interface RawSummary {
@@ -105,12 +106,7 @@ export class SermonRepositoryImpl implements SermonRepository {
      */
     async addPreachingLog(id: string, log: PreachingLog): Promise<void> {
         updateDoc(doc(getFirebaseDb(), 'sermons', id), {
-            preachingHistory: arrayUnion({
-                date: log.date,
-                location: log.location,
-                durationMinutes: log.durationMinutes,
-                ...(log.notes ? { notes: log.notes } : {}),
-            }),
+            preachingHistory: arrayUnion(toFirestoreLog(log)),
             updatedAt: serverTimestamp(),
         }).catch((error) => reportWriteFailure('preaching_log', error));
     }
@@ -122,18 +118,26 @@ export class SermonRepositoryImpl implements SermonRepository {
      */
     async removePreachingLog(id: string, log: PreachingLog): Promise<void> {
         updateDoc(doc(getFirebaseDb(), 'sermons', id), {
-            preachingHistory: arrayRemove({
-                date: log.date,
-                location: log.location,
-                durationMinutes: log.durationMinutes,
-                ...(log.notes ? { notes: log.notes } : {}),
-            }),
+            preachingHistory: arrayRemove(toFirestoreLog(log)),
             updatedAt: serverTimestamp(),
         }).catch((error) => reportWriteFailure('preaching_log', error));
     }
 
     async getSermonById(id: string): Promise<Sermon | null> {
+        return (await this.getSermonWithSource(id)).sermon;
+    }
+
+    /**
+     * El sermón y si vino de la caché del SDK. Sin red, `getDoc` responde
+     * desde la caché sin fallar: hay que saberlo para no decir «en vivo».
+     */
+    async getSermonWithSource(id: string): Promise<{ sermon: Sermon | null; fromCache: boolean }> {
         const snap = await getDoc(doc(getFirebaseDb(), 'sermons', id));
+        const fromCache = snap.metadata.fromCache;
+        return { sermon: this.toSermon(snap), fromCache };
+    }
+
+    private toSermon(snap: any): Sermon | null {
         if (!snap.exists()) return null;
         const d = snap.data() as any;
         return {

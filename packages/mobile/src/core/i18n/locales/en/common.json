@@ -28,5 +28,8 @@
     "load_failed": "Couldn't load. Check your connection.",
     "load_failed_hint": "If you prepared this sermon for offline use, it will show up anyway.",
     "go_back": "Go back",
-    "undo": "Undo"
+    "undo": "Undo",
+    "pending_sync_title": "Unsynced changes",
+    "pending_sync_body": "Preaching logs, marks or ink haven't uploaded yet. If you sign out now they'll be lost. Connect to the internet and wait a few seconds.",
+    "logout_anyway": "Sign out anyway"
 }

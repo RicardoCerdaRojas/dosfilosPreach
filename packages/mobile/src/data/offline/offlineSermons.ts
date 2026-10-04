@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Sermon } from '@dosfilos/domain';
 
 import type { SermonSummary } from '@/domain/models/sermon.model';
+import { SESSION_PREFIX } from './preachSession';
 
 /**
  * El domingo sin red (A1 de la fase Púlpito premium).
@@ -33,7 +34,13 @@ export interface BriefcaseEntry {
     savedAt: string;
 }
 
-export type Origin = 'live' | 'briefcase' | 'snapshot';
+/**
+ * De dónde salió lo que se muestra. `cache` es la caché de Firestore: el SDK
+ * responde desde ella cuando no llega al servidor, así que NO es «en vivo»
+ * aunque la lectura no haya fallado (revisión adversarial de A1: el aviso de
+ * «sin conexión» se apagaba con una lectura servida por la caché).
+ */
+export type Origin = 'live' | 'cache' | 'briefcase' | 'snapshot';
 
 export class DeadlineError extends Error {
     constructor() {
@@ -168,8 +175,6 @@ export async function writeListSnapshot(uid: string, summaries: SermonSummary[])
     await AsyncStorage.setItem(listKey(uid), JSON.stringify(summaries));
 }
 
-/** Sesiones del atril guardadas para retomar (ver preachSession). */
-const SESSION_PREFIX = 'preach-session:';
 
 /** Al cerrar sesión: nada de lo guardado sobrevive al usuario que lo guardó. */
 export async function clearOfflineData(): Promise<void> {
@@ -181,8 +186,14 @@ export async function clearOfflineData(): Promise<void> {
 
 // ── Lectura con respaldo ───────────────────────────────────────────────────
 
+/** Lo que devuelve la lectura de Firestore: el sermón y si vino de su caché. */
+export interface LiveSermon {
+    sermon: Sermon | null;
+    fromCache: boolean;
+}
+
 export interface SermonLoadDeps {
-    fetchLive: (id: string) => Promise<Sermon | null>;
+    fetchLive: (id: string) => Promise<LiveSermon>;
     read: (id: string) => Promise<BriefcaseEntry | null>;
     write: (entry: BriefcaseEntry) => Promise<void>;
     deadlineMs: number;
@@ -208,13 +219,17 @@ export interface SermonLoad {
 export async function loadSermon(id: string, deps: SermonLoadDeps): Promise<SermonLoad> {
     const entry = await deps.read(id).catch(() => null);
     try {
-        const live = await (entry ? withDeadline(deps.fetchLive(id), deps.deadlineMs) : deps.fetchLive(id));
-        if (live && entry) {
+        const { sermon: live, fromCache } = await (entry
+            ? withDeadline(deps.fetchLive(id), deps.deadlineMs)
+            : deps.fetchLive(id));
+        // Sólo lo que llegó DEL SERVIDOR renueva la copia: la caché del SDK
+        // no es más nueva que lo que se guardó.
+        if (live && entry && !fromCache) {
             await deps
                 .write({ sermon: live, savedAt: (deps.now?.() ?? new Date()).toISOString() })
                 .catch(() => undefined);
         }
-        return { sermon: live, origin: 'live' };
+        return { sermon: live, origin: fromCache ? 'cache' : 'live' };
     } catch (error) {
         if (entry) return { sermon: entry.sermon, origin: 'briefcase', savedAt: entry.savedAt };
         throw error;
@@ -240,16 +255,20 @@ export interface ListLoad {
  * promesa del check verde.
  */
 export async function loadPublishedList(deps: ListLoadDeps): Promise<ListLoad> {
+    // Lo guardado se lee primero (es local y rápido): sin respaldo no tiene
+    // sentido cortar a la red por plazo — una función que arranca en frío y
+    // tarda 10 s daría error cuando iba a contestar (revisión de A1).
+    const [snapshot, saved] = await Promise.all([
+        deps.readSnapshot().catch(() => null),
+        deps.listBriefcase().catch(() => [] as BriefcaseEntry[]),
+    ]);
+    const hasBackup = !!snapshot || saved.length > 0;
     try {
-        const live = await withDeadline(deps.fetchLive(), deps.deadlineMs);
+        const live = await (hasBackup ? withDeadline(deps.fetchLive(), deps.deadlineMs) : deps.fetchLive());
         await deps.writeSnapshot(live).catch(() => undefined);
         return { summaries: live, origin: 'live' };
     } catch (error) {
-        const [snapshot, saved] = await Promise.all([
-            deps.readSnapshot().catch(() => null),
-            deps.listBriefcase().catch(() => []),
-        ]);
-        if (!snapshot && saved.length === 0) throw error;
+        if (!hasBackup) throw error;
         const byId = new Map((snapshot ?? []).map((s) => [s.id, s]));
         for (const entry of saved) {
             if (!byId.has(entry.sermon.id)) byId.set(entry.sermon.id, summaryFromSermon(entry.sermon));

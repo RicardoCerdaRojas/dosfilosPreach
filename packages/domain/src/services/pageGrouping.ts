@@ -97,7 +97,11 @@ export function packPages(
         // Ni en una página vacía: se reparte por bloques.
         for (const index of group) {
             const height = heights[index] ?? 0;
-            if (used + height > room() && current.length > 0) flush();
+            // También acá la primera página puede quedar sólo con los títulos:
+            // un bloque que no entra debajo de ellos pero sí en una página
+            // entera no se monta encima (revisión adversarial de A7).
+            const titlesOnly = pages.length === 0 && current.length === 0 && height > room() && height <= capacity;
+            if ((used + height > room() && current.length > 0) || titlesOnly) flush();
             current.push(index);
             used += height;
         }

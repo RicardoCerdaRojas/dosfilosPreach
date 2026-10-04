@@ -27,7 +27,7 @@ const ICON: Record<ToastType, keyof typeof MaterialIcons.glyphMap> = {
  * consola y el cambio desaparecía de la pantalla sin explicación.
  */
 export const ToastNotification = () => {
-    const { toast, hideToast, showToast } = useUIStore();
+    const { toast, hideToast, showToast, quiet } = useUIStore();
     const insets = useSafeAreaInsets();
     const theme = useAppTheme();
     const { t } = useTranslation();
@@ -37,7 +37,7 @@ export const ToastNotification = () => {
         [showToast, t],
     );
 
-    if (!toast || !toast.visible) return null;
+    if (!toast || !toast.visible || quiet) return null;
 
     const tone = toast.type === 'error' ? theme.danger : toast.type === 'success' ? theme.positive : theme.accent;
 

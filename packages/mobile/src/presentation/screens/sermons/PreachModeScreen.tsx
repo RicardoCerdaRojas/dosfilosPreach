@@ -53,8 +53,15 @@ import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultS
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
 import { usePagination } from '@/presentation/hooks/usePagination';
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
-import { createGestureGate, tapZone } from './preachGestures';
-import { clearPreachSession, readPreachSession, savePreachSession } from '@/data/offline/preachSession';
+import { useUIStore } from '@/presentation/state/ui.store';
+import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
+import {
+    SESSION_SAVE_EVERY_MS,
+    clearPreachSession,
+    readPreachSession,
+    resumeClock,
+    savePreachSession,
+} from '@/data/offline/preachSession';
 
 interface PreachModeScreenProps {
     /** Id inyectado: lo usa la vista previa de dev, que no llega por ruta. */
@@ -73,7 +80,7 @@ export default function PreachModeScreen({
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { width, height: screenHeight } = useWindowDimensions();
-    const { data: sermon, isLoading, error, refetch } = useSermon(id ?? '');
+    const { data: sermon, isLoading, refetch } = useSermon(id ?? '', { stable: true });
 
     const readingMode = useReaderSettingsStore((s) => s.readingMode);
     const setReadingMode = useReaderSettingsStore((s) => s.setReadingMode);
@@ -109,6 +116,11 @@ export default function PreachModeScreen({
     const [pageIndex, setPageIndex] = useState(0);
     const [chromeVisible, setChromeVisible] = useState(true);
     const [blackout, setBlackout] = useState(false);
+    // Con la pantalla negra no se muestra ningún aviso (revisión de A2).
+    useEffect(() => {
+        useUIStore.getState().setQuiet(blackout);
+        return () => useUIStore.getState().setQuiet(false);
+    }, [blackout]);
     const [showSections, setShowSections] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [showBible, setShowBible] = useState(false);
@@ -134,17 +146,15 @@ export default function PreachModeScreen({
     const [gate] = useState(createGestureGate);
     const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
-    const swipeDelta = (event: { pageX: number; pageY: number }) => {
-        const from = swipeStart.current;
-        if (!from) return { dx: 0, dy: 0 };
-        return { dx: event.pageX - from.x, dy: event.pageY - from.y };
-    };
 
     // El tic repinta y revisa los avisos. Lee el reloj y la duración por ref:
     // recrear el intervalo en cada cambio perdería la fracción en curso.
     const clockRef = useRef(clock);
     const targetRef = useRef(30);
     const hapticsRef = useRef(true);
+    /** Lugar actual y último guardado, para el guardado periódico del tic. */
+    const positionRef = useRef<{ slug: string | null; page: number }>({ slug: null, page: 0 });
+    const lastSaveRef = useRef(0);
     useEffect(() => {
         clockRef.current = clock;
     });
@@ -157,8 +167,21 @@ export default function PreachModeScreen({
             // oye. En tinta electrónica no hay motor háptico.
             const due = dueCues(clockRef.current, t1, targetRef.current * 60);
             if (due.length) {
+                // Marcado en el ref YA: si dos tics corren antes de volver a
+                // pintar, el segundo no repite el pulso (revisión de A4).
+                clockRef.current = markCues(clockRef.current, due);
                 if (hapticsRef.current) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                 setClock((c) => markCues(c, due));
+            }
+            // Guardado periódico: al retomar, lo que pasó desde el último
+            // guardado decide si la app estuvo predicando o muerta.
+            if (id && t1 - lastSaveRef.current >= SESSION_SAVE_EVERY_MS) {
+                lastSaveRef.current = t1;
+                void savePreachSession(id, {
+                    clock: clockRef.current,
+                    sectionSlug: positionRef.current.slug,
+                    pageIndex: positionRef.current.page,
+                });
             }
         }, 1000);
         // Al volver a la app, repintar ya: no esperar al próximo segundo.
@@ -169,7 +192,7 @@ export default function PreachModeScreen({
             clearInterval(timer);
             sub.remove();
         };
-    }, [running]);
+    }, [running, id]);
 
     const sections = sermon?.content ? extractSectionsWithBody(sermon.content) : [];
     const section = sections[sectionIndex];
@@ -209,29 +232,42 @@ export default function PreachModeScreen({
         if (!id || restoringRef.current || !content) return;
         restoringRef.current = true;
         const known = extractSectionsWithBody(content);
-        void readPreachSession(id, Date.now()).then((session) => {
-            if (session) {
-                const at = known.findIndex((sec) => sec.slug === session.sectionSlug);
-                if (at >= 0) {
-                    setSectionIndex(at);
-                    setPageIndex(session.pageIndex);
+        void readPreachSession(id, Date.now())
+            .then((session) => {
+                if (session) {
+                    const t0 = Date.now();
+                    const at = known.findIndex((sec) => sec.slug === session.sectionSlug);
+                    if (at >= 0) {
+                        setSectionIndex(at);
+                        setPageIndex(session.pageIndex);
+                    }
+                    // Si la app estuvo muerta, vuelve PAUSADO en el último
+                    // guardado (resumeClock). Si el movimiento ya no existe
+                    // (se editó), el tiempo sigue en el primero.
+                    const resumed = resumeClock(session, t0);
+                    const slug = at >= 0 ? session.sectionSlug : (known[0]?.slug ?? null);
+                    setClock(slug ? moveClockTo(resumed, slug, t0) : resumed);
+                    setNow(t0);
                 }
-                setClock(session.clock);
-                setNow(Date.now());
-            }
-            setRestored(true);
-        });
+            })
+            // Sin esto, una falla de lectura dejaba la sesión sin guardarse
+            // en toda la predicación.
+            .catch(() => undefined)
+            .finally(() => setRestored(true));
     }, [id, content]);
 
     // Se guarda en cada cambio de estado del reloj o de lugar; no en cada
     // segundo, porque el tiempo se recalcula contra la hora al volver.
     useEffect(() => {
+        positionRef.current = { slug: section?.slug ?? null, page: pageIndex };
         if (!id || !restored) return;
         if (clock.accumulatedMs === 0 && !clock.running) return;
         void savePreachSession(id, {
             clock,
             sectionSlug: section?.slug ?? null,
             pageIndex,
+        }).then(() => {
+            lastSaveRef.current = Date.now();
         });
     }, [id, restored, clock, section?.slug, pageIndex]);
 
@@ -383,14 +419,21 @@ export default function PreachModeScreen({
      * movimiento vecino: para el predicador el sermón es continuo, la división
      * en movimientos sirve para ubicarse, no para tener que navegarla.
      */
+    /**
+     * El reloj arranca solo con el PRIMER toque, de cualquier tipo: antes, si
+     * el pastor no tocaba play, la predicación no se registraba (A4). Era con
+     * el primer avance, y entonces la primera página no contaba nunca: el
+     * informe decía «introducción 0:00» (revisión adversarial de A4).
+     */
+    const ensureClockStarted = () => {
+        if (clock.running || clock.accumulatedMs > 0) return;
+        const t0 = Date.now();
+        setClock((c) => startWithSlug(c, t0));
+        setNow(t0);
+    };
+
     const step = (delta: number) => {
-        // El reloj arranca solo con el primer avance: antes, si el pastor no
-        // tocaba play, la predicación no se registraba (A4).
-        if (delta > 0 && !clock.running && clock.accumulatedMs === 0) {
-            const t0 = Date.now();
-            setClock((c) => startWithSlug(c, t0));
-            setNow(t0);
-        }
+        ensureClockStarted();
         const next = safePageIndex + delta;
         if (next >= 0 && next < pages.length) {
             setPageIndex(next);
@@ -414,6 +457,14 @@ export default function PreachModeScreen({
     // reenvía sus taps desde adentro y su locationX sería relativo.
     const handleTap = (x: number) => {
         if (!gate.acceptsTap(Date.now())) return;
+        ensureClockStarted();
+        // ¿Deslizó? Se decide al soltar, contra el punto donde bajó el dedo.
+        const swipe = swipeDirection(swipeStart.current?.x ?? null, x);
+        swipeStart.current = null;
+        if (swipe !== 0) {
+            step(swipe);
+            return;
+        }
         const zone = tapZone(x, width);
         if (zone === 'back') step(-1);
         else if (zone === 'forward') step(1);
@@ -460,7 +511,9 @@ export default function PreachModeScreen({
 
     // Sin datos: un mensaje y dos salidas. Antes era un spinner eterno, y el
     // pastor no sabía si esperar o volver (A2).
-    if (error || !sermon) {
+    // Sólo sin sermón: si una recarga falla, React Query conserva los datos y
+    // el atril no se reemplaza por esta pantalla (revisión de A2).
+    if (!sermon) {
         return (
             <View
                 className="flex-1 items-center justify-center px-10"
@@ -624,27 +677,16 @@ export default function PreachModeScreen({
             )}
 
             {/* Swipe horizontal para pasar página, además de las zonas de tap.
-                Sólo reclama el gesto si es claramente horizontal y largo: si
-                no, se comería el arrastre de selección y el scroll vertical
-                de una página que no entró. */}
+                Se decide al SOLTAR (handleTap), contra el punto de partida
+                anotado al bajar el dedo: los manejadores del sistema de
+                respuesta pasados a Pressable quedaban pisados por los suyos y
+                el deslizamiento nunca pasaba página (revisión de A3). */}
             <Pressable
                 className="flex-1"
                 onPress={(e) => handleTap(e.nativeEvent.pageX)}
-                onMoveShouldSetResponder={(e) => {
-                    const { dx, dy } = swipeDelta(e.nativeEvent);
-                    return Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 2;
-                }}
-                // El origen se anota en onTouchStart, no en onResponderGrant:
-                // ese corre DESPUÉS de reclamar el gesto, y para decidir si
-                // reclamarlo ya hace falta saber de dónde salió el dedo.
                 onTouchStart={(e) => {
                     swipeStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
-                    if (gate.touchStart(e.nativeEvent.touches.length, Date.now())) setBlackout(true);
-                }}
-                onResponderRelease={(e) => {
-                    const { dx } = swipeDelta(e.nativeEvent);
-                    swipeStart.current = null;
-                    if (Math.abs(dx) > 48) step(dx < 0 ? 1 : -1);
+                    if (gate.touchStart(e.nativeEvent.touches, Date.now())) setBlackout(true);
                 }}
             >
                 <ScrollView
@@ -848,6 +890,13 @@ export default function PreachModeScreen({
                 targetMinutes={targetMinutes}
                 // Cambiar la duración ya no pone el reloj en cero (A4).
                 onPickDuration={(min) => id && setTargetMinutes(id, min)}
+                // Volver a cero, a mano: para un ensayo que se repite, o si el
+                // reloj quedó mal. Antes no había forma.
+                onResetClock={() => {
+                    setClock(newClock(section?.slug ?? null));
+                    setNow(Date.now());
+                    if (id) void clearPreachSession(id);
+                }}
                 budgets={budgets}
                 onSetBudget={(slug, seconds) => setBudgetOverride(`${id}|${slug}`, seconds)}
             />

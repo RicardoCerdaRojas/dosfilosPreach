@@ -17,5 +17,6 @@
     "status_upcoming": "Por empezar",
     "status_finished": "Terminado",
     "status_empty": "Sin sermones",
-    "next_up": "Toca ahora"
+    "next_up": "Toca ahora",
+    "sermons_unavailable": "No se pudieron cargar tus sermones: el estado de cada semana puede no estar al día."
 }

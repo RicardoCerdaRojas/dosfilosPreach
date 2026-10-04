@@ -1,8 +1,15 @@
-import { nextInPlan, pickCurrentPlan, planOrder, planStatus, publishedForDraft } from '@dosfilos/domain';
+import {
+    nextInPlan,
+    pickCurrentPlan,
+    planOrder,
+    planStatus,
+    publishedForDraft,
+    timesPreachedForDraft,
+} from '@dosfilos/domain';
 import type { PlanStatus } from '@dosfilos/domain';
 
 import { SermonSummary } from '@/domain/models/sermon.model';
-import { usePublishedSermons } from '@/presentation/hooks/useSermons';
+import { usePublishedSummaries } from '@/presentation/hooks/useSermons';
 import { useSeriesPlans, type PlannedSermonItem, type SeriesPlan } from '@/presentation/hooks/useSeriesPlans';
 
 /** Una semana del plan con lo que la app sabe del sermón que hay detrás. */
@@ -33,14 +40,16 @@ export interface PlanBoard extends Omit<SeriesPlan, 'items'> {
  */
 export function usePlanBoard() {
     const { data: plans, isLoading, error: plansError, refetch: refetchPlans } = useSeriesPlans();
+    // TODAS las copias publicadas, no la lista agrupada: esa ya descartó
+    // copias y el plan elegía la versión equivocada (revisión de A6).
     const {
-        data: groups,
+        data: summaries,
         isLoading: loadingSermons,
         error: sermonsError,
         refetch: refetchSermons,
-    } = usePublishedSermons();
+    } = usePublishedSummaries();
 
-    const published: SermonSummary[] = (groups ?? []).flatMap((group) => group.sermons);
+    const published: SermonSummary[] = summaries ?? [];
 
     const boards: PlanBoard[] = (plans ?? []).map((plan) => {
         const items: PlanBoardItem[] = plan.items
@@ -52,9 +61,9 @@ export function usePlanBoard() {
                     ...item,
                     sermon,
                     ready: !!sermon,
-                    // Predicado según el registro del propio sermón, que es el
-                    // único lugar donde eso se marca.
-                    preached: (sermon?.timesPreached ?? 0) > 0,
+                    // Predicado si CUALQUIER copia del borrador se predicó:
+                    // republicar crea una copia con el historial vacío.
+                    preached: item.draftId ? timesPreachedForDraft(item.draftId, published) > 0 : false,
                 };
             })
             .sort(planOrder);

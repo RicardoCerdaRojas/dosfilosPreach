@@ -17,5 +17,6 @@
     "status_upcoming": "Not started",
     "status_finished": "Finished",
     "status_empty": "No sermons",
-    "next_up": "Up next"
+    "next_up": "Up next",
+    "sermons_unavailable": "Your sermons couldn't be loaded: each week's status may be out of date."
 }

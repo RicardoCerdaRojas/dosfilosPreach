@@ -26,9 +26,23 @@ export function tapZone(x: number, width: number): TapZone {
     return 'center';
 }
 
+/** Lo que el gesto necesita de cada dedo en la pantalla. */
+export interface TouchPoint {
+    identifier: string | number;
+}
+
+/**
+ * Dedos que bajaron casi juntos. `touches` cuenta TODOS los dedos sobre la
+ * pantalla: un pulgar apoyado en el borde hacía que cada toque llegara como
+ * «dos dedos», bloqueaba el pase de página y podía apagar la pantalla
+ * (revisión adversarial de A3). Sólo cuentan los que empezaron hace menos de
+ * esto.
+ */
+export const SIMULTANEOUS_MS = 150;
+
 export interface GestureGate {
     /** Al tocar la pantalla. Devuelve true si ese toque completa el apagado. */
-    touchStart(touchCount: number, now: number): boolean;
+    touchStart(touches: readonly TouchPoint[], now: number): boolean;
     /** Un toque simple: ¿se atiende o es parte de un gesto de dos dedos? */
     acceptsTap(now: number): boolean;
 }
@@ -36,9 +50,16 @@ export interface GestureGate {
 export function createGestureGate(): GestureGate {
     let lastMultiAt = -Infinity;
     let suppressUntil = -Infinity;
+    const startedAt = new Map<string | number, number>();
     return {
-        touchStart(touchCount, now) {
-            if (touchCount < 2) return false;
+        touchStart(touches, now) {
+            // Se olvidan los dedos que ya se levantaron.
+            const present = new Set(touches.map((t) => t.identifier));
+            for (const id of [...startedAt.keys()]) if (!present.has(id)) startedAt.delete(id);
+            for (const t of touches) if (!startedAt.has(t.identifier)) startedAt.set(t.identifier, now);
+
+            const fresh = [...startedAt.values()].filter((at) => now - at <= SIMULTANEOUS_MS).length;
+            if (fresh < 2) return false;
             suppressUntil = now + MULTI_TOUCH_GRACE_MS;
             const completes = now - lastMultiAt <= BLACKOUT_WINDOW_MS;
             // Tras apagar, el próximo par empieza de cero: tres toques no
@@ -50,4 +71,18 @@ export function createGestureGate(): GestureGate {
             return now > suppressUntil;
         },
     };
+}
+
+/**
+ * ¿Fue un deslizamiento? Se decide al SOLTAR, con el punto de partida: el
+ * `Pressable` del atril pisa los manejadores del sistema de respuesta y el
+ * deslizamiento nunca llegaba a pasar página (anterior a esta fase).
+ */
+export const SWIPE_MIN_PX = 48;
+
+export function swipeDirection(startX: number | null, endX: number): -1 | 0 | 1 {
+    if (startX === null) return 0;
+    const dx = endX - startX;
+    if (Math.abs(dx) <= SWIPE_MIN_PX) return 0;
+    return dx < 0 ? 1 : -1;
 }

@@ -66,5 +66,8 @@
     "settings": "Reading settings",
     "blackout": "Black screen (tap to return)",
     "start_timer": "Start the clock",
-    "pause_timer": "Pause the clock"
+    "pause_timer": "Pause the clock",
+    "reset_clock": "Reset the clock",
+    "reset_clock_confirm": "The clock and the per-movement times go back to zero.",
+    "minutes_short": "{{count}} min"
 }

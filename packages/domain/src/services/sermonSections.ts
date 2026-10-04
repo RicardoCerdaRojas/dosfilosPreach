@@ -4,10 +4,10 @@
  * VIVE EN EL DOMINIO (A7 de la fase Púlpito premium). Antes había dos copias a
  * mano —`packages/web/src/pages/sermons/preach.tsx` y
  * `packages/mobile/src/core/utils/sermonSections.ts`— con un comentario que
- * pedía mantenerlas iguales. Los slugs tienen que coincidir entre plataformas:
- * las marcas se anclan por `(sectionSlug, offset)` (M-05), y si divergen, lo
- * que el pastor subrayó en la tablet el sábado no aparece en la web, ni al
- * revés.
+ * pedía mantenerlas iguales. Los slugs anclan las marcas de la tablet
+ * (`sectionSlug, offset`, M-05) y la navegación por secciones de la web. La web
+ * todavía guarda sus subrayados en el navegador (`useHighlights`); cuando lea
+ * las marcas de Firestore (F2), estos slugs son el contrato que las cruza.
  */
 
 export interface SermonSection {
@@ -64,6 +64,10 @@ export function extractSectionsWithBody(markdown: string): SermonSection[] {
         }
         const title = (match[1] ?? '').trim();
         if (!title) continue;
+        // El texto antes del primer `##` es la sección `preambulo`: un título
+        // que se llame «Preámbulo» no puede llevar el mismo slug, o las marcas
+        // de las dos secciones chocan (revisión adversarial de A7).
+        if (!current && preamble.join('').trim()) seenSlugs.add('preambulo');
         const slug = slugifyHeader(title);
         if (!slug) continue;
         let suffix = 1;

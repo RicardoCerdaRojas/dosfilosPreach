@@ -79,3 +79,10 @@ describe('packPages — las páginas del atril', () => {
         expect(packPages([], [], 100, 60)).toEqual([]);
     });
 });
+
+describe('packPages — revisión adversarial de A7', () => {
+    it('un grupo más alto que una página, al principio: su primer bloque no se monta sobre los títulos', () => {
+        // Antes: [[0],[1],[2]] — la página 0 llevaba títulos (50) + un bloque de 80 en 100.
+        expect(packPages([[0, 1, 2]], [80, 60, 60], 100, 50)).toEqual([[], [0], [1], [2]]);
+    });
+});

@@ -3,9 +3,15 @@ import { describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { queryClient } from '@/core/providers/query-client.provider';
-import { useAuthStore } from '../auth.store';
+import { PendingWritesError, useAuthStore } from '../auth.store';
+import { useReaderSettingsStore } from '../readerSettings.store';
 
 // jest sube este mock por encima de los imports: el store ya lo recibe.
+
+jest.mock('@/data/sources/firebase.source', () => {
+    const synced = jest.fn(async () => true);
+    return { __synced: synced, pendingWritesSynced: synced };
+});
 
 jest.mock('@/data/repositories/auth.repository.impl', () => {
     const signIn = jest.fn();
@@ -20,6 +26,7 @@ jest.mock('@/data/repositories/auth.repository.impl', () => {
 });
 
 
+const synced = (jest.requireMock('@/data/sources/firebase.source') as { __synced: jest.Mock<any> }).__synced;
 const signIn = (jest.requireMock('@/data/repositories/auth.repository.impl') as { __signIn: jest.Mock<any> })
     .__signIn;
 
@@ -60,5 +67,24 @@ describe('cerrar sesión', () => {
         queryClient.setQueryData(['bibleInk'], ['tinta de A']);
         useAuthStore.getState().setUser({ id: 'pastor-b' } as never);
         expect(queryClient.getQueryData(['bibleInk'])).toBeUndefined();
+    });
+});
+
+describe('cerrar sesión — revisión adversarial de A8', () => {
+    it('con cambios sin subir no sale: avisa (se perderían); forzado, sale igual', async () => {
+        useAuthStore.setState({ user: { id: 'pastor' } as never, isLoading: false });
+        synced.mockResolvedValueOnce(false);
+        await expect(useAuthStore.getState().signOut()).rejects.toBeInstanceOf(PendingWritesError);
+        expect(useAuthStore.getState().user).toEqual({ id: 'pastor' });
+        await useAuthStore.getState().signOut({ force: true });
+        expect(useAuthStore.getState().user).toBeNull();
+    });
+
+    it('borra lo personal de los ajustes (el lugar de predicación del anterior) y conserva los del aparato', async () => {
+        useReaderSettingsStore.setState({ lastPreachingPlace: 'Iglesia del anterior', deliveryFontSize: 32 });
+        useAuthStore.setState({ user: { id: 'pastor' } as never, isLoading: false });
+        await useAuthStore.getState().signOut();
+        expect(useReaderSettingsStore.getState().lastPreachingPlace).toBe('');
+        expect(useReaderSettingsStore.getState().deliveryFontSize).toBe(32);
     });
 });

@@ -111,7 +111,7 @@ describe('loadSermon — la red con plazo, el maletín de respaldo', () => {
         const escrito: BriefcaseEntry[] = [];
         const vivo = sermon({ title: 'Corregido en la web' });
         const r = await loadSermon('s1', {
-            fetchLive: async () => vivo,
+            fetchLive: async () => ({ sermon: vivo, fromCache: false }),
             read: async () => entry,
             write: async (e) => {
                 escrito.push(e);
@@ -188,5 +188,39 @@ describe('loadPublishedList — la lista sin red', () => {
         });
         expect(r.origin).toBe('live');
         expect(guardadas[0]!.map((s) => s.id)).toEqual(['a', 'b']);
+    });
+});
+
+describe('revisión adversarial de A1', () => {
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
+    it('una lectura servida por la caché de Firestore no cuenta como «en vivo» ni renueva el maletín', async () => {
+        const escrito: BriefcaseEntry[] = [];
+        const r = await loadSermon('s1', {
+            fetchLive: async () => ({ sermon: sermon(), fromCache: true }),
+            read: async () => ({ sermon: sermon(), savedAt: 'x' }),
+            write: async (e) => {
+                escrito.push(e);
+            },
+            deadlineMs: 6000,
+        });
+        expect(r.origin).toBe('cache');
+        expect(escrito).toEqual([]);
+    });
+
+    it('sin nada guardado, la lista espera a la red aunque tarde más que el plazo (función en frío)', async () => {
+        jest.useFakeTimers();
+        const lenta = new Promise<SermonSummary[]>((resolve) => setTimeout(() => resolve([summary('a')]), 15_000));
+        const pendiente = loadPublishedList({
+            fetchLive: () => lenta,
+            readSnapshot: async () => null,
+            writeSnapshot: async () => undefined,
+            listBriefcase: async () => [],
+            deadlineMs: 9000,
+        });
+        await jest.advanceTimersByTimeAsync(15_000);
+        await expect(pendiente).resolves.toMatchObject({ origin: 'live' });
     });
 });
