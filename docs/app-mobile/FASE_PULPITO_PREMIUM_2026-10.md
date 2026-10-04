@@ -171,13 +171,15 @@ También hay errores que se muestran como «no tienes sermones», una Biblia que
 
 ## 4. Decisiones que necesito del fundador
 
+**Decididas el 2026-10-04:** Etapa 0 primero, en su propio PR; D1 sólo tablet; D3 pantalla neutra; D5 ocultar «Editar» en la v1. Siguen abiertas D2, D4 (forma), D6, D7 y D8.
+
 | # | Pregunta | Recomendación |
 |---|---|---|
-| D1 | **¿Tablet sólo, o también teléfono?** | **Sólo tablet en la v1** (`ios.isTabletOnly` y equivalente en Play). El producto se diseñó para el atril de 11-13″. En teléfono habría que adaptar el atril y la Biblia, y las tiendas exigirían capturas y revisión en iPhone. El teléfono puede ser una v1.1 |
+| D1 ✅ | **¿Tablet sólo, o también teléfono?** → **Sólo tablet** | **Sólo tablet en la v1** (`ios.isTabletOnly` y equivalente en Play). El producto se diseñó para el atril de 11-13″. En teléfono habría que adaptar el atril y la Biblia, y las tiendas exigirían capturas y revisión en iPhone. El teléfono puede ser una v1.1 |
 | D2 | **¿Qué hacemos con la RVR1960?** | Confirmar la licencia con Sociedades Bíblicas. Mientras tanto, preparar el cambio a un texto libre por si hace falta. Bloquea la publicación y alcanza también a la web |
-| D3 | **¿Cómo resolvemos el registro?** | Quitar de la app el enlace a la web. Para quien entra con Google o Apple sin cuenta, mostrar una pantalla neutra que no mencione planes ni precios. Además, decidir si se impide crear cuentas sin pago (función de bloqueo) o se permite una cuenta gratuita que sólo lee |
+| D3 ✅ | **¿Cómo resolvemos el registro?** → **Pantalla neutra** | Quitar de la app el enlace a la web. Para quien entra con Google o Apple sin cuenta, mostrar una pantalla neutra que no mencione planes ni precios. Además, decidir si se impide crear cuentas sin pago (función de bloqueo) o se permite una cuenta gratuita que sólo lee |
 | D4 | **Borrado de cuenta** | Auto-borrado desde Perfil y desde una URL web: borrar datos, cancelar Stripe y revocar el token de Apple. Es obligatorio en las dos tiendas |
-| D5 | **¿Qué editor queda en la v1?** | **Ocultar «Editar» en la v1.** Hoy edita la copia publicada y rompe las marcas. El Redactor (F4) se hace bien después |
+| D5 ✅ | **¿Qué editor queda en la v1?** → **Ocultar «Editar»** | **Ocultar «Editar» en la v1.** Hoy edita la copia publicada y rompe las marcas. El Redactor (F4) se hace bien después |
 | D6 | **¿Reporte de errores con Crashlytics o con Sentry?** | **Crashlytics.** Ya usamos `@react-native-firebase` y Firebase, no suma otro proveedor y es gratis. Sin datos personales |
 | D7 | **¿Quiénes son los beta testers y qué tipo de cuenta de Play tienen?** | 2-3 pastores, con un iPad y una tablet Android cada uno. Si la cuenta de Play es personal y nueva, Play exige una prueba cerrada de 12 testers durante 14 días antes de producción (supuesto): hay que confirmarlo |
 | D8 | **¿Qué entra en la v1 y qué queda para después?** | **Para la v1:** gestos seguros, offline real, cronómetro confiable, registro, Biblia rápida y accesibilidad. **Después:** glifos de predicador, modo ensayo con presupuestos aprendidos, pasadores BT y Redactor |
