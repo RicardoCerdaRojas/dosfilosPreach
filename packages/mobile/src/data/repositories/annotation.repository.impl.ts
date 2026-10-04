@@ -10,6 +10,7 @@ import {
 } from '@react-native-firebase/firestore';
 import { HIGHLIGHT_COLORS, MARK_STYLES } from '@dosfilos/domain';
 import type { InkNote, InkStroke } from '@dosfilos/domain';
+import { reportWriteFailure } from '@/core/errors/writeFailures';
 import type {
     HighlightColor,
     MarkStyle,
@@ -229,5 +230,5 @@ export class AnnotationRepositoryImpl implements AnnotationRepository {
  * el log en vez de perderse en silencio.
  */
 function settleOffline(write: Promise<unknown>, label: string): void {
-    write.catch((error) => console.warn(`[annotations] ${label} failed:`, error));
+    write.catch((error) => reportWriteFailure('annotation', { label, error }));
 }

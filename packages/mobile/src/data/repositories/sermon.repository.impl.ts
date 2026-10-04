@@ -12,6 +12,7 @@ import type { PreachingLog } from '@dosfilos/domain';
 import { Sermon, SermonSummary } from '@/domain/models/sermon.model';
 import { SermonRepository } from '@/domain/repositories/sermon.repository';
 import { getFirebaseDb } from '@/data/sources/firebase.source';
+import { reportWriteFailure } from '@/core/errors/writeFailures';
 
 /** Item crudo del callable getSermonsListSummary (fechas en milisegundos). */
 interface RawSummary {
@@ -93,7 +94,7 @@ export class SermonRepositoryImpl implements SermonRepository {
             title: patch.title,
             content: patch.content,
             updatedAt: serverTimestamp(),
-        }).catch((error) => console.warn(`[sermons] update ${id} failed:`, error));
+        }).catch((error) => reportWriteFailure('sermon', error));
     }
 
     /**
@@ -110,7 +111,7 @@ export class SermonRepositoryImpl implements SermonRepository {
                 ...(log.notes ? { notes: log.notes } : {}),
             }),
             updatedAt: serverTimestamp(),
-        }).catch((error) => console.warn(`[sermons] preaching log ${id} failed:`, error));
+        }).catch((error) => reportWriteFailure('preaching_log', error));
     }
 
     async getSermonById(id: string): Promise<Sermon | null> {

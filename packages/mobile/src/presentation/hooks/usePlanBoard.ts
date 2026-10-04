@@ -32,8 +32,13 @@ export interface PlanBoard extends Omit<SeriesPlan, 'items'> {
  * distintas a la misma pregunta.
  */
 export function usePlanBoard() {
-    const { data: plans, isLoading } = useSeriesPlans();
-    const { data: groups, isLoading: loadingSermons } = usePublishedSermons();
+    const { data: plans, isLoading, error: plansError, refetch: refetchPlans } = useSeriesPlans();
+    const {
+        data: groups,
+        isLoading: loadingSermons,
+        error: sermonsError,
+        refetch: refetchSermons,
+    } = usePublishedSermons();
 
     const published = new Map<string, SermonSummary>();
     for (const group of groups ?? []) {
@@ -67,6 +72,12 @@ export function usePlanBoard() {
 
     return {
         isLoading: isLoading || loadingSermons,
+        /** Falló alguna de las dos lecturas: la pantalla lo dice en vez de «sin planes» (A2). */
+        error: plansError ?? sermonsError ?? null,
+        refetch: () => {
+            refetchPlans();
+            refetchSermons();
+        },
         plans: boards,
         /** El plan que la app debe mostrar: el activo, o el que va a empezar. */
         current: pickCurrentPlan(boards, (plan) => plan.status),

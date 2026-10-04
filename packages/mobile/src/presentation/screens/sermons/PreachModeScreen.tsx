@@ -59,7 +59,7 @@ export default function PreachModeScreen({
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { width, height: screenHeight } = useWindowDimensions();
-    const { data: sermon, isLoading } = useSermon(id ?? '');
+    const { data: sermon, isLoading, error, refetch } = useSermon(id ?? '');
 
     const readingMode = useReaderSettingsStore((s) => s.readingMode);
     const setReadingMode = useReaderSettingsStore((s) => s.setReadingMode);
@@ -302,10 +302,57 @@ export default function PreachModeScreen({
         if (resolved.length) setCitation(resolved);
     };
 
-    if (isLoading || !sermon) {
+    if (isLoading) {
         return (
             <View className="flex-1 items-center justify-center" style={{ backgroundColor: tokens.background }}>
                 <ActivityIndicator color={tokens.accent} />
+            </View>
+        );
+    }
+
+    // Sin datos: un mensaje y dos salidas. Antes era un spinner eterno, y el
+    // pastor no sabía si esperar o volver (A2).
+    if (error || !sermon) {
+        return (
+            <View
+                className="flex-1 items-center justify-center px-10"
+                style={{ backgroundColor: tokens.background }}
+            >
+                <MaterialIcons name="cloud-off" size={36} color={tokens.textSecondary} />
+                <Text
+                    style={{ color: tokens.textPrimary, fontSize: 19 }}
+                    className="font-lexend-semibold text-center mt-4"
+                >
+                    {t('common:load_failed')}
+                </Text>
+                <Text
+                    style={{ color: tokens.textSecondary, fontSize: 15, lineHeight: 22 }}
+                    className="font-lexend text-center mt-2"
+                >
+                    {t('common:load_failed_hint')}
+                </Text>
+                <View className="flex-row mt-6">
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        accessibilityRole="button"
+                        className="px-6 py-3 rounded-full mr-3"
+                        style={{ borderWidth: 1, borderColor: tokens.border }}
+                    >
+                        <Text style={{ color: tokens.textPrimary }} className="font-lexend-semibold">
+                            {t('common:go_back')}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => refetch()}
+                        accessibilityRole="button"
+                        className="px-6 py-3 rounded-full"
+                        style={{ backgroundColor: tokens.accent }}
+                    >
+                        <Text style={{ color: tokens.background }} className="font-lexend-semibold">
+                            {t('common:retry')}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     }

@@ -46,7 +46,7 @@ export default function HomeScreen() {
     const { gutter, isTablet } = useLayout();
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const { data: groups, isLoading } = usePublishedSermons();
+    const { data: groups, isLoading, error, refetch } = usePublishedSermons();
     const { current: plan } = usePlanBoard();
 
     const all = (groups ?? []).flatMap((g) => g.sermons);
@@ -117,6 +117,28 @@ export default function HomeScreen() {
                     </Card>
                 ) : next ? (
                     <NextSermon sermon={next} />
+                ) : error ? (
+                    // Falló la carga: se dice. Antes se veía «no tienes
+                    // sermones», que parece un problema de datos (A2).
+                    <Card theme={theme}>
+                        <EmptyState
+                            theme={theme}
+                            title={t('common:load_failed')}
+                            hint={t('common:load_failed_hint')}
+                            action={
+                                <TouchableOpacity
+                                    onPress={() => refetch()}
+                                    accessibilityRole="button"
+                                    className="px-6 py-3 rounded-full active:opacity-85"
+                                    style={{ backgroundColor: theme.accent }}
+                                >
+                                    <Text style={{ color: theme.onAccent }} className="font-lexend-semibold">
+                                        {t('common:retry')}
+                                    </Text>
+                                </TouchableOpacity>
+                            }
+                        />
+                    </Card>
                 ) : (
                     <Card theme={theme}>
                         <EmptyState

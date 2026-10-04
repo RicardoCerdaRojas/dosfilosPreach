@@ -1,67 +1,95 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { useUIStore, ToastType } from '@/presentation/state/ui.store';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
-const getIconName = (type: ToastType): keyof typeof Ionicons.glyphMap => {
-  switch (type) {
-    case 'success': return 'checkmark-circle';
-    case 'error': return 'alert-circle';
-    case 'info': return 'information-circle';
-    default: return 'information-circle';
-  }
+import { useAppTheme } from '@/core/theme/appTheme';
+import { onWriteFailure } from '@/core/errors/writeFailures';
+import { useUIStore, ToastType } from '@/presentation/state/ui.store';
+
+const ICON: Record<ToastType, keyof typeof MaterialIcons.glyphMap> = {
+    success: 'check-circle',
+    error: 'error-outline',
+    info: 'info-outline',
 };
 
+/**
+ * El aviso de la app.
+ *
+ * Antes era verde/rojo/azul de Tailwind con títulos fijos en español
+ * («Error», «Éxito»): no seguía el tema —en tinta electrónica era un bloque
+ * de color— ni el idioma. Ahora es una tarjeta del tema con el color sólo en
+ * el ícono, y el mensaje dice lo que pasó sin un título que lo repita.
+ *
+ * También escucha las escrituras que fallaron (A2): antes iban sólo a la
+ * consola y el cambio desaparecía de la pantalla sin explicación.
+ */
 export const ToastNotification = () => {
-  const { toast, hideToast } = useUIStore();
-  const insets = useSafeAreaInsets();
+    const { toast, hideToast, showToast } = useUIStore();
+    const insets = useSafeAreaInsets();
+    const theme = useAppTheme();
+    const { t } = useTranslation();
 
-  if (!toast || !toast.visible) return null;
+    useEffect(
+        () => onWriteFailure((kind) => showToast(t(`common:write_failed_${kind}`), 'error', 6000)),
+        [showToast, t],
+    );
 
-  const bgColors = {
-    success: 'bg-green-600',
-    error: 'bg-red-600',
-    info: 'bg-blue-600',
-  };
+    if (!toast || !toast.visible) return null;
 
-  return (
-    <Animated.View
-      entering={FadeInUp.springify()}
-      exiting={FadeOutUp}
-      style={[
-        styles.container,
-        { top: insets.top + 12 } 
-      ]}
-      pointerEvents="box-none"
-    >
-      <View className={`flex-row items-center justify-between px-4 py-3 rounded-2xl shadow-xl w-[92%] self-center ${bgColors[toast.type] || 'bg-gray-800'}`}>
-            <View className="flex-row items-center flex-1">
-                <Ionicons name={getIconName(toast.type)} size={28} color="white" />
-                <View className="ml-3 flex-1">
-                    <Text className="text-white font-bold text-base">
-                        {toast.type === 'error' ? 'Error' : toast.type === 'success' ? 'Éxito' : 'Información'}
-                    </Text>
-                    <Text className="text-white/90 text-sm leading-4 mt-0.5">
-                        {toast.message}
-                    </Text>
-                </View>
+    const tone = toast.type === 'error' ? theme.danger : toast.type === 'success' ? theme.positive : theme.accent;
+
+    return (
+        <Animated.View
+            entering={FadeInUp}
+            exiting={FadeOutUp}
+            style={[styles.container, { top: insets.top + 12 }]}
+            pointerEvents="box-none"
+        >
+            <View
+                accessibilityRole="alert"
+                className="flex-row items-center px-4 py-3 rounded-2xl"
+                style={{
+                    width: '92%',
+                    maxWidth: 560,
+                    backgroundColor: theme.surface,
+                    borderWidth: 1,
+                    borderColor: theme.borderStrong,
+                    shadowColor: theme.shadow,
+                    shadowOpacity: 0.18,
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 6,
+                }}
+            >
+                <MaterialIcons name={ICON[toast.type]} size={22} color={tone} />
+                <Text
+                    style={{ color: theme.textPrimary, fontSize: 15, lineHeight: 21 }}
+                    className="font-lexend flex-1 ml-3"
+                >
+                    {toast.message}
+                </Text>
+                <TouchableOpacity
+                    onPress={hideToast}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common:close')}
+                    className="p-1 ml-2"
+                >
+                    <MaterialIcons name="close" size={18} color={theme.textMuted} />
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={hideToast} className="p-1 ml-2">
-                <Ionicons name="close" size={20} color="white" style={{ opacity: 0.8 }} />
-            </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
+        </Animated.View>
+    );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    alignItems: 'center',
-  },
+    container: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        alignItems: 'center',
+    },
 });

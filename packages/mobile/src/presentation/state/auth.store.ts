@@ -19,50 +19,27 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
     user: null,
+    // SÓLO el arranque: true hasta saber si hay sesión. Ingresar NO lo toca
+    // (A2): la raíz devuelve `null` mientras vale true, y un ingreso que lo
+    // encendía desmontaba la pantalla de login — si la contraseña era
+    // incorrecta, el pastor volvía a una pantalla en blanco y sin el email que
+    // había escrito. El login tiene su propio indicador.
     isLoading: true,
     signIn: async (email, password) => {
-        try {
-            set({ isLoading: true });
-            const user = await authRepository.signIn(email, password);
-            set({ user, isLoading: false });
-        } catch (error) {
-            set({ isLoading: false });
-            console.warn('Sign in failed', error);
-            throw error;
-        }
+        const user = await authRepository.signIn(email, password);
+        set({ user });
     },
     signUp: async (email, password, firstName, lastName) => {
-        try {
-            set({ isLoading: true });
-            const user = await authRepository.signUp(email, password, firstName, lastName);
-            set({ user, isLoading: false });
-        } catch (error) {
-            set({ isLoading: false });
-            console.warn('Sign up failed', error);
-            throw error;
-        }
+        const user = await authRepository.signUp(email, password, firstName, lastName);
+        set({ user });
     },
     signInWithGoogle: async (idToken) => {
-        try {
-            set({ isLoading: true });
-            const user = await authRepository.signInWithGoogle(idToken);
-            set({ user, isLoading: false });
-        } catch (error) {
-            set({ isLoading: false });
-            console.warn('Google sign in failed', error);
-            throw error;
-        }
+        const user = await authRepository.signInWithGoogle(idToken);
+        set({ user });
     },
     signInWithApple: async (identityToken, rawNonce) => {
-        try {
-            set({ isLoading: true });
-            const user = await authRepository.signInWithApple(identityToken, rawNonce);
-            set({ user, isLoading: false });
-        } catch (error) {
-            set({ isLoading: false });
-            console.warn('Apple sign in failed', error);
-            throw error;
-        }
+        const user = await authRepository.signInWithApple(identityToken, rawNonce);
+        set({ user });
     },
     signOut: async () => {
         await authRepository.signOut();

@@ -20,5 +20,12 @@
     "retry": "Retry",
     "close": "Close",
     "eink": "E-ink",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "write_failed_sermon": "The sermon couldn't be saved. Check your connection and try again.",
+    "write_failed_preaching_log": "The preaching log couldn't be saved. Try again.",
+    "write_failed_annotation": "A sermon mark couldn't be saved.",
+    "write_failed_bible_mark": "A Bible mark couldn't be saved.",
+    "load_failed": "Couldn't load. Check your connection.",
+    "load_failed_hint": "If you prepared this sermon for offline use, it will show up anyway.",
+    "go_back": "Go back"
 }

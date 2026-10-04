@@ -20,5 +20,12 @@
     "retry": "Reintentar",
     "close": "Cerrar",
     "eink": "Tinta e.",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "write_failed_sermon": "No se pudo guardar el sermón. Revisa tu conexión y vuelve a intentarlo.",
+    "write_failed_preaching_log": "No se pudo registrar la predicación. Vuelve a intentarlo.",
+    "write_failed_annotation": "No se pudo guardar una marca del sermón.",
+    "write_failed_bible_mark": "No se pudo guardar una marca de la Biblia.",
+    "load_failed": "No se pudo cargar. Revisa tu conexión.",
+    "load_failed_hint": "Si preparaste este sermón para usarlo sin conexión, aparecerá igual.",
+    "go_back": "Volver"
 }

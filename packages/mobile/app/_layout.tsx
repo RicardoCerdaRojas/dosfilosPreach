@@ -21,8 +21,6 @@ import { useEffect, useMemo } from 'react';
 import { useColorScheme } from 'nativewind';
 import 'react-native-reanimated';
 
-// Ignore specific warnings
-LogBox.ignoreLogs(['Sign in failed', 'Sign up failed', 'Google sign in failed']);
 
 import { AppQueryClientProvider } from '@/core/providers/query-client.provider';
 import { useThemeStore } from '@/presentation/state/theme.store';

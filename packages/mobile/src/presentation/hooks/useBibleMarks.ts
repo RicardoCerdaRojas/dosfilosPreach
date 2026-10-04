@@ -10,6 +10,7 @@ import {
 import type { HighlightColor, MarkStyle } from '@dosfilos/domain';
 
 import { getFirebaseAuth, getFirebaseDb } from '@/data/sources/firebase.source';
+import { reportWriteFailure } from '@/core/errors/writeFailures';
 import type { BibleMark, VerseWordRange } from '@/domain/bible/entities/BibleMark';
 import { verseKey } from '@/domain/bible/entities/BibleMark';
 
@@ -94,7 +95,7 @@ export const useBibleMarkMutations = () => {
                         from: range.from ?? null,
                         to: range.to ?? null,
                         createdAt: serverTimestamp(),
-                    }).catch((error) => console.warn(`[bibleMarks] ${id} failed:`, error));
+                    }).catch((error) => reportWriteFailure('bible_mark', { id, error }));
                 }),
             );
         },
