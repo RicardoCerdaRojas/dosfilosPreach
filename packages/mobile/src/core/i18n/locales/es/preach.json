@@ -81,5 +81,7 @@
     "end_time_hint": "La duración sale de la hora: lo ya predicado más lo que falta hasta entonces.",
     "end_time_until": "hasta las {{time}}",
     "end_time_later": "5 minutos más tarde",
-    "end_time_earlier": "5 minutos más temprano"
+    "end_time_earlier": "5 minutos más temprano",
+    "view_outline": "Ver el bosquejo",
+    "view_manuscript": "Ver el manuscrito"
 }

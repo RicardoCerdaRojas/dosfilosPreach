@@ -81,5 +81,7 @@
     "end_time_hint": "The duration comes from the time: what you have preached plus what is left until then.",
     "end_time_until": "until {{time}}",
     "end_time_later": "5 minutes later",
-    "end_time_earlier": "5 minutes earlier"
+    "end_time_earlier": "5 minutes earlier",
+    "view_outline": "Show the outline",
+    "view_manuscript": "Show the manuscript"
 }

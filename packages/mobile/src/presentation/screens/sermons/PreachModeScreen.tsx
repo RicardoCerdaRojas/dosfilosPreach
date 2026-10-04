@@ -21,6 +21,7 @@ import {
     aggregateRequiredAttributions,
     buildMovementBudgets,
     buildReadingBlocks,
+    buildOutline,
     buildRehearsalReport,
     defaultTargetMinutes,
     shiftEndAt,
@@ -46,6 +47,7 @@ import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachIn
 import { usePagination } from '@/presentation/hooks/usePagination';
 import { usePreachClock } from '@/presentation/hooks/usePreachClock';
 import { PreachReadingPage } from '@/presentation/components/preach/PreachReadingPage';
+import { PreachOutline } from '@/presentation/components/preach/PreachOutline';
 import { readingPassageFor, verseTextFor } from '@/data/repositories/bible/BibleVersionFactory';
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 import { useUIStore } from '@/presentation/state/ui.store';
@@ -162,6 +164,11 @@ export default function PreachModeScreen({
 
 
     const blocks = section ? buildReadingBlocks(section.body) : [];
+    // Bosquejo (C7): el mismo movimiento, derivado del manuscrito. Una página
+    // por movimiento; las marcas y la tinta, ancladas al manuscrito, no van.
+    const outlineOn = useReaderSettingsStore((s) => s.outlineView);
+    const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
+    const outline = outlineOn && section ? buildOutline(section.body) : [];
 
     // La caja de medida abarca TODO lo que se lee — título, título de
     // movimiento, cuerpo y atribuciones. Cuando sólo la usaba el cuerpo, los
@@ -297,8 +304,9 @@ export default function PreachModeScreen({
         layoutKey: `${section?.slug ?? ''}|${fontSize}|${senseLines}|${deliveryFace}|${hangingIndent}|${measure ?? 0}`,
     });
 
-    const safePageIndex = Math.min(pageIndex, Math.max(0, pages.length - 1));
-    const pageBlocks = pages.length
+    const pageCount = outlineOn ? 1 : Math.max(1, pages.length);
+    const safePageIndex = Math.min(pageIndex, pageCount - 1);
+    const pageBlocks = pages.length && !outlineOn
         ? pages[safePageIndex].map((i) => blocks[i])
         : blocks;
 
@@ -306,7 +314,7 @@ export default function PreachModeScreen({
     // viene: alcanza para saber si la idea sigue o si acá cerró.
 
     const nextPeek =
-        pages.length && safePageIndex < pages.length - 1
+        !outlineOn && pages.length && safePageIndex < pages.length - 1
             ? blocks[pages[safePageIndex + 1][0]]?.text ?? null
             : null;
 
@@ -352,7 +360,7 @@ export default function PreachModeScreen({
             return;
         }
         const next = safePageIndex + delta;
-        if (next >= 0 && next < pages.length) {
+        if (next >= 0 && next < pageCount) {
             setPageIndex(next);
             scrollRef.current?.scrollTo({ y: 0, animated: tokens.animations });
             return;
@@ -521,7 +529,24 @@ export default function PreachModeScreen({
                                 color={running ? tokens.accent : tokens.textSecondary}
                             />
                         </TouchableOpacity>
+                        {/* Manuscrito o bosquejo (C7), a un toque: se cambia
+                            en medio del sermón, cuando la idea ya está dicha. */}
                         <TouchableOpacity
+                            onPress={() => {
+                                ink.setPenActive(false);
+                                setOutlineView(!outlineOn);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel={t(outlineOn ? 'preach:view_manuscript' : 'preach:view_outline')}
+                            className="mr-4"
+                        >
+                            <MaterialIcons
+                                name={outlineOn ? 'article' : 'format-list-bulleted'}
+                                size={22}
+                                color={outlineOn ? tokens.accent : tokens.textSecondary}
+                            />
+                        </TouchableOpacity>
+                        {outlineOn ? null : <TouchableOpacity
                             onPress={() => ink.setPenActive(!ink.penActive)}
                             accessibilityRole="button"
                             accessibilityLabel={t('preach:pen')}
@@ -532,7 +557,7 @@ export default function PreachModeScreen({
                                 size={22}
                                 color={ink.penActive ? tokens.accent : tokens.textSecondary}
                             />
-                        </TouchableOpacity>
+                        </TouchableOpacity>}
                         <TouchableOpacity
                             onPress={() => setShowBible(true)}
                             accessibilityRole="button"
@@ -583,7 +608,7 @@ export default function PreachModeScreen({
                     elapsedSeconds={elapsed}
                     readingIndex={sectionIndex}
                     pageIndex={safePageIndex}
-                    pageCount={Math.max(1, pages.length)}
+                    pageCount={pageCount}
                     running={running}
                     numbers={statusBarMode === 'full'}
                     endAt={preachClock.endAt}
@@ -620,7 +645,7 @@ export default function PreachModeScreen({
                             alignSelf: 'center',
                             // Sin esto, mientras se miden las alturas se ve el
                             // movimiento entero de un flash antes de paginar.
-                            opacity: showReading || (measure && !measuring) ? 1 : 0,
+                            opacity: showReading || (measure && (outlineOn || !measuring)) ? 1 : 0,
                         }}
                     >
                         {pageProbe}
@@ -652,7 +677,17 @@ export default function PreachModeScreen({
                         ) : null}
                         {!showReading && safePageIndex === 0 ? pageHeader : null}
 
-                    {showReading ? null : <PreachSectionBody
+                    {!showReading && outlineOn ? (
+                        <PreachOutline
+                            items={outline}
+                            tokens={tokens}
+                            fontSize={fontSize}
+                            face={deliveryFace}
+                            onTapAt={handleTap}
+                        />
+                    ) : null}
+
+                    {showReading || outlineOn ? null : <PreachSectionBody
                         blocks={pageBlocks}
                         highlights={highlighting.highlights}
                         fontSize={fontSize}
@@ -695,7 +730,7 @@ export default function PreachModeScreen({
 
                     {!showReading &&
                         sectionIndex === sections.length - 1 &&
-                        safePageIndex === Math.max(0, pages.length - 1) &&
+                        safePageIndex === pageCount - 1 &&
                         attributions.length > 0 && (
                         <View style={{ borderTopWidth: 1, borderTopColor: tokens.border }} className="mt-8 pt-4">
                             {attributions.map((block) => (
@@ -734,7 +769,7 @@ export default function PreachModeScreen({
                         elapsedSeconds={elapsed}
                         readingIndex={sectionIndex}
                         pageIndex={safePageIndex}
-                        pageCount={Math.max(1, pages.length)}
+                        pageCount={pageCount}
                         height={panelHeight}
                         numbers={panelMode === 'full'}
                     />
@@ -967,7 +1002,7 @@ export default function PreachModeScreen({
             {/* Tinta encima de todo. Con el lápiz apagado la capa es
                 transparente al tacto: predicar no puede quedar detrás de una
                 capa de dibujo. */}
-            <InkLayer
+            {outlineOn ? null : <InkLayer
                 tokens={tokens}
                 notes={ink.notes}
                 anchorRectFor={ink.anchorRectFor}
@@ -980,7 +1015,7 @@ export default function PreachModeScreen({
                 onErase={ink.eraseStroke}
                 top={chromeTop}
                 bottom={panelHeight + insets.bottom}
-            />
+            />}
 
             {/* Barra del lápiz: colores, goma y salida. Va DESPUÉS de la capa
                 para quedar por encima — si quedara debajo, la propia capa
