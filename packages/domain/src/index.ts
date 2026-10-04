@@ -41,6 +41,7 @@ export * from './services/movementBudget'; // 🌱 Púlpito F2 — presupuesto d
 export * from './services/pageGrouping'; // 🌱 Púlpito F2 — bloques que no se separan entre páginas
 export * from './services/rehearsalReport'; // 🌱 Púlpito F3 — informe del ensayo (tiempo real vs presupuesto)
 export * from './services/preachClock'; // 🌱 Púlpito premium A4 — reloj de pared que sobrevive al bloqueo y a la app cerrada
+export * from './services/preachOutline'; // 🌱 Púlpito premium C7 — el bosquejo derivado del manuscrito
 export * from './entities/SermonSeries';
 export * from './entities/LibraryResource';
 export * from './entities/extractionHealth';

@@ -84,13 +84,51 @@ export function spentSeconds(clock: PreachClock, now: number): Record<string, nu
  * objetivo, un pulso háptico — se siente en la mano y nadie más lo oye.
  */
 export const EIGHTY_PERCENT_CUE = 'eighty';
+/** Faltan cinco minutos (C7). Sólo si el sermón dura más de diez. */
+export const FIVE_MINUTES_CUE = 'five-left';
+/** Un movimiento se pasó de su presupuesto (C7): uno por movimiento. */
+export const overrunCue = (slug: string) => `overrun:${slug}`;
 
-export function dueCues(clock: PreachClock, now: number, targetSeconds: number): string[] {
+/**
+ * Avisos que tocan ahora y no se dieron todavía. Todos se sienten en la mano
+ * y nadie más los oye (pulso háptico):
+ * - al 80 % del objetivo;
+ * - a los 5 minutos del final, si el sermón dura más de 10 (C7);
+ * - cuando el movimiento que se está leyendo se pasa de su presupuesto, una
+ *   vez por movimiento (C7).
+ */
+export function dueCues(
+    clock: PreachClock,
+    now: number,
+    targetSeconds: number,
+    budgets: ReadonlyArray<{ slug: string; seconds: number }> = [],
+): string[] {
     const due: string[] = [];
-    if (targetSeconds > 0 && elapsedMs(clock, now) >= targetSeconds * 800 && !clock.cuesFired.includes(EIGHTY_PERCENT_CUE)) {
+    const fired = new Set(clock.cuesFired);
+    const elapsed = elapsedMs(clock, now) / 1000;
+    if (targetSeconds > 0 && elapsed >= targetSeconds * 0.8 && !fired.has(EIGHTY_PERCENT_CUE)) {
         due.push(EIGHTY_PERCENT_CUE);
     }
+    if (targetSeconds > 600 && targetSeconds - elapsed <= 300 && !fired.has(FIVE_MINUTES_CUE)) {
+        due.push(FIVE_MINUTES_CUE);
+    }
+    if (clock.running && clock.slug) {
+        const budget = budgets.find((b) => b.slug === clock.slug);
+        const spent = spentSeconds(clock, now)[clock.slug] ?? 0;
+        const cue = overrunCue(clock.slug);
+        if (budget && spent > budget.seconds && !fired.has(cue)) due.push(cue);
+    }
     return due;
+}
+
+/**
+ * La duración que resulta de una HORA DE TÉRMINO (C7): lo predicado más lo que
+ * queda hasta esa hora. El culto no empieza a horario y el pastor no decide
+ * cuándo sube: «termino a las 11:45» es lo que de verdad sabe. Nunca menos de
+ * un minuto.
+ */
+export function targetSecondsUntil(clock: PreachClock, now: number, endAt: number): number {
+    return Math.max(60, Math.round(elapsedMs(clock, now) / 1000 + (endAt - now) / 1000));
 }
 
 export function markCues(clock: PreachClock, cues: string[]): PreachClock {
