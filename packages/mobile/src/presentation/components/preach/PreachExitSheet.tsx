@@ -74,7 +74,7 @@ export function PreachExitSheet({
     };
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'slide' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'slide' : 'none'} onRequestClose={onClose}>
             <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
                 <Pressable
                     className="rounded-t-3xl px-7 pt-6"

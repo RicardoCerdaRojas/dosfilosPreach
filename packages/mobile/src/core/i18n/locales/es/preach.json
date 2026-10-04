@@ -62,5 +62,7 @@
     "instrument_full": "Con números",
     "instrument_minimal": "Sólo la marca",
     "instrument_off": "Oculto",
-    "offline_copy": "Sin conexión: copia del maletín"
+    "offline_copy": "Sin conexión: copia del maletín",
+    "settings": "Ajustes de lectura",
+    "blackout": "Pantalla negra (toca para volver)"
 }

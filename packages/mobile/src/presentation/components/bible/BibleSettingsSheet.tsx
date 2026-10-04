@@ -133,7 +133,7 @@ export function BibleSettingsSheet({ visible, tokens, onClose }: Props) {
     );
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'} onRequestClose={onClose}>
             {/* Cajón derecho, como los ajustes del atril: el texto queda a la
                 vista mientras se ajusta, que es la única forma de saber si el
                 ajuste sirve. */}

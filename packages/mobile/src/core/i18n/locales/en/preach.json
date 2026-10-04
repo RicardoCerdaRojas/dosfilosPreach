@@ -62,5 +62,7 @@
     "instrument_full": "With numbers",
     "instrument_minimal": "Marker only",
     "instrument_off": "Hidden",
-    "offline_copy": "Offline: briefcase copy"
+    "offline_copy": "Offline: briefcase copy",
+    "settings": "Reading settings",
+    "blackout": "Black screen (tap to return)"
 }

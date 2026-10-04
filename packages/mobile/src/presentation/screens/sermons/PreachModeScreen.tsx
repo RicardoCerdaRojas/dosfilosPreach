@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    BackHandler,
     Modal,
     Pressable,
     ScrollView,
@@ -41,6 +42,7 @@ import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultS
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
 import { usePagination } from '@/presentation/hooks/usePagination';
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
+import { createGestureGate, tapZone } from './preachGestures';
 
 interface PreachModeScreenProps {
     /** Id inyectado: lo usa la vista previa de dev, que no llega por ruta. */
@@ -113,7 +115,8 @@ export default function PreachModeScreen({
     const [spentBySlug, setSpentBySlug] = useState<Record<string, number>>({});
     const [showExit, setShowExit] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
-    const lastTapRef = useRef(0);
+    // Toques: un dedo pasa página, dos dedos dos veces apagan (A3).
+    const [gate] = useState(createGestureGate);
     const swipeStart = useRef<{ x: number; y: number } | null>(null);
     // El intervalo no debe recrearse en cada cambio de sección: lee el slug
     // vigente por ref en vez de entrar en las dependencias del efecto.
@@ -278,21 +281,32 @@ export default function PreachModeScreen({
     };
 
     // Zonas de tap: ⅓ izquierda retrocede, ⅓ derecha avanza, centro
-    // muestra/oculta controles. Doble tap con dos dedos → blackout.
+    // muestra/oculta controles. La pantalla negra es de DOS dedos (ver
+    // preachGestures): un dedo nunca apaga, por rápido que toque.
     // `x` es SIEMPRE absoluto de pantalla (pageX): el cuerpo del sermón
     // reenvía sus taps desde adentro y su locationX sería relativo.
     const handleTap = (x: number) => {
-        const now = Date.now();
-        if (now - lastTapRef.current < 300) {
-            lastTapRef.current = 0;
-            setBlackout(true);
-            return;
-        }
-        lastTapRef.current = now;
-        if (x < width / 3) step(-1);
-        else if (x > (width * 2) / 3) step(1);
+        if (!gate.acceptsTap(Date.now())) return;
+        const zone = tapZone(x, width);
+        if (zone === 'back') step(-1);
+        else if (zone === 'forward') step(1);
         else setChromeVisible((v) => !v);
     };
+
+    // Salir pasa por la hoja de salida si hubo predicación: ahí se registra.
+    const requestExit = () => (elapsed > 60 ? setShowExit(true) : router.back());
+
+    // «Atrás» de Android: antes salía del atril sin la hoja de salida y se
+    // perdían el informe y el registro (A3). Las capas abiertas (Modal) se
+    // cierran solas con su onRequestClose antes de llegar acá.
+    useEffect(() => {
+        const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (blackout) setBlackout(false);
+            else if (!showExit) requestExit();
+            return true;
+        });
+        return () => sub.remove();
+    });
 
     const openCitation = (ordinals: number[]) => {
         if (!manifest) return;
@@ -367,7 +381,7 @@ export default function PreachModeScreen({
                     style={{ paddingTop: insets.top + 6, borderBottomWidth: 1, borderBottomColor: tokens.border }}
                 >
                     <TouchableOpacity
-                        onPress={() => (elapsed > 60 ? setShowExit(true) : router.back())}
+                        onPress={requestExit}
                         accessibilityRole="button"
                         accessibilityLabel={t('preach:exit')}
                         className="flex-row items-center"
@@ -422,10 +436,29 @@ export default function PreachModeScreen({
                                 color={tokens.textSecondary}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setShowSections(true)} className="mr-4">
+                        {/* Pantalla negra también con un botón: el gesto de dos
+                            dedos no se descubre solo. */}
+                        <TouchableOpacity
+                            onPress={() => setBlackout(true)}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('preach:blackout')}
+                            className="mr-4"
+                        >
+                            <MaterialIcons name="dark-mode" size={22} color={tokens.textSecondary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setShowSections(true)}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('preach:sections')}
+                            className="mr-4"
+                        >
                             <MaterialIcons name="format-list-numbered" size={22} color={tokens.textSecondary} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setShowSettings(true)}>
+                        <TouchableOpacity
+                            onPress={() => setShowSettings(true)}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('preach:settings')}
+                        >
                             <MaterialIcons name="tune" size={22} color={tokens.textSecondary} />
                         </TouchableOpacity>
                     </View>
@@ -463,6 +496,7 @@ export default function PreachModeScreen({
                 // reclamarlo ya hace falta saber de dónde salió el dedo.
                 onTouchStart={(e) => {
                     swipeStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+                    if (gate.touchStart(e.nativeEvent.touches.length, Date.now())) setBlackout(true);
                 }}
                 onResponderRelease={(e) => {
                     const { dx } = swipeDelta(e.nativeEvent);
@@ -624,7 +658,12 @@ export default function PreachModeScreen({
             )}
 
             {/* Riel de secciones */}
-            <Modal visible={showSections} transparent animationType={tokens.animations ? 'slide' : 'none'}>
+            <Modal
+                visible={showSections}
+                transparent
+                animationType={tokens.animations ? 'slide' : 'none'}
+                onRequestClose={() => setShowSections(false)}
+            >
                 <Pressable className="flex-1 bg-black/40" onPress={() => setShowSections(false)}>
                     <View
                         className="mt-auto rounded-t-2xl px-6 pt-5"
@@ -699,7 +738,12 @@ export default function PreachModeScreen({
             />
 
             {/* Popover de cita [N] — primer cliente del citationManifest */}
-            <Modal visible={citation !== null} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+            <Modal
+                visible={citation !== null}
+                transparent
+                animationType={tokens.animations ? 'fade' : 'none'}
+                onRequestClose={() => setCitation(null)}
+            >
                 <Pressable className="flex-1 bg-black/50 items-center justify-center px-8" onPress={() => setCitation(null)}>
                     <View className="rounded-2xl p-6 w-full max-w-2xl" style={{ backgroundColor: tokens.surface }}>
                         {(citation ?? []).map(({ ordinal, entry }) => (
@@ -723,7 +767,12 @@ export default function PreachModeScreen({
             </Modal>
 
             {/* Aparato de estudio: fuera del flujo de entrega, en capa (P5) */}
-            <Modal visible={apparatus !== null} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+            <Modal
+                visible={apparatus !== null}
+                transparent
+                animationType={tokens.animations ? 'fade' : 'none'}
+                onRequestClose={() => setApparatus(null)}
+            >
                 <Pressable
                     className="flex-1 bg-black/50 items-center justify-center px-8"
                     onPress={() => setApparatus(null)}

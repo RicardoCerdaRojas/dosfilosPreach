@@ -62,7 +62,7 @@ export function MarkPopover({
     const style: MarkStyle = currentStyle ?? 'highlight';
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'} onRequestClose={onClose}>
             <Pressable className="flex-1" onPress={onClose}>
                 <View
                     style={{

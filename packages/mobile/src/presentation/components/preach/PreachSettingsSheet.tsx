@@ -95,7 +95,7 @@ export function PreachSettingsSheet({
     const insets = useSafeAreaInsets();
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'} onRequestClose={onClose}>
             {/* Cajón lateral derecho, no hoja inferior. En una tablet el ancho
                 sobra y el alto no: una hoja desde abajo tapaba justo el tablero
                 y dejaba media pantalla vacía a los costados. */}

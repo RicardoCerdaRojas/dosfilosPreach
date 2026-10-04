@@ -92,7 +92,7 @@ export function BibleSearchSheet({
     );
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'} onRequestClose={onClose}>
             {/* El teclado tapaba media lista: la hoja se levanta con él en vez
                 de quedarse clavada al 80 % de la pantalla. */}
             <KeyboardAvoidingView

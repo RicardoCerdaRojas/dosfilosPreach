@@ -52,7 +52,7 @@ export function BiblePickerSheet({
     const book = books.find((b) => b.id === chosen);
 
     return (
-        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'}>
+        <Modal visible={visible} transparent animationType={tokens.animations ? 'fade' : 'none'} onRequestClose={onClose}>
             <Pressable className="flex-1 bg-black/40" onPress={onClose}>
                 <Pressable
                     className="mt-auto rounded-t-3xl px-6 pt-5"
