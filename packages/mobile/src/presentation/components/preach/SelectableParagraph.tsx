@@ -342,7 +342,9 @@ export function SelectableParagraph({
                             // deja la primera línea afuera y el resto adentro.
                             // La primera palabra sale de la sangría, y también la
                             // de un renglón cortado a mano: empieza en el margen.
-                            marginLeft: (index === 0 && !continued) || word.breaksLine ? -hangingIndent : 0,
+                            // Una continuación que arranca en un salto a mano también va al margen.
+                            marginLeft:
+                                (index === 0 && (!continued || !!units[0]?.lineBreak)) || word.breaksLine ? -hangingIndent : 0,
                         }}
                     >
                         <Text

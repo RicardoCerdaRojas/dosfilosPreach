@@ -52,15 +52,25 @@ function unescape(text: string): string {
  * suelto queda como texto. Los espacios se conservan tal cual.
  */
 export function parseInline(text: string): InlineRun[] {
-    // Cada renglón por separado, con un salto entre uno y otro: es la regla
-    // de los saltos de línea (`LINE_BREAK_RULE`), la misma del atril y la web.
-    // La barra del salto estándar (`\` al final del renglón) no se lee.
-    const renglones = text.split(/\n|<br\s*\/?>/gi).map((r) => r.replace(/\\$/, ''));
+    // El párrafo ENTERO, con sus saltos, y recién después se parte en
+    // renglones: así una negrita que cruza un salto sigue siendo negrita
+    // (revisión adversarial). Es la regla de los saltos de línea
+    // (`LINE_BREAK_RULE`), la misma del atril y la web. La barra del salto
+    // estándar (la ÚLTIMA barra antes del salto) no se lee; una barra escrita
+    // a propósito (`\\`) sí, y la del final del párrafo también.
+    const normalizado = text.replace(BR, '\n').replace(/\\(\r?\n)/g, '$1').replace(/\r\n/g, '\n');
     const runs: InlineRun[] = [];
-    renglones.forEach((renglon, i) => {
-        if (i > 0) runs.push({ text: '', lineBreak: true });
-        runs.push(...parseInlineLine(renglon));
-    });
+    for (const run of parseInlineLine(normalizado)) {
+        // Un salto ya resuelto adentro de una negrita queda como está.
+        if (run.lineBreak) {
+            runs.push(run);
+            continue;
+        }
+        run.text.split('\n').forEach((parte, i) => {
+            if (i > 0) runs.push({ text: '', lineBreak: true });
+            if (parte) runs.push({ ...run, text: parte });
+        });
+    }
     // Un salto al principio o al final del párrafo no es un renglón.
     while (runs[0]?.lineBreak) runs.shift();
     while (runs[runs.length - 1]?.lineBreak) runs.pop();
@@ -71,7 +81,7 @@ function parseInlineLine(fuente: string): InlineRun[] {
     const runs: InlineRun[] = [];
     // `***a***` (negrita y cursiva) primero: si no, la rama de negrita deja
     // asteriscos sueltos.
-    const re = /(\*\*\*|___)(?=\S)([\s\S]+?)(?<=\S)\1|(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\3|(?<![*\w])([*_])(?=\S)([^*_\n]+?)(?<=\S)\5(?![*\w])/g;
+    const re = /(\*\*\*|___)(?=\S)([\s\S]+?)(?<=\S)\1|(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\3|(?<![*\w])([*_])(?=\S)([^*_]+?)(?<=\S)\5(?![*\w])/g;
     let ultimo = 0;
     for (const m of fuente.matchAll(re)) {
         const i = m.index ?? 0;
@@ -87,14 +97,15 @@ function parseInlineLine(fuente: string): InlineRun[] {
         ultimo = i + m[0].length;
     }
     if (ultimo < fuente.length) runs.push({ text: unescape(fuente.slice(ultimo)) });
-    return mergeRuns(runs.filter(r => r.text.length > 0));
+    return mergeRuns(runs.filter(r => r.lineBreak || r.text.length > 0));
 }
 
 function mergeRuns(runs: InlineRun[]): InlineRun[] {
     const out: InlineRun[] = [];
     for (const r of runs) {
         const prev = out[out.length - 1];
-        if (prev && !!prev.bold === !!r.bold && !!prev.italic === !!r.italic) prev.text += r.text;
+        // Un salto nunca se funde con el texto de al lado.
+        if (prev && !prev.lineBreak && !r.lineBreak && !!prev.bold === !!r.bold && !!prev.italic === !!r.italic) prev.text += r.text;
         else out.push({ ...r });
     }
     return out;

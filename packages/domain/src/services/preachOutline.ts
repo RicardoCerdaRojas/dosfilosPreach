@@ -43,7 +43,9 @@ function firstSentence(text: string): string {
 
 export function buildOutline(body: string): OutlineItem[] {
     const items: OutlineItem[] = [];
-    const lines = (body ?? '').replace(/\r\n/g, '\n').split('\n');
+    // El salto estándar (`\` al final del renglón) no se lee: el bosquejo
+    // mostraba la barra suelta (revisión adversarial de LINE_BREAK_RULE).
+    const lines = (body ?? '').replace(/\r\n/g, '\n').replace(/(?<!\\)\\(?=\n)/g, '').split('\n');
     let paragraph: string[] = [];
 
     const flushParagraph = () => {

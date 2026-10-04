@@ -41,3 +41,11 @@ describe('bosquejo de un movimiento (C7)', () => {
         expect(cue!.text.endsWith('…')).toBe(true);
     });
 });
+
+describe('bosquejo y saltos de línea (LINE_BREAK_RULE)', () => {
+    it('REGRESIÓN: el salto estándar del editor no deja una barra suelta en el bosquejo', () => {
+        const items = buildOutline('A nivel institucional\\\nHace muchos años observé algo.\n\n1. Primero.\\\n   Debemos resistir.\n\n> Uno\\\n> Dos');
+        expect(items.map((i) => i.text).join(' | ')).not.toContain('\\');
+    });
+});
+

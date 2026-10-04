@@ -123,18 +123,22 @@ const RULES: RewriteRule[] = [
     // Separadores sueltos: `---`, `***`, `* * *`, `___`, o un asterisco solo
     // en su renglón (salía como párrafo «*» al final de una página).
     { re: /^[ \t]*(?:[*_-][ \t]*)+$/gm, emit: () => null },
+    // El salto de línea estándar (`\` al final del renglón): la barra no se
+    // lee. ANTES que los escapes: si no, `\\` (una barra escrita a propósito)
+    // quedaba como `\` y esta regla se la comía (revisión adversarial). Se
+    // lleva sólo la ÚLTIMA barra: `\\` + salto deja la barra escrita.
+    { re: /\\(?=\r?\n)/g, emit: () => null },
     { re: /\{#[^}]+\}/g, emit: () => null },
     { re: /\[([^\]]+)\]\(#[^)]*\)/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
     // Un asterisco escapado (`\\*`) no abre ni cierra énfasis.
-    { re: /(?<!\\)\*\*(.*?[^\\])\*\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }) },
+    // El énfasis puede cruzar un salto de renglón (no un párrafo): `**uno↵dos**`.
+    { re: /(?<!\\)\*\*((?:(?!\n\n)[\s\S])*?[^\\])\*\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }) },
     // El abridor de énfasis no puede ir seguido de espacio: si no, un
     // marcador de lista `* punto` abre énfasis y se come hasta el próximo
     // asterisco, fundiendo dos viñetas en una.
-    { re: /(?<!\\)\*(\S(?:.*?[^\s\\])?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
+    { re: /(?<!\\)\*(\S(?:(?:(?!\n\n)[\s\S])*?[^\s\\])?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
     // Al final, después del énfasis: `\*` no abre ni cierra nada.
     { re: ESCAPABLE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
-    // El salto de línea estándar (`\` al final del renglón): la barra no se lee.
-    { re: /\\(?=\n)/g, emit: () => null },
 ];
 
 /** El texto plano de un fragmento de markdown, con entidades y escapes resueltos. */

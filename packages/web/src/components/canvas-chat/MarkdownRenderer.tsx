@@ -2,6 +2,7 @@ import { useContext, useState, useMemo } from 'react';
 import { BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { SERMON_REMARK_PLUGINS } from '@/lib/sermonMarkdown';
 import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
 import { CitationQuote } from './CitationQuote';
@@ -122,7 +123,9 @@ export function MarkdownRenderer({ content, className, enableBibleLinks = true, 
         )}
       >
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          // Leyendo un sermón (el lienzo del borrador), la regla de los saltos
+          // del pastor (LINE_BREAK_RULE); en el chat, el markdown de siempre.
+          remarkPlugins={reading ? SERMON_REMARK_PLUGINS : [remarkGfm]}
           rehypePlugins={[rehypeRaw]}
           components={{
             /**

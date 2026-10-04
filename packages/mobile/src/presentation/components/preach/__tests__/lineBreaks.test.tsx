@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
-import { LINE_BREAK_FIXTURES, buildReadingBlocks } from '@dosfilos/domain';
+import { LINE_BREAK_FIXTURES, buildReadingBlocks, fragmentBlock } from '@dosfilos/domain';
 
 import { READING_MODES } from '@/core/theme/readingModes';
 import { PreachSectionBody } from '../PreachSectionBody';
@@ -67,4 +67,32 @@ describe('saltos de línea en el atril (LINE_BREAK_RULE)', () => {
         const r = render('Un párrafo de una sola línea.', false);
         expect(r.root.findAll((n) => isBreak(n as never))).toHaveLength(0);
     });
+
+    it('REGRESIÓN: la continuación que arranca en un salto a mano empieza en el margen', () => {
+        const [block] = buildReadingBlocks('Primera oración.\nSegunda línea del pastor.');
+        const tail = fragmentBlock(block!, { block: 0, from: 1, to: 2 });
+        expect(tail.continued).toBe(true);
+        let r!: ReactTestRenderer;
+        act(() => {
+            r = create(
+                <PreachSectionBody
+                    blocks={[tail]}
+                    highlights={[]}
+                    fontSize={30}
+                    tokens={READING_MODES.claro}
+                    senseLines={false}
+                    face="lexend"
+                    hangingIndent
+                    selection={null}
+                    onSelectionChange={noop}
+                    onSelectionEnd={noop}
+                    onTapAt={noop}
+                    onPressCitation={noop}
+                    onPressApparatus={noop}
+                />,
+            );
+        });
+        expect((wordView(r, 'Segunda').props.style as { marginLeft: number }).marginLeft).toBeLessThan(0);
+    });
 });
+

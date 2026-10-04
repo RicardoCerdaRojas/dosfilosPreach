@@ -34,6 +34,21 @@ export const LINE_BREAK_FIXTURES: LineBreakFixture[] = [
         lines: [['Primera línea.', 'Segunda línea.']],
     },
     {
+        name: 'una negrita que cruza el salto sigue siendo negrita (revisión adversarial)',
+        markdown: '**uno\ndos** tres',
+        lines: [['uno', 'dos tres']],
+    },
+    {
+        name: 'una barra escrita a propósito al final del renglón se ve (y el salto también)',
+        markdown: 'C:\\\\\nsiguiente',
+        lines: [['C:\\', 'siguiente']],
+    },
+    {
+        name: 'una barra escrita a propósito y DESPUÉS el salto estándar',
+        markdown: 'C:\\\\\\\nsiguiente',
+        lines: [['C:\\', 'siguiente']],
+    },
+    {
         name: 'una línea en blanco sigue separando párrafos',
         markdown: 'Un párrafo.\n\nOtro párrafo.',
         lines: [['Un párrafo.'], ['Otro párrafo.']],

@@ -279,7 +279,7 @@ export function PreachSectionBody({
                         key={blockIndex}
                         onPress={() => onPressApparatus(block.text)}
                         accessibilityRole="button"
-                        accessibilityLabel={block.text}
+                        accessibilityLabel={block.text.replace(/\n/g, ' ')}
                         className="flex-row items-center"
                         style={{
                             borderLeftWidth: 2,
@@ -304,7 +304,7 @@ export function PreachSectionBody({
                             }}
                             className="font-lexend"
                         >
-                            {block.text}
+                            {block.text.replace(/\n/g, ' · ')}
                         </Text>
                     </TouchableOpacity>
                 ) : block.kind === 'listitem' ? (
