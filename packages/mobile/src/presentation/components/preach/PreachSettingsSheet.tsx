@@ -206,6 +206,8 @@ export function PreachSettingsSheet({
                     <View className="flex-row items-center mb-5">
                         <TouchableOpacity
                             onPress={() => setFontSize(Math.max(DELIVERY_SIZE.min, fontSize - 2))}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('preach:font_smaller')}
                             className="px-4 py-2 rounded-lg"
                             style={{ borderWidth: 1, borderColor: tokens.border }}
                         >
@@ -216,6 +218,8 @@ export function PreachSettingsSheet({
                         </Text>
                         <TouchableOpacity
                             onPress={() => setFontSize(Math.min(DELIVERY_SIZE.max, fontSize + 2))}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('preach:font_bigger')}
                             className="px-4 py-2 rounded-lg"
                             style={{ borderWidth: 1, borderColor: tokens.border }}
                         >

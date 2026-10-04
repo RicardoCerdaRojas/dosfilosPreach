@@ -44,5 +44,7 @@
     "privacy": "Privacy Policy",
     "and": "and",
     "on": "On",
-    "off": "Off"
+    "off": "Off",
+    "not_found": "This screen doesn't exist",
+    "go_home": "Back to home"
 }

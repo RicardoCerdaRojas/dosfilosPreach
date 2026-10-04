@@ -44,5 +44,7 @@
     "privacy": "Política de privacidad",
     "and": "y",
     "on": "Sí",
-    "off": "No"
+    "off": "No",
+    "not_found": "Esta pantalla no existe",
+    "go_home": "Volver al inicio"
 }

@@ -67,12 +67,14 @@ export function BibleSettingsSheet({ visible, tokens, onClose }: Props) {
         active: boolean,
         onPress: () => void,
         content: React.ReactNode,
+        a11yLabel: string,
         width?: number,
     ) => (
         <TouchableOpacity
             key={key}
             onPress={onPress}
             accessibilityRole="button"
+            accessibilityLabel={a11yLabel}
             accessibilityState={{ selected: active }}
             className="items-center justify-center rounded-xl mr-2"
             style={{
@@ -219,6 +221,7 @@ export function BibleSettingsSheet({ visible, tokens, onClose }: Props) {
                                         }
                                         style={{ transform: [{ scaleY: 0.7 + value * 0.3 }] }}
                                     />,
+                                    `${t('bible:line_spacing')} ${value}`,
                                 ),
                             )}
                         </View>
@@ -242,6 +245,7 @@ export function BibleSettingsSheet({ visible, tokens, onClose }: Props) {
                                     >
                                         Aa
                                     </Text>,
+                                    t(`preach:face_${face}`),
                                 ),
                             )}
                         </View>
@@ -263,6 +267,7 @@ export function BibleSettingsSheet({ visible, tokens, onClose }: Props) {
                                             borderColor: tokens.border,
                                         }}
                                     />,
+                                    t(READING_MODE_LABEL_KEYS[mode]),
                                     52,
                                 ),
                             )}
