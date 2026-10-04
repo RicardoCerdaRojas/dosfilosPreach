@@ -23,6 +23,7 @@ import {
 import { InkLayer } from '@/presentation/components/preach/InkLayer';
 import { MarkPopover } from '@/presentation/components/preach/MarkPopover';
 import { useBibleInk } from '@/presentation/hooks/useBibleInk';
+import { useSharedValue } from 'react-native-reanimated';
 import { formatSelectionForSermon } from '@/presentation/components/bible/passageFormat';
 import { BiblePickerSheet } from '@/presentation/components/bible/BiblePickerSheet';
 import { BibleSearchSheet } from '@/presentation/components/bible/BibleSearchSheet';
@@ -108,6 +109,9 @@ export default function BibleReaderScreen() {
      */
     const inkLayoutKey = `${bookId}|${chapter}|${fontSize}|${parallelId ?? ''}|${readingMode}|${fullWidth}|${lineSpacing}|${verseNumbers}|${face}`;
     const ink = useBibleInk(bookId, chapter, inkLayoutKey);
+    // Cuánto bajó el capítulo. La tinta vive en coordenadas del TEXTO (las de
+    // pantalla más esto): antes quedaba fija mientras el capítulo se movía.
+    const scrollY = useSharedValue(0);
 
     const repo = BibleVersionFactory.getByVersion(versionId);
     const parallelRepo = parallelId ? BibleVersionFactory.getByVersion(parallelId) : null;
@@ -380,6 +384,10 @@ export default function BibleReaderScreen() {
 
             <ScrollView
                 onLayout={(e) => setAvailableWidth(e.nativeEvent.layout.width - 48)}
+                onScroll={(e) => {
+                    scrollY.value = e.nativeEvent.contentOffset.y;
+                }}
+                scrollEventThrottle={16}
                 contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 120 }}
             >
                 {probe}
@@ -418,7 +426,9 @@ export default function BibleReaderScreen() {
                                     setPopoverY(atY);
                                     setShowPopover(true);
                                 }}
-                                onVerseLayout={ink.rememberVerse}
+                                onVerseLayout={(verse, rect) =>
+                                    ink.rememberVerse(verse, { ...rect, y: rect.y + scrollY.value })
+                                }
                                 layoutKey={inkLayoutKey}
                             />
                         </View>
@@ -514,6 +524,7 @@ export default function BibleReaderScreen() {
                 color={ink.penColor}
                 eraser={ink.eraser}
                 onErase={ink.eraseStroke}
+                scrollOffset={scrollY}
                 top={headerHeight + hintHeight}
                 bottom={0}
             />

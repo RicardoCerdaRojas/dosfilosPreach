@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { GestureResponderEvent, View } from 'react-native';
-import { Canvas, Path, Skia, type SkPath } from '@shopify/react-native-skia';
-import { useSharedValue } from 'react-native-reanimated';
+import { Canvas, Group, Path, Skia, type SkPath } from '@shopify/react-native-skia';
+import { useDerivedValue, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import type { InkColor, InkStroke } from '@dosfilos/domain';
 import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
 
@@ -45,6 +45,14 @@ interface Props {
     top: number;
     /** Alto del tablero inferior, por la misma razón. */
     bottom: number;
+    /**
+     * Cuánto se desplazó el texto que está debajo, si se desplaza (la Biblia).
+     *
+     * Las anclas y los trazos viven en coordenadas del TEXTO —las de pantalla
+     * más este desplazamiento—, y el lienzo se corre con él. Antes la tinta
+     * quedaba fija en la pantalla mientras el capítulo se movía debajo.
+     */
+    scrollOffset?: SharedValue<number>;
 }
 
 const STROKE_WIDTH_EM = 0.07;
@@ -116,7 +124,12 @@ export function InkLayer({
     onErase,
     top,
     bottom,
+    scrollOffset,
 }: Props) {
+    /** Un toque en pantalla, llevado a coordenadas del texto. */
+    const toDoc = (pageX: number, pageY: number) => ({ x: pageX, y: pageY + (scrollOffset?.value ?? 0) });
+    // El lienzo se corre con el texto en el hilo de la interfaz, sin pasar por React.
+    const scrollTransform = useDerivedValue(() => [{ translateY: -(scrollOffset?.value ?? 0) }]);
     const livePath = useSharedValue<SkPath>(Skia.Path.Make());
     /**
      * Dónde arranca el lienzo, en coordenadas de PANTALLA.
@@ -156,7 +169,8 @@ export function InkLayer({
         y: p.y - origin.y,
     });
 
-    const eraseAt = (x: number, y: number) => {
+    const eraseAt = (pageX: number, pageY: number) => {
+        const { x, y } = toDoc(pageX, pageY);
         const hit = nearestStroke(notes, anchorRectFor, bodySize, x, y, erasedInGesture.current);
         if (!hit) return;
         erasedInGesture.current.add(hit.stroke);
@@ -172,8 +186,9 @@ export function InkLayer({
             eraseAt(pageX, pageY);
             return;
         }
-        anchor.current = anchorAt(pageX, pageY);
-        points.current = [{ x: pageX, y: pageY }];
+        const at = toDoc(pageX, pageY);
+        anchor.current = anchorAt(at.x, at.y);
+        points.current = [at];
         livePath.value = buildPath(points.current.map(toCanvas));
     };
 
@@ -185,10 +200,10 @@ export function InkLayer({
             return;
         }
         if (!anchor.current) return;
-        const { pageX, pageY } = e.nativeEvent;
+        const at = toDoc(e.nativeEvent.pageX, e.nativeEvent.pageY);
         const last = points.current[points.current.length - 1];
-        if (last && Math.hypot(pageX - last.x, pageY - last.y) < MIN_POINT_DISTANCE) return;
-        points.current.push({ x: pageX, y: pageY });
+        if (last && Math.hypot(at.x - last.x, at.y - last.y) < MIN_POINT_DISTANCE) return;
+        points.current.push(at);
         // Asignar el valor compartido redibuja en Skia sin re-renderizar React.
         livePath.value = buildPath(points.current.map(toCanvas));
     };
@@ -237,6 +252,7 @@ export function InkLayer({
             onResponderTerminate={finish}
         >
             <Canvas style={{ flex: 1 }} pointerEvents="none">
+                <Group transform={scrollTransform}>
                 {notes.map((note) => {
                     const rect = anchorRectFor(note);
                     if (!rect) return null;
@@ -276,6 +292,7 @@ export function InkLayer({
                     strokeCap="round"
                     strokeJoin="round"
                 />
+                </Group>
             </Canvas>
         </View>
     );
