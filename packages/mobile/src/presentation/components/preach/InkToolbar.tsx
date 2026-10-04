@@ -41,6 +41,8 @@ interface Props {
     pencilOnly?: { on: boolean; toggle: () => void };
     /** Cambiar de capítulo sin cerrar la tinta (la Biblia). */
     navigation?: { onPrevious: () => void; onNext: () => void; canPrevious: boolean; canNext: boolean };
+    /** Ancho máximo: el del contenedor (en la Biblia hay un rail al costado). Por defecto, la ventana. */
+    maxWidth?: number;
     style?: StyleProp<ViewStyle>;
 }
 
@@ -63,6 +65,7 @@ export function InkToolbar({
     onDone,
     pencilOnly,
     navigation,
+    maxWidth,
     style,
 }: Props) {
     const { t } = useTranslation();
@@ -124,7 +127,7 @@ export function InkToolbar({
                     alignItems: 'center',
                     // Cinco colores y la navegación no entran en un iPad mini en
                     // un solo renglón: pasa a dos en vez de salirse de la pantalla.
-                    maxWidth: width - 40,
+                    maxWidth: maxWidth ?? width - 40,
                     borderRadius: 24,
                     backgroundColor: tokens.surface,
                     borderWidth: 1,

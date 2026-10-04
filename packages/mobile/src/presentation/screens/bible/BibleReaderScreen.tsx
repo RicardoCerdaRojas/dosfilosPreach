@@ -131,6 +131,10 @@ export default function BibleReaderScreen() {
     };
     // Otro capítulo empieza ARRIBA. Antes conservaba la altura del anterior,
     // y al volver a la tinta parecía devolver al lugar de las últimas notas.
+    // Se sube ANTES de cambiar de capítulo: si se subía después, los
+    // versículos nuevos podían medirse con el desplazamiento viejo y la tinta
+    // quedar anclada corrida (revisión adversarial). El efecto queda de red.
+    const toTop = () => scrollRef.current?.scrollTo({ y: 0, animated: false });
     useEffect(() => {
         scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, [bookId, chapter, scrollRef]);
@@ -266,6 +270,7 @@ export default function BibleReaderScreen() {
     const goChapter = (delta: number) => {
         const next = chapter + delta;
         if (next >= 1 && next <= chapterCount) {
+            toTop();
             setChapter(next);
             setSelection(null);
         }
@@ -519,9 +524,6 @@ export default function BibleReaderScreen() {
                 scrollOffset={scrollY}
                 onScrollTo={scrollInkTo}
                 pencilOnly={pencilOnly}
-                // La primera vez que se ve el Apple Pencil, escribe sólo él y
-                // el dedo desplaza (se puede apagar en la barra).
-                onStylusDetected={() => setPencilOnly(true)}
                 top={headerHeight + hintHeight}
                 bottom={0}
             />
@@ -534,6 +536,8 @@ export default function BibleReaderScreen() {
                     onToggleVisible={() => setInkVisible(!inkVisible)}
                     clearOptions={[{ label: t('preach:ink_clear_chapter'), onPress: () => ink.clearNotes(ink.notes) }]}
                     pencilOnly={{ on: pencilOnly, toggle: () => setPencilOnly(!pencilOnly) }}
+                    // El ancho del lector, no el de la ventana: al costado está el rail.
+                    maxWidth={availableWidth + 48 - 40}
                     // Cambiar de capítulo sin cerrar la tinta: los botones del
                     // final quedan debajo de la capa.
                     navigation={{
@@ -586,6 +590,7 @@ export default function BibleReaderScreen() {
                 chapter={chapter}
                 versionId={versionId}
                 onPick={(nextBook, nextChapter) => {
+                    toTop();
                     setBookId(nextBook);
                     setChapter(nextChapter);
                     setSelection(null);
@@ -603,6 +608,7 @@ export default function BibleReaderScreen() {
                 currentBookId={bookId}
                 currentBookName={book?.name ?? ''}
                 onOpen={(nextBook, nextChapter, nextVerse) => {
+                    toTop();
                     setBookId(nextBook);
                     setChapter(nextChapter);
                     // El versículo encontrado queda SELECCIONADO: abrir el

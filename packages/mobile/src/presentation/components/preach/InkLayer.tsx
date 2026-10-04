@@ -71,8 +71,6 @@ interface Props {
      * «sólo Apple Pencil», también uno.
      */
     onScrollTo?: (y: number) => void;
-    /** Se vio el Apple Pencil por primera vez: la pantalla puede encender «sólo Apple Pencil». */
-    onStylusDetected?: () => void;
 }
 
 /** Lo más que dura el trazo puente: el hueco que tapa es de un cuadro. */
@@ -151,7 +149,6 @@ export function InkLayer({
     pencilOnly = false,
     onFingerGesture,
     onScrollTo,
-    onStylusDetected,
 }: Props) {
     // Fuera del React Compiler: el gesto del lápiz (T-9) se arma en el render
     // con callbacks que leen refs, y el compilador no distingue que corren
@@ -341,6 +338,22 @@ export function InkLayer({
     const scroll = useRef<{ startOffset: number; startY: number } | null>(null);
     const drawTouch = useRef<number | null>(null);
     const drawIsStylus = useRef(false);
+    /** Hasta dónde se mandó desplazar la última vez: `scrollOffset` llega un cuadro tarde. */
+    const lastScrollTarget = useRef<number | null>(null);
+    /** El gesto ya se activó: activarlo de nuevo es una transición inválida en UIKit. */
+    const activated = useRef(false);
+    /**
+     * La goma espera a que el dedo se mueva o se levante. Si borrara al
+     * apoyarse, el primer dedo de un desplazamiento con dos dedos borraba un
+     * trazo antes de que llegara el segundo (revisión adversarial).
+     */
+    const pendingErase = useRef<{ x: number; y: number } | null>(null);
+    const activate = (manager: { activate: () => void }) => {
+        if (activated.current) return;
+        activated.current = true;
+        manager.activate();
+    };
+    const currentOffset = () => lastScrollTarget.current ?? scrollOffset?.value ?? 0;
     const averageY = (touches: { absoluteY: number }[]) =>
         touches.reduce((sum, t) => sum + t.absoluteY, 0) / Math.max(1, touches.length);
     const scrollGesture = Gesture.Pan()
@@ -351,15 +364,18 @@ export function InkLayer({
             const touch = e.changedTouches[0];
             if (!touch) return;
             const stylus = e.pointerType === PointerType.STYLUS;
-            if (stylus && !pencilOnly) onStylusDetected?.();
             // Un trazo de lápiz en curso no lo corta nada: ni la palma ni otro dedo.
             if (drawIsStylus.current) return;
             // El lápiz escribe siempre, aunque haya una palma apoyada desplazando.
+            // OJO: RNGH toma el tipo de un toque CUALQUIERA del evento: con la
+            // palma ya apoyada, el lápiz puede llegar como dedo (supuesto en el
+            // dispositivo; arreglarlo pide parchear código nativo).
             if (stylus) {
                 scroll.current = null;
+                pendingErase.current = null;
                 drawTouch.current = touch.id;
                 drawIsStylus.current = true;
-                manager.activate();
+                activate(manager);
                 beginAt(touch.absoluteX, touch.absoluteY);
                 return;
             }
@@ -369,40 +385,58 @@ export function InkLayer({
                     drawTouch.current = null;
                     cancelStroke();
                 }
-                scroll.current = { startOffset: scrollOffset?.value ?? 0, startY: averageY(e.allTouches) };
-                manager.activate();
+                pendingErase.current = null;
+                scroll.current = { startOffset: currentOffset(), startY: averageY(e.allTouches) };
+                activate(manager);
                 return;
             }
             if (scroll.current || drawTouch.current !== null) return;
             drawTouch.current = touch.id;
-            manager.activate();
-            beginAt(touch.absoluteX, touch.absoluteY);
+            activate(manager);
+            if (eraser) pendingErase.current = { x: touch.absoluteX, y: touch.absoluteY };
+            else beginAt(touch.absoluteX, touch.absoluteY);
         })
         .onTouchesMove((e) => {
             if (scroll.current) {
-                onScrollTo?.(Math.max(0, scroll.current.startOffset + scroll.current.startY - averageY(e.allTouches)));
+                const target = Math.max(0, scroll.current.startOffset + scroll.current.startY - averageY(e.allTouches));
+                lastScrollTarget.current = target;
+                onScrollTo?.(target);
                 return;
             }
             const touch = e.allTouches.find((t) => t.id === drawTouch.current);
-            if (touch) extendAt(touch.absoluteX, touch.absoluteY);
+            if (!touch) return;
+            if (pendingErase.current) {
+                beginAt(pendingErase.current.x, pendingErase.current.y);
+                pendingErase.current = null;
+            }
+            extendAt(touch.absoluteX, touch.absoluteY);
         })
         .onTouchesUp((e) => {
             if (drawTouch.current !== null && e.changedTouches.some((t) => t.id === drawTouch.current)) {
                 drawTouch.current = null;
                 drawIsStylus.current = false;
+                // Un toque de goma sin moverse: borra donde se apoyó.
+                if (pendingErase.current) {
+                    beginAt(pendingErase.current.x, pendingErase.current.y);
+                    pendingErase.current = null;
+                }
                 finish();
             }
             // Al levantar un dedo de dos, se sigue desplazando desde donde quedó.
-            if (scroll.current && e.numberOfTouches > 1) {
+            // `numberOfTouches` ya no cuenta al que se levantó: se mira a los que quedan.
+            if (scroll.current) {
                 const rest = e.allTouches.filter((t) => !e.changedTouches.some((c) => c.id === t.id));
-                scroll.current = { startOffset: scrollOffset?.value ?? 0, startY: averageY(rest) };
+                if (rest.length >= 1) scroll.current = { startOffset: currentOffset(), startY: averageY(rest) };
             }
         })
         .onFinalize(() => {
             if (drawTouch.current !== null) finish();
             drawTouch.current = null;
             drawIsStylus.current = false;
+            pendingErase.current = null;
             scroll.current = null;
+            activated.current = false;
+            lastScrollTarget.current = null;
         });
     /* eslint-enable react-hooks/refs */
 
