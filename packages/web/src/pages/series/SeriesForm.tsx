@@ -385,7 +385,7 @@ export function SeriesForm() {
                         their scheduled dates. */}
                     {id && shiftablePlannedCount > 0 && (
                       <>
-                        <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+                        <p className="text-[11px] text-warning leading-snug">
                           {t('form.steps.planning.shiftHint', { count: shiftablePlannedCount })}
                         </p>
                         {/* Hard-rebuild escape hatch: when legacy bad
@@ -398,7 +398,7 @@ export function SeriesForm() {
                         <button
                           type="button"
                           onClick={handleRecalcDates}
-                          className="text-[11px] text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 underline underline-offset-2"
+                          className="text-[11px] text-success hover:opacity-80 underline underline-offset-2"
                         >
                           {t('form.steps.planning.recalcButton', { count: shiftablePlannedCount })}
                         </button>
