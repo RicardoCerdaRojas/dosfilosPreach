@@ -2,11 +2,8 @@
     "title": "Plans",
     "sermons": "Sermons in the plan",
     "week": "Week {{week}}",
-    "finish_on_web": "Finish on the web",
-    "start_on_web": "Start on the web",
-    "open_web": "Open the planner",
     "empty_title": "No preaching plans yet",
-    "empty_hint": "Plans are built on the web; they show up here to be preached.",
+    "empty_hint": "Plans are built in Preach on your computer; they show up here to preach them.",
     "no_items": "This plan has no sermons",
     "no_items_hint": "Add its weeks from the planner.",
     "active_plan": "Plan in progress",
@@ -18,5 +15,7 @@
     "status_finished": "Finished",
     "status_empty": "No sermons",
     "next_up": "Up next",
-    "sermons_unavailable": "Your sermons couldn't be loaded: each week's status may be out of date."
+    "sermons_unavailable": "Your sermons couldn't be loaded: each week's status may be out of date.",
+    "start_on_computer": "Written in Preach on your computer",
+    "finish_on_computer": "Finished in Preach on your computer"
 }

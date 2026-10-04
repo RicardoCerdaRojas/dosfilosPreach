@@ -2,11 +2,8 @@
     "title": "Planes",
     "sermons": "Sermones del plan",
     "week": "Semana {{week}}",
-    "finish_on_web": "Terminar en la web",
-    "start_on_web": "Empezar en la web",
-    "open_web": "Abrir el planificador",
     "empty_title": "Todavía no hay planes de predicación",
-    "empty_hint": "Los planes se arman en la web; aquí aparecen para predicarlos.",
+    "empty_hint": "Los planes se arman en Preach desde tu computadora; aquí aparecen para predicarlos.",
     "no_items": "Este plan no tiene sermones",
     "no_items_hint": "Agrega sus semanas desde el planificador.",
     "active_plan": "Plan en curso",
@@ -18,5 +15,7 @@
     "status_finished": "Terminado",
     "status_empty": "Sin sermones",
     "next_up": "Toca ahora",
-    "sermons_unavailable": "No se pudieron cargar tus sermones: el estado de cada semana puede no estar al día."
+    "sermons_unavailable": "No se pudieron cargar tus sermones: el estado de cada semana puede no estar al día.",
+    "start_on_computer": "Se escribe en Preach desde tu computadora",
+    "finish_on_computer": "Se termina en Preach desde tu computadora"
 }
