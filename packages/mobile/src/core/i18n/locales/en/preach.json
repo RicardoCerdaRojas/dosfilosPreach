@@ -107,5 +107,7 @@
     "reading_focus_hint": "The current paragraph at full contrast, the rest dimmed. Moving forward goes idea by idea before turning the page.",
     "ink_pencil_only": "Only Apple Pencil writes; your finger turns the page",
     "ink_green": "Green",
-    "ink_yellow": "Yellow"
+    "ink_yellow": "Yellow",
+    "collapse_quotes": "Collapsed quotes",
+    "collapse_quotes_hint": "Block quotes shrink to one line and open with a tap. Off, they read in full on the page."
 }

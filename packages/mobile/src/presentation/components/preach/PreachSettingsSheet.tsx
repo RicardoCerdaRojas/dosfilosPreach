@@ -41,6 +41,9 @@ interface Props {
     /** Foco de lectura (L-3). */
     readingFocus: boolean;
     setReadingFocus: (on: boolean) => void;
+    /** Citas plegadas a un renglón (opción; por defecto completas). */
+    collapseQuotes: boolean;
+    setCollapseQuotes: (on: boolean) => void;
     /** Brillo propio del atril (C7); `null` es el del sistema. */
     brightness: number | null;
     setBrightness: (level: number | null) => void;
@@ -108,6 +111,8 @@ export function PreachSettingsSheet({
     setReadingPage,
     readingFocus,
     setReadingFocus,
+    collapseQuotes,
+    setCollapseQuotes,
     brightness,
     setBrightness,
     setHangingIndent,
@@ -386,6 +391,14 @@ export function PreachSettingsSheet({
                         hint={t('preach:reading_focus_hint')}
                         value={readingFocus}
                         onChange={setReadingFocus}
+                    />
+
+                    <OnOffSetting
+                        tokens={tokens}
+                        title={t('preach:collapse_quotes')}
+                        hint={t('preach:collapse_quotes_hint')}
+                        value={collapseQuotes}
+                        onChange={setCollapseQuotes}
                     />
 
                     {/* DOS INSTRUMENTOS, DOS CONTROLES. La franja de arriba y

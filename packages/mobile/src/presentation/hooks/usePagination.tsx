@@ -61,6 +61,12 @@ interface Options {
      * página (A7): antes no se contaba y esa página se pasaba del alto.
      */
     header?: React.ReactNode;
+    /**
+     * Qué bloques se pueden partir entre oraciones (y por eso traen métricas
+     * de renglones). Por defecto `isSplittable`; una cita PLEGADA no se parte,
+     * y esperar sus métricas era caer en la espera de 400 ms.
+     */
+    canSplit?: (block: ReadingBlock) => boolean;
 }
 
 export function usePagination({
@@ -69,6 +75,7 @@ export function usePagination({
     renderBlock,
     layoutKey,
     header,
+    canSplit = isSplittable,
 }: Options): Pagination {
     const [heights, setHeights] = useState<Record<string, number[]>>({});
     const [unitMetrics, setUnitMetrics] = useState<Record<string, (UnitMetric[] | undefined)[]>>({});
@@ -88,7 +95,7 @@ export function usePagination({
     const bodyMeasured =
         blocks.length === 0 || (measured?.length === blocks.length && measured.every((h) => h > 0));
     const unitsForKey = unitMetrics[layoutKey];
-    const unitsMeasured = blocks.every((block, i) => !isSplittable(block) || unitsForKey?.[i] !== undefined);
+    const unitsMeasured = blocks.every((block, i) => !canSplit(block) || unitsForKey?.[i] !== undefined);
     const complete = bodyMeasured && headerHeight !== undefined && (unitsMeasured || metricsGrace[layoutKey] === true);
 
     useEffect(() => {

@@ -14,7 +14,8 @@ interface Props {
     /** El cuerpo del atril: el versículo se lee casi al mismo tamaño. */
     fontSize: number;
     face: DeliveryFace;
-    onOpenInBible: () => void;
+    /** Sin esto no hay botón «Abrir en la Biblia» (el texto plegado de una cita). */
+    onOpenInBible?: () => void;
     onClose: () => void;
 }
 
@@ -60,9 +61,11 @@ export function VersePopup({ reference, passage, tokens, fontSize, face, onOpenI
                         paddingBottom: 20,
                     }}
                 >
-                    <Text style={{ color: tokens.accent, fontFamily: family.semibold, fontSize: size * 0.8, marginBottom: size * 0.5 }}>
-                        {passage?.title ?? reference}
-                    </Text>
+                    {passage?.title || reference ? (
+                        <Text style={{ color: tokens.accent, fontFamily: family.semibold, fontSize: size * 0.8, marginBottom: size * 0.5 }}>
+                            {passage?.title || reference}
+                        </Text>
+                    ) : null}
                     <ScrollView style={{ flexGrow: 0 }} showsVerticalScrollIndicator>
                         {passage ? (
                             passage.verses.map((verse) => (
@@ -95,15 +98,17 @@ export function VersePopup({ reference, passage, tokens, fontSize, face, onOpenI
                         <TouchableOpacity onPress={onClose} accessibilityRole="button" style={{ paddingVertical: 8, paddingRight: 16 }}>
                             <Text style={{ color: tokens.textSecondary, fontFamily: 'Lexend-SemiBold', fontSize: 14 }}>{t('common:close')}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={onOpenInBible}
-                            accessibilityRole="button"
-                            style={{ borderWidth: 1, borderColor: tokens.border, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 }}
-                        >
-                            <Text style={{ color: tokens.textPrimary, fontFamily: 'Lexend-SemiBold', fontSize: 14 }}>
-                                {t('preach:open_in_bible')}
-                            </Text>
-                        </TouchableOpacity>
+                        {onOpenInBible ? (
+                            <TouchableOpacity
+                                onPress={onOpenInBible}
+                                accessibilityRole="button"
+                                style={{ borderWidth: 1, borderColor: tokens.border, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 }}
+                            >
+                                <Text style={{ color: tokens.textPrimary, fontFamily: 'Lexend-SemiBold', fontSize: 14 }}>
+                                    {t('preach:open_in_bible')}
+                                </Text>
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
                 </Pressable>
             </Pressable>

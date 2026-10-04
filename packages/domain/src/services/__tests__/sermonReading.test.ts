@@ -269,3 +269,21 @@ describe('saltos de línea del pastor (LINE_BREAK_RULE)', () => {
     });
 });
 
+describe('la Escritura del punto (cita que empieza con una referencia)', () => {
+    it('se marca como Escritura', () => {
+        const [quote] = buildReadingBlocks('> **Jonás 4:5-8** — 5 Y salió Jonás de la ciudad. 6 Y preparó Jehová Dios una calabacera.');
+        expect(quote!.kind).toBe('quote');
+        expect(quote!.scripture).toBe(true);
+    });
+
+    it('una cita de un comentario no', () => {
+        const [quote] = buildReadingBlocks('> La lástima de Jonás se corresponde con sus intereses. — David F. Burt, Comentario Jonás, p. 89');
+        expect(quote!.scripture).toBeUndefined();
+    });
+
+    it('una cita que nombra una referencia en el medio tampoco', () => {
+        const [quote] = buildReadingBlocks('> Como dice Jonás 4:2, Dios es clemente.');
+        expect(quote!.scripture).toBeUndefined();
+    });
+});
+

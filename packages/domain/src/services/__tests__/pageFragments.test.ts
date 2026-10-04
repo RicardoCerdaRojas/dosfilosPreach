@@ -120,6 +120,13 @@ describe('paginación por oración (L-1)', () => {
         expect(pages[1]!.find((f) => f.block === last)).toEqual({ block: last, from: 0, to: 3 });
     });
 
+    it('la Escritura del punto (una cita) también se parte entre oraciones para llenar la página', () => {
+        const blocks = buildReadingBlocks(`${sentences(3, 'A')}\n\n> ${sentences(10, 'Q')}`);
+        expect(blocks[1]!.kind).toBe('quote');
+        const pages = packFragments(blocks, metricsOf(blocks), 400);
+        expect(layout(pages)).toEqual([['0:0-3', '1:0-6'], ['1:6-10']]);
+    });
+
     it('sin bloques no hay páginas', () => {
         expect(packFragments([], [], 400)).toEqual([]);
     });

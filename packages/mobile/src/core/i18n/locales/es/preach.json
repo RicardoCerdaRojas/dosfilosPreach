@@ -107,5 +107,7 @@
     "reading_focus_hint": "El párrafo en curso a pleno y el resto atenuado. Avanzar recorre las ideas antes de pasar la página.",
     "ink_pencil_only": "Sólo el Apple Pencil escribe; el dedo pasa página",
     "ink_green": "Verde",
-    "ink_yellow": "Amarillo"
+    "ink_yellow": "Amarillo",
+    "collapse_quotes": "Citas plegadas",
+    "collapse_quotes_hint": "Las citas en bloque se reducen a un renglón y se leen tocándolas. Apagado, se leen completas en la página."
 }

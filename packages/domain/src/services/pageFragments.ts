@@ -43,9 +43,13 @@ export interface PageFragment {
     to: number;
 }
 
-/** Sólo la prosa y las viñetas se parten entre oraciones; un subtítulo o una cita colapsada, no. */
+/**
+ * La prosa, las viñetas y las citas se parten entre oraciones; un subtítulo,
+ * no. Una cita PLEGADA (opción del atril) mide un renglón y no trae métricas
+ * de oraciones, así que tampoco se parte: `fragmentHeight` la da entera.
+ */
 export function isSplittable(block: ReadingBlock): boolean {
-    return (block.kind === 'paragraph' || block.kind === 'listitem') && block.units.length >= 2;
+    return (block.kind === 'paragraph' || block.kind === 'listitem' || block.kind === 'quote') && block.units.length >= 2;
 }
 
 const whole = (blocks: readonly ReadingBlock[], index: number): PageFragment => ({

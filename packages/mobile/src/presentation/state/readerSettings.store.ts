@@ -167,6 +167,13 @@ interface ReaderSettingsState {
      */
     readingFocus: boolean;
     setReadingFocus: (on: boolean) => void;
+    /**
+     * Citas en bloque plegadas a un renglón (el «aparato de estudio» de P5).
+     * Apagado por defecto: en el manuscrito del pastor la cita al comienzo de
+     * un punto es la Escritura que se lee en voz alta.
+     */
+    collapseQuotes: boolean;
+    setCollapseQuotes: (on: boolean) => void;
     /** Sólo el Apple Pencil escribe en el atril; el dedo sigue pasando página (T-9). */
     pencilOnly: boolean;
     setPencilOnly: (on: boolean) => void;
@@ -267,6 +274,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
             setInkVisible: (on: boolean) => set({ inkVisible: on }),
             readingFocus: false,
             setReadingFocus: (on: boolean) => set({ readingFocus: on }),
+            collapseQuotes: false,
+            setCollapseQuotes: (on: boolean) => set({ collapseQuotes: on }),
             pencilOnly: false,
             setPencilOnly: (on: boolean) => set({ pencilOnly: on }),
             pinnedNext: null,

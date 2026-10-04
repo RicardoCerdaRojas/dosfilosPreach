@@ -23,6 +23,7 @@ import {
     buildReadingBlocks,
     buildOutline,
     buildRehearsalReport,
+    isSplittable,
     INK_WIDTH,
     fragmentBlock,
     defaultTargetMinutes,
@@ -192,6 +193,8 @@ export default function PreachModeScreen({
     const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
     const outline = outlineOn && section ? buildOutline(section.body) : [];
     const readingFocus = useReaderSettingsStore((s) => s.readingFocus);
+    const collapseQuotes = useReaderSettingsStore((s) => s.collapseQuotes);
+    const setCollapseQuotes = useReaderSettingsStore((s) => s.setCollapseQuotes);
     const pencilOnly = useReaderSettingsStore((s) => s.pencilOnly);
     const setPencilOnly = useReaderSettingsStore((s) => s.setPencilOnly);
     const setReadingFocus = useReaderSettingsStore((s) => s.setReadingFocus);
@@ -209,7 +212,7 @@ export default function PreachModeScreen({
     const { measure, probe } = useDeliveryMeasure(fontSize);
 
     // Capa de tinta: anclada al texto, no a la pantalla. Ver InkNote en domain.
-    const inkLayoutKey = `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}`;
+    const inkLayoutKey = `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}`;
     const ink = useInkNotes(
         id ?? '',
         section,
@@ -295,6 +298,7 @@ export default function PreachModeScreen({
         <PreachSectionBody
             blocks={[block]}
             onUnitMetrics={onUnitMetrics}
+            collapseQuotes={collapseQuotes}
             highlights={[]}
             fontSize={fontSize}
             tokens={tokens}
@@ -352,7 +356,9 @@ export default function PreachModeScreen({
         renderBlock: renderBlockForMeasure,
         // La familia entra en la clave: distintas fuentes dan distinta altura
         // de línea, y paginar con las alturas de otra fuente corta mal.
-        layoutKey: `${section?.slug ?? ''}|${fontSize}|${senseLines}|${deliveryFace}|${hangingIndent}|${measure ?? 0}`,
+        layoutKey: `${section?.slug ?? ''}|${fontSize}|${senseLines}|${deliveryFace}|${hangingIndent}|${measure ?? 0}|${collapseQuotes}`,
+        // Una cita plegada mide un renglón: ni se parte ni se esperan sus métricas.
+        canSplit: (b) => isSplittable(b) && !(collapseQuotes && b.kind === 'quote'),
     });
 
     const pageCount = outlineOn ? 1 : Math.max(1, pages.length);
@@ -802,6 +808,7 @@ export default function PreachModeScreen({
                     {showReading || outlineOn ? null : <PreachSectionBody
                         blocks={pageBlocks}
                         isBlockDimmed={focusOn ? (i) => isDimmed(pageKinds, effectiveFocus, i) : undefined}
+                        collapseQuotes={collapseQuotes}
                         highlights={highlighting.highlights}
                         glyphs={highlighting.glyphs}
                         fontSize={fontSize}
@@ -1006,6 +1013,8 @@ export default function PreachModeScreen({
                 setReadingPage={setReadingPageOn}
                 readingFocus={readingFocus}
                 setReadingFocus={setReadingFocus}
+                collapseQuotes={collapseQuotes}
+                setCollapseQuotes={setCollapseQuotes}
                 brightness={preachBrightness}
                 setBrightness={setPreachBrightness}
                 targetMinutes={targetMinutes}
@@ -1056,32 +1065,17 @@ export default function PreachModeScreen({
                 </Pressable>
             </Modal>
 
-            {/* Aparato de estudio: fuera del flujo de entrega, en capa (P5) */}
-            <Modal
-                visible={apparatus !== null}
-                transparent
-                animationType={tokens.animations ? 'fade' : 'none'}
-                onRequestClose={() => setApparatus(null)}
-            >
-                <Pressable
-                    className="flex-1 bg-black/50 items-center justify-center px-8"
-                    onPress={() => setApparatus(null)}
-                >
-                    <View
-                        className="rounded-2xl p-6 w-full max-w-2xl"
-                        style={{ backgroundColor: tokens.surface, maxHeight: '70%' }}
-                    >
-                        <ScrollView>
-                            <Text
-                                style={{ color: tokens.textPrimary, fontSize: fontSize * 0.7 }}
-                                className="font-lexend leading-6"
-                            >
-                                {apparatus}
-                            </Text>
-                        </ScrollView>
-                    </View>
-                </Pressable>
-            </Modal>
+            {/* Cita plegada (opción): se lee en capa, con tipografía de lectura.
+                Antes el interlineado era fijo (24 pt para ~21 de texto): las
+                líneas salían pegadas, lo vio el fundador. */}
+            <VersePopup
+                reference={apparatus === null ? null : ''}
+                passage={apparatus === null ? null : { title: '', verses: [{ number: 0, text: apparatus }] }}
+                tokens={tokens}
+                fontSize={fontSize}
+                face={deliveryFace}
+                onClose={() => setApparatus(null)}
+            />
 
             {/* Marcas: popover contextual junto a lo que se seleccionó. Un
                 panel inferior tapaba el tablero y obligaba a mirar a otro

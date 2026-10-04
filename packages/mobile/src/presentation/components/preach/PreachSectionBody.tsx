@@ -88,6 +88,8 @@ interface Props {
     onUnitMetrics?: (metrics: UnitMetric[]) => void;
     /** Foco de lectura (L-3): los bloques fuera de foco van atenuados. */
     isBlockDimmed?: (index: number) => boolean;
+    /** Citas plegadas a un renglón (opción). Por defecto se leen completas. */
+    collapseQuotes?: boolean;
 }
 
 /** Cuánto se atenúa lo que no está en foco: se lee, pero no llama la vista. */
@@ -121,6 +123,7 @@ export function PreachSectionBody({
     layoutKey,
     onUnitMetrics,
     isBlockDimmed,
+    collapseQuotes = false,
 }: Props) {
     /** Vista de cada párrafo (por el comienzo de su primera oración), para medirla sin depender de `onLayout`. */
     const blockNodes = useRef<Map<number, View>>(new Map());
@@ -221,7 +224,7 @@ export function PreachSectionBody({
         };
     };
 
-    const paragraph = (units: ReadingUnit[], key: React.Key, style?: object, continued = false) => (
+    const paragraph = (units: ReadingUnit[], key: React.Key, style?: object, continued = false, verseNumbers = false) => (
         <MeasuredParagraph
             key={key}
             units={units}
@@ -255,6 +258,8 @@ export function PreachSectionBody({
                 faceClass={FACE_CLASS[face].regular}
                 hangingIndent={hangingIndent ? fontSize * HANGING_INDENT_EM : 0}
                 continued={continued}
+                verseNumbers={verseNumbers}
+                verseNumberColor={tokens.textSecondary}
                 onUnitLines={(lines) => {
                     const first = units[0];
                     if (!first) return;
@@ -270,11 +275,27 @@ export function PreachSectionBody({
     return (
         <>
             {blocks.map((block, blockIndex) => {
-                const rendered = block.kind === 'quote' ? (
-                    // P5 — el aparato de estudio se colapsa a una marca al
-                    // margen. Es el comentario que se leyó el martes: en el
-                    // púlpito ocupaba una pantalla entera de algo que nadie
-                    // va a decir en voz alta.
+                const rendered = block.kind === 'quote' && !collapseQuotes ? (
+                    // La cita COMPLETA, como texto de lectura. En el manuscrito
+                    // del pastor la cita al comienzo de un punto es la Escritura
+                    // que se lee en voz alta; plegarla obligaba a tocar, leer en
+                    // una capa y cerrar justo al empezar el punto (lo vio el
+                    // fundador). Con filete del acento, y resaltado y tinta como
+                    // cualquier párrafo.
+                    <View
+                        key={blockIndex}
+                        style={{
+                            borderLeftWidth: 3,
+                            borderLeftColor: tokens.accent,
+                            paddingLeft: fontSize * 0.6,
+                            marginBottom: fontSize * PARAGRAPH_GAP_EM,
+                        }}
+                    >
+                        {paragraph(block.units, 'q', undefined, block.continued, !!block.scripture)}
+                    </View>
+                ) : block.kind === 'quote' ? (
+                    // Plegada (opción): el aparato de estudio de P5, para quien
+                    // usa las citas como notas que no se dicen en voz alta.
                     <TouchableOpacity
                         key={blockIndex}
                         onPress={() => onPressApparatus(block.text)}

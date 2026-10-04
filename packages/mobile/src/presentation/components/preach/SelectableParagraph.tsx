@@ -109,6 +109,9 @@ interface Props {
      * anclar a la oración).
      */
     onUnitLines?: (lines: UnitLines[]) => void;
+    /** Es Escritura: los números de versículo van discretos (chicos y atenuados). */
+    verseNumbers?: boolean;
+    verseNumberColor?: string;
 }
 
 /**
@@ -145,6 +148,8 @@ export function SelectableParagraph({
     hangingIndent = 0,
     continued = false,
     onUnitLines,
+    verseNumbers = false,
+    verseNumberColor,
 }: Props) {
     const rects = useRef<Map<number, LayoutRectangle>>(new Map());
     const reportedLines = useRef('');
@@ -322,6 +327,7 @@ export function SelectableParagraph({
                     word.sourceEnd <= selection.end;
                 const mark = styleAt(word.sourceStart);
                 const glyph = glyphAt?.(word.sourceStart, word.sourceEnd) ?? null;
+                const isVerseNumber = verseNumbers && /^\d{1,3}$/.test(word.text);
                 return [
                     lineBreak,
                     <View
@@ -355,8 +361,15 @@ export function SelectableParagraph({
                             }}
                             suppressHighlighting
                             style={{
-                                color: word.ordinals ? undefined : word.reference ? (referenceColor ?? color) : color,
-                                fontSize,
+                                color: word.ordinals
+                                    ? undefined
+                                    : isVerseNumber
+                                      ? (verseNumberColor ?? color)
+                                      : word.reference
+                                        ? (referenceColor ?? color)
+                                        : color,
+                                // El número de versículo se ve, pero no se lee en voz alta.
+                                fontSize: isVerseNumber ? fontSize * 0.6 : fontSize,
                                 lineHeight,
                                 textDecorationLine: mark?.strike
                                     ? 'line-through'

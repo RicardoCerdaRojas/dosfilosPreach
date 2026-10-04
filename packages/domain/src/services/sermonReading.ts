@@ -17,6 +17,7 @@
  */
 
 import { splitSentences } from './sentenceSegmentation';
+import { findBibleReferences } from '../bible/referenceSpans';
 
 /** Text plus `map[i]` = index in the original string of rendered char `i`. */
 export interface SourceMappedText {
@@ -74,6 +75,18 @@ export interface ReadingBlock {
     text: string;
     /** Sentences of a paragraph; a subheading is a single unit. */
     units: ReadingUnit[];
+    /**
+     * Una cita que empieza con una referencia bíblica: es la Escritura del
+     * punto («Jonás 4:5-8 — 5 Y salió…»), que se lee en voz alta. El atril
+     * muestra sus números de versículo discretos.
+     */
+    scripture?: boolean;
+}
+
+/** ¿El texto empieza con una referencia bíblica (salvo comillas o un guion)? */
+function startsWithReference(text: string): boolean {
+    const first = findBibleReferences(text)[0];
+    return !!first && /^[\s"'“”«»*_—–-]*$/.test(text.slice(0, first.start));
 }
 
 /**
@@ -285,7 +298,8 @@ export function buildReadingBlocks(body: string): ReadingBlock[] {
             texts.push(mapped.text);
         }
         if (!units.length) return;
-        blocks.push({ kind, text: texts.join('\n'), units });
+        const text = texts.join('\n');
+        blocks.push(kind === 'quote' && startsWithReference(text) ? { kind, text, units, scripture: true } : { kind, text, units });
     };
 
     for (const chunk of chunkBounds) {
