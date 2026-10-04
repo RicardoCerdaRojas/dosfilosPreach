@@ -2,6 +2,8 @@
 
 Rama `feat/redaccion-consulta-y-exportar`. Un PR para la fase y un commit por unidad. Hallazgos 32–34 de la bitácora del ejercicio.
 
+**Estado (2026-10-03):** R1–R3 mergeados y desplegados en #735. Siguieron #736 (ruta por defecto con Luna en `config/llmRouting`, aplicada en producción junto con `sermon.consult`) y #737 (exportar con diseño para imprimir y el autor en la portada). Falta la prueba del fundador en producción.
+
 ## R1 · Las citas de la biblioteca no se marcan como inventadas (#33)
 
 **Lo que se vio.** Al publicar, el verificador marcó tres citas como «probable cita inventada»: Burt p. 89 (dos veces) y Calvino p. 66. La de Calvino se había elegido con «Buscar citas en mi biblioteca».
