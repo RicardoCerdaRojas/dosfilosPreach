@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { PinnedNext } from '@/core/utils/nextSermon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { READING_MODES, ReadingMode, ReadingModeTokens } from '@/core/theme/readingModes';
@@ -169,6 +170,12 @@ interface ReaderSettingsState {
     /** Sólo el Apple Pencil escribe en el atril; el dedo sigue pasando página (T-9). */
     pencilOnly: boolean;
     setPencilOnly: (on: boolean) => void;
+    /**
+     * El sermón de «este domingo» elegido a mano en el inicio. Manda sobre el
+     * plan hasta que se predica o pasan 10 días (`pickNextSermon`).
+     */
+    pinnedNext: PinnedNext | null;
+    setPinnedNext: (pin: PinnedNext | null) => void;
     /** Brillo propio del atril (C7), de 0 a 1; `null` deja el del sistema. */
     preachBrightness: number | null;
     setPreachBrightness: (level: number | null) => void;
@@ -249,6 +256,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
                     budgetOverrides: {},
                     recentSearches: [],
                     lastRead: null,
+                    // La elección es del pastor que la hizo, no del siguiente.
+                    pinnedNext: null,
                 }),
             readingPage: true,
             setReadingPage: (on: boolean) => set({ readingPage: on }),
@@ -260,6 +269,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
             setReadingFocus: (on: boolean) => set({ readingFocus: on }),
             pencilOnly: false,
             setPencilOnly: (on: boolean) => set({ pencilOnly: on }),
+            pinnedNext: null,
+            setPinnedNext: (pin: PinnedNext | null) => set({ pinnedNext: pin }),
             preachBrightness: null,
             setPreachBrightness: (level: number | null) => set({ preachBrightness: level }),
             lastPreachingPlace: '',

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { defaultTargetMinutes, estimateSpokenMinutes, targetMinuteOptions } from '@dosfilos/domain';
+import { calendarDay, defaultTargetMinutes, estimateSpokenMinutes, targetMinuteOptions } from '@dosfilos/domain';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAppTheme, type AppTheme } from '@/core/theme/appTheme';
@@ -19,6 +19,7 @@ import { OfflineNotice } from '@/presentation/components/OfflineNotice';
 import { useBibleMarks } from '@/presentation/hooks/useBibleMarks';
 import { BibleVersionFactory, readingPassageFor } from '@/data/repositories/bible/BibleVersionFactory';
 import { isReady, sundayReadiness, type ReadinessItem } from '@/core/utils/sundayReadiness';
+import { pickNextSermon, pinnedStillValid } from '@/core/utils/nextSermon';
 import { SermonCard } from '@/presentation/components/SermonCard';
 import { UserAvatar } from '@/presentation/components/UserAvatar';
 import { Card, Chip, EmptyState, SectionLabel, Skeleton } from '@/presentation/components/ui/kit';
@@ -71,11 +72,16 @@ export default function HomeScreen() {
      * tarde publica el cuarto al final, y el que predica el domingo es el
      * primero. El tablero le ofrecía el final de la serie.
      */
+    // Lo elegido a mano manda; si no, el plan por calendario (fase «Atril:
+    // tinta y lectura»: el inicio ofrecía la semana 2 a quien iba por la 5).
+    const pinnedNext = useReaderSettingsStore((s) => s.pinnedNext);
+    const setPinnedNext = useReaderSettingsStore((s) => s.setPinnedNext);
+    const [now] = useState(() => Date.now());
     const planned = plan?.next?.sermon;
-    const oldestUnpreached = [...recent]
-        .filter((s) => s.timesPreached === 0)
-        .sort((a, b) => (a.publishedAt?.getTime() ?? 0) - (b.publishedAt?.getTime() ?? 0))[0];
-    const next = planned ?? oldestUnpreached ?? recent[0];
+    const next = pickNextSermon(recent, planned, pinnedNext, now);
+    const isPinned = !!next && pinnedStillValid(pinnedNext, recent, now)?.id === next.id;
+    const plannedItem = next ? plan?.items.find((item) => item.sermon?.id === next.id) : undefined;
+    const [choosing, setChoosing] = useState(false);
     const rest = recent.filter((s) => s.id !== next?.id).slice(0, 4);
 
     // La serie del próximo sermón: es la que el pastor está recorriendo.
@@ -118,7 +124,13 @@ export default function HomeScreen() {
                         <Skeleton theme={theme} height={44} width={200} style={{ marginTop: 24 }} />
                     </Card>
                 ) : next ? (
-                    <NextSermon sermon={next} />
+                    <NextSermon
+                        sermon={next}
+                        scheduledDate={plannedItem?.scheduledDate}
+                        week={plannedItem?.week}
+                        pinned={isPinned}
+                        onChange={() => setChoosing(true)}
+                    />
                 ) : error ? (
                     // Falló la carga: se dice. Antes se veía «no tienes
                     // sermones», que parece un problema de datos (A2).
@@ -188,6 +200,23 @@ export default function HomeScreen() {
                     </>
                 ) : null}
             </ScrollView>
+
+            <NextChooser
+                visible={choosing}
+                plan={plan}
+                recent={recent}
+                currentId={next?.id}
+                pinned={isPinned}
+                onPick={(sermon) => {
+                    setPinnedNext({ sermonId: sermon.id, preachedAtPin: sermon.timesPreached, pinnedAt: Date.now() });
+                    setChoosing(false);
+                }}
+                onFollowPlan={() => {
+                    setPinnedNext(null);
+                    setChoosing(false);
+                }}
+                onClose={() => setChoosing(false)}
+            />
         </View>
     );
 }
@@ -203,7 +232,20 @@ export default function HomeScreen() {
  * El MALETÍN se muestra acá y no sólo en el detalle: enterarse de que el
  * sermón no está garantizado sin conexión camino al púlpito es tarde.
  */
-function NextSermon({ sermon }: { sermon: SermonSummary }) {
+function NextSermon({
+    sermon,
+    scheduledDate,
+    week,
+    pinned,
+    onChange,
+}: {
+    sermon: SermonSummary;
+    scheduledDate?: Date;
+    week?: number;
+    /** Lo eligió el pastor a mano. */
+    pinned: boolean;
+    onChange: () => void;
+}) {
     const theme = useAppTheme();
     const router = useRouter();
     const { t } = useTranslation();
@@ -244,7 +286,20 @@ function NextSermon({ sermon }: { sermon: SermonSummary }) {
     return (
         <Card theme={theme} style={{ padding: 24 }}>
             <View className="flex-row items-center justify-between">
-                <SectionLabel theme={theme}>{t('home:next_to_preach')}</SectionLabel>
+                <View className="flex-row items-center flex-1">
+                    <SectionLabel theme={theme}>{nextLabel(t, scheduledDate, week, pinned)}</SectionLabel>
+                    <TouchableOpacity
+                        onPress={onChange}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('home:change_next')}
+                        hitSlop={8}
+                        className="ml-3"
+                    >
+                        <Text style={{ color: theme.accent, fontSize: 12 }} className="font-lexend-semibold">
+                            {t('home:change')}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
                 <View className="flex-row items-center">
                     {minutes > 0 ? (
                         <View className="mr-2">
@@ -473,7 +528,11 @@ function ActivePlan({ plan }: { plan: PlanBoard }) {
     const router = useRouter();
     const { t } = useTranslation();
 
-    const upcoming = plan.items.filter((item) => !item.preached).slice(0, 3);
+    // Desde lo que TOCA en adelante: lo que quedó atrás sin registrar ya pasó
+    // y no es «lo que viene» (el plan mostraba las semanas 2, 3 y 4 a quien
+    // iba por la 5).
+    const from = plan.next ? plan.items.indexOf(plan.next) : 0;
+    const upcoming = plan.items.slice(Math.max(0, from)).filter((item) => !item.preached).slice(0, 3);
     if (!upcoming.length) return null;
 
     return (
@@ -708,3 +767,112 @@ function SeriesProgress({ title, sermons }: { title: string | null; sermons: Ser
         </SupportCard>
     );
 }
+
+/** «Este domingo · 4 oct», «Domingo 11 oct», «Elegido por ti» o «Lo próximo». */
+function nextLabel(t: (key: string, options?: Record<string, unknown>) => string, date: Date | undefined, week: number | undefined, pinned: boolean): string {
+    if (pinned) return t('home:next_chosen');
+    if (!date) return week ? t('home:next_week', { week }) : t('home:next_to_preach');
+    // El mismo día de calendario que usa el plan (`calendarDay`): una fecha
+    // guardada sin hora se lee en UTC.
+    const key = calendarDay(date);
+    const day = new Date(Math.floor(key / 10000), Math.floor((key % 10000) / 100) - 1, key % 100);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = Math.round((day.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+    const formatted = `${day.getDate()}/${day.getMonth() + 1}`;
+    if (days === 0) return t('home:next_today', { date: formatted });
+    if (days > 0 && days < 7 && day.getDay() === 0) return t('home:next_this_sunday', { date: formatted });
+    return t('home:next_on', { date: formatted });
+}
+
+/**
+ * Elegir a mano qué se predica (fase «Atril: tinta y lectura»). La app no
+ * siempre puede saberlo: un plan sin fechas, o semanas predicadas sin
+ * registrarlas. Primero el plan, en su orden, después lo demás.
+ */
+function NextChooser({
+    visible,
+    plan,
+    recent,
+    currentId,
+    pinned,
+    onPick,
+    onFollowPlan,
+    onClose,
+}: {
+    visible: boolean;
+    plan: PlanBoard | null;
+    recent: SermonSummary[];
+    currentId: string | undefined;
+    pinned: boolean;
+    onPick: (sermon: SermonSummary) => void;
+    onFollowPlan: () => void;
+    onClose: () => void;
+}) {
+    const theme = useAppTheme();
+    const { t } = useTranslation();
+    const fromPlan = (plan?.items ?? []).flatMap((item) => (item.sermon ? [{ item, sermon: item.sermon }] : []));
+    const inPlan = new Set(fromPlan.map((p) => p.sermon.id));
+    const others = recent.filter((s) => !inPlan.has(s.id)).slice(0, 8);
+
+    const row = (sermon: SermonSummary, caption: string | null) => (
+        <TouchableOpacity
+            key={sermon.id}
+            onPress={() => onPick(sermon)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: sermon.id === currentId }}
+            className="flex-row items-center py-3"
+            style={{ borderTopWidth: 1, borderTopColor: theme.border }}
+        >
+            <View style={{ flex: 1 }}>
+                {caption ? (
+                    <Text style={{ color: theme.textMuted, fontSize: 12 }} className="font-lexend">
+                        {caption}
+                    </Text>
+                ) : null}
+                <Text style={{ color: theme.textPrimary, fontSize: 15 }} className="font-lexend-semibold" numberOfLines={1}>
+                    {sermon.title}
+                </Text>
+            </View>
+            {sermon.timesPreached > 0 ? (
+                <Text style={{ color: theme.textMuted, fontSize: 12 }} className="font-lexend ml-2">
+                    {t('home:already_preached')}
+                </Text>
+            ) : null}
+            {sermon.id === currentId ? (
+                <MaterialIcons name="check-circle" size={20} color={theme.accent} style={{ marginLeft: 8 }} />
+            ) : null}
+        </TouchableOpacity>
+    );
+
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+            <Pressable className="flex-1 items-center justify-center px-8" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={onClose}>
+                <Pressable
+                    onPress={() => undefined}
+                    className="rounded-2xl p-6 w-full"
+                    style={{ backgroundColor: theme.surface, maxWidth: 560, maxHeight: '80%' }}
+                >
+                    <Text style={{ color: theme.textPrimary, fontSize: 18 }} className="font-lexend-bold mb-1">
+                        {t('home:choose_next_title')}
+                    </Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 13 }} className="font-lexend mb-3">
+                        {t('home:choose_next_hint')}
+                    </Text>
+                    <ScrollView>
+                        {fromPlan.map(({ item, sermon }) => row(sermon, t('plans:week', { week: item.week })))}
+                        {others.map((sermon) => row(sermon, null))}
+                    </ScrollView>
+                    {pinned ? (
+                        <TouchableOpacity onPress={onFollowPlan} accessibilityRole="button" className="self-start mt-4">
+                            <Text style={{ color: theme.accent, fontSize: 14 }} className="font-lexend-semibold">
+                                {t('home:follow_plan')}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : null}
+                </Pressable>
+            </Pressable>
+        </Modal>
+    );
+}
+

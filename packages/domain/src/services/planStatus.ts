@@ -70,6 +70,45 @@ export function nextInPlan<T extends PlanItemState>(items: T[]): T | null {
 }
 
 /**
+ * El día de calendario de una fecha, como número comparable (AAAAMMDD).
+ *
+ * El planificador guarda las fechas como MEDIANOCHE UTC
+ * (`new Date('2026-09-06')`): en Chile eso es el sábado a las 21:00, y el
+ * domingo de mañana la semana de hoy parecía pasada. Una fecha a medianoche
+ * UTC exacta es una fecha SIN hora y se lee en UTC; cualquier otra, en la
+ * hora local del dispositivo.
+ */
+export function calendarDay(date: Date): number {
+    const dateOnly = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+    return dateOnly
+        ? date.getUTCFullYear() * 10000 + (date.getUTCMonth() + 1) * 100 + date.getUTCDate()
+        : date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+/** Hoy, como día de calendario LOCAL (`now` es la hora del dispositivo). */
+const localDay = (now: Date) => now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
+/**
+ * Lo que TOCA predicar, por calendario (fase «Atril: tinta y lectura»).
+ *
+ * `nextInPlan` toma el primero sin predicar, y «predicado» sólo lo sabe la
+ * app si el pastor lo registró al salir del atril. El fundador predicó cuatro
+ * semanas sin registrarlas y el inicio le seguía ofreciendo la segunda.
+ *
+ * Si el plan tiene fechas, manda el calendario: el primero sin predicar cuya
+ * fecha es hoy o después. Lo que quedó atrás sin registrar ya pasó: no es lo
+ * que se predica el domingo. Sin fechas (plan flexible), o con todas ya
+ * pasadas, vale la regla de siempre.
+ */
+export function nextByCalendar<T extends PlanItemState>(items: T[], now: Date = new Date()): T | null {
+    const today = localDay(now);
+    const upcoming = items
+        .filter((item) => !item.preached && item.scheduledDate && calendarDay(item.scheduledDate) >= today)
+        .sort(planOrder);
+    return upcoming[0] ?? nextInPlan(items);
+}
+
+/**
  * El plan que la app debe mostrar: el activo; si no hay, el que está por
  * empezar. Los terminados no compiten — su lugar es el archivo.
  */

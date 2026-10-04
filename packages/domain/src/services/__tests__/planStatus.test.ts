@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { nextInPlan, pickCurrentPlan, planStatus, type PlanItemState } from '../planStatus';
+import { calendarDay, nextByCalendar, nextInPlan, pickCurrentPlan, planStatus, type PlanItemState } from '../planStatus';
 
 const item = (week: number, opts: Partial<PlanItemState> = {}): PlanItemState => ({
     week,
@@ -90,3 +90,57 @@ describe('pickCurrentPlan', () => {
         expect(pickCurrentPlan([{ s: 'finished' }], status)).toBeNull();
     });
 });
+
+describe('lo que toca este domingo, por calendario', () => {
+    // Serie de Jonás: seis domingos desde el 6 de septiembre de 2026.
+    const sunday = (day: number) => new Date(2026, 8, 6 + 7 * (day - 1), 10);
+    const serie = (preached: number[]): (PlanItemState & { week: number })[] =>
+        [1, 2, 3, 4, 5, 6].map((week) => ({
+            week,
+            scheduledDate: sunday(week),
+            ready: true,
+            preached: preached.includes(week),
+        }));
+
+    it('REGRESIÓN: las semanas predicadas sin registrar no se ofrecen; toca la del domingo', () => {
+        // Hoy es el 4 de octubre: el domingo de la semana 5. Sólo la 1 está registrada.
+        const today = new Date(2026, 9, 4, 8);
+        expect(nextByCalendar(serie([1]), today)?.week).toBe(5);
+        expect(nextInPlan(serie([1]))?.week).toBe(2);
+    });
+
+    it('un día de semana, toca la del domingo que viene', () => {
+        expect(nextByCalendar(serie([1]), new Date(2026, 9, 7))?.week).toBe(6);
+    });
+
+    it('lo ya registrado no se ofrece aunque sea su fecha', () => {
+        expect(nextByCalendar(serie([1, 5]), new Date(2026, 9, 4, 8))?.week).toBe(6);
+    });
+
+    it('sin fechas (plan flexible) o con todas pasadas, vale el primero sin predicar', () => {
+        const flexible = serie([1]).map((i) => ({ ...i, scheduledDate: undefined }));
+        expect(nextByCalendar(flexible, new Date(2026, 9, 4))?.week).toBe(2);
+        expect(nextByCalendar(serie([1]), new Date(2027, 0, 1))?.week).toBe(2);
+    });
+});
+
+describe('día de calendario', () => {
+    it('REGRESIÓN: una fecha guardada a medianoche UTC es ese día, en cualquier huso', () => {
+        // Así guarda el planificador «domingo 4 de octubre».
+        expect(calendarDay(new Date('2026-10-04'))).toBe(20261004);
+    });
+
+    it('una fecha con hora es su día local', () => {
+        expect(calendarDay(new Date(2026, 9, 4, 10, 30))).toBe(20261004);
+    });
+
+    it('el domingo a medianoche UTC sigue siendo «hoy» el domingo por la mañana', () => {
+        const items = [
+            { week: 5, scheduledDate: new Date('2026-10-04'), ready: true, preached: false },
+            { week: 6, scheduledDate: new Date('2026-10-11'), ready: true, preached: false },
+        ];
+        expect(nextByCalendar(items, new Date(2026, 9, 4, 8))?.week).toBe(5);
+        expect(nextByCalendar(items, new Date(2026, 9, 4, 23, 59))?.week).toBe(5);
+    });
+});
+

@@ -1,5 +1,5 @@
 import {
-    nextInPlan,
+    nextByCalendar,
     pickCurrentPlan,
     planOrder,
     planStatus,
@@ -72,7 +72,9 @@ export function usePlanBoard() {
             ...plan,
             items,
             status: planStatus(items),
-            next: nextInPlan(items),
+            // Por calendario: lo predicado sin registrar no es lo que toca el
+            // domingo (lo vio el fundador: el inicio le ofrecía la semana 2).
+            next: nextByCalendar(items),
             readyCount: items.filter((i) => i.ready).length,
             preachedCount: items.filter((i) => i.preached).length,
         };

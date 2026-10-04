@@ -41,5 +41,16 @@
     "duration_from_text": "Duration: {{minutes}} min, from the text",
     "duration_chosen": "Duration: {{minutes}} min, your choice",
     "duration_adjust": "Adjust",
-    "minutes_short": "{{minutes}} min"
+    "minutes_short": "{{minutes}} min",
+    "change": "Change",
+    "change_next": "Change this Sunday's sermon",
+    "next_chosen": "Your choice",
+    "next_week": "Week {{week}}",
+    "next_today": "Today · {{date}}",
+    "next_this_sunday": "This Sunday · {{date}}",
+    "next_on": "For {{date}}",
+    "choose_next_title": "What are you preaching this Sunday?",
+    "choose_next_hint": "The app infers it from the plan, but you decide. Your choice holds until you preach it.",
+    "follow_plan": "Go back to what the plan says",
+    "already_preached": "Already preached"
 }
