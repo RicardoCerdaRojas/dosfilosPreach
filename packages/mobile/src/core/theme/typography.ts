@@ -122,6 +122,17 @@ export function measureToWidth(charRatio: number, fontSize: number, ch: number):
 export const DELIVERY_FACES = ['lexend', 'literata', 'atkinson'] as const;
 export type DeliveryFace = (typeof DELIVERY_FACES)[number];
 
+/**
+ * La familia por NOMBRE, para ponerla en `style`. NativeWind con `className`
+ * junto a un `style` a veces no aplica lo de la clase (trampa registrada), y
+ * donde la lectura importa —el versículo tocado en el atril— no se arriesga.
+ */
+export const FACE_FAMILY: Record<DeliveryFace, { regular: string; semibold: string }> = {
+    lexend: { regular: 'Lexend', semibold: 'Lexend-SemiBold' },
+    literata: { regular: 'Literata', semibold: 'Literata-SemiBold' },
+    atkinson: { regular: 'Atkinson', semibold: 'Atkinson-Bold' },
+};
+
 /** Clases de NativeWind por familia y peso. */
 export const FACE_CLASS: Record<DeliveryFace, { regular: string; semibold: string }> = {
     lexend: { regular: 'font-lexend', semibold: 'font-lexend-semibold' },

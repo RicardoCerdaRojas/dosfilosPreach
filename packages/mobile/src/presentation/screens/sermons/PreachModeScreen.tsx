@@ -52,6 +52,7 @@ import { READING_SLUG, usePreachClock } from '@/presentation/hooks/usePreachCloc
 import { usePreachBrightness } from '@/presentation/hooks/usePreachBrightness';
 import { PreachReadingPage } from '@/presentation/components/preach/PreachReadingPage';
 import { PreachOutline } from '@/presentation/components/preach/PreachOutline';
+import { VersePopup } from '@/presentation/components/preach/VersePopup';
 import { readingPassageFor, verseTextFor } from '@/data/repositories/bible/BibleVersionFactory';
 import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 import { useUIStore } from '@/presentation/state/ui.store';
@@ -60,6 +61,18 @@ import { focusOnArrival, isDimmed, stepFocus } from './readingFocus';
 
 /** Cuánto dura la marca de reanudación al pasar página (L-2). */
 const RESUME_MARK_MS = 2500;
+
+/**
+ * El pasaje de una referencia tocada, versículo por versículo. Si no se
+ * puede armar así, el texto de siempre en un solo bloque (número 0: sin
+ * número a la vista).
+ */
+function versePassage(reference: string) {
+    const passage = readingPassageFor([reference]);
+    if (passage) return passage;
+    const text = verseTextFor(reference);
+    return text ? { title: reference, verses: [{ number: 0, text }] } : null;
+}
 
 interface PreachModeScreenProps {
     /** Id inyectado: lo usa la vista previa de dev, que no llega por ruta. */
@@ -952,40 +965,19 @@ export default function PreachModeScreen({
 
             {/* El versículo de una referencia tocada en el manuscrito (C7):
                 sin salir de la página. «Abrir en la Biblia» lleva al cajón. */}
-            <Modal
-                visible={verseRef !== null}
-                transparent
-                animationType={tokens.animations ? 'fade' : 'none'}
-                onRequestClose={() => setVerseRef(null)}
-            >
-                <Pressable className="flex-1 bg-black/50 items-center justify-center px-8" onPress={() => setVerseRef(null)}>
-                    <View className="rounded-2xl p-6 w-full max-w-2xl" style={{ backgroundColor: tokens.surface }}>
-                        <Text style={{ color: tokens.accent }} className="font-lexend-semibold text-base mb-2">
-                            {verseRef}
-                        </Text>
-                        <Text
-                            style={{ color: tokens.textPrimary, fontSize: Math.max(18, fontSize * 0.75), lineHeight: Math.max(18, fontSize * 0.75) * 1.45 }}
-                            className="font-lexend"
-                        >
-                            {(verseRef && verseTextFor(verseRef)) ?? t('preach:verse_unreadable')}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => {
-                                if (verseRef) setBibleRefs([verseRef]);
-                                setVerseRef(null);
-                                setShowBible(true);
-                            }}
-                            accessibilityRole="button"
-                            className="self-end mt-4 px-4 py-2 rounded-full"
-                            style={{ borderWidth: 1, borderColor: tokens.border }}
-                        >
-                            <Text style={{ color: tokens.textPrimary }} className="font-lexend-semibold text-sm">
-                                {t('preach:open_in_bible')}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </Pressable>
-            </Modal>
+            <VersePopup
+                reference={verseRef}
+                passage={verseRef ? versePassage(verseRef) : null}
+                tokens={tokens}
+                fontSize={fontSize}
+                face={deliveryFace}
+                onOpenInBible={() => {
+                    if (verseRef) setBibleRefs([verseRef]);
+                    setVerseRef(null);
+                    setShowBible(true);
+                }}
+                onClose={() => setVerseRef(null)}
+            />
 
             {/* Ajustes: modo de luz, tipografía, corte de línea, duración */}
             <PreachSettingsSheet
