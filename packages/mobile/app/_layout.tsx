@@ -1,5 +1,5 @@
 import { DarkTheme as navigationDarkTheme, DefaultTheme as navigationDefaultTheme, ThemeProvider } from 'expo-router';
-import { LogBox, View, useColorScheme as useDeviceColorScheme } from 'react-native';
+import { View, useColorScheme as useDeviceColorScheme } from 'react-native';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';

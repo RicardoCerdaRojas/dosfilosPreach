@@ -135,6 +135,22 @@ export const useAddPreachingLog = (id: string) => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (log: PreachingLog) => repository.addPreachingLog(id, log),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sermon', id] }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['sermon', id] });
+            // La lista y el inicio muestran «predicado»: también cambian.
+            queryClient.invalidateQueries({ queryKey: ['sermons', 'published-groups'] });
+        },
+    });
+};
+
+/** El «Deshacer» de un registro recién agregado (A5). */
+export const useRemovePreachingLog = (id: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (log: PreachingLog) => repository.removePreachingLog(id, log),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['sermon', id] });
+            queryClient.invalidateQueries({ queryKey: ['sermons', 'published-groups'] });
+        },
     });
 };

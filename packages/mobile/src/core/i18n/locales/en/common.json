@@ -27,5 +27,6 @@
     "write_failed_bible_mark": "A Bible mark couldn't be saved.",
     "load_failed": "Couldn't load. Check your connection.",
     "load_failed_hint": "If you prepared this sermon for offline use, it will show up anyway.",
-    "go_back": "Go back"
+    "go_back": "Go back",
+    "undo": "Undo"
 }

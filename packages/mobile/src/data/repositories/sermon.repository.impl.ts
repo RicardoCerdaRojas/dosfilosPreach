@@ -1,6 +1,7 @@
 import { getApp } from '@react-native-firebase/app';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import {
+    arrayRemove,
     arrayUnion,
     doc,
     getDoc,
@@ -105,6 +106,23 @@ export class SermonRepositoryImpl implements SermonRepository {
     async addPreachingLog(id: string, log: PreachingLog): Promise<void> {
         updateDoc(doc(getFirebaseDb(), 'sermons', id), {
             preachingHistory: arrayUnion({
+                date: log.date,
+                location: log.location,
+                durationMinutes: log.durationMinutes,
+                ...(log.notes ? { notes: log.notes } : {}),
+            }),
+            updatedAt: serverTimestamp(),
+        }).catch((error) => reportWriteFailure('preaching_log', error));
+    }
+
+    /**
+     * Quita un registro: es el «Deshacer» de marcar predicado (A5). Tiene que
+     * ser EL MISMO objeto que se agregó —arrayRemove compara el mapa entero—,
+     * así que se arma con los mismos campos que `addPreachingLog`.
+     */
+    async removePreachingLog(id: string, log: PreachingLog): Promise<void> {
+        updateDoc(doc(getFirebaseDb(), 'sermons', id), {
+            preachingHistory: arrayRemove({
                 date: log.date,
                 location: log.location,
                 durationMinutes: log.durationMinutes,

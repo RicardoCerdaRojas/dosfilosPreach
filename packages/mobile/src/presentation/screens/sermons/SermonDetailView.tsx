@@ -10,7 +10,8 @@ import { useAppTheme } from '@/core/theme/appTheme';
 import { STUDY_COLUMN, useLayout } from '@/core/theme/layout';
 import { READING_MODES } from '@/core/theme/readingModes';
 import { extractSectionsWithBody } from '@/core/utils/sermonSections';
-import { useAddPreachingLog, useSermon } from '@/presentation/hooks/useSermons';
+import { useAddPreachingLog, useRemovePreachingLog, useSermon } from '@/presentation/hooks/useSermons';
+import { useUIStore } from '@/presentation/state/ui.store';
 import { useBriefcase, usePrepareBriefcase, useRemoveBriefcase } from '@/presentation/hooks/useSermonBriefcase';
 import { OfflineNotice } from '@/presentation/components/OfflineNotice';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
@@ -55,6 +56,8 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
     const prepare = usePrepareBriefcase(sermonId);
     const removeSaved = useRemoveBriefcase(sermonId);
     const addLog = useAddPreachingLog(sermonId);
+    const removeLog = useRemovePreachingLog(sermonId);
+    const showToast = useUIStore((s) => s.showToast);
     const [showBible, setShowBible] = useState(false);
 
     // Sin useMemo: el compilador de React memoiza solo (y la regla de lint
@@ -189,8 +192,8 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                         <TouchableOpacity
                             onPress={() => {
                                 if (addLog.isPending) return;
-                                const record = () =>
-                                    addLog.mutate({
+                                const record = () => {
+                                    const log = {
                                         date: new Date(),
                                         // Sin lugar: el registro completo se
                                         // pide al salir del púlpito. Exigirlo
@@ -198,7 +201,15 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                                         // predicar.
                                         location: '',
                                         durationMinutes: 0,
+                                    };
+                                    addLog.mutate(log);
+                                    // Un toque de más se deshace desde el
+                                    // aviso: antes no había vuelta atrás (A5).
+                                    showToast(t('sermons:marked_preached'), 'success', 6000, {
+                                        label: t('common:undo'),
+                                        onPress: () => removeLog.mutate(log),
                                     });
+                                };
                                 // Ya marcado, se pregunta: un toque de más no
                                 // debería inventar una predicación que no
                                 // ocurrió, y un sermón SÍ se predica dos veces.

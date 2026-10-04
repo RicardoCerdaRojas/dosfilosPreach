@@ -43,5 +43,6 @@
     "offline_saved_on": "Guardado sin conexión el {{date}}.",
     "offline_update": "Actualizar copia",
     "offline_remove": "Quitar del maletín",
-    "offline_ready_badge": "Listo sin conexión"
+    "offline_ready_badge": "Listo sin conexión",
+    "marked_preached": "Marcado como predicado."
 }

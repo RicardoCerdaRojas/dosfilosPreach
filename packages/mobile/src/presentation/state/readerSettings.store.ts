@@ -145,6 +145,9 @@ interface ReaderSettingsState {
      */
     targetMinutesBySermon: Record<string, number>;
     setTargetMinutes: (sermonId: string, minutes: number) => void;
+    /** Dónde predicó la última vez: casi siempre es el mismo lugar (A5). */
+    lastPreachingPlace: string;
+    setLastPreachingPlace: (place: string) => void;
 }
 
 export const useReaderSettingsStore = create<ReaderSettingsState>()(
@@ -204,6 +207,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
                     else next[key] = seconds;
                     return { budgetOverrides: next };
                 }),
+            lastPreachingPlace: '',
+            setLastPreachingPlace: (place: string) => set({ lastPreachingPlace: place }),
             targetMinutesBySermon: {},
             setTargetMinutes: (sermonId: string, minutes: number) =>
                 set((state) => ({

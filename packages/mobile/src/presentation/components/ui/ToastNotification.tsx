@@ -71,6 +71,21 @@ export const ToastNotification = () => {
                 >
                     {toast.message}
                 </Text>
+                {toast.action ? (
+                    <TouchableOpacity
+                        onPress={() => {
+                            toast.action?.onPress();
+                            hideToast();
+                        }}
+                        accessibilityRole="button"
+                        className="px-3 py-1.5 ml-2 rounded-full"
+                        style={{ backgroundColor: theme.accentSoft }}
+                    >
+                        <Text style={{ color: theme.accent, fontSize: 14 }} className="font-lexend-semibold">
+                            {toast.action.label}
+                        </Text>
+                    </TouchableOpacity>
+                ) : null}
                 <TouchableOpacity
                     onPress={hideToast}
                     accessibilityRole="button"

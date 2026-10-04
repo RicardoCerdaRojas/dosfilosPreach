@@ -27,5 +27,6 @@
     "write_failed_bible_mark": "No se pudo guardar una marca de la Biblia.",
     "load_failed": "No se pudo cargar. Revisa tu conexión.",
     "load_failed_hint": "Si preparaste este sermón para usarlo sin conexión, aparecerá igual.",
-    "go_back": "Volver"
+    "go_back": "Volver",
+    "undo": "Deshacer"
 }

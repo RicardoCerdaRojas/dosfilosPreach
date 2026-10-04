@@ -33,7 +33,7 @@
     "exit_title": "How the time went",
     "exit_total": "{{actual}} in total, out of {{budget}} budgeted",
     "log_title": "Log this preaching",
-    "log_place": "Place (church, occasion)",
+    "log_place": "Place (optional)",
     "log_notes": "Notes — what landed and what didn't",
     "log_hint": "Date and duration come from the timer.",
     "log_save": "Save and exit",
