@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { User } from '@/domain/entities/user';
 import { AuthRepositoryImpl } from '@/data/repositories/auth.repository.impl';
+import { clearOfflineData } from '@/data/offline/offlineSermons';
+import { queryClient } from '@/core/providers/query-client.provider';
 
 // Instantiate repository - in a reel app, this might be injected
 const authRepository = new AuthRepositoryImpl();
@@ -17,7 +19,7 @@ interface AuthState {
     setUser: (user: User | null) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     // SÓLO el arranque: true hasta saber si hay sesión. Ingresar NO lo toca
     // (A2): la raíz devuelve `null` mientras vale true, y un ingreso que lo
@@ -41,14 +43,30 @@ export const useAuthStore = create<AuthState>((set) => ({
         const user = await authRepository.signInWithApple(identityToken, rawNonce);
         set({ user });
     },
+    /**
+     * Cerrar sesión no dejaba nada limpio (A8): en una tablet compartida, el
+     * siguiente usuario veía la caché de sermones, las marcas de la Biblia y
+     * el maletín del anterior. Ahora se vacía la caché y se borra todo lo
+     * guardado para usar sin conexión.
+     */
     signOut: async () => {
         await authRepository.signOut();
+        queryClient.clear();
+        await clearOfflineData();
         set({ user: null });
     },
     resetPassword: async (email) => {
         await authRepository.sendPasswordResetEmail(email);
     },
-    setUser: (user) => set({ user, isLoading: false }),
+    // Si cambia QUIÉN está adentro, la caché de la sesión anterior no sirve:
+    // varias consultas no llevan el uid en la clave y no caducan nunca. Lo
+    // guardado sin conexión se conserva (filtra por usuario) — borrarlo acá
+    // haría perder el maletín a quien vuelve a entrar con su misma cuenta.
+    setUser: (user) => {
+        const previous = get().user;
+        if (previous && previous.id !== user?.id) queryClient.clear();
+        set({ user, isLoading: false });
+    },
 }));
 
 // Initialize subscription

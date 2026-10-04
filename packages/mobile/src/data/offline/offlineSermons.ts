@@ -168,10 +168,13 @@ export async function writeListSnapshot(uid: string, summaries: SermonSummary[])
     await AsyncStorage.setItem(listKey(uid), JSON.stringify(summaries));
 }
 
+/** Sesiones del atril guardadas para retomar (ver preachSession). */
+const SESSION_PREFIX = 'preach-session:';
+
 /** Al cerrar sesión: nada de lo guardado sobrevive al usuario que lo guardó. */
 export async function clearOfflineData(): Promise<void> {
     const keys = (await AsyncStorage.getAllKeys()).filter(
-        (k) => k.startsWith(BRIEFCASE_PREFIX) || k.startsWith(LIST_PREFIX),
+        (k) => k.startsWith(BRIEFCASE_PREFIX) || k.startsWith(LIST_PREFIX) || k.startsWith(SESSION_PREFIX),
     );
     if (keys.length) await AsyncStorage.multiRemove(keys);
 }

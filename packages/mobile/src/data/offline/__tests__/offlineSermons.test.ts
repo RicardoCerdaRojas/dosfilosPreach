@@ -68,7 +68,9 @@ describe('maletín — almacenamiento', () => {
         await writeBriefcase({ sermon: sermon(), savedAt: 'x' });
         await writeListSnapshot('pastor', [summary('a')]);
         await AsyncStorage.setItem('reader-settings-storage', '{}');
+        await AsyncStorage.setItem('preach-session:s1', '{}');
         await clearOfflineData();
+        expect(await AsyncStorage.getItem('preach-session:s1')).toBeNull();
         expect(await readBriefcase('s1')).toBeNull();
         expect(await readListSnapshot('pastor')).toBeNull();
         expect(await AsyncStorage.getItem('reader-settings-storage')).toBe('{}');
