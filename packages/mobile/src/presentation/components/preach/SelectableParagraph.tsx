@@ -18,6 +18,8 @@ interface PlacedWord {
     unit: number;
     /** Es la primera palabra de un renglón que el pastor cortó a mano. */
     breaksLine: boolean;
+    /** Está dentro de una referencia bíblica, aunque no se pueda tocar. */
+    inReference: boolean;
 }
 
 /** Renglones de una oración, desde el borde de arriba del párrafo. */
@@ -171,11 +173,12 @@ export function SelectableParagraph({
 
     const words: PlacedWord[] = [];
     units.forEach((unit, unitIndex) => {
-        const references = onPressReference ? findBibleReferences(unit.text) : [];
+        const references = onPressReference || verseNumbers ? findBibleReferences(unit.text) : [];
         splitWords(unit.text).forEach((w, wordIndex) => {
             const tokens = tokenizeCitations(w.text);
             const citation = tokens.find((t) => t.kind === 'citation');
-            const reference = references.find((r) => w.start < r.end && w.end > r.start);
+            const span = references.find((r) => w.start < r.end && w.end > r.start);
+            const reference = onPressReference ? span : undefined;
             words.push({
                 text: w.text,
                 sourceStart: unit.sourceStart + w.start,
@@ -184,6 +187,7 @@ export function SelectableParagraph({
                 reference: reference?.reference ?? null,
                 unit: unitIndex,
                 breaksLine: wordIndex === 0 && !!unit.lineBreak && unitIndex > 0,
+                inReference: !!span,
             });
         });
     });
@@ -327,7 +331,15 @@ export function SelectableParagraph({
                     word.sourceEnd <= selection.end;
                 const mark = styleAt(word.sourceStart);
                 const glyph = glyphAt?.(word.sourceStart, word.sourceEnd) ?? null;
-                const isVerseNumber = verseNumbers && /^\d{1,3}$/.test(word.text);
+                // Un número de versículo: cifras sueltas, fuera de la referencia
+                // (el «1» de «1 Juan 3:16» se lee: revisión adversarial) y
+                // seguidas de una palabra que empieza el versículo con
+                // mayúscula —«5 Y salió»—, no de «40 días».
+                const isVerseNumber =
+                    verseNumbers &&
+                    !word.inReference &&
+                    /^\d{1,3}$/.test(word.text) &&
+                    /^[«"“¿¡(]*[A-ZÁÉÍÓÚÑÜ]/.test(words[index + 1]?.text ?? '');
                 return [
                     lineBreak,
                     <View

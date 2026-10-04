@@ -86,7 +86,7 @@ export interface ReadingBlock {
 /** ¿El texto empieza con una referencia bíblica (salvo comillas o un guion)? */
 function startsWithReference(text: string): boolean {
     const first = findBibleReferences(text)[0];
-    return !!first && /^[\s"'“”«»*_—–-]*$/.test(text.slice(0, first.start));
+    return !!first && /^[\s"'“”«»*_—–(-]*$/.test(text.slice(0, first.start));
 }
 
 /**

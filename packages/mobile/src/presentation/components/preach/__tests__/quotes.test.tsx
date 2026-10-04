@@ -10,12 +10,12 @@ import { PreachSectionBody } from '../PreachSectionBody';
 const noop = () => undefined;
 const PUNTO = '> **Jonás 4:5-8** — 5 Y salió Jonás de la ciudad. 6 Y preparó Jehová Dios una calabacera.';
 
-function render(collapseQuotes: boolean, onPressApparatus: (text: string) => void = noop) {
+function render(collapseQuotes: boolean, onPressApparatus: (text: string) => void = noop, source = PUNTO) {
     let r!: ReactTestRenderer;
     act(() => {
         r = create(
             <PreachSectionBody
-                blocks={buildReadingBlocks(PUNTO)}
+                blocks={buildReadingBlocks(source)}
                 highlights={[]}
                 fontSize={30}
                 tokens={READING_MODES.claro}
@@ -49,6 +49,15 @@ describe('la Escritura del punto en el atril', () => {
         const salio = word(r, 'salió')!.props.style as { fontSize: number; color: string };
         expect(five.fontSize).toBeLessThan(salio.fontSize);
         expect(five.color).toBe(READING_MODES.claro.textSecondary);
+    });
+
+    it('REGRESIÓN: el «1» de «1 Juan» y un «40 días» se leen; no son números de versículo', () => {
+        const r = render(false, noop, '> **1 Juan 3:16** — 16 En esto hemos conocido el amor. 17 Pero el que tiene 40 días…');
+        const size = (w: string) => (word(r, w)!.props.style as { fontSize: number }).fontSize;
+        expect(size('1')).toBe(size('Juan'));
+        expect(size('40')).toBe(size('días…'));
+        expect(size('16')).toBeLessThan(size('Juan'));
+        expect(size('17')).toBeLessThan(size('Juan'));
     });
 
     it('con «citas plegadas», vuelve a un renglón que se abre tocándolo', () => {

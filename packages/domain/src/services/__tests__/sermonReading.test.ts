@@ -276,6 +276,11 @@ describe('la Escritura del punto (cita que empieza con una referencia)', () => {
         expect(quote!.scripture).toBe(true);
     });
 
+    it('también con la referencia entre paréntesis', () => {
+        const [quote] = buildReadingBlocks('> (Jonás 4:2) Y oró a Jehová y dijo.');
+        expect(quote!.scripture).toBe(true);
+    });
+
     it('una cita de un comentario no', () => {
         const [quote] = buildReadingBlocks('> La lástima de Jonás se corresponde con sus intereses. — David F. Burt, Comentario Jonás, p. 89');
         expect(quote!.scripture).toBeUndefined();
