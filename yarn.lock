@@ -5939,6 +5939,13 @@
   dependencies:
     "@expo/plist" "^0.8.1"
 
+"@react-native-firebase/crashlytics@26.3.2":
+  version "26.3.2"
+  resolved "https://registry.yarnpkg.com/@react-native-firebase/crashlytics/-/crashlytics-26.3.2.tgz#c7dbaa90c7a817b21620cf8266f44aa8a511fff5"
+  integrity sha512-bljAZnRtdV+fu/hZKqDrgz7IrNjzq55yZqQZfK2GR/heYEoBR3s5EQmWHg9KGgsG6xMLY56zZ9mnuUmgILA7tg==
+  dependencies:
+    stacktrace-js "^2.0.2"
+
 "@react-native-firebase/firestore@26.3.2":
   version "26.3.2"
   resolved "https://registry.yarnpkg.com/@react-native-firebase/firestore/-/firestore-26.3.2.tgz#e809a9654c81ac5bf4284a37d6ca3bdca705a99a"

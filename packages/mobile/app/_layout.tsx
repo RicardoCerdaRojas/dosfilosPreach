@@ -36,6 +36,10 @@ import '@/core/i18n';
 import { initAppCheck } from '@/core/config/appCheck';
 initAppCheck().catch((err) => console.error('[appCheck] init failed:', err));
 
+// Reporte de fallos (B5): sólo en builds publicados, sin datos personales.
+import { initCrashReporting } from '@/core/config/crashReporting';
+initCrashReporting().catch((err) => console.error('[crashlytics] init failed:', err));
+
 // Google Sign-In nativo (M-08) — configurar antes de que se monte el login
 import { configureGoogleSignIn } from '@/core/config/socialAuth';
 configureGoogleSignIn();
