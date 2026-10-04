@@ -155,7 +155,7 @@ export function SermonPreview({
         );
       }
       // Handle normal links
-      return <a {...props} className="text-blue-500 underline hover:text-blue-700" target="_blank" rel="noopener noreferrer" />;
+      return <a {...props} className="text-primary underline hover:opacity-80" target="_blank" rel="noopener noreferrer" />;
     },
     // Custom blockquote styling
     blockquote: ({ node, ...props }: any) => (
@@ -224,10 +224,10 @@ export function SermonPreview({
               {bibleReferences.map((ref, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-sm font-medium shadow-sm cursor-pointer hover:bg-amber-100 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 text-warning-subtle-foreground border border-warning/30 text-sm font-medium shadow-sm cursor-pointer hover:bg-warning/20 transition-colors"
                   onClick={() => setSelectedReference(ref)}
                 >
-                  <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                  <BookOpen className="h-3.5 w-3.5 text-warning" />
                   {ref}
                 </div>
               ))}
