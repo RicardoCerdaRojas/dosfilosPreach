@@ -64,5 +64,7 @@
     "instrument_off": "Hidden",
     "offline_copy": "Offline: briefcase copy",
     "settings": "Reading settings",
-    "blackout": "Black screen (tap to return)"
+    "blackout": "Black screen (tap to return)",
+    "start_timer": "Start the clock",
+    "pause_timer": "Pause the clock"
 }

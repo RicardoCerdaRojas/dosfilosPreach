@@ -64,5 +64,7 @@
     "instrument_off": "Oculto",
     "offline_copy": "Sin conexión: copia del maletín",
     "settings": "Ajustes de lectura",
-    "blackout": "Pantalla negra (toca para volver)"
+    "blackout": "Pantalla negra (toca para volver)",
+    "start_timer": "Iniciar el reloj",
+    "pause_timer": "Pausar el reloj"
 }

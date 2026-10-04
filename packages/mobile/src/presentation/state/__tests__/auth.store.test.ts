@@ -1,5 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { useAuthStore } from '../auth.store';
+
+// jest sube este mock por encima de los imports: el store ya lo recibe.
+
 jest.mock('@/data/repositories/auth.repository.impl', () => {
     const signIn = jest.fn();
     return {
@@ -11,7 +15,6 @@ jest.mock('@/data/repositories/auth.repository.impl', () => {
     };
 });
 
-import { useAuthStore } from '../auth.store';
 
 const signIn = (jest.requireMock('@/data/repositories/auth.repository.impl') as { __signIn: jest.Mock<any> })
     .__signIn;

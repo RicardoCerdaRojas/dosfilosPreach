@@ -138,6 +138,13 @@ interface ReaderSettingsState {
     setPanelRatio: (ratio: number) => void;
     budgetOverrides: Record<string, number>;
     setBudgetOverride: (key: string, seconds: number | null) => void;
+    /**
+     * Duración objetivo por sermón, en minutos (A4). Antes era 30 fijos para
+     * todos y se olvidaba al salir del atril: un sermón de 45 había que
+     * reajustarlo cada vez. Lo que no se fija sale del texto.
+     */
+    targetMinutesBySermon: Record<string, number>;
+    setTargetMinutes: (sermonId: string, minutes: number) => void;
 }
 
 export const useReaderSettingsStore = create<ReaderSettingsState>()(
@@ -197,6 +204,11 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
                     else next[key] = seconds;
                     return { budgetOverrides: next };
                 }),
+            targetMinutesBySermon: {},
+            setTargetMinutes: (sermonId: string, minutes: number) =>
+                set((state) => ({
+                    targetMinutesBySermon: { ...state.targetMinutesBySermon, [sermonId]: minutes },
+                })),
         }),
         {
             name: 'reader-settings-storage',

@@ -11,6 +11,9 @@ module.exports = {
     testMatch: ['<rootDir>/**/__tests__/**/*.test.ts?(x)'],
     testPathIgnorePatterns: ['/node_modules/', '/ios/', '/android/', '/dist/'],
     moduleNameMapper: {
+        // El dominio importa con `.js` (ESM) archivos que son `.ts`; Metro lo
+        // resuelve, jest no.
+        '^(\\.{1,2}/.*)\\.js$': '$1',
         '^@dosfilos/domain$': '<rootDir>/../domain/src',
         '^@dosfilos/domain/(.*)$': '<rootDir>/../domain/src/$1',
         '^@/core/(.*)$': '<rootDir>/src/core/$1',
