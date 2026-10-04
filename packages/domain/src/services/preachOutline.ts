@@ -12,6 +12,8 @@
  *   no puede olvidar; si no tiene ninguna, la primera oración, como pie.
  * - Citas (`>`) → su primera línea, como recordatorio de qué se lee.
  */
+import { decodeMarkdownText } from './sermonReading';
+
 export type OutlineItem =
     | { kind: 'heading'; text: string }
     | { kind: 'point'; text: string; ordinal?: string }
@@ -23,7 +25,7 @@ export type OutlineItem =
 export const OUTLINE_CUE_MAX = 140;
 
 const stripInline = (text: string) =>
-    text
+    decodeMarkdownText(text)
         .replace(/<br\s*\/?>/gi, ' ')
         .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
         .replace(/\*\*(.+?)\*\*/g, '$1')

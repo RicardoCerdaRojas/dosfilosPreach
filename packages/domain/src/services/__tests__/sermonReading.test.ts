@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { buildReadingBlocks, normalizeSectionBody } from '../sermonReading';
+import { buildReadingBlocks, decodeMarkdownText, normalizeSectionBody } from '../sermonReading';
 import { splitSentences } from '../sentenceSegmentation';
 import {
     buildAnnotationAnchor,
@@ -206,5 +206,44 @@ describe('splitWords', () => {
         const from = words[2].start;
         const to = words[4].end;
         expect(body.slice(from, to)).toBe('a Moisés desde');
+    });
+});
+
+describe('texto limpio en el atril (fase «Atril: tinta y lectura»)', () => {
+    const texts = (body: string) => buildReadingBlocks(body).map((b) => b.text);
+
+    it('REGRESIÓN: las entidades del editor web se leen, no se muestran («precaminosa.&#x20;»)', () => {
+        expect(texts('Una inclinación precaminosa.&#x20;\n\nOtra&nbsp;cosa &amp; más.')).toEqual([
+            'Una inclinación precaminosa.',
+            'Otra cosa & más.',
+        ]);
+    });
+
+    it('REGRESIÓN: los escapes de markdown no dejan la barra («\\[...]»)', () => {
+        expect(texts('Como dijo: \\[...] y luego \\*nada\\*.')).toEqual(['Como dijo: [...] y luego *nada*.']);
+        // Escapado sólo al abrir: tampoco es énfasis.
+        expect(texts('Vale \\*5* pesos.')).toEqual(['Vale *5* pesos.']);
+    });
+
+    it('REGRESIÓN: un asterisco solo en su renglón no es un párrafo', () => {
+        expect(texts('Último punto.\n\n*\n\n* * *\n\n***')).toEqual(['Último punto.']);
+    });
+
+    it('una viñeta con asterisco sigue siendo viñeta', () => {
+        expect(buildReadingBlocks('* Primero\n* Segundo').map((b) => [b.kind, b.text])).toEqual([
+            ['listitem', 'Primero'],
+            ['listitem', 'Segundo'],
+        ]);
+    });
+
+    it('las posiciones siguen apuntando al texto original (las marcas no se corren)', () => {
+        const body = 'Uno &#x20;dos. Tres.';
+        const { text, map } = normalizeSectionBody(body);
+        const at = text.indexOf('Tres');
+        expect(body.slice(map[at]!, map[at]! + 4)).toBe('Tres');
+    });
+
+    it('una entidad desconocida se deja como está', () => {
+        expect(decodeMarkdownText('a &foo; b')).toBe('a &foo; b');
     });
 });

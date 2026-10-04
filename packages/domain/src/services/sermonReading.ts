@@ -67,22 +67,60 @@ interface RewriteRule {
     emit: (match: RegExpExecArray) => { text: string; offsetInMatch: number } | null;
 }
 
+/** Entidades HTML que deja el editor web (`&#x20;` es un espacio final). */
+const NAMED_ENTITIES: Record<string, string> = { nbsp: ' ', amp: '&', quot: '"', apos: "'", lt: '<', gt: '>' };
+export function decodeEntity(entity: string): string | null {
+    const named = NAMED_ENTITIES[entity.toLowerCase()];
+    if (named !== undefined) return named;
+    const code = /^#x([0-9a-f]+)$/i.test(entity)
+        ? parseInt(entity.slice(2), 16)
+        : /^#(\d+)$/.test(entity)
+          ? parseInt(entity.slice(1), 10)
+          : NaN;
+    if (!Number.isFinite(code) || code <= 0 || code > 0x10ffff) return null;
+    // Un espacio duro se lee como espacio: en el atril tiene que poder cortar renglón.
+    return code === 0xa0 ? ' ' : String.fromCodePoint(code);
+}
+
+/** Lo que el markdown escapa con barra invertida: se lee el carácter, no la barra. */
+const ESCAPABLE = /\\([\\`*_{}\[\]()#+\-.!>|~])/g;
+
 /**
  * Same set the pulpit reader used to apply as a chain of `.replace()` calls —
  * now offset-preserving. Order matters: links are unwrapped before emphasis
  * so `[**x**](#a)` collapses cleanly.
  */
 const RULES: RewriteRule[] = [
+    // Antes que todo: una entidad puede esconder un carácter que otra regla mira.
+    {
+        re: /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
+        emit: (m) => {
+            const text = decodeEntity(m[1] ?? '');
+            return text === null ? { text: m[0], offsetInMatch: 0 } : { text, offsetInMatch: -1 };
+        },
+    },
     { re: /<br\s*\/?>/gi, emit: () => ({ text: '\n', offsetInMatch: -1 }) },
-    { re: /^---\s*$/gm, emit: () => null },
+    // Separadores sueltos: `---`, `***`, `* * *`, `___`, o un asterisco solo
+    // en su renglón (salía como párrafo «*» al final de una página).
+    { re: /^[ \t]*(?:[*_-][ \t]*)+$/gm, emit: () => null },
     { re: /\{#[^}]+\}/g, emit: () => null },
     { re: /\[([^\]]+)\]\(#[^)]*\)/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
-    { re: /\*\*(.+?)\*\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }) },
+    // Un asterisco escapado (`\\*`) no abre ni cierra énfasis.
+    { re: /(?<!\\)\*\*(.*?[^\\])\*\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }) },
     // El abridor de énfasis no puede ir seguido de espacio: si no, un
     // marcador de lista `* punto` abre énfasis y se come hasta el próximo
     // asterisco, fundiendo dos viñetas en una.
-    { re: /\*(\S(?:.*?\S)?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
+    { re: /(?<!\\)\*(\S(?:.*?[^\s\\])?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
+    // Al final, después del énfasis: `\*` no abre ni cierra nada.
+    { re: ESCAPABLE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
 ];
+
+/** El texto plano de un fragmento de markdown, con entidades y escapes resueltos. */
+export function decodeMarkdownText(text: string): string {
+    return text
+        .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, entity: string) => decodeEntity(entity) ?? whole)
+        .replace(ESCAPABLE, '$1');
+}
 
 function identity(text: string): SourceMappedText {
     const map = new Array<number>(text.length);
