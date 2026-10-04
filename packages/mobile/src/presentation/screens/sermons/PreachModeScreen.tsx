@@ -40,6 +40,7 @@ import { PreachSettingsSheet } from '@/presentation/components/preach/PreachSett
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
 import { usePagination } from '@/presentation/hooks/usePagination';
+import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 
 interface PreachModeScreenProps {
     /** Id inyectado: lo usa la vista previa de dev, que no llega por ruta. */
@@ -81,6 +82,7 @@ export default function PreachModeScreen({
     const budgetOverrides = useReaderSettingsStore((s) => s.budgetOverrides);
     const setBudgetOverride = useReaderSettingsStore((s) => s.setBudgetOverride);
     const tokens = READING_MODES[readingMode];
+    const offline = useConnectivityStore((s) => s.offline);
 
     // El púlpito nunca se apaga a mitad de sermón. En modo atril es
     // incondicional por diseño; en el resto vale mientras dure la pantalla.
@@ -325,6 +327,19 @@ export default function PreachModeScreen({
                     >
                         <MaterialIcons name="close" size={22} color={tokens.textSecondary} />
                     </TouchableOpacity>
+
+                    {/* Sin conexión: el sermón es la copia del maletín. Un
+                        ícono, no un cartel: en el atril sólo tiene que estar
+                        a la vista para quien lo busque. */}
+                    {offline ? (
+                        <View
+                            accessible
+                            accessibilityLabel={t('preach:offline_copy')}
+                            className="flex-row items-center ml-4 mr-auto"
+                        >
+                            <MaterialIcons name="cloud-off" size={18} color={tokens.textSecondary} />
+                        </View>
+                    ) : null}
 
                     <View className="flex-row items-center">
                         {/* El timer vive abajo, en el tablero (P7). Acá queda

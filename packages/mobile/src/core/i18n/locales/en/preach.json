@@ -61,5 +61,6 @@
     "status_bar": "Top strip",
     "instrument_full": "With numbers",
     "instrument_minimal": "Marker only",
-    "instrument_off": "Hidden"
+    "instrument_off": "Hidden",
+    "offline_copy": "Offline: briefcase copy"
 }

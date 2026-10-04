@@ -38,5 +38,10 @@
     "preached_times": "Predicado {{count}} veces",
     "not_preached_yet": "Sin predicar",
     "mark_preached_confirm": "Se registra con la fecha de hoy. Puedes agregar lugar y notas al salir del púlpito.",
-    "mark_preached_again": "Ya está marcado como predicado. ¿Registrar otra predicación?"
+    "mark_preached_again": "Ya está marcado como predicado. ¿Registrar otra predicación?",
+    "offline_notice": "Sin conexión: estás viendo lo guardado en esta tablet.",
+    "offline_saved_on": "Guardado sin conexión el {{date}}.",
+    "offline_update": "Actualizar copia",
+    "offline_remove": "Quitar del maletín",
+    "offline_ready_badge": "Listo sin conexión"
 }

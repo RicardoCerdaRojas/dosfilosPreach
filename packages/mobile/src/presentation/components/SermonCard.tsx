@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useAppTheme } from '@/core/theme/appTheme';
 import { SermonSummary } from '@/domain/models/sermon.model';
+import { useBriefcaseIds } from '@/presentation/hooks/useSermonBriefcase';
 
 interface SermonCardProps {
     sermon: SermonSummary;
@@ -30,6 +31,8 @@ export const SermonCard: React.FC<SermonCardProps> = ({ sermon, active, onPress 
     const router = useRouter();
     const theme = useAppTheme();
     const { t, i18n } = useTranslation();
+    const { data: saved } = useBriefcaseIds();
+    const offlineReady = saved?.has(sermon.id) ?? false;
 
     const formattedDate = sermon.publishedAt
         ? sermon.publishedAt.toLocaleDateString(i18n.language, {
@@ -71,6 +74,17 @@ export const SermonCard: React.FC<SermonCardProps> = ({ sermon, active, onPress 
             </Text>
 
             <View className="flex-row items-center mt-2">
+                {/* Listo sin conexión: el estado que se busca antes de salir
+                    para la iglesia. Antes sólo se veía entrando al sermón. */}
+                {offlineReady ? (
+                    <View
+                        className="flex-row items-center mr-3"
+                        accessible
+                        accessibilityLabel={t('sermons:offline_ready_badge')}
+                    >
+                        <MaterialIcons name="offline-pin" size={13} color={theme.positive} />
+                    </View>
+                ) : null}
                 {/* Predicado o no: es el estado que el pastor consulta para
                     saber qué le queda por delante, y no estaba en ningún lado. */}
                 {sermon.timesPreached > 0 ? (

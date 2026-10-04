@@ -61,5 +61,6 @@
     "status_bar": "Franja de arriba",
     "instrument_full": "Con números",
     "instrument_minimal": "Sólo la marca",
-    "instrument_off": "Oculto"
+    "instrument_off": "Oculto",
+    "offline_copy": "Sin conexión: copia del maletín"
 }

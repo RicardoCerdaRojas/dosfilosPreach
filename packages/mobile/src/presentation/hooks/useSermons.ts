@@ -4,8 +4,22 @@ import { Sermon, SermonListGroup, SermonSummary } from '@/domain/models/sermon.m
 import type { PreachingLog } from '@dosfilos/domain';
 import { SermonRepositoryImpl } from '@/data/repositories/sermon.repository.impl';
 import { PREVIEW_SERMON, PREVIEW_SERMON_ID } from '@/core/dev/previewSermon';
+import {
+    LIST_DEADLINE_MS,
+    SERMON_DEADLINE_MS,
+    listBriefcase,
+    loadPublishedList,
+    loadSermon,
+    readBriefcase,
+    readListSnapshot,
+    writeBriefcase,
+    writeListSnapshot,
+} from '@/data/offline/offlineSermons';
+import { useAuthStore } from '@/presentation/state/auth.store';
+import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 
 const repository = new SermonRepositoryImpl();
+const setOffline = (offline: boolean) => useConnectivityStore.getState().setOffline(offline);
 
 const newestFirst = (a: SermonSummary, b: SermonSummary) =>
     (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0);
@@ -18,7 +32,17 @@ export const usePublishedSermons = () => {
     return useQuery({
         queryKey: ['sermons', 'published-groups'],
         queryFn: async (): Promise<SermonListGroup[]> => {
-            const all = await repository.getPublishedSummaries();
+            // Sin red, la última lista vista más lo guardado en el maletín
+            // (A1): el inicio ya no dice «no tienes sermones» por falta de WiFi.
+            const uid = useAuthStore.getState().user?.id ?? '';
+            const { summaries: all, origin } = await loadPublishedList({
+                fetchLive: () => repository.getPublishedSummaries(),
+                readSnapshot: () => readListSnapshot(uid),
+                writeSnapshot: (list) => writeListSnapshot(uid, list),
+                listBriefcase: () => listBriefcase(uid),
+                deadlineMs: LIST_DEADLINE_MS,
+            });
+            setOffline(origin !== 'live');
             // Publicar varias veces crea copias, enlazadas por uno de dos
             // campos: `versionOf` lo pone "crear versión" y `sourceSermonId`
             // lo pone PUBLICAR, que copia el borrador. Acá se miraba sólo el
@@ -72,7 +96,18 @@ export const useSermon = (id: string) => {
     const isPreview = __DEV__ && id === PREVIEW_SERMON_ID;
     return useQuery({
         queryKey: ['sermon', id],
-        queryFn: () => (isPreview ? PREVIEW_SERMON : repository.getSermonById(id)),
+        queryFn: async () => {
+            if (isPreview) return PREVIEW_SERMON;
+            // De la red con plazo; si no contesta, la copia del maletín (A1).
+            const { sermon, origin } = await loadSermon(id, {
+                fetchLive: (sid) => repository.getSermonById(sid),
+                read: readBriefcase,
+                write: writeBriefcase,
+                deadlineMs: SERMON_DEADLINE_MS,
+            });
+            setOffline(origin !== 'live');
+            return sermon;
+        },
         enabled: !!id,
     });
 };

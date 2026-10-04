@@ -11,7 +11,8 @@ import { STUDY_COLUMN, useLayout } from '@/core/theme/layout';
 import { READING_MODES } from '@/core/theme/readingModes';
 import { extractSectionsWithBody } from '@/core/utils/sermonSections';
 import { useAddPreachingLog, useSermon } from '@/presentation/hooks/useSermons';
-import { useBriefcase, usePrepareBriefcase } from '@/presentation/hooks/useSermonBriefcase';
+import { useBriefcase, usePrepareBriefcase, useRemoveBriefcase } from '@/presentation/hooks/useSermonBriefcase';
+import { OfflineNotice } from '@/presentation/components/OfflineNotice';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
 import { Chip, EmptyState, SectionLabel, Skeleton } from '@/presentation/components/ui/kit';
@@ -52,6 +53,7 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
     const fontSize = useReaderSettingsStore((s) => s.deliveryFontSize);
     const { data: briefcase } = useBriefcase(sermonId);
     const prepare = usePrepareBriefcase(sermonId);
+    const removeSaved = useRemoveBriefcase(sermonId);
     const addLog = useAddPreachingLog(sermonId);
     const [showBible, setShowBible] = useState(false);
 
@@ -155,6 +157,9 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                 }}
             >
                 <View style={{ width: '100%', maxWidth: STUDY_COLUMN, alignSelf: 'center' }}>
+                    <View style={{ marginTop: 16 }}>
+                        <OfflineNotice />
+                    </View>
                     {sermon.bibleReferences.length > 0 ? (
                         <Text
                             style={{
@@ -247,8 +252,31 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                             garantizado antes de subir al púlpito; no tiene que
                             confiar en que la caché "probablemente" lo tenga. */}
                         <TouchableOpacity
-                            onPress={() => prepare.mutate()}
-                            disabled={prepare.isPending || !!briefcase}
+                            onPress={() => {
+                                if (!briefcase) {
+                                    prepare.mutate();
+                                    return;
+                                }
+                                // Ya guardado: se renueva o se quita. Antes el
+                                // chip quedaba deshabilitado para siempre y la
+                                // copia no se podía poner al día.
+                                const date = new Date(briefcase.savedAt).toLocaleString(i18n.language, {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                });
+                                Alert.alert(
+                                    t('sermons:ready_offline'),
+                                    t('sermons:offline_saved_on', { date }),
+                                    [
+                                        { text: t('common:cancel'), style: 'cancel' },
+                                        { text: t('sermons:offline_remove'), style: 'destructive', onPress: () => removeSaved.mutate() },
+                                        { text: t('sermons:offline_update'), onPress: () => prepare.mutate() },
+                                    ],
+                                );
+                            }}
+                            disabled={prepare.isPending}
                             accessibilityRole="button"
                             accessibilityLabel={t(
                                 briefcase ? 'sermons:ready_offline' : 'sermons:prepare_offline',

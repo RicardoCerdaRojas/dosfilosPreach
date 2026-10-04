@@ -14,6 +14,7 @@ import { useReaderSettingsStore } from '@/presentation/state/readerSettings.stor
 import { usePublishedSermons, useSermon } from '@/presentation/hooks/useSermons';
 import { usePlanBoard, type PlanBoard } from '@/presentation/hooks/usePlanBoard';
 import { useBriefcase } from '@/presentation/hooks/useSermonBriefcase';
+import { OfflineNotice } from '@/presentation/components/OfflineNotice';
 import { useBibleMarks } from '@/presentation/hooks/useBibleMarks';
 import { BibleVersionFactory } from '@/data/repositories/bible/BibleVersionFactory';
 import { SermonCard } from '@/presentation/components/SermonCard';
@@ -104,6 +105,8 @@ export default function HomeScreen() {
                     {/* En tablet el perfil vive al pie del rail; acá sobra. */}
                     {isTablet ? null : <UserAvatar />}
                 </View>
+
+                <OfflineNotice />
 
                 {isLoading ? (
                     <Card theme={theme} style={{ padding: 24 }}>
