@@ -83,5 +83,7 @@
     "end_time_later": "5 minutos más tarde",
     "end_time_earlier": "5 minutos más temprano",
     "view_outline": "Ver el bosquejo",
-    "view_manuscript": "Ver el manuscrito"
+    "view_manuscript": "Ver el manuscrito",
+    "brightness": "Brillo del atril",
+    "brightness_system": "El del sistema"
 }

@@ -83,5 +83,7 @@
     "end_time_later": "5 minutes later",
     "end_time_earlier": "5 minutes earlier",
     "view_outline": "Show the outline",
-    "view_manuscript": "Show the manuscript"
+    "view_manuscript": "Show the manuscript",
+    "brightness": "Lectern brightness",
+    "brightness_system": "System"
 }

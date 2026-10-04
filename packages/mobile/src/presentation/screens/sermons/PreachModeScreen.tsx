@@ -46,6 +46,7 @@ import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultS
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
 import { usePagination } from '@/presentation/hooks/usePagination';
 import { usePreachClock } from '@/presentation/hooks/usePreachClock';
+import { usePreachBrightness } from '@/presentation/hooks/usePreachBrightness';
 import { PreachReadingPage } from '@/presentation/components/preach/PreachReadingPage';
 import { PreachOutline } from '@/presentation/components/preach/PreachOutline';
 import { readingPassageFor, verseTextFor } from '@/data/repositories/bible/BibleVersionFactory';
@@ -169,6 +170,9 @@ export default function PreachModeScreen({
     const outlineOn = useReaderSettingsStore((s) => s.outlineView);
     const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
     const outline = outlineOn && section ? buildOutline(section.body) : [];
+    const preachBrightness = useReaderSettingsStore((s) => s.preachBrightness);
+    const setPreachBrightness = useReaderSettingsStore((s) => s.setPreachBrightness);
+    usePreachBrightness(preachBrightness);
 
     // La caja de medida abarca TODO lo que se lee — título, título de
     // movimiento, cuerpo y atribuciones. Cuando sólo la usaba el cuerpo, los
@@ -909,6 +913,8 @@ export default function PreachModeScreen({
                 setHangingIndent={setHangingIndent}
                 readingPage={readingPageOn}
                 setReadingPage={setReadingPageOn}
+                brightness={preachBrightness}
+                setBrightness={setPreachBrightness}
                 targetMinutes={targetMinutes}
                 // Cambiar la duración ya no pone el reloj en cero (A4).
                 onPickDuration={(min) => id && setTargetMinutes(id, min)}

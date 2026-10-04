@@ -154,6 +154,9 @@ interface ReaderSettingsState {
      */
     outlineView: boolean;
     setOutlineView: (on: boolean) => void;
+    /** Brillo propio del atril (C7), de 0 a 1; `null` deja el del sistema. */
+    preachBrightness: number | null;
+    setPreachBrightness: (level: number | null) => void;
     /** Dónde predicó la última vez: casi siempre es el mismo lugar (A5). */
     lastPreachingPlace: string;
     setLastPreachingPlace: (place: string) => void;
@@ -236,6 +239,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
             setReadingPage: (on: boolean) => set({ readingPage: on }),
             outlineView: false,
             setOutlineView: (on: boolean) => set({ outlineView: on }),
+            preachBrightness: null,
+            setPreachBrightness: (level: number | null) => set({ preachBrightness: level }),
             lastPreachingPlace: '',
             setLastPreachingPlace: (place: string) => set({ lastPreachingPlace: place }),
             targetMinutesBySermon: {},

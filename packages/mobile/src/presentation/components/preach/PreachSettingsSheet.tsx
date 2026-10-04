@@ -38,6 +38,9 @@ interface Props {
     hangingIndent: boolean;
     readingPage: boolean;
     setReadingPage: (on: boolean) => void;
+    /** Brillo propio del atril (C7); `null` es el del sistema. */
+    brightness: number | null;
+    setBrightness: (level: number | null) => void;
     setHangingIndent: (on: boolean) => void;
     targetMinutes: number;
     onPickDuration: (minutes: number) => void;
@@ -66,6 +69,9 @@ const INSTRUMENT_MODES = [
     { value: 'minimal' as const, key: 'preach:instrument_minimal' },
     { value: 'off' as const, key: 'preach:instrument_off' },
 ];
+
+/** Brillos del atril: el del sistema o uno fijo. */
+const BRIGHTNESS_LEVELS = [null, 0.3, 0.55, 0.8, 1] as const;
 
 /** Tres alturas de tablero. La chica alcanza para el reloj y el riel. */
 const PANEL_SIZES = [
@@ -97,6 +103,8 @@ export function PreachSettingsSheet({
     hangingIndent,
     readingPage,
     setReadingPage,
+    brightness,
+    setBrightness,
     setHangingIndent,
     targetMinutes,
     onPickDuration,
@@ -292,6 +300,40 @@ export function PreachSettingsSheet({
                                 </Text>
                             </TouchableOpacity>
                         ))}
+                    </View>
+
+                    {/* Brillo del atril (C7): el púlpito tiene su luz. */}
+                    <Text
+                        style={{ color: tokens.textSecondary }}
+                        className="font-lexend-semibold text-xs uppercase tracking-widest mb-2"
+                    >
+                        {t('preach:brightness')}
+                    </Text>
+                    <View className="flex-row flex-wrap mb-5">
+                        {BRIGHTNESS_LEVELS.map((level) => {
+                            const selected = level === brightness;
+                            return (
+                                <TouchableOpacity
+                                    key={String(level)}
+                                    onPress={() => setBrightness(level)}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected }}
+                                    className="px-4 py-2 rounded-full mr-2 mb-2"
+                                    style={{
+                                        backgroundColor: selected ? tokens.accent : 'transparent',
+                                        borderWidth: 1,
+                                        borderColor: selected ? tokens.accent : tokens.border,
+                                    }}
+                                >
+                                    <Text
+                                        style={{ color: selected ? tokens.background : tokens.textPrimary }}
+                                        className="font-lexend text-sm"
+                                    >
+                                        {level === null ? t('preach:brightness_system') : `${Math.round(level * 100)} %`}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
 
                     {/* Página de Lectura (C7): el pasaje antes del sermón. */}
