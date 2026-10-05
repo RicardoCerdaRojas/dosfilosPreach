@@ -109,5 +109,8 @@
     "ink_green": "Green",
     "ink_yellow": "Yellow",
     "collapse_quotes": "Collapsed quotes",
-    "collapse_quotes_hint": "Block quotes shrink to one line and open with a tap. Off, they read in full on the page."
+    "collapse_quotes_hint": "Block quotes shrink to one line and open with a tap. Off, they read in full on the page.",
+    "continuous_reading": "Continuous document",
+    "continuous_reading_hint": "The whole sermon as one document: swipe to move on, and tapping a side scrolls almost a screen. Off, you move page by page.",
+    "ink_clear_screen": "What is on screen"
 }

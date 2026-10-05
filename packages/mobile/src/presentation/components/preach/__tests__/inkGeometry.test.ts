@@ -4,7 +4,7 @@ import { toNoteSpace } from '@dosfilos/domain';
 
 import { READING_MODES } from '@/core/theme/readingModes';
 
-import { inkColorFor, inkSignature, inkTouchMode, nearestStroke, noteWithStroke, showsBridge, touchWrites, withStrokeRestored, withoutStroke } from '../inkGeometry';
+import { fingerNavigates, inkColorFor, inkSignature, inkTouchMode, nearestStroke, noteWithStroke, showsBridge, touchWrites, withStrokeRestored, withoutStroke } from '../inkGeometry';
 
 const RECT = { x: 100, y: 200, height: 40 };
 const BODY = 28;
@@ -117,5 +117,19 @@ describe('colores de la tinta', () => {
 
     it('en tinta electrónica todo es negro', () => {
         expect(inkColorFor('yellow', READING_MODES.eink, true)).toBe(READING_MODES.eink.textPrimary);
+    });
+});
+
+describe('un dedo sobre la tinta en el sermón continuo', () => {
+    it('apenas movido en vertical, es un toque: navega', () => {
+        expect(fingerNavigates(3, 1)).toBe(true);
+    });
+
+    it('desplazando, no navega', () => {
+        expect(fingerNavigates(40, 1)).toBe(false);
+    });
+
+    it('con la palma apoyada (dos toques), nunca navega', () => {
+        expect(fingerNavigates(0, 2)).toBe(false);
     });
 });

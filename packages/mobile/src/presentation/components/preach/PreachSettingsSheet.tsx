@@ -43,6 +43,9 @@ interface Props {
     setReadingFocus: (on: boolean) => void;
     /** Citas plegadas a un renglón (opción; por defecto completas). */
     collapseQuotes: boolean;
+    /** El sermón como documento continuo, en vez de páginas. */
+    continuousReading: boolean;
+    setContinuousReading: (on: boolean) => void;
     setCollapseQuotes: (on: boolean) => void;
     /** Brillo propio del atril (C7); `null` es el del sistema. */
     brightness: number | null;
@@ -112,6 +115,8 @@ export function PreachSettingsSheet({
     readingFocus,
     setReadingFocus,
     collapseQuotes,
+    continuousReading,
+    setContinuousReading,
     setCollapseQuotes,
     brightness,
     setBrightness,
@@ -398,6 +403,16 @@ export function PreachSettingsSheet({
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    {/* Cómo se avanza: por páginas (el texto no se mueve) o
+                        deslizando un documento continuo. */}
+                    <OnOffSetting
+                        tokens={tokens}
+                        title={t('preach:continuous_reading')}
+                        hint={t('preach:continuous_reading_hint')}
+                        value={continuousReading}
+                        onChange={setContinuousReading}
+                    />
 
                     {/* Foco de lectura (L-3): volver del público al lugar exacto. */}
                     <OnOffSetting

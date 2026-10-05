@@ -122,6 +122,19 @@ export function inkTouchMode(touches: number, isStylus: boolean, pencilOnly: boo
     return touchWrites(isStylus, pencilOnly) ? 'draw' : 'scroll';
 }
 
+/** Cuánto puede moverse en vertical un dedo para que cuente como toque y no como desplazamiento. */
+export const TAP_SLOP = 12;
+
+/**
+ * Con el lápiz activo sobre un texto que se desplaza (el sermón continuo,
+ * «sólo Apple Pencil»), el dedo desplaza. Pero si apenas se movió en
+ * vertical era un TOQUE (o un deslizamiento de lado): navega, como sobre el
+ * texto. Con más de un dedo nunca: la palma no pasa página.
+ */
+export function fingerNavigates(maxVerticalTravel: number, touches: number): boolean {
+    return touches === 1 && maxVerticalTravel < TAP_SLOP;
+}
+
 /**
  * El color de pantalla de una tinta, en el modo de luz vigente. Uno solo para
  * la capa y para la barra: si no, el punto de la barra y el trazo podían no

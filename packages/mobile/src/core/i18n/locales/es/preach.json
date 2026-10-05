@@ -109,5 +109,8 @@
     "ink_green": "Verde",
     "ink_yellow": "Amarillo",
     "collapse_quotes": "Citas plegadas",
-    "collapse_quotes_hint": "Las citas en bloque se reducen a un renglón y se leen tocándolas. Apagado, se leen completas en la página."
+    "collapse_quotes_hint": "Las citas en bloque se reducen a un renglón y se leen tocándolas. Apagado, se leen completas en la página.",
+    "continuous_reading": "Documento continuo",
+    "continuous_reading_hint": "El sermón entero en un solo documento: se avanza deslizando el dedo, y tocar un costado baja casi una pantalla. Apagado, se avanza por páginas.",
+    "ink_clear_screen": "Lo que está en pantalla"
 }

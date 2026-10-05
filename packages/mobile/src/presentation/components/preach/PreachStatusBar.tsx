@@ -15,6 +15,8 @@ interface Props {
     readingIndex: number;
     pageIndex: number;
     pageCount: number;
+    /** Muestra «página / total». En el documento continuo no hay páginas que contar. */
+    showPages?: boolean;
     /** Cronómetro detenido: el reloj se muestra apagado, no en blanco. */
     running: boolean;
     /**
@@ -66,6 +68,7 @@ export function PreachStatusBar({
     readingIndex,
     pageIndex,
     pageCount,
+    showPages = true,
     running,
     numbers,
     endAt = null,
@@ -147,7 +150,7 @@ export function PreachStatusBar({
                     }}
                     className="font-lexend"
                 >
-                    {pageIndex + 1}/{pageCount}
+                    {showPages ? `${pageIndex + 1}/${pageCount}` : null}
                 </Text>
             </View>
             ) : null}

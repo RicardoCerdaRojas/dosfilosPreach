@@ -12,7 +12,7 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const noop = () => undefined;
 
-function render(onClose: () => void = noop) {
+function render(onClose: () => void = noop, setContinuousReading: (on: boolean) => void = noop) {
     let r!: ReactTestRenderer;
     act(() => {
         r = create(
@@ -43,6 +43,8 @@ function render(onClose: () => void = noop) {
                 readingFocus={false}
                 setReadingFocus={noop}
                 collapseQuotes={false}
+                continuousReading={false}
+                setContinuousReading={setContinuousReading}
                 setCollapseQuotes={noop}
                 brightness={null}
                 setBrightness={noop}
@@ -84,6 +86,14 @@ describe('el cajón de ajustes del atril', () => {
         const r = render();
         const scroll = r.root.findByProps({ testID: 'settings-scroll' });
         expect(scroll.findAll((n) => n.props.children === 'preach:collapse_quotes').length).toBeGreaterThan(0);
+    });
+
+    it('el documento continuo se enciende desde el cajón', () => {
+        const set = jest.fn();
+        const r = render(noop, set);
+        const on = r.root.findByProps({ accessibilityLabel: 'preach:continuous_reading: common:on' });
+        act(() => on.props.onPress());
+        expect(set).toHaveBeenCalledWith(true);
     });
 
     it('tocar fuera del cajón lo cierra', () => {

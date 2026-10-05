@@ -14,6 +14,23 @@ const repository = new AnnotationRepositoryImpl();
 /** Grosor del lápiz: fino o grueso (el resaltador tiene el suyo). */
 export type PenWidth = 'fine' | 'bold';
 
+/** Un movimiento que está a la vista, con dónde empieza cada oración suya. */
+export interface InkSection {
+    section: SermonSection;
+    sentenceStarts: readonly number[];
+}
+
+/**
+ * La posición de una oración: movimiento y comienzo. Con el sermón continuo
+ * hay varios movimientos a la vista, y casi todos empiezan en la posición 0.
+ */
+export type InkAnchorKey = string;
+export const inkAnchorKey = (slug: string, offset: number): InkAnchorKey => `${slug}|${offset}`;
+const parseAnchorKey = (key: InkAnchorKey) => {
+    const cut = key.lastIndexOf('|');
+    return { slug: key.slice(0, cut), offset: Number(key.slice(cut + 1)) };
+};
+
 /**
  * La oración que contiene una posición del cuerpo: el comienzo de oración más
  * cercano por detrás. Si una oración empieza uno o dos caracteres DESPUÉS
@@ -43,7 +60,11 @@ export function sentenceContaining(starts: readonly number[], at: number): numbe
  */
 export function useInkNotes(
     sermonId: string,
-    section: SermonSection | undefined,
+    /**
+     * Los movimientos a la vista: el de la página, o todos en el sermón
+     * continuo. Cada nota se resuelve contra el SUYO.
+     */
+    sections: readonly InkSection[],
     /**
      * Firma del layout vigente (cuerpo, sangría, colometría, página…). Las
      * posiciones se guardan bajo ESTA clave en vez de vaciarse al cambiar: si
@@ -52,11 +73,14 @@ export function useInkNotes(
      * párrafos de arriba, así que nadie re-reportaba y la tinta desaparecía.
      */
     layoutKey: string,
-    /** Dónde empieza cada oración del movimiento, para ubicar notas en la suya. */
-    sentenceStarts: readonly number[] = [],
+    /**
+     * De qué es el historial (deshacer, rehacer): el movimiento en páginas,
+     * el sermón entero en continuo. Al cambiar, empieza vacío.
+     */
+    historyScope: string,
 ) {
     const queryClient = useQueryClient();
-    const history = useInkHistory(section?.slug ?? '');
+    const history = useInkHistory(historyScope);
     const key = ['ink', sermonId];
     const [penActive, setPenActive] = useState(false);
     const [penColor, setPenColor] = useState<InkColor>('ink');
@@ -64,8 +88,8 @@ export function useInkNotes(
     const [width, setWidth] = useState<PenWidth>('fine');
     const [eraser, setEraser] = useState(false);
 
-    /** layoutKey → (comienzo de oración → rectángulo en pantalla). */
-    const blockRects = useRef<Map<string, Map<number, AnchorRect>>>(new Map());
+    /** layoutKey → (movimiento|comienzo de oración → rectángulo en pantalla). */
+    const blockRects = useRef<Map<string, Map<InkAnchorKey, AnchorRect>>>(new Map());
     /**
      * Nota abierta por ancla —`movimiento|posición`—, para que trazos seguidos
      * no creen documentos sueltos. Era sólo la posición, y casi todos los
@@ -73,7 +97,8 @@ export function useInkNotes(
      * agregaba a la nota del primero (revisión adversarial).
      */
     const noteByAnchor = useRef<Map<string, string>>(new Map());
-    const anchorKey = (slug: string, offset: number) => `${slug}|${offset}`;
+    const anchorKey = inkAnchorKey;
+    const sectionOf = (slug: string) => sections.find((s) => s.section.slug === slug);
 
     const { data: notes } = useQuery({
         queryKey: key,
@@ -82,7 +107,7 @@ export function useInkNotes(
         staleTime: Infinity,
     });
 
-    const sectionNotes = section ? (notes ?? []).filter((n) => n.sectionSlug === section.slug) : [];
+    const sectionNotes = (notes ?? []).filter((n) => sections.some((s) => s.section.slug === n.sectionSlug));
     const current = () => queryClient.getQueryData<InkNote[]>(key) ?? [];
     const write = (update: (list: InkNote[]) => InkNote[]) =>
         queryClient.setQueryData<InkNote[]>(key, (list) => update(list ?? []));
@@ -96,14 +121,18 @@ export function useInkNotes(
         return map;
     };
 
-    const rememberBlock = (offset: number, rect: AnchorRect) => {
-        rectsForLayout().set(offset, rect);
+    const rememberBlock = (slug: string, offset: number, rect: AnchorRect) => {
+        rectsForLayout().set(anchorKey(slug, offset), rect);
     };
+
+    /** Dónde está ahora una oración (en el layout vigente), si ya se midió. */
+    const rectFor = (slug: string, offset: number): AnchorRect | null =>
+        rectsForLayout().get(anchorKey(slug, offset)) ?? null;
 
     /** Oración más cercana a un punto de pantalla, para anclar un trazo nuevo. */
     const anchorAt = (screenX: number, screenY: number) => {
-        if (!section) return null;
-        let bestOffset: number | null = null;
+        if (!sections.length) return null;
+        let bestOffset: InkAnchorKey | null = null;
         let bestRect: AnchorRect | null = null;
         let bestDistance = Number.POSITIVE_INFINITY;
         for (const [offset, rect] of rectsForLayout().entries()) {
@@ -125,26 +154,29 @@ export function useInkNotes(
     // sermón, que es lo que efectivamente guarda este hook.
     const anchorRectFor = (drawable: { id: string }): AnchorRect | null => {
         const note = sectionNotes.find((n) => n.id === drawable.id);
-        if (!note || !section) return null;
+        const own = note ? sectionOf(note.sectionSlug) : undefined;
+        if (!note || !own) return null;
         // El ancla se re-resuelve contra el texto ACTUAL: si el sermón se editó
         // en la web, la nota sigue encontrando su pasaje.
-        const at = resolveAnnotationAnchor(note, section.body);
+        const at = resolveAnnotationAnchor(note, own.section.body);
         if (!at) return null;
         // Sólo las posiciones de ESTE layout: las de otros quedan guardadas
         // aparte y no pueden dibujar tinta de una página sobre otra. La nota
         // va con la ORACIÓN que contiene su ancla: así las viejas, ancladas al
         // comienzo del párrafo, siguen en su lugar.
         const rects = rectsForLayout();
-        const exact = rects.get(at.start);
+        const slug = own.section.slug;
+        const exact = rects.get(anchorKey(slug, at.start));
         if (exact) return exact;
-        const sentence = sentenceContaining(sentenceStarts, at.start);
-        return sentence === null ? null : (rects.get(sentence) ?? null);
+        const sentence = sentenceContaining(own.sentenceStarts, at.start);
+        return sentence === null ? null : (rects.get(anchorKey(slug, sentence)) ?? null);
     };
 
-    const anchorFor = (offset: number) =>
-        section
-            ? buildAnnotationAnchor(section.slug, section.body, offset, Math.min(offset + 24, section.body.length))
-            : null;
+    const anchorFor = (key: InkAnchorKey) => {
+        const { slug, offset } = parseAnchorKey(key);
+        const own = sectionOf(slug)?.section;
+        return own ? buildAnnotationAnchor(own.slug, own.body, offset, Math.min(offset + 24, own.body.length)) : null;
+    };
 
     /** Agrega un trazo a la nota de su ancla (o crea la nota). Sin historial. */
     const appendStroke = (anchor: SermonAnnotationAnchor, stroke: InkStroke) => {
@@ -223,10 +255,10 @@ export function useInkNotes(
         });
     };
 
-    const addStroke = (offset: number, stroke: InkStroke) => {
+    const addStroke = (key: InkAnchorKey, stroke: InkStroke) => {
         // El ancla se arma AHORA, con el movimiento de ahora: rehacer más
         // tarde la usa tal cual.
-        const anchor = anchorFor(offset);
+        const anchor = anchorFor(key);
         if (!anchor) return;
         appendStroke(anchor, stroke);
         history.record({ undo: () => removeStroke(stroke), redo: () => appendStroke(anchor, stroke) });
@@ -274,6 +306,7 @@ export function useInkNotes(
         canUndo: history.canUndo,
         canRedo: history.canRedo,
         rememberBlock,
+        rectFor,
         anchorAt,
         anchorRectFor,
         addStroke,

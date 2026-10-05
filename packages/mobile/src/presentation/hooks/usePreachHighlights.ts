@@ -29,57 +29,65 @@ export function firstWordOf(body: string, range: SelectionRange): SelectionRange
 
 export function usePreachHighlights(
     sermonId: string,
-    section: SermonSection | undefined,
+    /**
+     * Los movimientos a la vista: el de la página, o todos en el sermón
+     * continuo. Cada marca se resuelve contra el SUYO.
+     */
+    sections: readonly SermonSection[],
     hapticsEnabled: boolean,
 ) {
-    /** Lo que el dedo está seleccionando ahora mismo. */
-    const [selection, setSelection] = useState<SelectionRange | null>(null);
+    /** Lo que el dedo está seleccionando ahora mismo, y en qué movimiento. */
+    const [selection, setSelection] = useState<{ slug: string; range: SelectionRange } | null>(null);
     /** Selección confirmada, con la Y donde soltó, para colocar el popover. */
-    const [pending, setPending] = useState<{ range: SelectionRange; y: number } | null>(null);
+    const [pending, setPending] = useState<{ slug: string; range: SelectionRange; y: number } | null>(null);
 
     const { data: annotations } = useAnnotations(sermonId);
     const { create, recolor, remove } = useHighlightMutations(sermonId);
     const { data: glyphMarks } = useGlyphs(sermonId);
     const glyphMutations = useGlyphMutations(sermonId);
 
+    const sectionOf = (slug: string) => sections.find((s) => s.slug === slug);
+
     // Las marcas se reanclan contra el cuerpo CRUDO de la sección: el sermón
     // pudo editarse en la web después de que se hicieron, y una que ya no
     // encuentra su texto se oculta sin borrarse (la marca es del pastor).
-    const highlights: ResolvedHighlight[] = section
-        ? (annotations ?? [])
-              .filter((a) => a.sectionSlug === section.slug)
-              .map((a) => {
-                  const at = resolveAnnotationAnchor(a, section.body);
-                  return at
-                      ? {
-                            id: a.id,
-                            color: a.color,
-                            style: a.style ?? 'highlight',
-                            start: at.start,
-                            end: at.end,
-                        }
-                      : null;
-              })
-              .filter((h): h is ResolvedHighlight => h !== null)
-        : [];
+    const highlightsFor = (slug: string): ResolvedHighlight[] => {
+        const section = sectionOf(slug);
+        if (!section) return [];
+        return (annotations ?? [])
+            .filter((a) => a.sectionSlug === slug)
+            .map((a) => {
+                const at = resolveAnnotationAnchor(a, section.body);
+                return at
+                    ? {
+                          id: a.id,
+                          color: a.color,
+                          style: a.style ?? 'highlight',
+                          start: at.start,
+                          end: at.end,
+                      }
+                    : null;
+            })
+            .filter((h): h is ResolvedHighlight => h !== null);
+    };
 
     // Marcas de predicador (C7): se reanclan igual que los resaltados.
-    const glyphs: ResolvedGlyph[] = section
-        ? (glyphMarks ?? [])
-              .filter((g) => g.sectionSlug === section.slug)
-              .map((g) => {
-                  const at = resolveAnnotationAnchor(g, section.body);
-                  return at ? { id: g.id, glyph: g.glyph, start: at.start } : null;
-              })
-              .filter((g): g is ResolvedGlyph => g !== null)
-        : [];
+    const glyphsFor = (slug: string): ResolvedGlyph[] => {
+        const section = sectionOf(slug);
+        if (!section) return [];
+        return (glyphMarks ?? [])
+            .filter((g) => g.sectionSlug === slug)
+            .map((g) => {
+                const at = resolveAnnotationAnchor(g, section.body);
+                return at ? { id: g.id, glyph: g.glyph, start: at.start } : null;
+            })
+            .filter((g): g is ResolvedGlyph => g !== null);
+    };
 
-    /** Marca que cubre a la vez el punto dado. Para pintar palabra por palabra. */
-    const markAt = (sourceStart: number): ResolvedHighlight | null =>
-        highlights.find((h) => sourceStart >= h.start && sourceStart < h.end) ?? null;
-
+    const pendingSection = pending ? sectionOf(pending.slug) : undefined;
+    const pendingHighlights = pending ? highlightsFor(pending.slug) : [];
     const pendingMark = pending
-        ? (highlights.find(
+        ? (pendingHighlights.find(
               (h) =>
                   Math.min(h.end, pending.range.end) - Math.max(h.start, pending.range.start) > 0,
           ) ?? null)
@@ -90,41 +98,41 @@ export function usePreachHighlights(
     // selección lo hacía desaparecer (revisión adversarial de C7). El que ya
     // esté en esa palabra se cambia o se quita; uno en otra palabra de la
     // selección no se toca.
-    const firstWord = pending && section ? firstWordOf(section.body, pending.range) : null;
-    const pendingGlyph = firstWord
-        ? (glyphs.find((g) => g.start >= firstWord.start && g.start < firstWord.end) ?? null)
+    const firstWord = pending && pendingSection ? firstWordOf(pendingSection.body, pending.range) : null;
+    const pendingGlyph = firstWord && pending
+        ? (glyphsFor(pending.slug).find((g) => g.start >= firstWord.start && g.start < firstWord.end) ?? null)
         : null;
 
     const applyGlyph = (glyph: PreacherGlyph) => {
-        if (!section || !pending) return;
+        if (!pendingSection || !pending) return;
         const action = glyphAction(pendingGlyph?.glyph ?? null, glyph);
         if (action === 'remove' && pendingGlyph) glyphMutations.remove.mutate(pendingGlyph.id);
         else if (action === 'update' && pendingGlyph) glyphMutations.change.mutate({ id: pendingGlyph.id, glyph });
         else if (action === 'create' && firstWord) {
             glyphMutations.create.mutate({
-                anchor: buildAnnotationAnchor(section.slug, section.body, firstWord.start, firstWord.end),
+                anchor: buildAnnotationAnchor(pendingSection.slug, pendingSection.body, firstWord.start, firstWord.end),
                 glyph,
             });
         }
         close();
     };
 
-    const beginSelection = (range: SelectionRange | null) => {
+    const beginSelection = (slug: string, range: SelectionRange | null) => {
         // El pulso confirma que el texto quedó agarrado: en el púlpito nadie
         // se queda mirando si la selección prendió. En e-ink no hay motor.
         if (range && !selection && hapticsEnabled) {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        setSelection(range);
+        setSelection(range ? { slug, range } : null);
     };
 
-    const endSelection = (range: SelectionRange, y: number) => {
-        setSelection(range);
-        setPending({ range, y });
+    const endSelection = (slug: string, range: SelectionRange, y: number) => {
+        setSelection({ slug, range });
+        setPending({ slug, range, y });
     };
 
     const applyMark = (color: HighlightColor, style: MarkStyle) => {
-        if (!section || !pending) return;
+        if (!pendingSection || !pending) return;
         if (pendingMark) {
             if (pendingMark.color !== color || pendingMark.style !== style) {
                 recolor.mutate({ id: pendingMark.id, color, style });
@@ -132,8 +140,8 @@ export function usePreachHighlights(
         } else {
             create.mutate({
                 anchor: buildAnnotationAnchor(
-                    section.slug,
-                    section.body,
+                    pendingSection.slug,
+                    pendingSection.body,
                     pending.range.start,
                     pending.range.end,
                 ),
@@ -154,12 +162,22 @@ export function usePreachHighlights(
         setSelection(null);
     };
 
+    // Se entregan DATOS, no funciones: llamar en el render a una función que
+    // devuelve un hook hace que el React Compiler dé por llamados en el
+    // render a todos los manejadores de la pantalla (medido en el atril).
+    const highlightsBySlug: Record<string, ResolvedHighlight[]> = {};
+    const glyphsBySlug: Record<string, ResolvedGlyph[]> = {};
+    for (const section of sections) {
+        highlightsBySlug[section.slug] = highlightsFor(section.slug);
+        glyphsBySlug[section.slug] = glyphsFor(section.slug);
+    }
+
     return {
-        highlights,
-        glyphs,
+        highlightsBySlug,
+        glyphsBySlug,
         pendingGlyph: pendingGlyph?.glyph ?? null,
         applyGlyph,
-        markAt,
+        /** La selección en curso, y en qué movimiento. */
         selection,
         beginSelection,
         endSelection,

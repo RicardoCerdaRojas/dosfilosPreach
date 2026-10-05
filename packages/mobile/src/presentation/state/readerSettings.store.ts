@@ -174,6 +174,13 @@ interface ReaderSettingsState {
      */
     collapseQuotes: boolean;
     setCollapseQuotes: (on: boolean) => void;
+    /**
+     * El sermón como un documento continuo que se desplaza, en vez de
+     * páginas (fase «Atril continuo»). Apagado por defecto: en la página el
+     * texto no se mueve y el ojo que vuelve del público lo encuentra.
+     */
+    continuousReading: boolean;
+    setContinuousReading: (on: boolean) => void;
     /** Sólo el Apple Pencil escribe en el atril; el dedo sigue pasando página (T-9). */
     pencilOnly: boolean;
     setPencilOnly: (on: boolean) => void;
@@ -276,6 +283,8 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
             setReadingFocus: (on: boolean) => set({ readingFocus: on }),
             collapseQuotes: false,
             setCollapseQuotes: (on: boolean) => set({ collapseQuotes: on }),
+            continuousReading: false,
+            setContinuousReading: (on: boolean) => set({ continuousReading: on }),
             pencilOnly: false,
             setPencilOnly: (on: boolean) => set({ pencilOnly: on }),
             pinnedNext: null,

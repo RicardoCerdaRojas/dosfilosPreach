@@ -7,7 +7,15 @@ import { toNoteSpace, toScreenSpace } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
 import { Gesture, GestureDetector, PointerType } from 'react-native-gesture-handler';
-import { inkColorFor, inkSignature, inkTouchMode, nearestStroke, showsBridge, touchWrites } from './inkGeometry';
+import {
+    fingerNavigates,
+    inkColorFor,
+    inkSignature,
+    inkTouchMode,
+    nearestStroke,
+    showsBridge,
+    touchWrites,
+} from './inkGeometry';
 
 /**
  * Lo ÚNICO que la capa necesita de una nota: su id y sus trazos.
@@ -29,15 +37,19 @@ export interface AnchorRect {
     height: number;
 }
 
-interface Props {
+/**
+ * `K` es cómo se nombra el lugar donde se ancla una nota: un versículo en la
+ * Biblia, `movimiento|oración` en el atril.
+ */
+interface Props<K> {
     tokens: ReadingModeTokens;
     notes: InkDrawable[];
     anchorRectFor: (note: InkDrawable) => AnchorRect | null;
     bodySize: number;
     penActive: boolean;
     /** Párrafo más cercano al punto donde empezó el trazo. */
-    anchorAt: (screenX: number, screenY: number) => { offset: number; rect: AnchorRect } | null;
-    onFinishStroke: (offset: number, stroke: InkStroke) => void;
+    anchorAt: (screenX: number, screenY: number) => { offset: K; rect: AnchorRect } | null;
+    onFinishStroke: (offset: K, stroke: InkStroke) => void;
     color: InkColor;
     /** Lápiz o resaltador (T-7). */
     tool: InkTool;
@@ -130,7 +142,7 @@ function buildPath(points: { x: number; y: number }[]): SkPath {
  * dibuja directo. Meterlos en el estado provocaba un render por punto: lento,
  * con muestras perdidas, y de ahí los segmentos rectos.
  */
-export function InkLayer({
+export function InkLayer<K = number>({
     tokens,
     notes,
     anchorRectFor,
@@ -149,7 +161,7 @@ export function InkLayer({
     pencilOnly = false,
     onFingerGesture,
     onScrollTo,
-}: Props) {
+}: Props<K>) {
     // Fuera del React Compiler: el gesto del lápiz (T-9) se arma en el render
     // con callbacks que leen refs, y el compilador no distingue que corren
     // DESPUÉS, en el gesto. La capa ya evita re-renders a mano (el trazo vive
@@ -174,7 +186,7 @@ export function InkLayer({
     const [origin, setOrigin] = useState({ x: 0, y: top });
     const canvas = useRef<View | null>(null);
     const points = useRef<{ x: number; y: number }[]>([]);
-    const anchor = useRef<{ offset: number; rect: AnchorRect } | null>(null);
+    const anchor = useRef<{ offset: K; rect: AnchorRect } | null>(null);
     /**
      * El trazo recién soltado, dibujado tal cual quedó en pantalla.
      *
@@ -348,6 +360,11 @@ export function InkLayer({
      * trazo antes de que llegara el segundo (revisión adversarial).
      */
     const pendingErase = useRef<{ x: number; y: number } | null>(null);
+    /**
+     * Un dedo que desplaza puede ser un toque de navegación (el sermón
+     * continuo): dónde empezó, cuánto se movió en vertical y cuántos dedos hubo.
+     */
+    const fingerTrack = useRef<{ startX: number; startY: number; travel: number; touches: number } | null>(null);
     const activate = (manager: { activate: () => void }) => {
         if (activated.current) return;
         activated.current = true;
@@ -387,6 +404,8 @@ export function InkLayer({
                 }
                 pendingErase.current = null;
                 scroll.current = { startOffset: currentOffset(), startY: averageY(e.allTouches) };
+                if (fingerTrack.current) fingerTrack.current.touches = Math.max(fingerTrack.current.touches, e.numberOfTouches);
+                else fingerTrack.current = { startX: touch.absoluteX, startY: touch.absoluteY, travel: 0, touches: e.numberOfTouches };
                 activate(manager);
                 return;
             }
@@ -398,6 +417,13 @@ export function InkLayer({
         })
         .onTouchesMove((e) => {
             if (scroll.current) {
+                const first = e.allTouches[0];
+                if (fingerTrack.current && first) {
+                    fingerTrack.current.travel = Math.max(
+                        fingerTrack.current.travel,
+                        Math.abs(first.absoluteY - fingerTrack.current.startY),
+                    );
+                }
                 const target = Math.max(0, scroll.current.startOffset + scroll.current.startY - averageY(e.allTouches));
                 lastScrollTarget.current = target;
                 onScrollTo?.(target);
@@ -427,6 +453,14 @@ export function InkLayer({
             if (scroll.current) {
                 const rest = e.allTouches.filter((t) => !e.changedTouches.some((c) => c.id === t.id));
                 if (rest.length >= 1) scroll.current = { startOffset: currentOffset(), startY: averageY(rest) };
+                // Se levantó el último dedo: si apenas se movió, era un toque de navegación.
+                const track = fingerTrack.current;
+                if (rest.length === 0 && track) {
+                    fingerTrack.current = null;
+                    if (fingerNavigates(track.travel, track.touches)) {
+                        onFingerGesture?.(track.startX, e.changedTouches[0]?.absoluteX ?? track.startX);
+                    }
+                }
             }
         })
         .onFinalize(() => {
@@ -437,6 +471,7 @@ export function InkLayer({
             scroll.current = null;
             activated.current = false;
             lastScrollTarget.current = null;
+            fingerTrack.current = null;
         });
     /* eslint-enable react-hooks/refs */
 

@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useKeepAwake } from 'expo-keep-awake';
+import Animated, { useAnimatedReaction, useAnimatedRef, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { StatusBar } from 'expo-status-bar';
 import type { CitationManifestEntry, ReadingBlock, UnitMetric } from '@dosfilos/domain';
 import {
@@ -35,7 +37,7 @@ import { useSermon } from '@/presentation/hooks/useSermons';
 import { usePreachHighlights } from '@/presentation/hooks/usePreachHighlights';
 import { extractSectionsWithBody } from '@/core/utils/sermonSections';
 import { READING_MODES, shownSeconds } from '@/core/theme/readingModes';
-import { GAZE_LINE_RATIO, TYPE_SCALE } from '@/core/theme/typography';
+import { DELIVERY_LINE_HEIGHT, GAZE_LINE_RATIO, TYPE_SCALE } from '@/core/theme/typography';
 import { useReaderSettingsStore } from '@/presentation/state/readerSettings.store';
 import { PreachSectionBody, type PageBlock } from '@/presentation/components/preach/PreachSectionBody';
 import { useDeliveryMeasure } from '@/presentation/hooks/useDeliveryMeasure';
@@ -44,7 +46,8 @@ import { PreachExitSheet } from '@/presentation/components/preach/PreachExitShee
 import { PreachStatusBar } from '@/presentation/components/preach/PreachStatusBar';
 import { InkLayer } from '@/presentation/components/preach/InkLayer';
 import { InkToolbar } from '@/presentation/components/preach/InkToolbar';
-import { useInkNotes } from '@/presentation/hooks/useInkNotes';
+import { useInkNotes, type InkSection } from '@/presentation/hooks/useInkNotes';
+import { ContinuousSermon, type ContinuousSection } from '@/presentation/components/preach/ContinuousSermon';
 import { PreachSettingsSheet } from '@/presentation/components/preach/PreachSettingsSheet';
 import { BibleConsultSheet } from '@/presentation/components/bible/BibleConsultSheet';
 import { PreachInstrumentPanel } from '@/presentation/components/preach/PreachInstrumentPanel';
@@ -59,6 +62,18 @@ import { useConnectivityStore } from '@/presentation/state/connectivity.store';
 import { useUIStore } from '@/presentation/state/ui.store';
 import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
 import { focusOnArrival, isDimmed, stepFocus } from './readingFocus';
+import {
+    READING_LINE_RATIO,
+    continuousFocusStep,
+    maxScroll,
+    progressInSection,
+    screenStep,
+    sectionAtLine,
+    type BlockBox,
+} from './continuousReading';
+
+/** En el documento continuo, el avance dentro del movimiento va en décimos (para el reloj). */
+const CONTINUOUS_STEPS = 10;
 
 /** Cuánto dura la marca de reanudación al pasar página (L-2). */
 const RESUME_MARK_MS = 2500;
@@ -151,10 +166,32 @@ export default function PreachModeScreen({
     const [onReadingPage, setOnReadingPage] = useState(initialSectionIndex === 0);
 
     const [showExit, setShowExit] = useState(false);
-    const scrollRef = useRef<ScrollView>(null);
+    const scrollRef = useAnimatedRef<Animated.ScrollView>();
+    /** Cuánto bajó el texto: la tinta del documento continuo vive en coordenadas del texto. */
+    const scrollY = useSharedValue(0);
+    const onScroll = useAnimatedScrollHandler((e) => {
+        scrollY.value = e.contentOffset.y;
+    });
     // Toques: un dedo pasa página, dos dedos dos veces apagan (A3).
     const [gate] = useState(createGestureGate);
     const swipeStart = useRef<{ x: number; y: number } | null>(null);
+    /**
+     * Documento continuo: a qué movimiento ir apenas el documento esté medido
+     * (-1, la Lectura). Lo fijan volver a una predicación guardada y pasar de
+     * páginas a continuo; mientras espera, desplazar no cambia de movimiento.
+     */
+    const pendingJump = useRef<number | null>(initialSectionIndex > 0 ? initialSectionIndex : null);
+    /**
+     * Cada pedido de salto, contado: el efecto que lo cumple tiene que volver
+     * a correr aunque el documento ya estuviera medido (la sesión guardada
+     * llega tarde). Si no, el salto quedaba pendiente para siempre y
+     * desplazar dejaba de cambiar de movimiento.
+     */
+    const [jumpRequest, setJumpRequest] = useState(0);
+    const requestJump = (to: number) => {
+        pendingJump.current = to;
+        setJumpRequest((n) => n + 1);
+    };
 
 
 
@@ -187,11 +224,32 @@ export default function PreachModeScreen({
 
 
     const blocks = section ? buildReadingBlocks(section.body) : [];
+    // Documento continuo (fase «Atril continuo»): el sermón entero se desplaza.
+    const continuousOn = useReaderSettingsStore((s) => s.continuousReading);
+    const setContinuousOn = useReaderSettingsStore((s) => s.setContinuousReading);
     // Bosquejo (C7): el mismo movimiento, derivado del manuscrito. Una página
     // por movimiento; las marcas y la tinta, ancladas al manuscrito, no van.
     const outlineOn = useReaderSettingsStore((s) => s.outlineView);
     const setOutlineView = useReaderSettingsStore((s) => s.setOutlineView);
     const outline = outlineOn && section ? buildOutline(section.body) : [];
+    // Cada movimiento con sus bloques, y dónde empieza el primero en el sermón
+    // entero: el foco recorre el documento de corrido.
+    const continuousSections: ContinuousSection[] = [];
+    if (continuousOn) {
+        let firstBlock = 0;
+        for (const sec of sections) {
+            const secBlocks = buildReadingBlocks(sec.body);
+            continuousSections.push({
+                section: sec,
+                blocks: secBlocks,
+                outline: outlineOn ? buildOutline(sec.body) : undefined,
+                firstBlock,
+            });
+            firstBlock += secBlocks.length;
+        }
+    }
+    const allBlocks = continuousSections.flatMap((c) => c.blocks.map((block) => ({ slug: c.section.slug, block })));
+    const allKinds = allBlocks.map((b) => b.block.kind);
     const readingFocus = useReaderSettingsStore((s) => s.readingFocus);
     const collapseQuotes = useReaderSettingsStore((s) => s.collapseQuotes);
     const setCollapseQuotes = useReaderSettingsStore((s) => s.setCollapseQuotes);
@@ -211,13 +269,35 @@ export default function PreachModeScreen({
     // títulos quedaban pegados al borde y el bloque se veía desalineado.
     const { measure, probe } = useDeliveryMeasure(fontSize);
 
+    /** Dónde empieza cada movimiento dentro del documento continuo (medido). */
+    const [sectionTops, setSectionTops] = useState<number[]>([]);
+    /** Dónde empieza el documento continuo dentro de la caja de lectura. */
+    const [continuousTop, setContinuousTop] = useState(0);
+
     // Capa de tinta: anclada al texto, no a la pantalla. Ver InkNote en domain.
-    const inkLayoutKey = `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}`;
+    // En continuo la firma NO lleva el movimiento: cambiar de movimiento
+    // desplazando no mueve nada, y vaciar las posiciones borraba la tinta.
+    // Lleva, en cambio, lo que mueve el documento en la pantalla: los
+    // controles, y dónde empieza cada movimiento (un movimiento que crece
+    // empuja a los de abajo, y sus párrafos no avisan: no se movieron dentro
+    // de su movimiento).
+    const inkLayoutKey = continuousOn
+        ? `c|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}|${chromeVisible}|${continuousTop}|${sectionTops.map(Math.round).join(',')}`
+        : `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}`;
+    const inkSections: InkSection[] = continuousOn
+        ? continuousSections.map((c) => ({
+              section: c.section,
+              sentenceStarts: c.blocks.flatMap((b) => b.units.map((u) => u.sourceStart)),
+          }))
+        : section
+          ? [{ section, sentenceStarts: blocks.flatMap((b) => b.units.map((u) => u.sourceStart)) }]
+          : [];
     const ink = useInkNotes(
         id ?? '',
-        section,
+        inkSections,
         inkLayoutKey,
-        blocks.flatMap((b) => b.units.map((u) => u.sourceStart)),
+        // El historial es del movimiento en páginas; del sermón, en continuo.
+        continuousOn ? '§continuo' : (section?.slug ?? ''),
     );
 
     // El presupuesto de tiempo por movimiento alimenta el riel (D2). Por
@@ -251,6 +331,8 @@ export default function PreachModeScreen({
             setOnReadingPage(onReading);
             setSectionIndex(at);
             setPageIndex(page);
+            // En continuo se vuelve DESPLAZANDO, cuando el documento ya se midió.
+            requestJump(onReading ? -1 : at);
         },
     });
     const { budgets, elapsed, running } = preachClock;
@@ -315,11 +397,12 @@ export default function PreachModeScreen({
     );
 
     // Lo que va arriba de la primera página del movimiento. Se mide para
-    // descontarlo de esa página (A7).
-    const pageHeader =
-        (sectionIndex === 0 && sermon?.title) || section?.title ? (
+    // descontarlo de esa página (A7). En continuo encabeza cada movimiento.
+    const headerFor = (index: number) => {
+        const sec = sections[index];
+        return (index === 0 && sermon?.title) || sec?.title ? (
             <View>
-                {sectionIndex === 0 && sermon?.title ? (
+                {index === 0 && sermon?.title ? (
                     <Text
                         style={{
                             color: tokens.textPrimary,
@@ -331,7 +414,7 @@ export default function PreachModeScreen({
                         {sermon.title}
                     </Text>
                 ) : null}
-                {section?.title ? (
+                {sec?.title ? (
                     // Ubica, no compite: 0.6× en versalitas y color
                     // secundario. A 1.15× le disputaba la pantalla al
                     // título del sermón.
@@ -343,15 +426,18 @@ export default function PreachModeScreen({
                         }}
                         className="font-lexend-semibold uppercase tracking-widest"
                     >
-                        {section.title}
+                        {sec.title}
                     </Text>
                 ) : null}
             </View>
         ) : null;
+    };
+    const pageHeader = headerFor(sectionIndex);
 
     const { pages, measuring, probe: pageProbe } = usePagination({
-        header: pageHeader ?? undefined,
-        blocks,
+        // En continuo no hay páginas: no se mide nada para paginar.
+        header: continuousOn ? undefined : (pageHeader ?? undefined),
+        blocks: continuousOn ? [] : blocks,
         availableHeight: pageHeight,
         renderBlock: renderBlockForMeasure,
         // La familia entra en la clave: distintas fuentes dan distinta altura
@@ -361,7 +447,9 @@ export default function PreachModeScreen({
         canSplit: (b) => isSplittable(b) && !(collapseQuotes && b.kind === 'quote'),
     });
 
-    const pageCount = outlineOn ? 1 : Math.max(1, pages.length);
+    // En continuo, el «número de página» es cuánto del movimiento se leyó, en
+    // décimos: alimenta al reloj (¿voy bien de tiempo?) y no se muestra.
+    const pageCount = continuousOn ? CONTINUOUS_STEPS : outlineOn ? 1 : Math.max(1, pages.length);
     const safePageIndex = Math.min(pageIndex, pageCount - 1);
     // Con la paginación por oración (L-1) una página lleva fragmentos: un
     // bloque entero o un tramo de sus oraciones.
@@ -388,11 +476,152 @@ export default function PreachModeScreen({
     // carga timer, modos de luz, navegación por secciones y citas.
     // El pulso se apaga solo en e-ink: los lectores BOOX no tienen motor
     // háptico. Atril apaga animaciones pero conserva el pulso.
-    const highlighting = usePreachHighlights(id ?? '', section, readingMode !== 'eink');
+    const highlighting = usePreachHighlights(
+        id ?? '',
+        continuousOn ? sections : section ? [section] : [],
+        readingMode !== 'eink',
+    );
+
+
+    // ——— Documento continuo (fase «Atril continuo») ———
+    /** Alto visible de la caja que se desplaza y dónde está en la ventana. */
+    const viewport = useRef({ height: 0, windowY: 0 });
+    const contentHeight = useRef(0);
+    const [contentSize, setContentSize] = useState(0);
+    const viewportHeightSV = useSharedValue(0);
+    const contentHeightSV = useSharedValue(0);
+    const topsSV = useSharedValue<number[]>([]);
+    const [continuousFocus, setContinuousFocus] = useState<number | null>(null);
+    /** Marca de reanudación (L-2) del documento continuo: dónde sigue lo nuevo. */
+    const [scrollMark, setScrollMark] = useState<number | null>(null);
+    const lineHeight = fontSize * DELIVERY_LINE_HEIGHT;
+    /** Lo que queda a la vista al bajar una pantalla: dos renglones. */
+    const overlap = 2 * lineHeight;
+    // El respiro de arriba del contenido: el mismo que usa la caja que se desplaza.
+    const scrollContentTop = chromeVisible ? 16 : insets.top + 24;
+    /** Comienzo de cada movimiento en el documento (coordenadas del contenido). */
+    const docTops = sectionTops.slice(0, sections.length).map((top) => scrollContentTop + continuousTop + top);
+    const docTopsKey = docTops.join(',');
+    const topsReady =
+        continuousOn && sections.length > 0 && docTops.length === sections.length && docTops.every((top) => Number.isFinite(top));
+    useEffect(() => {
+        topsSV.set(topsReady ? docTops : []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [topsReady, docTopsKey]);
+
+    const scrollToY = (y: number, animated: boolean = tokens.animations) => {
+        const max = maxScroll(contentHeight.current, viewport.current.height);
+        scrollRef.current?.scrollTo({ y: Math.min(max, Math.max(0, y)), animated });
+    };
+    /** Con la tinta activa, la capa desplaza el documento ella misma. */
+    const scrollInkTo = (y: number) => scrollToY(y, false);
+
+    /** Dónde empieza y termina cada bloque en el documento; `null` si no se midió. */
+    const blockBoxes = (): BlockBox[] =>
+        allBlocks.map(({ slug, block }) => {
+            const first = block.units[0];
+            const last = block.units[block.units.length - 1];
+            const a = first ? ink.rectFor(slug, first.sourceStart) : null;
+            const b = last ? ink.rectFor(slug, last.sourceStart) : null;
+            if (!a || !b) return null;
+            return { top: a.y - viewport.current.windowY, bottom: b.y + b.height - viewport.current.windowY };
+        });
+
+    /**
+     * Desplazando se cambia de movimiento: el que cruza la línea de lectura
+     * (un tercio de la pantalla) es el que se está leyendo. El reloj carga el
+     * tiempo a ése, y el riel lo marca.
+     */
+    const track = (index: number, progressStep: number) => {
+        if (!continuousOn || pendingJump.current !== null) return;
+        if (index < 0 && passage) {
+            if (!onReadingPage) {
+                setOnReadingPage(true);
+                preachClock.moveTo(READING_SLUG);
+            }
+            return;
+        }
+        const at = Math.max(0, index);
+        if (onReadingPage) setOnReadingPage(false);
+        if (at !== sectionIndex) enterSection(at, progressStep);
+        else if (progressStep !== pageIndex) setPageIndex(progressStep);
+    };
+    useAnimatedReaction(
+        () => {
+            const tops = topsSV.value;
+            if (!continuousOn || !tops.length) return null;
+            const line = scrollY.value + viewportHeightSV.value * READING_LINE_RATIO;
+            const at = sectionAtLine(tops, line);
+            const progress = at < 0 ? 0 : progressInSection(tops, at, line, contentHeightSV.value);
+            return { at, step: Math.min(CONTINUOUS_STEPS - 1, Math.floor(progress * CONTINUOUS_STEPS)) };
+        },
+        (now, before) => {
+            if (!now || (before && now.at === before.at && now.step === before.step)) return;
+            scheduleOnRN(track, now.at, now.step);
+        },
+    );
+
+    // Pasar de páginas a continuo sigue en el mismo movimiento; volver a
+    // páginas, también (desde su primera página).
+    const changeContinuous = (on: boolean) => {
+        if (on === continuousOn) return;
+        setContinuousFocus(null);
+        // Las posiciones de la vez anterior pueden ser de otro tamaño de letra:
+        // se vuelven a medir antes de saltar.
+        setSectionTops([]);
+        if (on) {
+            requestJump(onReadingPage ? -1 : sectionIndex);
+        } else {
+            setPageIndex(0);
+            scrollRef.current?.scrollTo({ y: 0, animated: false });
+        }
+        setContinuousOn(on);
+    };
+
+    // El salto pendiente, cuando el documento ya está medido.
+    useEffect(() => {
+        if (!topsReady || contentSize <= 0 || pendingJump.current === null) return;
+        const target = pendingJump.current < 0 ? 0 : (docTops[pendingJump.current] ?? 0);
+        const frame = requestAnimationFrame(() => {
+            scrollToY(target, false);
+            pendingJump.current = null;
+        });
+        return () => cancelAnimationFrame(frame);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [topsReady, docTopsKey, contentSize, jumpRequest]);
+
+    /**
+     * Un toque en el costado, en continuo: casi una pantalla, o con el foco
+     * encendido, la idea siguiente (desplazando sólo si no entra).
+     */
+    const stepContinuous = (towards: 1 | -1) => {
+        const view = { scroll: scrollY.value, height: viewport.current.height, contentHeight: contentHeight.current };
+        if (focusOn) {
+            const next = continuousFocusStep(allKinds, blockBoxes(), continuousFocus, towards, view, lineHeight, overlap);
+            setContinuousFocus(next.focus);
+            if (next.scrollTo !== null) scrollToY(next.scrollTo);
+            return;
+        }
+        const target = screenStep(view.scroll, view.height, view.contentHeight, overlap, towards);
+        if (Math.abs(target - view.scroll) < 1) return;
+        scrollToY(target);
+        // Marca de reanudación (L-2): donde empieza lo que no se veía.
+        if (towards > 0) {
+            const mark = Date.now();
+            setScrollMark(mark);
+            setTimeout(() => setScrollMark((current) => (current === mark ? null : current)), RESUME_MARK_MS);
+        }
+    };
 
     const goTo = (index: number) => {
         if (index < 0 || index >= sections.length) return;
         enterSection(index, 0);
+        if (continuousOn) {
+            setContinuousFocus(null);
+            const top = docTops[index];
+            if (top !== undefined) scrollToY(top);
+            return;
+        }
         scrollRef.current?.scrollTo({ y: 0, animated: tokens.animations });
     };
 
@@ -412,6 +641,10 @@ export default function PreachModeScreen({
     const step = (delta: number) => {
         ensureClockStarted();
         const towards: 1 | -1 = delta > 0 ? 1 : -1;
+        if (continuousOn) {
+            stepContinuous(towards);
+            return;
+        }
         // Foco de lectura (L-3): avanzar recorre las ideas de la página antes
         // de pasarla.
         if (focusOn && !showReading) {
@@ -528,6 +761,37 @@ export default function PreachModeScreen({
             .filter((p): p is { ordinal: number; entry: CitationManifestEntry } => Boolean(p.entry));
         if (resolved.length) setCitation(resolved);
     };
+
+    const pageHighlights = (section && highlighting.highlightsBySlug[section.slug]) || [];
+    const pageGlyphs = (section && highlighting.glyphsBySlug[section.slug]) || [];
+    const pageSelection =
+        section && highlighting.selection?.slug === section.slug ? highlighting.selection.range : null;
+
+    // Las atribuciones, al pie de la última página (o del documento continuo).
+    const attributionsBlock =
+        attributions.length > 0 ? (
+                        <View style={{ borderTopWidth: 1, borderTopColor: tokens.border }} className="mt-8 pt-4">
+                            {attributions.map((block) => (
+                                <View key={block.sourceId} className="mb-3">
+                                    <Text
+                                        style={{ color: tokens.textSecondary, fontSize: fontSize * 0.6 }}
+                                        className="font-lexend-semibold"
+                                    >
+                                        {block.title}
+                                    </Text>
+                                    {block.lines.map((line, i) => (
+                                        <Text
+                                            key={i}
+                                            style={{ color: tokens.textSecondary, fontSize: fontSize * 0.55 }}
+                                            className="font-lexend"
+                                        >
+                                            {line}
+                                        </Text>
+                                    ))}
+                                </View>
+                            ))}
+                        </View>
+        ) : null;
 
     if (isLoading) {
         return (
@@ -712,6 +976,7 @@ export default function PreachModeScreen({
                     readingIndex={sectionIndex}
                     pageIndex={safePageIndex}
                     pageCount={pageCount}
+                    showPages={!continuousOn}
                     running={running}
                     numbers={statusBarMode === 'full'}
                     endAt={preachClock.endAt}
@@ -731,13 +996,33 @@ export default function PreachModeScreen({
                     if (gate.touchStart(e.nativeEvent.touches, Date.now())) setBlackout(true);
                 }}
             >
-                <ScrollView
+                <Animated.ScrollView
                     ref={scrollRef}
+                    onScroll={onScroll}
+                    scrollEventThrottle={16}
+                    onLayout={(e) => {
+                        const height = e.nativeEvent.layout.height;
+                        viewport.current = { ...viewport.current, height };
+                        viewportHeightSV.set(height);
+                        e.currentTarget.measureInWindow((_x, y) => {
+                            viewport.current = { ...viewport.current, windowY: y };
+                        });
+                    }}
+                    onContentSizeChange={(_w, h) => {
+                        contentHeight.current = h;
+                        contentHeightSV.set(h);
+                        setContentSize(h);
+                    }}
+                    // Desplazar a mano suelta el foco: el próximo toque lo pone
+                    // en la primera idea a la vista.
+                    onScrollBeginDrag={() => setContinuousFocus(null)}
+                    // Marcando, el dedo arrastra la selección, no el documento.
+                    scrollEnabled={!(continuousOn && highlighting.selection !== null)}
                     contentContainerStyle={{
                         // Sin medida en píxeles: PreachSectionBody se centra a
                         // sí mismo en 48 ch (D1). Esto es solo respiro mínimo.
                         paddingHorizontal: 24,
-                        paddingTop: chromeVisible ? 16 : insets.top + 24,
+                        paddingTop: scrollContentTop,
                         paddingBottom: insets.bottom + 56,
                     }}
                 >
@@ -769,7 +1054,59 @@ export default function PreachModeScreen({
                                 }}
                             />
                         ) : null}
-                        {showReading && passage ? (
+                        {continuousOn ? (
+                            <View onLayout={(e) => setContinuousTop(e.nativeEvent.layout.y)}>
+                                <ContinuousSermon
+                                    sections={continuousSections}
+                                    reading={
+                                        passage ? (
+                                            <PreachReadingPage
+                                                passage={passage}
+                                                tokens={tokens}
+                                                fontSize={fontSize}
+                                                face={deliveryFace}
+                                                onTapAt={handleTap}
+                                            />
+                                        ) : null
+                                    }
+                                    headerFor={headerFor}
+                                    footer={attributionsBlock}
+                                    outline={outlineOn}
+                                    tokens={tokens}
+                                    fontSize={fontSize}
+                                    face={deliveryFace}
+                                    senseLines={senseLines}
+                                    hangingIndent={hangingIndent}
+                                    collapseQuotes={collapseQuotes}
+                                    highlights={highlighting.highlightsBySlug}
+                                    glyphs={highlighting.glyphsBySlug}
+                                    selection={highlighting.selection}
+                                    onSelectionChange={highlighting.beginSelection}
+                                    onSelectionEnd={highlighting.endSelection}
+                                    onTapAt={handleTap}
+                                    onPressCitation={openCitation}
+                                    onPressReference={setVerseRef}
+                                    onPressApparatus={setApparatus}
+                                    // En coordenadas del TEXTO: la pantalla más lo desplazado.
+                                    onUnitLayout={(slug, start, rect) =>
+                                        ink.rememberBlock(slug, start, { ...rect, y: rect.y + scrollY.value })
+                                    }
+                                    layoutKey={inkLayoutKey}
+                                    isBlockDimmed={
+                                        focusOn ? (i) => isDimmed(allKinds, continuousFocus, i) : undefined
+                                    }
+                                    onSectionTop={(index, y) =>
+                                        setSectionTops((tops) => {
+                                            if (tops[index] === y) return tops;
+                                            const next = [...tops];
+                                            next[index] = y;
+                                            return next;
+                                        })
+                                    }
+                                />
+                            </View>
+                        ) : null}
+                        {!continuousOn && showReading && passage ? (
                             <PreachReadingPage
                                 passage={passage}
                                 tokens={tokens}
@@ -778,8 +1115,8 @@ export default function PreachModeScreen({
                                 onTapAt={handleTap}
                             />
                         ) : null}
-                        {!showReading && safePageIndex === 0 ? pageHeader : null}
-                        {!showReading && resumeMark === `${sectionIndex}|${safePageIndex}` ? (
+                        {!continuousOn && !showReading && safePageIndex === 0 ? pageHeader : null}
+                        {!continuousOn && !showReading && resumeMark === `${sectionIndex}|${safePageIndex}` ? (
                             <View
                                 pointerEvents="none"
                                 accessible={false}
@@ -795,7 +1132,7 @@ export default function PreachModeScreen({
                             />
                         ) : null}
 
-                    {!showReading && outlineOn ? (
+                    {!continuousOn && !showReading && outlineOn ? (
                         <PreachOutline
                             items={outline}
                             tokens={tokens}
@@ -805,24 +1142,24 @@ export default function PreachModeScreen({
                         />
                     ) : null}
 
-                    {showReading || outlineOn ? null : <PreachSectionBody
+                    {continuousOn || showReading || outlineOn || !section ? null : <PreachSectionBody
                         blocks={pageBlocks}
                         isBlockDimmed={focusOn ? (i) => isDimmed(pageKinds, effectiveFocus, i) : undefined}
                         collapseQuotes={collapseQuotes}
-                        highlights={highlighting.highlights}
-                        glyphs={highlighting.glyphs}
+                        highlights={pageHighlights}
+                        glyphs={pageGlyphs}
                         fontSize={fontSize}
                         tokens={tokens}
                         senseLines={senseLines}
                         face={deliveryFace}
                         hangingIndent={hangingIndent}
-                        onBlockLayout={ink.rememberBlock}
+                        onBlockLayout={(start, rect) => ink.rememberBlock(section.slug, start, rect)}
                         layoutKey={inkLayoutKey}
                         onTapAt={handleTap}
                         onPressApparatus={setApparatus}
-                        selection={highlighting.selection}
-                        onSelectionChange={highlighting.beginSelection}
-                        onSelectionEnd={highlighting.endSelection}
+                        selection={pageSelection}
+                        onSelectionChange={(range) => highlighting.beginSelection(section.slug, range)}
+                        onSelectionEnd={(range, y) => highlighting.endSelection(section.slug, range, y)}
                         onPressCitation={openCitation}
                         onPressReference={setVerseRef}
                     />}
@@ -830,7 +1167,7 @@ export default function PreachModeScreen({
                     {/* Asomo: dos renglones de lo que viene, atenuados. Avisa
                         que el bloque sigue, y quita la duda de si la página
                         terminó la idea o la cortó. */}
-                    {nextPeek && !showReading ? (
+                    {nextPeek && !showReading && !continuousOn ? (
                         <View
                             pointerEvents="none"
                             style={{ marginTop: fontSize * 0.6, opacity: 0.32 }}
@@ -849,34 +1186,28 @@ export default function PreachModeScreen({
                         </View>
                     ) : null}
 
-                    {!showReading &&
+                    {!continuousOn &&
+                        !showReading &&
                         sectionIndex === sections.length - 1 &&
                         safePageIndex === pageCount - 1 &&
-                        attributions.length > 0 && (
-                        <View style={{ borderTopWidth: 1, borderTopColor: tokens.border }} className="mt-8 pt-4">
-                            {attributions.map((block) => (
-                                <View key={block.sourceId} className="mb-3">
-                                    <Text
-                                        style={{ color: tokens.textSecondary, fontSize: fontSize * 0.6 }}
-                                        className="font-lexend-semibold"
-                                    >
-                                        {block.title}
-                                    </Text>
-                                    {block.lines.map((line, i) => (
-                                        <Text
-                                            key={i}
-                                            style={{ color: tokens.textSecondary, fontSize: fontSize * 0.55 }}
-                                            className="font-lexend"
-                                        >
-                                            {line}
-                                        </Text>
-                                    ))}
-                                </View>
-                            ))}
-                        </View>
-                    )}
+                        attributionsBlock}
                     </View>
-                </ScrollView>
+                </Animated.ScrollView>
+                {continuousOn && scrollMark !== null ? (
+                    <View
+                        pointerEvents="none"
+                        accessible={false}
+                        style={{
+                            position: 'absolute',
+                            top: overlap,
+                            left: Math.max(4, (width - (measure ?? width - 48)) / 2 - fontSize * 0.55),
+                            width: 4,
+                            height: fontSize * 1.15,
+                            borderRadius: 2,
+                            backgroundColor: tokens.accent,
+                        }}
+                    />
+                ) : null}
             </Pressable>
 
             {/* P7 — el tercio inferior es el tablero: timer y riel, los dos
@@ -891,6 +1222,7 @@ export default function PreachModeScreen({
                         readingIndex={sectionIndex}
                         pageIndex={safePageIndex}
                         pageCount={pageCount}
+                        showPages={!continuousOn}
                         height={panelHeight}
                         numbers={panelMode === 'full'}
                     />
@@ -918,6 +1250,7 @@ export default function PreachModeScreen({
                                     onPress={() => {
                                         setOnReadingPage(true);
                                         setShowSections(false);
+                                        if (continuousOn) scrollToY(0);
                                     }}
                                     className="py-3"
                                 >
@@ -1015,6 +1348,8 @@ export default function PreachModeScreen({
                 setReadingFocus={setReadingFocus}
                 collapseQuotes={collapseQuotes}
                 setCollapseQuotes={setCollapseQuotes}
+                continuousReading={continuousOn}
+                setContinuousReading={changeContinuous}
                 brightness={preachBrightness}
                 setBrightness={setPreachBrightness}
                 targetMinutes={targetMinutes}
@@ -1113,6 +1448,11 @@ export default function PreachModeScreen({
                 onErase={ink.eraseStroke}
                 top={chromeTop}
                 bottom={panelHeight + insets.bottom}
+                // En continuo la tinta se corre con el documento, y con el
+                // lápiz activo la capa lo desplaza (dos dedos; con «sólo
+                // Apple Pencil», uno), como en la Biblia.
+                scrollOffset={continuousOn ? scrollY : undefined}
+                onScrollTo={continuousOn ? scrollInkTo : undefined}
             />}
 
             {/* Barra del lápiz: colores, goma y salida. Va DESPUÉS de la capa
@@ -1127,10 +1467,20 @@ export default function PreachModeScreen({
                     pencilOnly={{ on: pencilOnly, toggle: () => setPencilOnly(!pencilOnly) }}
                     clearOptions={[
                         {
-                            label: t('preach:ink_clear_page'),
+                            label: t(continuousOn ? 'preach:ink_clear_screen' : 'preach:ink_clear_page'),
                             // Lo que está dibujado en ESTA página: las notas
-                            // cuya oración se ve ahora.
-                            onPress: () => ink.clearNotes(ink.notes.filter((n) => ink.anchorRectFor(n) !== null)),
+                            // cuya oración se ve ahora. En continuo, las que
+                            // están en la pantalla.
+                            onPress: () =>
+                                ink.clearNotes(
+                                    ink.notes.filter((n) => {
+                                        const rect = ink.anchorRectFor(n);
+                                        if (!rect) return false;
+                                        if (!continuousOn) return true;
+                                        const top = viewport.current.windowY + scrollY.value;
+                                        return rect.y + rect.height >= top && rect.y <= top + viewport.current.height;
+                                    }),
+                                ),
                         },
                         { label: t('preach:ink_clear_sermon'), onPress: () => ink.clearNotes(ink.allNotes) },
                     ]}

@@ -134,3 +134,26 @@ Todo en un PR, un commit por unidad, con revisión adversarial antes de abrirlo.
 
 **T-9:** sólo en el atril. En la Biblia el dedo tendría que desplazar el capítulo por debajo de la capa de tinta.
 
+
+## 7. Documento continuo (pedido del fundador, 2026-10-04)
+
+**Qué es:** una opción del atril, «Documento continuo», apagada por defecto. Las páginas tienen una ventaja que no se quiere perder: el texto no se mueve, y el ojo que vuelve de la congregación lo encuentra donde lo dejó. Hay predicadores que prefieren igual deslizar un documento: por eso es opción y no reemplazo.
+
+**Cómo funciona:**
+- El sermón entero se ve en un solo documento: primero la Lectura, después cada movimiento con su título, y al final las atribuciones.
+- Se avanza deslizando el dedo. Tocar un costado baja (o sube) casi una pantalla, y deja a la vista los dos últimos renglones, con la marca de reanudación (L-2) donde empieza lo nuevo.
+- El movimiento en curso es el que cruza la línea de lectura, a un tercio de la pantalla. Lo siguen el reloj, el riel y la sesión guardada; el avance dentro del movimiento va en décimos.
+- **Foco de lectura (L-3):** cada toque pasa a la idea siguiente. El texto se desplaza sólo si esa idea no entra, y entonces queda arriba. Un párrafo más alto que la pantalla se recorre de a pantallas. Desplazar a mano suelta el foco.
+- **Tinta:** se corre con el documento. Con el lápiz activo, dos dedos desplazan; con «sólo Apple Pencil», uno, y un toque de dedo sigue navegando.
+- Cambiar de modo conserva el movimiento en curso.
+
+**La reforma que pedía L-5 se hizo para esto:**
+- La tinta y las marcas trabajan con varios movimientos a la vista. Cada posición se nombra por movimiento y oración.
+- En páginas se les pasa un solo movimiento, y se comportan igual que antes.
+- El historial de deshacer es del movimiento en páginas, y del sermón entero en continuo.
+
+**Trampa del React Compiler (medida):** llamar en el render a una función que devuelve un hook (`highlightsFor(slug)`) hizo que el compilador diera por llamados en el render a todos los manejadores de la pantalla, y marcara sus `Date.now()` como impuros. Por eso el hook entrega datos (mapas por movimiento), no funciones.
+
+**Supuesto, por probar en el iPad:**
+- El costo de montar el sermón entero de una vez.
+- Que el reloj (un render por segundo) no redibuje el documento: depende de que el compilador memoice sus propiedades.
