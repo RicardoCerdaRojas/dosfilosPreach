@@ -10,6 +10,7 @@ import type { DeliveryFace } from '@/core/theme/typography';
 import {
     DELIVERY_LINE_HEIGHT,
     FACE_CLASS,
+    FACE_FAMILY,
     HANGING_INDENT_EM,
     PARAGRAPH_GAP_EM,
     TYPE_SCALE,
@@ -256,6 +257,7 @@ export function PreachSectionBody({
                 onPressReference={onPressReference}
                 referenceColor={tokens.accent}
                 faceClass={FACE_CLASS[face].regular}
+                faceFamilies={FACE_FAMILY[face]}
                 hangingIndent={hangingIndent ? fontSize * HANGING_INDENT_EM : 0}
                 continued={continued}
                 verseNumbers={verseNumbers}

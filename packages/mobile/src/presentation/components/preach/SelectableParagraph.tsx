@@ -3,7 +3,12 @@ import { GestureResponderEvent, LayoutRectangle, Text, View } from 'react-native
 import type { ReadingUnit } from '@dosfilos/domain';
 import { findBibleReferences, splitWords } from '@dosfilos/domain';
 
+import { formattedFont, type FaceFamilies } from '@/core/theme/typography';
 import { tokenizeCitations } from '@/core/utils/sermonSections';
+
+/** Subrayado, tachado, los dos o ninguno. */
+const decorationOf = (underline: boolean, strike: boolean) =>
+    underline && strike ? 'underline line-through' : strike ? 'line-through' : underline ? 'underline' : 'none';
 
 /** Una palabra con su rango en el cuerpo CRUDO y su rectángulo en pantalla. */
 interface PlacedWord {
@@ -18,6 +23,8 @@ interface PlacedWord {
     unit: number;
     /** Es la primera palabra de un renglón que el pastor cortó a mano. */
     breaksLine: boolean;
+    /** Formato del editor que le toca (`INLINE_FORMAT_RULE`). */
+    format: { bold?: boolean; italic?: boolean; underline?: boolean };
     /** Está dentro de una referencia bíblica, aunque no se pueda tocar. */
     inReference: boolean;
 }
@@ -113,6 +120,12 @@ interface Props {
     onUnitLines?: (lines: UnitLines[]) => void;
     /** Es Escritura: los números de versículo van discretos (chicos y atenuados). */
     verseNumbers?: boolean;
+    /**
+     * Las familias de la letra elegida, para la negrita y la cursiva que el
+     * pastor marcó en el editor (`INLINE_FORMAT_RULE`). Sin ellas, el
+     * formato no se dibuja.
+     */
+    faceFamilies?: FaceFamilies;
     verseNumberColor?: string;
 }
 
@@ -151,6 +164,7 @@ export function SelectableParagraph({
     continued = false,
     onUnitLines,
     verseNumbers = false,
+    faceFamilies,
     verseNumberColor,
 }: Props) {
     const rects = useRef<Map<number, LayoutRectangle>>(new Map());
@@ -178,6 +192,8 @@ export function SelectableParagraph({
             const tokens = tokenizeCitations(w.text);
             const citation = tokens.find((t) => t.kind === 'citation');
             const span = references.find((r) => w.start < r.end && w.end > r.start);
+            // El formato de la palabra es el de su primera letra.
+            const mark = unit.marks?.find((m) => w.start >= m.start && w.start < m.end);
             const reference = onPressReference ? span : undefined;
             words.push({
                 text: w.text,
@@ -187,6 +203,7 @@ export function SelectableParagraph({
                 reference: reference?.reference ?? null,
                 unit: unitIndex,
                 breaksLine: wordIndex === 0 && !!unit.lineBreak && unitIndex > 0,
+                format: { bold: mark?.bold, italic: mark?.italic, underline: mark?.underline },
                 inReference: !!span,
             });
         });
@@ -390,11 +407,13 @@ export function SelectableParagraph({
                                 // El número de versículo se ve, pero no se lee en voz alta.
                                 fontSize: isVerseNumber ? fontSize * 0.6 : fontSize,
                                 lineHeight,
-                                textDecorationLine: mark?.strike
-                                    ? 'line-through'
-                                    : mark?.underline
-                                      ? 'underline'
-                                      : 'none',
+                                // La negrita y la cursiva del editor, por familia (no por clase).
+                                ...(faceFamilies ? formattedFont(faceFamilies, word.format) : {}),
+                                // El subrayado del editor convive con las marcas del pastor.
+                                textDecorationLine: decorationOf(
+                                    !!mark?.underline || (!!faceFamilies && !!word.format.underline),
+                                    !!mark?.strike,
+                                ),
                             }}
                             className={faceClass}
                         >

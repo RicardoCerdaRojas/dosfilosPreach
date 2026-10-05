@@ -4,11 +4,12 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { buildReadingBlocks } from '@dosfilos/domain';
+import { buildReadingBlocks, formatRuns, type ReadingBlock } from '@dosfilos/domain';
 
 import { useAppTheme } from '@/core/theme/appTheme';
 import { STUDY_COLUMN, useLayout } from '@/core/theme/layout';
 import { READING_MODES } from '@/core/theme/readingModes';
+import { FACE_FAMILY, formattedFont } from '@/core/theme/typography';
 import { extractSectionsWithBody } from '@/core/utils/sermonSections';
 import { useAddPreachingLog, useRemovePreachingLog, useSermon } from '@/presentation/hooks/useSermons';
 import { useUIStore } from '@/presentation/state/ui.store';
@@ -358,7 +359,7 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                                             }}
                                             className="font-lexend-semibold"
                                         >
-                                            {block.text}
+                                            <FormattedBlock block={block} />
                                         </Text>
                                     ) : block.kind === 'quote' ? (
                                         // El detalle es la vista de ESTUDIO: acá la
@@ -381,7 +382,7 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                                                 }}
                                                 className="font-literata italic"
                                             >
-                                                {block.text}
+                                                <FormattedBlock block={block} />
                                             </Text>
                                         </View>
                                     ) : (
@@ -396,7 +397,7 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                                             className="font-literata"
                                         >
                                             {block.kind === 'listitem' ? '•  ' : ''}
-                                            {block.text}
+                                            <FormattedBlock block={block} />
                                         </Text>
                                     ),
                                 )}
@@ -459,5 +460,32 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                 </TouchableOpacity>
             </View>
         </View>
+    );
+}
+
+/**
+ * El texto de un bloque con el formato que el pastor marcó en el editor:
+ * negrita, cursiva y subrayado (`INLINE_FORMAT_RULE`). Antes era texto plano,
+ * y el subrayado llegaba como «<u>…</u>».
+ */
+function FormattedBlock({ block }: { block: ReadingBlock }) {
+    return (
+        <>
+            {formatRuns(block.text, block.marks).map((run, i) =>
+                run.bold || run.italic || run.underline ? (
+                    <Text
+                        key={i}
+                        style={{
+                            ...formattedFont(FACE_FAMILY.literata, run),
+                            textDecorationLine: run.underline ? 'underline' : 'none',
+                        }}
+                    >
+                        {run.text}
+                    </Text>
+                ) : (
+                    run.text
+                ),
+            )}
+        </>
     );
 }

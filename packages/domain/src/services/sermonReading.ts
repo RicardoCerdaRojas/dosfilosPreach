@@ -26,6 +26,76 @@ export interface SourceMappedText {
 }
 
 /**
+ * LA REGLA DEL FORMATO, una sola para todo el producto (2026-10-05).
+ *
+ * Lo que el pastor marca en el editor —negrita, cursiva, subrayado— se ve
+ * igual en la web, el atril, el detalle del sermón y Word/PDF. El editor
+ * guarda la negrita y la cursiva como markdown (`**`, `*`) y el subrayado
+ * como HTML (`<u>…</u>`): la web lo mostraba, pero el atril quitaba el
+ * énfasis (texto plano) y dejaba las etiquetas `<u>` escritas, y Word y PDF
+ * también. Lo vio el fundador predicando Jonás.
+ *
+ * Valen igual `<b>`/`<strong>` y `<i>`/`<em>`, por si llegan pegados.
+ */
+export const INLINE_FORMAT_RULE = 'lo que se marca en el editor se ve igual en todas partes';
+
+/** Un tramo con formato, en coordenadas del texto al que pertenece. */
+export interface FormatSpan {
+    start: number;
+    end: number;
+    bold?: true;
+    italic?: true;
+    underline?: true;
+}
+
+const BOLD = 1;
+const ITALIC = 2;
+const UNDERLINE = 4;
+
+/** Los tramos con formato de un texto mapeado, según el formato de cada carácter de origen. */
+function formatSpans(text: string, map: readonly number[], format: Uint8Array | undefined): FormatSpan[] {
+    if (!format) return [];
+    const spans: FormatSpan[] = [];
+    let open: { start: number; flags: number } | null = null;
+    const close = (end: number) => {
+        if (!open) return;
+        const span: FormatSpan = { start: open.start, end };
+        if (open.flags & BOLD) span.bold = true;
+        if (open.flags & ITALIC) span.italic = true;
+        if (open.flags & UNDERLINE) span.underline = true;
+        spans.push(span);
+        open = null;
+    };
+    for (let i = 0; i < text.length; i += 1) {
+        const flags = format[map[i] ?? -1] ?? 0;
+        if (open && open.flags !== flags) close(i);
+        if (!open && flags) open = { start: i, flags };
+    }
+    close(text.length);
+    return spans;
+}
+
+/**
+ * Parte un texto en tramos con su formato, para dibujarlo con estilos
+ * anidados (el detalle del sermón en mobile).
+ */
+export function formatRuns(
+    text: string,
+    spans: readonly FormatSpan[] = [],
+): { text: string; bold?: true; italic?: true; underline?: true }[] {
+    const runs: { text: string; bold?: true; italic?: true; underline?: true }[] = [];
+    let cursor = 0;
+    for (const span of spans) {
+        if (span.start > cursor) runs.push({ text: text.slice(cursor, span.start) });
+        const { start, end, ...style } = span;
+        runs.push({ text: text.slice(start, end), ...style });
+        cursor = end;
+    }
+    if (cursor < text.length) runs.push({ text: text.slice(cursor) });
+    return runs.filter((r) => r.text.length > 0);
+}
+
+/**
  * What a block IS, which decides how the pulpit treats it.
  *
  *  - `paragraph` / `subheading` / `listitem` — delivery material: the pastor
@@ -53,6 +123,8 @@ export interface ReadingUnit {
      * párrafo (Mayúsculas+Enter en el editor). Ver `LINE_BREAK_RULE`.
      */
     lineBreak?: boolean;
+    /** Negrita, cursiva y subrayado, en coordenadas de `text` (`INLINE_FORMAT_RULE`). */
+    marks?: FormatSpan[];
 }
 
 /**
@@ -81,6 +153,8 @@ export interface ReadingBlock {
      * muestra sus números de versículo discretos.
      */
     scripture?: boolean;
+    /** Negrita, cursiva y subrayado, en coordenadas de `text` (`INLINE_FORMAT_RULE`). */
+    marks?: FormatSpan[];
 }
 
 /** ¿El texto empieza con una referencia bíblica (salvo comillas o un guion)? */
@@ -98,6 +172,8 @@ function startsWithReference(text: string): boolean {
 interface RewriteRule {
     re: RegExp;
     emit: (match: RegExpExecArray) => { text: string; offsetInMatch: number } | null;
+    /** El formato que da a lo que deja (negrita, cursiva, subrayado). */
+    format?: number;
 }
 
 /** Entidades HTML que deja el editor web (`&#x20;` es un espacio final). */
@@ -124,6 +200,21 @@ const ESCAPABLE = /\\([\\`*_{}\[\]()#+\-.!>|~])/g;
  * so `[**x**](#a)` collapses cleanly.
  */
 const RULES: RewriteRule[] = [
+    // Las etiquetas de formato del editor (`INLINE_FORMAT_RULE`), ANTES que
+    // las entidades: un `&lt;u&gt;` escrito a propósito es texto, no formato.
+    { re: /<u>([\s\S]*?)<\/u>/gi, format: UNDERLINE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 3 }) },
+    {
+        re: /<(b|strong)>([\s\S]*?)<\/\1>/gi,
+        format: BOLD,
+        emit: (m) => ({ text: m[2] ?? '', offsetInMatch: (m[1] ?? '').length + 2 }),
+    },
+    {
+        re: /<(i|em)>([\s\S]*?)<\/\1>/gi,
+        format: ITALIC,
+        emit: (m) => ({ text: m[2] ?? '', offsetInMatch: (m[1] ?? '').length + 2 }),
+    },
+    // Una etiqueta de formato sin pareja no se lee.
+    { re: /<\/?(?:u|b|strong|i|em)>/gi, emit: () => null },
     // Antes que todo: una entidad puede esconder un carácter que otra regla mira.
     {
         re: /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
@@ -145,11 +236,19 @@ const RULES: RewriteRule[] = [
     { re: /\[([^\]]+)\]\(#[^)]*\)/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
     // Un asterisco escapado (`\\*`) no abre ni cierra énfasis.
     // El énfasis puede cruzar un salto de renglón (no un párrafo): `**uno↵dos**`.
-    { re: /(?<!\\)\*\*((?:(?!\n\n)[\s\S])*?[^\\])\*\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }) },
+    {
+        re: /(?<!\\)\*\*((?:(?!\n\n)[\s\S])*?[^\\])\*\*/g,
+        format: BOLD,
+        emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }),
+    },
     // El abridor de énfasis no puede ir seguido de espacio: si no, un
     // marcador de lista `* punto` abre énfasis y se come hasta el próximo
     // asterisco, fundiendo dos viñetas en una.
-    { re: /(?<!\\)\*(\S(?:(?:(?!\n\n)[\s\S])*?[^\s\\])?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
+    {
+        re: /(?<!\\)\*(\S(?:(?:(?!\n\n)[\s\S])*?[^\s\\])?)\*/g,
+        format: ITALIC,
+        emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }),
+    },
     // Al final, después del énfasis: `\*` no abre ni cierra nada.
     { re: ESCAPABLE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
 ];
@@ -167,7 +266,7 @@ function identity(text: string): SourceMappedText {
     return { text, map };
 }
 
-function applyRule(src: SourceMappedText, rule: RewriteRule): SourceMappedText {
+function applyRule(src: SourceMappedText, rule: RewriteRule, format?: Uint8Array): SourceMappedText {
     const re = new RegExp(rule.re.source, rule.re.flags);
     const out: string[] = [];
     const map: number[] = [];
@@ -193,6 +292,13 @@ function applyRule(src: SourceMappedText, rule: RewriteRule): SourceMappedText {
             const base = emitted.offsetInMatch >= 0 ? match.index + emitted.offsetInMatch : -1;
             for (let k = 0; k < emitted.text.length; k += 1) {
                 out.push(emitted.text[k]!);
+                // Lo que queda adentro de un énfasis o una etiqueta lleva su
+                // formato, anotado en la posición de ORIGEN: sobrevive a las
+                // reglas que siguen, que conservan el mapa.
+                if (rule.format && format && base >= 0) {
+                    const origin = src.map[base + k];
+                    if (origin !== undefined) format[origin] = (format[origin] ?? 0) | rule.format;
+                }
                 // Fuera del texto original no hay a dónde mapear: se ancla al
                 // comienzo del match, que es de donde salió lo emitido.
                 map.push(
@@ -210,7 +316,16 @@ function applyRule(src: SourceMappedText, rule: RewriteRule): SourceMappedText {
 
 /** Strip markdown for display while remembering every character's origin. */
 export function normalizeSectionBody(body: string): SourceMappedText {
-    return RULES.reduce(applyRule, identity(body ?? ''));
+    return normalizeWithFormat(body).mapped;
+}
+
+/** Lo mismo, y además el formato de cada posición del ORIGEN (`INLINE_FORMAT_RULE`). */
+function normalizeWithFormat(body: string): { mapped: SourceMappedText; format: Uint8Array } {
+    const source = body ?? '';
+    const format = new Uint8Array(source.length);
+    let mapped = identity(source);
+    for (const rule of RULES) mapped = applyRule(mapped, rule, format);
+    return { mapped, format };
 }
 
 function sliceMapped(src: SourceMappedText, start: number, end: number): SourceMappedText {
@@ -235,17 +350,19 @@ function joinLines(src: SourceMappedText, lines: { start: number; end: number }[
     return { text: out.join(''), map };
 }
 
-function toUnits(src: SourceMappedText): ReadingUnit[] {
+function toUnits(src: SourceMappedText, format?: Uint8Array): ReadingUnit[] {
     return splitSentences(src.text).map((span) => {
         // Un span siempre cae dentro del texto mapeado; el cero es el ancla
         // honesta para el caso imposible en vez de una aserción.
         const start = src.map[span.start] ?? 0;
-        return {
+        const unit: ReadingUnit = {
             text: span.text,
             sourceStart: start,
             // `end` is exclusive: the last mapped char plus one.
             sourceEnd: (src.map[span.end - 1] ?? start) + 1,
         };
+        const marks = formatSpans(span.text, src.map.slice(span.start, span.end), format);
+        return marks.length ? { ...unit, marks } : unit;
     });
 }
 
@@ -267,7 +384,7 @@ const LIST_RE = /^(?:[-•+]\s+|\*\s+|\d+[.)]\s+)/;
  * and consecutive quoted lines collapse into one run-on line.
  */
 export function buildReadingBlocks(body: string): ReadingBlock[] {
-    const normalized = normalizeSectionBody(body);
+    const { mapped: normalized, format } = normalizeWithFormat(body);
     if (!normalized.text.trim()) return [];
 
     const blocks: ReadingBlock[] = [];
@@ -289,17 +406,25 @@ export function buildReadingBlocks(body: string): ReadingBlock[] {
     const push = (kind: ReadingBlockKind, lines: { start: number; end: number }[]) => {
         const units: ReadingUnit[] = [];
         const texts: string[] = [];
+        const marks: FormatSpan[] = [];
+        let offset = 0;
         for (const line of lines) {
             const mapped = trimMapped(joinLines(normalized, [line]));
             if (!mapped.text) continue;
-            const lineUnits = toUnits(mapped);
+            const lineUnits = toUnits(mapped, format);
             if (units.length && lineUnits[0]) lineUnits[0] = { ...lineUnits[0], lineBreak: true };
             units.push(...lineUnits);
+            if (texts.length) offset += 1; // el '\n' que une los renglones
+            for (const span of formatSpans(mapped.text, mapped.map, format)) {
+                marks.push({ ...span, start: span.start + offset, end: span.end + offset });
+            }
             texts.push(mapped.text);
+            offset += mapped.text.length;
         }
         if (!units.length) return;
         const text = texts.join('\n');
-        blocks.push(kind === 'quote' && startsWithReference(text) ? { kind, text, units, scripture: true } : { kind, text, units });
+        const block: ReadingBlock = kind === 'quote' && startsWithReference(text) ? { kind, text, units, scripture: true } : { kind, text, units };
+        blocks.push(marks.length ? { ...block, marks } : block);
     };
 
     for (const chunk of chunkBounds) {

@@ -56,6 +56,8 @@ const runsDe = (runs: ReadonlyArray<InlineRun>, extra: { italics?: boolean; colo
         text: r.text,
         bold: r.bold,
         italics: r.italic || extra.italics,
+        // El subrayado del editor (INLINE_FORMAT_RULE).
+        ...(r.underline ? { underline: {} } : {}),
         ...(extra.color ? { color: extra.color } : {}),
         ...(extra.size ? { size: extra.size } : {}),
     }));
