@@ -154,15 +154,14 @@ export function continuousFocusStep(
  * inercia de un deslizamiento, el dedo que lo frena también llegaba como
  * toque: en un costado saltaba una pantalla, en el centro escondía el
  * encabezado (lo vio el fundador). Es de frenado si el documento se movió
- * hace un instante, y el movimiento venía de la mano (no de un toque en el
- * costado, que debe poder repetirse rápido).
+ * hace un instante y lo movía la MANO: arrastrando, o por la inercia que
+ * dejó. Un paso del propio atril (un toque en el costado) no frena el toque
+ * siguiente: dos toques rápidos tienen que sumar (revisión adversarial).
  */
 export const STOP_TOUCH_MS = 150;
-/** Lo que puede durar la inercia de un deslizamiento. */
-export const MOMENTUM_MS = 4000;
-export function isStopTouch(now: number, lastScrollAt: number, lastDragAt: number, dragging: boolean): boolean {
+export function isStopTouch(now: number, lastScrollAt: number, byHand: { dragging: boolean; momentum: boolean }): boolean {
     if (now - lastScrollAt > STOP_TOUCH_MS) return false;
-    return dragging || now - lastDragAt < MOMENTUM_MS;
+    return byHand.dragging || byHand.momentum;
 }
 
 /** Un comienzo donde puede quedar arriba la pantalla nueva. */
@@ -177,7 +176,8 @@ export interface ReadingAnchor {
 export const MIN_STEP_RATIO = 0.5;
 
 /**
- * A dónde lleva un toque en el costado, cayendo en un COMIENZO.
+ * A dónde lleva un toque en el costado, cayendo en un COMIENZO. Todo en
+ * coordenadas de lo que se VE (sin la franja que tapan los controles).
  *
  * Bajar una pantalla exacta dejaba arriba media oración de un párrafo, y el
  * que vuelve de mirar a la gente no sabe dónde está (lo pidió el fundador).
@@ -186,7 +186,6 @@ export const MIN_STEP_RATIO = 0.5;
  * repita algo de lo que ya se veía, siempre se avanza al menos media
  * pantalla. Sin comienzo a mano, el paso de siempre.
  *
- * `top` es la parte de arriba de la pantalla que tapan los controles.
  */
 export function anchoredStep(
     scroll: number,

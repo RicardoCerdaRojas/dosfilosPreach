@@ -175,9 +175,8 @@ export default function PreachModeScreen({
         scrollY.value = e.contentOffset.y;
         lastScrollAt.value = Date.now();
     });
-    /** El dedo está arrastrando el documento, y cuándo lo soltó. */
-    const dragging = useRef(false);
-    const lastDragAt = useRef(0);
+    /** La mano mueve el documento: arrastrando, o por la inercia que dejó. */
+    const byHand = useRef({ dragging: false, momentum: false });
     /** El toque en curso sólo frena el documento (no navega ni toca los controles). */
     const stopTouch = useRef(false);
     // Toques: un dedo pasa página, dos dedos dos veces apagan (A3).
@@ -281,6 +280,8 @@ export default function PreachModeScreen({
     const [sectionTops, setSectionTops] = useState<number[]>([]);
     /** Dónde empieza el documento continuo dentro de la caja de lectura. */
     const [continuousTop, setContinuousTop] = useState(0);
+    /** El alto de la franja de controles del documento continuo (ver `bandKey`). */
+    const [band, setBand] = useState<{ key: string; height: number }>({ key: '', height: 0 });
 
     // Capa de tinta: anclada al texto, no a la pantalla. Ver InkNote en domain.
     // En continuo la firma NO lleva el movimiento: cambiar de movimiento
@@ -290,7 +291,7 @@ export default function PreachModeScreen({
     // empuja a los de abajo, y sus párrafos no avisan: no se movieron dentro
     // de su movimiento).
     const inkLayoutKey = continuousOn
-        ? `c|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}|${chromeVisible}|${continuousTop}|${sectionTops.map(Math.round).join(',')}`
+        ? `c|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}|${band.height}|${continuousTop}|${sectionTops.map(Math.round).join(',')}`
         : `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}`;
     const inkSections: InkSection[] = continuousOn
         ? continuousSections.map((c) => ({
@@ -511,7 +512,14 @@ export default function PreachModeScreen({
      * puntos y el que leía perdía la línea, lo vio el fundador). Su alto, el
      * último medido con los controles a la vista.
      */
-    const [chromeBand, setChromeBand] = useState(0);
+    /**
+     * Una medida por configuración: volver a medir al mostrar los controles
+     * podía dar otro alto (un margen de pantalla pasajero al volver la barra
+     * del sistema) y mover el texto, que es justo lo que esto evita
+     * (revisión adversarial). Se mide de nuevo sólo si cambia algo real.
+     */
+    const bandKey = `${statusBarMode}|${budgets.length > 0}|${insets.top}|${width}`;
+    const chromeBand = band.height;
     /** Lo que tapan los controles arriba del documento continuo. */
     const overlayTop = continuousOn && chromeVisible ? chromeBand : 0;
     const overlayTopSV = useSharedValue(0);
@@ -655,7 +663,13 @@ export default function PreachModeScreen({
         continuousSections.forEach((c, si) => {
             const base = docTops[si];
             if (base === undefined || !Number.isFinite(base)) return;
-            anchors.push({ y: base, rank: 0 });
+            // El título del movimiento, donde empieza su texto (sin el aire de
+            // arriba). Sin título, vale como comienzo de párrafo.
+            const titled = (si === 0 && !!sermon?.title) || !!c.section.title;
+            const air = si === 0 && !passage ? 0 : fontSize * 1.2;
+            anchors.push({ y: base + air, rank: titled ? 0 : 1 });
+            // En bosquejo, los bloques medidos son los del manuscrito: no valen.
+            if (outlineOn) return;
             c.blocks.forEach((block, bi) => {
                 const top = blockTops.current.get(`${c.section.slug}|${bi}`);
                 if (top !== undefined) anchors.push({ y: base + top, rank: block.kind === 'subheading' ? 0 : 1 });
@@ -950,7 +964,7 @@ export default function PreachModeScreen({
             <View
                 onLayout={(e) => {
                     const height = e.nativeEvent.layout.height;
-                    if (continuousOn && height > 0) setChromeBand(height);
+                    if (continuousOn && height > 0 && band.key !== bandKey) setBand({ key: bandKey, height });
                 }}
                 style={
                     continuousOn
@@ -1098,7 +1112,7 @@ export default function PreachModeScreen({
                 onPress={(e) => handleTap(e.nativeEvent.pageX)}
                 onTouchStart={(e) => {
                     stopTouch.current =
-                        continuousOn && isStopTouch(Date.now(), lastScrollAt.value, lastDragAt.current, dragging.current);
+                        continuousOn && isStopTouch(Date.now(), lastScrollAt.value, byHand.current);
                     swipeStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
                     if (gate.touchStart(e.nativeEvent.touches, Date.now())) setBlackout(true);
                 }}
@@ -1123,12 +1137,19 @@ export default function PreachModeScreen({
                     // Desplazar a mano suelta el foco: el próximo toque lo pone
                     // en la primera idea a la vista.
                     onScrollBeginDrag={() => {
-                        dragging.current = true;
+                        byHand.current = { dragging: true, momentum: false };
                         setContinuousFocus(null);
                     }}
                     onScrollEndDrag={() => {
-                        dragging.current = false;
-                        lastDragAt.current = Date.now();
+                        byHand.current = { ...byHand.current, dragging: false };
+                    }}
+                    // La inercia que deja un deslizamiento (iOS no la avisa para
+                    // un desplazamiento animado del propio atril).
+                    onMomentumScrollBegin={() => {
+                        byHand.current = { ...byHand.current, momentum: true };
+                    }}
+                    onMomentumScrollEnd={() => {
+                        byHand.current = { ...byHand.current, momentum: false };
                     }}
                     // Marcando, el dedo arrastra la selección, no el documento.
                     scrollEnabled={!(continuousOn && highlighting.selection !== null)}
@@ -1629,7 +1650,10 @@ export default function PreachModeScreen({
                 <Pressable
                     onPress={() => setBlackout(false)}
                     className="absolute inset-0"
-                    style={{ backgroundColor: '#000000' }}
+                    // Encima de TODO: los controles del documento continuo van
+                    // en una franja con zIndex, y sin esto quedaban prendidos
+                    // sobre la pantalla negra (revisión adversarial).
+                    style={{ backgroundColor: '#000000', zIndex: 100, elevation: 100 }}
                 />
             )}
         </View>

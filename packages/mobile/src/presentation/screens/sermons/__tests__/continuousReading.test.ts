@@ -116,19 +116,18 @@ describe('el foco de lectura en el sermón continuo', () => {
 
 describe('un toque que detiene el documento', () => {
     it('REGRESIÓN: con el texto corriendo por la inercia, el toque sólo lo detiene', () => {
-        // Se soltó el dedo hace 800 ms y el documento se movió hace 16 ms.
-        expect(isStopTouch(10_000, 9_984, 9_200, false)).toBe(true);
+        // El documento se movió hace 16 ms, por la inercia que dejó el dedo.
+        expect(isStopTouch(10_000, 9_984, { dragging: false, momentum: true })).toBe(true);
         // Mientras se arrastra, también.
-        expect(isStopTouch(10_000, 9_990, 0, true)).toBe(true);
+        expect(isStopTouch(10_000, 9_990, { dragging: true, momentum: false })).toBe(true);
     });
 
-    it('con el documento quieto, el toque navega', () => {
-        expect(isStopTouch(10_000, 9_000, 8_000, false)).toBe(false);
+    it('con el documento quieto, el toque navega (aunque quedara marcada una inercia)', () => {
+        expect(isStopTouch(10_000, 9_000, { dragging: false, momentum: true })).toBe(false);
     });
 
-    it('el movimiento de un toque en el costado no frena el siguiente toque', () => {
-        // El documento se mueve (animación propia) pero nadie arrastró hace rato.
-        expect(isStopTouch(10_000, 9_990, 1_000, false)).toBe(false);
+    it('REGRESIÓN: el paso del propio atril no frena el toque siguiente (dos toques suman)', () => {
+        expect(isStopTouch(10_000, 9_990, { dragging: false, momentum: false })).toBe(false);
     });
 });
 
