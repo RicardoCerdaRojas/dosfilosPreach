@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { buildAnnotationAnchor, buildReadingBlocks } from '@dosfilos/domain';
 import type { InkStroke } from '@dosfilos/domain';
 
 import { inkAnchorKey, sentenceContaining, useInkNotes } from '../useInkNotes';
@@ -158,6 +159,40 @@ describe('tinta en el sermón continuo', () => {
         act(() => api.undo());
         act(() => api.undo());
         expect(api.notes).toEqual([]);
+    });
+});
+
+describe('tinta anclada antes de leer el formato del editor', () => {
+    it('REGRESIÓN: una oración que empieza con «<u>» conserva su tinta vieja (anclada a la etiqueta)', () => {
+        const U = { slug: 'u', title: 'U', body: 'Vean el amor de Dios.\n<u>Dios es misericordia:</u> sin igual.' };
+        // Antes la oración empezaba en «<» (22); ahora se lee desde «D» (25).
+        const starts = buildReadingBlocks(U.body).flatMap((b) => b.units.map((u) => u.sourceStart));
+        expect(starts).toEqual([0, 25]);
+        function SondaU({ onApi }: { onApi: (api: Api) => void }) {
+            onApi(useInkNotes('s1', [{ section: U, sentenceStarts: starts }], 'k-u', 'u'));
+            return null;
+        }
+        act(() => {
+            renderer.update(
+                <QueryClientProvider client={client}>
+                    <SondaU onApi={(a) => (api = a)} />
+                </QueryClientProvider>,
+            );
+        });
+        act(() => {
+            api.rememberBlock('u', 0, { x: 0, y: 100, height: 20 });
+            api.rememberBlock('u', 25, { x: 0, y: 160, height: 20 });
+        });
+        const old = { ...buildAnnotationAnchor('u', U.body, 22, 46), id: 'vieja', type: 'ink' as const, strokes: [stroke(1)] };
+        client.setQueryData(['ink', 's1'], [old]);
+        act(() => {
+            renderer.update(
+                <QueryClientProvider client={client}>
+                    <SondaU onApi={(a) => (api = a)} />
+                </QueryClientProvider>,
+            );
+        });
+        expect(api.anchorRectFor(api.notes[0]!)).toEqual({ x: 0, y: 160, height: 20 });
     });
 });
 

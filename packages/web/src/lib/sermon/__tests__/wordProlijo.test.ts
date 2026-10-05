@@ -72,6 +72,18 @@ describe('exportSermonToDocx — prolijo', () => {
         expect(doc).toMatch(/<w:i\/>[\s\S]{0,200}París/);
     });
 
+    it('REGRESIÓN: el subrayado del editor se subraya; no se imprime «<u>» (INLINE_FORMAT_RULE)', async () => {
+        const blob = await exportSermonToDocx({
+            id: 's', userId: 'u', title: 'T', content: 'Vean.\n<u>Dios es misericordia:</u>\nÉxodo 34:6.',
+            bibleReferences: [], tags: [], status: 'published',
+            createdAt: new Date('2026-10-03'), updatedAt: new Date('2026-10-03'), isShared: false, authorName: 'P', preachingHistory: [],
+        } as Sermon);
+        const x = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/document.xml')!.async('string');
+        expect(x).not.toMatch(/&lt;\/?u&gt;/);
+        expect(x).toMatch(/<w:r><w:rPr>(?:(?!<\/w:rPr>).)*<w:u w:val="single"\/>(?:(?!<\/w:rPr>).)*<\/w:rPr><w:t[^>]*>Dios es misericordia:<\/w:t>/);
+        expect(x).not.toMatch(/<w:u w:val="single"\/>(?:(?!<\/w:r>).)*Vean\./);
+    });
+
     it('el hebreo llega tal cual; las etiquetas no se imprimen', async () => {
         const doc = await xml();
         expect((doc.match(/וַיְמַן/g) ?? []).length).toBe(1);

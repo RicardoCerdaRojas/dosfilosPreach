@@ -27,6 +27,8 @@ export const OUTLINE_CUE_MAX = 140;
 const stripInline = (text: string) =>
     decodeMarkdownText(text)
         .replace(/<br\s*\/?>/gi, ' ')
+        // El bosquejo es texto plano: el formato del editor no se lee (INLINE_FORMAT_RULE).
+        .replace(/<\/?(?:u|b|strong|i|em)>/gi, '')
         .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
         .replace(/\*\*(.+?)\*\*/g, '$1')
         .replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, '$1$2')

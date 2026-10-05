@@ -127,11 +127,52 @@ export type DeliveryFace = (typeof DELIVERY_FACES)[number];
  * junto a un `style` a veces no aplica lo de la clase (trampa registrada), y
  * donde la lectura importa —el versículo tocado en el atril— no se arriesga.
  */
-export const FACE_FAMILY: Record<DeliveryFace, { regular: string; semibold: string }> = {
-    lexend: { regular: 'Lexend', semibold: 'Lexend-SemiBold' },
-    literata: { regular: 'Literata', semibold: 'Literata-SemiBold' },
-    atkinson: { regular: 'Atkinson', semibold: 'Atkinson-Bold' },
+export interface FaceFamilies {
+    regular: string;
+    semibold: string;
+    /** Cursiva y negrita cursiva, para el formato del editor (`INLINE_FORMAT_RULE`). */
+    italic: string;
+    semiboldItalic: string;
+    /**
+     * La familia no tiene cursiva propia (Lexend no la diseñó): se pide
+     * inclinada al sistema con `fontStyle`.
+     */
+    synthItalic: boolean;
+}
+
+export const FACE_FAMILY: Record<DeliveryFace, FaceFamilies> = {
+    lexend: { regular: 'Lexend', semibold: 'Lexend-SemiBold', italic: 'Lexend', semiboldItalic: 'Lexend-SemiBold', synthItalic: true },
+    literata: {
+        regular: 'Literata',
+        semibold: 'Literata-SemiBold',
+        italic: 'Literata-Italic',
+        semiboldItalic: 'Literata-SemiBoldItalic',
+        synthItalic: false,
+    },
+    atkinson: {
+        regular: 'Atkinson',
+        semibold: 'Atkinson-Bold',
+        italic: 'Atkinson-Italic',
+        semiboldItalic: 'Atkinson-BoldItalic',
+        synthItalic: false,
+    },
 };
+
+/**
+ * La familia y el estilo de una palabra con formato del editor: negrita en
+ * seminegrita (la del púlpito), cursiva en la cursiva de la familia.
+ */
+export function formattedFont(
+    families: FaceFamilies,
+    format: { bold?: boolean; italic?: boolean },
+): { fontFamily?: string; transform?: { skewX: string }[] } {
+    if (!format.bold && !format.italic) return {};
+    const fontFamily = format.bold && format.italic ? families.semiboldItalic : format.bold ? families.semibold : families.italic;
+    // Sin cursiva propia, se inclina la palabra. `fontStyle: 'italic'` no
+    // sirve: iOS no inclina una familia propia que no trae cursiva (revisión
+    // adversarial). Va sobre el texto de UNA palabra, no sobre texto anidado.
+    return format.italic && families.synthItalic ? { fontFamily, transform: [{ skewX: '-10deg' }] } : { fontFamily };
+}
 
 /** Clases de NativeWind por familia y peso. */
 export const FACE_CLASS: Record<DeliveryFace, { regular: string; semibold: string }> = {

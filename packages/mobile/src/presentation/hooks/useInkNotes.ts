@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { buildAnnotationAnchor, resolveAnnotationAnchor } from '@dosfilos/domain';
+import { buildAnnotationAnchor, firstReadIndex, resolveAnnotationAnchor } from '@dosfilos/domain';
 import type { InkColor, InkNote, InkStroke, InkTool, SermonAnnotationAnchor } from '@dosfilos/domain';
 
 import { SermonSection } from '@/core/utils/sermonSections';
@@ -98,6 +98,21 @@ export function useInkNotes(
      */
     const noteByAnchor = useRef<Map<string, string>>(new Map());
     const anchorKey = inkAnchorKey;
+    /**
+     * Dónde empieza a leerse un ancla (cuerpo|posición → posición). Se guarda
+     * porque se pregunta en cada dibujo, y el cuerpo no cambia entre dibujos.
+     */
+    const readIndex = useRef<Map<string, number>>(new Map());
+    const firstRead = (body: string, at: number) => {
+        const key = `${at}|${body}`;
+        let found = readIndex.current.get(key);
+        if (found === undefined) {
+            found = firstReadIndex(body, at);
+            if (readIndex.current.size > 500) readIndex.current.clear();
+            readIndex.current.set(key, found);
+        }
+        return found;
+    };
     const sectionOf = (slug: string) => sections.find((s) => s.section.slug === slug);
 
     const { data: notes } = useQuery({
@@ -168,7 +183,9 @@ export function useInkNotes(
         const slug = own.section.slug;
         const exact = rects.get(anchorKey(slug, at.start));
         if (exact) return exact;
-        const sentence = sentenceContaining(own.sentenceStarts, at.start);
+        // Una nota anclada cuando la oración empezaba con una marca que ahora
+        // no se lee (`<u>`): se busca desde donde la oración se LEE.
+        const sentence = sentenceContaining(own.sentenceStarts, firstRead(own.section.body, at.start));
         return sentence === null ? null : (rects.get(anchorKey(slug, sentence)) ?? null);
     };
 

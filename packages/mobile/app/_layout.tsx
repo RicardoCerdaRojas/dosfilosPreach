@@ -12,10 +12,17 @@ import {
 // Tres familias de LECTURA, elegibles desde el púlpito. No son estilos: cada
 // una resuelve un problema distinto del ojo que vuelve del público. Ver
 // DELIVERY_FACES en core/theme/typography.
-import { Literata_400Regular, Literata_600SemiBold } from '@expo-google-fonts/literata';
+import {
+  Literata_400Regular,
+  Literata_400Regular_Italic,
+  Literata_600SemiBold,
+  Literata_600SemiBold_Italic,
+} from '@expo-google-fonts/literata';
 import {
   AtkinsonHyperlegible_400Regular,
+  AtkinsonHyperlegible_400Regular_Italic,
   AtkinsonHyperlegible_700Bold,
+  AtkinsonHyperlegible_700Bold_Italic,
 } from '@expo-google-fonts/atkinson-hyperlegible';
 import { useEffect, useMemo } from 'react';
 import { useColorScheme } from 'nativewind';
@@ -100,6 +107,12 @@ function RootLayoutNav() {
     'Literata-SemiBold': Literata_600SemiBold,
     Atkinson: AtkinsonHyperlegible_400Regular,
     'Atkinson-Bold': AtkinsonHyperlegible_700Bold,
+    // Las cursivas, para el formato que el pastor marca en el editor
+    // (INLINE_FORMAT_RULE). Lexend no tiene cursiva.
+    'Literata-Italic': Literata_400Regular_Italic,
+    'Literata-SemiBoldItalic': Literata_600SemiBold_Italic,
+    'Atkinson-Italic': AtkinsonHyperlegible_400Regular_Italic,
+    'Atkinson-BoldItalic': AtkinsonHyperlegible_700Bold_Italic,
   });
   const segments = useSegments();
   const router = useRouter();

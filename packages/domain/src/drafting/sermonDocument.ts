@@ -19,6 +19,8 @@ export interface InlineRun {
     text: string;
     bold?: boolean;
     italic?: boolean;
+    /** Subrayado del editor (`<u>…</u>`). Ver `INLINE_FORMAT_RULE`. */
+    underline?: boolean;
     /**
      * Un salto de línea dentro del párrafo (`LINE_BREAK_RULE`): el pastor
      * cortó la línea a mano. Va con `text` vacío.
@@ -41,8 +43,13 @@ const BR = /<br\s*\/?>/gi;
  * Antes sólo `&nbsp;` y `&amp;`: el `&#x20;` que deja el editor al final de
  * un renglón salía literal en el Word y el PDF, igual que en el atril.
  */
+/** Una etiqueta de formato sin pareja: no se lee (`INLINE_FORMAT_RULE`). */
+const STRAY_FORMAT_TAG = /(?<!\\)<\/?(?:u|b|strong|i|em)>/gi;
+
 function unescape(text: string): string {
     return text
+        // Antes de las entidades: un `&lt;u&gt;` escrito a propósito es texto.
+        .replace(STRAY_FORMAT_TAG, '')
         .replace(/\\([\\`*_{}[\]()#+\-.!>|])/g, '$1')
         .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, entity: string) => decodeEntity(entity) ?? whole);
 }
@@ -81,7 +88,9 @@ function parseInlineLine(fuente: string): InlineRun[] {
     const runs: InlineRun[] = [];
     // `***a***` (negrita y cursiva) primero: si no, la rama de negrita deja
     // asteriscos sueltos.
-    const re = /(\*\*\*|___)(?=\S)([\s\S]+?)(?<=\S)\1|(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\3|(?<![*\w])([*_])(?=\S)([^*_]+?)(?<=\S)\5(?![*\w])/g;
+    // Al final, las etiquetas de formato del editor (`INLINE_FORMAT_RULE`):
+    // el subrayado llega como `<u>…</u>`, y si alguien pega HTML, `<b>` o `<i>`.
+    const re = /(\*\*\*|___)(?=\S)([\s\S]+?)(?<=\S)\1|(\*\*|__)(?=\S)([\s\S]+?)(?<=\S)\3|(?<![*\w])([*_])(?=\S)([^*_]+?)(?<=\S)\5(?![*\w])|(?<!\\)<(u|b|strong|i|em)>([\s\S]*?)<\/\7>/gi;
     let ultimo = 0;
     for (const m of fuente.matchAll(re)) {
         const i = m.index ?? 0;
@@ -91,8 +100,14 @@ function parseInlineLine(fuente: string): InlineRun[] {
         } else if (m[3]) {
             // La negrita puede llevar cursiva adentro.
             for (const r of parseInline(m[4]!)) runs.push({ ...r, bold: true });
+        } else if (m[7]) {
+            const tag = m[7].toLowerCase();
+            const style = tag === 'u' ? { underline: true } : tag === 'b' || tag === 'strong' ? { bold: true } : { italic: true };
+            for (const r of parseInline(m[8]!)) runs.push(r.lineBreak ? r : { ...r, ...style });
         } else {
-            runs.push({ text: unescape(m[6]!), italic: true });
+            // La cursiva también puede llevar formato adentro: el editor abre
+            // el subrayado DENTRO de la cursiva (`*a <u>b</u>*`).
+            for (const r of parseInline(m[6]!)) runs.push(r.lineBreak ? r : { ...r, italic: true });
         }
         ultimo = i + m[0].length;
     }
@@ -105,7 +120,15 @@ function mergeRuns(runs: InlineRun[]): InlineRun[] {
     for (const r of runs) {
         const prev = out[out.length - 1];
         // Un salto nunca se funde con el texto de al lado.
-        if (prev && !prev.lineBreak && !r.lineBreak && !!prev.bold === !!r.bold && !!prev.italic === !!r.italic) prev.text += r.text;
+        if (
+            prev &&
+            !prev.lineBreak &&
+            !r.lineBreak &&
+            !!prev.bold === !!r.bold &&
+            !!prev.italic === !!r.italic &&
+            !!prev.underline === !!r.underline
+        )
+            prev.text += r.text;
         else out.push({ ...r });
     }
     return out;

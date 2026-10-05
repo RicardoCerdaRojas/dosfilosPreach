@@ -73,6 +73,39 @@ describe('PdfExportService — lo que se dibuja (revisión adversarial de R2)', 
         expect(hace.x).toBeCloseTo(l.find((x) => x.text === 'A')!.x, 1);
     }, 60000);
 
+    it('REGRESIÓN: el subrayado del editor se subraya; no se imprime «<u>» (INLINE_FORMAT_RULE)', async () => {
+        const { jsPDF } = await import('jspdf');
+        const textos: Array<{ text: string; x: number; y: number }> = [];
+        const rayas: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+        const svc = new PdfExportService(cargar, () => {
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const text = doc.text.bind(doc);
+            const line = doc.line.bind(doc);
+            doc.text = ((t: string, x: number, y: number, ...resto: unknown[]) => {
+                textos.push({ text: String(t), x, y });
+                return (text as (...a: unknown[]) => unknown)(t, x, y, ...resto);
+            }) as typeof doc.text;
+            doc.line = ((x1: number, y1: number, x2: number, y2: number, ...resto: unknown[]) => {
+                rayas.push({ x1, y1, x2, y2 });
+                return (line as (...a: unknown[]) => unknown)(x1, y1, x2, y2, ...resto);
+            }) as typeof doc.line;
+            return doc;
+        });
+        await svc.buildSermonPdf(SermonEntity.create({
+            id: 's', userId: 'u', title: 'Prueba', status: 'published',
+            content: 'Antes <u>Dios es misericordia</u> después.',
+            bibleReferences: [], tags: [], createdAt: new Date(), updatedAt: new Date(),
+        } as never));
+        expect(textos.some((t) => t.text.includes('<u>') || t.text.includes('</u>'))).toBe(false);
+        const dios = textos.find((t) => t.text === 'Dios')!;
+        const despues = textos.find((t) => t.text === 'después.')!;
+        // Una raya horizontal bajo «Dios», y ninguna bajo «después».
+        const bajo = (t: { x: number; y: number }) =>
+            rayas.some((r) => r.y1 === r.y2 && r.y1 > t.y && r.y1 < t.y + 2 && r.x1 <= t.x + 0.01 && r.x2 > t.x);
+        expect(bajo(dios)).toBe(true);
+        expect(bajo(despues)).toBe(false);
+    }, 60000);
+
         it('la puntuación pegada al hebreo va con la fuente latina, y el hebreo con la suya', async () => {
         const l = await dibujado('La palabra (חֶסֶד) significa.');
         expect(l.find(x => x.text === '(')?.font).toBe('EBGaramond');

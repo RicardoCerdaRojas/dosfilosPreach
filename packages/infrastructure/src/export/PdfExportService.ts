@@ -99,6 +99,8 @@ interface Pieza {
     pegado?: boolean;
     /** Un salto de línea que puso el pastor: corta la línea acá. */
     salto?: boolean;
+    /** Subrayado del editor (`INLINE_FORMAT_RULE`): jsPDF no lo tiene, se dibuja. */
+    underline?: boolean;
 }
 
 /**
@@ -123,7 +125,7 @@ function piezasDe(runs: ReadonlyArray<InlineRun>): Pieza[] {
         for (const parte of r.text.split(/(\s+)/)) {
             if (!parte) continue;
             if (/^\s+$/.test(parte)) {
-                out.push({ text: ' ', font: 'serif', bold: !!r.bold, italic: !!r.italic, hebreo: false, espacio: true });
+                out.push({ text: ' ', font: 'serif', bold: !!r.bold, italic: !!r.italic, hebreo: false, espacio: true, underline: !!r.underline });
                 continue;
             }
             // Dentro de una palabra, el hebreo y lo demás van por separado: la
@@ -132,7 +134,7 @@ function piezasDe(runs: ReadonlyArray<InlineRun>): Pieza[] {
             for (const trozo of parte.split(/([\u0590-\u05FF\uFB1D-\uFB4F]+)/)) {
                 if (!trozo) continue;
                 const hebreo = HEBREO.test(trozo);
-                out.push({ text: hebreo ? trozo : sinGlifo(trozo), font: hebreo ? 'hebreo' : 'serif', bold: !!r.bold, italic: !!r.italic, hebreo, espacio: false, pegado: true });
+                out.push({ text: hebreo ? trozo : sinGlifo(trozo), font: hebreo ? 'hebreo' : 'serif', bold: !!r.bold, italic: !!r.italic, hebreo, espacio: false, pegado: true, underline: !!r.underline });
             }
             out[out.length - 1]!.pegado = false;
         }
@@ -349,10 +351,18 @@ class Dibujo {
             this.doc.setTextColor(...(o.color ?? TINTA));
             for (const p of visual) {
                 this.fuente(p, o.size);
+                const desde = x;
                 if (p.hebreo) x = this.hebreo(p.text, x, base);
                 else {
                     this.doc.text(p.text, x, base, esp ? { charSpace: esp } : undefined);
                     x += this.doc.getTextWidth(p.text) + esp * Array.from(p.text).length;
+                }
+                // El subrayado, del color del texto, bajo la línea de base.
+                if (p.underline && x > desde) {
+                    const bajo = base + o.size * PT * 0.14;
+                    this.doc.setDrawColor(...(o.color ?? TINTA));
+                    this.doc.setLineWidth(o.size * PT * 0.055);
+                    this.doc.line(desde, bajo, x, bajo);
                 }
             }
             this.y += alto;

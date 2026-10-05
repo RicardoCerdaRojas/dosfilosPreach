@@ -88,7 +88,9 @@ export function fragmentBlock(block: ReadingBlock, fragment: PageFragment): Read
     const units = block.units.slice(fragment.from, fragment.to);
     // El primer renglón de un fragmento no lleva salto delante: ya empieza arriba.
     const text = units.map((u, i) => (i === 0 ? '' : u.lineBreak ? '\n' : ' ') + u.text).join('');
-    return { ...block, units, text, continued: fragment.from > 0 };
+    // Los tramos con formato del bloque son del texto ENTERO: en un fragmento
+    // valen los de cada oración, que viajan con ella.
+    return { ...block, units, text, marks: undefined, continued: fragment.from > 0 };
 }
 
 /**
