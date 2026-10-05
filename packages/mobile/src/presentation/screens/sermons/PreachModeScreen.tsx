@@ -63,12 +63,10 @@ import { useUIStore } from '@/presentation/state/ui.store';
 import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
 import { focusOnArrival, isDimmed, stepFocus } from './readingFocus';
 import {
-    READING_LINE_RATIO,
     continuousFocusStep,
     maxScroll,
-    progressInSection,
     screenStep,
-    sectionAtLine,
+    trackedPlace,
     type BlockBox,
 } from './continuousReading';
 
@@ -500,7 +498,11 @@ export default function PreachModeScreen({
     // El respiro de arriba del contenido: el mismo que usa la caja que se desplaza.
     const scrollContentTop = chromeVisible ? 16 : insets.top + 24;
     /** Comienzo de cada movimiento en el documento (coordenadas del contenido). */
-    const docTops = sectionTops.slice(0, sections.length).map((top) => scrollContentTop + continuousTop + top);
+    // Uno por movimiento, sin huecos: un `onLayout` que llega en otra tanda
+    // dejaba el arreglo con agujeros que `every` no ve.
+    const docTops = Array.from({ length: sections.length }, (_, i) => sectionTops[i]).map((top) =>
+        top === undefined ? Number.NaN : scrollContentTop + continuousTop + top,
+    );
     const docTopsKey = docTops.join(',');
     const topsReady =
         continuousOn && sections.length > 0 && docTops.length === sections.length && docTops.every((top) => Number.isFinite(top));
@@ -509,12 +511,28 @@ export default function PreachModeScreen({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [topsReady, docTopsKey]);
 
+    /**
+     * El destino del último desplazamiento animado, mientras dura: dos toques
+     * rápidos suman desde ahí y no desde la mitad de la animación (que daba
+     * pantalla y media).
+     */
+    const lastTarget = useRef<{ y: number; at: number } | null>(null);
     const scrollToY = (y: number, animated: boolean = tokens.animations) => {
         const max = maxScroll(contentHeight.current, viewport.current.height);
-        scrollRef.current?.scrollTo({ y: Math.min(max, Math.max(0, y)), animated });
+        const target = Math.min(max, Math.max(0, y));
+        lastTarget.current = animated ? { y: target, at: Date.now() } : null;
+        scrollRef.current?.scrollTo({ y: target, animated });
+        return target;
     };
-    /** Con la tinta activa, la capa desplaza el documento ella misma. */
-    const scrollInkTo = (y: number) => scrollToY(y, false);
+    /**
+     * Con la tinta activa, la capa desplaza el documento ella misma. Eso no
+     * pasa por el arrastre de la lista, así que suelta el foco acá: si no, el
+     * próximo toque volvía a la idea que ya quedó arriba (revisión adversarial).
+     */
+    const scrollInkTo = (y: number) => {
+        setContinuousFocus(null);
+        return scrollToY(y, false);
+    };
 
     /** Dónde empieza y termina cada bloque en el documento; `null` si no se midió. */
     const blockBoxes = (): BlockBox[] =>
@@ -534,26 +552,26 @@ export default function PreachModeScreen({
      */
     const track = (index: number, progressStep: number) => {
         if (!continuousOn || pendingJump.current !== null) return;
+        // El reloj se mueve SIEMPRE con el documento, no según lo que la
+        // pantalla cree: al bajar de la Lectura a la introducción, el índice
+        // ya era 0 y la introducción se cargaba a la Lectura (revisión
+        // adversarial). Mover al mismo movimiento no hace nada.
         if (index < 0 && passage) {
-            if (!onReadingPage) {
-                setOnReadingPage(true);
-                preachClock.moveTo(READING_SLUG);
-            }
+            preachClock.moveTo(READING_SLUG);
+            if (!onReadingPage) setOnReadingPage(true);
             return;
         }
         const at = Math.max(0, index);
+        const slug = sections[at]?.slug;
+        if (slug) preachClock.moveTo(slug);
         if (onReadingPage) setOnReadingPage(false);
-        if (at !== sectionIndex) enterSection(at, progressStep);
-        else if (progressStep !== pageIndex) setPageIndex(progressStep);
+        if (at !== sectionIndex) setSectionIndex(at);
+        if (progressStep !== pageIndex) setPageIndex(progressStep);
     };
     useAnimatedReaction(
         () => {
-            const tops = topsSV.value;
-            if (!continuousOn || !tops.length) return null;
-            const line = scrollY.value + viewportHeightSV.value * READING_LINE_RATIO;
-            const at = sectionAtLine(tops, line);
-            const progress = at < 0 ? 0 : progressInSection(tops, at, line, contentHeightSV.value);
-            return { at, step: Math.min(CONTINUOUS_STEPS - 1, Math.floor(progress * CONTINUOUS_STEPS)) };
+            if (!continuousOn) return null;
+            return trackedPlace(topsSV.value, scrollY.value, viewportHeightSV.value, contentHeightSV.value, CONTINUOUS_STEPS);
         },
         (now, before) => {
             if (!now || (before && now.at === before.at && now.step === before.step)) return;
@@ -595,7 +613,8 @@ export default function PreachModeScreen({
      * encendido, la idea siguiente (desplazando sólo si no entra).
      */
     const stepContinuous = (towards: 1 | -1) => {
-        const view = { scroll: scrollY.value, height: viewport.current.height, contentHeight: contentHeight.current };
+        const recent = lastTarget.current && Date.now() - lastTarget.current.at < 500 ? lastTarget.current.y : null;
+        const view = { scroll: recent ?? scrollY.value, height: viewport.current.height, contentHeight: contentHeight.current };
         if (focusOn) {
             const next = continuousFocusStep(allKinds, blockBoxes(), continuousFocus, towards, view, lineHeight, overlap);
             setContinuousFocus(next.focus);
@@ -603,11 +622,13 @@ export default function PreachModeScreen({
             return;
         }
         const target = screenStep(view.scroll, view.height, view.contentHeight, overlap, towards);
-        if (Math.abs(target - view.scroll) < 1) return;
+        const moved = target - view.scroll;
+        if (Math.abs(moved) < 1) return;
         scrollToY(target);
-        // Marca de reanudación (L-2): donde empieza lo que no se veía.
+        // Marca de reanudación (L-2): donde empieza lo que no se veía. Al
+        // llegar al final el paso es más corto, y lo nuevo empieza más abajo.
         if (towards > 0) {
-            const mark = Date.now();
+            const mark = view.height - moved;
             setScrollMark(mark);
             setTimeout(() => setScrollMark((current) => (current === mark ? null : current)), RESUME_MARK_MS);
         }
@@ -619,7 +640,9 @@ export default function PreachModeScreen({
         if (continuousOn) {
             setContinuousFocus(null);
             const top = docTops[index];
-            if (top !== undefined) scrollToY(top);
+            // Sin animar: animando, el documento pasaba por los movimientos
+            // de en medio y el reloj les cargaba unos milisegundos a cada uno.
+            if (top !== undefined && Number.isFinite(top)) scrollToY(top, false);
             return;
         }
         scrollRef.current?.scrollTo({ y: 0, animated: tokens.animations });
@@ -1199,7 +1222,7 @@ export default function PreachModeScreen({
                         accessible={false}
                         style={{
                             position: 'absolute',
-                            top: overlap,
+                            top: scrollMark,
                             left: Math.max(4, (width - (measure ?? width - 48)) / 2 - fontSize * 0.55),
                             width: 4,
                             height: fontSize * 1.15,

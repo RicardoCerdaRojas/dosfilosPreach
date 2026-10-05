@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { ReadingBlockKind } from '@dosfilos/domain';
 
-import { continuousFocusStep, progressInSection, screenStep, sectionAtLine } from '../continuousReading';
+import { continuousFocusStep, progressInSection, screenStep, sectionAtLine, trackedPlace } from '../continuousReading';
 
 describe('en qué movimiento se está leyendo', () => {
     const tops = [0, 1000, 2500];
@@ -21,6 +21,26 @@ describe('en qué movimiento se está leyendo', () => {
         expect(progressInSection(tops, 1, 1750, 4000)).toBeCloseTo(0.5);
         expect(progressInSection(tops, 2, 4000, 4000)).toBe(1);
         expect(progressInSection(tops, 0, -50, 4000)).toBe(0);
+    });
+});
+
+describe('dónde se está leyendo', () => {
+    it('el movimiento que cruza la línea de lectura, y cuánto de él', () => {
+        // Línea en 400 + 0,3·900 = 670: el movimiento 0 (0–1000), por la mitad y algo.
+        expect(trackedPlace([0, 1000, 2000], 400, 900, 3000, 10)).toEqual({ at: 0, step: 6 });
+    });
+
+    it('REGRESIÓN: con el documento al final, se lee el último aunque sea corto', () => {
+        // Conclusión de 300 (2600–2900): su comienzo nunca llegaba a la línea (2000 + 270).
+        expect(trackedPlace([16, 1000, 2000, 2600], 2000, 900, 2900, 10)).toEqual({ at: 3, step: 9 });
+    });
+
+    it('un documento que entra en la pantalla no está «al final»', () => {
+        expect(trackedPlace([0, 300], 0, 900, 600, 10)?.at).toBe(0);
+    });
+
+    it('sin movimientos medidos, todavía no se sabe', () => {
+        expect(trackedPlace([], 0, 900, 3000, 10)).toBeNull();
     });
 });
 
@@ -72,6 +92,12 @@ describe('el foco de lectura en el sermón continuo', () => {
         expect(continuousFocusStep(kinds, boxes, 3, -1, { ...view, scroll: 680 }, 40, 80)).toEqual({ focus: 2, scrollTo: 0 });
         const below = [{ top: 0, bottom: 300 }, null, { top: 1400, bottom: 1700 }, { top: 2000, bottom: 2600 }];
         expect(continuousFocusStep(kinds, below, 3, -1, { ...view, scroll: 1950 }, 40, 80)).toEqual({ focus: 2, scrollTo: 940 });
+    });
+
+    it('REGRESIÓN: una idea sin medir (cita plegada) se salta, no deja el foco fuera de la vista', () => {
+        const kindsQ: ReadingBlockKind[] = ['paragraph', 'quote', 'paragraph'];
+        const boxesQ = [{ top: 0, bottom: 300 }, null, { top: 360, bottom: 600 }];
+        expect(continuousFocusStep(kindsQ, boxesQ, 0, 1, view, 40, 80)).toEqual({ focus: 2, scrollTo: null });
     });
 
     it('en el final del sermón el foco se queda', () => {

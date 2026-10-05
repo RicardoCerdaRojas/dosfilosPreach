@@ -248,6 +248,13 @@ export function SelectableParagraph({
      */
     const handleTouchStart = (e: GestureResponderEvent) => {
         const { pageX, pageY } = e.nativeEvent;
+        // En el documento continuo el texto se desplaza y `onLayout` no se
+        // entera: con el origen medido al armar, un toque largo después de
+        // bajar marcaba otro renglón o nada (revisión adversarial). Se vuelve
+        // a medir en cada toque, antes de que venza la espera.
+        container.current?.measureInWindow((x, y) => {
+            origin.current = { x, y };
+        });
         pressStart.current = { x: pageX, y: pageY };
         cancelTimerOnly();
         pressTimer.current = setTimeout(() => {

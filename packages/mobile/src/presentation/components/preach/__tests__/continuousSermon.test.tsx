@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -20,6 +20,13 @@ function sectionsOf(): ContinuousSection[] {
         { section: B, blocks: b, firstBlock: a.length },
     ];
 }
+
+// Se desmonta todo al terminar: el cuerpo mide en el cuadro siguiente
+// (requestAnimationFrame) y, montado, ese cuadro llegaba con jest ya cerrado.
+const mounted: ReactTestRenderer[] = [];
+afterEach(() => {
+    mounted.splice(0).forEach((r) => act(() => r.unmount()));
+});
 
 function render(overrides: Partial<React.ComponentProps<typeof ContinuousSermon>> = {}) {
     let r!: ReactTestRenderer;
@@ -53,6 +60,7 @@ function render(overrides: Partial<React.ComponentProps<typeof ContinuousSermon>
             />,
         );
     });
+    mounted.push(r);
     return r;
 }
 const bodies = (r: ReactTestRenderer) => r.root.findAllByType(PreachSectionBody);

@@ -82,7 +82,7 @@ interface Props<K> {
      * lo mueve ella misma, a esta altura. Dos dedos desplazan siempre; con
      * «sólo Apple Pencil», también uno.
      */
-    onScrollTo?: (y: number) => void;
+    onScrollTo?: (y: number) => number | void;
 }
 
 /** Lo más que dura el trazo puente: el hueco que tapa es de un cuadro. */
@@ -425,8 +425,10 @@ export function InkLayer<K = number>({
                     );
                 }
                 const target = Math.max(0, scroll.current.startOffset + scroll.current.startY - averageY(e.allTouches));
-                lastScrollTarget.current = target;
-                onScrollTo?.(target);
+                // El destino que quedó de verdad (con tope al final): si no,
+                // al levantar un dedo se retomaba desde más allá del final.
+                const applied = onScrollTo?.(target);
+                lastScrollTarget.current = typeof applied === 'number' ? applied : target;
                 return;
             }
             const touch = e.allTouches.find((t) => t.id === drawTouch.current);

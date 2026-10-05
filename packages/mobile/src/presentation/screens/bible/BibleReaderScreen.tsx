@@ -127,7 +127,10 @@ export default function BibleReaderScreen() {
      */
     const scrollInkTo = (y: number) => {
         const max = Math.max(0, contentHeight.current - viewportHeight.current);
-        scrollRef.current?.scrollTo({ y: Math.min(Math.max(0, y), max), animated: false });
+        const target = Math.min(Math.max(0, y), max);
+        scrollRef.current?.scrollTo({ y: target, animated: false });
+        // La capa sigue desde lo que quedó de verdad, no desde más allá del final.
+        return target;
     };
     // Otro capítulo empieza ARRIBA. Antes conservaba la altura del anterior,
     // y al volver a la tinta parecía devolver al lugar de las últimas notas.

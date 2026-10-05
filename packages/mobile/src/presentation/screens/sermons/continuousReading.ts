@@ -43,7 +43,34 @@ export function progressInSection(tops: readonly number[], index: number, line: 
 }
 
 /** Hasta dónde se puede desplazar: el final del documento al pie de la pantalla. */
-export const maxScroll = (contentHeight: number, viewport: number) => Math.max(0, contentHeight - viewport);
+export function maxScroll(contentHeight: number, viewport: number): number {
+    'worklet';
+    return Math.max(0, contentHeight - viewport);
+}
+
+/**
+ * Dónde se está leyendo: el movimiento y cuánto de él (en `steps` tramos).
+ *
+ * Con el documento bajado hasta el final, el que se lee es el ÚLTIMO, aunque
+ * su comienzo no llegue a la línea de lectura: una conclusión de menos de dos
+ * tercios de pantalla no la cruzaba nunca, y el reloj le cargaba su tiempo al
+ * movimiento anterior (revisión adversarial).
+ */
+export function trackedPlace(
+    tops: readonly number[],
+    scroll: number,
+    viewport: number,
+    contentHeight: number,
+    steps: number,
+): { at: number; step: number } | null {
+    'worklet';
+    if (!tops.length) return null;
+    const atEnd = contentHeight > viewport && scroll >= maxScroll(contentHeight, viewport) - 1;
+    const line = scroll + viewport * READING_LINE_RATIO;
+    const at = atEnd ? tops.length - 1 : sectionAtLine(tops, line);
+    const progress = atEnd ? 1 : at < 0 ? 0 : progressInSection(tops, at, line, contentHeight);
+    return { at, step: Math.min(steps - 1, Math.floor(progress * steps)) };
+}
 
 /**
  * A dónde lleva un toque en el costado: casi una pantalla, dejando a la vista
@@ -105,11 +132,17 @@ export function continuousFocusStep(
     if (current && towards > 0 && current.bottom > viewBottom + 1) return { focus, scrollTo: screen() };
     if (current && towards < 0 && current.top < viewTop - 1) return { focus, scrollTo: screen() };
 
-    const moved = stepFocus(kinds, focus, towards);
+    // La idea siguiente que se pueda ubicar. Una sin medir (una cita plegada
+    // es un renglón que se toca, no un párrafo) se salta: el foco caía fuera
+    // de la pantalla sin desplazar, y todo lo visible quedaba atenuado.
+    let moved = stepFocus(kinds, focus, towards);
+    while (moved.turn === 0 && moved.focus !== null && !boxes[moved.focus]) {
+        moved = stepFocus(kinds, moved.focus, towards);
+    }
     // En el borde del sermón el foco se queda donde está.
     if (moved.turn !== 0 || moved.focus === null) return { focus, scrollTo: null };
-    const box = boxes[moved.focus];
-    if (!box || (box.top >= viewTop - 1 && box.bottom <= viewBottom + 1)) return { focus: moved.focus, scrollTo: null };
+    const box = boxes[moved.focus]!;
+    if (box.top >= viewTop - 1 && box.bottom <= viewBottom + 1) return { focus: moved.focus, scrollTo: null };
     if (towards > 0) return { focus: moved.focus, scrollTo: clamp(box.top - lead) };
     // Volviendo: la idea anterior queda ABAJO, que es donde estaba al leerla.
     const tall = box.bottom - box.top > view.height - lead;
