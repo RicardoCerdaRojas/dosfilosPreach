@@ -111,6 +111,17 @@ describe('el sermón como un documento continuo', () => {
         expect(onSectionTop).toHaveBeenCalledWith(1, 840);
     });
 
+    it('cada bloque avisa dónde empieza, con su movimiento (para caer en un comienzo)', () => {
+        const onBlockTop = jest.fn();
+        const r = render({ onBlockTop });
+        const body = bodies(r)[1]!;
+        // El cuerpo envuelve cada bloque en una vista que se mide.
+        const wrappers = body.findAll((n) => n.parent === body && typeof n.props.onLayout === 'function');
+        expect(wrappers).toHaveLength(2);
+        act(() => wrappers[1]!.props.onLayout({ nativeEvent: { layout: { x: 0, y: 220, width: 600, height: 90 } } }));
+        expect(onBlockTop).toHaveBeenCalledWith('tormenta', 1, 220);
+    });
+
     it('las marcas de cada movimiento son las suyas', () => {
         const mark = { id: 'h1', color: 'yellow' as const, style: 'highlight' as const, start: 0, end: 6 };
         const r = render({ highlights: { tormenta: [mark] } });

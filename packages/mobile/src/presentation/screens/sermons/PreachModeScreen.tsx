@@ -63,11 +63,13 @@ import { useUIStore } from '@/presentation/state/ui.store';
 import { createGestureGate, swipeDirection, tapZone } from './preachGestures';
 import { focusOnArrival, isDimmed, stepFocus } from './readingFocus';
 import {
+    anchoredStep,
     continuousFocusStep,
+    isStopTouch,
     maxScroll,
-    screenStep,
     trackedPlace,
     type BlockBox,
+    type ReadingAnchor,
 } from './continuousReading';
 
 /** En el documento continuo, el avance dentro del movimiento va en décimos (para el reloj). */
@@ -167,9 +169,16 @@ export default function PreachModeScreen({
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
     /** Cuánto bajó el texto: la tinta del documento continuo vive en coordenadas del texto. */
     const scrollY = useSharedValue(0);
+    /** Cuándo se movió el documento por última vez: un toque que lo frena no navega. */
+    const lastScrollAt = useSharedValue(0);
     const onScroll = useAnimatedScrollHandler((e) => {
         scrollY.value = e.contentOffset.y;
+        lastScrollAt.value = Date.now();
     });
+    /** La mano mueve el documento: arrastrando, o por la inercia que dejó. */
+    const byHand = useRef({ dragging: false, momentum: false });
+    /** El toque en curso sólo frena el documento (no navega ni toca los controles). */
+    const stopTouch = useRef(false);
     // Toques: un dedo pasa página, dos dedos dos veces apagan (A3).
     const [gate] = useState(createGestureGate);
     const swipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -271,6 +280,8 @@ export default function PreachModeScreen({
     const [sectionTops, setSectionTops] = useState<number[]>([]);
     /** Dónde empieza el documento continuo dentro de la caja de lectura. */
     const [continuousTop, setContinuousTop] = useState(0);
+    /** El alto de la franja de controles del documento continuo (ver `bandKey`). */
+    const [band, setBand] = useState<{ key: string; height: number }>({ key: '', height: 0 });
 
     // Capa de tinta: anclada al texto, no a la pantalla. Ver InkNote en domain.
     // En continuo la firma NO lleva el movimiento: cambiar de movimiento
@@ -280,7 +291,7 @@ export default function PreachModeScreen({
     // empuja a los de abajo, y sus párrafos no avisan: no se movieron dentro
     // de su movimiento).
     const inkLayoutKey = continuousOn
-        ? `c|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}|${chromeVisible}|${continuousTop}|${sectionTops.map(Math.round).join(',')}`
+        ? `c|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}|${band.height}|${continuousTop}|${sectionTops.map(Math.round).join(',')}`
         : `${sectionIndex}|${pageIndex}|${fontSize}|${senseLines}|${hangingIndent}|${deliveryFace}|${panelMode}|${statusBarMode}|${panelRatio}|${width}x${screenHeight}|${collapseQuotes}`;
     const inkSections: InkSection[] = continuousOn
         ? continuousSections.map((c) => ({
@@ -495,8 +506,31 @@ export default function PreachModeScreen({
     const lineHeight = fontSize * DELIVERY_LINE_HEIGHT;
     /** Lo que queda a la vista al bajar una pantalla: dos renglones. */
     const overlap = 2 * lineHeight;
-    // El respiro de arriba del contenido: el mismo que usa la caja que se desplaza.
-    const scrollContentTop = chromeVisible ? 16 : insets.top + 24;
+    /**
+     * En continuo los controles de arriba van ENCIMA del documento, no antes:
+     * mostrarlos u ocultarlos no mueve el texto (antes subía o bajaba unos 60
+     * puntos y el que leía perdía la línea, lo vio el fundador). Su alto, el
+     * último medido con los controles a la vista.
+     */
+    /**
+     * Una medida por configuración: volver a medir al mostrar los controles
+     * podía dar otro alto (un margen de pantalla pasajero al volver la barra
+     * del sistema) y mover el texto, que es justo lo que esto evita
+     * (revisión adversarial). Se mide de nuevo sólo si cambia algo real.
+     */
+    const bandKey = `${statusBarMode}|${budgets.length > 0}|${insets.top}|${width}`;
+    const chromeBand = band.height;
+    /** Lo que tapan los controles arriba del documento continuo. */
+    const overlayTop = continuousOn && chromeVisible ? chromeBand : 0;
+    const overlayTopSV = useSharedValue(0);
+    useEffect(() => {
+        overlayTopSV.set(overlayTop);
+    }, [overlayTop, overlayTopSV]);
+    // El respiro de arriba del contenido: el mismo que usa la caja que se
+    // desplaza. En continuo no cambia con los controles (van encima).
+    const scrollContentTop = continuousOn ? chromeBand + 16 : chromeVisible ? 16 : insets.top + 24;
+    /** Dónde empieza cada bloque dentro de su movimiento (documento continuo). */
+    const blockTops = useRef(new Map<string, number>());
     /** Comienzo de cada movimiento en el documento (coordenadas del contenido). */
     // Uno por movimiento, sin huecos: un `onLayout` que llega en otra tanda
     // dejaba el arreglo con agujeros que `every` no ve.
@@ -571,7 +605,15 @@ export default function PreachModeScreen({
     useAnimatedReaction(
         () => {
             if (!continuousOn) return null;
-            return trackedPlace(topsSV.value, scrollY.value, viewportHeightSV.value, contentHeightSV.value, CONTINUOUS_STEPS);
+            // Lo que tapan los controles no se está leyendo.
+            const hidden = overlayTopSV.value;
+            return trackedPlace(
+                topsSV.value,
+                scrollY.value + hidden,
+                viewportHeightSV.value - hidden,
+                contentHeightSV.value,
+                CONTINUOUS_STEPS,
+            );
         },
         (now, before) => {
             if (!now || (before && now.at === before.at && now.step === before.step)) return;
@@ -599,7 +641,7 @@ export default function PreachModeScreen({
     // El salto pendiente, cuando el documento ya está medido.
     useEffect(() => {
         if (!topsReady || contentSize <= 0 || pendingJump.current === null) return;
-        const target = pendingJump.current < 0 ? 0 : (docTops[pendingJump.current] ?? 0);
+        const target = pendingJump.current < 0 ? 0 : (docTops[pendingJump.current] ?? 0) - overlayTop;
         const frame = requestAnimationFrame(() => {
             scrollToY(target, false);
             pendingJump.current = null;
@@ -612,23 +654,57 @@ export default function PreachModeScreen({
      * Un toque en el costado, en continuo: casi una pantalla, o con el foco
      * encendido, la idea siguiente (desplazando sólo si no entra).
      */
+    /**
+     * Los comienzos del documento donde puede quedar arriba una pantalla:
+     * títulos y subtítulos, párrafos y viñetas, y oraciones.
+     */
+    const readingAnchors = (): ReadingAnchor[] => {
+        const anchors: ReadingAnchor[] = [];
+        continuousSections.forEach((c, si) => {
+            const base = docTops[si];
+            if (base === undefined || !Number.isFinite(base)) return;
+            // El título del movimiento, donde empieza su texto (sin el aire de
+            // arriba). Sin título, vale como comienzo de párrafo.
+            const titled = (si === 0 && !!sermon?.title) || !!c.section.title;
+            const air = si === 0 && !passage ? 0 : fontSize * 1.2;
+            anchors.push({ y: base + air, rank: titled ? 0 : 1 });
+            // En bosquejo, los bloques medidos son los del manuscrito: no valen.
+            if (outlineOn) return;
+            c.blocks.forEach((block, bi) => {
+                const top = blockTops.current.get(`${c.section.slug}|${bi}`);
+                if (top !== undefined) anchors.push({ y: base + top, rank: block.kind === 'subheading' ? 0 : 1 });
+                block.units.slice(1).forEach((unit) => {
+                    const rect = ink.rectFor(c.section.slug, unit.sourceStart);
+                    if (rect) anchors.push({ y: rect.y - viewport.current.windowY, rank: 2 });
+                });
+            });
+        });
+        return anchors;
+    };
+
     const stepContinuous = (towards: 1 | -1) => {
         const recent = lastTarget.current && Date.now() - lastTarget.current.at < 500 ? lastTarget.current.y : null;
-        const view = { scroll: recent ?? scrollY.value, height: viewport.current.height, contentHeight: contentHeight.current };
+        // Lo que se ve, sin la franja que tapan los controles.
+        const hidden = overlayTop;
+        const view = {
+            scroll: (recent ?? scrollY.value) + hidden,
+            height: viewport.current.height - hidden,
+            contentHeight: contentHeight.current,
+        };
         if (focusOn) {
             const next = continuousFocusStep(allKinds, blockBoxes(), continuousFocus, towards, view, lineHeight, overlap);
             setContinuousFocus(next.focus);
-            if (next.scrollTo !== null) scrollToY(next.scrollTo);
+            if (next.scrollTo !== null) scrollToY(next.scrollTo - hidden);
             return;
         }
-        const target = screenStep(view.scroll, view.height, view.contentHeight, overlap, towards);
+        // La pantalla nueva empieza en un comienzo (título, párrafo, oración).
+        const target = anchoredStep(view.scroll, view.height, view.contentHeight, overlap, towards, readingAnchors(), lineHeight * 0.4);
         const moved = target - view.scroll;
         if (Math.abs(moved) < 1) return;
-        scrollToY(target);
-        // Marca de reanudación (L-2): donde empieza lo que no se veía. Al
-        // llegar al final el paso es más corto, y lo nuevo empieza más abajo.
-        if (towards > 0) {
-            const mark = view.height - moved;
+        scrollToY(target - hidden);
+        // Marca de reanudación (L-2): donde empieza lo que no se veía.
+        if (towards > 0 && moved < view.height) {
+            const mark = hidden + view.height - moved;
             setScrollMark(mark);
             setTimeout(() => setScrollMark((current) => (current === mark ? null : current)), RESUME_MARK_MS);
         }
@@ -642,7 +718,7 @@ export default function PreachModeScreen({
             const top = docTops[index];
             // Sin animar: animando, el documento pasaba por los movimientos
             // de en medio y el reloj les cargaba unos milisegundos a cada uno.
-            if (top !== undefined && Number.isFinite(top)) scrollToY(top, false);
+            if (top !== undefined && Number.isFinite(top)) scrollToY(top - overlayTop, false);
             return;
         }
         scrollRef.current?.scrollTo({ y: 0, animated: tokens.animations });
@@ -723,6 +799,12 @@ export default function PreachModeScreen({
     // `x` es SIEMPRE absoluto de pantalla (pageX): el cuerpo del sermón
     // reenvía sus taps desde adentro y su locationX sería relativo.
     const handleTap = (x: number) => {
+        // El dedo que frena el documento no navega ni toca los controles.
+        if (stopTouch.current) {
+            stopTouch.current = false;
+            swipeStart.current = null;
+            return;
+        }
         if (!gate.acceptsTap(Date.now())) return;
         ensureClockStarted();
         // ¿Deslizó? Se decide al soltar, contra el punto donde bajó el dedo.
@@ -877,134 +959,148 @@ export default function PreachModeScreen({
         <View className="flex-1" style={{ backgroundColor: tokens.background }}>
             <StatusBar style={tokens.statusBarStyle} hidden={!chromeVisible} />
 
-            {chromeVisible && (
-                <View
-                    className="flex-row items-center justify-between px-5 pb-2"
-                    style={{ paddingTop: insets.top + 6, borderBottomWidth: 1, borderBottomColor: tokens.border }}
-                >
-                    <TouchableOpacity
-                        onPress={requestExit}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('preach:exit')}
-                        className="flex-row items-center"
+            {/* Los controles de arriba. En continuo van ENCIMA del documento:
+                mostrarlos u ocultarlos no mueve el texto. */}
+            <View
+                onLayout={(e) => {
+                    const height = e.nativeEvent.layout.height;
+                    if (continuousOn && height > 0 && band.key !== bandKey) setBand({ key: bandKey, height });
+                }}
+                style={
+                    continuousOn
+                        ? { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, backgroundColor: tokens.background }
+                        : undefined
+                }
+            >
+                {chromeVisible && (
+                    <View
+                        className="flex-row items-center justify-between px-5 pb-2"
+                        style={{ paddingTop: insets.top + 6, borderBottomWidth: 1, borderBottomColor: tokens.border }}
                     >
-                        <MaterialIcons name="close" size={22} color={tokens.textSecondary} />
-                    </TouchableOpacity>
-
-                    {/* Sin conexión: el sermón es la copia del maletín. Un
-                        ícono, no un cartel: en el atril sólo tiene que estar
-                        a la vista para quien lo busque. */}
-                    {offline ? (
-                        <View
-                            accessible
-                            accessibilityLabel={t('preach:offline_copy')}
-                            className="flex-row items-center ml-4 mr-auto"
+                        <TouchableOpacity
+                            onPress={requestExit}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('preach:exit')}
+                            className="flex-row items-center"
                         >
-                            <MaterialIcons name="cloud-off" size={18} color={tokens.textSecondary} />
+                            <MaterialIcons name="close" size={22} color={tokens.textSecondary} />
+                        </TouchableOpacity>
+
+                        {/* Sin conexión: el sermón es la copia del maletín. Un
+                            ícono, no un cartel: en el atril sólo tiene que estar
+                            a la vista para quien lo busque. */}
+                        {offline ? (
+                            <View
+                                accessible
+                                accessibilityLabel={t('preach:offline_copy')}
+                                className="flex-row items-center ml-4 mr-auto"
+                            >
+                                <MaterialIcons name="cloud-off" size={18} color={tokens.textSecondary} />
+                            </View>
+                        ) : null}
+
+                        <View className="flex-row items-center">
+                            {/* El timer vive abajo, en el tablero (P7). Acá queda
+                                sólo arrancarlo y pararlo. */}
+                            <TouchableOpacity
+                                onPress={preachClock.toggle}
+                                accessibilityRole="button"
+                                accessibilityLabel={t(running ? 'preach:pause_timer' : 'preach:start_timer')}
+                                className="mr-5"
+                            >
+                                <MaterialIcons
+                                    name={running ? 'pause' : 'play-arrow'}
+                                    size={26}
+                                    color={running ? tokens.accent : tokens.textSecondary}
+                                />
+                            </TouchableOpacity>
+                            {/* Manuscrito o bosquejo (C7), a un toque: se cambia
+                                en medio del sermón, cuando la idea ya está dicha. */}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    ink.setPenActive(false);
+                                    setOutlineView(!outlineOn);
+                                }}
+                                accessibilityRole="button"
+                                accessibilityLabel={t(outlineOn ? 'preach:view_manuscript' : 'preach:view_outline')}
+                                className="mr-4"
+                            >
+                                <MaterialIcons
+                                    name={outlineOn ? 'article' : 'format-list-bulleted'}
+                                    size={22}
+                                    color={outlineOn ? tokens.accent : tokens.textSecondary}
+                                />
+                            </TouchableOpacity>
+                            {outlineOn ? null : <TouchableOpacity
+                                onPress={() => ink.setPenActive(!ink.penActive)}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('preach:pen')}
+                                className="mr-4"
+                            >
+                                <MaterialIcons
+                                    name={ink.penActive ? 'draw' : 'edit'}
+                                    size={22}
+                                    color={ink.penActive ? tokens.accent : tokens.textSecondary}
+                                />
+                            </TouchableOpacity>}
+                            <TouchableOpacity
+                                onPress={() => setShowBible(true)}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('bible:title')}
+                                className="mr-4"
+                            >
+                                <MaterialIcons
+                                    name="menu-book"
+                                    size={22}
+                                    color={tokens.textSecondary}
+                                />
+                            </TouchableOpacity>
+                            {/* Pantalla negra también con un botón: el gesto de dos
+                                dedos no se descubre solo. */}
+                            <TouchableOpacity
+                                onPress={() => setBlackout(true)}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('preach:blackout')}
+                                className="mr-4"
+                            >
+                                <MaterialIcons name="dark-mode" size={22} color={tokens.textSecondary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setShowSections(true)}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('preach:sections')}
+                                className="mr-4"
+                            >
+                                <MaterialIcons name="format-list-numbered" size={22} color={tokens.textSecondary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setShowSettings(true)}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('preach:settings')}
+                            >
+                                <MaterialIcons name="tune" size={22} color={tokens.textSecondary} />
+                            </TouchableOpacity>
                         </View>
-                    ) : null}
-
-                    <View className="flex-row items-center">
-                        {/* El timer vive abajo, en el tablero (P7). Acá queda
-                            sólo arrancarlo y pararlo. */}
-                        <TouchableOpacity
-                            onPress={preachClock.toggle}
-                            accessibilityRole="button"
-                            accessibilityLabel={t(running ? 'preach:pause_timer' : 'preach:start_timer')}
-                            className="mr-5"
-                        >
-                            <MaterialIcons
-                                name={running ? 'pause' : 'play-arrow'}
-                                size={26}
-                                color={running ? tokens.accent : tokens.textSecondary}
-                            />
-                        </TouchableOpacity>
-                        {/* Manuscrito o bosquejo (C7), a un toque: se cambia
-                            en medio del sermón, cuando la idea ya está dicha. */}
-                        <TouchableOpacity
-                            onPress={() => {
-                                ink.setPenActive(false);
-                                setOutlineView(!outlineOn);
-                            }}
-                            accessibilityRole="button"
-                            accessibilityLabel={t(outlineOn ? 'preach:view_manuscript' : 'preach:view_outline')}
-                            className="mr-4"
-                        >
-                            <MaterialIcons
-                                name={outlineOn ? 'article' : 'format-list-bulleted'}
-                                size={22}
-                                color={outlineOn ? tokens.accent : tokens.textSecondary}
-                            />
-                        </TouchableOpacity>
-                        {outlineOn ? null : <TouchableOpacity
-                            onPress={() => ink.setPenActive(!ink.penActive)}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('preach:pen')}
-                            className="mr-4"
-                        >
-                            <MaterialIcons
-                                name={ink.penActive ? 'draw' : 'edit'}
-                                size={22}
-                                color={ink.penActive ? tokens.accent : tokens.textSecondary}
-                            />
-                        </TouchableOpacity>}
-                        <TouchableOpacity
-                            onPress={() => setShowBible(true)}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('bible:title')}
-                            className="mr-4"
-                        >
-                            <MaterialIcons
-                                name="menu-book"
-                                size={22}
-                                color={tokens.textSecondary}
-                            />
-                        </TouchableOpacity>
-                        {/* Pantalla negra también con un botón: el gesto de dos
-                            dedos no se descubre solo. */}
-                        <TouchableOpacity
-                            onPress={() => setBlackout(true)}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('preach:blackout')}
-                            className="mr-4"
-                        >
-                            <MaterialIcons name="dark-mode" size={22} color={tokens.textSecondary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setShowSections(true)}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('preach:sections')}
-                            className="mr-4"
-                        >
-                            <MaterialIcons name="format-list-numbered" size={22} color={tokens.textSecondary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setShowSettings(true)}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('preach:settings')}
-                        >
-                            <MaterialIcons name="tune" size={22} color={tokens.textSecondary} />
-                        </TouchableOpacity>
                     </View>
-                </View>
-            )}
+                )}
 
-            {/* La línea de vuelo va SIEMPRE, con tablero o sin él: apagarlo
-                dejaba al predicador sin hora y sin saber por dónde va. */}
-            {chromeVisible && budgets.length > 0 && statusBarMode !== 'off' && (
-                <PreachStatusBar
-                    tokens={tokens}
-                    budgets={budgets}
-                    elapsedSeconds={shownSeconds(tokens, elapsed)}
-                    readingIndex={sectionIndex}
-                    pageIndex={safePageIndex}
-                    pageCount={pageCount}
-                    showPages={!continuousOn}
-                    running={running}
-                    numbers={statusBarMode === 'full'}
-                    endAt={preachClock.endAt}
-                />
-            )}
+                {/* La línea de vuelo va SIEMPRE, con tablero o sin él: apagarlo
+                    dejaba al predicador sin hora y sin saber por dónde va. */}
+                {chromeVisible && budgets.length > 0 && statusBarMode !== 'off' && (
+                    <PreachStatusBar
+                        tokens={tokens}
+                        budgets={budgets}
+                        elapsedSeconds={shownSeconds(tokens, elapsed)}
+                        readingIndex={sectionIndex}
+                        pageIndex={safePageIndex}
+                        pageCount={pageCount}
+                        showPages={!continuousOn}
+                        running={running}
+                        numbers={statusBarMode === 'full'}
+                        endAt={preachClock.endAt}
+                    />
+                )}
+            </View>
 
             {/* Swipe horizontal para pasar página, además de las zonas de tap.
                 Se decide al SOLTAR (handleTap), contra el punto de partida
@@ -1015,6 +1111,8 @@ export default function PreachModeScreen({
                 className="flex-1"
                 onPress={(e) => handleTap(e.nativeEvent.pageX)}
                 onTouchStart={(e) => {
+                    stopTouch.current =
+                        continuousOn && isStopTouch(Date.now(), lastScrollAt.value, byHand.current);
                     swipeStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
                     if (gate.touchStart(e.nativeEvent.touches, Date.now())) setBlackout(true);
                 }}
@@ -1038,7 +1136,21 @@ export default function PreachModeScreen({
                     }}
                     // Desplazar a mano suelta el foco: el próximo toque lo pone
                     // en la primera idea a la vista.
-                    onScrollBeginDrag={() => setContinuousFocus(null)}
+                    onScrollBeginDrag={() => {
+                        byHand.current = { dragging: true, momentum: false };
+                        setContinuousFocus(null);
+                    }}
+                    onScrollEndDrag={() => {
+                        byHand.current = { ...byHand.current, dragging: false };
+                    }}
+                    // La inercia que deja un deslizamiento (iOS no la avisa para
+                    // un desplazamiento animado del propio atril).
+                    onMomentumScrollBegin={() => {
+                        byHand.current = { ...byHand.current, momentum: true };
+                    }}
+                    onMomentumScrollEnd={() => {
+                        byHand.current = { ...byHand.current, momentum: false };
+                    }}
                     // Marcando, el dedo arrastra la selección, no el documento.
                     scrollEnabled={!(continuousOn && highlighting.selection !== null)}
                     contentContainerStyle={{
@@ -1118,6 +1230,7 @@ export default function PreachModeScreen({
                                     isBlockDimmed={
                                         focusOn ? (i) => isDimmed(allKinds, continuousFocus, i) : undefined
                                     }
+                                    onBlockTop={(slug, index, y) => blockTops.current.set(`${slug}|${index}`, y)}
                                     onSectionTop={(index, y) =>
                                         setSectionTops((tops) => {
                                             if (tops[index] === y) return tops;
@@ -1537,7 +1650,10 @@ export default function PreachModeScreen({
                 <Pressable
                     onPress={() => setBlackout(false)}
                     className="absolute inset-0"
-                    style={{ backgroundColor: '#000000' }}
+                    // Encima de TODO: los controles del documento continuo van
+                    // en una franja con zIndex, y sin esto quedaban prendidos
+                    // sobre la pantalla negra (revisión adversarial).
+                    style={{ backgroundColor: '#000000', zIndex: 100, elevation: 100 }}
                 />
             )}
         </View>
