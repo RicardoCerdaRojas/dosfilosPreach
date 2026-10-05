@@ -41,10 +41,34 @@ export interface InkStroke {
     /** Grosor en unidades del cuerpo, para que escale con el texto. */
     width: number;
     color: InkColor;
+    /**
+     * Con qué se hizo. Ausente en los trazos anteriores a este campo: eran
+     * todos de lápiz (fase «Atril: tinta y lectura», T-7).
+     */
+    tool?: InkTool;
 }
 
-export const INK_COLORS = ['ink', 'red', 'blue'] as const;
+/** Verde y amarillo desde la fase «Atril: tinta y lectura» (pedido del fundador). */
+export const INK_COLORS = ['ink', 'red', 'blue', 'green', 'yellow'] as const;
 export type InkColor = (typeof INK_COLORS)[number];
+
+/** Lápiz o resaltador: el resaltador es ancho y translúcido, se lee a través. */
+export const INK_TOOLS = ['pen', 'highlighter'] as const;
+export type InkTool = (typeof INK_TOOLS)[number];
+
+/** Grosores en unidades del cuerpo: escalan con la letra. */
+export const INK_WIDTH = { fine: 0.05, bold: 0.11, highlighter: 0.6 } as const;
+
+/**
+ * El mismo trazo, aunque sea otro objeto: después de releer de Firestore los
+ * trazos son objetos nuevos, y deshacer tiene que encontrar el que dibujó.
+ */
+export function sameStroke(a: InkStroke, b: InkStroke): boolean {
+    if (a === b) return true;
+    if (a.width !== b.width || a.color !== b.color || (a.tool ?? 'pen') !== (b.tool ?? 'pen')) return false;
+    if (a.points.length !== b.points.length) return false;
+    return a.points.every((p, i) => p.x === b.points[i]!.x && p.y === b.points[i]!.y);
+}
 
 export interface InkNote extends SermonAnnotationAnchor {
     id: string;

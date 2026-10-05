@@ -177,6 +177,12 @@ export function SelectableVerses({
 
     const handleTouchStart = (e: GestureResponderEvent) => {
         const { pageX, pageY } = e.nativeEvent;
+        // El capítulo se desplaza y `onLayout` no se entera: el origen medido
+        // al armar quedaba viejo y un toque largo marcaba otro versículo.
+        // Se vuelve a medir en cada toque, antes de que venza la espera.
+        container.current?.measureInWindow((x, y) => {
+            origin.current = { x, y };
+        });
         pressStart.current = { x: pageX, y: pageY };
         cancelTimerOnly();
         pressTimer.current = setTimeout(() => {

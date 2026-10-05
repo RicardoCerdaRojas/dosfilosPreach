@@ -12,6 +12,8 @@
  *   no puede olvidar; si no tiene ninguna, la primera oración, como pie.
  * - Citas (`>`) → su primera línea, como recordatorio de qué se lee.
  */
+import { decodeMarkdownText } from './sermonReading';
+
 export type OutlineItem =
     | { kind: 'heading'; text: string }
     | { kind: 'point'; text: string; ordinal?: string }
@@ -23,7 +25,7 @@ export type OutlineItem =
 export const OUTLINE_CUE_MAX = 140;
 
 const stripInline = (text: string) =>
-    text
+    decodeMarkdownText(text)
         .replace(/<br\s*\/?>/gi, ' ')
         .replace(/\*\*\*(.+?)\*\*\*/g, '$1')
         .replace(/\*\*(.+?)\*\*/g, '$1')
@@ -41,7 +43,9 @@ function firstSentence(text: string): string {
 
 export function buildOutline(body: string): OutlineItem[] {
     const items: OutlineItem[] = [];
-    const lines = (body ?? '').replace(/\r\n/g, '\n').split('\n');
+    // El salto estándar (`\` al final del renglón) no se lee: el bosquejo
+    // mostraba la barra suelta (revisión adversarial de LINE_BREAK_RULE).
+    const lines = (body ?? '').replace(/\r\n/g, '\n').replace(/(?<!\\)\\(?=\n)/g, '').split('\n');
     let paragraph: string[] = [];
 
     const flushParagraph = () => {

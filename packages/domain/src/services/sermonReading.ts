@@ -17,6 +17,7 @@
  */
 
 import { splitSentences } from './sentenceSegmentation';
+import { findBibleReferences } from '../bible/referenceSpans';
 
 /** Text plus `map[i]` = index in the original string of rendered char `i`. */
 export interface SourceMappedText {
@@ -47,13 +48,45 @@ export interface ReadingUnit {
     /** Half-open range `[sourceStart, sourceEnd)` in the raw section body. */
     sourceStart: number;
     sourceEnd: number;
+    /**
+     * Empieza un renglón nuevo: el pastor cortó la línea a mano dentro del
+     * párrafo (Mayúsculas+Enter en el editor). Ver `LINE_BREAK_RULE`.
+     */
+    lineBreak?: boolean;
 }
+
+/**
+ * LA REGLA DE LOS SALTOS DE LÍNEA, una sola para todo el producto.
+ *
+ * Un salto de línea que el pastor puso DENTRO de un párrafo se ve como salto,
+ * en todas partes: la web, el atril y Word/PDF. Es lo que ya le muestra el
+ * editor. El markdown estándar (CommonMark) dice lo contrario —un salto suelto
+ * es un espacio— y el editor (MDXEditor) los guardaba así: los tres lectores
+ * los convertían en espacio y el texto se pegaba («A nivel institucional Hace
+ * muchos años…»). Lo vio el fundador el 2026-10-04.
+ *
+ * Valen igual el salto suelto (`\n`), el estándar (`\` + salto) y `<br>`.
+ * Una línea en blanco sigue separando párrafos.
+ */
+export const LINE_BREAK_RULE = 'un salto dentro de un párrafo se ve como salto';
 
 export interface ReadingBlock {
     kind: ReadingBlockKind;
     text: string;
     /** Sentences of a paragraph; a subheading is a single unit. */
     units: ReadingUnit[];
+    /**
+     * Una cita que empieza con una referencia bíblica: es la Escritura del
+     * punto («Jonás 4:5-8 — 5 Y salió…»), que se lee en voz alta. El atril
+     * muestra sus números de versículo discretos.
+     */
+    scripture?: boolean;
+}
+
+/** ¿El texto empieza con una referencia bíblica (salvo comillas o un guion)? */
+function startsWithReference(text: string): boolean {
+    const first = findBibleReferences(text)[0];
+    return !!first && /^[\s"'“”«»*_—–(-]*$/.test(text.slice(0, first.start));
 }
 
 /**
@@ -67,22 +100,66 @@ interface RewriteRule {
     emit: (match: RegExpExecArray) => { text: string; offsetInMatch: number } | null;
 }
 
+/** Entidades HTML que deja el editor web (`&#x20;` es un espacio final). */
+const NAMED_ENTITIES: Record<string, string> = { nbsp: ' ', amp: '&', quot: '"', apos: "'", lt: '<', gt: '>' };
+export function decodeEntity(entity: string): string | null {
+    const named = NAMED_ENTITIES[entity.toLowerCase()];
+    if (named !== undefined) return named;
+    const code = /^#x([0-9a-f]+)$/i.test(entity)
+        ? parseInt(entity.slice(2), 16)
+        : /^#(\d+)$/.test(entity)
+          ? parseInt(entity.slice(1), 10)
+          : NaN;
+    if (!Number.isFinite(code) || code <= 0 || code > 0x10ffff) return null;
+    // Un espacio duro se lee como espacio: en el atril tiene que poder cortar renglón.
+    return code === 0xa0 ? ' ' : String.fromCodePoint(code);
+}
+
+/** Lo que el markdown escapa con barra invertida: se lee el carácter, no la barra. */
+const ESCAPABLE = /\\([\\`*_{}\[\]()#+\-.!>|~])/g;
+
 /**
  * Same set the pulpit reader used to apply as a chain of `.replace()` calls —
  * now offset-preserving. Order matters: links are unwrapped before emphasis
  * so `[**x**](#a)` collapses cleanly.
  */
 const RULES: RewriteRule[] = [
+    // Antes que todo: una entidad puede esconder un carácter que otra regla mira.
+    {
+        re: /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
+        emit: (m) => {
+            const text = decodeEntity(m[1] ?? '');
+            return text === null ? { text: m[0], offsetInMatch: 0 } : { text, offsetInMatch: -1 };
+        },
+    },
     { re: /<br\s*\/?>/gi, emit: () => ({ text: '\n', offsetInMatch: -1 }) },
-    { re: /^---\s*$/gm, emit: () => null },
+    // Separadores sueltos: `---`, `***`, `* * *`, `___`, o un asterisco solo
+    // en su renglón (salía como párrafo «*» al final de una página).
+    { re: /^[ \t]*(?:[*_-][ \t]*)+$/gm, emit: () => null },
+    // El salto de línea estándar (`\` al final del renglón): la barra no se
+    // lee. ANTES que los escapes: si no, `\\` (una barra escrita a propósito)
+    // quedaba como `\` y esta regla se la comía (revisión adversarial). Se
+    // lleva sólo la ÚLTIMA barra: `\\` + salto deja la barra escrita.
+    { re: /\\(?=\r?\n)/g, emit: () => null },
     { re: /\{#[^}]+\}/g, emit: () => null },
     { re: /\[([^\]]+)\]\(#[^)]*\)/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
-    { re: /\*\*(.+?)\*\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }) },
+    // Un asterisco escapado (`\\*`) no abre ni cierra énfasis.
+    // El énfasis puede cruzar un salto de renglón (no un párrafo): `**uno↵dos**`.
+    { re: /(?<!\\)\*\*((?:(?!\n\n)[\s\S])*?[^\\])\*\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 2 }) },
     // El abridor de énfasis no puede ir seguido de espacio: si no, un
     // marcador de lista `* punto` abre énfasis y se come hasta el próximo
     // asterisco, fundiendo dos viñetas en una.
-    { re: /\*(\S(?:.*?\S)?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
+    { re: /(?<!\\)\*(\S(?:(?:(?!\n\n)[\s\S])*?[^\s\\])?)\*/g, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
+    // Al final, después del énfasis: `\*` no abre ni cierra nada.
+    { re: ESCAPABLE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 1 }) },
 ];
+
+/** El texto plano de un fragmento de markdown, con entidades y escapes resueltos. */
+export function decodeMarkdownText(text: string): string {
+    return text
+        .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, entity: string) => decodeEntity(entity) ?? whole)
+        .replace(ESCAPABLE, '$1');
+}
 
 function identity(text: string): SourceMappedText {
     const map = new Array<number>(text.length);
@@ -206,11 +283,23 @@ export function buildReadingBlocks(body: string): ReadingBlock[] {
     }
     chunkBounds.push({ start: cursor, end: normalized.text.length });
 
+    // Cada renglón se parte en oraciones por separado: un salto a mano corta
+    // también la unidad (una etiqueta como «A nivel institucional», sin punto,
+    // no se funde con la oración que sigue). Ver LINE_BREAK_RULE.
     const push = (kind: ReadingBlockKind, lines: { start: number; end: number }[]) => {
-        if (!lines.length) return;
-        const joined = trimMapped(joinLines(normalized, lines));
-        if (!joined.text) return;
-        blocks.push({ kind, text: joined.text, units: toUnits(joined) });
+        const units: ReadingUnit[] = [];
+        const texts: string[] = [];
+        for (const line of lines) {
+            const mapped = trimMapped(joinLines(normalized, [line]));
+            if (!mapped.text) continue;
+            const lineUnits = toUnits(mapped);
+            if (units.length && lineUnits[0]) lineUnits[0] = { ...lineUnits[0], lineBreak: true };
+            units.push(...lineUnits);
+            texts.push(mapped.text);
+        }
+        if (!units.length) return;
+        const text = texts.join('\n');
+        blocks.push(kind === 'quote' && startsWithReference(text) ? { kind, text, units, scripture: true } : { kind, text, units });
     };
 
     for (const chunk of chunkBounds) {

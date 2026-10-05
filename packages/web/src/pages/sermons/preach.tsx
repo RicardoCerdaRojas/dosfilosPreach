@@ -33,7 +33,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { LocalBibleService } from '@/services/LocalBibleService';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { SERMON_REMARK_PLUGINS } from '@/lib/sermonMarkdown';
 import rehypeRaw from 'rehype-raw';
 import { useHighlights } from '@/hooks/useHighlights';
 import { HighlightToolbar } from '@/components/preach/HighlightToolbar';
@@ -525,7 +525,7 @@ export function PreachModePage() {
                     `}</style>
                     <ReactMarkdown 
                       components={components}
-                      remarkPlugins={[remarkGfm]}
+                      remarkPlugins={SERMON_REMARK_PLUGINS}
                       rehypePlugins={[rehypeRaw]}
                     >
                       {applyHighlights(processContent(sermon.content))}
@@ -600,7 +600,7 @@ export function PreachModePage() {
                 `}</style>
                 <ReactMarkdown 
                   components={components}
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={SERMON_REMARK_PLUGINS}
                   rehypePlugins={[rehypeRaw]}
                 >
                   {applyHighlights(processContent(sermon.content))}

@@ -1,24 +1,70 @@
 import { useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { buildAnnotationAnchor, resolveAnnotationAnchor } from '@dosfilos/domain';
-import type { InkColor, InkNote, InkStroke } from '@dosfilos/domain';
+import type { InkColor, InkNote, InkStroke, InkTool, SermonAnnotationAnchor } from '@dosfilos/domain';
 
 import { SermonSection } from '@/core/utils/sermonSections';
 import { AnnotationRepositoryImpl } from '@/data/repositories/annotation.repository.impl';
 import type { AnchorRect } from '@/presentation/components/preach/InkLayer';
+import { noteWithStroke, withStrokeRestored, withoutStroke } from '@/presentation/components/preach/inkGeometry';
+import { useInkHistory } from '@/presentation/hooks/useInkHistory';
 
 const repository = new AnnotationRepositoryImpl();
+
+/** Grosor del lápiz: fino o grueso (el resaltador tiene el suyo). */
+export type PenWidth = 'fine' | 'bold';
+
+/** Un movimiento que está a la vista, con dónde empieza cada oración suya. */
+export interface InkSection {
+    section: SermonSection;
+    sentenceStarts: readonly number[];
+}
+
+/**
+ * La posición de una oración: movimiento y comienzo. Con el sermón continuo
+ * hay varios movimientos a la vista, y casi todos empiezan en la posición 0.
+ */
+export type InkAnchorKey = string;
+export const inkAnchorKey = (slug: string, offset: number): InkAnchorKey => `${slug}|${offset}`;
+const parseAnchorKey = (key: InkAnchorKey) => {
+    const cut = key.lastIndexOf('|');
+    return { slug: key.slice(0, cut), offset: Number(key.slice(cut + 1)) };
+};
+
+/**
+ * La oración que contiene una posición del cuerpo: el comienzo de oración más
+ * cercano por detrás. Si una oración empieza uno o dos caracteres DESPUÉS
+ * (un escape `\\[` que la limpieza del texto ahora se come), es ésa.
+ */
+export function sentenceContaining(starts: readonly number[], at: number): number | null {
+    let best: number | null = null;
+    for (const start of starts) {
+        if (start > at && start - at <= 2) return start;
+        if (start <= at && (best === null || start > best)) best = start;
+    }
+    return best;
+}
 
 /**
  * Notas de tinta ancladas al texto.
  *
- * El hook sostiene el mapa de dónde está cada palabra en pantalla —lo reporta
+ * El hook sostiene el mapa de dónde está cada oración en pantalla —lo reporta
  * el cuerpo mientras se dibuja— y con eso resuelve dos cosas: dónde pintar
- * una nota guardada, y a qué palabra anclar un trazo nuevo.
+ * una nota guardada, y a qué oración anclar un trazo nuevo.
+ *
+ * Toda escritura va PRIMERO a la caché de react-query y a Firestore en el
+ * mismo instante y en orden, con el id definitivo generado en el cliente: la
+ * tinta aparece y desaparece bajo el dedo, con red o sin ella, y deshacer
+ * nunca compite con una escritura todavía en vuelo. Con historial (deshacer
+ * y rehacer, T-5) y limpieza de la página o del sermón (T-6).
  */
 export function useInkNotes(
     sermonId: string,
-    section: SermonSection | undefined,
+    /**
+     * Los movimientos a la vista: el de la página, o todos en el sermón
+     * continuo. Cada nota se resuelve contra el SUYO.
+     */
+    sections: readonly InkSection[],
     /**
      * Firma del layout vigente (cuerpo, sangría, colometría, página…). Las
      * posiciones se guardan bajo ESTA clave en vez de vaciarse al cambiar: si
@@ -27,27 +73,44 @@ export function useInkNotes(
      * párrafos de arriba, así que nadie re-reportaba y la tinta desaparecía.
      */
     layoutKey: string,
+    /**
+     * De qué es el historial (deshacer, rehacer): el movimiento en páginas,
+     * el sermón entero en continuo. Al cambiar, empieza vacío.
+     */
+    historyScope: string,
 ) {
     const queryClient = useQueryClient();
+    const history = useInkHistory(historyScope);
+    const key = ['ink', sermonId];
     const [penActive, setPenActive] = useState(false);
     const [penColor, setPenColor] = useState<InkColor>('ink');
+    const [tool, setTool] = useState<InkTool>('pen');
+    const [width, setWidth] = useState<PenWidth>('fine');
     const [eraser, setEraser] = useState(false);
 
-    /** layoutKey → (offset del párrafo → rectángulo en pantalla). */
-    const blockRects = useRef<Map<string, Map<number, AnchorRect>>>(new Map());
-    /** Nota abierta por ancla, para que trazos seguidos no creen documentos sueltos. */
-    const noteByOffset = useRef<Map<number, string>>(new Map());
+    /** layoutKey → (movimiento|comienzo de oración → rectángulo en pantalla). */
+    const blockRects = useRef<Map<string, Map<InkAnchorKey, AnchorRect>>>(new Map());
+    /**
+     * Nota abierta por ancla —`movimiento|posición`—, para que trazos seguidos
+     * no creen documentos sueltos. Era sólo la posición, y casi todos los
+     * movimientos empiezan en la 0: un trazo en el segundo movimiento se
+     * agregaba a la nota del primero (revisión adversarial).
+     */
+    const noteByAnchor = useRef<Map<string, string>>(new Map());
+    const anchorKey = inkAnchorKey;
+    const sectionOf = (slug: string) => sections.find((s) => s.section.slug === slug);
 
     const { data: notes } = useQuery({
-        queryKey: ['ink', sermonId],
+        queryKey: key,
         queryFn: () => repository.listInk(sermonId),
         enabled: !!sermonId,
         staleTime: Infinity,
     });
 
-    const sectionNotes = section
-        ? (notes ?? []).filter((n) => n.sectionSlug === section.slug)
-        : [];
+    const sectionNotes = (notes ?? []).filter((n) => sections.some((s) => s.section.slug === n.sectionSlug));
+    const current = () => queryClient.getQueryData<InkNote[]>(key) ?? [];
+    const write = (update: (list: InkNote[]) => InkNote[]) =>
+        queryClient.setQueryData<InkNote[]>(key, (list) => update(list ?? []));
 
     const rectsForLayout = () => {
         let map = blockRects.current.get(layoutKey);
@@ -58,14 +121,18 @@ export function useInkNotes(
         return map;
     };
 
-    const rememberBlock = (offset: number, rect: AnchorRect) => {
-        rectsForLayout().set(offset, rect);
+    const rememberBlock = (slug: string, offset: number, rect: AnchorRect) => {
+        rectsForLayout().set(anchorKey(slug, offset), rect);
     };
 
-    /** Párrafo más cercano a un punto de pantalla, para anclar un trazo nuevo. */
+    /** Dónde está ahora una oración (en el layout vigente), si ya se midió. */
+    const rectFor = (slug: string, offset: number): AnchorRect | null =>
+        rectsForLayout().get(anchorKey(slug, offset)) ?? null;
+
+    /** Oración más cercana a un punto de pantalla, para anclar un trazo nuevo. */
     const anchorAt = (screenX: number, screenY: number) => {
-        if (!section) return null;
-        let bestOffset: number | null = null;
+        if (!sections.length) return null;
+        let bestOffset: InkAnchorKey | null = null;
         let bestRect: AnchorRect | null = null;
         let bestDistance = Number.POSITIVE_INFINITY;
         for (const [offset, rect] of rectsForLayout().entries()) {
@@ -87,117 +154,161 @@ export function useInkNotes(
     // sermón, que es lo que efectivamente guarda este hook.
     const anchorRectFor = (drawable: { id: string }): AnchorRect | null => {
         const note = sectionNotes.find((n) => n.id === drawable.id);
-        if (!note) return null;
-        if (!section) return null;
+        const own = note ? sectionOf(note.sectionSlug) : undefined;
+        if (!note || !own) return null;
         // El ancla se re-resuelve contra el texto ACTUAL: si el sermón se editó
         // en la web, la nota sigue encontrando su pasaje.
-        const at = resolveAnnotationAnchor(note, section.body);
+        const at = resolveAnnotationAnchor(note, own.section.body);
         if (!at) return null;
         // Sólo las posiciones de ESTE layout: las de otros quedan guardadas
-        // aparte y no pueden dibujar tinta de una página sobre otra.
-        return rectsForLayout().get(at.start) ?? null;
+        // aparte y no pueden dibujar tinta de una página sobre otra. La nota
+        // va con la ORACIÓN que contiene su ancla: así las viejas, ancladas al
+        // comienzo del párrafo, siguen en su lugar.
+        const rects = rectsForLayout();
+        const slug = own.section.slug;
+        const exact = rects.get(anchorKey(slug, at.start));
+        if (exact) return exact;
+        const sentence = sentenceContaining(own.sentenceStarts, at.start);
+        return sentence === null ? null : (rects.get(anchorKey(slug, sentence)) ?? null);
     };
 
-    const append = useMutation({
-        // Se agrega el trazo a la caché ANTES de que Firestore conteste. Sin
-        // esto el trazo desaparece al soltar el dedo y reaparece cuando vuelve
-        // la consulta: el parpadeo que se veía al terminar de escribir.
-        onMutate: ({ offset, stroke }) => {
-            if (!section) return;
-            const existing = noteByOffset.current.get(offset);
-            queryClient.setQueryData<InkNote[]>(['ink', sermonId], (current) => {
-                const list = current ?? [];
-                if (existing) {
-                    return list.map((n) =>
-                        n.id === existing ? { ...n, strokes: [...n.strokes, stroke] } : n,
-                    );
-                }
-                const anchor = buildAnnotationAnchor(
-                    section.slug,
-                    section.body,
-                    offset,
-                    Math.min(offset + 24, section.body.length),
-                );
-                const optimisticId = `pending-${offset}-${list.length}`;
-                noteByOffset.current.set(offset, optimisticId);
-                return [
-                    ...list,
-                    {
-                        ...anchor,
-                        id: optimisticId,
-                        type: 'ink' as const,
-                        strokes: [stroke],
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
-                        updatedBy: 'mobile' as const,
-                    },
-                ];
-            });
-        },
-        mutationFn: async ({ offset, stroke }: { offset: number; stroke: InkStroke }) => {
-            if (!section) return;
-            const pending = noteByOffset.current.get(offset);
-            // El id optimista no existe en Firestore: se crea de verdad.
-            const existing = pending?.startsWith('pending-') ? undefined : pending;
-            const anchor = buildAnnotationAnchor(
-                section.slug,
-                section.body,
-                offset,
-                Math.min(offset + 24, section.body.length),
-            );
-            const id = await repository.appendInkStroke(sermonId, anchor, stroke, existing);
-            noteByOffset.current.set(offset, id);
-        },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ink', sermonId] }),
-    });
+    const anchorFor = (key: InkAnchorKey) => {
+        const { slug, offset } = parseAnchorKey(key);
+        const own = sectionOf(slug)?.section;
+        return own ? buildAnnotationAnchor(own.slug, own.body, offset, Math.min(offset + 24, own.body.length)) : null;
+    };
+
+    /** Agrega un trazo a la nota de su ancla (o crea la nota). Sin historial. */
+    const appendStroke = (anchor: SermonAnnotationAnchor, stroke: InkStroke) => {
+        const keyOf = anchorKey(anchor.sectionSlug, anchor.offset);
+        const known = noteByAnchor.current.get(keyOf);
+        const existing = known && current().some((n) => n.id === known) ? known : undefined;
+        if (existing) {
+            write((list) => list.map((n) => (n.id === existing ? { ...n, strokes: [...n.strokes, stroke] } : n)));
+            void repository.appendInkStroke(sermonId, anchor, stroke, existing);
+            return;
+        }
+        const id = repository.newInkNoteId(sermonId);
+        noteByAnchor.current.set(keyOf, id);
+        write((list) => [
+            ...list,
+            {
+                ...anchor,
+                id,
+                type: 'ink' as const,
+                strokes: [stroke],
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                updatedBy: 'mobile' as const,
+            },
+        ]);
+        void repository.appendInkStroke(sermonId, anchor, stroke, undefined, id);
+    };
+
+    const forgetNote = (id: string) => {
+        for (const [k, noteId] of noteByAnchor.current.entries()) {
+            if (noteId === id) noteByAnchor.current.delete(k);
+        }
+    };
+
+    /** Quita un trazo de su nota (o la nota, si era el último). Sin historial. */
+    const removeStroke = (stroke: InkStroke) => {
+        const note = noteWithStroke(current(), stroke);
+        if (!note) return null;
+        const index = note.strokes.findIndex((s) => s === stroke);
+        write((list) => withoutStroke(list, note.id, stroke));
+        const remaining = current().find((n) => n.id === note.id)?.strokes ?? [];
+        if (!remaining.length) {
+            forgetNote(note.id);
+            void repository.deleteAnnotation(sermonId, note.id);
+        } else {
+            void repository.replaceInkStrokes(sermonId, note.id, remaining);
+        }
+        return { note, index: Math.max(0, index) };
+    };
+
+    /** Vuelve a poner un trazo en su nota (o la nota, si se había ido). Sin historial. */
+    const restoreStroke = (note: InkNote, stroke: InkStroke, index: number) => {
+        write((list) => withStrokeRestored(list, note, stroke, index));
+        const restored = current().find((n) => n.id === note.id);
+        if (restored) {
+            noteByAnchor.current.set(anchorKey(note.sectionSlug, note.offset), note.id);
+            void repository.restoreInkNote(sermonId, restored);
+        }
+    };
+
+    /** Saca notas enteras. Sin historial. */
+    const removeNotes = (ids: Set<string>) => {
+        write((list) => list.filter((n) => !ids.has(n.id)));
+        ids.forEach((id) => {
+            forgetNote(id);
+            void repository.deleteAnnotation(sermonId, id);
+        });
+    };
+
+    /** Vuelve a poner notas enteras, con sus ids. Sin historial. */
+    const restoreNotes = (restored: InkNote[]) => {
+        write((list) => [...list.filter((n) => !restored.some((r) => r.id === n.id)), ...restored]);
+        restored.forEach((note) => {
+            noteByAnchor.current.set(anchorKey(note.sectionSlug, note.offset), note.id);
+            void repository.restoreInkNote(sermonId, note);
+        });
+    };
+
+    const addStroke = (key: InkAnchorKey, stroke: InkStroke) => {
+        // El ancla se arma AHORA, con el movimiento de ahora: rehacer más
+        // tarde la usa tal cual.
+        const anchor = anchorFor(key);
+        if (!anchor) return;
+        appendStroke(anchor, stroke);
+        history.record({ undo: () => removeStroke(stroke), redo: () => appendStroke(anchor, stroke) });
+    };
 
     /**
-     * Borra UN trazo. Si era el último de la nota, se va la nota.
-     *
-     * Antes la goma se llevaba la nota entera —todo lo escrito sobre ese
-     * párrafo— por tocar una sola raya. Una goma borra lo que toca.
+     * Borra UN trazo —el trazo mismo, no su número—. Si era el último de la
+     * nota, se va la nota.
      */
-    const erase = useMutation({
-        onMutate: ({ noteId, index }: { noteId: string; index: number }) => {
-            queryClient.setQueryData<InkNote[]>(['ink', sermonId], (current) =>
-                (current ?? [])
-                    .map((n) =>
-                        n.id === noteId
-                            ? { ...n, strokes: n.strokes.filter((_, i) => i !== index) }
-                            : n,
-                    )
-                    .filter((n) => n.strokes.length > 0),
-            );
-        },
-        mutationFn: async ({ noteId }: { noteId: string; index: number }) => {
-            const remaining =
-                queryClient
-                    .getQueryData<InkNote[]>(['ink', sermonId])
-                    ?.find((n) => n.id === noteId)?.strokes ?? [];
-            if (!remaining.length) {
-                for (const [offset, id] of noteByOffset.current.entries()) {
-                    if (id === noteId) noteByOffset.current.delete(offset);
-                }
-                await repository.deleteAnnotation(sermonId, noteId);
-                return;
-            }
-            await repository.replaceInkStrokes(sermonId, noteId, remaining);
-        },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ink', sermonId] }),
-    });
+    const eraseStroke = (_noteId: string, stroke: InkStroke) => {
+        const removed = removeStroke(stroke);
+        if (!removed) return;
+        history.record({
+            undo: () => restoreStroke(removed.note, stroke, removed.index),
+            redo: () => removeStroke(stroke),
+        });
+    };
+
+    /** Borra estas notas (una página, o todo el sermón). Se puede deshacer. */
+    const clearNotes = (targets: InkNote[]) => {
+        if (!targets.length) return;
+        const snapshot = targets.map((n) => ({ ...n, strokes: [...n.strokes] }));
+        const ids = new Set(snapshot.map((n) => n.id));
+        removeNotes(ids);
+        history.record({ undo: () => restoreNotes(snapshot), redo: () => removeNotes(ids) });
+    };
 
     return {
         notes: sectionNotes,
+        allNotes: notes ?? [],
         penActive,
         setPenActive,
         penColor,
         setPenColor,
+        tool,
+        setTool,
+        width,
+        setWidth,
         eraser,
         setEraser,
-        eraseStroke: (noteId: string, index: number) => erase.mutate({ noteId, index }),
+        eraseStroke,
+        clearNotes,
+        undo: history.undo,
+        redo: history.redo,
+        canUndo: history.canUndo,
+        canRedo: history.canRedo,
         rememberBlock,
+        rectFor,
         anchorAt,
         anchorRectFor,
-        addStroke: (offset: number, stroke: InkStroke) => append.mutate({ offset, stroke }),
+        addStroke,
     };
 }

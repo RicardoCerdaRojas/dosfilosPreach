@@ -152,8 +152,14 @@ jobs:
       # entorno jsdom y sus tests fallan en falso. Ese falso rojo es lo que
       # justificaba el `continue-on-error`, que a su vez hacía que este paso
       # reportara verde pase lo que pase — y se tragaba las fallas reales.
+      # Con el huso del fundador (Chile, UTC-3/-4): las fechas guardadas a
+      # medianoche UTC caen el día anterior ahí, y las pruebas de fechas del
+      # plan sólo discriminan en un huso así. En UTC pasaban a ciegas
+      # (revisión adversarial de «Atril: tinta y lectura»).
       - name: Run unit tests
         run: npm run test:unit
+        env:
+          TZ: America/Santiago
 
   firestore-rules:
     name: Reglas de Firestore

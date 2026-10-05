@@ -14,6 +14,46 @@ interface PlacedWord {
     ordinals: number[] | null;
     /** La referencia bíblica de la que es parte («Jonás 4:2»), si alguna. */
     reference: string | null;
+    /** A qué oración pertenece. */
+    unit: number;
+    /** Es la primera palabra de un renglón que el pastor cortó a mano. */
+    breaksLine: boolean;
+    /** Está dentro de una referencia bíblica, aunque no se pueda tocar. */
+    inReference: boolean;
+}
+
+/** Renglones de una oración, desde el borde de arriba del párrafo. */
+export interface UnitLines {
+    top: number;
+    bottom: number;
+}
+
+/**
+ * Dónde empieza y termina cada oración, con los rectángulos de sus palabras.
+ * Una oración sin palabras (no debería haberla) se pega al final de la
+ * anterior, con alto cero. `null` si falta medir alguna palabra.
+ */
+export function unitLinesFrom(
+    wordUnits: readonly number[],
+    unitCount: number,
+    rects: ReadonlyMap<number, { y: number; height: number }>,
+): UnitLines[] | null {
+    const lines: (UnitLines | null)[] = Array.from({ length: unitCount }, () => null);
+    for (let i = 0; i < wordUnits.length; i += 1) {
+        const rect = rects.get(i);
+        if (!rect) return null;
+        const u = wordUnits[i]!;
+        const current = lines[u];
+        const top = rect.y;
+        const bottom = rect.y + rect.height;
+        lines[u] = current ? { top: Math.min(current.top, top), bottom: Math.max(current.bottom, bottom) } : { top, bottom };
+    }
+    let previous = 0;
+    return lines.map((line) => {
+        const resolved = line ?? { top: previous, bottom: previous };
+        previous = resolved.bottom;
+        return resolved;
+    });
 }
 
 /** Umbral del long press propio. El de RN son ~500 ms y no se puede bajar. */
@@ -60,6 +100,20 @@ interface Props {
      * lo que el ojo busca al volver del público.
      */
     hangingIndent?: number;
+    /**
+     * Es la continuación de un párrafo que empezó en la página anterior
+     * (paginación por oración): su primer renglón no sale de la sangría.
+     */
+    continued?: boolean;
+    /**
+     * Renglones de cada oración, cuando todas las palabras ya se ubicaron. Lo
+     * usan la paginación (para cortar entre oraciones) y la tinta (para
+     * anclar a la oración).
+     */
+    onUnitLines?: (lines: UnitLines[]) => void;
+    /** Es Escritura: los números de versículo van discretos (chicos y atenuados). */
+    verseNumbers?: boolean;
+    verseNumberColor?: string;
 }
 
 /**
@@ -94,8 +148,13 @@ export function SelectableParagraph({
     selectionColor,
     faceClass,
     hangingIndent = 0,
+    continued = false,
+    onUnitLines,
+    verseNumbers = false,
+    verseNumberColor,
 }: Props) {
     const rects = useRef<Map<number, LayoutRectangle>>(new Map());
+    const reportedLines = useRef('');
     const anchor = useRef<PlacedWord | null>(null);
     const container = useRef<View | null>(null);
     /**
@@ -113,18 +172,22 @@ export function SelectableParagraph({
     const pressStart = useRef<{ x: number; y: number } | null>(null);
 
     const words: PlacedWord[] = [];
-    units.forEach((unit) => {
-        const references = onPressReference ? findBibleReferences(unit.text) : [];
-        splitWords(unit.text).forEach((w) => {
+    units.forEach((unit, unitIndex) => {
+        const references = onPressReference || verseNumbers ? findBibleReferences(unit.text) : [];
+        splitWords(unit.text).forEach((w, wordIndex) => {
             const tokens = tokenizeCitations(w.text);
             const citation = tokens.find((t) => t.kind === 'citation');
-            const reference = references.find((r) => w.start < r.end && w.end > r.start);
+            const span = references.find((r) => w.start < r.end && w.end > r.start);
+            const reference = onPressReference ? span : undefined;
             words.push({
                 text: w.text,
                 sourceStart: unit.sourceStart + w.start,
                 sourceEnd: unit.sourceStart + w.end,
                 ordinals: citation && citation.kind === 'citation' ? citation.ordinals : null,
                 reference: reference?.reference ?? null,
+                unit: unitIndex,
+                breaksLine: wordIndex === 0 && !!unit.lineBreak && unitIndex > 0,
+                inReference: !!span,
             });
         });
     });
@@ -149,6 +212,20 @@ export function SelectableParagraph({
         return closest;
     };
 
+    const reportLines = () => {
+        if (!onUnitLines) return;
+        const lines = unitLinesFrom(
+            words.map((w) => w.unit),
+            units.length,
+            rects.current,
+        );
+        if (!lines) return;
+        const signature = lines.map((l) => `${l.top}:${l.bottom}`).join('|');
+        if (signature === reportedLines.current) return;
+        reportedLines.current = signature;
+        onUnitLines(lines);
+    };
+
     const rangeBetween = (a: PlacedWord, b: PlacedWord): SelectionRange => ({
         start: Math.min(a.sourceStart, b.sourceStart),
         end: Math.max(a.sourceEnd, b.sourceEnd),
@@ -171,6 +248,13 @@ export function SelectableParagraph({
      */
     const handleTouchStart = (e: GestureResponderEvent) => {
         const { pageX, pageY } = e.nativeEvent;
+        // En el documento continuo el texto se desplaza y `onLayout` no se
+        // entera: con el origen medido al armar, un toque largo después de
+        // bajar marcaba otro renglón o nada (revisión adversarial). Se vuelve
+        // a medir en cada toque, antes de que venza la espera.
+        container.current?.measureInWindow((x, y) => {
+            origin.current = { x, y };
+        });
         pressStart.current = { x: pageX, y: pageY };
         cancelTimerOnly();
         pressTimer.current = setTimeout(() => {
@@ -243,16 +327,34 @@ export function SelectableParagraph({
             onResponderTerminate={handleTerminate}
         >
             {words.map((word, index) => {
+                // Salto a mano (LINE_BREAK_RULE): un elemento de ancho completo
+                // fuerza el renglón nuevo en la fila que envuelve.
+                const lineBreak = word.breaksLine ? (
+                    <View key={`br-${index}`} style={{ width: '100%', height: 0 }} pointerEvents="none" />
+                ) : null;
                 const selected =
                     selection !== null &&
                     word.sourceStart >= selection.start &&
                     word.sourceEnd <= selection.end;
                 const mark = styleAt(word.sourceStart);
                 const glyph = glyphAt?.(word.sourceStart, word.sourceEnd) ?? null;
-                return (
+                // Un número de versículo: cifras sueltas, fuera de la referencia
+                // (el «1» de «1 Juan 3:16» se lee: revisión adversarial) y
+                // seguidas de una palabra que empieza el versículo con
+                // mayúscula —«5 Y salió»—, no de «40 días».
+                const isVerseNumber =
+                    verseNumbers &&
+                    !word.inReference &&
+                    /^\d{1,3}$/.test(word.text) &&
+                    /^[«"“¿¡(]*[A-ZÁÉÍÓÚÑÜ]/.test(words[index + 1]?.text ?? '');
+                return [
+                    lineBreak,
                     <View
                         key={index}
-                        onLayout={(e) => rects.current.set(index, e.nativeEvent.layout)}
+                        onLayout={(e) => {
+                            rects.current.set(index, e.nativeEvent.layout);
+                            reportLines();
+                        }}
                         style={{
                             backgroundColor: selected
                                 ? selectionColor
@@ -263,7 +365,11 @@ export function SelectableParagraph({
                             paddingRight: fontSize * 0.28,
                             // La primera palabra sale de la sangría: es lo que
                             // deja la primera línea afuera y el resto adentro.
-                            marginLeft: index === 0 ? -hangingIndent : 0,
+                            // La primera palabra sale de la sangría, y también la
+                            // de un renglón cortado a mano: empieza en el margen.
+                            // Una continuación que arranca en un salto a mano también va al margen.
+                            marginLeft:
+                                (index === 0 && (!continued || !!units[0]?.lineBreak)) || word.breaksLine ? -hangingIndent : 0,
                         }}
                     >
                         <Text
@@ -274,8 +380,15 @@ export function SelectableParagraph({
                             }}
                             suppressHighlighting
                             style={{
-                                color: word.ordinals ? undefined : word.reference ? (referenceColor ?? color) : color,
-                                fontSize,
+                                color: word.ordinals
+                                    ? undefined
+                                    : isVerseNumber
+                                      ? (verseNumberColor ?? color)
+                                      : word.reference
+                                        ? (referenceColor ?? color)
+                                        : color,
+                                // El número de versículo se ve, pero no se lee en voz alta.
+                                fontSize: isVerseNumber ? fontSize * 0.6 : fontSize,
                                 lineHeight,
                                 textDecorationLine: mark?.strike
                                     ? 'line-through'
@@ -303,8 +416,8 @@ export function SelectableParagraph({
                                 {glyph}
                             </Text>
                         ) : null}
-                    </View>
-                );
+                    </View>,
+                ];
             })}
         </View>
     );

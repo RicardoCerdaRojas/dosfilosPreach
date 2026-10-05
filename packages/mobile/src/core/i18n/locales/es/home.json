@@ -41,5 +41,18 @@
     "duration_from_text": "Duración: {{minutes}} min, según el texto",
     "duration_chosen": "Duración: {{minutes}} min, la que elegiste",
     "duration_adjust": "Ajustar",
-    "minutes_short": "{{minutes}} min"
+    "minutes_short": "{{minutes}} min",
+    "change": "Cambiar",
+    "change_next": "Cambiar el sermón de este domingo",
+    "next_chosen": "Elegido por ti",
+    "next_week": "Semana {{week}}",
+    "next_today": "Hoy · {{date}}",
+    "next_this_sunday": "Este domingo · {{date}}",
+    "next_on": "Para el {{date}}",
+    "choose_next_title": "¿Qué predicas este domingo?",
+    "choose_next_hint": "La app lo deduce del plan, pero tú decides. Tu elección vale para este domingo.",
+    "follow_plan": "Volver a lo que dice el plan",
+    "already_preached": "Ya predicado",
+    "next_past": "Era el {{date}}",
+    "unwritten_hint": "La semana {{week}} todavía no está escrita. Publícala desde Preach en tu computadora, o elige otro sermón con «Cambiar»."
 }

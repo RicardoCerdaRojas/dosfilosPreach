@@ -97,6 +97,8 @@ interface Pieza {
     text: string; font: 'serif' | 'hebreo'; bold: boolean; italic: boolean; hebreo: boolean; espacio: boolean;
     /** Sigue pegada a la próxima pieza (misma palabra): no se corta la línea entre ellas. */
     pegado?: boolean;
+    /** Un salto de línea que puso el pastor: corta la línea acá. */
+    salto?: boolean;
 }
 
 /**
@@ -112,6 +114,12 @@ function sinGlifo(t: string): string {
 function piezasDe(runs: ReadonlyArray<InlineRun>): Pieza[] {
     const out: Pieza[] = [];
     for (const r of runs) {
+        // El salto que puso el pastor dentro del párrafo (LINE_BREAK_RULE):
+        // una pieza propia que corta la línea.
+        if (r.lineBreak) {
+            out.push({ text: '', font: 'serif', bold: false, italic: false, hebreo: false, espacio: false, salto: true });
+            continue;
+        }
         for (const parte of r.text.split(/(\s+)/)) {
             if (!parte) continue;
             if (/^\s+$/.test(parte)) {
@@ -274,7 +282,7 @@ class Dibujo {
         const palabras: Pieza[][] = [];
         let abierta: Pieza[] = [];
         for (const p of piezas) {
-            if (p.espacio) { if (abierta.length) palabras.push(abierta); abierta = []; palabras.push([p]); continue; }
+            if (p.espacio || p.salto) { if (abierta.length) palabras.push(abierta); abierta = []; palabras.push([p]); continue; }
             abierta.push(p);
             if (!p.pegado) { palabras.push(abierta); abierta = []; }
         }
@@ -290,6 +298,10 @@ class Dibujo {
         };
         for (const palabra of palabras) {
             const actual = () => lineas[lineas.length - 1]!;
+            if (palabra[0]!.salto) {
+                cortar();
+                continue;
+            }
             if (palabra.length === 1 && palabra[0]!.espacio) {
                 if (actual().length > 0) { actual().push(palabra[0]!); usado += this.ancho_(palabra[0]!, o.size, esp); }
                 continue;

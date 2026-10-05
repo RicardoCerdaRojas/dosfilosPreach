@@ -6,7 +6,7 @@ import { seriesService } from '@dosfilos/application';
 import type { SermonSeriesEntity } from '@dosfilos/domain';
 import { FirebaseStorageService } from '@dosfilos/infrastructure';
 import { useFirebase } from '@/context/firebase-context';
-import { addDays, daysBetween, parseLocalDate } from '@/lib/dateUtils';
+import { addDays, daysBetween, fromStoredDate, parseLocalDate } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -385,7 +385,7 @@ export function SeriesForm() {
                         their scheduled dates. */}
                     {id && shiftablePlannedCount > 0 && (
                       <>
-                        <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+                        <p className="text-[11px] text-warning leading-snug">
                           {t('form.steps.planning.shiftHint', { count: shiftablePlannedCount })}
                         </p>
                         {/* Hard-rebuild escape hatch: when legacy bad
@@ -398,7 +398,7 @@ export function SeriesForm() {
                         <button
                           type="button"
                           onClick={handleRecalcDates}
-                          className="text-[11px] text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 underline underline-offset-2"
+                          className="text-[11px] text-success hover:opacity-80 underline underline-offset-2"
                         >
                           {t('form.steps.planning.recalcButton', { count: shiftablePlannedCount })}
                         </button>
@@ -653,9 +653,9 @@ function computeShiftedMetadata(
         const isShiftable = !p.draftId && (!p.status || p.status === 'planned');
         const totalDelta = isShiftable ? deltaDays : 0;
         const original = new Date(p.scheduledDate);
-        // addDays(_, 0) drops the time component → normalizes to
-        // local midnight. addDays(_, N) does both: shift + normalize.
-        const next = addDays(original, totalDelta);
+        // Primero su DÍA (`fromStoredDate`): una fecha vieja a medianoche UTC
+        // es su día UTC, no el día anterior local. Después el corrimiento.
+        const next = addDays(fromStoredDate(original), totalDelta);
 
         if (totalDelta !== 0) shiftedCount++;
         else if (next.getTime() !== original.getTime()) healedCount++;

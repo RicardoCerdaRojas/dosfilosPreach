@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { PinnedNext } from '@/core/utils/nextSermon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { READING_MODES, ReadingMode, ReadingModeTokens } from '@/core/theme/readingModes';
@@ -154,6 +155,41 @@ interface ReaderSettingsState {
      */
     outlineView: boolean;
     setOutlineView: (on: boolean) => void;
+    /**
+     * La tinta se ve (T-8). Ocultarla no la borra: es para predicar con el
+     * texto limpio sin perder lo anotado. Vale para el púlpito y la Biblia.
+     */
+    inkVisible: boolean;
+    setInkVisible: (on: boolean) => void;
+    /**
+     * Foco de lectura (L-3): el párrafo en curso a pleno contraste y el resto
+     * atenuado; avanzar recorre las ideas antes de pasar la página.
+     */
+    readingFocus: boolean;
+    setReadingFocus: (on: boolean) => void;
+    /**
+     * Citas en bloque plegadas a un renglón (el «aparato de estudio» de P5).
+     * Apagado por defecto: en el manuscrito del pastor la cita al comienzo de
+     * un punto es la Escritura que se lee en voz alta.
+     */
+    collapseQuotes: boolean;
+    setCollapseQuotes: (on: boolean) => void;
+    /**
+     * El sermón como un documento continuo que se desplaza, en vez de
+     * páginas (fase «Atril continuo»). Apagado por defecto: en la página el
+     * texto no se mueve y el ojo que vuelve del público lo encuentra.
+     */
+    continuousReading: boolean;
+    setContinuousReading: (on: boolean) => void;
+    /** Sólo el Apple Pencil escribe en el atril; el dedo sigue pasando página (T-9). */
+    pencilOnly: boolean;
+    setPencilOnly: (on: boolean) => void;
+    /**
+     * El sermón de «este domingo» elegido a mano en el inicio. Manda sobre el
+     * plan hasta que se predica o pasan 10 días (`pickNextSermon`).
+     */
+    pinnedNext: PinnedNext | null;
+    setPinnedNext: (pin: PinnedNext | null) => void;
     /** Brillo propio del atril (C7), de 0 a 1; `null` deja el del sistema. */
     preachBrightness: number | null;
     setPreachBrightness: (level: number | null) => void;
@@ -234,11 +270,25 @@ export const useReaderSettingsStore = create<ReaderSettingsState>()(
                     budgetOverrides: {},
                     recentSearches: [],
                     lastRead: null,
+                    // La elección es del pastor que la hizo, no del siguiente.
+                    pinnedNext: null,
                 }),
             readingPage: true,
             setReadingPage: (on: boolean) => set({ readingPage: on }),
             outlineView: false,
             setOutlineView: (on: boolean) => set({ outlineView: on }),
+            inkVisible: true,
+            setInkVisible: (on: boolean) => set({ inkVisible: on }),
+            readingFocus: false,
+            setReadingFocus: (on: boolean) => set({ readingFocus: on }),
+            collapseQuotes: false,
+            setCollapseQuotes: (on: boolean) => set({ collapseQuotes: on }),
+            continuousReading: false,
+            setContinuousReading: (on: boolean) => set({ continuousReading: on }),
+            pencilOnly: false,
+            setPencilOnly: (on: boolean) => set({ pencilOnly: on }),
+            pinnedNext: null,
+            setPinnedNext: (pin: PinnedNext | null) => set({ pinnedNext: pin }),
             preachBrightness: null,
             setPreachBrightness: (level: number | null) => set({ preachBrightness: level }),
             lastPreachingPlace: '',

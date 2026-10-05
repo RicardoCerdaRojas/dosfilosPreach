@@ -38,6 +38,15 @@ interface Props {
     hangingIndent: boolean;
     readingPage: boolean;
     setReadingPage: (on: boolean) => void;
+    /** Foco de lectura (L-3). */
+    readingFocus: boolean;
+    setReadingFocus: (on: boolean) => void;
+    /** Citas plegadas a un renglón (opción; por defecto completas). */
+    collapseQuotes: boolean;
+    /** El sermón como documento continuo, en vez de páginas. */
+    continuousReading: boolean;
+    setContinuousReading: (on: boolean) => void;
+    setCollapseQuotes: (on: boolean) => void;
     /** Brillo propio del atril (C7); `null` es el del sistema. */
     brightness: number | null;
     setBrightness: (level: number | null) => void;
@@ -103,6 +112,12 @@ export function PreachSettingsSheet({
     hangingIndent,
     readingPage,
     setReadingPage,
+    readingFocus,
+    setReadingFocus,
+    collapseQuotes,
+    continuousReading,
+    setContinuousReading,
+    setCollapseQuotes,
     brightness,
     setBrightness,
     setHangingIndent,
@@ -123,22 +138,37 @@ export function PreachSettingsSheet({
             {/* Cajón lateral derecho, no hoja inferior. En una tablet el ancho
                 sobra y el alto no: una hoja desde abajo tapaba justo el tablero
                 y dejaba media pantalla vacía a los costados. */}
-            <Pressable className="flex-1 flex-row bg-black/40" onPress={onClose}>
-                <View className="flex-1" />
+            {/* El fondo y el cajón son HERMANOS. Antes el cajón era un
+                Pressable dentro del fondo, y el Pressable se quedaba con el
+                toque: la lista no se desplazaba y lo de abajo («Citas
+                plegadas») quedaba fuera de alcance en el iPad. Layout por
+                estilo, no por clase (trampa de NativeWind registrada). */}
+            <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)' }}>
                 <Pressable
-                    className="px-6 pt-6"
-                    onPress={() => undefined}
+                    style={{ flex: 1 }}
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common:close')}
+                    testID="settings-backdrop"
+                />
+                <View
                     style={{
                         backgroundColor: tokens.surface,
                         width: 420,
                         maxWidth: '85%',
                         height: '100%',
-                        paddingBottom: insets.bottom + 20,
+                        paddingTop: 24,
+                        paddingHorizontal: 24,
                         borderLeftWidth: 1,
                         borderLeftColor: tokens.border,
                     }}
                 >
-                    <ScrollView showsVerticalScrollIndicator={false}>
+                    <ScrollView
+                        testID="settings-scroll"
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+                        showsVerticalScrollIndicator
+                    >
                     <Text
                         style={{ color: tokens.textSecondary }}
                         className="font-lexend-semibold text-xs uppercase tracking-widest mb-2"
@@ -373,6 +403,33 @@ export function PreachSettingsSheet({
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    {/* Cómo se avanza: por páginas (el texto no se mueve) o
+                        deslizando un documento continuo. */}
+                    <OnOffSetting
+                        tokens={tokens}
+                        title={t('preach:continuous_reading')}
+                        hint={t('preach:continuous_reading_hint')}
+                        value={continuousReading}
+                        onChange={setContinuousReading}
+                    />
+
+                    {/* Foco de lectura (L-3): volver del público al lugar exacto. */}
+                    <OnOffSetting
+                        tokens={tokens}
+                        title={t('preach:reading_focus')}
+                        hint={t('preach:reading_focus_hint')}
+                        value={readingFocus}
+                        onChange={setReadingFocus}
+                    />
+
+                    <OnOffSetting
+                        tokens={tokens}
+                        title={t('preach:collapse_quotes')}
+                        hint={t('preach:collapse_quotes_hint')}
+                        value={collapseQuotes}
+                        onChange={setCollapseQuotes}
+                    />
 
                     {/* DOS INSTRUMENTOS, DOS CONTROLES. La franja de arriba y
                         el tablero de abajo no son dos vistas de lo mismo: quien
@@ -665,8 +722,56 @@ export function PreachSettingsSheet({
                         </>
                     ) : null}
                     </ScrollView>
-                </Pressable>
-            </Pressable>
+                </View>
+            </View>
         </Modal>
+    );
+}
+
+/** Un ajuste de sí o no, con su explicación: el mismo formato en toda la hoja. */
+function OnOffSetting({
+    tokens,
+    title,
+    hint,
+    value,
+    onChange,
+}: {
+    tokens: ReadingModeTokens;
+    title: string;
+    hint: string;
+    value: boolean;
+    onChange: (on: boolean) => void;
+}) {
+    const { t } = useTranslation();
+    return (
+        <>
+            <Text style={{ color: tokens.textSecondary }} className="font-lexend-semibold text-xs uppercase tracking-widest mb-1">
+                {title}
+            </Text>
+            <Text style={{ color: tokens.textSecondary }} className="font-lexend text-xs mb-2">
+                {hint}
+            </Text>
+            <View className="flex-row flex-wrap mb-5">
+                {[true, false].map((on) => (
+                    <TouchableOpacity
+                        key={String(on)}
+                        onPress={() => onChange(on)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${title}: ${t(on ? 'common:on' : 'common:off')}`}
+                        accessibilityState={{ selected: on === value }}
+                        className="px-4 py-2 rounded-full mr-2 mb-2"
+                        style={{
+                            backgroundColor: on === value ? tokens.accent : 'transparent',
+                            borderWidth: 1,
+                            borderColor: on === value ? tokens.accent : tokens.border,
+                        }}
+                    >
+                        <Text style={{ color: on === value ? tokens.background : tokens.textPrimary }} className="font-lexend text-sm">
+                            {t(on ? 'common:on' : 'common:off')}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        </>
     );
 }

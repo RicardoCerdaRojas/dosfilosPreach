@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
-import { buildReadingBlocks, normalizeSectionBody } from '../sermonReading';
+import { buildReadingBlocks, decodeMarkdownText, normalizeSectionBody } from '../sermonReading';
+import { LINE_BREAK_FIXTURES } from '../lineBreakFixtures';
 import { splitSentences } from '../sentenceSegmentation';
 import {
     buildAnnotationAnchor,
@@ -76,13 +77,12 @@ describe('buildReadingBlocks', () => {
         'Nadie discute con el fuego [1].',
     ].join('\n');
 
-    it('splits subheadings from paragraphs and joins wrapped lines', () => {
+    it('splits subheadings from paragraphs and KEEPS the pastor\'s line breaks (LINE_BREAK_RULE)', () => {
         const blocks = buildReadingBlocks(body);
         expect(blocks.map((b) => b.kind)).toEqual(['subheading', 'paragraph', 'paragraph']);
         expect(blocks[0].text).toBe('El primer punto');
-        expect(blocks[1].text).toBe(
-            'Dios llama a Moisés desde la zarza. La zarza arde y no se consume.',
-        );
+        expect(blocks[1].text).toBe('Dios llama a Moisés desde la zarza.\nLa zarza arde y no se consume.');
+        expect(blocks[1].units.map((u) => !!u.lineBreak)).toEqual([false, true]);
     });
 
     it('gives every unit a range that still reads correctly in the RAW body', () => {
@@ -136,7 +136,7 @@ describe('buildReadingBlocks', () => {
         const wrapped = ['- Primer punto que sigue', '  en la línea de abajo.', '- Segundo punto.'].join('\n');
         const blocks = buildReadingBlocks(wrapped);
         expect(blocks.map((b) => b.kind)).toEqual(['listitem', 'listitem']);
-        expect(blocks[0].text).toBe('Primer punto que sigue en la línea de abajo.');
+        expect(blocks[0].text).toBe('Primer punto que sigue\nen la línea de abajo.');
     });
 
     it('does not let a star bullet open emphasis and swallow the next item', () => {
@@ -208,3 +208,87 @@ describe('splitWords', () => {
         expect(body.slice(from, to)).toBe('a Moisés desde');
     });
 });
+
+describe('texto limpio en el atril (fase «Atril: tinta y lectura»)', () => {
+    const texts = (body: string) => buildReadingBlocks(body).map((b) => b.text);
+
+    it('REGRESIÓN: las entidades del editor web se leen, no se muestran («precaminosa.&#x20;»)', () => {
+        expect(texts('Una inclinación precaminosa.&#x20;\n\nOtra&nbsp;cosa &amp; más.')).toEqual([
+            'Una inclinación precaminosa.',
+            'Otra cosa & más.',
+        ]);
+    });
+
+    it('REGRESIÓN: los escapes de markdown no dejan la barra («\\[...]»)', () => {
+        expect(texts('Como dijo: \\[...] y luego \\*nada\\*.')).toEqual(['Como dijo: [...] y luego *nada*.']);
+        // Escapado sólo al abrir: tampoco es énfasis.
+        expect(texts('Vale \\*5* pesos.')).toEqual(['Vale *5* pesos.']);
+    });
+
+    it('REGRESIÓN: un asterisco solo en su renglón no es un párrafo', () => {
+        expect(texts('Último punto.\n\n*\n\n* * *\n\n***')).toEqual(['Último punto.']);
+    });
+
+    it('una viñeta con asterisco sigue siendo viñeta', () => {
+        expect(buildReadingBlocks('* Primero\n* Segundo').map((b) => [b.kind, b.text])).toEqual([
+            ['listitem', 'Primero'],
+            ['listitem', 'Segundo'],
+        ]);
+    });
+
+    it('las posiciones siguen apuntando al texto original (las marcas no se corren)', () => {
+        const body = 'Uno &#x20;dos. Tres.';
+        const { text, map } = normalizeSectionBody(body);
+        const at = text.indexOf('Tres');
+        expect(body.slice(map[at]!, map[at]! + 4)).toBe('Tres');
+    });
+
+    it('una entidad desconocida se deja como está', () => {
+        expect(decodeMarkdownText('a &foo; b')).toBe('a &foo; b');
+    });
+});
+
+describe('saltos de línea del pastor (LINE_BREAK_RULE)', () => {
+    it.each(LINE_BREAK_FIXTURES)('$name', ({ markdown, lines }) => {
+        const blocks = buildReadingBlocks(markdown);
+        // Cada bloque, renglón por renglón, como lo escribió el pastor.
+        expect(blocks.map((b) => b.text.split('\n'))).toEqual(lines);
+    });
+
+    it('una etiqueta sin punto no se funde con la oración que sigue: es su propia unidad', () => {
+        const [block] = buildReadingBlocks('**A nivel institucional**\nHace muchos años observé algo.');
+        expect(block!.units.map((u) => u.text)).toEqual(['A nivel institucional', 'Hace muchos años observé algo.']);
+        expect(block!.units[1]!.lineBreak).toBe(true);
+    });
+
+    it('los offsets siguen apuntando al texto original después del salto', () => {
+        const body = 'Uno.\\\nDos.';
+        const [block] = buildReadingBlocks(body);
+        const second = block!.units[1]!;
+        expect(body.slice(second.sourceStart, second.sourceEnd)).toBe('Dos.');
+    });
+});
+
+describe('la Escritura del punto (cita que empieza con una referencia)', () => {
+    it('se marca como Escritura', () => {
+        const [quote] = buildReadingBlocks('> **Jonás 4:5-8** — 5 Y salió Jonás de la ciudad. 6 Y preparó Jehová Dios una calabacera.');
+        expect(quote!.kind).toBe('quote');
+        expect(quote!.scripture).toBe(true);
+    });
+
+    it('también con la referencia entre paréntesis', () => {
+        const [quote] = buildReadingBlocks('> (Jonás 4:2) Y oró a Jehová y dijo.');
+        expect(quote!.scripture).toBe(true);
+    });
+
+    it('una cita de un comentario no', () => {
+        const [quote] = buildReadingBlocks('> La lástima de Jonás se corresponde con sus intereses. — David F. Burt, Comentario Jonás, p. 89');
+        expect(quote!.scripture).toBeUndefined();
+    });
+
+    it('una cita que nombra una referencia en el medio tampoco', () => {
+        const [quote] = buildReadingBlocks('> Como dice Jonás 4:2, Dios es clemente.');
+        expect(quote!.scripture).toBeUndefined();
+    });
+});
+

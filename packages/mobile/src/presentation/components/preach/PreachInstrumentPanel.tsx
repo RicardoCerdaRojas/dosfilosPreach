@@ -16,6 +16,8 @@ interface Props {
     /** Página dentro del movimiento, para el punto de avance fino. */
     pageIndex: number;
     pageCount: number;
+    /** Muestra «página / total». En el documento continuo no hay páginas que contar. */
+    showPages?: boolean;
     height: number;
     /** Con reloj y título, o sólo el riel de movimientos. */
     numbers: boolean;
@@ -54,6 +56,7 @@ export function PreachInstrumentPanel({
     readingIndex,
     pageIndex,
     pageCount,
+    showPages = true,
     height,
     numbers,
 }: Props) {
@@ -118,7 +121,7 @@ export function PreachInstrumentPanel({
                     }}
                     className="font-lexend"
                 >
-                    {pageIndex + 1}/{pageCount}
+                    {showPages ? `${pageIndex + 1}/${pageCount}` : null}
                 </Text>
             </View>
 

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { Text, TouchableOpacity, View, type LayoutChangeEvent } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import type { HighlightColor, MarkStyle, PreacherGlyph, ReadingBlock, ReadingUnit } from '@dosfilos/domain';
+import type { HighlightColor, MarkStyle, PreacherGlyph, ReadingBlock, ReadingUnit, UnitMetric } from '@dosfilos/domain';
 
 import { ReadingModeTokens } from '@/core/theme/readingModes';
 import { GLYPH_SYMBOL } from '@/core/theme/preacherGlyphs';
@@ -14,7 +14,7 @@ import {
     PARAGRAPH_GAP_EM,
     TYPE_SCALE,
 } from '@/core/theme/typography';
-import { SelectableParagraph, SelectionRange } from './SelectableParagraph';
+import { SelectableParagraph, SelectionRange, type UnitLines } from './SelectableParagraph';
 
 /** Marca ya reanclada al cuerpo crudo de ESTA sección. */
 export interface ResolvedGlyph {
@@ -31,8 +31,11 @@ export interface ResolvedHighlight {
     end: number;
 }
 
+/** Un bloque, o el tramo de sus oraciones que cae en esta página. */
+export type PageBlock = ReadingBlock & { continued?: boolean };
+
 interface Props {
-    blocks: ReadingBlock[];
+    blocks: PageBlock[];
     highlights: ResolvedHighlight[];
     /** Marcas de predicador ya resueltas (C7): dónde empieza cada una. */
     glyphs?: ResolvedGlyph[];
@@ -78,7 +81,19 @@ interface Props {
      * corren. Medir explícitamente no deja a nadie sin posición.
      */
     layoutKey?: string;
+    /**
+     * Renglones de cada oración del (único) bloque, medidos desde su borde de
+     * arriba. Lo usa la medición fuera de pantalla de la paginación (L-1).
+     */
+    onUnitMetrics?: (metrics: UnitMetric[]) => void;
+    /** Foco de lectura (L-3): los bloques fuera de foco van atenuados. */
+    isBlockDimmed?: (index: number) => boolean;
+    /** Citas plegadas a un renglón (opción). Por defecto se leen completas. */
+    collapseQuotes?: boolean;
 }
+
+/** Cuánto se atenúa lo que no está en foco: se lee, pero no llama la vista. */
+const DIMMED_OPACITY = 0.38;
 
 /** Marca que cubre un punto del cuerpo crudo. La unidad ahora es la palabra. */
 function highlightAt(
@@ -106,24 +121,86 @@ export function PreachSectionBody({
     hangingIndent,
     onBlockLayout,
     layoutKey,
+    onUnitMetrics,
+    isBlockDimmed,
+    collapseQuotes = false,
 }: Props) {
-    /** Vista de cada bloque, para poder medirla sin depender de `onLayout`. */
+    /** Vista de cada párrafo (por el comienzo de su primera oración), para medirla sin depender de `onLayout`. */
     const blockNodes = useRef<Map<number, View>>(new Map());
+    /** Oraciones de cada párrafo y sus renglones, cuando ya se midieron. */
+    const paragraphUnits = useRef<Map<number, ReadingUnit[]>>(new Map());
+    const paragraphLines = useRef<Map<number, UnitLines[]>>(new Map());
+    /** Dónde está cada párrafo dentro del bloque (colometría: uno por oración). */
+    const paragraphY = useRef<Map<number, number>>(new Map());
 
+    /**
+     * La tinta se ancla a la ORACIÓN (T-4): con la paginación por oración un
+     * párrafo puede seguir en otra página, y una nota anclada al párrafo
+     * entero se dibujaba en la página donde el párrafo empieza. Se informa la
+     * posición de cada oración: su primer renglón. Las notas viejas, ancladas
+     * al comienzo del párrafo, caen en su primera oración, que está en el
+     * mismo lugar de siempre.
+     */
+    const reportParagraph = (first: number, node: View) => {
+        if (!onBlockLayout) return;
+        node.measureInWindow((x, y, _width, height) => {
+            const units = paragraphUnits.current.get(first) ?? [];
+            const lines = paragraphLines.current.get(first);
+            if (!lines || lines.length !== units.length) {
+                onBlockLayout(first, { x, y, height });
+                return;
+            }
+            units.forEach((unit, i) => {
+                const line = lines[i]!;
+                onBlockLayout(unit.sourceStart, { x, y: y + line.top, height: Math.max(1, line.bottom - line.top) });
+            });
+        });
+    };
+
+    // Qué se muestra, como texto: `blocks` es un arreglo nuevo en cada render
+    // (el reloj re-renderiza cada segundo) y no sirve de dependencia.
+    const blocksKey = blocks.map((b) => `${b.units[0]?.sourceStart ?? -1}:${b.units.length}`).join(',');
     useEffect(() => {
         if (!onBlockLayout) return;
         // En el frame siguiente: al correr el efecto, el layout nativo puede
         // no haber bajado todavía y se mediría la posición vieja.
         const frame = requestAnimationFrame(() => {
-            for (const [offset, node] of blockNodes.current.entries()) {
-                node.measureInWindow((x, y, _width, height) => {
-                    onBlockLayout(offset, { x, y, height });
-                });
-            }
+            for (const [first, node] of blockNodes.current.entries()) reportParagraph(first, node);
         });
         return () => cancelAnimationFrame(frame);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [layoutKey, blocks]);
+    }, [layoutKey, blocksKey]);
+
+    /** Lo que cada párrafo informa al montarse y al desmontarse. */
+    const registry: ParagraphRegistry = {
+        attach: (first, node) => blockNodes.current.set(first, node),
+        setUnits: (first, units) => paragraphUnits.current.set(first, units),
+        detach: (first) => {
+            blockNodes.current.delete(first);
+            paragraphUnits.current.delete(first);
+            paragraphLines.current.delete(first);
+            paragraphY.current.delete(first);
+        },
+    };
+
+    /** Las métricas del bloque para la paginación, cuando están todos sus párrafos. */
+    const reportedMetrics = useRef('');
+    const reportBlockMetrics = () => {
+        if (!onUnitMetrics || blocks.length !== 1) return;
+        const firsts = [...paragraphUnits.current.keys()].sort((a, b) => a - b);
+        const metrics: UnitMetric[] = [];
+        for (const first of firsts) {
+            const lines = paragraphLines.current.get(first);
+            const top = paragraphY.current.get(first);
+            if (!lines || top === undefined) return;
+            for (const line of lines) metrics.push({ top: top + line.top, bottom: top + line.bottom });
+        }
+        if (metrics.length !== blocks[0]!.units.length) return;
+        const signature = metrics.map((m) => `${m.top}:${m.bottom}`).join('|');
+        if (signature === reportedMetrics.current) return;
+        reportedMetrics.current = signature;
+        onUnitMetrics(metrics);
+    };
     /**
      * Traduce las marcas guardadas al trazo que le toca a cada palabra.
      * En tinta electrónica el color no existe, así que toda marca cae a
@@ -147,24 +224,19 @@ export function PreachSectionBody({
         };
     };
 
-    const paragraph = (units: ReadingUnit[], key: React.Key, style?: object) => (
-        <View
+    const paragraph = (units: ReadingUnit[], key: React.Key, style?: object, continued = false, verseNumbers = false) => (
+        <MeasuredParagraph
             key={key}
+            units={units}
+            registry={registry}
             style={style}
-            ref={(node) => {
-                const first = units[0];
-                if (!first || !node) return;
-                blockNodes.current.set(first.sourceStart, node);
-                return () => {
-                    blockNodes.current.delete(first.sourceStart);
-                };
-            }}
             onLayout={(e) => {
                 const first = units[0];
-                if (!first || !onBlockLayout) return;
-                e.currentTarget.measureInWindow((x, y, _width, height) => {
-                    onBlockLayout(first.sourceStart, { x, y, height });
-                });
+                if (!first) return;
+                paragraphY.current.set(first.sourceStart, e.nativeEvent.layout.y);
+                reportBlockMetrics();
+                const node = blockNodes.current.get(first.sourceStart);
+                if (node) reportParagraph(first.sourceStart, node);
             }}
         >
             <SelectableParagraph
@@ -185,23 +257,50 @@ export function PreachSectionBody({
                 referenceColor={tokens.accent}
                 faceClass={FACE_CLASS[face].regular}
                 hangingIndent={hangingIndent ? fontSize * HANGING_INDENT_EM : 0}
+                continued={continued}
+                verseNumbers={verseNumbers}
+                verseNumberColor={tokens.textSecondary}
+                onUnitLines={(lines) => {
+                    const first = units[0];
+                    if (!first) return;
+                    paragraphLines.current.set(first.sourceStart, lines);
+                    reportBlockMetrics();
+                    const node = blockNodes.current.get(first.sourceStart);
+                    if (node) reportParagraph(first.sourceStart, node);
+                }}
             />
-        </View>
+        </MeasuredParagraph>
     );
 
     return (
         <>
-            {blocks.map((block, blockIndex) =>
-                block.kind === 'quote' ? (
-                    // P5 — el aparato de estudio se colapsa a una marca al
-                    // margen. Es el comentario que se leyó el martes: en el
-                    // púlpito ocupaba una pantalla entera de algo que nadie
-                    // va a decir en voz alta.
+            {blocks.map((block, blockIndex) => {
+                const rendered = block.kind === 'quote' && !collapseQuotes ? (
+                    // La cita COMPLETA, como texto de lectura. En el manuscrito
+                    // del pastor la cita al comienzo de un punto es la Escritura
+                    // que se lee en voz alta; plegarla obligaba a tocar, leer en
+                    // una capa y cerrar justo al empezar el punto (lo vio el
+                    // fundador). Con filete del acento, y resaltado y tinta como
+                    // cualquier párrafo.
+                    <View
+                        key={blockIndex}
+                        style={{
+                            borderLeftWidth: 3,
+                            borderLeftColor: tokens.accent,
+                            paddingLeft: fontSize * 0.6,
+                            marginBottom: fontSize * PARAGRAPH_GAP_EM,
+                        }}
+                    >
+                        {paragraph(block.units, 'q', undefined, block.continued, !!block.scripture)}
+                    </View>
+                ) : block.kind === 'quote' ? (
+                    // Plegada (opción): el aparato de estudio de P5, para quien
+                    // usa las citas como notas que no se dicen en voz alta.
                     <TouchableOpacity
                         key={blockIndex}
                         onPress={() => onPressApparatus(block.text)}
                         accessibilityRole="button"
-                        accessibilityLabel={block.text}
+                        accessibilityLabel={block.text.replace(/\n/g, ' ')}
                         className="flex-row items-center"
                         style={{
                             borderLeftWidth: 2,
@@ -226,7 +325,7 @@ export function PreachSectionBody({
                             }}
                             className="font-lexend"
                         >
-                            {block.text}
+                            {block.text.replace(/\n/g, ' · ')}
                         </Text>
                     </TouchableOpacity>
                 ) : block.kind === 'listitem' ? (
@@ -244,9 +343,9 @@ export function PreachSectionBody({
                             }}
                             className={FACE_CLASS[face].regular}
                         >
-                            {'•'}
+                            {block.continued ? '' : '•'}
                         </Text>
-                        <View style={{ flex: 1 }}>{paragraph(block.units, 'li')}</View>
+                        <View style={{ flex: 1 }}>{paragraph(block.units, 'li', undefined, block.continued)}</View>
                     </View>
                 ) : block.kind === 'subheading' ? (
                     <Text
@@ -273,11 +372,74 @@ export function PreachSectionBody({
                         )}
                     </View>
                 ) : (
-                    paragraph(block.units, blockIndex, {
-                        marginBottom: fontSize * PARAGRAPH_GAP_EM,
-                    })
-                ),
-            )}
+                    paragraph(
+                        block.units,
+                        blockIndex,
+                        { marginBottom: fontSize * PARAGRAPH_GAP_EM },
+                        block.continued,
+                    )
+                );
+                if (!isBlockDimmed) return rendered;
+                return (
+                    <View key={`focus-${blockIndex}`} style={{ opacity: isBlockDimmed(blockIndex) ? DIMMED_OPACITY : 1 }}>
+                        {rendered}
+                    </View>
+                );
+            })}
         </>
+    );
+}
+
+interface ParagraphRegistry {
+    attach: (first: number, node: View) => void;
+    setUnits: (first: number, units: ReadingUnit[]) => void;
+    detach: (first: number) => void;
+}
+
+/**
+ * La vista de un párrafo, con un callback de ref ESTABLE.
+ *
+ * En React 19 un ref en línea se limpia y se vuelve a llamar en cada render.
+ * Esa limpieza borraba los renglones de cada oración, que no vuelven a llegar
+ * porque `onLayout` no se repite: la tinta caía al párrafo entero (revisión
+ * adversarial de «Atril: tinta y lectura»). Acá el callback cambia sólo si
+ * cambia el párrafo.
+ */
+function MeasuredParagraph({
+    units,
+    registry,
+    style,
+    onLayout,
+    children,
+}: {
+    units: ReadingUnit[];
+    registry: ParagraphRegistry;
+    style?: object;
+    onLayout: (e: LayoutChangeEvent) => void;
+    children: React.ReactNode;
+}) {
+    const first = units[0]?.sourceStart;
+    const latest = useRef(registry);
+    useEffect(() => {
+        latest.current = registry;
+    });
+    useEffect(() => {
+        if (first !== undefined) latest.current.setUnits(first, units);
+    }, [first, units]);
+    const ref = useCallback(
+        (node: View | null) => {
+            if (first === undefined || !node) return;
+            latest.current.attach(first, node);
+            latest.current.setUnits(first, units);
+            return () => latest.current.detach(first);
+        },
+        // Sólo cuando cambia el párrafo: las oraciones se actualizan aparte.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [first],
+    );
+    return (
+        <View ref={ref} style={style} onLayout={onLayout}>
+            {children}
+        </View>
     );
 }

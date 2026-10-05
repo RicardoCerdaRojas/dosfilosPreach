@@ -34,9 +34,15 @@ export interface PlanItemState {
 export function planStatus(items: PlanItemState[], now: Date = new Date()): PlanStatus {
     if (!items.length) return 'empty';
     if (items.every((item) => item.preached)) return 'finished';
+    const today = localDay(now);
+    // Por calendario: si todo lo que falta tenía fecha y ya pasó, la serie se
+    // predicó aunque no se haya registrado. Si no, quedaba «activa» para
+    // siempre y tapaba al plan siguiente (revisión adversarial).
+    const pending = items.filter((item) => !item.preached);
+    if (pending.every((item) => item.scheduledDate && calendarDay(item.scheduledDate) < today)) return 'finished';
     const started =
         items.some((item) => item.preached) ||
-        items.some((item) => item.scheduledDate && item.scheduledDate.getTime() <= now.getTime());
+        items.some((item) => item.scheduledDate && calendarDay(item.scheduledDate) <= today);
     return started ? 'active' : 'upcoming';
 }
 
@@ -67,6 +73,52 @@ export function planOrder(a: PlanItemState, b: PlanItemState): number {
 export function nextInPlan<T extends PlanItemState>(items: T[]): T | null {
     const pending = items.filter((item) => !item.preached).sort(planOrder);
     return pending[0] ?? null;
+}
+
+/**
+ * El día de calendario de una fecha, como número comparable (AAAAMMDD).
+ *
+ * El planificador guarda las fechas como MEDIANOCHE UTC
+ * (`new Date('2026-09-06')`): en Chile eso es el sábado a las 21:00, y el
+ * domingo de mañana la semana de hoy parecía pasada. Una fecha a medianoche
+ * UTC exacta es una fecha SIN hora y se lee en UTC; cualquier otra, en la
+ * hora local del dispositivo.
+ */
+export function calendarDay(date: Date): number {
+    const dateOnly = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+    return dateOnly
+        ? date.getUTCFullYear() * 10000 + (date.getUTCMonth() + 1) * 100 + date.getUTCDate()
+        : date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+/** Hoy, como día de calendario LOCAL (`now` es la hora del dispositivo). */
+const localDay = (now: Date) => now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
+/**
+ * Lo que TOCA predicar, por calendario (fase «Atril: tinta y lectura»).
+ *
+ * `nextInPlan` toma el primero sin predicar, y «predicado» sólo lo sabe la
+ * app si el pastor lo registró al salir del atril. El fundador predicó cuatro
+ * semanas sin registrarlas y el inicio le seguía ofreciendo la segunda.
+ *
+ * Si el plan tiene fechas, manda el calendario: el primero sin predicar cuya
+ * fecha es hoy o después. Lo que quedó atrás sin registrar ya pasó: no es lo
+ * que se predica el domingo. Si ya no queda nada por delante, sólo lo que no
+ * tiene fecha. Un plan sin ninguna fecha (flexible) sigue la regla de siempre.
+ */
+export function nextByCalendar<T extends PlanItemState>(items: T[], now: Date = new Date()): T | null {
+    const today = localDay(now);
+    const pending = items.filter((item) => !item.preached);
+    const upcoming = pending
+        .filter((item) => item.scheduledDate && calendarDay(item.scheduledDate) >= today)
+        .sort(planOrder);
+    if (upcoming[0]) return upcoming[0];
+    // Sin nada por delante en el calendario: lo que queda sin fecha, si hay.
+    // Lo fechado que quedó atrás ya pasó; ofrecerlo era la semana 2 para
+    // siempre (revisión adversarial).
+    const undated = pending.filter((item) => !item.scheduledDate);
+    if (pending.some((item) => item.scheduledDate)) return nextInPlan(undated);
+    return nextInPlan(items);
 }
 
 /**
