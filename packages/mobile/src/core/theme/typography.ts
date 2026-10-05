@@ -165,10 +165,13 @@ export const FACE_FAMILY: Record<DeliveryFace, FaceFamilies> = {
 export function formattedFont(
     families: FaceFamilies,
     format: { bold?: boolean; italic?: boolean },
-): { fontFamily?: string; fontStyle?: 'italic' } {
+): { fontFamily?: string; transform?: { skewX: string }[] } {
     if (!format.bold && !format.italic) return {};
     const fontFamily = format.bold && format.italic ? families.semiboldItalic : format.bold ? families.semibold : families.italic;
-    return format.italic && families.synthItalic ? { fontFamily, fontStyle: 'italic' } : { fontFamily };
+    // Sin cursiva propia, se inclina la palabra. `fontStyle: 'italic'` no
+    // sirve: iOS no inclina una familia propia que no trae cursiva (revisión
+    // adversarial). Va sobre el texto de UNA palabra, no sobre texto anidado.
+    return format.italic && families.synthItalic ? { fontFamily, transform: [{ skewX: '-10deg' }] } : { fontFamily };
 }
 
 /** Clases de NativeWind por familia y peso. */

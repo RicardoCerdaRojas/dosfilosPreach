@@ -21,12 +21,12 @@ afterEach(() => {
     mounted.splice(0).forEach((r) => act(() => r.unmount()));
 });
 
-function render(face: DeliveryFace = 'literata', highlights: ResolvedHighlight[] = []) {
+function render(face: DeliveryFace = 'literata', highlights: ResolvedHighlight[] = [], body = BODY) {
     let r!: ReactTestRenderer;
     act(() => {
         r = create(
             <PreachSectionBody
-                blocks={buildReadingBlocks(BODY)}
+                blocks={buildReadingBlocks(body)}
                 highlights={highlights}
                 fontSize={30}
                 tokens={READING_MODES.claro}
@@ -49,6 +49,8 @@ const styleOf = (r: ReactTestRenderer, w: string) =>
     StyleSheet.flatten(r.root.findAllByType(Text).find((n) => n.props.children === w)!.props.style) as {
         fontFamily?: string;
         fontStyle?: string;
+        transform?: unknown;
+        backgroundColor?: string;
         textDecorationLine?: string;
     };
 
@@ -68,9 +70,28 @@ describe('el formato del editor en el atril', () => {
         expect(styleOf(r, 'pasando').fontFamily).toBeUndefined();
     });
 
-    it('Lexend no tiene cursiva: se pide inclinada', () => {
+    it('Lexend no tiene cursiva: la palabra se inclina (iOS no la inclina sola)', () => {
         const r = render('lexend');
-        expect(styleOf(r, 'Jehová')).toMatchObject({ fontFamily: 'Lexend', fontStyle: 'italic' });
+        expect(styleOf(r, 'Jehová')).toMatchObject({ fontFamily: 'Lexend', transform: [{ skewX: '-10deg' }] });
+    });
+
+    it('REGRESIÓN: la cursiva entre comillas se dibuja (el formato es el de la primera letra)', () => {
+        const r = render('literata', [], 'Dijo «*Jehová*» y (<u>Dios</u>) calló.');
+        expect(styleOf(r, '«Jehová»').fontFamily).toBe('Literata-Italic');
+        expect(styleOf(r, '(Dios)').textDecorationLine).toBe('underline');
+    });
+
+    it('REGRESIÓN: una palabra después de una etiqueta recibe SU marca, no la de al lado', () => {
+        const body = 'Fue el profeta: <u>Dios es misericordia</u> y vino a Nínive.';
+        const start = body.indexOf('vino');
+        const r = render('literata', [{ id: 'h', color: 'yellow', style: 'highlight', start, end: start + 4 }], body);
+        const highlighted = (w: string) =>
+            (StyleSheet.flatten(r.root.findAllByType(Text).find((n) => n.props.children === w)!.parent!.props.style) as {
+                backgroundColor?: string;
+            }).backgroundColor !== 'transparent';
+        expect(highlighted('vino')).toBe(true);
+        expect(highlighted('Nínive.')).toBe(false);
+        expect(highlighted('y')).toBe(false);
     });
 
     it('el subrayado del editor convive con la marca de tachado del pastor', () => {

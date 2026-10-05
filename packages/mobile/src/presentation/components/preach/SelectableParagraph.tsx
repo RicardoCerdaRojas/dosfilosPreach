@@ -192,13 +192,22 @@ export function SelectableParagraph({
             const tokens = tokenizeCitations(w.text);
             const citation = tokens.find((t) => t.kind === 'citation');
             const span = references.find((r) => w.start < r.end && w.end > r.start);
-            // El formato de la palabra es el de su primera letra.
-            const mark = unit.marks?.find((m) => w.start >= m.start && w.start < m.end);
+            // El formato de la palabra es el de su primera LETRA: en «*Jehová*»
+            // o «(<u>Dios</u>)» el primer carácter es una comilla o un paréntesis
+            // sin formato (revisión adversarial).
+            const letter = w.start + Math.max(0, w.text.search(/[0-9A-Za-zÀ-ÖØ-öø-ɏͰ-ϿЀ-ӿ\u0590-\u05FF]/));
+            const mark = unit.marks?.find((m) => letter >= m.start && letter < m.end);
+            // Dónde está la palabra en el cuerpo crudo: por el mapa de la
+            // oración, no sumando. Entre medio pudo haber marcas que no se leen
+            // (`**`, `<u>`) y la suma la corría (revisión adversarial).
+            const map = unit.sourceMap;
+            const sourceStart = map?.[w.start] ?? unit.sourceStart + w.start;
+            const sourceEnd = (map?.[w.end - 1] ?? unit.sourceStart + w.end - 1) + 1;
             const reference = onPressReference ? span : undefined;
             words.push({
                 text: w.text,
-                sourceStart: unit.sourceStart + w.start,
-                sourceEnd: unit.sourceStart + w.end,
+                sourceStart,
+                sourceEnd,
                 ordinals: citation && citation.kind === 'citation' ? citation.ordinals : null,
                 reference: reference?.reference ?? null,
                 unit: unitIndex,

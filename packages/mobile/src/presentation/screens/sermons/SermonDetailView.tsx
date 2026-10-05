@@ -9,7 +9,7 @@ import { buildReadingBlocks, formatRuns, type ReadingBlock } from '@dosfilos/dom
 import { useAppTheme } from '@/core/theme/appTheme';
 import { STUDY_COLUMN, useLayout } from '@/core/theme/layout';
 import { READING_MODES } from '@/core/theme/readingModes';
-import { FACE_FAMILY, formattedFont } from '@/core/theme/typography';
+import { FACE_FAMILY, formattedFont, type FaceFamilies } from '@/core/theme/typography';
 import { extractSectionsWithBody } from '@/core/utils/sermonSections';
 import { useAddPreachingLog, useRemovePreachingLog, useSermon } from '@/presentation/hooks/useSermons';
 import { useUIStore } from '@/presentation/state/ui.store';
@@ -359,7 +359,7 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                                             }}
                                             className="font-lexend-semibold"
                                         >
-                                            <FormattedBlock block={block} />
+                                            <FormattedBlock block={block} families={FACE_FAMILY.lexend} />
                                         </Text>
                                     ) : block.kind === 'quote' ? (
                                         // El detalle es la vista de ESTUDIO: acá la
@@ -382,7 +382,7 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
                                                 }}
                                                 className="font-literata italic"
                                             >
-                                                <FormattedBlock block={block} />
+                                                <FormattedBlock block={block} italic />
                                             </Text>
                                         </View>
                                     ) : (
@@ -468,7 +468,17 @@ export function SermonDetailView({ sermonId, showBack = true }: Props) {
  * negrita, cursiva y subrayado (`INLINE_FORMAT_RULE`). Antes era texto plano,
  * y el subrayado llegaba como «<u>…</u>».
  */
-function FormattedBlock({ block }: { block: ReadingBlock }) {
+function FormattedBlock({
+    block,
+    families = FACE_FAMILY.literata,
+    italic = false,
+}: {
+    block: ReadingBlock;
+    /** La familia del texto que lo rodea: el subtítulo va en Lexend. */
+    families?: FaceFamilies;
+    /** El texto que lo rodea ya va en cursiva (la cita): la negrita es negrita cursiva. */
+    italic?: boolean;
+}) {
     return (
         <>
             {formatRuns(block.text, block.marks).map((run, i) =>
@@ -476,7 +486,7 @@ function FormattedBlock({ block }: { block: ReadingBlock }) {
                     <Text
                         key={i}
                         style={{
-                            ...formattedFont(FACE_FAMILY.literata, run),
+                            ...formattedFont(families, { bold: run.bold, italic: run.italic || italic }),
                             textDecorationLine: run.underline ? 'underline' : 'none',
                         }}
                     >

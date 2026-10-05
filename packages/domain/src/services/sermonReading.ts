@@ -125,6 +125,13 @@ export interface ReadingUnit {
     lineBreak?: boolean;
     /** Negrita, cursiva y subrayado, en coordenadas de `text` (`INLINE_FORMAT_RULE`). */
     marks?: FormatSpan[];
+    /**
+     * De dónde viene cada carácter de `text` en el cuerpo crudo. Una palabra
+     * se ubica con esto, no sumando su posición a `sourceStart`: entre medio
+     * pudo haber marcas que no se leen (`**`, `<u>`), y la suma la corría
+     * unas letras (revisión adversarial de INLINE_FORMAT_RULE).
+     */
+    sourceMap?: number[];
 }
 
 /**
@@ -202,19 +209,21 @@ const ESCAPABLE = /\\([\\`*_{}\[\]()#+\-.!>|~])/g;
 const RULES: RewriteRule[] = [
     // Las etiquetas de formato del editor (`INLINE_FORMAT_RULE`), ANTES que
     // las entidades: un `&lt;u&gt;` escrito a propósito es texto, no formato.
-    { re: /<u>([\s\S]*?)<\/u>/gi, format: UNDERLINE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 3 }) },
+    // Sin cruzar un párrafo (como el énfasis), y una etiqueta escapada
+    // (`\<u>`) no es formato.
+    { re: /(?<!\\)<u>((?:(?!\n\n)[\s\S])*?)<\/u>/gi, format: UNDERLINE, emit: (m) => ({ text: m[1] ?? '', offsetInMatch: 3 }) },
     {
-        re: /<(b|strong)>([\s\S]*?)<\/\1>/gi,
+        re: /(?<!\\)<(b|strong)>((?:(?!\n\n)[\s\S])*?)<\/\1>/gi,
         format: BOLD,
         emit: (m) => ({ text: m[2] ?? '', offsetInMatch: (m[1] ?? '').length + 2 }),
     },
     {
-        re: /<(i|em)>([\s\S]*?)<\/\1>/gi,
+        re: /(?<!\\)<(i|em)>((?:(?!\n\n)[\s\S])*?)<\/\1>/gi,
         format: ITALIC,
         emit: (m) => ({ text: m[2] ?? '', offsetInMatch: (m[1] ?? '').length + 2 }),
     },
     // Una etiqueta de formato sin pareja no se lee.
-    { re: /<\/?(?:u|b|strong|i|em)>/gi, emit: () => null },
+    { re: /(?<!\\)<\/?(?:u|b|strong|i|em)>/gi, emit: () => null },
     // Antes que todo: una entidad puede esconder un carácter que otra regla mira.
     {
         re: /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
@@ -314,6 +323,20 @@ function applyRule(src: SourceMappedText, rule: RewriteRule, format?: Uint8Array
     return { text: out.join(''), map };
 }
 
+/**
+ * La primera posición del cuerpo crudo, desde `at`, que se LEE (no es una
+ * marca como `**` o `<u>`). Un ancla guardada cuando la oración empezaba en
+ * la etiqueta (antes se leía como texto) encuentra así su oración: si no,
+ * caía en la anterior (revisión adversarial de INLINE_FORMAT_RULE).
+ */
+export function firstReadIndex(body: string, at: number): number {
+    let best = Number.POSITIVE_INFINITY;
+    for (const origin of normalizeSectionBody(body).map) {
+        if (origin >= at && origin < best) best = origin;
+    }
+    return Number.isFinite(best) ? best : at;
+}
+
 /** Strip markdown for display while remembering every character's origin. */
 export function normalizeSectionBody(body: string): SourceMappedText {
     return normalizeWithFormat(body).mapped;
@@ -361,8 +384,9 @@ function toUnits(src: SourceMappedText, format?: Uint8Array): ReadingUnit[] {
             // `end` is exclusive: the last mapped char plus one.
             sourceEnd: (src.map[span.end - 1] ?? start) + 1,
         };
-        const marks = formatSpans(span.text, src.map.slice(span.start, span.end), format);
-        return marks.length ? { ...unit, marks } : unit;
+        const sourceMap = src.map.slice(span.start, span.end);
+        const marks = formatSpans(span.text, sourceMap, format);
+        return marks.length ? { ...unit, sourceMap, marks } : { ...unit, sourceMap };
     });
 }
 

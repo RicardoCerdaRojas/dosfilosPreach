@@ -58,6 +58,23 @@ describe('el formato del editor en el atril', () => {
         expect(buildReadingBlocks('Sin </u> pareja.')[0]!.text).toBe('Sin  pareja.');
     });
 
+    it('REGRESIÓN: cada carácter sabe de dónde viene, aunque entre medio haya etiquetas', () => {
+        const body = 'Fue el profeta: <u>Dios es misericordia</u> y vino a Nínive.';
+        const unit = buildReadingBlocks(body)[0]!.units[0]!;
+        const at = unit.text.indexOf('vino');
+        expect(body.slice(unit.sourceMap![at]!, unit.sourceMap![at + 3]! + 1)).toBe('vino');
+    });
+
+    it('una etiqueta no cruza un párrafo', () => {
+        const blocks = buildReadingBlocks('Texto <u> suelto.\n\nOtro <u>x</u> fin.');
+        expect(blocks[0]!.marks).toBeUndefined();
+        expect(marked(blocks[1]!.text, blocks[1]!.marks![0]!)).toBe('x');
+    });
+
+    it('una etiqueta escapada (`\\<u>`) no es formato', () => {
+        expect(buildReadingBlocks('Escribí \\<u>a</u> así.')[0]!.marks).toBeUndefined();
+    });
+
     it('un fragmento de página no arrastra los tramos del bloque entero', () => {
         const [block] = buildReadingBlocks('Jonás huyó a Tarsis. <u>Dios no lo soltó.</u> La tormenta llegó.');
         expect(block!.units).toHaveLength(3);
@@ -79,6 +96,10 @@ describe('el formato del editor en Word y PDF', () => {
     it('anidado con negrita, en los dos órdenes', () => {
         expect(parseInline('**<u>a</u> b**')).toEqual([{ text: 'a', underline: true, bold: true }, { text: ' b', bold: true }]);
         expect(parseInline('<u>**a** b</u>')).toEqual([{ text: 'a', bold: true, underline: true }, { text: ' b', underline: true }]);
+    });
+
+    it('REGRESIÓN: el subrayado dentro de una cursiva se conserva (así lo guarda el editor)', () => {
+        expect(parseInline('*a <u>b</u>*')).toEqual([{ text: 'a ', italic: true }, { text: 'b', underline: true, italic: true }]);
     });
 
     it('`<b>`/`<strong>` e `<i>`/`<em>` también son formato', () => {
