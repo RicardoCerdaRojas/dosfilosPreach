@@ -1,0 +1,21 @@
+# Lo que el build de la app móvil (EAS) no necesita subir.
+#
+# EAS copia el repositorio desde git: lo que .gitignore ya excluye nunca se
+# sube. Esto sólo saca lo que pesa y la tablet no usa. Con todo el monorepo
+# el paquete pesaba 49 MB y la subida se cortaba a mitad (2026-10-05).
+# Se dejan todos los package.json y scripts/: la instalación los necesita.
+.git
+node_modules
+
+# Documentación.
+docs/
+
+# Las Biblias de la web, de infraestructura y de la raíz (la tablet lleva
+# las suyas en packages/mobile/assets/bible).
+rvr1960.json
+packages/web/src/assets/bible/
+packages/infrastructure/src/bible/data/
+
+# Imágenes públicas de la web y la landing.
+packages/web/public/
+packages/landing/public/
