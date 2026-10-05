@@ -91,6 +91,11 @@ interface Props {
     isBlockDimmed?: (index: number) => boolean;
     /** Citas plegadas a un renglón (opción). Por defecto se leen completas. */
     collapseQuotes?: boolean;
+    /**
+     * Dónde empieza cada bloque, medido desde el contenedor (el documento
+     * continuo: un toque en el costado deja arriba un comienzo).
+     */
+    onBlockTop?: (index: number, y: number) => void;
 }
 
 /** Cuánto se atenúa lo que no está en foco: se lee, pero no llama la vista. */
@@ -125,6 +130,7 @@ export function PreachSectionBody({
     onUnitMetrics,
     isBlockDimmed,
     collapseQuotes = false,
+    onBlockTop,
 }: Props) {
     /** Vista de cada párrafo (por el comienzo de su primera oración), para medirla sin depender de `onLayout`. */
     const blockNodes = useRef<Map<number, View>>(new Map());
@@ -381,9 +387,13 @@ export function PreachSectionBody({
                         block.continued,
                     )
                 );
-                if (!isBlockDimmed) return rendered;
+                if (!isBlockDimmed && !onBlockTop) return rendered;
                 return (
-                    <View key={`focus-${blockIndex}`} style={{ opacity: isBlockDimmed(blockIndex) ? DIMMED_OPACITY : 1 }}>
+                    <View
+                        key={`focus-${blockIndex}`}
+                        onLayout={onBlockTop ? (e) => onBlockTop(blockIndex, e.nativeEvent.layout.y) : undefined}
+                        style={{ opacity: isBlockDimmed?.(blockIndex) ? DIMMED_OPACITY : 1 }}
+                    >
                         {rendered}
                     </View>
                 );

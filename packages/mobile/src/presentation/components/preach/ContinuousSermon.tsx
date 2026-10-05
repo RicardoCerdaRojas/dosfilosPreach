@@ -53,6 +53,8 @@ interface Props {
     isBlockDimmed?: (globalIndex: number) => boolean;
     /** Dónde empieza cada movimiento, medido desde el comienzo de esta vista. */
     onSectionTop: (index: number, y: number) => void;
+    /** Dónde empieza cada bloque, medido desde el comienzo de su movimiento. */
+    onBlockTop?: (slug: string, index: number, y: number) => void;
 }
 
 /**
@@ -88,6 +90,7 @@ export const ContinuousSermon = React.memo(function ContinuousSermon({
     layoutKey,
     isBlockDimmed,
     onSectionTop,
+    onBlockTop,
 }: Props) {
     return (
         <View>
@@ -125,6 +128,7 @@ export const ContinuousSermon = React.memo(function ContinuousSermon({
                             onSelectionEnd={(range, y) => onSelectionEnd(section.slug, range, y)}
                             onPressCitation={onPressCitation}
                             onPressReference={onPressReference}
+                            onBlockTop={onBlockTop ? (i, y) => onBlockTop(section.slug, i, y) : undefined}
                         />
                     )}
                 </View>

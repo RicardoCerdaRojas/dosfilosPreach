@@ -1,7 +1,16 @@
 import { describe, expect, it } from '@jest/globals';
 import type { ReadingBlockKind } from '@dosfilos/domain';
 
-import { continuousFocusStep, progressInSection, screenStep, sectionAtLine, trackedPlace } from '../continuousReading';
+import {
+    anchoredStep,
+    continuousFocusStep,
+    isStopTouch,
+    progressInSection,
+    screenStep,
+    sectionAtLine,
+    trackedPlace,
+    type ReadingAnchor,
+} from '../continuousReading';
 
 describe('en qué movimiento se está leyendo', () => {
     const tops = [0, 1000, 2500];
@@ -102,5 +111,54 @@ describe('el foco de lectura en el sermón continuo', () => {
 
     it('en el final del sermón el foco se queda', () => {
         expect(continuousFocusStep(kinds, boxes, 3, 1, { ...view, scroll: 680 }, 40, 80)).toEqual({ focus: 3, scrollTo: null });
+    });
+});
+
+describe('un toque que detiene el documento', () => {
+    it('REGRESIÓN: con el texto corriendo por la inercia, el toque sólo lo detiene', () => {
+        // Se soltó el dedo hace 800 ms y el documento se movió hace 16 ms.
+        expect(isStopTouch(10_000, 9_984, 9_200, false)).toBe(true);
+        // Mientras se arrastra, también.
+        expect(isStopTouch(10_000, 9_990, 0, true)).toBe(true);
+    });
+
+    it('con el documento quieto, el toque navega', () => {
+        expect(isStopTouch(10_000, 9_000, 8_000, false)).toBe(false);
+    });
+
+    it('el movimiento de un toque en el costado no frena el siguiente toque', () => {
+        // El documento se mueve (animación propia) pero nadie arrastró hace rato.
+        expect(isStopTouch(10_000, 9_990, 1_000, false)).toBe(false);
+    });
+});
+
+describe('avance que cae en un comienzo', () => {
+    // Pantalla de 1000, solape 80: el paso de siempre baja 920.
+    const step = (anchors: ReadingAnchor[], scroll = 0, towards: 1 | -1 = 1) =>
+        anchoredStep(scroll, 1000, 10_000, 80, towards, anchors, 10);
+
+    it('REGRESIÓN: prefiere un título, aunque se repita texto', () => {
+        expect(step([{ y: 700, rank: 0 }, { y: 900, rank: 1 }, { y: 925, rank: 2 }])).toBe(690);
+    });
+
+    it('sin título, el comienzo de un párrafo o viñeta antes que una oración', () => {
+        expect(step([{ y: 800, rank: 1 }, { y: 925, rank: 2 }])).toBe(790);
+    });
+
+    it('del mismo tipo, el que más avanza', () => {
+        expect(step([{ y: 600, rank: 1 }, { y: 880, rank: 1 }])).toBe(870);
+    });
+
+    it('nunca avanza menos de media pantalla', () => {
+        expect(step([{ y: 300, rank: 0 }, { y: 910, rank: 2 }])).toBe(900);
+    });
+
+    it('sin comienzos a mano, el paso de siempre', () => {
+        expect(step([{ y: 2000, rank: 0 }])).toBe(920);
+    });
+
+    it('hacia atrás, con la misma regla', () => {
+        // Desde 3000: el paso de siempre sube a 2080; se puede poner arriba entre 2080 y 2500.
+        expect(step([{ y: 2300, rank: 0 }, { y: 2100, rank: 1 }], 3000, -1)).toBe(2290);
     });
 });

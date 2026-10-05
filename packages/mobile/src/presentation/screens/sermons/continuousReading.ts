@@ -148,3 +148,73 @@ export function continuousFocusStep(
     const tall = box.bottom - box.top > view.height - lead;
     return { focus: moved.focus, scrollTo: clamp(tall ? box.top - lead : box.bottom - view.height + lead) };
 }
+
+/**
+ * ¿Este toque sólo DETIENE el documento? Con el texto corriendo por la
+ * inercia de un deslizamiento, el dedo que lo frena también llegaba como
+ * toque: en un costado saltaba una pantalla, en el centro escondía el
+ * encabezado (lo vio el fundador). Es de frenado si el documento se movió
+ * hace un instante, y el movimiento venía de la mano (no de un toque en el
+ * costado, que debe poder repetirse rápido).
+ */
+export const STOP_TOUCH_MS = 150;
+/** Lo que puede durar la inercia de un deslizamiento. */
+export const MOMENTUM_MS = 4000;
+export function isStopTouch(now: number, lastScrollAt: number, lastDragAt: number, dragging: boolean): boolean {
+    if (now - lastScrollAt > STOP_TOUCH_MS) return false;
+    return dragging || now - lastDragAt < MOMENTUM_MS;
+}
+
+/** Un comienzo donde puede quedar arriba la pantalla nueva. */
+export interface ReadingAnchor {
+    /** Dónde está en el documento. */
+    y: number;
+    /** 0: título o subtítulo; 1: párrafo, viñeta o cita; 2: oración. */
+    rank: 0 | 1 | 2;
+}
+
+/** Lo menos que avanza un toque: media pantalla, para que se note. */
+export const MIN_STEP_RATIO = 0.5;
+
+/**
+ * A dónde lleva un toque en el costado, cayendo en un COMIENZO.
+ *
+ * Bajar una pantalla exacta dejaba arriba media oración de un párrafo, y el
+ * que vuelve de mirar a la gente no sabe dónde está (lo pidió el fundador).
+ * Ahora la pantalla nueva empieza en el mejor comienzo a mano: un título o
+ * subtítulo; si no, un párrafo o una viñeta; si no, una oración. Aunque se
+ * repita algo de lo que ya se veía, siempre se avanza al menos media
+ * pantalla. Sin comienzo a mano, el paso de siempre.
+ *
+ * `top` es la parte de arriba de la pantalla que tapan los controles.
+ */
+export function anchoredStep(
+    scroll: number,
+    viewport: number,
+    contentHeight: number,
+    overlap: number,
+    towards: 1 | -1,
+    anchors: readonly ReadingAnchor[],
+    lead: number,
+): number {
+    const plain = screenStep(scroll, viewport, contentHeight, overlap, towards);
+    const max = maxScroll(contentHeight, viewport);
+    // Lo que se puede poner arriba: entre media pantalla de avance y el paso de siempre.
+    const lo = towards > 0 ? scroll + viewport * MIN_STEP_RATIO : plain;
+    const hi = towards > 0 ? plain : scroll - viewport * MIN_STEP_RATIO;
+    let best: ReadingAnchor | null = null;
+    for (const anchor of anchors) {
+        const top = anchor.y - lead;
+        if (top < lo - 0.5 || top > hi + 0.5) continue;
+        if (
+            !best ||
+            anchor.rank < best.rank ||
+            // Del mismo tipo, el más cercano al paso de siempre (el que más avanza).
+            (anchor.rank === best.rank && Math.abs(top - plain) < Math.abs(best.y - lead - plain))
+        ) {
+            best = anchor;
+        }
+    }
+    if (!best) return plain;
+    return Math.min(max, Math.max(0, best.y - lead));
+}
