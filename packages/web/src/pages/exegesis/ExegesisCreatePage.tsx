@@ -81,8 +81,11 @@ export function ExegesisCreatePage() {
     // valores puestos y cambia los que quiera antes de crear. Un perfil que
     // decide en silencio es un perfil que nadie revisa.
     const { profiles, defaultProfile } = useWorkProfiles();
-    const perfilElegido = profiles.find(p => p.id === workProfileId) ?? null;
     const [workProfileId, setWorkProfileId] = useState<string | null>(null);
+    // DESPUÉS del estado que lee: antes iba arriba y, con un perfil guardado,
+    // el `find` leía `workProfileId` sin declarar y la página se caía en
+    // blanco («Cannot access before initialization»).
+    const perfilElegido = profiles.find(p => p.id === workProfileId) ?? null;
     const perfilAplicado = useRef(false);
 
     const aplicarPerfil = useCallback((profile: WorkProfile | null) => {
