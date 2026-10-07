@@ -337,6 +337,40 @@ describe('exportPaperToDocx — la maquetación sale de la rúbrica', () => {
     });
 });
 
+describe('exportPaperToDocx — la portada como el estilo «Carátula» de TMS (TP #6)', () => {
+    const portadaDe = async (cover: Partial<PaperCover>, title = 'Santiago 3:1-12') => {
+        const doc = await xmlOf(paper({
+            title,
+            cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda', place: 'Concepción, Chile', date: 'Octubre 2026', ...cover },
+        } as Partial<ExegeticalPaper>), 'word/document.xml');
+        return doc.slice(0, doc.indexOf('<w:sectPr'));
+    };
+
+    it('REGRESIÓN: ningún renglón de la portada lleva espacio después (heredaba 12 pt del cuerpo)', async () => {
+        const portada = await portadaDe({ assignmentTitle: 'Trabajo práctico #6' });
+        const parrafos = portada.match(/<w:p>[\s\S]*?<\/w:p>|<w:p [\s\S]*?<\/w:p>/g) ?? [];
+        expect(parrafos.length).toBeGreaterThan(20);
+        for (const p of parrafos) expect(p).toMatch(/<w:spacing[^>]*w:after="0"/);
+    });
+
+    it('REGRESIÓN: si el nombre de la entrega ya dice el pasaje, el pasaje no se repite', async () => {
+        const portada = await portadaDe({ assignmentTitle: 'Trabajo Práctico #6 - Santiago 3:1−12' });
+        expect(portada.match(/SANTIAGO 3:1/g)?.length).toBe(1);
+    });
+
+    it('si no lo dice, el pasaje va debajo del nombre de la entrega', async () => {
+        const portada = await portadaDe({ assignmentTitle: 'Trabajo práctico #6' });
+        expect(portada).toContain('TRABAJO PRÁCTICO #6');
+        expect(portada).toContain('SANTIAGO 3:1–12');
+    });
+
+    it('un rango con signo menos (−) sale con guion medio', async () => {
+        const portada = await portadaDe({ assignmentTitle: 'Trabajo práctico #6 - Santiago 3:1−12' });
+        expect(portada).toContain('3:1–12');
+        expect(portada).not.toContain('3:1−12');
+    });
+});
+
 describe('exportPaperToDocx — la portada manda sobre la cabecera', () => {
     const conPortada = paper({
         cover: {

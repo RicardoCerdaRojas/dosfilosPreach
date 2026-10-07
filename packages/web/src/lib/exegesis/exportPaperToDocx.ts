@@ -321,6 +321,27 @@ function titleDisplayOf(paper: ExegeticalPaper): string {
     return paper.title?.trim() || formatPassageReference(paper.passage, paper.displayLanguage);
 }
 
+/** Un rango de versículos va con guion medio: «3:1–12», no con el signo menos (−) ni el guion corto. */
+function coverText(text: string): string {
+    return text.replace(/(\d)\s*[\u2212\u2010\u2011-]\s*(\d)/g, '$1–$2');
+}
+
+/** Lo que se compara para saber si un renglón ya dice lo que diría otro. */
+function comparable(text: string): string {
+    return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es')
+        .replace(/[\u2212\u2010\u2011\u2013\u2014-]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function mentions(text: string, part: string): boolean {
+    const p = comparable(part);
+    return p.length > 0 && comparable(text).includes(p);
+}
+
 function coverSection(cover: PaperCover | null, fallbackTitle: string, style: CoverStyle = TMS_COVER_STYLE) {
     if (!hasCover(cover)) return null;
     const { layout } = style;
@@ -330,8 +351,14 @@ function coverSection(cover: PaperCover | null, fallbackTitle: string, style: Co
     const parrafo = (text: string) => new Paragraph({
         alignment: AlignmentType.CENTER,
         indent: { firstLine: 0 },
-        spacing: { line: 360, lineRule: LineRuleType.AUTO },
-        children: text ? textRuns(style.uppercase ? text.toLocaleUpperCase('es') : text) : [],
+        // Sin espacio antes ni después, como el estilo «Carátula» de TMS: la
+        // separación la dan SÓLO los renglones en blanco. Sin fijarlo, cada
+        // renglón heredaba los 12 pt «después» del cuerpo del trabajo, unos
+        // 300 pt de más en 25 renglones, y el lugar y la fecha se pasaban a la
+        // segunda hoja (TP #6, 2026-10-07, cotejado contra la portada del
+        // fundador).
+        spacing: { line: 360, lineRule: LineRuleType.AUTO, before: 0, after: 0 },
+        children: text ? textRuns(coverText(style.uppercase ? text.toLocaleUpperCase('es') : text)) : [],
     });
     const line = (text: string) => [parrafo(text)];
     const blancos = (n: number) => Array.from({ length: n }, () => parrafo(''));
@@ -356,7 +383,10 @@ function coverSection(cover: PaperCover | null, fallbackTitle: string, style: Co
             ...(institution ? line(institution) : []),
             ...blancos(layout.afterInstitution),
             ...(assignmentTitle ? line(assignmentTitle) : []),
-            ...line(fallbackTitle),
+            // El pasaje, salvo que el nombre de la entrega ya lo diga: si no,
+            // salía dos veces («TRABAJO PRÁCTICO #6 - SANTIAGO 3:1–12» y abajo
+            // «SANTIAGO 3:1-12»).
+            ...(assignmentTitle && mentions(assignmentTitle, fallbackTitle) ? [] : line(fallbackTitle)),
             ...(course ? line(course) : []),
             ...blancos(layout.afterTitle),
             ...(style.byLine.trim() ? line(style.byLine.trim()) : []),
