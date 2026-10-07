@@ -1,5 +1,11 @@
 # Fase: lo que destapó el TP #6 (Santiago 3:1-12) · octubre 2026
 
+> **Estado: CERRADA 2026-10-07.** B, A, C, D, E y G mergeadas y desplegadas en **#749**. Después, tres arreglos medidos en producción:
+> - **#750** y **#752:** el verificador juzga sólo lo que la frase toma de la fuente, con el campo `takenFromSource` antes del veredicto.
+> - **#751:** renombrar la clave de una fuente corrige lo ya generado, y la revisión avisa cuando una cita usa una clave huérfana.
+>
+> En 3:2, entre las 16:36 y las 17:46, las verificadas subieron de 8 a 12 y las no encontradas bajaron de 3 a 0. Falta medir #752 con una nueva verificación de 3:2 y hacer la prueba con el TP #7. F (visor y edición) queda para una fase propia.
+
 **Qué es.** Arreglos surgidos de un ejercicio real en producción entre el 6 y el 7 de octubre de 2026: el trabajo práctico #6 de griego del NT del fundador, sobre Santiago 3:1-12, con cuatro preguntas de sintaxis y entrega el 7 de octubre. Se recorrió todo el camino:
 
 - crear el trabajo con un perfil y armar la rúbrica;
