@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, prioritizeChunksForCitedPage, pageVerdictFor } from '@dosfilos/domain';
+import { citationAnchorFor, classifyOriginalLanguageAbsence, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -200,6 +200,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             chunks,
             language,
             ...(parsed.otherSources?.length ? { otherSources: parsed.otherSources } : {}),
+            sourceLostOriginalScript: lostOriginalScript(parsed.evidence, chunks),
         });
 
         try {
@@ -222,6 +223,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             const matchedPage = extractPageFromHint(parsedResp.bestPageHint);
             let status: CitationStatus = parsedResp.status;
             let note: string | null = parsedResp.reasoning || null;
+            let citedPageHolds = false;
 
             // Cotejo de página. La cita trae un número; hay tres desenlaces
             // y antes sólo se escribían dos.
@@ -245,6 +247,9 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                     note = language === 'en'
                         ? `The claim is in the source, but p. ${parsed.pages} could not be checked: the supporting passage carries no page anchor.`
                         : `La afirmación está en la fuente, pero la p. ${parsed.pages} no se pudo comprobar: el pasaje de apoyo no trae ancla de página.`;
+                } else if (verdict === 'mismatch' && citedPageSettlesIt(parsed.pages, parsedResp.citedPageSupports, chunks)) {
+                    // La página citada también lo dice: la cita está bien.
+                    citedPageHolds = true;
                 } else if (verdict === 'mismatch') {
                     status = 'page-mismatch';
                     note = language === 'en'
@@ -259,11 +264,14 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                 matchedCorpusId: matched.corpusId,
                 matchedSourceLabel: matched.displayLabel,
                 similarityScore: parsedResp.confidence,
-                matchedPage,
+                // Si la página citada lo sostiene, el apoyo que se muestra es ése.
+                matchedPage: citedPageHolds ? parsed.pages : matchedPage,
                 // El hint es el ancla completa que el propio sistema escribió
                 // para ese fragmento; guardarla evita que la interfaz tenga
                 // que adivinar si el número es página impresa u hoja.
-                matchedPageLabel: parsedResp.bestPageHint.trim() || null,
+                matchedPageLabel: citedPageHolds
+                    ? (chunks.find(c => { const p = printedPageOfHint(c.pageHint); return p !== null && pagesOverlap(parsed.pages!, p); })?.pageHint ?? null)
+                    : (parsedResp.bestPageHint.trim() || null),
                 note,
             };
         } catch (err) {
@@ -383,7 +391,59 @@ export interface ParsedLlmResponse {
     status: CitationStatus;
     confidence: number | null;
     bestPageHint: string;
+    /** Un fragmento de la página CITADA respalda la afirmación por sí solo. */
+    citedPageSupports: boolean;
     reasoning: string;
+}
+
+/**
+ * La afirmación cita griego o hebreo y la evidencia de la fuente no trae ni
+ * una letra (con texto de sobra para afirmarlo): la copia lo perdió al
+ * extraerse. Ver `lostScriptBlock` en el prompt.
+ */
+export function lostOriginalScript(evidence: string, chunks: ReadonlyArray<{ text: string }>): boolean {
+    const texto = chunks.map(c => c.text).join('\n');
+    return countOriginalLanguageChars(evidence) > 0
+        && texto.length >= MIN_CHARS_PARA_AFIRMAR_AUSENCIA
+        && countOriginalLanguageChars(texto) === 0
+        // Un comentario que translitera no perdió nada: escribe «ḥesed» a
+        // propósito, y ahí la falta de la forma original sí es un dato.
+        && classifyOriginalLanguageAbsence(texto) === 'lost';
+}
+
+/**
+ * La página IMPRESA de un ancla, o `null` si el ancla es otra cosa.
+ *
+ * Las anclas son «p. 47», «hoja 87» o «§ 2.3». Sacar el primer número de
+ * cualquiera haría que una cita a la p. 141 se diera por buena con la HOJA
+ * 141 —que es otra página del libro— o con el § 141.
+ */
+export function printedPageOfHint(hint: string | null): string | null {
+    if (!hint || !/^pp?\.\s*\d/.test(hint.trim())) return null;
+    return extractPageFromHint(hint.trim());
+}
+
+/**
+ * La página citada respalda la cita, aunque el mejor apoyo esté en otra.
+ *
+ * El verificador comparaba la página citada con la del MEJOR fragmento y, si
+ * no coincidían, decía «página no coincide». En el TP #6 pasó tres veces y
+ * las tres la página citada también lo decía (140→141, 111→109, 144→145):
+ * 5 de 5 revisiones a mano fueron falsas alarmas.
+ *
+ * Sólo se cree si de verdad llegó un fragmento de una página citada: si no,
+ * el modelo habría opinado sobre algo que no vio.
+ */
+export function citedPageSettlesIt(
+    citedPages: string | null,
+    citedPageSupports: boolean,
+    chunks: ReadonlyArray<{ pageHint: string | null }>,
+): boolean {
+    if (!citedPages || !citedPageSupports) return false;
+    return chunks.some(c => {
+        const page = printedPageOfHint(c.pageHint);
+        return page !== null && pagesOverlap(citedPages, page);
+    });
 }
 
 /**
@@ -414,6 +474,7 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
             status: 'manual-pending',
             confidence: null,
             bestPageHint: '',
+            citedPageSupports: false,
             // `finishReason` viene del servidor justamente para no tener que
             // adivinar aquí: cuando dice MAX_TOKENS el corte es un hecho, y el
             // arreglo es subir el presupuesto, no revisar la cita.
@@ -441,7 +502,8 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
         : conocido
             ? ''
             : `El modelo no declaró un veredicto reconocible (${String(declarado)}). No es un problema de la cita.`;
-    return { status, confidence, bestPageHint, reasoning };
+    const citedPageSupports = parsed?.citedPageSupports === true;
+    return { status, confidence, bestPageHint, citedPageSupports, reasoning };
 }
 
 function extractPageFromHint(hint: string): string | null {

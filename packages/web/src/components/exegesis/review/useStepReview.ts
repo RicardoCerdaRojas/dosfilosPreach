@@ -18,6 +18,7 @@ import {
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { selectionAfterReview } from './nextPendingCitation';
 
 export type ReviewFilter = CitationStatus | 'all';
 
@@ -115,9 +116,15 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
 
     const review = async (path: string, note: string) => {
         if (!version) return;
+        const nueva = !reviews.has(path);
         try {
             await reviewCitation.mutateAsync({ paperId: paper.id, stepId: step.id, versionId: version.id, path, note });
             toast.success(note.trim() ? t('canonical.review.toast.reviewSaved') : t('canonical.review.toast.reviewRemoved'));
+            // Revisada la cita, se pasa a la siguiente pendiente: el panel se
+            // quedaba en la misma y parecía que no había pasado nada (TP #6).
+            setSelectedPath(selectionAfterReview({
+                listed: listed.map(([p]) => p), reviewed: new Set(reviews.keys()), path, wasNew: nueva, note,
+            }));
         } catch (err) {
             console.error('[exegesis] review citation failed:', err);
             toast.error(t('canonical.review.toast.reviewFailed'));

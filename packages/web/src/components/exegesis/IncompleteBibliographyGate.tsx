@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Pencil } from 'lucide-react';
-import type { ExegeticalPaper } from '@dosfilos/domain';
+import type { BibliographyEntry, ExegeticalPaper } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { usePaperBibliography, type PaperBibliographyRow } from '@/hooks/exegesis/usePaperBibliography';
 import { BibliographyEditDialog } from './BibliographyEditDialog';
@@ -24,8 +24,13 @@ import {
  * documento sigue imprimiendo el marcador —omitir la obra sería peor (ver
  * `renderBibliography`)—, pero ya no por descuido.
  */
-export function IncompleteBibliographyGate({ paper, open, onCancel, onExport }: {
+export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onExport }: {
     paper: ExegeticalPaper;
+    /**
+     * La bibliografía que va a salir: sólo lo CITADO. Es lo que decide; las
+     * fuentes del corpus sin citar no entran al documento y no cuentan.
+     */
+    entries: ReadonlyArray<BibliographyEntry>;
     open: boolean;
     onCancel: () => void;
     onExport: () => void;
@@ -33,11 +38,17 @@ export function IncompleteBibliographyGate({ paper, open, onCancel, onExport }: 
     const { t } = useTranslation('exegesis');
     const rows = usePaperBibliography(paper);
     const [editing, setEditing] = useState<PaperBibliographyRow | null>(null);
-    // Las que estaban incompletas al abrir, para que no desaparezcan de la
-    // lista apenas se completan: se ven pasar a verde.
-    const [shown] = useState(() => new Set(rows.filter(r => r.missing.length > 0).map(r => r.sourceId)));
-    const visibles = rows.filter(r => shown.has(r.sourceId));
-    const pendientes = rows.filter(r => r.missing.length > 0).length;
+    // Las citadas incompletas al abrir, para que no desaparezcan de la lista
+    // apenas se completan: se ven pasar a verde.
+    const [shown] = useState(() => entries.filter(e => !e.text).map(e => e.citationKey));
+    const pendientes = entries.filter(e => !e.text).length;
+    const visibles = shown.map(key => {
+        const entry = entries.find(e => e.citationKey === key);
+        // Una cita a un libro que ya no está en el corpus no tiene ficha que
+        // abrir: se muestra igual, sin edición.
+        const row = rows.find(r => r.citationKey === key) ?? null;
+        return { key, label: row?.displayLabel ?? entry?.displayLabel ?? key, missing: entry?.missing ?? [], row };
+    });
 
     return (
         <>
@@ -50,28 +61,30 @@ export function IncompleteBibliographyGate({ paper, open, onCancel, onExport }: 
                         <DialogDescription>{t('detail.bibliography.gate.description')}</DialogDescription>
                     </DialogHeader>
                     <ul className="space-y-2">
-                        {visibles.map(row => (
-                            <li key={row.sourceId}>
+                        {visibles.map(item => (
+                            <li key={item.key}>
                                 <button
                                     type="button"
-                                    onClick={() => setEditing(row)}
-                                    disabled={!row.editable}
+                                    onClick={() => item.row && setEditing(item.row)}
+                                    disabled={!item.row?.editable}
                                     className="group flex w-full items-start gap-2 rounded-lg border border-border px-3 py-2 text-left disabled:opacity-60"
                                 >
-                                    {row.missing.length === 0
+                                    {item.missing.length === 0
                                         ? <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
                                         : <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />}
                                     <span className="flex-1 min-w-0">
-                                        <span className="block text-sm font-medium text-foreground truncate">{row.displayLabel}</span>
-                                        {row.missing.length > 0 && (
+                                        <span className="block text-sm font-medium text-foreground truncate">{item.label}</span>
+                                        {item.missing.length > 0 && (
                                             <span className="block text-xs text-muted-foreground">
-                                                {t('detail.bibliography.gate.missing', {
-                                                    fields: row.missing.map(f => t(`detail.bibliography.fields.${f}`).toLocaleLowerCase()).join(', '),
-                                                })}
+                                                {item.row
+                                                    ? t('detail.bibliography.gate.missing', {
+                                                        fields: item.missing.map(f => t(`detail.bibliography.fields.${f}`).toLocaleLowerCase()).join(', '),
+                                                    })
+                                                    : t('detail.bibliography.gate.notInCorpus')}
                                             </span>
                                         )}
                                     </span>
-                                    {row.editable && <Pencil className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />}
+                                    {item.row?.editable && <Pencil className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />}
                                 </button>
                             </li>
                         ))}

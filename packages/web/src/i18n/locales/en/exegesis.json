@@ -1918,6 +1918,7 @@
         "reviewedLabel": "Reviewed by hand",
         "notePlaceholder": "What you found when opening the page. E.g. “The polel/hiphil contrast is on p. 436; fix the citation”.",
         "reviewedOn": "Reviewed on {{date}}.",
+        "update": "Update the note",
         "save": "Mark as reviewed",
         "remove": "Remove mark",
         "useThisPage": "Note this page",
@@ -1953,7 +1954,7 @@
       },
       "unreadableOriginal": {
         "title": "Greek or Hebrew that is not in the source ({{count}})",
-        "body": "These claims quote an original-language form while resting on a book whose extracted text contains none. The form did not come from there — the assistant supplied it.",
+        "body": "These claims attribute to a book an original-language form that is not in the verse, and the extracted copy of that book has none. It may be in the printed book: check it in the PDF.",
         "item": "{{form}} — attributed to {{source}}",
         "lost": "Incomplete extraction. The book left neither original characters nor transliteration: they were probably lost on extraction. Check it in the library.",
         "transliterated": "This book transliterates. It writes the original in Latin script — “the root hāyâ” — following its series’ convention, so the discussion may well be right; what is missing is the form in its own script. There is nothing to re-extract: if the claim depends on the spelling, rest it on a source that carries the original."
@@ -2164,6 +2165,7 @@
         "collapse": "Collapse"
       },
       "gate": {
+        "notInCorpus": "Cited in the paper but no longer in the corpus: add it back or remove its citations.",
         "multiChapter": "v1 only supports single-chapter passages. Edit the passage to a single chapter to start.",
         "noVerses": "v1 requires explicit verses. Edit the passage to include start and end verses."
       },

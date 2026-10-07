@@ -80,9 +80,12 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
         // cierta. Va FUERA del actualizador de `draft` porque ese se ejecuta
         // dos veces en modo estricto y no debe tener efectos.
         setFromLibrary(marked => {
-            if (!marked.has(field)) return marked;
+            // Escribir el autor reescribe también la forma ordenable: su marca
+            // deja de ser cierta junto con la del autor.
+            const tocados = field === 'author' ? [field, 'authorSorted' as Field] : [field];
+            if (!tocados.some(f => marked.has(f))) return marked;
             const next = new Set(marked);
-            next.delete(field);
+            for (const f of tocados) next.delete(f);
             return next;
         });
         setFromBook(marked => {
@@ -127,7 +130,13 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                 toast.error(t('detail.bibliography.readNoText'));
                 return;
             }
-            const { data: merged, filled } = completeWithProposal(clean, result.data);
+            // Lo prellenado desde la biblioteca y no tocado todavía es una
+            // pista (el título de la tarjeta suele traer la colección): la
+            // portada del libro lo reemplaza. Lo escrito a mano, nunca.
+            const sinPistas = Object.fromEntries(
+                Object.entries(clean).filter(([f]) => !fromLibrary.has(f as Field)),
+            ) as BibliographicData;
+            const { data: merged, filled } = completeWithProposal(sinPistas, result.data);
             if (filled.length === 0) {
                 // Tres razones distintas para no llenar nada, y decirlas
                 // todas «tu libro no trae datos» sería mentir en dos de ellas.
@@ -151,6 +160,7 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
             }));
             // Se suman a las de una lectura anterior en vez de reemplazarlas.
             setFromBook(marcadas => new Set([...marcadas, ...llenados]));
+            setFromLibrary(marcadas => new Set([...marcadas].filter(f => !llenados.includes(f))));
             toast.success(t('detail.bibliography.readFilled', { count: llenados.length }));
         } catch (err) {
             console.error('[exegesis] no se pudo leer la portada del libro:', err);

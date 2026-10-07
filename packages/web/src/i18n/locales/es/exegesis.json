@@ -1918,6 +1918,7 @@
         "reviewedLabel": "Revisada a mano",
         "notePlaceholder": "Qué encontraste al abrir la página. Ej.: «El contraste polel/hifil está en la p. 436; corregir la cita».",
         "reviewedOn": "Revisada el {{date}}.",
+        "update": "Actualizar la nota",
         "save": "Marcar como revisada",
         "remove": "Quitar marca",
         "useThisPage": "Anotar esta página",
@@ -1953,7 +1954,7 @@
       },
       "unreadableOriginal": {
         "title": "Griego o hebreo que no está en la fuente ({{count}})",
-        "body": "Estas afirmaciones citan una forma en lengua original apoyándose en un libro cuyo texto extraído no tiene ninguna. La forma no salió de ahí: la puso el asistente.",
+        "body": "Estas afirmaciones atribuyen a un libro una forma en lengua original que no está en el versículo, y la copia extraída de ese libro no tiene ninguna. Puede estar en el libro impreso: compruébala en el PDF.",
         "item": "{{form}} — atribuido a {{source}}",
         "lost": "Extracción incompleta. El libro no dejó ni caracteres originales ni transliteración: probablemente se perdieron al extraerlo. Revisalo en la biblioteca.",
         "transliterated": "Este libro translitera. Escribe el original en alfabeto latino —«la raíz hāyâ»— siguiendo la convención de su colección, así que la discusión puede ser correcta; lo que no hay es la forma en caracteres. No hay nada que re-extraer: si la afirmación depende de la grafía, apóyala en una fuente que traiga el original."
@@ -2164,6 +2165,7 @@
         "collapse": "Colapsar"
       },
       "gate": {
+        "notInCorpus": "Citado en el trabajo, pero ya no está en el corpus: vuelve a agregarlo o quita sus citas.",
         "multiChapter": "v1 solo soporta pasajes de un capítulo. Edita el pasaje a un solo capítulo para iniciar.",
         "noVerses": "v1 requiere versos explícitos. Edita el pasaje para incluir verso inicial y final."
       },

@@ -626,6 +626,7 @@ export function ExegesisPaperPage() {
             {exportPendiente && (
                 <IncompleteBibliographyGate
                     paper={paper}
+                    entries={bibliography}
                     open={!!exportPendiente}
                     onCancel={() => setExportPendiente(null)}
                     onExport={() => {

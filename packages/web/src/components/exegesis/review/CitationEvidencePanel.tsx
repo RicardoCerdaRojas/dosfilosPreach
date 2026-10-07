@@ -92,7 +92,8 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 </div>
             )}
 
-            {verdict.status === 'page-mismatch' && (
+            {/* Revisada a mano, el aviso de página ya no es un problema abierto (TP #6). */}
+            {verdict.status === 'page-mismatch' && !review && (
                 <p className="rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-xs text-warning-subtle-foreground">
                     {offByOne ? t('canonical.review.panel.pageHintCalibration') : t('canonical.review.panel.pageHint')}
                     {offByOne && calibrationPath && (
@@ -103,6 +104,14 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                             </Link>
                         </>
                     )}
+                </p>
+            )}
+            {/* La nota cierra ESTA cita; el desfase del libro sigue y afecta a las demás. */}
+            {verdict.status === 'page-mismatch' && review && offByOne && calibrationPath && (
+                <p className="text-xs text-muted-foreground">
+                    <Link to={calibrationPath} className="underline underline-offset-2">
+                        {t('canonical.review.panel.pageHintCalibrate')}
+                    </Link>
                 </p>
             )}
 
@@ -163,9 +172,16 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                                 {t('canonical.review.panel.remove')}
                             </Button>
                         )}
-                        <Button type="button" size="sm" onClick={() => onReview(path, note)} disabled={isReviewing || note.trim().length < 5}>
+                        {/* Ya revisada: el botón no vuelve a ofrecer «marcar»; sólo
+                            actualiza la nota si cambió (TP #6). */}
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => onReview(path, note)}
+                            disabled={isReviewing || note.trim().length < 5 || (!!review && note.trim() === review.note.trim())}
+                        >
                             {isReviewing ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
-                            {t('canonical.review.panel.save')}
+                            {review ? t('canonical.review.panel.update') : t('canonical.review.panel.save')}
                         </Button>
                     </div>
                 </div>
@@ -177,7 +193,14 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
 /** Si lo citado y lo hallado se llevan exactamente una página. */
 function isOffByOne(verdict: VerifiedCitation): boolean {
     const cited = parsePageRange(verdict.pages);
-    const found = parsePageRange(verdict.matchedPageLabel ?? (verdict.matchedPage !== null ? String(verdict.matchedPage) : null));
+    // El ancla viene escrita («p. 141», «hoja 141», «§ 2.3») y `parsePageRange`
+    // exige empezar por el número: con «p. 141» devolvía null y el enlace de
+    // calibrar no aparecía nunca. Una hoja o una sección no son la página
+    // impresa y no dicen nada del desfase.
+    const label = verdict.matchedPageLabel?.trim() ?? null;
+    const found = label
+        ? (/^pp?\.\s*\d/.test(label) ? parsePageRange(label.replace(/^pp?\.\s*/, '')) : null)
+        : parsePageRange(verdict.matchedPage !== null ? String(verdict.matchedPage) : null);
     if (!cited || !found) return false;
     return Math.abs(cited.start - found.start) === 1;
 }
