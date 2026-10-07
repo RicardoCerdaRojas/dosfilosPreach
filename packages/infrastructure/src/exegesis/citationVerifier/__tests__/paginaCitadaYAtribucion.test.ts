@@ -85,7 +85,10 @@ describe('la página citada se respeta si también lo dice', () => {
 });
 
 describe('se juzga sólo lo que la frase le atribuye a la fuente', () => {
-    it('REGRESIÓN: el prompt excluye SÓLO a otros autores nombrados y la conclusión marcada; lo demás, completo', () => {
+    it('REGRESIÓN (prod, 3:2): el análisis del autor no se le exige a la fuente; lo que se le atribuye explícitamente, sí', () => {
+        // Con la regla anterior («todo lo demás, COMPLETO») 7 de 18 citas de
+        // 3:2 bajaron a «coincidencia baja» con notas como «Mayor sí sostiene
+        // … pero no trata la decisión sintáctica».
         for (const language of ['es', 'en'] as const) {
             const { systemInstruction } = buildLlmVerifierPrompt({
                 rawCitation: 'Adamson, p. 140',
@@ -96,10 +99,10 @@ describe('se juzga sólo lo que la frase le atribuye a la fuente', () => {
                 chunks: [],
                 language,
             });
-            expect(systemInstruction).toMatch(language === 'es' ? /Sólo puedes dejar fuera dos cosas/ : /You may leave out only two things/);
-            // Contra la indulgencia: una parte sin respaldo no es «verified».
-            expect(systemInstruction).toMatch(language === 'es' ? /respaldado COMPLETO/ : /supported IN FULL/);
-            expect(systemInstruction).toMatch(language === 'es' ? /Ante la duda, una parte NO está excluida/ : /When in doubt, a part is NOT excluded/);
+            expect(systemInstruction).toMatch(language === 'es' ? /Es del AUTOR y NO se le exige a la fuente/ : /It is the AUTHOR's and is NOT required of the source/);
+            expect(systemInstruction).toMatch(language === 'es' ? /decisión sintáctica/ : /syntactic decision/);
+            expect(systemInstruction).toMatch(language === 'es' ? /SÍ se exige, y entero/ : /It IS required, in full/);
+            expect(systemInstruction).not.toMatch(/Ante la duda, una parte NO está excluida|When in doubt, a part is NOT excluded/);
             expect(systemInstruction).toContain('citedPageSupports');
         }
     });
