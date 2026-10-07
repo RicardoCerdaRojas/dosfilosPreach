@@ -76,6 +76,41 @@
 
 ---
 
-## Griego
+## Griego (segundo PR de esta fase)
 
-*(Se agrega cuando lleguen los comentarios.)*
+**El pedido.** El profesor del fundador quiere lo mismo que en hebreo: la función de los términos importantes y el análisis de cláusulas. La exégesis más útil es la que establece la función de palabras, verbos y cláusulas. **Taxonomía: Wallace**, *Greek Grammar Beyond the Basics*; decisión del fundador del 2026-10-07.
+
+**Lo que ya hay (leído en el código).**
+- La morfología sale de MorphGNT, sin pasar por el asistente.
+- Función de caso cerrada según Wallace (`caseFunctionTaxonomy.ts`).
+- Uso del artículo y función discursiva de partículas (Runge).
+- Ruta `greekTutor.analyzeVerse` → Luna sin razonamiento.
+- Caché global `greek_insight_cache`, con `promptVersion` (hoy 10). Una versión vieja ofrece «Ampliar análisis».
+
+**Lo que falta.**
+- Cláusulas: hoy sólo hay texto libre en `syntacticFunction`.
+- Función de verbos: participios, infinitivos, usos de modo.
+- Funciones de caso que faltan: dativo de agencia, genitivo absoluto, genitivo de contenido.
+- La palabra «Clave» se elige comparando texto, no por índice.
+
+**Fuente determinista: MACULA Greek** (Clear Bible, CC BY 4.0, edición SBLGNT; `cdn.jsdelivr.net/gh/Clear-Bible/macula-greek@main/SBLGNT/lowfat/`).
+- Trae árboles sintácticos con la cláusula y su estructura (`class="cl"`, `rule="S-V-O"`, `Conj-CL`), el rol de cada palabra (`role` s/v/o/io/adv/p), roles semánticos (`frame`) y referentes.
+- Medido en Santiago 2:6: δέ = conjunción; ὑμεῖς = s; ἠτιμάσατε = v; τὸν πτωχόν = o.
+- Tamaño: cartas de 0,2 a 5,7 MB (Santiago 1,3); evangelios y Hechos de 9 a 17 MB, que habrá que preprocesar.
+- Exige atribución, como MorphGNT.
+
+**Unidades.**
+- **G1. Cláusulas desde MACULA.**
+  - Del dato: límites, roles y conector.
+  - Del asistente: tipo de dependiente (ἵνα, ὅτι, relativa, participial, genitivo absoluto, infinitival), conexión según Runge (καί, δέ, γάρ, οὖν, ἀλλά, asíndeton), valor y explicación.
+  - Sección «Cláusulas» como en hebreo.
+- **G2. Función de verbos (Wallace), lista cerrada como la de casos.**
+  - Participio: adjetival, sustantival y adverbial (temporal, medio, manera, causa, condición, concesión, propósito, resultado, circunstancia concomitante); perifrástico, genitivo absoluto, redundante.
+  - Infinitivo: propósito, resultado, tiempo, causa, medio, sujeto, objeto, discurso indirecto, epexegético.
+  - Modos: subjuntivo hortativo, deliberativo, de prohibición, tras ἵνα/ὅπως; imperativo; optativo volitivo.
+  - Uso del tiempo: aoristo constativo, ingresivo, culminativo, gnómico; presente progresivo, iterativo, gnómico.
+- **G3. Funciones de caso:** completar la lista (dativo de agencia, genitivo absoluto, de contenido…) y marcar la «Clave» por índice.
+
+**Literatura.** Wallace es la columna de las taxonomías; Runge, los conectores; Levinsohn y Porter, apoyo. Se codifican categorías, no se copia texto de los libros.
+
+**Reforzar el hebreo después.** MACULA Hebrew (sobre WLC, los mismos tokens que OSHB) trae cláusulas: podría dar los límites de H2 en vez del asistente.
