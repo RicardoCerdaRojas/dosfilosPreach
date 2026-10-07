@@ -10,10 +10,20 @@ import { SchemaType } from '../../llm/schemaType';
 export const LLM_CITATION_VERIFIER_SCHEMA = {
     type: SchemaType.OBJECT,
     properties: {
+        // PRIMERO lo tomado, después el veredicto: el veredicto iba primero y
+        // su descripción decía «si la fuente respalda la afirmación» —la frase
+        // entera—, y el verificador le seguía exigiendo a la fuente el
+        // análisis del autor aunque la regla dijera lo contrario (TP #6, 3:2:
+        // «Adamson traduce “capaz de controlar”, pero no aborda la distinción
+        // entre capacidad personal y posibilidad impersonal»).
+        takenFromSource: {
+            type: SchemaType.STRING,
+            description: 'One sentence: what the paper sentence TAKES from the cited source — the fact, position or reading it attributes to it. Leave out the paper author\'s own analysis (grammatical reasoning, syntactic decision, translation choice, conclusions) and anything attributed to OTHER named authors.',
+        },
         status: {
             type: SchemaType.STRING,
             enum: ['verified', 'fuzzy-low', 'not-found'],
-            description: 'Whether the source supports the claim. "verified" = clear support (paraphrase or quote). "fuzzy-low" = partial / tangential support. "not-found" = no support.',
+            description: 'Whether the chunks support what is in takenFromSource — NOT the author\'s analysis. "verified" = they support it (paraphrase or quote). "fuzzy-low" = they touch the topic but do not support it. "not-found" = it does not appear.',
         },
         confidence: {
             type: SchemaType.NUMBER,
@@ -29,8 +39,11 @@ export const LLM_CITATION_VERIFIER_SCHEMA = {
         },
         reasoning: {
             type: SchemaType.STRING,
-            description: 'One sentence in the requested language explaining the verdict.',
+            description: 'One sentence in the requested language explaining the verdict about takenFromSource.',
         },
     },
-    required: ['status', 'confidence', 'bestPageHint', 'citedPageSupports', 'reasoning'],
+    required: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'citedPageSupports', 'reasoning'],
+    // Gemini ordena las propiedades alfabéticamente si no se le dice; el
+    // orden importa: se escribe lo tomado antes de decidir.
+    propertyOrdering: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'citedPageSupports', 'reasoning'],
 } as const;
