@@ -31,10 +31,19 @@
       "oshbValidation": "OSHB Validation"
     },
     "oshb": {
-      "confirmed": "Confirmed by OSHB",
-      "differs": "Differs from OSHB",
-      "code": "OSHB Code",
-      "farfanAnalysis": "Farfán Analysis"
+      "confirmed": "Matches OSHB",
+      "differs": "Corrected per OSHB",
+      "code": "OSHB code",
+      "corrected": "Corrected per OSHB",
+      "correction": "{{field}}: {{analysis}} → {{oshb}}",
+      "translationNote": "The saved translation may not follow this correction. If it doesn't, re-analyze the verse.",
+      "fields": {
+        "binyan": "Stem",
+        "verbForm": "Form",
+        "person": "Person",
+        "gender": "Gender",
+        "number": "Number"
+      }
     },
     "colors": {
       "legend": "Color System",
@@ -54,6 +63,12 @@
       "Hithpael": "Hithpael (intensive reflexive)"
     },
     "verbForms": {
+      "PERFECT": "Perfect",
+      "IMPERFECT": "Imperfect",
+      "WAYYIQTOL": "Wayyiqtol",
+      "JUSSIVE": "Jussive",
+      "COHORTATIVE": "Cohortative",
+      "WEQATAL": "Weqatal",
       "Perfect": "Perfect",
       "Imperfect": "Imperfect",
       "Wayyiqtol": "Wayyiqtol",

@@ -14,6 +14,7 @@ import React from 'react';
 import { TooltipContent } from '@/components/ui/tooltip';
 import type { WordAnalysis } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
+import { OshbCorrectionsList } from './OshbCorrectionsList';
 
 // ── Category badge colors (mirrors WordCard) ─────────────────────────────────
 const CATEGORY_COLORS: Record<string, string> = {
@@ -106,7 +107,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
               <span
                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 ${getCatColor(word.category)}`}
               >
-                {word.category ? t(`verseAnalyzer.categories.${word.category.toUpperCase()}`, { defaultValue: word.category }) : 'PARTICLE'}
+                {word.category ? t(`verseAnalyzer.categories.${word.category.toUpperCase()}`) : 'PARTICLE'}
               </span>
             )}
           </div>
@@ -150,7 +151,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
             {vm && (
               <div className="flex items-start gap-x-5 gap-y-3 flex-wrap">
                 {vm.binyan    && <MorphPill label="Binyan"  value={vm.binyan} />}
-                {vm.verbForm  && <MorphPill label="Forma"   value={t(`verseAnalyzer.verbForms.${vm.verbForm}`, { defaultValue: vm.verbForm })} />}
+                {vm.verbForm  && <MorphPill label="Forma"   value={t(`verseAnalyzer.verbForms.${vm.verbForm}`)} />}
                 {(vm.person || vm.gender || vm.number) && (
                   <MorphPill label="P-G-N" value={pgnLabel(vm.person, vm.gender, vm.number)} />
                 )}
@@ -167,11 +168,13 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
               </div>
             )}
 
+            {vm && <OshbCorrectionsList oshb={word.oshbReference} />}
+
             {nm && (nm.gender || nm.number || nm.state) && (
               <div className="flex items-center gap-x-5 gap-y-3 flex-wrap">
-                {nm.gender && <MorphPill label="Género"  value={t(`verseAnalyzer.morphology.gender.${nm.gender.toUpperCase()}`, { defaultValue: `${nm.gender}` })} />}
-                {nm.number && <MorphPill label="Número"  value={t(`verseAnalyzer.morphology.number.${nm.number.toUpperCase()}`, { defaultValue: `${nm.number}` })} />}
-                {nm.state  && <MorphPill label="Estado"  value={t(`verseAnalyzer.morphology.state.${nm.state.toUpperCase()}`, { defaultValue: `${nm.state}` })} />}
+                {nm.gender && <MorphPill label="Género"  value={t(`verseAnalyzer.morphology.gender.${nm.gender.toUpperCase()}`)} />}
+                {nm.number && <MorphPill label="Número"  value={t(`verseAnalyzer.morphology.number.${nm.number.toUpperCase()}`)} />}
+                {nm.state  && <MorphPill label="Estado"  value={t(`verseAnalyzer.morphology.state.${nm.state.toUpperCase()}`)} />}
               </div>
             )}
           </div>

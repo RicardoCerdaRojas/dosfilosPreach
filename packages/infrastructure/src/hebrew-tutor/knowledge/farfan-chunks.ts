@@ -696,6 +696,26 @@ modal, o habitual; el wayyiqtol tiene valor de pasado narrativo.
 `,
   },
 
+  // ── Volitives ────────────────────────────────────────────────────────────────
+
+  {
+    id: 'farfan-volitivos',
+    topics: ['yusivo', 'cohortativo', 'imperativo', 'volitivo', 'prohibición', 'אַל', 'לֹא', 'deseo'],
+    content: `
+## Volitivos: yusivo, cohortativo, imperativo — y la prohibición
+
+- **Cohortativo** (1.ª persona, suele llevar ָה): «hagamos», «que yo vaya».
+- **Imperativo** (2.ª persona, positivo): «ve», «escucha».
+- **Yusivo** (3.ª y 2.ª persona): deseo o mandato indirecto, «que haga», «que no haga».
+
+**Prohibición — la partícula decide la etiqueta:**
+- **אַל + forma de prefijo = YUSIVO.** Prohibición o ruego negativo puntual: אַל־תִּפְגְּעִי־בִי «no insistas conmigo» (Rut 1:16). Nunca se usa אַל con imperativo.
+- **לֹא + forma de prefijo = IMPERFECTO.** Prohibición categórica o permanente: לֹא תִרְצָח «no matarás».
+
+**Forma y etiqueta:** en la mayoría de los verbos, el yusivo de 2.ª y 3.ª persona se escribe IGUAL que el imperfecto. Sólo se distingue en algunos débiles: III-he apocopado (יַעַשׂ por יַעֲשֶׂה), huecos (יָקֹם por יָקוּם) e Hifil (יַקְטֵל por יַקְטִיל). Cuando la forma no lo muestra, la etiqueta la decide la partícula o el contexto, no la forma.
+`,
+  },
+
   // ── Syntax ───────────────────────────────────────────────────────────────────
 
   {

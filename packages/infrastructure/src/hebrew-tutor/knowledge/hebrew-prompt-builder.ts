@@ -135,13 +135,20 @@ function formatOshbContext(verse: HebrewVerse): string {
     .join('\n');
 
   return `
-## REFERENCIA OSHB (solo para verificación, NO es autoridad morfológica)
+## MORFOLOGÍA DE OSHB — AUTORIDAD para el verbo
 
-Los siguientes códigos morfológicos son de la Open Scriptures Hebrew Bible.
-Puedes usarlos como SEGUNDO CRITERIO de comparación, pero tu análisis debe
-basarse SIEMPRE en las reglas gramaticales de Farfán y del profesor.
-Si hay discrepancia, indica en la explicación por qué la gramática de Farfán
-difiere del código OSHB.
+Los siguientes códigos son de la Open Scriptures Hebrew Bible, etiquetada a mano.
+Para cada VERBO, toma de su código el TALLO, la FORMA y la PERSONA-GÉNERO-NÚMERO:
+ya resolvió por contexto las formas ambiguas (תִּ…נָה es 2FP o 3FP; un prefijo con
+אַל es yusivo aunque se escriba igual que el imperfecto). No los contradigas.
+Tu traducción y tu función sintáctica deben ser coherentes con esa persona y esa
+forma (2.ª persona → se le habla a alguien). La explicación sigue a Farfán.
+
+Lectura del código de verbo: V + tallo (q qal, N nifal, p piel, P pual, h hifil,
+H hofal, t hitpael) + forma (p perfecto, q weqatal, i imperfecto, w wayyiqtol,
+h cohortativo, j yusivo, v imperativo, a inf. absoluto, c inf. constructo,
+r participio activo, s participio pasivo) + persona, género, número.
+Ej.: HVNi2fp = nifal imperfecto 2.ª fem. plural; HVqj2fs = qal yusivo 2.ª fem. sing.
 
 ${rows}
 `;

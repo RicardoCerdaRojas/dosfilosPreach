@@ -116,19 +116,28 @@ export interface WordAnalysis {
   readonly oshbReference?: OshbReference;
 }
 
+/** Un rasgo del verbo que OSHB corrigió: lo que decía el análisis y lo que dice OSHB. */
+export interface OshbCorrection {
+  readonly field: 'binyan' | 'verbForm' | 'person' | 'gender' | 'number';
+  readonly analysis: string;
+  readonly oshb: string;
+}
+
 /**
- * Data from the OSHB (morphhb) for cross-validation.
- * This is informational — it is NOT the source of the morphological analysis.
+ * La palabra según OSHB (morphhb), que DECIDE la morfología del verbo.
+ *
+ * Antes era sólo informativa y el asistente la contradecía en las formas
+ * ambiguas (2FP/3FP, yusivo/imperfecto). Ver `services/oshb-contrast.ts`.
  */
 export interface OshbReference {
-  /** morphhb morphology code, e.g. "HVqw3ms" */
+  /** Código de morphhb, p. ej. "HVqw3ms". */
   readonly morphCode: string;
-  /** Strong's number with language prefix, e.g. "H1961" */
+  /** Lema de morphhb (número de Strong con prefijo), p. ej. "c/1961". */
   readonly strongNumber: string;
-  /** Whether our analysis agrees with the OSHB parsing */
+  /** El análisis coincidía con OSHB. */
   readonly agreesWithAnalysis: boolean;
-  /** Human-readable OSHB parsing for display */
-  readonly oshbParsing: string;
+  /** Lo que se corrigió con OSHB. Vacío si coincidía. */
+  readonly corrections: readonly OshbCorrection[];
 }
 
 // ── Verb Table ────────────────────────────────────────────────────────────────

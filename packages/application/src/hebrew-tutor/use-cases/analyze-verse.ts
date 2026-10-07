@@ -25,7 +25,7 @@ import type {
   LexicalEntry,
   HebrewVerse,
 } from '@dosfilos/domain';
-import { reconcileGlobalWords } from '@dosfilos/domain';
+import { applyOshbMorphology, reconcileGlobalWords } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -72,7 +72,12 @@ export class AnalyzeVerseUseCase {
     );
 
     // 5. Perform the analysis via Gemini + knowledge base + lexical context
-    const analysis = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries);
+    // La morfología verbal la decide OSHB (formas ambiguas: 2FP/3FP,
+    // yusivo/imperfecto); ver `applyOshbMorphology`.
+    const analysis = applyOshbMorphology(
+        await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries),
+        hebrewVerse.words,
+    );
 
     // 6. Persist to cache for future requests
     if (this.sessionRepository) {
@@ -107,11 +112,13 @@ export class AnalyzeVerseUseCase {
     if (!this.sessionRepository) return null;
     const cached = await this.sessionRepository.getCachedAnalysis(hebrewVerse.reference);
     if (!cached) return null;
-    return {
+    // Primero las letras, después la morfología de OSHB: así lo guardado
+    // antes de que OSHB decidiera también sale corregido.
+    return applyOshbMorphology({
       ...cached,
       hebrewText: hebrewVerse.hebrewText,
       words: reconcileGlobalWords(cached.words, hebrewVerse.words),
-    };
+    }, hebrewVerse.words);
   }
 
   /**

@@ -31,10 +31,19 @@
       "oshbValidation": "Validación OSHB"
     },
     "oshb": {
-      "confirmed": "Confirmado por OSHB",
-      "differs": "Difiere de OSHB",
+      "confirmed": "Coincide con OSHB",
+      "differs": "Corregido según OSHB",
       "code": "Código OSHB",
-      "farfanAnalysis": "Análisis Farfán"
+      "corrected": "Corregido según OSHB",
+      "correction": "{{field}}: {{analysis}} → {{oshb}}",
+      "translationNote": "La traducción guardada puede no seguir esta corrección. Si no la sigue, re-analiza el versículo.",
+      "fields": {
+        "binyan": "Binyan",
+        "verbForm": "Forma",
+        "person": "Persona",
+        "gender": "Género",
+        "number": "Número"
+      }
     },
     "colors": {
       "legend": "Sistema de Colores",
@@ -54,6 +63,9 @@
       "Hithpael": "Hitpael (reflexivo intensivo)"
     },
     "verbForms": {
+      "JUSSIVE": "Yusivo",
+      "COHORTATIVE": "Cohortativo",
+      "WEQATAL": "Weqatal",
       "Perfect": "Perfecto",
       "PERFECT": "Perfecto",
       "Imperfect": "Imperfecto",
