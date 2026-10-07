@@ -184,6 +184,44 @@ export interface LexicalNote {
   readonly type: LexicalNoteType;
 }
 
+// ── Clauses ───────────────────────────────────────────────────────────────────
+
+/**
+ * Cómo se une una cláusula a lo anterior.
+ *
+ *   FIRST             — primera del versículo y sin conector que analizar.
+ *   WAYYIQTOL_CHAIN   — וַ + prefijo: sigue la cadena narrativa.
+ *   WAW_CONJUNCTIVE   — וְ + verbo: coordinación simple (incluye weqatal).
+ *   WAW_DISJUNCTIVE   — וְ + NO verbo (sujeto, objeto, adverbio adelante):
+ *                       rompe la cadena; contraste, circunstancia, paréntesis.
+ *                       Rut 1:14 «וְרוּת דָּבְקָה בָּהּ» = «pero Rut se quedó».
+ *   ASYNDETIC         — empieza SIN conjunción: asíndeton.
+ *                       Rut 1:16 «עַמֵּךְ עַמִּי».
+ *   SUBORDINATE       — introducida por כִּי, אֲשֶׁר, אִם, לְמַעַן, כַּאֲשֶׁר…
+ *   QUOTATION         — comienzo de discurso directo.
+ */
+export type ClauseConnection =
+  | 'FIRST' | 'WAYYIQTOL_CHAIN' | 'WAW_CONJUNCTIVE' | 'WAW_DISJUNCTIVE'
+  | 'ASYNDETIC' | 'SUBORDINATE' | 'QUOTATION';
+
+/** Una cláusula del versículo: qué palabras abarca, de qué tipo es y cómo se une. */
+export interface VerseClause {
+  /** Índice (desde 0) de la primera palabra en `words`. */
+  readonly firstWord: number;
+  /** Índice de la última palabra, inclusive. */
+  readonly lastWord: number;
+  readonly type: 'VERBAL' | 'NOMINAL';
+  readonly connection: ClauseConnection;
+  /** El conector en hebreo (וְ, כִּי, אֲשֶׁר…), o `null`. */
+  readonly connector: string | null;
+  /** Valor lógico en palabras: «contraste», «circunstancia», «causa», «clímax»… */
+  readonly value: string;
+  /** Una frase que lo explica al estudiante. */
+  readonly explanation: string;
+  /** La conexión que dio el asistente se corrigió con la regla de la waw. */
+  readonly adjusted?: boolean;
+}
+
 // ── Verse Analysis ────────────────────────────────────────────────────────────
 
 /**
@@ -205,6 +243,8 @@ export interface VerseAnalysis {
   readonly words: readonly WordAnalysis[];
   /** Summary table of verbal forms in the verse */
   readonly verbTable: readonly VerbTableEntry[];
+  /** Las cláusulas del versículo. Ausente en análisis guardados antes de existir. */
+  readonly clauses?: readonly VerseClause[];
   /** Optional exegetical or syntactic observations */
   readonly exegeticalNotes?: readonly string[];
   /**

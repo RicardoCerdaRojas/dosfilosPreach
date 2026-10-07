@@ -30,6 +30,23 @@
       "syntacticFunction": "Función Sintáctica",
       "oshbValidation": "Validación OSHB"
     },
+    "clauses": {
+      "title": "Cláusulas",
+      "adjusted": "Conexión corregida por la regla de la waw (waw + no verbo = disyuntiva; sin conjunción = asíndeton).",
+      "types": {
+        "VERBAL": "verbal",
+        "NOMINAL": "nominal"
+      },
+      "connections": {
+        "FIRST": "Inicial",
+        "WAYYIQTOL_CHAIN": "Cadena de wayyiqtol",
+        "WAW_CONJUNCTIVE": "Waw conjuntiva",
+        "WAW_DISJUNCTIVE": "Waw disyuntiva",
+        "ASYNDETIC": "Asíndeton",
+        "SUBORDINATE": "Subordinada",
+        "QUOTATION": "Discurso directo"
+      }
+    },
     "oshb": {
       "confirmed": "Coincide con OSHB",
       "differs": "Corregido según OSHB",

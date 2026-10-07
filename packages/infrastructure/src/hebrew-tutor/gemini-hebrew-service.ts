@@ -112,6 +112,8 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
       fluidTranslation: (data.fluidTranslation as string) || '',
       words: reconciledWords,
       verbTable: Array.isArray(data.verbTable) ? (data.verbTable as VerseAnalysis['verbTable']) : [],
+      // Se validan después, contra las palabras (`checkClauseConnections`).
+      clauses: Array.isArray(data.clauses) ? (data.clauses as VerseAnalysis['clauses']) : [],
       exegeticalNotes: Array.isArray(data.exegeticalNotes)
         ? (data.exegeticalNotes as string[])
         : undefined,

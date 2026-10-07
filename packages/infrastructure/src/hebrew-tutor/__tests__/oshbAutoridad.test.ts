@@ -25,3 +25,15 @@ describe('el prompt del tutor de hebreo', () => {
         expect(chunk.content).toMatch(/אַל \+ forma de prefijo = YUSIVO/);
     });
 });
+
+/** Bitácora del módulo de hebreo #2 (Rut 1:14) y #4 (Rut 1:16). */
+describe('el prompt pide las cláusulas con su conexión', () => {
+    it('REGRESIÓN: esquema, reglas de waw disyuntiva y asíndeton, y el fragmento de Farfán siempre', () => {
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText));
+        expect(texto).toContain('"clauses": [');
+        expect(texto).toMatch(/וְ \+ NO VERBO .*→ WAW_DISJUNCTIVE/);
+        expect(texto).toMatch(/Sin conjunción → ASYNDETIC/);
+        expect(texto).toMatch(/clauses MUST cover the whole verse/);
+        expect(selectRelevantChunks('x').map(c => c.id)).toContain('farfan-clausulas-conexion');
+    });
+});

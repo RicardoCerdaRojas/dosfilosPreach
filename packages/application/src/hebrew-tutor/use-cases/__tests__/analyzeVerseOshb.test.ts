@@ -13,6 +13,8 @@ const analisis = {
         verbMorphology: { binyan: 'NIFAL', verbForm: 'IMPERFECT', verbType: 'STRONG', person: 3, gender: 'F', number: 'P', temporalValue: '', recognitionClues: [] },
     }],
     verbTable: [], analyzedAt: new Date(),
+    // El asistente dijo «waw conjuntiva» en una cláusula que no empieza con waw.
+    clauses: [{ firstWord: 0, lastWord: 0, type: 'VERBAL', connection: 'WAW_CONJUNCTIVE', connector: null, value: '', explanation: '' }],
 };
 const provider = { loadBook: vi.fn(), getVerse: vi.fn().mockReturnValue(verse) };
 
@@ -24,6 +26,8 @@ describe('el tutor de hebreo con la morfología de OSHB', () => {
         expect(service.analyzeVerse).not.toHaveBeenCalled();
         expect(r.words[0]!.verbMorphology?.person).toBe(2);
         expect(r.words[0]!.oshbReference?.morphCode).toBe('HVNi2fp');
+        // Y la conexión de las cláusulas se comprueba al leer.
+        expect(r.clauses?.[0]?.connection).toBe('ASYNDETIC');
     });
 
     it('un análisis nuevo también, y se guarda corregido', async () => {

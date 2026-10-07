@@ -17,6 +17,7 @@ export * from './entities/hebrew-study-session.js';
 // Services
 export * from './services/reconcile-words.js';
 export * from './services/oshb-contrast.js';
+export * from './services/clause-connections.js';
 
 // Ports
 export * from './ports/ports.js';

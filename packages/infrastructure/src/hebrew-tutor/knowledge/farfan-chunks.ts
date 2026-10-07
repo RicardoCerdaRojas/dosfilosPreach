@@ -716,6 +716,34 @@ modal, o habitual; el wayyiqtol tiene valor de pasado narrativo.
 `,
   },
 
+  // ── Clause connection ────────────────────────────────────────────────────────
+
+  {
+    id: 'farfan-clausulas-conexion',
+    topics: ['cláusula', 'disyuntiva', 'asíndeton', 'asindética', 'waw', 'conexión', 'contraste', 'circunstancial'],
+    content: `
+## Cómo se unen las cláusulas: la waw y su ausencia
+
+**Waw + verbo** continúa: וַ + prefijo es la cadena narrativa (wayyiqtol); וְ + perfecto
+(weqatal) continúa en futuro o modo; וְ + otro verbo coordina («y»).
+
+**Waw + NO verbo = cláusula disyuntiva.** Cuando tras la waw viene el sujeto, el
+objeto o un adverbio y DESPUÉS el verbo (o no hay verbo), la cláusula interrumpe la
+secuencia. Según el contexto expresa:
+- **contraste**: «Orpá besó a su suegra, **pero** Rut se quedó con ella» (Rut 1:14);
+- **circunstancia** simultánea o de fondo: «**mientras** …», «estando …»;
+- **paréntesis** o información de trasfondo para el lector;
+- **comienzo** de una nueva escena.
+
+**Asíndeton** (sin conjunción): una cláusula que entra sin waw ni partícula. Marca
+énfasis, clímax, explicación o enumeración solemne: «tu pueblo, mi pueblo; y tu Dios,
+mi Dios» (Rut 1:16). No se le agrega «y» al traducir.
+
+**Oración nominal**: sin verbo finito; la cópula se suple («será», «es»). Puede ser
+asindética o unida con waw.
+`,
+  },
+
   // ── Syntax ───────────────────────────────────────────────────────────────────
 
   {

@@ -25,7 +25,7 @@ import type {
   LexicalEntry,
   HebrewVerse,
 } from '@dosfilos/domain';
-import { applyOshbMorphology, reconcileGlobalWords } from '@dosfilos/domain';
+import { applyOshbMorphology, checkClauseConnections, reconcileGlobalWords } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -74,10 +74,12 @@ export class AnalyzeVerseUseCase {
     // 5. Perform the analysis via Gemini + knowledge base + lexical context
     // La morfología verbal la decide OSHB (formas ambiguas: 2FP/3FP,
     // yusivo/imperfecto); ver `applyOshbMorphology`.
-    const analysis = applyOshbMorphology(
+    // Y la conexión de cada cláusula se comprueba contra su primera palabra
+    // (waw + no verbo = disyuntiva; sin conjunción = asíndeton).
+    const analysis = checkClauseConnections(applyOshbMorphology(
         await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries),
         hebrewVerse.words,
-    );
+    ));
 
     // 6. Persist to cache for future requests
     if (this.sessionRepository) {
@@ -114,11 +116,11 @@ export class AnalyzeVerseUseCase {
     if (!cached) return null;
     // Primero las letras, después la morfología de OSHB: así lo guardado
     // antes de que OSHB decidiera también sale corregido.
-    return applyOshbMorphology({
+    return checkClauseConnections(applyOshbMorphology({
       ...cached,
       hebrewText: hebrewVerse.hebrewText,
       words: reconcileGlobalWords(cached.words, hebrewVerse.words),
-    }, hebrewVerse.words);
+    }, hebrewVerse.words));
   }
 
   /**
