@@ -98,7 +98,7 @@ import { PageBalanceHint } from './PageBalanceHint';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { SourceCitationKey } from './SourceCitationKey';
 import { ExcludedSourcesCard } from './ExcludedSourcesCard';
-import { heroRoleCounts } from './heroRoleCounts';
+import { heroRoleCounts, unirConY } from './heroRoleCounts';
 import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
 import { ExcludedBadge } from './ExcludedBadge';
 import { useExcludedSourceConfirm } from './useExcludedSourceConfirm';
@@ -792,12 +792,13 @@ function ExtractHeroCard({
     strategy: ExegeticalStrategy;
     onExtract: () => void;
 }) {
-    const { t, i18n } = useTranslation('exegesis');
+    const { t } = useTranslation('exegesis');
     const cuantas = heroRoleCounts(rubric);
     const cuantasTexto = cuantas.kind === 'rubric'
         ? t('paperSetup.subSteps.corpus.hero.dialecticalRubric', {
-            detail: new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(
+            detail: unirConY(
                 cuantas.counts.map(c => t(`paperSetup.subSteps.corpus.hero.roleCount.${c.role}`, { count: c.count })),
+                t('paperSetup.subSteps.corpus.hero.and'),
             ),
         })
         : t('paperSetup.subSteps.corpus.hero.dialecticalStrategy', {

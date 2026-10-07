@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeEffectiveRoleTargets, computeRoleExpectations } from '@dosfilos/domain';
-import { heroRoleCounts } from '../heroRoleCounts';
+import { heroRoleCounts, unirConY } from '../heroRoleCounts';
 
 /**
  * TP #6: el texto de arranque sugería unas 13 fuentes (4-5 anclas, 4-5
@@ -35,3 +35,12 @@ describe('cuántas fuentes sugiere el texto de arranque del corpus', () => {
         expect(heroRoleCounts({ sourceRequirements: [] } as never).kind).toBe('strategy');
     });
 });
+
+describe('unirConY', () => {
+    it('«a, b y c»', () => {
+        expect(unirConY(['2 anclas', '4 contrastes', '3 técnicas'], 'y')).toBe('2 anclas, 4 contrastes y 3 técnicas');
+        expect(unirConY(['1 ancla'], 'y')).toBe('1 ancla');
+        expect(unirConY([], 'y')).toBe('');
+    });
+});
+

@@ -1068,6 +1068,7 @@
           "dialecticalEyebrow": "Siembra los tres roles",
           "dialecticalTitle": "Tu biblioteca tiene {{count}} recursos — armemos un corpus dialéctico",
           "dialecticalBody": "El corpus serio se construye en tres roles: ANCLA (lectura base, comentario expositivo), CONTRASTE (otra voz: crítico, monografía, diccionario), TÉCNICA (léxico, gramática o aparato). Agrega tus fuentes y elige el rol de cada una al agregarla.",
+          "and": "y",
           "dialecticalRubric": "Para este trabajo, apunta a al menos {{detail}}.",
           "dialecticalStrategy": "Un trabajo riguroso suele tener {{anchorMin}}-{{anchorMax}} anclas, {{contrastMin}}-{{contrastMax}} contrastes y {{technicalMin}}-{{technicalMax}} técnicas.",
           "roleCount": {"anchor_one": "1 ancla", "anchor_other": "{{count}} anclas", "contrast_one": "1 contraste", "contrast_other": "{{count}} contrastes", "technical_one": "1 técnica", "technical_other": "{{count}} técnicas"},

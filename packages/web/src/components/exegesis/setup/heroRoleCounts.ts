@@ -22,3 +22,9 @@ export function heroRoleCounts(rubric: Pick<PaperRubric, 'sourceRequirements'> |
     const efectivos = computeEffectiveRoleTargets(pide);
     return { kind: 'rubric', counts: ORDEN.map(role => ({ role, count: efectivos[role] })) };
 }
+
+/** «a, b y c»: `Intl.ListFormat` no está en la `lib` de la app. */
+export function unirConY(partes: ReadonlyArray<string>, y: string): string {
+    if (partes.length <= 1) return partes[0] ?? '';
+    return `${partes.slice(0, -1).join(', ')} ${y} ${partes[partes.length - 1]}`;
+}

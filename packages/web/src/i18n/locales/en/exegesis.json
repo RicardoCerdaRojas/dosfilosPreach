@@ -1068,6 +1068,7 @@
           "dialecticalEyebrow": "Seed the three roles",
           "dialecticalTitle": "Your library has {{count}} resources — let's build a dialectical corpus",
           "dialecticalBody": "A serious corpus is built in three roles: ANCHOR (base reading, expository commentary), CONTRAST (another voice: critical, monograph, dictionary), TECHNICAL (lexicon, grammar or apparatus). Add your sources and choose each one's role as you add it.",
+          "and": "and",
           "dialecticalRubric": "For this paper, aim for at least {{detail}}.",
           "dialecticalStrategy": "A rigorous paper usually has {{anchorMin}}-{{anchorMax}} anchors, {{contrastMin}}-{{contrastMax}} contrasts and {{technicalMin}}-{{technicalMax}} technical.",
           "roleCount": {"anchor_one": "1 anchor", "anchor_other": "{{count}} anchors", "contrast_one": "1 contrast", "contrast_other": "{{count}} contrasts", "technical_one": "1 technical source", "technical_other": "{{count}} technical sources"},
