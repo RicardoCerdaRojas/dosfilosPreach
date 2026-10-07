@@ -7,7 +7,6 @@ import {
     HeadingLevel,
     LineRuleType,
     NumberFormat,
-    PageBreak,
     PageNumber,
     Packer,
     Paragraph,
@@ -135,10 +134,11 @@ export async function exportPaperToDocx(
             case 'heading':
                 paragraphs.push(new Paragraph({
                     heading: HEADING_LEVELS[Math.min(block.level, 3) as 1 | 2 | 3],
-                    children: [
-                        ...(index === bibliographyAt ? [new PageBreak()] : []),
-                        ...textRuns(block.text),
-                    ],
+                    // «Salto de página antes» del párrafo, no un salto DENTRO
+                    // del título: con el salto adentro, Word deja un renglón
+                    // vacío con estilo de título al pie de la hoja anterior.
+                    ...(index === bibliographyAt ? { pageBreakBefore: true } : {}),
+                    children: textRuns(block.text),
                 }));
                 break;
             case 'paragraph':

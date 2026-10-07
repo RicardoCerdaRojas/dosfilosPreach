@@ -48,9 +48,24 @@ describe('readBibliographyFromCover', () => {
 
     it('un libro sin texto extraído no gasta una llamada al modelo', async () => {
         const modelo = vi.fn();
-        const res = await readBibliographyFromCover('r1', 'm', bibliotecaCon(''), modelo);
+        const res = await readBibliographyFromCover('r1', 'm', bibliotecaCon(''), modelo, async () => '');
         expect(res.hasText).toBe(false);
         expect(modelo).not.toHaveBeenCalled();
+    });
+
+    it('REGRESIÓN: sin `textContent`, la portada sale de los primeros fragmentos del índice (Adamson, TP #6)', async () => {
+        const modelo = vi.fn().mockResolvedValue(JSON.stringify({ publisher: 'Kregel Publications', year: '2011' }));
+        const fragmentos = vi.fn().mockResolvedValue(CREDITOS);
+        const res = await readBibliographyFromCover('r1', 'm', bibliotecaCon(''), modelo, fragmentos);
+        expect(fragmentos).toHaveBeenCalledWith('r1');
+        expect(res.hasText).toBe(true);
+        expect(res.data.publisher).toBe('Kregel Publications');
+    });
+
+    it('con `textContent` suficiente no se consultan los fragmentos', async () => {
+        const fragmentos = vi.fn();
+        await readBibliographyFromCover('r1', 'm', bibliotecaCon(CREDITOS), vi.fn().mockResolvedValue('{}'), fragmentos);
+        expect(fragmentos).not.toHaveBeenCalled();
     });
 
     it('una respuesta ilegible deja la ficha vacía en vez de romper', async () => {
@@ -62,12 +77,12 @@ describe('readBibliographyFromCover', () => {
 
 describe('buildCoverPrompt', () => {
     it('dice explícitamente cuándo el ejemplar no trae créditos', () => {
-        const prompt = buildCoverPrompt({ cover: 'Portada', credits: '' });
+        const prompt = buildCoverPrompt({ cover: 'Portada', credits: '', origin: 'hojas' });
         expect(prompt).toContain('NO trae página de créditos');
     });
 
     it('avisa que el título guardado es una pista y no la portada', () => {
-        const prompt = buildCoverPrompt({ cover: 'Portada', credits: 'X' }, 'nombre-de-archivo.pdf');
+        const prompt = buildCoverPrompt({ cover: 'Portada', credits: 'X', origin: 'hojas' }, 'nombre-de-archivo.pdf');
         expect(prompt).toContain('pista de quien lo subió');
         expect(prompt).toContain('nombre-de-archivo.pdf');
     });

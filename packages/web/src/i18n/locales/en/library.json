@@ -222,6 +222,13 @@
     "confirm": "Delete"
   },
   "editModal": {
+    "bibliography": {
+      "title": "Citation entry",
+      "complete": "Complete: your papers' bibliography uses it as is.",
+      "incomplete_one": "1 detail is missing to cite it in a bibliography.",
+      "incomplete_other": "{{count}} details are missing to cite it in a bibliography.",
+      "edit": "Edit entry"
+    },
     "title": "Edit Resource",
     "description": "Edit the document details.",
     "titleLabel": "Title",

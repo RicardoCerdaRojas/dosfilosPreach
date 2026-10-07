@@ -1,6 +1,7 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { esEncabezadoDeBibliografia } from '../services/paperBibliography';
 import type { BibliographyEntry } from '../services/paperBibliography';
+import type { RequiredBibliographyField } from '../services/bibliography';
 import type { ExegeticalPaper } from './ExegeticalPaper';
 import type { ExegeticalStep } from './ExegeticalStep';
 import { applyPageLabelStyle } from '../services/citationStyle';
@@ -122,7 +123,7 @@ function renderBibliography(
     if (entries.length === 0) return '';
     const lineas = entries.map(e => e.text
         ? `- ${e.text}`
-        : `- ${e.displayLabel}. [${labels.incompleteEntry}: ${e.missing.join(', ')}]`);
+        : `- ${e.displayLabel}. [${labels.incompleteEntry}: ${e.missing.map(f => labels.fields[f]).join(', ')}]`);
     return `\n## ${labels.bibliography}\n\n${lineas.join('\n')}\n`;
 }
 
@@ -135,6 +136,12 @@ interface SectionLabels {
     emptyBody: string;
     bibliography: string;
     incompleteEntry: string;
+    /**
+     * Cómo se nombra cada dato que falta, en el idioma del trabajo. Salía la
+     * clave interna —«faltan: author, city, publisher»—, en inglés dentro de
+     * un trabajo en español (TP #6, 2026-10-07).
+     */
+    fields: Record<RequiredBibliographyField, string>;
 }
 
 const LABELS_ES: SectionLabels = {
@@ -145,6 +152,7 @@ const LABELS_ES: SectionLabels = {
     verse: 'Versículo',
     bibliography: 'Bibliografía',
     incompleteEntry: 'FICHA INCOMPLETA, faltan',
+    fields: { author: 'autor', title: 'título', city: 'ciudad', publisher: 'editorial', year: 'año' },
     emptyBody: 'Sin contenido aceptado todavía. Genera y acepta los pasos antes de exportar para obtener el trabajo completo.',
 };
 
@@ -156,6 +164,7 @@ const LABELS_EN: SectionLabels = {
     verse: 'Verse',
     bibliography: 'Bibliography',
     incompleteEntry: 'INCOMPLETE ENTRY, missing',
+    fields: { author: 'author', title: 'title', city: 'city', publisher: 'publisher', year: 'year' },
     emptyBody: 'No accepted content yet. Generate and accept steps before exporting to get the full paper.',
 };
 

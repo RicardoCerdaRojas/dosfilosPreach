@@ -7,6 +7,7 @@ import {
     type ReadableRegions,
 } from '@dosfilos/domain';
 import { FirebaseLibraryRepository } from '../firebase/FirebaseLibraryRepository';
+import { FirebaseChunkRepository } from '../firebase/FirebaseChunkRepository';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { withGeminiRetry } from './geminiRetry';
 
@@ -59,6 +60,7 @@ export async function readBibliographyFromCover(
     modelName: string = MODEL_FAST,
     library: FirebaseLibraryRepository = new FirebaseLibraryRepository(),
     ejecutarPrompt: EjecutarPrompt = pedirleAlModelo,
+    arranqueDesdeFragmentos: (resourceId: string) => Promise<string> = id => new FirebaseChunkRepository().firstChunksText(id),
 ): Promise<CoverBibliographyResult> {
     const resource = (await library.findById(resourceId)) as {
         textContent?: string;
@@ -66,7 +68,14 @@ export async function readBibliographyFromCover(
         author?: string;
     } | null;
 
-    const regiones = readableRegionsOf(resource?.textContent ?? '');
+    // Sin `textContent`, el arranque sale de los primeros fragmentos del
+    // índice: un libro indexado TIENE texto, y decir lo contrario era falso
+    // (TP #6, Adamson).
+    let texto = resource?.textContent ?? '';
+    if (readableRegionsOf(texto).cover.length < MINIMO_PARA_INTENTAR) {
+        texto = await arranqueDesdeFragmentos(resourceId).catch(() => '');
+    }
+    const regiones = readableRegionsOf(texto);
     if (regiones.cover.length < MINIMO_PARA_INTENTAR) {
         return { data: {}, discarded: [], hasText: false, origin: regiones.origin };
     }

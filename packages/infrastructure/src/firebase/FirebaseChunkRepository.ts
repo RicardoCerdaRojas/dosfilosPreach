@@ -59,6 +59,28 @@ export class FirebaseChunkRepository {
     }
 
     /**
+     * El ARRANQUE del libro: el texto de sus primeros fragmentos, en orden.
+     *
+     * Para el lector de portadas cuando el recurso no guarda `textContent`
+     * (TP #6: Adamson tenía su índice completo y `textContent` vacío, y la
+     * app decía «no tiene texto extraído»). Igualdad + `in` sobre campos
+     * distintos se resuelven con los índices simples: no pide índice compuesto.
+     */
+    async firstChunksText(resourceId: string, count = 8): Promise<string> {
+        const q = query(
+            collection(db, this.collectionName),
+            where('resourceId', '==', resourceId),
+            where('chunkIndex', 'in', Array.from({ length: count }, (_, i) => i)),
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs
+            .map(d => this.firestoreToChunk(d.id, d.data()))
+            .sort((a, b) => a.chunkIndex - b.chunkIndex)
+            .map(c => c.text)
+            .join('\n\n');
+    }
+
+    /**
      * Get all chunks for a user's library
      */
     async findByUserId(userId: string): Promise<DocumentChunkEntity[]> {

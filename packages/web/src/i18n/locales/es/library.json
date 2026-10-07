@@ -222,6 +222,13 @@
     "confirm": "Eliminar"
   },
   "editModal": {
+    "bibliography": {
+      "title": "Ficha para citar",
+      "complete": "Completa: la bibliografía de tus trabajos la usa tal cual.",
+      "incomplete_one": "Le falta 1 dato para citarlo en la bibliografía.",
+      "incomplete_other": "Le faltan {{count}} datos para citarlo en la bibliografía.",
+      "edit": "Editar ficha"
+    },
     "title": "Editar Recurso",
     "description": "Modifica los metadatos del documento.",
     "titleLabel": "Título",

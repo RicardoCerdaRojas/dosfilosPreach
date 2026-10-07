@@ -22,6 +22,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useReadBibliographyFromCover, useSaveBibliography } from '@/hooks/exegesis/usePaperBibliography';
+import { useLibrary } from '@/hooks/library';
+import { prefillFromLibrary } from '@/lib/exegesis/prefillFromLibrary';
 
 // La lista y los obligatorios son del dominio: la bibliografía se imprime
 // con ellos y el formulario solo los muestra.
@@ -56,17 +58,33 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
     // Qué campos vinieron del ejemplar y no de la mano de quien lo tiene.
     // Se marca porque un dato leído se revisa distinto de uno escrito.
     const [fromBook, setFromBook] = useState<ReadonlySet<Field>>(() => new Set());
+    /** Los campos que se propusieron desde la tarjeta de la biblioteca. */
+    const [fromLibrary, setFromLibrary] = useState<ReadonlySet<Field>>(() => new Set());
+    const { resources } = useLibrary();
+    const resource = resources.find(r => r.id === resourceId);
 
     useEffect(() => {
         if (!open) return;
-        setDraft(Object.fromEntries(FIELDS.map(f => [f, data?.[f] ?? ''])) as Record<Field, string>);
+        const base = Object.fromEntries(FIELDS.map(f => [f, data?.[f] ?? ''])) as Record<Field, string>;
+        const prefill = canEdit ? prefillFromLibrary(data, resource) : { values: {}, fields: [] };
+        setDraft({ ...base, ...prefill.values });
         setFromBook(new Set());
-    }, [open, data]);
+        setFromLibrary(new Set(prefill.fields));
+        // `resource` cambia de identidad con cada lectura de la biblioteca; el
+        // prellenado sólo importa al abrir.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, data, canEdit]);
 
     const set = (field: Field, value: string) => {
         // Tocar un campo leído lo vuelve escrito: la marca dejaría de ser
         // cierta. Va FUERA del actualizador de `draft` porque ese se ejecuta
         // dos veces en modo estricto y no debe tener efectos.
+        setFromLibrary(marked => {
+            if (!marked.has(field)) return marked;
+            const next = new Set(marked);
+            next.delete(field);
+            return next;
+        });
         setFromBook(marked => {
             // Escribir el autor reescribe también la forma ordenable —pero
             // solo mientras nadie la haya tocado—, y en ese caso su marca
@@ -199,6 +217,11 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                                 {fromBook.has(field) && (
                                     <span className="ml-1.5 normal-case tracking-normal font-normal text-primary">
                                         {t('detail.bibliography.fromBook')}
+                                    </span>
+                                )}
+                                {fromLibrary.has(field) && !fromBook.has(field) && (
+                                    <span className="ml-1.5 normal-case tracking-normal font-normal text-primary">
+                                        {t('detail.bibliography.fromLibrary')}
                                     </span>
                                 )}
                             </span>

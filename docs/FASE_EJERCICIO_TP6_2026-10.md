@@ -38,20 +38,25 @@ Para cada hallazgo se indica su número en la bitácora y lo que se verificó en
 ## B. Exportar sólo lo entregable (#19, #21, #14, #26)
 
 **#19, ficha incompleta dentro del Word.**
-- **Qué pasa:** la bibliografía del Word salió con «[FICHA INCOMPLETA, faltan: author, title, city, publisher, year]».
-- **Causa (leído):** `exportPaperToMarkdown.ts:125` escribe `[${labels.incompleteEntry}: ${e.missing.join(', ')}]`, y los campos salen con su clave interna en inglés (`author`, `city`).
+- **Qué pasa:** la bibliografía salió con «[FICHA INCOMPLETA, faltan: author, title, city, publisher, year]».
+- **Causa (leído):**
+  - el marcador es una decisión de diseño anterior y bien fundada (`renderBibliography`): omitir la obra dejaría el cuerpo citando un libro que la bibliografía no nombra, y completarla de memoria sería inventar;
+  - pero los campos salían con su clave interna en inglés;
+  - y el aviso de la pantalla llegaba DESPUÉS de la descarga, como un mensaje pasajero, y pasó sin verse.
 - **Arreglo:**
-  - antes de exportar, un aviso que nombra los libros y los campos que faltan, con un botón que abre su ficha;
-  - en el archivo nunca debe aparecer un marcador.
-  - Decisión técnica: bloquear o exportar sin el marcador. Propuesta: advertir y no bloquear, porque la entrega es del estudiante; el aviso queda en la pantalla y no en el documento.
+  - el marcador se mantiene, pero en el idioma del trabajo («faltan: autor, ciudad, editorial, año»);
+  - antes de descargar, un diálogo (`IncompleteBibliographyGate`) lista los libros incompletos, deja completar cada ficha ahí mismo, y sólo exporta «igual» si se decide.
 
-**#21, título vacío.** Hay un `Heading2` sin texto justo antes de «Bibliografía».
-- Hay que encontrar de dónde sale (el ensamble o el exportador).
-- Un título vacío no se exporta.
+**#21, título vacío: era un error de lectura.**
+- No había un título vacío: el título «Bibliografía» llevaba un salto de página DENTRO del párrafo, y el lector del XML lo mostró como dos renglones.
+- De todos modos se cambió a `pageBreakBefore`: con el salto adentro, Word deja un renglón con estilo de título al pie de la hoja anterior.
 
 **#14, el lector de portadas no lee el libro.** «Leer las portadas» le dijo a Adamson que «no tiene texto extraído», aunque el libro tiene 19 fragmentos indexados.
 - **Causa (leído):** `CoverBibliographyReader.ts:69` lee `resource.textContent`, y en ese libro está vacío.
-- **Arreglo:** si `textContent` no alcanza, leer las primeras hojas desde `document_chunks` o desde el PDF.
+- **Arreglo:**
+  - si `textContent` no alcanza, se lee el arranque desde los primeros fragmentos del índice (`firstChunksText`: igualdad + `in`, sin índice compuesto);
+  - el mensaje ya no afirma que el libro «no tiene texto»: dice que no se encontró la portada y que hay que escribirla a mano;
+  - **supuesto:** que los primeros fragmentos traen la portada y los créditos (se mide en producción con Adamson).
 
 **#26, la ficha es un dato del libro.**
 - La ficha persiste en el recurso (`useSaveBibliography` → `libraryService.updateResource(..., { bibliography })`, leído), así que sirve para todos los trabajos.
@@ -59,8 +64,8 @@ Para cada hallazgo se indica su número en la bitácora y lo que se verificó en
   - la biblioteca no la muestra ni la edita;
   - el libro guarda dos juegos de datos que no se comunican: `author` y `title`, que muestra la tarjeta (Wallace sí tenía autor), y `bibliography`, la ficha, que decía «falta autor».
 - **Arreglo:**
-  - la ficha se ve y se edita desde la página del libro en la biblioteca;
-  - se prellena con `author` y `title` cuando le faltan.
+  - «Editar recurso» en la biblioteca muestra el estado de la ficha («Ficha para citar») y la abre;
+  - la ficha se prellena con `author` y `title` de la biblioteca cuando le faltan, marcados «de la biblioteca: revísalo» (`prefillFromLibrary`).
 
 ## A. Verificador sin falsas alarmas (#15, #16, #17, #18)
 
