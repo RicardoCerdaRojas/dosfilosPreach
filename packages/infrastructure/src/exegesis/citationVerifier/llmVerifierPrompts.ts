@@ -20,7 +20,11 @@ Reglas:
 
 Cross-language es esperado: el paper puede estar en español y la fuente en inglés (o viceversa). Verifica el SIGNIFICADO, no la coincidencia léxica.
 
-Qué se juzga: lo que la oración le ATRIBUYE a la fuente citada. Sólo puedes dejar fuera dos cosas: (1) lo que la oración atribuye EXPRESAMENTE a otro autor u obra NOMBRADOS en ella («Adamson y Mayor difieren…», «según el aparato de NA28…»), y (2) lo que la oración marca EXPRESAMENTE como conclusión del propio trabajo («por lo tanto, en este trabajo se sostiene…»). Todo lo demás cuenta como dicho por la fuente citada y debe estar respaldado COMPLETO: si una parte lo está y otra no, es "fuzzy-low", no "verified". Ante la duda, una parte NO está excluida.
+Qué se juzga: lo que la oración TOMA de la fuente citada —el dato, la posición o la lectura que se le atribuye—, no el análisis del autor del paper.
+- Es del AUTOR y NO se le exige a la fuente: el razonamiento gramatical (concordancia, caso, dependencia), la decisión sintáctica, la elección de traducción, las conclusiones y la conexión entre ideas. Que la fuente no diga «la concordancia es masculina singular» o «la decisión sintáctica puede sostenerse» NO baja el veredicto.
+- Tampoco se busca en estos fragmentos lo que la oración atribuye a OTRO autor u obra nombrados en ella («Mayor contempla…», «según el aparato de NA28…»).
+- SÍ se exige, y entero: lo que la oración dice explícitamente que la fuente sostiene («Adamson subraya un ideal», «Porter define el infinitivo como…»), y el contenido sobre el texto que la cita viene a respaldar (que el hombre que no tropieza al hablar puede refrenar el cuerpo).
+Veredicto: "verified" si la fuente sostiene lo que se le toma, aunque no diga el análisis del autor. "fuzzy-low" si la fuente trata el tema pero no sostiene lo que se le toma, o sostiene sólo una parte de lo que la oración le atribuye explícitamente. "not-found" si lo que se le toma no aparece.
 
 Si encontraste apoyo en un fragmento que tenía un \`pageHint\` (ej. "p. 47"), copia ese hint en \`bestPageHint\`. Si no hay pageHint disponible o no encontraste apoyo, devuelve string vacío.
 
@@ -39,7 +43,11 @@ Rules:
 
 Cross-language is expected: the paper may be in Spanish and the source in English (or vice versa). Verify MEANING, not lexical overlap.
 
-What you judge: what the sentence ATTRIBUTES to the cited source. You may leave out only two things: (1) what the sentence EXPLICITLY attributes to another author or work NAMED in it ("Adamson and Mayor differ…", "per the NA28 apparatus…"), and (2) what the sentence EXPLICITLY marks as the paper's own conclusion ("therefore this paper holds…"). Everything else counts as said by the cited source and must be supported IN FULL: if one part is and another is not, it is "fuzzy-low", not "verified". When in doubt, a part is NOT excluded.
+What you judge: what the sentence TAKES from the cited source —the fact, position or reading attributed to it—, not the paper author's analysis.
+- It is the AUTHOR's and is NOT required of the source: grammatical reasoning (agreement, case, dependency), the syntactic decision, the translation choice, conclusions and the links between ideas. That the source does not say "the agreement is masculine singular" or "the syntactic decision holds" does NOT lower the verdict.
+- Nor is anything the sentence attributes to ANOTHER author or work named in it looked for in these chunks ("Mayor allows…", "per the NA28 apparatus…").
+- It IS required, in full: what the sentence explicitly says the source holds ("Adamson stresses an ideal", "Porter defines the infinitive as…"), and the content about the text that the citation is there to support (that the man who does not stumble in speech can bridle the body).
+Verdict: "verified" if the source supports what is taken from it, even if it does not state the author's analysis. "fuzzy-low" if the source touches the topic but does not support what is taken from it, or supports only part of what the sentence explicitly attributes to it. "not-found" if what is taken from it does not appear.
 
 If you found support in a chunk that carried a \`pageHint\` (e.g. "p. 47"), copy that hint into \`bestPageHint\`. If no pageHint was available or no support was found, return an empty string.
 
