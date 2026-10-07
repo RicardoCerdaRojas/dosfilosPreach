@@ -66,6 +66,7 @@ import {
     UpdatePaperBriefUseCase,
     UpdatePaperCoverUseCase,
     UpdatePaperExcludedSourcesUseCase,
+    RenameCitationKeyUseCase,
     SaveAssembledPaperUseCase,
     UpdateStepPlanUseCase,
     UpdateRubricUseCase,
@@ -154,6 +155,7 @@ class ExegesisService {
     public updatePaperBrief: UpdatePaperBriefUseCase;
     public updatePaperCover: UpdatePaperCoverUseCase;
     public updatePaperExcludedSources: UpdatePaperExcludedSourcesUseCase;
+    public renameCitationKey: RenameCitationKeyUseCase;
     /**
      * Adjunta una guía de estilo al trabajo COPIÁNDOLA. Volver a
      * llamarlo es lo que significa «actualizar a la versión actual»:
@@ -356,6 +358,7 @@ class ExegesisService {
         this.updatePaperBrief = new UpdatePaperBriefUseCase(paperRepository);
         this.updatePaperCover = new UpdatePaperCoverUseCase(paperRepository);
         this.updatePaperExcludedSources = new UpdatePaperExcludedSourcesUseCase(paperRepository);
+        this.renameCitationKey = new RenameCitationKeyUseCase(paperRepository);
         this.setPaperStyleGuide = new SetPaperStyleGuideUseCase(paperRepository, styleGuideRepository);
         // Guardar NO compone: la composición ya está hecha y revisada.
         this.saveAssembledPaper = new SaveAssembledPaperUseCase(paperRepository);

@@ -10,6 +10,7 @@ import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/
 import { CitationEvidencePanel } from '@/components/exegesis/review/CitationEvidencePanel';
 import { CitationStatusBadge } from '@/components/exegesis/review/CitationStatusBadge';
 import { useStepReview } from '@/components/exegesis/review/useStepReview';
+import { OrphanCitationKeysNotice } from '@/components/exegesis/review/OrphanCitationKeysNotice';
 import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
 
 const FILTERS: ReadonlyArray<CitationStatus> = ['not-found', 'page-mismatch', 'fuzzy-low', 'manual-pending', 'verified'];
@@ -148,6 +149,8 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                         ) : null}
                     </div>
                 )}
+
+                <OrphanCitationKeysNotice paper={paper} analysis={r.analysis} />
 
                 {r.unreadableOriginal.length > 0 && (
                     <section className="rounded-xl border border-warning/40 bg-warning-subtle/40 px-4 py-3 space-y-1.5">

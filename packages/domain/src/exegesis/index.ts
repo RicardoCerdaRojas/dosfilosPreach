@@ -88,6 +88,7 @@ export * from './services/verseMorphologyBriefing';
 export * from './services/sourceMemory';
 export * from './services/excludedSources';
 export * from './services/commentaryCoverage';
+export * from './services/renameCitationKey';
 export * from './services/oshbMorphology';
 export * from './services/preachingBriefTemplate';
 export * from './services/sourcesAndFormatBlock';

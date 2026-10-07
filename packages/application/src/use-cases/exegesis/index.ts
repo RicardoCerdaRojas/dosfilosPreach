@@ -7,6 +7,8 @@ export { UpdatePaperBriefUseCase } from './UpdatePaperBriefUseCase';
 export { UpdatePaperCoverUseCase, normalizeCover } from './UpdatePaperCoverUseCase';
 export type { UpdatePaperCoverInput } from './UpdatePaperCoverUseCase';
 export { UpdatePaperExcludedSourcesUseCase, normalizeExcludedSources } from './UpdatePaperExcludedSourcesUseCase';
+export { RenameCitationKeyUseCase } from './RenameCitationKeyUseCase';
+export type { RenameCitationKeyInput } from './RenameCitationKeyUseCase';
 export type { UpdatePaperExcludedSourcesInput } from './UpdatePaperExcludedSourcesUseCase';
 export { SaveAssembledPaperUseCase } from './SaveAssembledPaperUseCase';
 export { UpdateStepPlanUseCase } from './UpdateStepPlanUseCase';

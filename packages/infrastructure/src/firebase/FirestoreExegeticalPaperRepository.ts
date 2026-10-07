@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -387,6 +387,28 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
 
         if (!updated) throw new Error('Source update failed');
         return updated;
+    }
+
+    async renameCitationKey(ownerId: string, paperId: string, from: string, to: string): Promise<ExegeticalPaper> {
+        const ref = this.docRef(paperId);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error(`Paper ${paperId} not found`);
+            const data = snap.data();
+            if (data.ownerId !== ownerId) throw new Error(`Paper ${paperId} not owned by ${ownerId}`);
+            const steps: unknown[] = Array.isArray(data.steps) ? data.steps : [];
+            const renombrados = steps.map(raw => serializeStep(renameKeyInStep(deserializeStep(raw), from, to)));
+            tx.update(ref, {
+                steps: renombrados,
+                ...(typeof data.assembledMarkdown === 'string'
+                    ? { assembledMarkdown: renameKeyInText(data.assembledMarkdown, from, to) }
+                    : {}),
+                updatedAt: new Date(),
+            });
+        });
+        const fresh = await this.getPaper(ownerId, paperId);
+        if (!fresh) throw new Error(`Paper ${paperId} not found after rename`);
+        return fresh;
     }
 
     async setCitationReview(

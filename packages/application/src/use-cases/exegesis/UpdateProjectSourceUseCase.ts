@@ -28,7 +28,14 @@ export class UpdateProjectSourceUseCase {
         if (!input.ownerId || !input.paperId || !input.sourceId) {
             throw new Error('UpdateProjectSourceUseCase: ownerId, paperId and sourceId required');
         }
-        return this.paperRepository.updateSource(
+        // La clave vieja, para propagar el renombre a lo ya generado: si no,
+        // el análisis sigue citando «Aland» con la fuente llamada «NA28»
+        // (TP #6) y el verificador no la encuentra.
+        const anterior = typeof input.citationKey === 'string'
+            ? (await this.paperRepository.getPaper(input.ownerId, input.paperId))
+                ?.sources.find(s => s.id === input.sourceId)?.citationKey ?? null
+            : null;
+        const actualizada = await this.paperRepository.updateSource(
             input.ownerId,
             input.paperId,
             input.sourceId,
@@ -41,5 +48,10 @@ export class UpdateProjectSourceUseCase {
                 excerpts: input.excerpts,
             }
         );
+        const nueva = input.citationKey?.trim();
+        if (anterior && nueva && anterior !== nueva) {
+            await this.paperRepository.renameCitationKey(input.ownerId, input.paperId, anterior, nueva);
+        }
+        return actualizada;
     }
 }

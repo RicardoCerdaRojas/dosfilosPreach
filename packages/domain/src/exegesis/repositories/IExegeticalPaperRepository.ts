@@ -151,6 +151,13 @@ export interface IExegeticalPaperRepository {
 
     removeSource(ownerId: string, paperId: string, sourceId: string): Promise<void>;
 
+    /**
+     * Cambia una clave de cita en todo lo ya generado del trabajo: el
+     * análisis y la prosa de cada versión de cada paso, y el trabajo
+     * ensamblado. Atómico. Ver `services/renameCitationKey.ts`.
+     */
+    renameCitationKey(ownerId: string, paperId: string, from: string, to: string): Promise<ExegeticalPaper>;
+
     // ── Steps ─────────────────────────────────────────────────────────────
 
     /**

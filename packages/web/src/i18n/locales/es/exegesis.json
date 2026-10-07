@@ -1990,6 +1990,16 @@
         "removeConfirm": "Se quita la cita del análisis. La afirmación queda sin esta fuente y el trabajo exportado ya no la nombrará aquí.",
         "removeConfirmAction": "Quitar la cita"
       },
+      "orphanKeys": {
+        "title_one": "Una cita usa una clave que ya no está en tu corpus",
+        "title_other": "{{count}} claves citadas ya no están en tu corpus",
+        "body": "Lo generado cita una fuente con un nombre que ya no tiene (probablemente la renombraste). Elige a qué fuente corresponde: se corrige en el análisis, la prosa y el trabajo ensamblado de todo el trabajo. Después, vuelve a verificar.",
+        "item": "«{{from}}» es:",
+        "pick": "Fuente que corresponde a «{{from}}»",
+        "fix": "Corregir",
+        "done": "«{{from}}» pasó a «{{to}}» en todo el trabajo. Vuelve a verificar las citas.",
+        "failed": "No se pudo corregir la clave."
+      },
       "unreadableOriginal": {
         "title": "Griego o hebreo que no está en la fuente ({{count}})",
         "body": "Estas afirmaciones atribuyen a un libro una forma en lengua original que no está en el versículo, y la copia extraída de ese libro no tiene ninguna. Puede estar en el libro impreso: compruébala en el PDF.",

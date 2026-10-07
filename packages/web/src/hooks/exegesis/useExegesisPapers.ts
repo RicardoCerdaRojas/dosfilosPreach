@@ -608,6 +608,17 @@ export function useExegesisPapers() {
         },
     });
 
+    const renameCitationKey = useMutation({
+        mutationFn: async ({ paperId, from, to }: { paperId: string; from: string; to: string }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.renameCitationKey.execute({ ownerId: user.uid, paperId, from, to });
+        },
+        onSuccess: (paper) => {
+            queryClient.setQueryData(['exegesis', 'papers', user?.uid, paper.id], paper);
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     const updatePaperExcludedSources = useMutation({
         mutationFn: async ({ paperId, excludedSources }: { paperId: string; excludedSources: ReadonlyArray<ExcludedSource> }) => {
             if (!user?.uid) throw new Error('User not authenticated');
@@ -733,6 +744,7 @@ export function useExegesisPapers() {
         correctCitation,
         updatePaperCover,
         updatePaperExcludedSources,
+        renameCitationKey,
         runCoherencePass,
         classifySourceType,
         startStudyFromPaper,
