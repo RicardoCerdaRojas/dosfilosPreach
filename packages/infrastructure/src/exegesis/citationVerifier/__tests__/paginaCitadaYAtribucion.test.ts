@@ -77,6 +77,19 @@ describe('la página citada se respeta si también lo dice', () => {
         expect(printedPageOfHint(null)).toBeNull();
     });
 
+    it('REGRESIÓN (prod, 3:2): primero se escribe lo tomado de la fuente, después el veredicto sobre eso', () => {
+        // Luna responde sin razonar y en el orden del esquema: con el
+        // veredicto primero, decidía antes de separar lo tomado del análisis.
+        expect(Object.keys(LLM_CITATION_VERIFIER_SCHEMA.properties)[0]).toBe('takenFromSource');
+        expect(LLM_CITATION_VERIFIER_SCHEMA.required).toContain('takenFromSource');
+        expect(LLM_CITATION_VERIFIER_SCHEMA.propertyOrdering[0]).toBe('takenFromSource');
+        expect(LLM_CITATION_VERIFIER_SCHEMA.properties.status.description).toMatch(/takenFromSource — NOT the author's analysis/);
+        const { systemInstruction } = buildLlmVerifierPrompt({
+            rawCitation: 'x', evidence: 'x', evidenceIsQuoted: false, citedPages: null, matchedSourceLabel: 'X', chunks: [], language: 'es',
+        });
+        expect(systemInstruction).toMatch(/Antes del veredicto escribe en `takenFromSource`/);
+    });
+
     it('el veredicto trae el campo, y si falta vale «no»', () => {
         expect(parseLlmResponse('{"status":"verified","confidence":1,"bestPageHint":"","citedPageSupports":true,"reasoning":"x"}').citedPageSupports).toBe(true);
         expect(parseLlmResponse('{"status":"verified","confidence":1,"bestPageHint":"","reasoning":"x"}').citedPageSupports).toBe(false);
