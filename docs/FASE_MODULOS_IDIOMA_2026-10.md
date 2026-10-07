@@ -76,6 +76,15 @@
 
 ---
 
+## Principio de la fase (pedido del profesor, 2026-10-07)
+
+Los análisis consideran **SIEMPRE la función** de los verbos, las partículas, los participios y toda palabra que ayude a entender la **intención del autor**, además de las cláusulas. Esto vale para el hebreo y para el griego.
+
+**Cómo se aplica.**
+- **Listas cerradas de funciones**, como la de caso, en lugar de texto libre.
+- **Datos deterministas** (OSHB, MorphGNT, MACULA) antes que lo que decida el asistente.
+- **Pendiente en hebreo (H4, segundo PR):** la función de participios (predicativo, atributivo, sustantivado), infinitivos (constructo de propósito o temporal con בְּ/כְּ; absoluto enfático o imperativo) y partículas discursivas (הִנֵּה, כִּי, אַךְ, רַק, גַּם, לָכֵן, עַתָּה). Hoy sólo hay texto libre en `syntacticFunction`.
+
 ## Griego (segundo PR de esta fase)
 
 **El pedido.** El profesor del fundador quiere lo mismo que en hebreo: la función de los términos importantes y el análisis de cláusulas. La exégesis más útil es la que establece la función de palabras, verbos y cláusulas. **Taxonomía: Wallace**, *Greek Grammar Beyond the Basics*; decisión del fundador del 2026-10-07.
@@ -110,6 +119,7 @@
   - Modos: subjuntivo hortativo, deliberativo, de prohibición, tras ἵνα/ὅπως; imperativo; optativo volitivo.
   - Uso del tiempo: aoristo constativo, ingresivo, culminativo, gnómico; presente progresivo, iterativo, gnómico.
 - **G3. Funciones de caso:** completar la lista (dativo de agencia, genitivo absoluto, de contenido…) y marcar la «Clave» por índice.
+- **G4. Partículas y palabras de intención:** ampliar la función discursiva (Runge), que hoy se aplica a algunas partículas, a toda partícula y conector, y a los adverbios y pronombres que marcan énfasis o foco.
 
 **Literatura.** Wallace es la columna de las taxonomías; Runge, los conectores; Levinsohn y Porter, apoyo. Se codifican categorías, no se copia texto de los libros.
 
