@@ -21,9 +21,13 @@ function build(overrides: { paper?: unknown } = {}) {
     const profileRepository = {
         createProfile: vi.fn().mockImplementation(async (draft: unknown) => ({ ...(draft as object), id: 'wp1' })),
     };
+    const rubricRepository = { createRubric: vi.fn().mockImplementation(async (d: unknown) => ({ ...(d as object), id: 'rub-nueva' })) };
+    const briefRepository = { createBrief: vi.fn().mockImplementation(async (d: unknown) => ({ ...(d as object), id: 'enc-nuevo' })) };
     return {
-        useCase: new SaveWorkProfileFromPaperUseCase(paperRepository as never, profileRepository as never),
+        useCase: new SaveWorkProfileFromPaperUseCase(paperRepository as never, profileRepository as never, rubricRepository as never, briefRepository as never),
         profileRepository,
+        rubricRepository,
+        briefRepository,
     };
 }
 
@@ -42,7 +46,7 @@ describe('SaveWorkProfileFromPaperUseCase', () => {
     });
 
     it('la rúbrica y el encuadre viajan como punteros, no como copia', async () => {
-        const { useCase, profileRepository } = build();
+        const { useCase, profileRepository, rubricRepository } = build({ paper: { ...paper, rubric: { sourceRequirements: [] } } });
         await useCase.execute({ ...input, rubricTemplateId: 'r1', briefTemplateId: 'b1' });
 
         const draft = profileRepository.createProfile.mock.calls[0]![0];
@@ -50,6 +54,35 @@ describe('SaveWorkProfileFromPaperUseCase', () => {
         // La rúbrica del trabajo es una copia congelada; guardarla acá
         // crearía una tercera verdad sobre la misma rúbrica.
         expect(draft).not.toHaveProperty('rubric');
+        // Con plantilla elegida, no se crea otra.
+        expect(rubricRepository.createRubric).not.toHaveBeenCalled();
+    });
+
+    it('REGRESIÓN (TP #6): sin plantilla elegida, crea las plantillas con la rúbrica y el encuadre DEL TRABAJO', async () => {
+        const rubric = { sourceRequirements: [], formatting: { pageLimit: 1 } };
+        const { useCase, profileRepository, rubricRepository, briefRepository } = build({
+            paper: { ...paper, rubric, assignmentBrief: '  Cuatro preguntas de sintaxis.  ' },
+        });
+        await useCase.execute(input);
+        expect(rubricRepository.createRubric).toHaveBeenCalledWith({
+            ownerId: 'o1', displayName: input.displayName, isDefault: false, rubric,
+        });
+        expect(briefRepository.createBrief).toHaveBeenCalledWith({
+            ownerId: 'o1', displayName: input.displayName, isDefault: false, body: 'Cuatro preguntas de sintaxis.',
+        });
+        expect(profileRepository.createProfile.mock.calls[0]![0]).toMatchObject({
+            rubricTemplateId: 'rub-nueva', briefTemplateId: 'enc-nuevo',
+        });
+    });
+
+    it('sin rúbrica ni encuadre en el trabajo no crea plantillas vacías', async () => {
+        const { useCase, profileRepository, rubricRepository, briefRepository } = build({
+            paper: { ...paper, rubric: null, assignmentBrief: '   ' },
+        });
+        await useCase.execute(input);
+        expect(rubricRepository.createRubric).not.toHaveBeenCalled();
+        expect(briefRepository.createBrief).not.toHaveBeenCalled();
+        expect(profileRepository.createProfile.mock.calls[0]![0]).toMatchObject({ rubricTemplateId: null, briefTemplateId: null });
     });
 
     it('un nombre en blanco no crea un perfil que nadie va a reconocer', async () => {

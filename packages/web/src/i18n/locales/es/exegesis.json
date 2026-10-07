@@ -1545,7 +1545,7 @@
       "namePlaceholder": "OT603 · Trabajo de investigación",
       "courseLabel": "Curso (opcional)",
       "coursePlaceholder": "OT603 — Exégesis de hebreo",
-      "whatItSaves": "Guarda la guía de estilo, el método, la portada y qué plantillas de rúbrica y encuadre usaste. No guarda el pasaje ni el corpus: ésos son de cada trabajo.",
+      "whatItSaves": "Guarda la guía de estilo, el método y la portada, y crea con el nombre del perfil una rúbrica y un encuadre con los de este trabajo (los verás en tus plantillas). No guarda el pasaje ni el corpus: ésos son de cada trabajo.",
       "save": "Guardar",
       "cancel": "Cancelar",
       "saved": "Perfil guardado. Estará disponible al crear el próximo trabajo.",

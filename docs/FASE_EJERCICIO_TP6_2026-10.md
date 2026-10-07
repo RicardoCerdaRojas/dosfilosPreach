@@ -145,6 +145,11 @@ Debe pasar a la siguiente cita pendiente y dejar la revisada como estado.
 
 **#3, justificaciones de la rúbrica.** El «Aparato crítico» muestra el texto genérico de los comentarios, y el «Comentario expositivo» muestra el texto de ejemplo.
 
+**Cómo quedó D (2026-10-07):**
+- **#2, decisión del fundador:** al guardar el perfil se CREAN una rúbrica y un encuadre con los del trabajo, con el nombre del perfil, y el perfil apunta a ellos (se ven y editan en las plantillas). Guardar dos veces crea dos juegos de plantillas. Además, crear un trabajo con un perfil ahora precarga SU encuadre (antes sólo la rúbrica, el método y la portada).
+- **#4:** la portada heredada propone el mes en curso con la forma de la anterior («SEPTIEMBRE 2026» → «OCTUBRE 2026»); otra forma de fecha no se toca.
+- **#3:** un requisito sin justificación muestra la descripción del tipo. El texto genérico del «Aparato crítico» NO está en el código: vino guardado en la rúbrica del TP #6 (extraída o de plantilla); atribuirlo pide leer esa rúbrica en producción.
+
 ## E. Plan de uso coherente con el encuadre (#10, #11, #12, #13)
 
 **#10, el plan de uso planifica de más.**

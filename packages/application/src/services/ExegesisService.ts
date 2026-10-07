@@ -384,7 +384,7 @@ class ExegesisService {
 
         // User-level rubric templates
         this.listUserRubrics = new ListUserRubricsUseCase(userRubricRepository);
-        this.saveWorkProfileFromPaper = new SaveWorkProfileFromPaperUseCase(paperRepository, workProfileRepository);
+        this.saveWorkProfileFromPaper = new SaveWorkProfileFromPaperUseCase(paperRepository, workProfileRepository, userRubricRepository, userAssignmentBriefRepository);
         this.createUserRubric = new CreateUserRubricUseCase(userRubricRepository);
         this.updateUserRubric = new UpdateUserRubricUseCase(userRubricRepository);
         this.deleteUserRubric = new DeleteUserRubricUseCase(userRubricRepository);

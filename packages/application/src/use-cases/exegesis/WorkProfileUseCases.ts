@@ -1,8 +1,10 @@
-import { PAPER_COVER_FIELDS, PAPER_COVER_FIELDS_POR_ENTREGA } from '@dosfilos/domain';
+import { ASSIGNMENT_BRIEF_MAX_CHARS, PAPER_COVER_FIELDS, PAPER_COVER_FIELDS_POR_ENTREGA } from '@dosfilos/domain';
 import type {
     ExegeticalPaper,
     PaperCover,
     IExegeticalPaperRepository,
+    IUserAssignmentBriefRepository,
+    IUserRubricRepository,
     IWorkProfileRepository,
     WorkProfile,
 } from '@dosfilos/domain';
@@ -13,7 +15,10 @@ export interface SaveWorkProfileFromPaperInput {
     paperId: string;
     displayName: string;
     course?: string;
-    /** Plantilla de rúbrica que este trabajo usó, si el usuario la recuerda. */
+    /**
+     * Plantilla de rúbrica a la que apuntar. Si no se da, se CREA una con la
+     * rúbrica del trabajo (ver el caso de uso).
+     */
     rubricTemplateId?: string | null;
     briefTemplateId?: string | null;
     makeDefault?: boolean;
@@ -28,14 +33,21 @@ export interface SaveWorkProfileFromPaperInput {
  * sitio es pedirle que la recuerde.
  *
  * Lo que se copia del trabajo: guía de estilo, método y portada. La
- * rúbrica y el encuadre viajan como punteros a sus plantillas, si las
- * hay: la rúbrica del trabajo es una copia congelada, y guardar esa copia
- * dentro del perfil crearía una tercera verdad sobre la misma rúbrica.
+ * rúbrica y el encuadre siguen viajando como PUNTEROS a plantillas, pero
+ * las plantillas se crean aquí, con lo que el trabajo tiene: en el TP #6 el
+ * perfil aplicó la rúbrica del sistema (12 páginas, doble espacio, 13
+ * fuentes) porque el botón nunca supo qué plantilla había usado el trabajo,
+ * y aunque lo supiera, la rúbrica AJUSTADA dentro del trabajo no estaba en
+ * ninguna plantilla. Decisión del fundador (2026-10-07): crear las
+ * plantillas al guardar, con el nombre del perfil, y que se vean y editen
+ * en el directorio como cualquier otra.
  */
 export class SaveWorkProfileFromPaperUseCase {
     constructor(
         private paperRepository: IExegeticalPaperRepository,
         private profileRepository: IWorkProfileRepository,
+        private rubricRepository: IUserRubricRepository,
+        private briefRepository: IUserAssignmentBriefRepository,
     ) { }
 
     async execute(input: SaveWorkProfileFromPaperInput): Promise<WorkProfile> {
@@ -48,12 +60,27 @@ export class SaveWorkProfileFromPaperUseCase {
         const paper = await this.paperRepository.getPaper(input.ownerId, input.paperId);
         if (!paper) throw new Error(`Paper ${input.paperId} not found`);
 
+        const rubricTemplateId = input.rubricTemplateId
+            ?? (paper.rubric
+                ? (await this.rubricRepository.createRubric({
+                    ownerId: input.ownerId, displayName, isDefault: false, rubric: paper.rubric,
+                })).id
+                : null);
+        const brief = paper.assignmentBrief?.trim() ?? '';
+        const briefTemplateId = input.briefTemplateId
+            ?? (brief
+                ? (await this.briefRepository.createBrief({
+                    ownerId: input.ownerId, displayName, isDefault: false,
+                    body: brief.slice(0, ASSIGNMENT_BRIEF_MAX_CHARS),
+                })).id
+                : null);
+
         return this.profileRepository.createProfile({
             ownerId: input.ownerId,
             displayName,
             ...(input.course?.trim() ? { course: input.course.trim() } : {}),
-            rubricTemplateId: input.rubricTemplateId ?? null,
-            briefTemplateId: input.briefTemplateId ?? null,
+            rubricTemplateId,
+            briefTemplateId,
             styleGuideId: paper.styleGuideId ?? null,
             exegeticalStrategy: paper.exegeticalStrategy === 'free' ? 'free' : 'dialectical',
             cover: coverDelCurso(paper.cover),

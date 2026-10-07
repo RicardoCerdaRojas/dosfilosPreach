@@ -1545,7 +1545,7 @@
       "namePlaceholder": "OT603 · Research paper",
       "courseLabel": "Course (optional)",
       "coursePlaceholder": "OT603 — Hebrew Exegesis",
-      "whatItSaves": "Saves the style guide, the method, the cover page and which rubric and brief templates you used. It does not save the passage or the corpus: those belong to each paper.",
+      "whatItSaves": "Saves the style guide, method and cover, and creates a rubric and a framing with this paper's, named after the profile (you'll see them in your templates). It doesn't save the passage or the corpus: those belong to each paper.",
       "save": "Save",
       "cancel": "Cancel",
       "saved": "Profile saved. It will be available when you create the next paper.",

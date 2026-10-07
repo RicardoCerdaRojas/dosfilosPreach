@@ -214,8 +214,10 @@ function RequirementRow({
                         </button>
                     )}
                 </div>
+                {/* Sin justificación propia, qué ES ese tipo: antes quedaba sólo
+                    la línea de ejemplos y parecía la justificación (TP #6). */}
                 <p className="text-warning-subtle-foreground leading-snug mt-0.5">
-                    {check.justification}
+                    {check.justification.trim() || t(`sourceTypes.${check.sourceType}.description`)}
                 </p>
                 <p className="text-[11px] text-muted-foreground italic mt-0.5">
                     {examples}

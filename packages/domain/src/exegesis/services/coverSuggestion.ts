@@ -28,6 +28,34 @@ export function nextAssignmentTitle(title: string | undefined): string | undefin
     return m ? `${m[1]}${Number(m[2]) + 1}` : t;
 }
 
+const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const MESES_EN = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+
+/**
+ * La fecha de la entrega siguiente: el mes en curso, con la forma de la
+ * anterior («SEPTIEMBRE 2026» → «OCTUBRE 2026»; «Septiembre 2026» →
+ * «Octubre 2026»).
+ *
+ * En el TP #6 la portada heredada avanzó el número (#5 → #6) y dejó la fecha
+ * del mes anterior. Sólo se reemplaza «Mes AAAA» (con «setiembre» como
+ * variante); cualquier otra forma se deja, porque reescribirla sería inventar
+ * el formato del seminario.
+ */
+export function nextAssignmentDate(date: string | undefined, now: Date): string | undefined {
+    const d = date?.trim();
+    if (!d) return date;
+    const m = d.match(/^(\p{L}+)(\s+(?:de\s+|of\s+)?)(\d{4})$/iu);
+    if (!m) return date;
+    const mes = m[1]!.toLowerCase().replace('setiembre', 'septiembre');
+    const meses = MESES_ES.includes(mes) ? MESES_ES : MESES_EN.includes(mes) ? MESES_EN : null;
+    if (!meses) return date;
+    const nuevo = meses[now.getMonth()]!;
+    const forma = m[1] === m[1]!.toUpperCase() ? nuevo.toUpperCase()
+        : m[1]![0] === m[1]![0]!.toUpperCase() ? nuevo[0]!.toUpperCase() + nuevo.slice(1)
+            : nuevo;
+    return `${forma}${m[2]}${now.getFullYear()}`;
+}
+
 export interface CoverOrigin {
     kind: 'paper' | 'profile';
     id: string;
@@ -49,6 +77,7 @@ export function coverOrigins(
     papers: ReadonlyArray<Pick<ExegesisPaperSummary, 'id' | 'title' | 'createdAt' | 'cover'>>,
     profiles: ReadonlyArray<Pick<WorkProfile, 'id' | 'displayName' | 'cover'>>,
     currentPaperId: string,
+    now: Date = new Date(),
 ): CoverOrigin[] {
     const deTrabajos = papers
         .filter(p => p.id !== currentPaperId && hasCover(p.cover))
@@ -59,11 +88,18 @@ export function coverOrigins(
             kind: 'paper',
             id: p.id,
             label: p.cover!.assignmentTitle?.trim() || p.title?.trim() || p.id,
-            cover: { ...p.cover!, assignmentTitle: nextAssignmentTitle(p.cover!.assignmentTitle) },
+            cover: {
+                ...p.cover!,
+                assignmentTitle: nextAssignmentTitle(p.cover!.assignmentTitle),
+                date: nextAssignmentDate(p.cover!.date, now),
+            },
         }));
     const dePerfiles = profiles
         .filter(p => hasCover(p.cover))
-        .map((p): CoverOrigin => ({ kind: 'profile', id: p.id, label: p.displayName, cover: { ...p.cover! } }));
+        .map((p): CoverOrigin => ({
+            kind: 'profile', id: p.id, label: p.displayName,
+            cover: { ...p.cover!, date: nextAssignmentDate(p.cover!.date, now) },
+        }));
     return [...deTrabajos, ...dePerfiles];
 }
 
