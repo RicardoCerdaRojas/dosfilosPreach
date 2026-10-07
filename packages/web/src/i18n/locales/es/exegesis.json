@@ -1388,6 +1388,8 @@
         "citaPorSeccion": "Este libro no tiene páginas impresas: sus citas van por sección (§), que se encuentra en el ejemplar."
       },
       "corpus-plan": {
+        "outsideDocument_one": "1 paso queda fuera del documento (el encuadre no lo pide): no se planifica.",
+        "outsideDocument_other": "{{count}} pasos quedan fuera del documento (el encuadre no los pide): no se planifican.",
         "tab": "Plan de uso",
         "heading": "Plan de uso del corpus",
         "description": "Asigna fuentes específicas a cada verso o sección. Te proponemos una distribución basada en el pasaje y el corpus; tú revisas y ajustas. Las fuentes asignadas tienen prioridad en la generación, pero el modelo puede usar las demás cuando sea pertinente.",
@@ -1441,6 +1443,11 @@
         "toastUpdateError": "No se pudo guardar el cambio. Intenta de nuevo."
       },
       "plan": {
+        "leftOut": {
+          "introduction": "Introducción · excluida por el encuadre",
+          "conclusion": "Conclusión · excluida por el encuadre",
+          "body": "Todas las preguntas del encuadre nombran un versículo, así que el trabajo responde sólo esos versículos. Si la necesitas, inclúyela desde la página del trabajo."
+        },
         "tab": "Plan estructural",
         "heading": "Plan estructural",
         "description": "Para cada paso (intro, verso, conclusión), confirma o ajusta qué tipos de fuente debe priorizar el agente. Las sugerencias vienen de la rúbrica.",

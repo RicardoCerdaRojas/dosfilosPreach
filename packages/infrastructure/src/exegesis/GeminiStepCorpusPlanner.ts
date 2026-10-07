@@ -192,8 +192,14 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
     ].join('\n');
 
     const stepsSection = isSpanish ? '**Pasos del paper:**' : '**Paper steps:**';
+    // Las preguntas del encuadre bajo su paso: lo que la fuente tiene que
+    // ayudar a responder ahí.
+    const preguntaDice = isSpanish ? 'pregunta del encuadre' : 'brief question';
     const stepsList = input.steps
-        .map(s => `- id="${s.id}" · kind=${s.kind} · ${s.label}`)
+        .map(s => [
+            `- id="${s.id}" · kind=${s.kind} · ${s.label}`,
+            ...(s.questions ?? []).map(q => `    · ${preguntaDice}: ${q}`),
+        ].join('\n'))
         .join('\n');
 
     const schemaSection = isSpanish
@@ -218,6 +224,7 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
 - Usa SOLO los ids exactos listados arriba (no inventes nuevos).
 - Usa SOLO ids de pasos listados arriba.
 - TODOS los pasos deben aparecer en "allocations" con al menos 1 fuente con rol "anchor".
+- Si un paso trae preguntas del encuadre, elige las fuentes que las responden: una pregunta de crítica textual o de puntuación pide el aparato crítico y su comentario; una de sintaxis, la gramática. Esas fuentes van en ese paso y no en otro.
 - TODAS las fuentes deben aparecer al menos una vez en algún paso, salvo que sean claramente irrelevantes.
 - Cada id en "pinnedSources" DEBE tener una entrada correspondiente en "pinnedSourceRoles".
 - Máximo 4 fuentes por paso. Apunta a 2-3.`
@@ -225,6 +232,7 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
 - Use ONLY the exact ids listed above (don't invent new ones).
 - Use ONLY step ids listed above.
 - ALL steps must appear in "allocations" with at least 1 source with role "anchor".
+- If a step carries brief questions, pick the sources that answer them: a text-critical or punctuation question calls for the critical apparatus and its commentary; a syntax question, the grammar. Those sources go in that step and not elsewhere.
 - ALL sources must appear at least once in some step, unless clearly irrelevant.
 - Every id in "pinnedSources" MUST have a corresponding entry in "pinnedSourceRoles".
 - Max 4 sources per step. Aim for 2-3.`;

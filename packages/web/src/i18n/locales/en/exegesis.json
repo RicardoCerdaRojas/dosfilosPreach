@@ -1388,6 +1388,8 @@
         "citaPorSeccion": "This book has no printed pages: its citations go by section (§), which can be found in the copy."
       },
       "corpus-plan": {
+        "outsideDocument_one": "1 step is left out of the document (the brief doesn't ask for it): it isn't planned.",
+        "outsideDocument_other": "{{count}} steps are left out of the document (the brief doesn't ask for them): they aren't planned.",
         "tab": "Usage plan",
         "heading": "Corpus usage plan",
         "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Pinned sources get priority during generation, but the model can still reach for the others when relevant.",
@@ -1441,6 +1443,11 @@
         "toastUpdateError": "Couldn't save the change. Try again."
       },
       "plan": {
+        "leftOut": {
+          "introduction": "Introduction · left out by the brief",
+          "conclusion": "Conclusion · left out by the brief",
+          "body": "Every question in the brief names a verse, so the paper answers only those verses. If you need it, include it from the paper page."
+        },
         "tab": "Structural plan",
         "heading": "Structural plan",
         "description": "For each step (intro, verse, conclusion) confirm or adjust which source types the agent should prioritize. Suggestions come from the rubric.",

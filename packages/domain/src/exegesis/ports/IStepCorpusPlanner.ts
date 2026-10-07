@@ -64,6 +64,12 @@ export interface ProposeStepCorpusStepInput {
     label: string;
     /** Verse-kind only: the specific verse reference. */
     verseRef?: PassageReference | null;
+    /**
+     * Las preguntas del encuadre que este paso responde. Sin ellas el
+     * planificador repartía a ciegas: en el TP #6 puso NA28 y Metzger en
+     * 3:11, que no tenía pregunta, y no en 3:6, que trataba la puntuación.
+     */
+    questions?: ReadonlyArray<string>;
 }
 
 export interface ProposeStepCorpusResult {

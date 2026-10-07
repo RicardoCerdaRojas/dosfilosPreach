@@ -147,3 +147,40 @@ function classifyCoverageStatus(
     if (!planned && cited) return 'cited-not-planned';
     return 'never-cited';
 }
+
+/**
+ * El plan de cada paso sin una fuente que salió del corpus.
+ *
+ * Quitar una fuente del corpus dejaba su id en el plan: el selector la
+ * mostraba como un id crudo («64a71b9d-…», TP #6) y cualquier edición de esa
+ * fila fallaba, porque el caso de uso rechaza ids que no están en el corpus.
+ * Genérico sobre la entrada: corre igual sobre el documento crudo de
+ * Firestore que sobre la entidad.
+ */
+export function stepPlanWithoutSource<E extends {
+    pinnedSources?: ReadonlyArray<string>;
+    suppressedSources?: ReadonlyArray<string>;
+    pinnedSourceRoles?: Readonly<Record<string, string>>;
+}>(perStep: Readonly<Record<string, E>>, sourceId: string): Record<string, E> {
+    const out: Record<string, E> = {};
+    for (const [stepId, entry] of Object.entries(perStep)) {
+        const roles = entry.pinnedSourceRoles ? { ...entry.pinnedSourceRoles } : undefined;
+        if (roles) delete roles[sourceId];
+        out[stepId] = {
+            ...entry,
+            ...(entry.pinnedSources ? { pinnedSources: entry.pinnedSources.filter(id => id !== sourceId) } : {}),
+            ...(entry.suppressedSources ? { suppressedSources: entry.suppressedSources.filter(id => id !== sourceId) } : {}),
+            ...(roles ? { pinnedSourceRoles: roles } : {}),
+        };
+    }
+    return out;
+}
+
+/** Las fuentes fijadas a un paso que siguen en el corpus (sin fantasmas). */
+export function pinnedSourcesInCorpus(
+    pinned: ReadonlyArray<string> | undefined,
+    sources: ReadonlyArray<Pick<ProjectSource, 'id'>>,
+): string[] {
+    const vigentes = new Set(sources.map(s => s.id));
+    return (pinned ?? []).filter(id => vigentes.has(id));
+}

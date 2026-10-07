@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, resolveExegeticalStrategy, trimStepVersions } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -437,8 +437,14 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             }
             const sources: ProjectSource[] = Array.isArray(data.sources) ? data.sources : [];
             const filtered = sources.filter(s => s.id !== sourceId);
+            const perStep = data.stepPlan?.perStep;
             tx.update(ref, {
                 sources: filtered,
+                // El plan de uso no se queda apuntando a la fuente que salió
+                // (TP #6: se veía como un id crudo y bloqueaba editar la fila).
+                ...(perStep && typeof perStep === 'object'
+                    ? { 'stepPlan.perStep': stepPlanWithoutSource(perStep, sourceId) }
+                    : {}),
                 updatedAt: new Date(),
             });
         });

@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react';
 import { ListTree, BookText, Layers, Crosshair } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import type { ExegeticalPaper } from '@dosfilos/domain';
+import { frameLeftOut, type ExegeticalPaper } from '@dosfilos/domain';
 import { StepKindEmphasisCard } from './StepKindEmphasisCard';
 
 /**
@@ -57,9 +58,27 @@ export function StructuralPlanSubStep({ paper }: StructuralPlanSubStepProps) {
                 </div>
             </header>
 
-            <StepKindEmphasisCard paper={paper} kind="introduction" icon={<BookText className="h-4 w-4" />} />
+            {frameLeftOut(paper, 'introduction')
+                ? <FrameLeftOutNote kind="introduction" icon={<BookText className="h-4 w-4" />} />
+                : <StepKindEmphasisCard paper={paper} kind="introduction" icon={<BookText className="h-4 w-4" />} />}
             <StepKindEmphasisCard paper={paper} kind="verse" icon={<Crosshair className="h-4 w-4" />} />
-            <StepKindEmphasisCard paper={paper} kind="conclusion" icon={<Layers className="h-4 w-4" />} />
+            {frameLeftOut(paper, 'conclusion')
+                ? <FrameLeftOutNote kind="conclusion" icon={<Layers className="h-4 w-4" />} />
+                : <StepKindEmphasisCard paper={paper} kind="conclusion" icon={<Layers className="h-4 w-4" />} />}
         </div>
+    );
+}
+
+/** El marco que el encuadre deja fuera: se dice, en vez de planificarlo. */
+function FrameLeftOutNote({ kind, icon }: { kind: 'introduction' | 'conclusion'; icon: ReactNode }) {
+    const { t } = useTranslation('exegesis');
+    return (
+        <section className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 flex items-start gap-2 text-muted-foreground">
+            <span className="mt-0.5">{icon}</span>
+            <div>
+                <p className="text-sm font-medium">{t(`paperSetup.subSteps.plan.leftOut.${kind}`)}</p>
+                <p className="text-xs mt-0.5">{t('paperSetup.subSteps.plan.leftOut.body')}</p>
+            </div>
+        </section>
     );
 }

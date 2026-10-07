@@ -163,6 +163,12 @@ Debe pasar a la siguiente cita pendiente y dejar la revisada como estado.
 
 **#13, el plan estructural confunde.** Muestra la introducción y la conclusión aunque el encuadre las excluya. Debe indicarlo («excluida por el encuadre»).
 
+**Cómo quedó E (2026-10-07):**
+- **#10:** el plan de uso (caso de uso y pantalla) sólo planifica los pasos que van al documento (`includeInDocument`), y cada paso lleva al planificador sus preguntas del encuadre, con la regla de que las fuentes que las responden van en ese paso. La pantalla dice cuántos pasos quedaron fuera.
+- **#11:** quitar una fuente del corpus la quita del plan (fijadas, suprimidas, roles). Los fantasmas ya guardados no se muestran ni se reenvían al editar (antes hacían fallar la edición).
+- **#12, leído y no reproducido:** la edición manual conserva los roles desde #708. Los dos caminos que todavía los perdían eran regenerar el plan (un rol que el planificador no devuelve borraba el anterior) y la fila con un fantasma (la edición fallaba). Se arreglaron los dos.
+- **#13:** el plan estructural muestra la introducción o la conclusión como «excluida por el encuadre» cuando lo está (por los pasos, o por las preguntas antes de sembrar).
+
 ## G. Claves de cita (#8, #9)
 
 - **#8:** una obra de varios autores propone la clave del primero («Carson»). Debe proponer «Carson y Moo».
