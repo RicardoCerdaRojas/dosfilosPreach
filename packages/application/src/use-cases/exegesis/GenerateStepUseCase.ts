@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -147,7 +147,7 @@ export class GenerateStepUseCase {
                 paperPassage: paper.passage,
                 verseRef: step.verseRef,
                 language: paper.displayLanguage,
-                assignmentBrief: paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(paper),
                 stepEmphasis,
                 styleGuideContent,
                 sources,

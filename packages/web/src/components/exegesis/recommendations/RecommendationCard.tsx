@@ -4,6 +4,7 @@ import { useTranslation } from '@/i18n';
 import { useNavigate } from 'react-router-dom';
 import {
     getRecommendationId,
+    type ExcludedSource,
     type SourceRecommendation,
     type SourceType,
 } from '@dosfilos/domain';
@@ -11,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { useOwnedRecommendations } from '@/hooks/exegesis/useOwnedRecommendations';
 import { useLibraryRecommendationMatch } from '@/hooks/exegesis/useLibraryRecommendationMatch';
 import { useTrackActivity } from '@/hooks/useTrackActivity';
+import { ExcludedBadge } from '../setup/ExcludedBadge';
+import { useExcludedSourceConfirm } from '../setup/useExcludedSourceConfirm';
 
 interface RecommendationCardProps {
     recommendation: SourceRecommendation;
@@ -27,6 +30,8 @@ interface RecommendationCardProps {
      * la mitad de un favor.
      */
     onAttachMatch?: (libraryResourceId: string, title: string) => Promise<void>;
+    /** Excluida del trabajo: se marca y adjuntarla pide confirmación. */
+    exclusion?: ExcludedSource | null;
 }
 
 /**
@@ -42,8 +47,9 @@ interface RecommendationCardProps {
  * Stateless beyond the owned toggle. Pure presentational + persistence
  * + telemetry. No data fetching here — the parent passes the shape.
  */
-export function RecommendationCard({ recommendation, sourceType, paperId, onAttachMatch }: RecommendationCardProps) {
+export function RecommendationCard({ recommendation, sourceType, paperId, onAttachMatch, exclusion = null }: RecommendationCardProps) {
     const [attaching, setAttaching] = useState(false);
+    const { guard, dialog: confirmExcluded } = useExcludedSourceConfirm();
     const { t, i18n } = useTranslation('exegesis');
     const navigate = useNavigate();
     const { isOwned, toggle } = useOwnedRecommendations();
@@ -126,6 +132,7 @@ export function RecommendationCard({ recommendation, sourceType, paperId, onAtta
                     <p className="text-[12.5px] font-medium text-foreground leading-snug">
                         {recommendation.title}
                     </p>
+                    {exclusion && <ExcludedBadge exclusion={exclusion} />}
                     <p className="text-[11px] text-muted-foreground leading-snug">
                         {recommendation.author}
                     </p>
@@ -168,14 +175,14 @@ export function RecommendationCard({ recommendation, sourceType, paperId, onAtta
                             <button
                                 type="button"
                                 disabled={attaching}
-                                onClick={async () => {
+                                onClick={() => guard(exclusion ? [exclusion] : [], async () => {
                                     setAttaching(true);
                                     try {
                                         await onAttachMatch(libraryMatch.id, libraryMatch.title);
                                     } finally {
                                         setAttaching(false);
                                     }
-                                }}
+                                })}
                                 className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded font-medium text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
                             >
                                 {attaching
@@ -222,6 +229,7 @@ export function RecommendationCard({ recommendation, sourceType, paperId, onAtta
                     </div>
                 )}
             </div>
+            {confirmExcluded}
         </article>
     );
 }

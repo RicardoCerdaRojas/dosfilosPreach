@@ -125,6 +125,14 @@ Debe pasar a la siguiente cita pendiente y dejar la revisada como estado.
 
 **#7, libro mal clasificado.** Subukjian, *Volvamos a la predicación bíblica*, es homilética y figura como «Comentario expositivo» que cuenta para Santiago. Hay que revisar cómo se clasifica un recurso (por tipo y por libros bíblicos) y que un recurso sin libro bíblico no cuente para un requisito de comentario.
 
+**Cómo quedó C (2026-10-07):**
+- `excludedSources` en el trabajo: `null` = sin confirmar (se propone lo citado en la entrega anterior), `[]` = confirmado que no hay.
+- Los pasos que REDACTAN (análisis, prosa, introducción, conclusión, ensamble, coherencia, plan de uso, pasos de ministerio) reciben el encuadre + la línea de exclusiones (`briefWithExclusions`). Las consultas al corpus y el ranking de la biblioteca NO: un nombre en la consulta acercaría justamente ese libro.
+- **#7, desvío del plan:** un comentario cuya ficha de biblioteca dice que comenta OTROS libros no cuenta. Uno SIN libros registrados sigue contando, con aviso y enlace a la biblioteca: un archivo subido desde el corpus queda así, y no hay dato que lo distinga de un libro mal clasificado (supuesto: no se midió cuántos recursos del corpus están sin libros). Si Subukjian figura con alcance «toda la Biblia», este arreglo no lo atrapa: hay que corregir su ficha.
+- Sin confirmar, las LISTAS (orden, marca, preselección, confirmación, herencia de la serie) ya tratan lo citado en la entrega anterior como excluido; los pasos que redactan sólo leen lo confirmado.
+- Se excluye por APELLIDO (de cada coautor, con partícula: «de Silva»), no por cualquier palabra del autor.
+- **Brechas aceptadas:** (a) el aviso de «requisitos faltantes» que reciben el análisis y la generación de pasos sigue contando por tipo, sin mirar si el comentario cubre el libro (no tienen la biblioteca a mano); (b) el sermón generado desde un trabajo recibe el encuadre sin las exclusiones: un sermón no lo corrige el sílabo.
+
 ## D. El perfil guarda lo que configuraste (#2, #4, #3)
 
 **#2, el perfil no guarda la rúbrica.**

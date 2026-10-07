@@ -19,7 +19,7 @@ import type {
     StudyGuideAudience,
     StyleGuideManifest,
 } from '@dosfilos/domain';
-import { isCitableSourceType } from '@dosfilos/domain';
+import { isCitableSourceType, briefWithExclusions } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
 /**
@@ -69,7 +69,7 @@ export class ComposeSermonFromAnalysesUseCase {
             const composerInput: ComposeSermonInput = {
                 paperPassage: ctx.paper.passage,
                 language: ctx.paper.displayLanguage,
-                assignmentBrief: ctx.paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(ctx.paper),
                 verseAnalyses: ctx.verseAnalyses,
                 styleGuideContent: ctx.styleGuideContent,
                 styleGuideManifest: ctx.manifest,
@@ -113,7 +113,7 @@ export class ComposeDevotionalFromAnalysesUseCase {
             const composerInput: ComposeDevotionalInput = {
                 paperPassage: ctx.paper.passage,
                 language: ctx.paper.displayLanguage,
-                assignmentBrief: ctx.paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(ctx.paper),
                 verseAnalyses: ctx.verseAnalyses,
                 styleGuideContent: ctx.styleGuideContent,
                 styleGuideManifest: ctx.manifest,
@@ -157,7 +157,7 @@ export class ComposeStudyGuideFromAnalysesUseCase {
             const composerInput: ComposeStudyGuideInput = {
                 paperPassage: ctx.paper.passage,
                 language: ctx.paper.displayLanguage,
-                assignmentBrief: ctx.paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(ctx.paper),
                 verseAnalyses: ctx.verseAnalyses,
                 styleGuideContent: ctx.styleGuideContent,
                 styleGuideManifest: ctx.manifest,

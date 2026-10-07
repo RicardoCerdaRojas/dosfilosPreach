@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import {
+    sourceTypesForRubric,
     computeRubricCompliance,
     getSourceTypeOrderIndex,
     type ExegeticalPaper,
@@ -10,6 +11,7 @@ import {
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { useLibrary } from '@/hooks/library';
+import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
 import { RecommendationsSection } from '../recommendations/RecommendationsSection';
 import { useAttachLibrarySource } from '@/hooks/exegesis/useAttachLibrarySource';
 
@@ -45,6 +47,7 @@ interface RubricGapCardProps {
 
 export function RubricGapCard({ paper, onPickType }: RubricGapCardProps) {
     const { t } = useTranslation('exegesis');
+    const { resources } = useLibrary();
     const rubric = paper.rubric;
 
     if (!rubric) {
@@ -55,7 +58,9 @@ export function RubricGapCard({ paper, onPickType }: RubricGapCardProps) {
         );
     }
 
-    const sourceTypes = paper.sources.map(s => s.sourceType);
+    // Un comentario de OTRO libro no cumple el requisito de comentario de
+    // este pasaje (TP #6: una homilética contaba como comentario de Santiago).
+    const sourceTypes = sourceTypesForRubric(paper.sources, id => resources.find(r => r.id === id), paper.passage.bookId);
     const report = computeRubricCompliance(sourceTypes, rubric);
 
     // Surface only requirements with `required > 0` — zero-minimum
@@ -174,6 +179,7 @@ function RequirementRow({
     const { t } = useTranslation('exegesis');
     const library = useLibrary();
     const attachMatch = useAttachRecommendationMatch(paper, check.sourceType);
+    const exclusiones = usePaperExclusions(paper);
     const label = t(`sourceTypes.${check.sourceType}.label`);
     const examples = t(`sourceTypes.${check.sourceType}.examples`);
 
@@ -225,6 +231,7 @@ function RequirementRow({
                     paperLanguage={paper.displayLanguage}
                     paperId={paper.id}
                     onAttachMatch={attachMatch}
+                    excludedSources={exclusiones}
                 />
             </div>
         </li>

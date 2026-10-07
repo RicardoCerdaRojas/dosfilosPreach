@@ -86,6 +86,8 @@ export * from './services/assignmentBriefWindows';
 export * from './services/originalLanguageEvidence';
 export * from './services/verseMorphologyBriefing';
 export * from './services/sourceMemory';
+export * from './services/excludedSources';
+export * from './services/commentaryCoverage';
 export * from './services/oshbMorphology';
 export * from './services/preachingBriefTemplate';
 export * from './services/sourcesAndFormatBlock';

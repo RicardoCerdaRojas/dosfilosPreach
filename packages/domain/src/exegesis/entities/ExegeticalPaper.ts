@@ -4,6 +4,7 @@ import type { ExegeticalStep } from './ExegeticalStep';
 import type { PaperRubric, StructuralExpectation } from './PaperRubric';
 import type { StepSourcePlan } from './StepSourcePlan';
 import type { StyleGuideSnapshot } from './StyleGuideSnapshot';
+import type { ExcludedSource } from '../services/excludedSources';
 
 /**
  * Top-level entity for a single exegetical paper.
@@ -75,6 +76,14 @@ export interface ExegeticalPaper {
      * portada a mano cada vez.
      */
     cover?: PaperCover | null;
+
+    /**
+     * Fuentes que este trabajo no puede usar (el sílabo no permite repetir,
+     * el profesor las prohibió). `undefined`/`null` significa que el
+     * estudiante todavía no las confirmó; `[]`, que confirmó que no hay.
+     * Ver `services/excludedSources.ts`.
+     */
+    excludedSources?: ReadonlyArray<ExcludedSource> | null;
 
     /**
      * Free-text framing of the paper — typically a paragraph that

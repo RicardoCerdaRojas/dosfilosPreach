@@ -24,6 +24,7 @@ import {
     documentSections,
     sectionBudgets,
     isCitableSourceType,
+    briefWithExclusions,
 } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 import { buildComposerSourcesWithPinnedContent, deriveCitationKey } from './pinnedSourceContent';
@@ -139,7 +140,7 @@ export class ComposeConclusionFromAnalysesUseCase {
             const composerInput: ComposeConclusionInput = {
                 paperPassage: paper.passage,
                 language: paper.displayLanguage,
-                assignmentBrief: paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(paper),
                 verseAnalyses,
                 styleGuideContent,
                 styleGuideManifest: manifest,

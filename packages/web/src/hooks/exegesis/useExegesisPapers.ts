@@ -5,6 +5,7 @@ import type {
     AddProjectSourceInput,
     CitationEdit,
     PaperCover,
+    ExcludedSource,
     CreateExegeticalPaperInput,
     ExegeticalPaper,
     ExtractRubricFromTextInput,
@@ -607,6 +608,17 @@ export function useExegesisPapers() {
         },
     });
 
+    const updatePaperExcludedSources = useMutation({
+        mutationFn: async ({ paperId, excludedSources }: { paperId: string; excludedSources: ReadonlyArray<ExcludedSource> }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.updatePaperExcludedSources.execute({ ownerId: user.uid, paperId, excludedSources });
+        },
+        onSuccess: (paper) => {
+            queryClient.setQueryData(['exegesis', 'papers', user?.uid, paper.id], paper);
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     const verifyStepCitations = useMutation({
         mutationFn: async ({ paperId, stepId, versionId }: {
             paperId: string;
@@ -720,6 +732,7 @@ export function useExegesisPapers() {
         reviewCitation,
         correctCitation,
         updatePaperCover,
+        updatePaperExcludedSources,
         runCoherencePass,
         classifySourceType,
         startStudyFromPaper,

@@ -93,7 +93,10 @@ export function autoSelection(input: {
     ranked: ReadonlyArray<RankedResource>;
     isIndexed: (r: LibraryResource) => boolean;
     topN: number;
+    /** Excluida del trabajo (sílabo): nunca se preselecciona. */
+    isExcluded?: (r: LibraryResource) => boolean;
 }): Map<string, SelectionEntry> {
+    const excluida = input.isExcluded ?? (() => false);
     const next = new Map<string, SelectionEntry>();
     const byId = new Map(input.resources.map(r => [r.id, r]));
     const withPages = resourceIdsOf(input.sources, hasCuratedScope);
@@ -101,7 +104,7 @@ export function autoSelection(input: {
     for (const source of input.sources) {
         if (!isSourceWithoutScope(source) || isPickedByPages(source)) continue;
         const resource = byId.get(source.sourceLibraryResourceId ?? source.corpusId);
-        if (!resource || !input.isIndexed(resource)) continue;
+        if (!resource || !input.isIndexed(resource) || excluida(resource)) continue;
         next.set(resource.id, initialSelectionFor(resource, input.sources));
     }
 
@@ -109,7 +112,7 @@ export function autoSelection(input: {
     for (const r of input.ranked) {
         if (applied >= input.topN) break;
         const resource = byId.get(r.resourceId);
-        if (!resource || !input.isIndexed(resource)) continue;
+        if (!resource || !input.isIndexed(resource) || excluida(resource)) continue;
         if (withPages.has(resource.id) || next.has(resource.id)) continue;
         next.set(resource.id, initialSelectionFor(resource, input.sources));
         applied++;

@@ -1067,7 +1067,10 @@
           "body": "En lugar de inyectar PDFs completos al modelo, extraemos solo los fragmentos relevantes para tu pasaje. Tú los revisas y editas antes de generar — esa visibilidad es lo que nos distingue de NotebookLM y similares.",
           "dialecticalEyebrow": "Siembra los tres roles",
           "dialecticalTitle": "Tu biblioteca tiene {{count}} recursos — armemos un corpus dialéctico",
-          "dialecticalBody": "El corpus serio se construye en tres roles: ANCLA (lectura base, comentario expositivo), CONTRASTE (otra voz: crítico, monografía, diccionario), TÉCNICA (léxico, gramática o aparato). Agrega tus fuentes y elige el rol de cada una al agregarla; un trabajo riguroso suele tener 4-5 anclas, 4-5 contrastes y 3-4 técnicas.",
+          "dialecticalBody": "El corpus serio se construye en tres roles: ANCLA (lectura base, comentario expositivo), CONTRASTE (otra voz: crítico, monografía, diccionario), TÉCNICA (léxico, gramática o aparato). Agrega tus fuentes y elige el rol de cada una al agregarla.",
+          "dialecticalRubric": "Para este trabajo, apunta a al menos {{detail}}.",
+          "dialecticalStrategy": "Un trabajo riguroso suele tener {{anchorMin}}-{{anchorMax}} anclas, {{contrastMin}}-{{contrastMax}} contrastes y {{technicalMin}}-{{technicalMax}} técnicas.",
+          "roleCount": {"anchor_one": "1 ancla", "anchor_other": "{{count}} anclas", "contrast_one": "1 contraste", "contrast_other": "{{count}} contrastes", "technical_one": "1 técnica", "technical_other": "{{count}} técnicas"},
           "recommended": "Recomendado",
           "suggestedCount": "fuentes recomendadas para un paper riguroso",
           "dialecticalAlt": "O bien:",
@@ -1310,6 +1313,33 @@
           "page": "h. {{sheet}} · p. {{printed}}",
           "sheet": "h. {{sheet}}",
           "hint": "Una gramática se indexa por categorías, no por pasajes. Estas son las secciones que nombran lo que tu encuadre pregunta; la lista va en el orden del libro y no se recorta."
+        },
+        "excluded": {
+          "title": "Fuentes excluidas de este trabajo",
+          "hint": "Lo que tu plan de estudios o tu profesor no permite usar aquí. Aparecen al final de cada lista, marcadas, y se le indica al asistente que no las cite.",
+          "proposal": "En tu entrega anterior ({{paper}}) citaste estas fuentes. Si tu plan no permite repetirlas en semanas consecutivas, marca las que excluyes de este trabajo:",
+          "previousFallback": "trabajo anterior",
+          "accept": "Excluirlas",
+          "decline": "No hace falta",
+          "citedIn": "citada en {{paper}}",
+          "byYou": "agregada por ti",
+          "remove": "Quitar {{source}} de las excluidas",
+          "placeholder": "Autor a excluir (p. ej. Varner)",
+          "add": "Excluir",
+          "saveFailed": "No se pudieron guardar las fuentes excluidas.",
+          "badge": "Excluida",
+          "badgeCitedIn": "Excluida · citada en {{paper}}",
+          "inCorpus": "{{source}} está entre las fuentes excluidas de este trabajo. Si tu plan no la permite, quítala del corpus.",
+          "confirmTitle": "¿Agregar una fuente excluida?",
+          "confirmBody_one": "{{sources}} está entre las fuentes excluidas de este trabajo o la citaste en tu entrega anterior. Agrégala sólo si tu plan de estudios lo permite.",
+          "confirmBody_other": "{{sources}} están entre las fuentes excluidas de este trabajo o las citaste en tu entrega anterior. Agrégalas sólo si tu plan de estudios lo permite.",
+          "confirmAdd": "Agregar igual",
+          "confirmCancel": "Cancelar"
+        },
+        "commentaryCoverage": {
+          "otherBooks": "Según tu biblioteca, este libro no comenta {{book}}: no cuenta como comentario para la rúbrica de este trabajo.",
+          "noBook": "Tu biblioteca no dice qué libro comenta esta obra. Cuenta como comentario, pero revísalo: si no comenta {{book}}, no debería.",
+          "fix": "Revisar en la biblioteca"
         },
         "sourceMemory": {
           "repeated": "Citaste {{source}} en tu entrega anterior ({{paper}}, {{date}}). Si tu plan de estudios no permite repetir fuente en semanas consecutivas, esta no debería entrar."

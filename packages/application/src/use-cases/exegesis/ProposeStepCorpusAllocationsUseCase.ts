@@ -7,6 +7,7 @@ import {
     type ProposeStepCorpusStepInput,
     type StepSourcePlan,
     type StepSourcePlanEntry,
+    briefWithExclusions,
 } from '@dosfilos/domain';
 
 export interface ProposeStepCorpusAllocationsInput {
@@ -84,7 +85,7 @@ export class ProposeStepCorpusAllocationsUseCase {
 
         const result = await this.planner.propose({
             passage: paper.passage,
-            assignmentBrief: paper.assignmentBrief,
+            assignmentBrief: briefWithExclusions(paper),
             language: paper.displayLanguage,
             paperPhase: paper.phase,
             sources: paper.sources.map(s => ({

@@ -491,4 +491,15 @@ describe('AnalyzeVerseCanonicallyUseCase — texto completo desde los fragmentos
         expect(texto).toContain('desde los fragmentos');
         expect(texto).not.toContain('COPIA CORTADA');
     });
+
+    it('REGRESIÓN (TP #6): el análisis recibe las fuentes excluidas; la búsqueda en el corpus no', async () => {
+        const paper = { ...makePaper([makeSource('Kittel', 'res-b')]), assignmentBrief: 'Cuatro preguntas.', excludedSources: [{ key: 'Varner', previousPaperTitle: 'TP #5' }] };
+        const { useCase, analyzer, retriever } = buildUseCase({ paper, analysis: analysisCiting(['Kittel']), retrievedFor: ['res-b'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse.mock.calls[0][0].assignmentBrief).toContain('Varner');
+        expect(analyzer.analyzeVerse.mock.calls[0][0].assignmentBrief).toContain('Cuatro preguntas.');
+        // Un nombre en la consulta acercaría justamente ese libro.
+        expect(retriever.retrieve.mock.calls[0][0].query).not.toContain('Varner');
+    });
 });
+
