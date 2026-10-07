@@ -25,7 +25,7 @@ import type {
   LexicalEntry,
   HebrewVerse,
 } from '@dosfilos/domain';
-import { applyOshbMorphology, checkClauseConnections, reconcileGlobalWords } from '@dosfilos/domain';
+import { applyOshbMorphology, checkClauseConnections, markOathFormula, reconcileGlobalWords } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -76,10 +76,10 @@ export class AnalyzeVerseUseCase {
     // yusivo/imperfecto); ver `applyOshbMorphology`.
     // Y la conexión de cada cláusula se comprueba contra su primera palabra
     // (waw + no verbo = disyuntiva; sin conjunción = asíndeton).
-    const analysis = checkClauseConnections(applyOshbMorphology(
+    const analysis = this.withRules(
         await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries),
-        hebrewVerse.words,
-    ));
+        hebrewVerse,
+    );
 
     // 6. Persist to cache for future requests
     if (this.sessionRepository) {
@@ -116,11 +116,20 @@ export class AnalyzeVerseUseCase {
     if (!cached) return null;
     // Primero las letras, después la morfología de OSHB: así lo guardado
     // antes de que OSHB decidiera también sale corregido.
-    return checkClauseConnections(applyOshbMorphology({
+    return this.withRules({
       ...cached,
       hebrewText: hebrewVerse.hebrewText,
       words: reconcileGlobalWords(cached.words, hebrewVerse.words),
-    }, hebrewVerse.words));
+    }, hebrewVerse);
+  }
+
+  /**
+   * Lo que se decide en el código y no se le deja al asistente, en orden:
+   * la morfología verbal de OSHB, la fórmula de juramento (yusivo, aunque
+   * OSHB de Rut 1:17 diga imperfecto) y la conexión de las cláusulas.
+   */
+  private withRules(analysis: VerseAnalysis, hebrewVerse: HebrewVerse): VerseAnalysis {
+    return checkClauseConnections(markOathFormula(applyOshbMorphology(analysis, hebrewVerse.words), hebrewVerse.words));
   }
 
   /**

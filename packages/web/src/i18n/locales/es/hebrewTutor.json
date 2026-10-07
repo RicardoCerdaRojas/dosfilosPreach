@@ -53,6 +53,7 @@
       "code": "Código OSHB",
       "corrected": "Corregido según OSHB",
       "correction": "{{field}}: {{analysis}} → {{oshb}}",
+      "reasonOathFormula": "Fórmula de juramento: yusivo, como la etiqueta OSHB en 11 de sus 12 apariciones.",
       "translationNote": "La traducción guardada puede no seguir esta corrección. Si no la sigue, re-analiza el versículo.",
       "fields": {
         "binyan": "Binyan",

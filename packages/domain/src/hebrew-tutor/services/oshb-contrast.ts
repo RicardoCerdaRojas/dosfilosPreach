@@ -143,3 +143,57 @@ export function applyOshbMorphology(
 
     return { ...analysis, words, verbTable };
 }
+
+/**
+ * La fórmula de juramento כֹּה יַעֲשֶׂה … וְכֹה יֹסִיף: sus dos verbos son
+ * YUSIVOS, de valor volitivo («así me haga Dios, y aún me añada»).
+ *
+ * Medido en OSHB (2026-10-07): la fórmula aparece 12 veces y OSHB etiqueta
+ * yusivo 11 (1 S 3:17; 14:44; 20:13; 25:22; 2 S 3:9, 35; 19:14; 1 R 2:23;
+ * 19:2; 20:10; 2 R 6:31). La excepción es Rut 1:17, imperfecto, y el tutor
+ * leyó «futuro, él hará» (bitácora del módulo de hebreo #5). Se reconoce por
+ * los lemas: כֹּה (3541) + עשׂה (6213), y después וְכֹה + יסף (3254).
+ */
+export const OATH_FORMULA_VALUE = 'volitivo — fórmula de juramento («así me haga…»)';
+
+export function markOathFormula(
+    analysis: VerseAnalysis,
+    tokens: readonly { text: string; oshbMorphCode?: string; lemma?: string }[],
+): VerseAnalysis {
+    if (!tokens || tokens.length < 4) return analysis;
+    const lema = (t: { lemma?: string } | undefined) => (t?.lemma ?? '').trim();
+    const indices: number[] = [];
+    for (let i = 0; i + 1 < tokens.length; i++) {
+        if (lema(tokens[i]) !== '3541' || !lema(tokens[i + 1]).startsWith('6213')) continue;
+        const resto = tokens.slice(i + 2, i + 8);
+        const yasaf = resto.findIndex(t => lema(t) === '3254');
+        if (yasaf < 0 || !resto.slice(0, yasaf).some(t => lema(t) === 'c/3541')) continue;
+        indices.push(i + 1, i + 2 + yasaf);
+    }
+    if (indices.length === 0) return analysis;
+
+    const tramos = alignWordsToTokens(analysis.words, tokens);
+    const words = analysis.words.map((w, i) => {
+        const tramo = tramos[i];
+        if (!tramo || !w.verbMorphology) return w;
+        if (!indices.some(k => k >= tramo.start && k < tramo.start + tramo.count)) return w;
+        const vm = w.verbMorphology;
+        const cambio: OshbCorrection[] = vm.verbForm === VerbForm.JUSSIVE
+            ? []
+            : [{ field: 'verbForm', analysis: String(vm.verbForm), oshb: VerbForm.JUSSIVE, reason: 'oath-formula' }];
+        const previas = (w.oshbReference?.corrections ?? []).filter(c => c.field !== 'verbForm');
+        return {
+            ...w,
+            verbMorphology: { ...vm, verbForm: VerbForm.JUSSIVE, temporalValue: OATH_FORMULA_VALUE },
+            ...(w.oshbReference
+                ? { oshbReference: { ...w.oshbReference, corrections: [...previas, ...cambio], agreesWithAnalysis: previas.length + cambio.length === 0 } }
+                : {}),
+        };
+    });
+    const marcadas = words.filter((w, i) => w !== analysis.words[i]);
+    const verbTable = analysis.verbTable.map(row => {
+        const palabra = marcadas.find(w => esqueleto(w.hebrewText) === esqueleto(row.hebrewForm));
+        return palabra ? { ...row, verbForm: VerbForm.JUSSIVE, temporalValue: OATH_FORMULA_VALUE } : row;
+    });
+    return { ...analysis, words, verbTable };
+}

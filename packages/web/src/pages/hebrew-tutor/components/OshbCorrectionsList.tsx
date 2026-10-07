@@ -30,6 +30,9 @@ export const OshbCorrectionsList: React.FC<{ oshb?: OshbReference }> = ({ oshb }
               analysis: valor(c, c.analysis),
               oshb: valor(c, c.oshb),
             })}
+            {c.reason === 'oath-formula' && (
+              <span className="block text-[10.5px] text-muted-foreground">{t('verseAnalyzer.oshb.reasonOathFormula')}</span>
+            )}
           </li>
         ))}
       </ul>

@@ -53,6 +53,7 @@
       "code": "OSHB code",
       "corrected": "Corrected per OSHB",
       "correction": "{{field}}: {{analysis}} → {{oshb}}",
+      "reasonOathFormula": "Oath formula: jussive, as OSHB tags it in 11 of its 12 occurrences.",
       "translationNote": "The saved translation may not follow this correction. If it doesn't, re-analyze the verse.",
       "fields": {
         "binyan": "Stem",

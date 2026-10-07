@@ -712,6 +712,10 @@ modal, o habitual; el wayyiqtol tiene valor de pasado narrativo.
 - **אַל + forma de prefijo = YUSIVO.** Prohibición o ruego negativo puntual: אַל־תִּפְגְּעִי־בִי «no insistas conmigo» (Rut 1:16). Nunca se usa אַל con imperativo.
 - **לֹא + forma de prefijo = IMPERFECTO.** Prohibición categórica o permanente: לֹא תִרְצָח «no matarás».
 
+**Fórmula de juramento** כֹּה יַעֲשֶׂה … וְכֹה יֹסִיף: sus dos verbos son YUSIVOS de valor volitivo: «así me haga YHWH, y aún me añada» (Rut 1:17; 1 S 3:17). NO es futuro («él hará»). Lo mismo con otras fórmulas de juramento (חַי־יְהוָה, אִם / אִם־לֹא de juramento): el valor es volitivo o de aseveración, no temporal.
+
+**Valor ≠ forma:** en "temporalValue" describe el VALOR en contexto (pasado narrativo, futuro, habitual, modal, VOLITIVO/desiderativo…). La traducción sigue al valor.
+
 **Forma y etiqueta:** en la mayoría de los verbos, el yusivo de 2.ª y 3.ª persona se escribe IGUAL que el imperfecto. Sólo se distingue en algunos débiles: III-he apocopado (יַעַשׂ por יַעֲשֶׂה), huecos (יָקֹם por יָקוּם) e Hifil (יַקְטֵל por יַקְטִיל). Cuando la forma no lo muestra, la etiqueta la decide la partícula o el contexto, no la forma.
 `,
   },

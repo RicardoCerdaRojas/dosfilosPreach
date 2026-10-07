@@ -120,7 +120,14 @@ export interface WordAnalysis {
 export interface OshbCorrection {
   readonly field: 'binyan' | 'verbForm' | 'person' | 'gender' | 'number';
   readonly analysis: string;
+  /** El valor que quedó (de OSHB, o de la regla que lo decidió). */
   readonly oshb: string;
+  /**
+   * Por qué, cuando no es el código de OSHB de esta palabra: la fórmula de
+   * juramento es yusivo en 11 de sus 12 apariciones en OSHB (Rut 1:17 es la
+   * excepción).
+   */
+  readonly reason?: 'oath-formula';
 }
 
 /**

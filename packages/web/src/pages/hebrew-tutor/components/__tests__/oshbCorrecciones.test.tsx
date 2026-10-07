@@ -24,4 +24,10 @@ describe('lo que OSHB corrigió en el verbo', () => {
         render(<OshbValidationBadge oshb={corregida} />);
         expect(screen.getByTitle('verseAnalyzer.oshb.differs')).toBeInTheDocument();
     });
+
+    it('la corrección por fórmula de juramento dice su motivo (Rut 1:17)', () => {
+        render(<OshbCorrectionsList oshb={{ ...corregida, corrections: [{ field: 'verbForm', analysis: 'IMPERFECT', oshb: 'JUSSIVE', reason: 'oath-formula' }] }} />);
+        expect(screen.getByText('verseAnalyzer.oshb.reasonOathFormula')).toBeInTheDocument();
+    });
 });
+

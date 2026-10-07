@@ -37,4 +37,29 @@ describe('el tutor de hebreo con la morfología de OSHB', () => {
         expect(r.words[0]!.verbMorphology?.person).toBe(2);
         expect(sessions.cacheAnalysis.mock.calls[0]![1].words[0].verbMorphology.person).toBe(2);
     });
+
+    it('REGRESIÓN (Rut 1:17): la fórmula de juramento sale yusiva al leer', async () => {
+        const v17 = {
+            reference: 'Ruth.1.17', displayReference: 'Rut 1:17', hebrewText: 'x',
+            words: [
+                { text: 'כֹּה', lemma: '3541', oshbMorphCode: 'HD' }, { text: 'יַעֲשֶׂה', lemma: '6213 a', oshbMorphCode: 'HVqi3ms' },
+                { text: 'וְכֹה', lemma: 'c/3541', oshbMorphCode: 'HC/D' }, { text: 'יֹסִיף', lemma: '3254', oshbMorphCode: 'HVhi3ms' },
+            ],
+        };
+        const vm = { binyan: 'QAL', verbForm: 'IMPERFECT', verbType: 'STRONG', person: 3, gender: 'M', number: 'S', temporalValue: 'futuro', recognitionClues: [] };
+        const guardado = {
+            ...analisis,
+            words: [
+                { hebrewText: 'כֹּה', category: 'ADVERB', morphemes: [] }, { hebrewText: 'יַעֲשֶׂה', category: 'VERB', morphemes: [], verbMorphology: vm },
+                { hebrewText: 'וְכֹה', category: 'ADVERB', morphemes: [] }, { hebrewText: 'יֹסִיף', category: 'VERB', morphemes: [], verbMorphology: { ...vm, binyan: 'HIFIL' } },
+            ],
+            clauses: [],
+        };
+        const prov = { loadBook: vi.fn(), getVerse: vi.fn().mockReturnValue(v17) };
+        const sessions = { getCachedAnalysis: vi.fn().mockResolvedValue(guardado), cacheAnalysis: vi.fn() };
+        const r = await new AnalyzeVerseUseCase(prov as never, { analyzeVerse: vi.fn() } as never, sessions as never).execute({ morphhbKey: 'Ruth', chapter: 1, verse: 17 } as never);
+        expect(r.words[1]!.verbMorphology?.verbForm).toBe('JUSSIVE');
+        expect(r.words[3]!.verbMorphology?.verbForm).toBe('JUSSIVE');
+    });
 });
+
