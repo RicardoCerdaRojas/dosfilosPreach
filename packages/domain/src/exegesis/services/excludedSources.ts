@@ -54,7 +54,7 @@ const PARTICULAS = new Set(['de', 'da', 'del', 'della', 'di', 'do', 'dos', 'du',
  */
 function apellidos(text: string | null | undefined): Set<string> {
     const out = new Set<string>();
-    for (const coautor of comparable(text ?? '').split(/\s*(?:;|&|\band\b|\by\b)\s*/)) {
+    for (const coautor of comparable(text ?? '').replace(/\bet al\b/g, '').split(/\s*(?:;|&|\band\b|\by\b)\s*/)) {
         const c = coautor.trim();
         if (!c) continue;
         const tokens = (c.includes(',') ? c.split(',')[0]! : c).trim().split(' ').filter(Boolean);

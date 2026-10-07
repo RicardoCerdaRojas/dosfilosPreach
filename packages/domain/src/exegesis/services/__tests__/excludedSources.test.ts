@@ -84,3 +84,11 @@ describe('lo que se propone y lo que leen los pasos que redactan', () => {
         expect(briefWithExclusions({ assignmentBrief: null, excludedSources: null, displayLanguage: 'es' })).toBeNull();
     });
 });
+
+describe('una clave «et al.» (G)', () => {
+    it('alcanza al primer autor, no a un apellido «al»', () => {
+        const aland = [{ key: 'Aland et al.', previousPaperTitle: null }];
+        expect(exclusionFor({ author: 'Aland, Barbara; Aland, Kurt' }, aland)).not.toBeNull();
+        expect(exclusionFor({ author: 'Ahmad Al' }, aland)).toBeNull();
+    });
+});

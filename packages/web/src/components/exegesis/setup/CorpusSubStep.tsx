@@ -1065,6 +1065,7 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                         source={source}
                         isCitable={isCitable}
                         libraryAuthor={libraryResource?.author ?? null}
+                        libraryTitle={libraryResource?.title ?? null}
                     />
                 </div>
                 <button
@@ -1705,7 +1706,7 @@ function AddSourceDialog({
         if (willBeSingle) {
             setDisplayName(resource.title || resource.id);
             if (resource.author) {
-                const key = deriveCitationKeyFromAuthor(resource.author);
+                const key = deriveCitationKeyFromAuthor(resource.author, resource.title, paper.displayLanguage);
                 if (key) setCitationKey(key);
             }
             // Auto-classify in the background. Best-effort: failures
@@ -1815,7 +1816,7 @@ function AddSourceDialog({
                     .map(id => library.resources.find(r => r.id === id))
                     .filter((r): r is LibraryResource => !!r);
                 for (const r of picked) {
-                    const autoCite = r.author ? deriveCitationKeyFromAuthor(r.author) : '';
+                    const autoCite = deriveCitationKeyFromAuthor(r.author, r.title, paper.displayLanguage);
                     // Ya no se adjunta el libro entero: se calcula la sección
                     // que trata el pasaje y se adjunta esa. El selector queda a
                     // un click en "Ajustar páginas" para corregirla.

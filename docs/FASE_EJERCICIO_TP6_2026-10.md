@@ -174,6 +174,8 @@ Debe pasar a la siguiente cita pendiente y dejar la revisada como estado.
 - **#8:** una obra de varios autores propone la clave del primero («Carson»). Debe proponer «Carson y Moo».
 - **#9:** Nestle-Aland propone «Aland». Debe proponer «NA28»: el texto crítico se cita por su sigla.
 
+**Cómo quedó G (2026-10-07):** dos o tres autores → «Carson y Moo», «Köstenberger, Kellum y Quarles» («and» si el trabajo es en inglés); cuatro o más → «Aland et al.»; partícula → «de Silva»; las marcas de editor no cuentan. Las ediciones críticas se proponen por sigla mirando el título: NA (con el número de edición si está; si no, NA28), UBS, BHS, BHQ. Medido: el analizador de citas lee «(Carson y Moo, p. 45)» y «(Aland et al., p. 3)» igual que «(Wallace, p. 165)». La clave sigue siendo sólo una propuesta editable.
+
 ---
 
 ## Fuera de esta fase

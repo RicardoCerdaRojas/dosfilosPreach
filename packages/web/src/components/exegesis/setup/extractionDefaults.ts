@@ -40,7 +40,7 @@ export function initialSelectionFor(
         return {
             sourceType: existente.sourceType,
             displayLabel: existente.displayLabel,
-            citationKey: existente.citationKey ?? deriveCitationKeyFromAuthor(resource.author),
+            citationKey: existente.citationKey ?? deriveCitationKeyFromAuthor(resource.author, resource.title),
             chosenRole: existente.chosenRole ?? null,
         };
     }
@@ -51,7 +51,7 @@ export function initialSelectionFor(
         displayLabel: resource.title,
         // La clave sale del autor desde el principio: vacía, una fuente sin
         // autor quedaba fuera de las citas sin aviso.
-        citationKey: deriveCitationKeyFromAuthor(resource.author),
+        citationKey: deriveCitationKeyFromAuthor(resource.author, resource.title),
         chosenRole: null,
     };
 }
