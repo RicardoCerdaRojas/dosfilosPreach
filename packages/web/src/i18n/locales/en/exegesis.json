@@ -1067,7 +1067,11 @@
           "body": "Instead of feeding whole PDFs to the model, we extract only the fragments relevant to your passage. You review and edit them before generating — that visibility is what sets us apart from NotebookLM and similar tools.",
           "dialecticalEyebrow": "Seed the three roles",
           "dialecticalTitle": "Your library has {{count}} resources — let's build a dialectical corpus",
-          "dialecticalBody": "A serious corpus is built in three roles: ANCHOR (base reading, expository commentary), CONTRAST (another voice: critical, monograph, dictionary), TECHNICAL (lexicon, grammar or apparatus). Add your sources and choose each one's role as you add it; a rigorous paper usually has 4-5 anchors, 4-5 contrasts and 3-4 technical.",
+          "dialecticalBody": "A serious corpus is built in three roles: ANCHOR (base reading, expository commentary), CONTRAST (another voice: critical, monograph, dictionary), TECHNICAL (lexicon, grammar or apparatus). Add your sources and choose each one's role as you add it.",
+          "and": "and",
+          "dialecticalRubric": "For this paper, aim for at least {{detail}}.",
+          "dialecticalStrategy": "A rigorous paper usually has {{anchorMin}}-{{anchorMax}} anchors, {{contrastMin}}-{{contrastMax}} contrasts and {{technicalMin}}-{{technicalMax}} technical.",
+          "roleCount": {"anchor_one": "1 anchor", "anchor_other": "{{count}} anchors", "contrast_one": "1 contrast", "contrast_other": "{{count}} contrasts", "technical_one": "1 technical source", "technical_other": "{{count}} technical sources"},
           "recommended": "Recommended",
           "suggestedCount": "sources recommended for a rigorous paper",
           "dialecticalAlt": "Or:",
@@ -1311,6 +1315,33 @@
           "sheet": "s. {{sheet}}",
           "hint": "A grammar is indexed by category, not by passage. These are the sections naming what your brief asks about; the list follows the book order and is not trimmed."
         },
+        "excluded": {
+          "title": "Sources excluded from this paper",
+          "hint": "What your syllabus or professor doesn't allow here. They appear last in every list, marked, and the assistant is told not to cite them.",
+          "proposal": "In your previous paper ({{paper}}) you cited these sources. If your syllabus doesn't allow repeating them in consecutive weeks, check the ones to exclude from this paper:",
+          "previousFallback": "previous paper",
+          "accept": "Exclude them",
+          "decline": "Not needed",
+          "citedIn": "cited in {{paper}}",
+          "byYou": "added by you",
+          "remove": "Remove {{source}} from excluded",
+          "placeholder": "Author to exclude (e.g. Varner)",
+          "add": "Exclude",
+          "saveFailed": "Couldn't save the excluded sources.",
+          "badge": "Excluded",
+          "badgeCitedIn": "Excluded · cited in {{paper}}",
+          "inCorpus": "{{source}} is among the sources excluded from this paper. If your syllabus doesn't allow it, remove it from the corpus.",
+          "confirmTitle": "Add an excluded source?",
+          "confirmBody_one": "{{sources}} is among the sources excluded from this paper, or you cited it in your previous paper. Add it only if your syllabus allows it.",
+          "confirmBody_other": "{{sources}} are among the sources excluded from this paper, or you cited them in your previous paper. Add them only if your syllabus allows it.",
+          "confirmAdd": "Add anyway",
+          "confirmCancel": "Cancel"
+        },
+        "commentaryCoverage": {
+          "otherBooks": "According to your library, this book doesn't comment on {{book}}: it doesn't count as a commentary for this paper's rubric.",
+          "noBook": "Your library doesn't say which book this work comments on. It counts as a commentary, but check it: if it doesn't cover {{book}}, it shouldn't.",
+          "fix": "Check in the library"
+        },
         "sourceMemory": {
           "repeated": "You cited {{source}} in your previous paper ({{paper}}, {{date}}). If your syllabus forbids repeating a source in consecutive weeks, this one should stay out."
         },
@@ -1358,6 +1389,8 @@
         "citaPorSeccion": "This book has no printed pages: its citations go by section (§), which can be found in the copy."
       },
       "corpus-plan": {
+        "outsideDocument_one": "1 step is left out of the document (the brief doesn't ask for it): it isn't planned.",
+        "outsideDocument_other": "{{count}} steps are left out of the document (the brief doesn't ask for them): they aren't planned.",
         "tab": "Usage plan",
         "heading": "Corpus usage plan",
         "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Pinned sources get priority during generation, but the model can still reach for the others when relevant.",
@@ -1411,6 +1444,11 @@
         "toastUpdateError": "Couldn't save the change. Try again."
       },
       "plan": {
+        "leftOut": {
+          "introduction": "Introduction · left out by the brief",
+          "conclusion": "Conclusion · left out by the brief",
+          "body": "Every question in the brief names a verse, so the paper answers only those verses. If you need it, include it from the paper page."
+        },
         "tab": "Structural plan",
         "heading": "Structural plan",
         "description": "For each step (intro, verse, conclusion) confirm or adjust which source types the agent should prioritize. Suggestions come from the rubric.",
@@ -1515,7 +1553,7 @@
       "namePlaceholder": "OT603 · Research paper",
       "courseLabel": "Course (optional)",
       "coursePlaceholder": "OT603 — Hebrew Exegesis",
-      "whatItSaves": "Saves the style guide, the method, the cover page and which rubric and brief templates you used. It does not save the passage or the corpus: those belong to each paper.",
+      "whatItSaves": "Saves the style guide, method and cover, and creates a rubric and a framing with this paper's, named after the profile (you'll see them in your templates). It doesn't save the passage or the corpus: those belong to each paper.",
       "save": "Save",
       "cancel": "Cancel",
       "saved": "Profile saved. It will be available when you create the next paper.",
@@ -1918,6 +1956,7 @@
         "reviewedLabel": "Reviewed by hand",
         "notePlaceholder": "What you found when opening the page. E.g. “The polel/hiphil contrast is on p. 436; fix the citation”.",
         "reviewedOn": "Reviewed on {{date}}.",
+        "update": "Update the note",
         "save": "Mark as reviewed",
         "remove": "Remove mark",
         "useThisPage": "Note this page",
@@ -1953,7 +1992,7 @@
       },
       "unreadableOriginal": {
         "title": "Greek or Hebrew that is not in the source ({{count}})",
-        "body": "These claims quote an original-language form while resting on a book whose extracted text contains none. The form did not come from there — the assistant supplied it.",
+        "body": "These claims attribute to a book an original-language form that is not in the verse, and the extracted copy of that book has none. It may be in the printed book: check it in the PDF.",
         "item": "{{form}} — attributed to {{source}}",
         "lost": "Incomplete extraction. The book left neither original characters nor transliteration: they were probably lost on extraction. Check it in the library.",
         "transliterated": "This book transliterates. It writes the original in Latin script — “the root hāyâ” — following its series’ convention, so the discussion may well be right; what is missing is the form in its own script. There is nothing to re-extract: if the claim depends on the spelling, rest it on a source that carries the original."
@@ -2164,6 +2203,7 @@
         "collapse": "Collapse"
       },
       "gate": {
+        "notInCorpus": "Cited in the paper but no longer in the corpus: add it back or remove its citations.",
         "multiChapter": "v1 only supports single-chapter passages. Edit the passage to a single chapter to start.",
         "noVerses": "v1 requires explicit verses. Edit the passage to include start and end verses."
       },
@@ -2379,16 +2419,27 @@
       "readFromBook": "Read from the book",
       "reading": "Reading the front matter…",
       "readHint": "The title page and copyright page of this very copy are read. Whatever the book does not state is left blank: nothing is filled in from memory.",
+      "fromLibrary": "from the library: check it",
       "fromBook": "from the book",
       "readFilled": "{{count}} field(s) filled with what the book says. Check them against the copy.",
       "readNothing": "This copy does not carry its publication data in the opening pages. They have to be typed in.",
-      "readNoText": "This book has no extracted text yet, so there is no front matter to read.",
+      "readNoText": "The cover was not found in this book's text. Write the entry by hand from the copyright page.",
       "readFailed": "The book's front matter could not be read.",
       "readAlreadyComplete": "This record is already complete. There is nothing to read from the book.",
       "readNothingNew": "The book adds nothing to what you already typed.",
       "notEditable": "This source's record is not edited here: the book is not yours.",
       "incompleteToast_one": "The bibliography has 1 incomplete entry: {{sources}}. Complete it before submitting.",
       "incompleteToast_other": "The bibliography has {{count}} incomplete entries: {{sources}}. Complete them before submitting.",
+      "gate": {
+        "title_one": "1 cited book is missing data",
+        "title_other": "{{count}} cited books are missing data",
+        "description": "If you export now, the bibliography prints them with what is missing in brackets. Tap one to complete its entry right here: it is saved on the book and serves all your papers.",
+        "missing": "Missing: {{fields}}",
+        "allComplete": "All entries are complete.",
+        "exportAnyway": "Export anyway",
+        "export": "Export",
+        "cancel": "Cancel"
+      },
       "bulk": {
         "cta_one": "Read the missing title page",
         "cta_other": "Read the title pages of the {{count}} missing",

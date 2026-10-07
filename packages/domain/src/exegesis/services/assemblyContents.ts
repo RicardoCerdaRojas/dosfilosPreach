@@ -103,6 +103,23 @@ export function inclusionAtBirth(
 }
 
 /**
+ * Si el marco (introducción o conclusión) queda fuera del documento.
+ *
+ * Con los pasos ya sembrados, lo dicen ellos (el estudiante puede haberlos
+ * vuelto a incluir). Antes de sembrar, lo mismo que decidirá la siembra a
+ * partir de las preguntas del encuadre. El plan estructural mostraba la
+ * introducción y la conclusión como si fueran a escribirse (TP #6).
+ */
+export function frameLeftOut(
+    paper: Pick<ExegeticalPaper, 'steps' | 'assignmentBrief'>,
+    kind: 'introduction' | 'conclusion',
+): boolean {
+    const deEseTipo = paper.steps.filter(s => s.kind === kind);
+    if (deEseTipo.length > 0) return deEseTipo.every(s => !pertenceAlDocumento(s));
+    return inclusionAtBirth({ kind, verseRef: null }, parseBriefQuestions(paper.assignmentBrief)) === false;
+}
+
+/**
  * Los encabezados que lleva la sección de un paso en el documento.
  *
  * Con preguntas en el encuadre, el título de la sección es la PREGUNTA, no la

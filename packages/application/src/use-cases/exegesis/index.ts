@@ -6,6 +6,8 @@ export { ArchiveExegeticalPaperUseCase } from './ArchiveExegeticalPaperUseCase';
 export { UpdatePaperBriefUseCase } from './UpdatePaperBriefUseCase';
 export { UpdatePaperCoverUseCase, normalizeCover } from './UpdatePaperCoverUseCase';
 export type { UpdatePaperCoverInput } from './UpdatePaperCoverUseCase';
+export { UpdatePaperExcludedSourcesUseCase, normalizeExcludedSources } from './UpdatePaperExcludedSourcesUseCase';
+export type { UpdatePaperExcludedSourcesInput } from './UpdatePaperExcludedSourcesUseCase';
 export { SaveAssembledPaperUseCase } from './SaveAssembledPaperUseCase';
 export { UpdateStepPlanUseCase } from './UpdateStepPlanUseCase';
 export { UpdateRubricUseCase } from './UpdateRubricUseCase';

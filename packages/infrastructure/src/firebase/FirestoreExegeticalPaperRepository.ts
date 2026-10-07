@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, resolveExegeticalStrategy, trimStepVersions } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -203,7 +203,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources'>>
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Strip undefined — Firestore rejects undefined values; null is fine.
@@ -437,8 +437,14 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             }
             const sources: ProjectSource[] = Array.isArray(data.sources) ? data.sources : [];
             const filtered = sources.filter(s => s.id !== sourceId);
+            const perStep = data.stepPlan?.perStep;
             tx.update(ref, {
                 sources: filtered,
+                // El plan de uso no se queda apuntando a la fuente que salió
+                // (TP #6: se veía como un id crudo y bloqueaba editar la fila).
+                ...(perStep && typeof perStep === 'object'
+                    ? { 'stepPlan.perStep': stepPlanWithoutSource(perStep, sourceId) }
+                    : {}),
                 updatedAt: new Date(),
             });
         });
@@ -856,6 +862,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
         styleGuideId: paper.styleGuideId,
         assignmentBrief: paper.assignmentBrief,
         ...(paper.cover ? { cover: paper.cover } : {}),
+        ...(paper.excludedSources ? { excludedSources: paper.excludedSources } : {}),
         sources: paper.sources.map(serializeSource),
         rubric: paper.rubric,
         stepPlan: paper.stepPlan,
@@ -890,6 +897,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         title: data.title,
         assignmentBrief: data.assignmentBrief ?? null,
         cover: data.cover ?? null,
+        excludedSources: Array.isArray(data.excludedSources) ? data.excludedSources : null,
         styleGuideId: data.styleGuideId ?? null,
         // La copia de la guía. `capturedAt` viaja como Timestamp y hay
         // que devolverlo a Date: la interfaz lo muestra como fecha.

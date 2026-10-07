@@ -5,7 +5,7 @@ import type {
     IExegeticalPaperRepository,
     ICoherenceReviewer,
 } from '@dosfilos/domain';
-import { formatPassageReference } from '@dosfilos/domain';
+import { formatPassageReference, briefWithExclusions } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 
 export interface RunCoherencePassInput {
@@ -60,7 +60,7 @@ export class RunCoherencePassUseCase {
             return await this.reviewer.review({
                 sections,
                 passageDisplay,
-                assignmentBrief: paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(paper),
                 language,
             });
         } catch (err) {

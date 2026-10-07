@@ -7,6 +7,10 @@ import {
     type ProposeStepCorpusStepInput,
     type StepSourcePlan,
     type StepSourcePlanEntry,
+    briefWithExclusions,
+    parseBriefQuestions,
+    pertenceAlDocumento,
+    questionsOfStep,
 } from '@dosfilos/domain';
 
 export interface ProposeStepCorpusAllocationsInput {
@@ -68,8 +72,10 @@ export class ProposeStepCorpusAllocationsUseCase {
         if (!paper) throw new Error(`Paper ${input.paperId} not found`);
 
         // Filter to steps the planner can actually allocate against —
-        // assembly is mechanical concatenation, no corpus needed.
-        const plannableSteps = paper.steps.filter(s => s.kind !== 'assembly');
+        // assembly is mechanical concatenation, no corpus needed. Un paso
+        // fuera del documento tampoco: en el TP #6 el encuadre dejaba 3:2,
+        // 3:6 y 3:7 y el plan repartió fuentes en los doce versículos.
+        const plannableSteps = paper.steps.filter(s => s.kind !== 'assembly' && pertenceAlDocumento(s));
         if (plannableSteps.length === 0) {
             return {
                 paper,
@@ -78,13 +84,14 @@ export class ProposeStepCorpusAllocationsUseCase {
             };
         }
 
+        const preguntas = parseBriefQuestions(paper.assignmentBrief);
         const stepInputs: ReadonlyArray<ProposeStepCorpusStepInput> = plannableSteps.map(step =>
-            buildPlannerStepInput(step, paper),
+            buildPlannerStepInput(step, paper, questionsOfStep(step, preguntas).map(q => q.text)),
         );
 
         const result = await this.planner.propose({
             passage: paper.passage,
-            assignmentBrief: paper.assignmentBrief,
+            assignmentBrief: briefWithExclusions(paper),
             language: paper.displayLanguage,
             paperPhase: paper.phase,
             sources: paper.sources.map(s => ({
@@ -113,14 +120,15 @@ export class ProposeStepCorpusAllocationsUseCase {
             // role entries (planner referenced an id we just dropped)
             // are silently discarded — the chip would have nowhere to
             // anchor its badge anyway.
-            const sanitizedRoles: Record<string, 'anchor' | 'contrast' | 'technical'> = {};
-            if (allocation.pinnedSourceRoles) {
-                for (const id of pinned) {
-                    const role = allocation.pinnedSourceRoles[id];
-                    if (role) sanitizedRoles[id] = role;
-                }
-            }
+            // Un rol que el planificador no devuelve no borra el que ya
+            // tenía esa fuente en ese paso: regenerar dejaba «sin rol»
+            // fuentes que el estudiante había clasificado (TP #6).
             const existing = nextPerStep[step.id];
+            const sanitizedRoles: Record<string, 'anchor' | 'contrast' | 'technical'> = {};
+            for (const id of pinned) {
+                const role = allocation.pinnedSourceRoles?.[id] ?? existing?.pinnedSourceRoles?.[id];
+                if (role) sanitizedRoles[id] = role;
+            }
             nextPerStep[step.id] = {
                 stepId: step.id,
                 kind: step.kind,
@@ -155,7 +163,7 @@ export class ProposeStepCorpusAllocationsUseCase {
     }
 }
 
-function buildPlannerStepInput(step: ExegeticalStep, paper: ExegeticalPaper): ProposeStepCorpusStepInput {
+function buildPlannerStepInput(step: ExegeticalStep, paper: ExegeticalPaper, questions: ReadonlyArray<string>): ProposeStepCorpusStepInput {
     const language = paper.displayLanguage;
     let label: string;
     if (step.kind === 'verse' && step.verseRef) {
@@ -172,5 +180,6 @@ function buildPlannerStepInput(step: ExegeticalStep, paper: ExegeticalPaper): Pr
         kind: step.kind,
         label,
         verseRef: step.verseRef,
+        ...(questions.length > 0 ? { questions } : {}),
     };
 }

@@ -18,7 +18,7 @@ import type {
     IPageNumberingReader,
     ICuratedCorpusReader,
 } from '@dosfilos/domain';
-import { enforceAnalysisCoverage, isCitableSourceType } from '@dosfilos/domain';
+import { enforceAnalysisCoverage, isCitableSourceType, briefWithExclusions } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 import { buildComposerSourcesWithPinnedContent, deriveCitationKey } from './pinnedSourceContent';
@@ -175,7 +175,7 @@ export class ComposeAcademicPaperUseCase {
                 paperPassage: paper.passage,
                 paperTitle: paper.title ?? null,
                 language: paper.displayLanguage,
-                assignmentBrief: paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(paper),
                 verseAnalyses,
                 pageLabel,
                 styleGuideContent,

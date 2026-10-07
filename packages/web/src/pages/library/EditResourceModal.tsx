@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     LibraryResourceEntity,
+    missingBibliographyFields,
     ResourceType,
     type BibleBookId,
     type LibraryResourceScope,
@@ -20,6 +21,8 @@ import {
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { ResourceMetadataEditor } from './components/ResourceMetadataEditor';
+import { BibliographyEditDialog } from '@/components/exegesis/BibliographyEditDialog';
+import { useLibrary } from '@/hooks/library';
 
 interface EditResourceModalProps {
     resource: LibraryResourceEntity | null;
@@ -58,6 +61,13 @@ export function EditResourceModal({ resource, open, onOpenChange, onSave }: Edit
     const [type, setType] = useState<ResourceType>('theology');
     const [coversBibleBooks, setCoversBibleBooks] = useState<ReadonlyArray<BibleBookId>>([]);
     const [scope, setScope] = useState<LibraryResourceScope>('book');
+    /** La ficha para citar es un dato del libro: se edita también desde aquí (TP #6). */
+    const [fichaAbierta, setFichaAbierta] = useState(false);
+    // La ficha se lee de la biblioteca VIGENTE, no de la copia con que se
+    // abrió este modal: con la copia, abrir la ficha por segunda vez traía lo
+    // de antes de guardar y guardarlo de nuevo borraba lo recién escrito.
+    const { resources } = useLibrary();
+    const fichaVigente = (resource && resources.find(r => r.id === resource.id)?.bibliography) ?? resource?.bibliography ?? null;
     // Quién escribió el texto. No se deduce de nada: un PDF no lo dice, y de
     // esta marca depende que el perfil de voz pueda aprender el registro del
     // autor sin devolverle el de otro.
@@ -147,6 +157,21 @@ export function EditResourceModal({ resource, open, onOpenChange, onSave }: Edit
                         onCoversBibleBooksChange={setCoversBibleBooks}
                         onScopeChange={setScope}
                     />
+                    {resource && (
+                        <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground">{t('editModal.bibliography.title')}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {missingBibliographyFields(fichaVigente).length === 0
+                                        ? t('editModal.bibliography.complete')
+                                        : t('editModal.bibliography.incomplete', { count: missingBibliographyFields(fichaVigente).length })}
+                                </p>
+                            </div>
+                            <Button type="button" size="sm" variant="outline" onClick={() => setFichaAbierta(true)}>
+                                {t('editModal.bibliography.edit')}
+                            </Button>
+                        </div>
+                    )}
                     <label className="flex items-start gap-2 text-sm text-foreground">
                         <input
                             type="checkbox"
@@ -172,6 +197,16 @@ export function EditResourceModal({ resource, open, onOpenChange, onSave }: Edit
                     </Button>
                 </DialogFooter>
             </DialogContent>
+            {resource && fichaAbierta && (
+                <BibliographyEditDialog
+                    open={fichaAbierta}
+                    onOpenChange={setFichaAbierta}
+                    resourceId={resource.id}
+                    displayLabel={resource.title}
+                    data={fichaVigente}
+                    canEdit
+                />
+            )}
         </Dialog>
     );
 }

@@ -129,9 +129,39 @@ export interface UnreadableOriginalClaim {
     absence: OriginalLanguageAbsence;
 }
 
-/** La forma original más larga de un texto, para nombrar el hallazgo. */
-function primeraForma(text: string): string | null {
-    const formas = text.match(/[Ͱ-Ͽἀ-῿֐-׿]+/g) ?? [];
+/** Una forma comparable: sin acentos, espíritus ni puntos masoréticos, y con la sigma final igualada. */
+function comparableForm(form: string): string {
+    return form.normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05c7]/g, '').toLowerCase().replace(/ς/g, 'σ');
+}
+
+/**
+ * Las palabras en griego o hebreo de un texto, una por una.
+ *
+ * Los bloques Unicode traen también la puntuación: el maqaf (־) une
+ * palabras hebreas —«כִּי־טוֹב» son dos—, y el sof pasuq (׃), el paseq (׀),
+ * la ano teleia (·) y el punto y coma griego (;) cierran o cortan frases.
+ * Dentro de la palabra, «טוֹב׃» del versículo y «טוֹב» del análisis no se
+ * reconocían como la misma.
+ */
+function formasOriginales(text: string): string[] {
+    return (text.match(/[Ͱ-Ͽἀ-῿֐-׿]+/g) ?? [])
+        .flatMap(f => f.split(/[\u05be\u05c0\u05c3\u05c6\u0387\u037e]+/))
+        .filter(f => f.length > 0);
+}
+
+/**
+ * La forma original más larga de un texto que NO está en el propio
+ * versículo, para nombrar el hallazgo.
+ *
+ * Una forma del versículo no salió del libro: el análisis la tomó del texto
+ * bíblico, que tiene a la vista. En el TP #6 (Santiago 3) las 17 formas
+ * señaladas —ἅπαντες, λόγῳ, δυνατός, τῇ φύσει τῇ ἀνθρωπίνῃ…— eran todas del
+ * versículo, y el aviso decía «la puso el asistente». Lo sospechoso es una
+ * forma que el versículo no trae y el libro, sin griego, tampoco.
+ */
+function primeraForma(text: string, verseText: string): string | null {
+    const delVersiculo = new Set(formasOriginales(verseText).map(comparableForm));
+    const formas = formasOriginales(text).filter(f => !delVersiculo.has(comparableForm(f)));
     return formas.sort((a, b) => b.length - a.length)[0] ?? null;
 }
 
@@ -153,7 +183,7 @@ export function claimsQuotingUnreadableOriginal(
         if (!absence) continue;
         // La forma puede venir en la afirmación o en la cita textual que el
         // analizador dijo haber copiado; las dos son lectura de la fuente.
-        const form = primeraForma(`${claim.claim} ${claim.verbatimQuote ?? ''}`);
+        const form = primeraForma(`${claim.claim} ${claim.verbatimQuote ?? ''}`, analysis.originalText ?? '');
         if (!form) continue;
         out.push({ path: claim.path, sourceKey: claim.sourceKey, form, absence });
     }

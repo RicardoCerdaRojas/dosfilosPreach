@@ -176,6 +176,9 @@ describe('exportPaperToMarkdown — la bibliografía llega al documento', () => 
 
     it('la ficha coja se imprime fea, para que no se entregue sin verla', () => {
         const md = exportPaperToMarkdown(p, { bibliography: buildPaperBibliography(p, FICHAS) });
-        expect(md).toContain('- The Epistle of James (NICNT). [FICHA INCOMPLETA, faltan: author, title, city, publisher, year]');
+        // Lo que falta, en el idioma del trabajo: salía con la clave interna
+        // en inglés («faltan: author, title…») dentro de un trabajo en
+        // español (TP #6, 2026-10-07).
+        expect(md).toContain('- The Epistle of James (NICNT). [FICHA INCOMPLETA, faltan: autor, título, ciudad, editorial, año]');
     });
 });

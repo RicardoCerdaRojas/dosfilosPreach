@@ -436,6 +436,10 @@ describe('exportPaperToDocx — la bibliografía generada', () => {
         const xml = await zip.file('word/document.xml')!.async('string');
         expect(xml).toContain('FICHA INCOMPLETA');
         expect(xml).toContain('The Epistle of James');
+        // REGRESIÓN (TP #6): lo que falta, nombrado en el idioma del trabajo,
+        // no con la clave interna en inglés.
+        expect(xml).toContain('faltan: ciudad, editorial, año');
+        expect(xml).not.toMatch(/city|publisher/);
     });
 });
 
@@ -481,7 +485,12 @@ describe('exportPaperToDocx — formato de la guía', () => {
 
     it('la bibliografía empieza en página nueva y va con sangría francesa', async () => {
         const doc = await xmlOf(paper(), 'word/document.xml');
-        expect(doc).toContain('<w:br w:type="page"/>');
+        // El título de la bibliografía empieza la hoja por sí mismo: sin un
+        // salto de página DENTRO del título, que dejaba un renglón de título
+        // vacío al pie de la hoja anterior.
+        const titulo = doc.slice(doc.lastIndexOf('<w:p>', doc.indexOf('Bibliograf')) , doc.indexOf('Bibliograf'));
+        expect(titulo).toContain('<w:pageBreakBefore/>');
+        expect(titulo).not.toContain('<w:br w:type="page"/>');
         expect(doc).toMatch(/w:hanging="720"/);
     });
 

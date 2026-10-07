@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layers, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { ExegeticalPaper } from '@dosfilos/domain';
+import { excludedLast, exclusionFor, type ExcludedSource, type ExegeticalPaper } from '@dosfilos/domain';
 import { useCorpusHeredado } from '@/hooks/exegesis/useCorpusHeredado';
+import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
+import { useLibrary } from '@/hooks/library';
+import { ExcludedBadge } from './ExcludedBadge';
+import { useExcludedSourceConfirm } from './useExcludedSourceConfirm';
 
 /**
  * «Las fuentes que ya usaste en esta serie».
@@ -23,22 +27,41 @@ import { useCorpusHeredado } from '@/hooks/exegesis/useCorpusHeredado';
 export function HerenciaDeSerie({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
     const { propuesta, heredar, avance } = useCorpusHeredado(paper.id);
-    const [excluidos, setExcluidos] = useState<Set<string>>(new Set());
+    // Las que el estudiante dio vuelta respecto de su estado inicial: marcada,
+    // salvo las excluidas del trabajo, que arrancan desmarcadas (TP #6: la
+    // serie ofrecía de un clic las fuentes de la semana anterior).
+    const [alternadas, setAlternadas] = useState<Set<string>>(new Set());
+    const exclusiones = usePaperExclusions(paper);
+    const { resources } = useLibrary();
+    const { guard, dialog: confirmExcluded } = useExcludedSourceConfirm();
 
     const datos = propuesta.data;
     if (!datos) return null;
 
-    const elegidos = datos.fuentes.filter(f => !excluidos.has(f.sourceLibraryResourceId));
+    const exclusionDe = (f: { citationKey?: string | null; sourceLibraryResourceId: string }): ExcludedSource | null =>
+        exclusionFor({
+            citationKey: f.citationKey ?? null,
+            author: resources.find(r => r.id === f.sourceLibraryResourceId)?.author ?? null,
+        }, exclusiones);
+    const fuentes = excludedLast(datos.fuentes, f => exclusionDe(f) !== null);
+    const estaElegida = (f: (typeof fuentes)[number]) =>
+        (exclusionDe(f) === null) !== alternadas.has(f.sourceLibraryResourceId);
+    const elegidos = fuentes.filter(estaElegida);
 
     const alternar = (id: string) => {
-        setExcluidos(prev => {
+        setAlternadas(prev => {
             const next = new Set(prev);
             if (next.has(id)) next.delete(id); else next.add(id);
             return next;
         });
     };
 
-    const traer = async () => {
+    const traer = () => {
+        const hits = elegidos.map(exclusionDe).filter((e): e is ExcludedSource => e !== null);
+        guard(hits, () => void traerYa());
+    };
+
+    const traerYa = async () => {
         try {
             const r = await heredar.mutateAsync({ soloEstos: elegidos.map(f => f.sourceLibraryResourceId), paper });
             // Se informa cuántas ENTRARON, no cuántas se pidieron: si alguien
@@ -48,7 +71,7 @@ export function HerenciaDeSerie({ paper }: { paper: ExegeticalPaper }) {
             if (r.porLema > 0) partes.push(t('paperSetup.subSteps.corpus.herencia.toastPorLema', { count: r.porLema }));
             if (r.sinPropuesta > 0) partes.push(t('paperSetup.subSteps.corpus.herencia.toastSinPropuesta', { count: r.sinPropuesta }));
             toast.success(partes.join(' '));
-            setExcluidos(new Set());
+            setAlternadas(new Set());
         } catch {
             toast.error(t('paperSetup.subSteps.corpus.herencia.error'));
         }
@@ -79,8 +102,9 @@ export function HerenciaDeSerie({ paper }: { paper: ExegeticalPaper }) {
             </div>
 
             <ul className="space-y-1">
-                {datos.fuentes.map(f => {
-                    const elegida = !excluidos.has(f.sourceLibraryResourceId);
+                {fuentes.map(f => {
+                    const elegida = estaElegida(f);
+                    const exclusion = exclusionDe(f);
                     return (
                         <li key={f.sourceLibraryResourceId}>
                             <label className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 hover:bg-primary/10 cursor-pointer">
@@ -93,6 +117,7 @@ export function HerenciaDeSerie({ paper }: { paper: ExegeticalPaper }) {
                                 <span className="text-[12.5px] text-foreground truncate flex-1 min-w-0">
                                     {f.displayLabel}
                                 </span>
+                                {exclusion && <ExcludedBadge exclusion={exclusion} />}
                                 {f.citationKey && (
                                     <span className="text-[11px] text-muted-foreground font-mono shrink-0">
                                         {f.citationKey}
@@ -120,6 +145,7 @@ export function HerenciaDeSerie({ paper }: { paper: ExegeticalPaper }) {
                     {t('paperSetup.subSteps.corpus.herencia.nota')}
                 </p>
             </div>
+            {confirmExcluded}
         </div>
     );
 }

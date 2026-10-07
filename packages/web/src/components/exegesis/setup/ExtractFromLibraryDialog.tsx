@@ -6,8 +6,11 @@ import { libraryService } from '@dosfilos/application';
 import {
     ResourcesNotIndexedError,
     SOURCE_TYPE_GROUPS,
+    excludedLast,
+    exclusionFor,
     hasCuratedScope,
     usesExtractedExcerpts,
+    type ExcludedSource,
     type ExegeticalPaper,
     type LibraryResource,
     type RankedResource,
@@ -26,6 +29,9 @@ import {
 import { autoSelection, initialSelectionFor, resourceIdsOf, type SelectionEntry } from './extractionDefaults';
 import { RoleSelect, SelectedResourcesList } from './ExtractSelectionParts';
 import { useTranslation } from '@/i18n';
+import { ExcludedBadge } from './ExcludedBadge';
+import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
+import { useExcludedSourceConfirm } from './useExcludedSourceConfirm';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useRankedLibrary } from '@/hooks/exegesis/useRankedLibrary';
 
@@ -100,6 +106,8 @@ export function ExtractFromLibraryDialog({
     // trip and uploads the user does in another tab show up here
     // automatically.
     const { resources, isLoading } = useLibrary();
+    // Sin confirmar, lo citado en la entrega anterior cuenta como excluido.
+    const exclusiones = usePaperExclusions(paper);
 
     // v1.7 smart-match: rank the user's library against the paper.
     // Fires on dialog open in parallel with the resource list fetch.
@@ -131,6 +139,11 @@ export function ExtractFromLibraryDialog({
      */
     const withPagesIds = useMemo(() => resourceIdsOf(paper.sources, hasCuratedScope), [paper.sources]);
     const entradaInicial = (resource: LibraryResource): SelectionEntry => initialSelectionFor(resource, paper.sources);
+    // Las excluidas del trabajo (sílabo) van al final y marcadas, nunca
+    // preseleccionadas; elegirlas pide confirmación (TP #6).
+    const exclusionDe = (resource: LibraryResource): ExcludedSource | null =>
+        exclusionFor({ author: resource.author }, exclusiones);
+    const { guard, dialog: confirmExcluded } = useExcludedSourceConfirm();
 
     // Quick lookup of the per-resource ranking. Built once per ranking
     // change; `null` for unranked resources (those never matched any
@@ -188,8 +201,9 @@ export function ExtractFromLibraryDialog({
             const bRank = rankByResource.get(b.id)?.score ?? 0;
             return bRank - aRank;
         });
-        return { topMatches: top, restMatches: rest };
-    }, [filtered, rankByResource]);
+        const excluida = (r: LibraryResource) => exclusionFor({ author: r.author }, exclusiones) !== null;
+        return { topMatches: excludedLast(top, excluida), restMatches: excludedLast(rest, excluida) };
+    }, [filtered, rankByResource, exclusiones]);
 
     // One-shot auto pre-selection of the top-N ranked resources after
     // the ranking lands. We only do this when the ranking is non-empty
@@ -213,10 +227,11 @@ export function ExtractFromLibraryDialog({
             ranked: ranking.ranked,
             isIndexed: r => libraryService.getResourceIndexStatus(r) === 'indexed',
             topN: AUTO_SELECT_TOP_N,
+            isExcluded: r => exclusionFor({ author: r.author }, exclusiones) !== null,
         });
         if (next.size > 0) setSelections(next);
         setAutoSelectionApplied(true);
-    }, [ranking.isLoading, ranking.ranked, resources, selections.size, autoSelectionApplied, paper.sources]);
+    }, [ranking.isLoading, ranking.ranked, resources, selections.size, autoSelectionApplied, paper.sources, exclusiones]);
 
     // Count cached vs uncached for the "All" chip caption — gives the
     // user a sense of how much classification investment exists.
@@ -233,17 +248,20 @@ export function ExtractFromLibraryDialog({
     }, [selections, alreadyExcerptedIds]);
 
     const toggleResource = (resource: LibraryResource) => {
-        const next = new Map(selections);
-        if (next.has(resource.id)) {
+        if (selections.has(resource.id)) {
+            const next = new Map(selections);
             next.delete(resource.id);
-        } else {
-            next.set(resource.id, entradaInicial(resource));
+            setSelections(next);
+            return;
+        }
+        const exclusion = exclusionDe(resource);
+        guard(exclusion ? [exclusion] : [], () => {
+            setSelections(prev => new Map(prev).set(resource.id, entradaInicial(resource)));
             // Clear the not-indexed error when the user changes the
             // selection — gives them a chance to retry without the
             // stale error blocking the footer.
             setNotIndexedIds([]);
-        }
-        setSelections(next);
+        });
     };
 
     const updateSelection = (resourceId: string, patch: Partial<SelectionEntry>) => {
@@ -406,6 +424,7 @@ export function ExtractFromLibraryDialog({
                                                         onToggle={() => toggleResource(r)}
                                                         onUpdate={(patch) => updateSelection(r.id, patch)}
                                                         rankInfo={rankByResource.get(r.id) ?? null}
+                                                        exclusion={exclusionDe(r)}
                                                     />
                                                 </li>
                                             );
@@ -460,6 +479,7 @@ export function ExtractFromLibraryDialog({
                                                     onToggle={() => toggleResource(r)}
                                                     onUpdate={(patch) => updateSelection(r.id, patch)}
                                                     rankInfo={null}
+                                                    exclusion={exclusionDe(r)}
                                                 />
                                             </li>
                                         );
@@ -526,6 +546,7 @@ export function ExtractFromLibraryDialog({
                     </div>
                 </DialogFooter>
             </DialogContent>
+            {confirmExcluded}
         </Dialog>
     );
 }
@@ -564,6 +585,7 @@ function ResourceRow({
     onToggle,
     onUpdate,
     rankInfo,
+    exclusion,
 }: {
     resource: LibraryResource;
     status: ReturnType<typeof libraryService.getResourceIndexStatus>;
@@ -581,6 +603,8 @@ function ResourceRow({
      * surface in the ranking (rendered in the collapsed "rest" tail).
      */
     rankInfo: RankedResource | null;
+    /** Excluida del trabajo: se marca, al final de la lista. */
+    exclusion: ExcludedSource | null;
 }) {
     const { t } = useTranslation('exegesis');
 
@@ -617,6 +641,7 @@ function ResourceRow({
                                 {resource.author}
                             </p>
                         )}
+                        {exclusion && <ExcludedBadge exclusion={exclusion} />}
                         {rankInfo && rankInfo.matchedChunkCount > 0 && (
                             <span
                                 className="inline-flex items-center gap-0.5 text-[10px] text-success font-medium"

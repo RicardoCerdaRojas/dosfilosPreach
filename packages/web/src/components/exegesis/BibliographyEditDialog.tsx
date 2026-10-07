@@ -22,6 +22,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useReadBibliographyFromCover, useSaveBibliography } from '@/hooks/exegesis/usePaperBibliography';
+import { useLibrary } from '@/hooks/library';
+import { prefillFromLibrary } from '@/lib/exegesis/prefillFromLibrary';
 
 // La lista y los obligatorios son del dominio: la bibliografía se imprime
 // con ellos y el formulario solo los muestra.
@@ -56,17 +58,36 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
     // Qué campos vinieron del ejemplar y no de la mano de quien lo tiene.
     // Se marca porque un dato leído se revisa distinto de uno escrito.
     const [fromBook, setFromBook] = useState<ReadonlySet<Field>>(() => new Set());
+    /** Los campos que se propusieron desde la tarjeta de la biblioteca. */
+    const [fromLibrary, setFromLibrary] = useState<ReadonlySet<Field>>(() => new Set());
+    const { resources } = useLibrary();
+    const resource = resources.find(r => r.id === resourceId);
 
     useEffect(() => {
         if (!open) return;
-        setDraft(Object.fromEntries(FIELDS.map(f => [f, data?.[f] ?? ''])) as Record<Field, string>);
+        const base = Object.fromEntries(FIELDS.map(f => [f, data?.[f] ?? ''])) as Record<Field, string>;
+        const prefill = canEdit ? prefillFromLibrary(data, resource) : { values: {}, fields: [] };
+        setDraft({ ...base, ...prefill.values });
         setFromBook(new Set());
-    }, [open, data]);
+        setFromLibrary(new Set(prefill.fields));
+        // `resource` cambia de identidad con cada lectura de la biblioteca; el
+        // prellenado sólo importa al abrir.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, data, canEdit]);
 
     const set = (field: Field, value: string) => {
         // Tocar un campo leído lo vuelve escrito: la marca dejaría de ser
         // cierta. Va FUERA del actualizador de `draft` porque ese se ejecuta
         // dos veces en modo estricto y no debe tener efectos.
+        setFromLibrary(marked => {
+            // Escribir el autor reescribe también la forma ordenable: su marca
+            // deja de ser cierta junto con la del autor.
+            const tocados = field === 'author' ? [field, 'authorSorted' as Field] : [field];
+            if (!tocados.some(f => marked.has(f))) return marked;
+            const next = new Set(marked);
+            for (const f of tocados) next.delete(f);
+            return next;
+        });
         setFromBook(marked => {
             // Escribir el autor reescribe también la forma ordenable —pero
             // solo mientras nadie la haya tocado—, y en ese caso su marca
@@ -109,7 +130,13 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                 toast.error(t('detail.bibliography.readNoText'));
                 return;
             }
-            const { data: merged, filled } = completeWithProposal(clean, result.data);
+            // Lo prellenado desde la biblioteca y no tocado todavía es una
+            // pista (el título de la tarjeta suele traer la colección): la
+            // portada del libro lo reemplaza. Lo escrito a mano, nunca.
+            const sinPistas = Object.fromEntries(
+                Object.entries(clean).filter(([f]) => !fromLibrary.has(f as Field)),
+            ) as BibliographicData;
+            const { data: merged, filled } = completeWithProposal(sinPistas, result.data);
             if (filled.length === 0) {
                 // Tres razones distintas para no llenar nada, y decirlas
                 // todas «tu libro no trae datos» sería mentir en dos de ellas.
@@ -133,6 +160,7 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
             }));
             // Se suman a las de una lectura anterior en vez de reemplazarlas.
             setFromBook(marcadas => new Set([...marcadas, ...llenados]));
+            setFromLibrary(marcadas => new Set([...marcadas].filter(f => !llenados.includes(f))));
             toast.success(t('detail.bibliography.readFilled', { count: llenados.length }));
         } catch (err) {
             console.error('[exegesis] no se pudo leer la portada del libro:', err);
@@ -199,6 +227,11 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
                                 {fromBook.has(field) && (
                                     <span className="ml-1.5 normal-case tracking-normal font-normal text-primary">
                                         {t('detail.bibliography.fromBook')}
+                                    </span>
+                                )}
+                                {fromLibrary.has(field) && !fromBook.has(field) && (
+                                    <span className="ml-1.5 normal-case tracking-normal font-normal text-primary">
+                                        {t('detail.bibliography.fromLibrary')}
                                     </span>
                                 )}
                             </span>

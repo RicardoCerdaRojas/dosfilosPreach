@@ -94,4 +94,14 @@ describe('autoSelection', () => {
         });
         expect([...sel.keys()]).toEqual(['a', 'b']);
     });
+
+    it('REGRESIÓN (TP #6): una excluida del trabajo no se marca, ni rankeada ni heredada; su lugar lo toma la que sigue', () => {
+        const varner = (r: { id: string }) => r.id === 'varner';
+        const sel = autoSelection({
+            sources: [heredada('varner')], resources: ['varner', 'moo', 'davids'].map(id => recurso(id)),
+            ranked: rank(['varner', 'moo', 'davids']), isIndexed: todoIndexado, topN: 2, isExcluded: varner as never,
+        });
+        expect([...sel.keys()]).toEqual(['moo', 'davids']);
+    });
 });
+

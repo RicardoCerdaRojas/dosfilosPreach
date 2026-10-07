@@ -2,8 +2,11 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import {
+    excludedLast,
+    exclusionFor,
     getSourceRecommendations,
     type BibleBookId,
+    type ExcludedSource,
     type SourceType,
 } from '@dosfilos/domain';
 import { useTrackActivity } from '@/hooks/useTrackActivity';
@@ -16,6 +19,8 @@ interface RecommendationsSectionProps {
     paperId: string;
     /** Adjunta al corpus una obra ya presente en la biblioteca. */
     onAttachMatch?: (libraryResourceId: string, title: string) => Promise<void>;
+    /** Las excluidas del trabajo van al final y marcadas (TP #6). */
+    excludedSources?: ReadonlyArray<ExcludedSource> | null;
 }
 
 /**
@@ -41,6 +46,7 @@ export function RecommendationsSection({
     paperLanguage,
     paperId,
     onAttachMatch,
+    excludedSources = null,
 }: RecommendationsSectionProps) {
     const { t } = useTranslation('exegesis');
     const { trackActivity } = useTrackActivity();
@@ -49,8 +55,11 @@ export function RecommendationsSection({
     // Pure synchronous lookup against the in-bundle catalog. Memoized
     // so we don't re-sort on every parent render.
     const recommendations = useMemo(
-        () => getSourceRecommendations(bookId, sourceType, paperLanguage),
-        [bookId, sourceType, paperLanguage],
+        () => excludedLast(
+            getSourceRecommendations(bookId, sourceType, paperLanguage),
+            rec => exclusionFor({ author: rec.author }, excludedSources) !== null,
+        ),
+        [bookId, sourceType, paperLanguage, excludedSources],
     );
 
     // Telemetry: fire `recommendation_gap_no_suggestions` once per
@@ -118,6 +127,7 @@ export function RecommendationsSection({
                             sourceType={sourceType}
                             paperId={paperId}
                             onAttachMatch={onAttachMatch}
+                            exclusion={exclusionFor({ author: rec.author }, excludedSources)}
                         />
                     ))}
                 </div>

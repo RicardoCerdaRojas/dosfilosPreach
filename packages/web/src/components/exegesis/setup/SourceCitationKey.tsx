@@ -18,16 +18,18 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
  *
  * Sin clave se avisa y se propone la que sale del autor del libro, si hay.
  */
-export function SourceCitationKey({ paper, source, isCitable, libraryAuthor }: {
+export function SourceCitationKey({ paper, source, isCitable, libraryAuthor, libraryTitle = null }: {
     paper: ExegeticalPaper;
     source: ProjectSource;
     isCitable: boolean;
     /** El autor del libro en la biblioteca, si la fuente viene de ahí. */
     libraryAuthor: string | null;
+    /** El título del libro: una edición crítica se cita por su sigla (NA28). */
+    libraryTitle?: string | null;
 }) {
     const { t } = useTranslation('exegesis');
     const { updateSource } = useExegesisPapers();
-    const propuesta = deriveCitationKeyFromAuthor(libraryAuthor);
+    const propuesta = deriveCitationKeyFromAuthor(libraryAuthor, libraryTitle, paper.displayLanguage);
     const [draft, setDraft] = useState<string | null>(null);
     const k = (key: string) => `paperSetup.subSteps.corpus.citationKey.${key}`;
 

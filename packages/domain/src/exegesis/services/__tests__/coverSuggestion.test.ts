@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { coverOrigins, hasCover, nextAssignmentTitle } from '../coverSuggestion';
+import { coverOrigins, hasCover, nextAssignmentDate, nextAssignmentTitle } from '../coverSuggestion';
 
 /**
  * El fundador reescribía la portada en cada trabajo práctico: el seminario, su
@@ -22,6 +22,37 @@ describe('nextAssignmentTitle', () => {
         expect(nextAssignmentTitle('Trabajo final')).toBe('Trabajo final');
         expect(nextAssignmentTitle('Tarea 4')).toBe('Tarea 4');
         expect(nextAssignmentTitle(undefined)).toBeUndefined();
+    });
+});
+
+describe('nextAssignmentDate', () => {
+    const octubre = new Date(2026, 9, 7);
+
+    it('REGRESIÓN (TP #6): el mes en curso, con la forma de la anterior', () => {
+        expect(nextAssignmentDate('SEPTIEMBRE 2026', octubre)).toBe('OCTUBRE 2026');
+        expect(nextAssignmentDate('Septiembre 2026', octubre)).toBe('Octubre 2026');
+        expect(nextAssignmentDate('septiembre de 2026', octubre)).toBe('octubre de 2026');
+        expect(nextAssignmentDate('Setiembre 2026', octubre)).toBe('Octubre 2026');
+        expect(nextAssignmentDate('September 2026', octubre)).toBe('October 2026');
+        // Cambio de año.
+        expect(nextAssignmentDate('Diciembre 2026', new Date(2027, 0, 5))).toBe('Enero 2027');
+    });
+
+    it('otra forma de fecha no se reescribe', () => {
+        expect(nextAssignmentDate('30 de septiembre de 2026', octubre)).toBe('30 de septiembre de 2026');
+        expect(nextAssignmentDate('2026-09-30', octubre)).toBe('2026-09-30');
+        expect(nextAssignmentDate('Primavera 2025', octubre)).toBe('Primavera 2025');
+        expect(nextAssignmentDate(undefined, octubre)).toBeUndefined();
+    });
+
+    it('la portada heredada de un trabajo o de un perfil trae el mes en curso', () => {
+        const o = coverOrigins(
+            [trabajo('tp4', 20, TP4)],
+            [{ id: 'p1', displayName: 'TMS', cover: { institution: 'TMS', author: 'R', date: 'AGOSTO 2026' } }],
+            'tp5',
+            octubre,
+        );
+        expect(o.map(x => x.cover.date)).toEqual(['Octubre 2026', 'OCTUBRE 2026']);
     });
 });
 

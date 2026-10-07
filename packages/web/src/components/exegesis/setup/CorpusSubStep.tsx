@@ -40,6 +40,10 @@ import {
     previousDelivery,
     emptySourceReason,
     repeatedFromPreviousDelivery,
+    excludedLast,
+    exclusionFor,
+    commentaryBookCoverage,
+    isCommentaryType,
     hasResolvedNumbering,
     deriveCitationKeyFromAuthor,
     usesExtractedExcerpts,
@@ -49,6 +53,7 @@ import {
     countSheets,
     isExcerptSetStale,
     resourceMatchesTestament,
+    type ExcludedSource,
     type ExegeticalPaper,
     type LibraryResource,
     type ProjectSource,
@@ -92,6 +97,11 @@ import { CorpusBudgetMeter } from './CorpusBudgetMeter';
 import { PageBalanceHint } from './PageBalanceHint';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { SourceCitationKey } from './SourceCitationKey';
+import { ExcludedSourcesCard } from './ExcludedSourcesCard';
+import { heroRoleCounts, unirConY } from './heroRoleCounts';
+import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
+import { ExcludedBadge } from './ExcludedBadge';
+import { useExcludedSourceConfirm } from './useExcludedSourceConfirm';
 import { SourceSinPaginas } from './SourceSinPaginas';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 
@@ -199,6 +209,9 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
             </header>
 
             {paper.rubric && <RubricRigorIndicator rubric={paper.rubric} />}
+
+            {/* Antes de elegir: lo que el sílabo no deja usar (TP #6). */}
+            <ExcludedSourcesCard paper={paper} />
 
             {isStartingEmpty ? (
                 <>
@@ -323,6 +336,7 @@ function CorpusSourcesList({
                 showExtractHero ? (
                     <ExtractHeroCard
                         libraryCount={library.resources.length}
+                        rubric={paper.rubric}
                         strategy={strategy}
                         onExtract={onExtract}
                     />
@@ -769,14 +783,29 @@ function EmptySourcesState({ onAdd }: { onAdd: () => void }) {
  */
 function ExtractHeroCard({
     libraryCount,
+    rubric,
     strategy,
     onExtract,
 }: {
     libraryCount: number;
+    rubric: ExegeticalPaper['rubric'];
     strategy: ExegeticalStrategy;
     onExtract: () => void;
 }) {
     const { t } = useTranslation('exegesis');
+    const cuantas = heroRoleCounts(rubric);
+    const cuantasTexto = cuantas.kind === 'rubric'
+        ? t('paperSetup.subSteps.corpus.hero.dialecticalRubric', {
+            detail: unirConY(
+                cuantas.counts.map(c => t(`paperSetup.subSteps.corpus.hero.roleCount.${c.role}`, { count: c.count })),
+                t('paperSetup.subSteps.corpus.hero.and'),
+            ),
+        })
+        : t('paperSetup.subSteps.corpus.hero.dialecticalStrategy', {
+            anchorMin: cuantas.ranges.anchor.min, anchorMax: cuantas.ranges.anchor.max,
+            contrastMin: cuantas.ranges.contrast.min, contrastMax: cuantas.ranges.contrast.max,
+            technicalMin: cuantas.ranges.technical.min, technicalMax: cuantas.ranges.technical.max,
+        });
 
     if (usesRoleCoverage(strategy)) {
         return (
@@ -793,7 +822,7 @@ function ExtractHeroCard({
                             {t('paperSetup.subSteps.corpus.hero.dialecticalTitle', { count: libraryCount })}
                         </h4>
                         <p className="text-[12.5px] text-foreground/80 leading-relaxed mt-1.5">
-                            {t('paperSetup.subSteps.corpus.hero.dialecticalBody')}
+                            {t('paperSetup.subSteps.corpus.hero.dialecticalBody')} {cuantasTexto}
                         </p>
                     </div>
                 </div>
@@ -925,6 +954,18 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
         ? library.resources.find(r => r.id === source.sourceLibraryResourceId)
         : null;
     const originalUrl = libraryResource?.storageUrl ?? null;
+    // Un comentario que comenta otros libros no cumple el requisito de
+    // comentario de este pasaje; uno sin libro registrado cuenta, pero se
+    // pide completarlo (TP #6: una homilética contaba como comentario).
+    const recursoDeBiblioteca = libraryResource ?? library.resources.find(r => r.id === source.corpusId) ?? null;
+    // Excluida del trabajo (confirmada) y aun así en el corpus: se avisa. Sin
+    // confirmar, ya lo dice el aviso de «citada en tu entrega anterior».
+    const excluida = exclusionFor({ citationKey: source.citationKey, author: recursoDeBiblioteca?.author ?? null }, paper.excludedSources);
+    const coberturaComentario = isCommentaryType(source.sourceType) && recursoDeBiblioteca
+        ? commentaryBookCoverage(recursoDeBiblioteca, paper.passage.bookId)
+        : 'covers';
+    const libroDelPasaje = getBookById(paper.passage.bookId);
+    const nombreLibro = (paper.displayLanguage === 'en' ? libroDelPasaje?.nameEn : libroDelPasaje?.nameEs) ?? paper.passage.bookId;
     // Excerpts panel is collapsed by default — sources can have up to
     // 30 chunks each and unfolding them all by default would dwarf
     // everything else on the page. The user expands when they want
@@ -1025,6 +1066,7 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                         source={source}
                         isCitable={isCitable}
                         libraryAuthor={libraryResource?.author ?? null}
+                        libraryTitle={libraryResource?.title ?? null}
                     />
                 </div>
                 <button
@@ -1074,7 +1116,30 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 <SinPaginaComprobable resourceId={libraryResource.id} />
             )}
 
-            {yaCitadaAntes && entregaPrevia && (
+            {coberturaComentario !== 'covers' && recursoDeBiblioteca && (
+                <div className="mt-2 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-[11px] text-warning-subtle-foreground flex flex-wrap items-center gap-x-2">
+                    <span>
+                        {t(coberturaComentario === 'other-books'
+                            ? 'paperSetup.subSteps.corpus.commentaryCoverage.otherBooks'
+                            : 'paperSetup.subSteps.corpus.commentaryCoverage.noBook', { book: nombreLibro })}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/dashboard/library?resource=${recursoDeBiblioteca.id}`)}
+                        className="underline underline-offset-2 font-medium"
+                    >
+                        {t('paperSetup.subSteps.corpus.commentaryCoverage.fix')}
+                    </button>
+                </div>
+            )}
+
+            {excluida && (
+                <div className="mt-2 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-[11px] text-warning-subtle-foreground">
+                    {t('paperSetup.subSteps.corpus.excluded.inCorpus', { source: excluida.key })}
+                </div>
+            )}
+
+            {!excluida && yaCitadaAntes && entregaPrevia && (
                 <div className="mt-2 rounded-lg border border-info/30 bg-info-subtle/40 px-3 py-2 text-[11px] text-info-subtle-foreground">
                     {t('paperSetup.subSteps.corpus.sourceMemory.repeated', {
                         source: source.citationKey,
@@ -1577,20 +1642,24 @@ function AddSourceDialog({
             .length;
     }, [library.resources, attachedCorpusIds, paperTestament]);
 
+    const exclusiones = usePaperExclusions(paper);
     const filteredResources = useMemo(() => {
         // Se busca por palabras sueltas sobre título + autor: "burt jonas"
         // encuentra "Comentario Jonás" de David F. Burt aunque el orden no
         // coincida y falten los acentos. Antes era un único `includes` sensible
         // a mayúsculas y acentos, así que "jonas" no encontraba "Jonás".
         const terms = normalizeForSearch(librarySearch).split(/\s+/).filter(Boolean);
-        return availableForPicker
+        const lista = availableForPicker
             .filter(r => libraryTypeFilter === 'all' || r.type === libraryTypeFilter)
             .filter(r => {
                 if (terms.length === 0) return true;
                 const haystack = normalizeForSearch(`${r.title ?? ''} ${r.author ?? ''}`);
                 return terms.every(term => haystack.includes(term));
             });
-    }, [availableForPicker, libraryTypeFilter, librarySearch]);
+        // Las excluidas del trabajo, al final y marcadas (TP #6).
+        return excludedLast(lista, r => exclusionFor({ author: r.author }, exclusiones) !== null);
+    }, [availableForPicker, libraryTypeFilter, librarySearch, exclusiones]);
+    const { guard: confirmarExcluidas, dialog: confirmExcludedDialog } = useExcludedSourceConfirm();
 
     // Per-type counts for the chip row. Only types with ≥1 resource
     // get a chip — empty chips are noise.
@@ -1638,7 +1707,7 @@ function AddSourceDialog({
         if (willBeSingle) {
             setDisplayName(resource.title || resource.id);
             if (resource.author) {
-                const key = deriveCitationKeyFromAuthor(resource.author);
+                const key = deriveCitationKeyFromAuthor(resource.author, resource.title, paper.displayLanguage);
                 if (key) setCitationKey(key);
             }
             // Auto-classify in the background. Best-effort: failures
@@ -1691,9 +1760,26 @@ function AddSourceDialog({
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!canSubmit || !user?.uid) return;
+        // Agregar una excluida no se impide: se confirma.
+        const exclusiones: ExcludedSource[] = [];
+        if (mode === 'upload') {
+            const ex = exclusionFor({ citationKey: citationKey.trim() }, exclusiones);
+            if (ex) exclusiones.push(ex);
+        } else {
+            for (const id of pickedResourceIds) {
+                const r = library.resources.find(x => x.id === id);
+                const ex = r ? exclusionFor({ author: r.author, citationKey: isBulkLibrary ? null : citationKey.trim() }, exclusiones) : null;
+                if (ex && !exclusiones.includes(ex)) exclusiones.push(ex);
+            }
+        }
+        confirmarExcluidas(exclusiones, () => void enviar());
+    };
+
+    const enviar = async () => {
+        if (!user?.uid) return;
         setUploading(true);
         setProgress(0);
         try {
@@ -1731,7 +1817,7 @@ function AddSourceDialog({
                     .map(id => library.resources.find(r => r.id === id))
                     .filter((r): r is LibraryResource => !!r);
                 for (const r of picked) {
-                    const autoCite = r.author ? deriveCitationKeyFromAuthor(r.author) : '';
+                    const autoCite = deriveCitationKeyFromAuthor(r.author, r.title, paper.displayLanguage);
                     // Ya no se adjunta el libro entero: se calcula la sección
                     // que trata el pasaje y se adjunta esa. El selector queda a
                     // un click en "Ajustar páginas" para corregirla.
@@ -1872,6 +1958,7 @@ function AddSourceDialog({
                                     testamentFilterEnabled={testamentFilterEnabled}
                                     onToggleTestamentFilter={() => setTestamentFilterEnabled(v => !v)}
                                     excludedByTestament={excludedByTestament}
+                                    exclusionOf={r => exclusionFor({ author: r.author }, exclusiones)}
                                 />
                             )}
 
@@ -2051,6 +2138,7 @@ function AddSourceDialog({
                     </div>
                 </form>
             </DialogContent>
+            {confirmExcludedDialog}
         </Dialog>
     );
 }
@@ -2143,6 +2231,7 @@ function LibraryPicker({
     testamentFilterEnabled,
     onToggleTestamentFilter,
     excludedByTestament,
+    exclusionOf,
 }: {
     isLoading: boolean;
     resources: ReadonlyArray<LibraryResource>;
@@ -2159,6 +2248,8 @@ function LibraryPicker({
     testamentFilterEnabled: boolean;
     onToggleTestamentFilter: () => void;
     excludedByTestament: number;
+    /** Excluida del trabajo (sílabo): se marca en la fila. */
+    exclusionOf: (resource: LibraryResource) => ExcludedSource | null;
 }) {
     const { t } = useTranslation('exegesis');
 
@@ -2303,6 +2394,7 @@ function LibraryPicker({
                                                     {r.author}
                                                 </p>
                                             )}
+                                            {(() => { const ex = exclusionOf(r); return ex ? <ExcludedBadge exclusion={ex} /> : null; })()}
                                             <ResourceReadinessBadge status={status} />
                                             {/* Qué vale el libro, en una
                                                 palabra. Acá el pastor elige

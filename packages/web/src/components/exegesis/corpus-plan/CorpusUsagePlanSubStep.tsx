@@ -5,6 +5,8 @@ import { useTranslation } from '@/i18n';
 import {
     formatPassageReference,
     isStepPlanStale,
+    pertenceAlDocumento,
+    pinnedSourcesInCorpus,
     type ExegeticalPaper,
     type ExegeticalStep,
     type ExegeticalStepKind,
@@ -53,10 +55,13 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
     // Filter to LLM-driven steps (assembly is mechanical and doesn't
     // consume the corpus). Sort by `order` so the table follows the
     // wizard's own step order.
+    // Sólo lo que va al documento: un paso que el encuadre deja fuera no se
+    // planifica (TP #6: el plan repartió fuentes en los doce versículos).
     const plannableSteps = useMemo(
-        () => paper.steps.filter(s => s.kind !== 'assembly').sort((a, b) => a.order - b.order),
+        () => paper.steps.filter(s => s.kind !== 'assembly' && pertenceAlDocumento(s)).sort((a, b) => a.order - b.order),
         [paper.steps],
     );
+    const fueraDelDocumento = paper.steps.filter(s => s.kind !== 'assembly' && !pertenceAlDocumento(s)).length;
 
     const stale = isStepPlanStale(paper);
     const hasProposal = paper.stepPlan.proposedAt != null;
@@ -129,13 +134,16 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
     ) => {
         const entry = paper.stepPlan.perStep[stepId];
         const siguiente: Record<string, SourceRole> = { ...(entry?.pinnedSourceRoles ?? {}) };
+        const vigentes = pinnedSourcesInCorpus(entry?.pinnedSources, paper.sources);
+        for (const id of Object.keys(siguiente)) if (!vigentes.includes(id)) delete siguiente[id];
         if (role) siguiente[sourceId] = role;
         else delete siguiente[sourceId];
         try {
             await updateAllocation.mutateAsync({
                 paperId: paper.id,
                 stepId,
-                pinnedSources: entry?.pinnedSources ?? [],
+                // Sin fantasmas: un id que salió del corpus hacía fallar la edición.
+                pinnedSources: vigentes,
                 pinnedSourceRoles: siguiente,
             });
         } catch (err) {
@@ -216,6 +224,11 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
                                     ].join(' ')}
                                 >
                                     <CoveragePanel paper={paper} plannableSteps={plannableSteps} />
+                                    {fueraDelDocumento > 0 && (
+                                        <p className="text-[11px] text-muted-foreground">
+                                            {t('paperSetup.subSteps.corpus-plan.outsideDocument', { count: fueraDelDocumento })}
+                                        </p>
+                                    )}
 
                                     <div className="rounded-lg border border-border bg-card overflow-hidden">
                                         <table className="w-full text-sm">
@@ -383,7 +396,7 @@ function PlanRow({
 }) {
     const { t } = useTranslation('exegesis');
     const entry = paper.stepPlan.perStep[step.id];
-    const pinned = entry?.pinnedSources ?? [];
+    const pinned = pinnedSourcesInCorpus(entry?.pinnedSources, paper.sources);
     const roles = entry?.pinnedSourceRoles;
     const note = entry?.note ?? null;
     const label = stepLabel(step, paper.displayLanguage, t);

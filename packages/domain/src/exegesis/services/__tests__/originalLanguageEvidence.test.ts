@@ -102,6 +102,32 @@ describe('claimsQuotingUnreadableOriginal', () => {
         )).toEqual([]);
     });
 
+    it('REGRESIÓN (TP #6): una forma del propio versículo no se señala; la que el versículo no trae, sí', () => {
+        const a = {
+            ...analisis([
+                { sourceKey: 'Adamson', claim: 'Adamson restringe ἅπαντες a los maestros' },
+                { sourceKey: 'Adamson', claim: 'relaciona τῇ φύσει τῇ ἀνθρωπίνῃ con οὐδεὶς ἀνθρώπων' },
+            ]),
+            originalText: 'πολλὰ γὰρ πταίομεν ἅπαντες· … δεδάμασται τῇ φύσει τῇ ἀνθρωπίνῃ',
+        } as CanonicalVerseAnalysis;
+        const encontradas = claimsQuotingUnreadableOriginal(a, new Map([['Adamson', 'lost' as const]]));
+        expect(encontradas).toHaveLength(1);
+        // Sin acentos ni sigma final: «ανθρωπων» no está en el versículo.
+        expect(encontradas[0]!.form).toBe('ἀνθρώπων');
+    });
+
+    it('la puntuación del versículo no esconde una forma suya: maqaf, sof pasuq, ano teleia', () => {
+        const a = {
+            ...analisis([
+                { sourceKey: 'Adamson', claim: 'lee טוֹב y כִּי como dos palabras' },
+                { sourceKey: 'Adamson', claim: 'cierra la frase en ἅπαντες' },
+            ]),
+            // maqaf (U+05BE), sof pasuq (U+05C3) y ano teleia griega (U+0387).
+            originalText: 'כִּי\u05beטוֹב\u05c3 πταίομεν ἅπαντες\u0387',
+        } as CanonicalVerseAnalysis;
+        expect(claimsQuotingUnreadableOriginal(a, new Map([['Adamson', 'lost' as const]]))).toEqual([]);
+    });
+
     it('sin fuentes marcadas no recorre nada', () => {
         expect(claimsQuotingUnreadableOriginal(
             analisis([{ sourceKey: 'Adamson', claim: 'μέντοι' }]),

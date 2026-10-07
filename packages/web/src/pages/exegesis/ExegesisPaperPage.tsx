@@ -55,6 +55,7 @@ import { useEffectiveStyleGuide } from '@/hooks/exegesis/useEffectiveStyleGuide'
 import { StepCard } from '@/components/exegesis/StepCard';
 import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
+import { IncompleteBibliographyGate } from '@/components/exegesis/IncompleteBibliographyGate';
 import { GlossaryCheckCard } from '@/components/exegesis/GlossaryCheckCard';
 import { CorpusCoverageReport } from '@/components/exegesis/corpus-plan/CorpusCoverageReport';
 import { PaperFacultyDrawer } from '@/components/exegesis/PaperFacultyDrawer';
@@ -124,6 +125,8 @@ export function ExegesisPaperPage() {
     // de un retorno temprano. El hook tolera `paper` nulo y devuelve lista
     // vacía.
     const bibliography = usePaperBibliographyEntries(paper);
+    /** Exportación en espera de las fichas incompletas (TP #6): ver `pedirExport`. */
+    const [exportPendiente, setExportPendiente] = useState<'docx' | 'md' | null>(null);
     const { guide: guiaDelTrabajo } = useEffectiveStyleGuide(paper);
 
     const [facultyDrawerOpen, setFacultyDrawerOpen] = useState(false);
@@ -315,6 +318,19 @@ export function ExegesisPaperPage() {
         }
     };
 
+    /**
+     * Exportar pasa primero por las fichas: con alguna incompleta, se abre el
+     * diálogo que deja completarlas ANTES de bajar el archivo (TP #6).
+     */
+    const pedirExport = (formato: 'docx' | 'md') => {
+        if (bibliography.some(e => !e.text)) {
+            setExportPendiente(formato);
+            return;
+        }
+        if (formato === 'docx') void handleExportDocx();
+        else handleExportMarkdown();
+    };
+
     const passageShape = passageEligibleForGeneration(paper);
 
     // El paper se queda en la numeración del TEXTO ORIGINAL, que es la
@@ -452,10 +468,10 @@ export function ExegesisPaperPage() {
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="min-w-[220px]">
-                                        <DropdownMenuItem onClick={handleExportMarkdown}>
+                                        <DropdownMenuItem onClick={() => pedirExport('md')}>
                                             {t('detail.exportMarkdown.cta')}
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={handleExportDocx}>
+                                        <DropdownMenuItem onClick={() => pedirExport('docx')}>
                                             {t('detail.exportDocx.cta')}
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -606,6 +622,21 @@ export function ExegesisPaperPage() {
                 onOpenChange={setFacultyDrawerOpen}
                 paper={paper}
             />
+            {/* Fuera de la columna lateral: con ella oculta, el diálogo igual aparece. */}
+            {exportPendiente && (
+                <IncompleteBibliographyGate
+                    paper={paper}
+                    entries={bibliography}
+                    open={!!exportPendiente}
+                    onCancel={() => setExportPendiente(null)}
+                    onExport={() => {
+                        const formato = exportPendiente;
+                        setExportPendiente(null);
+                        if (formato === 'docx') void handleExportDocx();
+                        else handleExportMarkdown();
+                    }}
+                />
+            )}
         </div>
     );
 }

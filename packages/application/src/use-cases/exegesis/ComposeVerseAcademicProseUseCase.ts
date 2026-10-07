@@ -35,6 +35,7 @@ import {
     verseWordBudget,
     type AcademicVoiceSample,
     type BriefQuestion,
+    briefWithExclusions,
 } from '@dosfilos/domain';
 import { buildPageLabeler } from './buildPageLabeler';
 import { composerSourceOf } from './pinnedSourceContent';
@@ -188,7 +189,7 @@ export class ComposeVerseAcademicProseUseCase {
                 verseAnalysis: target.canonicalAnalysis,
                 paperPassage: paper.passage,
                 language: paper.displayLanguage,
-                assignmentBrief: paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(paper),
                 styleGuideContent,
                 styleGuideManifest: manifest,
                 sources: await buildComposerSources(paper, this.bibliography),

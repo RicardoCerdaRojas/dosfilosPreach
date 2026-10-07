@@ -18,6 +18,7 @@ import {
 } from '@dosfilos/domain';
 import { useWorkProfiles } from '@/hooks/exegesis/useWorkProfiles';
 import type { WorkProfile } from '@dosfilos/domain';
+import { briefToPrefill } from '@/lib/exegesis/briefToPrefill';
 
 /**
  * Step 1 of the exegesis creation flow — minimal page.
@@ -39,7 +40,10 @@ export function ExegesisCreatePage() {
     const { t, i18n } = useTranslation('exegesis');
     const { createPaper, updatePaperCover } = useExegesisPapers();
     const { rubrics, defaultRubric } = useUserRubrics();
-    const { defaultBrief } = useUserAssignmentBriefs();
+    const { briefs, defaultBrief } = useUserAssignmentBriefs();
+    // El encuadre del perfil elegido, si trae uno: el perfil lo apuntaba y
+    // la creación lo ignoraba (TP #6).
+    const [briefDelPerfilId, setBriefDelPerfilId] = useState<string | null>(null);
 
     const [passage, setPassage] = useState<PassageReference | null>(null);
     const [passageError, setPassageError] = useState<string | null>(null);
@@ -93,6 +97,7 @@ export function ExegesisCreatePage() {
         if (!profile) return;
         perfilAplicado.current = true;
         setRubricTemplateId(profile.rubricTemplateId);
+        setBriefDelPerfilId(profile.briefTemplateId);
         setExegeticalStrategy(profile.exegeticalStrategy);
         setCoverFromProfile(profile.cover ?? null);
     }, []);
@@ -109,11 +114,13 @@ export function ExegesisCreatePage() {
 
     // Auto-load the user's default brief once the hook resolves.
     // Skip when the user already typed something so we don't clobber.
+    // El del perfil gana sobre el encuadre por defecto.
     useEffect(() => {
         if (briefUserTyped) return;
-        if (!defaultBrief) return;
-        setAssignmentBrief(defaultBrief.body.slice(0, briefMaxChars));
-    }, [defaultBrief, briefUserTyped]);
+        const elegido = briefToPrefill(briefs, briefDelPerfilId, defaultBrief);
+        if (!elegido) return;
+        setAssignmentBrief(elegido.body.slice(0, briefMaxChars));
+    }, [briefs, briefDelPerfilId, defaultBrief, briefUserTyped]);
 
     const isCreating = createPaper.isPending;
     const canCreate = !!passage && !isCreating;

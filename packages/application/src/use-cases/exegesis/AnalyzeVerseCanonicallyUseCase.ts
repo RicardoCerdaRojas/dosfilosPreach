@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -162,7 +162,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                 originalLanguageText,
                 pericopeContext,
                 language: paper.displayLanguage,
-                assignmentBrief: paper.assignmentBrief,
+                assignmentBrief: briefWithExclusions(paper),
                 stepEmphasis,
                 styleGuideContent,
                 sources,
