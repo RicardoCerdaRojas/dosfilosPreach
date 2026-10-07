@@ -1990,6 +1990,16 @@
         "removeConfirm": "The citation is removed from the analysis. The claim loses this source and the exported paper will no longer name it here.",
         "removeConfirmAction": "Remove citation"
       },
+      "orphanKeys": {
+        "title_one": "A citation uses a key that is no longer in your corpus",
+        "title_other": "{{count}} cited keys are no longer in your corpus",
+        "body": "The generated text cites a source by a name it no longer has (you probably renamed it). Pick which source it is: it's corrected in the analysis, prose and assembled paper across the whole paper. Then verify again.",
+        "item": "«{{from}}» is:",
+        "pick": "Source that matches «{{from}}»",
+        "fix": "Fix",
+        "done": "«{{from}}» became «{{to}}» across the paper. Verify the citations again.",
+        "failed": "Couldn't fix the key."
+      },
       "unreadableOriginal": {
         "title": "Greek or Hebrew that is not in the source ({{count}})",
         "body": "These claims attribute to a book an original-language form that is not in the verse, and the extracted copy of that book has none. It may be in the printed book: check it in the PDF.",
