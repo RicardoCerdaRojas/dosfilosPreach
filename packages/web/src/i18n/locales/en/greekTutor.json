@@ -1004,7 +1004,8 @@
         "permissive": "Permissive",
         "volitive": "Volitive (wish)",
         "potential": "Potential",
-        "oblique": "Oblique"
+        "oblique": "Oblique",
+        "lest": "Fear or negative purpose («lest»)"
       },
       "tenseUses": {
         "progressive": "Progressive",
@@ -1047,7 +1048,8 @@
         "indefinite": "with ἄν",
         "hortatory": "1st person plural",
         "meGenoito": "μὴ γένοιτο",
-        "presentProhibition": "μή + imperative"
+        "presentProhibition": "μή + imperative",
+        "lest": "μή or μήποτε in a dependent clause"
       }
     },
     "agency": {

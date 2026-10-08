@@ -120,7 +120,7 @@ export function GreekWordHoverContent({ token, insight, keyInsight, relations, o
 
                 {/* 3 · POR QUÉ ASÍ. */}
                 <FrontedNote fronted={fronted} />
-                <GreekVerbFunctionBlock insight={insight} mood={token.tag.mood} />
+                <GreekVerbFunctionBlock insight={insight} mood={token.tag.mood} tense={token.tag.tense} />
                 {regimen && <GreekPrepositionBlock lemma={token.lemma} usage={regimen} />}
                 <GreekAgencyBlock insight={insight} />
 

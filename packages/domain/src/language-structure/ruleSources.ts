@@ -1,5 +1,6 @@
 import type { ClauseRelation } from './verseStructure.js';
 import type { TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
+import type { TENSE_USES } from './verbFunctions.js';
 import type { NominalRule } from './nominalFunctions.js';
 
 /**
@@ -66,6 +67,7 @@ export const VERB_RULE_SOURCES: Readonly<Record<VerbRule, readonly RuleSource[]>
     ouMe: [W('Emphatic Negation Subjunctive')],
     prohibition: [W('Prohibitive Subjunctive')],
     indefinite: [W('Subjunctive in Indefinite Relative Clause'), W('Subjunctive in Indefinite Temporal Clause')],
+    lest: [W('Subjunctive after Verbs of Fearing'), W('Subjunctive in Purpose Clauses')],
     hortatory: [W('Hortatory Subjunctive'), W('Deliberative Subjunctive')],
     meGenoito: [W('Voluntative Optative')],
     presentProhibition: [W('Imperative of Prohibition')],
@@ -84,19 +86,39 @@ export const VERB_FUNCTION_SOURCES: Readonly<Record<VerbFunctionId, readonly Rul
     imperatival: [W('Imperatival Infinitive')], absolute: [W('Absolute Infinitive')],
     hortatory: [W('Hortatory Subjunctive')], deliberative: [W('Deliberative Subjunctive')], prohibition: [W('Prohibitive Subjunctive'), W('Imperative of Prohibition')],
     emphaticNegation: [W('Emphatic Negation Subjunctive')], inaClause: [W('Subjunctive in Purpose Clauses')], conditional: [W('Subjunctive in Conditional Sentences')],
-    indefinite: [W('Subjunctive in Indefinite Relative Clause')], command: [W('Imperative of Command')], request: [W('Imperative of Request (Entreaty)')],
+    indefinite: [W('Subjunctive in Indefinite Relative Clause')], lest: [W('Subjunctive after Verbs of Fearing')], command: [W('Imperative of Command')], request: [W('Imperative of Request (Entreaty)')],
     permissive: [W('Permissive Imperative (Imperative of Toleration)')], volitive: [W('Voluntative Optative')], potential: [W('Potential Optative')], oblique: [W('Oblique Optative')],
 };
 
-export const TENSE_USE_SOURCES: Readonly<Record<TenseUseId, readonly RuleSource[]>> = {
-    progressive: [W('Progressive (Descriptive) Present')], customary: [W('Customary (Habitual or General) Present'), P('2026-10-07 · Stg 2:7 βλασφημοῦσιν')],
-    iterative: [W('Iterative Present')], gnomic: [W('Gnomic Present')], historical: [W('Historical Present')], futuristic: [W('Futuristic Present')],
-    conative: [W('Conative Present')], extendingFromPast: [W('Present of Past Action Still in Progress')], instantaneous: [W('Instantaneous Present')],
-    ingressive: [W('Ingressive Aorist'), W('Ingressive Imperfect')], constative: [W('Constative Aorist')], culminative: [W('Consummative (Culminative) Aorist')],
-    epistolary: [W('Epistolary Aorist')], proleptic: [W('Proleptic (Futuristic) Aorist')], dramatic: [W('Dramatic Aorist')],
-    predictive: [W('Predictive Future')], imperatival: [W('Imperatival Future')], deliberative: [W('Deliberative Future')],
-    intensive: [W('Intensive (Resultative) Perfect')], extensive: [W('Extensive (Consummative) Perfect')],
+/**
+ * El uso del tiempo, POR TIEMPO: «habitual» es una sección para el presente y
+ * otra para el imperfecto; «gnómico», una para cada tiempo (revisión de G2:
+ * un imperfecto habitual citaba «…Present»). El tipo exige cada uso de cada tiempo.
+ */
+export const TENSE_USE_SOURCES: { readonly [T in keyof typeof TENSE_USES]: Readonly<Record<(typeof TENSE_USES)[T][number], readonly RuleSource[]>> } = {
+    P: {
+        progressive: [W('Progressive (Descriptive) Present')], customary: [W('Customary (Habitual or General) Present'), P('2026-10-07 · Stg 2:7 βλασφημοῦσιν')],
+        iterative: [W('Iterative Present')], gnomic: [W('Gnomic Present')], historical: [W('Historical Present')], futuristic: [W('Futuristic Present')],
+        conative: [W('Conative (Tendential, Voluntative) Present')], extendingFromPast: [W('Present of Past Action Still in Progress')], instantaneous: [W('Instantaneous Present')],
+    },
+    I: {
+        progressive: [W('Progressive (Descriptive) Imperfect')], ingressive: [W('Ingressive Imperfect')], iterative: [W('Iterative Imperfect')],
+        customary: [W('Customary (Habitual or General) Imperfect')], conative: [W('Conative (Voluntative, Tendential) Imperfect')],
+    },
+    A: {
+        constative: [W('Constative Aorist')], ingressive: [W('Ingressive Aorist')], culminative: [W('Consummative (Culminative) Aorist')], gnomic: [W('Gnomic Aorist')],
+        epistolary: [W('Epistolary Aorist')], proleptic: [W('Proleptic (Futuristic) Aorist')], dramatic: [W('Dramatic Aorist')],
+    },
+    F: { predictive: [W('Predictive Future')], imperatival: [W('Imperatival Future')], deliberative: [W('Deliberative Future')], gnomic: [W('Gnomic Future')] },
+    X: { intensive: [W('Intensive (Resultative) Perfect')], extensive: [W('Extensive (Consummative) Perfect')], proleptic: [W('Proleptic (Futuristic) Perfect')], gnomic: [W('Gnomic Perfect')] },
+    Y: { intensive: [W('Intensive (Resultative) Pluperfect')], extensive: [W('Extensive (Consummative) Pluperfect')] },
 };
+
+/** Las fuentes de un uso del tiempo para el tiempo del verbo (código de MorphGNT). */
+export function tenseUseSources(use: TenseUseId, tense: string | undefined): readonly RuleSource[] {
+    const porTiempo = tense && tense in TENSE_USE_SOURCES ? (TENSE_USE_SOURCES[tense as keyof typeof TENSE_USES] as Record<string, readonly RuleSource[]>) : undefined;
+    return porTiempo?.[use] ?? [];
+}
 
 /**
  * Las fuentes de una función según la forma: «propósito» es una sección para

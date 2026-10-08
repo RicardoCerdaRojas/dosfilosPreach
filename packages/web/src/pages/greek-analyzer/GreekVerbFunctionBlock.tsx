@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { TENSE_USE_SOURCES, VERB_RULE_SOURCES, verbFunctionSources, type GreekWordInsight } from '@dosfilos/domain';
+import { tenseUseSources, VERB_RULE_SOURCES, verbFunctionSources, type GreekWordInsight } from '@dosfilos/domain';
 import { SourceNote } from '@/components/language-structure/SourceNote';
 
 /**
@@ -9,7 +9,13 @@ import { SourceNote } from '@/components/language-structure/SourceNote';
  * «Regla» si la decidió el texto; «Asistente» si la eligió de la lista que el
  * texto acota.
  */
-export function GreekVerbFunctionBlock({ insight, mood }: { insight?: GreekWordInsight; /** Modo de MorphGNT: elige la fuente (participio o infinitivo). */ mood?: string }) {
+export function GreekVerbFunctionBlock({ insight, mood, tense }: {
+    insight?: GreekWordInsight;
+    /** Modo de MorphGNT: elige la fuente (participio o infinitivo). */
+    mood?: string;
+    /** Tiempo de MorphGNT: el uso del tiempo se cita según el tiempo (presente ≠ imperfecto). */
+    tense?: string;
+}) {
     const { t } = useTranslation('greekTutor');
     if (!insight?.verbFunction && !insight?.tenseUse) return null;
     const etiqueta = (porRegla: boolean) => (
@@ -51,7 +57,7 @@ export function GreekVerbFunctionBlock({ insight, mood }: { insight?: GreekWordI
                         : insight.verbFunction
                           ? verbFunctionSources(insight.verbFunction, mood === 'P' ? 'participle' : mood === 'N' ? 'infinitive' : 'other')
                           : []),
-                    ...(insight.tenseUse ? TENSE_USE_SOURCES[insight.tenseUse] : []),
+                    ...(insight.tenseUse ? tenseUseSources(insight.tenseUse, tense) : []),
                 ]}
             />
         </div>

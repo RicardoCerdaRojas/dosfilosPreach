@@ -118,9 +118,9 @@ describe('G2 — validación de lo que devuelve el asistente', () => {
     });
     it('el prompt pide elegir donde hay lista y explicar donde ya está decidido', () => {
         const tarea = buildVerbFunctionTask([libre, decidido, indicativo], ['ἦν', 'λέγει', 'ἐλεγχόμενοι']);
-        expect(tarea).toMatch(/2\. ἐλεγχόμενοι — participio — "verbFunction", elige de: "manner"/);
-        expect(tarea).toMatch(/0\. ἦν — participio — FUNCIÓN YA DECIDIDA por regla \(εἰμί \+ participio/);
-        expect(tarea).toMatch(/1\. λέγει — indicativo — "tenseUse", elige de: "progressive".*"customary" \(habitual/);
+        expect(tarea).toMatch(/3\. ἐλεγχόμενοι — participio — "verbFunction", elige de: "manner"/);
+        expect(tarea).toMatch(/1\. ἦν — participio — FUNCIÓN YA DECIDIDA por regla \(εἰμί \+ participio/);
+        expect(tarea).toMatch(/2\. λέγει — indicativo — "tenseUse", elige de: "progressive".*"customary" \(habitual/);
         expect(buildVerbFunctionTask([], [])).toBe('');
     });
 });
@@ -133,6 +133,11 @@ describe('G2 — las reglas se aplican al mostrar (análisis ya guardados)', () 
     ];
     const palabra = (x: object) => ({ text: 't', ...x }) as { text: string; verbFunction?: never };
 
+    it('si la regla decide lo MISMO que eligió el asistente, su nota se conserva', () => {
+        const out = applyVerbRules([palabra({ verbFunction: 'periphrastic', verbNote: 'ἦν + participio' })], cands);
+        expect(out[0]).toEqual({ text: 't', verbFunction: 'periphrastic', verbRule: 'periphrastic', verbNote: 'ἦν + participio' });
+    });
+
     it('una regla nueva corrige lo guardado; lo que la regla de hoy no permite se quita, con su nota', () => {
         const out = applyVerbRules([
             palabra({ verbFunction: 'manner', verbNote: 'a' }),
@@ -140,10 +145,65 @@ describe('G2 — las reglas se aplican al mostrar (análisis ya guardados)', () 
             palabra({ tenseUse: 'customary', verbNote: 'c' }),
             palabra({ verbFunction: 'command', verbNote: 'd' }),
         ], cands);
-        expect(out[0]).toMatchObject({ verbFunction: 'periphrastic', verbRule: 'periphrastic', verbNote: 'a' });
+        // La regla decide OTRA función: la nota vieja («manner») ya no vale y se quita.
+        expect(out[0]).toEqual({ text: 't', verbFunction: 'periphrastic', verbRule: 'periphrastic' });
         expect(out[1]).toEqual({ text: 't' });
         expect(out[2]).toEqual({ text: 't', tenseUse: 'customary', verbNote: 'c' });
         // Ya no es verbo (o el dato cambió): nada.
         expect(out[3]).toEqual({ text: 't' });
+    });
+});
+
+/**
+ * Revisión adversarial de G2 + G3 (2026-10-08): cada fila, un verso donde una
+ * regla decidía mal (y la pantalla lo mostraba como «Regla») o no veía el caso.
+ */
+describe('G2 — regresiones de la revisión adversarial', () => {
+    it.each([
+        // El subordinante MÁS CERCANO manda, no un ἵνα de más arriba.
+        ['1JN/2.json', 28, 'φανερωθῇ', 'conditional'],
+        ['LUK/16.json', 9, 'ἐκλίπῃ', 'indefinite'],
+        ['JHN/15.json', 16, 'αἰτήσητε', 'indefinite'],
+        ['ACT/23.json', 14, 'ἀποκτείνωμεν', 'indefinite'],
+        // Perifrástico: con εἰμί dos cláusulas arriba (Mc 1:6) y con el infinitivo εἶναι (Lc 9:18).
+        ['MRK/1.json', 6, 'ἐνδεδυμένος', 'periphrastic'],
+        ['MRK/1.json', 6, 'ἔσθων', 'periphrastic'],
+        ['LUK/9.json', 18, 'προσευχόμενον', 'periphrastic'],
+        // Genitivo absoluto con el sujeto en una cláusula hija.
+        ['ACT/23.json', 30, 'μηνυθείσης', 'genitiveAbsolute'],
+        // οὐ μή con una palabra entre medio.
+        ['MAT/23.json', 39, 'ἴδητε', 'emphaticNegation'],
+        ['HEB/13.json', 5, 'ἀνῶ', 'emphaticNegation'],
+        // Infinitivo con preposición y palabras entre medio.
+        ['MRK/4.json', 5, 'ἔχειν', 'cause'],
+        ['JHN/17.json', 5, 'εἶναι', 'time'],
+        // μηδείς también prohíbe; μή/μήποτε dependiente es «no sea que».
+        ['1CO/3.json', 18, 'ἐξαπατάτω', 'prohibition'],
+        ['1CO/10.json', 12, 'πέσῃ', 'lest'],
+    ])('%s %i %s → %s (regla)', (rel, v, t, f) => {
+        expect(verbo(rel, v, t).decided).toBe(f);
+    });
+
+    it.each([
+        // Lo que NO es: hearing verbs, no nominativo, aoristo, εἰμί con su predicado, artículo de otro.
+        ['MRK/14.json', 58, 'λέγοντος', 'genitiveAbsolute'],
+        ['ACT/2.json', 6, 'λαλούντων', 'genitiveAbsolute'],
+        ['HEB/11.json', 1, 'ἐλπιζομένων', 'periphrastic'],
+        ['LUK/15.json', 7, 'μετανοοῦντι', 'periphrastic'],
+        ['ACT/10.json', 24, 'συγκαλεσάμενος', 'periphrastic'],
+        ['1PE/3.json', 22, 'πορευθεὶς', 'periphrastic'],
+    ])('%s %i %s NO es %s', (rel, v, t, f) => {
+        expect(verbo(rel, v, t).decided).not.toBe(f);
+    });
+
+    it('el artículo de otra palabra no hace articular al participio (Hch 1:6 λέγοντες, Hch 15:3); el de dos cláusulas arriba sí (1 Jn 2:4 «ὁ λέγων», Stg 1:25)', () => {
+        expect(verbo('ACT/1.json', 6, 'λέγοντες').rule).toBeUndefined();
+        expect(verbo('ACT/15.json', 3, 'ἐκδιηγούμενοι').rule).toBeUndefined();
+        expect(verbo('1JN/2.json', 4, 'λέγων').rule).toBe('articular');
+        expect(verbo('JAS/1.json', 25, 'παρακύψας').rule).toBe('articular');
+    });
+
+    it('un relativo no fuerza el exhortativo (Hch 21:16 «παρ’ ᾧ ξενισθῶμεν»)', () => {
+        expect(verbo('ACT/21.json', 16, 'ξενισθῶμεν').rule).toBeUndefined();
     });
 });

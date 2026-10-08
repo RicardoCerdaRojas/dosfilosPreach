@@ -25,7 +25,7 @@ export const INFINITIVE_FUNCTIONS = [
     'subject', 'directObject', 'indirectDiscourse', 'epexegetical', 'imperatival', 'absolute',
 ] as const;
 export const SUBJUNCTIVE_FUNCTIONS = [
-    'hortatory', 'deliberative', 'prohibition', 'emphaticNegation', 'inaClause', 'conditional', 'indefinite',
+    'hortatory', 'deliberative', 'prohibition', 'emphaticNegation', 'inaClause', 'conditional', 'indefinite', 'lest',
 ] as const;
 export const IMPERATIVE_FUNCTIONS = ['command', 'prohibition', 'request', 'permissive', 'conditional'] as const;
 export const OPTATIVE_FUNCTIONS = ['volitive', 'potential', 'oblique'] as const;
@@ -53,7 +53,7 @@ export type TenseUseId = (typeof TENSE_USES)[keyof typeof TENSE_USES][number];
 export type VerbRule =
     | 'articular' | 'periphrastic' | 'genitiveAbsolute'
     | 'eisTo' | 'prosTo' | 'enToi' | 'metaTo' | 'proTou' | 'diaTo' | 'tou' | 'articularNominal'
-    | 'afterIna' | 'conditionalEan' | 'ouMe' | 'prohibition' | 'indefinite' | 'hortatory' | 'meGenoito' | 'presentProhibition';
+    | 'afterIna' | 'conditionalEan' | 'ouMe' | 'prohibition' | 'indefinite' | 'lest' | 'hortatory' | 'meGenoito' | 'presentProhibition';
 
 export interface VerbCandidate {
     /** Posición en el versículo (0 = primera palabra). */
@@ -86,32 +86,128 @@ interface Contexto {
     /** Palabras de las cláusulas que la contienen: madre, abuela… */
     readonly arriba: readonly (readonly StructureWord[])[];
     readonly fila?: StructureNode;
+    /** Palabras de las cláusulas HIJAS de la suya (un sujeto puede estar ahí). */
+    readonly hijas: readonly StructureWord[];
+    /** El rol MACULA de su cláusula («o»: es objeto de otro verbo). */
+    readonly rolClausula: string;
+    /** La cláusula madre tiene verbo propio: la suya es subordinada. */
+    readonly madreConVerbo: boolean;
     readonly tiempo: string;
     readonly persona: string;
     readonly plural: boolean;
 }
 
-/** El conector de una cláusula que contiene al verbo (la propia o una madre). */
-const bajo = (c: Contexto, lemas: readonly string[]) => [c.clausula, ...c.arriba].some(cl => cl.some(x => !x.role && lemas.includes(x.l)));
-
 /**
- * El artículo ANTES del participio, en su cláusula o en la madre (MACULA lo
- * envuelve: «ὁ | πιστεύων»; «ὁ ὀπίσω μου ἐρχόμενος»), sin un sustantivo entre
- * medio que se lo lleve: «στραφεὶς δὲ ὁ Ἰησοῦς» (Jn 1:38) y «ὁ Ἰωάννης λέγων»
- * (Jn 1:26) NO son articulares.
+ * El subordinante que manda sobre el verbo: el de la cláusula MÁS CERCANA que
+ * tenga uno, subiendo desde la propia. «ἵνα … ὅταν φανερωθῇ» (1 Jn 2:28):
+ * φανερωθῇ está bajo ὅταν, no bajo el ἵνα de más arriba (revisión de G2).
  */
-function articular(c: Contexto): boolean {
-    const pos = (x: StructureWord) => c.ws.indexOf(x);
-    const previos = [...c.clausula, ...(c.arriba[0] ?? [])].filter(x => pos(x) >= 0 && pos(x) < c.i).sort((a, b) => pos(b) - pos(a));
-    const art = previos.find(x => esArticulo(x) && concuerda(x, c.w));
-    return !!art && !c.ws.slice(pos(art) + 1, c.i).some(x => /^(N|RP|RD)/.test(x.pos ?? '') && concuerda(x, art));
+const SUBORDINANTES: ReadonlySet<string> = new Set(['ἵνα', 'ὅπως', 'ἐάν', 'ὅταν', 'ἄν', 'ἕως', 'μέχρι', 'ἄχρι', 'πρίν', 'μήποτε', 'εἰ', 'ὅτι', 'ὡς', 'καθώς']);
+function subordinanteCercano(c: Contexto): string | undefined {
+    for (const cl of [c.clausula, ...c.arriba]) {
+        // ἕως, μέχρι, ἄχρι pueden traer rol en MACULA («ἕως οὗ», Hch 23:14): cuentan igual.
+        const s = cl.find(x => SUBORDINANTES.has(x.l) && (!x.role || INDEFINIDOS.has(x.l))) ?? cl.find(x => x.l === 'ἄν');
+        if (s) return s.l;
+        // Una cláusula con verbo propio (distinto) corta la búsqueda: ya es otra oración.
+        if (cl !== c.clausula && cl.some(x => x.role === 'v' && x !== c.w)) return undefined;
+    }
+    return undefined;
+}
+const INDEFINIDOS: ReadonlySet<string> = new Set(['ὅταν', 'ἄν', 'ἕως', 'μέχρι', 'ἄχρι', 'πρίν']);
+
+/** μή y sus compuestos de prohibición (1 Co 3:18 μηδείς, 1 Jn 3:7 μηδείς, μηκέτι, μηδέ). */
+const NEGACION_DE_PROHIBICION: ReadonlySet<string> = new Set(['μή', 'μηδέ', 'μηδείς', 'μηκέτι', 'μήτε']);
+const conProhibicion = (c: Contexto) => c.clausula.some(x => NEGACION_DE_PROHIBICION.has(x.l));
+
+/** οὐ μή delante del verbo, aunque haya palabras entre medio («οὐ μή με ἴδητε», Mt 23:39). */
+function ouMe(c: Contexto): boolean {
+    for (let k = Math.max(0, c.i - 5); k < c.i - 1; k++) if (c.ws[k]!.l === 'οὐ' && c.ws[k + 1]!.l === 'μή') return true;
+    return false;
 }
 
 /**
- * Infinitivo con preposición y artículo: la preposición, si es una de las que
- * acotan (Wallace). Otra (ἕως τοῦ, ἕνεκεν τοῦ) cae en «τοῦ + infinitivo».
- * PENDIENTE: ἕως τοῦ es temporal y esa lista no trae «time» (Hch 8:40).
+ * El artículo de un participio: el más cercano HACIA ATRÁS (hasta 8 palabras)
+ * que concuerda, sin otra palabra que se lo lleve entre medio — un sustantivo,
+ * pronombre, adjetivo u otro participio que concuerde con el artículo.
+ * «στραφεὶς δὲ ὁ Ἰησοῦς» (Jn 1:38), «ὁ Ἰωάννης λέγων» (Jn 1:26), «Οἱ …
+ * συνελθόντες … λέγοντες» (Hch 1:6) NO son articulares; «ὁ ὀπίσω μου
+ * ἐρχόμενος» (Jn 1:15) y «ὁ λέγων» (1 Jn 2:4, el artículo dos cláusulas
+ * arriba en MACULA) sí. Lineal en el texto: MACULA anida el artículo a
+ * distinta profundidad.
  */
+function articular(c: Contexto): boolean {
+    for (let k = c.i - 1; k >= Math.max(0, c.i - 8); k--) {
+        const x = c.ws[k]!;
+        if (esArticulo(x)) {
+            if (!concuerda(x, c.w)) continue;
+            return !c.ws.slice(k + 1, c.i).some(y => /^(N|RP|RD|A|V)/.test(y.pos ?? '') && concuerda(y, x) && (y.pos !== 'V-' || modo(y) === 'P'));
+        }
+        // Un verbo finito entre medio: ya es otra cláusula.
+        if (y_finito(x)) return false;
+    }
+    return false;
+}
+const y_finito = (x: StructureWord) => ['I', 'S', 'O', 'D'].includes(modo(x));
+
+/**
+ * Perifrástico: εἰμί + participio, concordando en número. Con εἰμί finito, el
+ * participio va en nominativo (Hb 11:1 «ἐλπιζομένων» no lo es); con el
+ * infinitivo εἶναι, en acusativo («ἐν τῷ εἶναι αὐτὸν προσευχόμενον», Lc 9:18).
+ * El εἰμί puede estar en la cláusula madre si la del participio no tiene sujeto
+ * ni verbo propio (Mc 1:6 «ἦν … ἐνδεδυμένος … καὶ ἔσθων»).
+ */
+function perifrastico(c: Contexto): boolean {
+    // Wallace: el perifrástico usa participio PRESENTE o PERFECTO, casi nunca aoristo
+    // («ἦν προσδοκῶν…, συγκαλεσάμενος», Hch 10:24: el aoristo no es parte de la perífrasis).
+    if (!['P', 'X'].includes(c.tiempo)) return false;
+    const numero = c.w.parse?.[5];
+    // La primera cláusula de arriba con verbo (las de coordinación, «καί», no tienen).
+    const madre = c.clausula.some(x => x.role === 's' || (x !== c.w && y_finito(x))) ? [] : (c.arriba.find(cl => cl.some(x => x.pos === 'V-')) ?? []);
+    // Si εἰμί ya tiene su predicado («ψεύστης ἐστίν», 1 Jn 2:4; «ἐστιν ἐν δεξιᾷ», 1 P 3:22),
+    // el participio no lo completa: no es perifrástico.
+    const sinPredicado = (cl: readonly StructureWord[]) => !cl.some(y => y.role === 'p');
+    const conEimi = [c.clausula, madre].filter(cl => cl.length && sinPredicado(cl)).flat();
+    return conEimi.some(x => {
+        if (x === c.w || x.l !== 'εἰμί' || x.parse?.[5] !== numero && modo(x) !== 'N') return false;
+        if (y_finito(x)) return caso(c.w) === 'N' && x.parse?.[5] === numero;
+        return modo(x) === 'N' && caso(c.w) === 'A';
+    });
+}
+
+/**
+ * Genitivo absoluto: participio en genitivo con sujeto propio en genitivo, en
+ * su cláusula o en una hija (Hch 23:30 «μηνυθείσης … ἐπιβουλῆς»). NO si la
+ * cláusula es el OBJETO de otro verbo: «ἠκούσαμεν αὐτοῦ λέγοντος» (Mc 14:58)
+ * es el genitivo de un verbo de oír.
+ */
+function genitivoAbsoluto(c: Contexto): boolean {
+    if (caso(c.w) !== 'G' || c.rolClausula === 'o') return false;
+    return [...c.clausula, ...c.hijas].some(x => x !== c.w && x.role === 's' && caso(x) === 'G');
+}
+
+/**
+ * El artículo neutro del infinitivo, aunque haya palabras entre medio («διὰ τὸ
+ * μὴ ἔχειν», Mc 4:5; «πρὸ τοῦ τὸν κόσμον εἶναι», Jn 17:5): el más cercano
+ * hacia atrás (hasta 5 palabras), sin un verbo entre medio. Y la preposición
+ * justo antes de él.
+ */
+function articuloDelInfinitivo(c: Contexto): { articulo: StructureWord; preposicion?: string } | undefined {
+    for (let k = c.i - 1; k >= Math.max(0, c.i - 5); k--) {
+        const x = c.ws[k]!;
+        if (x.pos === 'V-') return undefined;
+        if (esArticulo(x) && x.parse?.[5] === 'S' && x.parse?.[6] === 'N') {
+            const antes = c.ws[k - 1];
+            return { articulo: x, ...(antes?.pos === 'P-' ? { preposicion: antes.l } : {}) };
+        }
+    }
+    return undefined;
+}
+const CON_PREPOSICION: ReadonlySet<string> = new Set(['εἰς', 'πρός', 'ἐν', 'μετά', 'πρό', 'διά']);
+const preposicionDelInfinitivo = (c: Contexto) => {
+    const p = articuloDelInfinitivo(c)?.preposicion;
+    return p && CON_PREPOSICION.has(p) ? p : undefined;
+};
+
 /**
  * Circunstancia concomitante (Wallace): participio AORISTO, ANTES de un verbo
  * principal en AORISTO, indicativo o imperativo. Stg 2:9 «ἁμαρτίαν ἐργάζεσθε,
@@ -129,10 +225,6 @@ function concomitantePosible(c: Contexto): boolean {
 const hayNominalQueConcuerda = (c: Contexto) =>
     [...c.clausula, ...(c.arriba[0] ?? [])].some(x => x !== c.w && /^(N|RP|RD|A)/.test(x.pos ?? '') && concuerda(x, c.w));
 
-const CON_PREPOSICION: ReadonlySet<string> = new Set(['εἰς', 'πρός', 'ἐν', 'μετά', 'πρό', 'διά']);
-const preposicionDelInfinitivo = (c: Contexto) =>
-    c.antes2?.pos === 'P-' && esArticulo(c.antes) && CON_PREPOSICION.has(c.antes2.l) ? c.antes2.l : undefined;
-
 interface ReglaVerbo {
     /** El nombre: une la regla con su fuente (`VERB_RULE_SOURCES`) y su texto. */
     readonly rule: VerbRule;
@@ -144,15 +236,15 @@ interface ReglaVerbo {
 
 /**
  * LAS REGLAS DE LOS VERBOS, EN ORDEN: gana la primera que se cumple. El orden
- * importa (οὐ μή antes que μή; el ἵνa de una cláusula madre antes que la
+ * importa (οὐ μή antes que μή; el subordinante más cercano antes que la
  * prohibición). Para agregar una: aquí, con su fuente en `ruleSources.ts`, su
  * texto en `greekTutor.json` y un versículo de prueba.
  */
 export const VERB_RULES: readonly ReglaVerbo[] = [
     // Participio
     { rule: 'articular', form: 'participle', when: articular, allowed: ['attributive', 'substantival'] },
-    { rule: 'periphrastic', form: 'participle', when: c => c.clausula.some(x => x !== c.w && x.l === 'εἰμί' && ['I', 'S', 'O', 'D'].includes(modo(x))), allowed: ['periphrastic'] },
-    { rule: 'genitiveAbsolute', form: 'participle', when: c => caso(c.w) === 'G' && c.clausula.some(x => x !== c.w && x.role === 's' && caso(x) === 'G'), allowed: ['genitiveAbsolute'] },
+    { rule: 'periphrastic', form: 'participle', when: perifrastico, allowed: ['periphrastic'] },
+    { rule: 'genitiveAbsolute', form: 'participle', when: genitivoAbsoluto, allowed: ['genitiveAbsolute'] },
     // Infinitivo con preposición y artículo
     { rule: 'eisTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'εἰς', allowed: ['purpose', 'result'] },
     { rule: 'prosTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'πρός', allowed: ['purpose'] },
@@ -161,23 +253,18 @@ export const VERB_RULES: readonly ReglaVerbo[] = [
     { rule: 'proTou', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'πρό', allowed: ['time'] },
     { rule: 'diaTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'διά', allowed: ['cause'] },
     // Infinitivo articular sin una de esas preposiciones
-    { rule: 'tou', form: 'infinitive', when: c => !preposicionDelInfinitivo(c) && esArticulo(c.antes) && caso(c.antes) === 'G', allowed: ['purpose', 'result', 'epexegetical', 'complementary'] },
-    { rule: 'articularNominal', form: 'infinitive', when: c => !preposicionDelInfinitivo(c) && esArticulo(c.antes), allowed: ['subject', 'directObject', 'epexegetical'] },
-    // Subjuntivo
-    { rule: 'ouMe', form: 'subjunctive', when: c => c.antes?.l === 'μή' && c.antes2?.l === 'οὐ', allowed: ['emphaticNegation'] },
-    { rule: 'afterIna', form: 'subjunctive', when: c => bajo(c, ['ἵνα', 'ὅπως']), allowed: ['inaClause'] },
-    { rule: 'conditionalEan', form: 'subjunctive', when: c => bajo(c, ['ἐάν']) || c.fila?.relation === 'condition', allowed: ['conditional'] },
-    { rule: 'prohibition', form: 'subjunctive', when: c => c.clausula.some(x => x.l === 'μή') && c.tiempo === 'A' && c.persona === '2', allowed: ['prohibition'] },
-    {
-        rule: 'indefinite', form: 'subjunctive', allowed: ['indefinite'],
-        when: c => {
-            const madre = c.arriba[0] ?? [];
-            return [...c.clausula, ...madre].some(x => x.l === 'ἄν') || ['ὅταν', 'ἕως'].includes(madre[0]?.l ?? '') || ['ὅταν', 'ἕως'].includes(c.clausula[0]?.l ?? '');
-        },
-    },
-    { rule: 'hortatory', form: 'subjunctive', when: c => c.persona === '1' && c.plural, allowed: ['hortatory', 'deliberative'] },
+    { rule: 'tou', form: 'infinitive', when: c => !preposicionDelInfinitivo(c) && caso(articuloDelInfinitivo(c)?.articulo) === 'G', allowed: ['purpose', 'result', 'epexegetical', 'complementary', 'time'] },
+    { rule: 'articularNominal', form: 'infinitive', when: c => !preposicionDelInfinitivo(c) && !!articuloDelInfinitivo(c), allowed: ['subject', 'directObject', 'epexegetical'] },
+    // Subjuntivo: el subordinante MÁS CERCANO manda
+    { rule: 'ouMe', form: 'subjunctive', when: ouMe, allowed: ['emphaticNegation'] },
+    { rule: 'afterIna', form: 'subjunctive', when: c => ['ἵνα', 'ὅπως'].includes(subordinanteCercano(c) ?? ''), allowed: ['inaClause'] },
+    { rule: 'conditionalEan', form: 'subjunctive', when: c => subordinanteCercano(c) === 'ἐάν' || subordinanteCercano(c) === 'εἰ', allowed: ['conditional'] },
+    { rule: 'indefinite', form: 'subjunctive', when: c => INDEFINIDOS.has(subordinanteCercano(c) ?? ''), allowed: ['indefinite'] },
+    { rule: 'lest', form: 'subjunctive', when: c => subordinanteCercano(c) === 'μήποτε' || (c.clausula[0]?.l === 'μή' && !!c.madreConVerbo), allowed: ['lest'] },
+    { rule: 'prohibition', form: 'subjunctive', when: c => conProhibicion(c) && c.tiempo === 'A' && c.persona === '2', allowed: ['prohibition'] },
+    { rule: 'hortatory', form: 'subjunctive', when: c => c.persona === '1' && c.plural && !c.clausula.some(x => x.pos === 'RR'), allowed: ['hortatory', 'deliberative'] },
     // Imperativo y optativo
-    { rule: 'presentProhibition', form: 'imperative', when: c => c.clausula.some(x => x.l === 'μή'), allowed: ['prohibition'] },
+    { rule: 'presentProhibition', form: 'imperative', when: conProhibicion, allowed: ['prohibition'] },
     { rule: 'meGenoito', form: 'optative', when: c => c.w.l === 'γίνομαι' && c.antes?.l === 'μή', allowed: ['volitive'] },
 ];
 
@@ -185,7 +272,7 @@ export const VERB_RULES: readonly ReglaVerbo[] = [
 const SIN_REGLA: Readonly<Record<GreekVerbForm, readonly VerbFunctionId[]>> = {
     participle: PARTICIPLE_FUNCTIONS.filter(f => !['attributive', 'substantival', 'periphrastic', 'genitiveAbsolute'].includes(f)),
     infinitive: INFINITIVE_FUNCTIONS.filter(f => !['time', 'cause'].includes(f)),
-    subjunctive: ['hortatory', 'deliberative', 'prohibition', 'indefinite'],
+    subjunctive: ['hortatory', 'deliberative', 'prohibition', 'indefinite', 'lest'],
     imperative: IMPERATIVE_FUNCTIONS.filter(f => f !== 'prohibition'),
     optative: [...OPTATIVE_FUNCTIONS],
     indicative: [],
@@ -216,6 +303,9 @@ export function greekVerbCandidates(ch: ChapterStructure, verse: number): VerbCa
             clausula: propia === undefined ? [] : palabras(ch.clauses[propia]!.w).filter(x => ws.includes(x)),
             arriba,
             fila: filas.find(f => f.words.some(t => t.r === w.r)),
+            hijas: propia === undefined ? [] : ch.clauses.flatMap(cl => (cl.p === propia ? palabras(cl.w) : [])),
+            rolClausula: propia === undefined ? '' : ch.clauses[propia]!.role,
+            madreConVerbo: (arriba[0] ?? []).some(x => x.role === 'v' && y_finito(x)),
             tiempo: w.parse?.[1] ?? '', persona: w.parse?.[0] ?? '', plural: w.parse?.[5] === 'P',
         };
         const tenseUses = form === 'indicative' ? [...(TENSE_USES[c.tiempo as keyof typeof TENSE_USES] ?? [])] : [];
@@ -248,7 +338,7 @@ const FUNCION_ES: Record<VerbFunctionId, string> = {
     imperatival: 'imperativo (equivale a un mandato)', absolute: 'absoluto (saludo epistolar: χαίρειν)',
     hortatory: 'exhortativo («hagamos»)', deliberative: 'deliberativo (pregunta real o retórica: «¿qué haremos?»)', prohibition: 'prohibición',
     emphaticNegation: 'negación enfática (οὐ μή: «de ningún modo»)', inaClause: 'subjuntivo tras ἵνα/ὅπως', conditional: 'condicional (ἐάν)',
-    indefinite: 'indefinido (con ἄν: relativo o temporal indefinido)', command: 'mandato', request: 'ruego o petición (a un superior)',
+    indefinite: 'indefinido (con ἄν: relativo o temporal indefinido)', lest: 'temor o propósito negativo («no sea que», con μή o μήποτε)', command: 'mandato', request: 'ruego o petición (a un superior)',
     permissive: 'permisivo («que sea así»)', volitive: 'volitivo (deseo: «ojalá»)', potential: 'potencial (con ἄν)', oblique: 'oblicuo (discurso indirecto)',
 };
 
@@ -271,21 +361,22 @@ const REGLA_ES: Record<VerbRule, string> = {
     eisTo: 'εἰς τό + infinitivo', prosTo: 'πρὸς τό + infinitivo', enToi: 'ἐν τῷ + infinitivo (simultáneo)', metaTo: 'μετὰ τό + infinitivo (anterior)',
     proTou: 'πρὸ τοῦ + infinitivo (posterior)', diaTo: 'διὰ τό + infinitivo', tou: 'τοῦ + infinitivo', articularNominal: 'infinitivo con artículo',
     afterIna: 'dentro de una cláusula con ἵνα/ὅπως', conditionalEan: 'prótasis con ἐάν', ouMe: 'οὐ μή + subjuntivo', prohibition: 'μή + subjuntivo aoristo',
-    indefinite: 'con ἄν (relativo o temporal indefinido)', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
+    indefinite: 'con ἄν (relativo o temporal indefinido)', lest: 'μή o μήποτε en una cláusula dependiente', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
 };
 
 /** El tramo del prompt con la tarea de los verbos. Vacío si no hay verbos. */
 export function buildVerbFunctionTask(candidates: readonly VerbCandidate[], words: readonly string[]): string {
     if (!candidates.length) return '';
     const lineas = candidates.map(c => {
-        const partes = [`${c.ordinal}. ${words[c.ordinal] ?? ''} — ${FORMA_ES[c.form]}`];
+        // Numerados COMO la lista de palabras del prompt (desde 1).
+        const partes = [`${c.ordinal + 1}. ${words[c.ordinal] ?? ''} — ${FORMA_ES[c.form]}`];
         if (c.decided) partes.push(`FUNCIÓN YA DECIDIDA por regla (${REGLA_ES[c.rule!]}): "${c.decided}" = ${FUNCION_ES[c.decided]}; sólo explícala en "verbNote"`);
         else if (c.allowed.length) partes.push(`"verbFunction", elige de: ${c.allowed.map(f => `"${f}" (${FUNCION_ES[f]})`).join('; ')}${c.rule ? ` [acotado porque ${REGLA_ES[c.rule]}]` : ''}`);
         if (c.tenseUses.length) partes.push(`"tenseUse", elige de: ${c.tenseUses.map(u => `"${u}" (${USO_ES[u]})`).join('; ')}`);
         return partes.join(' — ');
     });
     return `
-Y para cada VERBO de la lista de abajo (por su POSICIÓN, empezando en 0), su
+Y para cada VERBO de la lista de abajo (con el MISMO número que en la lista de palabras), su
 función según Wallace: "verbFunction" (participios, infinitivos, subjuntivos,
 imperativos, optativos) y "tenseUse" (indicativos), ELIGIENDO el id EXACTO de
 las opciones de esa palabra —no inventes etiquetas, devuelve "" si ninguna
@@ -336,8 +427,9 @@ export function applyVerbRules<T extends { verbFunction?: VerbFunctionId; verbRu
             ...(fn ? { verbFunction: fn } : {}),
             ...(c?.decided && c.rule ? { verbRule: c.rule } : {}),
             ...(uso ? { tenseUse: uso } : {}),
-            // La nota explica lo que el asistente vio: sin función ni uso, sobra.
-            ...(verbNote && (fn || uso) ? { verbNote } : {}),
+            // La nota explica lo que el asistente eligió: si hoy la regla decide OTRA
+            // función, la nota vieja contradiría la ficha (revisión de G2).
+            ...(verbNote && (fn || uso) && (!fn || fn === verbFunction) ? { verbNote } : {}),
         } as T;
     });
 }

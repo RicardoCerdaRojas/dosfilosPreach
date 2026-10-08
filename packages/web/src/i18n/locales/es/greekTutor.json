@@ -1028,7 +1028,8 @@
         "permissive": "Permisivo",
         "volitive": "Volitivo (deseo)",
         "potential": "Potencial",
-        "oblique": "Oblicuo"
+        "oblique": "Oblicuo",
+        "lest": "Temor o propósito negativo («no sea que»)"
       },
       "tenseUses": {
         "progressive": "Progresivo",
@@ -1071,7 +1072,8 @@
         "indefinite": "con ἄν",
         "hortatory": "1.ª persona plural",
         "meGenoito": "μὴ γένοιτο",
-        "presentProhibition": "μή + imperativo"
+        "presentProhibition": "μή + imperativo",
+        "lest": "μή o μήποτε en una cláusula dependiente"
       }
     },
     "agency": {

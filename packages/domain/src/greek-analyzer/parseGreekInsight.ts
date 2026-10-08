@@ -131,7 +131,9 @@ export function parseGreekInsight(
                   const significance = typeof k.significance === 'string' ? k.significance.trim() : '';
                   // La posición vale sólo si en ella está ESA palabra (sin puntuación).
                   const sin = (x: string) => x.replace(/[.,·;··’]+$/u, '');
-                  const index = typeof k.index === 'number' && Number.isInteger(k.index) && words[k.index] && sin(words[k.index]!.text) === sin(text) ? k.index : undefined;
+                  // «n» es el número de la lista del prompt (desde 1); se guarda la posición (desde 0).
+                  const pos = typeof k.n === 'number' && Number.isInteger(k.n) ? k.n - 1 : -1;
+                  const index = pos >= 0 && words[pos] && sin(words[pos]!.text) === sin(text) ? pos : undefined;
                   return text && significance ? { ...(index !== undefined ? { index } : {}), text, significance } : null;
               })
               .filter((k): k is { index?: number; text: string; significance: string } => k !== null)

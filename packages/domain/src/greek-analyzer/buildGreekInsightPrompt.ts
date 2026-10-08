@@ -109,7 +109,7 @@ Y para CADA palabra, en el MISMO ORDEN de la lista:
   repartida del núcleo del sintagma, no omitida. Y dilo en su
   "syntacticFunction": "comparte el 'de' de κυρίου".
 
-Y ADEMÁS, "keyInsights" (cada una con su "index": la POSICIÓN de la palabra en la lista de arriba, empezando en 0): elige las 2 o 3 palabras que cargan el PESO
+Y ADEMÁS, "keyInsights" (cada una con su "n": el NÚMERO de la palabra en la lista de arriba): elige las 2 o 3 palabras que cargan el PESO
 TEOLÓGICO del versículo y explica su SIGNIFICANCIA para la predicación — el
 paso del dato a la consecuencia: por qué importa que ese verbo sea aoristo y
 no presente, qué pierde el oyente si el matiz del lema se traduce plano.
@@ -219,7 +219,7 @@ FORMATO DE SALIDA (JSON, sin texto alrededor):
     { "text": "…", "semanticRange": "sentido A / sentido B", "syntacticFunction": "…", "translation": "…", "caseFunction": "possession", "nameNote": "", "articleUse": "", "antecedent": "", "discourseFunction": "", "connects": ""${verbos ? ', "verbFunction": "", "tenseUse": "", "verbNote": ""' : ''} }
   ],
   "keyInsights": [
-    { "index": 0, "text": "…", "significance": "Por qué esta palabra importa al predicar este versículo." }
+    { "n": 1, "text": "…", "significance": "Por qué esta palabra importa al predicar este versículo." }
   ],
   "wordOrderNote": "…",
   "relations": [ { "from": 6, "to": 0, "type": "apposition", "note": "δοῦλος nombra al mismo referente que Ἰάκωβος." } ],

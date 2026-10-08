@@ -75,3 +75,13 @@ describe('fuentes según la forma', () => {
         expect(verbFunctionSources('purpose').length).toBe(2);
     });
 });
+
+describe('el uso del tiempo se cita según el tiempo', () => {
+    it('«habitual» del presente ≠ del imperfecto; la nota del profesor sólo en el presente (Stg 2:7)', async () => {
+        const { tenseUseSources } = await import('../ruleSources');
+        expect(tenseUseSources('customary', 'P').map(s => s.section)).toEqual(['Customary (Habitual or General) Present', 'Indicación del profesor']);
+        expect(tenseUseSources('customary', 'I').map(s => s.section)).toEqual(['Customary (Habitual or General) Imperfect']);
+        expect(tenseUseSources('gnomic', 'A').map(s => s.section)).toEqual(['Gnomic Aorist']);
+        expect(tenseUseSources('customary', undefined)).toEqual([]);
+    });
+});

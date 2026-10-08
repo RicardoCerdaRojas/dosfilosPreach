@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { GreekWordCard } from './GreekWordCard';
 import { StructureSection } from '@/components/language-structure/StructureSection';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
+import { mismasPalabras } from '@/components/language-structure/mismasPalabras';
 import { applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
 
 /**
@@ -74,18 +75,20 @@ export function GreekAnalyzerPage() {
     const referencia = `${book} ${chapter}:${verse}`;
     /** La vista «Estructura» y lo que aporta a las fichas (lo antepuesto al verbo). */
     const estructura = useVerseStructure('gr', book, chapter, verse);
+    // Los datos fijados y los tokens de la página, ¿el mismo versículo palabra por palabra?
+    const alineados = useMemo(() => mismasPalabras(estructura.words, data?.tokens), [estructura.words, data?.tokens]);
     const { insight: insightGuardado, checking, generating, error: insightError, cacheUnavailable, generate } = useGreekInsight(
         referencia,
         data?.tokens,
         previous,
         estructura.nodes,
         // Los verbos de los datos (posición = token) sólo si coinciden con los tokens.
-        estructura.words.length === (data?.tokens.length ?? -1) ? estructura.verbs : undefined,
-        estructura.words.length === (data?.tokens.length ?? -1) ? estructura.nominal : undefined,
+        alineados ? estructura.verbs : undefined,
+        alineados ? estructura.nominal : undefined,
     );
     // Las reglas de los verbos se aplican AL MOSTRAR: una regla mejorada llega a
     // los análisis ya guardados sin re-analizar (G2, como el hebreo).
-    const verbosVigentes = estructura.words.length === (data?.tokens.length ?? -1) ? estructura.verbs : null;
+    const verbosVigentes = alineados ? estructura.verbs : null;
     const insight = useMemo(
         () =>
             insightGuardado && verbosVigentes
@@ -103,15 +106,15 @@ export function GreekAnalyzerPage() {
     );
     // MACULA y MorphGNT se alinearon palabra por palabra en G0: el ordinal es el
     // índice del token. Si un día no coinciden en cantidad, no se enlaza nada.
-    const cantidadTokens = data?.tokens.length ?? -1;
+
     const alinear = useCallback(
-        (palabras: readonly StructureWord[]) => (palabras.length === cantidadTokens ? palabras.map((_, i) => i) : []),
-        [cantidadTokens],
+        (palabras: readonly StructureWord[]) => (alineados && palabras.length === estructura.words.length ? palabras.map((_, i) => i) : []),
+        [alineados, estructura.words.length],
     );
     // Lo antepuesto, con foco o marco cuando el asistente ya leyó las cláusulas.
     const lecturas = insight?.clauseReadings;
     const antepuestas = useMemo(() => conLectura(estructura.nodes ?? [], estructura.ordinal, lecturas), [estructura, lecturas]);
-    const frontedDe = (i: number) => (estructura.words.length === cantidadTokens ? antepuestas.get(i) : undefined);
+    const frontedDe = (i: number) => (alineados ? antepuestas.get(i) : undefined);
     /**
      * Por qué no hay lectura de cláusulas: sin análisis (el botón «Generar» está
      * justo arriba: aquí sólo el porqué), un análisis anterior a v11, o uno que

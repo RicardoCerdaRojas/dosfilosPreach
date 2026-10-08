@@ -245,7 +245,7 @@ describe('función de los verbos en el análisis griego (G2)', () => {
     const verbos = [{ ordinal: 2, form: 'imperative' as const, allowed: ['command', 'request'] as const, tenseUses: [] }];
 
     it('con verbos, el prompt pide "verbFunction" de la lista; sin verbos, no', () => {
-        expect(buildGreekInsightPrompt({ reference: 'Santiago 1:2', tokens, verbs: verbos as never })).toMatch(/2\. ἡγήσασθε, — imperativo — "verbFunction", elige de: "command"/);
+        expect(buildGreekInsightPrompt({ reference: 'Santiago 1:2', tokens, verbs: verbos as never })).toMatch(/3\. ἡγήσασθε, — imperativo — "verbFunction", elige de: "command"/);
         expect(buildGreekInsightPrompt({ reference: 'Santiago 1:2', tokens })).not.toContain('verbFunction');
     });
 
@@ -266,7 +266,7 @@ describe('claves por posición (G3)', () => {
         const raw = JSON.stringify({
             literalTranslation: 'x', fluidTranslation: 'y',
             words: tokens.map(t => ({ text: t.text, semanticRange: 'a', syntacticFunction: 'b', translation: 'c' })),
-            keyInsights: [{ index: 1, text: 'χαρὰν', significance: 's' }, { index: 0, text: 'ἡγήσασθε,', significance: 't' }],
+            keyInsights: [{ n: 2, text: 'χαρὰν', significance: 's' }, { n: 1, text: 'ἡγήσασθε,', significance: 't' }],
         });
         const r = parseGreekInsight(raw, { reference: 'Santiago 1:2', expectedWordCount: 3 });
         expect(r?.keyInsights?.[0]).toMatchObject({ index: 1, text: 'χαρὰν' });

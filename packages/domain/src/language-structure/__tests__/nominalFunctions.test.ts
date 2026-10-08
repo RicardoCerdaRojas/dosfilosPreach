@@ -25,6 +25,15 @@ describe('G3 — agencia con verbo pasivo (Wallace)', () => {
         expect(greekAgency(cargar('1CO/1.json'), 2)).toEqual([]);
         expect(greekAgency(cargar('1CO/7.json'), 10)).toEqual([]);
     });
+    it('διά + genitivo es agente sólo con una persona (Jn 1:17 «διὰ Μωϋσέως»); con una cosa es medio, tiempo o lugar', () => {
+        expect(greekAgency(cargar('JHN/1.json'), 17)).toMatchObject([{ kind: 'intermediate' }]);
+        expect(greekAgency(cargar('1PE/1.json'), 5)).toEqual([]);   // διὰ πίστεως
+        expect(greekAgency(cargar('ACT/16.json'), 9)).toEqual([]);  // διὰ νυκτός
+    });
+    it('el pasivo tiene que estar cerca, en la misma cláusula (1 P 2:5), y no ser un deponente (Mt 12:1 ἐπορεύθη)', () => {
+        expect(greekAgency(cargar('1PE/2.json'), 5)).toEqual([]);
+        expect(greekAgency(cargar('MAT/12.json'), 1)).toEqual([]);
+    });
     it('sin verbo pasivo no hay agente (Stg 1:5 «αἰτείτω παρὰ τοῦ διδόντος»: «de parte de»)', () => {
         expect(greekAgency(cargar('JAS/1.json'), 5)).toEqual([]);
     });
@@ -70,8 +79,8 @@ describe('G3 — aplicado al mostrar', () => {
     });
     it('el prompt da los hechos para explicarlos, no para decidirlos', () => {
         const t = buildNominalFactsTask(agencia, anafora, ['ἐλεγχόμενοι', 'ὑπὸ', 'τοῦ', 'νόμου']);
-        expect(t).toMatch(/1\. ὑπὸ νόμου: AGENTE ÚLTIMO .* de la pasiva ἐλεγχόμενοι.*PERSONIFICACIÓN/);
-        expect(t).toMatch(/2\. τοῦ: artículo ANAFÓRICO — retoma νόμον \(v\. 8\)/);
+        expect(t).toMatch(/2\. ὑπὸ νόμου: AGENTE ÚLTIMO .* de la pasiva ἐλεγχόμενοι.*PERSONIFICACIÓN/);
+        expect(t).toMatch(/3\. τοῦ: artículo ANAFÓRICO — retoma νόμον \(v\. 8\)/);
         expect(buildNominalFactsTask([], [], [])).toBe('');
     });
 });

@@ -55,6 +55,14 @@ const AGENCIA: Readonly<Record<string, { caso: string; kind: AgencyKind; rule: N
     'διά': { caso: 'G', kind: 'intermediate', rule: 'agentDia' },
 };
 
+/** Pasivos de forma que no son pasivos («ἐγενήθη», «ἐπορεύθη», «ἀπεκρίθη»): no tienen agente. */
+const DEPONENTES: ReadonlySet<string> = new Set(['γίνομαι', 'πορεύομαι', 'ἀποκρίνομαι', 'φαίνομαι', 'φοβέομαι', 'δύναμαι', 'βούλομαι', 'διαλέγομαι', 'ἀρνέομαι', 'ἐνθυμέομαι']);
+
+/** Persona: pronombre, nombre propio o un sustantivo de persona. */
+const PERSONAS: ReadonlySet<string> = new Set(['ἄνθρωπος', 'ἀνήρ', 'γυνή', 'ἀπόστολος', 'προφήτης', 'ἄγγελος', 'πατήρ', 'υἱός', 'κύριος', 'θεός', 'Χριστός', 'μαθητής', 'ἀδελφός', 'δοῦλος', 'διάκονος', 'πρεσβύτερος', 'γραμματεύς', 'βασιλεύς']);
+const esPersona = (w: StructureWord) =>
+    /^(RP|RR|RD)/.test(w.pos ?? '') || PERSONAS.has(w.l) || (!!w.l[0] && w.l[0] === w.l[0].toUpperCase() && w.l[0] !== w.l[0].toLowerCase());
+
 /** El término de una preposición: la primera palabra con caso que sigue (saltando el artículo). */
 function terminoDe(ws: readonly StructureWord[], i: number): number | undefined {
     for (let k = i + 1; k < ws.length && k <= i + 4; k++) {
@@ -76,14 +84,19 @@ export function greekAgency(ch: ChapterStructure, verse: number): AgencyFact[] {
         if (!regla) return;
         const t = terminoDe(ws, i);
         if (t === undefined || caso(ws[t]) !== regla.caso) return;
-        // El verbo PASIVO de la misma cláusula (o de la madre, si la frase
-        // preposicional quedó en una cláusula propia).
+        // διά + genitivo es AGENTE sólo con una persona; con una cosa es medio,
+        // tiempo o lugar («διὰ πίστεως», 1 P 1:5; «διὰ νυκτός», Hch 16:9): eso
+        // lo lee el asistente (revisión de G3). ὑπό sí, aunque sea impersonal:
+        // «ὑπὸ τοῦ νόμου» es la ley personificada (profesor, Stg 2:9).
+        if (regla.kind === 'intermediate' && !esPersona(ws[t]!)) return;
+        // El verbo PASIVO más cercano de la MISMA cláusula; la madre sólo si la
+        // propia no tiene verbo (1 P 2:5 «διὰ Ἰησοῦ» se ataba a un pasivo a 11 palabras).
         const propia = clausulas.filter(c => c.words.includes(w.r)).sort((a, b) => b.depth - a.depth)[0];
-        const candidatas = propia ? [propia.index, ...(ch.clauses[propia.index]!.p !== null ? [ch.clauses[propia.index]!.p!] : [])] : [];
-        const verbo = candidatas
-            .flatMap(c => ch.clauses[c]!.w.map(r => porRef.get(r)).filter((x): x is StructureWord => !!x))
-            .find(x => voz(x) === 'P');
-        const v = verbo ? ws.indexOf(verbo) : -1;
+        const palabrasDe = (c: number) => ch.clauses[c]!.w.map(r => porRef.get(r)).filter((x): x is StructureWord => !!x);
+        const enPropia = propia ? palabrasDe(propia.index) : [];
+        const madre = propia && !enPropia.some(x => x.pos === 'V-') && ch.clauses[propia.index]!.p !== null ? palabrasDe(ch.clauses[propia.index]!.p!) : [];
+        const pasivos = [...enPropia, ...madre].filter(x => voz(x) === 'P' && !DEPONENTES.has(x.l)).map(x => ws.indexOf(x)).filter(k => k >= 0);
+        const v = pasivos.sort((a, b) => Math.abs(a - i) - Math.abs(b - i))[0] ?? -1;
         if (v < 0) return;
         out.push({ ordinal: i, kind: regla.kind, rule: regla.rule, verbOrdinal: v, termOrdinal: t });
     });
@@ -163,8 +176,8 @@ export function buildNominalFactsTask(agency: readonly AgencyFact[], anaphora: r
         impersonal: 'MEDIO IMPERSONAL (con qué se hace)',
     };
     const lineas = [
-        ...agency.map(a => `- ${a.ordinal}. ${words[a.ordinal]} ${words[a.termOrdinal]}: ${TIPO[a.kind]} de la pasiva ${words[a.verbOrdinal]}. En el "syntacticFunction" de la preposición nómbralo así; si el agente es impersonal (una cosa, la ley, el pecado), explica la PERSONIFICACIÓN.`),
-        ...anaphora.map(a => `- ${a.ordinal}. ${words[a.ordinal]}: artículo ANAFÓRICO — retoma ${a.antecedent.text} (v. ${a.antecedent.verse}). Devuelve "articleUse": "anaphoric" y "antecedent": "${a.antecedent.text}, v. ${a.antecedent.verse}", salvo que sea monádico o por antonomasia.`),
+        ...agency.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]} ${words[a.termOrdinal]}: ${TIPO[a.kind]} de la pasiva ${words[a.verbOrdinal]}. En el "syntacticFunction" de la preposición nómbralo así; si el agente es impersonal (una cosa, la ley, el pecado), explica la PERSONIFICACIÓN.`),
+        ...anaphora.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]}: artículo ANAFÓRICO — retoma ${a.antecedent.text} (v. ${a.antecedent.verse}). Devuelve "articleUse": "anaphoric" y "antecedent": "${a.antecedent.text}, v. ${a.antecedent.verse}", salvo que sea monádico o por antonomasia.`),
     ];
     return `
 HECHOS QUE DA EL TEXTO (no los cambies; explícalos donde corresponda):
