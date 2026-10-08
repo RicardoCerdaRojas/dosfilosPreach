@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FirestoreGreekInsightRepository, GreekInsightService } from '@dosfilos/infrastructure';
-import type { GreekVerseInsight, GreekWordToken } from '@dosfilos/domain';
+import type { GreekVerseInsight, GreekWordToken, StructureNode } from '@dosfilos/domain';
 
 /**
  * El análisis del modelo para el versículo activo: caché global primero,
@@ -20,6 +20,8 @@ export function useGreekInsight(
      * mirando un solo versículo.
      */
     previousVerse?: { reference: string; text: string },
+    /** Las filas de «Estructura»: el análisis trae la lectura de cada una (G1 + G5). */
+    structure?: readonly StructureNode[] | null,
 ) {
     const repoRef = useRef<FirestoreGreekInsightRepository>();
     if (!repoRef.current) repoRef.current = new FirestoreGreekInsightRepository();
@@ -32,6 +34,9 @@ export function useGreekInsight(
     const [checking, setChecking] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    /** El versículo en pantalla: un resultado que llega después de navegar no se pone en otro. */
+    const actualRef = useRef(reference);
+    actualRef.current = reference;
 
     useEffect(() => {
         let vivo = true;
@@ -60,15 +65,15 @@ export function useGreekInsight(
         setGenerating(true);
         setError(null);
         try {
-            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse });
-            setInsight(result);
+            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse, structure: structure ?? undefined });
             void repoRef.current!.save(result);
+            if (actualRef.current === reference) setInsight(result);
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         } finally {
             setGenerating(false);
         }
-    }, [reference, tokens, previousVerse]);
+    }, [reference, tokens, previousVerse, structure]);
 
     return { insight, checking, generating, error, cacheUnavailable, generate };
 }

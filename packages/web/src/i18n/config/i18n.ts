@@ -40,6 +40,8 @@ import greekTutorEn from '../locales/en/greekTutor.json';
 import greekTutorEs from '../locales/es/greekTutor.json';
 import hebrewTutorEn from '../locales/en/hebrewTutor.json';
 import hebrewTutorEs from '../locales/es/hebrewTutor.json';
+import languageStructureEn from '../locales/en/languageStructure.json';
+import languageStructureEs from '../locales/es/languageStructure.json';
 import sermonDetailEn from '../locales/en/sermonDetail.json';
 import sermonDetailEs from '../locales/es/sermonDetail.json';
 import facultyEn from '../locales/en/faculty.json';
@@ -93,6 +95,7 @@ export const initI18n = () => {
                     generator: generatorEn,
                     greekTutor: greekTutorEn,
                     hebrewTutor: hebrewTutorEn,
+                    languageStructure: languageStructureEn,
                     sermonDetail: sermonDetailEn,
                     faculty: facultyEn,
                     exegesis: exegesisEn,
@@ -119,6 +122,7 @@ export const initI18n = () => {
                     generator: generatorEs,
                     greekTutor: greekTutorEs,
                     hebrewTutor: hebrewTutorEs,
+                    languageStructure: languageStructureEs,
                     sermonDetail: sermonDetailEs,
                     faculty: facultyEs,
                     exegesis: exegesisEs,

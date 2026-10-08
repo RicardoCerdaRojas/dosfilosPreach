@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "books": {
+    "gr": {
+      "MAT": 28,
+      "MRK": 16,
+      "LUK": 24,
+      "JHN": 21,
+      "ACT": 28,
+      "ROM": 16,
+      "1CO": 16,
+      "2CO": 13,
+      "GAL": 6,
+      "EPH": 6,
+      "PHP": 4,
+      "COL": 4,
+      "1TH": 5,
+      "2TH": 3,
+      "1TI": 6,
+      "2TI": 4,
+      "TIT": 3,
+      "PHM": 1,
+      "HEB": 13,
+      "JAS": 5,
+      "1PE": 5,
+      "2PE": 3,
+      "1JN": 5,
+      "2JN": 1,
+      "3JN": 1,
+      "JUD": 1,
+      "REV": 22
+    },
+    "he": {
+      "Gen": 50,
+      "Exod": 40,
+      "Lev": 27,
+      "Num": 36,
+      "Deut": 34,
+      "Josh": 24,
+      "Judg": 21,
+      "Ruth": 4,
+      "1Sam": 31,
+      "2Sam": 24,
+      "1Kgs": 22,
+      "2Kgs": 25,
+      "1Chr": 29,
+      "2Chr": 36,
+      "Ezra": 10,
+      "Neh": 13,
+      "Esth": 10,
+      "Job": 42,
+      "Ps": 150,
+      "Prov": 31,
+      "Eccl": 12,
+      "Song": 8,
+      "Isa": 66,
+      "Jer": 52,
+      "Lam": 5,
+      "Ezek": 48,
+      "Dan": 12,
+      "Hos": 14,
+      "Joel": 4,
+      "Amos": 9,
+      "Obad": 1,
+      "Jonah": 4,
+      "Mic": 7,
+      "Nah": 3,
+      "Hab": 3,
+      "Zeph": 3,
+      "Hag": 2,
+      "Zech": 14,
+      "Mal": 3
+    }
+  },
+  "sources": {
+    "maculaGreek": {
+      "repo": "Clear-Bible/macula-greek",
+      "sha": "8423afe47b9e8f24b7772e808af45c7159a6fe7e",
+      "license": "CC BY 4.0"
+    },
+    "maculaHebrew": {
+      "repo": "Clear-Bible/macula-hebrew",
+      "sha": "47db250bd55d0d8577f2a94fba114ef16c35b23c",
+      "license": "CC BY 4.0"
+    },
+    "morphgnt": {
+      "repo": "morphgnt/sblgnt",
+      "sha": "aaed91e57c8e4a8dc9a2383e129ca5e75fe6393d",
+      "license": "Morfología MorphGNT: CC BY-SA 3.0 · texto SBLGNT: CC BY 4.0"
+    },
+    "morphhb": {
+      "repo": "openscriptures/morphhb",
+      "sha": "3d15126fb1ef74867fc1434be1942e837932691f",
+      "license": "Morfología OSHB: CC BY 4.0 · texto WLC: dominio público"
+    }
+  },
+  "dataLicense": {
+    "gr": "CC BY-SA 3.0 (deriva de MorphGNT) · MACULA Greek CC BY 4.0 · SBLGNT CC BY 4.0",
+    "he": "CC BY 4.0 (MACULA Hebrew, morfología OSHB) · WLC dominio público"
+  },
+  "attribution": [
+    "MACULA Greek y MACULA Hebrew Linguistic Datasets, Clear Bible, Inc. (CC BY 4.0).",
+    "MorphGNT, James K. Tauber y colaboradores (CC BY-SA 3.0), sobre el SBL Greek New Testament (SBLGNT, CC BY 4.0).",
+    "Open Scriptures Hebrew Bible (OSHB), morfología CC BY 4.0, sobre el Westminster Leningrad Codex (dominio público)."
+  ]
+}

@@ -32,6 +32,8 @@
     },
     "clauses": {
       "title": "Cláusulas",
+      "missing": "Este análisis se generó antes de que el asistente leyera las cláusulas. Re-analiza el versículo para verlas.",
+      "reanalyze": "Re-analizar",
       "adjusted": "Conexión corregida por la regla de la waw (waw + no verbo = disyuntiva; sin conjunción = asíndeton).",
       "types": {
         "VERBAL": "verbal",
@@ -191,6 +193,12 @@
     "errors": {
       "loadFailed": "Error al cargar el análisis. Por favor, intenta de nuevo.",
       "bookNotFound": "No se pudo cargar este libro. Verifica tu conexión."
+    },
+    "stickyVerse": {
+      "on": "Fijo On",
+      "off": "Fijo Off",
+      "titleOn": "Dejar de fijar el versículo arriba al bajar",
+      "titleOff": "Fijar el versículo arriba al bajar por la página"
     }
   },
   "lexiconAdmin": {

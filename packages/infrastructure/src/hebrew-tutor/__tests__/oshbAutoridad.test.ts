@@ -37,3 +37,24 @@ describe('el prompt pide las cláusulas con su conexión', () => {
         expect(selectRelevantChunks('x').map(c => c.id)).toContain('farfan-clausulas-conexion');
     });
 });
+
+/** G1 + G5 (opción «b» del fundador): con estructura, el asistente LEE las cláusulas de MACULA. */
+describe('el prompt con las filas de «Estructura»', () => {
+    const fila = {
+        index: 3, depth: 0, words: [{ r: '16!1', t: 'אַל', role: 'adv' as const }, { r: '16!2', t: 'תִּפְגְּעִי', role: 'v' as const }],
+        connector: null, relation: 'speech' as const, isApodosis: false, verbless: false, fronted: [],
+    };
+
+    it('pide "clauseReadings" de las filas numeradas y NO pide partir el versículo en "clauses"', () => {
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [fila]);
+        expect(texto).toContain('LA ESTRUCTURA YA ESTÁ DECIDIDA');
+        expect(texto).toContain('1. [nivel 0] אַל תִּפְגְּעִי — relación: discurso directo');
+        expect(texto).toContain('"clauseReadings": [');
+        expect(texto).not.toContain('"clauses": [');
+        expect(texto).not.toMatch(/clauses MUST cover the whole verse/);
+        // Las pautas de la waw siguen para la traducción.
+        expect(texto).toMatch(/waw disyuntiva de contraste →\s+«pero»/);
+        // Rut 1:14 (prueba del fundador): una nota decía «waw conjuntiva» donde la fila es disyuntiva.
+        expect(texto).toMatch(/"exegeticalNotes" y la función de cada palabra usan los MISMOS nombres/);
+    });
+});

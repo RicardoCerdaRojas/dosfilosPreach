@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { useTranslation } from 'react-i18next';
 import type { WordAnalysis } from '@dosfilos/domain';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from './MorphemeSpan';
@@ -19,6 +20,8 @@ interface WordCardProps {
   onHover?: (hovered: boolean) => void;
   /** Ref forwarded to the card root div for scroll-into-view */
   cardRef?: React.Ref<HTMLDivElement>;
+  /** Antepuesta al verbo (dato de MACULA, vista «Estructura»). */
+  fronted?: FrontedInfo;
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -41,7 +44,7 @@ const getCategoryStyle = (cat?: string | null) => {
 };
 
 export const WordCard: React.FC<WordCardProps> = ({
-  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef,
+  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef, fronted,
 }) => {
   const { t } = useTranslation('hebrewTutor');
   const [expanded, setExpanded] = useState(false);
@@ -170,6 +173,8 @@ export const WordCard: React.FC<WordCardProps> = ({
           </p>
         </div>
       </div>
+
+      {fronted && <div className="mb-3"><FrontedNote fronted={fronted} /></div>}
 
       {/* Morphology table - Compact Grid */}
       {hasMorphologyData && morphology && (

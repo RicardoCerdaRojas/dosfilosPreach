@@ -1,3 +1,5 @@
+import { buildClauseReadingTask } from '../language-structure/clauseReading';
+import type { StructureNode } from '../language-structure/verseStructure';
 import type { GreekWordToken } from './morphGntToken';
 import { CASE_FUNCTIONS } from './caseFunctionTaxonomy';
 import { SPANISH_REGISTER } from '../shared/spanishRegister';
@@ -50,7 +52,10 @@ export function buildGreekInsightPrompt(input: {
      * artículo" y "acá el autor retoma lo que acaba de decir".
      */
     previousVerse?: { reference: string; text: string };
+    /** Las filas de «Estructura» (MACULA): el modelo las LEE, no las arma. */
+    structure?: readonly StructureNode[];
 }): string {
+    const lectura = buildClauseReadingTask(input.structure ?? []);
     const lista = input.tokens
         .map((t, i) => `${i + 1}. ${t.text} — lema ${t.lemma} — ${describirTag(t)}`)
         .join('\n');
@@ -188,6 +193,8 @@ pastor algo que predicará con confianza y que su profesor desmontará. Si los
 miembros no se cierran invertidos de verdad, NO es quiasmo — llámalo
 paralelismo o devuelve null.
 
+${lectura}
+
 REGLAS:
 - Todo en español, salvo las palabras griegas.
 - ${SPANISH_REGISTER}
@@ -206,6 +213,6 @@ FORMATO DE SALIDA (JSON, sin texto alrededor):
   ],
   "wordOrderNote": "…",
   "relations": [ { "from": 6, "to": 0, "type": "apposition", "note": "δοῦλος nombra al mismo referente que Ἰάκωβος." } ],
-  "rhetoric": null
+  "rhetoric": null${lectura ? ',\n  "clauseReadings": [ { "n": 1, "value": "…", "explanation": "…" } ]' : ''}
 }`;
 }

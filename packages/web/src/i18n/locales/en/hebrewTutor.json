@@ -32,6 +32,8 @@
     },
     "clauses": {
       "title": "Clauses",
+      "missing": "This analysis was generated before the assistant read the clauses. Re-analyze the verse to see them.",
+      "reanalyze": "Re-analyze",
       "adjusted": "Connection corrected by the waw rule (waw + non-verb = disjunctive; no conjunction = asyndeton).",
       "types": {
         "VERBAL": "verbal",
@@ -170,6 +172,12 @@
     "errors": {
       "loadFailed": "Error loading the analysis. Please try again.",
       "bookNotFound": "Could not load this book. Check your connection."
+    },
+    "stickyVerse": {
+      "on": "Pinned On",
+      "off": "Pinned Off",
+      "titleOn": "Stop pinning the verse at the top while scrolling",
+      "titleOff": "Pin the verse at the top while scrolling"
     }
   },
   "lexiconAdmin": {

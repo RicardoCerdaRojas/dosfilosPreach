@@ -47,6 +47,7 @@ export const VerseAnalyzerPage: React.FC<VerseAnalyzerPageProps> = ({
     verseReference,
     bookIndex,
     analysis,
+    analyzedRef,
     hebrewVerse,
     isLoadingIndex,
     isAnalyzing,
@@ -63,8 +64,11 @@ export const VerseAnalyzerPage: React.FC<VerseAnalyzerPageProps> = ({
     prevVerse,
   } = useVerseAnalysis();
 
-  const [localAnalysis, setLocalAnalysis] = React.useState(analysis);
-  React.useEffect(() => { setLocalAnalysis(analysis); }, [analysis]);
+  // Las ediciones de traducción se aplican sobre EL análisis que las recibió.
+  // Derivado en el mismo render (sin efecto): con un efecto, al navegar se
+  // mostraba un render el análisis viejo con la referencia nueva.
+  const [ediciones, setEdiciones] = React.useState<{ base: typeof analysis; cambios: { literalTranslation?: string; fluidTranslation?: string } }>({ base: null, cambios: {} });
+  const localAnalysis = analysis && ediciones.base === analysis ? { ...analysis, ...ediciones.cambios } : analysis;
 
   const { recents, refresh } = useRecentVerses();
   const { user } = useFirebase();
@@ -203,12 +207,11 @@ export const VerseAnalyzerPage: React.FC<VerseAnalyzerPageProps> = ({
           <VerseAnalysisResult
             analysis={localAnalysis}
             verseReference={verseReference}
+            structureRef={analyzedRef ?? undefined}
             canForceRefresh={canReanalyze}
             onForceRefresh={() => analyze(true)}
             onTranslationUpdate={(updates) =>
-              setLocalAnalysis(prev =>
-                prev ? { ...prev, ...updates } : prev
-              )
+              setEdiciones(prev => ({ base: analysis, cambios: { ...(prev.base === analysis ? prev.cambios : {}), ...updates } }))
             }
           />
         )}

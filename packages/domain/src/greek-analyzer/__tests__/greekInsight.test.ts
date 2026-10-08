@@ -212,3 +212,31 @@ describe('composition — ὁλόκληροι y la falacia de la raíz (v9)', ()
         expect(out?.words[0].composition).toBeUndefined();
     });
 });
+
+describe('lectura de cláusulas en el análisis griego (G1 + G5)', () => {
+    const fila = {
+        index: 7, depth: 0, words: [{ r: '2!1', t: 'Πᾶσαν', role: 'o' as const }, { r: '2!3', t: 'ἡγήσασθε,', role: 'v' as const }],
+        connector: null, relation: 'main' as const, isApodosis: false, verbless: false,
+        fronted: [{ r: '2!1', rs: ['2!1'], role: 'o' as const }],
+    };
+
+    it('con filas, el prompt las manda a LEER y pide "clauseReadings"; sin filas, no', () => {
+        const con = buildGreekInsightPrompt({ reference: 'Santiago 1:2', tokens, structure: [fila] });
+        expect(con).toContain('CLÁUSULAS:');
+        expect(con).toContain('1. [nivel 0] Πᾶσαν ἡγήσασθε,');
+        expect(con).toContain('"clauseReadings"');
+        const sin = buildGreekInsightPrompt({ reference: 'Santiago 1:2', tokens });
+        expect(sin).not.toContain('clauseReadings');
+    });
+
+    it('el parser valida la lectura contra las filas y la guarda', () => {
+        const raw = JSON.stringify({
+            literalTranslation: 'Toda alegría considerad', fluidTranslation: 'Considérenlo motivo de alegría',
+            words: tokens.map(t => ({ text: t.text, semanticRange: 'x', syntacticFunction: 'y', translation: 'z' })),
+            clauseReadings: [{ n: 1, value: 'mandato', explanation: 'Imperativo aoristo.', fronting: 'focus' }, { n: 5, value: 'x', explanation: 'y' }],
+        });
+        const r = parseGreekInsight(raw, { reference: 'Santiago 1:2', expectedWordCount: 3, structure: [fila] });
+        expect(r?.clauseReadings).toEqual([{ index: 7, anchor: '2!1', value: 'mandato', explanation: 'Imperativo aoristo.', fronting: 'focus' }]);
+        expect(parseGreekInsight(raw, { reference: 'Santiago 1:2', expectedWordCount: 3 })?.clauseReadings).toBeUndefined();
+    });
+});

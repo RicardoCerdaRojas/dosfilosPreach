@@ -35,5 +35,14 @@
     "openInLibrary": "Open in my library →",
     "fromSharedLibrary": "From Preach's shared library.",
     "seeInBibliography": "See in bibliography →"
+  },
+  "versePicker": {
+    "searchBook": "Search book...",
+    "noResults": "No results",
+    "chapterShort": "Ch. {{n}}",
+    "verseShort": "v. {{n}}",
+    "prevVerse": "Previous verse",
+    "nextVerse": "Next verse",
+    "chooseBook": "Choose a book"
   }
 }

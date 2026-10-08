@@ -6,6 +6,7 @@ import {
     type GreekWordInsight,
     type GreekWordToken,
 } from '@dosfilos/domain';
+import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,8 @@ interface Props {
     objectCase?: string;
     bookCount?: number;
     bookName?: string;
+    /** Antepuesta al verbo (dato de MACULA, vista «Estructura»). */
+    fronted?: FrontedInfo;
 }
 
 /** Una sección del popover: rótulo pequeño + cuerpo. Da el ritmo vertical. */
@@ -56,7 +59,7 @@ function Bloque({ label, children }: { label: string; children: React.ReactNode 
  * Encabezado FIJO: al desplazarse por un análisis largo, la palabra que se
  * está mirando no debe salirse de la vista.
  */
-export function GreekWordHoverContent({ token, insight, keyInsight, relations, objectCase, bookCount, bookName }: Props) {
+export function GreekWordHoverContent({ token, insight, keyInsight, relations, objectCase, bookCount, bookName, fronted }: Props) {
     const { t } = useTranslation('greekTutor');
     const pistas = greekRecognitionClues(token);
     const ntCount = useNtLemmaFrequency(token.lemma);
@@ -114,6 +117,7 @@ export function GreekWordHoverContent({ token, insight, keyInsight, relations, o
                 )}
 
                 {/* 3 · POR QUÉ ASÍ. */}
+                <FrontedNote fronted={fronted} />
                 {regimen && <GreekPrepositionBlock lemma={token.lemma} usage={regimen} />}
 
                 {insight && <GreekParticleBlock insight={insight} />}

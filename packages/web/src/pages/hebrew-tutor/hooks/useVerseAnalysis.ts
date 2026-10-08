@@ -7,7 +7,7 @@
  *  - Manages loading/error states
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useHebrewTutor } from '../HebrewTutorProvider';
 import { useAuthorization } from '../../../hooks/useAuthorization';
 import type { VerseAnalysis, BookIndex, HebrewVerse } from '@dosfilos/domain';
@@ -24,6 +24,8 @@ interface UseVerseAnalysisState {
   verseReference: string;
   /** Most recent analysis result */
   analysis: VerseAnalysis | null;
+  /** El versículo al que corresponde `analysis` (no el que está seleccionado ahora). */
+  analyzedRef: { book: string; chapter: number; verse: number } | null;
   /** Raw Hebrew verse text available without AI (for preview state) */
   hebrewVerse: HebrewVerse | null;
   isLoadingIndex: boolean;
@@ -53,7 +55,15 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [selectedVerse, setSelectedVerse] = useState(1);
   const [bookIndex, setBookIndex] = useState<BookIndex | null>(null);
-  const [analysis, setAnalysis] = useState<VerseAnalysis | null>(null);
+  const [analysis, setAnalysisState] = useState<VerseAnalysis | null>(null);
+  const [analyzedRef, setAnalyzedRef] = useState<UseVerseAnalysisState['analyzedRef']>(null);
+  /** El análisis y su versículo cambian juntos: la sección «Estructura» lee el segundo. */
+  const setAnalysis = useCallback((a: VerseAnalysis | null, ref: UseVerseAnalysisState['analyzedRef'] = null) => {
+    setAnalysisState(a);
+    setAnalyzedRef(a ? ref : null);
+  }, []);
+  /** Cada navegación tiene su número: la respuesta de una anterior que llega tarde se descarta. */
+  const navSeq = useRef(0);
   const [hebrewVerse, setHebrewVerse] = useState<HebrewVerse | null>(null);
   const [isLoadingIndex, setIsLoadingIndex] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -107,6 +117,7 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
       
       setIsAnalyzing(true);
       setError(null);
+      const seq = navSeq.current;
       try {
         const result = await analyzeVerse.execute({
           morphhbKey: selectedBook,
@@ -123,7 +134,9 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
           }));
         }
 
-        setAnalysis(result);
+        // Si mientras tanto se navegó a otro versículo, este resultado ya no es el de la pantalla.
+        if (seq !== navSeq.current) return;
+        setAnalysis(result, { book: selectedBook, chapter: selectedChapter, verse: selectedVerse });
       } catch (err) {
         setError(
           `Error al analizar el versículo: ${err instanceof Error ? err.message : String(err)}`,
@@ -147,6 +160,7 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
    */
   const navigateToVerse = useCallback(
     async (book: string, chapter: number, verse: number) => {
+      const seq = ++navSeq.current;
       setAnalysis(null);
       setHebrewVerse(null);
       setSelectedBook(book);
@@ -156,16 +170,18 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
       setIsLoadingVerse(true);
       try {
         const cached = await checkCache({ morphhbKey: book, chapter, verse });
+        if (seq !== navSeq.current) return;
         if (cached) {
-          setAnalysis(cached);
+          setAnalysis(cached, { book, chapter, verse });
           return;
         }
         const verseData = await getVerseText.execute({ morphhbKey: book, chapter, verse });
+        if (seq !== navSeq.current) return;
         setHebrewVerse(verseData);
       } catch (err) {
         console.warn('[useVerseAnalysis] Could not load verse preview:', err);
       } finally {
-        setIsLoadingVerse(false);
+        if (seq === navSeq.current) setIsLoadingVerse(false);
       }
     },
     [checkCache, getVerseText],
@@ -217,6 +233,7 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
     verseReference: `${selectedBook}.${selectedChapter}.${selectedVerse}`,
     bookIndex,
     analysis,
+    analyzedRef,
     hebrewVerse,
     isLoadingIndex,
     isAnalyzing,

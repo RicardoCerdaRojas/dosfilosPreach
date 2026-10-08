@@ -1,4 +1,5 @@
 import { greekRecognitionClues, prepositionUsage, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
+import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { Star, BookmarkPlus, Check } from 'lucide-react';
 import { useNtLemmaFrequency } from './useLemmaFrequency';
 import { GreekCompositionBlock } from './GreekCompositionBlock';
@@ -26,6 +27,8 @@ interface Props {
     bookCount?: number;
     /** Nombre del libro, para la línea de frecuencia. */
     bookName?: string;
+    /** Antepuesta al verbo (dato de MACULA, vista «Estructura»). */
+    fronted?: FrontedInfo;
     /** Guardar el hallazgo para el sermón. Presente sólo con insight. */
     onSaveFinding?: () => void;
     saved?: boolean;
@@ -61,6 +64,7 @@ export function GreekWordCard({
     relations,
     bookCount,
     bookName,
+    fronted,
     onSaveFinding,
     saved,
     highlighted,
@@ -155,6 +159,8 @@ export function GreekWordCard({
             {insight && (
                 <div className="text-sm font-medium text-primary">{insight.translation}</div>
             )}
+
+            <FrontedNote fronted={fronted} />
 
             {puente && (
                 <div className="text-xs italic text-muted-foreground">{t(`analyzer.bridge.${puente}`)}</div>
