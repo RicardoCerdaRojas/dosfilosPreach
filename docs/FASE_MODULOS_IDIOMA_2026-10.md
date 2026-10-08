@@ -86,6 +86,15 @@ Se corrigieron los hallazgos 1 a 7, 9 y 10:
 
 **Límite aceptado (#8):** cuando el asistente devuelve tantas palabras como tokens tiene OSHB, se alinean por posición sin comparar consonantes. Si el asistente juntó dos palabras y partió otra, OSHB corregiría la palabra equivocada. Viene de #726, donde la posición sana las letras; se revisa si aparece un caso real.
 
+### Ajustes del hebreo para el próximo PR (prueba del fundador en producción, 2026-10-07)
+
+- **H6, aviso de textos anteriores a la corrección.**
+  - **Lo que se vio:** en Rut 1:13 תְּשַׂבֵּרְנָה, OSHB corrigió QAL → PIEL y 3 → 2. El tallo es correcto: la forma muestra preformativo con shewa, pataḥ en la 1.ª radical y dagesh en la 2.ª. Pero la traducción «esperarían», el valor y las pistas siguen siendo los del asistente.
+  - **Arreglo:** el aviso nombra todos los textos anteriores a la corrección (traducción de la palabra, explicación, pistas y traducción LITERAL del versículo), no sólo «la traducción guardada». Y marca el bloque de la literal cuando el versículo tiene correcciones.
+- **H7, la fórmula de juramento traducida en el código.**
+  - **Lo que se vio:** en Rut 1:17 la etiqueta quedó «Yusivo, volitivo», pero la ficha dice «él hará» y la literal «así hará… y así él añadirá». La fluida ya decía bien «Que así me haga… y así me añada».
+  - **Arreglo:** en la fórmula, el significado se sabe con certeza. יַעֲשֶׂה → «haga» e יֹסִיף → «añada», o «hagan / añadan» con sujeto plural (1 R 19:2). Se fija en el código la traducción de esas dos palabras.
+
 ### Pendientes de confirmar con el profesor (no se tocan todavía)
 - Rut 1:14 וְרוּת: «Raíz: רות» para un nombre propio.
 - La וּ descrita como «componente» del nombre cuando es mater lectionis (vocal *ū*).
@@ -124,7 +133,59 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
 - Tamaño: cartas de 0,2 a 5,7 MB (Santiago 1,3); evangelios y Hechos de 9 a 17 MB, que habrá que preprocesar.
 - Exige atribución, como MorphGNT.
 
+**Orden de construcción (decisión del fundador, 2026-10-07):** G0 → G1 + G5 → G2 → G3 → G4, con H5, H6 y H7 del hebreo donde toquen.
+
+**Por qué G0 primero (medido el 2026-10-07).**
+- 8 de los 11 comentarios del profesor se podían decidir con datos (OSHB, MorphGNT, MACULA), y en ellos el asistente falló. Así que el enfoque dato → regla → asistente está respaldado.
+- Lo que no escala hoy:
+  - los datos se descargan en el navegador desde GitHub en `@master`, sin versión fijada, y MACULA pesa hasta 16,7 MB por libro;
+  - la caché del hebreo mezcla las ediciones del usuario con lo generado;
+  - la respuesta del asistente crece sin esquema estricto;
+  - no hay un banco de verificación lingüística.
+- MorphGNT ↔ MACULA en Santiago: 1.739 = 1.739 palabras, y **por identificador coinciden las 1.739**. MACULA ordena las palabras según el árbol, así que **por posición, 204 caen mal**. Se alinea siempre por identificador.
+
 **Unidades.**
+- **G0. Cimientos.**
+  - **Preprocesamiento:** a partir de versiones fijadas (commit de MorphGNT, MACULA Greek/Hebrew y morphhb), generar archivos por capítulo, alineados por identificador y servidos por nosotros. Medido en Santiago: 10-15 KB por capítulo con palabra, rol y clase.
+  - **Un solo modelo de cláusula** en el dominio, para hebreo y griego (reemplaza al `VerseClause` de H2 y al del tutor viejo).
+  - **Banco de regresión** con los casos del profesor (Rut 1:13-17, Stg 2:6-9): las reglas se comprueban en CI y el asistente en una corrida periódica.
+  - **Caché del hebreo:** las ediciones del usuario guardadas aparte, y el análisis versionado como en el griego. Así «Re-analizar» deja de borrar lo corregido.
+  - **Esquema estricto** para la respuesta del asistente: se hace en G1/H5, cuando el esquema cambia (estructura desde MACULA; el asistente sólo interpreta).
+  - **Licencias:** MorphGNT es CC BY-SA; revisar antes de redistribuir derivados. MACULA y OSHB son CC BY 4.0.
+  - **Medido, MACULA Hebrew ↔ OSHB (Rut 1):**
+    - MACULA viene por capítulo (932 archivos, 423 MB) y parte la palabra en morfemas, pero cada pieza trae `ref` (versículo + número de palabra) y el código de OSHB.
+    - Agrupadas por `ref`, calzan **325 de 326** palabras en texto y en código. La que no calza es el *ketiv* de 1:8, que el lector ya descarta desde #726.
+    - Se alinea por `ref`, nunca por posición.
+  - **Hecho en G0 (2026-10-07):**
+    - **`scripts/language-structure/build.mjs`:**
+      - fija las cuatro fuentes por commit y guarda las descargas en una caché fuera del repo;
+      - alinea el griego por identificador y el hebreo por versículo + número de palabra, contando el qere (MACULA numera ketiv y qere por separado; sin el qere, Rut 1:8 se corría una posición);
+      - verifica y falla si algo no calza;
+      - escribe `packages/web/public/language-data/v1/{gr,he}/<libro>/<cap>.json` y un `manifest.json` con licencias y atribución.
+      - Medido: Santiago 1.739/1.739 y Rut 1.306/1.306 (11 ketiv marcados).
+    - **Dominio `language-structure/`:** `ChapterStructure` (un solo modelo para los dos idiomas), `verseWords` y `clausesOfVerse` (profundidad y orden del texto).
+    - **`HostedLanguageStructureProvider`:** lee del sitio, con caché y sin repetir pedidos en curso.
+    - **Banco de regresión** (`bancoDelProfesor.test.ts`): los casos del profesor fijados sobre los datos generados (Stg 2:7-9, Rut 1:8-17).
+    - **Caché del hebreo:** la traducción del usuario va en `userTranslations` y un análisis nuevo reemplaza sólo lo generado (`mergeFields`). Además, `promptVersion` (2).
+    - **Licencias verificadas:** el texto SBLGNT es CC BY 4.0; la morfología de MorphGNT, CC BY-SA 3.0 (sólo afecta a los archivos `gr/`).
+  - **Revisión adversarial de G0, corregido:**
+    - **Juan, 1 y 2 Corintios no se escribían.**
+      - MACULA trae la perícopa de la adúltera (Jn 7:53-8:11), que SBLGNT omite, y alinear el libro entero corría todo lo que sigue. Ahora se alinea versículo por versículo.
+      - Las marcas del aparato de MorphGNT («⸀1ἄλλῳ») daban falsas diferencias. Ahora se quitan, también del texto que se guarda.
+    - **Hebreo, palabras perdidas.** Se perdía toda palabra con letra grande o pequeña (`<seg>`), incluidas las dos palabras extremas del Shemá (Dt 6:4), y el resto del versículo quedaba corrido. Encima, se escribían libros con diferencias.
+      - Ahora la palabra se lee entera.
+      - Se comparan código Y consonantes, y toda palabra de MACULA tiene que quedar usada.
+      - Un libro con diferencias no se escribe.
+    - **El sitio devuelve HTML con 200 para lo que no existe.** El proveedor lo toma como «no existe», y el manifiesto lleva los capítulos por libro.
+    - **Cláusulas:**
+      - se conservan las coordinaciones sin palabras propias, para que sus hijas no pierdan el anidamiento;
+      - las palabras van en el orden del texto, no del árbol;
+      - una relativa dentro de una frase nominal no hereda su rol;
+      - los roles de error de MACULA se descartan.
+    - **«Re-analizar»** devolvía la traducción del asistente hasta recargar. Ahora relee lo guardado, con la del usuario encima.
+    - Al regenerar, cada libro se limpia antes de escribirse, y una corrida parcial no reescribe el manifiesto.
+    - El script se movió a `scripts/language-structure/` con sus pruebas, y corre en `test:unit`.
+  - **Queda anotado (no se arregla en G0):** como la caché del hebreo es global, una vez que alguien corrige la traducción de un versículo, la que genere un re-análisis ya no se ve para nadie. Hace falta una forma de ver o quitar la corrección.
 - **G1. Cláusulas desde MACULA.**
   - Del dato: límites, roles y conector.
   - Del asistente: tipo de dependiente (ἵνα, ὅτι, relativa, participial, genitivo absoluto, infinitival), conexión según Runge (καί, δέ, γάρ, οὖν, ἀλλά, asíndeton), valor y explicación.
@@ -134,9 +195,49 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
   - Infinitivo: propósito, resultado, tiempo, causa, medio, sujeto, objeto, discurso indirecto, epexegético.
   - Modos: subjuntivo hortativo, deliberativo, de prohibición, tras ἵνα/ὅπως; imperativo; optativo volitivo.
   - Uso del tiempo: aoristo constativo, ingresivo, culminativo, gnómico; presente progresivo, iterativo, gnómico.
+- **#G5, tipo de agencia (profesor, Stg 2:9 ἐλεγχόμενοι ὑπὸ τοῦ νόμου).** El tutor dice «agente de la pasiva», bien, pero sin el tipo.
+  - **Regla en el código (Wallace, excurso de la agencia):** con verbo PASIVO (voz `P` en MorphGNT; ἐλεγχόμενοι = `-PPPNPM-`):
+    - ὑπό / ἀπό / παρά + genitivo = **agente último** («agencia final»);
+    - διά + genitivo = **agente intermedio**;
+    - ἐν + dativo o dativo solo = **medio** (impersonal).
+  - **Del asistente:** la nota de **personificación** cuando el agente último es impersonal; aquí, la ley como quien acusa.
+  - **Interfaz:** el bloque «Preposición y su caso» agrega el tipo de agencia y la comparación con los otros dos.
+- **#G6, artículo anafórico (profesor, Stg 2:9 τοῦ νόμου → νόμον βασιλικόν de 2:8).**
+  - **Lo que se vio:** el tutor eligió «de lo conocido», aunque la lista ya tiene «anafórico», el prompt manda «REVISA PRIMERO SI ES ANAFÓRICO contra el versículo anterior» y el versículo anterior se le pasa. Medido en MorphGNT: 2:8 trae νόμον, lema νόμος.
+  - **Regla en el código:** para cada artículo, su sustantivo es el que concuerda en caso, número y género (MACULA lo agrupa). Si el lema aparece antes (versículo anterior o antes en el mismo) → anafórico, con `antecedent` «νόμον, v. 8».
+  - Se respeta lo que eligió el asistente cuando es monádico, por antonomasia o con nombre propio (ὁ θεός, ὁ Χριστός). Se corrige si eligió «de lo conocido», «genérico» o lo dejó vacío.
+  - **Interfaz:** «Anafórico — retoma νόμον (2:8)».
 - **G3. Funciones de caso:** completar la lista (dativo de agencia, genitivo absoluto, de contenido…) y marcar la «Clave» por índice.
+- **Hallazgos del profesor en griego (Santiago 2:6-7, 2026-10-07):**
+  - **#G1, pronombre enfático.** En 2:7 οὐκ αὐτοὶ βλασφημοῦσιν, el verbo ya marca «ellos» en su terminación (-ουσιν). El pronombre explícito es **enfático o contrastivo**: «¿no son ELLOS los que blasfeman?». Lo mismo en 2:6 ὑμεῖς δὲ ἠτιμάσατε. El tutor dijo «enfatizando», pero no explicó por qué.
+    - **Regla en el código (G4):** pronombre personal en nominativo + verbo finito de la misma persona y número en la cláusula = enfático, con la explicación de la terminación.
+  - **#G2, uso del tiempo.** βλασφημοῦσιν es un **presente habitual** (Wallace, *customary present*): «suelen blasfemar». El tutor sólo da «Tiempo: Presente».
+    - **G2 lo cubre:** uso del tiempo de cada verbo, en una lista cerrada que se ve en la ficha.
 - **G4. Partículas y palabras de intención:** ampliar la función discursiva (Runge), que hoy se aplica a algunas partículas, a toda partícula y conector, y a los adverbios y pronombres que marcan énfasis o foco.
 
-**Literatura.** Wallace es la columna de las taxonomías; Runge, los conectores; Levinsohn y Porter, apoyo. Se codifican categorías, no se copia texto de los libros.
+- **G5 / H5. Estructura y subordinación** (pedido del profesor, 2026-10-07): ver la subordinación de cláusulas, la identificación de prótasis y apódosis, y la función de cláusulas, palabras y conectores.
+  - **Vista «Estructura»** en *sentence flow* (Fee): las subordinadas sangradas bajo la cláusula que modifican, con el conector resaltado y la **relación lógica** a la vista.
+  - **Relaciones:** lista cerrada de *arcing* (Fuller y Schreiner): condición (prótasis/apódosis), fundamento, inferencia, propósito, resultado, concesión, contraste, tiempo, serie…
+  - **Condicionales:** la pareja prótasis ↔ apódosis. En griego, la clase se decide en el código desde MorphGNT (εἰ + indicativo = 1.ª; ἐάν + subjuntivo = 3.ª; …).
+  - **Quién decide qué:** la jerarquía (qué cláusula contiene a cuál) sale de **MACULA**, Greek y Hebrew (CC BY 4.0). El asistente sólo elige la relación de la lista y la explica.
+  - **ETCBC/BHSA no se usa:** es CC BY-NC (no comercial).
+  - **#G3, condicional de 1.ª clase (profesor, Santiago 2:9 εἰ δὲ προσωπολημπτεῖτε).**
+    - **Regla en el código desde MorphGNT:** εἰ/ἐάν + modo y tiempo del primer verbo finito de la prótasis + ἄν en la apódosis.
+      - 1.ª clase: εἰ + indicativo.
+      - 2.ª clase: εἰ + indicativo pasado, con ἄν en la apódosis.
+      - 3.ª clase: ἐάν + subjuntivo.
+      - 4.ª clase: εἰ + optativo.
+      - Medido: προσωπολημπτεῖτε = `2PAI-P--` (presente indicativo) y no hay ἄν → 1.ª clase.
+    - **Explicación que se muestra:** la 1.ª clase asume la verdad **para el argumento** (indicativo = modo de la realidad), no siempre en los hechos. Ej.: Mt 12:27 εἰ ἐγὼ ἐν Βεελζεβοὺλ…, primera clase y falsa. No se traduce siempre «ya que».
+    - **Del asistente:** si en el contexto la condición es también verdadera en los hechos, con su razón (Stg 2:1-6: el favoritismo era real).
+    - **Interfaz:** en la ficha de εἰ, «Condicional de 1.ª clase · εἰ + indicativo (…)»; en «Estructura», la pareja prótasis ↔ apódosis.
+  - **#G4, orden marcado (profesor, Stg 2:9 ἁμαρτίαν ἐργάζεσθε).**
+    - **Lo que se vio:** el objeto antes del verbo marca énfasis. Hoy sólo lo dice el bloque «El orden de las palabras», que es texto libre del asistente; la ficha de la palabra no lo menciona.
+    - **Medido en MACULA:** la cláusula trae los roles en orden: ἁμαρτίαν = o → ἐργάζεσθε = v. También marca «εἰ προσωπολημπτεῖτε» como `sub-CL` adverbial (la prótasis) y ἐλεγχόμενοι como cláusula adverbial.
+    - **Regla:** el código detecta lo que va ANTES del verbo, desde los roles de MACULA. El asistente elige su función según Runge: **foco/énfasis** («pecado es lo que cometen») o **marco/punto de partida** (fija el tema, como el ὑμεῖς contrastivo de 2:6 o una frase de tiempo inicial). No todo lo antepuesto es énfasis.
+    - **Interfaz:** en «Estructura», cada cláusula con sus constituyentes en orden (O · V) y el adelantado resaltado; en la ficha, «Antepuesto al verbo → foco/marco».
+  - Ya existe un modelo de cláusulas del tutor viejo (`greekTutor.analyzeSyntax`, `domain/src/greek-tutor/syntax-analysis.ts`), no conectado al analizador: se puede reaprovechar.
+
+**Literatura.** Wallace es la columna de las taxonomías (cláusula y condicionales incluidas); Runge, los conectores; Levinsohn y Porter, apoyo. Hebreo: Arnold y Choi, Joüon-Muraoka, Waltke-O'Connor. Diagramado: Fee (*phrasing*), Schreiner (*arcing*), Kaiser (*block diagram*). Se codifican categorías, no se copia texto de los libros.
 
 **Reforzar el hebreo después.** MACULA Hebrew (sobre WLC, los mismos tokens que OSHB) trae cláusulas: podría dar los límites de H2 en vez del asistente.

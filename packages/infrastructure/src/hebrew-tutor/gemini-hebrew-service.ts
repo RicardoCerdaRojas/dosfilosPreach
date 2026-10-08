@@ -13,7 +13,7 @@
  */
 
 import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry } from '@dosfilos/domain';
-import { reconcileGlobalWords } from '@dosfilos/domain';
+import { HEBREW_ANALYSIS_PROMPT_VERSION, reconcileGlobalWords } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { GEMINI_CONFIG } from '../gemini/config.js';
 import { selectRelevantChunks } from './knowledge/knowledge-selector.js';
@@ -121,6 +121,7 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
         ? (data.lexicalNotes as VerseAnalysis['lexicalNotes'])
         : undefined,
       analyzedAt: new Date().toISOString(),
+      promptVersion: HEBREW_ANALYSIS_PROMPT_VERSION,
     };
   }
 

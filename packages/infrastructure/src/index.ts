@@ -73,3 +73,4 @@ export { FirestoreWorkProfileRepository } from './firebase/FirestoreWorkProfileR
 export { FirestoreTermGlossaryRepository } from './firebase/FirestoreTermGlossaryRepository';
 export { FirestoreVoiceProfileRepository } from './firebase/FirestoreVoiceProfileRepository';
 export { SermonProseReader } from './exegesis/SermonProseReader';
+export * from './language-structure/HostedLanguageStructureProvider';

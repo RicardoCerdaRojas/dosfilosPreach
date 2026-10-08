@@ -25,6 +25,29 @@ function removeUndefined<T>(obj: T): any {
     return obj;
 }
 
+/**
+ * La traducción que corrigió un usuario, guardada APARTE del análisis generado.
+ *
+ * Antes se escribía encima de `analysis.literalTranslation` /
+ * `fluidTranslation`, y «Re-analizar» (que reescribe el análisis) la borraba;
+ * por eso tampoco se podía versionar la caché. Ahora vive en `userTranslations`
+ * y se aplica encima al leer. Las corregidas ANTES de este cambio siguen dentro
+ * del análisis y no se distinguen: ésas sí se pierden si se re-analiza.
+ */
+export interface UserTranslations {
+    literal?: string;
+    fluid?: string;
+}
+
+export function withUserTranslations(analysis: VerseAnalysis, user: UserTranslations | undefined): VerseAnalysis {
+    if (!user) return analysis;
+    return {
+        ...analysis,
+        ...(typeof user.literal === 'string' ? { literalTranslation: user.literal } : {}),
+        ...(typeof user.fluid === 'string' ? { fluidTranslation: user.fluid } : {}),
+    };
+}
+
 export class FirebaseHebrewSessionRepository implements IHebrewSessionRepository {
     private readonly cacheCollection = 'hebrew_analysis_cache';
 
@@ -39,7 +62,8 @@ export class FirebaseHebrewSessionRepository implements IHebrewSessionRepository
             }
 
             console.log(`[FirebaseHebrewSessionRepository] Cache hit for ${reference}`);
-            return snapshot.data().analysis as VerseAnalysis;
+            const data = snapshot.data();
+            return withUserTranslations(data.analysis as VerseAnalysis, data.userTranslations as UserTranslations | undefined);
         } catch (error) {
             console.error('[FirebaseHebrewSessionRepository] Error reading cache:', error);
             // Non-critical, return null to proceed with fresh analysis
@@ -52,12 +76,15 @@ export class FirebaseHebrewSessionRepository implements IHebrewSessionRepository
             const cacheKey = reference.replace(/\./g, '_') + '_v2';
             const docRef = doc(db, this.cacheCollection, cacheKey);
 
+            // `mergeFields`: se reemplaza lo generado ENTERO y no se toca
+            // `userTranslations`. (`merge: true` mezclaría en profundidad y
+            // dejaría campos del análisis anterior.)
             await setDoc(docRef, removeUndefined({
                 reference,
                 analysis,
                 cachedAt: new Date(),
                 usageCount: 1 // We can increment this later if we update the doc on read
-            }));
+            }), { mergeFields: ['reference', 'analysis', 'cachedAt', 'usageCount'] });
 
             console.log(`[FirebaseHebrewSessionRepository] Cached analysis for ${reference}`);
         } catch (error) {
@@ -77,7 +104,7 @@ export class FirebaseHebrewSessionRepository implements IHebrewSessionRepository
             snapshot.forEach(doc => {
                 const data = doc.data();
                 if (data.analysis) {
-                    analyses.push(data.analysis as VerseAnalysis);
+                    analyses.push(withUserTranslations(data.analysis as VerseAnalysis, data.userTranslations as UserTranslations | undefined));
                 }
             });
 
@@ -96,14 +123,13 @@ export class FirebaseHebrewSessionRepository implements IHebrewSessionRepository
             const cacheKey = reference.replace(/\./g, '_') + '_v2';
             const docRef = doc(db, this.cacheCollection, cacheKey);
 
-            // Build a partial update using Firestore dot-notation paths so that
-            // only the patched translation fields are overwritten.
+            // Aparte del análisis generado: así «Re-analizar» no la borra.
             const patch: Record<string, string> = {};
             if (updates.literalTranslation !== undefined) {
-                patch['analysis.literalTranslation'] = updates.literalTranslation;
+                patch['userTranslations.literal'] = updates.literalTranslation;
             }
             if (updates.fluidTranslation !== undefined) {
-                patch['analysis.fluidTranslation'] = updates.fluidTranslation;
+                patch['userTranslations.fluid'] = updates.fluidTranslation;
             }
 
             if (Object.keys(patch).length === 0) return;

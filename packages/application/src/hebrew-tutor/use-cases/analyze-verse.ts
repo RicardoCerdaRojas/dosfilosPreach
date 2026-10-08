@@ -83,8 +83,10 @@ export class AnalyzeVerseUseCase {
     }
 
     // La morfología verbal la decide OSHB, la fórmula de juramento es yusivo
-    // y la conexión de cada cláusula se comprueba: siempre al mostrar.
-    return this.withRules(raw, hebrewVerse);
+    // y la conexión de cada cláusula se comprueba: siempre al mostrar. Se
+    // relee lo guardado para que vuelva encima la traducción que corrigió el
+    // usuario (se guarda aparte); sin caché, el análisis tal cual.
+    return (await this.readCache(hebrewVerse)) ?? this.withRules(raw, hebrewVerse);
   }
 
   /**

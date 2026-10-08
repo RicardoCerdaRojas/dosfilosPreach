@@ -191,6 +191,14 @@ export interface LexicalNote {
   readonly type: LexicalNoteType;
 }
 
+/**
+ * Versión del prompt del análisis de hebreo. Subirla cuando el prompt pida
+ * algo nuevo que un análisis guardado no puede tener (como las cláusulas).
+ *   1 — sin versión (todo lo anterior a la fase de módulos de idioma).
+ *   2 — OSHB como autoridad, cláusulas, volitivos y fórmula de juramento.
+ */
+export const HEBREW_ANALYSIS_PROMPT_VERSION = 2;
+
 // ── Clauses ───────────────────────────────────────────────────────────────────
 
 /**
@@ -252,6 +260,12 @@ export interface VerseAnalysis {
   readonly verbTable: readonly VerbTableEntry[];
   /** Las cláusulas del versículo. Ausente en análisis guardados antes de existir. */
   readonly clauses?: readonly VerseClause[];
+  /**
+   * Con qué versión del prompt se generó. Ausente = antes de versionar
+   * (fase módulos de idioma, G0). Lo usa la interfaz para ofrecer ampliar un
+   * análisis viejo cuando el prompt pide algo que antes no existía.
+   */
+  readonly promptVersion?: number;
   /** Optional exegetical or syntactic observations */
   readonly exegeticalNotes?: readonly string[];
   /**

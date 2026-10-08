@@ -68,5 +68,16 @@ describe('el tutor de hebreo con la morfología de OSHB', () => {
         expect(r.words[1]!.verbMorphology?.verbForm).toBe('JUSSIVE');
         expect(r.words[3]!.verbMorphology?.verbForm).toBe('JUSSIVE');
     });
+
+    it('REGRESIÓN (revisión): «Re-analizar» devuelve lo releído, con la traducción del usuario encima', async () => {
+        const sessions = {
+            getCachedAnalysis: vi.fn().mockResolvedValue({ ...analisis, fluidTranslation: 'corregida por el usuario' }),
+            cacheAnalysis: vi.fn(),
+        };
+        const service = { analyzeVerse: vi.fn().mockResolvedValue({ ...analisis, fluidTranslation: 'del asistente' }) };
+        const r = await new AnalyzeVerseUseCase(provider as never, service as never, sessions as never).execute({ morphhbKey: 'Ruth', chapter: 1, verse: 13, forceRefresh: true } as never);
+        expect(service.analyzeVerse).toHaveBeenCalled();
+        expect(r.fluidTranslation).toBe('corregida por el usuario');
+    });
 });
 

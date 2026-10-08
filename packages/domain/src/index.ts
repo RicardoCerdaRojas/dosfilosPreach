@@ -251,3 +251,4 @@ export * from './strategies';
 
 // Hebrew Tutor
 export * from './hebrew-tutor/index.js';
+export * from './language-structure/index.js';
