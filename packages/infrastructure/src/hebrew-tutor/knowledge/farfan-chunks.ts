@@ -696,6 +696,58 @@ modal, o habitual; el wayyiqtol tiene valor de pasado narrativo.
 `,
   },
 
+  // ── Volitives ────────────────────────────────────────────────────────────────
+
+  {
+    id: 'farfan-volitivos',
+    topics: ['yusivo', 'cohortativo', 'imperativo', 'volitivo', 'prohibición', 'אַל', 'לֹא', 'deseo'],
+    content: `
+## Volitivos: yusivo, cohortativo, imperativo — y la prohibición
+
+- **Cohortativo** (1.ª persona, suele llevar ָה): «hagamos», «que yo vaya».
+- **Imperativo** (2.ª persona, positivo): «ve», «escucha».
+- **Yusivo** (3.ª y 2.ª persona): deseo o mandato indirecto, «que haga», «que no haga».
+
+**Prohibición — la partícula decide la etiqueta:**
+- **אַל + forma de prefijo = YUSIVO.** Prohibición o ruego negativo puntual: אַל־תִּפְגְּעִי־בִי «no insistas conmigo» (Rut 1:16). Nunca se usa אַל con imperativo.
+- **לֹא + forma de prefijo = IMPERFECTO.** Prohibición categórica o permanente: לֹא תִרְצָח «no matarás».
+
+**Fórmula de juramento** כֹּה יַעֲשֶׂה … וְכֹה יֹסִיף: sus dos verbos son YUSIVOS de valor volitivo: «así me haga YHWH, y aún me añada» (Rut 1:17; 1 S 3:17). NO es futuro («él hará»). Lo mismo con otras fórmulas de juramento (חַי־יְהוָה, אִם / אִם־לֹא de juramento): el valor es volitivo o de aseveración, no temporal.
+
+**Valor ≠ forma:** en "temporalValue" describe el VALOR en contexto (pasado narrativo, futuro, habitual, modal, VOLITIVO/desiderativo…). La traducción sigue al valor.
+
+**Forma y etiqueta:** en la mayoría de los verbos, el yusivo de 2.ª y 3.ª persona se escribe IGUAL que el imperfecto. Sólo se distingue en algunos débiles: III-he apocopado (יַעַשׂ por יַעֲשֶׂה), huecos (יָקֹם por יָקוּם) e Hifil (יַקְטֵל por יַקְטִיל). Cuando la forma no lo muestra, la etiqueta la decide la partícula o el contexto, no la forma.
+`,
+  },
+
+  // ── Clause connection ────────────────────────────────────────────────────────
+
+  {
+    id: 'farfan-clausulas-conexion',
+    topics: ['cláusula', 'disyuntiva', 'asíndeton', 'asindética', 'waw', 'conexión', 'contraste', 'circunstancial'],
+    content: `
+## Cómo se unen las cláusulas: la waw y su ausencia
+
+**Waw + verbo** continúa: וַ + prefijo es la cadena narrativa (wayyiqtol); וְ + perfecto
+(weqatal) continúa en futuro o modo; וְ + otro verbo coordina («y»).
+
+**Waw + NO verbo = cláusula disyuntiva.** Cuando tras la waw viene el sujeto, el
+objeto o un adverbio y DESPUÉS el verbo (o no hay verbo), la cláusula interrumpe la
+secuencia. Según el contexto expresa:
+- **contraste**: «Orpá besó a su suegra, **pero** Rut se quedó con ella» (Rut 1:14);
+- **circunstancia** simultánea o de fondo: «**mientras** …», «estando …»;
+- **paréntesis** o información de trasfondo para el lector;
+- **comienzo** de una nueva escena.
+
+**Asíndeton** (sin conjunción): una cláusula que entra sin waw ni partícula. Marca
+énfasis, clímax, explicación o enumeración solemne: «tu pueblo, mi pueblo; y tu Dios,
+mi Dios» (Rut 1:16). No se le agrega «y» al traducir.
+
+**Oración nominal**: sin verbo finito; la cópula se suple («será», «es»). Puede ser
+asindética o unida con waw.
+`,
+  },
+
   // ── Syntax ───────────────────────────────────────────────────────────────────
 
   {

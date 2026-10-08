@@ -20,6 +20,10 @@ const ALWAYS_INCLUDE_IDS = new Set<string>([
   'farfan-verb-intro',
   'farfan-wayyiqtol',
   'farfan-verb-type-classification-rules',
+  // אַל + prefijo = yusivo: la etiqueta la decide la partícula (Rut 1:16).
+  'farfan-volitivos',
+  // Toda cláusula se une de algún modo: disyuntiva, asíndeton (Rut 1:14, 1:16).
+  'farfan-clausulas-conexion',
 ]);
 
 /**

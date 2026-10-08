@@ -18,6 +18,7 @@
 import React from 'react';
 import { WordCard } from './WordCard';
 import { VerbTable } from './VerbTable';
+import { ClausesSection } from './ClausesSection';
 import { WordTutorSheet } from './WordTutorSheet';
 import { VerbDetectivePanel } from './VerbDetectivePanel';
 import { NominalDetectivePanel } from './NominalDetectivePanel';
@@ -517,6 +518,9 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
           </div>
         )}
       </div>
+
+      {/* ── Clauses ───────────────────────────────────────────────────────── */}
+      <ClausesSection clauses={analysis.clauses} words={analysis.words} />
 
       {/* ── Word analysis grid ─────────────────────────────────────────────── */}
       <div className="print:mt-6">

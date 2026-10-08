@@ -85,6 +85,17 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
       "pgn": "string — e.g. '3ms', '2fp'"
     }
   ],
+  "clauses": [
+    {
+      "firstWord": "number — 0-based index in \"words\" of the clause's first word",
+      "lastWord": "number — index of its last word (inclusive)",
+      "type": "VERBAL | NOMINAL — NOMINAL when it has no finite verb (verbless clause)",
+      "connection": "FIRST | WAYYIQTOL_CHAIN | WAW_CONJUNCTIVE | WAW_DISJUNCTIVE | ASYNDETIC | SUBORDINATE | QUOTATION — see REGLAS DE CLÁUSULAS",
+      "connector": "string | null — the connecting word in Hebrew (וְ, כִּי, אֲשֶׁר…), null when none",
+      "value": "string — logical relation in Spanish: 'contraste', 'circunstancia', 'causa', 'propósito', 'secuencia narrativa', 'clímax / declaración solemne', 'paralelismo'…",
+      "explanation": "string — one sentence for the student explaining the connection and its value"
+    }
+  ],
   "exegeticalNotes": ["string — optional observations"],
   "lexicalNotes": [
     {
@@ -104,6 +115,7 @@ CRITICAL RULES:
 - The concatenation of "text" for all "morphemes" MUST EXACTLY MATCH the original "hebrewText" of the word. DO NOT omit ANY vowel (nikkud) or cantillation mark (te'amim).
 - Do NOT include markdown, code fences, or any text outside the JSON object.
 - lexicalNotes MUST be an array. Return [] if no idiomatic observations exist.
+- clauses MUST cover the whole verse, in order, without overlaps: every word belongs to exactly one clause.
 - literalTranslation MUST remain literal even when a phrase is an idiom. Do not apply idiomatic meaning there.
 - MAQAF (Unicode U+05BE, the Hebrew hyphen that joins words): Words connected by a maqaf MUST be split into separate word objects in the "words" array, one object per lexical unit. Ensure the "hebrewText" of the FIRST word includes the maqaf at the end, but DO NOT duplicate the maqaf if the source text already has it.
 - SOF PASUQ (Unicode U+05C3 ׃) and PASEQ (Unicode U+05C0 ׀) are verse-level punctuation marks, NOT part of any individual word. Do NOT include them in any word's "hebrewText" or in any morpheme "text" field. They are handled separately by the rendering pipeline.
@@ -135,13 +147,20 @@ function formatOshbContext(verse: HebrewVerse): string {
     .join('\n');
 
   return `
-## REFERENCIA OSHB (solo para verificación, NO es autoridad morfológica)
+## MORFOLOGÍA DE OSHB — AUTORIDAD para el verbo
 
-Los siguientes códigos morfológicos son de la Open Scriptures Hebrew Bible.
-Puedes usarlos como SEGUNDO CRITERIO de comparación, pero tu análisis debe
-basarse SIEMPRE en las reglas gramaticales de Farfán y del profesor.
-Si hay discrepancia, indica en la explicación por qué la gramática de Farfán
-difiere del código OSHB.
+Los siguientes códigos son de la Open Scriptures Hebrew Bible, etiquetada a mano.
+Para cada VERBO, toma de su código el TALLO, la FORMA y la PERSONA-GÉNERO-NÚMERO:
+ya resolvió por contexto las formas ambiguas (תִּ…נָה es 2FP o 3FP; un prefijo con
+אַל es yusivo aunque se escriba igual que el imperfecto). No los contradigas.
+Tu traducción y tu función sintáctica deben ser coherentes con esa persona y esa
+forma (2.ª persona → se le habla a alguien). La explicación sigue a Farfán.
+
+Lectura del código de verbo: V + tallo (q qal, N nifal, p piel, P pual, h hifil,
+H hofal, t hitpael) + forma (p perfecto, q weqatal, i imperfecto, w wayyiqtol,
+h cohortativo, j yusivo, v imperativo, a inf. absoluto, c inf. constructo,
+r participio activo, s participio pasivo) + persona, género, número.
+Ej.: HVNi2fp = nifal imperfecto 2.ª fem. plural; HVqj2fs = qal yusivo 2.ª fem. sing.
 
 ${rows}
 `;
@@ -323,6 +342,31 @@ Ejemplos:
 DISTINGUIR de:
 - Frases preposicionales donde el sufijo NO es correferencial con el sujeto
   (e.g., "fabricaron para ellos [otros]") — en ese caso traducir normalmente.
+
+## REGLAS DE CLÁUSULAS (campo "clauses")
+
+Divide el versículo en cláusulas y, para cada una, di CÓMO se une a lo anterior.
+Mira la PRIMERA palabra de la cláusula:
+
+- וַ + prefijo (wayyiqtol) → WAYYIQTOL_CHAIN: sigue la cadena narrativa.
+- וְ + VERBO (incluido el weqatal) → WAW_CONJUNCTIVE: coordinación simple, «y».
+- וְ + NO VERBO (sujeto, objeto, adverbio, pronombre adelante) → WAW_DISJUNCTIVE:
+  la cláusula ROMPE la cadena. Su valor suele ser contraste («pero»),
+  circunstancia («mientras»), información de fondo o paréntesis («ahora bien»).
+  Ej. Rut 1:14 וַתִּשַּׁק עָרְפָּה לַחֲמוֹתָהּ | וְרוּת דָּבְקָה בָּהּ
+  → la segunda es disyuntiva de CONTRASTE: «pero Rut se quedó con ella».
+  NO la traduzcas con «y»; NO digas que el sujeto está «coordinado» con la anterior.
+- Sin conjunción → ASYNDETIC (asíndeton). Suele marcar clímax, declaración solemne,
+  explicación o enumeración. Ej. Rut 1:16 … | עַמֵּךְ עַמִּי | וֵאלֹהַיִךְ אֱלֹהָי
+  → «tu pueblo, mi pueblo» es una cláusula NOMINAL ASINDÉTICA (declaración solemne);
+  «וֵאלֹהַיִךְ אֱלֹהָי» es OTRA cláusula nominal unida con waw, no un segundo
+  miembro del sujeto.
+- כִּי, אֲשֶׁר, אִם, לְמַעַן, כַּאֲשֶׁר, פֶּן… → SUBORDINATE (también si llevan waw delante).
+- Comienzo de discurso directo → QUOTATION.
+- La primera cláusula del versículo sin conector que analizar → FIRST.
+
+La función sintáctica de cada palabra y las traducciones deben ser coherentes con
+estas conexiones (disyuntiva de contraste → «pero»; asíndeton → sin «y» agregada).
 
 ## REGLA DE TRADUCCIÓN PARA WAYYIQTOL (Pasado narrativo secuencial)
 

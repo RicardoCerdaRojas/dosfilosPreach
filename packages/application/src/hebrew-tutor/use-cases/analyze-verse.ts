@@ -25,7 +25,7 @@ import type {
   LexicalEntry,
   HebrewVerse,
 } from '@dosfilos/domain';
-import { reconcileGlobalWords } from '@dosfilos/domain';
+import { applyOshbMorphology, checkClauseConnections, markOathFormula, reconcileGlobalWords } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -72,14 +72,19 @@ export class AnalyzeVerseUseCase {
     );
 
     // 5. Perform the analysis via Gemini + knowledge base + lexical context
-    const analysis = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries);
+    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries);
 
-    // 6. Persist to cache for future requests
+    // 6. Persist to cache for future requests. Se guarda lo que dio el
+    // asistente, SIN las reglas: aplicadas antes de guardar, la próxima
+    // lectura ya no encontraba diferencia con OSHB y la corrección (y el
+    // aviso de la traducción) desaparecía desde la segunda vez.
     if (this.sessionRepository) {
-      await this.sessionRepository.cacheAnalysis(hebrewVerse.reference, analysis);
+      await this.sessionRepository.cacheAnalysis(hebrewVerse.reference, raw);
     }
 
-    return analysis;
+    // La morfología verbal la decide OSHB, la fórmula de juramento es yusivo
+    // y la conexión de cada cláusula se comprueba: siempre al mostrar.
+    return this.withRules(raw, hebrewVerse);
   }
 
   /**
@@ -107,11 +112,22 @@ export class AnalyzeVerseUseCase {
     if (!this.sessionRepository) return null;
     const cached = await this.sessionRepository.getCachedAnalysis(hebrewVerse.reference);
     if (!cached) return null;
-    return {
+    // Primero las letras, después la morfología de OSHB: así lo guardado
+    // antes de que OSHB decidiera también sale corregido.
+    return this.withRules({
       ...cached,
       hebrewText: hebrewVerse.hebrewText,
       words: reconcileGlobalWords(cached.words, hebrewVerse.words),
-    };
+    }, hebrewVerse);
+  }
+
+  /**
+   * Lo que se decide en el código y no se le deja al asistente, en orden:
+   * la morfología verbal de OSHB, la fórmula de juramento (yusivo, aunque
+   * OSHB de Rut 1:17 diga imperfecto) y la conexión de las cláusulas.
+   */
+  private withRules(analysis: VerseAnalysis, hebrewVerse: HebrewVerse): VerseAnalysis {
+    return checkClauseConnections(markOathFormula(applyOshbMorphology(analysis, hebrewVerse.words), hebrewVerse.words));
   }
 
   /**

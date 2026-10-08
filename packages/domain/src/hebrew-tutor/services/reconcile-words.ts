@@ -42,9 +42,15 @@ export function reconcileGlobalWords(
   morphhbTokens: readonly { text: string }[],
 ): VerseAnalysis['words'] {
   if (!morphhbTokens || morphhbTokens.length === 0) return geminiWords;
-  const tokens = alinear(geminiWords, morphhbTokens);
-  return geminiWords.map((w, i) => reconciliarPalabra(w, tokens[i] ?? null));
+  const tramos = alignWordsToTokens(geminiWords, morphhbTokens);
+  return geminiWords.map((w, i) => {
+    const t = tramos[i];
+    return reconciliarPalabra(w, t ? morphhbTokens.slice(t.start, t.start + t.count).map(x => x.text).join('') : null);
+  });
 }
+
+/** Qué tokens de morphhb le tocan a una palabra: desde `start`, `count` seguidos. */
+export interface TokenSpan { start: number; count: number }
 
 /**
  * Qué texto de morphhb le toca a cada palabra del modelo.
@@ -55,33 +61,32 @@ export function reconcileGlobalWords(
  * suyas. Sin coincidencia, `null`: la palabra conserva el texto del modelo y
  * la alineación no avanza, así que el error no arrastra a las demás.
  */
-function alinear(
+export function alignWordsToTokens(
   palabras: readonly Palabra[],
   tokens: readonly { text: string }[],
-): Array<string | null> {
-  if (palabras.length === tokens.length) return tokens.map(t => t.text);
+): Array<TokenSpan | null> {
+  if (palabras.length === tokens.length) return tokens.map((_, i) => ({ start: i, count: 1 }));
 
-  const out: Array<string | null> = [];
+  const out: Array<TokenSpan | null> = [];
   let j = 0;
   for (const palabra of palabras) {
     const propio = esqueleto(palabra.hebrewText || (palabra.morphemes ?? []).map(m => m.text).join(''));
-    let texto: string | null = null;
+    let tramo: TokenSpan | null = null;
 
-    for (let k = 1; k <= 3 && j + k <= tokens.length && texto === null; k++) {
-      const tramo = tokens.slice(j, j + k).map(t => t.text).join('');
-      if (esqueleto(tramo) === propio) {
-        texto = tramo;
+    for (let k = 1; k <= 3 && j + k <= tokens.length && tramo === null; k++) {
+      if (esqueleto(tokens.slice(j, j + k).map(t => t.text).join('')) === propio) {
+        tramo = { start: j, count: k };
         j += k;
       }
     }
     // El modelo se saltó un token: se busca un poco más adelante.
-    for (let salto = 1; salto <= 3 && texto === null && j + salto < tokens.length; salto++) {
+    for (let salto = 1; salto <= 3 && tramo === null && j + salto < tokens.length; salto++) {
       if (esqueleto(tokens[j + salto]!.text) === propio) {
-        texto = tokens[j + salto]!.text;
+        tramo = { start: j + salto, count: 1 };
         j += salto + 1;
       }
     }
-    out.push(texto);
+    out.push(tramo);
   }
   return out;
 }

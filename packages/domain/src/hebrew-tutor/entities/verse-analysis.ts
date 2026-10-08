@@ -116,19 +116,35 @@ export interface WordAnalysis {
   readonly oshbReference?: OshbReference;
 }
 
+/** Un rasgo del verbo que OSHB corrigió: lo que decía el análisis y lo que dice OSHB. */
+export interface OshbCorrection {
+  readonly field: 'binyan' | 'verbForm' | 'person' | 'gender' | 'number';
+  readonly analysis: string;
+  /** El valor que quedó (de OSHB, o de la regla que lo decidió). */
+  readonly oshb: string;
+  /**
+   * Por qué, cuando no es el código de OSHB de esta palabra: la fórmula de
+   * juramento es yusivo en 11 de sus 12 apariciones en OSHB (Rut 1:17 es la
+   * excepción).
+   */
+  readonly reason?: 'oath-formula';
+}
+
 /**
- * Data from the OSHB (morphhb) for cross-validation.
- * This is informational — it is NOT the source of the morphological analysis.
+ * La palabra según OSHB (morphhb), que DECIDE la morfología del verbo.
+ *
+ * Antes era sólo informativa y el asistente la contradecía en las formas
+ * ambiguas (2FP/3FP, yusivo/imperfecto). Ver `services/oshb-contrast.ts`.
  */
 export interface OshbReference {
-  /** morphhb morphology code, e.g. "HVqw3ms" */
+  /** Código de morphhb, p. ej. "HVqw3ms". */
   readonly morphCode: string;
-  /** Strong's number with language prefix, e.g. "H1961" */
+  /** Lema de morphhb (número de Strong con prefijo), p. ej. "c/1961". */
   readonly strongNumber: string;
-  /** Whether our analysis agrees with the OSHB parsing */
+  /** El análisis coincidía con OSHB. */
   readonly agreesWithAnalysis: boolean;
-  /** Human-readable OSHB parsing for display */
-  readonly oshbParsing: string;
+  /** Lo que se corrigió con OSHB. Vacío si coincidía. */
+  readonly corrections: readonly OshbCorrection[];
 }
 
 // ── Verb Table ────────────────────────────────────────────────────────────────
@@ -175,6 +191,44 @@ export interface LexicalNote {
   readonly type: LexicalNoteType;
 }
 
+// ── Clauses ───────────────────────────────────────────────────────────────────
+
+/**
+ * Cómo se une una cláusula a lo anterior.
+ *
+ *   FIRST             — primera del versículo y sin conector que analizar.
+ *   WAYYIQTOL_CHAIN   — וַ + prefijo: sigue la cadena narrativa.
+ *   WAW_CONJUNCTIVE   — וְ + verbo: coordinación simple (incluye weqatal).
+ *   WAW_DISJUNCTIVE   — וְ + NO verbo (sujeto, objeto, adverbio adelante):
+ *                       rompe la cadena; contraste, circunstancia, paréntesis.
+ *                       Rut 1:14 «וְרוּת דָּבְקָה בָּהּ» = «pero Rut se quedó».
+ *   ASYNDETIC         — empieza SIN conjunción: asíndeton.
+ *                       Rut 1:16 «עַמֵּךְ עַמִּי».
+ *   SUBORDINATE       — introducida por כִּי, אֲשֶׁר, אִם, לְמַעַן, כַּאֲשֶׁר…
+ *   QUOTATION         — comienzo de discurso directo.
+ */
+export type ClauseConnection =
+  | 'FIRST' | 'WAYYIQTOL_CHAIN' | 'WAW_CONJUNCTIVE' | 'WAW_DISJUNCTIVE'
+  | 'ASYNDETIC' | 'SUBORDINATE' | 'QUOTATION';
+
+/** Una cláusula del versículo: qué palabras abarca, de qué tipo es y cómo se une. */
+export interface VerseClause {
+  /** Índice (desde 0) de la primera palabra en `words`. */
+  readonly firstWord: number;
+  /** Índice de la última palabra, inclusive. */
+  readonly lastWord: number;
+  readonly type: 'VERBAL' | 'NOMINAL';
+  readonly connection: ClauseConnection;
+  /** El conector en hebreo (וְ, כִּי, אֲשֶׁר…), o `null`. */
+  readonly connector: string | null;
+  /** Valor lógico en palabras: «contraste», «circunstancia», «causa», «clímax»… */
+  readonly value: string;
+  /** Una frase que lo explica al estudiante. */
+  readonly explanation: string;
+  /** La conexión que dio el asistente se corrigió con la regla de la waw. */
+  readonly adjusted?: boolean;
+}
+
 // ── Verse Analysis ────────────────────────────────────────────────────────────
 
 /**
@@ -196,6 +250,8 @@ export interface VerseAnalysis {
   readonly words: readonly WordAnalysis[];
   /** Summary table of verbal forms in the verse */
   readonly verbTable: readonly VerbTableEntry[];
+  /** Las cláusulas del versículo. Ausente en análisis guardados antes de existir. */
+  readonly clauses?: readonly VerseClause[];
   /** Optional exegetical or syntactic observations */
   readonly exegeticalNotes?: readonly string[];
   /**

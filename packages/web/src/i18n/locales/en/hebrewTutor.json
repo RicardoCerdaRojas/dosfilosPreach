@@ -30,11 +30,79 @@
       "syntacticFunction": "Syntactic Function",
       "oshbValidation": "OSHB Validation"
     },
+    "clauses": {
+      "title": "Clauses",
+      "adjusted": "Connection corrected by the waw rule (waw + non-verb = disjunctive; no conjunction = asyndeton).",
+      "types": {
+        "VERBAL": "verbal",
+        "NOMINAL": "nominal"
+      },
+      "connections": {
+        "FIRST": "Initial",
+        "WAYYIQTOL_CHAIN": "Wayyiqtol chain",
+        "WAW_CONJUNCTIVE": "Conjunctive waw",
+        "WAW_DISJUNCTIVE": "Disjunctive waw",
+        "ASYNDETIC": "Asyndeton",
+        "SUBORDINATE": "Subordinate",
+        "QUOTATION": "Direct speech"
+      }
+    },
+    "categories": {
+      "VERB": "Verb",
+      "NOUN": "Noun",
+      "ADJECTIVE": "Adjective",
+      "PRONOUN": "Pronoun",
+      "PERSONAL_PRONOUN": "Personal Pronoun",
+      "DEMONSTRATIVE_PRONOUN": "Demonstrative Pronoun",
+      "RELATIVE_PRONOUN": "Relative Pronoun",
+      "PREPOSITION": "Preposition",
+      "CONJUNCTION": "Conjunction",
+      "DEFINITE_ARTICLE": "Definite Article",
+      "PARTICLE": "Particle",
+      "ADVERB": "Adverb",
+      "INTERJECTION": "Interjection",
+      "PROPER_NOUN": "Proper Noun",
+      "OBJECT_MARKER": "Direct Object Marker",
+      "INTERROGATIVE": "Interrogative",
+      "NEGATIVE_PARTICLE": "Negative Particle"
+    },
+    "morphology": {
+      "gender": {
+        "M": "Masculine",
+        "F": "Feminine",
+        "C": "Common",
+        "MASCULINE": "Masculine",
+        "FEMININE": "Feminine",
+        "COMMON": "Common"
+      },
+      "number": {
+        "S": "Singular",
+        "P": "Plural",
+        "D": "Dual",
+        "SINGULAR": "Singular",
+        "PLURAL": "Plural",
+        "DUAL": "Dual"
+      },
+      "state": {
+        "ABSOLUTE": "Absolute",
+        "CONSTRUCT": "Construct"
+      }
+    },
     "oshb": {
-      "confirmed": "Confirmed by OSHB",
-      "differs": "Differs from OSHB",
-      "code": "OSHB Code",
-      "farfanAnalysis": "Farfán Analysis"
+      "confirmed": "Matches OSHB",
+      "differs": "Corrected per OSHB",
+      "code": "OSHB code",
+      "corrected": "Corrected per OSHB",
+      "correction": "{{field}}: {{analysis}} → {{oshb}}",
+      "reasonOathFormula": "Oath formula: jussive, as OSHB tags it in 11 of its 12 occurrences.",
+      "translationNote": "The saved translation may not follow this correction. If it doesn't, re-analyze the verse.",
+      "fields": {
+        "binyan": "Stem",
+        "verbForm": "Form",
+        "person": "Person",
+        "gender": "Gender",
+        "number": "Number"
+      }
     },
     "colors": {
       "legend": "Color System",
@@ -54,6 +122,12 @@
       "Hithpael": "Hithpael (intensive reflexive)"
     },
     "verbForms": {
+      "PERFECT": "Perfect",
+      "IMPERFECT": "Imperfect",
+      "WAYYIQTOL": "Wayyiqtol",
+      "JUSSIVE": "Jussive",
+      "COHORTATIVE": "Cohortative",
+      "WEQATAL": "Weqatal",
       "Perfect": "Perfect",
       "Imperfect": "Imperfect",
       "Wayyiqtol": "Wayyiqtol",
