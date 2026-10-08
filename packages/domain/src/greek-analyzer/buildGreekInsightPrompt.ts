@@ -1,4 +1,5 @@
-import { buildNominalFactsTask, type AgencyFact, type AnaphoraFact } from '../language-structure/nominalFunctions';
+import { buildDiscourseTask, type DiscourseCandidate } from '../language-structure/discourseFunctions';
+import { buildNominalFactsTask, type NominalFacts } from '../language-structure/nominalFunctions';
 import { buildVerbFunctionTask, type VerbCandidate } from '../language-structure/verbFunctions';
 import { buildClauseReadingTask } from '../language-structure/clauseReading';
 import type { StructureNode } from '../language-structure/verseStructure';
@@ -59,11 +60,14 @@ export function buildGreekInsightPrompt(input: {
     /** Los verbos con sus funciones posibles (G2). */
     verbs?: readonly VerbCandidate[];
     /** Hechos de G3 que da el texto: agencia y artículo anafórico. */
-    nominal?: { readonly agency: readonly AgencyFact[]; readonly anaphora: readonly AnaphoraFact[] };
+    nominal?: NominalFacts;
+    /** G4: partículas y pronombres explícitos con su función posible o decidida. */
+    discourse?: readonly DiscourseCandidate[];
 }): string {
     const lectura = buildClauseReadingTask(input.structure ?? []);
     const verbos = buildVerbFunctionTask(input.verbs ?? [], input.tokens.map(t => t.text));
-    const hechos = buildNominalFactsTask(input.nominal?.agency ?? [], input.nominal?.anaphora ?? [], input.tokens.map(t => t.text));
+    const discurso = buildDiscourseTask(input.discourse ?? [], input.tokens.map(t => t.text));
+    const hechos = buildNominalFactsTask(input.nominal?.agency ?? [], input.nominal?.anaphora ?? [], input.tokens.map(t => t.text), input.nominal?.autos ?? []);
     const lista = input.tokens
         .map((t, i) => `${i + 1}. ${t.text} — lema ${t.lemma} — ${describirTag(t)}`)
         .join('\n');
@@ -204,6 +208,7 @@ paralelismo o devuelve null.
 ${lectura}
 ${verbos}
 ${hechos}
+${discurso}
 
 REGLAS:
 - Todo en español, salvo las palabras griegas.

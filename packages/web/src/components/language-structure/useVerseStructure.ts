@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+    greekDiscourseCandidates,
     greekAgency,
     greekAnaphora,
+    greekAutos,
     greekVerbCandidates,
-    type AgencyFact,
-    type AnaphoraFact,
+    type NominalFacts,
+    type DiscourseCandidate,
     readingFor,
     verseStructure,
     type ClauseReading,
@@ -32,7 +34,9 @@ export interface VerseStructureState {
     /** G2 (sólo griego): cada verbo con las funciones que el texto permite o decide. */
     verbs: readonly VerbCandidate[];
     /** G3 (sólo griego): agencia de las preposiciones y artículos anafóricos. */
-    nominal: { readonly agency: readonly AgencyFact[]; readonly anaphora: readonly AnaphoraFact[] };
+    nominal: NominalFacts;
+    /** G4 (sólo griego): partículas y pronombres explícitos. */
+    discourse: readonly DiscourseCandidate[];
 }
 
 /**
@@ -68,8 +72,13 @@ export function useVerseStructure(
         const frontedByOrdinal = conLectura(nodes ?? [], ordinal);
         const griego = actual?.chapter && lang === 'gr' ? actual.chapter : null;
         const verbs = griego ? greekVerbCandidates(griego, verse) : [];
-        const nominal = { agency: griego ? greekAgency(griego, verse) : [], anaphora: griego ? greekAnaphora(griego, verse) : [] };
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal };
+        const nominal = {
+            agency: griego ? greekAgency(griego, verse) : [],
+            anaphora: griego ? greekAnaphora(griego, verse) : [],
+            autos: griego ? greekAutos(griego, verse) : [],
+        };
+        const discourse = griego ? greekDiscourseCandidates(griego, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse };
     }, [actual, key, verse, lang]);
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FirestoreGreekInsightRepository, GreekInsightService } from '@dosfilos/infrastructure';
-import type { AgencyFact, AnaphoraFact, GreekVerseInsight, GreekWordToken, StructureNode, VerbCandidate } from '@dosfilos/domain';
+import type { DiscourseCandidate, GreekVerseInsight, GreekWordToken, NominalFacts, StructureNode, VerbCandidate } from '@dosfilos/domain';
 
 /**
  * El análisis del modelo para el versículo activo: caché global primero,
@@ -25,7 +25,9 @@ export function useGreekInsight(
     /** Los verbos con sus funciones posibles (G2): el análisis trae la de cada uno. */
     verbs?: readonly VerbCandidate[],
     /** Hechos de G3 (agencia, anáfora): el asistente los explica. */
-    nominal?: { readonly agency: readonly AgencyFact[]; readonly anaphora: readonly AnaphoraFact[] },
+    nominal?: NominalFacts,
+    /** G4: partículas y pronombres explícitos. */
+    discourse?: readonly DiscourseCandidate[],
 ) {
     const repoRef = useRef<FirestoreGreekInsightRepository>();
     if (!repoRef.current) repoRef.current = new FirestoreGreekInsightRepository();
@@ -69,7 +71,7 @@ export function useGreekInsight(
         setGenerating(true);
         setError(null);
         try {
-            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse, structure: structure ?? undefined, verbs, nominal });
+            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse, structure: structure ?? undefined, verbs, nominal, discourse });
             void repoRef.current!.save(result);
             if (actualRef.current === reference) setInsight(result);
         } catch (e) {
@@ -77,7 +79,7 @@ export function useGreekInsight(
         } finally {
             setGenerating(false);
         }
-    }, [reference, tokens, previousVerse, structure, verbs, nominal]);
+    }, [reference, tokens, previousVerse, structure, verbs, nominal, discourse]);
 
     return { insight, checking, generating, error, cacheUnavailable, generate };
 }

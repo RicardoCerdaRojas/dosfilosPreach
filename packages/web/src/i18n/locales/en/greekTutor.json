@@ -940,7 +940,11 @@
       "resumption": "Resumption",
       "purpose": "Purpose",
       "temporal": "Temporal frame",
-      "condition": "Condition"
+      "condition": "Condition",
+      "additive": "Additive",
+      "attentionGetter": "Attention-getter",
+      "restrictive": "Restrictive",
+      "overtPronoun": "The verb «{{verb}}» already marks the subject with its ending; the pronoun repeats it, so it marks emphasis or contrast."
     },
     "discourseHint": {
       "development": "A NEW step in the argument, not necessarily contrary. δέ is this — always translating it \"but\" invents an opposition that is not there.",
@@ -954,7 +958,10 @@
       "resumption": "Picks up a thread left earlier.",
       "purpose": "Introduces the purpose.",
       "temporal": "Places what follows in time.",
-      "condition": "States the condition the rest depends on."
+      "condition": "States the condition the rest depends on.",
+      "additive": "«Also», «even»: adds to the topic.",
+      "attentionGetter": "«Look!»: draws attention to what follows.",
+      "restrictive": "«Only»: limits to this and nothing else."
     },
     "preposition": {
       "title": "Preposition and its case",
@@ -1060,6 +1067,21 @@
       "ruleAgentHypo": "ὑπό/παρά + genitive with a passive verb",
       "ruleAgentDia": "διά + genitive with a passive verb",
       "ruleAnaphora": "its noun already appeared earlier"
+    },
+    "autos": {
+      "title": "Use of αὐτός",
+      "intensive": "Intensive — “-self”",
+      "identical": "Identifying — “the same”",
+      "intensiveHint": "Intensifies {{head}} (“{{tr}}”). Not the pronoun “he”.",
+      "intensiveHintNoHead": "Intensifies: “he himself”. Not the pronoun “he”.",
+      "identicalHint": "With the article before it, it identifies {{head}} (“{{tr}}”): “the same”.",
+      "identicalHintNoHead": "With the article before it, it identifies: “the same”, “the same thing”.",
+      "together": "“ἐπὶ τὸ αὐτό” is an idiom: “together, in the same place”.",
+      "ruleIntensive": "outside the article, next to what it intensifies",
+      "ruleIdentical": "with the article before it",
+      "intensiveHintTr": "Intensifies {{head}} (“{{tr}}”). Not the pronoun “he”.",
+      "identicalHintTr": "With the article before it, it identifies {{head}} (“{{tr}}”): “the same”.",
+      "staleTranslation": "The translation “{{own}}” comes from an analysis made before this rule. Re-analyze the verse to update it."
     }
   }
 }

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
     IMPERATIVE_FUNCTIONS, INFINITIVE_FUNCTIONS, OPTATIVE_FUNCTIONS, PARTICIPLE_FUNCTIONS, SUBJUNCTIVE_FUNCTIONS,
-    TENSE_USES, VERB_RULE_SOURCES, CASE_FUNCTIONS,
+    TENSE_USES, VERB_RULE_SOURCES, CASE_FUNCTIONS, DISCOURSE_FUNCTIONS,
 } from '@dosfilos/domain';
 
 /** Toda función, uso y regla de G2 tiene su texto en español y en inglés: una nueva sin texto falla aquí. */
@@ -19,6 +19,11 @@ describe.each(['es', 'en'])('textos de G2 (%s)', l => {
     it.each(FUNCIONES)('función %s', f => expect(t.functions[f]).toBeTruthy());
     it.each(USOS)('uso del tiempo %s', u => expect(t.tenseUses[u]).toBeTruthy());
     it.each(REGLAS)('regla %s', r => expect(t.rules[r]).toBeTruthy());
+    // G4: toda función discursiva con nombre y explicación.
+    it.each([...DISCOURSE_FUNCTIONS])('función discursiva %s', f => {
+        expect(analizador(l).discourse[f]).toBeTruthy();
+        expect(analizador(l).discourseHint[f]).toBeTruthy();
+    });
     // G3: toda función de caso con nombre y explicación.
     it.each(CASOS)('caso %s, función %s', (c, f) => {
         expect(analizador(l).caseFn[c][f]).toBeTruthy();

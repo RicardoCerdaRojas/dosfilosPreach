@@ -2,6 +2,7 @@ import type { ClauseRelation } from './verseStructure.js';
 import type { TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
 import type { TENSE_USES } from './verbFunctions.js';
 import type { NominalRule } from './nominalFunctions.js';
+import type { DiscourseRule } from './discourseFunctions.js';
 
 /**
  * DE DÓNDE SALE CADA REGLA Y CADA CATEGORÍA — para que el pastor la pueda
@@ -131,11 +132,23 @@ export function verbFunctionSources(id: VerbFunctionId, form?: 'participle' | 'i
     return todas;
 }
 
+/** Las reglas de G4: conectores y partículas (Runge) y el pronombre explícito (#G1). */
+export const DISCOURSE_RULE_SOURCES: Readonly<Record<DiscourseRule, readonly RuleSource[]>> = {
+    deDevelopment: [R('Development (δέ)')], garSupport: [R('Strengthening/Support (γάρ)')],
+    kaiContinuity: [R('Continuity (καί)')], kaiAdditive: [R('Thematic Addition (adverbial καί)')], teContinuity: [R('Continuity (τε)')],
+    ounInference: [R('Inference and Resumption (οὖν)')], inferential: [R('Inferential Connectives')],
+    allaAfterNegation: [R('Correction (ἀλλά)')], allaCorrection: [R('Correction (ἀλλά)')], menPoint: [R('Point/Counterpoint Sets (μέν … δέ)')],
+    idouAttention: [R('Attention-Getters (ἰδού)')], mononRestrictive: [R('Restrictive Focus')], intensiveParticle: [R('Emphasis')],
+    overtPronoun: [W('Personal Pronouns (Nominative for Emphasis)'), R('Emphasis'), P('2026-10-07 · Stg 2:7 αὐτοὶ βλασφημοῦσιν')],
+};
+
 /** Las reglas de G3: agencia (#G5) y artículo anafórico (#G6). */
 export const NOMINAL_RULE_SOURCES: Readonly<Record<NominalRule, readonly RuleSource[]>> = {
     agentHypo: [W('Ultimate Agent'), P('2026-10-07 · Stg 2:9 ὑπὸ τοῦ νόμου')],
     agentDia: [W('Intermediate Agent')],
     anaphoraLemma: [W('Anaphoric (Previous Reference)'), P('2026-10-07 · Stg 2:9 τοῦ νόμου → νόμον, v. 8')],
+    autosIntensive: [W('αὐτός as Intensive Pronoun')],
+    autosIdentical: [W('αὐτός as Identifying Adjective')],
 };
 
 /** Notas de «Estructura» que salen de una regla: condicionales, conectores, orden. */
