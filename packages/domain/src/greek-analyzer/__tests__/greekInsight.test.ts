@@ -260,3 +260,16 @@ describe('función de los verbos en el análisis griego (G2)', () => {
         expect(r?.words[0]).not.toHaveProperty('verbFunction');
     });
 });
+
+describe('claves por posición (G3)', () => {
+    it('la posición vale sólo si en ella está esa palabra', () => {
+        const raw = JSON.stringify({
+            literalTranslation: 'x', fluidTranslation: 'y',
+            words: tokens.map(t => ({ text: t.text, semanticRange: 'a', syntacticFunction: 'b', translation: 'c' })),
+            keyInsights: [{ index: 1, text: 'χαρὰν', significance: 's' }, { index: 0, text: 'ἡγήσασθε,', significance: 't' }],
+        });
+        const r = parseGreekInsight(raw, { reference: 'Santiago 1:2', expectedWordCount: 3 });
+        expect(r?.keyInsights?.[0]).toMatchObject({ index: 1, text: 'χαρὰν' });
+        expect(r?.keyInsights?.[1]).not.toHaveProperty('index');
+    });
+});

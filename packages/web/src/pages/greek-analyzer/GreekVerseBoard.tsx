@@ -14,7 +14,7 @@ interface Props {
     title: string;
     data: GreekVerseTokens;
     insight: GreekVerseInsight | null;
-    claveDe: (texto: string) => GreekKeyInsight | undefined;
+    claveDe: (texto: string, i?: number) => GreekKeyInsight | undefined;
     relacionesDe: (i: number) => { type: string; note: string; otherText: string }[];
     casoDelTermino: (i: number) => string | undefined;
     lemmaCounts: Record<string, number>;
@@ -142,7 +142,7 @@ export function GreekVerseBoard({
                         <GreekWordTooltip
                             token={tok}
                             insight={insight?.words[i]}
-                            keyInsight={claveDe(tok.text)}
+                            keyInsight={claveDe(tok.text, i)}
                             relations={relacionesDe(i)}
                             objectCase={casoDelTermino(i)}
                             bookCount={lemmaCounts[tok.lemma]}

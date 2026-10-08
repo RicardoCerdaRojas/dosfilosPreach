@@ -129,9 +129,12 @@ export function parseGreekInsight(
                   const k = crudo as Record<string, unknown>;
                   const text = typeof k.text === 'string' ? k.text.trim() : '';
                   const significance = typeof k.significance === 'string' ? k.significance.trim() : '';
-                  return text && significance ? { text, significance } : null;
+                  // La posición vale sólo si en ella está ESA palabra (sin puntuación).
+                  const sin = (x: string) => x.replace(/[.,·;··’]+$/u, '');
+                  const index = typeof k.index === 'number' && Number.isInteger(k.index) && words[k.index] && sin(words[k.index]!.text) === sin(text) ? k.index : undefined;
+                  return text && significance ? { ...(index !== undefined ? { index } : {}), text, significance } : null;
               })
-              .filter((k): k is { text: string; significance: string } => k !== null)
+              .filter((k): k is { index?: number; text: string; significance: string } => k !== null)
               .slice(0, 3)
         : [];
 

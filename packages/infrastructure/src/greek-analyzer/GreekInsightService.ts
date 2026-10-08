@@ -5,6 +5,8 @@ import {
     type GreekWordToken,
     type StructureNode,
     type VerbCandidate,
+    type AgencyFact,
+    type AnaphoraFact,
 } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
@@ -25,6 +27,8 @@ export class GreekInsightService {
         structure?: readonly StructureNode[];
         /** Verbos con sus funciones posibles (G2, Wallace). */
         verbs?: readonly VerbCandidate[];
+        /** Hechos de G3: agencia y artículo anafórico. */
+        nominal?: { readonly agency: readonly AgencyFact[]; readonly anaphora: readonly AnaphoraFact[] };
     }): Promise<GreekVerseInsight> {
         const raw = await runLlmPrompt({
             feature: 'greekTutor.analyzeVerse',

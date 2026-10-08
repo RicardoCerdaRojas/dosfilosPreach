@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+    greekAgency,
+    greekAnaphora,
     greekVerbCandidates,
+    type AgencyFact,
+    type AnaphoraFact,
     readingFor,
     verseStructure,
     type ClauseReading,
@@ -27,6 +31,8 @@ export interface VerseStructureState {
     frontedByOrdinal: ReadonlyMap<number, FrontedInfo>;
     /** G2 (sólo griego): cada verbo con las funciones que el texto permite o decide. */
     verbs: readonly VerbCandidate[];
+    /** G3 (sólo griego): agencia de las preposiciones y artículos anafóricos. */
+    nominal: { readonly agency: readonly AgencyFact[]; readonly anaphora: readonly AnaphoraFact[] };
 }
 
 /**
@@ -60,8 +66,10 @@ export function useVerseStructure(
         const words = actual?.chapter ? verseWords(actual.chapter, verse) : [];
         const ordinal = new Map(words.map((w, i) => [w.r, i]));
         const frontedByOrdinal = conLectura(nodes ?? [], ordinal);
-        const verbs = actual?.chapter && lang === 'gr' ? greekVerbCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs };
+        const griego = actual?.chapter && lang === 'gr' ? actual.chapter : null;
+        const verbs = griego ? greekVerbCandidates(griego, verse) : [];
+        const nominal = { agency: griego ? greekAgency(griego, verse) : [], anaphora: griego ? greekAnaphora(griego, verse) : [] };
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal };
     }, [actual, key, verse, lang]);
 }
 

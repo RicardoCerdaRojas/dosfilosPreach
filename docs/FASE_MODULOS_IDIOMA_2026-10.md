@@ -267,6 +267,14 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
   - Se respeta lo que eligió el asistente cuando es monádico, por antonomasia o con nombre propio (ὁ θεός, ὁ Χριστός). Se corrige si eligió «de lo conocido», «genérico» o lo dejó vacío.
   - **Interfaz:** «Anafórico — retoma νόμον (2:8)».
 - **G3. Funciones de caso:** completar la lista (dativo de agencia, genitivo absoluto, de contenido…) y marcar la «Clave» por índice.
+  - **Hecho en G3 (2026-10-08):**
+    - **Agencia (#G5), por regla** (`greekAgency`): con un verbo PASIVO en la cláusula (o la madre), ὑπό/παρά + genitivo = agente último y διά + genitivo = agente intermedio. Stg 2:9 «ὑπὸ τοῦ νόμου» = agente último. **Medido sobre el NT y recortado:** ἐν + dativo salía 505 veces y casi nunca es «medio» (1 Co 1:2 «ἐν Χριστῷ» es esfera), y ἀπό con pasiva suele ser separación (1 Co 7:10): los dos quedaron fuera de la regla. Quedan 153 con ὑπό, 8 con παρά y 102 con διά.
+    - **Artículo anafórico (#G6), por regla** (`greekAnaphora`): el artículo cuyo sustantivo ya apareció en el versículo anterior o antes en el mismo, con lo que retoma («νόμον, v. 8»). Fuera: nombres propios, monádicos (θεός, κύριος) y el artículo de un adjetivo («ὁ ποιμὴν ὁ καλός»). Se respeta lo que eligió el asistente si es monádico, por antonomasia, nombre propio, deíctico, sustantivador, posesivo o abstracto. 2.267 en el NT.
+    - Las dos se aplican AL MOSTRAR (`applyNominalRules`) y van en el prompt como HECHOS para que el asistente los explique (la personificación de un agente impersonal: la ley como quien acusa). Análisis griego v13.
+    - **Funciones de caso:** + genitivo de contenido, de tiempo, de separación, de comparación y sujeto de genitivo absoluto; dativo de agencia, asociación, causa y lugar; acusativo cognado y adverbial.
+    - **«Clave» por posición:** el asistente devuelve la posición de la palabra y el parser la valida contra el texto (antes se marcaba toda palabra igual).
+    - **Ficha:** «Agencia» en la preposición y «Regla» + fuente en el artículo anafórico (Wallace, «Ultimate Agent», «Anaphoric (Previous Reference)», y la revisión docente).
+
 - **Hallazgos del profesor en griego (Santiago 2:6-7, 2026-10-07):**
   - **#G1, pronombre enfático.** En 2:7 οὐκ αὐτοὶ βλασφημοῦσιν, el verbo ya marca «ellos» en su terminación (-ουσιν). El pronombre explícito es **enfático o contrastivo**: «¿no son ELLOS los que blasfeman?». Lo mismo en 2:6 ὑμεῖς δὲ ἠτιμάσατε. El tutor dijo «enfatizando», pero no explicó por qué.
     - **Regla en el código (G4):** pronombre personal en nominativo + verbo finito de la misma persona y número en la cláusula = enfático, con la explicación de la terminación.

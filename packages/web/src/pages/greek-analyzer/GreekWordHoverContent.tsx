@@ -8,6 +8,7 @@ import {
 } from '@dosfilos/domain';
 import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { GreekVerbFunctionBlock } from './GreekVerbFunctionBlock';
+import { GreekAgencyBlock, GreekAnaphoraRuleNote } from './GreekNominalRuleBlock';
 import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -121,6 +122,7 @@ export function GreekWordHoverContent({ token, insight, keyInsight, relations, o
                 <FrontedNote fronted={fronted} />
                 <GreekVerbFunctionBlock insight={insight} mood={token.tag.mood} />
                 {regimen && <GreekPrepositionBlock lemma={token.lemma} usage={regimen} />}
+                <GreekAgencyBlock insight={insight} />
 
                 {insight && <GreekParticleBlock insight={insight} />}
 
@@ -147,6 +149,7 @@ export function GreekWordHoverContent({ token, insight, keyInsight, relations, o
                                 <span className="font-medium" lang="grc">{insight.antecedent}</span>
                             </p>
                         )}
+                        <GreekAnaphoraRuleNote insight={insight} />
                     </div>
                 )}
 

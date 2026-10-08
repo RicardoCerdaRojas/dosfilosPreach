@@ -832,7 +832,12 @@
         "partitive": "Genitivo partitivo",
         "source": "Genitivo de origen",
         "apposition": "Genitivo de aposición",
-        "objectOfPreposition": "Genitivo régimen de preposición"
+        "objectOfPreposition": "Genitivo régimen de preposición",
+        "content": "Genitivo de contenido",
+        "time": "Genitivo de tiempo",
+        "separation": "Genitivo de separación",
+        "comparison": "Genitivo de comparación",
+        "absoluteSubject": "Genitivo, sujeto de genitivo absoluto"
       },
       "D": {
         "indirectObject": "Dativo objeto indirecto",
@@ -842,7 +847,11 @@
         "advantage": "Dativo de interés",
         "time": "Dativo de tiempo",
         "sphere": "Dativo de esfera",
-        "objectOfPreposition": "Dativo régimen de preposición"
+        "objectOfPreposition": "Dativo régimen de preposición",
+        "agency": "Dativo de agencia",
+        "association": "Dativo de asociación",
+        "cause": "Dativo de causa",
+        "location": "Dativo de lugar"
       },
       "A": {
         "directObject": "Acusativo objeto directo",
@@ -850,7 +859,9 @@
         "subjectOfInfinitive": "Acusativo sujeto del infinitivo",
         "measure": "Acusativo de extensión",
         "respect": "Acusativo de relación",
-        "objectOfPreposition": "Acusativo régimen de preposición"
+        "objectOfPreposition": "Acusativo régimen de preposición",
+        "cognate": "Acusativo cognado",
+        "adverbial": "Acusativo adverbial"
       },
       "V": {
         "address": "Vocativo de invocación"
@@ -883,7 +894,17 @@
       "subjectOfInfinitive": "Hace de sujeto dentro de una oración de infinitivo.",
       "measure": "Cuánto tiempo o cuánta distancia.",
       "respect": "\"En cuanto a\", limita el alcance.",
-      "address": "Llama o interpela directamente."
+      "address": "Llama o interpela directamente.",
+      "content": "Dice de qué está lleno o hecho algo.",
+      "separation": "Marca de qué se aparta o separa.",
+      "comparison": "Tras un comparativo: «más que».",
+      "absoluteSubject": "Sujeto del participio en un genitivo absoluto.",
+      "agency": "Quién hace la acción de un pasivo (raro, con perfecto).",
+      "association": "Con quién se asocia la acción.",
+      "cause": "Por qué ocurre la acción.",
+      "location": "Dónde ocurre la acción.",
+      "cognate": "Repite la raíz del verbo para reforzarlo.",
+      "adverbial": "Funciona como adverbio de modo."
     },
     "cacheUnavailable": "No pudimos consultar los análisis guardados (revisa tu sesión o tu conexión). Puedes generarlo de nuevo, pero quizá ya exista.",
     "rhetoric": {
@@ -1052,6 +1073,15 @@
         "meGenoito": "μὴ γένοιτο",
         "presentProhibition": "μή + imperativo"
       }
+    },
+    "agency": {
+      "title": "Agencia",
+      "ultimate": "Agente último",
+      "intermediate": "Agente intermedio",
+      "impersonal": "Medio impersonal",
+      "ruleAgentHypo": "ὑπό/παρά + genitivo con verbo pasivo",
+      "ruleAgentDia": "διά + genitivo con verbo pasivo",
+      "ruleAnaphora": "su sustantivo ya apareció antes"
     }
   }
 }

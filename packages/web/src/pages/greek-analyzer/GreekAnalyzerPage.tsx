@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { GreekWordCard } from './GreekWordCard';
 import { StructureSection } from '@/components/language-structure/StructureSection';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
-import { applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
+import { applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
 
 /**
  * El ANALIZADOR griego — espejo del analizador hebreo, versículo a versículo:
@@ -81,13 +81,25 @@ export function GreekAnalyzerPage() {
         estructura.nodes,
         // Los verbos de los datos (posición = token) sólo si coinciden con los tokens.
         estructura.words.length === (data?.tokens.length ?? -1) ? estructura.verbs : undefined,
+        estructura.words.length === (data?.tokens.length ?? -1) ? estructura.nominal : undefined,
     );
     // Las reglas de los verbos se aplican AL MOSTRAR: una regla mejorada llega a
     // los análisis ya guardados sin re-analizar (G2, como el hebreo).
     const verbosVigentes = estructura.words.length === (data?.tokens.length ?? -1) ? estructura.verbs : null;
     const insight = useMemo(
-        () => (insightGuardado && verbosVigentes ? { ...insightGuardado, words: applyVerbRules(insightGuardado.words, verbosVigentes) } : insightGuardado),
-        [insightGuardado, verbosVigentes],
+        () =>
+            insightGuardado && verbosVigentes
+                ? {
+                      ...insightGuardado,
+                      // G2 (verbos) y G3 (agencia, artículo anafórico), aplicadas al mostrar.
+                      words: applyNominalRules(
+                          applyVerbRules(insightGuardado.words, verbosVigentes),
+                          estructura.nominal.agency,
+                          estructura.nominal.anaphora,
+                      ),
+                  }
+                : insightGuardado,
+        [insightGuardado, verbosVigentes, estructura.nominal],
     );
     // MACULA y MorphGNT se alinearon palabra por palabra en G0: el ordinal es el
     // índice del token. Si un día no coinciden en cantidad, no se enlaza nada.
@@ -147,8 +159,9 @@ export function GreekAnalyzerPage() {
 
     /** Empata una clave exegética con su token, tolerando puntuación. */
     const limpiar = (x: string) => x.replace(/[.,·;··]+$/u, '');
-    const claveDe = (texto: string) =>
-        insight?.keyInsights?.find((k) => limpiar(k.text) === limpiar(texto));
+    /** La clave de ESA palabra: por posición (v13); en análisis viejos, por texto. */
+    const claveDe = (texto: string, i?: number) =>
+        insight?.keyInsights?.find((k) => (k.index !== undefined && i !== undefined ? k.index === i : limpiar(k.text) === limpiar(texto)));
 
     /**
      * EL PUENTE AL SERMÓN: guarda el hallazgo con el MISMO formato de las
@@ -159,7 +172,7 @@ export function GreekAnalyzerPage() {
     const guardarHallazgo = async (i: number) => {
         const tok = data?.tokens[i];
         if (!tok || !user?.uid) return;
-        const cuerpo = claveDe(tok.text)?.significance ?? insight?.words[i]?.semanticRange;
+        const cuerpo = claveDe(tok.text, i)?.significance ?? insight?.words[i]?.semanticRange;
         if (!cuerpo) return;
         const nombreLibro = libroActual ? nombre(libroActual) : book;
         try {
@@ -271,7 +284,7 @@ export function GreekAnalyzerPage() {
                                         <GreekWordTooltip
                                             token={tok}
                                             insight={insight?.words[i]}
-                                            keyInsight={claveDe(tok.text)}
+                                            keyInsight={claveDe(tok.text, i)}
                                             relations={relacionesDe(i)}
                                             objectCase={casoDelTermino(i)}
                                             bookCount={lemmaCounts[tok.lemma]}
@@ -296,14 +309,14 @@ export function GreekAnalyzerPage() {
                                         key={i}
                                         token={tok}
                                         insight={insight?.words[i]}
-                                        keyInsight={claveDe(tok.text)}
+                                        keyInsight={claveDe(tok.text, i)}
                                         relations={relacionesDe(i)}
                                         objectCase={casoDelTermino(i)}
                                         bookCount={lemmaCounts[tok.lemma]}
                                         bookName={libroActual ? nombre(libroActual) : book}
                                         fronted={frontedDe(i)}
                                         onSaveFinding={
-                                            insight && user?.uid && (claveDe(tok.text) || insight.words[i])
+                                            insight && user?.uid && (claveDe(tok.text, i) || insight.words[i])
                                                 ? () => void guardarHallazgo(i)
                                                 : undefined
                                         }

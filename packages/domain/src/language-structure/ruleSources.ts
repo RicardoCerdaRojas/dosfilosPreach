@@ -1,5 +1,6 @@
 import type { ClauseRelation } from './verseStructure.js';
 import type { TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
+import type { NominalRule } from './nominalFunctions.js';
 
 /**
  * DE DÓNDE SALE CADA REGLA Y CADA CATEGORÍA — para que el pastor la pueda
@@ -107,6 +108,13 @@ export function verbFunctionSources(id: VerbFunctionId, form?: 'participle' | 'i
     if (form === 'infinitive') return todas.filter(s => !/Participle/.test(s.section));
     return todas;
 }
+
+/** Las reglas de G3: agencia (#G5) y artículo anafórico (#G6). */
+export const NOMINAL_RULE_SOURCES: Readonly<Record<NominalRule, readonly RuleSource[]>> = {
+    agentHypo: [W('Ultimate Agent'), P('2026-10-07 · Stg 2:9 ὑπὸ τοῦ νόμου')],
+    agentDia: [W('Intermediate Agent')],
+    anaphoraLemma: [W('Anaphoric (Previous Reference)'), P('2026-10-07 · Stg 2:9 τοῦ νόμου → νόμον, v. 8')],
+};
 
 /** Notas de «Estructura» que salen de una regla: condicionales, conectores, orden. */
 export type StructureRuleKey = 'class1' | 'class2' | 'class3' | 'class4' | 'fronted' | Extract<ClauseRelation, 'development' | 'chain' | 'conjunctive' | 'disjunctive' | 'asyndetic'>;
