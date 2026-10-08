@@ -237,6 +237,16 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
   - Infinitivo: propósito, resultado, tiempo, causa, medio, sujeto, objeto, discurso indirecto, epexegético.
   - Modos: subjuntivo hortativo, deliberativo, de prohibición, tras ἵνα/ὅπως; imperativo; optativo volitivo.
   - Uso del tiempo: aoristo constativo, ingresivo, culminativo, gnómico; presente progresivo, iterativo, gnómico.
+  - **Hecho en G2 (2026-10-08):**
+    - **`greekVerbCandidates`** (dominio): por cada verbo del versículo, desde MorphGNT + MACULA, las funciones POSIBLES (lista cerrada de Wallace) y, donde el texto lo fija, la función DECIDIDA por regla:
+      - perifrástico (εἰμί + participio en la misma cláusula); genitivo absoluto (participio en genitivo con sujeto propio en genitivo);
+      - infinitivo con preposición y artículo (εἰς τό → propósito o resultado; πρὸς τό → propósito; ἐν τῷ, μετὰ τό, πρὸ τοῦ → tiempo; διὰ τό → causa); τοῦ + infinitivo y el infinitivo articular, acotados;
+      - subjuntivo dentro de una cláusula con ἵνα/ὅπως (también el coordinado: Jn 3:16 ἔχῃ), en la prótasis con ἐάν, con ἄν o ἕως/ὅταν (indefinido), οὐ μή (negación enfática), μή + aoristo de 2.ª persona (prohibición); 1.ª plural → exhortativo o deliberativo; μή + imperativo; μὴ γένοιτο;
+      - participio con artículo → sólo adjetival o sustantival. El artículo cuenta si va ANTES del participio sin un sustantivo entre medio que se lo lleve («στραφεὶς δὲ ὁ Ἰησοῦς», Jn 1:38, y «ὁ Ἰωάννης λέγων», Jn 1:26, no son articulares: sin esa regla salían 275 falsos);
+      - indicativo: el uso del tiempo de la lista de su tiempo (el presente incluye el **habitual**, comentario #G2 del profesor).
+    - **Medido sobre el NT (28.056 verbos, sin errores):** 309 genitivos absolutos (Wallace cuenta ~313), 226 perifrásticos, 1.909 participios articulares, 801 subjuntivos bajo ἵνα/ὅπως, 354 condicionales con ἐάν, 203 indefinidos, 77 οὐ μή, 15 μὴ γένοιτο.
+    - **El análisis griego (v12)** recibe la lista por verbo; el asistente elige el id y lo explica en una frase (`verbNote`); el código valida: un id fuera de la lista se descarta, lo decidido por regla manda.
+    - **Ficha de la palabra:** «Función del verbo» y «Uso del tiempo», marcados «Regla» (con el porqué) o «Asistente».
 - **#G5, tipo de agencia (profesor, Stg 2:9 ἐλεγχόμενοι ὑπὸ τοῦ νόμου).** El tutor dice «agente de la pasiva», bien, pero sin el tipo.
   - **Regla en el código (Wallace, excurso de la agencia):** con verbo PASIVO (voz `P` en MorphGNT; ἐλεγχόμενοι = `-PPPNPM-`):
     - ὑπό / ἀπό / παρά + genitivo = **agente último** («agencia final»);

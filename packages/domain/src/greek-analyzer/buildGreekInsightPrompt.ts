@@ -1,3 +1,4 @@
+import { buildVerbFunctionTask, type VerbCandidate } from '../language-structure/verbFunctions';
 import { buildClauseReadingTask } from '../language-structure/clauseReading';
 import type { StructureNode } from '../language-structure/verseStructure';
 import type { GreekWordToken } from './morphGntToken';
@@ -54,8 +55,11 @@ export function buildGreekInsightPrompt(input: {
     previousVerse?: { reference: string; text: string };
     /** Las filas de «Estructura» (MACULA): el modelo las LEE, no las arma. */
     structure?: readonly StructureNode[];
+    /** Los verbos con sus funciones posibles (G2). */
+    verbs?: readonly VerbCandidate[];
 }): string {
     const lectura = buildClauseReadingTask(input.structure ?? []);
+    const verbos = buildVerbFunctionTask(input.verbs ?? [], input.tokens.map(t => t.text));
     const lista = input.tokens
         .map((t, i) => `${i + 1}. ${t.text} — lema ${t.lemma} — ${describirTag(t)}`)
         .join('\n');
@@ -194,6 +198,7 @@ miembros no se cierran invertidos de verdad, NO es quiasmo — llámalo
 paralelismo o devuelve null.
 
 ${lectura}
+${verbos}
 
 REGLAS:
 - Todo en español, salvo las palabras griegas.
@@ -206,7 +211,7 @@ FORMATO DE SALIDA (JSON, sin texto alrededor):
   "literalTranslation": "…",
   "fluidTranslation": "…",
   "words": [
-    { "text": "…", "semanticRange": "sentido A / sentido B", "syntacticFunction": "…", "translation": "…", "caseFunction": "possession", "nameNote": "", "articleUse": "", "antecedent": "", "discourseFunction": "", "connects": "" }
+    { "text": "…", "semanticRange": "sentido A / sentido B", "syntacticFunction": "…", "translation": "…", "caseFunction": "possession", "nameNote": "", "articleUse": "", "antecedent": "", "discourseFunction": "", "connects": ""${verbos ? ', "verbFunction": "", "tenseUse": "", "verbNote": ""' : ''} }
   ],
   "keyInsights": [
     { "text": "…", "significance": "Por qué esta palabra importa al predicar este versículo." }

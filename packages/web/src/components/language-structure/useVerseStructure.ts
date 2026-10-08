@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+    greekVerbCandidates,
     readingFor,
     verseStructure,
     type ClauseReading,
@@ -8,6 +9,7 @@ import {
     type StructureLanguage,
     type StructureNode,
     type StructureWord,
+    type VerbCandidate,
 } from '@dosfilos/domain';
 
 import { languageStructureProvider as provider } from './provider';
@@ -23,6 +25,8 @@ export interface VerseStructureState {
     ordinal: ReadonlyMap<string, number>;
     /** Ordinal → con qué rol va antepuesta al verbo y, si el asistente lo leyó, foco o marco (para la ficha). */
     frontedByOrdinal: ReadonlyMap<number, FrontedInfo>;
+    /** G2 (sólo griego): cada verbo con las funciones que el texto permite o decide. */
+    verbs: readonly VerbCandidate[];
 }
 
 /**
@@ -56,8 +60,9 @@ export function useVerseStructure(
         const words = actual?.chapter ? verseWords(actual.chapter, verse) : [];
         const ordinal = new Map(words.map((w, i) => [w.r, i]));
         const frontedByOrdinal = conLectura(nodes ?? [], ordinal);
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal };
-    }, [actual, key, verse]);
+        const verbs = actual?.chapter && lang === 'gr' ? greekVerbCandidates(actual.chapter, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs };
+    }, [actual, key, verse, lang]);
 }
 
 /**

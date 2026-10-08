@@ -4,6 +4,7 @@ import {
     type GreekVerseInsight,
     type GreekWordToken,
     type StructureNode,
+    type VerbCandidate,
 } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
@@ -22,6 +23,8 @@ export class GreekInsightService {
         previousVerse?: { reference: string; text: string };
         /** Filas de «Estructura»: el modelo devuelve su lectura (G1 + G5). */
         structure?: readonly StructureNode[];
+        /** Verbos con sus funciones posibles (G2, Wallace). */
+        verbs?: readonly VerbCandidate[];
     }): Promise<GreekVerseInsight> {
         const raw = await runLlmPrompt({
             feature: 'greekTutor.analyzeVerse',
@@ -38,6 +41,7 @@ export class GreekInsightService {
             expectedWordCount: input.tokens.length,
             cases: input.tokens.map((t) => t.tag.case),
             structure: input.structure,
+            verbs: input.verbs,
         });
         if (!parsed) {
             throw new Error('greek-insight: respuesta del modelo inválida o desalineada');

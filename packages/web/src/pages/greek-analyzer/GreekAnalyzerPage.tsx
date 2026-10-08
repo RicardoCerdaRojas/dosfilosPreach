@@ -74,7 +74,14 @@ export function GreekAnalyzerPage() {
     const referencia = `${book} ${chapter}:${verse}`;
     /** La vista «Estructura» y lo que aporta a las fichas (lo antepuesto al verbo). */
     const estructura = useVerseStructure('gr', book, chapter, verse);
-    const { insight, checking, generating, error: insightError, cacheUnavailable, generate } = useGreekInsight(referencia, data?.tokens, previous, estructura.nodes);
+    const { insight, checking, generating, error: insightError, cacheUnavailable, generate } = useGreekInsight(
+        referencia,
+        data?.tokens,
+        previous,
+        estructura.nodes,
+        // Los verbos de los datos (posición = token) sólo si coinciden con los tokens.
+        estructura.words.length === (data?.tokens.length ?? -1) ? estructura.verbs : undefined,
+    );
     // MACULA y MorphGNT se alinearon palabra por palabra en G0: el ordinal es el
     // índice del token. Si un día no coinciden en cantidad, no se enlaza nada.
     const cantidadTokens = data?.tokens.length ?? -1;

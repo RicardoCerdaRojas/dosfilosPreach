@@ -240,3 +240,23 @@ describe('lectura de cláusulas en el análisis griego (G1 + G5)', () => {
         expect(parseGreekInsight(raw, { reference: 'Santiago 1:2', expectedWordCount: 3 })?.clauseReadings).toBeUndefined();
     });
 });
+
+describe('función de los verbos en el análisis griego (G2)', () => {
+    const verbos = [{ ordinal: 2, form: 'imperative' as const, allowed: ['command', 'request'] as const, tenseUses: [] }];
+
+    it('con verbos, el prompt pide "verbFunction" de la lista; sin verbos, no', () => {
+        expect(buildGreekInsightPrompt({ reference: 'Santiago 1:2', tokens, verbs: verbos as never })).toMatch(/2\. ἡγήσασθε, — imperativo — "verbFunction", elige de: "command"/);
+        expect(buildGreekInsightPrompt({ reference: 'Santiago 1:2', tokens })).not.toContain('verbFunction');
+    });
+
+    it('el parser guarda la función válida en la palabra del verbo', () => {
+        const raw = JSON.stringify({
+            literalTranslation: 'x', fluidTranslation: 'y',
+            words: tokens.map((t, i) => ({ text: t.text, semanticRange: 'a', syntacticFunction: 'b', translation: 'c', ...(i === 2 ? { verbFunction: 'command', verbNote: 'Mandato puntual.' } : { verbFunction: 'command' }) })),
+        });
+        const r = parseGreekInsight(raw, { reference: 'Santiago 1:2', expectedWordCount: 3, verbs: verbos as never });
+        expect(r?.words[2]).toMatchObject({ verbFunction: 'command', verbNote: 'Mandato puntual.' });
+        // Una palabra que no es verbo no recibe función aunque el asistente la mande.
+        expect(r?.words[0]).not.toHaveProperty('verbFunction');
+    });
+});

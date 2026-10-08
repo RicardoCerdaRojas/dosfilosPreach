@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FirestoreGreekInsightRepository, GreekInsightService } from '@dosfilos/infrastructure';
-import type { GreekVerseInsight, GreekWordToken, StructureNode } from '@dosfilos/domain';
+import type { GreekVerseInsight, GreekWordToken, StructureNode, VerbCandidate } from '@dosfilos/domain';
 
 /**
  * El análisis del modelo para el versículo activo: caché global primero,
@@ -22,6 +22,8 @@ export function useGreekInsight(
     previousVerse?: { reference: string; text: string },
     /** Las filas de «Estructura»: el análisis trae la lectura de cada una (G1 + G5). */
     structure?: readonly StructureNode[] | null,
+    /** Los verbos con sus funciones posibles (G2): el análisis trae la de cada uno. */
+    verbs?: readonly VerbCandidate[],
 ) {
     const repoRef = useRef<FirestoreGreekInsightRepository>();
     if (!repoRef.current) repoRef.current = new FirestoreGreekInsightRepository();
@@ -65,7 +67,7 @@ export function useGreekInsight(
         setGenerating(true);
         setError(null);
         try {
-            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse, structure: structure ?? undefined });
+            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse, structure: structure ?? undefined, verbs });
             void repoRef.current!.save(result);
             if (actualRef.current === reference) setInsight(result);
         } catch (e) {
@@ -73,7 +75,7 @@ export function useGreekInsight(
         } finally {
             setGenerating(false);
         }
-    }, [reference, tokens, previousVerse, structure]);
+    }, [reference, tokens, previousVerse, structure, verbs]);
 
     return { insight, checking, generating, error, cacheUnavailable, generate };
 }

@@ -1,3 +1,4 @@
+import { readVerbFunction, type VerbCandidate } from '../language-structure/verbFunctions';
 import { parseClauseReadings } from '../language-structure/clauseReading';
 import type { StructureNode } from '../language-structure/verseStructure';
 import { GREEK_INSIGHT_PROMPT_VERSION, type GreekVerseInsight, type GreekWordInsight } from './verseInsight';
@@ -31,6 +32,8 @@ export function parseGreekInsight(
         cases?: readonly (GreekCase | undefined)[];
         /** Las filas de «Estructura» que se mandaron a leer (en el mismo orden). */
         structure?: readonly StructureNode[];
+        /** Los verbos con sus funciones posibles (G2): valida lo que devolvió el asistente. */
+        verbs?: readonly VerbCandidate[];
     },
 ): GreekVerseInsight | null {
     const inicio = raw.indexOf('{');
@@ -100,7 +103,9 @@ export function parseGreekInsight(
             }
         }
 
+        const verbo = readVerbFunction(w, input.verbs?.find(c => c.ordinal === i));
         words.push({
+            ...verbo,
             text,
             semanticRange,
             syntacticFunction,
