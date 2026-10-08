@@ -1,7 +1,18 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
-import { readingFor, type ClauseReading, type ClauseRelation, type StructureLanguage, type StructureNode, type StructureWord } from '@dosfilos/domain';
+import {
+    readingFor,
+    STRUCTURE_RULE_SOURCES,
+    type ClauseReading,
+    type ClauseRelation,
+    type RuleSource,
+    type StructureLanguage,
+    type StructureNode,
+    type StructureRuleKey,
+    type StructureWord,
+} from '@dosfilos/domain';
+import { SourceNote } from './SourceNote';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
@@ -11,6 +22,15 @@ const CON_NOTA: ReadonlySet<ClauseRelation> = new Set([
     'development', 'purposeOrResult', 'groundOrContent', 'negativePurpose', 'question', 'exception',
     'chain', 'conjunctive', 'disjunctive', 'asyndetic', 'speech',
 ]);
+
+/** Las fuentes de las reglas que dieron las notas de la fila (para citar). */
+function fuentesDe(n: StructureNode): RuleSource[] {
+    const claves: StructureRuleKey[] = [];
+    if (n.conditionalClass) claves.push(`class${n.conditionalClass}` as StructureRuleKey);
+    if (n.relation in STRUCTURE_RULE_SOURCES) claves.push(n.relation as StructureRuleKey);
+    if (n.fronted.length) claves.push('fronted');
+    return claves.flatMap(k => STRUCTURE_RULE_SOURCES[k]);
+}
 
 /** Más sangría que esto no cabe en un teléfono; la jerarquía se sigue leyendo. */
 const MAX_SANGRIA = 5;
@@ -154,6 +174,7 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                         {notas.length > 0 && (
                             <p className="mt-1 text-[12px] leading-snug text-muted-foreground">{notas.join(' ')}</p>
                         )}
+                        <SourceNote sources={fuentesDe(n)} compact />
                         {lectura && (
                             <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12.5px] leading-snug" data-testid="clause-reading">
                                 <EtiquetaAsistente />

@@ -113,5 +113,8 @@
     "reanalyze": "Re-analyze",
     "generateButton": "Generate analysis",
     "empty": "The assistant did not return the clause reading in this analysis. Re-analyze the verse to request it."
-  }
+  },
+  "source": "Source",
+  "copyCitation": "Copy citation",
+  "showSource": "Show source ›"
 }

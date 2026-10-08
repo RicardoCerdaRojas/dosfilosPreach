@@ -1,3 +1,5 @@
+import { buildNominalFactsTask, type AgencyFact, type AnaphoraFact } from '../language-structure/nominalFunctions';
+import { buildVerbFunctionTask, type VerbCandidate } from '../language-structure/verbFunctions';
 import { buildClauseReadingTask } from '../language-structure/clauseReading';
 import type { StructureNode } from '../language-structure/verseStructure';
 import type { GreekWordToken } from './morphGntToken';
@@ -54,8 +56,14 @@ export function buildGreekInsightPrompt(input: {
     previousVerse?: { reference: string; text: string };
     /** Las filas de «Estructura» (MACULA): el modelo las LEE, no las arma. */
     structure?: readonly StructureNode[];
+    /** Los verbos con sus funciones posibles (G2). */
+    verbs?: readonly VerbCandidate[];
+    /** Hechos de G3 que da el texto: agencia y artículo anafórico. */
+    nominal?: { readonly agency: readonly AgencyFact[]; readonly anaphora: readonly AnaphoraFact[] };
 }): string {
     const lectura = buildClauseReadingTask(input.structure ?? []);
+    const verbos = buildVerbFunctionTask(input.verbs ?? [], input.tokens.map(t => t.text));
+    const hechos = buildNominalFactsTask(input.nominal?.agency ?? [], input.nominal?.anaphora ?? [], input.tokens.map(t => t.text));
     const lista = input.tokens
         .map((t, i) => `${i + 1}. ${t.text} — lema ${t.lemma} — ${describirTag(t)}`)
         .join('\n');
@@ -101,7 +109,7 @@ Y para CADA palabra, en el MISMO ORDEN de la lista:
   repartida del núcleo del sintagma, no omitida. Y dilo en su
   "syntacticFunction": "comparte el 'de' de κυρίου".
 
-Y ADEMÁS, "keyInsights": elige las 2 o 3 palabras que cargan el PESO
+Y ADEMÁS, "keyInsights" (cada una con su "n": el NÚMERO de la palabra en la lista de arriba): elige las 2 o 3 palabras que cargan el PESO
 TEOLÓGICO del versículo y explica su SIGNIFICANCIA para la predicación — el
 paso del dato a la consecuencia: por qué importa que ese verbo sea aoristo y
 no presente, qué pierde el oyente si el matiz del lema se traduce plano.
@@ -194,6 +202,8 @@ miembros no se cierran invertidos de verdad, NO es quiasmo — llámalo
 paralelismo o devuelve null.
 
 ${lectura}
+${verbos}
+${hechos}
 
 REGLAS:
 - Todo en español, salvo las palabras griegas.
@@ -206,10 +216,10 @@ FORMATO DE SALIDA (JSON, sin texto alrededor):
   "literalTranslation": "…",
   "fluidTranslation": "…",
   "words": [
-    { "text": "…", "semanticRange": "sentido A / sentido B", "syntacticFunction": "…", "translation": "…", "caseFunction": "possession", "nameNote": "", "articleUse": "", "antecedent": "", "discourseFunction": "", "connects": "" }
+    { "text": "…", "semanticRange": "sentido A / sentido B", "syntacticFunction": "…", "translation": "…", "caseFunction": "possession", "nameNote": "", "articleUse": "", "antecedent": "", "discourseFunction": "", "connects": ""${verbos ? ', "verbFunction": "", "tenseUse": "", "verbNote": ""' : ''} }
   ],
   "keyInsights": [
-    { "text": "…", "significance": "Por qué esta palabra importa al predicar este versículo." }
+    { "n": 1, "text": "…", "significance": "Por qué esta palabra importa al predicar este versículo." }
   ],
   "wordOrderNote": "…",
   "relations": [ { "from": 6, "to": 0, "type": "apposition", "note": "δοῦλος nombra al mismo referente que Ἰάκωβος." } ],

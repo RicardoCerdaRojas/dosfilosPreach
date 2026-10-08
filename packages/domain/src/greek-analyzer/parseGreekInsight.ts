@@ -1,3 +1,4 @@
+import { readVerbFunction, type VerbCandidate } from '../language-structure/verbFunctions';
 import { parseClauseReadings } from '../language-structure/clauseReading';
 import type { StructureNode } from '../language-structure/verseStructure';
 import { GREEK_INSIGHT_PROMPT_VERSION, type GreekVerseInsight, type GreekWordInsight } from './verseInsight';
@@ -31,6 +32,8 @@ export function parseGreekInsight(
         cases?: readonly (GreekCase | undefined)[];
         /** Las filas de «Estructura» que se mandaron a leer (en el mismo orden). */
         structure?: readonly StructureNode[];
+        /** Los verbos con sus funciones posibles (G2): valida lo que devolvió el asistente. */
+        verbs?: readonly VerbCandidate[];
     },
 ): GreekVerseInsight | null {
     const inicio = raw.indexOf('{');
@@ -100,7 +103,9 @@ export function parseGreekInsight(
             }
         }
 
+        const verbo = readVerbFunction(w, input.verbs?.find(c => c.ordinal === i));
         words.push({
+            ...verbo,
             text,
             semanticRange,
             syntacticFunction,
@@ -124,9 +129,14 @@ export function parseGreekInsight(
                   const k = crudo as Record<string, unknown>;
                   const text = typeof k.text === 'string' ? k.text.trim() : '';
                   const significance = typeof k.significance === 'string' ? k.significance.trim() : '';
-                  return text && significance ? { text, significance } : null;
+                  // La posición vale sólo si en ella está ESA palabra (sin puntuación).
+                  const sin = (x: string) => x.replace(/[.,·;··’]+$/u, '');
+                  // «n» es el número de la lista del prompt (desde 1); se guarda la posición (desde 0).
+                  const pos = typeof k.n === 'number' && Number.isInteger(k.n) ? k.n - 1 : -1;
+                  const index = pos >= 0 && words[pos] && sin(words[pos]!.text) === sin(text) ? pos : undefined;
+                  return text && significance ? { ...(index !== undefined ? { index } : {}), text, significance } : null;
               })
-              .filter((k): k is { text: string; significance: string } => k !== null)
+              .filter((k): k is { index?: number; text: string; significance: string } => k !== null)
               .slice(0, 3)
         : [];
 

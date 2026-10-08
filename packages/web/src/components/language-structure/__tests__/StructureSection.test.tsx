@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
@@ -108,6 +109,37 @@ describe('StructureFlow (G1 + G5)', () => {
     it('el hebreo va de derecha a izquierda', () => {
         const { container } = render(<StructureFlow lang="he" nodes={verseStructure(cargar('he/Ruth/1.json'), 16)} />);
         expect(container.querySelector('[dir="rtl"]')).not.toBeNull();
+    });
+});
+
+describe('la fuente de cada fila con regla', () => {
+    it('Stg 2:9: «Fuente» se abre al tocarlo y muestra la cita', () => {
+        render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
+        const toggles = screen.getAllByTestId('source-toggle');
+        expect(toggles.length).toBeGreaterThan(0);
+        fireEvent.click(toggles[1]!);
+        expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition');
+    });
+
+    it('igual con todo lo que pasa la página: tooltips, lecturas y enlaces', async () => {
+        const { TooltipContent } = await import('@/components/ui/tooltip');
+        const nodes = verseStructure(santiago2, 9);
+        const ordinal = new Map(verseWords(santiago2, 9).map((w, i) => [w.r, i]));
+        const Pagina = () => {
+            const [sel, setSel] = React.useState<number | null>(null);
+            return (
+                <TooltipProvider>
+                    <StructureFlow
+                        lang="gr" nodes={nodes} ordinal={ordinal}
+                        readings={nodes.map(n => ({ index: n.index, anchor: n.words[0]!.r, value: 'v', explanation: 'e' }))}
+                        links={{ renderText: i => <b>{i}</b>, renderTooltip: i => <TooltipContent>{i}</TooltipContent>, onSelect: setSel, selected: sel }}
+                    />
+                </TooltipProvider>
+            );
+        };
+        render(<Pagina />);
+        fireEvent.click(screen.getAllByTestId('source-toggle')[1]!);
+        expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition');
     });
 });
 

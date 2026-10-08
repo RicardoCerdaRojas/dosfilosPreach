@@ -68,6 +68,25 @@ export interface GreekWordInsight {
     };
     /** Traducción contextual de la palabra. */
     readonly translation: string;
+    /**
+     * G2 — la función del verbo según Wallace (participio, infinitivo, modo),
+     * de la lista acotada por el dato (`greekVerbCandidates`). Con `verbRule`,
+     * la decidió una regla del código y el asistente sólo la explica.
+     */
+    readonly verbFunction?: import('../language-structure/verbFunctions').VerbFunctionId;
+    readonly verbRule?: import('../language-structure/verbFunctions').VerbRule;
+    /** El uso del tiempo en el indicativo («presente habitual», «aoristo ingresivo»). */
+    readonly tenseUse?: import('../language-structure/verbFunctions').TenseUseId;
+    /** Por qué esa función o ese uso, en una frase. */
+    readonly verbNote?: string;
+    /**
+     * G3 — en una preposición con verbo pasivo, el tipo de agencia (Wallace):
+     * agente último (ὑπό/παρά + genitivo) o intermedio (διά + genitivo).
+     * Lo decide el texto al mostrar (`applyNominalRules`).
+     */
+    readonly agency?: import('../language-structure/nominalFunctions').AgencyKind;
+    /** La regla de G3 que decidió la agencia o la anáfora del artículo. */
+    readonly nominalRule?: import('../language-structure/nominalFunctions').NominalRule;
 }
 
 /**
@@ -77,6 +96,8 @@ export interface GreekWordInsight {
  * actitud continua".
  */
 export interface GreekKeyInsight {
+    /** Posición de la palabra (desde v13): marca la «Clave» en esa palabra y no en otra igual. */
+    readonly index?: number;
     /** La palabra, verbatim como aparece en el versículo. */
     readonly text: string;
     readonly significance: string;
@@ -98,8 +119,10 @@ export interface GreekKeyInsight {
  * v9: + composition (palabras compuestas) y artículo con uso obligatorio.
  * v10: + discourseFunction/connects para partículas y conjunciones.
  * v11: + clauseReadings — la lectura de cada fila de «Estructura» (G1 + G5).
+ * v12: + verbFunction/tenseUse/verbNote — la función de cada verbo (G2, Wallace).
+ * v13: + hechos de G3 (agencia, artículo anafórico) en el prompt; claves por posición; más funciones de caso.
  */
-export const GREEK_INSIGHT_PROMPT_VERSION = 11;
+export const GREEK_INSIGHT_PROMPT_VERSION = 13;
 
 export interface GreekVerseInsight {
     /** "JAS 1:2" — la clave del caché. */

@@ -126,6 +126,12 @@ describe('verseStructure — revisión adversarial de G1 + G5', () => {
         expect(verseStructure(cargar('gr/JAS/1.json'), 1).flatMap(n => n.fronted)).toEqual([]);
     });
 
+    it('el relativo y su preposición van primero por gramática: no son «antepuesto» (1 Co 1:9 «δι’ οὗ», Ef 1:7 «ἐν ᾧ»); el τις indefinido sí (Stg 1:5)', () => {
+        expect(verseStructure(cargar('gr/1CO/1.json'), 9).flatMap(n => n.fronted)).toEqual([]);
+        expect(verseStructure(cargar('gr/EPH/1.json'), 7).flatMap(n => n.fronted)).toEqual([]);
+        expect(fila(verseStructure(cargar('gr/JAS/1.json'), 5), 'Εἰ').fronted.map(f => f.role)).toEqual(['s']);
+    });
+
     it('en hebreo lo antepuesto lleva la waw: Gn 1:2 וְהָאָרֶץ, Sal 1:2 וּבְתוֹרָתוֹ', () => {
         expect(fila(verseStructure(cargar('he/Gen/1.json'), 2), 'וְהָאָרֶץ').fronted.map(f => f.role)).toEqual(['s']);
         expect(fila(verseStructure(cargar('he/Ps/1.json'), 2), 'וּבְתוֹרָתוֹ').fronted.map(f => f.role)).toEqual(['pp']);

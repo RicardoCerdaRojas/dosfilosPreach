@@ -1,5 +1,7 @@
 import { greekRecognitionClues, prepositionUsage, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
 import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
+import { GreekVerbFunctionBlock } from './GreekVerbFunctionBlock';
+import { GreekAgencyBlock, GreekAnaphoraRuleNote } from './GreekNominalRuleBlock';
 import { Star, BookmarkPlus, Check } from 'lucide-react';
 import { useNtLemmaFrequency } from './useLemmaFrequency';
 import { GreekCompositionBlock } from './GreekCompositionBlock';
@@ -161,12 +163,14 @@ export function GreekWordCard({
             )}
 
             <FrontedNote fronted={fronted} />
+            <GreekVerbFunctionBlock insight={insight} mood={token.tag.mood} tense={token.tag.tense} />
 
             {puente && (
                 <div className="text-xs italic text-muted-foreground">{t(`analyzer.bridge.${puente}`)}</div>
             )}
 
             {regimen && <GreekPrepositionBlock lemma={token.lemma} usage={regimen} />}
+            <GreekAgencyBlock insight={insight} />
 
             {insight && <GreekParticleBlock insight={insight} />}
 
@@ -190,6 +194,7 @@ export function GreekWordCard({
                             <span className="font-medium" lang="grc">{insight.antecedent}</span>
                         </p>
                     )}
+                    <GreekAnaphoraRuleNote insight={insight} />
                 </div>
             )}
 

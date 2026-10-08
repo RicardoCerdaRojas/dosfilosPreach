@@ -36,6 +36,11 @@ export const CASE_FUNCTIONS: Record<GreekCase, readonly string[]> = {
         'partitive',          // el todo del que se toma una parte
         'source',             // origen
         'apposition',         // genitivo de aposición ("la señal DE la circuncisión")
+        'content',            // de contenido ("la red llena DE peces") — G3
+        'time',               // genitivo de tiempo (dentro de qué tiempo: "de noche") — G3
+        'separation',         // de separación ("ajenos DE la ciudadanía") — G3
+        'comparison',         // de comparación (tras comparativo: "mayor QUE") — G3
+        'absoluteSubject',    // sujeto de un genitivo absoluto ("ὀψίας γενομένης") — G3
         'objectOfPreposition',
     ],
     D: [
@@ -46,6 +51,10 @@ export const CASE_FUNCTIONS: Record<GreekCase, readonly string[]> = {
         'advantage',          // dativo de interés (a favor de)
         'time',               // dativo de tiempo (cuándo)
         'sphere',             // esfera/ámbito
+        'agency',             // dativo de agencia (raro: con perfecto pasivo) — G3
+        'association',        // de asociación ("con") — G3
+        'cause',              // de causa ("por") — G3
+        'location',           // de lugar ("en") — G3
         'objectOfPreposition',
     ],
     A: [
@@ -54,6 +63,8 @@ export const CASE_FUNCTIONS: Record<GreekCase, readonly string[]> = {
         'subjectOfInfinitive',// el "sujeto" en acusativo de una infinitiva
         'measure',            // extensión de tiempo o espacio
         'respect',            // acusativo de relación
+        'cognate',            // cognado ("temieron con gran temor") — G3
+        'adverbial',          // adverbial (de modo: "gratuitamente" = δωρεάν) — G3
         'objectOfPreposition',
     ],
     V: ['address'],           // invocación directa

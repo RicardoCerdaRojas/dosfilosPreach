@@ -237,6 +237,22 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
   - Infinitivo: propósito, resultado, tiempo, causa, medio, sujeto, objeto, discurso indirecto, epexegético.
   - Modos: subjuntivo hortativo, deliberativo, de prohibición, tras ἵνα/ὅπως; imperativo; optativo volitivo.
   - Uso del tiempo: aoristo constativo, ingresivo, culminativo, gnómico; presente progresivo, iterativo, gnómico.
+  - **Hecho en G2 (2026-10-08):**
+    - **`greekVerbCandidates`** (dominio): por cada verbo del versículo, desde MorphGNT + MACULA, las funciones POSIBLES (lista cerrada de Wallace) y, donde el texto lo fija, la función DECIDIDA por regla:
+      - perifrástico (εἰμί + participio en la misma cláusula); genitivo absoluto (participio en genitivo con sujeto propio en genitivo);
+      - infinitivo con preposición y artículo (εἰς τό → propósito o resultado; πρὸς τό → propósito; ἐν τῷ, μετὰ τό, πρὸ τοῦ → tiempo; διὰ τό → causa); τοῦ + infinitivo y el infinitivo articular, acotados;
+      - subjuntivo dentro de una cláusula con ἵνα/ὅπως (también el coordinado: Jn 3:16 ἔχῃ), en la prótasis con ἐάν, con ἄν o ἕως/ὅταν (indefinido), οὐ μή (negación enfática), μή + aoristo de 2.ª persona (prohibición); 1.ª plural → exhortativo o deliberativo; μή + imperativo; μὴ γένοιτο;
+      - participio con artículo → sólo adjetival o sustantival. El artículo cuenta si va ANTES del participio sin un sustantivo entre medio que se lo lleve («στραφεὶς δὲ ὁ Ἰησοῦς», Jn 1:38, y «ὁ Ἰωάννης λέγων», Jn 1:26, no son articulares: sin esa regla salían 275 falsos);
+      - indicativo: el uso del tiempo de la lista de su tiempo (el presente incluye el **habitual**, comentario #G2 del profesor).
+    - **Medido sobre el NT (28.056 verbos, sin errores):** 309 genitivos absolutos (Wallace cuenta ~313), 226 perifrásticos, 1.909 participios articulares, 801 subjuntivos bajo ἵνα/ὅπως, 354 condicionales con ἐάν, 203 indefinidos, 77 οὐ μή, 15 μὴ γένοιτο.
+    - **El análisis griego (v12)** recibe la lista por verbo; el asistente elige el id y lo explica en una frase (`verbNote`); el código valida: un id fuera de la lista se descarta, lo decidido por regla manda.
+    - **Ficha de la palabra:** «Función del verbo» y «Uso del tiempo», marcados «Regla» (con el porqué) o «Asistente».
+  - **Reglas con fuente, mantenibles (pedido del fundador, 2026-10-08):**
+    - **Registro de fuentes** (`ruleSources.ts`): cada regla y cada categoría con su obra (Wallace, Runge, Arnold y Choi, o la revisión docente con fecha y versículo) y su sección. La **página sólo se muestra verificada contra el libro**: hoy ninguna lo está (falta completarlas con un ejemplar).
+    - **En pantalla, para citar:** la ficha del verbo muestra la fuente con «Copiar cita»; en «Estructura», cada fila con regla tiene «Fuente» (compacto, se abre al tocarlo).
+    - **Reglas en una tabla ordenada** (`VERB_RULES`): nombre, forma, condición y lo que permite; gana la primera. El cambio dejó idénticos los 28.055 verbos del NT. Una prueba exige que cada regla se cumpla alguna vez en el NT (regla muerta = falla) y que cada función, uso y regla tenga texto en es/en.
+    - **Las reglas de los verbos se aplican al mostrar** (`applyVerbRules`), como el hebreo: una regla mejorada llega a los análisis ya guardados sin re-analizar.
+    - **Ajustes por la prueba del fundador (Stg 2:9 ἐλεγχόμenoι):** «predicativo» sólo si hay un sustantivo o pronombre que concuerde (el asistente lo eligió con el sujeto implícito); «circunstancia concomitante» sólo con los criterios de Wallace —participio aoristo antes de un verbo aoristo indicativo o imperativo— (Mt 28:19 πορευθέντες sí, βαπτίζοντες no; el asistente la eligió para un presente pospuesto). La fuente se elige por forma (infinitivo o participio).
 - **#G5, tipo de agencia (profesor, Stg 2:9 ἐλεγχόμενοι ὑπὸ τοῦ νόμου).** El tutor dice «agente de la pasiva», bien, pero sin el tipo.
   - **Regla en el código (Wallace, excurso de la agencia):** con verbo PASIVO (voz `P` en MorphGNT; ἐλεγχόμενοι = `-PPPNPM-`):
     - ὑπό / ἀπό / παρά + genitivo = **agente último** («agencia final»);
@@ -250,6 +266,26 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
   - Se respeta lo que eligió el asistente cuando es monádico, por antonomasia o con nombre propio (ὁ θεός, ὁ Χριστός). Se corrige si eligió «de lo conocido», «genérico» o lo dejó vacío.
   - **Interfaz:** «Anafórico — retoma νόμον (2:8)».
 - **G3. Funciones de caso:** completar la lista (dativo de agencia, genitivo absoluto, de contenido…) y marcar la «Clave» por índice.
+  - **Hecho en G3 (2026-10-08):**
+    - **Agencia (#G5), por regla** (`greekAgency`): con un verbo PASIVO en la cláusula (o la madre), ὑπό/παρά + genitivo = agente último y διά + genitivo = agente intermedio. Stg 2:9 «ὑπὸ τοῦ νόμου» = agente último. **Medido sobre el NT y recortado:** ἐν + dativo salía 505 veces y casi nunca es «medio» (1 Co 1:2 «ἐν Χριστῷ» es esfera), y ἀπό con pasiva suele ser separación (1 Co 7:10): los dos quedaron fuera de la regla. Quedan 153 con ὑπό, 8 con παρά y 102 con διά.
+    - **Artículo anafórico (#G6), por regla** (`greekAnaphora`): el artículo cuyo sustantivo ya apareció en el versículo anterior o antes en el mismo, con lo que retoma («νόμον, v. 8»). Fuera: nombres propios, monádicos (θεός, κύριος) y el artículo de un adjetivo («ὁ ποιμὴν ὁ καλός»). Se respeta lo que eligió el asistente si es monádico, por antonomasia, nombre propio, deíctico, sustantivador, posesivo o abstracto. 2.267 en el NT.
+    - Las dos se aplican AL MOSTRAR (`applyNominalRules`) y van en el prompt como HECHOS para que el asistente los explique (la personificación de un agente impersonal: la ley como quien acusa). Análisis griego v13.
+    - **Funciones de caso:** + genitivo de contenido, de tiempo, de separación, de comparación y sujeto de genitivo absoluto; dativo de agencia, asociación, causa y lugar; acusativo cognado y adverbial.
+    - **«Clave» por posición:** el asistente devuelve la posición de la palabra y el parser la valida contra el texto (antes se marcaba toda palabra igual).
+    - **Ficha:** «Agencia» en la preposición y «Regla» + fuente en el artículo anafórico (Wallace, «Ultimate Agent», «Anaphoric (Previous Reference)», y la revisión docente).
+  - **Revisión adversarial de G2 + G3 (2026-10-08), corregido** — reglas que decidían mal y la pantalla lo mostraba como «Regla»:
+    - **Subjuntivo:** manda el subordinante MÁS CERCANO (1 Jn 2:28 φανερωθῇ es ἐάν, no el ἵνα de arriba; Lc 16:9 ὅταν; Hch 23:14 «ἕως οὗ»); οὐ μή con palabras entre medio (Mt 23:39); μηδείς/μηδέ/μηκέτι también prohíben (1 Co 3:18); nueva función «no sea que» (μή/μήποτε dependiente, 1 Co 10:12); el exhortativo no en una relativa (Hch 21:16).
+    - **Participio articular:** el artículo más cercano hacia atrás (hasta 8 palabras), sin otra palabra que se lo lleve —incluido otro participio— y a cualquier profundidad de MACULA (1 Jn 2:4 «ὁ λέγων» sí; Hch 1:6 λέγοντες no).
+    - **Perifrástico:** participio presente o perfecto, en nominativo (o acusativo con εἶναι), concordando en número, y εἰμí SIN su propio predicado; puede estar en la primera cláusula de arriba con verbo (Mc 1:6). Antes daba falsos (Hb 11:1, 1 Jn 2:4 «ψεύστης ἐστίν»). 238 en el NT.
+    - **Genitivo absoluto:** no si la cláusula es objeto de otro verbo (Mc 14:58 «ἠκούσαμεν αὐτοῦ λέγοντος»); el sujeto puede estar en una hija (Hch 23:30).
+    - **Infinitivo con preposición** aunque haya palabras entre medio (Mc 4:5 «διὰ τὸ μὴ ἔχειν», Jn 17:5); τοῦ + infinitivo admite «tiempo» (ἕως τοῦ, Hch 8:40).
+    - **Agencia:** διά + genitivo sólo con persona (Jn 1:17 «διὰ Μωϋσέως»); con una cosa es medio, tiempo o lugar y lo lee el asistente (1 P 1:5, Hch 16:9). El pasivo, el más cercano de la misma cláusula, y no un deponente (ἐπορεύθη).
+    - **Fuentes:** el uso del tiempo se cita según el tiempo (el imperfecto habitual ya no cita «…Present»); la nota del profesor sólo en el presente habitual.
+    - **Nota del asistente:** si hoy la regla decide otra función, la nota guardada se quita (contradecía la ficha).
+    - **Prompt:** verbos, hechos y claves numerados igual que la lista de palabras (desde 1).
+    - **Alineación:** datos fijados y tokens de la página se comparan palabra por palabra, no sólo por cantidad. Medido contra MorphGNT en vivo: 2.482 de 2.482 versículos coinciden (Juan, con la perícopa de la adúltera, y Apocalipsis incluidos).
+    - **Queda:** el artículo anafórico no distingue dos referentes con el mismo sustantivo (1 Co 1:21 «σοφία») ni mira el capítulo anterior.
+
 - **Hallazgos del profesor en griego (Santiago 2:6-7, 2026-10-07):**
   - **#G1, pronombre enfático.** En 2:7 οὐκ αὐτοὶ βλασφημοῦσιν, el verbo ya marca «ellos» en su terminación (-ουσιν). El pronombre explícito es **enfático o contrastivo**: «¿no son ELLOS los que blasfeman?». Lo mismo en 2:6 ὑμεῖς δὲ ἠτιμάσατε. El tutor dijo «enfatizando», pero no explicó por qué.
     - **Regla en el código (G4):** pronombre personal en nominativo + verbo finito de la misma persona y número en la cláusula = enfático, con la explicación de la terminación.

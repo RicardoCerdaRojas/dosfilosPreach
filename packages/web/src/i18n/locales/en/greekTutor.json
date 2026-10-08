@@ -808,7 +808,12 @@
         "partitive": "Partitive genitive",
         "source": "Genitive of source",
         "apposition": "Genitive of apposition",
-        "objectOfPreposition": "Genitive object of preposition"
+        "objectOfPreposition": "Genitive object of preposition",
+        "content": "Genitive of content",
+        "time": "Genitive of time",
+        "separation": "Genitive of separation",
+        "comparison": "Genitive of comparison",
+        "absoluteSubject": "Genitive, subject of a genitive absolute"
       },
       "D": {
         "indirectObject": "Dative indirect object",
@@ -818,7 +823,11 @@
         "advantage": "Dative of advantage",
         "time": "Dative of time",
         "sphere": "Dative of sphere",
-        "objectOfPreposition": "Dative object of preposition"
+        "objectOfPreposition": "Dative object of preposition",
+        "agency": "Dative of agency",
+        "association": "Dative of association",
+        "cause": "Dative of cause",
+        "location": "Dative of place"
       },
       "A": {
         "directObject": "Accusative direct object",
@@ -826,7 +835,9 @@
         "subjectOfInfinitive": "Accusative subject of infinitive",
         "measure": "Accusative of measure",
         "respect": "Accusative of respect",
-        "objectOfPreposition": "Accusative object of preposition"
+        "objectOfPreposition": "Accusative object of preposition",
+        "cognate": "Cognate accusative",
+        "adverbial": "Adverbial accusative"
       },
       "V": {
         "address": "Vocative of address"
@@ -859,7 +870,17 @@
       "subjectOfInfinitive": "Acts as subject inside an infinitive clause.",
       "measure": "How much time or distance.",
       "respect": "\"As to\", limits the scope.",
-      "address": "Directly calls or addresses."
+      "address": "Directly calls or addresses.",
+      "content": "What something is full of or made of.",
+      "separation": "What something is separated from.",
+      "comparison": "After a comparative: «than».",
+      "absoluteSubject": "Subject of the participle in a genitive absolute.",
+      "agency": "Who performs the action of a passive (rare, with the perfect).",
+      "association": "Whom the action is associated with.",
+      "cause": "Why the action happens.",
+      "location": "Where the action happens.",
+      "cognate": "Repeats the verb’s root to reinforce it.",
+      "adverbial": "Works as an adverb of manner."
     },
     "cacheUnavailable": "We could not read the saved analyses (check your session or connection). You can generate it again, but one may already exist.",
     "rhetoric": {
@@ -939,6 +960,106 @@
       "title": "Preposition and its case",
       "contrast": "With other cases the sense changes:",
       "noObject": "Could not identify the governed term."
+    },
+    "verbFn": {
+      "title": "Verb function",
+      "tenseTitle": "Tense use",
+      "rule": "Rule",
+      "ruleTitle": "Decided by the text: {{why}}",
+      "assistant": "Assistant",
+      "assistantTitle": "Chosen by the assistant from a list narrowed by the text (Wallace).",
+      "functions": {
+        "attributive": "Attributive participle",
+        "substantival": "Substantival participle",
+        "predicate": "Predicate participle",
+        "temporal": "Temporal participle",
+        "means": "Participle of means",
+        "manner": "Participle of manner",
+        "cause": "Causal",
+        "condition": "Conditional",
+        "concession": "Concessive",
+        "purpose": "Purpose",
+        "result": "Result",
+        "attendantCircumstance": "Attendant circumstance",
+        "complementary": "Complementary",
+        "periphrastic": "Periphrastic",
+        "genitiveAbsolute": "Genitive absolute",
+        "redundant": "Redundant",
+        "time": "Temporal",
+        "subject": "Infinitive as subject",
+        "directObject": "Infinitive as direct object",
+        "indirectDiscourse": "Indirect discourse",
+        "epexegetical": "Epexegetical",
+        "imperatival": "Imperatival",
+        "absolute": "Absolute (epistolary greeting)",
+        "hortatory": "Hortatory subjunctive",
+        "deliberative": "Deliberative",
+        "prohibition": "Prohibition",
+        "emphaticNegation": "Emphatic negation (οὐ μή)",
+        "inaClause": "Subjunctive after ἵνα/ὅπως",
+        "conditional": "Conditional subjunctive (ἐάν)",
+        "indefinite": "Indefinite (with ἄν)",
+        "command": "Command",
+        "request": "Request",
+        "permissive": "Permissive",
+        "volitive": "Volitive (wish)",
+        "potential": "Potential",
+        "oblique": "Oblique",
+        "lest": "Fear or negative purpose («lest»)"
+      },
+      "tenseUses": {
+        "progressive": "Progressive",
+        "customary": "Customary",
+        "iterative": "Iterative",
+        "gnomic": "Gnomic",
+        "historical": "Historical",
+        "futuristic": "Futuristic",
+        "conative": "Conative",
+        "extendingFromPast": "Extending from past",
+        "instantaneous": "Instantaneous",
+        "ingressive": "Ingressive",
+        "constative": "Constative",
+        "culminative": "Culminative",
+        "epistolary": "Epistolary",
+        "proleptic": "Proleptic",
+        "dramatic": "Dramatic",
+        "predictive": "Predictive",
+        "imperatival": "Imperatival",
+        "deliberative": "Deliberative",
+        "intensive": "Intensive",
+        "extensive": "Extensive"
+      },
+      "rules": {
+        "articular": "has the article",
+        "periphrastic": "εἰμί + participle in the same clause",
+        "genitiveAbsolute": "genitive participle with its own genitive subject",
+        "eisTo": "εἰς τό + infinitive",
+        "prosTo": "πρὸς τό + infinitive",
+        "enToi": "ἐν τῷ + infinitive (simultaneous)",
+        "metaTo": "μετὰ τό + infinitive (antecedent)",
+        "proTou": "πρὸ τοῦ + infinitive (subsequent)",
+        "diaTo": "διὰ τό + infinitive",
+        "tou": "τοῦ + infinitive",
+        "articularNominal": "articular infinitive",
+        "afterIna": "inside a ἵνα/ὅπως clause",
+        "conditionalEan": "protasis with ἐάν",
+        "ouMe": "οὐ μή + subjunctive",
+        "prohibition": "μή + aorist subjunctive",
+        "indefinite": "with ἄν",
+        "hortatory": "1st person plural",
+        "meGenoito": "μὴ γένοιτο",
+        "presentProhibition": "μή + imperative",
+        "lest": "μή or μήποτε in a dependent clause"
+      }
+    },
+    "agency": {
+      "title": "Agency",
+      "ultimate": "Ultimate agent",
+      "intermediate": "Intermediate agent",
+      "impersonal": "Impersonal means",
+      "ruleAgentHypo": "ὑπό/παρά + genitive with a passive verb",
+      "ruleAgentDia": "διά + genitive with a passive verb",
+      "ruleAnaphora": "its noun already appeared earlier"
     }
   }
 }
