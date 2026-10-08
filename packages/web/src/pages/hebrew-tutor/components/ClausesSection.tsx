@@ -8,11 +8,35 @@ import type { VerseClause, WordAnalysis } from '@dosfilos/domain';
  * El análisis era sólo por palabra: una waw disyuntiva («וְרוּת» = «pero
  * Rut», Rut 1:14) se leía como «y», y un asíndeton («עַמֵּךְ עַמִּי», Rut 1:16)
  * no se nombraba (bitácora del módulo de hebreo #2 y #4). Un análisis guardado
- * antes de esto no trae cláusulas: la sección no aparece.
+ * antes de esto no trae cláusulas: se avisa y se ofrece re-analizar.
  */
-export const ClausesSection: React.FC<{ clauses?: readonly VerseClause[]; words: readonly WordAnalysis[] }> = ({ clauses, words }) => {
+export const ClausesSection: React.FC<{
+  clauses?: readonly VerseClause[];
+  words: readonly WordAnalysis[];
+  /** Un análisis viejo no trae cláusulas: se dice por qué y se ofrece re-analizar. */
+  onReanalyze?: () => void;
+}> = ({ clauses, words, onReanalyze }) => {
   const { t } = useTranslation('hebrewTutor');
-  if (!clauses || clauses.length === 0) return null;
+  if (!clauses || clauses.length === 0) {
+    if (!onReanalyze) return null;
+    return (
+      <section className="rounded-xl border border-dashed border-border bg-card p-5 print:hidden" data-testid="clauses-missing">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          {t('verseAnalyzer.clauses.title')}
+        </h3>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[12.5px] text-muted-foreground">{t('verseAnalyzer.clauses.missing')}</p>
+          <button
+            type="button"
+            onClick={onReanalyze}
+            className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+          >
+            {t('verseAnalyzer.clauses.reanalyze')}
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 print:break-inside-avoid">

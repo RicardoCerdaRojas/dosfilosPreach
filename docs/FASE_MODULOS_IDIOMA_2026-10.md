@@ -190,6 +190,48 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
   - Del dato: límites, roles y conector.
   - Del asistente: tipo de dependiente (ἵνα, ὅτι, relativa, participial, genitivo absoluto, infinitival), conexión según Runge (καί, δέ, γάρ, οὖν, ἀλλά, asíndeton), valor y explicación.
   - Sección «Cláusulas» como en hebreo.
+  - **Hecho en G1 + G5 (2026-10-07), la parte del dato y las reglas (sin asistente):**
+    - **`verseStructure`** (dominio): las filas de la vista «Estructura» para griego y hebreo, cada una con su conector, su relación, la clase de la condicional, la apódosis, si es nominal y lo antepuesto al verbo.
+    - **Envoltorios de MACULA.** MACULA envuelve muchas cláusulas en otra que sólo trae la partícula (οὐκ), el artículo (τὸ ἐπικληθέν), la conjunción (Εἰ, la καί entre dos coordinadas) o la waw separada de su verbo. Se funden en la hija donde sigue el texto. No se funden si madre e hija traen cada una su conector («Εἰ δέ…»: la fila de δέ queda arriba y la condicional debajo).
+    - **Griego:**
+      - la clase de la condicional se mira en todo el subárbol (en Stg 1:5 el verbo está en una cláusula hija de la de Εἰ);
+      - las pospositivas (δέ, γάρ, οὖν) abren su fila antes de la palabra que las precede;
+      - el καί adverbial («εἰ καὶ πάσχοιτε», «aun si») no es conector ni cuenta como antepuesto;
+      - la negación tampoco cuenta como antepuesta.
+    - **Hebreo:**
+      - אִם, כִּי, לְמַעַן, פֶּן y לָכֵן se miran antes que la waw, porque OSHB los marca «C» igual que a ella (antes de esto, en todo el AT salían 2 condicionales; ahora salen 897);
+      - כִּי אִם = «sino / excepto»;
+      - la conjunción que no quedó en ninguna cláusula (כִּי en Rut 1:16) es el conector de la que sigue;
+      - אֲשֶׁר en la madre marca como relativa a la hija, no a la madre;
+      - una cláusula es infinitival sólo si su verbo es infinitivo, y el discurso directo pasa del envoltorio a su cláusula (Rut 2:8 הֲלוֹא).
+    - **Apódosis:** la madre de la prótasis; si esa madre no tiene palabras propias (Rut 3:13), sus otras hijas. Sigue el árbol de MACULA: en Rut 3:13 «חַי יְהוָה» queda dentro de la apódosis porque MACULA la coordina ahí.
+    - **Medido en todo el corpus:** 7.927 versículos griegos y 23.213 hebreos, sin errores, y cada palabra del versículo aparece exactamente una vez (prueba en CI sobre todo el corpus, ~7 s).
+    - **Vista web compartida** (`components/language-structure/`): sangría por nivel, rol bajo cada palabra (S, V, O…), conector punteado, lo antepuesto resaltado, «Prótasis · 1.ª clase» y «Apódosis», y una nota de la regla. En griego, tocar una palabra la marca en las tarjetas. En hebreo, la sección va antes de «Cláusulas» (la lectura del asistente), con la referencia del versículo YA analizado.
+    - **Pruebas:** 21 de dominio sobre datos reales (Stg 1:5, 2:7, 2:9; Jn 3:16, 11:21; 1 Jn 1:9, 3:22; 1 P 3:14; Mc 15:44; Mt 12:4; Ef 1:4, 1:7; Ro 8:28; 1 Co 11:19, 16:13; Rut 1:14-17, 2:8, 3:13, 3:18; Gn 1:2; Sal 1:2; 1 R 1:30, 14:10; Is 6:8), la invariante sobre todo el corpus, 13 de la vista (más una por cada relación con nombre en es/en) y 2 del hook del hebreo. Cada regla se rompió una vez y alguna prueba falló; sólo sobrevive una guarda defensiva (la palabra anterior tiene que ser del mismo versículo), que ningún caso del corpus activa.
+    - **Revisión adversarial de G1 + G5, corregido:**
+      - **Hebreo: la sección no salía nunca con un análisis de la caché** (el camino más común): la referencia venía de `hebrewVerse`, que ese camino no llena. Además, una respuesta tardía de una navegación anterior podía dejar la estructura de un versículo junto al análisis de otro. Ahora el hook guarda el versículo junto con el análisis y descarta lo que llega tarde.
+      - **Hebreo: lo antepuesto se perdía cuando la waw va pegada** («וְהָאָרֶץ הָיְתָה», Gn 1:2): 3.497 de 6.001 cláusulas disyuntivas no lo mostraban.
+      - **Griego: εἰ interrogativo como condición** (Mc 15:44, Hch 19:2; MACULA lo marca `PtclCL`): ahora es «Pregunta». «ὃ ἐάν» es relativo indefinido, y «εἰ μή» sin verbo es «Excepción».
+      - **Griego: conector tomado de una palabra con rol** (1 Co 11:19 «ἵνα καὶ οἱ δόκιμοι» salía «Adición»): el conector va sin rol; el relativo puede ir tras una preposición (Ef 1:7 «ἐν ᾧ»).
+      - **Participios e infinitivos copulativos** (Ro 8:28 «οὖσιν», Ef 1:4 «εἶναι») salían como principales.
+      - **Palabras fuera de toda cláusula** (213 griegas, 740 hebreas; 1 Co 16:13 perdía 3 de sus 4 imperativos; לָכֵן, עַל כֵּן): un tramo sin verbo antes de una cláusula se le une como conector; si no, va en su propia fila, un verbo por fila.
+      - **Hebreo: «inferencia» casi siempre mal** (140 de 142 eran כֵּן «así»): ahora sólo לָכֵן y עַל כֵּן.
+      - **Palabras repetidas** (15 versículos, Is 6:8) y **del versículo anterior** (Esd 4:11): cada palabra se muestra una vez, en la cláusula más profunda.
+      - Inglés «1 class» → «1st class»; la palabra marcada en griego se limpia al cambiar de versículo.
+      - **Queda como está:** 2.820 filas griegas que son sólo el conector (δέ, γάρ, ὅτι con la cláusula debajo); es a propósito. En Gn 49:15 queda una fila con sólo «כִּי», por cómo agrupa MACULA.
+    - **Lectura del asistente dentro de «Estructura»** (opción «b» del fundador, 2026-10-08; incluye H5):
+      - el análisis de cada idioma (`greekTutor.analyzeVerse` v11, `hebrewTutor.analyzeVerse` v3) recibe las filas numeradas y devuelve, por fila, valor y explicación; la relación donde el dato la deja abierta (ἵνα: propósito/resultado; ὅτι/כִּי: causa/contenido) y foco/marco de lo antepuesto;
+      - el código valida contra las filas: número inexistente o repetido, elección donde no hay ambigüedad o foco donde nada va antepuesto, se descartan; cada lectura queda anclada a la primera palabra de su fila;
+      - en pantalla, lo del asistente va marcado «Asistente»; lo demás sale del texto. La ficha de la palabra dice foco o marco cuando el asistente lo leyó;
+      - el hebreo deja de partir el versículo en «Cláusulas» (H2): con estructura, el prompt pide leer las filas. «Cláusulas» queda sólo en el modo descubrimiento;
+      - un análisis anterior (griego v10, hebreo v2) avisa en «Estructura» y ofrece re-analizar; la traducción corregida por el usuario se conserva.
+      - Sin función nueva ni despliegue del servidor: los prompts se arman en el cliente.
+      - **Revisión adversarial de la lectura, corregido:**
+        - en griego, un análisis generado antes de que llegaran las filas quedaba v11 sin lectura y sin aviso: ahora «Generar» espera las filas y un v11 sin lectura avisa y ofrece re-analizar;
+        - en hebreo, un análisis sin filas (datos que no se pudieron leer) se marcaba v3 y el aviso decía «anterior a la lectura»: ahora se marca v2; y un v3 sin lectura tiene su propio aviso. Mientras no se re-analice, se muestran las cláusulas que el asistente sí partió;
+        - al navegar en hebreo ya no parpadea el análisis anterior con la referencia nueva; un análisis griego que llega después de navegar se guarda pero no se pone en el versículo nuevo; el selector griego espera el índice del libro nuevo.
+    - **Ajustes por la revisión del fundador en local (2026-10-08):** leyenda con las marcas reales; las palabras de «Estructura» con la capa de color y la ficha (tooltip) de la página; en hebreo tocar una palabra baja a su tarjeta; la sangría hebrea va a la derecha; sólo cuenta como antepuesto lo que va antes de un verbo FINITO (el saludo de Stg 1:1 no marca nada); el versículo fijo del hebreo queda apagado por defecto con un botón; selectores de libro/capítulo/versículo compartidos (`VersePicker`) en los dos módulos; y los componentes base (`ui/select`, `dropdown-menu`, `popover`, `tooltip`) usaban sintaxis de Tailwind 4 que el 3.4 ignora — ninguna lista tenía altura máxima.
+    - **Pendiente:** el buscador «Ir a versículo…» en griego; el error intermitente `max_output_tokens` del análisis hebreo (Rut 3:13), en functions.
 - **G2. Función de verbos (Wallace), lista cerrada como la de casos.**
   - Participio: adjetival, sustantival y adverbial (temporal, medio, manera, causa, condición, concesión, propósito, resultado, circunstancia concomitante); perifrástico, genitivo absoluto, redundante.
   - Infinitivo: propósito, resultado, tiempo, causa, medio, sujeto, objeto, discurso indirecto, epexegético.

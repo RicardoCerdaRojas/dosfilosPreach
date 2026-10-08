@@ -19,6 +19,8 @@ import React from 'react';
 import { WordCard } from './WordCard';
 import { VerbTable } from './VerbTable';
 import { ClausesSection } from './ClausesSection';
+import { StructureSection } from '@/components/language-structure/StructureSection';
+import { useEstructuraHebrea, useVersiculoFijo } from '../hooks/useEstructuraHebrea';
 import { WordTutorSheet } from './WordTutorSheet';
 import { VerbDetectivePanel } from './VerbDetectivePanel';
 import { NominalDetectivePanel } from './NominalDetectivePanel';
@@ -26,7 +28,7 @@ import { StickyVerseHeader } from './StickyVerseHeader';
 import { MorphemeSpan } from './MorphemeSpan';
 import { WordTooltipContent } from './WordTooltipContent';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
-import { PaletteIcon, ActivityIcon, PrinterIcon, DownloadIcon, FileTextIcon, ScanTextIcon, BookOpenIcon, LayoutGridIcon, ScrollTextIcon, CopyIcon, CheckIcon, RefreshCwIcon, BookOpenTextIcon, PencilIcon, XIcon } from 'lucide-react';
+import { PaletteIcon, ActivityIcon, PrinterIcon, DownloadIcon, FileTextIcon, ScanTextIcon, BookOpenIcon, LayoutGridIcon, ScrollTextIcon, CopyIcon, CheckIcon, RefreshCwIcon, BookOpenTextIcon, PencilIcon, XIcon, PinIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { VerseAnalysis, WordAnalysis, LexicalNote, LexicalNoteType } from '@dosfilos/domain';
 import { versePunctuationOf } from '@dosfilos/domain';
@@ -44,6 +46,8 @@ interface VerseAnalysisResultProps {
   canForceRefresh?: boolean;
   /** Called after a translation is saved so the parent can update local state */
   onTranslationUpdate?: (updates: { literalTranslation?: string; fluidTranslation?: string }) => void;
+  /** Libro (clave morphhb), capítulo y versículo: activan la sección «Estructura». */
+  structureRef?: { book: string; chapter: number; verse: number };
 }
 
 // Color legend items — pedagogical vowel classes + Dagesh
@@ -64,8 +68,10 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   onForceRefresh,
   canForceRefresh = true,
   onTranslationUpdate,
+  structureRef,
 }) => {
   const { t } = useTranslation('hebrewTutor');
+  const { t: tEstructura } = useTranslation('languageStructure');
   const [tutorWord, setTutorWord] = React.useState<any | null>(null);
   const [detectiveWord, setDetectiveWord] = React.useState<WordAnalysis | null>(null);
   const [detectiveWordIndex, setDetectiveWordIndex] = React.useState<number>(-1);
@@ -80,9 +86,33 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   const showColors = viewMode === 'morphological';
   const [showVerbMarkers, setShowVerbMarkers] = React.useState(true);
   const [showSyntaxMarkers, setShowSyntaxMarkers] = React.useState(false);
+  const [fijarVersiculo, alternarFijo] = useVersiculoFijo();
 
   /** Index of the currently highlighted word (hover from header or card). null = none. */
   const [activeWordIndex, setActiveWordIndex] = React.useState<number | null>(null);
+
+  // ── Estructura (G1 + G5): datos de MACULA, enlazados a las palabras del análisis ──
+  const { estructura, alinear, antepuestas, sinLectura } = useEstructuraHebrea(analysis, structureRef);
+
+  /**
+   * La palabra según la vista activa — la usan el versículo y la «Estructura»:
+   * masorética (texto entero, todas las marcas) o morfológica (morfemas a
+   * color, sin cantilación).
+   */
+  const pintarPalabra = (w: WordAnalysis): React.ReactNode =>
+    fullMarks ? (
+      <span className="font-hebrew" style={{ fontFeatureSettings: '"mark" 1, "mkmk" 1' }}>
+        {w.hebrewText}
+      </span>
+    ) : w.morphemes && w.morphemes.length > 0 ? (
+      <>
+        <MorphemeSpan segments={w.morphemes} variant="text" disableColors={!showColors} disableNativeTooltip />
+        {/* Sof pasuq: los morfemas no lo llevan, la línea sí. */}
+        <span className="font-hebrew">{versePunctuationOf(w.hebrewText)}</span>
+      </>
+    ) : (
+      w.hebrewText
+    );
 
   // ── Text scale (persisted in localStorage) ─────────────────────────────────
   // Steps: ~20% per jump — 7 levels total for wide accessibility range
@@ -191,8 +221,8 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Floating sticky header — auto-appears when verse header scrolls out */}
-      <StickyVerseHeader
+      {/* Floating sticky header — sólo si el usuario lo activó («Fijo On») */}
+      {fijarVersiculo && <StickyVerseHeader
         analysis={analysis}
         showColors={showColors}
         showVerbMarkers={showVerbMarkers}
@@ -203,7 +233,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
         onWordHover={handleHeaderWordHover}
         onWordClick={handleHeaderWordClick}
         textScale={textScale}
-      />
+      />}
       {/* ── Header: Reference + Hebrew text ───────────────────────────────── */}
       <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
         <div className="flex items-center justify-between mb-4">
@@ -249,6 +279,17 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                   {showSyntaxMarkers ? 'Sintaxis On' : 'Sintaxis Off'}
                 </button>
               )}
+              <button
+                onClick={alternarFijo}
+                aria-pressed={fijarVersiculo}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors print:hidden ${
+                  fijarVersiculo ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+                title={t(fijarVersiculo ? 'verseAnalyzer.stickyVerse.titleOn' : 'verseAnalyzer.stickyVerse.titleOff')}
+              >
+                <PinIcon className="w-3.5 h-3.5" />
+                {t(fijarVersiculo ? 'verseAnalyzer.stickyVerse.on' : 'verseAnalyzer.stickyVerse.off')}
+              </button>
             </div>
             {/* ── Text size control ─────────────────────── */}
             <div className="flex items-center gap-0.5 bg-muted rounded-full px-1 py-0.5">
@@ -358,28 +399,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                         <span className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${SYNTACTIC_DOT[syntacticMark]}`} />
                       )}
                       {/* Hebrew — dual rendering strategy */}
-                      <span>
-                        {fullMarks ? (
-                          // Masoretic mode: single unbroken string, all marks preserved
-                          <span className="font-hebrew" style={{ fontFeatureSettings: '"mark" 1, "mkmk" 1' }}>
-                            {w.hebrewText}
-                          </span>
-                        ) : w.morphemes && w.morphemes.length > 0 ? (
-                          // Morphological mode: colored spans, cantillation stripped
-                          <>
-                            <MorphemeSpan
-                              segments={w.morphemes}
-                              variant="text"
-                              disableColors={!showColors}
-                              disableNativeTooltip
-                            />
-                            {/* Sof pasuq: los morfemas no lo llevan, la línea sí. */}
-                            <span className="font-hebrew">{versePunctuationOf(w.hebrewText)}</span>
-                          </>
-                        ) : (
-                          w.hebrewText
-                        )}
-                      </span>
+                      <span>{pintarPalabra(w)}</span>
                     {/* Per-word transliteration */}
                     {w.transliteration && (
                       <span
@@ -393,7 +413,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                     )}
                   </span>
                 </TooltipTrigger>
-                <WordTooltipContent word={w} side="bottom" />
+                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} />
               </Tooltip>
             );
           })}
@@ -520,7 +540,42 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
       </div>
 
       {/* ── Clauses ───────────────────────────────────────────────────────── */}
-      <ClausesSection clauses={analysis.clauses} words={analysis.words} />
+      {structureRef && (
+        <StructureSection
+          lang="he"
+          structure={estructura}
+          readings={analysis.clauseReadings}
+          readingNotice={
+            sinLectura
+              ? {
+                  message: tEstructura(`readingMissing.${sinLectura}`),
+                  ...(onForceRefresh && canForceRefresh
+                    ? { action: { label: tEstructura('readingMissing.reanalyze'), onClick: onForceRefresh } }
+                    : {}),
+                }
+              : undefined
+          }
+          links={{
+            toPageIndex: alinear,
+            renderText: i => (analysis.words[i] ? pintarPalabra(analysis.words[i]!) : null),
+            renderTooltip: i =>
+              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} /> : null,
+            onSelect: handleHeaderWordClick,
+            selected: activeWordIndex,
+          }}
+        />
+      )}
+      {/* Las cláusulas como las partía el asistente (H2): en el modo descubrimiento
+          (sin «Estructura») y en un análisis que todavía no trae la lectura de las
+          filas — hasta re-analizar, es lo que hay. El aviso para re-analizar lo
+          da «Estructura»: aquí no se repite. */}
+      {(!structureRef || !analysis.clauseReadings?.length) && (
+        <ClausesSection
+          clauses={analysis.clauses}
+          words={analysis.words}
+          onReanalyze={!structureRef && onForceRefresh && canForceRefresh ? onForceRefresh : undefined}
+        />
+      )}
 
       {/* ── Word analysis grid ─────────────────────────────────────────────── */}
       <div className="print:mt-6">
@@ -541,6 +596,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
               onInvestigate={handleInvestigate}
               onHover={(hovered) => setActiveWordIndex(hovered ? i : null)}
               cardRef={(el) => { cardRefs.current[i] = el; }}
+              fronted={antepuestas.get(i)}
             />
           ))}
         </div>

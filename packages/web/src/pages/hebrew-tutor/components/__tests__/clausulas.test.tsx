@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 /** Bitácora del módulo de hebreo #2 y #4. */
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
@@ -19,8 +19,16 @@ describe('la sección de cláusulas', () => {
         expect(screen.getAllByText('verseAnalyzer.clauses.adjusted')).toHaveLength(1);
     });
 
-    it('un análisis viejo sin cláusulas no muestra la sección', () => {
+    it('un análisis viejo sin cláusulas, sin poder re-analizar, no muestra la sección', () => {
         const { container } = render(<ClausesSection words={words} clauses={undefined} />);
         expect(container).toBeEmptyDOMElement();
+    });
+
+    it('un análisis viejo sin cláusulas avisa por qué y ofrece re-analizar', () => {
+        const onReanalyze = vi.fn();
+        render(<ClausesSection words={words} clauses={[]} onReanalyze={onReanalyze} />);
+        expect(screen.getByText('verseAnalyzer.clauses.missing')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('verseAnalyzer.clauses.reanalyze'));
+        expect(onReanalyze).toHaveBeenCalled();
     });
 });

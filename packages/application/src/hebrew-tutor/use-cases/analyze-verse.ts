@@ -24,8 +24,10 @@ import type {
   VerseAnalysis,
   LexicalEntry,
   HebrewVerse,
+  ILanguageStructureProvider,
+  StructureNode,
 } from '@dosfilos/domain';
-import { applyOshbMorphology, checkClauseConnections, markOathFormula, reconcileGlobalWords } from '@dosfilos/domain';
+import { applyOshbMorphology, checkClauseConnections, markOathFormula, reconcileGlobalWords, verseStructure } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -48,6 +50,8 @@ export class AnalyzeVerseUseCase {
     private readonly analysisService: IHebrewAnalysisService,
     private readonly sessionRepository?: IHebrewSessionRepository,
     private readonly lexicalRepository?: ILexicalRepository,
+    /** Los datos de «Estructura» (MACULA): el asistente lee esas cláusulas en vez de partirlas (G1 + G5). */
+    private readonly structureProvider?: ILanguageStructureProvider,
   ) {}
 
   async execute(input: AnalyzeVerseInput): Promise<VerseAnalysis> {
@@ -71,8 +75,10 @@ export class AnalyzeVerseUseCase {
       hebrewVerse.reference,
     );
 
-    // 5. Perform the analysis via Gemini + knowledge base + lexical context
-    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries);
+    // 5. Perform the analysis via Gemini + knowledge base + lexical context,
+    // con las filas de «Estructura» para que el asistente las lea.
+    const estructura = await this.structureOf(morphhbKey, chapter, verse);
+    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries, estructura);
 
     // 6. Persist to cache for future requests. Se guarda lo que dio el
     // asistente, SIN las reglas: aplicadas antes de guardar, la próxima
@@ -100,6 +106,20 @@ export class AnalyzeVerseUseCase {
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Las filas de «Estructura» del versículo. Sin datos (o si no se pudieron
+   * leer) el análisis sigue sin lectura de cláusulas: nunca se bloquea por esto.
+   */
+  private async structureOf(morphhbKey: string, chapter: number, verse: number): Promise<StructureNode[]> {
+    if (!this.structureProvider) return [];
+    try {
+      const ch = await this.structureProvider.getChapter('he', morphhbKey, chapter);
+      return ch ? verseStructure(ch, verse) : [];
+    } catch {
+      return [];
+    }
+  }
 
   /**
    * Lee el caché y vuelve a poner el texto de morphhb en cada palabra.

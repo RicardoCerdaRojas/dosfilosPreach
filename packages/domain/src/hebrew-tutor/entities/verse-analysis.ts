@@ -196,8 +196,9 @@ export interface LexicalNote {
  * algo nuevo que un análisis guardado no puede tener (como las cláusulas).
  *   1 — sin versión (todo lo anterior a la fase de módulos de idioma).
  *   2 — OSHB como autoridad, cláusulas, volitivos y fórmula de juramento.
+ *   3 — la estructura sale de MACULA; el asistente LEE cada fila (`clauseReadings`).
  */
-export const HEBREW_ANALYSIS_PROMPT_VERSION = 2;
+export const HEBREW_ANALYSIS_PROMPT_VERSION = 3;
 
 // ── Clauses ───────────────────────────────────────────────────────────────────
 
@@ -258,8 +259,14 @@ export interface VerseAnalysis {
   readonly words: readonly WordAnalysis[];
   /** Summary table of verbal forms in the verse */
   readonly verbTable: readonly VerbTableEntry[];
-  /** Las cláusulas del versículo. Ausente en análisis guardados antes de existir. */
+  /**
+   * Las cláusulas como las partía el asistente (H2). Desde v3 la estructura
+   * sale de MACULA y el asistente sólo la lee (`clauseReadings`); esto queda
+   * para los análisis guardados antes y para el modo descubrimiento.
+   */
   readonly clauses?: readonly VerseClause[];
+  /** La lectura de cada fila de «Estructura» (G1 + G5). Ausente antes de v3 o sin datos de estructura. */
+  readonly clauseReadings?: readonly import('../../language-structure/clauseReading').ClauseReading[];
   /**
    * Con qué versión del prompt se generó. Ausente = antes de versionar
    * (fase módulos de idioma, G0). Lo usa la interfaz para ofrecer ampliar un

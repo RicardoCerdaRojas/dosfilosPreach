@@ -53,6 +53,7 @@ export type TranslationNamespace =
     | 'generator'
     | 'greekTutor'
     | 'hebrewTutor'
+    | 'languageStructure'
     | 'faculty'
     | 'exegesis'
     | 'projects'

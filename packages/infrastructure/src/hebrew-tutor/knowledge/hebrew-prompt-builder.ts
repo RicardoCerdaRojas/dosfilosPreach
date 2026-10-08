@@ -13,7 +13,8 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewVerse } from '@dosfilos/domain';
+import type { HebrewVerse, StructureNode } from '@dosfilos/domain';
+import { buildClauseReadingTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
 
@@ -120,6 +121,38 @@ CRITICAL RULES:
 - MAQAF (Unicode U+05BE, the Hebrew hyphen that joins words): Words connected by a maqaf MUST be split into separate word objects in the "words" array, one object per lexical unit. Ensure the "hebrewText" of the FIRST word includes the maqaf at the end, but DO NOT duplicate the maqaf if the source text already has it.
 - SOF PASUQ (Unicode U+05C3 ׃) and PASEQ (Unicode U+05C0 ׀) are verse-level punctuation marks, NOT part of any individual word. Do NOT include them in any word's "hebrewText" or in any morpheme "text" field. They are handled separately by the rendering pipeline.
 `;
+
+// ── Lectura de cláusulas (G1 + G5) ────────────────────────────────────────────
+
+/**
+ * Con estructura, la sección de cláusulas pasa de «pártelas» a «léelas». Las
+ * pautas de la waw siguen valiendo para la TRADUCCIÓN: la relación ya viene
+ * decidida por el dato y el asistente la usa (disyuntiva de contraste → «pero»).
+ */
+const SECCION_LECTURA = (tarea: string) => `## CLÁUSULAS: LA ESTRUCTURA YA ESTÁ DECIDIDA (campo "clauseReadings")
+
+Las cláusulas de este versículo, su dependencia y su conexión vienen del texto
+(MACULA). NO devuelvas el campo "clauses". La traducción y la función de cada
+palabra deben ser coherentes con esas conexiones: waw disyuntiva de contraste →
+«pero», no «y»; asíndeton → sin «y» agregada; wayyiqtol → secuencia narrativa.
+Las "exegeticalNotes" y la función de cada palabra usan los MISMOS nombres de
+relación que la lista de abajo: si una cláusula es «waw + no verbo (disyuntiva)»,
+no la llames «conjuntiva» en ninguna parte.
+${tarea}`;
+
+/** El esquema de salida con "clauseReadings" en lugar de "clauses". */
+function conLectura(schema: string): string {
+  const inicio = schema.indexOf('  "clauses": [');
+  const fin = schema.indexOf('  "exegeticalNotes"');
+  if (inicio === -1 || fin === -1) return schema;
+  return schema.slice(0, inicio)
+    + `  "clauseReadings": [
+    { "n": "number — the clause number from CLÁUSULAS", "value": "string — 2 to 5 words in Spanish", "explanation": "string — one sentence", "resolved": "ground | content — only where asked", "fronting": "focus | frame — only where asked" }
+  ],
+`
+    + schema.slice(fin)
+    .replace('- clauses MUST cover the whole verse, in order, without overlaps: every word belongs to exactly one clause.\n', '- clauseReadings: one entry per numbered clause, with its "n".\n');
+}
 
 // ── Knowledge context formatter ───────────────────────────────────────────────
 
@@ -270,7 +303,13 @@ export function buildVerseAnalysisPrompt(
   knowledgeChunks: readonly KnowledgeChunk[],
   lexicalEntries: readonly LexicalEntry[] = [],
   language = 'es',
+  /**
+   * Filas de «Estructura» (MACULA). Con ellas el asistente ya no parte el
+   * versículo en cláusulas (H2): LEE las que da el dato (G1 + G5).
+   */
+  structure: readonly StructureNode[] = [],
 ): string {
+  const lectura = buildClauseReadingTask(structure);
   const langInstruction =
     language === 'es'
       ? 'IMPORTANT: Respond entirely in Spanish. Use clear academic Spanish appropriate for a Chilean seminary student.'
@@ -343,7 +382,7 @@ DISTINGUIR de:
 - Frases preposicionales donde el sufijo NO es correferencial con el sujeto
   (e.g., "fabricaron para ellos [otros]") — en ese caso traducir normalmente.
 
-## REGLAS DE CLÁUSULAS (campo "clauses")
+${lectura ? SECCION_LECTURA(lectura) : `## REGLAS DE CLÁUSULAS (campo "clauses")
 
 Divide el versículo en cláusulas y, para cada una, di CÓMO se une a lo anterior.
 Mira la PRIMERA palabra de la cláusula:
@@ -366,7 +405,7 @@ Mira la PRIMERA palabra de la cláusula:
 - La primera cláusula del versículo sin conector que analizar → FIRST.
 
 La función sintáctica de cada palabra y las traducciones deben ser coherentes con
-estas conexiones (disyuntiva de contraste → «pero»; asíndeton → sin «y» agregada).
+estas conexiones (disyuntiva de contraste → «pero»; asíndeton → sin «y» agregada).`}
 
 ## REGLA DE TRADUCCIÓN PARA WAYYIQTOL (Pasado narrativo secuencial)
 
@@ -507,6 +546,6 @@ Texto hebreo: ${verse.hebrewText}
 
 ## FORMATO DE RESPUESTA
 
-${OUTPUT_SCHEMA}
+${lectura ? conLectura(OUTPUT_SCHEMA) : OUTPUT_SCHEMA}
 `.trim();
 }

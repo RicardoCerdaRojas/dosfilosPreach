@@ -12,8 +12,8 @@
  *  - maxOutputTokens 32768 to accommodate long verse analyses with many words
  */
 
-import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry } from '@dosfilos/domain';
-import { HEBREW_ANALYSIS_PROMPT_VERSION, reconcileGlobalWords } from '@dosfilos/domain';
+import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry, StructureNode } from '@dosfilos/domain';
+import { HEBREW_ANALYSIS_PROMPT_VERSION, parseClauseReadings, reconcileGlobalWords } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { GEMINI_CONFIG } from '../gemini/config.js';
 import { selectRelevantChunks } from './knowledge/knowledge-selector.js';
@@ -32,12 +32,13 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
     verse: HebrewVerse,
     language = 'es',
     lexicalEntries: readonly LexicalEntry[] = [],
+    structure: readonly StructureNode[] = [],
   ): Promise<VerseAnalysis> {
     // 1. Select the most relevant grammar knowledge chunks for this verse
     const knowledgeChunks = selectRelevantChunks(verse.hebrewText, [], 10);
 
     // 2. Build the full pedagogical prompt (includes lexical glossary context when provided)
-    const prompt = buildVerseAnalysisPrompt(verse, knowledgeChunks, lexicalEntries, language);
+    const prompt = buildVerseAnalysisPrompt(verse, knowledgeChunks, lexicalEntries, language, structure);
 
     // 3. Call Gemini
     let rawResponse: string;
@@ -57,7 +58,7 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
     }
 
     // 4. Parse and validate the JSON response
-    const analysis = this.parseAnalysisResponse(rawResponse, verse);
+    const analysis = this.parseAnalysisResponse(rawResponse, verse, structure);
 
     return analysis;
   }
@@ -68,7 +69,7 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
    * Parses the Gemini JSON response into a VerseAnalysis domain entity.
    * Performs minimal validation and provides safe defaults.
    */
-  private parseAnalysisResponse(rawJson: string, verse: HebrewVerse): VerseAnalysis {
+  private parseAnalysisResponse(rawJson: string, verse: HebrewVerse, structure: readonly StructureNode[] = []): VerseAnalysis {
     let data: Record<string, unknown>;
 
     const cleaned = this.cleanJsonResponse(rawJson);
@@ -114,6 +115,8 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
       verbTable: Array.isArray(data.verbTable) ? (data.verbTable as VerseAnalysis['verbTable']) : [],
       // Se validan después, contra las palabras (`checkClauseConnections`).
       clauses: Array.isArray(data.clauses) ? (data.clauses as VerseAnalysis['clauses']) : [],
+      // Con estructura, el asistente LEE las filas: se validan contra ellas.
+      ...(structure.length ? { clauseReadings: parseClauseReadings(data.clauseReadings, structure) } : {}),
       exegeticalNotes: Array.isArray(data.exegeticalNotes)
         ? (data.exegeticalNotes as string[])
         : undefined,
@@ -121,7 +124,10 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
         ? (data.lexicalNotes as VerseAnalysis['lexicalNotes'])
         : undefined,
       analyzedAt: new Date().toISOString(),
-      promptVersion: HEBREW_ANALYSIS_PROMPT_VERSION,
+      // v3 = el asistente LEYÓ las filas de «Estructura». Sin filas (datos que
+      // no se pudieron leer) el prompt fue el de v2 —partir cláusulas— y así se
+      // marca: la interfaz ofrecerá re-analizar en vez de decir «sin lectura».
+      promptVersion: structure.length ? HEBREW_ANALYSIS_PROMPT_VERSION : 2,
     };
   }
 

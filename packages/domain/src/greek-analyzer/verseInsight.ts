@@ -97,8 +97,9 @@ export interface GreekKeyInsight {
  * v8: + articleUse/antecedent, con el versículo anterior como contexto.
  * v9: + composition (palabras compuestas) y artículo con uso obligatorio.
  * v10: + discourseFunction/connects para partículas y conjunciones.
+ * v11: + clauseReadings — la lectura de cada fila de «Estructura» (G1 + G5).
  */
-export const GREEK_INSIGHT_PROMPT_VERSION = 10;
+export const GREEK_INSIGHT_PROMPT_VERSION = 11;
 
 export interface GreekVerseInsight {
     /** "JAS 1:2" — la clave del caché. */
@@ -135,6 +136,12 @@ export interface GreekVerseInsight {
      * propuesta — ver las salvaguardas en `rhetoricalStructure.ts`.
      */
     readonly rhetoric?: import('./rhetoricalStructure').RhetoricalStructure;
+    /**
+     * La lectura de cada cláusula de la vista «Estructura» (valor, explicación,
+     * la relación que el dato deja abierta y foco/marco de lo antepuesto),
+     * validada contra las filas. Ausente antes de v11 o sin datos de estructura.
+     */
+    readonly clauseReadings?: readonly import('../language-structure/clauseReading').ClauseReading[];
     /** Ausente en cachés anteriores al versionado. */
     readonly promptVersion?: number;
 }

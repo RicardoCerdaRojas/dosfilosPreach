@@ -80,7 +80,12 @@ const attrs = (s) => Object.fromEntries([...(s ?? '').matchAll(/([\w:]+)="([^"]*
 export function leerLowfat(xml) {
     const clausulas = [];
     const palabras = [];
-    const pila = []; // { cl: índice|null, role, cls }
+    // `cons`: el rol del CONSTITUYENTE de la cláusula al que pertenece lo que
+    // está adentro (el grupo hijo directo de la cláusula). En «τὸ καλὸν ὄνομα»
+    // (Stg 2:7) el rol «o» está en el grupo, no en las palabras: sin esto, un
+    // objeto de varias palabras no tenía rol y no se podía ver si iba antes
+    // del verbo.
+    const pila = []; // { cl: índice|null, role, cls, cons }
     const rol = (r) => (r && !r.startsWith('err') ? r : '');
     for (const m of xml.matchAll(/<wg(\s[^>]*)?>|<\/wg>|<w\s([^>]*)>([^<]*)<\/w>/gs)) {
         const g = m[0];
@@ -92,15 +97,19 @@ export function leerLowfat(xml) {
                 const tope = pila[pila.length - 1];
                 const envolvente = tope && tope.cls !== 'np' ? tope.role : '';
                 clausulas.push({ id: clausulas.length, parent: padre, rule: a.rule ?? '', role: rol(a.role) || rol(envolvente), words: [] });
-                pila.push({ cl: clausulas.length - 1, role: '', cls: 'cl' });
+                pila.push({ cl: clausulas.length - 1, role: '', cls: 'cl', cons: '' });
             } else {
-                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '' });
+                const tope = pila[pila.length - 1];
+                const cons = tope && tope.cls === 'cl' ? rol(a.role) : (tope?.cons ?? '');
+                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '', cons });
             }
             continue;
         }
         const a = attrs(m[2]);
         const cl = [...pila].reverse().find(x => x.cl !== null)?.cl ?? null;
-        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role), morph: a.morph ?? '', clause: cl });
+        const tope = pila[pila.length - 1];
+        const cons = tope && tope.cls !== 'cl' ? tope.cons : '';
+        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl });
     }
     return { clausulas, palabras };
 }

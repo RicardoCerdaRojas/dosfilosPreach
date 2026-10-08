@@ -1,8 +1,6 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { VersePicker } from '@/components/bible-nav/VersePicker';
 import type { BibleBookId } from '@dosfilos/domain';
 
 interface Libro {
@@ -23,6 +21,8 @@ interface Props {
     onStep: (delta: 1 | -1) => void;
     vista: 'verse' | 'passage';
     onVista: (v: 'verse' | 'passage') => void;
+    /** Mientras carga el libro nuevo, capítulo y versículo esperan (si no, ofrecen los del libro anterior). */
+    loading?: boolean;
 }
 
 /**
@@ -33,47 +33,26 @@ interface Props {
  */
 export function GreekNavBar({
     books, book, chapter, verse, chapters, versesInChapter,
-    nombre, onGoTo, onStep, vista, onVista,
+    nombre, onGoTo, onStep, vista, onVista, loading = false,
 }: Props) {
     const { t } = useTranslation('greekTutor');
 
     return (
         <div className="flex flex-wrap items-center gap-2">
-            <Select value={book} onValueChange={(v) => onGoTo(v as BibleBookId, 1, 1)}>
-                <SelectTrigger className="w-44 h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                    {books.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>{nombre(b)}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Select value={String(chapter)} onValueChange={(v) => onGoTo(book, Number(v), 1)}>
-                <SelectTrigger className="w-28 h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                    {chapters.map((c) => (
-                        <SelectItem key={c} value={String(c)}>{t('analyzer.chapterShort', { n: c })}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <Select value={String(verse)} onValueChange={(v) => onGoTo(book, chapter, Number(v))}>
-                <SelectTrigger className="w-24 h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                    {Array.from({ length: versesInChapter }, (_, i) => i + 1).map((v) => (
-                        <SelectItem key={v} value={String(v)}>{t('analyzer.verseShort', { n: v })}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-
-            <div className="flex items-center gap-1">
-                <Button variant="outline" size="sm" onClick={() => onStep(-1)} aria-label={t('analyzer.prevVerse')}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => onStep(1)} aria-label={t('analyzer.nextVerse')}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            </div>
+            <VersePicker
+                books={books.map((b) => ({ key: b.id, name: nombre(b) }))}
+                book={book}
+                chapter={chapter}
+                verse={verse}
+                chapters={chapters}
+                versesInChapter={versesInChapter}
+                onNavigate={(b, c, v) => onGoTo(b as BibleBookId, c, v)}
+                onPrev={() => onStep(-1)}
+                onNext={() => onStep(1)}
+                canPrev={!(chapter === chapters[0] && verse === 1)}
+                canNext={!(chapter === chapters[chapters.length - 1] && verse === versesInChapter)}
+                loadingIndex={loading}
+            />
 
             <div className="ml-auto flex items-center gap-1">
                 {(['verse', 'passage'] as const).map((v) => (

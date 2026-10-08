@@ -47,4 +47,12 @@ describe('cláusulas del capítulo', () => {
         expect(cls.find(c => c.rule === 'V').role).toBe('');
         expect(cls.find(c => c.rule === 'sub-CL').role).toBe('adv');
     });
+
+    it('REGRESIÓN (G1): las palabras de un constituyente de varias palabras llevan su rol (Stg 2:7 τὸ καλὸν ὄνομα = o)', () => {
+        const x = `<wg class="cl" rule="S-V-O"><w xml:id="b1" ref="X 2:7!1" role="s">αὐτοὶ</w><w xml:id="b2" ref="X 2:7!2" role="v">βλ</w>
+          <wg class="np" role="o"><w xml:id="b3" ref="X 2:7!3">τὸ</w><wg class="np"><w xml:id="b4" ref="X 2:7!4">καλὸν</w></wg></wg></wg>`;
+        const { palabras } = leerLowfat(x);
+        expect(palabras.map(p => p.role)).toEqual(['s', 'v', 'o', 'o']);
+    });
 });
+

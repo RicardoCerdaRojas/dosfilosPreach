@@ -3,6 +3,7 @@ import {
     parseGreekInsight,
     type GreekVerseInsight,
     type GreekWordToken,
+    type StructureNode,
 } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
@@ -19,6 +20,8 @@ export class GreekInsightService {
         tokens: readonly GreekWordToken[];
         /** Contexto para detectar la anáfora del artículo. */
         previousVerse?: { reference: string; text: string };
+        /** Filas de «Estructura»: el modelo devuelve su lectura (G1 + G5). */
+        structure?: readonly StructureNode[];
     }): Promise<GreekVerseInsight> {
         const raw = await runLlmPrompt({
             feature: 'greekTutor.analyzeVerse',
@@ -34,6 +37,7 @@ export class GreekInsightService {
             reference: input.reference,
             expectedWordCount: input.tokens.length,
             cases: input.tokens.map((t) => t.tag.case),
+            structure: input.structure,
         });
         if (!parsed) {
             throw new Error('greek-insight: respuesta del modelo inválida o desalineada');

@@ -29,3 +29,15 @@ describe('HostedLanguageStructureProvider', () => {
         expect(await new HostedLanguageStructureProvider('/x', f).getChapter('gr', 'JHN', 99)).toBeNull();
     });
 });
+
+describe('HostedLanguageStructureProvider — claves de libro', () => {
+    it('«Cant» (catálogo del tutor de hebreo) se pide como «Song» (OSHB)', async () => {
+        const urls: string[] = [];
+        const p = new HostedLanguageStructureProvider('/language-data/v1', (async (url: string) => {
+            urls.push(url);
+            return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+        }) as typeof fetch);
+        await p.getChapter('he', 'Cant', 2);
+        expect(urls).toEqual(['/language-data/v1/he/Song/2.json']);
+    });
+});

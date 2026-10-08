@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGreekVerse } from './useGreekVerse';
@@ -6,13 +6,17 @@ import { useGreekInsight } from './useGreekInsight';
 import { GreekPassageView } from './GreekPassageView';
 import { GreekInsightBlocks } from './GreekInsightBlocks';
 import type { GreekColorMode, GreekFontScale } from './GreekVerseTools';
-import { GreekVerseBoard } from './GreekVerseBoard';
+import { GreekVerseBoard, GreekWordTooltip } from './GreekVerseBoard';
+import { pintarPalabraGriega } from './pintarPalabraGriega';
 import { GreekNavBar } from './GreekNavBar';
 import { FirestoreGreekFindingsRepository } from '@dosfilos/infrastructure';
 import { transliterateGreek } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { toast } from 'sonner';
 import { GreekWordCard } from './GreekWordCard';
+import { StructureSection } from '@/components/language-structure/StructureSection';
+import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
+import { GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
 
 /**
  * El ANALIZADOR griego — espejo del analizador hebreo, versículo a versículo:
@@ -28,10 +32,13 @@ import { GreekWordCard } from './GreekWordCard';
  */
 export function GreekAnalyzerPage() {
     const { t, i18n } = useTranslation('greekTutor');
+    const { t: tEstructura } = useTranslation('languageStructure');
     const { user } = useFirebase();
     const { book, chapter, verse, books, chapters, versesInChapter, data, previous, loading, error, goTo, step, provider, lemmaCounts } =
         useGreekVerse({ book: 'JAS', chapter: 1, verse: 1 });
     const [seleccion, setSeleccion] = useState<number | null>(null);
+    // La selección es una posición en el versículo: al cambiar de versículo ya no vale.
+    useEffect(() => setSeleccion(null), [book, chapter, verse]);
     /** Versículo suelto o perícopa: un pastor estudia pasajes. */
     const [vista, setVista] = useState<'verse' | 'passage'>('verse');
     /** Lemas guardados en esta sesión, para el check del botón. */
@@ -65,7 +72,36 @@ export function GreekAnalyzerPage() {
         i18n.language.startsWith('es') ? b.nameEs : b.nameEn;
     const libroActual = books.find((b) => b.id === book);
     const referencia = `${book} ${chapter}:${verse}`;
-    const { insight, generating, error: insightError, cacheUnavailable, generate } = useGreekInsight(referencia, data?.tokens, previous);
+    /** La vista «Estructura» y lo que aporta a las fichas (lo antepuesto al verbo). */
+    const estructura = useVerseStructure('gr', book, chapter, verse);
+    const { insight, checking, generating, error: insightError, cacheUnavailable, generate } = useGreekInsight(referencia, data?.tokens, previous, estructura.nodes);
+    // MACULA y MorphGNT se alinearon palabra por palabra en G0: el ordinal es el
+    // índice del token. Si un día no coinciden en cantidad, no se enlaza nada.
+    const cantidadTokens = data?.tokens.length ?? -1;
+    const alinear = useCallback(
+        (palabras: readonly StructureWord[]) => (palabras.length === cantidadTokens ? palabras.map((_, i) => i) : []),
+        [cantidadTokens],
+    );
+    // Lo antepuesto, con foco o marco cuando el asistente ya leyó las cláusulas.
+    const lecturas = insight?.clauseReadings;
+    const antepuestas = useMemo(() => conLectura(estructura.nodes ?? [], estructura.ordinal, lecturas), [estructura, lecturas]);
+    const frontedDe = (i: number) => (estructura.words.length === cantidadTokens ? antepuestas.get(i) : undefined);
+    /**
+     * Por qué no hay lectura de cláusulas: sin análisis (el botón «Generar» está
+     * justo arriba: aquí sólo el porqué), un análisis anterior a v11, o uno que
+     * se generó sin las filas (antes de que llegaran) o cuya lectura no pasó la
+     * validación — en esos dos, re-analizar.
+     */
+    const reanalizar = { label: tEstructura('readingMissing.reanalyze'), onClick: () => void generate(), disabled: generating || estructura.loading };
+    const avisoLectura = checking || cacheUnavailable
+        ? undefined
+        : !insight
+          ? { message: tEstructura('readingMissing.generate') }
+          : insight.promptVersion !== GREEK_INSIGHT_PROMPT_VERSION
+            ? { message: tEstructura('readingMissing.stale'), action: reanalizar }
+            : !lecturas?.length && (estructura.nodes?.length ?? 0) > 0
+              ? { message: tEstructura('readingMissing.empty'), action: reanalizar }
+              : undefined;
 
     /**
      * El caso del TÉRMINO de una preposición: el primer token siguiente que
@@ -140,6 +176,7 @@ export function GreekAnalyzerPage() {
                     onStep={step}
                     vista={vista}
                     onVista={setVista}
+                    loading={loading}
                 />
 
                 {vista === 'passage' ? (
@@ -186,6 +223,7 @@ export function GreekAnalyzerPage() {
                             reanalyzing={generating}
                             seleccion={seleccion}
                             onSeleccion={setSeleccion}
+                            frontedDe={frontedDe}
                         />
 
                         {/* LAS DOS TRADUCCIONES — el aporte del modelo, con caché
@@ -194,11 +232,43 @@ export function GreekAnalyzerPage() {
                             quien lee morfología no pidió pagar una llamada. */}
                         <GreekInsightBlocks
                             insight={insight}
-                            generating={generating}
                             error={insightError}
                             cacheUnavailable={cacheUnavailable}
                             tokens={data.tokens}
                             onGenerate={() => void generate()}
+                            // Sin las filas de «Estructura» el análisis saldría sin la lectura de cláusulas.
+                            generating={generating || estructura.loading}
+                        />
+
+                        {/* ESTRUCTURA — determinista (MACULA + reglas): las
+                            cláusulas sangradas, sus conectores y relaciones.
+                            Tocar una palabra la marca en las tarjetas. */}
+                        <StructureSection
+                            lang="gr"
+                            structure={estructura}
+                            readings={lecturas}
+                            readingNotice={avisoLectura}
+                            links={{
+                                toPageIndex: alinear,
+                                renderText: (i) => (data.tokens[i] ? pintarPalabraGriega(data.tokens[i]!, colorMode) : null),
+                                renderTooltip: (i) => {
+                                    const tok = data.tokens[i];
+                                    return tok ? (
+                                        <GreekWordTooltip
+                                            token={tok}
+                                            insight={insight?.words[i]}
+                                            keyInsight={claveDe(tok.text)}
+                                            relations={relacionesDe(i)}
+                                            objectCase={casoDelTermino(i)}
+                                            bookCount={lemmaCounts[tok.lemma]}
+                                            bookName={libroActual ? nombre(libroActual) : book}
+                                            fronted={frontedDe(i)}
+                                        />
+                                    ) : null;
+                                },
+                                onSelect: (i) => setSeleccion(seleccion === i ? null : i),
+                                selected: seleccion,
+                            }}
                         />
 
                         {/* ANÁLISIS POR PALABRA — todo a la vista. */}
@@ -217,6 +287,7 @@ export function GreekAnalyzerPage() {
                                         objectCase={casoDelTermino(i)}
                                         bookCount={lemmaCounts[tok.lemma]}
                                         bookName={libroActual ? nombre(libroActual) : book}
+                                        fronted={frontedDe(i)}
                                         onSaveFinding={
                                             insight && user?.uid && (claveDe(tok.text) || insight.words[i])
                                                 ? () => void guardarHallazgo(i)

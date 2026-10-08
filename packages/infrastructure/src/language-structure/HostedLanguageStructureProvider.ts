@@ -8,6 +8,9 @@ import type { ChapterStructure, ILanguageStructureProvider, StructureLanguage } 
  * Reemplaza la descarga en el navegador desde GitHub en `@master`: un capítulo
  * pesa 7-30 KB comprimido, contra los 16,7 MB de un libro de MACULA.
  */
+/** El catálogo del tutor de hebreo usa «Cant»; los datos, la clave de OSHB «Song». */
+const CLAVE_DE_DATOS: Readonly<Record<string, string>> = { Cant: 'Song' };
+
 export class HostedLanguageStructureProvider implements ILanguageStructureProvider {
     private readonly cache = new Map<string, Promise<ChapterStructure | null>>();
 
@@ -16,7 +19,8 @@ export class HostedLanguageStructureProvider implements ILanguageStructureProvid
         private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
     ) { }
 
-    getChapter(lang: StructureLanguage, book: string, chapter: number): Promise<ChapterStructure | null> {
+    getChapter(lang: StructureLanguage, libro: string, chapter: number): Promise<ChapterStructure | null> {
+        const book = CLAVE_DE_DATOS[libro] ?? libro;
         const key = `${lang}/${book}/${chapter}`;
         const enCurso = this.cache.get(key);
         if (enCurso) return enCurso;

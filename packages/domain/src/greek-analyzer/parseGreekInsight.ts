@@ -1,3 +1,5 @@
+import { parseClauseReadings } from '../language-structure/clauseReading';
+import type { StructureNode } from '../language-structure/verseStructure';
 import { GREEK_INSIGHT_PROMPT_VERSION, type GreekVerseInsight, type GreekWordInsight } from './verseInsight';
 import { isKnownCaseFunction } from './caseFunctionTaxonomy';
 import { validateRhetoricalStructure, validateWordRelations } from './rhetoricalStructure';
@@ -27,6 +29,8 @@ export function parseGreekInsight(
          * que ningún profesor reconoce es peor que ninguna.
          */
         cases?: readonly (GreekCase | undefined)[];
+        /** Las filas de «Estructura» que se mandaron a leer (en el mismo orden). */
+        structure?: readonly StructureNode[];
     },
 ): GreekVerseInsight | null {
     const inicio = raw.indexOf('{');
@@ -131,6 +135,7 @@ export function parseGreekInsight(
     // sostienen — sin tumbar el resto del análisis.
     const relations = validateWordRelations(p.relations, input.cases ?? []);
     const rhetoric = validateRhetoricalStructure(p.rhetoric, input.expectedWordCount);
+    const clauseReadings = input.structure ? parseClauseReadings(p.clauseReadings, input.structure) : [];
 
     return {
         reference: input.reference,
@@ -141,6 +146,7 @@ export function parseGreekInsight(
         ...(wordOrderNote ? { wordOrderNote } : {}),
         ...(relations.length > 0 ? { relations } : {}),
         ...(rhetoric ? { rhetoric } : {}),
+        ...(clauseReadings.length > 0 ? { clauseReadings } : {}),
         promptVersion: GREEK_INSIGHT_PROMPT_VERSION,
     };
 }

@@ -5,6 +5,7 @@
  * Follows the same dependency-injection pattern as GreekTutorProvider.
  */
 
+import { languageStructureProvider } from '@/components/language-structure/provider';
 import React, { createContext, useContext, useMemo } from 'react';
 import {
   MorphhbBibleProvider,
@@ -51,7 +52,7 @@ export const HebrewTutorProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Cast to include loadBook — MorphhbBibleProvider exposes it publicly
     const provider = bibleProvider as typeof bibleProvider & { loadBook(key: string): Promise<void> };
 
-    const analyzeVerse = new AnalyzeVerseUseCase(provider, analysisService, sessionRepository, lexiconRepository);
+    const analyzeVerse = new AnalyzeVerseUseCase(provider, analysisService, sessionRepository, lexiconRepository, languageStructureProvider);
 
     return {
       analyzeVerse,

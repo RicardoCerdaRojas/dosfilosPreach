@@ -81,3 +81,30 @@ describe('el tutor de hebreo con la morfología de OSHB', () => {
     });
 });
 
+
+describe('el análisis hebreo manda las filas de «Estructura» a leer (G1 + G5)', () => {
+    const capitulo = {
+        lang: 'he', book: 'Ruth', chapter: 1,
+        words: [{ r: '13!1', t: 'תֵּֽעָגֵ֔נָה', l: '5702', role: 'v', parts: [{ t: 'תֵּֽעָגֵ֔נָה', m: 'VNi2fp', role: 'v' }] }],
+        clauses: [{ p: null, rule: 'V', role: '', w: ['13!1'] }],
+    };
+
+    it('con datos, el servicio recibe las filas del versículo', async () => {
+        const service = { analyzeVerse: vi.fn().mockResolvedValue(analisis) };
+        const estructura = { getChapter: vi.fn().mockResolvedValue(capitulo) };
+        await new AnalyzeVerseUseCase(provider as never, service as never, undefined, undefined, estructura as never)
+            .execute({ morphhbKey: 'Ruth', chapter: 1, verse: 13, forceRefresh: true } as never);
+        expect(estructura.getChapter).toHaveBeenCalledWith('he', 'Ruth', 1);
+        const filas = service.analyzeVerse.mock.calls[0]![3];
+        expect(filas).toHaveLength(1);
+        expect(filas[0].words[0].t).toBe('תֵּֽעָגֵ֔נָה');
+    });
+
+    it('si los datos no se pueden leer, el análisis sigue sin lectura (no se bloquea)', async () => {
+        const service = { analyzeVerse: vi.fn().mockResolvedValue(analisis) };
+        const estructura = { getChapter: vi.fn().mockRejectedValue(new Error('red')) };
+        await new AnalyzeVerseUseCase(provider as never, service as never, undefined, undefined, estructura as never)
+            .execute({ morphhbKey: 'Ruth', chapter: 1, verse: 13, forceRefresh: true } as never);
+        expect(service.analyzeVerse.mock.calls[0]![3]).toEqual([]);
+    });
+});
