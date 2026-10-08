@@ -224,8 +224,16 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
     const trQueAbren = new Set(nodos.map(n => previaDe(palabrasDe(n.words)[0]?.r)).filter(esTr).map(w => w!.r));
     // Antes del verbo por gramática, no por énfasis: la negación y, en griego,
     // las conjunciones y partículas con función adverbial («εἰ καὶ πάσχοιτε»).
+    /**
+     * El relativo y el interrogativo (y la preposición que los rige) van
+     * siempre al comienzo de su cláusula: es gramática, no énfasis. «δι’ οὗ
+     * ἐκλήθητε» (1 Co 1:9) salía «antepuesto: foco» (prueba del fundador).
+     */
+    const relativoOInterrogativo = (w: StructureWord | undefined) => !!w && (w.pos === 'RR' || w.l === 'τίς');
+    const posVerso = new Map(verseWords(ch, verse).map((w, i, ws) => [w.r, ws[i + 1]]));
     const noCuenta = (r: string) => {
         const w = porRef.get(r);
+        if (ch.lang === 'gr' && (relativoOInterrogativo(w) || (w?.pos === 'P-' && relativoOInterrogativo(posVerso.get(r))))) return true;
         // καί adverbial («aun», «también»): MorphGNT lo marca D-, pero no es un constituyente adelantado.
         return NEGACIONES.has(lemas.get(r) ?? '') || (ch.lang === 'gr' && (w?.l === 'καί' || (!!w?.pos && /^[CX]/.test(w.pos))));
     };
