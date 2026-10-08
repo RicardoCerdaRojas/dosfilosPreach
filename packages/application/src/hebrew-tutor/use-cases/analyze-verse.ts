@@ -72,21 +72,19 @@ export class AnalyzeVerseUseCase {
     );
 
     // 5. Perform the analysis via Gemini + knowledge base + lexical context
-    // La morfología verbal la decide OSHB (formas ambiguas: 2FP/3FP,
-    // yusivo/imperfecto); ver `applyOshbMorphology`.
-    // Y la conexión de cada cláusula se comprueba contra su primera palabra
-    // (waw + no verbo = disyuntiva; sin conjunción = asíndeton).
-    const analysis = this.withRules(
-        await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries),
-        hebrewVerse,
-    );
+    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries);
 
-    // 6. Persist to cache for future requests
+    // 6. Persist to cache for future requests. Se guarda lo que dio el
+    // asistente, SIN las reglas: aplicadas antes de guardar, la próxima
+    // lectura ya no encontraba diferencia con OSHB y la corrección (y el
+    // aviso de la traducción) desaparecía desde la segunda vez.
     if (this.sessionRepository) {
-      await this.sessionRepository.cacheAnalysis(hebrewVerse.reference, analysis);
+      await this.sessionRepository.cacheAnalysis(hebrewVerse.reference, raw);
     }
 
-    return analysis;
+    // La morfología verbal la decide OSHB, la fórmula de juramento es yusivo
+    // y la conexión de cada cláusula se comprueba: siempre al mostrar.
+    return this.withRules(raw, hebrewVerse);
   }
 
   /**

@@ -47,6 +47,47 @@
         "QUOTATION": "Direct speech"
       }
     },
+    "categories": {
+      "VERB": "Verb",
+      "NOUN": "Noun",
+      "ADJECTIVE": "Adjective",
+      "PRONOUN": "Pronoun",
+      "PERSONAL_PRONOUN": "Personal Pronoun",
+      "DEMONSTRATIVE_PRONOUN": "Demonstrative Pronoun",
+      "RELATIVE_PRONOUN": "Relative Pronoun",
+      "PREPOSITION": "Preposition",
+      "CONJUNCTION": "Conjunction",
+      "DEFINITE_ARTICLE": "Definite Article",
+      "PARTICLE": "Particle",
+      "ADVERB": "Adverb",
+      "INTERJECTION": "Interjection",
+      "PROPER_NOUN": "Proper Noun",
+      "OBJECT_MARKER": "Direct Object Marker",
+      "INTERROGATIVE": "Interrogative",
+      "NEGATIVE_PARTICLE": "Negative Particle"
+    },
+    "morphology": {
+      "gender": {
+        "M": "Masculine",
+        "F": "Feminine",
+        "C": "Common",
+        "MASCULINE": "Masculine",
+        "FEMININE": "Feminine",
+        "COMMON": "Common"
+      },
+      "number": {
+        "S": "Singular",
+        "P": "Plural",
+        "D": "Dual",
+        "SINGULAR": "Singular",
+        "PLURAL": "Plural",
+        "DUAL": "Dual"
+      },
+      "state": {
+        "ABSOLUTE": "Absolute",
+        "CONSTRUCT": "Construct"
+      }
+    },
     "oshb": {
       "confirmed": "Matches OSHB",
       "differs": "Corrected per OSHB",

@@ -53,6 +53,9 @@ export interface OshbVerbParse {
  */
 export function parseOshbVerb(code: string | null | undefined): OshbVerbParse | null {
     if (!code) return null;
+    // El arameo (código con «A») tiene sus propios tallos: con la tabla
+    // hebrea, el ithpaal salía pual. Ahí no se nombra el tallo.
+    const arameo = code.startsWith('A');
     const segmentos = code.replace(/^[HA]/, '').split('/');
     const verbo = segmentos.find(s => s.startsWith('V') && s.length >= 3);
     if (!verbo) return null;
@@ -61,7 +64,7 @@ export function parseOshbVerb(code: string | null | undefined): OshbVerbParse | 
     const esParticipio = verbForm === VerbForm.PARTICIPLE_ACTIVE || verbForm === VerbForm.PARTICIPLE_PASSIVE;
     const [p, g, n] = esParticipio ? ['', resto[0] ?? '', resto[1] ?? ''] : [resto[0] ?? '', resto[1] ?? '', resto[2] ?? ''];
     return {
-        binyan: TALLO[verbo[1]!] ?? null,
+        binyan: arameo ? null : TALLO[verbo[1]!] ?? null,
         verbForm,
         person: PERSONA[p] ?? null,
         gender: GENERO[g] ?? null,
@@ -123,9 +126,9 @@ export function applyOshbMorphology(
         if (!code) return w;
         const oshbVerb = parseOshbVerb(code);
         const base = { morphCode: code, strongNumber: conCodigo?.lemma ?? '' };
-        if (w.category !== GrammaticalCategory.VERB || !w.verbMorphology || !oshbVerb) {
-            return { ...w, oshbReference: { ...base, agreesWithAnalysis: true, corrections: [] } };
-        }
+        // Sólo se compara —y sólo se muestra la insignia— cuando los dos lados
+        // son verbo: en un sustantivo «coincide con OSHB» no diría nada.
+        if (w.category !== GrammaticalCategory.VERB || !w.verbMorphology || !oshbVerb) return w;
         const { verbMorphology, corrections } = contrastVerbWithOshb(w.verbMorphology, oshbVerb);
         return {
             ...w,
@@ -134,14 +137,35 @@ export function applyOshbMorphology(
         };
     });
 
-    const corregidas = words.filter(w => (w.oshbReference?.corrections.length ?? 0) > 0 && w.verbMorphology);
-    const verbTable = analysis.verbTable.map(row => {
-        const palabra = corregidas.find(w => esqueleto(w.hebrewText) === esqueleto(row.hebrewForm));
-        if (!palabra?.verbMorphology) return row;
-        return { ...row, binyan: palabra.verbMorphology.binyan, verbForm: palabra.verbMorphology.verbForm, pgn: pgnDe(palabra.verbMorphology) };
-    });
+    const verbTable = syncVerbTable(analysis.verbTable, words, (row, w) => ({
+        ...row, binyan: w.verbMorphology!.binyan, verbForm: w.verbMorphology!.verbForm, pgn: pgnDe(w.verbMorphology!),
+    }));
 
     return { ...analysis, words, verbTable };
+}
+
+/**
+ * Cada fila de la tabla de verbos con SU palabra: en orden y usando cada
+ * palabra una sola vez. Buscar «la primera con las mismas consonantes»
+ * hacía que dos verbos iguales con análisis distinto (1 S 3:17 תְכַחֵד,
+ * yusivo e imperfecto) tomaran los dos el mismo.
+ */
+function syncVerbTable<R extends { hebrewForm: string }>(
+    rows: readonly R[],
+    words: readonly WordAnalysis[],
+    actualizar: (row: R, w: WordAnalysis) => R,
+): R[] {
+    let desde = 0;
+    return rows.map(row => {
+        const clave = esqueleto(row.hebrewForm);
+        for (let i = desde; i < words.length; i++) {
+            const w = words[i]!;
+            if (!w.verbMorphology || esqueleto(w.hebrewText) !== clave) continue;
+            desde = i + 1;
+            return actualizar(row, w);
+        }
+        return row;
+    });
 }
 
 /**
@@ -181,7 +205,10 @@ export function markOathFormula(
         const cambio: OshbCorrection[] = vm.verbForm === VerbForm.JUSSIVE
             ? []
             : [{ field: 'verbForm', analysis: String(vm.verbForm), oshb: VerbForm.JUSSIVE, reason: 'oath-formula' }];
-        const previas = (w.oshbReference?.corrections ?? []).filter(c => c.field !== 'verbForm');
+        // La corrección de forma que ya hizo OSHB se conserva (en 11 de las 12
+        // fórmulas OSHB ya dice yusivo y el error del asistente debe verse);
+        // sólo se reemplaza si la regla cambia algo.
+        const previas = (w.oshbReference?.corrections ?? []).filter(c => cambio.length === 0 || c.field !== 'verbForm');
         return {
             ...w,
             verbMorphology: { ...vm, verbForm: VerbForm.JUSSIVE, temporalValue: OATH_FORMULA_VALUE },
@@ -190,10 +217,10 @@ export function markOathFormula(
                 : {}),
         };
     });
-    const marcadas = words.filter((w, i) => w !== analysis.words[i]);
-    const verbTable = analysis.verbTable.map(row => {
-        const palabra = marcadas.find(w => esqueleto(w.hebrewText) === esqueleto(row.hebrewForm));
-        return palabra ? { ...row, verbForm: VerbForm.JUSSIVE, temporalValue: OATH_FORMULA_VALUE } : row;
-    });
+    const verbTable = syncVerbTable(analysis.verbTable, words, (row, w) => (
+        w.verbMorphology?.temporalValue === OATH_FORMULA_VALUE
+            ? { ...row, verbForm: VerbForm.JUSSIVE, temporalValue: OATH_FORMULA_VALUE }
+            : row
+    ));
     return { ...analysis, words, verbTable };
 }

@@ -67,4 +67,30 @@ describe('la conexión de cada cláusula', () => {
             .toEqual([expect.objectContaining({ firstWord: 0, lastWord: 0, connection: 'ASYNDETIC' })]);
         expect(checkClauseConnections({ words } as never).clauses).toEqual([]);
     });
+
+    it('REGRESIÓN (revisión): un weqatal no es cadena de wayyiqtol aunque su waw se llame «consecutiva»', () => {
+        const analysis = { words: [w('וְהָלַכְתָּ', GrammaticalCategory.VERB, [MorphemeRole.WAW_CONSECUTIVE], VerbForm.WEQATAL)], clauses: [clausula(0, 0, 'WAW_CONJUNCTIVE')] } as never;
+        const r = checkClauseConnections(analysis).clauses![0]!;
+        expect(r.connection).toBe('WAW_CONJUNCTIVE');
+        expect(r.adjusted).toBeUndefined();
+    });
+
+    it('REGRESIÓN (revisión): וְלֹא + verbo es continuación negada, no disyuntiva', () => {
+        const analysis = { words: [w('וְלֹא', GrammaticalCategory.NEGATIVE_PARTICLE, [MorphemeRole.WAW_CONJUNCTIVE]), w('יָדַע', GrammaticalCategory.VERB)], clauses: [clausula(0, 1, 'WAW_CONJUNCTIVE'), ] } as never;
+        expect(checkClauseConnections(analysis).clauses![0]!.connection).toBe('WAW_CONJUNCTIVE');
+        const asindeton = { words: [w('וְלֹא', GrammaticalCategory.NEGATIVE_PARTICLE, [MorphemeRole.WAW_CONJUNCTIVE])], clauses: [clausula(0, 0, 'ASYNDETIC')] } as never;
+        expect(checkClauseConnections(asindeton).clauses![0]!.connection).toBe('WAW_CONJUNCTIVE');
+    });
+
+    it('REGRESIÓN (revisión): la waw con ḥireq o segol también es waw (וִיהִי)', () => {
+        const analysis = { words: [w('וִיהִי', GrammaticalCategory.VERB)], clauses: [clausula(0, 0, 'WAW_CONJUNCTIVE')] } as never;
+        expect(checkClauseConnections(analysis).clauses![0]!.connection).toBe('WAW_CONJUNCTIVE');
+    });
+
+    it('REGRESIÓN (revisión): sin solapes ni repetidas, en orden; «inicial» sólo la primera', () => {
+        const words = [w('א', GrammaticalCategory.NOUN), w('ב', GrammaticalCategory.NOUN), w('ג', GrammaticalCategory.NOUN)];
+        const r = checkClauseConnections({ words, clauses: [clausula(2, 2, 'FIRST'), clausula(0, 1, 'FIRST'), clausula(0, 1, 'FIRST'), clausula(1, 2, 'ASYNDETIC')] } as never).clauses!;
+        expect(r.map(c => [c.firstWord, c.lastWord, c.connection])).toEqual([[0, 1, 'FIRST'], [2, 2, 'ASYNDETIC']]);
+    });
 });
+

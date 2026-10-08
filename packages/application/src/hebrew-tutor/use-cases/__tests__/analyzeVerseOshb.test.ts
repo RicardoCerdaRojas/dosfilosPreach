@@ -30,12 +30,19 @@ describe('el tutor de hebreo con la morfología de OSHB', () => {
         expect(r.clauses?.[0]?.connection).toBe('ASYNDETIC');
     });
 
-    it('un análisis nuevo también, y se guarda corregido', async () => {
-        const sessions = { getCachedAnalysis: vi.fn().mockResolvedValue(null), cacheAnalysis: vi.fn() };
+    it('REGRESIÓN (revisión): un análisis nuevo sale corregido, se guarda CRUDO y la corrección sigue a la segunda lectura', async () => {
+        let guardado: unknown = null;
+        const sessions = {
+            getCachedAnalysis: vi.fn().mockImplementation(async () => JSON.parse(JSON.stringify(guardado))),
+            cacheAnalysis: vi.fn().mockImplementation(async (_r: string, a: unknown) => { guardado = a; }),
+        };
         const service = { analyzeVerse: vi.fn().mockResolvedValue(analisis) };
-        const r = await new AnalyzeVerseUseCase(provider as never, service as never, sessions as never).execute({ morphhbKey: 'Ruth', chapter: 1, verse: 13, forceRefresh: true } as never);
-        expect(r.words[0]!.verbMorphology?.person).toBe(2);
-        expect(sessions.cacheAnalysis.mock.calls[0]![1].words[0].verbMorphology.person).toBe(2);
+        const uc = new AnalyzeVerseUseCase(provider as never, service as never, sessions as never);
+        const nuevo = await uc.execute({ morphhbKey: 'Ruth', chapter: 1, verse: 13, forceRefresh: true } as never);
+        expect(nuevo.words[0]!.verbMorphology?.person).toBe(2);
+        expect((guardado as typeof analisis).words[0]!.verbMorphology.person).toBe(3);
+        const releido = await uc.execute({ morphhbKey: 'Ruth', chapter: 1, verse: 13 } as never);
+        expect(releido.words[0]!.oshbReference).toMatchObject({ agreesWithAnalysis: false, corrections: [{ field: 'person', analysis: '3', oshb: '2' }] });
     });
 
     it('REGRESIÓN (Rut 1:17): la fórmula de juramento sale yusiva al leer', async () => {

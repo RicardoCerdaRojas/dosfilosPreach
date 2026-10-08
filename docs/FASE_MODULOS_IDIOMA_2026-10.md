@@ -70,6 +70,22 @@
 - La traducción sigue al valor.
 - **A confirmar con el profesor:** si el curso etiqueta esto «yusivo» por función. Mientras tanto: forma «Imperfecto», valor «volitivo».
 
+### Revisión adversarial del hebreo (2026-10-07)
+
+Se corrigieron los hallazgos 1 a 7, 9 y 10:
+- **Lo más serio:** la caché guardaba el análisis YA corregido, así que desde la segunda lectura la corrección de OSHB y el aviso de la traducción desaparecían. Ahora se guarda lo que dio el asistente y las reglas se aplican siempre al mostrar.
+- Un weqatal ya no sale «cadena de wayyiqtol».
+- וְלֹא + verbo ya no es disyuntiva.
+- La fórmula de juramento no tapa el error del asistente cuando OSHB ya decía yusivo.
+- La insignia OSHB aparece sólo en verbos.
+- Cada fila de la tabla de verbos va con su palabra.
+- El arameo no usa los tallos hebreos.
+- La waw con ḥireq o segol se reconoce.
+- Las cláusulas solapadas se descartan.
+- Faltaban textos en inglés.
+
+**Límite aceptado (#8):** cuando el asistente devuelve tantas palabras como tokens tiene OSHB, se alinean por posición sin comparar consonantes. Si el asistente juntó dos palabras y partió otra, OSHB corregiría la palabra equivocada. Viene de #726, donde la posición sana las letras; se revisa si aparece un caso real.
+
 ### Pendientes de confirmar con el profesor (no se tocan todavía)
 - Rut 1:14 וְרוּת: «Raíz: רות» para un nombre propio.
 - La וּ descrita como «componente» del nombre cuando es mater lectionis (vocal *ū*).

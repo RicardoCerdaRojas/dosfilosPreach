@@ -19,6 +19,8 @@ describe('el verbo de un código OSHB', () => {
         expect(parseOshbVerb('HC/D')).toBeNull();
         expect(parseOshbVerb('')).toBeNull();
         expect(parseOshbVerb('HVoi3ms')?.binyan).toBeNull();
+        // REGRESIÓN (revisión): el arameo tiene otros tallos; P es ithpaal, no pual.
+        expect(parseOshbVerb('AVPp3ms')).toMatchObject({ binyan: null, verbForm: VerbForm.PERFECT, person: Person.THIRD });
     });
 });
 
@@ -45,8 +47,8 @@ describe('el análisis con la morfología de OSHB', () => {
         expect(w.oshbReference).toMatchObject({ morphCode: 'HVNi2fp', agreesWithAnalysis: false });
         expect(w.oshbReference?.corrections).toEqual([{ field: 'person', analysis: '3', oshb: '2' }]);
         expect(r.verbTable[0]!.pgn).toBe('2fp');
-        // Un no-verbo lleva su código, sin correcciones.
-        expect(r.words[0]!.oshbReference).toMatchObject({ agreesWithAnalysis: true, corrections: [] });
+        // REGRESIÓN (revisión): un no-verbo no lleva insignia de OSHB: no se comparó nada.
+        expect(r.words[0]!.oshbReference).toBeUndefined();
     });
 
     it('REGRESIÓN (Rut 1:16): אַל + prefijo — imperfecto → yusivo', () => {
@@ -68,4 +70,14 @@ describe('el análisis con la morfología de OSHB', () => {
         const r = applyOshbMorphology(analysis, [{ text: 'אַל', oshbMorphCode: 'HTn' }, { text: 'תִּפְגְּעִי', oshbMorphCode: 'HVqj2fs' }, { text: 'בִי', oshbMorphCode: 'HR/Sp1cs' }]);
         expect(r.words[0]!.verbMorphology?.verbForm).toBe(VerbForm.JUSSIVE);
     });
+
+    it('REGRESIÓN (revisión, 1 S 3:17): dos verbos con las mismas consonantes y distinto análisis — cada fila con el suyo', () => {
+        const analysis = {
+            words: [verbo('תְכַחֵד', { person: 2, gender: 'M', number: 'S' }), verbo('תְכַחֵד', { person: 2, gender: 'M', number: 'S' })],
+            verbTable: [{ hebrewForm: 'תְכַחֵד', verbForm: 'IMPERFECT', pgn: '2ms' }, { hebrewForm: 'תְכַחֵד', verbForm: 'IMPERFECT', pgn: '2ms' }],
+        } as never;
+        const r = applyOshbMorphology(analysis, [{ text: 'תְכַחֵד', oshbMorphCode: 'HVpj2ms' }, { text: 'תְכַחֵד', oshbMorphCode: 'HVpi2ms' }]);
+        expect(r.verbTable.map(row => row.verbForm)).toEqual([VerbForm.JUSSIVE, VerbForm.IMPERFECT]);
+    });
 });
+

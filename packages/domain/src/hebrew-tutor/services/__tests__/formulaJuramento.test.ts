@@ -46,10 +46,13 @@ describe('la fórmula de juramento', () => {
         expect(markOathFormula(analisis, sinWekoh)).toBe(analisis);
     });
 
-    it('si ya era yusivo (como en 1 S 3:17), sólo fija el valor, sin corrección', () => {
+    it('REGRESIÓN (revisión): si OSHB ya dice yusivo (1 S 3:17), queda a la vista que el asistente dijo imperfecto', () => {
         const yusivos = tokens.map(t => ({ ...t, oshbMorphCode: t.oshbMorphCode.replace('qi3', 'qj3').replace('hi3', 'hj3') }));
         const r = markOathFormula(applyOshbMorphology(analisis, yusivos), yusivos);
         expect(r.words[1]!.verbMorphology?.temporalValue).toBe(OATH_FORMULA_VALUE);
-        expect(r.words[1]!.oshbReference?.corrections).toEqual([]);
+        expect(r.words[1]!.oshbReference).toMatchObject({
+            agreesWithAnalysis: false,
+            corrections: [{ field: 'verbForm', analysis: 'IMPERFECT', oshb: 'JUSSIVE' }],
+        });
     });
 });
