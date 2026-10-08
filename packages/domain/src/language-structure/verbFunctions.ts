@@ -74,110 +74,163 @@ const caso = (w: StructureWord | undefined) => w?.parse?.[4] ?? '';
 const concuerda = (a: StructureWord, b: StructureWord) => !!a.parse && !!b.parse && a.parse.slice(4, 7) === b.parse.slice(4, 7);
 const esArticulo = (w: StructureWord | undefined) => w?.pos === 'RA';
 
-/** Infinitivo articular con preposición (Wallace, «infinitivo con preposición»). */
-const PREPOSICION_INFINITIVO: Record<string, { rule: VerbRule; allowed: readonly VerbFunctionId[] }> = {
-    'εἰς': { rule: 'eisTo', allowed: ['purpose', 'result'] },
-    'πρός': { rule: 'prosTo', allowed: ['purpose'] },
-    'ἐν': { rule: 'enToi', allowed: ['time'] },
-    'μετά': { rule: 'metaTo', allowed: ['time'] },
-    'πρό': { rule: 'proTou', allowed: ['time'] },
-    'διά': { rule: 'diaTo', allowed: ['cause'] },
-};
+/** Lo que una regla puede mirar de un verbo: la forma, sus vecinos y sus cláusulas. */
+interface Contexto {
+    readonly w: StructureWord;
+    readonly i: number;
+    readonly ws: readonly StructureWord[];
+    readonly antes?: StructureWord;
+    readonly antes2?: StructureWord;
+    /** Palabras de su cláusula MACULA (la más profunda). */
+    readonly clausula: readonly StructureWord[];
+    /** Palabras de las cláusulas que la contienen: madre, abuela… */
+    readonly arriba: readonly (readonly StructureWord[])[];
+    readonly fila?: StructureNode;
+    readonly tiempo: string;
+    readonly persona: string;
+    readonly plural: boolean;
+}
 
-const decidir = (allowed: readonly VerbFunctionId[], rule: VerbRule) =>
-    allowed.length === 1 ? { allowed, decided: allowed[0]!, rule } : { allowed, rule };
+/** El conector de una cláusula que contiene al verbo (la propia o una madre). */
+const bajo = (c: Contexto, lemas: readonly string[]) => [c.clausula, ...c.arriba].some(cl => cl.some(x => !x.role && lemas.includes(x.l)));
+
+/**
+ * El artículo ANTES del participio, en su cláusula o en la madre (MACULA lo
+ * envuelve: «ὁ | πιστεύων»; «ὁ ὀπίσω μου ἐρχόμενος»), sin un sustantivo entre
+ * medio que se lo lleve: «στραφεὶς δὲ ὁ Ἰησοῦς» (Jn 1:38) y «ὁ Ἰωάννης λέγων»
+ * (Jn 1:26) NO son articulares.
+ */
+function articular(c: Contexto): boolean {
+    const pos = (x: StructureWord) => c.ws.indexOf(x);
+    const previos = [...c.clausula, ...(c.arriba[0] ?? [])].filter(x => pos(x) >= 0 && pos(x) < c.i).sort((a, b) => pos(b) - pos(a));
+    const art = previos.find(x => esArticulo(x) && concuerda(x, c.w));
+    return !!art && !c.ws.slice(pos(art) + 1, c.i).some(x => /^(N|RP|RD)/.test(x.pos ?? '') && concuerda(x, art));
+}
+
+/**
+ * Infinitivo con preposición y artículo: la preposición, si es una de las que
+ * acotan (Wallace). Otra (ἕως τοῦ, ἕνεκεν τοῦ) cae en «τοῦ + infinitivo».
+ * PENDIENTE: ἕως τοῦ es temporal y esa lista no trae «time» (Hch 8:40).
+ */
+/**
+ * Circunstancia concomitante (Wallace): participio AORISTO, ANTES de un verbo
+ * principal en AORISTO, indicativo o imperativo. Stg 2:9 «ἁμαρτίαν ἐργάζεσθε,
+ * ἐλεγχόμενοι» (presente, después del verbo) no lo cumple; el asistente lo
+ * había elegido.
+ */
+function concomitantePosible(c: Contexto): boolean {
+    if (c.tiempo !== 'A') return false;
+    const pos = (x: StructureWord) => c.ws.indexOf(x);
+    return [...c.clausula, ...(c.arriba[0] ?? [])].some(x =>
+        x !== c.w && pos(x) > c.i && x.role === 'v' && ['I', 'D'].includes(modo(x)) && x.parse?.[1] === 'A');
+}
+
+/** Un sustantivo, pronombre o adjetivo que concuerda con el participio, en su cláusula o la madre. */
+const hayNominalQueConcuerda = (c: Contexto) =>
+    [...c.clausula, ...(c.arriba[0] ?? [])].some(x => x !== c.w && /^(N|RP|RD|A)/.test(x.pos ?? '') && concuerda(x, c.w));
+
+const CON_PREPOSICION: ReadonlySet<string> = new Set(['εἰς', 'πρός', 'ἐν', 'μετά', 'πρό', 'διά']);
+const preposicionDelInfinitivo = (c: Contexto) =>
+    c.antes2?.pos === 'P-' && esArticulo(c.antes) && CON_PREPOSICION.has(c.antes2.l) ? c.antes2.l : undefined;
+
+interface ReglaVerbo {
+    /** El nombre: une la regla con su fuente (`VERB_RULE_SOURCES`) y su texto. */
+    readonly rule: VerbRule;
+    readonly form: GreekVerbForm;
+    readonly when: (c: Contexto) => boolean;
+    /** Lo que permite. Con UNA sola opción, la regla decide. */
+    readonly allowed: readonly VerbFunctionId[];
+}
+
+/**
+ * LAS REGLAS DE LOS VERBOS, EN ORDEN: gana la primera que se cumple. El orden
+ * importa (οὐ μή antes que μή; el ἵνa de una cláusula madre antes que la
+ * prohibición). Para agregar una: aquí, con su fuente en `ruleSources.ts`, su
+ * texto en `greekTutor.json` y un versículo de prueba.
+ */
+export const VERB_RULES: readonly ReglaVerbo[] = [
+    // Participio
+    { rule: 'articular', form: 'participle', when: articular, allowed: ['attributive', 'substantival'] },
+    { rule: 'periphrastic', form: 'participle', when: c => c.clausula.some(x => x !== c.w && x.l === 'εἰμί' && ['I', 'S', 'O', 'D'].includes(modo(x))), allowed: ['periphrastic'] },
+    { rule: 'genitiveAbsolute', form: 'participle', when: c => caso(c.w) === 'G' && c.clausula.some(x => x !== c.w && x.role === 's' && caso(x) === 'G'), allowed: ['genitiveAbsolute'] },
+    // Infinitivo con preposición y artículo
+    { rule: 'eisTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'εἰς', allowed: ['purpose', 'result'] },
+    { rule: 'prosTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'πρός', allowed: ['purpose'] },
+    { rule: 'enToi', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'ἐν', allowed: ['time'] },
+    { rule: 'metaTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'μετά', allowed: ['time'] },
+    { rule: 'proTou', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'πρό', allowed: ['time'] },
+    { rule: 'diaTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'διά', allowed: ['cause'] },
+    // Infinitivo articular sin una de esas preposiciones
+    { rule: 'tou', form: 'infinitive', when: c => !preposicionDelInfinitivo(c) && esArticulo(c.antes) && caso(c.antes) === 'G', allowed: ['purpose', 'result', 'epexegetical', 'complementary'] },
+    { rule: 'articularNominal', form: 'infinitive', when: c => !preposicionDelInfinitivo(c) && esArticulo(c.antes), allowed: ['subject', 'directObject', 'epexegetical'] },
+    // Subjuntivo
+    { rule: 'ouMe', form: 'subjunctive', when: c => c.antes?.l === 'μή' && c.antes2?.l === 'οὐ', allowed: ['emphaticNegation'] },
+    { rule: 'afterIna', form: 'subjunctive', when: c => bajo(c, ['ἵνα', 'ὅπως']), allowed: ['inaClause'] },
+    { rule: 'conditionalEan', form: 'subjunctive', when: c => bajo(c, ['ἐάν']) || c.fila?.relation === 'condition', allowed: ['conditional'] },
+    { rule: 'prohibition', form: 'subjunctive', when: c => c.clausula.some(x => x.l === 'μή') && c.tiempo === 'A' && c.persona === '2', allowed: ['prohibition'] },
+    {
+        rule: 'indefinite', form: 'subjunctive', allowed: ['indefinite'],
+        when: c => {
+            const madre = c.arriba[0] ?? [];
+            return [...c.clausula, ...madre].some(x => x.l === 'ἄν') || ['ὅταν', 'ἕως'].includes(madre[0]?.l ?? '') || ['ὅταν', 'ἕως'].includes(c.clausula[0]?.l ?? '');
+        },
+    },
+    { rule: 'hortatory', form: 'subjunctive', when: c => c.persona === '1' && c.plural, allowed: ['hortatory', 'deliberative'] },
+    // Imperativo y optativo
+    { rule: 'presentProhibition', form: 'imperative', when: c => c.clausula.some(x => x.l === 'μή'), allowed: ['prohibition'] },
+    { rule: 'meGenoito', form: 'optative', when: c => c.w.l === 'γίνομαι' && c.antes?.l === 'μή', allowed: ['volitive'] },
+];
+
+/** Sin regla que se cumpla: lo que cada forma puede ser (menos lo que sólo una regla otorga). */
+const SIN_REGLA: Readonly<Record<GreekVerbForm, readonly VerbFunctionId[]>> = {
+    participle: PARTICIPLE_FUNCTIONS.filter(f => !['attributive', 'substantival', 'periphrastic', 'genitiveAbsolute'].includes(f)),
+    infinitive: INFINITIVE_FUNCTIONS.filter(f => !['time', 'cause'].includes(f)),
+    subjunctive: ['hortatory', 'deliberative', 'prohibition', 'indefinite'],
+    imperative: IMPERATIVE_FUNCTIONS.filter(f => f !== 'prohibition'),
+    optative: [...OPTATIVE_FUNCTIONS],
+    indicative: [],
+};
 
 export function greekVerbCandidates(ch: ChapterStructure, verse: number): VerbCandidate[] {
     if (ch.lang !== 'gr') return [];
     const ws = verseWords(ch, verse);
     const filas = verseStructure(ch, verse);
     const clausulas = clausesOfVerse(ch, verse);
+    const porRef = new Map(ch.words.map(w => [w.r, w]));
+    const palabras = (rs: readonly string[]) => rs.map(r => porRef.get(r)).filter((x): x is StructureWord => !!x);
     /** La cláusula MACULA más profunda que contiene la palabra. */
     const indiceDe = (r: string): number | undefined => {
         let mejor: { index: number; depth: number } | undefined;
         for (const c of clausulas) if (c.words.includes(r) && (!mejor || c.depth >= mejor.depth)) mejor = c;
         return mejor?.index;
     };
-    const clausulaDe = (r: string) => {
-        const i = indiceDe(r);
-        return i === undefined ? [] : ch.clauses[i]!.w;
-    };
-    /**
-     * Las palabras de las cláusulas que CONTIENEN a la del verbo (madre, abuela…).
-     * MACULA deja ἵνα, ἐάν, ἕως ἄν o el artículo en una cláusula envoltorio:
-     * «ἵνα πᾶς … μὴ ἀπόληται ἀλλ’ ἔχῃ» (Jn 3:16) — ἔχῃ está bajo el ἵνα.
-     */
-    const ancestros = (r: string): StructureWord[][] => {
-        const out: StructureWord[][] = [];
-        let p = indiceDe(r) !== undefined ? ch.clauses[indiceDe(r)!]!.p : null;
-        while (p !== null && p !== undefined) {
-            out.push(ch.clauses[p]!.w.map(x => porRefCap.get(x)).filter((x): x is StructureWord => !!x));
-            p = ch.clauses[p]!.p;
-        }
-        return out;
-    };
-    const porRefCap = new Map(ch.words.map(w => [w.r, w]));
-    const filaDe = (r: string): StructureNode | undefined => filas.find(f => f.words.some(t => t.r === r));
-    const porRef = new Map(ws.map(w => [w.r, w]));
     const out: VerbCandidate[] = [];
-
     ws.forEach((w, i) => {
-        const m = modo(w);
-        const form = MODO[m];
+        const form = MODO[modo(w)];
         if (!form) return;
-        const tiempo = w.parse?.[1] ?? '';
-        const tenseUses = form === 'indicative' ? [...(TENSE_USES[tiempo as keyof typeof TENSE_USES] ?? [])] : [];
-        const antes = ws[i - 1];
-        const antes2 = ws[i - 2];
-        const enClausula = clausulaDe(w.r).map(r => porRef.get(r)).filter((x): x is StructureWord => !!x);
-        let r: Pick<VerbCandidate, 'allowed' | 'decided' | 'rule'> = { allowed: [] };
-
-        const arriba = ancestros(w.r);
-        /** El conector de una cláusula que contiene al verbo (la propia o una madre). */
-        const bajo = (lemas: readonly string[]) => [enClausula, ...arriba].some(c => c.some(x => !x.role && lemas.includes(x.l)));
-
-        if (form === 'participle') {
-            // El artículo ANTES del participio, en su cláusula o en la madre
-            // (MACULA lo envuelve: «ὁ | πιστεύων»; «ὁ ὀπίσω μου ἐρχόμενος»),
-            // sin un sustantivo entre medio que se lo lleve: «στραφεὶς δὲ ὁ
-            // Ἰησοῦς» (Jn 1:38) NO es articular.
-            const pos = (x: StructureWord) => ws.indexOf(x);
-            const previos = [...enClausula, ...(arriba[0] ?? [])].filter(x => pos(x) >= 0 && pos(x) < i).sort((a, b) => pos(b) - pos(a));
-            const art = previos.find(x => esArticulo(x) && concuerda(x, w));
-            const articular = !!art && !ws.slice(pos(art) + 1, i).some(x => /^(N|RP|RD)/.test(x.pos ?? '') && concuerda(x, art));
-            const eimi = enClausula.some(x => x !== w && x.l === 'εἰμί' && ['I', 'S', 'O', 'D'].includes(modo(x)));
-            const sujetoGenitivo = enClausula.some(x => x !== w && x.role === 's' && caso(x) === 'G');
-            if (articular) r = { allowed: ['attributive', 'substantival'], rule: 'articular' };
-            else if (eimi) r = { allowed: ['periphrastic'], decided: 'periphrastic', rule: 'periphrastic' };
-            else if (caso(w) === 'G' && sujetoGenitivo) r = { allowed: ['genitiveAbsolute'], decided: 'genitiveAbsolute', rule: 'genitiveAbsolute' };
-            else r = { allowed: PARTICIPLE_FUNCTIONS.filter(f => !['attributive', 'substantival', 'periphrastic', 'genitiveAbsolute'].includes(f)) };
-        } else if (form === 'infinitive') {
-            const prep = antes2?.pos === 'P-' && esArticulo(antes) ? PREPOSICION_INFINITIVO[antes2.l] : undefined;
-            if (prep) r = decidir(prep.allowed, prep.rule);
-            else if (esArticulo(antes) && antes!.l === 'ὁ' && caso(antes) === 'G') r = { allowed: ['purpose', 'result', 'epexegetical', 'complementary'], rule: 'tou' };
-            else if (esArticulo(antes)) r = { allowed: ['subject', 'directObject', 'epexegetical'], rule: 'articularNominal' };
-            else r = { allowed: INFINITIVE_FUNCTIONS.filter(f => !['time', 'cause'].includes(f)) };
-        } else if (form === 'subjunctive') {
-            const fila = filaDe(w.r);
-            const persona = w.parse?.[0] ?? '';
-            const plural = w.parse?.[5] === 'P';
-            const madre = arriba[0] ?? [];
-            const conAn = [...enClausula, ...madre].some(x => x.l === 'ἄν') || ['ὅταν', 'ἕως'].includes(madre[0]?.l ?? '');
-
-            if (antes?.l === 'μή' && antes2?.l === 'οὐ') r = { allowed: ['emphaticNegation'], decided: 'emphaticNegation', rule: 'ouMe' };
-            else if (bajo(['ἵνα', 'ὅπως'])) r = { allowed: ['inaClause'], decided: 'inaClause', rule: 'afterIna' };
-            else if (bajo(['ἐάν']) || fila?.relation === 'condition') r = { allowed: ['conditional'], decided: 'conditional', rule: 'conditionalEan' };
-            else if (enClausula.some(x => x.l === 'μή') && tiempo === 'A' && persona === '2') r = { allowed: ['prohibition'], decided: 'prohibition', rule: 'prohibition' };
-            else if (conAn || ['ὅταν', 'ἕως'].includes(enClausula[0]?.l ?? '')) r = { allowed: ['indefinite'], decided: 'indefinite', rule: 'indefinite' };
-            else if (persona === '1' && plural) r = { allowed: ['hortatory', 'deliberative'], rule: 'hortatory' };
-            else r = { allowed: ['hortatory', 'deliberative', 'prohibition', 'indefinite'] };
-        } else if (form === 'imperative') {
-            const conMe = enClausula.some(x => x.l === 'μή');
-            r = conMe ? { allowed: ['prohibition'], decided: 'prohibition', rule: 'presentProhibition' } : { allowed: IMPERATIVE_FUNCTIONS.filter(f => f !== 'prohibition') };
-        } else if (form === 'optative') {
-            r = w.l === 'γίνομαι' && antes?.l === 'μή' ? { allowed: ['volitive'], decided: 'volitive', rule: 'meGenoito' } : { allowed: [...OPTATIVE_FUNCTIONS] };
-        }
-        out.push({ ordinal: i, form, tenseUses, ...r });
+        const propia = indiceDe(w.r);
+        const arriba: StructureWord[][] = [];
+        for (let p = propia === undefined ? null : ch.clauses[propia]!.p; p !== null; p = ch.clauses[p]!.p) arriba.push(palabras(ch.clauses[p]!.w));
+        const c: Contexto = {
+            w, i, ws, antes: ws[i - 1], antes2: ws[i - 2],
+            clausula: propia === undefined ? [] : palabras(ch.clauses[propia]!.w).filter(x => ws.includes(x)),
+            arriba,
+            fila: filas.find(f => f.words.some(t => t.r === w.r)),
+            tiempo: w.parse?.[1] ?? '', persona: w.parse?.[0] ?? '', plural: w.parse?.[5] === 'P',
+        };
+        const tenseUses = form === 'indicative' ? [...(TENSE_USES[c.tiempo as keyof typeof TENSE_USES] ?? [])] : [];
+        const regla = VERB_RULES.find(r => r.form === form && r.when(c));
+        // «Predicativo» sólo si hay un sustantivo o pronombre del que predicar,
+        // en su cláusula o en la madre. Con el sujeto implícito en el verbo
+        // (Stg 2:9 «ἁμαρτίαν ἐργάζεσθε, ἐλεγχόμενοι…») el participio es adverbial.
+        const sinRegla = form === 'participle'
+            ? SIN_REGLA.participle.filter(f => (f !== 'predicate' || hayNominalQueConcuerda(c)) && (f !== 'attendantCircumstance' || concomitantePosible(c)))
+            : SIN_REGLA[form];
+        out.push(
+            regla
+                ? { ordinal: i, form, tenseUses, allowed: regla.allowed, rule: regla.rule, ...(regla.allowed.length === 1 ? { decided: regla.allowed[0]! } : {}) }
+                : { ordinal: i, form, tenseUses, allowed: sinRegla },
+        );
     });
     return out;
 }
@@ -260,4 +313,31 @@ export function readVerbFunction(raw: Record<string, unknown>, c: VerbCandidate 
         ...(tenseUse ? { tenseUse } : {}),
         ...(nota && (verbFunction || tenseUse) ? { verbNote: nota } : {}),
     };
+}
+
+/**
+ * Las reglas de los verbos aplicadas AL MOSTRAR, sobre un análisis guardado
+ * (como hace el hebreo): si una regla mejora, el cambio llega a los versículos
+ * ya analizados sin re-analizar. Lo decidido por regla manda; una elección del
+ * asistente que la regla de hoy ya no permite se quita (con su nota).
+ */
+export function applyVerbRules<T extends { verbFunction?: VerbFunctionId; verbRule?: VerbRule; tenseUse?: TenseUseId; verbNote?: string }>(
+    words: readonly T[],
+    candidates: readonly VerbCandidate[],
+): T[] {
+    const porPos = new Map(candidates.map(c => [c.ordinal, c]));
+    return words.map((w, i) => {
+        const c = porPos.get(i);
+        const { verbFunction, verbRule: _regla, tenseUse, verbNote, ...resto } = w;
+        const fn = c?.decided ?? (c && verbFunction && c.allowed.includes(verbFunction) ? verbFunction : undefined);
+        const uso = c && tenseUse && c.tenseUses.includes(tenseUse) ? tenseUse : undefined;
+        return {
+            ...resto,
+            ...(fn ? { verbFunction: fn } : {}),
+            ...(c?.decided && c.rule ? { verbRule: c.rule } : {}),
+            ...(uso ? { tenseUse: uso } : {}),
+            // La nota explica lo que el asistente vio: sin función ni uso, sobra.
+            ...(verbNote && (fn || uso) ? { verbNote } : {}),
+        } as T;
+    });
 }

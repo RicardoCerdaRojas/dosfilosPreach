@@ -162,7 +162,7 @@ export function GreekWordCard({
             )}
 
             <FrontedNote fronted={fronted} />
-            <GreekVerbFunctionBlock insight={insight} />
+            <GreekVerbFunctionBlock insight={insight} mood={token.tag.mood} />
 
             {puente && (
                 <div className="text-xs italic text-muted-foreground">{t(`analyzer.bridge.${puente}`)}</div>

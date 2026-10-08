@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import type { GreekWordInsight } from '@dosfilos/domain';
+import { TENSE_USE_SOURCES, VERB_RULE_SOURCES, verbFunctionSources, type GreekWordInsight } from '@dosfilos/domain';
+import { SourceNote } from '@/components/language-structure/SourceNote';
 
 /**
  * G2 — la función del verbo (Wallace) en la ficha de la palabra: qué hace el
@@ -8,7 +9,7 @@ import type { GreekWordInsight } from '@dosfilos/domain';
  * «Regla» si la decidió el texto; «Asistente» si la eligió de la lista que el
  * texto acota.
  */
-export function GreekVerbFunctionBlock({ insight }: { insight?: GreekWordInsight }) {
+export function GreekVerbFunctionBlock({ insight, mood }: { insight?: GreekWordInsight; /** Modo de MorphGNT: elige la fuente (participio o infinitivo). */ mood?: string }) {
     const { t } = useTranslation('greekTutor');
     if (!insight?.verbFunction && !insight?.tenseUse) return null;
     const etiqueta = (porRegla: boolean) => (
@@ -43,6 +44,16 @@ export function GreekVerbFunctionBlock({ insight }: { insight?: GreekWordInsight
                 </div>
             )}
             {insight.verbNote && <p className="text-xs leading-snug text-foreground/80">{insight.verbNote}</p>}
+            <SourceNote
+                sources={[
+                    ...(insight.verbRule
+                        ? VERB_RULE_SOURCES[insight.verbRule]
+                        : insight.verbFunction
+                          ? verbFunctionSources(insight.verbFunction, mood === 'P' ? 'participle' : mood === 'N' ? 'infinitive' : 'other')
+                          : []),
+                    ...(insight.tenseUse ? TENSE_USE_SOURCES[insight.tenseUse] : []),
+                ]}
+            />
         </div>
     );
 }

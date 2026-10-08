@@ -66,3 +66,12 @@ describe('lectura de cláusulas — validación', () => {
         expect(parseClauseReadings('basura', jn316)).toEqual([]);
     });
 });
+
+describe('fuentes según la forma', () => {
+    it('«propósito» cita la sección del infinitivo o la del participio, no las dos (Lc 5:17 εἰς τὸ ἰᾶσθαι)', async () => {
+        const { verbFunctionSources } = await import('../ruleSources');
+        expect(verbFunctionSources('purpose', 'infinitive').map(s => s.section)).toEqual(['Infinitive of Purpose']);
+        expect(verbFunctionSources('purpose', 'participle').map(s => s.section)).toEqual(['Participle of Purpose']);
+        expect(verbFunctionSources('purpose').length).toBe(2);
+    });
+});

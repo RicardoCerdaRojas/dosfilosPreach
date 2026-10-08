@@ -113,5 +113,8 @@
     "reanalyze": "Re-analizar",
     "generateButton": "Generar análisis",
     "empty": "El asistente no devolvió la lectura de las cláusulas en este análisis. Re-analiza el versículo para pedirla."
-  }
+  },
+  "source": "Fuente",
+  "copyCitation": "Copiar cita",
+  "showSource": "Ver fuente ›"
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { verseWords, type ChapterStructure } from '../chapterStructure';
-import { buildVerbFunctionTask, greekVerbCandidates, readVerbFunction, type VerbCandidate } from '../verbFunctions';
+import { applyVerbRules, buildVerbFunctionTask, greekVerbCandidates, readVerbFunction, VERB_RULES, type VerbCandidate } from '../verbFunctions';
 
 /** G2 — la función de cada verbo (Wallace): lo que decide el texto y lo que acota. */
 const BASE = fileURLToPath(new URL('../../../../web/public/language-data/v1/gr/', import.meta.url));
@@ -58,6 +58,23 @@ describe('G2 — lo que el texto acota (el asistente elige)', () => {
         expect(c.decided).toBeUndefined();
         expect(c.allowed).toContain('manner');
         expect(c.allowed).not.toContain('substantival');
+        // Sin sustantivo del que predicar (el sujeto va en ἐργάζεσθε), «predicativo» no se ofrece.
+        expect(c.allowed).not.toContain('predicate');
+    });
+
+    it('circunstancia concomitante sólo con los criterios de Wallace: aoristo antes de un verbo aoristo (Mt 28:19)', () => {
+        expect(verbo('MAT/28.json', 19, 'πορευθέντες').allowed).toContain('attendantCircumstance');
+        expect(verbo('MAT/28.json', 19, 'βαπτίζοντες').allowed).not.toContain('attendantCircumstance');
+        // Stg 2:9 (prueba del fundador): presente y después de ἐργάζεσθε; el asistente la había elegido.
+        expect(verbo('JAS/2.json', 9, 'ἐλεγχόμενοι').allowed).not.toContain('attendantCircumstance');
+        // Aoristo pero DESPUÉS del verbo: Hch 10:39 «ἀνεῖλαν κρεμάσαντες», el participio de medio de Wallace.
+        const kremasantes = verbo('ACT/10.json', 39, 'κρεμάσαντες');
+        expect(kremasantes.allowed).not.toContain('attendantCircumstance');
+        expect(kremasantes.allowed).toContain('means');
+    });
+
+    it('«predicativo» sí, si hay un sustantivo que concuerda (1 Co 1:23 «Χριστὸν ἐσταυρωμένον»)', () => {
+        expect(verbo('1CO/1.json', 23, 'ἐσταυρωμένον').allowed).toContain('predicate');
     });
     it('presente indicativo: el uso del tiempo incluye el habitual (Stg 2:7 βλασφημοῦσιν, profesor #G2)', () => {
         const c = verbo('JAS/2.json', 7, 'βλασφημοῦσιν');
@@ -68,14 +85,18 @@ describe('G2 — lo que el texto acota (el asistente elige)', () => {
 });
 
 describe('G2 — sobre todo el NT', () => {
-    it('los genitivos absolutos rondan los ~313 que cuenta Wallace, y nada falla', () => {
-        let ga = 0;
+    it('los genitivos absolutos rondan los ~313 que cuenta Wallace, cada regla se usa alguna vez, y nada falla', () => {
+        const usos = new Map<string, number>();
         for (const libro of readdirSync(BASE)) for (const f of readdirSync(`${BASE}${libro}`)) {
             const ch = cargar(`${libro}/${f}`);
-            for (const v of new Set(ch.words.map(w => Number(w.r.split('!')[0])))) ga += greekVerbCandidates(ch, v).filter(c => c.decided === 'genitiveAbsolute').length;
+            for (const v of new Set(ch.words.map(w => Number(w.r.split('!')[0]))))
+                for (const c of greekVerbCandidates(ch, v)) if (c.rule) usos.set(c.rule, (usos.get(c.rule) ?? 0) + 1);
         }
-        expect(ga).toBeGreaterThan(280);
-        expect(ga).toBeLessThan(340);
+        expect(usos.get('genitiveAbsolute')).toBeGreaterThan(280);
+        expect(usos.get('genitiveAbsolute')).toBeLessThan(340);
+        // Una regla que nunca se cumple en el NT está muerta o mal escrita (o tapada por otra anterior).
+        expect(VERB_RULES.map(r => r.rule).filter(r => !usos.get(r))).toEqual([]);
+        expect(new Set(VERB_RULES.map(r => r.rule)).size).toBe(VERB_RULES.length);
     }, 60_000);
 });
 
@@ -101,5 +122,28 @@ describe('G2 — validación de lo que devuelve el asistente', () => {
         expect(tarea).toMatch(/0\. ἦν — participio — FUNCIÓN YA DECIDIDA por regla \(εἰμί \+ participio/);
         expect(tarea).toMatch(/1\. λέγει — indicativo — "tenseUse", elige de: "progressive".*"customary" \(habitual/);
         expect(buildVerbFunctionTask([], [])).toBe('');
+    });
+});
+
+describe('G2 — las reglas se aplican al mostrar (análisis ya guardados)', () => {
+    const cands: VerbCandidate[] = [
+        { ordinal: 0, form: 'participle', allowed: ['periphrastic'], decided: 'periphrastic', rule: 'periphrastic', tenseUses: [] },
+        { ordinal: 1, form: 'participle', allowed: ['manner', 'cause'], tenseUses: [] },
+        { ordinal: 2, form: 'indicative', allowed: [], tenseUses: ['customary'] },
+    ];
+    const palabra = (x: object) => ({ text: 't', ...x }) as { text: string; verbFunction?: never };
+
+    it('una regla nueva corrige lo guardado; lo que la regla de hoy no permite se quita, con su nota', () => {
+        const out = applyVerbRules([
+            palabra({ verbFunction: 'manner', verbNote: 'a' }),
+            palabra({ verbFunction: 'substantival', verbNote: 'b' }),
+            palabra({ tenseUse: 'customary', verbNote: 'c' }),
+            palabra({ verbFunction: 'command', verbNote: 'd' }),
+        ], cands);
+        expect(out[0]).toMatchObject({ verbFunction: 'periphrastic', verbRule: 'periphrastic', verbNote: 'a' });
+        expect(out[1]).toEqual({ text: 't' });
+        expect(out[2]).toEqual({ text: 't', tenseUse: 'customary', verbNote: 'c' });
+        // Ya no es verbo (o el dato cambió): nada.
+        expect(out[3]).toEqual({ text: 't' });
     });
 });

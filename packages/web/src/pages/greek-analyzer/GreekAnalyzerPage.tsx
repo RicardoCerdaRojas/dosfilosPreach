@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { GreekWordCard } from './GreekWordCard';
 import { StructureSection } from '@/components/language-structure/StructureSection';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
-import { GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
+import { applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
 
 /**
  * El ANALIZADOR griego — espejo del analizador hebreo, versículo a versículo:
@@ -74,13 +74,20 @@ export function GreekAnalyzerPage() {
     const referencia = `${book} ${chapter}:${verse}`;
     /** La vista «Estructura» y lo que aporta a las fichas (lo antepuesto al verbo). */
     const estructura = useVerseStructure('gr', book, chapter, verse);
-    const { insight, checking, generating, error: insightError, cacheUnavailable, generate } = useGreekInsight(
+    const { insight: insightGuardado, checking, generating, error: insightError, cacheUnavailable, generate } = useGreekInsight(
         referencia,
         data?.tokens,
         previous,
         estructura.nodes,
         // Los verbos de los datos (posición = token) sólo si coinciden con los tokens.
         estructura.words.length === (data?.tokens.length ?? -1) ? estructura.verbs : undefined,
+    );
+    // Las reglas de los verbos se aplican AL MOSTRAR: una regla mejorada llega a
+    // los análisis ya guardados sin re-analizar (G2, como el hebreo).
+    const verbosVigentes = estructura.words.length === (data?.tokens.length ?? -1) ? estructura.verbs : null;
+    const insight = useMemo(
+        () => (insightGuardado && verbosVigentes ? { ...insightGuardado, words: applyVerbRules(insightGuardado.words, verbosVigentes) } : insightGuardado),
+        [insightGuardado, verbosVigentes],
     );
     // MACULA y MorphGNT se alinearon palabra por palabra en G0: el ordinal es el
     // índice del token. Si un día no coinciden en cantidad, no se enlaza nada.

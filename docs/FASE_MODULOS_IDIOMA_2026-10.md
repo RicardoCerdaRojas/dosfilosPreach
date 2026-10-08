@@ -247,6 +247,13 @@ Los análisis consideran **SIEMPRE la función** de los verbos, las partículas,
     - **Medido sobre el NT (28.056 verbos, sin errores):** 309 genitivos absolutos (Wallace cuenta ~313), 226 perifrásticos, 1.909 participios articulares, 801 subjuntivos bajo ἵνα/ὅπως, 354 condicionales con ἐάν, 203 indefinidos, 77 οὐ μή, 15 μὴ γένοιτο.
     - **El análisis griego (v12)** recibe la lista por verbo; el asistente elige el id y lo explica en una frase (`verbNote`); el código valida: un id fuera de la lista se descarta, lo decidido por regla manda.
     - **Ficha de la palabra:** «Función del verbo» y «Uso del tiempo», marcados «Regla» (con el porqué) o «Asistente».
+  - **Reglas con fuente, mantenibles (pedido del fundador, 2026-10-08):**
+    - **Registro de fuentes** (`ruleSources.ts`): cada regla y cada categoría con su obra (Wallace, Runge, Arnold y Choi, o la revisión docente con fecha y versículo) y su sección. La **página sólo se muestra verificada contra el libro**: hoy ninguna lo está (falta completarlas con un ejemplar).
+    - **En pantalla, para citar:** la ficha del verbo muestra la fuente con «Copiar cita»; en «Estructura», cada fila con regla tiene «Fuente» (compacto, se abre al tocarlo).
+    - **Reglas en una tabla ordenada** (`VERB_RULES`): nombre, forma, condición y lo que permite; gana la primera. El cambio dejó idénticos los 28.055 verbos del NT. Una prueba exige que cada regla se cumpla alguna vez en el NT (regla muerta = falla) y que cada función, uso y regla tenga texto en es/en.
+    - **Las reglas de los verbos se aplican al mostrar** (`applyVerbRules`), como el hebreo: una regla mejorada llega a los análisis ya guardados sin re-analizar.
+    - **Ajustes por la prueba del fundador (Stg 2:9 ἐλεγχόμenoι):** «predicativo» sólo si hay un sustantivo o pronombre que concuerde (el asistente lo eligió con el sujeto implícito); «circunstancia concomitante» sólo con los criterios de Wallace —participio aoristo antes de un verbo aoristo indicativo o imperativo— (Mt 28:19 πορευθέντες sí, βαπτίζοντες no; el asistente la eligió para un presente pospuesto). La fuente se elige por forma (infinitivo o participio).
+    - **Pendiente:** ἕως τοῦ + infinitivo es temporal y cae en la lista de τοῦ, que no trae «tiempo» (Hch 8:40).
 - **#G5, tipo de agencia (profesor, Stg 2:9 ἐλεγχόμενοι ὑπὸ τοῦ νόμου).** El tutor dice «agente de la pasiva», bien, pero sin el tipo.
   - **Regla en el código (Wallace, excurso de la agencia):** con verbo PASIVO (voz `P` en MorphGNT; ἐλεγχόμενοι = `-PPPNPM-`):
     - ὑπό / ἀπό / παρά + genitivo = **agente último** («agencia final»);
