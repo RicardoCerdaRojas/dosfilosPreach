@@ -13,11 +13,11 @@ describe('G3 en la ficha', () => {
         expect(screen.getByText('analyzer.agency.ultimate')).toBeInTheDocument();
         expect(screen.getByText('analyzer.verbFn.rule')).toBeInTheDocument();
         expect(screen.getByText('(analyzer.agency.ruleAgentHypo)')).toBeInTheDocument();
-        expect(screen.getByTestId('source-note').textContent).toContain('Ultimate Agent');
+        expect(screen.getByTestId('source-note').textContent).toContain('Ultimate Agent», p. 433');
     });
     it('artículo anafórico por regla: «Regla» y fuente; si lo eligió el asistente, nada de esto', () => {
         const { unmount } = render(<GreekAnaphoraRuleNote insight={{ ...base, articleUse: 'anaphoric', nominalRule: 'anaphoraLemma' }} />);
-        expect(screen.getByTestId('source-note').textContent).toContain('Anaphoric (Previous Reference)');
+        expect(screen.getByTestId('source-note').textContent).toContain('Anaphoric (Previous Reference)», p. 217');
         unmount();
         const { container } = render(<GreekAnaphoraRuleNote insight={{ ...base, articleUse: 'anaphoric' }} />);
         expect(container).toBeEmptyDOMElement();
@@ -27,7 +27,7 @@ describe('G3 en la ficha', () => {
         expect(screen.getByText('analyzer.autos.intensive')).toBeInTheDocument();
         expect(screen.getByText('analyzer.verbFn.rule')).toBeInTheDocument();
         expect(screen.getByText('analyzer.autos.intensiveHintNoHead')).toBeInTheDocument(); // sin traducción de κύριος
-        expect(screen.getByTestId('source-note').textContent).toContain('αὐτός as Intensive Pronoun');
+        expect(screen.getByTestId('source-note').textContent).toContain('As an Intensive Pronoun», p. 349');
         unmount();
         const r2 = render(<GreekAutosBlock insight={{ ...base, autosUse: 'identical', nominalRule: 'autosIdentical' }} />);
         expect(screen.getByText('analyzer.autos.identicalHintNoHead')).toBeInTheDocument();

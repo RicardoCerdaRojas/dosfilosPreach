@@ -1,5 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { tenseUseSources, VERB_RULE_SOURCES, verbFunctionSources, type GreekWordInsight } from '@dosfilos/domain';
+import { tenseUseSources, VERB_RULE_SOURCES, verbFunctionSources, type GreekVerbForm, type GreekWordInsight } from '@dosfilos/domain';
+
+/** Modo de MorphGNT → forma, para citar la sección de ESE modo. */
+const FORMA_DEL_MODO: Readonly<Record<string, GreekVerbForm>> = { P: 'participle', N: 'infinitive', S: 'subjunctive', D: 'imperative', O: 'optative' };
 import { SourceNote } from '@/components/language-structure/SourceNote';
 
 /**
@@ -55,7 +58,7 @@ export function GreekVerbFunctionBlock({ insight, mood, tense }: {
                     ...(insight.verbRule
                         ? VERB_RULE_SOURCES[insight.verbRule]
                         : insight.verbFunction
-                          ? verbFunctionSources(insight.verbFunction, mood === 'P' ? 'participle' : mood === 'N' ? 'infinitive' : 'other')
+                          ? verbFunctionSources(insight.verbFunction, FORMA_DEL_MODO[mood ?? ''] ?? 'other')
                           : []),
                     ...(insight.tenseUse ? tenseUseSources(insight.tenseUse, tense) : []),
                 ]}
