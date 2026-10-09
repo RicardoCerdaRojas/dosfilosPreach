@@ -70,8 +70,8 @@ describe('lectura de cláusulas — validación', () => {
 describe('fuentes según la forma', () => {
     it('«propósito» cita la sección del infinitivo o la del participio, no las dos (Lc 5:17 εἰς τὸ ἰᾶσθαι)', async () => {
         const { verbFunctionSources } = await import('../ruleSources');
-        expect(verbFunctionSources('purpose', 'infinitive').map(s => s.section)).toEqual(['Infinitive of Purpose']);
-        expect(verbFunctionSources('purpose', 'participle').map(s => s.section)).toEqual(['Participle of Purpose']);
+        expect(verbFunctionSources('purpose', 'infinitive').map(s => s.section)).toEqual(['Adverbial Uses › Purpose']);
+        expect(verbFunctionSources('purpose', 'participle').map(s => s.section)).toEqual(['Adverbial (or Circumstantial) › Purpose (Telic)']);
         expect(verbFunctionSources('purpose').length).toBe(2);
     });
 });
@@ -80,6 +80,7 @@ describe('el uso del tiempo se cita según el tiempo', () => {
     it('«habitual» del presente ≠ del imperfecto; la nota del profesor sólo en el presente (Stg 2:7)', async () => {
         const { tenseUseSources } = await import('../ruleSources');
         expect(tenseUseSources('customary', 'P').map(s => s.section)).toEqual(['Customary (Habitual or General) Present', 'Indicación del profesor']);
+        expect(tenseUseSources('customary', 'P')[0]!.verified?.page).toBe('521');
         expect(tenseUseSources('customary', 'I').map(s => s.section)).toEqual(['Customary (Habitual or General) Imperfect']);
         expect(tenseUseSources('gnomic', 'A').map(s => s.section)).toEqual(['Gnomic Aorist']);
         expect(tenseUseSources('customary', undefined)).toEqual([]);

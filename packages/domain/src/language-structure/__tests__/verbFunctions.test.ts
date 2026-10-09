@@ -206,4 +206,18 @@ describe('G2 — regresiones de la revisión adversarial', () => {
     it('un relativo no fuerza el exhortativo (Hch 21:16 «παρ’ ᾧ ξενισθῶμεν»)', () => {
         expect(verbo('ACT/21.json', 16, 'ξενισθῶμεν').rule).toBeUndefined();
     });
+
+describe('R0 — la regla no dice más que el libro que cita', () => {
+    it('ἐν τῷ + infinitivo acota tiempo o medio, y πρὸς τό propósito o resultado (Wallace p. 611): no deciden solos', () => {
+        const co = cargar('1CO/11.json');
+        const enToi = greekVerbCandidates(co, 21).find(c => c.rule === 'enToi');
+        expect(enToi).toMatchObject({ allowed: ['time', 'means'] });
+        expect(enToi?.decided).toBeUndefined();
+        const ts = cargar('1TH/2.json');
+        const prosTo = greekVerbCandidates(ts, 9).find(c => c.rule === 'prosTo');
+        expect(prosTo).toMatchObject({ allowed: ['purpose', 'result'] });
+        expect(prosTo?.decided).toBeUndefined();
+    });
+});
+
 });

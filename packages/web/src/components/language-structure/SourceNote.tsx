@@ -5,7 +5,8 @@ import { formatCitation, type RuleSource } from '@dosfilos/domain';
 
 /**
  * La fuente de una regla o categoría, lista para citar (Wallace, Runge…).
- * Sin página verificada, la cita va sin página: nunca una inventada.
+ * Verificada contra el ejemplar: sección y página. Sin verificar: sólo la
+ * obra y el tema («Runge, sobre los conectores»), nunca una cita inventada (R0).
  */
 export const SourceNote: React.FC<{
     sources?: readonly RuleSource[];
@@ -31,9 +32,11 @@ export const SourceNote: React.FC<{
             </button>
         );
     }
-    const citas = sources.map(s => formatCitation(s));
+    // Sin dos veces la misma: dos secciones sin verificar del mismo tema dicen lo mismo
+    // («Runge, sobre el énfasis y el foco», revisión de R0).
+    const citas = [...new Set(sources.map(s => formatCitation(s)))];
     // Se copia la cita completa (obra y año), como va en un trabajo.
-    const completas = sources.map(s => formatCitation(s, 'full'));
+    const completas = [...new Set(sources.map(s => formatCitation(s, 'full')))];
     const copiar = async () => {
         try {
             await navigator.clipboard.writeText(completas.join('; '));

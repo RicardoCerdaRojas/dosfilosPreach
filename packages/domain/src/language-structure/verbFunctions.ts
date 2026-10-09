@@ -247,8 +247,10 @@ export const VERB_RULES: readonly ReglaVerbo[] = [
     { rule: 'genitiveAbsolute', form: 'participle', when: genitivoAbsoluto, allowed: ['genitiveAbsolute'] },
     // Infinitivo con preposición y artículo
     { rule: 'eisTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'εἰς', allowed: ['purpose', 'result'] },
-    { rule: 'prosTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'πρός', allowed: ['purpose'] },
-    { rule: 'enToi', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'ἐν', allowed: ['time'] },
+    // πρὸς τό y ἐν τῷ: Wallace les da más de un uso (p. 611: πρὸς τό «Purpose, Result»; ἐν τῷ
+    // «Result (rare), Contemporaneous Time, Means»): la regla acota, no decide (revisión de R0).
+    { rule: 'prosTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'πρός', allowed: ['purpose', 'result'] },
+    { rule: 'enToi', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'ἐν', allowed: ['time', 'means'] },
     { rule: 'metaTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'μετά', allowed: ['time'] },
     { rule: 'proTou', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'πρό', allowed: ['time'] },
     { rule: 'diaTo', form: 'infinitive', when: c => preposicionDelInfinitivo(c) === 'διά', allowed: ['cause'] },

@@ -10,12 +10,12 @@ describe('G4 en la ficha', () => {
         render(<GreekParticleBlock insight={{ ...base, discourseFunction: 'emphasis', discourseRule: 'overtPronoun', overtPronounVerbText: 'βλασφημοῦσιν' }} />);
         expect(screen.getByTestId('overt-pronoun').textContent).toBe('analyzer.discourse.overtPronoun:βλασφημοῦσιν');
         expect(screen.getByText('analyzer.verbFn.assistant')).toBeInTheDocument();
-        expect(screen.getByTestId('source-note').textContent).toContain('Personal Pronouns (Nominative for Emphasis)');
+        expect(screen.getByTestId('source-note').textContent).toContain('Wallace, «Personal Pronouns › Nominative Uses › Emphasis», p. 321');
     });
     it('δέ decidida por regla: «Regla» y Runge', () => {
         render(<GreekParticleBlock insight={{ ...base, discourseFunction: 'development', discourseRule: 'deDevelopment' }} />);
         expect(screen.getByText('analyzer.verbFn.rule')).toBeInTheDocument();
-        expect(screen.getByTestId('source-note').textContent).toContain('Runge, «Development (δέ)»');
+        expect(screen.getByTestId('source-note').textContent).toContain('Runge, sobre los conectores'); // sin cotejar: sólo el tema (R0)
     });
     it('sin función devuelta, el pronombre explícito igual se explica (con su fuente)', () => {
         render(<GreekParticleBlock insight={{ ...base, discourseRule: 'overtPronoun', overtPronounVerbText: 'βλασφημοῦσιν' }} />);
