@@ -17,7 +17,7 @@ import { GreekWordCard } from './GreekWordCard';
 import { StructureSection } from '@/components/language-structure/StructureSection';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { mismasPalabras } from '@/components/language-structure/mismasPalabras';
-import { applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
+import { applyDiscourseRules, applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
 
 /**
  * El ANALIZADOR griego — espejo del analizador hebreo, versículo a versículo:
@@ -85,6 +85,7 @@ export function GreekAnalyzerPage() {
         // Los verbos de los datos (posición = token) sólo si coinciden con los tokens.
         alineados ? estructura.verbs : undefined,
         alineados ? estructura.nominal : undefined,
+        alineados ? estructura.discourse : undefined,
     );
     // Las reglas de los verbos se aplican AL MOSTRAR: una regla mejorada llega a
     // los análisis ya guardados sin re-analizar (G2, como el hebreo).
@@ -94,15 +95,19 @@ export function GreekAnalyzerPage() {
             insightGuardado && verbosVigentes
                 ? {
                       ...insightGuardado,
-                      // G2 (verbos) y G3 (agencia, artículo anafórico), aplicadas al mostrar.
-                      words: applyNominalRules(
-                          applyVerbRules(insightGuardado.words, verbosVigentes),
-                          estructura.nominal.agency,
-                          estructura.nominal.anaphora,
+                      // Aplicadas al mostrar: G2 verbos, G3 agencia/anáfora/αὐτός, G4 partículas y pronombres.
+                      words: applyDiscourseRules(
+                          applyNominalRules(
+                              applyVerbRules(insightGuardado.words, verbosVigentes),
+                              estructura.nominal.agency,
+                              estructura.nominal.anaphora,
+                              estructura.nominal.autos,
+                          ),
+                          estructura.discourse,
                       ),
                   }
                 : insightGuardado,
-        [insightGuardado, verbosVigentes, estructura.nominal],
+        [insightGuardado, verbosVigentes, estructura.nominal, estructura.discourse],
     );
     // MACULA y MorphGNT se alinearon palabra por palabra en G0: el ordinal es el
     // índice del token. Si un día no coinciden en cantidad, no se enlaza nada.

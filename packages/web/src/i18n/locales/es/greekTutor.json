@@ -964,7 +964,11 @@
       "resumption": "Retoma",
       "purpose": "Finalidad",
       "temporal": "Marco temporal",
-      "condition": "Condición"
+      "condition": "Condición",
+      "additive": "Aditivo",
+      "attentionGetter": "Llamada de atención",
+      "restrictive": "Restrictivo",
+      "overtPronoun": "El verbo «{{verb}}» ya dice el sujeto con su terminación; el pronombre lo repite, y por eso marca énfasis o contraste."
     },
     "discourseHint": {
       "development": "Un paso NUEVO del argumento, no necesariamente contrario. δέ es esto, y por eso traducirla siempre \"pero\" inventa una oposición que no está.",
@@ -978,7 +982,10 @@
       "resumption": "Retoma un hilo que quedó atrás.",
       "purpose": "Introduce la finalidad: para qué.",
       "temporal": "Sitúa en el tiempo lo que sigue.",
-      "condition": "Plantea la condición de la que depende lo demás."
+      "condition": "Plantea la condición de la que depende lo demás.",
+      "additive": "«También», «aun»: suma algo al tema.",
+      "attentionGetter": "«¡Mira!»: llama la atención sobre lo que sigue.",
+      "restrictive": "«Sólo»: limita a esto y nada más."
     },
     "preposition": {
       "title": "Preposición y su caso",
@@ -1084,6 +1091,21 @@
       "ruleAgentHypo": "ὑπό/παρά + genitivo con verbo pasivo",
       "ruleAgentDia": "διά + genitivo con verbo pasivo",
       "ruleAnaphora": "su sustantivo ya apareció antes"
+    },
+    "autos": {
+      "title": "Uso de αὐτός",
+      "intensive": "Intensivo — «mismo»",
+      "identical": "Identificador — «el mismo»",
+      "intensiveHint": "Realza a {{head}} («{{tr}}»). No es el pronombre «él».",
+      "intensiveHintNoHead": "Realza: «él mismo». No es el pronombre «él».",
+      "identicalHint": "Con el artículo delante, identifica a {{head}} («{{tr}}»): «el mismo».",
+      "identicalHintNoHead": "Con el artículo delante, identifica: «el mismo», «lo mismo».",
+      "together": "«ἐπὶ τὸ αὐτό» es un modismo: «juntos, en el mismo lugar».",
+      "ruleIntensive": "fuera del artículo, junto a lo que realza",
+      "ruleIdentical": "con el artículo delante",
+      "intensiveHintTr": "Realza a {{head}}: «{{tr}} {{own}}». No es el pronombre «él».",
+      "identicalHintTr": "Con el artículo delante, identifica a {{head}}: «{{own}} {{tr}}».",
+      "staleTranslation": "La traducción «{{own}}» es de un análisis anterior a esta regla. Re-analiza el versículo para actualizarla."
     }
   }
 }

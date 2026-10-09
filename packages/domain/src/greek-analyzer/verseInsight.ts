@@ -87,6 +87,20 @@ export interface GreekWordInsight {
     readonly agency?: import('../language-structure/nominalFunctions').AgencyKind;
     /** La regla de G3 que decidió la agencia o la anáfora del artículo. */
     readonly nominalRule?: import('../language-structure/nominalFunctions').NominalRule;
+    /** αὐτός intensivo («él mismo») o identificador («el mismo»), por su posición (`applyNominalRules`). */
+    readonly autosUse?: import('../language-structure/nominalFunctions').AutosUse;
+    /** Lo que ese αὐτός realza o identifica (texto de la palabra). */
+    readonly autosHeadText?: string;
+    /** «ἐπὶ τὸ αὐτό»: modismo, «juntos». */
+    readonly autosTogether?: boolean;
+    /** Traducción de lo que αὐτός realza («Señor»), para decirlo en el idioma del lector. */
+    readonly autosHeadTranslation?: string;
+    /** G4 — la regla (Runge) que decidió o acotó la función discursiva. */
+    readonly discourseRule?: import('../language-structure/discourseFunctions').DiscourseRule;
+    /** G4 — pronombre explícito: la posición del verbo que ya marca esa persona (#G1). */
+    readonly overtPronounVerb?: number;
+    /** …y su forma («βλασφημοῦσιν»), para decirlo en la ficha. */
+    readonly overtPronounVerbText?: string;
 }
 
 /**
@@ -121,8 +135,9 @@ export interface GreekKeyInsight {
  * v11: + clauseReadings — la lectura de cada fila de «Estructura» (G1 + G5).
  * v12: + verbFunction/tenseUse/verbNote — la función de cada verbo (G2, Wallace).
  * v13: + hechos de G3 (agencia, artículo anafórico) en el prompt; claves por posición; más funciones de caso.
+ * v14: + función en el argumento acotada por regla (G4, Runge) y pronombre explícito.
  */
-export const GREEK_INSIGHT_PROMPT_VERSION = 13;
+export const GREEK_INSIGHT_PROMPT_VERSION = 14;
 
 export interface GreekVerseInsight {
     /** "JAS 1:2" — la clave del caché. */

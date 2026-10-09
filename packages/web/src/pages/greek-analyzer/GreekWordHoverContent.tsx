@@ -8,7 +8,7 @@ import {
 } from '@dosfilos/domain';
 import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { GreekVerbFunctionBlock } from './GreekVerbFunctionBlock';
-import { GreekAgencyBlock, GreekAnaphoraRuleNote } from './GreekNominalRuleBlock';
+import { GreekAgencyBlock, GreekAnaphoraRuleNote, GreekAutosBlock } from './GreekNominalRuleBlock';
 import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -123,6 +123,7 @@ export function GreekWordHoverContent({ token, insight, keyInsight, relations, o
                 <GreekVerbFunctionBlock insight={insight} mood={token.tag.mood} tense={token.tag.tense} />
                 {regimen && <GreekPrepositionBlock lemma={token.lemma} usage={regimen} />}
                 <GreekAgencyBlock insight={insight} />
+                <GreekAutosBlock insight={insight} />
 
                 {insight && <GreekParticleBlock insight={insight} />}
 

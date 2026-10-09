@@ -44,6 +44,9 @@ export const DISCOURSE_FUNCTIONS = [
     'purpose',          // ἵνα, ὅπως: finalidad
     'temporal',         // ὅταν, ὅτε: marco temporal
     'condition',        // εἰ, ἐάν
+    'additive',         // καί adverbial: «también», «aun» (G4)
+    'attentionGetter',  // ἰδού, ἴδε: llama la atención (G4)
+    'restrictive',      // μόνον: «sólo» (G4)
 ] as const;
 
 export type DiscourseFunction = (typeof DISCOURSE_FUNCTIONS)[number];
