@@ -1,4 +1,5 @@
 import type { StructureNode } from '../../language-structure/verseStructure.js';
+import type { SpeechFact } from '../../language-structure/hebrewSpeech.js';
 /**
  * Domain ports (interfaces) for the Hebrew Tutor module.
  *
@@ -67,6 +68,8 @@ export interface IHebrewAnalysisService {
     lexicalEntries?: readonly LexicalEntry[],
     /** Filas de «Estructura» (MACULA): el asistente las LEE en vez de partir cláusulas (G1 + G5). */
     structure?: readonly StructureNode[],
+    /** Quién habla y a quién (MACULA): la 2.ª persona del discurso es el destinatario, no el hablante. */
+    speech?: readonly SpeechFact[],
   ): Promise<VerseAnalysis>;
 }
 

@@ -95,6 +95,18 @@ Se corrigieron los hallazgos 1 a 7, 9 y 10:
   - **Lo que se vio:** en Rut 1:17 la etiqueta quedó «Yusivo, volitivo», pero la ficha dice «él hará» y la literal «así hará… y así él añadirá». La fluida ya decía bien «Que así me haga… y así me añada».
   - **Arreglo:** en la fórmula, el significado se sabe con certeza. יַעֲשֶׂה → «haga» e יֹסִיף → «añada», o «hagan / añadan» con sujeto plural (1 R 19:2). Se fija en el código la traducción de esas dos palabras.
 
+- **Hecho (2026-10-09), H6, H7 y quién habla:**
+  - **H6:** el aviso de la ficha nombra todos los textos anteriores a la corrección (traducción de la palabra, valor, explicación, pistas y la literal del versículo); la traducción literal se marca cuando el versículo tiene formas corregidas según OSHB.
+  - **H7:** en la fórmula de juramento, la palabra se traduce en el código: «haga» / «añada», y «hagan» / «añadan» con sujeto plural (1 R 19:2). La literal del versículo sigue siendo la guardada y queda marcada por H6.
+  - **Quién habla (Rut 1:16):** `hebrewSpeechFacts` (dominio).
+    - Abre discurso: אָמַר finito con su hablante nombrado (rol «s» de MACULA, tira nominal, sin la conjunción pegada); «לֵאמֹר» con el hablante de su cláusula MADRE, sólo si ese verbo es de decir, mandar, llamar, enviar, responder, jurar o preguntar, o la fórmula profética «וַיְהִי דְבַר־יְהוָה … לֵאמֹר».
+    - No abre: participio («הָאֹמֵר אֵלַי», Gn 32:10), pasivo (Gn 32:29), אָמַר subordinado (אֲשֶׁר, מָה / לָמָּה, פֶּן: Éx 32:12, Dt 5:27), «אָמַר + לְ + infinitivo» (= se propuso, Dt 9:25), hablante que es sólo un pronombre (Dt 15:11), דִּבֶּר solo (narración, Dt 4:12). Todo אָמַר corta el discurso anterior.
+    - La 2.ª persona que sigue (verbo o sufijo) es a quien se habla, nunca el hablante; el destinatario escrito (después del verbo, con אֶל o לְ + sustantivo o sufijo) se nombra.
+    - Revisión adversarial: con la primera versión, 3 de 40 hechos al azar estaban mal (7,5 %) y una búsqueda dirigida halló 64 errores en 28 versículos (participios, «לֵאמֹר» mal enganchado, subordinadas, nifal). Tras los cortes: 2.720 hechos en 1.167 versículos y una muestra nueva de 40 al azar revisada a mano sin errores (leído).
+    - Se aplica al mostrar (nota «Quién habla» en la tarjeta y el tooltip: corrige también lo guardado) y va al prompt como hecho decidido.
+  - **Ajustes de la revisión:** el aviso de H6 no aparece cuando la única corrección es la fórmula de juramento (la traducción la pone el código), ni en la ficha ni en la literal; H7 traduce en el idioma del análisis (inglés: «do» / «add»).
+  - **Ajustes de la prueba del fundador en local (2026-10-09):** la nota «Quién habla» no se leía en el tooltip (texto blanco heredado; lo mismo pasaba con «Antepuesto»); nombra al hablante con la traducción del análisis («Rut», no «רוּת») y lleva «Regla»; y se escribe en positivo («Rut está hablando. El «tú» de este verbo es la persona a quien Rut le habla»): la versión «habla Rut… el sujeto no es Rut» se leía como contradicción. En Rut 1:17 el aviso de la literal salía aunque la literal re-analizada ya decía «Así haga»: OSHB etiqueta imperfecto, así que la corrección de la fórmula existe siempre.
+
 ### Pendientes de confirmar con el profesor (no se tocan todavía)
 - Rut 1:14 וְרוּת: «Raíz: רות» para un nombre propio.
 - La וּ descrita como «componente» del nombre cuando es mater lectionis (vocal *ū*).

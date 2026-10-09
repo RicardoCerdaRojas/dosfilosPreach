@@ -57,4 +57,11 @@ describe('el prompt con las filas de «Estructura»', () => {
         // Rut 1:14 (prueba del fundador): una nota decía «waw conjuntiva» donde la fila es disyuntiva.
         expect(texto).toMatch(/"exegeticalNotes" y la función de cada palabra usan los MISMOS nombres/);
     });
+
+    it('con quién habla (Rut 1:16), el prompt lo da como hecho decidido', () => {
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [{ ordinal: 1, text: 'תִּפְגְּעִי', kind: 'verb', speaker: 'רוּת', speakerOrdinals: [0] }]);
+        expect(texto).toContain('## QUIÉN HABLA');
+        expect(texto).toMatch(/תִּפְגְּעִי: verbo en 2\.ª persona dentro del discurso de רוּת/);
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## QUIÉN HABLA');
+    });
 });

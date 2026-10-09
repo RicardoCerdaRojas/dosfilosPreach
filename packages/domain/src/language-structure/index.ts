@@ -5,3 +5,4 @@ export * from './verbFunctions.js';
 export * from './ruleSources.js';
 export * from './nominalFunctions.js';
 export * from './discourseFunctions.js';
+export * from './hebrewSpeech.js';

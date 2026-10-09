@@ -196,6 +196,13 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
 
 **Una fase = un PR por etapa**, con un commit por unidad, como hasta ahora.
 
+### Resultado de R0 (PR #759, desplegado 2026-10-09)
+- Las secciones estaban de memoria: sólo 21 de 90 de Wallace coincidían con un encabezado del libro, y la «waw disjunctive» de Arnold y Choi apuntaba a «5.2.14 Disjunctive Clause» («o… o»).
+- Cotejadas con los ejemplares de la biblioteca: Wallace 1996 (91) y Arnold y Choi 2003 (6), los 97 encabezados en su página impresa (`scripts/language-rules/cotejar-citas.py`, lista aprobada en `cotejo-aprobado.json`, exigida por CI).
+- Runge (13): sólo el tema. El PDF disponible es una versión previa (Logos) sin créditos y con paginación propia (hoja − 7): sirve para el contenido de las reglas, no para citar páginas del impreso de 2010. El profesor no usa la gramática de Runge; sí su *Santiago: Comentario de alta definición* (Lexham, 2016), que sirve como conjunto de prueba de G4 sobre Santiago.
+- ἐν τῷ y πρὸς τό + infinitivo dejaron de decidir solos (Wallace les da varios usos, p. 611).
+- Falta: revisión a mano de `docs/CITAS_REGLAS_IDIOMA.md` (que la categoría del libro sea la de la regla).
+
 ---
 
 ## 8. Riesgos

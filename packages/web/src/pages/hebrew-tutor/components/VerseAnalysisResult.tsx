@@ -92,7 +92,11 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   const [activeWordIndex, setActiveWordIndex] = React.useState<number | null>(null);
 
   // ── Estructura (G1 + G5): datos de MACULA, enlazados a las palabras del análisis ──
-  const { estructura, alinear, antepuestas, sinLectura } = useEstructuraHebrea(analysis, structureRef);
+  const { estructura, alinear, antepuestas, discurso, sinLectura } = useEstructuraHebrea(analysis, structureRef);
+  // H6: con formas corregidas según OSHB, la traducción literal es anterior a la corrección. La
+  // fórmula de juramento no cuenta: su traducción la pone el código (H7), y en Rut 1:17 OSHB dice
+  // imperfecto, así que esa «corrección» existe siempre, aun con la literal ya bien (prueba del fundador).
+  const hayCorrecciones = analysis.words.some((w) => (w.oshbReference?.corrections ?? []).some((c) => c.reason !== 'oath-formula'));
 
   /**
    * La palabra según la vista activa — la usan el versículo y la «Estructura»:
@@ -413,7 +417,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                     )}
                   </span>
                 </TooltipTrigger>
-                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} />
+                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} />
               </Tooltip>
             );
           })}
@@ -480,6 +484,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
             verseReference={verseReference}
             field="literalTranslation"
             onSaved={(text) => onTranslationUpdate?.({ literalTranslation: text })}
+            notice={hayCorrecciones ? t('verseAnalyzer.oshb.literalNote') : undefined}
           />
         </div>
         <div className="print:mb-4">
@@ -559,7 +564,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
             toPageIndex: alinear,
             renderText: i => (analysis.words[i] ? pintarPalabra(analysis.words[i]!) : null),
             renderTooltip: i =>
-              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} /> : null,
+              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} /> : null,
             onSelect: handleHeaderWordClick,
             selected: activeWordIndex,
           }}
@@ -597,6 +602,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
               onHover={(hovered) => setActiveWordIndex(hovered ? i : null)}
               cardRef={(el) => { cardRefs.current[i] = el; }}
               fronted={antepuestas.get(i)}
+              speech={discurso.get(i)}
             />
           ))}
         </div>
@@ -670,10 +676,12 @@ interface TranslationPanelProps {
   verseReference?: string;
   field?: 'literalTranslation' | 'fluidTranslation';
   onSaved?: (newText: string) => void;
+  /** H6: la literal es anterior a una corrección de OSHB en el versículo. */
+  notice?: string;
 }
 
 const TranslationPanel: React.FC<TranslationPanelProps> = ({
-  label, text, icon, verseReference, field, onSaved,
+  label, text, icon, verseReference, field, onSaved, notice,
 }) => {
   const { updateVerseTranslation } = useHebrewTutor();
   const [copied, setCopied] = React.useState(false);
@@ -755,6 +763,12 @@ const TranslationPanel: React.FC<TranslationPanelProps> = ({
           </button>
         </div>
       </div>
+
+      {notice && (
+        <p className="mb-2 rounded-md border border-warning/30 bg-warning-subtle px-2 py-1 text-[11px] leading-snug text-warning-subtle-foreground" data-testid="literal-notice">
+          {notice}
+        </p>
+      )}
 
       {editing ? (
         <div className="space-y-2">

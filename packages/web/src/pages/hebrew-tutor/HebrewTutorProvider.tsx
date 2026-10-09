@@ -27,7 +27,7 @@ interface HebrewTutorContextType {
   getBibleNavigation: GetBibleNavigationUseCase;
   getVerseText: GetVerseTextUseCase;
   /** El análisis guardado, reconciliado con morphhb, sin llamar al modelo. */
-  checkCache: (input: { morphhbKey: string; chapter: number; verse: number }) => Promise<import('@dosfilos/domain').VerseAnalysis | null>;
+  checkCache: (input: { morphhbKey: string; chapter: number; verse: number; language?: string }) => Promise<import('@dosfilos/domain').VerseAnalysis | null>;
   saveDetectiveSession: SaveDetectiveSessionUseCase;
   updateVerseTranslation: UpdateVerseTranslationUseCase;
 }

@@ -180,19 +180,34 @@ function syncVerbTable<R extends { hebrewForm: string }>(
  */
 export const OATH_FORMULA_VALUE = 'volitivo — fórmula de juramento («así me haga…»)';
 
+/**
+ * H7: en la fórmula el significado se sabe con certeza, así que la palabra se
+ * traduce en el código (Rut 1:17 decía «él hará… él añadirá» con la etiqueta
+ * ya en yusivo). Plural con sujeto plural: «כֹּה־יַעֲשׂוּן אֱלֹהִים», 1 R 19:2.
+ */
+export const OATH_FORMULA_TRANSLATION = {
+    es: { asah: { singular: 'haga', plural: 'hagan' }, yasaf: { singular: 'añada', plural: 'añadan' } },
+    // «May the LORD do so to me, and more also»: en inglés el subjuntivo no cambia con el número.
+    en: { asah: { singular: 'do', plural: 'do' }, yasaf: { singular: 'add', plural: 'add' } },
+} as const;
+
 export function markOathFormula(
     analysis: VerseAnalysis,
     tokens: readonly { text: string; oshbMorphCode?: string; lemma?: string }[],
+    /** Idioma del análisis: la traducción fijada de H7 va en ese idioma. */
+    language: string = 'es',
 ): VerseAnalysis {
     if (!tokens || tokens.length < 4) return analysis;
     const lema = (t: { lemma?: string } | undefined) => (t?.lemma ?? '').trim();
     const indices: number[] = [];
+    const deYasaf = new Set<number>();
     for (let i = 0; i + 1 < tokens.length; i++) {
         if (lema(tokens[i]) !== '3541' || !lema(tokens[i + 1]).startsWith('6213')) continue;
         const resto = tokens.slice(i + 2, i + 8);
         const yasaf = resto.findIndex(t => lema(t) === '3254');
         if (yasaf < 0 || !resto.slice(0, yasaf).some(t => lema(t) === 'c/3541')) continue;
         indices.push(i + 1, i + 2 + yasaf);
+        deYasaf.add(i + 2 + yasaf);
     }
     if (indices.length === 0) return analysis;
 
@@ -200,8 +215,10 @@ export function markOathFormula(
     const words = analysis.words.map((w, i) => {
         const tramo = tramos[i];
         if (!tramo || !w.verbMorphology) return w;
-        if (!indices.some(k => k >= tramo.start && k < tramo.start + tramo.count)) return w;
+        const k = indices.find(k => k >= tramo.start && k < tramo.start + tramo.count);
+        if (k === undefined) return w;
         const vm = w.verbMorphology;
+        const forma = (language.startsWith('en') ? OATH_FORMULA_TRANSLATION.en : OATH_FORMULA_TRANSLATION.es)[deYasaf.has(k) ? 'yasaf' : 'asah'];
         const cambio: OshbCorrection[] = vm.verbForm === VerbForm.JUSSIVE
             ? []
             : [{ field: 'verbForm', analysis: String(vm.verbForm), oshb: VerbForm.JUSSIVE, reason: 'oath-formula' }];
@@ -212,6 +229,7 @@ export function markOathFormula(
         return {
             ...w,
             verbMorphology: { ...vm, verbForm: VerbForm.JUSSIVE, temporalValue: OATH_FORMULA_VALUE },
+            translation: vm.number === GrammaticalNumber.PLURAL ? forma.plural : forma.singular,
             ...(w.oshbReference
                 ? { oshbReference: { ...w.oshbReference, corrections: [...previas, ...cambio], agreesWithAnalysis: previas.length + cambio.length === 0 } }
                 : {}),

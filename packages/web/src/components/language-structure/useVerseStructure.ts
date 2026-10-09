@@ -5,7 +5,9 @@ import {
     greekAnaphora,
     greekAutos,
     greekVerbCandidates,
+    hebrewSpeechFacts,
     type NominalFacts,
+    type SpeechFact,
     type DiscourseCandidate,
     readingFor,
     verseStructure,
@@ -37,6 +39,8 @@ export interface VerseStructureState {
     nominal: NominalFacts;
     /** G4 (sólo griego): partículas y pronombres explícitos. */
     discourse: readonly DiscourseCandidate[];
+    /** Sólo hebreo: la 2.ª persona dentro de un discurso es a quien se habla (Rut 1:16). */
+    speech: readonly SpeechFact[];
 }
 
 /**
@@ -78,7 +82,8 @@ export function useVerseStructure(
             autos: griego ? greekAutos(griego, verse) : [],
         };
         const discourse = griego ? greekDiscourseCandidates(griego, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse };
+        const speech = actual?.chapter && lang === 'he' ? hebrewSpeechFacts(actual.chapter, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech };
     }, [actual, key, verse, lang]);
 }
 

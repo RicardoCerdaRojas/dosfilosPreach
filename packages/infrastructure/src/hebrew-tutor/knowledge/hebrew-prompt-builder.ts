@@ -13,8 +13,8 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewVerse, StructureNode } from '@dosfilos/domain';
-import { buildClauseReadingTask } from '@dosfilos/domain';
+import type { HebrewVerse, SpeechFact, StructureNode } from '@dosfilos/domain';
+import { buildClauseReadingTask, buildSpeechFactsTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
 
@@ -308,8 +308,11 @@ export function buildVerseAnalysisPrompt(
    * versículo en cláusulas (H2): LEE las que da el dato (G1 + G5).
    */
   structure: readonly StructureNode[] = [],
+  /** Quién habla y a quién (Rut 1:16): la 2.ª persona del discurso es el destinatario. */
+  speech: readonly SpeechFact[] = [],
 ): string {
   const lectura = buildClauseReadingTask(structure);
+  const habla = buildSpeechFactsTask(speech);
   const langInstruction =
     language === 'es'
       ? 'IMPORTANT: Respond entirely in Spanish. Use clear academic Spanish appropriate for a Chilean seminary student.'
@@ -381,6 +384,8 @@ Ejemplos:
 DISTINGUIR de:
 - Frases preposicionales donde el sufijo NO es correferencial con el sujeto
   (e.g., "fabricaron para ellos [otros]") — en ese caso traducir normalmente.
+
+${habla}
 
 ${lectura ? SECCION_LECTURA(lectura) : `## REGLAS DE CLÁUSULAS (campo "clauses")
 

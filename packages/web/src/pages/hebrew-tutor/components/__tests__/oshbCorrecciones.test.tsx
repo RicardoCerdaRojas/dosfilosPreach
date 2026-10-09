@@ -28,6 +28,8 @@ describe('lo que OSHB corrigió en el verbo', () => {
     it('la corrección por fórmula de juramento dice su motivo (Rut 1:17)', () => {
         render(<OshbCorrectionsList oshb={{ ...corregida, corrections: [{ field: 'verbForm', analysis: 'IMPERFECT', oshb: 'JUSSIVE', reason: 'oath-formula' }] }} />);
         expect(screen.getByText('verseAnalyzer.oshb.reasonOathFormula')).toBeInTheDocument();
+        // H7: la traducción la pone el código, así que no se avisa que es anterior (revisión).
+        expect(screen.queryByText('verseAnalyzer.oshb.translationNote')).toBeNull();
     });
 });
 
