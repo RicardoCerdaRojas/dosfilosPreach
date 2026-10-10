@@ -28,8 +28,10 @@ import type {
   SpeechFact,
   StructureNode,
   HebrewInfinitiveCandidate,
+  HebrewParticipleCandidate,
+  HebrewKiCandidate,
 } from '@dosfilos/domain';
-import { applyOshbMorphology, checkClauseConnections, hebrewInfinitiveCandidates, hebrewSpeechFacts, markOathFormula, reconcileGlobalWords, verseStructure } from '@dosfilos/domain';
+import { applyOshbMorphology, checkClauseConnections, hebrewInfinitiveCandidates, hebrewKiCandidates, hebrewParticipleCandidates, hebrewSpeechFacts, markOathFormula, reconcileGlobalWords, verseStructure } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -79,8 +81,8 @@ export class AnalyzeVerseUseCase {
 
     // 5. Perform the analysis via Gemini + knowledge base + lexical context,
     // con las filas de «Estructura» para que el asistente las lea.
-    const { nodes: estructura, speech, infinitives } = await this.structureOf(morphhbKey, chapter, verse);
-    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries, estructura, speech, infinitives);
+    const { nodes: estructura, speech, infinitives, participles, kis } = await this.structureOf(morphhbKey, chapter, verse);
+    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries, estructura, speech, infinitives, participles, kis);
 
     // 6. Persist to cache for future requests. Se guarda lo que dio el
     // asistente, SIN las reglas: aplicadas antes de guardar, la próxima
@@ -113,13 +115,17 @@ export class AnalyzeVerseUseCase {
    * Las filas de «Estructura» del versículo. Sin datos (o si no se pudieron
    * leer) el análisis sigue sin lectura de cláusulas: nunca se bloquea por esto.
    */
-  private async structureOf(morphhbKey: string, chapter: number, verse: number): Promise<{ nodes: StructureNode[]; speech: SpeechFact[]; infinitives: HebrewInfinitiveCandidate[] }> {
-    const nada = { nodes: [], speech: [], infinitives: [] };
+  private async structureOf(morphhbKey: string, chapter: number, verse: number): Promise<{
+    nodes: StructureNode[]; speech: SpeechFact[]; infinitives: HebrewInfinitiveCandidate[]; participles: HebrewParticipleCandidate[]; kis: HebrewKiCandidate[];
+  }> {
+    const nada = { nodes: [], speech: [], infinitives: [], participles: [], kis: [] };
     if (!this.structureProvider) return nada;
     try {
       const ch = await this.structureProvider.getChapter('he', morphhbKey, chapter);
       // Quién habla y a quién: la 2.ª persona del discurso es el destinatario (Rut 1:16).
-      return ch ? { nodes: verseStructure(ch, verse), speech: hebrewSpeechFacts(ch, verse), infinitives: hebrewInfinitiveCandidates(ch, verse) } : nada;
+      return ch
+        ? { nodes: verseStructure(ch, verse), speech: hebrewSpeechFacts(ch, verse), infinitives: hebrewInfinitiveCandidates(ch, verse), participles: hebrewParticipleCandidates(ch, verse), kis: hebrewKiCandidates(ch, verse) }
+        : nada;
     } catch {
       return nada;
     }

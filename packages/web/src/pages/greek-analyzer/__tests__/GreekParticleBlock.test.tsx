@@ -9,12 +9,12 @@ describe('G4 en la ficha', () => {
     it('pronombre explícito (Stg 2:7): explica que el verbo ya marca la persona, «Asistente» y fuente', () => {
         render(<GreekParticleBlock insight={{ ...base, discourseFunction: 'emphasis', discourseRule: 'overtPronoun', overtPronounVerbText: 'βλασφημοῦσιν' }} />);
         expect(screen.getByTestId('overt-pronoun').textContent).toBe('analyzer.discourse.overtPronoun:βλασφημοῦσιν');
-        expect(screen.getByText('analyzer.verbFn.assistant')).toBeInTheDocument();
+        expect(screen.getByText('wordFicha.origin.assistant')).toBeInTheDocument();
         expect(screen.getByTestId('source-note').textContent).toContain('Wallace, «Personal Pronouns › Nominative Uses › Emphasis», p. 321');
     });
     it('δέ decidida por regla: «Regla» y Runge', () => {
         render(<GreekParticleBlock insight={{ ...base, discourseFunction: 'development', discourseRule: 'deDevelopment' }} />);
-        expect(screen.getByText('analyzer.verbFn.rule')).toBeInTheDocument();
+        expect(screen.getByText('wordFicha.origin.rule')).toBeInTheDocument();
         expect(screen.getByTestId('source-note').textContent).toContain('Runge, sobre los conectores'); // sin cotejar: sólo el tema (R0)
     });
     it('sin función devuelta, el pronombre explícito igual se explica (con su fuente)', () => {

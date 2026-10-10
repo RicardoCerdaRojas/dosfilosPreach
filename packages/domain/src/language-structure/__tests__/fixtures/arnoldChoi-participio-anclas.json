@@ -1,0 +1,441 @@
+{
+ "obra": "Arnold y Choi, A Guide to Biblical Hebrew Syntax",
+ "edicion": "Cambridge 2003, ISBN 978-0-521-82609-9",
+ "nota": "Qué participio del versículo cita el libro en cada ejemplo. Sin texto del libro: sólo la palabra hebrea de OSHB.",
+ "anclas": [
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "1Kgs 3:9",
+   "palabras": [
+    "שֹׁמֵעַ"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "Deut 4:34",
+   "palabras": [
+    "נְטוּיָה"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "Prov 15:31",
+   "palabras": [
+    "שֹׁמַעַת"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "Exod 11:5",
+   "palabras": [
+    "הַיֹּשֵׁב"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "Jer 47:4",
+   "palabras": [
+    "הַבָּא"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "Gen 43:12",
+   "palabras": [
+    "הַמּוּשָׁב"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "Exod 31:18",
+   "palabras": [
+    "כְּתֻבִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "a",
+   "ref": "2Chr 28:9",
+   "palabras": [
+    "הַבָּא"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b",
+   "ref": "Ps 19:2",
+   "palabras": [
+    "מְסַפְּרִים"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b",
+   "ref": "Ps 19:1",
+   "palabras": [],
+   "como": "numeración inglesa: el libro cita «Ps 19:2 [Eng Ps 19:1]», es el mismo ejemplo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b",
+   "ref": "Gen 14:19",
+   "palabras": [
+    "בָּרוּךְ"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.1",
+   "ref": "Gen 16:8",
+   "palabras": [
+    "בֹּרַחַת"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.1",
+   "ref": "2Kgs 7:9",
+   "palabras": [
+    "עֹשִׂים"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.1",
+   "ref": "Gen 3:5",
+   "palabras": [
+    "יֹדֵעַ"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.1",
+   "ref": "Eccl 1:4",
+   "palabras": [
+    "הֹלֵךְ",
+    "בָּא",
+    "עֹמָדֶת"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.1",
+   "ref": "1Sam 23:1",
+   "palabras": [
+    "נִלְחָמִים"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Gen 2:10",
+   "palabras": [
+    "יֹצֵא"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Gen 39:23",
+   "palabras": [
+    "עֹשֶׂה",
+    "מַצְלִיחַ"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "1Kgs 1:5",
+   "palabras": [
+    "מִתְנַשֵּׂא"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Gen 19:1",
+   "palabras": [
+    "יֹשֵׁב"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Deut 3:2",
+   "palabras": [
+    "יוֹשֵׁב"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Gen 37:25",
+   "palabras": [
+    "בָּאָה"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Gen 18:2",
+   "palabras": [
+    "נִצָּבִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Gen 37:7",
+   "palabras": [
+    "מְאַלְּמִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Gen 42:35",
+   "palabras": [
+    "מְרִיקִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Exod 3:1",
+   "palabras": [
+    "רֹעֶה"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Job 1:14",
+   "palabras": [
+    "חֹרְשׁוֹת"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Deut 9:24",
+   "palabras": [
+    "מַמְרִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.2",
+   "ref": "Neh 1:4",
+   "palabras": [
+    "צָם",
+    "וּמִתְפַּלֵּל"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "Gen 7:4",
+   "palabras": [
+    "מַמְטִיר"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "2Kgs 4:16",
+   "palabras": [
+    "חֹבֶקֶת"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "Gen 41:28",
+   "palabras": [
+    "עֹשֶׂה"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "Gen 19:13",
+   "palabras": [
+    "מַשְׁחִתִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "Gen 6:17",
+   "palabras": [
+    "מֵבִיא"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "Deut 31:16",
+   "palabras": [
+    "שֹׁכֵב"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "1Kgs 20:13",
+   "palabras": [
+    "נֹתְנוֹ"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "b.3",
+   "ref": "1Kgs 2:45",
+   "palabras": [
+    "נָכוֹן"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Ruth 1:1",
+   "palabras": [
+    "הַשֹּׁפְטִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Gen 14:19",
+   "palabras": [
+    "קֹנֵה"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Jer 22:13",
+   "palabras": [
+    "בֹּנֶה"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Isa 35:9",
+   "palabras": [
+    "גְּאוּלִים"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Ps 121:5",
+   "palabras": [
+    "שֹׁמְרֶךָ"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Ps 106:3",
+   "palabras": [
+    "שֹׁמְרֵי"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Ps 103:18",
+   "palabras": [
+    "לְשֹׁמְרֵי"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Gen 23:10",
+   "palabras": [
+    "בָּאֵי"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Gen 9:10",
+   "palabras": [
+    "יֹצְאֵי"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "Isa 38:18",
+   "palabras": [
+    "יוֹרְדֵי"
+   ],
+   "como": "participio único del versículo"
+  },
+  {
+   "seccion": "3.4.3",
+   "etiqueta": "c",
+   "ref": "1Kgs 18:19",
+   "palabras": [
+    "אֹכְלֵי"
+   ],
+   "como": "participio único del versículo"
+  }
+ ]
+}

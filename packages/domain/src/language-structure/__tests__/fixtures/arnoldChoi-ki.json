@@ -1,0 +1,440 @@
+{
+ "obra": "A Guide to Biblical Hebrew Syntax - 7th",
+ "autor": "Arnold, Choi",
+ "recurso": "85935449-a732-417f-aeea-f9ca1c167831",
+ "tramo": "4.3.4–4.3.5",
+ "ejemplos": 54,
+ "secciones": [
+  {
+   "seccion": "4.3.4",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 149,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Causal",
+     "pagina": 149,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 6,
+       "versiculo": 13,
+       "pagina": 149
+      },
+      {
+       "libro": "Joel",
+       "capitulo": 1,
+       "versiculo": 15,
+       "pagina": 149
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 3,
+       "versiculo": 19,
+       "pagina": 149
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 1,
+       "versiculo": 42,
+       "pagina": 149
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Evidential",
+     "pagina": 149,
+     "ejemplos": [
+      {
+       "libro": "1Sam",
+       "capitulo": 26,
+       "versiculo": 15,
+       "pagina": 150
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 1,
+       "versiculo": 24,
+       "pagina": 150
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Clarification",
+     "pagina": 150,
+     "ejemplos": [
+      {
+       "libro": "Exod",
+       "capitulo": 3,
+       "versiculo": 12,
+       "pagina": 150
+      },
+      {
+       "libro": "Num",
+       "capitulo": 16,
+       "versiculo": 13,
+       "pagina": 150
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Result",
+     "pagina": 150,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 40,
+       "versiculo": 15,
+       "pagina": 150
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 20,
+       "versiculo": 10,
+       "pagina": 151
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 3,
+       "versiculo": 11,
+       "pagina": 151
+      }
+     ]
+    },
+    {
+     "etiqueta": "e",
+     "nombre": "Temporal",
+     "pagina": 151,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 6,
+       "versiculo": 1,
+       "pagina": 151
+      },
+      {
+       "libro": "Num",
+       "capitulo": 33,
+       "versiculo": 51,
+       "pagina": 151
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 1,
+       "versiculo": 10,
+       "pagina": 151
+      }
+     ]
+    },
+    {
+     "etiqueta": "f",
+     "nombre": "Conditional",
+     "pagina": 151,
+     "ejemplos": [
+      {
+       "libro": "2Kgs",
+       "capitulo": 4,
+       "versiculo": 29,
+       "pagina": 151
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 21,
+       "versiculo": 2,
+       "pagina": 151
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 21,
+       "versiculo": 33,
+       "pagina": 151
+      },
+      {
+       "libro": "Ruth",
+       "capitulo": 1,
+       "versiculo": 12,
+       "pagina": 151
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 6,
+       "versiculo": 20,
+       "pagina": 152
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 43,
+       "versiculo": 10,
+       "pagina": 152
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 2,
+       "versiculo": 27,
+       "pagina": 152
+      }
+     ]
+    },
+    {
+     "etiqueta": "g",
+     "nombre": "Adversative",
+     "pagina": 152,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 17,
+       "versiculo": 15,
+       "pagina": 152
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 19,
+       "versiculo": 13,
+       "pagina": 152
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 11,
+       "versiculo": 34,
+       "pagina": 152
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 15,
+       "versiculo": 4,
+       "pagina": 152
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 32,
+       "versiculo": 29,
+       "pagina": 152
+      }
+     ]
+    },
+    {
+     "etiqueta": "h",
+     "nombre": "Concessive",
+     "pagina": 152,
+     "ejemplos": [
+      {
+       "libro": "Ps",
+       "capitulo": 37,
+       "versiculo": 24,
+       "pagina": 153
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 12,
+       "versiculo": 1,
+       "pagina": 153
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 10,
+       "versiculo": 2,
+       "pagina": 153
+      }
+     ]
+    },
+    {
+     "etiqueta": "i",
+     "nombre": "Asseverative",
+     "pagina": 153,
+     "ejemplos": [
+      {
+       "libro": "2Sam",
+       "capitulo": 12,
+       "versiculo": 5,
+       "pagina": 153
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 14,
+       "versiculo": 44,
+       "pagina": 153
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 42,
+       "versiculo": 16,
+       "pagina": 153
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 25,
+       "versiculo": 34,
+       "pagina": 153
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 5,
+       "versiculo": 20,
+       "pagina": 153
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 15,
+       "versiculo": 7,
+       "pagina": 153
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 1,
+       "versiculo": 29,
+       "pagina": 153
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 7,
+       "versiculo": 9,
+       "pagina": 154
+      },
+      {
+       "libro": "Prov",
+       "capitulo": 23,
+       "versiculo": 18,
+       "pagina": 154
+      }
+     ]
+    },
+    {
+     "etiqueta": "j",
+     "nombre": "Perceptual",
+     "pagina": 154,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 1,
+       "versiculo": 10,
+       "pagina": 154
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 21,
+       "versiculo": 15,
+       "pagina": 154
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 6,
+       "versiculo": 7,
+       "pagina": 154
+      }
+     ]
+    },
+    {
+     "etiqueta": "k",
+     "nombre": "Subject",
+     "pagina": 154,
+     "ejemplos": [
+      {
+       "libro": "2Sam",
+       "capitulo": 18,
+       "versiculo": 3,
+       "pagina": 154
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 31,
+       "versiculo": 35,
+       "pagina": 154
+      }
+     ]
+    },
+    {
+     "etiqueta": "l",
+     "nombre": "Recitative",
+     "pagina": 154,
+     "ejemplos": [
+      {
+       "libro": "2Kgs",
+       "capitulo": 8,
+       "versiculo": 13,
+       "pagina": 154
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 1,
+       "versiculo": 30,
+       "pagina": 154
+      },
+      {
+       "libro": "Ezek",
+       "capitulo": 33,
+       "versiculo": 10,
+       "pagina": 154
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 9,
+       "versiculo": 1,
+       "pagina": 155
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 27,
+       "versiculo": 36,
+       "pagina": 155
+      }
+     ]
+    },
+    {
+     "etiqueta": "m",
+     "nombre": "Exceptive",
+     "pagina": 155,
+     "ejemplos": [
+      {
+       "libro": "Lev",
+       "capitulo": 22,
+       "versiculo": 6,
+       "pagina": 155
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 18,
+       "versiculo": 25,
+       "pagina": 155
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 3,
+       "versiculo": 13,
+       "pagina": 155
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 4,
+       "versiculo": 24,
+       "pagina": 155
+      }
+     ]
+    },
+    {
+     "etiqueta": "n",
+     "nombre": "Interrogative",
+     "pagina": 155,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 20,
+       "versiculo": 19,
+       "pagina": 155
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 18,
+       "versiculo": 34,
+       "pagina": 155
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "edicion": "Cambridge 2003, ISBN 978-0-521-82609-9"
+}

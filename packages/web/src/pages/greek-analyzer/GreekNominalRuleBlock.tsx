@@ -1,15 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { NOMINAL_RULE_SOURCES, type GreekWordInsight } from '@dosfilos/domain';
 import { SourceNote } from '@/components/language-structure/SourceNote';
+import { FichaOrigenRotulo } from '@/components/word-ficha/FichaPiezas';
 
-const Regla = () => {
-    const { t } = useTranslation('greekTutor');
-    return (
-        <span className="rounded border border-success/40 bg-success/10 px-1 text-[9.5px] font-semibold uppercase tracking-wider text-success">
-            {t('analyzer.verbFn.rule')}
-        </span>
-    );
-};
+/** La regla decide: el mismo rótulo que el resto de la ficha («Según la gramática», ámbar). */
+const Regla = () => <FichaOrigenRotulo origen="regla" />;
 
 /**
  * G3 — la AGENCIA de una preposición con verbo pasivo (profesor #G5, Stg 2:9

@@ -10,6 +10,11 @@ let cargando: Promise<Record<string, number>> | null = null;
  * (111 KB, 5.461 lemas) entra por import dinámico: quien nunca abre el
  * analizador no lo paga.
  */
+/** La frecuencia ya cargada, sin esperar: null mientras el índice no llegó. */
+export function frecuenciaNT(lemma: string | undefined): number | null {
+    return indice && lemma ? (indice[lemma] ?? 0) : null;
+}
+
 export function useNtLemmaFrequency(lemma: string | undefined): number | null {
     const [freq, setFreq] = useState<number | null>(indice && lemma ? (indice[lemma] ?? 0) : null);
 

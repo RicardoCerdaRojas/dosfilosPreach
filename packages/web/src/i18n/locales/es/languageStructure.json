@@ -116,5 +116,41 @@
   },
   "source": "Fuente",
   "copyCitation": "Copiar cita",
-  "showSource": "Ver fuente ›"
+  "showSource": "Ver fuente ›",
+  "wordFicha": {
+    "sections": {
+      "palabra": "La palabra",
+      "forma": "La forma",
+      "funcion": "Su función en el versículo",
+      "contexto": "En el contexto",
+      "estudio": "Para estudiar",
+      "acciones": "Acciones"
+    },
+    "origin": {
+      "rule": "Según la gramática",
+      "ruleTitle": "La propone una regla de la gramática; la cita dice dónde.",
+      "assistant": "Asistente",
+      "choiceTitle": "La eligió el asistente entre las opciones que deja la gramática.",
+      "assistantTitle": "La escribe el asistente.",
+      "options": "Por elegir",
+      "optionsTitle": "La gramática deja varias opciones y el asistente todavía no eligió."
+    },
+    "ruleToValidate": "regla por validar",
+    "howRecognized": "Cómo se reconoce",
+    "options": "La gramática deja estas opciones: {{list}}.",
+    "reanalyze": "Re-analiza para que el asistente elija.",
+    "otherReading": "Otra lectura posible: {{fn}}",
+    "otherReadingText": "El asistente la lee como «{{fn}}». Puede describir el mismo texto desde otro nivel (la frase entera en vez de la palabra): compara las dos lecturas con el contexto.",
+    "show": "Ver",
+    "hide": "Ocultar",
+    "openFicha": "Clic para ver la ficha completa",
+    "seeFicha": "Ver ficha",
+    "readMore": "Leer completa",
+    "readLess": "Mostrar menos",
+    "previous": "Palabra anterior",
+    "next": "Palabra siguiente",
+    "close": "Cerrar la ficha",
+    "panelDescription": "Ficha completa de la palabra: su forma, su función en el versículo y las fuentes.",
+    "reference": "{{ref}} · palabra {{n}} de {{total}}"
+  }
 }

@@ -13,7 +13,8 @@ import { FirestoreGreekFindingsRepository } from '@dosfilos/infrastructure';
 import { transliterateGreek } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { toast } from 'sonner';
-import { GreekWordCard } from './GreekWordCard';
+import { FichaPanelGriego, TarjetasResumenGriego } from './FichasGriego';
+import type { DatosGriego } from './ficha/bloquesGriego';
 import { StructureSection } from '@/components/language-structure/StructureSection';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { mismasPalabras } from '@/components/language-structure/mismasPalabras';
@@ -39,7 +40,11 @@ export function GreekAnalyzerPage() {
         useGreekVerse({ book: 'JAS', chapter: 1, verse: 1 });
     const [seleccion, setSeleccion] = useState<number | null>(null);
     // La selección es una posición en el versículo: al cambiar de versículo ya no vale.
-    useEffect(() => setSeleccion(null), [book, chapter, verse]);
+    /** La palabra cuya ficha completa está abierta en el panel lateral. */
+    const [ficha, setFicha] = useState<number | null>(null);
+    useEffect(() => { setSeleccion(null); setFicha(null); }, [book, chapter, verse]);
+    /** Tocar una palabra (en el versículo, la «Estructura» o su tarjeta) la marca y abre su ficha. */
+    const abrirFicha = (i: number | null) => { setSeleccion(i); setFicha(i); };
     /** Versículo suelto o perícopa: un pastor estudia pasajes. */
     const [vista, setVista] = useState<'verse' | 'passage'>('verse');
     /** Lemas guardados en esta sesión, para el check del botón. */
@@ -196,6 +201,24 @@ export function GreekAnalyzerPage() {
         }
     };
 
+    /** Los datos de la ficha de la palabra `i` (tooltip, tarjeta resumen y panel). */
+    const datosGriego = (i: number): DatosGriego | null => {
+        const tok = data?.tokens[i];
+        if (!tok) return null;
+        return {
+            token: tok,
+            insight: insight?.words[i],
+            keyInsight: claveDe(tok.text, i),
+            relations: relacionesDe(i),
+            objectCase: casoDelTermino(i),
+            bookCount: lemmaCounts[tok.lemma],
+            bookName: libroActual ? nombre(libroActual) : book,
+            fronted: frontedDe(i),
+            onSaveFinding: insight && user?.uid && (claveDe(tok.text, i) || insight.words[i]) ? () => void guardarHallazgo(i) : undefined,
+            saved: guardados.has(tok.lemma),
+        };
+    };
+
     return (
         <div className="h-full overflow-y-auto">
             <div className="mx-auto w-full max-w-6xl px-4 py-4 space-y-5">
@@ -257,7 +280,7 @@ export function GreekAnalyzerPage() {
                             onReanalyze={insight ? () => void generate() : undefined}
                             reanalyzing={generating}
                             seleccion={seleccion}
-                            onSeleccion={setSeleccion}
+                            onSeleccion={abrirFicha}
                             frontedDe={frontedDe}
                         />
 
@@ -301,7 +324,7 @@ export function GreekAnalyzerPage() {
                                         />
                                     ) : null;
                                 },
-                                onSelect: (i) => setSeleccion(seleccion === i ? null : i),
+                                onSelect: (i) => abrirFicha(i),
                                 selected: seleccion,
                             }}
                         />
@@ -311,30 +334,18 @@ export function GreekAnalyzerPage() {
                             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 {t('analyzer.wordAnalysis', { count: data.tokens.length })}
                             </h3>
-                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                                {data.tokens.map((tok, i) => (
-                                    <GreekWordCard
-                                        key={i}
-                                        token={tok}
-                                        insight={insight?.words[i]}
-                                        keyInsight={claveDe(tok.text, i)}
-                                        relations={relacionesDe(i)}
-                                        objectCase={casoDelTermino(i)}
-                                        bookCount={lemmaCounts[tok.lemma]}
-                                        bookName={libroActual ? nombre(libroActual) : book}
-                                        fronted={frontedDe(i)}
-                                        onSaveFinding={
-                                            insight && user?.uid && (claveDe(tok.text, i) || insight.words[i])
-                                                ? () => void guardarHallazgo(i)
-                                                : undefined
-                                        }
-                                        saved={guardados.has(tok.lemma)}
-                                        highlighted={seleccion === i}
-                                        onClick={() => setSeleccion(seleccion === i ? null : i)}
-                                    />
-                                ))}
-                            </div>
+                            <TarjetasResumenGriego total={data.tokens.length} datos={datosGriego} activa={seleccion} onAbrir={abrirFicha} />
                         </div>
+
+                        {/* La ficha completa de la palabra, en el panel lateral. */}
+                        <FichaPanelGriego
+                            titulo={`${libroActual ? nombre(libroActual) : book} ${chapter}:${verse}`}
+                            total={data.tokens.length}
+                            datos={datosGriego}
+                            abierta={ficha}
+                            // Cerrar el panel no quita la marca de la palabra (revisión de la ficha).
+                            onAbrir={(i) => (i === null ? setFicha(null) : abrirFicha(i))}
+                        />
 
                         {/* ATRIBUCIÓN OBLIGATORIA. El texto del SBLGNT es CC BY
                             4.0; la MORFOLOGÍA de MorphGNT que esta página

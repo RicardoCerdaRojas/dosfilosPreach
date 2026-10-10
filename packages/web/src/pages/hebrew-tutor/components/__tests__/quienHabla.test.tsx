@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 /**
  * Rut 1:16 (bitácora del módulo de hebreo): la tarjeta de תֵּלְכִי decía «Rut como
@@ -14,7 +14,7 @@ vi.mock('../../HebrewTutorProvider', () => ({ useHebrewTutor: () => ({}) }));
 vi.mock('../VerbDetectivePanel', () => ({ VerbDetectivePanel: () => null }));
 vi.mock('../NominalDetectivePanel', () => ({ NominalDetectivePanel: () => null }));
 const estado = vi.hoisted(() => ({
-    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[] },
+    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[], kis: [] as unknown[] },
 }));
 vi.mock('@/components/language-structure/useVerseStructure', () => ({
     useVerseStructure: () => estado.estructura,
@@ -23,6 +23,8 @@ vi.mock('@/components/language-structure/useVerseStructure', () => ({
 const { SpeechNote } = await import('../SpeechNote');
 const { VerseAnalysisResult } = await import('../VerseAnalysisResult');
 const { TooltipProvider } = await import('@/components/ui/tooltip');
+/** La ficha completa se abre tocando la tarjeta resumen de la palabra `k` (rediseño de la ficha). */
+const abrirFicha = (k: number) => fireEvent.click(screen.getAllByTestId('tarjeta-resumen')[k]!);
 
 describe('quién habla (Rut 1:16)', () => {
     it('sin destinatario escrito: «a quien Rut se dirige, no Rut»', () => {
@@ -58,8 +60,8 @@ describe('H6: la traducción literal es anterior a una corrección de OSHB', () 
     });
 });
 
-describe('del dato a la tarjeta (revisión: el camino no tenía prueba)', () => {
-    it('la nota «Quién habla» llega a la tarjeta de la palabra alineada (Rut 1:16 תֵּלְכִי)', () => {
+describe('del dato a la ficha (revisión: el camino no tenía prueba)', () => {
+    it('la nota «Quién habla» llega a la ficha de la palabra alineada (Rut 1:16 תֵּלְכִי)', () => {
         estado.estructura = {
             ...estado.estructura, unavailable: false,
             words: [{ r: '16!1', t: 'תֵּלְכִי', l: '3212', m: 'HVqi2fs', role: 'v' }],
@@ -68,6 +70,7 @@ describe('del dato a la tarjeta (revisión: el camino no tenía prueba)', () => 
         const analisis = { reference: 'Rut 1:16', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
             words: [{ hebrewText: 'תֵּלְכִי', hebrewWord: 'תֵּלְכִי', morphemes: [], category: 'VERB', translation: 'irás' }] };
         render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.1.16" /></TooltipProvider>);
+        abrirFicha(0);
         expect(screen.getAllByTestId('speech-note')[0]!.textContent).toContain('verseAnalyzer.speech.verb {"speaker":"רוּת"}');
     });
 });
@@ -85,14 +88,15 @@ describe('el hablante con su nombre en español (prueba del fundador: «Habla ר
                 { hebrewText: 'תֵּלְכִי', hebrewWord: 'תֵּלְכִי', morphemes: [], category: 'VERB', translation: 'vayas' },
             ] };
         render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.1.16" /></TooltipProvider>);
+        abrirFicha(1);
         const nota = screen.getAllByTestId('speech-note')[0]!.textContent!;
         expect(nota).toContain('{"speaker":"Rut"}');
         expect(nota).toContain('verseAnalyzer.speech.rule');
     });
 });
 
-describe('R4: del dato a la tarjeta', () => {
-    it('la función del infinitivo llega a la tarjeta de la palabra alineada (Gn 19:22 «עַד בֹּאֲךָ»)', () => {
+describe('R4: del dato a la tarjeta resumen y a la ficha', () => {
+    it('la función del infinitivo llega a la tarjeta resumen y a la ficha de la palabra alineada (Gn 19:22 «עַד בֹּאֲךָ»)', () => {
         estado.estructura = {
             ...estado.estructura, unavailable: false, speech: [],
             words: [{ r: '22!9', t: 'עַד', l: '5704', m: 'HR', role: '' }, { r: '22!10', t: 'בֹּאֲךָ', l: '935', m: 'HVqc/Sp2ms', role: 'v' }],
@@ -104,6 +108,65 @@ describe('R4: del dato a la tarjeta', () => {
                 { hebrewText: 'בֹּאֲךָ', hebrewWord: 'בֹּאֲךָ', morphemes: [], category: 'VERB', translation: 'que llegues' },
             ] };
         render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Gen.19.22" /></TooltipProvider>);
+        // En la tarjeta resumen, sin abrir nada: la función en una línea, con su origen.
+        const tarjeta = screen.getAllByTestId('tarjeta-resumen')[1]!.textContent!;
+        expect(tarjeta).toContain('verseAnalyzer.infinitive.functions.temporalUntil');
+        expect(tarjeta).toContain('wordFicha.origin.rule');
+        abrirFicha(1);
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('wordFicha.reference');
         expect(screen.getAllByTestId('infinitive-note')[0]!.textContent).toContain('verseAnalyzer.infinitive.functions.temporalUntil');
+    });
+    it('la del participio, con la elección del asistente (Gn 6:17 «הִנְנִי מֵבִיא»)', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [],
+            words: [{ r: '17!2', t: 'הִנְנִי', l: '2009', m: 'HTm/Sp1cs', role: 'p' }, { r: '17!3', t: 'מֵבִיא', l: '935', m: 'HVhrmsa', role: 'v' }],
+            participles: [{ ordinal: 1, text: 'מֵבִיא', rule: 'ptcHinne', allowed: ['predicatePresent', 'predicatePast', 'predicateFuture'], status: 'medida' }],
+        };
+        const analisis = { reference: 'Gn 6:17', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'הִנְנִי', hebrewWord: 'הִנְנִי', morphemes: [], category: 'PARTICLE', translation: 'he aquí yo' },
+                { hebrewText: 'מֵבִיא', hebrewWord: 'מֵבִיא', morphemes: [], category: 'VERB', translation: 'traigo', participleFunction: 'predicateFuture' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Gen.6.17" /></TooltipProvider>);
+        abrirFicha(1);
+        const nota = screen.getAllByTestId('participle-note')[0]!.textContent!;
+        expect(nota).toContain('verseAnalyzer.participle.functions.predicateFuture');
+        expect(nota).toContain('wordFicha.origin.assistant');
+    });
+    it('la de כִּי, con la elección del asistente (2 S 12:5, si la regla diera varias opciones)', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [],
+            words: [{ r: '5!7', t: 'חַי', l: '2416 a', m: 'HAamsa', role: '' }, { r: '5!8', t: 'יְהוָה', l: '3068', m: 'HNp', role: '' }, { r: '5!9', t: 'כִּי', l: '3588', m: 'HC', role: '' }],
+            kis: [{ ordinal: 2, text: 'כִּי', rule: 'kiGeneral', allowed: ['causal', 'asseverative'], status: 'medida' }],
+        };
+        const analisis = { reference: '2 S 12:5', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'חַי', hebrewWord: 'חַי', morphemes: [], category: 'ADJECTIVE', translation: 'vive' },
+                { hebrewText: 'יְהוָה', hebrewWord: 'יְהוָה', morphemes: [], category: 'PROPER_NOUN', translation: 'YHWH' },
+                { hebrewText: 'כִּי', hebrewWord: 'כִּי', morphemes: [], category: 'CONJUNCTION', translation: 'que', kiFunction: 'asseverative' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="2Sam.12.5" /></TooltipProvider>);
+        abrirFicha(2);
+        const nota = screen.getAllByTestId('ki-note')[0]!.textContent!;
+        expect(nota).toContain('verseAnalyzer.ki.functions.asseverative');
+        expect(nota).toContain('wordFicha.origin.assistant');
+    });
+});
+
+describe('la ficha en el panel lateral', () => {
+    it('tocar la palabra en el versículo abre su ficha; «siguiente» pasa a la otra sin cerrar', () => {
+        estado.estructura = { ...estado.estructura, unavailable: true, speech: [], infinitives: [], participles: [], kis: [] };
+        const analisis = { reference: 'Rut 1:16', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'רוּת', hebrewWord: 'רוּת', morphemes: [], category: 'NOUN', translation: 'Rut' },
+                { hebrewText: 'תֵּלְכִי', hebrewWord: 'תֵּלְכִי', morphemes: [], category: 'VERB', translation: 'vayas' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} /></TooltipProvider>);
+        fireEvent.click(screen.getAllByText('רוּת')[0]!);
+        const panel = () => screen.getByTestId('ficha-panel');
+        expect(panel().textContent).toContain('«Rut»');
+        fireEvent.click(screen.getByLabelText('wordFicha.next'));
+        expect(panel().textContent).toContain('«vayas»');
+        expect(screen.getByLabelText('wordFicha.next')).toBeDisabled();
     });
 });

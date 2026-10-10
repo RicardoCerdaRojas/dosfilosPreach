@@ -69,7 +69,27 @@ describe('el prompt con las filas de «Estructura»', () => {
         const inf = [{ ordinal: 3, text: 'בֹּאֲךָ', form: 'construct' as const, rule: 'adInf' as const, allowed: ['temporalUntil'] as const, status: 'medida' as const }];
         const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], inf as never);
         expect(texto).toContain('## INFINITIVOS: SU FUNCIÓN');
+        // Rediseño de la ficha: las pistas son de la FORMA; la evidencia sintáctica la da la regla.
+        expect(texto).toMatch(/"recognitionClues": \["string — Pistas visuales DE LA FORMA: sólo evidencia morfológica/);
         expect(texto).toContain('"infinitiveFunction"');
         expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## INFINITIVOS');
+    });
+
+    it('R4: con participios, el prompt trae su sección y el campo "participleFunction" en el esquema', () => {
+        const ptc = [{ ordinal: 2, text: 'מֵבִיא', rule: 'ptcHinne' as const, allowed: ['predicatePresent', 'predicatePast', 'predicateFuture'] as const, status: 'medida' as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], ptc as never);
+        expect(texto).toContain('## PARTICIPIOS: SU FUNCIÓN');
+        expect(texto).toMatch(/מֵבִיא: participio, elige "participleFunction" de: "predicatePresent"/);
+        expect(texto).toContain('"participleFunction"');
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## PARTICIPIOS');
+    });
+
+    it('R4: con כִּי, el prompt trae su sección y el campo "kiFunction" en el esquema', () => {
+        const ki = [{ ordinal: 3, text: 'כִּי', rule: 'kiJuramento' as const, allowed: ['asseverative'] as const, status: 'medida' as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], [], ki as never);
+        expect(texto).toContain('## כִּי: SU FUNCIÓN');
+        expect(texto).toMatch(/el texto propone asseverative = aseverativa/);
+        expect(texto).toContain('"kiFunction"');
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## כִּי: SU FUNCIÓN');
     });
 });

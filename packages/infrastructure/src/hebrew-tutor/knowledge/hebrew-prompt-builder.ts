@@ -13,8 +13,8 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewInfinitiveCandidate, HebrewVerse, SpeechFact, StructureNode } from '@dosfilos/domain';
-import { buildClauseReadingTask, buildHebrewInfinitiveTask, buildSpeechFactsTask } from '@dosfilos/domain';
+import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewVerse, SpeechFact, StructureNode } from '@dosfilos/domain';
+import { buildClauseReadingTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
 
@@ -41,6 +41,8 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
       "translation": "string — contextual translation of this word. IMPORTANT: Active and passive participles MUST have this translation field filled, functioning as the noun/adjective meaning in context.",
       "explanation": "string — detailed pedagogical explanation (morphology, recognition clues, typology, temporal/aspectual value). FORMATTED WITH MARKDOWN. Use bold text, bullet points, and short paragraphs to make it highly structured and readable.",
       "infinitiveFunction": "string | null — SÓLO en los infinitivos de la sección INFINITIVOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
+      "participleFunction": "string | null — SÓLO en los participios de la sección PARTICIPIOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
+      "kiFunction": "string | null — SÓLO en las palabras כִּי de la sección כִּי: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "verbMorphology": {
         "binyan": "QAL | NIFAL | PIEL | PUAL | HITPAEL | HIFIL | HOFAL",
         "verbForm": "PERFECT | IMPERFECT | WAYYIQTOL | WEQATAL | IMPERATIVE | COHORTATIVE | JUSSIVE | INF_CONSTRUCT | INF_ABSOLUTE | PARTICIPLE_ACTIVE | PARTICIPLE_PASSIVE",
@@ -50,7 +52,7 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
         "gender": "M | F | C | null",
         "number": "S | P | D | null",
         "temporalValue": "string — e.g. 'pasado narrativo secuencial'",
-        "recognitionClues": ["string — Pistas visuales. OBLIGATORIO: Debe seguir el formato exacto 'Descripción gramatical + Letra(s) hebrea(s) + (transliteración)'. Ejemplo: 'Preformativo de participio Piel מְ (mə-)'. NO omitir ninguna de las 3 partes."]
+        "recognitionClues": ["string — Pistas visuales DE LA FORMA: sólo evidencia morfológica (afijos, vocales, dagesh, radicales) que muestra cómo se reconoce el binyan, la forma y la persona. La evidencia sintáctica (qué palabra la rige, su posición) NO va aquí: la ficha la da aparte. OBLIGATORIO: Debe seguir el formato exacto 'Descripción gramatical + Letra(s) hebrea(s) + (transliteración)'. Ejemplo: 'Preformativo de participio Piel מְ (mə-)'. NO omitir ninguna de las 3 partes."]
       },
       "nominalMorphology": {
         "gender": "M | F | C | null",
@@ -313,10 +315,16 @@ export function buildVerseAnalysisPrompt(
   speech: readonly SpeechFact[] = [],
   /** R4: la función de cada infinitivo (Arnold y Choi §3.4): decidida o para elegir de la lista. */
   infinitives: readonly HebrewInfinitiveCandidate[] = [],
+  /** R4: la función de cada participio (Arnold y Choi §3.4.3). */
+  participles: readonly HebrewParticipleCandidate[] = [],
+  /** R4: la función de cada כִּי (Arnold y Choi §4.3.4). */
+  kis: readonly HebrewKiCandidate[] = [],
 ): string {
   const lectura = buildClauseReadingTask(structure);
   const habla = buildSpeechFactsTask(speech);
   const infinitivos = buildHebrewInfinitiveTask(infinitives);
+  const participios = buildHebrewParticipleTask(participles);
+  const particulaKi = buildHebrewKiTask(kis);
   const langInstruction =
     language === 'es'
       ? 'IMPORTANT: Respond entirely in Spanish. Use clear academic Spanish appropriate for a Chilean seminary student.'
@@ -391,6 +399,8 @@ DISTINGUIR de:
 
 ${habla}
 ${infinitivos}
+${participios}
+${particulaKi}
 
 ${lectura ? SECCION_LECTURA(lectura) : `## REGLAS DE CLÁUSULAS (campo "clauses")
 

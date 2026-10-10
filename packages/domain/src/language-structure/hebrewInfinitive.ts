@@ -1,4 +1,7 @@
 import { verseWords, type ChapterStructure, type StructureWord } from './chapterStructure.js';
+import { applyRuleChoice, ruleChoiceLines, type RuleChoiceView, type RuleStatus } from './hebrewRuleChoice.js';
+export type { RuleStatus } from './hebrewRuleChoice.js';
+import { clausulaDe, esInfinitivo, FINITAS, forma, lema, PREDICADO, prefijos, raiz, segmentos, sinAcentos, trasConstructo } from './hebrewMorph.js';
 
 /**
  * R4 — LA FUNCIÓN DEL INFINITIVO HEBREO, con el proceso de la fase «reglas
@@ -33,7 +36,6 @@ export type HebrewInfinitiveRule =
     | 'bInf' | 'kInf' | 'adInf' | 'achareInf' | 'lemaanInf' | 'baavurInf' | 'lemor' | 'lComplemento' | 'lInf'
     | 'trasConstructo' | 'desnudo' | 'absEnfatico' | 'absGenitivo' | 'absManera' | 'absConVerbo' | 'absSinVerbo';
 
-export type RuleStatus = 'medida' | 'validada';
 
 export interface HebrewInfinitiveCandidate {
     readonly ordinal: number;
@@ -47,44 +49,11 @@ export interface HebrewInfinitiveCandidate {
     readonly occurrence?: { readonly n: number; readonly of: number };
 }
 
-const lema = (w: StructureWord) => w.l.split('/').pop()!.split(' ')[0]!;
-/** OSHB separa ילך (3212) de הלך (1980): para «misma raíz» son uno («וַיֵּלֶךְ … הָלוֹךְ», 2 S 3:16). */
-const RAIZ: Readonly<Record<string, string>> = { '3212': '1980' };
-const raiz = (w: StructureWord) => RAIZ[lema(w)] ?? lema(w);
-const trasConstructo = (c: { prev?: StructureWord }) => !!c.prev && /^N[cgp]?[mfbc][spd]c$/.test(segmentos(c.prev).slice(-1)[0] ?? '');
-const prefijos = (w: StructureWord) => w.l.split('/').slice(0, -1);
-const segmentos = (w: StructureWord) => (w.m ?? '').replace(/^[HA]/, '').split('/');
-const verbo = (w: StructureWord) => segmentos(w).find(s => s.startsWith('V') && s.length >= 3);
-const forma = (w: StructureWord) => verbo(w)?.[2];
-const FINITAS = new Set(['p', 'i', 'w', 'q', 'v', 'j', 'h']);
-/** Un participio también predica («הוּא יֹצֵא לִקְרָאתֶךָ», Éx 4:14). */
-const PREDICADO = new Set([...FINITAS, 'r', 's']);
-
 /** Verbos que piden complemento (§3.4.1 a, p. 69): ידע, חלל (Hifil), יסף (Hifil), בקש (Piel), חדל, יכל, מאן, נתן, אבה. */
 const COMPLEMENTO: ReadonlySet<string> = new Set(['3045', '2490', '3254', '1245', '2308', '3201', '3985', '5414', '14']);
 /** Infinitivos absolutos de manera (§3.4.2 c): הַרְבֵּה, הֵיטֵב, הַשְׁכֵּם, הַרְחֵק, מַהֵר. */
 const MANERA: ReadonlySet<string> = new Set(['7235', '3190', '7925', '7368', '4116', '4118']);
 
-/**
- * La cláusula donde el infinitivo FUNCIONA: se sube por las madres hasta la
- * primera con predicado. MACULA anida un infinitivo dentro de otro («לָלֶכֶת
- * לִדְרֹשׁ», 1 Cr 21:30): mirar un solo nivel hacía creer que no había verbo
- * (revisión de R4: «sin verbo» erraba en 19 de 20). Sin predicado en toda la
- * cadena, la cláusula raíz.
- */
-function clausulaDe(ch: ChapterStructure, w: StructureWord, porRef: ReadonlyMap<string, StructureWord>): StructureWord[] {
-    let k = -1;
-    ch.clauses.forEach((c, i) => { if (c.w.includes(w.r) && (k < 0 || c.w.length < ch.clauses[k]!.w.length)) k = i; });
-    if (k < 0) return [];
-    const palabras = (i: number) => ch.clauses[i]!.w.map(r => porRef.get(r)).filter((x): x is StructureWord => !!x);
-    for (let i: number | null | undefined = k, n = 0; i !== null && i !== undefined && n < 32; i = ch.clauses[i]!.p, n++) {
-        const ps = palabras(i);
-        if (ps.some(x => x !== w && PREDICADO.has(forma(x) ?? '') && !esInfinitivo(x))) return ps;
-        if (ch.clauses[i]!.p === null || ch.clauses[i]!.p === undefined) return ps;
-    }
-    return palabras(k);
-}
-const esInfinitivo = (x: StructureWord) => forma(x) === 'c' || forma(x) === 'a';
 /**
  * El verbo finito del que puede depender el infinitivo: el más cercano antes, hasta 6 palabras, sin otro
  * verbo en medio. Una ventana de 2 perdía el orden verbo-sujeto-infinitivo («וְלֹא אָבוּ עַבְדֵי הַמֶּלֶךְ
@@ -182,8 +151,6 @@ export const HEBREW_INFINITIVE_RULES: readonly Regla[] = [
 export const HEBREW_INFINITIVE_RULE_STATUS: Readonly<Record<HebrewInfinitiveRule, RuleStatus>> =
     Object.fromEntries(HEBREW_INFINITIVE_RULES.map(r => [r.rule, 'medida'])) as Record<HebrewInfinitiveRule, RuleStatus>;
 
-const sinAcentos = (t: string) => t.replace(/[\u0591-\u05AF\u05BD\u05C0\u05C3]/g, '');
-
 export function hebrewInfinitiveCandidates(ch: ChapterStructure, verse: number): HebrewInfinitiveCandidate[] {
     if (ch.lang !== 'he') return [];
     const ws = verseWords(ch, verse);
@@ -210,6 +177,16 @@ export function hebrewInfinitiveCandidates(ch: ChapterStructure, verse: number):
     return out;
 }
 
+/**
+ * Las funciones nominales describen la relación del infinitivo con la palabra que lo rige, no el valor de
+ * toda la frase. En «בְּיוֹם אֲכָלְךָ» (Gn 2:17, el ejemplo del libro) el infinitivo es genitivo de יוֹם y la
+ * frase es temporal: el asistente devolvía «temporal» como otra función y la ficha lo mostraba como
+ * desacuerdo (prueba del fundador). El valor de la frase va en el valor temporal y la explicación.
+ */
+const NOTA_NOMINAL = (f: HebrewInfinitiveFunction) => (['genitive', 'subject', 'object'].includes(f)
+    ? 'Esta función describe la relación del infinitivo con la palabra que lo rige; el valor de la frase entera (por ejemplo, temporal) va en "temporalValue" y en la explicación, no como otra función.'
+    : undefined);
+
 /** Las funciones en castellano, para el prompt. */
 const FUNCION_ES: Readonly<Record<HebrewInfinitiveFunction, string>> = {
     subject: 'sujeto (nominal)', genitive: 'genitivo (nominal)', object: 'complemento u objeto (nominal)',
@@ -227,43 +204,16 @@ const FUNCIONES: ReadonlySet<string> = new Set(Object.keys(FUNCION_ES));
  */
 export function buildHebrewInfinitiveTask(candidates: readonly HebrewInfinitiveCandidate[]): string {
     if (!candidates.length) return '';
-    // Una forma repetida en el versículo se distingue por su aparición (Neh 9:8, dos «לָתֵת»), contando
-    // también las que no tienen regla: si no, «1.ª» podía nombrar otra palabra (revisión de R4).
-    const lineas = candidates.map(c => {
-        const cual = c.occurrence ? ` (${c.occurrence.n}.ª aparición de ${c.occurrence.of} en el versículo)` : '';
-        const forma = c.form === 'construct' ? 'infinitivo constructo' : 'infinitivo absoluto';
-        return c.allowed.length === 1
-            ? `- ${c.text}${cual}: ${forma}; el texto propone ${c.allowed[0]} = ${FUNCION_ES[c.allowed[0]!]} (regla medida, todavía sin validar). Si el contexto lo confirma, devuelve "infinitiveFunction": "${c.allowed[0]}" y explícalo; si claramente es otra función, devuelve esa (uno de: ${[...FUNCIONES].join(', ')}) y di por qué.`
-            : `- ${c.text}${cual}: ${forma}, elige "infinitiveFunction" de: ${c.allowed.map(f => `"${f}" (${FUNCION_ES[f]})`).join('; ')}. Elige por el contexto y explica por qué; si ninguna encaja, devuelve la que corresponda (uno de: ${[...FUNCIONES].join(', ')}) y di por qué.`;
-    });
+    const lineas = ruleChoiceLines(candidates, 'infinitiveFunction', c => (c.form === 'construct' ? 'infinitivo constructo' : 'infinitivo absoluto'), FUNCION_ES, NOTA_NOMINAL);
     return `
 ## INFINITIVOS: SU FUNCIÓN (campo "infinitiveFunction" de cada palabra)
 ${lineas.join('\n')}`;
 }
 
 /** Lo que muestra la ficha de un infinitivo. */
-export interface HebrewInfinitiveView {
-    readonly candidate: HebrewInfinitiveCandidate;
-    /** La función, si la propone la regla (una opción) o el asistente eligió una de la lista. */
-    readonly fn?: HebrewInfinitiveFunction;
-    /** `rule`: una sola opción; `assistant`: eligió de la lista; ninguna: sólo las opciones. */
-    readonly by?: 'rule' | 'assistant';
-    /**
-     * Si la regla (medida, sin validar) propone una función y el asistente lee otra, se muestran las dos:
-     * es justo el caso que el profesor tiene que mirar (revisión de R4: no imponer lo no validado).
-     */
-    readonly assistantReading?: HebrewInfinitiveFunction;
-}
+export type HebrewInfinitiveView = RuleChoiceView<HebrewInfinitiveCandidate, HebrewInfinitiveFunction>;
 
-/**
- * Al mostrar: la regla propone; la elección del asistente vale si está en la lista. Si el asistente lee una
- * función que la regla (medida, sin validar) no deja, se muestra al lado: con una opción o con varias
- * (revisión de R4: 1 S 22:17, el asistente acertaba «complemento» y se descartaba en silencio).
- */
+/** Al mostrar: ver `applyRuleChoice` (una opción la propone la regla; con varias, elige el asistente). */
 export function applyHebrewInfinitive(candidate: HebrewInfinitiveCandidate, choice: string | undefined): HebrewInfinitiveView {
-    const fuera = choice && FUNCIONES.has(choice) && !(candidate.allowed as readonly string[]).includes(choice) && candidate.status === 'medida'
-        ? { assistantReading: choice as HebrewInfinitiveFunction } : {};
-    if (candidate.allowed.length === 1) return { candidate, fn: candidate.allowed[0]!, by: 'rule', ...fuera };
-    const elegida = choice && (candidate.allowed as readonly string[]).includes(choice) ? (choice as HebrewInfinitiveFunction) : undefined;
-    return elegida ? { candidate, fn: elegida, by: 'assistant' } : { candidate, ...fuera };
+    return applyRuleChoice<HebrewInfinitiveFunction, HebrewInfinitiveCandidate>(candidate, choice, FUNCIONES);
 }

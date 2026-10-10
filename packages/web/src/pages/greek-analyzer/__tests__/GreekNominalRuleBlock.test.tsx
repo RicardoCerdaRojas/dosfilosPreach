@@ -11,7 +11,7 @@ describe('G3 en la ficha', () => {
     it('agencia: tipo, «Regla», por qué y fuente (Stg 2:9 ὑπό)', () => {
         render(<GreekAgencyBlock insight={{ ...base, agency: 'ultimate', nominalRule: 'agentHypo' }} />);
         expect(screen.getByText('analyzer.agency.ultimate')).toBeInTheDocument();
-        expect(screen.getByText('analyzer.verbFn.rule')).toBeInTheDocument();
+        expect(screen.getByText('wordFicha.origin.rule')).toBeInTheDocument();
         expect(screen.getByText('(analyzer.agency.ruleAgentHypo)')).toBeInTheDocument();
         expect(screen.getByTestId('source-note').textContent).toContain('Ultimate Agent», p. 433');
     });
@@ -25,7 +25,7 @@ describe('G3 en la ficha', () => {
     it('αὐτός intensivo (1 Ts 4:16): uso, «Regla», qué realza y Wallace; identificador sin sustantivo; «ἐπὶ τὸ αὐτό»', () => {
         const { unmount } = render(<GreekAutosBlock insight={{ ...base, autosUse: 'intensive', nominalRule: 'autosIntensive', autosHeadText: 'κύριος' }} />);
         expect(screen.getByText('analyzer.autos.intensive')).toBeInTheDocument();
-        expect(screen.getByText('analyzer.verbFn.rule')).toBeInTheDocument();
+        expect(screen.getByText('wordFicha.origin.rule')).toBeInTheDocument();
         expect(screen.getByText('analyzer.autos.intensiveHintNoHead')).toBeInTheDocument(); // sin traducción de κύριος
         expect(screen.getByTestId('source-note').textContent).toContain('As an Intensive Pronoun», p. 349');
         unmount();

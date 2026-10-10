@@ -1,0 +1,262 @@
+{
+ "obra": "A Guide to Biblical Hebrew Syntax - 7th",
+ "autor": "Arnold, Choi",
+ "recurso": "85935449-a732-417f-aeea-f9ca1c167831",
+ "tramo": "4.5–4.6",
+ "ejemplos": 25,
+ "secciones": [
+  {
+   "seccion": "4.5",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 157,
+   "subcategorias": [],
+   "ejemplos": []
+  },
+  {
+   "seccion": "4.5.1",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 158,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Exclamatory",
+     "pagina": 158,
+     "ejemplos": [
+      {
+       "libro": "Isa",
+       "capitulo": 6,
+       "versiculo": 8,
+       "pagina": 158
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 22,
+       "versiculo": 7,
+       "pagina": 158
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 22,
+       "versiculo": 1,
+       "pagina": 158
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Immediacy",
+     "pagina": 158,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 48,
+       "versiculo": 1,
+       "pagina": 159
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 2,
+       "versiculo": 2,
+       "pagina": 159
+      }
+     ]
+    }
+   ],
+   "ejemplos": []
+  },
+  {
+   "seccion": "4.5.2",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 159,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Immediate perception",
+     "pagina": 159,
+     "ejemplos": [
+      {
+       "libro": "Ruth",
+       "capitulo": 3,
+       "versiculo": 8,
+       "pagina": 159
+      },
+      {
+       "libro": "Ruth",
+       "capitulo": 4,
+       "versiculo": 1,
+       "pagina": 159
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Perception",
+     "pagina": 159,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 3,
+       "versiculo": 21,
+       "pagina": 160
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 10,
+       "versiculo": 7,
+       "pagina": 160
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Logical",
+     "pagina": 160,
+     "ejemplos": []
+    },
+    {
+     "etiqueta": "c.1",
+     "nombre": "Causal",
+     "pagina": 160,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 37,
+       "versiculo": 29,
+       "pagina": 160
+      },
+      {
+       "libro": "Num",
+       "capitulo": 17,
+       "versiculo": 12,
+       "pagina": 160
+      }
+     ]
+    },
+    {
+     "etiqueta": "c.2",
+     "nombre": "Occasion/circumstantial",
+     "pagina": 160,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 37,
+       "versiculo": 7,
+       "pagina": 160
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 24,
+       "versiculo": 30,
+       "pagina": 160
+      }
+     ]
+    },
+    {
+     "etiqueta": "c.3",
+     "nombre": "Conditional",
+     "pagina": 160,
+     "ejemplos": [
+      {
+       "libro": "Lev",
+       "capitulo": 13,
+       "versiculo": 5,
+       "pagina": 160
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 9,
+       "versiculo": 7,
+       "pagina": 160
+      }
+     ]
+    },
+    {
+     "etiqueta": "c.4",
+     "nombre": "Temporal",
+     "pagina": 160,
+     "ejemplos": [
+      {
+       "libro": "Judg",
+       "capitulo": 7,
+       "versiculo": 17,
+       "pagina": 161
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 10,
+       "versiculo": 8,
+       "pagina": 161
+      }
+     ]
+    },
+    {
+     "etiqueta": "c.5",
+     "nombre": "Result",
+     "pagina": 161,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 15,
+       "versiculo": 3,
+       "pagina": 161
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 3,
+       "versiculo": 12,
+       "pagina": 161
+      }
+     ]
+    },
+    {
+     "etiqueta": "c.6",
+     "nombre": "Adversative",
+     "pagina": 161,
+     "ejemplos": [
+      {
+       "libro": "Zech",
+       "capitulo": 11,
+       "versiculo": 6,
+       "pagina": 161
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 22,
+       "versiculo": 12,
+       "pagina": 161
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 8,
+       "versiculo": 32,
+       "pagina": 163
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 121,
+       "versiculo": 5,
+       "pagina": 164
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 1,
+       "versiculo": 1,
+       "pagina": 164
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 3,
+       "versiculo": 9,
+       "pagina": 164
+      }
+     ]
+    }
+   ],
+   "ejemplos": []
+  }
+ ],
+ "edicion": "Cambridge 2003, ISBN 978-0-521-82609-9"
+}

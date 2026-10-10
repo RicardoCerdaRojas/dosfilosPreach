@@ -14,6 +14,7 @@
 import React, { useEffect, useState } from 'react';
 import { MorphemeSpan } from './MorphemeSpan';
 import { WordTooltipContent } from './WordTooltipContent';
+import type { DatosHebreo } from '../ficha/bloquesHebreo';
 import {
   Tooltip,
   TooltipTrigger,
@@ -37,6 +38,8 @@ interface StickyVerseHeaderProps {
   onWordClick: (index: number) => void;
   /** Proportional scale factor shared with the main header. Default 1.0 */
   textScale?: number;
+  /** Los datos de la ficha de cada palabra: el tooltip muestra la misma función que el encabezado principal. */
+  datos?: (i: number) => DatosHebreo | null;
 }
 
 
@@ -50,6 +53,7 @@ export const StickyVerseHeader: React.FC<StickyVerseHeaderProps> = ({
   activeWordIndex,
   onWordHover,
   onWordClick,
+  datos,
   textScale = 1.0,
 }) => {
   const [visible, setVisible] = useState(false);
@@ -171,7 +175,7 @@ export const StickyVerseHeader: React.FC<StickyVerseHeaderProps> = ({
                       )}
                     </span>
                   </TooltipTrigger>
-                  <WordTooltipContent word={w} side="bottom" />
+                  <WordTooltipContent side="bottom" {...(datos?.(i) ?? {})} word={w} />
                 </Tooltip>
               );
             })}

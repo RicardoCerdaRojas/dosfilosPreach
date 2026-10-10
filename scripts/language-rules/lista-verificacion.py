@@ -12,7 +12,7 @@ TABLA = {
     'VERB_RULE_SOURCES': 'Regla de verbo', 'VERB_FUNCTION_SOURCES': 'Función del verbo',
     'TENSE_USE_SOURCES': 'Uso del tiempo', 'DISCOURSE_RULE_SOURCES': 'Conector o partícula',
     'NOMINAL_RULE_SOURCES': 'Regla nominal', 'STRUCTURE_RULE_SOURCES': 'Estructura',
-    'HEBREW_INFINITIVE_SOURCES': 'Infinitivo hebreo',
+    'HEBREW_INFINITIVE_SOURCES': 'Infinitivo hebreo', 'HEBREW_PARTICIPLE_SOURCES': 'Participio hebreo', 'HEBREW_KI_SOURCES': 'Partícula כִּי',
 }
 TIEMPO = {'P': 'presente', 'I': 'imperfecto', 'A': 'aoristo', 'F': 'futuro', 'X': 'perfecto', 'Y': 'pluscuamperfecto'}
 def uso(u):

@@ -2,6 +2,7 @@ import { GitBranch } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DISCOURSE_RULE_SOURCES, discourseRuleDecides, type GreekWordInsight } from '@dosfilos/domain';
 import { SourceNote } from '@/components/language-structure/SourceNote';
+import { FichaOrigenRotulo } from '@/components/word-ficha/FichaPiezas';
 
 interface Props {
     insight: GreekWordInsight;
@@ -36,15 +37,7 @@ export function GreekParticleBlock({ insight }: Props) {
                 <p className="flex flex-wrap items-center gap-1 text-xs">
                     <span className="font-semibold">{t(`analyzer.discourse.${insight.discourseFunction}`)}</span>
                     {insight.discourseRule && (
-                        <span
-                            className={
-                                discourseRuleDecides(insight.discourseRule)
-                                    ? 'rounded border border-success/40 bg-success/10 px-1 text-[9.5px] font-semibold uppercase tracking-wider text-success'
-                                    : 'rounded border border-info/40 bg-info/10 px-1 text-[9.5px] font-semibold uppercase tracking-wider text-info'
-                            }
-                        >
-                            {discourseRuleDecides(insight.discourseRule) ? t('analyzer.verbFn.rule') : t('analyzer.verbFn.assistant')}
-                        </span>
+                        <FichaOrigenRotulo origen={discourseRuleDecides(insight.discourseRule) ? 'regla' : 'asistente'} />
                     )}
                     {' — '}
                     <span className="text-muted-foreground">

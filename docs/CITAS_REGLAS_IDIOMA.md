@@ -103,7 +103,7 @@ Generado con `scripts/language-rules/lista-verificacion.py` (R0, `docs/FASE_REGL
 | Regla de verbo: `conditionalEan`<br>Estructura: `class3` | las oraciones condicionales | Semantic Categories › Third Class Condition | 696 | |
 | Estructura: `class4` | las oraciones condicionales | Semantic Categories › Fourth Class Condition (Less Probable Future) | 699 | |
 
-## Arnold y Choi (2003) — 25 de 25 verificadas
+## Arnold y Choi (2003) — 44 de 44 verificadas
 
 | Dónde se usa | Tema | Sección impresa | Página | ¿Corresponde? |
 | --- | --- | --- | --- | --- |
@@ -121,6 +121,11 @@ Generado con `scripts/language-rules/lista-verificacion.py` (R0, `docs/FASE_REGL
 | Infinitivo hebreo: `emphatic` | el infinitivo hebreo | 3.4.2 Infinitive Absolute › (b) Emphatic | 74 | |
 | Infinitivo hebreo: `manner` | el infinitivo hebreo | 3.4.2 Infinitive Absolute › (c) Manner | 76 | |
 | Infinitivo hebreo: `verbalSubstitute` | el infinitivo hebreo | 3.4.2 Infinitive Absolute › (d) Verbal substitute | 77 | |
+| Participio hebreo: `attributive` | el participio hebreo | 3.4.3 Participle › (a) Attributive | 78 | |
+| Participio hebreo: `predicatePresent` | el participio hebreo | 3.4.3 Participle › (b.1) Present | 79 | |
+| Participio hebreo: `predicatePast` | el participio hebreo | 3.4.3 Participle › (b.2) Past | 80 | |
+| Participio hebreo: `predicateFuture` | el participio hebreo | 3.4.3 Participle › (b.3) Future | 81 | |
+| Participio hebreo: `substantive` | el participio hebreo | 3.4.3 Participle › (c) Substantive | 82 | |
 | Estructura: `chain` | la waw consecutiva | 3.5.1 Imperfect plus waw Consecutive | 84 | |
 | Estructura: `conjunctive` | la waw consecutiva | 3.5.2 Perfect plus waw Consecutive | 87 | |
 | Infinitivo hebreo: `temporalWhile` | el infinitivo hebreo | 4.1.5 בְּ › (b) Temporal | 103 | |
@@ -131,6 +136,20 @@ Generado con `scripts/language-rules/lista-verificacion.py` (R0, `docs/FASE_REGL
 | Estructura: `conjunctive` | la conjunción waw | 4.3.3 ו › (b) Conjunctive | 146 | |
 | Estructura: `disjunctive` | la conjunción waw | 4.3.3 ו › (a) Adversative | 146 | |
 | Estructura: `disjunctive` | la conjunción waw | 4.3.3 ו › (e) Circumstantial | 147 | |
+| Partícula כִּי: `causal` | la partícula כִּי | 4.3.4 כִּי › (a) Causal | 149 | |
+| Partícula כִּי: `evidential` | la partícula כִּי | 4.3.4 כִּי › (b) Evidential | 149 | |
+| Partícula כִּי: `clarification` | la partícula כִּי | 4.3.4 כִּי › (c) Clarification | 150 | |
+| Partícula כִּי: `result` | la partícula כִּי | 4.3.4 כִּי › (d) Result | 150 | |
+| Partícula כִּי: `temporal` | la partícula כִּי | 4.3.4 כִּי › (e) Temporal | 151 | |
+| Partícula כִּי: `conditional` | la partícula כִּי | 4.3.4 כִּי › (f) Conditional | 151 | |
+| Partícula כִּי: `adversative` | la partícula כִּי | 4.3.4 כִּי › (g) Adversative | 152 | |
+| Partícula כִּי: `concessive` | la partícula כִּי | 4.3.4 כִּי › (h) Concessive | 152 | |
+| Partícula כִּי: `asseverative` | la partícula כִּי | 4.3.4 כִּי › (i) Asseverative | 153 | |
+| Partícula כִּי: `perceptual` | la partícula כִּי | 4.3.4 כִּי › (j) Perceptual | 154 | |
+| Partícula כִּי: `subject` | la partícula כִּי | 4.3.4 כִּי › (k) Subject | 154 | |
+| Partícula כִּי: `recitative` | la partícula כִּי | 4.3.4 כִּי › (l) Recitative | 154 | |
+| Partícula כִּי: `exceptive` | la partícula כִּי | 4.3.4 כִּי › (m) Exceptive | 155 | |
+| Partícula כִּי: `interrogative` | la partícula כִּי | 4.3.4 כִּי › (n) Interrogative | 155 | |
 | Estructura: `disjunctive` | las cláusulas subordinadas | 5.2.11 Circumstantial Clause | 182 | |
 
 ## Runge (2010) — 0 de 13 verificadas
