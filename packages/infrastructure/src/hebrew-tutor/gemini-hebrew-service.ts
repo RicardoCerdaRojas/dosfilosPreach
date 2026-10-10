@@ -12,7 +12,7 @@
  *  - maxOutputTokens 32768 to accommodate long verse analyses with many words
  */
 
-import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry, StructureNode } from '@dosfilos/domain';
+import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry, SpeechFact, StructureNode } from '@dosfilos/domain';
 import { HEBREW_ANALYSIS_PROMPT_VERSION, parseClauseReadings, reconcileGlobalWords } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { GEMINI_CONFIG } from '../gemini/config.js';
@@ -33,12 +33,13 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
     language = 'es',
     lexicalEntries: readonly LexicalEntry[] = [],
     structure: readonly StructureNode[] = [],
+    speech: readonly SpeechFact[] = [],
   ): Promise<VerseAnalysis> {
     // 1. Select the most relevant grammar knowledge chunks for this verse
     const knowledgeChunks = selectRelevantChunks(verse.hebrewText, [], 10);
 
     // 2. Build the full pedagogical prompt (includes lexical glossary context when provided)
-    const prompt = buildVerseAnalysisPrompt(verse, knowledgeChunks, lexicalEntries, language, structure);
+    const prompt = buildVerseAnalysisPrompt(verse, knowledgeChunks, lexicalEntries, language, structure, speech);
 
     // 3. Call Gemini
     let rawResponse: string;

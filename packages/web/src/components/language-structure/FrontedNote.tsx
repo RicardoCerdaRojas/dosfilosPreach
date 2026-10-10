@@ -19,7 +19,7 @@ export const FrontedNote: React.FC<{ fronted?: FrontedInfo }> = ({ fronted }) =>
     if (!fronted) return null;
     const role = t(`roleNames.${fronted.role}`);
     return (
-        <div className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-[12px] leading-snug" data-testid="fronted-note">
+        <div className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5 text-[12px] leading-snug text-foreground" data-testid="fronted-note">
             <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t('cardFrontedTitle')}</span>
             {fronted.fronting
                 ? t('cardFrontedChosen', { role, fronting: t(`fronting.${fronted.fronting}`) })

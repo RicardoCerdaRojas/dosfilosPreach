@@ -9,9 +9,10 @@ function useValor() {
 }
 
 /**
- * Qué corrigió OSHB en el verbo, y el aviso de que la traducción guardada
- * puede no seguirlo (Rut 1:13: 3FP → 2FP, pero el versículo seguía diciendo
- * «se quedarían»). Nada si no hubo correcciones.
+ * Qué corrigió OSHB en el verbo, y el aviso de que los textos del análisis
+ * anterior pueden no seguirlo (H6, Rut 1:13 תְּשַׂבֵּרְנָה: QAL → PIEL y 3 → 2, pero la
+ * traducción «esperarían», el valor, la explicación, las pistas y la literal del
+ * versículo seguían siendo los del asistente). Nada si no hubo correcciones.
  */
 export const OshbCorrectionsList: React.FC<{ oshb?: OshbReference }> = ({ oshb }) => {
   const { t } = useTranslation('hebrewTutor');
@@ -36,7 +37,10 @@ export const OshbCorrectionsList: React.FC<{ oshb?: OshbReference }> = ({ oshb }
           </li>
         ))}
       </ul>
-      <p className="text-[10.5px] italic text-muted-foreground">{t('verseAnalyzer.oshb.translationNote')}</p>
+      {/* En la fórmula de juramento la traducción la pone el código (H7): el aviso no aplica. */}
+      {!oshb.corrections.every((c) => c.reason === 'oath-formula') && (
+        <p className="text-[10.5px] italic text-muted-foreground">{t('verseAnalyzer.oshb.translationNote')}</p>
+      )}
     </div>
   );
 };

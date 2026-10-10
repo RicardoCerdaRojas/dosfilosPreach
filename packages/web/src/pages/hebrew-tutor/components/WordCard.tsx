@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
+import type { SpeechView } from '../hooks/useEstructuraHebrea';
+import { SpeechNote } from './SpeechNote';
 import { useTranslation } from 'react-i18next';
 import type { WordAnalysis } from '@dosfilos/domain';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from './MorphemeSpan';
@@ -22,6 +24,8 @@ interface WordCardProps {
   cardRef?: React.Ref<HTMLDivElement>;
   /** Antepuesta al verbo (dato de MACULA, vista «Estructura»). */
   fronted?: FrontedInfo;
+  /** 2.ª persona dentro de un discurso: quién habla y a quién (Rut 1:16). */
+  speech?: SpeechView;
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -44,7 +48,7 @@ const getCategoryStyle = (cat?: string | null) => {
 };
 
 export const WordCard: React.FC<WordCardProps> = ({
-  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef, fronted,
+  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef, fronted, speech,
 }) => {
   const { t } = useTranslation('hebrewTutor');
   const [expanded, setExpanded] = useState(false);
@@ -175,6 +179,7 @@ export const WordCard: React.FC<WordCardProps> = ({
       </div>
 
       {fronted && <div className="mb-3"><FrontedNote fronted={fronted} /></div>}
+      {speech && <div className="mb-3"><SpeechNote speech={speech} /></div>}
 
       {/* Morphology table - Compact Grid */}
       {hasMorphologyData && morphology && (

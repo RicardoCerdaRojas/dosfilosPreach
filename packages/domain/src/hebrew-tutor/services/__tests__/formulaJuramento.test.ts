@@ -33,6 +33,24 @@ describe('la fórmula de juramento', () => {
         expect(r.verbTable[0]).toMatchObject({ verbForm: VerbForm.JUSSIVE, temporalValue: OATH_FORMULA_VALUE });
     });
 
+    it('H7: la palabra se traduce en el código, «haga» y «añada» (Rut 1:17 decía «él hará… él añadirá»)', () => {
+        const r = markOathFormula(applyOshbMorphology(analisis, tokens), tokens);
+        expect(r.words[1]!.translation).toBe('haga');
+        expect(r.words[5]!.translation).toBe('añada');
+    });
+
+    it('H7: con sujeto plural, «hagan» y «añadan» (1 R 19:2 «כֹּה־יַעֲשׂוּן אֱלֹהִים וְכֹה יוֹסִפוּן»)', () => {
+        const plurales = tokens.map(t => ({ ...t, oshbMorphCode: t.oshbMorphCode.replace('qi3ms', 'qj3mp').replace('hi3ms', 'hj3mp') }));
+        const r = markOathFormula(applyOshbMorphology(analisis, plurales), plurales);
+        expect(r.words[1]!.translation).toBe('hagan');
+        expect(r.words[5]!.translation).toBe('añadan');
+    });
+
+    it('H7 en el idioma del análisis: en inglés «do» / «add»', () => {
+        const r = markOathFormula(applyOshbMorphology(analisis, tokens), tokens, 'en');
+        expect([r.words[1]!.translation, r.words[5]!.translation]).toEqual(['do', 'add']);
+    });
+
     it('«כֹּה יֵעָשֶׂה» sin «וְכֹה יֹסִיף» no es la fórmula (1 S 11:7)', () => {
         const sinYasaf = tokens.slice(0, 4);
         const r = markOathFormula(analisis, sinYasaf);

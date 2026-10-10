@@ -25,9 +25,10 @@ import type {
   LexicalEntry,
   HebrewVerse,
   ILanguageStructureProvider,
+  SpeechFact,
   StructureNode,
 } from '@dosfilos/domain';
-import { applyOshbMorphology, checkClauseConnections, markOathFormula, reconcileGlobalWords, verseStructure } from '@dosfilos/domain';
+import { applyOshbMorphology, checkClauseConnections, hebrewSpeechFacts, markOathFormula, reconcileGlobalWords, verseStructure } from '@dosfilos/domain';
 
 export interface AnalyzeVerseInput {
   /** Book key as used by morphhb, e.g. "Jonah" */
@@ -65,7 +66,7 @@ export class AnalyzeVerseUseCase {
 
     // 3. Check analysis cache (avoid redundant API calls)
     if (!forceRefresh) {
-      const cached = await this.readCache(hebrewVerse);
+      const cached = await this.readCache(hebrewVerse, language);
       if (cached) return cached;
     }
 
@@ -77,8 +78,8 @@ export class AnalyzeVerseUseCase {
 
     // 5. Perform the analysis via Gemini + knowledge base + lexical context,
     // con las filas de «Estructura» para que el asistente las lea.
-    const estructura = await this.structureOf(morphhbKey, chapter, verse);
-    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries, estructura);
+    const { nodes: estructura, speech } = await this.structureOf(morphhbKey, chapter, verse);
+    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries, estructura, speech);
 
     // 6. Persist to cache for future requests. Se guarda lo que dio el
     // asistente, SIN las reglas: aplicadas antes de guardar, la próxima
@@ -92,7 +93,7 @@ export class AnalyzeVerseUseCase {
     // y la conexión de cada cláusula se comprueba: siempre al mostrar. Se
     // relee lo guardado para que vuelva encima la traducción que corrigió el
     // usuario (se guarda aparte); sin caché, el análisis tal cual.
-    return (await this.readCache(hebrewVerse)) ?? this.withRules(raw, hebrewVerse);
+    return (await this.readCache(hebrewVerse, language)) ?? this.withRules(raw, hebrewVerse, language);
   }
 
   /**
@@ -100,9 +101,9 @@ export class AnalyzeVerseUseCase {
    * hay. Es lo que usa la navegación (◀/▶): antes leía el caché CRUDO y
    * mostraba las letras tal como se guardaron, corridas incluidas.
    */
-  async cachedOnly(input: Pick<AnalyzeVerseInput, 'morphhbKey' | 'chapter' | 'verse'>): Promise<VerseAnalysis | null> {
+  async cachedOnly(input: Pick<AnalyzeVerseInput, 'morphhbKey' | 'chapter' | 'verse' | 'language'>): Promise<VerseAnalysis | null> {
     await this.bibleProvider.loadBook(input.morphhbKey);
-    return this.readCache(this.bibleProvider.getVerse(input.morphhbKey, input.chapter, input.verse));
+    return this.readCache(this.bibleProvider.getVerse(input.morphhbKey, input.chapter, input.verse), input.language);
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
@@ -111,13 +112,15 @@ export class AnalyzeVerseUseCase {
    * Las filas de «Estructura» del versículo. Sin datos (o si no se pudieron
    * leer) el análisis sigue sin lectura de cláusulas: nunca se bloquea por esto.
    */
-  private async structureOf(morphhbKey: string, chapter: number, verse: number): Promise<StructureNode[]> {
-    if (!this.structureProvider) return [];
+  private async structureOf(morphhbKey: string, chapter: number, verse: number): Promise<{ nodes: StructureNode[]; speech: SpeechFact[] }> {
+    const nada = { nodes: [], speech: [] };
+    if (!this.structureProvider) return nada;
     try {
       const ch = await this.structureProvider.getChapter('he', morphhbKey, chapter);
-      return ch ? verseStructure(ch, verse) : [];
+      // Quién habla y a quién: la 2.ª persona del discurso es el destinatario (Rut 1:16).
+      return ch ? { nodes: verseStructure(ch, verse), speech: hebrewSpeechFacts(ch, verse) } : nada;
     } catch {
-      return [];
+      return nada;
     }
   }
 
@@ -130,7 +133,7 @@ export class AnalyzeVerseUseCase {
    * color; las siguientes vuelven a su sitio. Por eso no se sube la versión de
    * la clave: se perderían las traducciones que los usuarios corrigieron.
    */
-  private async readCache(hebrewVerse: HebrewVerse): Promise<VerseAnalysis | null> {
+  private async readCache(hebrewVerse: HebrewVerse, language = 'es'): Promise<VerseAnalysis | null> {
     if (!this.sessionRepository) return null;
     const cached = await this.sessionRepository.getCachedAnalysis(hebrewVerse.reference);
     if (!cached) return null;
@@ -140,7 +143,7 @@ export class AnalyzeVerseUseCase {
       ...cached,
       hebrewText: hebrewVerse.hebrewText,
       words: reconcileGlobalWords(cached.words, hebrewVerse.words),
-    }, hebrewVerse);
+    }, hebrewVerse, language);
   }
 
   /**
@@ -148,8 +151,8 @@ export class AnalyzeVerseUseCase {
    * la morfología verbal de OSHB, la fórmula de juramento (yusivo, aunque
    * OSHB de Rut 1:17 diga imperfecto) y la conexión de las cláusulas.
    */
-  private withRules(analysis: VerseAnalysis, hebrewVerse: HebrewVerse): VerseAnalysis {
-    return checkClauseConnections(markOathFormula(applyOshbMorphology(analysis, hebrewVerse.words), hebrewVerse.words));
+  private withRules(analysis: VerseAnalysis, hebrewVerse: HebrewVerse, language = 'es'): VerseAnalysis {
+    return checkClauseConnections(markOathFormula(applyOshbMorphology(analysis, hebrewVerse.words), hebrewVerse.words, language));
   }
 
   /**

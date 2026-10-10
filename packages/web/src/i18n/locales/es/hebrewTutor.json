@@ -49,6 +49,14 @@
         "QUOTATION": "Discurso directo"
       }
     },
+    "speech": {
+      "title": "Quién habla",
+      "rule": "Regla",
+      "verb": "{{speaker}} está hablando. El «tú» de este verbo es la persona a quien {{speaker}} le habla.",
+      "verbTo": "{{speaker}} le habla a {{addressee}}: el sujeto de este verbo es {{addressee}}.",
+      "suffix": "{{speaker}} está hablando. Este «tu / te» es la persona a quien {{speaker}} le habla.",
+      "suffixTo": "{{speaker}} le habla a {{addressee}}: este «tu / te» es {{addressee}}."
+    },
     "oshb": {
       "confirmed": "Coincide con OSHB",
       "differs": "Corregido según OSHB",
@@ -56,7 +64,8 @@
       "corrected": "Corregido según OSHB",
       "correction": "{{field}}: {{analysis}} → {{oshb}}",
       "reasonOathFormula": "Fórmula de juramento: yusivo, como la etiqueta OSHB en 11 de sus 12 apariciones.",
-      "translationNote": "La traducción guardada puede no seguir esta corrección. Si no la sigue, re-analiza el versículo.",
+      "translationNote": "La traducción de esta palabra, su valor, su explicación y sus pistas son del análisis anterior a esta corrección, igual que la traducción literal del versículo: pueden no seguirla. Re-analiza el versículo para actualizarlas.",
+      "literalNote": "Este versículo tiene formas corregidas según OSHB: la traducción literal es anterior a la corrección y puede no seguirla.",
       "fields": {
         "binyan": "Binyan",
         "verbForm": "Forma",

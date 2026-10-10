@@ -90,6 +90,14 @@
         "CONSTRUCT": "Construct"
       }
     },
+    "speech": {
+      "title": "Who is speaking",
+      "rule": "Rule",
+      "verb": "{{speaker}} is speaking. The “you” of this verb is the person {{speaker}} is speaking to.",
+      "verbTo": "{{speaker}} is speaking to {{addressee}}: the subject of this verb is {{addressee}}.",
+      "suffix": "{{speaker}} is speaking. This “you / your” is the person {{speaker}} is speaking to.",
+      "suffixTo": "{{speaker}} is speaking to {{addressee}}: this “you / your” is {{addressee}}."
+    },
     "oshb": {
       "confirmed": "Matches OSHB",
       "differs": "Corrected per OSHB",
@@ -97,7 +105,8 @@
       "corrected": "Corrected per OSHB",
       "correction": "{{field}}: {{analysis}} → {{oshb}}",
       "reasonOathFormula": "Oath formula: jussive, as OSHB tags it in 11 of its 12 occurrences.",
-      "translationNote": "The saved translation may not follow this correction. If it doesn't, re-analyze the verse.",
+      "translationNote": "This word's translation, value, explanation and clues come from the analysis made before this correction, as does the verse's literal translation: they may not follow it. Re-analyze the verse to update them.",
+      "literalNote": "This verse has forms corrected according to OSHB: the literal translation predates the correction and may not follow it.",
       "fields": {
         "binyan": "Stem",
         "verbForm": "Form",

@@ -169,7 +169,7 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
 
       setIsLoadingVerse(true);
       try {
-        const cached = await checkCache({ morphhbKey: book, chapter, verse });
+        const cached = await checkCache({ morphhbKey: book, chapter, verse, language });
         if (seq !== navSeq.current) return;
         if (cached) {
           setAnalysis(cached, { book, chapter, verse });
@@ -184,7 +184,7 @@ export function useVerseAnalysis(): UseVerseAnalysisState & UseVerseAnalysisActi
         if (seq === navSeq.current) setIsLoadingVerse(false);
       }
     },
-    [checkCache, getVerseText],
+    [checkCache, getVerseText, language],
   );
 
   /** Changes book and resets to chapter 1, verse 1. */
