@@ -191,7 +191,7 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
 | **R1. Herramienta de extracción** ✓ | Los scripts de la prueba de concepto pasan al repo: capa de texto, secciones, ejemplos, comparación con OSHB y MorphGNT, conjunto de control. Sin texto de los libros en el repo. | No. |
 | **R2. Ingesta medida** | Niccacci completo; Sandy y Giese; Farfán revisado (hebreo vocalizado, § y derechos). Medición de cada uno con R1. | Sí: carga en la biblioteca (gasta cuota, pide OK). |
 | **R3. Anclar las reglas existentes** | Las reglas de G2–G4 y H1–H3 pasan a «ancladas» con sección y página verificadas. | Sí: mejora las citas. |
-| **R4. Hebreo H4 con el proceso completo** (infinitivo ✓) | Infinitivo (esta prueba), participio, partículas, cadena de constructo; Niccacci para la sintaxis del verbo en el texto. | Sí. |
+| **R4. Hebreo H4 con el proceso completo** (infinitivo ✓, participio ✓) | Infinitivo (esta prueba), participio, partículas, cadena de constructo; Niccacci para la sintaxis del verbo en el texto. | Sí. |
 | **R5. Validación docente y ciclo de vuelta** | Pantalla de muestra para el profesor; casos desde la app. | Sí. |
 
 **Una fase = un PR por etapa**, con un commit por unidad, como hasta ahora.
@@ -250,6 +250,33 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
 - **Falta:**
   - la muestra del profesor para pasar a «validada» (R5);
   - מִן + infinitivo (§4.1.13), que queda sin regla.
+
+### R4, segundo tema: la función del participio hebreo (2026-10-10)
+- `hebrewParticipleCandidates` (dominio). Categorías de Arnold y Choi §3.4.3: atributivo (a), predicado en presente, pasado o futuro (b.1–b.3) y sustantivo (c). Cada regla mira artículo, preposición (pegada o suelta), estado, sufijo, la palabra anterior, הָיָה o הִנֵּה cerca y el rol que MACULA le da a la palabra. Todas «medidas», como el infinitivo; la ficha, el prompt y la elección del asistente usan el mismo camino (`hebrewRuleChoice.ts`).
+- **Lo que enseñaron los ejemplos del libro:** la morfología sola no alcanza. Un participio en constructo puede ser atributivo («אֹזֶן שֹׁמַעַת», Pr 15:31) y uno con sufijo, predicado («הִנְנִי נֹתְנוֹ», 1 R 20:13). «Nombre + participio» es atributo («לֵב שֹׁמֵעַ», 1 R 3:9) o sujeto + predicado («וְנָהָר יֹצֵא», Gn 2:10): lo separa el rol de MACULA.
+- **Medido:**
+  - **Los 48 ejemplos del libro, cada palabra citada** (`arnoldChoi-participio-anclas.json`: 28 con un solo participio en el versículo, 19 elegidos por la glosa inglesa del libro, y Sal 19:1, que es la numeración inglesa de 19:2): 11 deciden bien, 40 acotan bien, 0 contradicen.
+  - **El control (§4.5, הִנֵּה, no usado para ajustar):** los 9 participios sin artículo que siguen a הִנֵּה admiten predicado; 0 contradicciones.
+  - **Todo el AT:** 9.395 participios con regla (sin el arameo), 27 % con una sola opción.
+  - **Muestras de 20 al azar de las reglas que deciden** (leídas por nosotros, no por el profesor; la segunda muestra se tomó después de corregir lo que mostró la primera):
+    - preposición pegada 20/20; preposición suelta 19/20 (2 R 9:25 «אֵת רֹכְבִים» es predicado);
+    - הוֹי / אַשְׁרֵי + participio 20/20;
+    - con artículo y sin nombre antes: 18/20 en la primera muestra («חֲמֵשֶׁת אֲלָפִים הַנּוֹתָר», Ez 48:15, y «כְּמִתְלַהְלֵהַּ הַיֹּרֶה», Pr 26:18, eran atributivos: ahora tras cualquier nombre acota), 20/20 en la segunda;
+    - con sufijo: unas 18/20 en la primera («אַתָּה בוֹדָאם», Neh 6:8, es predicado: si MACULA lo trata como verbo, acota), 20/20 en la segunda;
+    - tras un nombre en constructo: 19/20 en las dos (OSHB pone אִישׁ en constructo en «אִישׁ צָרוּעַ», Lv 13:44, y «אִישׁ מֵבִין», 1 Cr 27:32: tras אִישׁ / אִשָּׁה acota);
+    - atributivo: 2 errores en la segunda muestra, los dos coordinados con «וְ» («שַׂר וְשֹׁפֵט», Éx 2:14; «וְאַלְמָנָה וּגְרוּשָׁה», Ez 44:22). Ahora decide sólo si concuerdan género, número y definitud, sin «וְ» y si no es un participio que funciona como nombre (אֹיֵב, רֹעֶה, שׂנא, שֹׁפֵט); en la tercera muestra, 5/5.
+  - **הָיָה + participio (perifrástico) NO decide:** erraba 6–8 de 20 («וְלֹא הָיָה מַצִּיל», Dn 8:7, «no había quien librara»; «וַיְהִי כָּל יוֹדְעוֹ», 1 S 10:11; «עֵד מְמַהֵר», Mal 3:5). Pone primero el tiempo de הָיָה y acota con sustantivo y atributivo. Un «וְ + qatal» de הָיָה que OSHB no marca como weqatal (76 en el AT; Zac 10:5) ofrece pasado y futuro.
+  - **Tras הִנֵּה, predicado, y el tiempo lo elige el asistente:** en narración suele ser pasado (Gn 37:25), en discurso presente o futuro (1 S 23:1, Gn 6:17). Queda para medir si el discurso basta para acotar.
+- **Revisión adversarial (corregido antes del PR):**
+  - OSHB marca «Tm» también יֵשׁ y כֵּן: la regla de הִנֵּה los tomaba (60 de 474) y quitaba sustantivo a «יֵשׁ גֹּאֵל» (Rut 3:12) o «עַל כֵּן רֹדְפַי» (Jer 20:11). Ahora exige el lema de הִנֵּה / הֵן, corta en otro participio predicado (Zac 11:16) y, si MACULA lo pone de sujeto, objeto o predicado nominal, también ofrece nombre o atributo (Sal 92:10, Zac 5:1). Muestra con otra semilla: 19/20 («הִנֵּה יוֹצֵר הָרִים», Am 4:13, es sustantivo).
+  - הָיָה se perdía en «יְהִי שֵׁם יְהוָה מְבֹרָךְ» (Job 1:21, Sal 113:2) y en «גַּם בָּרוּךְ יִהְיֶה» (Gn 27:33, un `return` que saltaba la palabra siguiente), y tomaba como tiempo un «וְהָיָה» que abre otra cláusula (Ez 47:12). Ahora mira hasta 4 palabras atrás saltando nombres (más allá de 2, sólo en la misma cláusula de MACULA: «יִהְיֶה עֶלְיוֹן כָּל עֹבֵר», 1 R 9:8, no) y la siguiente sólo sin «וְ» y en la misma cláusula.
+  - Una preposición suelta que MACULA no trata como tal también admite predicado («אֵת רֹכְבִים», 2 R 9:25; «לְמַעַן שָׂכוּר הוּא», Neh 6:13).
+  - Al comienzo del versículo, la palabra anterior es la última del versículo anterior: «הַמּוֹצִיא» (Lv 22:33) sigue a «מְקַדִּשְׁכֶם» (22:32) y acota (125 casos).
+  - El control de §4.5 pasaba aun sin la regla de הִנֵּה (los participios caían en otra que también admite predicado): ahora exige esa regla.
+  - Pendiente menor: OSHB pone en constructo «עִיר פְּרוּצָה» (Pr 25:28), atributivo; el genitivo queda 19/20.
+  - Sin cambios de comportamiento en el infinitivo por la refactorización: 0 diferencias en todo el AT (candidatos, prompt y elección).
+- **De paso:** la prueba de CI que exige el cotejo de las citas no miraba las tablas del hebreo (el infinitivo de R4 había quedado fuera). Ahora recorre todas las tablas `*_SOURCES`; las 5 citas nuevas del participio están cotejadas (121 de 121).
+- **Límite conocido (supuesto):** OSHB a veces da הִנְנִי con el lema 2005 (הֵן); se usa su código de partícula («Tm»), no el lema.
 
 ---
 

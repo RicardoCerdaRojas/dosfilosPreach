@@ -72,4 +72,13 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(texto).toContain('"infinitiveFunction"');
         expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## INFINITIVOS');
     });
+
+    it('R4: con participios, el prompt trae su sección y el campo "participleFunction" en el esquema', () => {
+        const ptc = [{ ordinal: 2, text: 'מֵבִיא', rule: 'ptcHinne' as const, allowed: ['predicatePresent', 'predicatePast', 'predicateFuture'] as const, status: 'medida' as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], ptc as never);
+        expect(texto).toContain('## PARTICIPIOS: SU FUNCIÓN');
+        expect(texto).toMatch(/מֵבִיא: participio, elige "participleFunction" de: "predicatePresent"/);
+        expect(texto).toContain('"participleFunction"');
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## PARTICIPIOS');
+    });
 });

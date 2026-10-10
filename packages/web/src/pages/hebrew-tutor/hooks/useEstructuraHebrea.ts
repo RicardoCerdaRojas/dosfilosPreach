@@ -1,5 +1,5 @@
 import React from 'react';
-import { applyHebrewInfinitive, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewInfinitive, applyHebrewParticiple, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type HebrewParticipleView, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -83,7 +83,17 @@ export function useEstructuraHebrea(
         }
         return m;
     }, [estructura, alinear, analysis.words]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, sinLectura };
+    /** R4 — lo mismo para el participio (Arnold y Choi §3.4.3). */
+    const participios = React.useMemo(() => {
+        const m = new Map<number, HebrewParticipleView>();
+        const indice = alinear(estructura.words);
+        for (const c of estructura.participles ?? []) {
+            const i = indice[c.ordinal];
+            if (i !== undefined) m.set(i, applyHebrewParticiple(c, analysis.words[i]?.participleFunction));
+        }
+        return m;
+    }, [estructura, alinear, analysis.words]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, sinLectura };
 }
 
 /**

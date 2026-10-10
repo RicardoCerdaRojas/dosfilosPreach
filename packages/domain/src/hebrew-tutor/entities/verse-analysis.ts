@@ -93,6 +93,8 @@ export interface WordAnalysis {
   readonly translation: string;
   /** R4: la función del infinitivo que eligió el asistente. Se valida al mostrar contra la regla. */
   readonly infinitiveFunction?: string;
+  /** R4: la función del participio que eligió el asistente. Se valida al mostrar contra la regla. */
+  readonly participleFunction?: string;
   /** Detailed pedagogical explanation following professor's methodology */
   readonly explanation: string;
 

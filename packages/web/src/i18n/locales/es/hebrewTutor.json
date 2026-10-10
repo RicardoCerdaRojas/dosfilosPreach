@@ -73,7 +73,19 @@
         "emphatic": "enfático",
         "manner": "manera",
         "verbalSubstitute": "sustituto del verbo"
-      },
+      }
+    },
+    "participle": {
+      "title": "Participio",
+      "functions": {
+        "attributive": "atributivo (como adjetivo)",
+        "predicatePresent": "predicado: presente",
+        "predicatePast": "predicado: pasado",
+        "predicateFuture": "predicado: futuro (inminente)",
+        "substantive": "sustantivo: «el que…»"
+      }
+    },
+    "ruleChoice": {
       "ruleMeasured": "Regla · medida",
       "ruleMeasuredTitle": "Regla medida, sin validar: la propone el texto y está probada contra los ejemplos de Arnold y Choi; falta la validación del profesor.",
       "assistantReads": "El asistente lee aquí otra función: {{fn}}. Es un caso para la revisión del profesor.",

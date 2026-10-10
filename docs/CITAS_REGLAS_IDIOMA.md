@@ -103,7 +103,7 @@ Generado con `scripts/language-rules/lista-verificacion.py` (R0, `docs/FASE_REGL
 | Regla de verbo: `conditionalEan`<br>Estructura: `class3` | las oraciones condicionales | Semantic Categories › Third Class Condition | 696 | |
 | Estructura: `class4` | las oraciones condicionales | Semantic Categories › Fourth Class Condition (Less Probable Future) | 699 | |
 
-## Arnold y Choi (2003) — 25 de 25 verificadas
+## Arnold y Choi (2003) — 30 de 30 verificadas
 
 | Dónde se usa | Tema | Sección impresa | Página | ¿Corresponde? |
 | --- | --- | --- | --- | --- |
@@ -121,6 +121,11 @@ Generado con `scripts/language-rules/lista-verificacion.py` (R0, `docs/FASE_REGL
 | Infinitivo hebreo: `emphatic` | el infinitivo hebreo | 3.4.2 Infinitive Absolute › (b) Emphatic | 74 | |
 | Infinitivo hebreo: `manner` | el infinitivo hebreo | 3.4.2 Infinitive Absolute › (c) Manner | 76 | |
 | Infinitivo hebreo: `verbalSubstitute` | el infinitivo hebreo | 3.4.2 Infinitive Absolute › (d) Verbal substitute | 77 | |
+| Participio hebreo: `attributive` | el participio hebreo | 3.4.3 Participle › (a) Attributive | 78 | |
+| Participio hebreo: `predicatePresent` | el participio hebreo | 3.4.3 Participle › (b.1) Present | 79 | |
+| Participio hebreo: `predicatePast` | el participio hebreo | 3.4.3 Participle › (b.2) Past | 80 | |
+| Participio hebreo: `predicateFuture` | el participio hebreo | 3.4.3 Participle › (b.3) Future | 81 | |
+| Participio hebreo: `substantive` | el participio hebreo | 3.4.3 Participle › (c) Substantive | 82 | |
 | Estructura: `chain` | la waw consecutiva | 3.5.1 Imperfect plus waw Consecutive | 84 | |
 | Estructura: `conjunctive` | la waw consecutiva | 3.5.2 Perfect plus waw Consecutive | 87 | |
 | Infinitivo hebreo: `temporalWhile` | el infinitivo hebreo | 4.1.5 בְּ › (b) Temporal | 103 | |

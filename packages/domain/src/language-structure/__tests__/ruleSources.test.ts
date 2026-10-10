@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import * as RS from '../ruleSources';
 import {
     DISCOURSE_RULE_SOURCES,
     formatCitation,
@@ -28,7 +29,9 @@ const juntar = (x: unknown): void => {
         else Object.values(x).forEach(juntar);
     }
 };
-[VERB_RULE_SOURCES, VERB_FUNCTION_SOURCES, TENSE_USE_SOURCES, DISCOURSE_RULE_SOURCES, NOMINAL_RULE_SOURCES, STRUCTURE_RULE_SOURCES].forEach(juntar);
+// Todas las tablas «*_SOURCES» del registro: una tabla nueva entra sola (la del infinitivo de R4 había quedado fuera).
+const TABLAS = Object.entries(RS).filter(([k]) => k.endsWith('_SOURCES'));
+TABLAS.forEach(([, t]) => juntar(t));
 
 describe('R0 — sólo se cita lo verificado', () => {
     it('sin verificar: obra y tema, nunca la sección ni una página', () => {
@@ -85,6 +88,11 @@ describe('R0 — sólo se cita lo verificado', () => {
     it('ἵνα cita la sección general (siete usos, p. 471); «lest» ya no cita el propósito', () => {
         expect(VERB_RULE_SOURCES.afterIna.map(s => s.verified?.page)).toEqual(['471']);
         expect(VERB_RULE_SOURCES.lest.map(s => s.section)).toEqual(['Subjunctive with Verbs of Fearing, Etc.']);
+    });
+
+    it('recorre todas las tablas, también las del hebreo (infinitivo, participio)', () => {
+        expect(TABLAS.map(([k]) => k)).toEqual(expect.arrayContaining(['HEBREW_INFINITIVE_SOURCES', 'HEBREW_PARTICIPLE_SOURCES', 'VERB_RULE_SOURCES']));
+        expect(todas.some(s => s.section.startsWith('3.4.3 Participle'))).toBe(true);
     });
 
     it('cada fuente tiene un tema en castellano para mostrar sin verificación', () => {

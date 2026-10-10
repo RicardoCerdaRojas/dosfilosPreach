@@ -1,0 +1,348 @@
+{
+ "obra": "A Guide to Biblical Hebrew Syntax - 7th",
+ "autor": "Arnold, Choi",
+ "recurso": "85935449-a732-417f-aeea-f9ca1c167831",
+ "tramo": "3.4.3–3.5",
+ "ejemplos": 48,
+ "secciones": [
+  {
+   "seccion": "3.4.3",
+   "titulo": "Participle",
+   "pagina": 77,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Attributive",
+     "pagina": 78,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 3,
+       "versiculo": 9,
+       "pagina": 78
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 4,
+       "versiculo": 34,
+       "pagina": 78
+      },
+      {
+       "libro": "Prov",
+       "capitulo": 15,
+       "versiculo": 31,
+       "pagina": 78
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 11,
+       "versiculo": 5,
+       "pagina": 79
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 47,
+       "versiculo": 4,
+       "pagina": 79
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 43,
+       "versiculo": 12,
+       "pagina": 79
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 31,
+       "versiculo": 18,
+       "pagina": 79
+      },
+      {
+       "libro": "2Chr",
+       "capitulo": 28,
+       "versiculo": 9,
+       "pagina": 79
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Predicate",
+     "pagina": 79,
+     "ejemplos": [
+      {
+       "libro": "Ps",
+       "capitulo": 19,
+       "versiculo": 2,
+       "pagina": 79
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 19,
+       "versiculo": 1,
+       "pagina": 79
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 14,
+       "versiculo": 19,
+       "pagina": 79
+      }
+     ]
+    },
+    {
+     "etiqueta": "b.1",
+     "nombre": "Present",
+     "pagina": 79,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 16,
+       "versiculo": 8,
+       "pagina": 80
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 7,
+       "versiculo": 9,
+       "pagina": 80
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 3,
+       "versiculo": 5,
+       "pagina": 80
+      },
+      {
+       "libro": "Eccl",
+       "capitulo": 1,
+       "versiculo": 4,
+       "pagina": 80
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 23,
+       "versiculo": 1,
+       "pagina": 80
+      }
+     ]
+    },
+    {
+     "etiqueta": "b.2",
+     "nombre": "Past",
+     "pagina": 80,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 2,
+       "versiculo": 10,
+       "pagina": 80
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 39,
+       "versiculo": 23,
+       "pagina": 80
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 1,
+       "versiculo": 5,
+       "pagina": 80
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 19,
+       "versiculo": 1,
+       "pagina": 80
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 3,
+       "versiculo": 2,
+       "pagina": 80
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 37,
+       "versiculo": 25,
+       "pagina": 80
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 18,
+       "versiculo": 2,
+       "pagina": 80
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 37,
+       "versiculo": 7,
+       "pagina": 81
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 42,
+       "versiculo": 35,
+       "pagina": 81
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 3,
+       "versiculo": 1,
+       "pagina": 81
+      },
+      {
+       "libro": "Job",
+       "capitulo": 1,
+       "versiculo": 14,
+       "pagina": 81
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 9,
+       "versiculo": 24,
+       "pagina": 81
+      },
+      {
+       "libro": "Neh",
+       "capitulo": 1,
+       "versiculo": 4,
+       "pagina": 81
+      }
+     ]
+    },
+    {
+     "etiqueta": "b.3",
+     "nombre": "Future",
+     "pagina": 81,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 7,
+       "versiculo": 4,
+       "pagina": 81
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 4,
+       "versiculo": 16,
+       "pagina": 81
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 41,
+       "versiculo": 28,
+       "pagina": 81
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 19,
+       "versiculo": 13,
+       "pagina": 81
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 6,
+       "versiculo": 17,
+       "pagina": 81
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 31,
+       "versiculo": 16,
+       "pagina": 81
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 20,
+       "versiculo": 13,
+       "pagina": 81
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 2,
+       "versiculo": 45,
+       "pagina": 82
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Substantive",
+     "pagina": 82,
+     "ejemplos": [
+      {
+       "libro": "Ruth",
+       "capitulo": 1,
+       "versiculo": 1,
+       "pagina": 82
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 14,
+       "versiculo": 19,
+       "pagina": 82
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 22,
+       "versiculo": 13,
+       "pagina": 82
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 35,
+       "versiculo": 9,
+       "pagina": 82
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 121,
+       "versiculo": 5,
+       "pagina": 82
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 106,
+       "versiculo": 3,
+       "pagina": 82
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 103,
+       "versiculo": 18,
+       "pagina": 82
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 23,
+       "versiculo": 10,
+       "pagina": 82
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 9,
+       "versiculo": 10,
+       "pagina": 82
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 38,
+       "versiculo": 18,
+       "pagina": 82
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 18,
+       "versiculo": 19,
+       "pagina": 82
+      }
+     ]
+    }
+   ],
+   "ejemplos": []
+  }
+ ],
+ "edicion": "Cambridge 2003, ISBN 978-0-521-82609-9"
+}

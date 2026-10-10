@@ -14,7 +14,7 @@ vi.mock('../../HebrewTutorProvider', () => ({ useHebrewTutor: () => ({}) }));
 vi.mock('../VerbDetectivePanel', () => ({ VerbDetectivePanel: () => null }));
 vi.mock('../NominalDetectivePanel', () => ({ NominalDetectivePanel: () => null }));
 const estado = vi.hoisted(() => ({
-    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[] },
+    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[] },
 }));
 vi.mock('@/components/language-structure/useVerseStructure', () => ({
     useVerseStructure: () => estado.estructura,
@@ -105,5 +105,21 @@ describe('R4: del dato a la tarjeta', () => {
             ] };
         render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Gen.19.22" /></TooltipProvider>);
         expect(screen.getAllByTestId('infinitive-note')[0]!.textContent).toContain('verseAnalyzer.infinitive.functions.temporalUntil');
+    });
+    it('la del participio, con la elección del asistente (Gn 6:17 «הִנְנִי מֵבִיא»)', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [],
+            words: [{ r: '17!2', t: 'הִנְנִי', l: '2009', m: 'HTm/Sp1cs', role: 'p' }, { r: '17!3', t: 'מֵבִיא', l: '935', m: 'HVhrmsa', role: 'v' }],
+            participles: [{ ordinal: 1, text: 'מֵבִיא', rule: 'ptcHinne', allowed: ['predicatePresent', 'predicatePast', 'predicateFuture'], status: 'medida' }],
+        };
+        const analisis = { reference: 'Gn 6:17', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'הִנְנִי', hebrewWord: 'הִנְנִי', morphemes: [], category: 'PARTICLE', translation: 'he aquí yo' },
+                { hebrewText: 'מֵבִיא', hebrewWord: 'מֵבִיא', morphemes: [], category: 'VERB', translation: 'traigo', participleFunction: 'predicateFuture' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Gen.6.17" /></TooltipProvider>);
+        const nota = screen.getAllByTestId('participle-note')[0]!.textContent!;
+        expect(nota).toContain('verseAnalyzer.participle.functions.predicateFuture');
+        expect(nota).toContain('verseAnalyzer.ruleChoice.assistant');
     });
 });

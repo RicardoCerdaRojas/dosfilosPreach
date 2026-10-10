@@ -18,32 +18,32 @@ describe('R4 en la ficha', () => {
         render(<HebrewInfinitiveNote view={{ candidate: hasta, fn: 'temporalUntil', by: 'rule' }} />);
         const n = screen.getByTestId('infinitive-note').textContent!;
         expect(n).toContain('verseAnalyzer.infinitive.functions.temporalUntil');
-        expect(n).toContain('verseAnalyzer.infinitive.ruleMeasured');
+        expect(n).toContain('verseAnalyzer.ruleChoice.ruleMeasured');
         expect(screen.getByTestId('source-toggle')).toBeInTheDocument();
     });
     it('varias y el asistente eligió: «Asistente»', () => {
         render(<HebrewInfinitiveNote view={{ candidate: be, fn: 'causal', by: 'assistant' }} />);
-        expect(screen.getByTestId('infinitive-note').textContent).toContain('verseAnalyzer.infinitive.assistant');
+        expect(screen.getByTestId('infinitive-note').textContent).toContain('verseAnalyzer.ruleChoice.assistant');
     });
     it('varias sin elección (análisis anterior): dice las opciones, sin marca', () => {
         render(<HebrewInfinitiveNote view={{ candidate: be }} />);
         const n = screen.getByTestId('infinitive-note').textContent!;
-        expect(n).toContain('verseAnalyzer.infinitive.options');
+        expect(n).toContain('verseAnalyzer.ruleChoice.options');
         expect(n).toContain('functions.causal');
         expect(n).not.toContain('ruleMeasured');
-        expect(n).toContain('verseAnalyzer.infinitive.reanalyze');
+        expect(n).toContain('verseAnalyzer.ruleChoice.reanalyze');
     });
     it('varias y el asistente leyó una fuera de la lista: su lectura al lado, sin «re-analiza» (1 S 22:17)', () => {
         render(<HebrewInfinitiveNote view={{ candidate: be, assistantReading: 'object' }} />);
         const n = screen.getByTestId('infinitive-note').textContent!;
         expect(screen.getByTestId('infinitive-disagreement').textContent).toContain('functions.object');
-        expect(n).toContain('verseAnalyzer.infinitive.options');
+        expect(n).toContain('verseAnalyzer.ruleChoice.options');
         expect(n).not.toContain('reanalyze');
     });
     it('la regla propone una y el asistente lee otra: se muestran las dos', () => {
         render(<HebrewInfinitiveNote view={{ candidate: hasta, fn: 'temporalUntil', by: 'rule', assistantReading: 'purpose' }} />);
         const d = screen.getByTestId('infinitive-disagreement').textContent!;
-        expect(d).toContain('verseAnalyzer.infinitive.assistantReads');
+        expect(d).toContain('verseAnalyzer.ruleChoice.assistantReads');
         expect(d).toContain('functions.purpose');
     });
     it('sin desacuerdo, no hay línea del asistente', () => {

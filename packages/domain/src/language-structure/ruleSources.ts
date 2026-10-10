@@ -4,6 +4,7 @@ import type { TENSE_USES } from './verbFunctions.js';
 import type { NominalRule } from './nominalFunctions.js';
 import type { DiscourseRule } from './discourseFunctions.js';
 import type { HebrewInfinitiveFunction } from './hebrewInfinitive.js';
+import type { HebrewParticipleFunction } from './hebrewParticiple.js';
 
 /**
  * DE DÓNDE SALE CADA REGLA Y CADA CATEGORÍA — para que el pastor la pueda
@@ -298,6 +299,16 @@ export const HEBREW_INFINITIVE_SOURCES: Readonly<Record<HebrewInfinitiveFunction
     emphatic: [AC(INFH, IA + '(b) Emphatic', '74')],
     manner: [AC(INFH, IA + '(c) Manner', '76')],
     verbalSubstitute: [AC(INFH, IA + '(d) Verbal substitute', '77')],
+};
+
+const PTCH = 'el participio hebreo';
+const PT = '3.4.3 Participle › ';
+export const HEBREW_PARTICIPLE_SOURCES: Readonly<Record<HebrewParticipleFunction, readonly RuleSource[]>> = {
+    attributive: [AC(PTCH, PT + '(a) Attributive', '78')],
+    predicatePresent: [AC(PTCH, PT + '(b.1) Present', '79')],
+    predicatePast: [AC(PTCH, PT + '(b.2) Past', '80')],
+    predicateFuture: [AC(PTCH, PT + '(b.3) Future', '81')],
+    substantive: [AC(PTCH, PT + '(c) Substantive', '82')],
 };
 
 /** Las fuentes de una función según la forma: «Nominal» es una sección para el constructo y otra para el absoluto. */

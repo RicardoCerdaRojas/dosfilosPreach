@@ -114,7 +114,19 @@
         "emphatic": "emphatic",
         "manner": "manner",
         "verbalSubstitute": "verbal substitute"
-      },
+      }
+    },
+    "participle": {
+      "title": "Participle",
+      "functions": {
+        "attributive": "attributive (adjectival)",
+        "predicatePresent": "predicate: present",
+        "predicatePast": "predicate: past",
+        "predicateFuture": "predicate: future (imminent)",
+        "substantive": "substantive: “the one who…”"
+      }
+    },
+    "ruleChoice": {
       "ruleMeasured": "Rule · measured",
       "ruleMeasuredTitle": "Measured rule, not yet validated: proposed by the text and tested against Arnold & Choi's examples; awaiting the professor's validation.",
       "assistantReads": "The assistant reads a different function here: {{fn}}. A case for the professor's review.",
