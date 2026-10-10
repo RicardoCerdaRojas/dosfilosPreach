@@ -116,5 +116,38 @@
   },
   "source": "Source",
   "copyCitation": "Copy citation",
-  "showSource": "Show source ›"
+  "showSource": "Show source ›",
+  "wordFicha": {
+    "sections": {
+      "palabra": "The word",
+      "forma": "The form",
+      "funcion": "Its function in the verse",
+      "contexto": "In context",
+      "estudio": "For study",
+      "acciones": "Actions"
+    },
+    "origin": {
+      "rule": "Per the grammar",
+      "ruleTitle": "Proposed by a grammar rule, tested against the book's examples; not yet validated by the professor.",
+      "assistant": "Assistant",
+      "assistantTitle": "Chosen by the assistant among the options the grammar allows."
+    },
+    "ruleToValidate": "rule pending validation",
+    "howRecognized": "How it is recognized",
+    "options": "The grammar allows these options: {{list}}.",
+    "reanalyze": "Re-analyze for the assistant to choose.",
+    "otherReading": "Another possible reading: {{fn}}",
+    "otherReadingText": "The assistant reads it as “{{fn}}”. It may describe the same text at another level (the whole phrase instead of the word): compare both readings with the context.",
+    "show": "Show",
+    "hide": "Hide",
+    "openFicha": "Click to see the full card",
+    "seeFicha": "See card",
+    "readMore": "Read all",
+    "readLess": "Show less",
+    "previous": "Previous word",
+    "next": "Next word",
+    "close": "Close the card",
+    "panelDescription": "Full word card: its form, its function in the verse and the sources.",
+    "reference": "{{ref}} · word {{n}} of {{total}}"
+  }
 }

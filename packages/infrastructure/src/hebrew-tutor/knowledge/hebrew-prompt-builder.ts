@@ -52,7 +52,7 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
         "gender": "M | F | C | null",
         "number": "S | P | D | null",
         "temporalValue": "string — e.g. 'pasado narrativo secuencial'",
-        "recognitionClues": ["string — Pistas visuales. OBLIGATORIO: Debe seguir el formato exacto 'Descripción gramatical + Letra(s) hebrea(s) + (transliteración)'. Ejemplo: 'Preformativo de participio Piel מְ (mə-)'. NO omitir ninguna de las 3 partes."]
+        "recognitionClues": ["string — Pistas visuales DE LA FORMA: sólo evidencia morfológica (afijos, vocales, dagesh, radicales) que muestra cómo se reconoce el binyan, la forma y la persona. La evidencia sintáctica (qué palabra la rige, su posición) NO va aquí: la ficha la da aparte. OBLIGATORIO: Debe seguir el formato exacto 'Descripción gramatical + Letra(s) hebrea(s) + (transliteración)'. Ejemplo: 'Preformativo de participio Piel מְ (mə-)'. NO omitir ninguna de las 3 partes."]
       },
       "nominalMorphology": {
         "gender": "M | F | C | null",

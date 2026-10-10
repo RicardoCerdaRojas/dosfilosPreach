@@ -177,6 +177,16 @@ export function hebrewInfinitiveCandidates(ch: ChapterStructure, verse: number):
     return out;
 }
 
+/**
+ * Las funciones nominales describen la relación del infinitivo con la palabra que lo rige, no el valor de
+ * toda la frase. En «בְּיוֹם אֲכָלְךָ» (Gn 2:17, el ejemplo del libro) el infinitivo es genitivo de יוֹם y la
+ * frase es temporal: el asistente devolvía «temporal» como otra función y la ficha lo mostraba como
+ * desacuerdo (prueba del fundador). El valor de la frase va en el valor temporal y la explicación.
+ */
+const NOTA_NOMINAL = (f: HebrewInfinitiveFunction) => (['genitive', 'subject', 'object'].includes(f)
+    ? 'Esta función describe la relación del infinitivo con la palabra que lo rige; el valor de la frase entera (por ejemplo, temporal) va en "temporalValue" y en la explicación, no como otra función.'
+    : undefined);
+
 /** Las funciones en castellano, para el prompt. */
 const FUNCION_ES: Readonly<Record<HebrewInfinitiveFunction, string>> = {
     subject: 'sujeto (nominal)', genitive: 'genitivo (nominal)', object: 'complemento u objeto (nominal)',
@@ -194,7 +204,7 @@ const FUNCIONES: ReadonlySet<string> = new Set(Object.keys(FUNCION_ES));
  */
 export function buildHebrewInfinitiveTask(candidates: readonly HebrewInfinitiveCandidate[]): string {
     if (!candidates.length) return '';
-    const lineas = ruleChoiceLines(candidates, 'infinitiveFunction', c => (c.form === 'construct' ? 'infinitivo constructo' : 'infinitivo absoluto'), FUNCION_ES);
+    const lineas = ruleChoiceLines(candidates, 'infinitiveFunction', c => (c.form === 'construct' ? 'infinitivo constructo' : 'infinitivo absoluto'), FUNCION_ES, NOTA_NOMINAL);
     return `
 ## INFINITIVOS: SU FUNCIÓN (campo "infinitiveFunction" de cada palabra)
 ${lineas.join('\n')}`;

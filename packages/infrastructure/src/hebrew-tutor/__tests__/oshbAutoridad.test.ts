@@ -69,6 +69,8 @@ describe('el prompt con las filas de «Estructura»', () => {
         const inf = [{ ordinal: 3, text: 'בֹּאֲךָ', form: 'construct' as const, rule: 'adInf' as const, allowed: ['temporalUntil'] as const, status: 'medida' as const }];
         const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], inf as never);
         expect(texto).toContain('## INFINITIVOS: SU FUNCIÓN');
+        // Rediseño de la ficha: las pistas son de la FORMA; la evidencia sintáctica la da la regla.
+        expect(texto).toMatch(/"recognitionClues": \["string — Pistas visuales DE LA FORMA: sólo evidencia morfológica/);
         expect(texto).toContain('"infinitiveFunction"');
         expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## INFINITIVOS');
     });

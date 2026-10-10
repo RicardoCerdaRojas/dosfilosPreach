@@ -46,13 +46,16 @@ export function applyRuleChoice<F extends string, C extends RuleChoiceCandidate<
  */
 export function ruleChoiceLines<F extends string, C extends RuleChoiceCandidate<F>>(
     candidates: readonly C[], campo: string, forma: (c: C) => string, nombres: Readonly<Record<F, string>>,
+    /** Una aclaración para la función propuesta, si hace falta (p. ej. el nivel que describe). */
+    nota?: (f: F) => string | undefined,
 ): string[] {
     const todas = Object.keys(nombres).join(', ');
     return candidates.map(c => {
         const cual = c.occurrence ? ` (${c.occurrence.n}.ª aparición de ${c.occurrence.of} en el versículo)` : '';
         const f = c.allowed[0]!;
+        const aclara = c.allowed.length === 1 && nota?.(f) ? ` ${nota(f)}` : '';
         return c.allowed.length === 1
-            ? `- ${c.text}${cual}: ${forma(c)}; el texto propone ${f} = ${nombres[f]} (regla medida, todavía sin validar). Si el contexto lo confirma, devuelve "${campo}": "${f}" y explícalo; si claramente es otra función, devuelve esa (uno de: ${todas}) y di por qué.`
+            ? `- ${c.text}${cual}: ${forma(c)}; el texto propone ${f} = ${nombres[f]} (regla medida, todavía sin validar).${aclara} Si el contexto lo confirma, devuelve "${campo}": "${f}" y explícalo; si claramente es otra función, devuelve esa (uno de: ${todas}) y di por qué.`
             : `- ${c.text}${cual}: ${forma(c)}, elige "${campo}" de: ${c.allowed.map(x => `"${x}" (${nombres[x]})`).join('; ')}. Elige por el contexto y explica por qué; si ninguna encaja, devuelve la que corresponda (uno de: ${todas}) y di por qué.`;
     });
 }

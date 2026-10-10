@@ -184,4 +184,9 @@ describe('R4 — al mostrar y en el prompt', () => {
         expect(t).toMatch(/בְּשָׁמְעוֹ: infinitivo constructo, elige "infinitiveFunction" de: "temporalWhile"/);
         expect(buildHebrewInfinitiveTask([])).toBe('');
     });
+    it('con una función nominal, el prompt aclara que es la relación con la palabra que lo rige (Gn 2:17)', () => {
+        const gen = { ...una, text: 'אֲכָלְךָ', rule: 'trasConstructo' as const, allowed: ['genitive'] as const };
+        expect(buildHebrewInfinitiveTask([gen])).toMatch(/relación del infinitivo con la palabra que lo rige; el valor de la frase entera .* va en "temporalValue"/);
+        expect(buildHebrewInfinitiveTask([una])).not.toMatch(/la palabra que lo rige/);
+    });
 });

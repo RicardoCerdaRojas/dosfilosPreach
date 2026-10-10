@@ -5,23 +5,23 @@
  *  1. Hebrew text + transliteration header (RTL, large, centered)
  *  2. Translation panel (literal + fluid side by side)
  *  3. Color legend
- *  4. WordCard grid (one card per analyzed word)
+ *  4. Summary-card grid (one per word; each opens the full ficha)
  *  5. VerbTable summary
  *  6. Exegetical notes section
  *
  * Bidirectional word highlighting:
  *  - Hovering a WordCard  → highlights the word in BOTH Hebrew headers (main + sticky)
  *  - Hovering a word in the main header → highlights the corresponding WordCard
- *  - Clicking a word in either header   → scrolls to the card (smooth)
+ *  - Clicking a word in either header   → opens its full card (ficha) in the side panel
  */
 
 import React from 'react';
-import { WordCard } from './WordCard';
+import { FichaPanelHebreo, TarjetasResumenHebreo } from './FichasHebreo';
+import { useDatosHebreo } from '../ficha/useDatosHebreo';
 import { VerbTable } from './VerbTable';
 import { ClausesSection } from './ClausesSection';
 import { StructureSection } from '@/components/language-structure/StructureSection';
 import { useEstructuraHebrea, useVersiculoFijo } from '../hooks/useEstructuraHebrea';
-import { WordTutorSheet } from './WordTutorSheet';
 import { VerbDetectivePanel } from './VerbDetectivePanel';
 import { NominalDetectivePanel } from './NominalDetectivePanel';
 import { StickyVerseHeader } from './StickyVerseHeader';
@@ -72,7 +72,8 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
 }) => {
   const { t } = useTranslation('hebrewTutor');
   const { t: tEstructura } = useTranslation('languageStructure');
-  const [tutorWord, setTutorWord] = React.useState<any | null>(null);
+  /** La palabra cuya ficha completa está abierta en el panel lateral. */
+  const [fichaAbierta, setFichaAbierta] = React.useState<number | null>(null);
   const [detectiveWord, setDetectiveWord] = React.useState<WordAnalysis | null>(null);
   const [detectiveWordIndex, setDetectiveWordIndex] = React.useState<number>(-1);
 
@@ -146,7 +147,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   });
 
   /** Refs for each WordCard DOM node — used to scroll cards into view */
-  const cardRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const cardRefs = React.useRef<(HTMLElement | null)[]>([]);
 
   /** Sentinel placed at the bottom of the main verse header — tracked by StickyVerseHeader */
   const headerSentinelRef = React.useRef<HTMLDivElement>(null);
@@ -169,9 +170,8 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
    * Scrolls the corresponding card smoothly into view.
    */
   const handleHeaderWordClick = React.useCallback((index: number) => {
-    const card = cardRefs.current[index];
-    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setActiveWordIndex(index);
+    setFichaAbierta(index);
   }, []);
 
   /**
@@ -185,6 +185,9 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
     setDetectiveWord(word);
     setDetectiveWordIndex(idx !== -1 ? idx : analysis.words.findIndex(w => w.hebrewText === word.hebrewText));
   }, [analysis.words]);
+
+  /** Los datos de la ficha de cada palabra (tooltip, tarjeta resumen y panel). */
+  const datosFicha = useDatosHebreo(analysis, { antepuestas, discurso, infinitivos, participios, kis }, handleInvestigate);
 
   /** Prev/next words for contextual display in the detective hero card */
   const detectiveAdjacentWords = React.useMemo(() => {
@@ -590,25 +593,14 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
           <span className="text-xs font-normal text-muted-foreground/60">({analysis.words.length} palabras)</span>
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 print:block">
-          {analysis.words.map((word, i) => (
-            <WordCard
-              key={`${word.hebrewWord}-${i}`}
-              word={word}
-              index={i}
-              isActive={activeWordIndex === i}
-              onFocus={() => setTutorWord(word)}
-              onInvestigate={handleInvestigate}
-              onHover={(hovered) => setActiveWordIndex(hovered ? i : null)}
-              cardRef={(el) => { cardRefs.current[i] = el; }}
-              fronted={antepuestas.get(i)}
-              speech={discurso.get(i)}
-              infinitive={infinitivos.get(i)}
-              participle={participios.get(i)}
-              ki={kis.get(i)}
-            />
-          ))}
-        </div>
+        <TarjetasResumenHebreo
+          analysis={analysis}
+          datos={datosFicha}
+          activa={activeWordIndex}
+          onAbrir={(i) => { setActiveWordIndex(i); setFichaAbierta(i); }}
+          onHover={setActiveWordIndex}
+          cardRefs={cardRefs}
+        />
       </div>
 
       {/* ── Verb table ─────────────────────────────────────────────────────── */}
@@ -643,12 +635,8 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
         Analizado: {new Date(analysis.analyzedAt).toLocaleString('es-CL')}
       </p>
 
-      {/* Interactive Tutor Sheet */}
-      <WordTutorSheet 
-        word={tutorWord} 
-        isOpen={!!tutorWord} 
-        onClose={() => setTutorWord(null)} 
-      />
+      {/* La ficha completa de la palabra, en el panel lateral. */}
+      <FichaPanelHebreo analysis={analysis} datos={datosFicha} abierta={fichaAbierta} onAbrir={setFichaAbierta} />
 
       {/* ── Detective Panels (Verb + Nominal) ── */}
       <VerbDetectivePanel
