@@ -307,6 +307,10 @@
       "off": "Pinned Off",
       "titleOn": "Stop pinning the verse at the top while scrolling",
       "titleOff": "Pin the verse at the top while scrolling"
+    },
+    "verseSearch": {
+      "noMatch": "Verse not found. Try “Gen 2:17” or “Genesis 2:17”.",
+      "label": "Go to verse"
     }
   },
   "lexiconAdmin": {
