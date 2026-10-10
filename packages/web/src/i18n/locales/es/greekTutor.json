@@ -1106,6 +1106,8 @@
       "intensiveHintTr": "Realza a {{head}}: «{{tr}} {{own}}». No es el pronombre «él».",
       "identicalHintTr": "Con el artículo delante, identifica a {{head}}: «{{own}} {{tr}}».",
       "staleTranslation": "La traducción «{{own}}» es de un análisis anterior a esta regla. Re-analiza el versículo para actualizarla."
-    }
+    },
+    "fichaBridge": "Puente",
+    "fichaFrequency": "Frecuencia"
   }
 }

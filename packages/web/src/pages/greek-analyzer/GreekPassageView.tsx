@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { GreekVerseInsight, GreekVerseTokens } from '@dosfilos/domain';
 import { FirestoreGreekInsightRepository, SBLGNTBibleProvider } from '@dosfilos/infrastructure';
 import type { BibleBookId } from '@dosfilos/domain';
-import { GreekWordHoverContent } from './GreekWordHoverContent';
+import { GreekWordTooltip } from './GreekVerseBoard';
 
 interface Props {
     provider: SBLGNTBibleProvider;
@@ -140,26 +140,13 @@ export function GreekPassageView({ provider, book, bookName, chapter, versesInCh
                                                 </span>
                                             </span>
                                         </TooltipTrigger>
-                                        <TooltipContent
-                            // `p-0` y `text-sm`: el tooltip base trae
-                            // `px-3 py-1.5 text-xs` para etiquetas cortas y
-                            // pelea con el encabezado fijo del contenido, que
-                            // pone su propio espaciado por sección.
-                            className="bg-card text-card-foreground border border-border shadow-xl rounded-lg p-0 text-sm max-w-none [&>svg]:bg-card [&>svg]:fill-card print:hidden"
-                            sideOffset={6}
-                            // Con 40rem de ancho el popover llega a los bordes:
-                            // Radix lo reubica solo, pero hay que decirle cuánto
-                            // margen respetar.
-                            collisionPadding={16}
-                        >
-                                            <GreekWordHoverContent
+                                        <GreekWordTooltip
                                                 token={tok}
                                                 insight={insight?.words[i]}
                                                 keyInsight={insight?.keyInsights?.find(
                                                     (k) => k.text.replace(/[.,·;]+$/u, '') === tok.text.replace(/[.,·;]+$/u, ''),
                                                 )}
                                             />
-                                        </TooltipContent>
                                     </Tooltip>
                                 ))}
                             </div>

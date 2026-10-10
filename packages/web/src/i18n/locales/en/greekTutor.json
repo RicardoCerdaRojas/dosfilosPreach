@@ -1082,6 +1082,8 @@
       "intensiveHintTr": "Intensifies {{head}} (“{{tr}}”). Not the pronoun “he”.",
       "identicalHintTr": "With the article before it, it identifies {{head}} (“{{tr}}”): “the same”.",
       "staleTranslation": "The translation “{{own}}” comes from an analysis made before this rule. Re-analyze the verse to update it."
-    }
+    },
+    "fichaBridge": "Bridge",
+    "fichaFrequency": "Frequency"
   }
 }

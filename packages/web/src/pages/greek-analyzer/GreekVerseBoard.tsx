@@ -1,9 +1,9 @@
-import type React from 'react';
 import type { GreekKeyInsight, GreekVerseInsight, GreekVerseTokens } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { GreekWordHoverContent } from './GreekWordHoverContent';
+import { FichaResumen } from '@/components/word-ficha/Ficha';
+import { BLOQUES_GRIEGO, type DatosGriego } from './ficha/bloquesGriego';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { pintarPalabraGriega } from './pintarPalabraGriega';
 import { GreekVerseTools, type GreekColorMode, type GreekFontScale } from './GreekVerseTools';
@@ -53,22 +53,19 @@ const LEYENDA: Record<Exclude<GreekColorMode, 'off'>, { key: string; className: 
 };
 
 /**
- * La ficha de una palabra en un tooltip. La usan el versículo y la vista
- * «Estructura»: la misma información en los dos lugares.
+ * El tooltip de una palabra: el RESUMEN de su ficha. La usan el versículo, la
+ * vista «Estructura» y el pasaje. La ficha completa se abre al hacer clic.
  */
-export function GreekWordTooltip(props: React.ComponentProps<typeof GreekWordHoverContent>) {
+export function GreekWordTooltip(props: DatosGriego) {
+    const { t } = useTranslation('languageStructure');
     return (
         <TooltipContent
-            // `p-0` y `text-sm`: el tooltip base trae `px-3 py-1.5 text-xs`
-            // para etiquetas cortas y pelea con el encabezado fijo del
-            // contenido, que pone su propio espaciado por sección.
-            className="bg-card text-card-foreground border border-border shadow-xl rounded-lg p-0 text-sm max-w-none [&>svg]:bg-card [&>svg]:fill-card"
+            // `p-0`: el tooltip base trae `px-3 py-1.5 text-xs` para etiquetas cortas.
+            className="w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-0 text-card-foreground shadow-2xl [&>svg]:bg-card [&>svg]:fill-card print:hidden"
             sideOffset={6}
-            // Con 40rem de ancho el popover llega a los bordes: Radix lo
-            // reubica solo, pero hay que decirle cuánto margen respetar.
             collisionPadding={16}
         >
-            <GreekWordHoverContent {...props} />
+            <FichaResumen registro={BLOQUES_GRIEGO} d={props} pie={t('wordFicha.openFicha')} />
         </TooltipContent>
     );
 }

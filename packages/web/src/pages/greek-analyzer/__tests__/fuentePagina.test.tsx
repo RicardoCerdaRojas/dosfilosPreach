@@ -17,7 +17,12 @@ vi.mock('../useGreekVerse', () => ({
 vi.mock('../useGreekInsight', () => ({ useGreekInsight: () => ({ insight: null, checking: false, generating: false, error: null, cacheUnavailable: false, generate: vi.fn() }) }));
 vi.mock('../GreekVerseBoard', () => ({ GreekVerseBoard: () => null, GreekWordTooltip: () => null }));
 vi.mock('../GreekInsightBlocks', () => ({ GreekInsightBlocks: () => null }));
-vi.mock('../GreekWordCard', () => ({ GreekWordCard: () => null }));
+// La grilla y el panel, mínimos: alcanza con ver que tocar una tarjeta abre ESA ficha en el panel.
+vi.mock('../FichasGriego', () => ({
+    TarjetasResumenGriego: ({ onAbrir }: { onAbrir: (i: number) => void }) => <button type="button" data-testid="tarjeta-2" onClick={() => onAbrir(2)} />,
+    FichaPanelGriego: ({ abierta, datos }: { abierta: number | null; datos: (i: number) => { token: { text: string } } | null }) =>
+        abierta === null ? null : <div data-testid="panel-abierto">{datos(abierta)?.token.text}</div>,
+}));
 vi.mock('@dosfilos/infrastructure', async (orig) => ({ ...(await orig<object>()), FirestoreGreekFindingsRepository: class {} }));
 const { GreekAnalyzerPage } = await import('../GreekAnalyzerPage');
 const { TooltipProvider } = await import('@/components/ui/tooltip');
@@ -28,5 +33,14 @@ describe('«Fuente» en la página griega (Stg 2:9)', () => {
         await waitFor(() => expect(screen.getAllByTestId('source-toggle').length).toBeGreaterThan(0));
         fireEvent.click(screen.getAllByTestId('source-toggle')[1]!);
         await waitFor(() => expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition'));
+    });
+});
+
+describe('la ficha en el panel lateral (página griega)', () => {
+    it('tocar la tarjeta resumen abre la ficha de esa palabra', async () => {
+        render(<TooltipProvider><GreekAnalyzerPage /></TooltipProvider>);
+        expect(screen.queryByTestId('panel-abierto')).toBeNull();
+        fireEvent.click(await screen.findByTestId('tarjeta-2'));
+        expect(screen.getByTestId('panel-abierto').textContent).toBe(tokens[2]!.text);
     });
 });
