@@ -90,6 +90,39 @@
         "CONSTRUCT": "Construct"
       }
     },
+    "infinitive": {
+      "title": {
+        "construct": "Infinitive construct",
+        "absolute": "Infinitive absolute"
+      },
+      "functions": {
+        "subject": "subject",
+        "genitive": "genitive",
+        "object": "complement",
+        "temporalWhile": "temporal: “when, while”",
+        "temporalAsSoonAs": "temporal: “as soon as”",
+        "temporalUntil": "temporal: “until”",
+        "temporalAfter": "temporal: “after”",
+        "comparative": "comparative: “like, as”",
+        "causal": "causal: “because”",
+        "instrumental": "instrumental: “by means of”",
+        "purpose": "purpose: “in order to”",
+        "result": "result: “so that”",
+        "obligation": "obligation",
+        "imminence": "imminence: “about to”",
+        "specification": "specification: “by …-ing”",
+        "emphatic": "emphatic",
+        "manner": "manner",
+        "verbalSubstitute": "verbal substitute"
+      },
+      "ruleMeasured": "Rule · measured",
+      "ruleMeasuredTitle": "Measured rule, not yet validated: proposed by the text and tested against Arnold & Choi's examples; awaiting the professor's validation.",
+      "assistantReads": "The assistant reads a different function here: {{fn}}. A case for the professor's review.",
+      "assistant": "Assistant",
+      "assistantTitle": "Chosen by the assistant from the options the text allows.",
+      "options": "The text allows: {{list}}. Context decides.",
+      "reanalyze": "Re-analyze for the assistant to choose."
+    },
     "speech": {
       "title": "Who is speaking",
       "rule": "Rule",

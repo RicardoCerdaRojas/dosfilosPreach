@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { SpeechNote } from './SpeechNote';
+import { HebrewInfinitiveNote } from './HebrewInfinitiveNote';
+import type { HebrewInfinitiveView } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import type { WordAnalysis } from '@dosfilos/domain';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from './MorphemeSpan';
@@ -26,6 +28,8 @@ interface WordCardProps {
   fronted?: FrontedInfo;
   /** 2.ª persona dentro de un discurso: quién habla y a quién (Rut 1:16). */
   speech?: SpeechView;
+  /** R4: la función del infinitivo. */
+  infinitive?: HebrewInfinitiveView;
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -48,7 +52,7 @@ const getCategoryStyle = (cat?: string | null) => {
 };
 
 export const WordCard: React.FC<WordCardProps> = ({
-  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef, fronted, speech,
+  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef, fronted, speech, infinitive,
 }) => {
   const { t } = useTranslation('hebrewTutor');
   const [expanded, setExpanded] = useState(false);
@@ -180,6 +184,7 @@ export const WordCard: React.FC<WordCardProps> = ({
 
       {fronted && <div className="mb-3"><FrontedNote fronted={fronted} /></div>}
       {speech && <div className="mb-3"><SpeechNote speech={speech} /></div>}
+      {infinitive && <div className="mb-3"><HebrewInfinitiveNote view={infinitive} /></div>}
 
       {/* Morphology table - Compact Grid */}
       {hasMorphologyData && morphology && (

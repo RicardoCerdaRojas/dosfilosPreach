@@ -3,6 +3,7 @@ import type { GreekVerbForm, TenseUseId, VerbFunctionId, VerbRule } from './verb
 import type { TENSE_USES } from './verbFunctions.js';
 import type { NominalRule } from './nominalFunctions.js';
 import type { DiscourseRule } from './discourseFunctions.js';
+import type { HebrewInfinitiveFunction } from './hebrewInfinitive.js';
 
 /**
  * DE DÓNDE SALE CADA REGLA Y CADA CATEGORÍA — para que el pastor la pueda
@@ -268,3 +269,40 @@ export function formatCitation(s: RuleSource, forma: 'short' | 'full' = 'short')
 
 /** ¿Se puede citar con sección y página? (La indicación docente es registro propio.) */
 export const isVerified = (s: RuleSource): boolean => s.work === 'professor' || !!s.verified;
+
+/**
+ * R4 — las funciones del infinitivo hebreo, en Arnold y Choi (2003): §3.4.1
+ * (constructo), §3.4.2 (absoluto) y, para בְּ y לְמַעַן, §4.1.5 y §4.1.11.
+ * Páginas tomadas de la capa del ejemplar (R1) y cotejadas como en R0.
+ */
+const INFH = 'el infinitivo hebreo';
+const IC = '3.4.1 Infinitive Construct › ';
+const IA = '3.4.2 Infinitive Absolute › ';
+export const HEBREW_INFINITIVE_SOURCES: Readonly<Record<HebrewInfinitiveFunction, readonly RuleSource[]>> = {
+    subject: [AC(INFH, IC + '(a) Nominal', '68'), AC(INFH, IA + '(a) Nominal', '74')],
+    genitive: [AC(INFH, IC + '(a) Nominal', '68'), AC(INFH, IA + '(a) Nominal', '74')],
+    object: [AC(INFH, IC + '(a) Nominal', '68'), AC(INFH, IA + '(a) Nominal', '74')],
+    temporalWhile: [AC(INFH, IC + '(b.1) The preposition בְּ plus the infinitive', '69'), AC(INFH, '4.1.5 בְּ › (b) Temporal', '103')],
+    temporalAsSoonAs: [AC(INFH, IC + '(b.2) The preposition כְּ plus the infinitive', '69')],
+    temporalUntil: [AC(INFH, IC + '(b.3) The preposition עַד plus the infinitive', '70')],
+    temporalAfter: [AC(INFH, IC + '(b.4) The preposition אַחֲרֵי plus the infinitive', '70')],
+    // כְּ + infinitivo también compara («like»): §4.1.9 (a). Revisión de R4.
+    comparative: [AC(INFH, '4.1.9 כְּ › (a) Agreement', '109')],
+    causal: [AC(INFH, '4.1.5 בְּ › (f) Causal', '105')],
+    instrumental: [AC(INFH, '4.1.5 בְּ › (c) Instrumental', '104')],
+    purpose: [AC(INFH, IC + '(c) Purpose', '71'), AC(INFH, '4.1.11 לְמַעַן › (a) Purpose', '115')],
+    result: [AC(INFH, IC + '(d) Result', '71')],
+    obligation: [AC(INFH, IC + '(e) Obligation', '71')],
+    imminence: [AC(INFH, IC + '(f) Imminence', '72')],
+    specification: [AC(INFH, IC + '(g) Specification', '72')],
+    emphatic: [AC(INFH, IA + '(b) Emphatic', '74')],
+    manner: [AC(INFH, IA + '(c) Manner', '76')],
+    verbalSubstitute: [AC(INFH, IA + '(d) Verbal substitute', '77')],
+};
+
+/** Las fuentes de una función según la forma: «Nominal» es una sección para el constructo y otra para el absoluto. */
+export function hebrewInfinitiveSources(fn: HebrewInfinitiveFunction, form: 'construct' | 'absolute'): readonly RuleSource[] {
+    const todas = HEBREW_INFINITIVE_SOURCES[fn];
+    const propias = todas.filter(x => !x.section.startsWith(form === 'construct' ? IA : IC));
+    return propias.length ? propias : todas;
+}

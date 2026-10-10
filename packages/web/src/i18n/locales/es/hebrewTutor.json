@@ -49,6 +49,39 @@
         "QUOTATION": "Discurso directo"
       }
     },
+    "infinitive": {
+      "title": {
+        "construct": "Infinitivo constructo",
+        "absolute": "Infinitivo absoluto"
+      },
+      "functions": {
+        "subject": "sujeto",
+        "genitive": "genitivo",
+        "object": "complemento",
+        "temporalWhile": "temporal: «cuando, mientras»",
+        "temporalAsSoonAs": "temporal: «en cuanto»",
+        "temporalUntil": "temporal: «hasta»",
+        "temporalAfter": "temporal: «después de»",
+        "comparative": "comparativo: «como»",
+        "causal": "causal: «porque»",
+        "instrumental": "instrumental: «por, mediante»",
+        "purpose": "propósito: «para»",
+        "result": "resultado: «de modo que»",
+        "obligation": "obligación",
+        "imminence": "inminencia: «a punto de»",
+        "specification": "especificación: «diciendo, haciendo»",
+        "emphatic": "enfático",
+        "manner": "manera",
+        "verbalSubstitute": "sustituto del verbo"
+      },
+      "ruleMeasured": "Regla · medida",
+      "ruleMeasuredTitle": "Regla medida, sin validar: la propone el texto y está probada contra los ejemplos de Arnold y Choi; falta la validación del profesor.",
+      "assistantReads": "El asistente lee aquí otra función: {{fn}}. Es un caso para la revisión del profesor.",
+      "assistant": "Asistente",
+      "assistantTitle": "La eligió el asistente de las opciones que deja el texto.",
+      "options": "Según el texto puede ser: {{list}}. Lo decide el contexto.",
+      "reanalyze": "Re-analiza para que el asistente elija."
+    },
     "speech": {
       "title": "Quién habla",
       "rule": "Regla",

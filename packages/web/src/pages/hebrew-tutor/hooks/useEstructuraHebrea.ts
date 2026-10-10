@@ -1,5 +1,5 @@
 import React from 'react';
-import { HEBREW_ANALYSIS_PROMPT_VERSION, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewInfinitive, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -68,7 +68,22 @@ export function useEstructuraHebrea(
         (analysis.promptVersion ?? 1) < HEBREW_ANALYSIS_PROMPT_VERSION ? 'stale'
             : !analysis.clauseReadings?.length && (estructura.nodes?.length ?? 0) > 0 ? 'empty'
                 : null;
-    return { estructura, alinear, antepuestas, discurso, sinLectura };
+    /**
+     * R4 — índice del análisis → la función del infinitivo: la regla (medida)
+     * propone; la elección del asistente vale si está en su lista y, si no, se
+     * muestra al lado. Lo ya guardado (sin elección) muestra la regla o las opciones.
+     * Límite: si el asistente une dos infinitivos en una palabra (maqaf), queda el último.
+     */
+    const infinitivos = React.useMemo(() => {
+        const m = new Map<number, HebrewInfinitiveView>();
+        const indice = alinear(estructura.words);
+        for (const c of estructura.infinitives ?? []) {
+            const i = indice[c.ordinal];
+            if (i !== undefined) m.set(i, applyHebrewInfinitive(c, analysis.words[i]?.infinitiveFunction));
+        }
+        return m;
+    }, [estructura, alinear, analysis.words]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, sinLectura };
 }
 
 /**

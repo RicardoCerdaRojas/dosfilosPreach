@@ -91,6 +91,8 @@ export interface WordAnalysis {
   readonly syntacticFunction: string;
   /** Contextual translation of this specific word/phrase */
   readonly translation: string;
+  /** R4: la función del infinitivo que eligió el asistente. Se valida al mostrar contra la regla. */
+  readonly infinitiveFunction?: string;
   /** Detailed pedagogical explanation following professor's methodology */
   readonly explanation: string;
 

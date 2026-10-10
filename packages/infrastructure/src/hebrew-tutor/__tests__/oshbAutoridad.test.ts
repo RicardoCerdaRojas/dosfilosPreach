@@ -64,4 +64,12 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(texto).toMatch(/תִּפְגְּעִי: verbo en 2\.ª persona dentro del discurso de רוּת/);
         expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## QUIÉN HABLA');
     });
+
+    it('R4: con infinitivos, el prompt trae su sección y el campo "infinitiveFunction" en el esquema', () => {
+        const inf = [{ ordinal: 3, text: 'בֹּאֲךָ', form: 'construct' as const, rule: 'adInf' as const, allowed: ['temporalUntil'] as const, status: 'medida' as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], inf as never);
+        expect(texto).toContain('## INFINITIVOS: SU FUNCIÓN');
+        expect(texto).toContain('"infinitiveFunction"');
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## INFINITIVOS');
+    });
 });

@@ -1,5 +1,6 @@
 import type { StructureNode } from '../../language-structure/verseStructure.js';
 import type { SpeechFact } from '../../language-structure/hebrewSpeech.js';
+import type { HebrewInfinitiveCandidate } from '../../language-structure/hebrewInfinitive.js';
 /**
  * Domain ports (interfaces) for the Hebrew Tutor module.
  *
@@ -70,6 +71,8 @@ export interface IHebrewAnalysisService {
     structure?: readonly StructureNode[],
     /** Quién habla y a quién (MACULA): la 2.ª persona del discurso es el destinatario, no el hablante. */
     speech?: readonly SpeechFact[],
+    /** R4: la función de cada infinitivo — decidida (una opción) o para elegir de la lista. */
+    infinitives?: readonly HebrewInfinitiveCandidate[],
   ): Promise<VerseAnalysis>;
 }
 
