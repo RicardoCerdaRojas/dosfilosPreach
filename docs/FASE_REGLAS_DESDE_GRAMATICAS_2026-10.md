@@ -188,7 +188,7 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
 | Etapa | Qué | Toca producción |
 |---|---|---|
 | **R0. Honestidad de las citas** | Estado de verificación en el registro de fuentes (obra, edición, sección, página, quién verificó). La ficha muestra sólo lo verificado; lo demás, obra + tema. Prueba en CI. Lista de verificación de las citas actuales (Wallace, Runge, Arnold y Choi) para contrastar con el ejemplar. | Sí: las secciones de Wallace y Runge pasan a mostrarse como tema general hasta verificarlas. |
-| **R1. Herramienta de extracción** | Los scripts de la prueba de concepto pasan al repo: capa de texto, secciones, ejemplos, comparación con OSHB y MorphGNT, conjunto de control. Sin texto de los libros en el repo. | No. |
+| **R1. Herramienta de extracción** ✓ | Los scripts de la prueba de concepto pasan al repo: capa de texto, secciones, ejemplos, comparación con OSHB y MorphGNT, conjunto de control. Sin texto de los libros en el repo. | No. |
 | **R2. Ingesta medida** | Niccacci completo; Sandy y Giese; Farfán revisado (hebreo vocalizado, § y derechos). Medición de cada uno con R1. | Sí: carga en la biblioteca (gasta cuota, pide OK). |
 | **R3. Anclar las reglas existentes** | Las reglas de G2–G4 y H1–H3 pasan a «ancladas» con sección y página verificadas. | Sí: mejora las citas. |
 | **R4. Hebreo H4 con el proceso completo** | Infinitivo (esta prueba), participio, partículas, cadena de constructo; Niccacci para la sintaxis del verbo en el texto. | Sí. |
@@ -202,6 +202,30 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
 - Runge (13): sólo el tema. El PDF disponible es una versión previa (Logos) sin créditos y con paginación propia (hoja − 7): sirve para el contenido de las reglas, no para citar páginas del impreso de 2010. El profesor no usa la gramática de Runge; sí su *Santiago: Comentario de alta definición* (Lexham, 2016), que sirve como conjunto de prueba de G4 sobre Santiago.
 - ἐν τῷ y πρὸς τό + infinitivo dejaron de decidir solos (Wallace les da varios usos, p. 611).
 - Falta: revisión a mano de `docs/CITAS_REGLAS_IDIOMA.md` (que la categoría del libro sea la de la regla).
+
+### Resultado de R1 (2026-10-09)
+- `scripts/language-rules/` (ver su README):
+  - **`bajar-recurso.cjs`:** sólo lectura. Se niega a escribir dentro del repo (ruta real, sin distinguir mayúsculas) y vacía la carpeta antes de bajar.
+  - **`medir-extraccion.py`:** página impresa, referencias (también las del otro Testamento), hojas con contenido perdido (contando caracteres que no son espacio) y escritura legible. Infiere el desfase si falta.
+  - **`ejemplos-del-libro.py`:** lee por bloques, para recuperar las referencias partidas entre líneas. Corta el tramo en la primera sección fuera de rango y marca los títulos ilegibles.
+  - **`libros.py`:** abreviaturas y nombres completos, con o sin paréntesis, «1Cor» y libros de un solo capítulo («Jude 3»).
+  - **`test_herramientas.py`:** casos sintéticos. Corren con `python3 -m unittest`, no en CI.
+- **Medido con los tres libros de la biblioteca:**
+  - **Arnold y Choi:** página impresa en 227 hojas; 1.486 referencias en la capa contra 1.204 en la extracción; contenido perdido en p. 28, 70–80 y 166–188; capa sin hebreo legible.
+  - **Runge (versión previa):** desfase inferido −7, apoyado en 322 hojas; 583 referencias.
+  - **Wallace:** 747 hojas coinciden; 5.293 referencias; griego ilegible en la capa.
+- **Archivos de prueba para R4:**
+  - Arnold y Choi 3.4.1–3.4.2 (infinitivo, **76** ejemplos);
+  - 4.1 (preposiciones, control: 18 secciones, **326** ejemplos).
+
+  Una prueba exige que cada referencia exista en nuestros datos, que ninguna página esté vacía y que cada ejemplo caiga entre la página de su subcategoría y la siguiente.
+- **Revisión adversarial:**
+  - **Referencias partidas entre líneas:** se perdían 12, alrededor del 3 %, con sesgo hacia 1–2 Samuel y 1–2 Reyes.
+  - **El candado del repo** se saltaba con otras mayúsculas.
+  - **Runge:** su numeración se reinicia por capítulo.
+  - **Falsos positivos de páginas perdidas** en índices y tablas, y títulos ilegibles que pasaban.
+
+  Todo corregido. La muestra de 16 atribuciones al azar estaba bien, y los archivos no traen texto del libro.
 
 ---
 

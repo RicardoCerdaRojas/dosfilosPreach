@@ -1,0 +1,2703 @@
+{
+ "obra": "A Guide to Biblical Hebrew Syntax - 7th",
+ "autor": "Arnold, Choi",
+ "recurso": "85935449-a732-417f-aeea-f9ca1c167831",
+ "tramo": "4.1–4.2",
+ "ejemplos": 326,
+ "secciones": [
+  {
+   "seccion": "4.1",
+   "titulo": "Prepositions",
+   "pagina": 95,
+   "subcategorias": [],
+   "ejemplos": []
+  },
+  {
+   "seccion": "4.1.1",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 96,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Spatial",
+     "pagina": 96,
+     "ejemplos": [
+      {
+       "libro": "Num",
+       "capitulo": 3,
+       "versiculo": 23,
+       "pagina": 96
+      },
+      {
+       "libro": "Song",
+       "capitulo": 2,
+       "versiculo": 9,
+       "pagina": 96
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 18,
+       "versiculo": 12,
+       "pagina": 96
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Temporal",
+     "pagina": 97,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 21,
+       "versiculo": 1,
+       "pagina": 97
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 5,
+       "versiculo": 13,
+       "pagina": 97
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 5,
+       "versiculo": 4,
+       "pagina": 97
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 24,
+       "versiculo": 55,
+       "pagina": 97
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 30,
+       "versiculo": 21,
+       "pagina": 97
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 5,
+       "versiculo": 1,
+       "pagina": 97
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Metaphorical",
+     "pagina": 97,
+     "ejemplos": [
+      {
+       "libro": "2Kgs",
+       "capitulo": 13,
+       "versiculo": 2,
+       "pagina": 97
+      },
+      {
+       "libro": "Job",
+       "capitulo": 31,
+       "versiculo": 7,
+       "pagina": 97
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 12,
+       "versiculo": 14,
+       "pagina": 97
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.2",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 97,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Terminative",
+     "pagina": 97,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 17,
+       "versiculo": 14,
+       "pagina": 97
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 11,
+       "versiculo": 10,
+       "pagina": 97
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 2,
+       "versiculo": 11,
+       "pagina": 97
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 55,
+       "versiculo": 5,
+       "pagina": 97
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 5,
+       "versiculo": 14,
+       "pagina": 98
+      },
+      {
+       "libro": "Num",
+       "capitulo": 6,
+       "versiculo": 25,
+       "pagina": 98
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 5,
+       "versiculo": 6,
+       "pagina": 98
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 5,
+       "versiculo": 8,
+       "pagina": 98
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 16,
+       "versiculo": 10,
+       "pagina": 98
+      },
+      {
+       "libro": "Ezek",
+       "capitulo": 2,
+       "versiculo": 9,
+       "pagina": 98
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 13,
+       "versiculo": 2,
+       "pagina": 98
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 48,
+       "versiculo": 9,
+       "pagina": 98
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 32,
+       "versiculo": 4,
+       "pagina": 98
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Estimative",
+     "pagina": 98,
+     "ejemplos": [
+      {
+       "libro": "Ezek",
+       "capitulo": 36,
+       "versiculo": 9,
+       "pagina": 98
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 3,
+       "versiculo": 21,
+       "pagina": 98
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 7,
+       "versiculo": 6,
+       "pagina": 98
+      },
+      {
+       "libro": "Num",
+       "capitulo": 32,
+       "versiculo": 14,
+       "pagina": 98
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 1,
+       "versiculo": 19,
+       "pagina": 99
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 20,
+       "versiculo": 37,
+       "pagina": 99
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 11,
+       "versiculo": 12,
+       "pagina": 99
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Declarative",
+     "pagina": 99,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 3,
+       "versiculo": 1,
+       "pagina": 99
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 40,
+       "versiculo": 2,
+       "pagina": 99
+      },
+      {
+       "libro": "Jonah",
+       "capitulo": 3,
+       "versiculo": 2,
+       "pagina": 99
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 37,
+       "versiculo": 10,
+       "pagina": 99
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Perceptual",
+     "pagina": 99,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 16,
+       "versiculo": 11,
+       "pagina": 99
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 12,
+       "versiculo": 7,
+       "pagina": 99
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 26,
+       "versiculo": 15,
+       "pagina": 99
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 28,
+       "versiculo": 5,
+       "pagina": 99
+      },
+      {
+       "libro": "Ezek",
+       "capitulo": 20,
+       "versiculo": 9,
+       "pagina": 99
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 109,
+       "versiculo": 14,
+       "pagina": 99
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 84,
+       "versiculo": 3,
+       "pagina": 100
+      },
+      {
+       "libro": "Ezek",
+       "capitulo": 23,
+       "versiculo": 5,
+       "pagina": 100
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 11,
+       "versiculo": 14,
+       "pagina": 100
+      },
+      {
+       "libro": "Neh",
+       "capitulo": 2,
+       "versiculo": 8,
+       "pagina": 100
+      }
+     ]
+    },
+    {
+     "etiqueta": "e",
+     "nombre": "Addition",
+     "pagina": 100,
+     "ejemplos": [
+      {
+       "libro": "Lev",
+       "capitulo": 18,
+       "versiculo": 18,
+       "pagina": 100
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 10,
+       "versiculo": 7,
+       "pagina": 100
+      }
+     ]
+    },
+    {
+     "etiqueta": "f",
+     "nombre": "Spatial",
+     "pagina": 100,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 23,
+       "versiculo": 19,
+       "pagina": 100
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 16,
+       "versiculo": 6,
+       "pagina": 100
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 5,
+       "versiculo": 25,
+       "pagina": 100
+      }
+     ]
+    },
+    {
+     "etiqueta": "g",
+     "nombre": "Specification",
+     "pagina": 100,
+     "ejemplos": [
+      {
+       "libro": "1Sam",
+       "capitulo": 4,
+       "versiculo": 19,
+       "pagina": 101
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 37,
+       "versiculo": 33,
+       "pagina": 101
+      },
+      {
+       "libro": "2Chr",
+       "capitulo": 6,
+       "versiculo": 27,
+       "pagina": 101
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 15,
+       "versiculo": 35,
+       "pagina": 101
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 21,
+       "versiculo": 22,
+       "pagina": 101
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.3",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 101,
+   "subcategorias": [],
+   "ejemplos": [
+    {
+     "libro": "1Sam",
+     "capitulo": 5,
+     "versiculo": 2,
+     "pagina": 101
+    },
+    {
+     "libro": "Gen",
+     "capitulo": 41,
+     "versiculo": 3,
+     "pagina": 101
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.4",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 101,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Accompaniment",
+     "pagina": 101,
+     "ejemplos": [
+      {
+       "libro": "Num",
+       "capitulo": 18,
+       "versiculo": 2,
+       "pagina": 101
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 5,
+       "versiculo": 22,
+       "pagina": 101
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 21,
+       "versiculo": 20,
+       "pagina": 101
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 4,
+       "versiculo": 1,
+       "pagina": 101
+      },
+      {
+       "libro": "Neh",
+       "capitulo": 6,
+       "versiculo": 16,
+       "pagina": 101
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Possession",
+     "pagina": 102,
+     "ejemplos": [
+      {
+       "libro": "Judg",
+       "capitulo": 17,
+       "versiculo": 2,
+       "pagina": 102
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 9,
+       "versiculo": 7,
+       "pagina": 102
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 23,
+       "versiculo": 28,
+       "pagina": 102
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Complement",
+     "pagina": 102,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 42,
+       "versiculo": 7,
+       "pagina": 102
+      },
+      {
+       "libro": "Ezek",
+       "capitulo": 20,
+       "versiculo": 44,
+       "pagina": 102
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Spatial",
+     "pagina": 102,
+     "ejemplos": [
+      {
+       "libro": "Judg",
+       "capitulo": 4,
+       "versiculo": 11,
+       "pagina": 102
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 33,
+       "versiculo": 21,
+       "pagina": 102
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 9,
+       "versiculo": 27,
+       "pagina": 102
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.5",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 102,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Spatial",
+     "pagina": 102,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 12,
+       "versiculo": 27,
+       "pagina": 102
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 31,
+       "versiculo": 54,
+       "pagina": 102
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 12,
+       "versiculo": 6,
+       "pagina": 102
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 12,
+       "versiculo": 6,
+       "pagina": 103
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 13,
+       "versiculo": 17,
+       "pagina": 103
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 14,
+       "versiculo": 28,
+       "pagina": 103
+      },
+      {
+       "libro": "Lev",
+       "capitulo": 16,
+       "versiculo": 22,
+       "pagina": 103
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 36,
+       "versiculo": 8,
+       "pagina": 103
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 4,
+       "versiculo": 27,
+       "pagina": 103
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 57,
+       "versiculo": 10,
+       "pagina": 103
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 90,
+       "versiculo": 1,
+       "pagina": 103
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 3,
+       "versiculo": 3,
+       "pagina": 103
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 68,
+       "versiculo": 6,
+       "pagina": 103
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 68,
+       "versiculo": 25,
+       "pagina": 103
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Temporal",
+     "pagina": 103,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 2,
+       "versiculo": 4,
+       "pagina": 103
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 5,
+       "versiculo": 1,
+       "pagina": 103
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 30,
+       "versiculo": 14,
+       "pagina": 103
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 30,
+       "versiculo": 16,
+       "pagina": 104
+      },
+      {
+       "libro": "Prov",
+       "capitulo": 17,
+       "versiculo": 17,
+       "pagina": 104
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 2,
+       "versiculo": 4,
+       "pagina": 104
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 5,
+       "versiculo": 4,
+       "pagina": 104
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 6,
+       "versiculo": 7,
+       "pagina": 104
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Instrumental",
+     "pagina": 104,
+     "ejemplos": [
+      {
+       "libro": "Mic",
+       "capitulo": 4,
+       "versiculo": 14,
+       "pagina": 104
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 22,
+       "versiculo": 23,
+       "pagina": 104
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 40,
+       "versiculo": 19,
+       "pagina": 104
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Adversative",
+     "pagina": 104,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 16,
+       "versiculo": 12,
+       "pagina": 104
+      },
+      {
+       "libro": "Num",
+       "capitulo": 14,
+       "versiculo": 11,
+       "pagina": 104
+      }
+     ]
+    },
+    {
+     "etiqueta": "e",
+     "nombre": "Specification",
+     "pagina": 104,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 26,
+       "versiculo": 11,
+       "pagina": 104
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 7,
+       "versiculo": 21,
+       "pagina": 105
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 1,
+       "versiculo": 14,
+       "pagina": 105
+      }
+     ]
+    },
+    {
+     "etiqueta": "f",
+     "nombre": "Causal",
+     "pagina": 105,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 24,
+       "versiculo": 16,
+       "pagina": 105
+      },
+      {
+       "libro": "Num",
+       "capitulo": 31,
+       "versiculo": 16,
+       "pagina": 105
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 16,
+       "versiculo": 7,
+       "pagina": 105
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 18,
+       "versiculo": 18,
+       "pagina": 105
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 39,
+       "versiculo": 9,
+       "pagina": 105
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 39,
+       "versiculo": 23,
+       "pagina": 105
+      }
+     ]
+    },
+    {
+     "etiqueta": "g",
+     "nombre": "Accompaniment",
+     "pagina": 105,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 15,
+       "versiculo": 14,
+       "pagina": 105
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 8,
+       "versiculo": 1,
+       "pagina": 105
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 3,
+       "versiculo": 16,
+       "pagina": 105
+      },
+      {
+       "libro": "Num",
+       "capitulo": 20,
+       "versiculo": 20,
+       "pagina": 105
+      }
+     ]
+    },
+    {
+     "etiqueta": "h",
+     "nombre": "Essence",
+     "pagina": 106,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 1,
+       "versiculo": 26,
+       "pagina": 106
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 5,
+       "versiculo": 1,
+       "pagina": 106
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 6,
+       "versiculo": 3,
+       "pagina": 106
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 40,
+       "versiculo": 10,
+       "pagina": 106
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 26,
+       "versiculo": 5,
+       "pagina": 106
+      }
+     ]
+    },
+    {
+     "etiqueta": "i",
+     "nombre": "Manner",
+     "pagina": 106,
+     "ejemplos": [
+      {
+       "libro": "Ezra",
+       "capitulo": 3,
+       "versiculo": 12,
+       "pagina": 106
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 29,
+       "versiculo": 7,
+       "pagina": 106
+      }
+     ]
+    },
+    {
+     "etiqueta": "j",
+     "nombre": "Price",
+     "pagina": 106,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 23,
+       "versiculo": 9,
+       "pagina": 106
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 29,
+       "versiculo": 18,
+       "pagina": 106
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 106,
+       "versiculo": 20,
+       "pagina": 106
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.6",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 106,
+   "subcategorias": [],
+   "ejemplos": [
+    {
+     "libro": "Gen",
+     "capitulo": 13,
+     "versiculo": 3,
+     "pagina": 107
+    },
+    {
+     "libro": "1Sam",
+     "capitulo": 7,
+     "versiculo": 14,
+     "pagina": 107
+    },
+    {
+     "libro": "1Kgs",
+     "capitulo": 15,
+     "versiculo": 19,
+     "pagina": 107
+    },
+    {
+     "libro": "Lev",
+     "capitulo": 26,
+     "versiculo": 46,
+     "pagina": 107
+    },
+    {
+     "libro": "2Kgs",
+     "capitulo": 11,
+     "versiculo": 17,
+     "pagina": 107
+    },
+    {
+     "libro": "Gen",
+     "capitulo": 31,
+     "versiculo": 53,
+     "pagina": 107
+    },
+    {
+     "libro": "Deut",
+     "capitulo": 25,
+     "versiculo": 1,
+     "pagina": 107
+    },
+    {
+     "libro": "Prov",
+     "capitulo": 6,
+     "versiculo": 19,
+     "pagina": 107
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.7",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 107,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Spatial",
+     "pagina": 107,
+     "ejemplos": [
+      {
+       "libro": "Jonah",
+       "capitulo": 2,
+       "versiculo": 7,
+       "pagina": 107
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 7,
+       "versiculo": 16,
+       "pagina": 108
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 4,
+       "versiculo": 4,
+       "pagina": 108
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 1,
+       "versiculo": 6,
+       "pagina": 108
+      },
+      {
+       "libro": "Joel",
+       "capitulo": 2,
+       "versiculo": 9,
+       "pagina": 108
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 2,
+       "versiculo": 15,
+       "pagina": 108
+      },
+      {
+       "libro": "Job",
+       "capitulo": 1,
+       "versiculo": 10,
+       "pagina": 108
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 3,
+       "versiculo": 4,
+       "pagina": 108
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Advantage",
+     "pagina": 108,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 20,
+       "versiculo": 7,
+       "pagina": 108
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 32,
+       "versiculo": 30,
+       "pagina": 108
+      },
+      {
+       "libro": "Lev",
+       "capitulo": 9,
+       "versiculo": 7,
+       "pagina": 108
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 22,
+       "versiculo": 13,
+       "pagina": 108
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.8",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 108,
+   "subcategorias": [],
+   "ejemplos": [
+    {
+     "libro": "Ezek",
+     "capitulo": 5,
+     "versiculo": 9,
+     "pagina": 108
+    },
+    {
+     "libro": "1Sam",
+     "capitulo": 15,
+     "versiculo": 23,
+     "pagina": 109
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.9",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 109,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Agreement",
+     "pagina": 109,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 1,
+       "versiculo": 11,
+       "pagina": 109
+      },
+      {
+       "libro": "Ruth",
+       "capitulo": 1,
+       "versiculo": 4,
+       "pagina": 109
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 4,
+       "versiculo": 13,
+       "pagina": 109
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 3,
+       "versiculo": 5,
+       "pagina": 109
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 44,
+       "versiculo": 15,
+       "pagina": 109
+      },
+      {
+       "libro": "Num",
+       "capitulo": 9,
+       "versiculo": 15,
+       "pagina": 109
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Correspondence",
+     "pagina": 109,
+     "ejemplos": [
+      {
+       "libro": "Neh",
+       "capitulo": 7,
+       "versiculo": 2,
+       "pagina": 109
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 24,
+       "versiculo": 2,
+       "pagina": 109
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Temporal",
+     "pagina": 110,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 44,
+       "versiculo": 31,
+       "pagina": 110
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 13,
+       "versiculo": 28,
+       "pagina": 110
+      }
+     ]
+    }
+   ],
+   "ejemplos": []
+  },
+  {
+   "seccion": "4.1.10",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 110,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Spatial",
+     "pagina": 110,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 37,
+       "versiculo": 10,
+       "pagina": 110
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 47,
+       "versiculo": 2,
+       "pagina": 110
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 9,
+       "versiculo": 12,
+       "pagina": 110
+      },
+      {
+       "libro": "1Chr",
+       "capitulo": 21,
+       "versiculo": 15,
+       "pagina": 110
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 84,
+       "versiculo": 12,
+       "pagina": 110
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 68,
+       "versiculo": 21,
+       "pagina": 110
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Locative",
+     "pagina": 110,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 2,
+       "versiculo": 19,
+       "pagina": 110
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 4,
+       "versiculo": 7,
+       "pagina": 110
+      },
+      {
+       "libro": "Num",
+       "capitulo": 13,
+       "versiculo": 21,
+       "pagina": 111
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Temporal",
+     "pagina": 111,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 8,
+       "versiculo": 11,
+       "pagina": 111
+      },
+      {
+       "libro": "Amos",
+       "capitulo": 4,
+       "versiculo": 4,
+       "pagina": 111
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 23,
+       "versiculo": 7,
+       "pagina": 111
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 16,
+       "versiculo": 4,
+       "pagina": 111
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Purpose",
+     "pagina": 111,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 1,
+       "versiculo": 16,
+       "pagina": 111
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 19,
+       "versiculo": 17,
+       "pagina": 111
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 5,
+       "versiculo": 17,
+       "pagina": 111
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 4,
+       "versiculo": 23,
+       "pagina": 111
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 14,
+       "versiculo": 1,
+       "pagina": 111
+      }
+     ]
+    },
+    {
+     "etiqueta": "e",
+     "nombre": "Quasi datival",
+     "pagina": 111,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 15,
+       "versiculo": 14,
+       "pagina": 112
+      },
+      {
+       "libro": "Num",
+       "capitulo": 31,
+       "versiculo": 4,
+       "pagina": 112
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 20,
+       "versiculo": 5,
+       "pagina": 112
+      }
+     ]
+    },
+    {
+     "etiqueta": "e.1",
+     "nombre": "Interest/advantage",
+     "pagina": 112,
+     "ejemplos": [
+      {
+       "libro": "Jer",
+       "capitulo": 22,
+       "versiculo": 10,
+       "pagina": 112
+      },
+      {
+       "libro": "Job",
+       "capitulo": 10,
+       "versiculo": 3,
+       "pagina": 112
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 31,
+       "versiculo": 19,
+       "pagina": 112
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 20,
+       "versiculo": 6,
+       "pagina": 112
+      }
+     ]
+    },
+    {
+     "etiqueta": "e.2",
+     "nombre": "Product",
+     "pagina": 112,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 12,
+       "versiculo": 2,
+       "pagina": 112
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 2,
+       "versiculo": 22,
+       "pagina": 112
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 4,
+       "versiculo": 7,
+       "pagina": 112
+      }
+     ]
+    },
+    {
+     "etiqueta": "f",
+     "nombre": "Possession",
+     "pagina": 112,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 20,
+       "versiculo": 3,
+       "pagina": 112
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 14,
+       "versiculo": 11,
+       "pagina": 112
+      }
+     ]
+    },
+    {
+     "etiqueta": "g",
+     "nombre": "Genitival",
+     "pagina": 113,
+     "ejemplos": [
+      {
+       "libro": "1Sam",
+       "capitulo": 16,
+       "versiculo": 18,
+       "pagina": 113
+      },
+      {
+       "libro": "Num",
+       "capitulo": 1,
+       "versiculo": 4,
+       "pagina": 113
+      }
+     ]
+    },
+    {
+     "etiqueta": "h",
+     "nombre": "Specification",
+     "pagina": 113,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 17,
+       "versiculo": 20,
+       "pagina": 113
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 9,
+       "versiculo": 54,
+       "pagina": 113
+      },
+      {
+       "libro": "Mic",
+       "capitulo": 2,
+       "versiculo": 6,
+       "pagina": 113
+      }
+     ]
+    },
+    {
+     "etiqueta": "i",
+     "nombre": "Normative",
+     "pagina": 113,
+     "ejemplos": [
+      {
+       "libro": "1Sam",
+       "capitulo": 10,
+       "versiculo": 19,
+       "pagina": 113
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 1,
+       "versiculo": 11,
+       "pagina": 113
+      },
+      {
+       "libro": "Num",
+       "capitulo": 4,
+       "versiculo": 29,
+       "pagina": 113
+      }
+     ]
+    },
+    {
+     "etiqueta": "j",
+     "nombre": "Manner",
+     "pagina": 113,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 32,
+       "versiculo": 8,
+       "pagina": 114
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 11,
+       "versiculo": 3,
+       "pagina": 114
+      }
+     ]
+    },
+    {
+     "etiqueta": "k",
+     "nombre": "Estimative",
+     "pagina": 114,
+     "ejemplos": [
+      {
+       "libro": "2Sam",
+       "capitulo": 22,
+       "versiculo": 24,
+       "pagina": 114
+      },
+      {
+       "libro": "Esth",
+       "capitulo": 10,
+       "versiculo": 3,
+       "pagina": 114
+      },
+      {
+       "libro": "Jonah",
+       "capitulo": 3,
+       "versiculo": 3,
+       "pagina": 114
+      }
+     ]
+    },
+    {
+     "etiqueta": "l",
+     "nombre": "Agent",
+     "pagina": 114,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 14,
+       "versiculo": 19,
+       "pagina": 114
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 8,
+       "versiculo": 3,
+       "pagina": 114
+      }
+     ]
+    },
+    {
+     "etiqueta": "m",
+     "nombre": "Reflexive",
+     "pagina": 114,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 12,
+       "versiculo": 1,
+       "pagina": 114
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 27,
+       "versiculo": 43,
+       "pagina": 114
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 34,
+       "versiculo": 27,
+       "pagina": 114
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.11",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 115,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Purpose",
+     "pagina": 115,
+     "ejemplos": [
+      {
+       "libro": "2Kgs",
+       "capitulo": 10,
+       "versiculo": 19,
+       "pagina": 115
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 12,
+       "versiculo": 13,
+       "pagina": 115
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Causal",
+     "pagina": 115,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 3,
+       "versiculo": 26,
+       "pagina": 115
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 11,
+       "versiculo": 32,
+       "pagina": 115
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.12",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 115,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Locative",
+     "pagina": 115,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 18,
+       "versiculo": 22,
+       "pagina": 115
+      },
+      {
+       "libro": "Num",
+       "capitulo": 17,
+       "versiculo": 19,
+       "pagina": 115
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 24,
+       "versiculo": 51,
+       "pagina": 116
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 34,
+       "versiculo": 10,
+       "pagina": 116
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Temporal",
+     "pagina": 116,
+     "ejemplos": [
+      {
+       "libro": "Amos",
+       "capitulo": 1,
+       "versiculo": 1,
+       "pagina": 116
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 18,
+       "versiculo": 5,
+       "pagina": 116
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Perceptual",
+     "pagina": 116,
+     "ejemplos": [
+      {
+       "libro": "1Sam",
+       "capitulo": 20,
+       "versiculo": 1,
+       "pagina": 116
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 6,
+       "versiculo": 11,
+       "pagina": 116
+      },
+      {
+       "libro": "Lev",
+       "capitulo": 16,
+       "versiculo": 30,
+       "pagina": 116
+      }
+     ]
+    }
+   ],
+   "ejemplos": []
+  },
+  {
+   "seccion": "4.1.13",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 116,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Source",
+     "pagina": 116,
+     "ejemplos": [
+      {
+       "libro": "Judg",
+       "capitulo": 12,
+       "versiculo": 8,
+       "pagina": 116
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 3,
+       "versiculo": 12,
+       "pagina": 116
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 12,
+       "versiculo": 42,
+       "pagina": 116
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 17,
+       "versiculo": 35,
+       "pagina": 116
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Temporal",
+     "pagina": 117,
+     "ejemplos": [
+      {
+       "libro": "1Sam",
+       "capitulo": 12,
+       "versiculo": 2,
+       "pagina": 117
+      },
+      {
+       "libro": "Mic",
+       "capitulo": 4,
+       "versiculo": 7,
+       "pagina": 117
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 8,
+       "versiculo": 16,
+       "pagina": 117
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Material",
+     "pagina": 117,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 2,
+       "versiculo": 7,
+       "pagina": 117
+      },
+      {
+       "libro": "Hos",
+       "capitulo": 13,
+       "versiculo": 2,
+       "pagina": 117
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Causal",
+     "pagina": 117,
+     "ejemplos": [
+      {
+       "libro": "Nah",
+       "capitulo": 1,
+       "versiculo": 5,
+       "pagina": 117
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 24,
+       "versiculo": 7,
+       "pagina": 117
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 7,
+       "versiculo": 47,
+       "pagina": 117
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 9,
+       "versiculo": 11,
+       "pagina": 117
+      }
+     ]
+    },
+    {
+     "etiqueta": "e",
+     "nombre": "Estimative",
+     "pagina": 117,
+     "ejemplos": [
+      {
+       "libro": "Exod",
+       "capitulo": 18,
+       "versiculo": 18,
+       "pagina": 118
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 32,
+       "versiculo": 11,
+       "pagina": 118
+      }
+     ]
+    },
+    {
+     "etiqueta": "f",
+     "nombre": "Partitive",
+     "pagina": 118,
+     "ejemplos": [
+      {
+       "libro": "Exod",
+       "capitulo": 16,
+       "versiculo": 27,
+       "pagina": 118
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 11,
+       "versiculo": 24,
+       "pagina": 118
+      },
+      {
+       "libro": "Prov",
+       "capitulo": 22,
+       "versiculo": 9,
+       "pagina": 118
+      }
+     ]
+    },
+    {
+     "etiqueta": "g",
+     "nombre": "Privative",
+     "pagina": 118,
+     "ejemplos": [
+      {
+       "libro": "Job",
+       "capitulo": 21,
+       "versiculo": 9,
+       "pagina": 118
+      },
+      {
+       "libro": "Job",
+       "capitulo": 11,
+       "versiculo": 15,
+       "pagina": 118
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 22,
+       "versiculo": 3,
+       "pagina": 118
+      }
+     ]
+    },
+    {
+     "etiqueta": "h",
+     "nombre": "Comparative",
+     "pagina": 118,
+     "ejemplos": [
+      {
+       "libro": "Judg",
+       "capitulo": 14,
+       "versiculo": 18,
+       "pagina": 118
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 1,
+       "versiculo": 28,
+       "pagina": 118
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 5,
+       "versiculo": 11,
+       "pagina": 118
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 3,
+       "versiculo": 14,
+       "pagina": 118
+      },
+      {
+       "libro": "Eccl",
+       "capitulo": 4,
+       "versiculo": 9,
+       "pagina": 118
+      }
+     ]
+    },
+    {
+     "etiqueta": "i",
+     "nombre": "Compound",
+     "pagina": 119,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 49,
+       "versiculo": 10,
+       "pagina": 119
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 104,
+       "versiculo": 12,
+       "pagina": 119
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 8,
+       "versiculo": 23,
+       "pagina": 119
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 6,
+       "versiculo": 6,
+       "pagina": 119
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.14",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 119,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Ablative",
+     "pagina": 119,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 16,
+       "versiculo": 8,
+       "pagina": 119
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 14,
+       "versiculo": 19,
+       "pagina": 119
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 13,
+       "versiculo": 6,
+       "pagina": 119
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Spatial",
+     "pagina": 119,
+     "ejemplos": [
+      {
+       "libro": "Zeph",
+       "capitulo": 1,
+       "versiculo": 7,
+       "pagina": 119
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 1,
+       "versiculo": 17,
+       "pagina": 119
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Causal",
+     "pagina": 119,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 7,
+       "versiculo": 7,
+       "pagina": 120
+      },
+      {
+       "libro": "Num",
+       "capitulo": 22,
+       "versiculo": 3,
+       "pagina": 120
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 9,
+       "versiculo": 21,
+       "pagina": 120
+      }
+     ]
+    }
+   ],
+   "ejemplos": []
+  },
+  {
+   "seccion": "4.1.15",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 120,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Locative",
+     "pagina": 120,
+     "ejemplos": [
+      {
+       "libro": "Isa",
+       "capitulo": 8,
+       "versiculo": 8,
+       "pagina": 120
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 11,
+       "versiculo": 31,
+       "pagina": 120
+      },
+      {
+       "libro": "Amos",
+       "capitulo": 4,
+       "versiculo": 6,
+       "pagina": 120
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Temporal",
+     "pagina": 120,
+     "ejemplos": [
+      {
+       "libro": "Ps",
+       "capitulo": 104,
+       "versiculo": 23,
+       "pagina": 120
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 12,
+       "versiculo": 9,
+       "pagina": 120
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 10,
+       "versiculo": 3,
+       "pagina": 120
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Degree",
+     "pagina": 120,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 1,
+       "versiculo": 4,
+       "pagina": 120
+      },
+      {
+       "libro": "2Sam",
+       "capitulo": 2,
+       "versiculo": 17,
+       "pagina": 120
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 64,
+       "versiculo": 8,
+       "pagina": 120
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.16",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 120,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Spatial/locative",
+     "pagina": 120,
+     "ejemplos": []
+    },
+    {
+     "etiqueta": "a.1",
+     "nombre": "Vertical relationship",
+     "pagina": 120,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 1,
+       "versiculo": 2,
+       "pagina": 121
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 19,
+       "versiculo": 23,
+       "pagina": 121
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 8,
+       "versiculo": 2,
+       "pagina": 121
+      },
+      {
+       "libro": "Job",
+       "capitulo": 29,
+       "versiculo": 4,
+       "pagina": 121
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 15,
+       "versiculo": 11,
+       "pagina": 121
+      },
+      {
+       "libro": "Num",
+       "capitulo": 24,
+       "versiculo": 2,
+       "pagina": 121
+      }
+     ]
+    },
+    {
+     "etiqueta": "a.2",
+     "nombre": "Horizontal relationship",
+     "pagina": 121,
+     "ejemplos": [
+      {
+       "libro": "1Kgs",
+       "capitulo": 6,
+       "versiculo": 5,
+       "pagina": 121
+      },
+      {
+       "libro": "Num",
+       "capitulo": 20,
+       "versiculo": 23,
+       "pagina": 121
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 25,
+       "versiculo": 16,
+       "pagina": 121
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Duty",
+     "pagina": 121,
+     "ejemplos": [
+      {
+       "libro": "2Sam",
+       "capitulo": 18,
+       "versiculo": 11,
+       "pagina": 121
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 19,
+       "versiculo": 20,
+       "pagina": 121
+      },
+      {
+       "libro": "Prov",
+       "capitulo": 7,
+       "versiculo": 14,
+       "pagina": 121
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Rank",
+     "pagina": 122,
+     "ejemplos": [
+      {
+       "libro": "2Sam",
+       "capitulo": 8,
+       "versiculo": 16,
+       "pagina": 122
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 28,
+       "versiculo": 43,
+       "pagina": 122
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 16,
+       "versiculo": 2,
+       "pagina": 122
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Causal",
+     "pagina": 122,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 20,
+       "versiculo": 3,
+       "pagina": 122
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 17,
+       "versiculo": 7,
+       "pagina": 122
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 44,
+       "versiculo": 23,
+       "pagina": 122
+      },
+      {
+       "libro": "2Chr",
+       "capitulo": 16,
+       "versiculo": 10,
+       "pagina": 122
+      },
+      {
+       "libro": "Isa",
+       "capitulo": 13,
+       "versiculo": 6,
+       "pagina": 122
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 2,
+       "versiculo": 24,
+       "pagina": 122
+      }
+     ]
+    },
+    {
+     "etiqueta": "e",
+     "nombre": "Manner",
+     "pagina": 122,
+     "ejemplos": [
+      {
+       "libro": "Ps",
+       "capitulo": 110,
+       "versiculo": 4,
+       "pagina": 122
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 6,
+       "versiculo": 26,
+       "pagina": 123
+      },
+      {
+       "libro": "Esth",
+       "capitulo": 9,
+       "versiculo": 26,
+       "pagina": 123
+      }
+     ]
+    },
+    {
+     "etiqueta": "f",
+     "nombre": "Adversative",
+     "pagina": 123,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 20,
+       "versiculo": 12,
+       "pagina": 123
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 15,
+       "versiculo": 27,
+       "pagina": 123
+      },
+      {
+       "libro": "2Chr",
+       "capitulo": 22,
+       "versiculo": 5,
+       "pagina": 123
+      },
+      {
+       "libro": "Ezra",
+       "capitulo": 10,
+       "versiculo": 2,
+       "pagina": 123
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 2,
+       "versiculo": 34,
+       "pagina": 123
+      }
+     ]
+    },
+    {
+     "etiqueta": "g",
+     "nombre": "Accompaniment",
+     "pagina": 123,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 30,
+       "versiculo": 40,
+       "pagina": 123
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 34,
+       "versiculo": 25,
+       "pagina": 123
+      },
+      {
+       "libro": "Num",
+       "capitulo": 31,
+       "versiculo": 8,
+       "pagina": 123
+      },
+      {
+       "libro": "Jer",
+       "capitulo": 4,
+       "versiculo": 20,
+       "pagina": 123
+      }
+     ]
+    },
+    {
+     "etiqueta": "h",
+     "nombre": "Interest",
+     "pagina": 124,
+     "ejemplos": [
+      {
+       "libro": "Zeph",
+       "capitulo": 3,
+       "versiculo": 17,
+       "pagina": 124
+      },
+      {
+       "libro": "Neh",
+       "capitulo": 2,
+       "versiculo": 18,
+       "pagina": 124
+      }
+     ]
+    },
+    {
+     "etiqueta": "i",
+     "nombre": "Emotive",
+     "pagina": 124,
+     "ejemplos": [
+      {
+       "libro": "Jonah",
+       "capitulo": 2,
+       "versiculo": 8,
+       "pagina": 124
+      },
+      {
+       "libro": "Hos",
+       "capitulo": 11,
+       "versiculo": 8,
+       "pagina": 124
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.17",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 124,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Accompaniment",
+     "pagina": 124,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 24,
+       "versiculo": 54,
+       "pagina": 124
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 18,
+       "versiculo": 19,
+       "pagina": 124
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 11,
+       "versiculo": 21,
+       "pagina": 124
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 18,
+       "versiculo": 23,
+       "pagina": 124
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Personal complement",
+     "pagina": 124,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 24,
+       "versiculo": 12,
+       "pagina": 125
+      },
+      {
+       "libro": "1Sam",
+       "capitulo": 20,
+       "versiculo": 14,
+       "pagina": 125
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 19,
+       "versiculo": 9,
+       "pagina": 125
+      },
+      {
+       "libro": "Deut",
+       "capitulo": 18,
+       "versiculo": 13,
+       "pagina": 125
+      },
+      {
+       "libro": "1Kgs",
+       "capitulo": 8,
+       "versiculo": 61,
+       "pagina": 125
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Locative",
+     "pagina": 125,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 25,
+       "versiculo": 11,
+       "pagina": 125
+      },
+      {
+       "libro": "Josh",
+       "capitulo": 7,
+       "versiculo": 2,
+       "pagina": 125
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 18,
+       "versiculo": 3,
+       "pagina": 125
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Restrictive",
+     "pagina": 125,
+     "ejemplos": [
+      {
+       "libro": "Deut",
+       "capitulo": 32,
+       "versiculo": 39,
+       "pagina": 125
+      },
+      {
+       "libro": "Ps",
+       "capitulo": 73,
+       "versiculo": 25,
+       "pagina": 125
+      },
+      {
+       "libro": "2Chr",
+       "capitulo": 14,
+       "versiculo": 10,
+       "pagina": 125
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "seccion": "4.1.18",
+   "titulo": null,
+   "tituloIlegible": true,
+   "pagina": 125,
+   "subcategorias": [
+    {
+     "etiqueta": "a",
+     "nombre": "Vertical relationship",
+     "pagina": 125,
+     "ejemplos": [
+      {
+       "libro": "Mal",
+       "capitulo": 3,
+       "versiculo": 21,
+       "pagina": 126
+      },
+      {
+       "libro": "Gen",
+       "capitulo": 18,
+       "versiculo": 4,
+       "pagina": 126
+      },
+      {
+       "libro": "Judg",
+       "capitulo": 4,
+       "versiculo": 5,
+       "pagina": 126
+      },
+      {
+       "libro": "Eccl",
+       "capitulo": 9,
+       "versiculo": 3,
+       "pagina": 126
+      }
+     ]
+    },
+    {
+     "etiqueta": "b",
+     "nombre": "Static position",
+     "pagina": 126,
+     "ejemplos": [
+      {
+       "libro": "1Sam",
+       "capitulo": 14,
+       "versiculo": 9,
+       "pagina": 126
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 16,
+       "versiculo": 29,
+       "pagina": 126
+      },
+      {
+       "libro": "Exod",
+       "capitulo": 10,
+       "versiculo": 23,
+       "pagina": 126
+      }
+     ]
+    },
+    {
+     "etiqueta": "c",
+     "nombre": "Metaphorical",
+     "pagina": 126,
+     "ejemplos": [
+      {
+       "libro": "Judg",
+       "capitulo": 3,
+       "versiculo": 30,
+       "pagina": 126
+      },
+      {
+       "libro": "Hab",
+       "capitulo": 3,
+       "versiculo": 7,
+       "pagina": 126
+      },
+      {
+       "libro": "Num",
+       "capitulo": 5,
+       "versiculo": 19,
+       "pagina": 126
+      }
+     ]
+    },
+    {
+     "etiqueta": "d",
+     "nombre": "Substitution",
+     "pagina": 126,
+     "ejemplos": [
+      {
+       "libro": "Gen",
+       "capitulo": 4,
+       "versiculo": 25,
+       "pagina": 126
+      },
+      {
+       "libro": "2Kgs",
+       "capitulo": 23,
+       "versiculo": 34,
+       "pagina": 126
+      },
+      {
+       "libro": "1Chr",
+       "capitulo": 29,
+       "versiculo": 23,
+       "pagina": 126
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "edicion": "Cambridge 2003, ISBN 978-0-521-82609-9"
+}

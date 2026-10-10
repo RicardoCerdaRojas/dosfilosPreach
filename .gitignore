@@ -110,3 +110,11 @@ packages/web/public/pdfjs/
 
 # Clave de la cuenta de servicio de Google Play (eas submit). Nunca al repo.
 packages/mobile/play-service-account.json
+
+# Python
+__pycache__/
+
+# Textos de libros bajados con scripts/language-rules (nunca al repo)
+recurso.pdf
+capa.txt
+estructurado.md
