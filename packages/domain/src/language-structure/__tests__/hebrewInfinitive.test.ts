@@ -176,6 +176,17 @@ describe('R4 — al mostrar y en el prompt', () => {
         expect(applyHebrewInfinitive(varias, 'inventada')).toEqual({ candidate: varias });
         expect(applyHebrewInfinitive(varias, undefined)).toEqual({ candidate: varias });
     });
+    it('Gn 2:17: genitivo por regla y lectura adverbial = la frase, no desacuerdo; una lectura no adverbial sigue siendo «otra lectura»', () => {
+        const gen = { ordinal: 2, text: 'אֲכָלְךָ', form: 'construct' as const, rule: 'trasConstructo' as const, allowed: ['genitive'] as const, status: 'medida' as const };
+        expect(applyHebrewInfinitive(gen, 'temporalAsSoonAs')).toEqual({ candidate: gen, fn: 'genitive', by: 'rule', phraseReading: 'temporalAsSoonAs' });
+        expect(applyHebrewInfinitive(gen, 'causal')).toMatchObject({ phraseReading: 'causal' });
+        expect(applyHebrewInfinitive(gen, 'subject')).toEqual({ candidate: gen, fn: 'genitive', by: 'rule', assistantReading: 'subject' });
+        expect(applyHebrewInfinitive(gen, 'genitive')).toEqual({ candidate: gen, fn: 'genitive', by: 'rule' });
+        // Sólo el genitivo encabeza una frase: un sujeto con lectura temporal es desacuerdo de verdad.
+        const suj = { ...gen, rule: 'desnudo' as const, allowed: ['subject'] as const };
+        expect(applyHebrewInfinitive(suj, 'temporalWhile')).toMatchObject({ assistantReading: 'temporalWhile' });
+        expect(applyHebrewInfinitive(suj, 'temporalWhile')).not.toHaveProperty('phraseReading');
+    });
     it('el prompt pide explicar la decidida y elegir de la lista', () => {
         const t = buildHebrewInfinitiveTask([una, varias]);
         expect(t).toMatch(/בֹּאֲךָ: infinitivo constructo; el texto propone temporalUntil = temporal «hasta» \(regla medida, todavía sin validar\)/);

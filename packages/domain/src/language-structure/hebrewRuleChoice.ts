@@ -27,6 +27,12 @@ export interface RuleChoiceView<C, F extends string> {
     readonly by?: 'rule' | 'assistant';
     /** El asistente leyó una función que la regla (medida, sin validar) no deja: se muestran las dos. */
     readonly assistantReading?: F;
+    /**
+     * El asistente describió la FRASE entera, no la palabra: no es desacuerdo con la regla
+     * (Gn 2:17, «בְּיוֹם אֲכָלְךָ»: genitivo de יוֹם, frase temporal). Lo decide cada idioma; ver
+     * `applyHebrewInfinitive`.
+     */
+    readonly phraseReading?: F;
 }
 
 export function applyRuleChoice<F extends string, C extends RuleChoiceCandidate<F>>(

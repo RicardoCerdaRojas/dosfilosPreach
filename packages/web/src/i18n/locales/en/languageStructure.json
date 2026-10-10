@@ -139,6 +139,7 @@
     "howRecognized": "How it is recognized",
     "options": "The grammar allows these options: {{list}}.",
     "reanalyze": "Re-analyze for the assistant to choose.",
+    "phraseReading": "The phrase",
     "otherReading": "Another possible reading: {{fn}}",
     "otherReadingText": "The assistant reads it as “{{fn}}”. It may describe the same text at another level (the whole phrase instead of the word): compare both readings with the context.",
     "show": "Show",
