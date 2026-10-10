@@ -1,0 +1,691 @@
+{
+ "obra": "Arnold y Choi, A Guide to Biblical Hebrew Syntax",
+ "edicion": "Cambridge 2003, ISBN 978-0-521-82609-9",
+ "nota": "Qué infinitivo del versículo cita el libro en cada ejemplo. Sin texto del libro: sólo la palabra hebrea de OSHB.",
+ "anclas": [
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.1",
+   "ref": "Prov 17:26",
+   "palabras": [
+    "עֲנוֹשׁ"
+   ],
+   "como": "hebreo de la extracción por visión"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.1",
+   "ref": "Prov 21:19",
+   "palabras": [
+    "שֶׁבֶת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.1",
+   "ref": "Gen 29:19",
+   "palabras": [
+    "תִּתִּי"
+   ],
+   "como": "hebreo de la extracción por visión"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.2",
+   "ref": "Eccl 3:4",
+   "palabras": [
+    "סְפוֹד",
+    "רְקוֹד"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.2",
+   "ref": "Gen 2:17",
+   "palabras": [
+    "אֲכָלְךָ"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.2",
+   "ref": "Gen 29:7",
+   "palabras": [
+    "הֵאָסֵף"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.3",
+   "ref": "1Kgs 3:7",
+   "palabras": [
+    "צֵאת",
+    "וָבֹא"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.3",
+   "ref": "Jer 18:20",
+   "palabras": [
+    "עָמְדִי"
+   ],
+   "como": "hebreo de la extracción por visión"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.3",
+   "ref": "1Kgs 14:9",
+   "palabras": [
+    "לַעֲשׂוֹת"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.3",
+   "ref": "Exod 2:18",
+   "palabras": [
+    "בֹּא"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.3",
+   "ref": "Gen 48:10",
+   "palabras": [
+    "לִרְאוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "a.3",
+   "ref": "Deut 29:19",
+   "palabras": [
+    "סְלֹחַ"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.1",
+   "ref": "1Sam 18:6",
+   "palabras": [
+    "בְּשׁוּב"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.1",
+   "ref": "Ezek 38:14",
+   "palabras": [
+    "בְּשֶׁבֶת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.2",
+   "ref": "Gen 12:14",
+   "palabras": [
+    "כְּבוֹא"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.2",
+   "ref": "Gen 27:34",
+   "palabras": [
+    "כִּשְׁמֹעַ"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.2",
+   "ref": "Esth 5:2",
+   "palabras": [
+    "כִרְאוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.2",
+   "ref": "Gen 40:10",
+   "palabras": [],
+   "como": "OSHB no ve un infinitivo (Anexo A.2)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.3",
+   "ref": "Gen 19:22",
+   "palabras": [
+    "בֹּאֲךָ"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.3",
+   "ref": "Gen 3:19",
+   "palabras": [
+    "שׁוּבְךָ"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.3",
+   "ref": "Gen 32:25",
+   "palabras": [
+    "עֲלוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.4",
+   "ref": "Exod 7:25",
+   "palabras": [
+    "הַכּוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "b.4",
+   "ref": "1Sam 5:9",
+   "palabras": [],
+   "como": "OSHB no ve un infinitivo (Anexo A.2)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "c",
+   "ref": "Gen 2:19",
+   "palabras": [
+    "לִרְאוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "c",
+   "ref": "Gen 15:7",
+   "palabras": [
+    "לָתֶת"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "c",
+   "ref": "Exod 4:14",
+   "palabras": [
+    "לִקְרָאתֶךָ"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "d",
+   "ref": "2Kgs 17:17",
+   "palabras": [
+    "לְהַכְעִיסוֹ"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "d",
+   "ref": "Ruth 2:10",
+   "palabras": [
+    "לְהַכִּירֵנִי"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "d",
+   "ref": "1Kgs 2:27",
+   "palabras": [
+    "לְמַלֵּא"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "d",
+   "ref": "Deut 7:6",
+   "palabras": [
+    "לִהְיוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "e",
+   "ref": "2Sam 18:11",
+   "palabras": [
+    "לָתֶת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "e",
+   "ref": "Mic 3:1",
+   "palabras": [
+    "לָדַעַת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "e",
+   "ref": "Esth 4:2",
+   "palabras": [
+    "לָבוֹא"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "f",
+   "ref": "Isa 38:20",
+   "palabras": [
+    "לְהוֹשִׁיעֵנִי"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "f",
+   "ref": "Ps 25:14",
+   "palabras": [
+    "לְהוֹדִיעָם"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "f",
+   "ref": "1Sam 4:19",
+   "palabras": [
+    "לָלַת"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "f",
+   "ref": "Gen 12:11",
+   "palabras": [
+    "לָבוֹא"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "f",
+   "ref": "Gen 15:12",
+   "palabras": [
+    "לָבוֹא"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "f",
+   "ref": "Josh 2:5",
+   "palabras": [
+    "לִסְגּוֹר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "g",
+   "ref": "Neh 13:18",
+   "palabras": [
+    "לְחַלֵּל"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "g",
+   "ref": "1Kgs 14:8",
+   "palabras": [
+    "לַעֲשׂוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "g",
+   "ref": "Exod 31:16",
+   "palabras": [
+    "לַעֲשׂוֹת"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "g",
+   "ref": "1Kgs 2:3",
+   "palabras": [
+    "לָלֶכֶת"
+   ],
+   "como": "hebreo de la extracción por visión"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "g",
+   "ref": "Gen 8:15",
+   "palabras": [
+    "לֵאמֹר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.1",
+   "etiqueta": "g",
+   "ref": "Gen 1:22",
+   "palabras": [
+    "לֵאמֹר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.1",
+   "ref": "Eccl 4:17",
+   "palabras": [
+    "וְקָרוֹב"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.1",
+   "ref": "Jer 10:5",
+   "palabras": [
+    "הֵיטֵיב"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.1",
+   "ref": "Prov 28:21",
+   "palabras": [
+    "הַכֵּר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.2",
+   "ref": "Isa 4:4",
+   "palabras": [
+    "בָּעֵר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.2",
+   "ref": "Prov 21:16",
+   "palabras": [
+    "הַשְׂכֵּל"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.3",
+   "ref": "Isa 7:15",
+   "palabras": [
+    "מָאוֹס",
+    "וּבָחוֹר"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.3",
+   "ref": "Isa 1:17",
+   "palabras": [
+    "הֵיטֵב"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "a.3",
+   "ref": "Prov 15:12",
+   "palabras": [
+    "הוֹכֵחַ"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Gen 18:18",
+   "palabras": [
+    "הָיוֹ"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Gen 43:3",
+   "palabras": [
+    "הָעֵד"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Amos 5:5",
+   "palabras": [
+    "גָּלֹה"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Deut 4:26",
+   "palabras": [
+    "הִשָּׁמֵד"
+   ],
+   "como": "hebreo de la extracción por visión"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Nah 1:3",
+   "palabras": [
+    "וְנַקֵּה"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Gen 44:28",
+   "palabras": [
+    "טָרֹף"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "2Kgs 5:11",
+   "palabras": [
+    "יָצוֹא"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Jer 6:29",
+   "palabras": [
+    "צָרוֹף"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Jer 23:17",
+   "palabras": [
+    "אָמוֹר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Gen 19:9",
+   "palabras": [
+    "שָׁפוֹט"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Gen 8:7",
+   "palabras": [
+    "יָצוֹא",
+    "וָשׁוֹב"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "Josh 6:13",
+   "palabras": [
+    "הָלוֹךְ"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "b",
+   "ref": "2Sam 3:16",
+   "palabras": [
+    "הָלוֹךְ"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "c",
+   "ref": "Josh 2:5",
+   "palabras": [
+    "מַהֵר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "c",
+   "ref": "Exod 33:7",
+   "palabras": [
+    "הַרְחֵק"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "c",
+   "ref": "Exod 30:36",
+   "palabras": [
+    "הָדֵק"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "c",
+   "ref": "Josh 3:17",
+   "palabras": [
+    "הָכֵן"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "c",
+   "ref": "2Kgs 10:18",
+   "palabras": [
+    "הַרְבֵּה"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "c",
+   "ref": "Exod 32:8",
+   "palabras": [
+    "מַהֵר"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "d",
+   "ref": "Num 15:35",
+   "palabras": [
+    "רָגוֹם"
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "d",
+   "ref": "Gen 17:10",
+   "palabras": [
+    "הִמּוֹל"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "d",
+   "ref": "Gen 41:43",
+   "palabras": [
+    "וְנָתוֹן"
+   ],
+   "como": "infinitivo único del versículo"
+  },
+  {
+   "seccion": "3.4.2",
+   "etiqueta": "d",
+   "ref": "Exod 20:8",
+   "palabras": [
+    "זָכוֹר"
+   ],
+   "como": "infinitivo único del versículo"
+  }
+ ]
+}

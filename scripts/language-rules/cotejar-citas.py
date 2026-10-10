@@ -21,7 +21,8 @@ F=json.load(open(sys.argv[1]))
 libros={}
 for arg in [a for a in sys.argv[2:] if '=' in a]:
     obra,resto=arg.split('=',1); ruta,off=resto.rsplit(':',1)
-    libros[obra]=(open(ruta).read().split('\f'),int(off))
+    # Ligaduras tipográficas de la capa («inﬁnitive»).
+    libros[obra]=(open(ruta).read().translate(str.maketrans({'ﬁ':'fi','ﬂ':'fl','ﬀ':'ff','ﬃ':'ffi','ﬄ':'ffl'})).split('\f'),int(off))
 def lat(x): return [w for w in re.findall(r'[a-z]+',x.lower()) if len(w)>2 and w not in ('the','and','aka','with')]
 ok=0; malos=[]
 for f in F:
@@ -30,7 +31,7 @@ for f in F:
     lineas=[set(lat(l)) for l in re.sub(r'-\n\s*','',hojas[p+off-1]).split('\n')]
     pares=lineas+[lineas[i]|lineas[i+1] for i in range(len(lineas)-1)]
     leaf=f['section'].split('›')[-1]
-    leaf=re.sub(r'^\s*[\d.]+\s+','',leaf); leaf=re.sub(r'^\s*\([a-z]\)\s*','',leaf)
+    leaf=re.sub(r'^\s*[\d.]+\s+','',leaf); leaf=re.sub(r'^\s*\([a-z](?:\.\d+)?\)\s*','',leaf)
     lw=set(lat(re.sub(r'\(a\.k\.a\.[^)]*\)','',leaf)))
     crudas=re.sub(r'-\n\s*','',hojas[p+off-1]).split('\n')
     if len(lw)<=2:
@@ -40,7 +41,7 @@ for f in F:
         # hasta tres palabras antes de la primera latina.
         griego=r'(?:\S+\s+){0,3}?' if re.match(r'\s*[\u0370-\u03ff\u1f00-\u1fff]',leaf) else ''
         # Ruido del OCR tolerado: basura antes de la marca («a> 5.»), «ID.» por «D.», «Asan» por «As an».
-        marca=re.compile(r'^\W*(?:\w\W+)?(?:\d+(?:\.\d+)+\.?|[IVX]+\.|[A-L]{1,2}[.,]|\d{1,2}[.,]|[a-l][.,]|\d{1,2}\)|\([a-z]\))\s+(?:as\s?an\s*)?'+griego+re.escape(primera),re.I)
+        marca=re.compile(r'^\W*(?:\w\W+)?(?:\d+(?:\.\d+)+\.?|[IVX]+\.|[A-L]{1,2}[.,]|\d{1,2}[.,]|[a-l][.,]|\d{1,2}\)|\([a-z](?:\.\d+)?\))\s+(?:as\s?an\s*)?'+griego+re.escape(primera),re.I)
         hallado=any(marca.match(l) and lw<=set(lat(l)) for l in crudas)
     else:
         hallado=any(lw<=l for l in pares)

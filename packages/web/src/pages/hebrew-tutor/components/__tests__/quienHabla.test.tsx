@@ -14,7 +14,7 @@ vi.mock('../../HebrewTutorProvider', () => ({ useHebrewTutor: () => ({}) }));
 vi.mock('../VerbDetectivePanel', () => ({ VerbDetectivePanel: () => null }));
 vi.mock('../NominalDetectivePanel', () => ({ NominalDetectivePanel: () => null }));
 const estado = vi.hoisted(() => ({
-    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[] },
+    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[] },
 }));
 vi.mock('@/components/language-structure/useVerseStructure', () => ({
     useVerseStructure: () => estado.estructura,
@@ -88,5 +88,22 @@ describe('el hablante con su nombre en español (prueba del fundador: «Habla ר
         const nota = screen.getAllByTestId('speech-note')[0]!.textContent!;
         expect(nota).toContain('{"speaker":"Rut"}');
         expect(nota).toContain('verseAnalyzer.speech.rule');
+    });
+});
+
+describe('R4: del dato a la tarjeta', () => {
+    it('la función del infinitivo llega a la tarjeta de la palabra alineada (Gn 19:22 «עַד בֹּאֲךָ»)', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [],
+            words: [{ r: '22!9', t: 'עַד', l: '5704', m: 'HR', role: '' }, { r: '22!10', t: 'בֹּאֲךָ', l: '935', m: 'HVqc/Sp2ms', role: 'v' }],
+            infinitives: [{ ordinal: 1, text: 'בֹּאֲךָ', form: 'construct', rule: 'adInf', allowed: ['temporalUntil'], status: 'medida' }],
+        };
+        const analisis = { reference: 'Gn 19:22', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'עַד', hebrewWord: 'עַד', morphemes: [], category: 'PREPOSITION', translation: 'hasta' },
+                { hebrewText: 'בֹּאֲךָ', hebrewWord: 'בֹּאֲךָ', morphemes: [], category: 'VERB', translation: 'que llegues' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Gen.19.22" /></TooltipProvider>);
+        expect(screen.getAllByTestId('infinitive-note')[0]!.textContent).toContain('verseAnalyzer.infinitive.functions.temporalUntil');
     });
 });

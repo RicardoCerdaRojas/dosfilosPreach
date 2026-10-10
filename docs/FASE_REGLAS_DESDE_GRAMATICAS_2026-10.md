@@ -191,7 +191,7 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
 | **R1. Herramienta de extracción** ✓ | Los scripts de la prueba de concepto pasan al repo: capa de texto, secciones, ejemplos, comparación con OSHB y MorphGNT, conjunto de control. Sin texto de los libros en el repo. | No. |
 | **R2. Ingesta medida** | Niccacci completo; Sandy y Giese; Farfán revisado (hebreo vocalizado, § y derechos). Medición de cada uno con R1. | Sí: carga en la biblioteca (gasta cuota, pide OK). |
 | **R3. Anclar las reglas existentes** | Las reglas de G2–G4 y H1–H3 pasan a «ancladas» con sección y página verificadas. | Sí: mejora las citas. |
-| **R4. Hebreo H4 con el proceso completo** | Infinitivo (esta prueba), participio, partículas, cadena de constructo; Niccacci para la sintaxis del verbo en el texto. | Sí. |
+| **R4. Hebreo H4 con el proceso completo** (infinitivo ✓) | Infinitivo (esta prueba), participio, partículas, cadena de constructo; Niccacci para la sintaxis del verbo en el texto. | Sí. |
 | **R5. Validación docente y ciclo de vuelta** | Pantalla de muestra para el profesor; casos desde la app. | Sí. |
 
 **Una fase = un PR por etapa**, con un commit por unidad, como hasta ahora.
@@ -226,6 +226,30 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
   - **Falsos positivos de páginas perdidas** en índices y tablas, y títulos ilegibles que pasaban.
 
   Todo corregido. La muestra de 16 atribuciones al azar estaba bien, y los archivos no traen texto del libro.
+
+### R4, primer tema: la función del infinitivo hebreo (2026-10-10)
+- `hebrewInfinitiveCandidates` (dominio). Las categorías son las de Arnold y Choi §3.4.1–3.4.2, más §4.1.5 (בְּ) y §4.1.11 (לְמַעַן). Cada regla mira la forma de OSHB, la preposición pegada o la anterior y el verbo de la cláusula (con el participio contando como predicado), y deja las categorías posibles.
+- **Estado de todas las reglas: «medida».** Con una sola opción se muestran «Regla · medida», con la explicación de que falta la validación del profesor; si el asistente lee otra función, la ficha muestra las dos. Con varias, elige el asistente («Asistente»); en un análisis anterior se muestran las opciones. Cada función cita su sección y su página, cotejadas con el ejemplar (25 citas de Arnold y Choi verificadas).
+- **Medido:**
+  - **Los 76 ejemplos del libro, cada uno contra SU palabra** (no contra el versículo: `arnoldChoi-infinitivo-anclas.json`): 24 deciden bien, 50 acotan bien y 0 contradicen. 2 no tienen infinitivo en OSHB (Gn 40:10, 1 S 5:9; Anexo A.2). Atención: las reglas se ajustaron mirando estos mismos ejemplos.
+  - **El control (§4.1, no usado para ajustar):** 0 contradicciones (2 deciden, 11 acotan).
+  - **Todo el AT:** 7.088 infinitivos con regla (sin el arameo de Daniel y Esdras), 26 % con una sola opción.
+  - **Muestras de 20 al azar de las reglas que deciden** (leídas por nosotros, no por el profesor): genitivo tras constructo 20/20, enfático 20/20, «hasta» 19/20 (Jue 11:33 «עַד בּוֹאֲךָ מִנִּית» es espacial).
+- **Revisión adversarial (corregido antes del PR):**
+  - «לְ + infinitivo sin verbo → obligación o inminencia» erraba 19 de 20; tras subir por las cláusulas hasta el verbo, todavía 18 de 20 (la cláusula sin verbo suele seguir al versículo anterior). **Se retiró:** obligación e inminencia sólo se ofrecen al asistente.
+  - כְּ + infinitivo no decide «en cuanto» (erraba 16–24 %): también puede ser «mientras» o comparar (§4.1.9 a, Sal 68:3).
+  - «עַד» y «אַחֲרֵי» no deciden si el infinitivo trae su propia preposición (2 Cr 32:24, 1 R 15:4); לְמַעַן admite resultado (§3.4.1 d, 2 R 22:17); tras לִפְנֵי / מִפְּנֵי no se dice nada (Mal 3:23).
+  - La prueba medía por versículo: cualquier infinitivo del versículo hacía pasar el ejemplo. Ahora se mide la palabra citada.
+- **Segunda revisión (corregido):**
+  - Los verbos que piden complemento sólo se buscaban 2 palabras atrás y se perdía el orden verbo-sujeto-infinitivo («וְלֹא אָבוּ עַבְדֵי הַמֶּלֶךְ לִשְׁלֹחַ», 1 S 22:17). Ahora se busca el verbo finito más cercano, hasta 6 palabras atrás, sin otro verbo en medio: 121 casos nuevos ofrecen complemento o propósito. En una muestra de 20, los 20 contienen la lectura correcta.
+  - Si el asistente leía una función fuera de la lista, se descartaba en silencio. Ahora se muestra al lado, como en las reglas de una opción.
+  - La «n.ª aparición» del prompt cuenta todas las palabras iguales del versículo (Ez 33:22: el «בּוֹא» con regla es el 2.º); el prompt da la lista de funciones válidas.
+  - La prueba fija cuántos ejemplos deciden y cuántos acotan (24 y 50), no sólo la suma.
+  - Límite conocido (supuesto, no medible con los datos fijados, que no traen el maqaf): si el asistente une dos infinitivos en una palabra, la ficha muestra sólo el último.
+- **Decisiones que vienen del libro:** בְּ + infinitivo acota (temporal, causal, instrumental). Los verbos que piden complemento acotan entre complemento y propósito (1 R 5:17, Anexo A.1). El infinitivo absoluto tras un sustantivo en constructo es genitivo (Is 4:4). ילך y הלך cuentan como la misma raíz para el enfático (2 S 3:16).
+- **Falta:**
+  - la muestra del profesor para pasar a «validada» (R5);
+  - מִן + infinitivo (§4.1.13), que queda sin regla.
 
 ---
 

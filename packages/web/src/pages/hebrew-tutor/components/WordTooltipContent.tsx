@@ -16,6 +16,8 @@ import type { WordAnalysis } from '@dosfilos/domain';
 import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { SpeechNote } from './SpeechNote';
+import { HebrewInfinitiveNote } from './HebrewInfinitiveNote';
+import type { HebrewInfinitiveView } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import { OshbCorrectionsList } from './OshbCorrectionsList';
 
@@ -72,6 +74,8 @@ interface WordTooltipContentProps {
   /** Antepuesta al verbo (dato de MACULA, vista «Estructura»). */
   fronted?: FrontedInfo;
   speech?: SpeechView;
+  /** R4: la función del infinitivo. */
+  infinitive?: HebrewInfinitiveView;
 }
 
 export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
@@ -79,6 +83,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
   side = 'bottom',
   fronted,
   speech,
+  infinitive,
 }) => {
   const { t } = useTranslation('hebrewTutor');
   const gloss = resolveGloss(word);
@@ -146,6 +151,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
             )}
             {fronted && <div className="mt-2"><FrontedNote fronted={fronted} /></div>}
             {speech && <div className="mt-2"><SpeechNote speech={speech} /></div>}
+            {infinitive && <div className="mt-2"><HebrewInfinitiveNote view={infinitive} /></div>}
             {word.syntacticFunction && (
               <div className="mt-2 flex items-start gap-2 px-2 py-1.5 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/50">
                 <span className="text-[9px] uppercase tracking-widest font-bold text-indigo-500 dark:text-indigo-400 shrink-0 pt-0.5">Función</span>

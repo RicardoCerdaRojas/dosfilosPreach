@@ -92,7 +92,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   const [activeWordIndex, setActiveWordIndex] = React.useState<number | null>(null);
 
   // ── Estructura (G1 + G5): datos de MACULA, enlazados a las palabras del análisis ──
-  const { estructura, alinear, antepuestas, discurso, sinLectura } = useEstructuraHebrea(analysis, structureRef);
+  const { estructura, alinear, antepuestas, discurso, infinitivos, sinLectura } = useEstructuraHebrea(analysis, structureRef);
   // H6: con formas corregidas según OSHB, la traducción literal es anterior a la corrección. La
   // fórmula de juramento no cuenta: su traducción la pone el código (H7), y en Rut 1:17 OSHB dice
   // imperfecto, así que esa «corrección» existe siempre, aun con la literal ya bien (prueba del fundador).
@@ -417,7 +417,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                     )}
                   </span>
                 </TooltipTrigger>
-                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} />
+                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} />
               </Tooltip>
             );
           })}
@@ -564,7 +564,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
             toPageIndex: alinear,
             renderText: i => (analysis.words[i] ? pintarPalabra(analysis.words[i]!) : null),
             renderTooltip: i =>
-              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} /> : null,
+              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} /> : null,
             onSelect: handleHeaderWordClick,
             selected: activeWordIndex,
           }}
@@ -603,6 +603,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
               cardRef={(el) => { cardRefs.current[i] = el; }}
               fronted={antepuestas.get(i)}
               speech={discurso.get(i)}
+              infinitive={infinitivos.get(i)}
             />
           ))}
         </div>

@@ -13,8 +13,8 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewVerse, SpeechFact, StructureNode } from '@dosfilos/domain';
-import { buildClauseReadingTask, buildSpeechFactsTask } from '@dosfilos/domain';
+import type { HebrewInfinitiveCandidate, HebrewVerse, SpeechFact, StructureNode } from '@dosfilos/domain';
+import { buildClauseReadingTask, buildHebrewInfinitiveTask, buildSpeechFactsTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
 
@@ -40,6 +40,7 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
       "syntacticFunction": "string — syntactic role in the clause",
       "translation": "string — contextual translation of this word. IMPORTANT: Active and passive participles MUST have this translation field filled, functioning as the noun/adjective meaning in context.",
       "explanation": "string — detailed pedagogical explanation (morphology, recognition clues, typology, temporal/aspectual value). FORMATTED WITH MARKDOWN. Use bold text, bullet points, and short paragraphs to make it highly structured and readable.",
+      "infinitiveFunction": "string | null — SÓLO en los infinitivos de la sección INFINITIVOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "verbMorphology": {
         "binyan": "QAL | NIFAL | PIEL | PUAL | HITPAEL | HIFIL | HOFAL",
         "verbForm": "PERFECT | IMPERFECT | WAYYIQTOL | WEQATAL | IMPERATIVE | COHORTATIVE | JUSSIVE | INF_CONSTRUCT | INF_ABSOLUTE | PARTICIPLE_ACTIVE | PARTICIPLE_PASSIVE",
@@ -310,9 +311,12 @@ export function buildVerseAnalysisPrompt(
   structure: readonly StructureNode[] = [],
   /** Quién habla y a quién (Rut 1:16): la 2.ª persona del discurso es el destinatario. */
   speech: readonly SpeechFact[] = [],
+  /** R4: la función de cada infinitivo (Arnold y Choi §3.4): decidida o para elegir de la lista. */
+  infinitives: readonly HebrewInfinitiveCandidate[] = [],
 ): string {
   const lectura = buildClauseReadingTask(structure);
   const habla = buildSpeechFactsTask(speech);
+  const infinitivos = buildHebrewInfinitiveTask(infinitives);
   const langInstruction =
     language === 'es'
       ? 'IMPORTANT: Respond entirely in Spanish. Use clear academic Spanish appropriate for a Chilean seminary student.'
@@ -386,6 +390,7 @@ DISTINGUIR de:
   (e.g., "fabricaron para ellos [otros]") — en ese caso traducir normalmente.
 
 ${habla}
+${infinitivos}
 
 ${lectura ? SECCION_LECTURA(lectura) : `## REGLAS DE CLÁUSULAS (campo "clauses")
 

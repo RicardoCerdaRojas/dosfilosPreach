@@ -6,6 +6,8 @@ import {
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
+    hebrewInfinitiveCandidates,
+    type HebrewInfinitiveCandidate,
     type NominalFacts,
     type SpeechFact,
     type DiscourseCandidate,
@@ -41,6 +43,8 @@ export interface VerseStructureState {
     discourse: readonly DiscourseCandidate[];
     /** Sólo hebreo: la 2.ª persona dentro de un discurso es a quien se habla (Rut 1:16). */
     speech: readonly SpeechFact[];
+    /** R4, sólo hebreo: la función posible de cada infinitivo (Arnold y Choi §3.4). */
+    infinitives: readonly HebrewInfinitiveCandidate[];
 }
 
 /**
@@ -83,7 +87,8 @@ export function useVerseStructure(
         };
         const discourse = griego ? greekDiscourseCandidates(griego, verse) : [];
         const speech = actual?.chapter && lang === 'he' ? hebrewSpeechFacts(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech };
+        const infinitives = actual?.chapter && lang === 'he' ? hebrewInfinitiveCandidates(actual.chapter, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives };
     }, [actual, key, verse, lang]);
 }
 
