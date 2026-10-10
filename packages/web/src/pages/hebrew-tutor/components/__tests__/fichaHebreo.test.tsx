@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import {
     HEBREW_INFINITIVE_RULES, HEBREW_INFINITIVE_SOURCES, HEBREW_KI_RULES, HEBREW_KI_SOURCES, HEBREW_PARTICIPLE_RULES, HEBREW_PARTICIPLE_SOURCES,
     type WordAnalysis,
@@ -17,11 +17,13 @@ import enLs from '@/i18n/locales/en/languageStructure.json';
  * participio y כִּי.
  */
 vi.mock('react-i18next', () => ({
-    useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k), i18n: { language: 'es' } }),
+    // `exists`: un valor fuera del catálogo («DESCONOCIDO…») no tiene traducción.
+    useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k), i18n: { language: 'es', exists: (k: string) => !k.includes('DESCONOCIDO') } }),
 }));
 const { BLOQUES_HEBREO, DESTINO_NOMBRE, DESTINO_PALABRA, DESTINO_VERBO } = await import('../../ficha/bloquesHebreo');
 const { FichaCompleta, FichaResumen } = await import('@/components/word-ficha/Ficha');
 const { TarjetasResumenHebreo } = await import('../FichasHebreo');
+const { FichaPanel } = await import('@/components/word-ficha/Ficha');
 
 /** Una palabra con TODOS los campos llenos, cada uno con un valor reconocible. */
 const PALABRA: WordAnalysis = {
@@ -116,6 +118,9 @@ describe('Ficha hebrea — tarjetas resumen e impresión', () => {
         const datos = (i: number) => (i === 0 ? DATOS : { word: { ...PALABRA, hebrewText: 'מוֹת', translation: 'OTRA' } });
         render(<TarjetasResumenHebreo analysis={analisis} datos={datos as never} activa={null} onAbrir={() => {}} onHover={() => {}} />);
         expect(screen.getAllByTestId('tarjeta-resumen')).toHaveLength(2);
+        // Las fichas completas sólo se dibujan al imprimir (antes estaban siempre, ocultas).
+        expect(screen.queryAllByTestId('ficha-completa')).toHaveLength(0);
+        act(() => { window.dispatchEvent(new Event('beforeprint')); });
         const completas = screen.getAllByTestId('ficha-completa');
         expect(completas).toHaveLength(2);
         expect(completas[0]!.textContent).toContain('EXPLICACION-PEDAGOGICA');
@@ -146,11 +151,13 @@ describe('Ficha hebrea — el bloque de función', () => {
         expect(n).toContain('verseAnalyzer.infinitive.functions.causal');
         expect(n).not.toContain('ruleToValidate');
     });
-    it('varias sin elección: las opciones y «re-analiza»; si el asistente leyó otra, sin «re-analiza»', () => {
+    it('varias sin elección: las opciones, «re-analiza» y «Por elegir» (no «Asistente»: nadie eligió)', () => {
         const be = { ordinal: 1, text: 'בְּשָׁמְעוֹ', form: 'construct' as const, rule: 'bInf' as const, allowed: ['temporalWhile', 'causal'] as const, status: 'medida' as const };
         const n = verFuncion({ infinitive: { candidate: be } }).getByTestId('infinitive-note').textContent!;
         expect(n).toContain('wordFicha.options');
         expect(n).toContain('wordFicha.reanalyze');
+        expect(n).toContain('wordFicha.origin.options');
+        expect(n).not.toContain('wordFicha.origin.assistant');
     });
     it('sin regla, la función la da el asistente', () => {
         const n = verFuncion({}).getByTestId('ficha-funcion').textContent!;
@@ -178,5 +185,51 @@ describe('Ficha hebrea — textos en los dos idiomas', () => {
         const a = claves((esLs as { wordFicha: object }).wordFicha).sort();
         expect(a).toEqual(claves((enLs as { wordFicha: object }).wordFicha).sort());
         expect(claves(fichaDe(es)).sort()).toEqual(claves(fichaDe(en)).sort());
+    });
+});
+
+describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
+    const ficha = (word: object, extra: object = {}) => render(<FichaCompleta registro={BLOQUES_HEBREO} d={{ word: { ...PALABRA, ...word } as WordAnalysis, ...extra }} />).container;
+    it('sin traducción, la glosa (la cadena de respaldo del tooltip de antes)', () => {
+        expect(ficha({ translation: '' }).textContent).toContain('«LEXICO comer»');
+    });
+    it('«Apertura» en וַיְהִי', () => {
+        const vh = { ...PALABRA.verbMorphology!, verbForm: 'WAYYIQTOL' as never };
+        expect(ficha({ root: 'היה', verbMorphology: vh }).textContent).toContain('verseAnalyzer.ficha.opening');
+        expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.opening');
+    });
+    it('el detective del verbo también para un verbo fuerte (como el panel de antes)', () => {
+        const fuerte = { ...PALABRA.verbMorphology!, verbType: 'STRONG' as never, rootClassification: undefined };
+        const c = ficha({ verbMorphology: fuerte }).textContent!;
+        expect(c).toContain('verseAnalyzer.ficha.strongVerb');
+        expect(c).not.toContain('verseAnalyzer.ficha.weakVerbRules');
+    });
+    it('«Investigar» sólo con detective y para verbos o nombres', () => {
+        expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.investigate');
+        expect(ficha({ category: 'PARTICLE' }, { onInvestigate: () => {} }).textContent).not.toContain('verseAnalyzer.ficha.investigate');
+        expect(ficha({}, { onInvestigate: () => {} }).textContent).toContain('verseAnalyzer.ficha.investigate');
+    });
+    it('el dagesh forte se ve como ◌ּ; un valor fuera del catálogo se muestra tal cual, no la clave', () => {
+        const c = ficha({
+            morphemes: [{ text: 'ּ', role: 'DAGESH_FORTE', label: '' }],
+            verbMorphology: { ...PALABRA.verbMorphology!, verbForm: 'DESCONOCIDO_X' as never },
+        }).textContent!;
+        expect(c).toContain('\u25CC\u05BC');
+        expect(c).toContain('DESCONOCIDO_X');
+        expect(c).not.toContain('verseAnalyzer.verbForms.DESCONOCIDO_X');
+    });
+    it('«Leer completa» sólo si la explicación es larga', () => {
+        expect(ficha({ explanation: 'Corta.' }).textContent).not.toContain('wordFicha.readMore');
+        expect(ficha({ explanation: 'x'.repeat(400) }).textContent).toContain('wordFicha.readMore');
+    });
+    it('el resumen de un nombre: género, número y estado en una línea', () => {
+        const nombre = { ...PALABRA, category: 'NOUN', verbMorphology: undefined } as unknown as WordAnalysis;
+        const t = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: nombre }} />).container.textContent!;
+        expect(t).toContain('verseAnalyzer.morphology.gender.M · verseAnalyzer.morphology.number.S · verseAnalyzer.morphology.state.CONSTRUCT');
+    });
+    it('en hebreo, «siguiente» (←) va a la izquierda de «anterior» (→)', () => {
+        render(<FichaPanel registro={BLOQUES_HEBREO} d={DATOS} abierto onCerrar={() => {}} referencia="Gn 2:17" onAnterior={() => {}} onSiguiente={() => {}} rtl />);
+        const botones = screen.getAllByRole('button').map(b => b.getAttribute('aria-label')).filter(x => x?.startsWith('wordFicha.') && x !== 'wordFicha.close');
+        expect(botones).toEqual(['wordFicha.next', 'wordFicha.previous']);
     });
 });

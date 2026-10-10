@@ -128,9 +128,12 @@
     },
     "origin": {
       "rule": "Per the grammar",
-      "ruleTitle": "Proposed by a grammar rule, tested against the book's examples; not yet validated by the professor.",
+      "ruleTitle": "Proposed by a grammar rule; the citation says where.",
       "assistant": "Assistant",
-      "assistantTitle": "Chosen by the assistant among the options the grammar allows."
+      "choiceTitle": "Chosen by the assistant among the options the grammar allows.",
+      "assistantTitle": "Written by the assistant.",
+      "options": "To choose",
+      "optionsTitle": "The grammar allows several options and the assistant has not chosen yet."
     },
     "ruleToValidate": "rule pending validation",
     "howRecognized": "How it is recognized",

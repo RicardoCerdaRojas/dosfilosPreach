@@ -19,9 +19,9 @@ vi.mock('../GreekVerseBoard', () => ({ GreekVerseBoard: () => null, GreekWordToo
 vi.mock('../GreekInsightBlocks', () => ({ GreekInsightBlocks: () => null }));
 // La grilla y el panel, mínimos: alcanza con ver que tocar una tarjeta abre ESA ficha en el panel.
 vi.mock('../FichasGriego', () => ({
-    TarjetasResumenGriego: ({ onAbrir }: { onAbrir: (i: number) => void }) => <button type="button" data-testid="tarjeta-2" onClick={() => onAbrir(2)} />,
-    FichaPanelGriego: ({ abierta, datos }: { abierta: number | null; datos: (i: number) => { token: { text: string } } | null }) =>
-        abierta === null ? null : <div data-testid="panel-abierto">{datos(abierta)?.token.text}</div>,
+    TarjetasResumenGriego: ({ onAbrir, activa }: { onAbrir: (i: number) => void; activa: number | null }) => <button type="button" data-testid="tarjeta-2" data-activa={String(activa)} onClick={() => onAbrir(2)} />,
+    FichaPanelGriego: ({ abierta, datos, onAbrir }: { abierta: number | null; onAbrir: (i: number | null) => void; datos: (i: number) => { token: { text: string } } | null }) =>
+        abierta === null ? null : <div data-testid="panel-abierto">{datos(abierta)?.token.text}<button type="button" data-testid="cerrar" onClick={() => onAbrir(null)} /></div>,
 }));
 vi.mock('@dosfilos/infrastructure', async (orig) => ({ ...(await orig<object>()), FirestoreGreekFindingsRepository: class {} }));
 const { GreekAnalyzerPage } = await import('../GreekAnalyzerPage');
@@ -42,5 +42,9 @@ describe('la ficha en el panel lateral (página griega)', () => {
         expect(screen.queryByTestId('panel-abierto')).toBeNull();
         fireEvent.click(await screen.findByTestId('tarjeta-2'));
         expect(screen.getByTestId('panel-abierto').textContent).toBe(tokens[2]!.text);
+        // Cerrar el panel no quita la marca de la palabra.
+        fireEvent.click(screen.getByTestId('cerrar'));
+        expect(screen.queryByTestId('panel-abierto')).toBeNull();
+        expect(screen.getByTestId('tarjeta-2').getAttribute('data-activa')).toBe('2');
     });
 });

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import { FichaCompleta, FichaPanel, FichaResumen } from '@/components/word-ficha/Ficha';
+import { useImprimiendo } from '@/components/word-ficha/useImprimiendo';
 import { cn } from '@/lib/utils';
 import { BLOQUES_GRIEGO, type DatosGriego } from './ficha/bloquesGriego';
 
@@ -44,6 +45,7 @@ export function TarjetasResumenGriego({
     onAbrir: (i: number) => void;
 }) {
     const { t } = useTranslation('languageStructure');
+    const imprimiendo = useImprimiendo();
     const indices = Array.from({ length: total }, (_, i) => i);
     return (
         <>
@@ -69,16 +71,18 @@ export function TarjetasResumenGriego({
                     ) : null;
                 })}
             </div>
-            <div className="hidden print:block">
-                {indices.map((i) => {
-                    const d = datos(i);
-                    return d ? (
-                        <div key={i} className="mb-4 break-inside-avoid rounded-xl border border-border">
-                            <FichaCompleta registro={BLOQUES_GRIEGO} d={d} />
-                        </div>
-                    ) : null;
-                })}
-            </div>
+            {imprimiendo && (
+                <div className="hidden print:block">
+                    {indices.map((i) => {
+                        const d = datos(i);
+                        return d ? (
+                            <div key={i} className="mb-4 break-inside-avoid rounded-xl border border-border">
+                                <FichaCompleta registro={BLOQUES_GRIEGO} d={d} />
+                            </div>
+                        ) : null;
+                    })}
+                </div>
+            )}
         </>
     );
 }

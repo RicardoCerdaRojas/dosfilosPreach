@@ -1,11 +1,7 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BookmarkPlus, Check, Star } from 'lucide-react';
-import {
-    greekRecognitionClues, prepositionUsage, tenseUseSources, translationBridge, VERB_RULE_SOURCES, verbFunctionSources,
-    type GreekCase, type GreekKeyInsight, type GreekVerbForm, type GreekWordInsight, type GreekWordToken,
-} from '@dosfilos/domain';
-import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
+import { greekRecognitionClues, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
+import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
 import { cn } from '@/lib/utils';
@@ -14,93 +10,16 @@ import { GreekCompositionBlock } from '../GreekCompositionBlock';
 import { GreekParticleBlock } from '../GreekParticleBlock';
 import { GreekPrepositionBlock } from '../GreekPrepositionBlock';
 import { useMorphCells } from '../useMorphCells';
-import { useNtLemmaFrequency } from '../useLemmaFrequency';
+import { frecuenciaNT, useNtLemmaFrequency } from '../useLemmaFrequency';
+import { FuncionCaso, FuncionVerbo, grc, Insignia, PuenteSuelto, regimenDe, UsoTiempo, type DatosGriego } from './piezasGriego';
+
+export type { DatosGriego } from './piezasGriego';
 
 /**
  * LA FICHA DE UNA PALABRA GRIEGA: sus bloques, en el mismo orden que la del
  * hebreo. Reúne lo que antes estaba en la tarjeta (`GreekWordCard`) y el
  * popover (`GreekWordHoverContent`).
  */
-
-export interface DatosGriego {
-    readonly token: GreekWordToken;
-    readonly insight?: GreekWordInsight;
-    readonly keyInsight?: GreekKeyInsight;
-    readonly relations?: readonly { type: string; note: string; otherText: string }[];
-    /** Caso del término de la preposición, para su régimen. */
-    readonly objectCase?: string;
-    readonly bookCount?: number;
-    readonly bookName?: string;
-    readonly fronted?: FrontedInfo;
-    /** Guardar el hallazgo para el sermón. */
-    readonly onSaveFinding?: () => void;
-    readonly saved?: boolean;
-}
-
-/** Modo de MorphGNT → forma, para citar la sección de ESE modo. */
-const FORMA_DEL_MODO: Readonly<Record<string, GreekVerbForm>> = { P: 'participle', N: 'infinitive', S: 'subjunctive', D: 'imperative', O: 'optative' };
-const regimenDe = (d: DatosGriego) => (d.token.pos === 'P' ? prepositionUsage(d.token.lemma, d.objectCase as GreekCase | undefined) : null);
-const grc = (s: string) => <span lang="grc" className="font-medium">{s}</span>;
-
-function Insignia({ children, tono = 'muted' }: { children: React.ReactNode; tono?: 'muted' | 'primary' }) {
-    return (
-        <span className={cn('inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wider', tono === 'primary' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
-            {children}
-        </span>
-    );
-}
-
-/** La función del verbo (G2, Wallace): una regla que decide o la elección del asistente. */
-function FuncionVerbo({ d }: { d: DatosGriego }) {
-    const { t } = useTranslation('greekTutor');
-    const i = d.insight!;
-    const fuentes = i.verbRule ? VERB_RULE_SOURCES[i.verbRule] : verbFunctionSources(i.verbFunction!, FORMA_DEL_MODO[d.token.tag.mood ?? ''] ?? 'other');
-    return (
-        <FichaFuncion
-            titulo={t('analyzer.verbFn.title')}
-            nombre={t(`analyzer.verbFn.functions.${i.verbFunction}`)}
-            origen={i.verbRule ? 'regla' : 'asistente'}
-            texto={i.verbNote}
-            reconoce={i.verbRule ? t(`analyzer.verbFn.rules.${i.verbRule}`) : undefined}
-            fuentes={fuentes}
-            porValidar={!!i.verbRule}
-            testId="verb-function"
-        />
-    );
-}
-
-/** El uso del tiempo en el indicativo (lo elige el asistente). */
-function UsoTiempo({ d }: { d: DatosGriego }) {
-    const { t } = useTranslation('greekTutor');
-    const i = d.insight!;
-    return (
-        <FichaFuncion
-            titulo={t('analyzer.verbFn.tenseTitle')}
-            nombre={t(`analyzer.verbFn.tenseUses.${i.tenseUse}`)}
-            origen="asistente"
-            texto={i.verbFunction ? undefined : i.verbNote}
-            fuentes={tenseUseSources(i.tenseUse!, d.token.tag.tense)}
-            testId="tense-use"
-        />
-    );
-}
-
-/** La función del caso, con su puente de traducción y la función sintáctica del asistente. */
-function FuncionCaso({ d }: { d: DatosGriego }) {
-    const { t } = useTranslation('greekTutor');
-    const i = d.insight!;
-    const puente = translationBridge(d.token);
-    return (
-        <FichaFuncion
-            titulo={t('analyzer.fields.caseFunction')}
-            nombre={t(`analyzer.caseFn.${d.token.tag.case}.${i.caseFunction}`)}
-            origen="asistente"
-            texto={<>{t(`analyzer.caseFnHint.${i.caseFunction}`)}{i.syntacticFunction && <span className="mt-1 block">{i.syntacticFunction}</span>}</>}
-            extra={puente ? <><dt className="text-info-subtle-foreground">{t('analyzer.fichaBridge')}</dt><dd className="m-0 italic">{t(`analyzer.bridge.${puente}`)}</dd></> : undefined}
-            testId="case-function"
-        />
-    );
-}
 
 export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     // ENCABEZADO
@@ -153,7 +72,8 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     },
     {
         id: 'gr.frecuencia', dato: 'Frecuencia (NT, libro, palabra rara)', seccion: 'palabra', origen: 'datos', antes: ['tarjeta', 'tooltip'],
-        hay: () => true,
+        // Mientras carga el índice (null) se monta para pedirlo; con 0 no hay nada que decir.
+        hay: (d) => frecuenciaNT(d.token.lemma) !== 0,
         Completo: function Frecuencia({ d }) {
             const { t } = useTranslation('greekTutor');
             const nt = useNtLemmaFrequency(d.token.lemma);
@@ -184,7 +104,7 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     // LA FORMA
     {
         id: 'gr.celdas', dato: 'Tiempo, voz, modo, persona, caso, número, género, grado', seccion: 'forma', origen: 'datos', antes: ['tarjeta', 'tooltip'],
-        hay: () => true,
+        hay: (d) => Object.values(d.token.tag ?? {}).some(Boolean),
         Completo: function Celdas({ d }) { return <FichaCeldas celdas={useMorphCells(d.token.tag)} />; },
         Corto: function Linea({ d }) {
             const celdas = useMorphCells(d.token.tag);
@@ -212,7 +132,7 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         hay: (d) => !!d.insight?.verbFunction, Completo: FuncionVerbo,
         Corto: function Corto({ d }) {
             const { t } = useTranslation('greekTutor');
-            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen={d.insight!.verbRule ? 'regla' : 'asistente'} /><strong className="font-bold">{t(`analyzer.verbFn.functions.${d.insight!.verbFunction}`)}</strong></p>;
+            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen={d.insight!.verbRule ? 'regla' : 'eleccion'} /><strong className="font-bold">{t(`analyzer.verbFn.functions.${d.insight!.verbFunction}`)}</strong></p>;
         },
     },
     {
@@ -224,7 +144,7 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         hay: (d) => !!(d.insight?.caseFunction && d.token.tag.case), Completo: FuncionCaso,
         Corto: function Corto({ d }) {
             const { t } = useTranslation('greekTutor');
-            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen="asistente" /><strong className="font-bold">{t(`analyzer.caseFn.${d.token.tag.case}.${d.insight!.caseFunction}`)}</strong></p>;
+            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen="eleccion" /><strong className="font-bold">{t(`analyzer.caseFn.${d.token.tag.case}.${d.insight!.caseFunction}`)}</strong></p>;
         },
     },
     {
@@ -264,11 +184,11 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     },
     {
         id: 'gr.agencia', dato: 'Agencia (agente de la pasiva)', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.insight?.agency, Completo: ({ d }) => <GreekAgencyBlock insight={d.insight} />,
+        hay: (d) => !!d.insight?.agency && !!d.insight.nominalRule, Completo: ({ d }) => <GreekAgencyBlock insight={d.insight} />,
     },
     {
         id: 'gr.autos', dato: 'Uso de αὐτός', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.insight?.autosUse, Completo: ({ d }) => <GreekAutosBlock insight={d.insight} />,
+        hay: (d) => !!d.insight?.autosUse && !!d.insight.nominalRule, Completo: ({ d }) => <GreekAutosBlock insight={d.insight} />,
     },
 
     // EN EL CONTEXTO
@@ -323,13 +243,6 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         },
     },
 ];
-
-/** El puente de traducción, cuando no hay bloque del caso que lo lleve (palabras sin función del caso). */
-function PuenteSuelto({ d }: { d: DatosGriego }) {
-    const { t } = useTranslation('greekTutor');
-    const puente = translationBridge(d.token);
-    return puente ? <span className="mt-1 block text-[13px] italic text-muted-foreground">{t(`analyzer.bridge.${puente}`)}</span> : null;
-}
 
 /**
  * DÓNDE VA CADA CAMPO. Como en el hebreo: `Record<keyof …>` obliga a nombrar

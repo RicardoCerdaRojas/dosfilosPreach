@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent, within } from '@testing-library/react';
 import type { GreekKeyInsight, GreekWordInsight, GreekWordToken } from '@dosfilos/domain';
 
 /**
@@ -10,7 +10,7 @@ import type { GreekKeyInsight, GreekWordInsight, GreekWordToken } from '@dosfilo
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k), i18n: { language: 'es' } }),
 }));
-vi.mock('../useLemmaFrequency', () => ({ useNtLemmaFrequency: () => 28 }));
+vi.mock('../useLemmaFrequency', () => ({ useNtLemmaFrequency: () => 28, frecuenciaNT: () => 28 }));
 const { BLOQUES_GRIEGO, DESTINO_CLAVE, DESTINO_INSIGHT, DESTINO_TOKEN } = await import('../ficha/bloquesGriego');
 const { FichaCompleta, FichaResumen } = await import('@/components/word-ficha/Ficha');
 const { FichaPanelGriego, TarjetasResumenGriego } = await import('../FichasGriego');
@@ -88,9 +88,20 @@ describe('Ficha griega — el bloque de función', () => {
         expect(n).toContain('analyzer.verbFn.rules.prohibition');
         expect(screen.getAllByTestId('source-note').length).toBeGreaterThan(0);
     });
-    it('sin regla, la eligió el asistente', () => {
+    it('sin regla, la eligió el asistente de la lista (no «texto libre»); las reglas griegas no dicen «por validar»', () => {
         render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ ...DATOS_VERBO, insight: { ...INSIGHT_VERBO, verbRule: undefined } } as never} />);
         expect(screen.getByTestId('verb-function').textContent).toContain('wordFicha.origin.assistant');
+        expect(within(screen.getByTestId('verb-function')).getByTestId('ficha-origen-eleccion')).toBeInTheDocument();
+    });
+    it('una regla griega decide sin «regla por validar» (ese estado es de las reglas medidas del hebreo)', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={DATOS_VERBO as never} />);
+        expect(screen.getByTestId('verb-function').textContent).not.toContain('wordFicha.ruleToValidate');
+    });
+    it('sin datos, ni «La forma» ni bloques de agencia vacíos', () => {
+        const { container } = render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: { ...NOMBRE, tag: {} }, insight: { ...INSIGHT_NOMBRE, nominalRule: undefined, caseFunction: undefined } } as never} />);
+        expect(container.querySelector('[data-ficha-seccion="forma"]')).toBeNull();
+        expect(container.querySelector('[data-ficha-bloque="gr.agencia"]')).toBeNull();
+        expect(container.querySelector('[data-ficha-bloque="gr.autos"]')).toBeNull();
     });
     it('el uso del tiempo solo (Stg 2:7, presente habitual): lo elige el asistente; un no verbo no tiene función verbal', () => {
         render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VERBO, insight: { ...INSIGHT_VERBO, verbFunction: undefined, verbRule: undefined, tenseUse: 'customary' } } as never} />);
@@ -111,6 +122,8 @@ describe('Ficha griega — tarjetas resumen, impresión y panel', () => {
     it('una tarjeta por palabra y, al imprimir, la ficha completa de cada una', () => {
         render(<TarjetasResumenGriego total={2} datos={datos} activa={null} onAbrir={() => {}} />);
         expect(screen.getAllByTestId('tarjeta-resumen')).toHaveLength(2);
+        expect(screen.queryAllByTestId('ficha-completa')).toHaveLength(0);
+        act(() => { window.dispatchEvent(new Event('beforeprint')); });
         expect(screen.getAllByTestId('ficha-completa')).toHaveLength(2);
     });
     it('el panel navega a la palabra siguiente', () => {

@@ -10,6 +10,8 @@ import type { GreekVerseInsight, GreekVerseTokens } from '@dosfilos/domain';
 import { FirestoreGreekInsightRepository, SBLGNTBibleProvider } from '@dosfilos/infrastructure';
 import type { BibleBookId } from '@dosfilos/domain';
 import { GreekWordTooltip } from './GreekVerseBoard';
+import { FichaPanelGriego } from './FichasGriego';
+import type { DatosGriego } from './ficha/bloquesGriego';
 
 interface Props {
     provider: SBLGNTBibleProvider;
@@ -38,6 +40,16 @@ export function GreekPassageView({ provider, book, bookName, chapter, versesInCh
     const [hasta, setHasta] = useState(Math.min(8, versesInChapter));
     const [versos, setVersos] = useState<{ tokens: GreekVerseTokens; insight: GreekVerseInsight | null }[]>([]);
     const [loading, setLoading] = useState(false);
+    /** La palabra cuya ficha completa está abierta: versículo y posición. */
+    const [ficha, setFicha] = useState<{ verse: number; i: number } | null>(null);
+    /** Los datos de la ficha de una palabra del pasaje: la palabra clave se empata por texto (como antes). */
+    const datosDe = (tokens: GreekVerseTokens, insight: GreekVerseInsight | null) => (i: number): DatosGriego | null => {
+        const tok = tokens.tokens[i];
+        if (!tok) return null;
+        const limpio = (x: string) => x.replace(/[.,·;]+$/u, '');
+        return { token: tok, insight: insight?.words[i], keyInsight: insight?.keyInsights?.find((k) => limpio(k.text) === limpio(tok.text)) };
+    };
+    const abierto = ficha ? versos.find((v) => v.tokens.reference.verse === ficha.verse) : undefined;
 
     useEffect(() => {
         setDesde(1);
@@ -133,20 +145,19 @@ export function GreekPassageView({ provider, book, bookName, chapter, versesInCh
                                 {tokens.tokens.map((tok, i) => (
                                     <Tooltip key={i} delayDuration={200}>
                                         <TooltipTrigger asChild>
-                                            <span className="flex flex-col items-center rounded px-1 py-0.5 hover:bg-primary/10">
+                                            {/* Tocarla abre su ficha completa (el pie del tooltip lo promete). */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setFicha({ verse: tokens.reference.verse, i })}
+                                                className="flex flex-col items-center rounded px-1 py-0.5 hover:bg-primary/10"
+                                            >
                                                 <span className="text-2xl leading-tight">{tok.text}</span>
                                                 <span className="text-[10px] text-muted-foreground italic print:text-[9px]" lang="en">
                                                     {tok.transliteration}
                                                 </span>
-                                            </span>
+                                            </button>
                                         </TooltipTrigger>
-                                        <GreekWordTooltip
-                                                token={tok}
-                                                insight={insight?.words[i]}
-                                                keyInsight={insight?.keyInsights?.find(
-                                                    (k) => k.text.replace(/[.,·;]+$/u, '') === tok.text.replace(/[.,·;]+$/u, ''),
-                                                )}
-                                            />
+                                        <GreekWordTooltip {...datosDe(tokens, insight)(i)!} />
                                     </Tooltip>
                                 ))}
                             </div>
@@ -159,6 +170,14 @@ export function GreekPassageView({ provider, book, bookName, chapter, versesInCh
                     ))}
                 </div>
             )}
+            {/* La ficha completa de la palabra tocada, en el panel lateral. */}
+            <FichaPanelGriego
+                titulo={abierto ? `${bookName} ${chapter}:${abierto.tokens.reference.verse}` : ''}
+                total={abierto?.tokens.tokens.length ?? 0}
+                datos={abierto ? datosDe(abierto.tokens, abierto.insight) : () => null}
+                abierta={abierto ? ficha!.i : null}
+                onAbrir={(i) => setFicha(i === null || !ficha ? null : { verse: ficha.verse, i })}
+            />
         </div>
     );
 }

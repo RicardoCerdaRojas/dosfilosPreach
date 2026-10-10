@@ -24,12 +24,12 @@ export function FichaFilas({ filas }: { filas: readonly (readonly [string, React
 }
 
 /** Las celdas de la forma (binyan, tiempo, caso…). Las ausentes no se pasan. */
-export function FichaCeldas({ celdas }: { celdas: readonly { label: string; value: string; ancha?: boolean }[] }) {
+export function FichaCeldas({ celdas }: { celdas: readonly { label: string; value: string; ancha?: boolean; title?: string }[] }) {
     if (!celdas.length) return null;
     return (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="ficha-celdas">
             {celdas.map((c) => (
-                <div key={c.label} className={cn('flex min-w-0 flex-col gap-0.5 rounded-xl border border-border bg-muted/40 px-3 py-2', c.ancha && 'col-span-2')}>
+                <div key={c.label} title={c.title} className={cn('flex min-w-0 flex-col gap-0.5 rounded-xl border border-border bg-muted/40 px-3 py-2', c.ancha && 'col-span-2')}>
                     <span className="text-[11px] text-muted-foreground">{c.label}</span>
                     <span className="text-sm font-semibold leading-snug break-words">{c.value}</span>
                 </div>
@@ -82,22 +82,34 @@ export function FichaPistas({ pistas }: { pistas: readonly React.ReactNode[] }) 
     );
 }
 
-export type OrigenFuncion = 'regla' | 'asistente';
+/**
+ * De dónde sale la función que se muestra:
+ *   - `regla`: la decidió una regla de la gramática;
+ *   - `eleccion`: el asistente eligió entre las opciones que deja la regla;
+ *   - `asistente`: texto del asistente, sin regla que acote;
+ *   - `opciones`: la regla deja varias y nadie eligió todavía (análisis anterior).
+ */
+export type OrigenFuncion = 'regla' | 'eleccion' | 'asistente' | 'opciones';
 
-/** El punto y el rótulo del origen: ámbar, según la gramática; azul, el asistente. */
+const ORIGEN: Readonly<Record<OrigenFuncion, { rotulo: string; titulo: string; texto: string; punto: string }>> = {
+    regla: { rotulo: 'rule', titulo: 'ruleTitle', texto: 'text-warning-subtle-foreground', punto: 'bg-warning' },
+    eleccion: { rotulo: 'assistant', titulo: 'choiceTitle', texto: 'text-info-subtle-foreground', punto: 'bg-info' },
+    asistente: { rotulo: 'assistant', titulo: 'assistantTitle', texto: 'text-info-subtle-foreground', punto: 'bg-info' },
+    opciones: { rotulo: 'options', titulo: 'optionsTitle', texto: 'text-muted-foreground', punto: 'bg-muted-foreground' },
+};
+
+/** El punto y el rótulo del origen: ámbar, según la gramática; azul, el asistente; gris, por elegir. */
 export function FichaOrigenRotulo({ origen }: { origen: OrigenFuncion }) {
     const { t } = useTranslation('languageStructure');
+    const o = ORIGEN[origen];
     return (
         <span
-            className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide',
-                origen === 'regla' ? 'text-warning-subtle-foreground' : 'text-info-subtle-foreground',
-            )}
-            title={t(origen === 'regla' ? 'wordFicha.origin.ruleTitle' : 'wordFicha.origin.assistantTitle')}
+            className={cn('inline-flex shrink-0 items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide', o.texto)}
+            title={t(`wordFicha.origin.${o.titulo}`)}
             data-testid={`ficha-origen-${origen}`}
         >
-            <span aria-hidden="true" className={cn('h-2 w-2 rounded-full', origen === 'regla' ? 'bg-warning' : 'bg-info')} />
-            {t(origen === 'regla' ? 'wordFicha.origin.rule' : 'wordFicha.origin.assistant')}
+            <span aria-hidden="true" className={cn('h-2 w-2 rounded-full', o.punto)} />
+            {t(`wordFicha.origin.${o.rotulo}`)}
         </span>
     );
 }
@@ -132,12 +144,12 @@ export function FichaFuncion({
     const { t } = useTranslation('languageStructure');
     const [otraAbierta, setOtraAbierta] = React.useState(false);
     const regla = origen === 'regla';
+    const caja = regla ? 'border-warning/30 bg-warning-subtle' : origen === 'opciones' ? 'border-border bg-muted/40' : 'border-info/30 bg-info-subtle';
+    const borde = regla ? 'border-warning/30' : origen === 'opciones' ? 'border-border' : 'border-info/30';
+    const rotulo = regla ? 'text-warning-subtle-foreground' : origen === 'opciones' ? 'text-muted-foreground' : 'text-info-subtle-foreground';
     return (
         <div className="flex flex-col gap-2" data-testid={testId}>
-            <div className={cn(
-                'flex flex-col gap-2 rounded-2xl border px-4 py-3',
-                regla ? 'border-warning/30 bg-warning-subtle' : 'border-info/30 bg-info-subtle',
-            )}>
+            <div className={cn('flex flex-col gap-2 rounded-2xl border px-4 py-3', caja)}>
                 {titulo && <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</span>}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     {nombre ? <span className="text-lg font-extrabold leading-tight tracking-tight">{nombre}</span> : <span />}
@@ -154,7 +166,7 @@ export function FichaFuncion({
                     <dl className="m-0 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-[13px] leading-snug">
                         {reconoce && (
                             <>
-                                <dt className={regla ? 'text-warning-subtle-foreground' : 'text-info-subtle-foreground'}>{t('wordFicha.howRecognized')}</dt>
+                                <dt className={rotulo}>{t('wordFicha.howRecognized')}</dt>
                                 <dd className="m-0">{reconoce}</dd>
                             </>
                         )}
@@ -162,7 +174,7 @@ export function FichaFuncion({
                     </dl>
                 )}
                 {fuentes && fuentes.length > 0 && (
-                    <div className={cn('flex flex-wrap items-center gap-x-2 border-t pt-2', regla ? 'border-warning/30' : 'border-info/30')}>
+                    <div className={cn('flex flex-wrap items-center gap-x-2 border-t pt-2', borde)}>
                         <SourceNote sources={fuentes} />
                         {porValidar && <span className="text-[11px] text-muted-foreground">· {t('wordFicha.ruleToValidate')}</span>}
                     </div>

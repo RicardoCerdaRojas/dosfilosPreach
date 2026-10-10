@@ -764,9 +764,7 @@
     "frequencyInBook": "{{n}}× en {{book}}",
     "rareWord": "palabra rara",
     "saveFinding": "Guardar este hallazgo para tu sermón",
-    "saveFindingShort": "Para mi sermón",
     "findingSaved": "Guardado — disponible en el taller",
-    "findingSavedShort": "Guardado",
     "findingSavedToast": "Hallazgo guardado. Lo encontrarás en el taller del sermón, sección «Palabras clave», con «Tráeme las del estudio».",
     "findingError": "No se pudo guardar el hallazgo.",
     "passage": {
@@ -995,10 +993,6 @@
     "verbFn": {
       "title": "Función del verbo",
       "tenseTitle": "Uso del tiempo",
-      "rule": "Regla",
-      "ruleTitle": "Decidido por el texto: {{why}}",
-      "assistant": "Asistente",
-      "assistantTitle": "Elegido por el asistente de una lista acotada por el texto (Wallace).",
       "functions": {
         "attributive": "Participio adjetival atributivo",
         "substantival": "Participio sustantival",

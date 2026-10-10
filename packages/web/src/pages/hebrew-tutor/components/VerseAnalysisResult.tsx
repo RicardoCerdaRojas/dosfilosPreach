@@ -146,16 +146,9 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
     return next;
   });
 
-  /** Refs for each WordCard DOM node — used to scroll cards into view */
-  const cardRefs = React.useRef<(HTMLElement | null)[]>([]);
 
   /** Sentinel placed at the bottom of the main verse header — tracked by StickyVerseHeader */
   const headerSentinelRef = React.useRef<HTMLDivElement>(null);
-
-  // Ensure cardRefs array is the right size whenever words change
-  React.useEffect(() => {
-    cardRefs.current = cardRefs.current.slice(0, analysis.words.length);
-  }, [analysis.words.length]);
 
   /**
    * Called when the user hovers a Hebrew word in the main header.
@@ -240,6 +233,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
         onWordHover={handleHeaderWordHover}
         onWordClick={handleHeaderWordClick}
         textScale={textScale}
+        datos={datosFicha}
       />}
       {/* ── Header: Reference + Hebrew text ───────────────────────────────── */}
       <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
@@ -599,7 +593,6 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
           activa={activeWordIndex}
           onAbrir={(i) => { setActiveWordIndex(i); setFichaAbierta(i); }}
           onHover={setActiveWordIndex}
-          cardRefs={cardRefs}
         />
       </div>
 
@@ -636,7 +629,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
       </p>
 
       {/* La ficha completa de la palabra, en el panel lateral. */}
-      <FichaPanelHebreo analysis={analysis} datos={datosFicha} abierta={fichaAbierta} onAbrir={setFichaAbierta} />
+      <FichaPanelHebreo analysis={analysis} datos={datosFicha} abierta={fichaAbierta} onAbrir={(i) => { setFichaAbierta(i); if (i !== null) setActiveWordIndex(i); }} />
 
       {/* ── Detective Panels (Verb + Nominal) ── */}
       <VerbDetectivePanel

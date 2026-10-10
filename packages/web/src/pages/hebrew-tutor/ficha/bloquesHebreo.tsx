@@ -1,23 +1,20 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Search } from 'lucide-react';
-import {
-    HEBREW_KI_SOURCES, HEBREW_PARTICIPLE_SOURCES, hebrewInfinitiveSources,
-    type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type RuleChoiceView, type RuleSource, type WordAnalysis,
-} from '@dosfilos/domain';
-import { FrontedNote, type FrontedInfo } from '@/components/language-structure/FrontedNote';
-import type { FichaBloque, FichaRegistro } from '@/components/word-ficha/fichaRegistro';
+import type { WordAnalysis } from '@dosfilos/domain';
+import { FrontedNote } from '@/components/language-structure/FrontedNote';
+import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
-import { cn } from '@/lib/utils';
-import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { SpeechNote } from '../components/SpeechNote';
-import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from '../components/MorphemeSpan';
+import { MorphemeSpan } from '../components/MorphemeSpan';
 import { OshbValidationBadge } from '../components/OshbValidationBadge';
 import { OshbCorrectionsList } from '../components/OshbCorrectionsList';
-import { WeakVerbDetective } from '../components/WeakVerbDetective';
-import { COLORES_MORFEMAS } from './coloresMorfemas';
+import {
+    Categoria, DetectiveVerbo, esApertura, esDebil, Explicacion, funcionDeRegla, he, InfinitivoCompleto, InfinitivoCorto, Insignia,
+    investigable, KiCompleto, KiCorto, LineaForma, Morfemas, nm, ParticipioCompleto, ParticipioCorto, traduccion, useCeldas, vm,
+    type DatosHebreo,
+} from './piezasHebreo';
+
+export type { DatosHebreo } from './piezasHebreo';
 
 /**
  * LA FICHA DE UNA PALABRA HEBREA: sus bloques, en el orden de lectura.
@@ -25,154 +22,6 @@ import { COLORES_MORFEMAS } from './coloresMorfemas';
  * (`WordTooltipContent`) y el panel «Tutor interactivo» (`WordTutorSheet`).
  * La tabla de destino (`docs/FICHA_DE_PALABRA.md`) sale de esta lista.
  */
-
-export interface DatosHebreo {
-    readonly word: WordAnalysis;
-    readonly fronted?: FrontedInfo;
-    readonly speech?: SpeechView;
-    readonly infinitive?: HebrewInfinitiveView;
-    readonly participle?: HebrewParticipleView;
-    readonly ki?: HebrewKiView;
-    /** Abre el detective (verbos y nombres). */
-    readonly onInvestigate?: () => void;
-}
-
-const he = (s: string, tam = 'text-[1.15em]') => <span dir="rtl" lang="he" className={cn('font-hebrew', tam)}>{s}</span>;
-const vm = (d: DatosHebreo) => d.word.verbMorphology;
-const nm = (d: DatosHebreo) => d.word.nominalMorphology;
-const tiposDeVerbo = (d: DatosHebreo): string[] => {
-    const v = vm(d)?.verbType;
-    if (!v) return [];
-    return (Array.isArray(v) ? v : String(v).split(',')).map(x => x.trim()).filter(Boolean);
-};
-const esDebil = (d: DatosHebreo) => tiposDeVerbo(d).some(x => !['STRONG', 'FUERTE'].includes(x.toUpperCase()));
-/** וַיְהִי: marca de apertura narrativa (la detección que ya hacía la tarjeta). */
-const esApertura = (d: DatosHebreo) => {
-    const w = d.word;
-    return w.category === 'VERB' && vm(d)?.verbForm?.toUpperCase() === 'WAYYIQTOL'
-        && (w.root === 'היה' || w.root === 'הָיָה' || !!w.hebrewText?.includes('וַיְהִי') || /wayh[iî]/i.test(w.transliteration ?? ''));
-};
-/** Traducción con respaldo: lo que hacía el tooltip. */
-const traduccion = (w: WordAnalysis) => w.translation || w.lemmaGloss || w.rootMeaning || w.root || w.hebrewText || '';
-const investigable = (d: DatosHebreo) => {
-    const c = d.word.category?.toUpperCase() ?? '';
-    return !!d.onInvestigate && (c === 'VERB' || ['NOUN', 'PROPER_NOUN', 'ADJECTIVE', 'PRONOUN', 'PERSONAL_PRONOUN', 'DEMONSTRATIVE_PRONOUN', 'RELATIVE_PRONOUN'].includes(c));
-};
-const funcionDeRegla = (d: DatosHebreo) => !!(d.infinitive || d.participle || d.ki);
-
-function Insignia({ children, tono = 'primary', title }: { children: React.ReactNode; tono?: 'primary' | 'destructive' | 'warning'; title?: string }) {
-    const tonos = {
-        primary: 'bg-primary/10 text-primary',
-        destructive: 'bg-destructive/10 text-destructive',
-        warning: 'bg-warning-subtle text-warning-subtle-foreground',
-    };
-    return <span title={title} className={cn('rounded-md px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wider', tonos[tono])}>{children}</span>;
-}
-
-/** Las celdas de la forma, traducidas. Las ausentes no se muestran. */
-function useCeldas(d: DatosHebreo) {
-    const { t } = useTranslation('hebrewTutor');
-    const celdas: { label: string; value: string; ancha?: boolean }[] = [];
-    const v = vm(d), n = nm(d);
-    if (v?.binyan) celdas.push({ label: t('verseAnalyzer.ficha.cells.binyan'), value: String(v.binyan) });
-    if (v?.verbForm) celdas.push({ label: t('verseAnalyzer.ficha.cells.form'), value: t(`verseAnalyzer.verbForms.${v.verbForm}`) });
-    const tipos = tiposDeVerbo(d);
-    const clase = (v as { rootClassification?: string | null } | undefined)?.rootClassification;
-    if (clase || tipos.length) celdas.push({ label: t('verseAnalyzer.ficha.cells.rootType'), value: clase || tipos.map(x => t(`verseAnalyzer.verbTypes.${x}`)).join(', ') });
-    const persona = v?.person ?? n?.person;
-    if (persona) celdas.push({ label: t('verseAnalyzer.ficha.cells.person'), value: String(persona) });
-    const g = v?.gender ?? n?.gender, num = v?.number ?? n?.number;
-    if (g) celdas.push({ label: t('verseAnalyzer.ficha.cells.gender'), value: t(`verseAnalyzer.morphology.gender.${String(g).toUpperCase()}`) });
-    if (num) celdas.push({ label: t('verseAnalyzer.ficha.cells.number'), value: t(`verseAnalyzer.morphology.number.${String(num).toUpperCase()}`) });
-    if (n?.state) celdas.push({ label: t('verseAnalyzer.ficha.cells.state'), value: t(`verseAnalyzer.morphology.state.${String(n.state).toUpperCase()}`) });
-    if (v?.temporalValue) celdas.push({ label: t('verseAnalyzer.ficha.cells.temporalValue'), value: v.temporalValue, ancha: true });
-    return celdas;
-}
-
-/** P-G-N compacto («2MS»), como el tooltip de antes. */
-const pgn = (d: DatosHebreo) => {
-    const v = vm(d);
-    if (!v) return '';
-    return `${v.person != null ? String(v.person).charAt(0) : ''}${v.gender != null ? String(v.gender).charAt(0) : ''}${v.number != null ? String(v.number).charAt(0) : ''}`.toUpperCase();
-};
-
-// ── La función: un bloque por forma con regla (infinitivo, participio, כִּי) ──
-
-interface FuncionDeRegla<F extends string> {
-    view: RuleChoiceView<{ readonly allowed: readonly F[]; readonly rule: string }, F>;
-    titulo: string;
-    nombre: (f: F) => string;
-    fuentes: (f: F) => readonly RuleSource[];
-    testId: string;
-}
-
-function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeRegla<F> }) {
-    const { t } = useTranslation('hebrewTutor');
-    const { candidate, fn, by, assistantReading } = f.view;
-    return (
-        <FichaFuncion
-            titulo={f.titulo}
-            nombre={fn ? f.nombre(fn) : undefined}
-            origen={by === 'rule' ? 'regla' : 'asistente'}
-            texto={d.word.syntacticFunction}
-            reconoce={t(`verseAnalyzer.ficha.recognizedBy.${candidate.rule}`)}
-            opciones={fn ? undefined : { lista: candidate.allowed.map(f.nombre), reanalizar: !assistantReading }}
-            fuentes={fn ? f.fuentes(fn) : candidate.allowed.flatMap(f.fuentes)}
-            porValidar={by === 'rule'}
-            otra={assistantReading ? f.nombre(assistantReading) : undefined}
-            testId={f.testId}
-        />
-    );
-}
-
-function CortoRegla<F extends string>({ f }: { f: FuncionDeRegla<F> }) {
-    const { candidate, fn, by } = f.view;
-    return (
-        <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <FichaOrigenRotulo origen={by === 'rule' ? 'regla' : 'asistente'} />
-            <span><strong className="font-bold">{fn ? f.nombre(fn) : candidate.allowed.map(f.nombre).join(' · ')}</strong> <span className="text-muted-foreground">· {f.titulo}</span></span>
-        </p>
-    );
-}
-
-function useInfinitivo(d: DatosHebreo): FuncionDeRegla<string> | null {
-    const { t } = useTranslation('hebrewTutor');
-    const v = d.infinitive;
-    if (!v) return null;
-    return {
-        view: v as never, titulo: t(`verseAnalyzer.infinitive.title.${v.candidate.form}`), testId: 'infinitive-note',
-        nombre: (f) => t(`verseAnalyzer.infinitive.functions.${f}`),
-        fuentes: (f) => hebrewInfinitiveSources(f as never, v.candidate.form),
-    };
-}
-function useParticipio(d: DatosHebreo): FuncionDeRegla<string> | null {
-    const { t } = useTranslation('hebrewTutor');
-    const v = d.participle;
-    if (!v) return null;
-    return {
-        view: v as never, titulo: t('verseAnalyzer.participle.title'), testId: 'participle-note',
-        nombre: (f) => t(`verseAnalyzer.participle.functions.${f}`),
-        fuentes: (f) => HEBREW_PARTICIPLE_SOURCES[f as keyof typeof HEBREW_PARTICIPLE_SOURCES],
-    };
-}
-function useKi(d: DatosHebreo): FuncionDeRegla<string> | null {
-    const { t } = useTranslation('hebrewTutor');
-    const v = d.ki;
-    if (!v) return null;
-    return {
-        view: v as never, titulo: t('verseAnalyzer.ki.title'), testId: 'ki-note',
-        nombre: (f) => t(`verseAnalyzer.ki.functions.${f}`),
-        fuentes: (f) => HEBREW_KI_SOURCES[f as keyof typeof HEBREW_KI_SOURCES],
-    };
-}
-
-const reglaCompleta = (use: (d: DatosHebreo) => FuncionDeRegla<string> | null): React.FC<{ d: DatosHebreo }> =>
-    function Completo({ d }) { const f = use(d); return f ? <BloqueRegla d={d} f={f} /> : null; };
-const reglaCorta = (use: (d: DatosHebreo) => FuncionDeRegla<string> | null): React.FC<{ d: DatosHebreo }> =>
-    function Corto({ d }) { const f = use(d); return f ? <CortoRegla f={f} /> : null; };
-
-// ── El registro ──────────────────────────────────────────────────────────────
-
 export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
     // ENCABEZADO
     {
@@ -194,10 +43,8 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         ),
     },
     {
-        id: 'he.categoria', dato: 'Categoría', seccion: 'encabezado', lugar: 'insignia', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.word.category,
-        Completo: function Categoria({ d }) { const { t } = useTranslation('hebrewTutor'); return <Insignia>{t(`verseAnalyzer.categories.${d.word.category!.toUpperCase()}`)}</Insignia>; },
-        Corto: function Categoria({ d }) { const { t } = useTranslation('hebrewTutor'); return <Insignia>{t(`verseAnalyzer.categories.${d.word.category!.toUpperCase()}`)}</Insignia>; },
+        id: 'he.categoria', dato: 'Categoría (con su color; sin categoría, «partícula»)', seccion: 'encabezado', lugar: 'insignia', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
+        hay: () => true, Completo: Categoria, Corto: Categoria,
     },
     {
         id: 'he.verboDebil', dato: '«Verbo débil»', seccion: 'encabezado', lugar: 'insignia', origen: 'asistente', antes: ['tarjeta'],
@@ -210,12 +57,12 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         Completo: function Apertura() { const { t } = useTranslation('hebrewTutor'); return <Insignia tono="warning" title={t('verseAnalyzer.ficha.openingTitle')}>{t('verseAnalyzer.ficha.opening')}</Insignia>; },
     },
     {
-        id: 'he.oshb', dato: 'Sello de validación con OSHB', seccion: 'encabezado', lugar: 'insignia', origen: 'datos', antes: ['tarjeta'],
+        id: 'he.oshb', dato: 'Sello de validación con OSHB (al tocarlo, código y correcciones)', seccion: 'encabezado', lugar: 'insignia', origen: 'datos', antes: ['tarjeta'],
         hay: (d) => !!d.word.oshbReference,
         Completo: ({ d }) => <OshbValidationBadge oshb={d.word.oshbReference} />,
     },
     {
-        id: 'he.traduccion', dato: 'Traducción en contexto', seccion: 'encabezado', lugar: 'traduccion', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],
+        id: 'he.traduccion', dato: 'Traducción en contexto (con respaldo: glosa, raíz…)', seccion: 'encabezado', lugar: 'traduccion', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],
         hay: (d) => !!traduccion(d.word),
         Completo: ({ d }) => <>«{traduccion(d.word)}»</>,
         Corto: ({ d }) => <>«{traduccion(d.word)}»</>,
@@ -241,15 +88,7 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         id: 'he.celdas', dato: 'Binyan, forma, tipo de raíz, persona, género, número, estado y valor temporal', seccion: 'forma', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!(vm(d) || nm(d)),
         Completo: function Celdas({ d }) { return <FichaCeldas celdas={useCeldas(d)} />; },
-        Corto: function Linea({ d }) {
-            const { t } = useTranslation('hebrewTutor');
-            const v = vm(d), n = nm(d);
-            const partes = v
-                ? [v.binyan, v.verbForm && t(`verseAnalyzer.verbForms.${v.verbForm}`), pgn(d)]
-                : [n?.gender && t(`verseAnalyzer.morphology.gender.${String(n.gender).toUpperCase()}`), n?.number && t(`verseAnalyzer.morphology.number.${String(n.number).toUpperCase()}`), n?.state && t(`verseAnalyzer.morphology.state.${String(n.state).toUpperCase()}`)];
-            const linea = partes.filter(Boolean).join(' · ');
-            return linea ? <p className="m-0 font-medium text-foreground/85">{linea}</p> : null;
-        },
+        Corto: LineaForma,
     },
     {
         id: 'he.correccionesOshb', dato: 'Correcciones de OSHB (cada diferencia)', seccion: 'forma', origen: 'datos', antes: ['tooltip'],
@@ -265,104 +104,32 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         },
     },
     {
-        id: 'he.morfemas', dato: 'Morfemas, uno por uno, y la guía de colores', seccion: 'forma', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],
-        hay: (d) => !!d.word.morphemes?.length,
-        Completo: function Morfemas({ d }) {
-            const { t } = useTranslation('hebrewTutor');
-            const categorias = [...new Set(d.word.morphemes!.map(m => getMorphemeCategory(m.role)).filter(c => c !== 'neutral'))];
-            return (
-                <FichaCaja titulo={t('verseAnalyzer.ficha.morphemes')} plegable abiertaAlInicio={false} testId="ficha-morfemas">
-                    <div className="flex flex-col gap-3">
-                        <div className="flex flex-wrap gap-2" dir="rtl">
-                            {d.word.morphemes!.map((seg, i) => (
-                                <div key={i} className={cn('flex min-w-10 flex-col items-center rounded-lg border px-2 py-1', MORPHEME_BADGE_STYLES[getMorphemeCategory(seg.role)] ?? MORPHEME_BADGE_STYLES.neutral)}>
-                                    <span dir="rtl" className="font-hebrew text-lg leading-none"><MorphemeSpan segments={[seg]} /></span>
-                                    <span dir="ltr" className="mt-1 text-[10px] text-muted-foreground">{seg.label || t(`verseAnalyzer.morphemeRoles.${seg.role}`)}</span>
-                                </div>
-                            ))}
-                        </div>
-                        {categorias.length > 0 && (
-                            <dl className="m-0 flex flex-col gap-1.5 text-[12.5px] leading-snug">
-                                {categorias.map(c => COLORES_MORFEMAS[c] && (
-                                    <div key={c}><dt className="inline font-semibold">{COLORES_MORFEMAS[c]!.label}: </dt><dd className="inline m-0 text-muted-foreground">{COLORES_MORFEMAS[c]!.desc}</dd></div>
-                                ))}
-                            </dl>
-                        )}
-                    </div>
-                </FichaCaja>
-            );
-        },
+        id: 'he.morfemas', dato: 'Morfemas, uno por uno (dagesh forte ◌ּ), y la guía de colores', seccion: 'forma', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],
+        hay: (d) => !!d.word.morphemes?.length, Completo: Morfemas,
     },
     {
-        id: 'he.reglasVerboDebil', dato: 'Reglas de verbo débil (detective) y su clasificación', seccion: 'forma', origen: 'asistente', antes: ['panel'],
-        hay: (d) => !!vm(d) && esDebil(d),
-        Completo: function Debil({ d }) {
-            const { t } = useTranslation('hebrewTutor');
-            return (
-                <FichaCaja titulo={t('verseAnalyzer.ficha.weakVerbRules')} plegable abiertaAlInicio={false} testId="ficha-verbo-debil">
-                    <p className="m-0 mb-2 text-[13px] leading-relaxed text-foreground/85">{t('verseAnalyzer.ficha.weakVerbClass', { type: tiposDeVerbo(d).join(', ').replace(/_/g, ' ') })}</p>
-                    <WeakVerbDetective word={d.word} />
-                </FichaCaja>
-            );
-        },
+        id: 'he.detectiveVerbo', dato: 'Detective del verbo (fuerte o débil) y su clasificación en Farfán', seccion: 'forma', origen: 'asistente', antes: ['panel'],
+        hay: (d) => !!vm(d) && !!d.word.hebrewText, Completo: DetectiveVerbo,
     },
 
     // SU FUNCIÓN
-    {
-        id: 'he.funcionInfinitivo', dato: 'Función del infinitivo', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.infinitive, Completo: reglaCompleta(useInfinitivo), Corto: reglaCorta(useInfinitivo),
-    },
-    {
-        id: 'he.funcionParticipio', dato: 'Función del participio', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.participle, Completo: reglaCompleta(useParticipio), Corto: reglaCorta(useParticipio),
-    },
-    {
-        id: 'he.funcionKi', dato: 'Función de כִּי', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.ki, Completo: reglaCompleta(useKi), Corto: reglaCorta(useKi),
-    },
+    { id: 'he.funcionInfinitivo', dato: 'Función del infinitivo', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.infinitive, Completo: InfinitivoCompleto, Corto: InfinitivoCorto },
+    { id: 'he.funcionParticipio', dato: 'Función del participio', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.participle, Completo: ParticipioCompleto, Corto: ParticipioCorto },
+    { id: 'he.funcionKi', dato: 'Función de כִּי', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.ki, Completo: KiCompleto, Corto: KiCorto },
     {
         // Sin regla para esta palabra, la función la da el asistente (con regla, va dentro de su bloque).
         id: 'he.funcionSintactica', dato: 'Función sintáctica (texto del asistente)', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],
         hay: (d) => !!d.word.syntacticFunction && !funcionDeRegla(d),
         Completo: ({ d }) => <FichaFuncion origen="asistente" texto={d.word.syntacticFunction} testId="ficha-funcion" />,
-        Corto: ({ d }) => (
-            <p className="m-0 flex items-start gap-2">
-                <FichaOrigenRotulo origen="asistente" />
-                <span className="line-clamp-2">{d.word.syntacticFunction}</span>
-            </p>
-        ),
+        Corto: ({ d }) => <p className="m-0 flex items-start gap-2"><FichaOrigenRotulo origen="asistente" /><span className="line-clamp-2">{d.word.syntacticFunction}</span></p>,
     },
 
     // EN EL CONTEXTO
-    {
-        id: 'he.quienHabla', dato: 'Quién habla y a quién', seccion: 'contexto', origen: 'regla', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.speech, Completo: ({ d }) => <SpeechNote speech={d.speech} />,
-    },
-    {
-        id: 'he.antepuesta', dato: 'Antepuesta al verbo', seccion: 'contexto', origen: 'datos', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.fronted, Completo: ({ d }) => <FrontedNote fronted={d.fronted} />,
-    },
+    { id: 'he.quienHabla', dato: 'Quién habla y a quién', seccion: 'contexto', origen: 'regla', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.speech, Completo: ({ d }) => <SpeechNote speech={d.speech} /> },
+    { id: 'he.antepuesta', dato: 'Antepuesta al verbo', seccion: 'contexto', origen: 'datos', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.fronted, Completo: ({ d }) => <FrontedNote fronted={d.fronted} /> },
 
     // PARA ESTUDIAR
-    {
-        id: 'he.explicacion', dato: 'Explicación pedagógica (texto largo)', seccion: 'estudio', origen: 'asistente', antes: ['tarjeta', 'panel'],
-        hay: (d) => !!d.word.explanation,
-        Completo: function Explicacion({ d }) {
-            const { t } = useTranslation('hebrewTutor');
-            const { t: tf } = useTranslation('languageStructure');
-            const [completa, setCompleta] = React.useState(false);
-            return (
-                <FichaCaja titulo={t('verseAnalyzer.ficha.explanation')} testId="ficha-explicacion">
-                    <div className={cn('prose-sm max-w-none text-[13.5px] leading-relaxed text-foreground/90 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5', !completa && 'line-clamp-4 print:line-clamp-none')}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{d.word.explanation!}</ReactMarkdown>
-                    </div>
-                    <button type="button" onClick={() => setCompleta(v => !v)} aria-expanded={completa} className="mt-1 min-h-8 self-start text-[12.5px] font-semibold text-primary hover:underline print:hidden">
-                        {completa ? tf('wordFicha.readLess') : tf('wordFicha.readMore')}
-                    </button>
-                </FichaCaja>
-            );
-        },
-    },
+    { id: 'he.explicacion', dato: 'Explicación pedagógica (con su formato)', seccion: 'estudio', origen: 'asistente', antes: ['tarjeta', 'panel'], hay: (d) => !!d.word.explanation, Completo: Explicacion },
 
     // ACCIONES
     {
@@ -378,8 +145,6 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         },
     },
 ];
-
-export type BloqueHebreo = FichaBloque<DatosHebreo>;
 
 /**
  * DÓNDE VA CADA CAMPO DEL ANÁLISIS. `Record<keyof …>` obliga a nombrar TODOS

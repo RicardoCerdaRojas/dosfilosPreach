@@ -740,9 +740,7 @@
     "frequencyInBook": "{{n}}× in {{book}}",
     "rareWord": "rare word",
     "saveFinding": "Save this finding for your sermon",
-    "saveFindingShort": "For my sermon",
     "findingSaved": "Saved — available in the workshop",
-    "findingSavedShort": "Saved",
     "findingSavedToast": "Finding saved. You will find it in the sermon workshop, “Key words” section, via “Bring the ones from my study”.",
     "findingError": "The finding could not be saved.",
     "passage": {
@@ -971,10 +969,6 @@
     "verbFn": {
       "title": "Verb function",
       "tenseTitle": "Tense use",
-      "rule": "Rule",
-      "ruleTitle": "Decided by the text: {{why}}",
-      "assistant": "Assistant",
-      "assistantTitle": "Chosen by the assistant from a list narrowed by the text (Wallace).",
       "functions": {
         "attributive": "Attributive participle",
         "substantival": "Substantival participle",

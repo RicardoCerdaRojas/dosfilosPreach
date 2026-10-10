@@ -102,8 +102,12 @@ export function FichaPanel<D>({
 }) {
     const { t } = useTranslation('languageStructure');
     const boton = 'flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted disabled:opacity-40';
-    const Anterior = rtl ? ChevronRight : ChevronLeft;
-    const Siguiente = rtl ? ChevronLeft : ChevronRight;
+    // En hebreo se lee de derecha a izquierda: «siguiente» (←) va a la izquierda y «anterior» (→) a la derecha.
+    const anterior = <button key="a" type="button" className={boton} onClick={onAnterior} disabled={!onAnterior} aria-label={t('wordFicha.previous')}>{rtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}</button>;
+    const siguiente = <button key="s" type="button" className={boton} onClick={onSiguiente} disabled={!onSiguiente} aria-label={t('wordFicha.next')}>{rtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</button>;
+    // Al cerrar, `d` pasa a null antes de que termine la animación: se sigue mostrando la última.
+    const ultima = React.useRef<D | null>(d);
+    if (d) ultima.current = d;
     return (
         <Sheet open={abierto} onOpenChange={(o) => !o && onCerrar()}>
             <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-[30rem] [&>button:last-child]:hidden" data-testid="ficha-panel">
@@ -111,12 +115,11 @@ export function FichaPanel<D>({
                     <SheetTitle className="text-xs font-semibold text-muted-foreground">{referencia}</SheetTitle>
                     <SheetDescription className="sr-only">{t('wordFicha.panelDescription')}</SheetDescription>
                     <div className="flex gap-1">
-                        <button type="button" className={boton} onClick={onAnterior} disabled={!onAnterior} aria-label={t('wordFicha.previous')}><Anterior className="h-4 w-4" /></button>
-                        <button type="button" className={boton} onClick={onSiguiente} disabled={!onSiguiente} aria-label={t('wordFicha.next')}><Siguiente className="h-4 w-4" /></button>
+                        {rtl ? [siguiente, anterior] : [anterior, siguiente]}
                         <button type="button" className={boton} onClick={onCerrar} aria-label={t('wordFicha.close')}><X className="h-4 w-4" /></button>
                     </div>
                 </div>
-                {d && <FichaCompleta registro={registro} d={d} />}
+                {ultima.current && <FichaCompleta registro={registro} d={ultima.current} />}
             </SheetContent>
         </Sheet>
     );

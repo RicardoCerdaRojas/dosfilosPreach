@@ -128,9 +128,12 @@
     },
     "origin": {
       "rule": "Según la gramática",
-      "ruleTitle": "La propone una regla de la gramática, probada contra los ejemplos del libro; todavía sin validar por el profesor.",
+      "ruleTitle": "La propone una regla de la gramática; la cita dice dónde.",
       "assistant": "Asistente",
-      "assistantTitle": "La eligió el asistente entre las opciones que deja la gramática."
+      "choiceTitle": "La eligió el asistente entre las opciones que deja la gramática.",
+      "assistantTitle": "La escribe el asistente.",
+      "options": "Por elegir",
+      "optionsTitle": "La gramática deja varias opciones y el asistente todavía no eligió."
     },
     "ruleToValidate": "regla por validar",
     "howRecognized": "Cómo se reconoce",

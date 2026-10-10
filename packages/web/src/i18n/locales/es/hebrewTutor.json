@@ -122,6 +122,8 @@
       "lexicon": "Léxico",
       "morphemes": "Morfemas y colores",
       "weakVerbRules": "Reglas de verbo débil",
+      "strongVerb": "Verbo fuerte (sistema de raíces de Farfán)",
+      "rootBehaviour": "Raíz: {{root}} · comportamiento: {{behaviour}}",
       "weakVerbClass": "Se clasifica como {{type}} en el sistema de raíces de Farfán.",
       "explanation": "Explicación del asistente",
       "investigate": "Investigar la palabra paso a paso",
@@ -166,15 +168,6 @@
         "kiInicial": "Abre el versículo: condición, tiempo, concesión, aseveración o causa.",
         "kiGeneral": "Sin una pista que limite las opciones: lo decide el contexto."
       }
-    },
-    "ruleChoice": {
-      "ruleMeasured": "Regla · medida",
-      "ruleMeasuredTitle": "Regla medida, sin validar: la propone el texto y está probada contra los ejemplos de Arnold y Choi; falta la validación del profesor.",
-      "assistantReads": "El asistente lee aquí otra función: {{fn}}. Es un caso para la revisión del profesor.",
-      "assistant": "Asistente",
-      "assistantTitle": "La eligió el asistente de las opciones que deja el texto.",
-      "options": "Según el texto puede ser: {{list}}. Lo decide el contexto.",
-      "reanalyze": "Re-analiza para que el asistente elija."
     },
     "speech": {
       "title": "Quién habla",

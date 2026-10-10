@@ -9,8 +9,8 @@ const { BLOQUES_GRIEGO } = await import('@/pages/greek-analyzer/ficha/bloquesGri
 const { filasDestino } = await import('../fichaRegistro');
 const { tablaMarkdown } = await import('../tablaDestino');
 
-// Las pruebas de web corren desde `packages/web`.
-const DOC = resolve(process.cwd(), '../../docs/FICHA_DE_PALABRA.md');
+// Relativo a ESTE archivo: CI corre las pruebas desde la raíz del repo (`--root packages/web`), en local desde el paquete.
+const DOC = resolve(__dirname, '../../../../../../docs/FICHA_DE_PALABRA.md');
 
 describe('tabla de destino de la ficha de palabra', () => {
     const generada = tablaMarkdown([...filasDestino('he', BLOQUES_HEBREO), ...filasDestino('gr', BLOQUES_GRIEGO)]);

@@ -163,6 +163,8 @@
       "lexicon": "Lexicon",
       "morphemes": "Morphemes and colors",
       "weakVerbRules": "Weak verb rules",
+      "strongVerb": "Strong verb (Farfán's root system)",
+      "rootBehaviour": "Root: {{root}} · behaviour: {{behaviour}}",
       "weakVerbClass": "Classified as {{type}} in Farfán's root system.",
       "explanation": "Assistant's explanation",
       "investigate": "Investigate the word step by step",
@@ -207,15 +209,6 @@
         "kiInicial": "Opens the verse: condition, time, concession, assertion or cause.",
         "kiGeneral": "No clue narrows the options: context decides."
       }
-    },
-    "ruleChoice": {
-      "ruleMeasured": "Rule · measured",
-      "ruleMeasuredTitle": "Measured rule, not yet validated: proposed by the text and tested against Arnold & Choi's examples; awaiting the professor's validation.",
-      "assistantReads": "The assistant reads a different function here: {{fn}}. A case for the professor's review.",
-      "assistant": "Assistant",
-      "assistantTitle": "Chosen by the assistant from the options the text allows.",
-      "options": "The text allows: {{list}}. Context decides.",
-      "reanalyze": "Re-analyze for the assistant to choose."
     },
     "speech": {
       "title": "Who is speaking",

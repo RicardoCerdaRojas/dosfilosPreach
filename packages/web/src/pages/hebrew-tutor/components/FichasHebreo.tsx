@@ -1,8 +1,8 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import type { VerseAnalysis } from '@dosfilos/domain';
 import { FichaCompleta, FichaPanel, FichaResumen } from '@/components/word-ficha/Ficha';
+import { useImprimiendo } from '@/components/word-ficha/useImprimiendo';
 import { cn } from '@/lib/utils';
 import { BLOQUES_HEBREO, type DatosHebreo } from '../ficha/bloquesHebreo';
 
@@ -40,18 +40,16 @@ export function FichaPanelHebreo({
 
 /** Una tarjeta resumen: lo esencial de la palabra; al tocarla abre la ficha. */
 function TarjetaResumen({
-    d, activa, onAbrir, onHover, cardRef,
+    d, activa, onAbrir, onHover,
 }: {
     d: DatosHebreo;
     activa: boolean;
     onAbrir: () => void;
     onHover: (h: boolean) => void;
-    cardRef?: React.Ref<HTMLButtonElement>;
 }) {
     const { t } = useTranslation('languageStructure');
     return (
         <button
-            ref={cardRef}
             type="button"
             onClick={onAbrir}
             onMouseEnter={() => onHover(true)}
@@ -75,15 +73,15 @@ function TarjetaResumen({
  * completa de cada palabra: en papel no hay panel que abrir y nada se pierde.
  */
 export function TarjetasResumenHebreo({
-    analysis, datos, activa, onAbrir, onHover, cardRefs,
+    analysis, datos, activa, onAbrir, onHover,
 }: {
     analysis: VerseAnalysis;
     datos: (i: number) => DatosHebreo | null;
     activa: number | null;
     onAbrir: (i: number) => void;
     onHover: (i: number | null) => void;
-    cardRefs?: React.MutableRefObject<(HTMLElement | null)[]>;
 }) {
+    const imprimiendo = useImprimiendo();
     return (
         <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 print:hidden">
@@ -96,21 +94,22 @@ export function TarjetasResumenHebreo({
                             activa={activa === i}
                             onAbrir={() => onAbrir(i)}
                             onHover={(h) => onHover(h ? i : null)}
-                            cardRef={(el) => { if (cardRefs) cardRefs.current[i] = el; }}
                         />
                     ) : null;
                 })}
             </div>
-            <div className="hidden print:block">
-                {analysis.words.map((w, i) => {
-                    const d = datos(i);
-                    return d ? (
-                        <div key={`${w.hebrewText}-${i}`} className="mb-4 break-inside-avoid rounded-xl border border-border">
-                            <FichaCompleta registro={BLOQUES_HEBREO} d={d} />
-                        </div>
-                    ) : null;
-                })}
-            </div>
+            {imprimiendo && (
+                <div className="hidden print:block">
+                    {analysis.words.map((w, i) => {
+                        const d = datos(i);
+                        return d ? (
+                            <div key={`${w.hebrewText}-${i}`} className="mb-4 break-inside-avoid rounded-xl border border-border">
+                                <FichaCompleta registro={BLOQUES_HEBREO} d={d} />
+                            </div>
+                        ) : null;
+                    })}
+                </div>
+            )}
         </>
     );
 }

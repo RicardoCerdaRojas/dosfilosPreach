@@ -343,7 +343,8 @@ export function GreekAnalyzerPage() {
                             total={data.tokens.length}
                             datos={datosGriego}
                             abierta={ficha}
-                            onAbrir={abrirFicha}
+                            // Cerrar el panel no quita la marca de la palabra (revisión de la ficha).
+                            onAbrir={(i) => (i === null ? setFicha(null) : abrirFicha(i))}
                         />
 
                         {/* ATRIBUCIÓN OBLIGATORIA. El texto del SBLGNT es CC BY
