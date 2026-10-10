@@ -240,4 +240,9 @@ describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
         const botones = screen.getAllByRole('button').map(b => b.getAttribute('aria-label')).filter(x => x?.startsWith('wordFicha.') && x !== 'wordFicha.close');
         expect(botones).toEqual(['wordFicha.next', 'wordFicha.previous']);
     });
+    it('al abrir, el foco va al título y no al primer botón (no aparece un marco sobre «Ver»)', async () => {
+        render(<FichaPanel registro={BLOQUES_HEBREO} d={DATOS} abierto onCerrar={() => {}} referencia="REF-Gn 2:17" rtl />);
+        await waitFor(() => expect(document.activeElement?.textContent).toBe('REF-Gn 2:17'));
+        expect(document.activeElement?.tagName).not.toBe('BUTTON');
+    });
 });
