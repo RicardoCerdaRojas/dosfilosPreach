@@ -81,4 +81,13 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(texto).toContain('"participleFunction"');
         expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## PARTICIPIOS');
     });
+
+    it('R4: con כִּי, el prompt trae su sección y el campo "kiFunction" en el esquema', () => {
+        const ki = [{ ordinal: 3, text: 'כִּי', rule: 'kiJuramento' as const, allowed: ['asseverative'] as const, status: 'medida' as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], [], ki as never);
+        expect(texto).toContain('## כִּי: SU FUNCIÓN');
+        expect(texto).toMatch(/el texto propone asseverative = aseverativa/);
+        expect(texto).toContain('"kiFunction"');
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## כִּי: SU FUNCIÓN');
+    });
 });

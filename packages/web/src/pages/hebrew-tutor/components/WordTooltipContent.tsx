@@ -18,7 +18,8 @@ import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { SpeechNote } from './SpeechNote';
 import { HebrewInfinitiveNote } from './HebrewInfinitiveNote';
 import { HebrewParticipleNote } from './HebrewParticipleNote';
-import type { HebrewInfinitiveView, HebrewParticipleView } from '@dosfilos/domain';
+import { HebrewKiNote } from './HebrewKiNote';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import { OshbCorrectionsList } from './OshbCorrectionsList';
 
@@ -79,6 +80,8 @@ interface WordTooltipContentProps {
   infinitive?: HebrewInfinitiveView;
   /** R4: la función del participio (Arnold y Choi §3.4.3). */
   participle?: HebrewParticipleView;
+  /** R4: la función de כִּי (Arnold y Choi §4.3.4). */
+  ki?: HebrewKiView;
 }
 
 export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
@@ -88,6 +91,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
   speech,
   infinitive,
   participle,
+  ki,
 }) => {
   const { t } = useTranslation('hebrewTutor');
   const gloss = resolveGloss(word);
@@ -157,6 +161,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({
             {speech && <div className="mt-2"><SpeechNote speech={speech} /></div>}
             {infinitive && <div className="mt-2"><HebrewInfinitiveNote view={infinitive} /></div>}
             {participle && <div className="mt-2"><HebrewParticipleNote view={participle} /></div>}
+            {ki && <div className="mt-2"><HebrewKiNote view={ki} /></div>}
             {word.syntacticFunction && (
               <div className="mt-2 flex items-start gap-2 px-2 py-1.5 rounded-lg bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/50">
                 <span className="text-[9px] uppercase tracking-widest font-bold text-indigo-500 dark:text-indigo-400 shrink-0 pt-0.5">Función</span>

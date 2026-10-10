@@ -1,0 +1,492 @@
+{
+ "obra": "Arnold y Choi, A Guide to Biblical Hebrew Syntax",
+ "edicion": "Cambridge 2003, ISBN 978-0-521-82609-9",
+ "nota": "Qué כִּי del versículo cita el libro: su posición entre las palabras del versículo (desde 0, como `verseWords`). Sin texto del libro.",
+ "anclas": [
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "a",
+   "ref": "Gen 6:13",
+   "posiciones": [
+    8
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "a",
+   "ref": "Joel 1:15",
+   "posiciones": [
+    2
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "a",
+   "ref": "Gen 3:19",
+   "posiciones": [
+    8
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "a",
+   "ref": "Deut 1:42",
+   "posiciones": [
+    9
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "b",
+   "ref": "1Sam 26:15",
+   "posiciones": [
+    16
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "b",
+   "ref": "1Kgs 1:24",
+   "posiciones": [],
+   "como": "OSHB no tiene כִּי en el versículo (referencia a revisar)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "c",
+   "ref": "Exod 3:12",
+   "posiciones": [
+    7
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "c",
+   "ref": "Num 16:13",
+   "posiciones": [
+    1
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "d",
+   "ref": "Gen 40:15",
+   "posiciones": [
+    10
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "d",
+   "ref": "Gen 20:10",
+   "posiciones": [
+    6
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "d",
+   "ref": "Exod 3:11",
+   "posiciones": [
+    6
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "e",
+   "ref": "Gen 6:1",
+   "posiciones": [
+    1
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "e",
+   "ref": "Num 33:51",
+   "posiciones": [
+    6
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "e",
+   "ref": "Exod 1:10",
+   "posiciones": [
+    6
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "f",
+   "ref": "2Kgs 4:29",
+   "posiciones": [
+    8
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "f",
+   "ref": "Exod 21:2",
+   "posiciones": [
+    0
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "f",
+   "ref": "Exod 21:33",
+   "posiciones": [
+    0,
+    5
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "f",
+   "ref": "Ruth 1:12",
+   "posiciones": [
+    7
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "f",
+   "ref": "Deut 6:20",
+   "posiciones": [
+    0
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "f",
+   "ref": "Gen 43:10",
+   "posiciones": [
+    3
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "f",
+   "ref": "2Sam 2:27",
+   "posiciones": [
+    7
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "g",
+   "ref": "Gen 17:15",
+   "posiciones": [
+    11
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "g",
+   "ref": "Exod 19:13",
+   "posiciones": [
+    4
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "g",
+   "ref": "1Kgs 11:34",
+   "posiciones": [
+    6
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "g",
+   "ref": "Gen 15:4",
+   "posiciones": [
+    8
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "g",
+   "ref": "Gen 32:29",
+   "posiciones": [
+    6
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "h",
+   "ref": "Ps 37:24",
+   "posiciones": [
+    0
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "h",
+   "ref": "Isa 12:1",
+   "posiciones": [
+    5
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "h",
+   "ref": "Jer 10:2",
+   "posiciones": [
+    12
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "2Sam 12:5",
+   "posiciones": [
+    10
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "1Sam 14:44",
+   "posiciones": [
+    7
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "Gen 42:16",
+   "posiciones": [
+    16
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "1Sam 25:34",
+   "posiciones": [
+    14
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "2Kgs 5:20",
+   "posiciones": [
+    20
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "Judg 15:7",
+   "posiciones": [
+    6
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "Isa 1:29",
+   "posiciones": [
+    0
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "Isa 7:9",
+   "posiciones": [
+    10
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "i",
+   "ref": "Prov 23:18",
+   "posiciones": [
+    0
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "j",
+   "ref": "Gen 1:10",
+   "posiciones": [
+    10
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "j",
+   "ref": "1Kgs 21:15",
+   "posiciones": [
+    3
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "j",
+   "ref": "Exod 6:7",
+   "posiciones": [
+    8
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "k",
+   "ref": "2Sam 18:3",
+   "posiciones": [
+    26
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "k",
+   "ref": "Gen 31:35",
+   "posiciones": [
+    7
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "l",
+   "ref": "2Kgs 8:13",
+   "posiciones": [
+    2
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "l",
+   "ref": "1Kgs 1:30",
+   "posiciones": [
+    8
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "l",
+   "ref": "Ezek 33:10",
+   "posiciones": [
+    10
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "l",
+   "ref": "2Sam 9:1",
+   "posiciones": [
+    2
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "l",
+   "ref": "Gen 27:36",
+   "posiciones": [
+    1
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "m",
+   "ref": "Lev 22:6",
+   "posiciones": [
+    11
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "m",
+   "ref": "1Sam 18:25",
+   "posiciones": [
+    9
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "m",
+   "ref": "2Sam 3:13",
+   "posiciones": [
+    17
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "m",
+   "ref": "2Kgs 4:24",
+   "posiciones": [
+    11
+   ],
+   "como": "כִּי único del versículo"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "n",
+   "ref": "Deut 20:19",
+   "posiciones": [
+    22
+   ],
+   "como": "a mano (glosa inglesa del libro)"
+  },
+  {
+   "seccion": "4.3.4",
+   "etiqueta": "n",
+   "ref": "2Kgs 18:34",
+   "posiciones": [
+    9
+   ],
+   "como": "כִּי único del versículo"
+  }
+ ]
+}

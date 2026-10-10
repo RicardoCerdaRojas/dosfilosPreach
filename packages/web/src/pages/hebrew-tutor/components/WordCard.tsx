@@ -4,7 +4,8 @@ import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { SpeechNote } from './SpeechNote';
 import { HebrewInfinitiveNote } from './HebrewInfinitiveNote';
 import { HebrewParticipleNote } from './HebrewParticipleNote';
-import type { HebrewInfinitiveView, HebrewParticipleView } from '@dosfilos/domain';
+import { HebrewKiNote } from './HebrewKiNote';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import type { WordAnalysis } from '@dosfilos/domain';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from './MorphemeSpan';
@@ -33,6 +34,8 @@ interface WordCardProps {
   infinitive?: HebrewInfinitiveView;
   /** R4: la función del participio (Arnold y Choi §3.4.3). */
   participle?: HebrewParticipleView;
+  /** R4: la función de כִּי (Arnold y Choi §4.3.4). */
+  ki?: HebrewKiView;
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
@@ -55,7 +58,7 @@ const getCategoryStyle = (cat?: string | null) => {
 };
 
 export const WordCard: React.FC<WordCardProps> = ({
-  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef, fronted, speech, infinitive, participle,
+  word, index, onFocus, onInvestigate, isActive = false, onHover, cardRef, fronted, speech, infinitive, participle, ki,
 }) => {
   const { t } = useTranslation('hebrewTutor');
   const [expanded, setExpanded] = useState(false);
@@ -189,6 +192,7 @@ export const WordCard: React.FC<WordCardProps> = ({
       {speech && <div className="mb-3"><SpeechNote speech={speech} /></div>}
       {infinitive && <div className="mb-3"><HebrewInfinitiveNote view={infinitive} /></div>}
       {participle && <div className="mb-3"><HebrewParticipleNote view={participle} /></div>}
+      {ki && <div className="mb-3"><HebrewKiNote view={ki} /></div>}
 
       {/* Morphology table - Compact Grid */}
       {hasMorphologyData && morphology && (

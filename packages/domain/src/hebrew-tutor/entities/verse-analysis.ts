@@ -95,6 +95,8 @@ export interface WordAnalysis {
   readonly infinitiveFunction?: string;
   /** R4: la función del participio que eligió el asistente. Se valida al mostrar contra la regla. */
   readonly participleFunction?: string;
+  /** R4: la función de כִּי que eligió el asistente. Se valida al mostrar contra la regla. */
+  readonly kiFunction?: string;
   /** Detailed pedagogical explanation following professor's methodology */
   readonly explanation: string;
 

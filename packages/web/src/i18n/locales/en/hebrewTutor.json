@@ -126,6 +126,25 @@
         "substantive": "substantive: “the one who…”"
       }
     },
+    "ki": {
+      "title": "Particle כִּי",
+      "functions": {
+        "causal": "causal: “because”",
+        "evidential": "evidential: “for”",
+        "clarification": "clarification: “that, namely”",
+        "result": "result: “that, so that”",
+        "temporal": "temporal: “when”",
+        "conditional": "conditional: “if”",
+        "adversative": "adversative: “but rather”",
+        "concessive": "concessive: “although”",
+        "asseverative": "asseverative: “surely”",
+        "perceptual": "perceptual: “that” (after see, know, hear)",
+        "subject": "subject clause: “that”",
+        "recitative": "recitative: introduces speech",
+        "exceptive": "exceptive: “except”",
+        "interrogative": "interrogative"
+      }
+    },
     "ruleChoice": {
       "ruleMeasured": "Rule · measured",
       "ruleMeasuredTitle": "Measured rule, not yet validated: proposed by the text and tested against Arnold & Choi's examples; awaiting the professor's validation.",

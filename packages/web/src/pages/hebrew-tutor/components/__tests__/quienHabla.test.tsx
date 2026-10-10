@@ -14,7 +14,7 @@ vi.mock('../../HebrewTutorProvider', () => ({ useHebrewTutor: () => ({}) }));
 vi.mock('../VerbDetectivePanel', () => ({ VerbDetectivePanel: () => null }));
 vi.mock('../NominalDetectivePanel', () => ({ NominalDetectivePanel: () => null }));
 const estado = vi.hoisted(() => ({
-    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[] },
+    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[], kis: [] as unknown[] },
 }));
 vi.mock('@/components/language-structure/useVerseStructure', () => ({
     useVerseStructure: () => estado.estructura,
@@ -120,6 +120,23 @@ describe('R4: del dato a la tarjeta', () => {
         render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Gen.6.17" /></TooltipProvider>);
         const nota = screen.getAllByTestId('participle-note')[0]!.textContent!;
         expect(nota).toContain('verseAnalyzer.participle.functions.predicateFuture');
+        expect(nota).toContain('verseAnalyzer.ruleChoice.assistant');
+    });
+    it('la de כִּי, con la elección del asistente (2 S 12:5, si la regla diera varias opciones)', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [],
+            words: [{ r: '5!7', t: 'חַי', l: '2416 a', m: 'HAamsa', role: '' }, { r: '5!8', t: 'יְהוָה', l: '3068', m: 'HNp', role: '' }, { r: '5!9', t: 'כִּי', l: '3588', m: 'HC', role: '' }],
+            kis: [{ ordinal: 2, text: 'כִּי', rule: 'kiGeneral', allowed: ['causal', 'asseverative'], status: 'medida' }],
+        };
+        const analisis = { reference: '2 S 12:5', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'חַי', hebrewWord: 'חַי', morphemes: [], category: 'ADJECTIVE', translation: 'vive' },
+                { hebrewText: 'יְהוָה', hebrewWord: 'יְהוָה', morphemes: [], category: 'PROPER_NOUN', translation: 'YHWH' },
+                { hebrewText: 'כִּי', hebrewWord: 'כִּי', morphemes: [], category: 'CONJUNCTION', translation: 'que', kiFunction: 'asseverative' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="2Sam.12.5" /></TooltipProvider>);
+        const nota = screen.getAllByTestId('ki-note')[0]!.textContent!;
+        expect(nota).toContain('verseAnalyzer.ki.functions.asseverative');
         expect(nota).toContain('verseAnalyzer.ruleChoice.assistant');
     });
 });

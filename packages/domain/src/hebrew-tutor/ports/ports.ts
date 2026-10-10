@@ -2,6 +2,7 @@ import type { StructureNode } from '../../language-structure/verseStructure.js';
 import type { SpeechFact } from '../../language-structure/hebrewSpeech.js';
 import type { HebrewInfinitiveCandidate } from '../../language-structure/hebrewInfinitive.js';
 import type { HebrewParticipleCandidate } from '../../language-structure/hebrewParticiple.js';
+import type { HebrewKiCandidate } from '../../language-structure/hebrewKi.js';
 /**
  * Domain ports (interfaces) for the Hebrew Tutor module.
  *
@@ -76,6 +77,8 @@ export interface IHebrewAnalysisService {
     infinitives?: readonly HebrewInfinitiveCandidate[],
     /** R4: la función de cada participio (Arnold y Choi §3.4.3). */
     participles?: readonly HebrewParticipleCandidate[],
+    /** R4: la función de cada כִּי (Arnold y Choi §4.3.4). */
+    kis?: readonly HebrewKiCandidate[],
   ): Promise<VerseAnalysis>;
 }
 

@@ -191,7 +191,7 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
 | **R1. Herramienta de extracción** ✓ | Los scripts de la prueba de concepto pasan al repo: capa de texto, secciones, ejemplos, comparación con OSHB y MorphGNT, conjunto de control. Sin texto de los libros en el repo. | No. |
 | **R2. Ingesta medida** | Niccacci completo; Sandy y Giese; Farfán revisado (hebreo vocalizado, § y derechos). Medición de cada uno con R1. | Sí: carga en la biblioteca (gasta cuota, pide OK). |
 | **R3. Anclar las reglas existentes** | Las reglas de G2–G4 y H1–H3 pasan a «ancladas» con sección y página verificadas. | Sí: mejora las citas. |
-| **R4. Hebreo H4 con el proceso completo** (infinitivo ✓, participio ✓) | Infinitivo (esta prueba), participio, partículas, cadena de constructo; Niccacci para la sintaxis del verbo en el texto. | Sí. |
+| **R4. Hebreo H4 con el proceso completo** (infinitivo ✓, participio ✓, כִּי ✓) | Infinitivo (esta prueba), participio, partículas, cadena de constructo; Niccacci para la sintaxis del verbo en el texto. | Sí. |
 | **R5. Validación docente y ciclo de vuelta** | Pantalla de muestra para el profesor; casos desde la app. | Sí. |
 
 **Una fase = un PR por etapa**, con un commit por unidad, como hasta ahora.
@@ -277,6 +277,28 @@ Todo hecho en local, sólo con lecturas; sin tocar producción ni gastar cuota.
   - Sin cambios de comportamiento en el infinitivo por la refactorización: 0 diferencias en todo el AT (candidatos, prompt y elección).
 - **De paso:** la prueba de CI que exige el cotejo de las citas no miraba las tablas del hebreo (el infinitivo de R4 había quedado fuera). Ahora recorre todas las tablas `*_SOURCES`; las 5 citas nuevas del participio están cotejadas (121 de 121).
 - **Límite conocido (supuesto):** OSHB a veces da הִנְנִי con el lema 2005 (הֵן); se usa su código de partícula («Tm»), no el lema.
+
+### R4, tercer tema: la función de כִּי (2026-10-10)
+- `hebrewKiCandidates` (dominio), con las 14 categorías de Arnold y Choi §4.3.4 (a)–(n). Va por palabra, como el infinitivo y el participio. La estructura de cláusulas sigue diciendo «causa o contenido» (y «כִּי אִם», contraste); esto lo afina sin tocarla. Mismo camino para el prompt, la elección del asistente y la ficha.
+- **Medido:**
+  - **Los 54 ejemplos del libro, cada כִּי citado** (`arnoldChoi-ki-anclas.json`: 34 con un solo כִּי en el versículo, 19 elegidos por la glosa inglesa): 3 deciden bien, 51 acotan bien, 0 contradicen. 1 R 1:24 no tiene כִּי en OSHB: **referencia a revisar en el libro**.
+  - **Todo el AT:** 4.483 כִּי. Sólo el juramento decide (18 casos); el resto, en promedio unas 6 opciones. כִּי casi siempre lo elige el asistente: la regla saca lo imposible y cita la sección.
+  - **Muestras de 20 al azar** (que la función correcta esté entre las opciones):
+    - tras juramento («חַי יְהוָה כִּי», «כֹּה יַעֲשֶׂה … וְכֹה יֹסִיף כִּי»): todos los del AT (16 en la muestra), después de corregir;
+    - cláusula objeto de MACULA (ver, saber, oír, decir): 20/20 y 19/20 («וַיִּנָּחֶם … כִּי עָשָׂה», Gn 6:6, es más causa);
+    - cláusula sujeto: 20/20; וַיְהִי / וְהָיָה כִּי: 20/20; tras negación sin verbo: 20/20; tras «decir»: 20/20; pregunta en la palabra siguiente: 20/20; al comienzo del versículo: 20/20; apódosis tras לוּ / לוּלֵא: 5/5.
+  - **Lo que las muestras corrigieron:**
+    - el juramento tomaba «חַיַּת הַשָּׂדֶה» (las bestias) y «חַיַּי» (mi vida): 5 de 20 errados. Ahora exige el homónimo «2416 a» (vivo) sin preposición ni sufijo, la fórmula completa con «וְכֹה יֹסִיף» («כֹּה אֶעֱשֶׂה לְּךָ», Am 4:12, no jura) y sólo el primer כִּי después;
+    - «sujeto» venía de la cláusula de la palabra siguiente y marcaba «כִּי הִנְנִי מֵקִים» (Hab 1:6, causa): 9 de 20. Ahora, sólo la cláusula propia del כִּי;
+    - la apódosis con cualquier אִם cerca erraba 8–10 de 20 («כִּי פִּי יְהוָה דִּבֵּר», Is 1:20): ahora sólo tras לוּ / לוּלֵא, o tras אִם si sigue עַתָּה / אָז;
+    - «tras una pregunta → resultado» erraba 4 de 20 (Job 27:9 temporal, Job 10:3 sujeto): se retiró;
+    - כִּי אִם sin negación antes también es «porque si» (Éx 10:4, 1 S 20:9).
+- **Revisión adversarial (corregido antes del PR; muestras propias con otra semilla):**
+  - El juramento decidía con 16/18: un אִם entre el juramento y el כִּי ya lo cierra («חַי יְהוָה אִם יִפֹּל … כִּי עִם אֱלֹהִים עָשָׂה», 1 S 14:45, causa), y con un yiqtol después también puede ser la condición jurada (1 S 20:13): ahí ya no decide. Decide en 16 casos del AT.
+  - **Perceptiva se perdía:** MACULA deja fuera de toda cláusula al 74 % de los כִּי, y el rol «objeto» no se veía («וַיֵּדַע דָּוִד כִּי», 2 S 5:12). Ahora, sin rol propio se mira la madre que sólo coordina (Gn 29:12), y con un verbo de ver, saber, oír, anunciar, recordar, creer, entender, decir o proclamar hasta 5 palabras antes (sin otro כִּי ni verbo finito en medio) se agregan perceptiva y recitativa (Gn 12:14, Jer 26:15).
+  - Al abrir el versículo tras una negación en el anterior, también «sino» («לֹא תִקַּח אִשָּׁה … כִּי אֶל אַרְצִי … תֵּלֵךְ», Gn 24:3–4). «Tras decir» mira hasta 4 palabras (Jos 2:24).
+  - Muestras del revisor (semilla 777): todas las reglas 20/20 menos la general (17/20, por la perceptiva, ya corregida).
+  - Queda: en una cadena «כִּי… כִּי… כִּי» tras un verbo de decir (Is 40:2), sólo el primero recibe recitativa.
 
 ---
 

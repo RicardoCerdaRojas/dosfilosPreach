@@ -8,4 +8,5 @@ export * from './discourseFunctions.js';
 export * from './hebrewSpeech.js';
 export * from './hebrewInfinitive.js';
 export * from './hebrewParticiple.js';
+export * from './hebrewKi.js';
 export type { RuleChoiceView } from './hebrewRuleChoice.js';

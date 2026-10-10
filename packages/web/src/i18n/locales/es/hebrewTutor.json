@@ -85,6 +85,25 @@
         "substantive": "sustantivo: «el que…»"
       }
     },
+    "ki": {
+      "title": "Partícula כִּי",
+      "functions": {
+        "causal": "causal: «porque»",
+        "evidential": "evidencial: «pues»",
+        "clarification": "aclaratoria: «que, es decir»",
+        "result": "resultado: «que, para que»",
+        "temporal": "temporal: «cuando»",
+        "conditional": "condicional: «si»",
+        "adversative": "adversativa: «sino»",
+        "concessive": "concesiva: «aunque»",
+        "asseverative": "aseverativa: «ciertamente»",
+        "perceptual": "perceptiva: «que» (tras ver, saber, oír)",
+        "subject": "cláusula sujeto: «que»",
+        "recitative": "recitativa: introduce lo dicho",
+        "exceptive": "exceptiva: «excepto»",
+        "interrogative": "interrogativa"
+      }
+    },
     "ruleChoice": {
       "ruleMeasured": "Regla · medida",
       "ruleMeasuredTitle": "Regla medida, sin validar: la propone el texto y está probada contra los ejemplos de Arnold y Choi; falta la validación del profesor.",

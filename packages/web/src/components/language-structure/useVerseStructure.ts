@@ -8,8 +8,10 @@ import {
     hebrewSpeechFacts,
     hebrewInfinitiveCandidates,
     hebrewParticipleCandidates,
+    hebrewKiCandidates,
     type HebrewInfinitiveCandidate,
     type HebrewParticipleCandidate,
+    type HebrewKiCandidate,
     type NominalFacts,
     type SpeechFact,
     type DiscourseCandidate,
@@ -48,6 +50,7 @@ export interface VerseStructureState {
     /** R4, sólo hebreo: la función posible de cada infinitivo (Arnold y Choi §3.4). */
     infinitives: readonly HebrewInfinitiveCandidate[];
     participles: readonly HebrewParticipleCandidate[];
+    kis: readonly HebrewKiCandidate[];
 }
 
 /**
@@ -92,7 +95,8 @@ export function useVerseStructure(
         const speech = actual?.chapter && lang === 'he' ? hebrewSpeechFacts(actual.chapter, verse) : [];
         const infinitives = actual?.chapter && lang === 'he' ? hebrewInfinitiveCandidates(actual.chapter, verse) : [];
         const participles = actual?.chapter && lang === 'he' ? hebrewParticipleCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles };
+        const kis = actual?.chapter && lang === 'he' ? hebrewKiCandidates(actual.chapter, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis };
     }, [actual, key, verse, lang]);
 }
 

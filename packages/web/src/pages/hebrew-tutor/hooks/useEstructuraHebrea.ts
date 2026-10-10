@@ -1,5 +1,5 @@
 import React from 'react';
-import { applyHebrewInfinitive, applyHebrewParticiple, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type HebrewParticipleView, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -93,7 +93,17 @@ export function useEstructuraHebrea(
         }
         return m;
     }, [estructura, alinear, analysis.words]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, sinLectura };
+    /** R4 — y para כִּי (Arnold y Choi §4.3.4). */
+    const kis = React.useMemo(() => {
+        const m = new Map<number, HebrewKiView>();
+        const indice = alinear(estructura.words);
+        for (const c of estructura.kis ?? []) {
+            const i = indice[c.ordinal];
+            if (i !== undefined) m.set(i, applyHebrewKi(c, analysis.words[i]?.kiFunction));
+        }
+        return m;
+    }, [estructura, alinear, analysis.words]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, sinLectura };
 }
 
 /**

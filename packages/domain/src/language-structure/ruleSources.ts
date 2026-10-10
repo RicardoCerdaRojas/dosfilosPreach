@@ -5,6 +5,7 @@ import type { NominalRule } from './nominalFunctions.js';
 import type { DiscourseRule } from './discourseFunctions.js';
 import type { HebrewInfinitiveFunction } from './hebrewInfinitive.js';
 import type { HebrewParticipleFunction } from './hebrewParticiple.js';
+import type { HebrewKiFunction } from './hebrewKi.js';
 
 /**
  * DE DÓNDE SALE CADA REGLA Y CADA CATEGORÍA — para que el pastor la pueda
@@ -309,6 +310,25 @@ export const HEBREW_PARTICIPLE_SOURCES: Readonly<Record<HebrewParticipleFunction
     predicatePast: [AC(PTCH, PT + '(b.2) Past', '80')],
     predicateFuture: [AC(PTCH, PT + '(b.3) Future', '81')],
     substantive: [AC(PTCH, PT + '(c) Substantive', '82')],
+};
+
+const KIH = 'la partícula כִּי';
+const KI = '4.3.4 כִּי › ';
+export const HEBREW_KI_SOURCES: Readonly<Record<HebrewKiFunction, readonly RuleSource[]>> = {
+    causal: [AC(KIH, KI + '(a) Causal', '149')],
+    evidential: [AC(KIH, KI + '(b) Evidential', '149')],
+    clarification: [AC(KIH, KI + '(c) Clarification', '150')],
+    result: [AC(KIH, KI + '(d) Result', '150')],
+    temporal: [AC(KIH, KI + '(e) Temporal', '151')],
+    conditional: [AC(KIH, KI + '(f) Conditional', '151')],
+    adversative: [AC(KIH, KI + '(g) Adversative', '152')],
+    concessive: [AC(KIH, KI + '(h) Concessive', '152')],
+    asseverative: [AC(KIH, KI + '(i) Asseverative', '153')],
+    perceptual: [AC(KIH, KI + '(j) Perceptual', '154')],
+    subject: [AC(KIH, KI + '(k) Subject', '154')],
+    recitative: [AC(KIH, KI + '(l) Recitative', '154')],
+    exceptive: [AC(KIH, KI + '(m) Exceptive', '155')],
+    interrogative: [AC(KIH, KI + '(n) Interrogative', '155')],
 };
 
 /** Las fuentes de una función según la forma: «Nominal» es una sección para el constructo y otra para el absoluto. */
