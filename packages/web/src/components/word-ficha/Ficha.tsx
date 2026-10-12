@@ -108,11 +108,19 @@ export function FichaPanel<D>({
     // Al cerrar, `d` pasa a null antes de que termine la animación: se sigue mostrando la última.
     const ultima = React.useRef<D | null>(d);
     if (d) ultima.current = d;
+    // Al abrir, el foco va al título (la referencia), no al primer botón de la ficha: así no aparece un
+    // marco de foco sobre «Ver» sin que nadie haya usado el teclado (prueba del fundador en producción).
+    const titulo = React.useRef<HTMLHeadingElement>(null);
     return (
         <Sheet open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-            <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-[30rem] [&>button:last-child]:hidden" data-testid="ficha-panel">
+            <SheetContent
+                side="right"
+                className="w-full overflow-y-auto p-0 sm:max-w-[30rem] [&>button:last-child]:hidden"
+                onOpenAutoFocus={(e) => { e.preventDefault(); titulo.current?.focus(); }}
+                data-testid="ficha-panel"
+            >
                 <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-background px-6 pb-2 pt-5">
-                    <SheetTitle className="text-xs font-semibold text-muted-foreground">{referencia}</SheetTitle>
+                    <SheetTitle ref={titulo} tabIndex={-1} className="text-xs font-semibold text-muted-foreground outline-none">{referencia}</SheetTitle>
                     <SheetDescription className="sr-only">{t('wordFicha.panelDescription')}</SheetDescription>
                     <div className="flex gap-1">
                         {rtl ? [siguiente, anterior] : [anterior, siguiente]}

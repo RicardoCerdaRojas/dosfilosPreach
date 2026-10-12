@@ -139,6 +139,7 @@
     "howRecognized": "Cómo se reconoce",
     "options": "La gramática deja estas opciones: {{list}}.",
     "reanalyze": "Re-analiza para que el asistente elija.",
+    "phraseReading": "La frase",
     "otherReading": "Otra lectura posible: {{fn}}",
     "otherReadingText": "El asistente la lee como «{{fn}}». Puede describir el mismo texto desde otro nivel (la frase entera en vez de la palabra): compara las dos lecturas con el contexto.",
     "show": "Ver",

@@ -328,6 +328,10 @@
       "off": "Fijo Off",
       "titleOn": "Dejar de fijar el versículo arriba al bajar",
       "titleOff": "Fijar el versículo arriba al bajar por la página"
+    },
+    "verseSearch": {
+      "noMatch": "No encontré ese versículo. Prueba «Gn 2:17» o «Génesis 2:17».",
+      "label": "Ir a versículo"
     }
   },
   "lexiconAdmin": {

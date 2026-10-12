@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { act, render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import {
     HEBREW_INFINITIVE_RULES, HEBREW_INFINITIVE_SOURCES, HEBREW_KI_RULES, HEBREW_KI_SOURCES, HEBREW_PARTICIPLE_RULES, HEBREW_PARTICIPLE_SOURCES,
     type WordAnalysis,
@@ -57,7 +57,7 @@ const PALABRA: WordAnalysis = {
 const INF = { ordinal: 9, text: 'אֲכָלְךָ', form: 'construct' as const, rule: 'trasConstructo' as const, allowed: ['genitive'] as const, status: 'medida' as const };
 const DATOS = {
     word: PALABRA,
-    infinitive: { candidate: INF, fn: 'genitive' as const, by: 'rule' as const, assistantReading: 'temporalAsSoonAs' as const },
+    infinitive: { candidate: INF, fn: 'genitive' as const, by: 'rule' as const, phraseReading: 'temporalAsSoonAs' as const },
     speech: { ordinal: 9, text: 'אֲכָלְךָ', kind: 'verb' as const, speaker: 'HABLANTE-יְהוָה', speakerOrdinals: [1] },
     fronted: { role: 'adv' as const, fronting: 'focus' as never },
     onInvestigate: vi.fn(),
@@ -133,16 +133,24 @@ describe('Ficha hebrea — el bloque de función', () => {
         return screen;
     };
     it('regla con una opción: «Según la gramática», cita y «regla por validar»; la otra lectura plegada', () => {
-        const s = verFuncion({ infinitive: DATOS.infinitive });
+        const s = verFuncion({ infinitive: { candidate: INF, fn: 'genitive', by: 'rule', assistantReading: 'subject' } });
         const n = s.getByTestId('infinitive-note').textContent!;
         expect(n).toContain('wordFicha.origin.rule');
         expect(n).toContain('wordFicha.ruleToValidate');
         expect(s.getByTestId('source-note')).toBeInTheDocument();
         const otra = s.getByTestId('ficha-otra-lectura');
         expect(otra.getAttribute('aria-expanded')).toBe('false');
-        expect(otra.textContent).toContain('verseAnalyzer.infinitive.functions.temporalAsSoonAs');
+        expect(otra.textContent).toContain('verseAnalyzer.infinitive.functions.subject');
         fireEvent.click(otra);
         expect(otra.getAttribute('aria-expanded')).toBe('true');
+    });
+    it('Gn 2:17: el genitivo con la frase temporal no es «otra lectura»: va como «La frase» dentro del bloque', () => {
+        const s = verFuncion({ infinitive: DATOS.infinitive });
+        expect(s.getByTestId('infinitive-note').textContent).toContain('wordFicha.phraseReading');
+        expect(s.getByTestId('ficha-lectura-frase').textContent).toBe('verseAnalyzer.infinitive.functions.temporalAsSoonAs');
+        expect(s.queryByTestId('ficha-otra-lectura')).toBeNull();
+        // Es la lectura del asistente: lleva su rótulo, no sólo el de la gramática del bloque.
+        expect(within(s.getByTestId('ficha-lectura-frase').parentElement!).getByTestId('ficha-origen-asistente')).toBeInTheDocument();
     });
     it('varias y el asistente eligió: «Asistente», sin «por validar»', () => {
         const be = { ordinal: 1, text: 'בְּשָׁמְעוֹ', form: 'construct' as const, rule: 'bInf' as const, allowed: ['temporalWhile', 'causal', 'instrumental'] as const, status: 'medida' as const };
@@ -231,5 +239,10 @@ describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
         render(<FichaPanel registro={BLOQUES_HEBREO} d={DATOS} abierto onCerrar={() => {}} referencia="Gn 2:17" onAnterior={() => {}} onSiguiente={() => {}} rtl />);
         const botones = screen.getAllByRole('button').map(b => b.getAttribute('aria-label')).filter(x => x?.startsWith('wordFicha.') && x !== 'wordFicha.close');
         expect(botones).toEqual(['wordFicha.next', 'wordFicha.previous']);
+    });
+    it('al abrir, el foco va al título y no al primer botón (no aparece un marco sobre «Ver»)', async () => {
+        render(<FichaPanel registro={BLOQUES_HEBREO} d={DATOS} abierto onCerrar={() => {}} referencia="REF-Gn 2:17" rtl />);
+        await waitFor(() => expect(document.activeElement?.textContent).toBe('REF-Gn 2:17'));
+        expect(document.activeElement?.tagName).not.toBe('BUTTON');
     });
 });

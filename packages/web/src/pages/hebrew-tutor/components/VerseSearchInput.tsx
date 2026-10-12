@@ -1,46 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SearchIcon, XIcon } from 'lucide-react';
 import { HEBREW_BOOKS_CATALOG } from '@dosfilos/infrastructure';
-import type { HebrewBook } from '@dosfilos/domain';
-
-interface ParsedRef {
-  bookKey: string;
-  bookName: string;
-  nameHebrew: string;
-  chapter: number;
-  verse: number;
-}
-
-function parseRef(input: string, books: HebrewBook[]): ParsedRef[] {
-  const cleaned = input.trim();
-  if (cleaned.length < 2) return [];
-
-  // Match: "book name" or "book name chapter" or "book name chapter:verse"
-  const m = cleaned.match(/^(.*?)(?:\s+(\d+)(?:[:.,\s](\d+))?)?$/);
-  if (!m) return [];
-
-  const [, bookPart = '', chapStr, verseStr] = m;
-  const chapter = chapStr ? parseInt(chapStr, 10) : undefined;
-  const verse = verseStr ? parseInt(verseStr, 10) : undefined;
-  const q = bookPart.trim().toLowerCase();
-
-  if (!q) return [];
-
-  return books
-    .filter(
-      (b) =>
-        b.nameSpanish.toLowerCase().startsWith(q) ||
-        b.nameEnglish.toLowerCase().startsWith(q) ||
-        b.abbreviation.toLowerCase().startsWith(q) ||
-        b.morphhbKey.toLowerCase().startsWith(q),
-    )
-    .slice(0, 6)
-    .map((b) => {
-      const ch = chapter && chapter >= 1 && chapter <= b.chapterCount ? chapter : 1;
-      const v = verse && verse >= 1 ? verse : 1;
-      return { bookKey: b.morphhbKey, bookName: b.nameSpanish, nameHebrew: b.nameHebrew, chapter: ch, verse: v };
-    });
-}
+import { verseSuggestions, type VerseSuggestion } from './buscarVersiculo';
 
 interface VerseSearchInputProps {
   onNavigate: (book: string, chapter: number, verse: number) => void;
@@ -55,18 +17,21 @@ export const VerseSearchInput: React.FC<VerseSearchInputProps> = ({
   placeholder = 'Ir a versículo…',
   inputClassName = '',
 }) => {
+  const { t } = useTranslation('hebrewTutor');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const suggestions = useMemo(() => parseRef(query, HEBREW_BOOKS_CATALOG), [query]);
+  const suggestions = useMemo(() => verseSuggestions(query, HEBREW_BOOKS_CATALOG), [query]);
+  // Con algo escrito, la lista se abre siempre: con sugerencias o con «no lo encontré» (antes callaba).
+  const escrito = query.trim().length >= 2;
 
   useEffect(() => {
     setActiveIdx(0);
-    setOpen(suggestions.length > 0 && query.length >= 2);
-  }, [suggestions, query]);
+    setOpen(escrito);
+  }, [suggestions, escrito]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -78,26 +43,31 @@ export const VerseSearchInput: React.FC<VerseSearchInputProps> = ({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const select = (s: ParsedRef) => {
+  const select = (s: VerseSuggestion) => {
     setQuery('');
     setOpen(false);
     onNavigate(s.bookKey, s.chapter, s.verse);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
-    if (!open || suggestions.length === 0) return;
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+    if (suggestions.length === 0) return;
+    // Enter va a la primera sugerencia aunque la lista esté cerrada (después de Escape o de un clic afuera).
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const selected = open ? suggestions[activeIdx] : suggestions[0];
+      if (selected) select(selected);
+    } else if (!open) {
+      return;
+    } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveIdx((i) => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const selected = suggestions[activeIdx];
-      if (selected) select(selected);
-    } else if (e.key === 'Escape') {
-      setOpen(false);
     }
   };
 
@@ -110,7 +80,8 @@ export const VerseSearchInput: React.FC<VerseSearchInputProps> = ({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKey}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onFocus={() => escrito && setOpen(true)}
+          aria-label={t('verseAnalyzer.verseSearch.label')}
           placeholder={placeholder}
           disabled={disabled}
           className={`pl-8 pr-7 py-1.5 text-sm bg-background border border-border/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/50 transition-all disabled:opacity-40 placeholder:text-muted-foreground/60 ${inputClassName}`}
@@ -132,6 +103,11 @@ export const VerseSearchInput: React.FC<VerseSearchInputProps> = ({
 
       {open && (
         <div className="absolute top-full left-0 mt-1.5 z-50 bg-popover border border-border rounded-xl shadow-xl overflow-hidden w-72">
+          {suggestions.length === 0 && (
+            <p className="m-0 px-3 py-2.5 text-sm text-muted-foreground" role="status" data-testid="verse-search-no-match">
+              {t('verseAnalyzer.verseSearch.noMatch')}
+            </p>
+          )}
           {suggestions.map((s, i) => (
             <button
               key={`${s.bookKey}-${s.chapter}-${s.verse}`}

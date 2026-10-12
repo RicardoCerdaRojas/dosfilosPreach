@@ -213,7 +213,24 @@ ${lineas.join('\n')}`;
 /** Lo que muestra la ficha de un infinitivo. */
 export type HebrewInfinitiveView = RuleChoiceView<HebrewInfinitiveCandidate, HebrewInfinitiveFunction>;
 
-/** Al mostrar: ver `applyRuleChoice` (una opción la propone la regla; con varias, elige el asistente). */
+/** Lo que vale una frase adverbial: la frase que encabeza el genitivo, no el infinitivo mismo. */
+const DE_FRASE: ReadonlySet<HebrewInfinitiveFunction> = new Set<HebrewInfinitiveFunction>([
+    'temporalWhile', 'temporalAsSoonAs', 'temporalUntil', 'temporalAfter', 'comparative', 'causal', 'instrumental', 'purpose', 'result',
+]);
+
+/**
+ * Al mostrar: ver `applyRuleChoice` (una opción la propone la regla; con varias, elige el asistente).
+ *
+ * Si la regla dice «genitivo» y el asistente lee un valor adverbial, describe la frase que rige el
+ * genitivo, no otra función de la palabra: va como `phraseReading`, no como desacuerdo. La nota del
+ * prompt (`NOTA_NOMINAL`) ya lo pide; esto cubre lo que el asistente devuelva igual y los análisis
+ * guardados antes de esa nota (Gn 2:17, prueba del fundador en producción).
+ */
 export function applyHebrewInfinitive(candidate: HebrewInfinitiveCandidate, choice: string | undefined): HebrewInfinitiveView {
-    return applyRuleChoice<HebrewInfinitiveFunction, HebrewInfinitiveCandidate>(candidate, choice, FUNCIONES);
+    const v = applyRuleChoice<HebrewInfinitiveFunction, HebrewInfinitiveCandidate>(candidate, choice, FUNCIONES);
+    if (v.fn === 'genitive' && v.by === 'rule' && v.assistantReading && DE_FRASE.has(v.assistantReading)) {
+        const { assistantReading, ...resto } = v;
+        return { ...resto, phraseReading: assistantReading };
+    }
+    return v;
 }

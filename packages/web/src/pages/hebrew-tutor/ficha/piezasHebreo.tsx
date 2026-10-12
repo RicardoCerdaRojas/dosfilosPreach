@@ -134,6 +134,7 @@ type Vista<F extends string> = {
     readonly fn?: F;
     readonly by?: 'rule' | 'assistant';
     readonly assistantReading?: F;
+    readonly phraseReading?: F;
 };
 interface FuncionDeRegla<F extends string> {
     view: Vista<F>;
@@ -148,7 +149,8 @@ const origenDe = <F extends string>(v: Vista<F>): OrigenFuncion => (v.by === 'ru
 
 function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeRegla<F> }) {
     const { t } = useTranslation('hebrewTutor');
-    const { candidate, fn, by, assistantReading } = f.view;
+    const { t: tl } = useTranslation('languageStructure');
+    const { candidate, fn, by, assistantReading, phraseReading } = f.view;
     return (
         <FichaFuncion
             titulo={f.titulo}
@@ -160,6 +162,8 @@ function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeR
             fuentes={fn ? f.fuentes(fn) : candidate.allowed.flatMap(f.fuentes)}
             porValidar={by === 'rule'}
             otra={assistantReading ? f.nombre(assistantReading) : undefined}
+            // La lectura de la frase es del asistente, no de la regla: con su rótulo y su color, aunque vaya en el bloque de la regla.
+            extra={phraseReading ? <><dt className="text-info-subtle-foreground">{tl('wordFicha.phraseReading')}</dt><dd className="m-0 flex flex-wrap items-center gap-x-2"><span data-testid="ficha-lectura-frase">{f.nombre(phraseReading)}</span><FichaOrigenRotulo origen="asistente" /></dd></> : undefined}
             testId={f.testId}
         />
     );
