@@ -81,6 +81,7 @@ import {
     paperIsDelivered,
     parseBriefQuestions,
     sectionBudgets,
+    uncitedRubricRequirements,
 } from '@dosfilos/domain';
 
 /**
@@ -323,7 +324,7 @@ export function ExegesisPaperPage() {
      * diálogo que deja completarlas ANTES de bajar el archivo (TP #6).
      */
     const pedirExport = (formato: 'docx' | 'md') => {
-        if (bibliography.some(e => !e.text)) {
+        if (bibliography.some(e => !e.text) || uncitedRubricRequirements(paper).length > 0) {
             setExportPendiente(formato);
             return;
         }
