@@ -1,0 +1,194 @@
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { BookOpen, Loader2, SearchX } from 'lucide-react';
+import { useTranslation } from '@/i18n';
+import { cn } from '@/lib/utils';
+import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
+import { BookSearchResults } from './BookSearchResults';
+import { CitationViewerToolbar, type SearchScope } from './CitationViewerToolbar';
+import { useCitationSheet } from './useCitationSheet';
+import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
+import type { CitationTarget, ViewedSheet } from './CitationSourceModal';
+
+/**
+ * El libro abierto: encabezado, barra (hojear, ir a página, buscar, zoom),
+ * resultados de la búsqueda en el libro y la hoja.
+ *
+ * Es el cuerpo de las dos maneras de mostrar una fuente: el panel lateral,
+ * que deja el texto del trabajo a la vista para citar mientras se escribe, y
+ * la ventana ampliada, para leer. Antes vivía sólo dentro del modal de las
+ * citas del análisis, y el resto de la aplicación abría el PDF suelto en otra
+ * pestaña: en el TP #7 el fundador terminó buscando «tautologous» a mano en un
+ * lector externo para comprobar dos citas (fase F).
+ */
+export interface SourceViewerBodyProps {
+    /** `null` en la Biblioteca: el libro se abre sin trabajo. */
+    paperId: string | null;
+    target: CitationTarget | null;
+    open: boolean;
+    layout: 'panel' | 'full';
+    /** Botones del encabezado que pone quien lo muestra (ampliar, cerrar). */
+    actions?: ReactNode;
+    /** El título accesible: el modal lo envuelve en su `DialogTitle`. */
+    renderTitle?: (title: ReactNode) => ReactNode;
+    /** Panel a la derecha de la hoja (la revisión de una cita). */
+    aside?: (viewed: ViewedSheet) => ReactNode;
+}
+
+export function SourceViewerBody({ paperId, target, open, layout, actions, renderTitle, aside }: SourceViewerBodyProps) {
+    const { t } = useTranslation('exegesis');
+    const [quoteFound, setQuoteFound] = useState<boolean | null>(null);
+    const [zoom, setZoom] = useState<number>(1);
+    const [search, setSearch] = useState('');
+    const [scope, setScope] = useState<SearchScope>('sheet');
+    const [matches, setMatches] = useState(0);
+    const view = useCitationSheet(paperId, target, open);
+    const bookSearch = useDocumentTextSearch(view.resourceId, search, open && scope === 'book');
+
+    // Cada destino nuevo vuelve a empezar: sin esto el visor heredaría el
+    // veredicto del anterior y diría «no la encontré» sobre una frase que
+    // todavía no buscó.
+    useEffect(() => {
+        setQuoteFound(null);
+        setZoom(1);
+        setSearch('');
+        setScope('sheet');
+        setMatches(0);
+    }, [target?.sourceKey, target?.resourceId, target?.page, target?.verbatimQuote]);
+
+    // Las flechas hojean, salvo cuando el lector está escribiendo.
+    const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); view.goTo(view.viewSheet - 1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); view.goTo(view.viewSheet + 1); }
+    };
+
+    const hasDocument = !!view.resourceId;
+    const hasQuote = !!target?.verbatimQuote?.trim();
+    // Abierto por recurso es el libro, no una cita: no hay página citada que
+    // comparar ni frase que buscar.
+    const isCitation = !target?.resourceId;
+    const viewed: ViewedSheet = { sheet: view.viewSheet, printed: view.printedOfView, isAnchor: view.viewSheet === view.anchorSheet };
+    const showResults = hasDocument && scope === 'book' && search.trim().length >= 2;
+    const results = showResults && (
+        <BookSearchResults
+            hits={bookSearch.data?.hits ?? []}
+            truncated={bookSearch.data?.truncated ?? false}
+            isLoading={bookSearch.isLoading}
+            isError={bookSearch.isError}
+            printedOf={view.printedOf}
+            currentSheet={view.viewSheet}
+            onGo={view.goTo}
+            layout={layout === 'full' ? 'column' : 'strip'}
+        />
+    );
+    const title = (
+        <span className="inline-flex items-center gap-2 text-base font-semibold">
+            <BookOpen className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+            <span className="truncate">{view.label}</span>
+        </span>
+    );
+
+    return (
+        <div className="flex h-full min-h-0 flex-col" onKeyDown={onKeyDown} data-testid="source-viewer">
+            <div className="flex items-start gap-3 border-b border-border px-5 py-3">
+                <div className="min-w-0 flex-1 space-y-1">
+                    {renderTitle ? renderTitle(title) : <h2 className="m-0">{title}</h2>}
+                    <p className="text-xs text-muted-foreground">
+                        {viewed.printed !== null
+                            ? t('citationViewer.pageWithSheet', { printed: viewed.printed, sheet: viewed.sheet })
+                            : t('citationViewer.sheetOnly', { sheet: viewed.sheet })}
+                        {!viewed.isAnchor && isCitation && ` · ${t('citationViewer.awayFromCited', { page: target?.page ?? '' })}`}
+                    </p>
+                    <StatusLine hasDocument={hasDocument} hasQuote={hasQuote} quoteFound={quoteFound} quote={target?.verbatimQuote ?? ''} isCitation={isCitation} />
+                </div>
+                {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
+            </div>
+
+            {hasDocument && (
+                <CitationViewerToolbar
+                    viewSheet={view.viewSheet}
+                    totalSheets={view.totalSheets}
+                    onGo={view.goTo}
+                    onGoToPageInput={view.goToPageInput}
+                    search={search}
+                    onSearch={setSearch}
+                    scope={scope}
+                    onScope={setScope}
+                    matches={matches}
+                    zoom={zoom}
+                    onZoom={setZoom}
+                />
+            )}
+
+            {layout === 'panel' && results}
+
+            <div className={cn('flex-1 min-h-0 flex', layout === 'full' ? 'flex-col md:flex-row' : 'flex-col')}>
+                {layout === 'full' && results}
+                <div className="flex-1 min-h-0 min-w-0 bg-muted/30">
+                    {!hasDocument ? (
+                        <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
+                            {t('citationViewer.sourceNotConfigured', { key: target?.sourceKey ?? '' })}
+                        </Centered>
+                    ) : view.loading ? (
+                        <Centered icon={<Loader2 className="h-4 w-4 animate-spin" />}>
+                            {t('citationViewer.loading')}
+                        </Centered>
+                    ) : (
+                        <PdfPageViewer
+                            url={view.pdfUrl}
+                            sheet={view.viewSheet}
+                            selected={false}
+                            highlightQuote={target?.verbatimQuote ?? null}
+                            onHighlightResolved={setQuoteFound}
+                            zoom={zoom === 1 ? 'fit' : zoom}
+                            searchTerm={search.trim() || null}
+                            onSearchMatches={setMatches}
+                        />
+                    )}
+                </div>
+                {aside && (
+                    <aside className="md:w-[380px] md:max-w-[40vw] shrink-0 max-h-[40vh] md:max-h-none overflow-y-auto border-t md:border-t-0 md:border-l border-border bg-background p-4">
+                        {aside(viewed)}
+                    </aside>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Qué esperar de la página que se está abriendo.
+ *
+ * Los casos son distintos y confundirlos deja al lector buscando una marca
+ * que no existe: la cita se resaltó, la cita existe pero no se pudo localizar
+ * —OCR ilegible, corriente en documentos escaneados—, el análisis nunca
+ * guardó una frase y sólo hay página, o no es una cita sino el libro abierto.
+ */
+function StatusLine({ hasDocument, hasQuote, quoteFound, quote, isCitation }: {
+    hasDocument: boolean;
+    hasQuote: boolean;
+    quoteFound: boolean | null;
+    quote: string;
+    isCitation: boolean;
+}) {
+    const { t } = useTranslation('exegesis');
+    if (!hasDocument || !isCitation) return null;
+
+    if (!hasQuote) {
+        return <p className="text-[11px] text-muted-foreground pt-0.5">{t('citationViewer.noQuoteRecorded')}</p>;
+    }
+    if (quoteFound === false) {
+        return <p className="text-[11px] text-warning pt-0.5">{t('citationViewer.quoteNotFound')}</p>;
+    }
+    return <p className="text-[11px] text-muted-foreground pt-0.5 line-clamp-2 italic">«{quote}»</p>;
+}
+
+function Centered({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+    return (
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+            {icon}
+            <p className="text-sm text-muted-foreground max-w-md">{children}</p>
+        </div>
+    );
+}

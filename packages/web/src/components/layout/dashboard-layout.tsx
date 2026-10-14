@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { SourceViewerProvider, SourceViewerSlot } from '@/components/exegesis/citation/SourceViewerProvider';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
@@ -45,6 +46,7 @@ export function DashboardLayout() {
   const isFullScreen = isPlanner || isGenerator || isSermonDetail || isBible || isSourcePages;
 
   return (
+    <SourceViewerProvider>
     <SidebarProvider>
       <AutoCollapseOnFaculty />
       <AppSidebar />
@@ -66,18 +68,23 @@ export function DashboardLayout() {
           </div>
         </header>
         
-        {/* Main content */}
-        <main className={cn(
-          "flex-1 flex flex-col print:block print:overflow-visible print:h-auto",
-          // Apps that need full height control (no parent scroll, no parent padding)
-          isFullScreen ? "overflow-hidden h-full" : "overflow-y-auto bg-muted/40 p-4 md:p-2"
-        )}>
-          <Outlet />
-        </main>
+        {/* Main content + el visor de fuente en su propia columna: abierto en
+            panel, el contenido se angosta en vez de quedar tapado. */}
+        <div className={cn("flex flex-1 min-h-0", isFullScreen && "overflow-hidden")}>
+          <main className={cn(
+            "flex-1 min-w-0 flex flex-col print:block print:overflow-visible print:h-auto",
+            // Apps that need full height control (no parent scroll, no parent padding)
+            isFullScreen ? "overflow-hidden h-full" : "overflow-y-auto bg-muted/40 p-4 md:p-2"
+          )}>
+            <Outlet />
+          </main>
+          <SourceViewerSlot />
+        </div>
       </SidebarInset>
       <FloatingHelpButton />
       <DashboardTour run={tour.run} onComplete={tour.markComplete} />
     </SidebarProvider>
+    </SourceViewerProvider>
   );
 }
 

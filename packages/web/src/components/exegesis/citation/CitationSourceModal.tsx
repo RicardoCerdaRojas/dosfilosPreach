@@ -1,19 +1,8 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { BookOpen, Loader2, SearchX } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { CitationPageKind } from '@dosfilos/domain';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
-import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
-import { BookSearchResults } from './BookSearchResults';
-import { CitationViewerToolbar, type SearchScope } from './CitationViewerToolbar';
-import { useCitationSheet } from './useCitationSheet';
-import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
+import { SourceViewerBody } from './SourceViewerBody';
 
 /**
  * El libro detrás de una cita, abierto en la página citada y con la frase
@@ -53,6 +42,13 @@ export interface CitationTarget {
     locator?: string;
     /** Frase textual registrada, cuando el análisis guardó una. */
     verbatimQuote?: string | null;
+    /**
+     * El recurso de la biblioteca, cuando se abre el libro y no una cita: la
+     * tarjeta de una fuente, la Biblioteca. Con él no hace falta un trabajo.
+     */
+    resourceId?: string;
+    /** El nombre del libro, cuando no hay trabajo de donde sacarlo. */
+    label?: string;
 }
 
 /** Lo que el visor sabe de la hoja que se está mirando, para quien la acompaña. */
@@ -66,174 +62,35 @@ export interface ViewedSheet {
 export interface CitationSourceModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    paperId: string;
+    /** `null` en la Biblioteca: el libro se abre sin trabajo. */
+    paperId: string | null;
     citation: CitationTarget | null;
     /**
      * Panel a la derecha del libro: el problema de la cita y su revisión.
      * Recibe la hoja que se mira para que pueda proponer «está aquí».
      */
     aside?: (viewed: ViewedSheet) => ReactNode;
+    /** Botones extra del encabezado (p. ej. «volver al panel»). */
+    actions?: ReactNode;
 }
 
-export function CitationSourceModal({ open, onOpenChange, paperId, citation, aside }: CitationSourceModalProps) {
+/** El visor ampliado: el mismo cuerpo que el panel, en una ventana grande. */
+export function CitationSourceModal({ open, onOpenChange, paperId, citation, aside, actions }: CitationSourceModalProps) {
     const { t } = useTranslation('exegesis');
-    const [quoteFound, setQuoteFound] = useState<boolean | null>(null);
-    const [zoom, setZoom] = useState<number>(1);
-    const [search, setSearch] = useState('');
-    const [scope, setScope] = useState<SearchScope>('sheet');
-    const [matches, setMatches] = useState(0);
-    const view = useCitationSheet(paperId, citation, open);
-    const bookSearch = useDocumentTextSearch(view.resourceId, search, open && scope === 'book');
-
-    // Cada cita nueva vuelve a empezar: sin esto el modal heredaría el
-    // veredicto de la anterior y diría «no la encontré» sobre una frase
-    // que todavía no buscó.
-    useEffect(() => {
-        setQuoteFound(null);
-        setZoom(1);
-        setSearch('');
-        setScope('sheet');
-        setMatches(0);
-    }, [citation?.sourceKey, citation?.page, citation?.verbatimQuote]);
-
-    // Las flechas hojean, salvo cuando el lector está escribiendo.
-    const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-        if (e.key === 'ArrowLeft') { e.preventDefault(); view.goTo(view.viewSheet - 1); }
-        if (e.key === 'ArrowRight') { e.preventDefault(); view.goTo(view.viewSheet + 1); }
-    };
-
-    const hasQuote = !!citation?.verbatimQuote?.trim();
-    const viewed: ViewedSheet = { sheet: view.viewSheet, printed: view.printedOfView, isAnchor: view.viewSheet === view.anchorSheet };
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="!max-w-none w-[95vw] h-[92vh] p-0 flex flex-col gap-0" onKeyDown={onKeyDown}>
-                <DialogHeader className="px-6 py-4 border-b border-border space-y-1">
-                    <DialogTitle className="inline-flex items-center gap-2 text-base">
-                        <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                        {view.source?.displayLabel ?? citation?.sourceKey ?? ''}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs">
-                        {viewed.printed !== null
-                            ? t('citationViewer.pageWithSheet', { printed: viewed.printed, sheet: viewed.sheet })
-                            : t('citationViewer.sheetOnly', { sheet: viewed.sheet })}
-                        {!viewed.isAnchor && ` · ${t('citationViewer.awayFromCited', { page: citation?.page ?? '' })}`}
-                    </DialogDescription>
-                    <StatusLine
-                        hasSource={!!view.source}
-                        hasQuote={hasQuote}
-                        quoteFound={quoteFound}
-                        quote={citation?.verbatimQuote ?? ''}
-                    />
-                </DialogHeader>
-
-                {!!view.source && (
-                    <CitationViewerToolbar
-                        viewSheet={view.viewSheet}
-                        totalSheets={view.totalSheets}
-                        onGo={view.goTo}
-                        onGoToPageInput={view.goToPageInput}
-                        search={search}
-                        onSearch={setSearch}
-                        scope={scope}
-                        onScope={setScope}
-                        matches={matches}
-                        zoom={zoom}
-                        onZoom={setZoom}
-                    />
-                )}
-
-                {!!view.source && scope === 'book' && search.trim().length >= 2 && (
-                    <BookSearchResults
-                        hits={bookSearch.data?.hits ?? []}
-                        truncated={bookSearch.data?.truncated ?? false}
-                        isLoading={bookSearch.isLoading}
-                        isError={bookSearch.isError}
-                        printedOf={view.printedOf}
-                        currentSheet={view.viewSheet}
-                        onGo={view.goTo}
-                    />
-                )}
-
-                <div className="flex-1 min-h-0 flex flex-col md:flex-row">
-                    <div className="flex-1 min-h-0 min-w-0 bg-muted/30">
-                        {!view.source ? (
-                            <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
-                                {t('citationViewer.sourceNotConfigured', { key: citation?.sourceKey ?? '' })}
-                            </Centered>
-                        ) : view.loading ? (
-                            <Centered icon={<Loader2 className="h-4 w-4 animate-spin" />}>
-                                {t('citationViewer.loading')}
-                            </Centered>
-                        ) : (
-                            <PdfPageViewer
-                                url={view.pdfUrl}
-                                sheet={view.viewSheet}
-                                selected={false}
-                                highlightQuote={citation?.verbatimQuote ?? null}
-                                onHighlightResolved={setQuoteFound}
-                                zoom={zoom === 1 ? 'fit' : zoom}
-                                searchTerm={search.trim() || null}
-                                onSearchMatches={setMatches}
-                            />
-                        )}
-                    </div>
-                    {aside && (
-                        <aside className="md:w-[380px] md:max-w-[40vw] shrink-0 max-h-[40vh] md:max-h-none overflow-y-auto border-t md:border-t-0 md:border-l border-border bg-background p-4">
-                            {aside(viewed)}
-                        </aside>
-                    )}
-                </div>
+            <DialogContent className="!max-w-none w-[95vw] h-[92vh] p-0 flex flex-col gap-0">
+                <DialogDescription className="sr-only">{t('sourceViewer.description')}</DialogDescription>
+                <SourceViewerBody
+                    paperId={paperId}
+                    target={citation}
+                    open={open}
+                    layout="full"
+                    aside={aside}
+                    actions={actions}
+                    renderTitle={title => <DialogTitle className="text-base">{title}</DialogTitle>}
+                />
             </DialogContent>
         </Dialog>
-    );
-}
-
-/**
- * Qué esperar de la página que se está abriendo.
- *
- * Los tres casos son distintos y confundirlos deja al lector buscando una
- * marca que no existe: la cita se resaltó, la cita existe pero no se pudo
- * localizar —OCR ilegible, corriente en documentos escaneados—, o el
- * análisis nunca guardó una frase y sólo hay página.
- */
-function StatusLine({ hasSource, hasQuote, quoteFound, quote }: {
-    hasSource: boolean;
-    hasQuote: boolean;
-    quoteFound: boolean | null;
-    quote: string;
-}) {
-    const { t } = useTranslation('exegesis');
-    if (!hasSource) return null;
-
-    if (!hasQuote) {
-        return (
-            <p className="text-[11px] text-muted-foreground pt-0.5">
-                {t('citationViewer.noQuoteRecorded')}
-            </p>
-        );
-    }
-    if (quoteFound === false) {
-        return (
-            <p className="text-[11px] text-warning pt-0.5">
-                {t('citationViewer.quoteNotFound')}
-            </p>
-        );
-    }
-    return (
-        <p className="text-[11px] text-muted-foreground pt-0.5 line-clamp-2 italic">
-            «{quote}»
-        </p>
-    );
-}
-
-function Centered({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-    return (
-        <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-            {icon}
-            <p className="text-sm text-muted-foreground max-w-md">{children}</p>
-        </div>
     );
 }

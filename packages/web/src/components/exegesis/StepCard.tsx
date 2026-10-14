@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Wand2,
     Loader2,
@@ -27,7 +27,8 @@ import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useReopenStep } from '@/hooks/exegesis/useReopenStep';
 import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/CanonicalAnalysisStudyView';
-import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
+import type { CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
+import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
@@ -178,7 +179,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // tarjeta seguiría girando hasta que el usuario recargue a mano. Un solo
     // temporizador, disparado exactamente al vencer, y sólo mientras genera.
     // Cita abierta en el visor del documento original. `null` = cerrado.
-    const [openCitation, setOpenCitation] = useState<CitationTarget | null>(null);
+    // Las citas se abren en el visor lateral: el texto del paso queda a la
+    // vista al lado del libro (fase F).
+    const sourceViewer = useSourceViewer();
+    const openCitation = useCallback((citation: CitationTarget) => sourceViewer.open({ paperId, citation }), [sourceViewer, paperId]);
     const navigate = useNavigate();
     const reviewPath = `/dashboard/exegesis/${paperId}/pasos/${step.id}/revision`;
 
@@ -951,7 +955,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             </div>
                         )}
                         {supportsStudyView && viewMode === 'study' ? (
-                            <CanonicalAnalysisStudyView analysis={canonicalAnalysis!} onOpenCitation={setOpenCitation} />
+                            <CanonicalAnalysisStudyView analysis={canonicalAnalysis!} onOpenCitation={openCitation} />
                         ) : previewMarkdown ? (
                             markdownRenderizado
                         ) : (
@@ -959,7 +963,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             // composer hasn't run on this version. Default
                             // straight to study view so the user sees the
                             // structured payload that came back.
-                            canonicalAnalysis && <CanonicalAnalysisStudyView analysis={canonicalAnalysis} onOpenCitation={setOpenCitation} />
+                            canonicalAnalysis && <CanonicalAnalysisStudyView analysis={canonicalAnalysis} onOpenCitation={openCitation} />
                         )}
                     </div>
                 )}
@@ -1243,12 +1247,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 formatting={formatting}
                 isComposing={composeVerseAcademicProse.isPending}
                 onRecompose={(guidance, targetWords) => handleComposeVerseProse(guidance, targetWords)}
-            />
-            <CitationSourceModal
-                open={!!openCitation}
-                onOpenChange={(open) => { if (!open) setOpenCitation(null); }}
-                paperId={paperId}
-                citation={openCitation}
             />
         </article>
     );

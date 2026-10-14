@@ -13,10 +13,11 @@ import { clampSheet, printedOfSheet, resolveCitationSheet, sheetForPageInput, ty
  * y la que el lector tiene delante (`viewSheet`), que se mueve al hojear.
  * Al cambiar de cita, la vista vuelve al ancla; hojear no la toca.
  */
-export function useCitationSheet(paperId: string, citation: CitationTarget | null, open: boolean) {
+export function useCitationSheet(paperId: string | null, citation: CitationTarget | null, open: boolean) {
     // Ya está en caché: la página del trabajo la pidió al montarse, así
-    // que resolverla acá no agrega lecturas.
-    const { paper } = useExegesisPaper(paperId);
+    // que resolverla acá no agrega lecturas. Sin trabajo (la Biblioteca), no
+    // se pide nada.
+    const { paper } = useExegesisPaper(paperId ?? undefined);
 
     const source = useMemo(() => {
         if (!citation || !paper) return null;
@@ -25,7 +26,9 @@ export function useCitationSheet(paperId: string, citation: CitationTarget | nul
             && (s.citationKey ?? s.displayLabel) === citation.sourceKey) ?? null;
     }, [paper, citation]);
 
-    const resourceId = source?.sourceLibraryResourceId ?? source?.corpusId ?? null;
+    // Abierto por recurso (la Biblioteca, la tarjeta de una fuente) no hace
+    // falta buscar la clave en el trabajo: el destino ya dice qué libro es.
+    const resourceId = citation?.resourceId ?? source?.sourceLibraryResourceId ?? source?.corpusId ?? null;
     const index = useDocumentPageIndex(open ? resourceId : null);
     const pdf = useDocumentPdfUrl(open ? resourceId : null);
     const numberingState = usePageNumbering(open ? resourceId : null);
@@ -65,6 +68,10 @@ export function useCitationSheet(paperId: string, citation: CitationTarget | nul
     return {
         source,
         resourceId,
+        /** Cómo se llama el libro arriba del visor. */
+        label: source?.displayLabel ?? citation?.label ?? citation?.sourceKey ?? '',
+        /** La clave con que se cita: la del trabajo, o la que trajo el destino. */
+        citationKey: source?.citationKey ?? citation?.sourceKey ?? null,
         pdfUrl: pdf.data?.url ?? null,
         loading,
         totalSheets,

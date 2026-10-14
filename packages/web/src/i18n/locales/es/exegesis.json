@@ -2494,6 +2494,13 @@
       "choose": "Elegir páginas de {{label}}"
     }
   },
+  "sourceViewer": {
+    "description": "El documento de la fuente, con búsqueda en todo el libro.",
+    "panelLabel": "Visor de fuente",
+    "expand": "Ampliar a pantalla completa",
+    "close": "Cerrar el visor",
+    "backToPanel": "Volver al panel"
+  },
   "citationViewer": {
     "pageWithSheet": "Hoja {{sheet}} del archivo · lleva impreso el {{printed}}",
     "sheetOnly": "Hoja {{sheet}} del archivo",
