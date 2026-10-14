@@ -15,6 +15,9 @@ describe('versionUnderReview — qué versión se revisa', () => {
     it('aceptado: la aceptada', () => {
         expect(versionUnderReview({ state: 'accepted', current: nueva, accepted: vieja })).toBe(vieja);
     });
+    it('regenerado otra vez y falló: la actual, que es la que aceptar tomaría', () => {
+        expect(versionUnderReview({ state: 'failed', current: nueva, accepted: vieja })).toBe(nueva);
+    });
     it('primera revisión, sin aceptada: la actual', () => {
         expect(versionUnderReview({ state: 'awaiting-review', current: nueva, accepted: null })).toBe(nueva);
         expect(versionUnderReview({ state: 'pending', current: null, accepted: null })).toBeNull();

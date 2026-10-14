@@ -340,7 +340,9 @@ export function isAbandonedGeneration(
 export function versionUnderReview(
     step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted'>,
 ): ExegeticalStepVersion | null {
-    return step.state === 'awaiting-review'
-        ? step.current ?? step.accepted
-        : step.accepted ?? step.current;
+    // Sólo un paso aceptado revisa la aceptada. En `failed` o `generating`
+    // aceptar también actúa sobre `current` (revisión adversarial de C).
+    return step.state === 'accepted'
+        ? step.accepted ?? step.current
+        : step.current ?? step.accepted;
 }

@@ -104,7 +104,8 @@ export function ExegesisCreatePage() {
         // (12 páginas, 13 fuentes). En el TP #7 el perfil «TP Semanal» era
         // así y el trabajo nació con la rúbrica del paper (#1). Sin rúbrica,
         // el perfil no opina: el selector queda como estaba y se avisa.
-        if (profile.rubricTemplateId !== null) setRubricTemplateId(profile.rubricTemplateId);
+        // Sin rúbrica vuelve a automático: no hereda la del perfil anterior.
+        setRubricTemplateId(profile.rubricTemplateId ?? undefined);
         setBriefDelPerfilId(profile.briefTemplateId);
         setExegeticalStrategy(profile.exegeticalStrategy);
         setCoverFromProfile(profile.cover ?? null);

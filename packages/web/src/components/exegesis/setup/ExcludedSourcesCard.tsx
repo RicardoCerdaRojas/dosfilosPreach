@@ -103,6 +103,9 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                                         type="checkbox"
                                         checked={!desmarcadas.has(e.key)}
                                         onChange={() => alternar(e.key)}
+                                        // Una marca a la vez: dos guardados en vuelo podían
+                                        // volver en desorden y dejar la lista vieja.
+                                        disabled={ocupado}
                                         className="h-3.5 w-3.5 rounded border-border accent-primary"
                                     />
                                     {e.key}

@@ -26,8 +26,9 @@ describe('planificador — esquema y tope', () => {
     });
 
     it('el tope crece con los pasos, entre 4k y 32k', () => {
-        expect(plannerOutputCap(4)).toBe(4_096);
-        expect(plannerOutputCap(15)).toBe(8_048);
+        // Piso de 16k: en Gemini el razonamiento sale del mismo tope.
+        expect(plannerOutputCap(4)).toBe(16_384);
+        expect(plannerOutputCap(40)).toBe(18_048);
         expect(plannerOutputCap(200)).toBe(32_768);
     });
 

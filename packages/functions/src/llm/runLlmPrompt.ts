@@ -526,13 +526,30 @@ async function porOtroProveedor(
  * proveedor devuelve `null` y el pedido sigue por Gemini; queda registrada en
  * los logs con «cae a Gemini» para poder medir cuántas veces pasa.
  */
-export async function conRespaldo<T>(intento: () => Promise<T>, etiqueta: string): Promise<T | null> {
+export async function conRespaldo<T>(
+    intento: () => Promise<T>,
+    etiqueta: string,
+    reloj: { ahora: () => number } = { ahora: () => Date.now() },
+): Promise<T | null> {
+    const desde = reloj.ahora();
     try {
         return await intento();
     } catch (err) {
-        console.warn(`[runLlmPrompt] ${etiqueta} cae a Gemini:`, err instanceof Error ? err.message : err);
+        const motivo = err instanceof Error ? err.message : err;
+        // Una falla tardía no cae: Gemini empezaría de cero con menos de cuatro
+        // minutos del límite de 540 s, la función moriría a mitad y el
+        // navegador reintentaría la cadena entera, cobrando dos veces
+        // (revisión adversarial de A).
+        if (reloj.ahora() - desde > SIN_RESPALDO_TRAS_MS) {
+            console.error(`[runLlmPrompt] ${etiqueta} falló tarde; sin tiempo para Gemini:`, motivo);
+            throw err;
+        }
+        console.warn(`[runLlmPrompt] ${etiqueta} cae a Gemini:`, motivo);
         return null;
     }
 }
+
+/** Después de esto ya no queda tiempo para que Gemini termine dentro de los 540 s. */
+export const SIN_RESPALDO_TRAS_MS = 310_000;
 
 type RutaRazonamiento = import('./ruteoDeModelos').RutaDeModelo['reasoning'];

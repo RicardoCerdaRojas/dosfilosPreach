@@ -110,9 +110,17 @@ export function inclusionAtBirth(
  * conclusión. TP #7: «Sin introducción, sin conclusión» estaba escrito y las
  * dos secciones seguían en el documento (#14).
  */
+const FIN = String.raw`(?=\s*(?:[.;:,)]|$|\s(?:ni|y|o|nor|or|and|sin|no)\b))`;
 const SIN_MARCO: Record<'introduction' | 'conclusion', RegExp> = {
-    introduction: /\b(?:sin|no\s+(?:incluya|incluir|lleva|llevar?)(?:\s+una?)?)\s+introducci[óo]n|\b(?:without|no)\s+(?:an?\s+)?introduction/i,
-    conclusion: /\b(?:sin|no\s+(?:incluya|incluir|lleva|llevar?)(?:\s+una?)?)\s+(?:introducci[óo]n\s*(?:,|ni|y|o)\s*(?:sin\s+)?)?conclusi[óo]n|\b(?:without|no)\s+(?:an?\s+)?(?:introduction\s*(?:,|or|and|nor)\s*(?:no\s+)?)?conclusion/i,
+    // «Sin introducción.» / «No incluya introducción»; NO «No incluya una
+    // introducción extensa»: la omisión tiene que cerrar la frase.
+    introduction: new RegExp(String.raw`\b(?:sin|no\s+(?:incluya|incluir|lleva|llevar?))(?:\s+una?)?\s+introducci[óo]n` + FIN
+        + String.raw`|\b(?:without|no)\s+(?:an?\s+)?introduction` + FIN, 'iu'),
+    // La conclusión necesita su propio «sin/ni/no»: «Sin introducción,
+    // conclusión de un párrafo» conserva la conclusión.
+    conclusion: new RegExp(String.raw`(?:\bsin|\bni|\bno\s+(?:incluya|incluir|lleva|llevar?))(?:\s+una?)?\s+conclusi[óo]n` + FIN
+        + String.raw`|(?:\bwithout|\bno|\bnor)\s+(?:an?\s+)?conclusion` + FIN
+        + String.raw`|\bwithout\s+(?:an?\s+)?introduction\s+(?:or|and)\s+(?:an?\s+)?conclusion` + FIN, 'iu'),
 };
 
 export function briefOmitsFrame(brief: string | null | undefined, kind: 'introduction' | 'conclusion'): boolean {
@@ -145,9 +153,13 @@ export function inclusionChangesFromBriefEdit(
     const out: InclusionChange[] = [];
     for (const step of paper.steps) {
         if (step.kind !== 'verse' && step.kind !== 'introduction' && step.kind !== 'conclusion') continue;
-        const nuevo = inclusionAtBirth(step, despues, nextBrief);
+        const previo = inclusionAtBirth(step, antes, paper.assignmentBrief);
+        // Si el encuadre nuevo ya no decide nada y el viejo lo dejaba fuera
+        // —se quitó «Sin introducción», o las preguntas pasaron a prosa—, se
+        // propone volver a incluirlo (revisión adversarial de D).
+        const nuevo = inclusionAtBirth(step, despues, nextBrief) ?? (previo === false ? true : undefined);
         if (nuevo === undefined) continue;
-        if (nuevo === inclusionAtBirth(step, antes, paper.assignmentBrief)) continue;
+        if (nuevo === previo) continue;
         if (nuevo === pertenceAlDocumento(step)) continue;
         out.push({ stepId: step.id, kind: step.kind, verseRef: step.verseRef, include: nuevo });
     }

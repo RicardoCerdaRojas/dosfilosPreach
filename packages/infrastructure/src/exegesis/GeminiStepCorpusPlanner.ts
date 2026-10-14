@@ -82,13 +82,16 @@ export class GeminiStepCorpusPlanner implements IStepCorpusPlanner {
 }
 
 /**
- * Tope de salida del planificador: ~400 tokens por paso más margen, entre 4k
+ * Tope de salida del planificador: ~400 tokens por paso más margen, entre 16k
  * y 32k. Un plan de 16 fuentes × 15 pasos ocupaba 4-8k (por eso se había
  * subido a 32k fijos); con 4 pasos, 32k sólo servían para que un bucle tardara
- * 3 minutos en fallar.
+ * 3 minutos en fallar. El piso es 16k y no 4k: en Gemini —la ruta de
+ * respaldo— el razonamiento se cobra del MISMO tope, y con 4k un plan de
+ * cuatro pasos podía volver vacío (revisión adversarial de A). El bucle lo
+ * corta el esquema estricto, no el tope.
  */
 export function plannerOutputCap(steps: number): number {
-    return Math.min(32_768, Math.max(4_096, 2_048 + steps * 400));
+    return Math.min(32_768, Math.max(16_384, 2_048 + steps * 400));
 }
 
 /**

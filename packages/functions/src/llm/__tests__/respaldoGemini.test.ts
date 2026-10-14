@@ -24,3 +24,17 @@ describe('conRespaldo', () => {
         aviso.mockRestore();
     });
 });
+
+describe('conRespaldo — una falla tardía no cae', () => {
+    it('pasados los 310 s, el error sube: Gemini no alcanzaría a terminar', async () => {
+        let t = 0;
+        const reloj = { ahora: () => t };
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await expect(conRespaldo(async () => { t = 400_000; throw new Error('OpenAI HTTP 500'); }, 'f', reloj))
+            .rejects.toThrow('OpenAI HTTP 500');
+        t = 0;
+        await expect(conRespaldo(async () => { t = 100_000; throw new Error('OpenAI HTTP 500'); }, 'f', reloj))
+            .resolves.toBeNull();
+        error.mockRestore();
+    });
+});

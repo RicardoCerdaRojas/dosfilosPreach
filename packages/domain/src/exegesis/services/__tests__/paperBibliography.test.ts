@@ -221,3 +221,21 @@ describe('con documento ensamblado, lo citado es lo que cita el documento', () =
         expect(uncitedRubricRequirements(sinEnsamble)).toEqual([]);
     });
 });
+
+/** Revisión adversarial de H: anclas que el sistema escribe y los patrones no leían. */
+describe('lo citado con anclas romanas, de sección, s.v. y hoja', () => {
+    it.each([
+        '(Moo, p. xiv)', '(Arnold y Choi, § 3.2.1)', '(BDAG, s.v. σοφία)', '(Wallace, hoja 87)',
+    ])('%s cuenta como cita', cita => {
+        const p = {
+            steps: [], assembledMarkdown: `Una afirmación ${cita}.`,
+            sources: ['Moo', 'Arnold y Choi', 'BDAG', 'Wallace'].map(k => ({ citationKey: k, displayLabel: k, sourceType: 'other' })),
+        } as unknown as ExegeticalPaper;
+        expect(citedSourceKeys(p).size).toBe(1);
+    });
+    it('un pie de imprenta no es una cita', () => {
+        const p = { steps: [], assembledMarkdown: 'Libro (Grand Rapids: Eerdmans, 2009).',
+            sources: [{ citationKey: 'Moo', displayLabel: 'Moo', sourceType: 'other' }] } as unknown as ExegeticalPaper;
+        expect(citedSourceKeys(p).size).toBe(0);
+    });
+});

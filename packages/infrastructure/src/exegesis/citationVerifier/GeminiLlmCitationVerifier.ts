@@ -382,7 +382,9 @@ export function selectEvidenceChunks(
     });
     const deLaCitada = sorted.filter(c => isOnCitedPage(c, citedPages)).length;
     return sorted
-        .slice(0, Math.max(caps.maxChunks, deLaCitada))
+        // Entera, pero con techo: una cita a un rango largo («Robertson,
+        // 570-593») traía 50 fragmentos y pasaba el tope del prompt.
+        .slice(0, Math.min(Math.max(caps.maxChunks, deLaCitada), caps.maxChunks * 3))
         .map(c => ({
             text: c.text.length > caps.maxCharsPerChunk ? c.text.slice(0, caps.maxCharsPerChunk) : c.text,
             pageHint: c.pageHint,

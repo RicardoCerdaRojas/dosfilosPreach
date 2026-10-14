@@ -109,7 +109,9 @@ export function proposeSortedAuthor(author: string): string {
     // Bill T., and John H. Choi». Antes se dejaba tal cual, y NA28 salió
     // «Eberhard Nestle y Kurt Aland.», ordenada por «Eberhard» (TP #7).
     const coordinado = clean.match(/^(.+?)\s+(and|y|e|&)\s+(.+)$/i);
-    if (coordinado && !LINAJE.test(clean)) {
+    // Sólo si lo de después de la conjunción es un nombre con apellido: «Ortega
+    // y Gasset» y «Ramón y Cajal» son UN apellido compuesto, no coautores.
+    if (coordinado && !LINAJE.test(clean) && coordinado[3]!.trim().split(/\s+/).length >= 2) {
         const primero = proposeSortedAuthor(coordinado[1]!);
         return primero === coordinado[1] ? clean : `${primero}, ${coordinado[2]} ${coordinado[3]}`;
     }
@@ -141,7 +143,11 @@ const LINAJE = /[\s,](jr|sr|ii|iii)\.?$/i;
 export function sortedAuthorOf(data: Pick<BibliographicData, 'author' | 'authorSorted'>): string {
     const autor = (data.author ?? '').trim();
     const ordenado = (data.authorSorted ?? '').trim();
-    return ordenado && ordenado !== autor ? ordenado : proposeSortedAuthor(autor);
+    // Sólo un nombre coordinado guardado tal cual se vuelve a proponer: «United
+    // Bible Societies» igual al autor es una decisión, no un descuido.
+    if (!ordenado) return proposeSortedAuthor(autor);
+    if (ordenado === autor && /\s(and|y|e|&)\s/i.test(autor)) return proposeSortedAuthor(autor);
+    return ordenado;
 }
 
 /**
@@ -263,6 +269,8 @@ export function withFullTitle<T extends Pick<BibliographicData, 'title'>>(data: 
     const largo = (resourceTitle ?? '').trim();
     if (!corto || largo.length <= corto.length) return data;
     if (!largo.toLocaleLowerCase().startsWith(corto.toLocaleLowerCase())) return data;
-    if (!/^\s*[:.—–-]\s*\S/.test(largo.slice(corto.length))) return data;
+    // Sólo «:» o «.»: un guion suele venir del nombre del archivo («James -
+    // McCartney»), y eso no es un subtítulo.
+    if (!/^\s*[:.]\s*\S/.test(largo.slice(corto.length))) return data;
     return { ...data, title: largo };
 }

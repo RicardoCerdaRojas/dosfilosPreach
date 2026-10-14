@@ -10,6 +10,10 @@ describe('briefOmitsFrame — el encuadre dice «sin introducción» (TP #7, #14
         ['Sin introducción y con conclusión.', true, false],
         ['Without introduction or conclusion.', true, true],
         ['La introducción debe presentar la tesis.', false, false],
+        // Revisión adversarial de D: no son omisiones.
+        ['Sin introducción, conclusión de un párrafo.', true, false],
+        ['No incluya una introducción extensa.', false, false],
+        ['No introduction longer than 200 words.', false, false],
     ])('%s', (brief, intro, concl) => {
         expect(briefOmitsFrame(brief, 'introduction')).toBe(intro);
         expect(briefOmitsFrame(brief, 'conclusion')).toBe(concl);
@@ -56,5 +60,14 @@ describe('inclusionChangesFromBriefEdit', () => {
             `${viejo}\nSin introducción.`,
         );
         expect(cambios).toEqual([expect.objectContaining({ stepId: 'intro', include: false })]);
+    });
+});
+
+describe('quitar «Sin introducción» propone volver a incluirla (revisión adversarial de D)', () => {
+    it('el encuadre nuevo ya no decide y el viejo la dejaba fuera', () => {
+        const paper = { assignmentBrief: 'Trabajo en prosa. Sin introducción.', passage: { chapterStart: 3, chapterEnd: 3 },
+            steps: [{ id: 'intro', kind: 'introduction', verseRef: null, includeInDocument: false }] } as never;
+        expect(inclusionChangesFromBriefEdit(paper, 'Trabajo en prosa.'))
+            .toEqual([expect.objectContaining({ stepId: 'intro', include: true })]);
     });
 });

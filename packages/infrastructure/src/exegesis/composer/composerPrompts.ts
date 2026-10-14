@@ -1,5 +1,6 @@
 import { fitPromptToCap } from '../../llm/promptBudget';
 import {
+    buildAcademicRegisterBlock,
     buildAcademicVoiceBlock,
     buildVerseCoverageContract,
     formatPassageReference,
@@ -43,6 +44,7 @@ export function buildComposerPrompt(input: ComposeAcademicPaperInput): BuiltComp
         // REGISTRO, no material del pasaje.
         systemInstruction: [
             buildSystemInstruction(input),
+            buildAcademicRegisterBlock(input.language),
             buildAcademicVoiceBlock(input.voiceSamples ?? [], input.language),
         ].filter(Boolean).join('\n\n'),
         userMessage: buildUserMessage(input),

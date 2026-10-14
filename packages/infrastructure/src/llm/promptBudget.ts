@@ -117,6 +117,9 @@ export const VERSE_CORPUS_SPACE_CHARS = MAX_PROMPT_CHARS - SAFETY_MARGIN_CHARS -
  *
  * Si todo cabe, nadie se recorta. Si no, se recortan las que más traen.
  */
+/** Lo que conserva, como mínimo, el texto sin fijar de cada fuente. */
+export const PISO_SIN_FIJAR = 4_000;
+
 export function allocateSourceBudgets(
     lengths: ReadonlyArray<number>,
     weights: ReadonlyArray<number>,
@@ -132,9 +135,19 @@ export function allocateSourceBudgets(
     const total = Math.max(0, totalChars);
     const pedido = lengths.map((len, i) => Math.min(len, Math.max(0, reserved[i] ?? 0)));
     const sumaPedido = pedido.reduce((s, n) => s + n, 0);
-    const escala = sumaPedido > total ? total / sumaPedido : 1;
+    // Lo fijado no se queda con todo: cada fuente con texto sin fijar conserva
+    // un piso. Sin él, un fijado enorme dejaba a las demás —el ancla
+    // incluida— en «[contenido truncado]» (revisión adversarial de B). Un
+    // piso por fuente y no un porcentaje: un 70 % volvía a truncar lo fijado
+    // de Robertson en el caso del TP #7.
+    const piso = lengths.reduce((sum, len, i) => sum + Math.min(PISO_SIN_FIJAR, Math.max(0, len - pedido[i]!)), 0);
+    const tope = Math.max(0, total - piso);
+    const escala = sumaPedido > tope ? tope / sumaPedido : 1;
     const base = pedido.map(n => Math.floor(n * escala));
-    const resto = repartir(lengths.map((len, i) => len - base[i]!), weights, total - base.reduce((s, n) => s + n, 0));
+    // Si lo fijado ya se achicó, lo que queda es el piso de las otras: una
+    // fuente recortada no compite por él.
+    const restante = lengths.map((len, i) => (escala < 1 && pedido[i]! > 0 ? 0 : len - base[i]!));
+    const resto = repartir(restante, weights, total - base.reduce((s, n) => s + n, 0));
     return base.map((n, i) => n + resto[i]!);
 }
 

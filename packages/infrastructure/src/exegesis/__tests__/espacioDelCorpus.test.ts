@@ -123,6 +123,12 @@ describe('lo fijado tiene lugar reservado', () => {
         expect(allocateSourceBudgets([124_000, 60_000, 60_000], [1, 1, 1], 150_000)[0]).toBe(50_000);
     });
 
+    it('lo fijado no deja a las demás fuentes vacías: cada una conserva un piso', () => {
+        const [fijada, ancla] = allocateSourceBudgets([200_000, 60_000], [1, 1], 150_000, [200_000, 0]);
+        expect(ancla).toBeGreaterThanOrEqual(4_000);
+        expect(fijada! + ancla!).toBeLessThanOrEqual(150_000);
+    });
+
     it('si lo reservado no cabe, se achica en proporción y nunca pasa del total', () => {
         const r = allocateSourceBudgets([100_000, 100_000], [1, 1], 100_000, [100_000, 100_000]);
         expect(r).toEqual([50_000, 50_000]);

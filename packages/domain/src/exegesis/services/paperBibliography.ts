@@ -80,6 +80,14 @@ export function keysCitedIn(markdown: string, keys: ReadonlyArray<string>): Read
         const key = keys.find(k => resolvesToCitedSource(cita.author, [k]));
         if (key) out.add(key);
     }
+    // Las anclas que el propio sistema escribe y los patrones no leen:
+    // «(Moo, p. xiv)», «(Arnold y Choi, § 3.2.1)», «(BDAG, s.v. σοφία)»,
+    // «(Wallace, hoja 87)». Un paréntesis que ABRE con la clave y una coma
+    // es una cita de esa fuente (revisión adversarial de H).
+    for (const m of markdown.matchAll(/\(\s*([^(),]{1,60}?)\s*,[^()]*\)/g)) {
+        const key = keys.find(k => resolvesToCitedSource(m[1]!, [k]));
+        if (key) out.add(key);
+    }
     return out;
 }
 

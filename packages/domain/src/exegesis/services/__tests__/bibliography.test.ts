@@ -148,3 +148,17 @@ describe('withFullTitle', () => {
         expect(withFullTitle({ title: 'The Epistle of James' }, 'Commentary on James').title).toBe('The Epistle of James');
     });
 });
+
+/** Revisión adversarial de H. */
+describe('autores que no son coautores', () => {
+    it('un apellido compuesto con «y» no se parte', () => {
+        expect(proposeSortedAuthor('José Ortega y Gasset')).toBe('José Ortega y Gasset');
+        expect(proposeSortedAuthor('Santiago Ramón y Cajal')).toBe('Santiago Ramón y Cajal');
+    });
+    it('un autor institucional guardado tal cual se respeta', () => {
+        expect(sortedAuthorOf({ author: 'United Bible Societies', authorSorted: 'United Bible Societies' })).toBe('United Bible Societies');
+    });
+    it('un guion no es un subtítulo (suele venir del nombre del archivo)', () => {
+        expect(withFullTitle({ title: 'James' }, 'James - McCartney').title).toBe('James');
+    });
+});
