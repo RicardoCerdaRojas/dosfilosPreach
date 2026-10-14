@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     Wand2,
     Loader2,
@@ -18,8 +18,6 @@ import {
     MoreVertical,
     Undo2,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,7 +25,12 @@ import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useReopenStep } from '@/hooks/exegesis/useReopenStep';
 import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/CanonicalAnalysisStudyView';
-import { CitationSourceModal, type CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
+import type { CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
+import { useRegisterCitationSink, useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
+import { insertarEnCursor } from '@/components/exegesis/citation/citarDesdeVisor';
+import { destinoDeCita, type CitaEnlazada } from '@/components/exegesis/citation/destinosDelVisor';
+import { ProsaConCitas } from '@/components/exegesis/citation/ProsaConCitas';
+import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
@@ -178,7 +181,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // tarjeta seguiría girando hasta que el usuario recargue a mano. Un solo
     // temporizador, disparado exactamente al vencer, y sólo mientras genera.
     // Cita abierta en el visor del documento original. `null` = cerrado.
-    const [openCitation, setOpenCitation] = useState<CitationTarget | null>(null);
+    // Las citas se abren en el visor lateral: el texto del paso queda a la
+    // vista al lado del libro (fase F).
+    const sourceViewer = useSourceViewer();
+    const openCitation = useCallback((citation: CitationTarget) => sourceViewer.open({ paperId, citation }), [sourceViewer, paperId]);
     const navigate = useNavigate();
     const reviewPath = `/dashboard/exegesis/${paperId}/pasos/${step.id}/revision`;
 
@@ -404,13 +410,28 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
      * El texto no cambia al marcar una casilla. Atarlo a `previewMarkdown`
      * hace que ese re-render no cueste nada.
      */
+    // Las citas de la prosa que nombran una fuente del trabajo se pueden
+    // pulsar: abren el visor en su página (fase F). El trabajo ya está en
+    // caché por la página que monta esta tarjeta.
+    const { paper: paperDeLasCitas } = useExegesisPaper(paperId);
+    // Atado al TEXTO de las claves, no a la identidad del trabajo: marcar una
+    // casilla del documento cambia el trabajo entero y no debe volver a
+    // dibujar la prosa (ver abajo).
+    const clavesTexto = (paperDeLasCitas?.sources ?? []).map(s => s.citationKey ?? s.displayLabel).join('\u0001');
+    const clavesDelTrabajo = useMemo(() => (clavesTexto ? clavesTexto.split('\u0001') : []), [clavesTexto]);
+    const abrirCitaDeLaProsa = useCallback(
+        (cita: CitaEnlazada) => sourceViewer.open(destinoDeCita(paperId, cita)),
+        [sourceViewer, paperId],
+    );
+    const tituloCita = t('detail.steps.openCitation');
     const markdownRenderizado = useMemo(() => (
-        <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {previewMarkdown}
-            </ReactMarkdown>
-        </div>
-    ), [previewMarkdown]);
+        <ProsaConCitas
+            markdown={previewMarkdown}
+            claves={clavesDelTrabajo}
+            onOpenCita={abrirCitaDeLaProsa}
+            tituloCita={tituloCita}
+        />
+    ), [previewMarkdown, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita]);
 
     const anyPipelinePending =
         generateStep.isPending
@@ -490,6 +511,22 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const stepLabel = step.verseRef
         ? formatPassageReference(step.verseRef, language)
         : t(`detail.steps.kind.${step.kind}`);
+
+    // Mientras se edita, este paso recibe las citas hechas en el visor de
+    // fuente: «Citar en el texto» las inserta donde está el cursor (fase F).
+    // El textarea conserva su cursor aunque el foco pase al visor.
+    const editorRef = useRef<HTMLTextAreaElement>(null);
+    const citationSink = useMemo(() => (editing ? {
+        label: stepLabel,
+        insert: (cita: string) => {
+            const el = editorRef.current;
+            if (!el) return;
+            const { valor, cursor } = insertarEnCursor(el.value, el.selectionStart, el.selectionEnd, cita);
+            setEditDraft(valor);
+            requestAnimationFrame(() => { el.focus(); el.setSelectionRange(cursor, cursor); });
+        },
+    } : null), [editing, stepLabel]);
+    useRegisterCitationSink(citationSink);
     const handleAdaptiveRegenerate = (regenerationHint?: string) => {
         if (shouldRegenerateCanonically) {
             return handleAnalyzeCanonically(regenerationHint);
@@ -951,7 +988,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             </div>
                         )}
                         {supportsStudyView && viewMode === 'study' ? (
-                            <CanonicalAnalysisStudyView analysis={canonicalAnalysis!} onOpenCitation={setOpenCitation} />
+                            <CanonicalAnalysisStudyView analysis={canonicalAnalysis!} onOpenCitation={openCitation} />
                         ) : previewMarkdown ? (
                             markdownRenderizado
                         ) : (
@@ -959,7 +996,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             // composer hasn't run on this version. Default
                             // straight to study view so the user sees the
                             // structured payload that came back.
-                            canonicalAnalysis && <CanonicalAnalysisStudyView analysis={canonicalAnalysis} onOpenCitation={setOpenCitation} />
+                            canonicalAnalysis && <CanonicalAnalysisStudyView analysis={canonicalAnalysis} onOpenCitation={openCitation} />
                         )}
                     </div>
                 )}
@@ -967,6 +1004,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 {editing && (
                     <div className="space-y-2">
                         <textarea
+                            ref={editorRef}
                             value={editDraft}
                             onChange={(e) => setEditDraft(e.target.value)}
                             className="w-full min-h-[200px] rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
@@ -1243,12 +1281,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 formatting={formatting}
                 isComposing={composeVerseAcademicProse.isPending}
                 onRecompose={(guidance, targetWords) => handleComposeVerseProse(guidance, targetWords)}
-            />
-            <CitationSourceModal
-                open={!!openCitation}
-                onOpenChange={(open) => { if (!open) setOpenCitation(null); }}
-                paperId={paperId}
-                citation={openCitation}
             />
         </article>
     );

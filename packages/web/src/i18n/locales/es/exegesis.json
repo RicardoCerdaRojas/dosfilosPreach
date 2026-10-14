@@ -1951,6 +1951,8 @@
         "claim": "Afirmación cotejada",
         "verdict": "Qué vio el verificador",
         "pageHint": "Una diferencia de una página puede ser la calibración del libro, no la cita. Abre el PDF y compara el folio impreso.",
+        "openCited": "Ver {{page}} (la citada)",
+        "openFound": "Ver {{page}} (donde la halló el verificador)",
         "openPdf": "Abrir en el PDF",
         "reviewLabel": "Revisión manual",
         "reviewedLabel": "Revisada a mano",
@@ -2152,6 +2154,7 @@
       "body": "Vamos a producir un paso por verso del pasaje, más conclusión, introducción y ensamble final."
     },
     "steps": {
+      "openCitation": "Ver en el libro",
       "startCta": "Iniciar generación",
       "generating": "Generando...",
       "regenerating": "Regenerando…",
@@ -2267,6 +2270,7 @@
       "changeCta": "Editar en configuración"
     },
     "sources": {
+      "open": "Abrir en el visor",
       "title": "Corpus del trabajo",
       "none": "Sin fuentes todavía. Agrégalas para que el orquestador pueda interactuar con ellas.",
       "addCta": "Editar en configuración",
@@ -2493,6 +2497,27 @@
       "title_other": "{{count}} fuentes no tienen páginas elegidas ni fragmentos: el análisis busca en cada libro entero. Elegir sus páginas es más preciso.",
       "choose": "Elegir páginas de {{label}}"
     }
+  },
+  "sourceViewer": {
+    "description": "El documento de la fuente, con búsqueda en todo el libro.",
+    "panelLabel": "Visor de fuente",
+    "expand": "Ampliar a pantalla completa",
+    "close": "Cerrar el visor",
+    "backToPanel": "Volver al panel",
+    "citeHere": "Citar en el texto",
+    "copy": "Copiar",
+    "copyCitation": "Copiar la cita",
+    "withQuote": "Con la frase",
+    "pageHint": "Cita de esta página",
+    "selectionHint": "Frase seleccionada",
+    "insertsInto": "Se inserta donde está el cursor, en {{label}}.",
+    "noEditor": "No hay un texto abierto: la cita se copia para pegarla donde quieras.",
+    "inserted": "Cita insertada en {{label}}.",
+    "copied": "Cita copiada.",
+    "copyFailed": "No se pudo copiar la cita.",
+    "index": "Índice del libro",
+    "clear": "Quitar",
+    "clearSelection": "Quitar la frase seleccionada"
   },
   "citationViewer": {
     "pageWithSheet": "Hoja {{sheet}} del archivo · lleva impreso el {{printed}}",

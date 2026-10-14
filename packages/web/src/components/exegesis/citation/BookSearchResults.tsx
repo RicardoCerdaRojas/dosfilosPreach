@@ -12,6 +12,12 @@ interface Props {
     printedOf: (sheet: number) => string | number | null;
     currentSheet: number;
     onGo: (sheet: number) => void;
+    /**
+     * `strip`: una franja bajo la barra (el panel lateral, angosto).
+     * `column`: una columna a la izquierda de la hoja (la vista ampliada),
+     * donde caben los renglones enteros.
+     */
+    layout?: 'strip' | 'column';
 }
 
 /**
@@ -22,8 +28,11 @@ interface Props {
  * renglón donde cae la palabra: casi siempre basta para saber cuál de las
  * cinco hojas es la que importa sin abrirlas una por una.
  */
-export function BookSearchResults({ hits, truncated, isLoading, isError, printedOf, currentSheet, onGo }: Props) {
+export function BookSearchResults({ hits, truncated, isLoading, isError, printedOf, currentSheet, onGo, layout = 'strip' }: Props) {
     const { t } = useTranslation('exegesis');
+    const marco = layout === 'column'
+        ? 'md:w-80 md:shrink-0 md:max-h-none max-h-44 overflow-y-auto border-b md:border-b-0 md:border-r border-border bg-card/40'
+        : 'border-b border-border bg-card/40 max-h-44 overflow-y-auto';
 
     if (isLoading) {
         return (
@@ -49,7 +58,7 @@ export function BookSearchResults({ hits, truncated, isLoading, isError, printed
     }
 
     return (
-        <div className="border-b border-border bg-card/40 max-h-44 overflow-y-auto">
+        <div className={marco} data-testid="book-search-results">
             <ul className="divide-y divide-border/60">
                 {hits.map(hit => {
                     const printed = printedOf(hit.sheet);

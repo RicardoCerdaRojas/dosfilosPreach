@@ -4,6 +4,9 @@ import {
     useRef,
     useState,
 } from 'react';
+import { rutaCalibracion } from '@/lib/rutaCalibracion';
+import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
+import { abrirFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import {
     AlertTriangle,
     BookOpenText,
@@ -953,7 +956,10 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
     const libraryResource = source.sourceLibraryResourceId
         ? library.resources.find(r => r.id === source.sourceLibraryResourceId)
         : null;
-    const originalUrl = libraryResource?.storageUrl ?? null;
+    // El libro se abre en el visor (fase F), no como PDF suelto en otra
+    // pestaña: con la página impresa, la búsqueda en el libro y «Citar».
+    const sourceViewer = useSourceViewer();
+    const puedeAbrirse = !!libraryResource;
     // Un comentario que comenta otros libros no cumple el requisito de
     // comentario de este pasaje; uno sin libro registrado cuenta, pero se
     // pide completarlo (TP #6: una homilética contaba como comentario).
@@ -1076,17 +1082,17 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 >
                     {t('paperSetup.subSteps.corpus.picker.adjustPages')}
                 </button>
-                {originalUrl && (
-                    <a
-                        href={originalUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-accent transition-colors inline-flex items-center"
+                {puedeAbrirse && (
+                    <button
+                        type="button"
+                        onClick={() => abrirFuente(sourceViewer.open, paper.id, source, libraryResource)}
+                        className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-accent transition-colors inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         aria-label={t('paperSetup.subSteps.corpus.list.viewOriginal')}
                         title={t('paperSetup.subSteps.corpus.list.viewOriginal')}
+                        data-testid="abrir-fuente-en-visor"
                     >
                         <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    </button>
                 )}
                 <button
                     type="button"
@@ -1268,7 +1274,7 @@ function SinPaginaComprobable({ resourceId }: { resourceId: string }) {
             </div>
             <button
                 type="button"
-                onClick={() => navigate(`/dashboard/library/${resourceId}/numeracion`)}
+                onClick={() => navigate(rutaCalibracion(resourceId))}
                 className="shrink-0 rounded border border-warning/40 px-2 py-1 text-[11px] font-medium text-warning-subtle-foreground hover:bg-warning-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 {t('paperSetup.subSteps.corpus.sinPaginaComprobable.action')}

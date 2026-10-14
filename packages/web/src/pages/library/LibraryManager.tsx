@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { rutaCalibracion } from '@/lib/rutaCalibracion';
+import { useAbrirRecursoEnVisor } from './hooks/useAbrirRecursoEnVisor';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '@/i18n';
@@ -45,6 +47,7 @@ const ADMIN_EMAIL = 'rdocerda@gmail.com';
  * resource references for modals.
  */
 export function LibraryManager() {
+    const abrirEnVisor = useAbrirRecursoEnVisor();
     const { t } = useTranslation('library');
     const { user } = useFirebase();
     const { checkCanAccessLibrary, checkCanUploadDocument } = useUsageLimits();
@@ -387,7 +390,7 @@ export function LibraryManager() {
                                 onRetryPremium={() => mutations.retryWithPremium(resource.id)}
                                 onReextractFromImages={() => mutations.reextractFromImages(resource.id)}
                                 onCancelExtraction={() => mutations.cancelExtraction(resource.id)}
-                                onPreview={() => window.open(resource.storageUrl, '_blank')}
+                                onPreview={() => abrirEnVisor(resource)}
                                 onSetPhases={() => openPhases(resource)}
                                 onConfigureCoreStores={isAdmin ? () => openCoreStores(resource) : undefined}
                                 // Un recurso del sistema no es del usuario: las reglas
@@ -395,7 +398,7 @@ export function LibraryManager() {
                                 // prometer algo que termina en un error de permisos.
                                 onCalibrateNumbering={resource.isSystemSource
                                     ? undefined
-                                    : () => navigate(`/dashboard/library/${resource.id}/numeracion`)}
+                                    : () => navigate(rutaCalibracion(resource.id))}
                             />
                             </div>
                         ))}

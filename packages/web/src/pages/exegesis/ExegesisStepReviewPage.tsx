@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { rutaCalibracion } from '@/lib/rutaCalibracion';
+import { paginaHallada } from '@/components/exegesis/review/paginaHallada';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { formatPassageReference, type CitationStatus, type SupportedLanguage } from '@dosfilos/domain';
@@ -69,7 +71,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
         if (!selectedClaim) return null;
         const source = paper.sources.find(s => (s.citationKey ?? s.displayLabel) === selectedClaim.sourceKey);
         const resourceId = source?.sourceLibraryResourceId ?? source?.corpusId;
-        return resourceId ? `/library/${resourceId}/numeracion` : null;
+        return resourceId ? rutaCalibracion(resourceId) : null;
     })();
 
     const select = (path: string) => {
@@ -83,6 +85,17 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
         const claim = r.selectedPath ? r.claims.get(r.selectedPath) : null;
         if (!claim) return;
         setOpenCitation({ sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator, verbatimQuote: claim.verbatimQuote });
+    };
+    // La página donde el verificador halló el apoyo, con la misma frase
+    // resaltada: si está ahí, se ve (fase F).
+    const openFound = () => {
+        const claim = r.selectedPath ? r.claims.get(r.selectedPath) : null;
+        const hallada = selectedVerdict ? paginaHallada(selectedVerdict) : null;
+        if (!claim || !hallada) return;
+        setOpenCitation({
+            sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator, verbatimQuote: claim.verbatimQuote,
+            openAt: { page: hallada.page, pageKind: hallada.pageKind },
+        });
     };
 
     return (
@@ -206,6 +219,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                             isReviewing={r.isReviewing}
                             onReview={r.review}
                             onOpenSource={openSource}
+                            onOpenFound={openFound}
                         />
                         {r.listed.length > 0 && (
                             <nav className="rounded-xl border border-border bg-card p-3 space-y-1" aria-label={t('canonical.review.listTitle')}>

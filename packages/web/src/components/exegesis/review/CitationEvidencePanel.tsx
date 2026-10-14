@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { esOtraPagina, paginaHallada } from './paginaHallada';
 import { Link } from 'react-router-dom';
 import { BookOpen, CheckCircle2, Loader2, MapPin, Undo2 } from 'lucide-react';
 import { parsePageRange, type AnalysisClaim, type CitationEdit, type CitationReview, type VerifiedCitation } from '@dosfilos/domain';
@@ -18,6 +19,11 @@ interface Props {
     onReview: (path: string, note: string) => void;
     /** Ausente cuando el panel ya vive junto al PDF. */
     onOpenSource?: () => void;
+    /**
+     * Abre la página donde el verificador halló el apoyo, cuando no es la
+     * citada (fase F): así se miran las dos y se decide.
+     */
+    onOpenFound?: () => void;
     /**
      * Frase para anotar «está aquí» con la hoja que el lector tiene
      * delante. Se agrega a la nota, no la reemplaza: lo que ya escribió
@@ -40,7 +46,7 @@ interface Props {
  * la página y la cita está bien» de «quería que dejara de bloquear», y la
  * diferencia es todo lo que este panel existe para registrar.
  */
-export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, noteFromView, viewed, isCorrecting = false, onCorrect, calibrationPath }: Props) {
+export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, onOpenFound, noteFromView, viewed, isCorrecting = false, onCorrect, calibrationPath }: Props) {
     const { t } = useTranslation('exegesis');
     const [note, setNote] = useState(review?.note ?? '');
     useEffect(() => { setNote(review?.note ?? ''); }, [path, review?.note]);
@@ -58,6 +64,10 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
     // cita: en Ortiz las cinco «página no coincide» de la medición eran
     // todas de un folio y todas del mismo tramo mal calibrado.
     const offByOne = isOffByOne(verdict);
+    // Sólo si el apoyo está en OTRA página que la citada: si es la misma, un
+    // segundo botón abriría lo mismo.
+    const encontrada = paginaHallada(verdict);
+    const hallada = encontrada && esOtraPagina(verdict, encontrada) ? encontrada : null;
 
     return (
         <div className="rounded-xl border border-border bg-card p-4 space-y-4">
@@ -119,8 +129,16 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" onClick={onOpenSource}>
                         <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-                        {t('canonical.review.panel.openPdf')}
+                        {hallada && onOpenFound && verdict.pages
+                            ? t('canonical.review.panel.openCited', { page: `${/\bhoja\b/i.test(verdict.raw ?? '') ? 'hoja' : 'p.'} ${verdict.pages}` })
+                            : t('canonical.review.panel.openPdf')}
                     </Button>
+                    {hallada && onOpenFound && (
+                        <Button type="button" size="sm" variant="outline" onClick={onOpenFound} data-testid="abrir-pagina-hallada">
+                            <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+                            {t('canonical.review.panel.openFound', { page: hallada.label })}
+                        </Button>
+                    )}
                 </div>
             )}
 

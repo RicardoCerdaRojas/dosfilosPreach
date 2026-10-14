@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { pdfjsLib } from '@/lib/pdfWorker';
 import { Loader2, FileWarning } from 'lucide-react';
 import { findQuoteInPageText } from '@dosfilos/domain';
+import './pdfTextLayer.css';
 
 /**
  * Una hoja del PDF, dibujada en canvas.
@@ -67,6 +68,14 @@ interface Props {
     searchTerm?: string | null;
     /** Cuántas veces aparece el término buscado en esta hoja. */
     onSearchMatches?: (count: number) => void;
+    /**
+     * Pone el texto de la hoja encima del dibujo para poder seleccionarlo
+     * (fase F: citar una frase desde el visor). En un escaneo sin texto no
+     * hay nada que seleccionar, y la hoja se ve igual.
+     */
+    selectable?: boolean;
+    /** La frase seleccionada en la hoja; `null` al soltarla. */
+    onTextSelected?: (text: string | null) => void;
 }
 
 /** Banda a pintar sobre el canvas, en píxeles CSS relativos a la hoja. */
@@ -120,6 +129,8 @@ export function PdfPageViewer({
     zoom = 'fit',
     searchTerm = null,
     onSearchMatches,
+    selectable = false,
+    onTextSelected,
 }: Props) {
     const { t } = useTranslation('exegesis');
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -135,6 +146,8 @@ export function PdfPageViewer({
     const [highlights, setHighlights] = useState<HighlightBox[]>([]);
     const [searchBoxes, setSearchBoxes] = useState<HighlightBox[]>([]);
     const [canvasBox, setCanvasBox] = useState({ width: 0, height: 0 });
+    const textLayerRef = useRef<HTMLDivElement>(null);
+    const textLayerTaskRef = useRef<{ cancel: () => void } | null>(null);
 
     // La hoja se ajusta al panel para que entre ENTERA. Al recorrer un libro
     // decidiendo qué sirve, ver media página y tener que scrollear para ver el
@@ -226,6 +239,7 @@ export function PdfPageViewer({
                 // La capa de texto se lee aparte del dibujo: el canvas
                 // pinta píxeles y no sabe dónde quedó cada palabra.
                 void paintBands(page, page.getViewport({ scale: cssScale }));
+                if (selectable) renderTextLayer(page, page.getViewport({ scale: cssScale }), cssScale);
 
                 const task = page.render({ canvas, canvasContext: ctx, viewport });
                 renderRef.current = task;
@@ -334,9 +348,73 @@ export function PdfPageViewer({
             }
         }
 
-        return () => { cancelled = true; renderRef.current?.cancel(); };
+        /**
+         * El texto de la hoja, transparente y en su lugar, para seleccionarlo.
+         * pdf.js arma los renglones con su propia escala (`--total-scale-factor`);
+         * con la misma escala que el dibujo, la selección cae sobre las letras.
+         */
+        function renderTextLayer(page: pdfjsLib.PDFPageProxy, cssViewport: pdfjsLib.PageViewport, scale: number) {
+            const el = textLayerRef.current;
+            if (!el) return;
+            textLayerTaskRef.current?.cancel();
+            el.replaceChildren();
+            el.style.setProperty('--total-scale-factor', String(scale));
+            el.style.setProperty('--scale-round-x', '1px');
+            el.style.setProperty('--scale-round-y', '1px');
+            try {
+                const layer = new pdfjsLib.TextLayer({ textContentSource: page.streamTextContent(), container: el, viewport: cssViewport });
+                textLayerTaskRef.current = layer;
+                layer.render().catch((err: unknown) => {
+                    if (!cancelled) console.warn('[PdfPageViewer] no se pudo armar la capa de texto', err);
+                });
+            } catch (err) {
+                console.warn('[PdfPageViewer] no se pudo armar la capa de texto', err);
+            }
+        }
+
+        return () => { cancelled = true; renderRef.current?.cancel(); textLayerTaskRef.current?.cancel(); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sheet, status, stage.width, stage.height, highlightQuote, zoom, searchTerm]);
+    }, [sheet, status, stage.width, stage.height, highlightQuote, zoom, searchTerm, selectable]);
+
+    // Al cambiar de hoja, la frase seleccionada en la anterior ya no vale.
+    useEffect(() => { onTextSelected?.(null); }, [sheet]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Una selección que termina FUERA de la hoja (arrastrando más allá del
+    // borde) o hecha con Shift + flechas no dispara el mouseup de la capa: se
+    // escucha también en el documento, pero sólo para REPORTAR una selección
+    // que cae en esta hoja, nunca para borrarla (un clic en «Citar» no debe
+    // perder la frase antes de usarla).
+    useEffect(() => {
+        if (!selectable || !onTextSelected) return;
+        const alSoltar = () => {
+            textLayerRef.current?.classList.remove('selecting');
+            const sel = window.getSelection();
+            const el = textLayerRef.current;
+            if (!sel || sel.isCollapsed || !el || !sel.anchorNode || !el.contains(sel.anchorNode)) return;
+            const text = sel.toString().replace(/\s+/g, ' ').trim();
+            if (text) onTextSelected(text);
+        };
+        document.addEventListener('mouseup', alSoltar);
+        document.addEventListener('keyup', alSoltar);
+        return () => {
+            document.removeEventListener('mouseup', alSoltar);
+            document.removeEventListener('keyup', alSoltar);
+        };
+    }, [selectable, onTextSelected]);
+
+    /** Lo seleccionado DENTRO de esta hoja, en un renglón corrido. */
+    const reportSelection = () => {
+        textLayerRef.current?.classList.remove('selecting');
+        if (!onTextSelected) return;
+        const sel = window.getSelection();
+        const el = textLayerRef.current;
+        if (!sel || sel.isCollapsed || !el || !sel.anchorNode || !el.contains(sel.anchorNode)) {
+            onTextSelected(null);
+            return;
+        }
+        const text = sel.toString().replace(/\s+/g, ' ').trim();
+        onTextSelected(text || null);
+    };
 
     if (status === 'error') {
         return (
@@ -384,6 +462,16 @@ export function PdfPageViewer({
                         style={{ left: box.left, top: box.top, width: box.width, height: box.height }}
                     />
                 ))}
+                {selectable && (
+                    <div
+                        ref={textLayerRef}
+                        className="textLayer"
+                        data-testid="pdf-text-layer"
+                        onMouseDown={() => textLayerRef.current?.classList.add('selecting')}
+                        onMouseUp={reportSelection}
+                        onKeyUp={reportSelection}
+                    />
+                )}
                 {status === 'ready' && highlights.map((box, i) => (
                     <div
                         key={i}

@@ -1951,6 +1951,8 @@
         "claim": "Checked claim",
         "verdict": "What the verifier saw",
         "pageHint": "A one-page difference may be the book's calibration, not the citation. Open the PDF and compare the printed folio.",
+        "openCited": "See {{page}} (cited)",
+        "openFound": "See {{page}} (where the verifier found it)",
         "openPdf": "Open in the PDF",
         "reviewLabel": "Manual review",
         "reviewedLabel": "Reviewed by hand",
@@ -2152,6 +2154,7 @@
       "body": "We'll produce one step per verse of the passage, plus conclusion, introduction, and final assembly."
     },
     "steps": {
+      "openCitation": "See it in the book",
       "startCta": "Start generation",
       "generating": "Generating...",
       "regenerating": "Regenerating…",
@@ -2267,6 +2270,7 @@
       "changeCta": "Edit in setup"
     },
     "sources": {
+      "open": "Open in the viewer",
       "title": "Project corpus",
       "none": "No sources yet. Add them so the orchestrator can interact with them.",
       "addCta": "Edit in setup",
@@ -2493,6 +2497,27 @@
       "title_other": "{{count}} sources have no chosen pages or excerpts: the analysis searches each whole book. Choosing their pages is more precise.",
       "choose": "Choose pages of {{label}}"
     }
+  },
+  "sourceViewer": {
+    "description": "The source document, with search across the whole book.",
+    "panelLabel": "Source viewer",
+    "expand": "Expand to full screen",
+    "close": "Close the viewer",
+    "backToPanel": "Back to the panel",
+    "citeHere": "Cite in the text",
+    "copy": "Copy",
+    "copyCitation": "Copy the citation",
+    "withQuote": "With the quote",
+    "pageHint": "Citation for this page",
+    "selectionHint": "Selected phrase",
+    "insertsInto": "It is inserted at the cursor, in {{label}}.",
+    "noEditor": "No text is open: the citation is copied so you can paste it anywhere.",
+    "inserted": "Citation inserted in {{label}}.",
+    "copied": "Citation copied.",
+    "copyFailed": "The citation could not be copied.",
+    "index": "Book index",
+    "clear": "Clear",
+    "clearSelection": "Clear the selected phrase"
   },
   "citationViewer": {
     "pageWithSheet": "Sheet {{sheet}} of the file · printed page {{printed}}",

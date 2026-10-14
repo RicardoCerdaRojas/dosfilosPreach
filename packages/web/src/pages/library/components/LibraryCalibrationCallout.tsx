@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
@@ -53,7 +54,7 @@ export function LibraryCalibrationCallout({ resources }: { resources: LibraryRes
                 size="sm"
                 variant="outline"
                 className="shrink-0"
-                onClick={() => navigate(`/dashboard/library/${pendientes[0]!.id}/numeracion`)}
+                onClick={() => navigate(rutaCalibracion(pendientes[0]!.id))}
             >
                 {t('calibrationCallout.action')}
             </Button>
