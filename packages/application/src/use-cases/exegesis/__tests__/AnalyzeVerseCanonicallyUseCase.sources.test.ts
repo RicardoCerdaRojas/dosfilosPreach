@@ -151,9 +151,10 @@ function buildUseCase(opts: {
                 opts.retrievedFor.map(id => [
                     id,
                     (opts.chunks ?? ['texto real de la fuente']).map(text => ({
-                        text,
+                        text: text.replace(/^FIJADO:/, ''),
                         sheet: opts.anchored === false ? null : 149,
                         section: null,
+                        ...(text.startsWith('FIJADO:') ? { pinned: true } : {}),
                     })),
                 ]),
             ),
@@ -503,3 +504,22 @@ describe('AnalyzeVerseCanonicallyUseCase — texto completo desde los fragmentos
     });
 });
 
+describe('AnalyzeVerseCanonicallyUseCase — lo fijado va primero (TP #7)', () => {
+    it('las hojas fijadas abren el texto de la fuente y se informa cuánto ocupan', async () => {
+        const paper = makePaper([makeSource('Robertson', 'res-a')]);
+        const { useCase, analyzer } = buildUseCase({
+            paper, analysis: analysisCiting(['Robertson']), retrievedFor: ['res-a'],
+            chunks: ['consultado uno', 'FIJADO:perifrastico 881', 'consultado dos'],
+        });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const [rob] = analyzer.analyzeVerse.mock.calls[0][0].sources;
+        expect(rob.textContent.indexOf('perifrastico 881')).toBeLessThan(rob.textContent.indexOf('consultado uno'));
+        expect(rob.pinnedChars).toBe(rob.textContent.indexOf('perifrastico 881') + 'perifrastico 881'.length);
+    });
+    it('sin nada fijado no hay reserva', async () => {
+        const paper = makePaper([makeSource('Robertson', 'res-a')]);
+        const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Robertson']), retrievedFor: ['res-a'], chunks: ['a', 'b'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse.mock.calls[0][0].sources[0].pinnedChars).toBeUndefined();
+    });
+});

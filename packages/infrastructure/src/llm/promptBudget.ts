@@ -121,6 +121,27 @@ export function allocateSourceBudgets(
     lengths: ReadonlyArray<number>,
     weights: ReadonlyArray<number>,
     totalChars: number,
+    /**
+     * Lo que cada fuente tiene GARANTIZADO antes del reparto: las hojas que el
+     * estudiante fijó (TP #7). Se reserva primero; lo que sobra se reparte como
+     * siempre. Si lo reservado no cabe entero, se achica en proporción —nunca
+     * más que el total— y el llamador lo registra.
+     */
+    reserved: ReadonlyArray<number> = [],
+): number[] {
+    const total = Math.max(0, totalChars);
+    const pedido = lengths.map((len, i) => Math.min(len, Math.max(0, reserved[i] ?? 0)));
+    const sumaPedido = pedido.reduce((s, n) => s + n, 0);
+    const escala = sumaPedido > total ? total / sumaPedido : 1;
+    const base = pedido.map(n => Math.floor(n * escala));
+    const resto = repartir(lengths.map((len, i) => len - base[i]!), weights, total - base.reduce((s, n) => s + n, 0));
+    return base.map((n, i) => n + resto[i]!);
+}
+
+function repartir(
+    lengths: ReadonlyArray<number>,
+    weights: ReadonlyArray<number>,
+    totalChars: number,
 ): number[] {
     const budgets = lengths.map(() => 0);
     let pending = lengths.map((_, i) => i).filter(i => lengths[i]! > 0 && weights[i]! > 0);
@@ -140,4 +161,21 @@ export function allocateSourceBudgets(
         pending = pending.filter(i => !fit.includes(i));
     }
     return budgets;
+}
+
+/**
+ * Si a alguna fuente no le cupo entero lo que el estudiante fijó, lo deja en
+ * el registro: es la señal de que fijó más de lo que entra en un paso.
+ */
+export function avisarFijadoRecortado(
+    sources: ReadonlyArray<{ citationKey?: string | null; displayLabel?: string; pinnedChars?: number }>,
+    budgets: ReadonlyArray<number>,
+    label: string,
+): void {
+    sources.forEach((s, i) => {
+        const fijado = s.pinnedChars ?? 0;
+        if (fijado > 0 && (budgets[i] ?? 0) < fijado) {
+            console.warn(`[${label}] lo fijado de ${s.citationKey ?? s.displayLabel ?? '?'} no cabe entero`, { fijado, presupuesto: budgets[i] });
+        }
+    });
 }

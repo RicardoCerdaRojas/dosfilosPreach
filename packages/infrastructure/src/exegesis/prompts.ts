@@ -7,7 +7,7 @@ import {
     type SourceType,
     type StepEmphasis,
 } from '@dosfilos/domain';
-import { allocateSourceBudgets, fitPromptToCap } from '../llm/promptBudget';
+import { allocateSourceBudgets, avisarFijadoRecortado, fitPromptToCap } from '../llm/promptBudget';
 import { voiceFor } from './testamentVoice';
 
 /**
@@ -341,7 +341,9 @@ function formatSources(
     // regardless — the model only needs to absorb their SHAPE.
     // Lo que una fuente no usa pasa a las demás, con los mismos pesos.
     const weights = sources.map(s => effectiveSourceTypeWeight(s.sourceType, emphasis));
-    const budgets = allocateSourceBudgets(sources.map(s => s.textContent?.length ?? 0), weights, budgetChars);
+    // Lo fijado por el estudiante tiene lugar reservado (TP #7).
+    const budgets = allocateSourceBudgets(sources.map(s => s.textContent?.length ?? 0), weights, budgetChars, sources.map(s => s.pinnedChars ?? 0));
+    avisarFijadoRecortado(sources, budgets, 'prompts');
 
     const blocks = sources.map((s, i) => {
         const truncated = truncate(s.textContent, budgets[i]!);

@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -481,8 +481,13 @@ export class AnalyzeVerseCanonicallyUseCase {
                 const siempre = scope?.kind === 'excerpt-sheets' ? scope.alwaysExcerpts : [];
                 const anchorOf = (e: { sourceLocation: string; sheet?: number; section?: string }) =>
                     relabelExcerptAnchor(e.sourceLocation, numbering, e);
+                // Lo fijado va primero: si el prompt tiene que recortar esta fuente,
+                // recorta lo consultado y no las hojas que el estudiante fijó (TP #7).
+                const { fijados, consultados } = fijadoPrimero(retrieved);
+                const parteFijada = fijados.map(c => `--- ${anchor(c)} ---\n${c.text}`).join('\n\n');
                 const textContent = [
-                    ...retrieved.map(c => `--- ${anchor(c)} ---\n${c.text}`),
+                    ...(parteFijada ? [parteFijada] : []),
+                    ...consultados.map(c => `--- ${anchor(c)} ---\n${c.text}`),
                     ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
                 ].join('\n\n');
                 contexts.push({
@@ -492,7 +497,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                     citationKey: source.citationKey,
                     ...(plannedRole ? { plannedRole } : {}),
                     textContent,
-                    excerptAnchors: [...retrieved.map(anchor), ...siempre.map(anchorOf)],
+                    ...(parteFijada ? { pinnedChars: parteFijada.length } : {}),
+                    excerptAnchors: [...fijados.map(anchor), ...consultados.map(anchor), ...siempre.map(anchorOf)],
                     priority,
                 });
                 continue;

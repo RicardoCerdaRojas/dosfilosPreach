@@ -6,7 +6,7 @@ import {
     type AnalyzeVerseInput,
     type CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { PRIOR_ANALYSES_BUDGET_CHARS, allocateSourceBudgets, fitPromptToCap } from '../../llm/promptBudget';
+import { PRIOR_ANALYSES_BUDGET_CHARS, allocateSourceBudgets, avisarFijadoRecortado, fitPromptToCap } from '../../llm/promptBudget';
 import { voiceFor } from '../testamentVoice';
 
 /**
@@ -339,11 +339,15 @@ function formatSources(
             : '(Sin fuentes configuradas. Apóyate en conocimiento general pero marca toda afirmación como tentative en confidenceFlags.)';
     }
     // Todas pesan lo mismo; lo que una fuente no usa pasa a las demás.
+    // Lo fijado por el estudiante tiene lugar reservado (TP #7: las hojas
+    // fijadas de Robertson se recortaban y el análisis no las veía).
     const budgets = allocateSourceBudgets(
         sources.map(s => s.textContent?.length ?? 0),
         sources.map(() => 1),
         budgetChars,
+        sources.map(s => s.pinnedChars ?? 0),
     );
+    avisarFijadoRecortado(sources, budgets, 'GeminiCanonicalVerseAnalyzer');
 
     // v1.7+: lead the source block with a directive that names the
     // pinned sourceKeys so the model treats them as a contract, not a

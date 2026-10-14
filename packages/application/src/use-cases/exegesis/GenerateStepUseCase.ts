@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -293,16 +293,22 @@ export class GenerateStepUseCase {
                     relabelExcerptAnchor(e.sourceLocation, numbering, e);
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt no tiene por qué notar de dónde salió el fragmento.
+                // Lo fijado va primero: si el prompt tiene que recortar esta
+                // fuente, recorta lo consultado y no las hojas fijadas (TP #7).
+                const { fijados, consultados } = fijadoPrimero(retrieved);
+                const parteFijada = fijados.map(c => `--- ${anchor(c)} ---\n${c.text}`).join('\n\n');
                 contexts.push({
                     corpusId: source.corpusId,
                     sourceType: source.sourceType,
                     displayLabel: source.displayLabel,
                     citationKey: source.citationKey,
                     textContent: [
-                        ...retrieved.map(c => `--- ${anchor(c)} ---\n${c.text}`),
+                        ...(parteFijada ? [parteFijada] : []),
+                        ...consultados.map(c => `--- ${anchor(c)} ---\n${c.text}`),
                         ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
                     ].join('\n\n'),
-                    excerptAnchors: [...retrieved.map(anchor), ...siempre.map(anchorOf)],
+                    ...(parteFijada ? { pinnedChars: parteFijada.length } : {}),
+                    excerptAnchors: [...fijados.map(anchor), ...consultados.map(anchor), ...siempre.map(anchorOf)],
                     priority,
                 });
                 continue;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     selectForPrompt,
     sheetWithinRanges,
+    fijadoPrimero,
     type CorpusChunk,
 } from '../selectCorpusChunks';
 
@@ -250,5 +251,12 @@ describe('selectForPrompt — piso por fuente', () => {
 
         expect(charsBySource(out.chunks)['introduccion']).toBe(3_000);
         expect(out.pinnedChars).toBe(3_000);
+    });
+});
+
+describe('fijadoPrimero — lo fijado adelante, cada grupo en su orden', () => {
+    it('separa sin reordenar dentro de cada grupo', () => {
+        const c = (i: number, pinned?: boolean) => ({ chunkIndex: i, pinned });
+        expect(fijadoPrimero([c(1), c(2, true), c(3), c(4, true)])).toEqual({ fijados: [c(2, true), c(4, true)], consultados: [c(1), c(3)] });
     });
 });
