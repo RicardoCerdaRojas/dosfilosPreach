@@ -1340,6 +1340,8 @@
           "previousFallback": "trabajo anterior",
           "accept": "Excluirlas",
           "decline": "No hace falta",
+          "done": "Listo",
+          "savedAsYouGo": "Cada marca ya quedó guardada.",
           "citedIn": "citada en {{paper}}",
           "byYou": "agregada por ti",
           "remove": "Quitar {{source}} de las excluidas",

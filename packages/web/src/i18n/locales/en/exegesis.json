@@ -1340,6 +1340,8 @@
           "previousFallback": "previous paper",
           "accept": "Exclude them",
           "decline": "Not needed",
+          "done": "Done",
+          "savedAsYouGo": "Each mark is already saved.",
           "citedIn": "cited in {{paper}}",
           "byYou": "added by you",
           "remove": "Remove {{source}} from excluded",

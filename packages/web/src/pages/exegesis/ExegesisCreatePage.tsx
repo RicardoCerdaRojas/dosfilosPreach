@@ -12,6 +12,7 @@ import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBrief
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
+    nextAssignmentDate,
     type ExegeticalStrategy,
     type PassageReference,
     type SupportedLanguage,
@@ -148,7 +149,11 @@ export function ExegesisCreatePage() {
             // dato que menos cambia entre trabajos del mismo curso y el que
             // más molesta retipear.
             if (coverFromProfile) {
-                await updatePaperCover.mutateAsync({ paperId: paper.id, cover: coverFromProfile });
+                // La fecha, del mes en curso: el perfil guarda la de la
+                // entrega con que se creó, y el TP #7 salió «SEPTIEMBRE 2026»
+                // en octubre (el #4 del TP #6, por el camino del perfil).
+                const cover = { ...coverFromProfile, date: nextAssignmentDate(coverFromProfile.date, new Date()) };
+                await updatePaperCover.mutateAsync({ paperId: paper.id, cover });
             }
             toast.success(t('create.toast.created'));
             navigate(`/dashboard/exegesis/${paper.id}/setup`);

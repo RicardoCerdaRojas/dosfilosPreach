@@ -13,11 +13,11 @@ import { useExegesisPapers } from './useExegesisPapers';
  *
  * Los pasos que REDACTAN no usan esto: sólo leen lo confirmado.
  */
-export function usePaperExclusions(paper: Pick<ExegeticalPaper, 'id' | 'excludedSources'>): ReadonlyArray<ExcludedSource> {
+export function usePaperExclusions(paper: Pick<ExegeticalPaper, 'id' | 'excludedSources' | 'displayLanguage'>): ReadonlyArray<ExcludedSource> {
     const { papers } = useExegesisPapers();
     const confirmadas = paper.excludedSources ?? null;
     return useMemo(
-        () => confirmadas ?? proposeExclusions(previousDelivery(papers, paper.id)),
-        [confirmadas, papers, paper.id],
+        () => confirmadas ?? proposeExclusions(previousDelivery(papers, paper.id), paper.displayLanguage),
+        [confirmadas, papers, paper.id, paper.displayLanguage],
     );
 }
