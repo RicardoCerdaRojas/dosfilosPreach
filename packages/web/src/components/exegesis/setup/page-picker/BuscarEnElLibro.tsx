@@ -15,6 +15,9 @@ import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
  * secciones de preposiciones. Con esto se busca lo que se pregunta
  * («dativus commodi») y se va a la página que se vio citada.
  */
+/** Cuánto se espera después de la última tecla antes de buscar. */
+export const ESPERA_MS = 400;
+
 export function BuscarEnElLibro({ resourceId, numbering, printedPageOffset, currentSheet, onGo, onSearchTerm }: {
     resourceId: string;
     numbering: PageNumbering | null;
@@ -29,10 +32,18 @@ export function BuscarEnElLibro({ resourceId, numbering, printedPageOffset, curr
     const [page, setPage] = useState('');
     const [rejected, setRejected] = useState(false);
     const ctx = { numbering, offset: printedPageOffset };
-    const search = useDocumentTextSearch(resourceId, term, true);
-    const searching = term.trim().length >= 2;
+    // Se busca cuando se deja de escribir, no en cada tecla: cada búsqueda
+    // relee el libro entero (1,5–1,8 s en Robertson) y «dativus commodi»
+    // disparaba catorce (revisión adversarial, fase F).
+    const [buscado, setBuscado] = useState('');
+    useEffect(() => {
+        const id = window.setTimeout(() => setBuscado(term.trim()), ESPERA_MS);
+        return () => window.clearTimeout(id);
+    }, [term]);
+    const search = useDocumentTextSearch(resourceId, buscado, true);
+    const searching = buscado.length >= 2;
 
-    useEffect(() => { onSearchTerm(searching ? term.trim() : null); }, [term, searching, onSearchTerm]);
+    useEffect(() => { onSearchTerm(searching ? buscado : null); }, [buscado, searching, onSearchTerm]);
 
     const goToPage = () => {
         const sheet = sheetForPageInput(Number(page.trim()), ctx);

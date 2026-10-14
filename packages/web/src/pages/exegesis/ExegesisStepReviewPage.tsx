@@ -92,7 +92,10 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
         const claim = r.selectedPath ? r.claims.get(r.selectedPath) : null;
         const hallada = selectedVerdict ? paginaHallada(selectedVerdict) : null;
         if (!claim || !hallada) return;
-        setOpenCitation({ sourceKey: claim.sourceKey, page: hallada.page, pageKind: hallada.pageKind, verbatimQuote: claim.verbatimQuote });
+        setOpenCitation({
+            sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator, verbatimQuote: claim.verbatimQuote,
+            openAt: { page: hallada.page, pageKind: hallada.pageKind },
+        });
     };
 
     return (

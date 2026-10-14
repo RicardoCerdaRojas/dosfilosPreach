@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { destinoDeCita, destinoDeFuente, enlazarCitas, PREFIJO_CITA } from '../destinosDelVisor';
+import { describe, it, expect, vi } from 'vitest';
+import { abrirFuente, destinoDeCita, destinoDeFuente, enlazarCitas, PREFIJO_CITA } from '../destinosDelVisor';
 
 const CLAVES = ['McCartney', 'Robertson', 'Varner', 'Mayor', 'Ropes', 'NA28'];
 
@@ -35,6 +35,13 @@ describe('enlazarCitas — las citas de la prosa abren el visor en su página', 
         expect(enlazarCitas('(McCartney, p. 204)', [])).toEqual({ markdown: '(McCartney, p. 204)', citas: [] });
     });
 
+    it('no toca lo que ya es código o un enlace', () => {
+        const texto = 'Ver `(Ropes, p. 2)` y [la nota (Ropes, p. 2)](https://x.org) pero sí (Ropes, p. 3).';
+        const { markdown, citas } = enlazarCitas(texto, CLAVES);
+        expect(citas).toEqual([{ sourceKey: 'Ropes', page: 3, pageKind: 'printed' }]);
+        expect(markdown).toBe(`Ver \`(Ropes, p. 2)\` y [la nota (Ropes, p. 2)](https://x.org) pero sí ([Ropes, p. 3](${PREFIJO_CITA}0)).`);
+    });
+
     it('el destino de una cita y el de una fuente', () => {
         expect(destinoDeCita('p1', { sourceKey: 'McCartney', page: 204, pageKind: 'printed' }))
             .toEqual({ paperId: 'p1', citation: { sourceKey: 'McCartney', page: 204, pageKind: 'printed' } });
@@ -43,5 +50,17 @@ describe('enlazarCitas — las citas de la prosa abren el visor en su página', 
             paperId: 'p1', citation: { sourceKey: 'Robertson', page: 612, resourceId: 'res-rob', label: 'Grammar…' },
         });
         expect(destinoDeFuente('p1', { ...fuente, excerptRecipe: undefined } as never).citation.page).toBe(1);
+    });
+
+    it('una fuente PDF se abre en el visor; un EPUB, como archivo', () => {
+        const open = vi.fn();
+        const abrir = vi.spyOn(window, 'open').mockReturnValue(null);
+        const fuente = { citationKey: 'Motyer', displayLabel: 'The Message of James', sourceLibraryResourceId: 'r', corpusId: 'c' } as never;
+        abrirFuente(open, 'p1', fuente, { mimeType: 'application/pdf', storageUrl: 'u' });
+        expect(open).toHaveBeenCalledTimes(1);
+        abrirFuente(open, 'p1', fuente, { mimeType: 'application/epub+zip', storageUrl: 'https://libro.epub' });
+        expect(open).toHaveBeenCalledTimes(1);
+        expect(abrir).toHaveBeenCalledWith('https://libro.epub', '_blank', 'noopener,noreferrer');
+        abrir.mockRestore();
     });
 });

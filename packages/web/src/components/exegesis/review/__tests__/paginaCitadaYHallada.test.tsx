@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { VerifiedCitation } from '@dosfilos/domain';
-import { paginaHallada } from '../paginaHallada';
+import { esOtraPagina, paginaHallada } from '../paginaHallada';
 
 /**
  * Fase F, F4: cuando el verificador halló el apoyo en otra página, la
@@ -18,6 +18,16 @@ describe('paginaHallada', () => {
     it('lee el rótulo: «p. N» es página impresa, «hoja N» es hoja', () => {
         expect(paginaHallada({ matchedPage: '202', matchedPageLabel: 'p. 202' })).toEqual({ page: 202, pageKind: 'printed', label: 'p. 202' });
         expect(paginaHallada({ matchedPage: '16', matchedPageLabel: 'hoja 16' })).toEqual({ page: 16, label: 'hoja 16' });
+    });
+    it('acepta «pp.» y mayúsculas, que vienen de la pista libre del verificador', () => {
+        expect(paginaHallada({ matchedPage: null, matchedPageLabel: 'pp. 202' })).toMatchObject({ page: 202, pageKind: 'printed' });
+        expect(paginaHallada({ matchedPage: null, matchedPageLabel: 'P. 202' })).toMatchObject({ page: 202, pageKind: 'printed' });
+    });
+    it('«p. 16» citada y «hoja 16» hallada son páginas distintas; un rango que empieza en la hallada es la misma', () => {
+        expect(esOtraPagina({ pages: '16', raw: 'Mayor, p. 16' }, { page: 16 })).toBe(true);
+        expect(esOtraPagina({ pages: '16', raw: 'Mayor, p. 16' }, { page: 16, pageKind: 'printed' })).toBe(false);
+        expect(esOtraPagina({ pages: '538–539', raw: 'Robertson, pp. 538–539' }, { page: 538, pageKind: 'printed' })).toBe(false);
+        expect(esOtraPagina({ pages: null, raw: 'Mayor' } as never, { page: 9, pageKind: 'printed' })).toBe(true);
     });
     it('sin rótulo, el número como página impresa; una romana o nada, no se abre', () => {
         expect(paginaHallada({ matchedPage: '61', matchedPageLabel: null })).toEqual({ page: 61, pageKind: 'printed', label: 'p. 61' });

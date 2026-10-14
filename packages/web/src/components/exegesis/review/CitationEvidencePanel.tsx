@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { paginaHallada } from './paginaHallada';
+import { esOtraPagina, paginaHallada } from './paginaHallada';
 import { Link } from 'react-router-dom';
 import { BookOpen, CheckCircle2, Loader2, MapPin, Undo2 } from 'lucide-react';
 import { parsePageRange, type AnalysisClaim, type CitationEdit, type CitationReview, type VerifiedCitation } from '@dosfilos/domain';
@@ -67,7 +67,7 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
     // Sólo si el apoyo está en OTRA página que la citada: si es la misma, un
     // segundo botón abriría lo mismo.
     const encontrada = paginaHallada(verdict);
-    const hallada = encontrada && String(encontrada.page) !== String(verdict.pages ?? '').split(/[–-]/)[0]?.trim() ? encontrada : null;
+    const hallada = encontrada && esOtraPagina(verdict, encontrada) ? encontrada : null;
 
     return (
         <div className="rounded-xl border border-border bg-card p-4 space-y-4">
@@ -129,8 +129,8 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" onClick={onOpenSource}>
                         <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-                        {hallada && onOpenFound
-                            ? t('canonical.review.panel.openCited', { page: verdict.pages ? `p. ${verdict.pages}` : '' })
+                        {hallada && onOpenFound && verdict.pages
+                            ? t('canonical.review.panel.openCited', { page: `${/\bhoja\b/i.test(verdict.raw ?? '') ? 'hoja' : 'p.'} ${verdict.pages}` })
                             : t('canonical.review.panel.openPdf')}
                     </Button>
                     {hallada && onOpenFound && (

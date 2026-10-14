@@ -1,6 +1,7 @@
 import { SourcesWithoutScopeNotice } from '@/components/exegesis/SourcesWithoutScopeNotice';
+import { useLibrary } from '@/hooks/library';
 import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
-import { destinoDeFuente } from '@/components/exegesis/citation/destinosDelVisor';
+import { abrirFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import { SeriesCorpusOffer } from '@/components/exegesis/SeriesCorpusOffer';
 import { rubricLabel } from '@/components/exegesis/setup/rubricLabel';
 import { useEffect, useState } from 'react';
@@ -969,6 +970,8 @@ function SourcesCard({
     t: (key: string) => string;
 }) {
     const sourceViewer = useSourceViewer();
+    // Para saber si cada fuente es un PDF (el visor) o un EPUB (el archivo).
+    const library = useLibrary();
     return (
         <section className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
             <header className="flex items-center gap-2 mb-3">
@@ -990,7 +993,7 @@ function SourcesCard({
             ) : (
                 <ul className="space-y-1.5">
                     {paper.sources.map(s => (
-                        <SourceRow key={s.id} source={s} onOpen={() => sourceViewer.open(destinoDeFuente(paper.id, s))} onRemove={() => onRemove(s.id)} disabled={isRemoving} t={t} />
+                        <SourceRow key={s.id} source={s} onOpen={() => abrirFuente(sourceViewer.open, paper.id, s, library.resources.find(r => r.id === (s.sourceLibraryResourceId ?? s.corpusId)))} onRemove={() => onRemove(s.id)} disabled={isRemoving} t={t} />
                     ))}
                 </ul>
             )}

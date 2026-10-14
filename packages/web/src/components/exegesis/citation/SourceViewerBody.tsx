@@ -59,7 +59,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
         setScope('sheet');
         setMatches(0);
         setSeleccion(null);
-    }, [target?.sourceKey, target?.resourceId, target?.page, target?.verbatimQuote]);
+    }, [target?.sourceKey, target?.resourceId, target?.page, target?.verbatimQuote, target?.openAt?.page]);
 
     // Las flechas hojean, salvo cuando el lector está escribiendo.
     const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {

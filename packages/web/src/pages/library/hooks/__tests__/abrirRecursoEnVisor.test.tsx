@@ -24,5 +24,8 @@ describe('Biblioteca — abrir un recurso', () => {
         expect(apellidoDelAutor('McCartney, Dan G.')).toBe('McCartney');
         expect(apellidoDelAutor('Eberhard Nestle y Kurt Aland')).toBe('Nestle');
         expect(apellidoDelAutor('')).toBe('');
+        expect(apellidoDelAutor('Eberhard Nestle, Kurt Aland')).toBe('Nestle');
+        expect(apellidoDelAutor('John Smith Jr.')).toBe('Smith');
+        expect(apellidoDelAutor('Carson & Moo')).toBe('Carson');
     });
 });

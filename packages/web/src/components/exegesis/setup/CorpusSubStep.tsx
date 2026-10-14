@@ -6,7 +6,7 @@ import {
 } from 'react';
 import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
-import { destinoDeFuente } from '@/components/exegesis/citation/destinosDelVisor';
+import { abrirFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import {
     AlertTriangle,
     BookOpenText,
@@ -1085,7 +1085,7 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 {puedeAbrirse && (
                     <button
                         type="button"
-                        onClick={() => sourceViewer.open(destinoDeFuente(paper.id, source))}
+                        onClick={() => abrirFuente(sourceViewer.open, paper.id, source, libraryResource)}
                         className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-accent transition-colors inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         aria-label={t('paperSetup.subSteps.corpus.list.viewOriginal')}
                         title={t('paperSetup.subSteps.corpus.list.viewOriginal')}

@@ -52,10 +52,20 @@ export function useCitationSheet(paperId: string | null, citation: CitationTarge
         [citation, ctx, totalSheets],
     );
 
+    // Dónde se ABRE puede no ser la citada: la revisión abre la página donde
+    // el verificador halló el apoyo, y la citada sigue siendo el ancla —con
+    // la que se compara «está aquí» y se ofrece corregir— (fase F, F4).
+    const openAtPage = citation?.openAt?.page;
+    const openAtKind = citation?.openAt?.pageKind;
+    const startSheet = useMemo(
+        () => (openAtPage ? clampSheet(resolveCitationSheet({ page: openAtPage, pageKind: openAtKind }, ctx), totalSheets) : anchorSheet),
+        [openAtPage, openAtKind, ctx, totalSheets, anchorSheet],
+    );
+
     // La hoja que se mira se resetea cuando cambia la cita o cuando termina
     // de llegar la calibración: hasta entonces el ancla es provisional.
-    const [viewSheet, setViewSheet] = useState(anchorSheet);
-    useEffect(() => { setViewSheet(anchorSheet); }, [anchorSheet]);
+    const [viewSheet, setViewSheet] = useState(startSheet);
+    useEffect(() => { setViewSheet(startSheet); }, [startSheet]);
 
     const goTo = (sheet: number) => setViewSheet(clampSheet(sheet, totalSheets));
     const goToPageInput = (input: number): boolean => {

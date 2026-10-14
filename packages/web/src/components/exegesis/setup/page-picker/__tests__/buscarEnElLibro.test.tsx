@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 
 /**
  * Fase F, F5: en el selector de hojas se busca en el libro y se va a una
@@ -18,7 +18,12 @@ vi.mock('@/hooks/exegesis/useDocumentTextSearch', () => ({
 }));
 const { BuscarEnElLibro } = await import('../BuscarEnElLibro');
 
-beforeEach(() => cleanup());
+beforeEach(() => { cleanup(); buscados.length = 0; vi.useFakeTimers(); });
+afterEach(() => { vi.useRealTimers(); });
+const escribir = (valor: string) => {
+    fireEvent.change(screen.getByLabelText('citationViewer.searchBookPlaceholder'), { target: { value: valor } });
+    act(() => { vi.advanceTimersByTime(400); });
+};
 
 const montar = () => {
     const onGo = vi.fn(); const onSearchTerm = vi.fn();
@@ -46,7 +51,7 @@ describe('BuscarEnElLibro', () => {
 
     it('buscar en el libro muestra dónde aparece, con su página impresa, y lleva ahí', () => {
         const { onGo, onSearchTerm } = montar();
-        fireEvent.change(screen.getByLabelText('citationViewer.searchBookPlaceholder'), { target: { value: 'dativus commodi' } });
+        escribir('dativus commodi');
         expect(buscados.at(-1)).toBe('dativus commodi');
         expect(onSearchTerm).toHaveBeenLastCalledWith('dativus commodi');
         const hit = screen.getByText('citationViewer.hitPage {"printed":538,"sheet":617}');
@@ -56,8 +61,20 @@ describe('BuscarEnElLibro', () => {
 
     it('con menos de dos letras no busca ni resalta', () => {
         const { onSearchTerm } = montar();
-        fireEvent.change(screen.getByLabelText('citationViewer.searchBookPlaceholder'), { target: { value: 'd' } });
+        escribir('d');
         expect(onSearchTerm).toHaveBeenLastCalledWith(null);
         expect(screen.queryByTestId('book-search-results')).toBeNull();
+    });
+
+    it('busca cuando se deja de escribir, no en cada tecla', () => {
+        montar();
+        const campo = screen.getByLabelText('citationViewer.searchBookPlaceholder');
+        for (const parcial of ['da', 'dat', 'dati', 'dativ', 'dativus']) {
+            fireEvent.change(campo, { target: { value: parcial } });
+            act(() => { vi.advanceTimersByTime(100); });
+        }
+        expect(buscados.filter(b => b.length >= 2)).toEqual([]);
+        act(() => { vi.advanceTimersByTime(400); });
+        expect(buscados.filter(b => b.length >= 2)).toEqual(['dativus']);
     });
 });

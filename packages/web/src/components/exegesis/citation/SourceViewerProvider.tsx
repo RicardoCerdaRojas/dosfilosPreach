@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type Dispatch, type KeyboardEvent, type ReactNode, type SetStateAction } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type KeyboardEvent, type ReactNode, type SetStateAction } from 'react';
 import { Maximize2, Minimize2, X } from 'lucide-react';
+import { useLocation, useInRouterContext } from 'react-router-dom';
 import { useTranslation } from '@/i18n';
 import { CitationSourceModal, type CitationTarget } from './CitationSourceModal';
 import { SourceViewerBody } from './SourceViewerBody';
@@ -106,10 +107,45 @@ const NOOP: SourceViewerApi = { open: () => {}, close: () => {} };
  * en el celular cubre la pantalla.
  */
 export function SourceViewerSlot() {
-    const { t } = useTranslation('exegesis');
+    const enRouter = useInRouterContext();
     const ctx = useContext(StateContext);
     if (!ctx?.target) return null;
+    return (
+        <>
+            {enRouter && <CerrarAlSalirDelTrabajo paperId={ctx.target.paperId} onClose={ctx.close} />}
+            <Visor />
+        </>
+    );
+}
+
+/**
+ * Al ir a OTRO trabajo (o a otra pantalla, si se abrió desde la Biblioteca)
+ * el visor se cierra: abierto, mostraba el libro del trabajo anterior y
+ * «Citar» insertaba en el nuevo una clave que no es fuente suya (revisión
+ * adversarial, fase F). Dentro del mismo trabajo (configuración, revisión de
+ * citas, página del trabajo) sigue abierto.
+ */
+function CerrarAlSalirDelTrabajo({ paperId, onClose }: { paperId: string | null; onClose: () => void }) {
+    const { pathname } = useLocation();
+    const inicial = useRef(pathname);
+    useEffect(() => {
+        if (pathname === inicial.current) return;
+        if (!paperId || !pathname.includes(paperId)) onClose();
+    }, [pathname, paperId, onClose]);
+    return null;
+}
+
+function Visor() {
+    const { t } = useTranslation('exegesis');
+    const ctx = useContext(StateContext)!;
     const { target, mode, setMode, close } = ctx;
+    // Al abrirse (o al cambiar de libro), el foco entra al panel: así Escape
+    // lo cierra y el teclado puede recorrerlo sin buscarlo.
+    const panelRef = useRef<HTMLElement>(null);
+    useEffect(() => {
+        if (mode === 'panel') panelRef.current?.focus();
+    }, [mode, target]);
+    if (!target) return null;
 
     if (mode === 'full') {
         return (
@@ -134,9 +170,14 @@ export function SourceViewerSlot() {
 
     return (
         <aside
+            ref={panelRef}
+            tabIndex={-1}
             aria-label={t('sourceViewer.panelLabel')}
             onKeyDown={onKeyDown}
-            className="fixed inset-0 z-50 flex flex-col bg-background md:sticky md:inset-auto md:top-0 md:z-auto md:h-svh md:max-h-full md:w-[min(600px,45vw)] md:shrink-0 md:self-start md:border-l md:border-border md:shadow-[-12px_0_32px_-16px_rgba(15,23,42,0.18)] print:hidden"
+            // Alto = la ventana menos el encabezado de la app (h-16): con 100svh
+            // la barra «Citar» quedaba 64 px bajo el borde en las páginas que
+            // hacen scroll de ventana (medido en la revisión adversarial).
+            className="fixed inset-0 z-50 flex flex-col bg-background outline-none md:sticky md:inset-auto md:top-0 md:z-auto md:h-[calc(100svh-4rem)] md:w-[min(600px,45vw)] md:shrink-0 md:self-start md:border-l md:border-border md:shadow-[-12px_0_32px_-16px_rgba(15,23,42,0.18)] print:hidden"
             data-testid="source-viewer-panel"
         >
             <SourceViewerBody

@@ -26,6 +26,24 @@ export function destinoDeFuente(paperId: string, source: ProjectSource): SourceV
     };
 }
 
+/**
+ * Abrir una fuente del trabajo: un PDF en el visor; lo demás (EPUB, Word, que
+ * la Biblioteca acepta) como archivo en otra pestaña, como antes. El visor
+ * sólo dibuja PDFs: abrir un EPUB ahí terminaba en «no se pudo abrir».
+ */
+export function abrirFuente(
+    open: (target: SourceViewerTarget) => void,
+    paperId: string,
+    source: ProjectSource,
+    recurso: { mimeType: string; storageUrl: string } | null | undefined,
+): void {
+    if (recurso && recurso.mimeType !== 'application/pdf') {
+        window.open(recurso.storageUrl, '_blank', 'noopener,noreferrer');
+        return;
+    }
+    open(destinoDeFuente(paperId, source));
+}
+
 /** Una cita de la prosa, ya resuelta a su fuente y su página. */
 export interface CitaEnlazada {
     sourceKey: string;
@@ -35,6 +53,9 @@ export interface CitaEnlazada {
 
 /** Prefijo de los enlaces que marcan una cita dentro del markdown. */
 export const PREFIJO_CITA = '#cita-';
+
+/** Bloques de código, código en línea y enlaces o imágenes markdown. */
+const PROTEGIDO = /```[\s\S]*?```|`[^`\n]*`|!?\[[^\]\n]*\]\([^)\n]*\)/g;
 
 const escapar = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -60,11 +81,21 @@ export function enlazarCitas(markdown: string, claves: ReadonlyArray<string | nu
         'g',
     );
     const citas: CitaEnlazada[] = [];
-    const salida = markdown.replace(patron, (todo, clave: string, _titulo, tipo: string | undefined, pagina: string) => {
+    const enlazar = (texto: string) => texto.replace(patron, (todo, clave: string, _titulo, tipo: string | undefined, pagina: string) => {
         const i = citas.length;
         citas.push({ sourceKey: clave, page: Number(pagina), ...(tipo === 'hoja' ? {} : { pageKind: 'printed' as const }) });
         return `[${todo.replace(/[[\]]/g, '\\$&')}](${PREFIJO_CITA}${i})`;
     });
+    // Lo que ya es código o un enlace no se toca: dentro de `código` el
+    // enlace se vería como texto crudo, y dentro de un [enlace](…) rompería
+    // el de afuera (revisión adversarial, fase F).
+    let salida = '';
+    let desde = 0;
+    for (const m of markdown.matchAll(PROTEGIDO)) {
+        salida += enlazar(markdown.slice(desde, m.index)) + m[0];
+        desde = m.index! + m[0].length;
+    }
+    salida += enlazar(markdown.slice(desde));
     return { markdown: salida, citas };
 }
 

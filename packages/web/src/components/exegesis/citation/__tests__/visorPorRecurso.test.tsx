@@ -36,6 +36,11 @@ describe('useCitationSheet — por recurso o por clave del trabajo', () => {
         const { result } = renderHook(() => useCitationSheet('p1', { sourceKey: 'McCartney', page: 204, pageKind: 'printed' }, true));
         expect(result.current.anchorFor(224)).toBe('hoja 224');
     });
+    it('abierta en la página hallada, la citada sigue siendo el ancla', () => {
+        const { result } = renderHook(() => useCitationSheet('p1', { sourceKey: 'McCartney', page: 203, openAt: { page: 202 } }, true));
+        expect(result.current.anchorSheet).toBe(203);
+        expect(result.current.viewSheet).toBe(202);
+    });
     it('una clave que no está en el trabajo y sin recurso: no hay documento', () => {
         const { result } = renderHook(() => useCitationSheet('p1', { sourceKey: 'Wallace', page: 165 }, true));
         expect(result.current.resourceId).toBeNull();

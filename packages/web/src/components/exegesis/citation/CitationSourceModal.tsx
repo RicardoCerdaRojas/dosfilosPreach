@@ -49,6 +49,11 @@ export interface CitationTarget {
     resourceId?: string;
     /** El nombre del libro, cuando no hay trabajo de donde sacarlo. */
     label?: string;
+    /**
+     * Abrir en OTRA página que la citada (la que halló el verificador). La
+     * citada sigue siendo el ancla: contra ella se mide «está aquí».
+     */
+    openAt?: { page: number; pageKind?: CitationPageKind };
 }
 
 /** Lo que el visor sabe de la hoja que se está mirando, para quien la acompaña. */

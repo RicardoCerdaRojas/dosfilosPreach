@@ -33,6 +33,7 @@ vi.mock('../useCitationSheet', () => ({
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const { SourceViewerProvider, SourceViewerSlot, useSourceViewer, useRegisterCitationSink } = await import('../SourceViewerProvider');
 const { useMemo, useRef, useState } = await import('react');
+const { MemoryRouter, useNavigate } = await import('react-router-dom');
 const { insertarEnCursor } = await import('../citarDesdeVisor');
 
 beforeEach(() => { cleanup(); llamadas.length = 0; });
@@ -214,3 +215,50 @@ function EditorB() {
     useRegisterCitationSink(sink);
     return null;
 }
+
+function Ir({ a }: { a: string }) {
+    const navigate = useNavigate();
+    return <button type="button" onClick={() => navigate(a)}>ir {a}</button>;
+}
+
+describe('Visor de fuente — navegación y foco', () => {
+    it('al abrirse, el foco entra al panel (Escape lo cierra sin buscarlo)', () => {
+        montar();
+        fireEvent.click(screen.getByText('abrir'));
+        expect(document.activeElement).toBe(screen.getByTestId('source-viewer-panel'));
+    });
+
+    it('sigue abierto dentro del mismo trabajo y se cierra al ir a otro', () => {
+        render(
+            <MemoryRouter initialEntries={['/dashboard/exegesis/p1']}>
+                <SourceViewerProvider>
+                    <Abridor />
+                    <Ir a="/dashboard/exegesis/p1/pasos/s1/revision" />
+                    <Ir a="/dashboard/exegesis/p2" />
+                    <SourceViewerSlot />
+                </SourceViewerProvider>
+            </MemoryRouter>,
+        );
+        fireEvent.click(screen.getByText('abrir'));
+        fireEvent.click(screen.getByText('ir /dashboard/exegesis/p1/pasos/s1/revision'));
+        expect(screen.getByTestId('source-viewer-panel')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('ir /dashboard/exegesis/p2'));
+        expect(screen.queryByTestId('source-viewer-panel')).toBeNull();
+    });
+
+    it('abierto desde la Biblioteca (sin trabajo), se cierra al cambiar de pantalla', () => {
+        render(
+            <MemoryRouter initialEntries={['/dashboard/library']}>
+                <SourceViewerProvider>
+                    <Abridor resourceId="res-motyer" />
+                    <Ir a="/dashboard/sermons" />
+                    <SourceViewerSlot />
+                </SourceViewerProvider>
+            </MemoryRouter>,
+        );
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.getByTestId('source-viewer-panel')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('ir /dashboard/sermons'));
+        expect(screen.queryByTestId('source-viewer-panel')).toBeNull();
+    });
+});
