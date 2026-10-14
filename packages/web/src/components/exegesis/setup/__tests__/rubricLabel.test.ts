@@ -13,6 +13,21 @@ describe('rubricLabel', () => {
     });
 });
 
+/** TP #7 (#4): el encabezado decía «Desde plantilla» sin decir cuál. */
+describe('rubricLabel con plantilla', () => {
+    const plantillas = [{ id: 'tx', displayName: 'TP Semanal Griego NT' }];
+    const deLaPlantilla = { ...buildDefaultRubric(), provenance: 'from-template' as const, sourceTemplateId: 'tx' };
+    it('dice el nombre de la plantilla', () => {
+        expect(rubricLabel(deLaPlantilla, t, plantillas)).toBe('TP Semanal Griego NT');
+    });
+    it('editada después de aplicarla, también', () => {
+        expect(rubricLabel({ ...deLaPlantilla, provenance: 'user-edited' }, t, plantillas)).toContain('TP Semanal Griego NT');
+    });
+    it('si la plantilla ya no existe, el rótulo de siempre', () => {
+        expect(rubricLabel(deLaPlantilla, t, [])).toBe('paperSetup.subSteps.rubric.provenance.from-template');
+    });
+});
+
 describe('expectationJustification', () => {
     it('la de predicación no toma la justificación de la académica', () => {
         const r = buildPreachingStudyRubric();

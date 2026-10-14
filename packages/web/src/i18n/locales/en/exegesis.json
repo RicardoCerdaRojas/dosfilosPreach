@@ -747,6 +747,7 @@
           "strategy-only": "Strategy only"
         },
         "presetEdited": "{{preset}} · edited",
+        "templateEdited": "{{name}} · edited",
         "presetSystem": "{{preset}} · system"
       },
       "manifest": {
@@ -1580,7 +1581,8 @@
       "saveFailed": "The profile could not be saved.",
       "pickLabel": "Work profile",
       "pickNone": "No profile",
-      "pickHint": "Fills in rubric, brief, style guide and method. You can change any of them before creating."
+      "pickHint": "Fills in rubric, brief, style guide and method. You can change any of them before creating.",
+      "noRubric": "This profile doesn't store a rubric: choose it below. To make it remember one, save the profile again from a paper with the right rubric."
     },
     "voice": {
       "heading": "How I write",

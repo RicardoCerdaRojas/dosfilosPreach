@@ -93,10 +93,17 @@ export function ExegesisCreatePage() {
     const perfilAplicado = useRef(false);
 
     const aplicarPerfil = useCallback((profile: WorkProfile | null) => {
+        // Elegir «sin perfil» también es una decisión: el perfil por defecto
+        // que llegue tarde no la pisa.
+        perfilAplicado.current = true;
         setWorkProfileId(profile?.id ?? null);
         if (!profile) return;
-        perfilAplicado.current = true;
-        setRubricTemplateId(profile.rubricTemplateId);
+        // Un perfil guardado antes del 2026-10-07 no creaba plantilla y quedó
+        // con `null`, que al crear significa «sin plantilla: la del sistema»
+        // (12 páginas, 13 fuentes). En el TP #7 el perfil «TP Semanal» era
+        // así y el trabajo nació con la rúbrica del paper (#1). Sin rúbrica,
+        // el perfil no opina: el selector queda como estaba y se avisa.
+        if (profile.rubricTemplateId !== null) setRubricTemplateId(profile.rubricTemplateId);
         setBriefDelPerfilId(profile.briefTemplateId);
         setExegeticalStrategy(profile.exegeticalStrategy);
         setCoverFromProfile(profile.cover ?? null);
@@ -226,7 +233,7 @@ export function ExegesisCreatePage() {
                         <StrategyOption
                             value="dialectical"
                             selected={exegeticalStrategy === 'dialectical'}
-                            onSelect={() => setExegeticalStrategy('dialectical')}
+                            onSelect={() => { perfilAplicado.current = true; setExegeticalStrategy('dialectical'); }}
                             recommended
                             title={t('create.strategy.dialectical.title')}
                             body={t('create.strategy.dialectical.body')}
@@ -234,7 +241,7 @@ export function ExegesisCreatePage() {
                         <StrategyOption
                             value="free"
                             selected={exegeticalStrategy === 'free'}
-                            onSelect={() => setExegeticalStrategy('free')}
+                            onSelect={() => { perfilAplicado.current = true; setExegeticalStrategy('free'); }}
                             title={t('create.strategy.free.title')}
                             body={t('create.strategy.free.body')}
                         />
@@ -263,6 +270,9 @@ export function ExegesisCreatePage() {
                             ))}
                         </select>
                         <p className="text-[11px] text-muted-foreground">{t('paperSetup.workProfile.pickHint')}</p>
+                        {perfilElegido && perfilElegido.rubricTemplateId === null && (
+                            <p className="text-[11px] text-warning-subtle-foreground">{t('paperSetup.workProfile.noRubric')}</p>
+                        )}
                     </div>
                 )}
 
@@ -275,7 +285,7 @@ export function ExegesisCreatePage() {
                     <div className="space-y-2">
                         <RubricTemplatePicker
                             value={rubricTemplateId}
-                            onChange={setRubricTemplateId}
+                            onChange={next => { perfilAplicado.current = true; setRubricTemplateId(next); }}
                             rubrics={rubrics}
                             defaultRubric={defaultRubric}
                         />

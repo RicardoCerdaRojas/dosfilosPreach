@@ -92,6 +92,7 @@ interface RubricEditorProps {
 
 function RubricEditor({ paper, rubric }: RubricEditorProps) {
     const { t } = useTranslation('exegesis');
+    const { rubrics: plantillas } = useUserRubrics();
     // The mutation lives in this component because the click handlers
     // (handleSave / handleReset) trigger it from here. Reading the
     // pending state from the SAME hook instance keeps the spinner in
@@ -251,7 +252,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                     <h2 className="text-lg font-semibold text-foreground inline-flex items-center gap-2">
                         {t('paperSetup.subSteps.rubric.heading')}
                         <span className="text-[10px] uppercase tracking-wide font-semibold rounded-full bg-muted text-muted-foreground px-2 py-0.5">
-                            {rubricLabel(rubric, t)}
+                            {rubricLabel(rubric, t, plantillas)}
                         </span>
                     </h2>
                     <p className="text-sm text-muted-foreground mt-0.5">

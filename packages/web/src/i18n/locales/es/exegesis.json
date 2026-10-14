@@ -747,6 +747,7 @@
           "strategy-only": "Sólo estrategia"
         },
         "presetEdited": "{{preset}} · editada",
+        "templateEdited": "{{name}} · editada",
         "presetSystem": "{{preset}} · sistema"
       },
       "manifest": {
@@ -1580,7 +1581,8 @@
       "saveFailed": "No se pudo guardar el perfil.",
       "pickLabel": "Perfil de trabajo",
       "pickNone": "Sin perfil",
-      "pickHint": "Rellena rúbrica, encuadre, guía de estilo y método. Puedes cambiar cualquiera antes de crear."
+      "pickHint": "Rellena rúbrica, encuadre, guía de estilo y método. Puedes cambiar cualquiera antes de crear.",
+      "noRubric": "Este perfil no guarda una rúbrica: elígela abajo. Para que la recuerde, vuelve a guardar el perfil desde un trabajo con la rúbrica correcta."
     },
     "voice": {
       "heading": "Cómo escribo yo",

@@ -10,7 +10,23 @@ type T = (key: string, opts?: Record<string, unknown>) => string;
  * Ahora dice cuál es y si se editó; las extraídas y las de plantilla siguen
  * diciendo de dónde salieron.
  */
-export function rubricLabel(rubric: PaperRubric, t: T): string {
+export function rubricLabel(
+    rubric: PaperRubric,
+    t: T,
+    /**
+     * Las plantillas del usuario. Con ellas, una rúbrica de plantilla dice
+     * CUÁL: «Desde plantilla» no dejaba saber si era «TP Semanal Griego NT» o
+     * la del paper (TP #7, #4).
+     */
+    templates?: ReadonlyArray<{ id: string; displayName: string }>,
+): string {
+    const plantilla = rubric.sourceTemplateId
+        ? templates?.find(x => x.id === rubric.sourceTemplateId)?.displayName
+        : undefined;
+    if (plantilla && rubric.provenance === 'from-template') return plantilla;
+    if (plantilla && rubric.provenance === 'user-edited') {
+        return t('paperSetup.subSteps.rubric.templateEdited', { name: plantilla });
+    }
     const preset = rubricPreset(rubric);
     if (preset && rubric.provenance === 'system-default') {
         return t('paperSetup.subSteps.rubric.presetSystem', { preset: t(`paperSetup.subSteps.rubric.preset.${preset}`) });
