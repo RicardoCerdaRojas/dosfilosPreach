@@ -300,9 +300,16 @@ export const runLlmPrompt = onCall(
             } else if (ruta.provider === 'gemini') {
                 model = ruta.model;
             } else {
-                return await porOtroProveedor(ruta.provider, ruta.model, ruta.reasoning, {
-                    feature, uid, system, prompt, data,
-                });
+                const otro = await conRespaldo(
+                    () => porOtroProveedor(ruta.provider as 'openai' | 'anthropic', ruta.model, ruta.reasoning, {
+                        feature, uid, system, prompt, data,
+                    }),
+                    `${feature} (${ruta.provider}/${ruta.model})`,
+                );
+                if (otro) return otro;
+                // Respaldo EN SILENCIO (decisión del fundador, TP #7): el pedido
+                // sigue por Gemini con el modelo que pidió el navegador, y el
+                // medidor lo registra como cualquier llamada de Gemini.
             }
         }
 
@@ -505,6 +512,26 @@ async function porOtroProveedor(
     } catch (err) {
         console.error(`[runLlmPrompt] ${feature} (${proveedor}/${modelo}) falló`, err);
         throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
+    }
+}
+
+/**
+ * Lo que pide la ruta a otro proveedor, con Gemini de respaldo.
+ *
+ * En el TP #7 (Santiago 3:13-18) OpenAI tumbó tres veces en un día un paso
+ * del trabajo: el planificador entró en bucle hasta `max_output_tokens`, el
+ * filtro de uso rechazó un prompt sobre «sabiduría demoníaca» (Stg 3:15) y un
+ * corte de red (ECONNRESET) dejó un análisis a medias. Ninguna era culpa del
+ * trabajo, y en las tres el estudiante quedó trabado. Cualquier falla del otro
+ * proveedor devuelve `null` y el pedido sigue por Gemini; queda registrada en
+ * los logs con «cae a Gemini» para poder medir cuántas veces pasa.
+ */
+export async function conRespaldo<T>(intento: () => Promise<T>, etiqueta: string): Promise<T | null> {
+    try {
+        return await intento();
+    } catch (err) {
+        console.warn(`[runLlmPrompt] ${etiqueta} cae a Gemini:`, err instanceof Error ? err.message : err);
+        return null;
     }
 }
 
