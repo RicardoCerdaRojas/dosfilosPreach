@@ -1,5 +1,6 @@
 import {
     buildCitationFormBlock,
+    buildAcademicRegisterBlock,
     buildAcademicVoiceBlock,
     buildWordBudgetBlock,
     formatPassageReference,
@@ -158,6 +159,7 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
     const conVoz = [
         system,
         buildWordBudgetBlock(input.wordBudget ?? null, lang),
+        buildAcademicRegisterBlock(lang),
         buildAcademicVoiceBlock(input.voiceSamples ?? [], lang),
     ].filter(Boolean).join('\n\n');
 
