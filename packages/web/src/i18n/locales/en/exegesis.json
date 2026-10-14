@@ -1951,6 +1951,8 @@
         "claim": "Checked claim",
         "verdict": "What the verifier saw",
         "pageHint": "A one-page difference may be the book's calibration, not the citation. Open the PDF and compare the printed folio.",
+        "openCited": "See {{page}} (cited)",
+        "openFound": "See {{page}} (where the verifier found it)",
         "openPdf": "Open in the PDF",
         "reviewLabel": "Manual review",
         "reviewedLabel": "Reviewed by hand",

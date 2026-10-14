@@ -1951,6 +1951,8 @@
         "claim": "Afirmación cotejada",
         "verdict": "Qué vio el verificador",
         "pageHint": "Una diferencia de una página puede ser la calibración del libro, no la cita. Abre el PDF y compara el folio impreso.",
+        "openCited": "Ver {{page}} (la citada)",
+        "openFound": "Ver {{page}} (donde la halló el verificador)",
         "openPdf": "Abrir en el PDF",
         "reviewLabel": "Revisión manual",
         "reviewedLabel": "Revisada a mano",

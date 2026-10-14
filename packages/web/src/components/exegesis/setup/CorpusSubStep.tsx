@@ -4,6 +4,7 @@ import {
     useRef,
     useState,
 } from 'react';
+import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
 import { destinoDeFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import {
@@ -1273,7 +1274,7 @@ function SinPaginaComprobable({ resourceId }: { resourceId: string }) {
             </div>
             <button
                 type="button"
-                onClick={() => navigate(`/dashboard/library/${resourceId}/numeracion`)}
+                onClick={() => navigate(rutaCalibracion(resourceId))}
                 className="shrink-0 rounded border border-warning/40 px-2 py-1 text-[11px] font-medium text-warning-subtle-foreground hover:bg-warning-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 {t('paperSetup.subSteps.corpus.sinPaginaComprobable.action')}

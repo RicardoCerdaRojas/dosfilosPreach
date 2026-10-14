@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { useAbrirRecursoEnVisor } from './hooks/useAbrirRecursoEnVisor';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -397,7 +398,7 @@ export function LibraryManager() {
                                 // prometer algo que termina en un error de permisos.
                                 onCalibrateNumbering={resource.isSystemSource
                                     ? undefined
-                                    : () => navigate(`/dashboard/library/${resource.id}/numeracion`)}
+                                    : () => navigate(rutaCalibracion(resource.id))}
                             />
                             </div>
                         ))}
