@@ -111,12 +111,12 @@ export function inclusionAtBirth(
  * introducción y la conclusión como si fueran a escribirse (TP #6).
  */
 export function frameLeftOut(
-    paper: Pick<ExegeticalPaper, 'steps' | 'assignmentBrief'>,
+    paper: Pick<ExegeticalPaper, 'steps' | 'assignmentBrief'> & { passage?: ExegeticalPaper['passage'] },
     kind: 'introduction' | 'conclusion',
 ): boolean {
     const deEseTipo = paper.steps.filter(s => s.kind === kind);
     if (deEseTipo.length > 0) return deEseTipo.every(s => !pertenceAlDocumento(s));
-    return inclusionAtBirth({ kind, verseRef: null }, parseBriefQuestions(paper.assignmentBrief)) === false;
+    return inclusionAtBirth({ kind, verseRef: null }, parseBriefQuestions(paper.assignmentBrief, paper.passage)) === false;
 }
 
 /**
@@ -204,7 +204,7 @@ export function assembleMarkdown(
 ): string {
     const passage = formatPassageReference(paper.passage, language);
     const out: string[] = [`# ${paper.title?.trim() || passage}`, ''];
-    const preguntas = parseBriefQuestions(paper.assignmentBrief);
+    const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
 
     for (const parte of contents.included) {
         const step = paper.steps.find(s => s.id === parte.stepId);

@@ -75,6 +75,8 @@ interface StepCardProps {
     allSteps?: ReadonlyArray<ExegeticalStep>;
     /** El encuadre del trabajo, para decir qué pregunta responde cada paso. */
     assignmentBrief?: string | null;
+    /** El pasaje: en uno de un solo capítulo, «el versículo 15» es de ese capítulo. */
+    passage?: { chapterStart: number; chapterEnd: number } | null;
     /** Si el trabajo ya está ensamblado: decide si recomponer lo alcanza. */
     hasAssembly?: boolean;
     /**
@@ -112,7 +114,7 @@ interface StepCardProps {
  * El documento sigue siendo legible por sí solo: dice `generating`, y el
  * `updatedAt` que está al lado dice desde cuándo.
  */
-export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, hasAssembly = false, wordsPerShare = null, formatting = null }: StepCardProps) {
+export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, passage = null, hasAssembly = false, wordsPerShare = null, formatting = null }: StepCardProps) {
     const { t } = useTranslation('exegesis');
     const {
         generateStep,
@@ -300,7 +302,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         }
         void runAnalyzeCanonically(regenerationHint);
     };
-    const preguntas = useMemo(() => parseBriefQuestions(assignmentBrief), [assignmentBrief]);
+    const capInicio = passage?.chapterStart;
+    const capFin = passage?.chapterEnd;
+    const preguntas = useMemo(
+        () => parseBriefQuestions(assignmentBrief, capInicio !== undefined && capFin !== undefined ? { chapterStart: capInicio, chapterEnd: capFin } : null),
+        [assignmentBrief, capInicio, capFin],
+    );
     /** La pregunta del encuadre que le toca a este versículo. */
     const preguntaPropia = step.kind === 'verse' && step.verseRef
         ? questionsForVerse(preguntas, step.verseRef.chapterStart, step.verseRef.verseStart ?? 1)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseBriefQuestions, questionsForVerse, unansweredQuestions } from '../briefQuestions';
+import { isSyntaxQuestion, parseBriefQuestions, questionsForVerse, unansweredQuestions } from '../briefQuestions';
 
 /**
  * El encuadre real del trabajo de Santiago 2:1–13.
@@ -98,4 +98,45 @@ describe('unansweredQuestions', () => {
         const sueltas = parseBriefQuestions('1. ¿Cuál es la tesis del pasaje?');
         expect(unansweredQuestions(sueltas, [{ chapter: 2, verse: 1 }])).toHaveLength(1);
     });
+});
+
+/**
+ * TP #7 (Santiago 3:13-18): «3. ¿Cuál es el sujeto del versículo 15?» no
+ * trae capítulo. Se descartaba, la pregunta quedaba sin sección y 3:15
+ * nacía fuera del documento (#13).
+ */
+describe('«el versículo N» sin capítulo en un pasaje de un solo capítulo', () => {
+    const encuadre = '1. ¿Qué modifica ἐν πραΰτητι σοφίας (3:13)?\n3. ¿Cuál es el sujeto del versículo 15?';
+    const STG_3 = { chapterStart: 3, chapterEnd: 3 };
+
+    it('hereda el capítulo del pasaje', () => {
+        const [, tercera] = parseBriefQuestions(encuadre, STG_3);
+        expect(tercera!.verses).toEqual([{ chapter: 3, verse: 15 }]);
+        expect(questionsForVerse(parseBriefQuestions(encuadre, STG_3), 3, 15).map(q => q.number)).toEqual([3]);
+    });
+
+    it('en un pasaje de varios capítulos sigue sin adivinar', () => {
+        const [, tercera] = parseBriefQuestions(encuadre, { chapterStart: 2, chapterEnd: 3 });
+        expect(tercera!.verses).toEqual([]);
+    });
+
+    it('una referencia completa previa en la pregunta sigue mandando', () => {
+        const [q] = parseBriefQuestions('1. Compare 2:4 con el versículo 6', STG_3);
+        expect(q!.verses).toEqual([{ chapter: 2, verse: 4 }, { chapter: 2, verse: 6 }]);
+    });
+});
+
+describe('isSyntaxQuestion — las cuatro del TP #7 y las que no', () => {
+    it.each([
+        '¿Qué modifica la frase preposicional ἐν πραΰτητι σοφίας (3:13)?',
+        '¿Cómo está funcionando el genitivo σοφίας (3:13)?',
+        '¿Cuál es el sujeto del versículo 15?',
+        '¿Qué denota el participio (en dativo) τοῖς ποιοῦσιν (3:18)?',
+    ])('de sintaxis: %s', q => expect(isSyntaxQuestion(q)).toBe(true));
+
+    it.each([
+        'En 3:6, ¿cómo se puntúa la frase?',
+        '¿Qué variantes textuales hay en 3:15?',
+        '¿Qué significa σοφία en Santiago?',
+    ])('no de sintaxis: %s', q => expect(isSyntaxQuestion(q)).toBe(false));
 });

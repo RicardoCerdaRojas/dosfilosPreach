@@ -736,7 +736,7 @@ function StepsPanel({
     const formatting = paper.rubric?.formatting ?? null;
     const wordsPerShare = sectionBudgets(
         paper.rubric?.expectedLength ?? null,
-        documentSections(steps, parseBriefQuestions(paper.assignmentBrief)),
+        documentSections(steps, parseBriefQuestions(paper.assignmentBrief, paper.passage)),
         formatting,
     ).perShare;
 
@@ -799,6 +799,7 @@ function StepsPanel({
                             language={language}
                             allSteps={paper.steps}
                             assignmentBrief={paper.assignmentBrief}
+                            passage={paper.passage}
                             hasAssembly={!!paper.assembledMarkdown?.trim()}
                             wordsPerShare={wordsPerShare}
                             formatting={formatting}

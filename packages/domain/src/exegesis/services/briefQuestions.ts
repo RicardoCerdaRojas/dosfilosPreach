@@ -50,7 +50,16 @@ const VERSICULO_SUELTO = /(?:vers[íi]culo|v\.)\s*(\d{1,3})/gi;
  * Vacío cuando el encuadre no viene en forma de preguntas, que es una
  * respuesta legítima y no un error: hay trabajos que se encargan en prosa.
  */
-export function parseBriefQuestions(brief: string | null | undefined): BriefQuestion[] {
+export function parseBriefQuestions(
+    brief: string | null | undefined,
+    /**
+     * El pasaje del trabajo. Si es de un solo capítulo, «el versículo 15» sin
+     * referencia previa es de ese capítulo (TP #7, Santiago 3:13-18: la
+     * pregunta 3 se quedaba sin sección y 3:15 nacía fuera del documento).
+     */
+    passage?: { chapterStart: number; chapterEnd: number } | null,
+): BriefQuestion[] {
+    const capituloUnico = passage && passage.chapterStart === passage.chapterEnd ? passage.chapterStart : null;
     const lineas = (brief ?? '').split('\n');
     const out: Array<{ number: number; partes: string[] }> = [];
 
@@ -71,11 +80,11 @@ export function parseBriefQuestions(brief: string | null | undefined): BriefQues
 
     return out.map(({ number, partes }) => {
         const text = partes.join(' ').trim();
-        return { number, text, verses: versesIn(text) };
+        return { number, text, verses: versesIn(text, capituloUnico) };
     });
 }
 
-function versesIn(texto: string): Array<{ chapter: number; verse: number }> {
+function versesIn(texto: string, capituloUnico: number | null): Array<{ chapter: number; verse: number }> {
     const out: Array<{ chapter: number; verse: number; at: number }> = [];
 
     CAPITULO_VERSICULO.lastIndex = 0;
@@ -86,10 +95,11 @@ function versesIn(texto: string): Array<{ chapter: number; verse: number }> {
     VERSICULO_SUELTO.lastIndex = 0;
     for (let m = VERSICULO_SUELTO.exec(texto); m; m = VERSICULO_SUELTO.exec(texto)) {
         // Hereda el capítulo de la referencia completa que la precede. Sin
-        // ninguna delante, no se puede resolver y se descarta: inventar un
-        // capítulo mandaría la pregunta a la sección equivocada.
+        // ninguna delante, el del pasaje si es uno solo; si no, se descarta:
+        // inventar un capítulo mandaría la pregunta a la sección equivocada.
         const previa = out.filter(r => r.at < m!.index).pop();
-        if (previa) out.push({ chapter: previa.chapter, verse: Number(m[1]), at: m.index });
+        const capitulo = previa?.chapter ?? capituloUnico;
+        if (capitulo !== null) out.push({ chapter: capitulo, verse: Number(m[1]), at: m.index });
     }
 
     return out
@@ -131,4 +141,19 @@ export function unansweredQuestions(
         if (!dueña) return true;
         return !verses.some(v => v.chapter === dueña.chapter && v.verse === dueña.verse);
     });
+}
+
+/**
+ * ¿La pregunta pide una decisión de sintaxis? Es la que necesita una
+ * gramática en su paso.
+ *
+ * TP #7 (Santiago 3:13-18): las cuatro preguntas eran de sintaxis («¿Qué
+ * modifica…?», «¿Cómo está funcionando el genitivo…?», «¿Cuál es el
+ * sujeto…?», «¿Qué denota el participio…?») y el plan dejó a Robertson sólo
+ * en 3:13, aunque el prompt del planificador ya lo pedía (#15).
+ */
+const SINTAXIS = /sintax|sint[áa]ctic|genitiv|dativ|acusativ|nominativ|vocativ|participi|infinitiv|subjuntiv|optativ|imperativ|aoristo|sujeto|predicad|modific|preposici|cl[áa]usula|subordinad|ap[óo]dosis|pr[óo]tasis|syntax|genitive|dative|accusative|participle|infinitive|subject|modif|preposition|clause/i;
+
+export function isSyntaxQuestion(text: string): boolean {
+    return SINTAXIS.test(text);
 }

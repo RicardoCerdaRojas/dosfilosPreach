@@ -19,6 +19,7 @@ import {
 } from '@/hooks/exegesis/useStepCorpusAllocations';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { PinnedSourcesPicker } from './PinnedSourcesPicker';
+import { nombreCortoDeFuente } from './nombreCortoDeFuente';
 
 interface CorpusUsagePlanSubStepProps {
     paper: ExegeticalPaper;
@@ -368,9 +369,7 @@ function CoveragePanel({
                                     className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-card px-2 py-0.5 text-[11px] text-foreground"
                                     title={s.displayLabel}
                                 >
-                                    {s.displayLabel.length > 40
-                                        ? `${s.displayLabel.slice(0, 38)}…`
-                                        : s.displayLabel}
+                                    {nombreCortoDeFuente(s)}
                                 </span>
                             ))}
                         </div>

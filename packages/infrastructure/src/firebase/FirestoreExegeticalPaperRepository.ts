@@ -548,7 +548,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
 
             // Con el encuadre en preguntas, el documento son las respuestas:
             // lo que no responde ninguna nace fuera (`inclusionAtBirth`).
-            const preguntas = parseBriefQuestions(data.assignmentBrief ?? null);
+            const preguntas = parseBriefQuestions(data.assignmentBrief ?? null, passage);
             for (const step of newSteps) {
                 const incluido = inclusionAtBirth(step, preguntas);
                 if (incluido !== undefined) step.includeInDocument = incluido;

@@ -8,6 +8,8 @@ import {
     type StepSourcePlan,
     type StepSourcePlanEntry,
     briefWithExclusions,
+    exclusionFor,
+    isSyntaxQuestion,
     parseBriefQuestions,
     pertenceAlDocumento,
     questionsOfStep,
@@ -84,7 +86,7 @@ export class ProposeStepCorpusAllocationsUseCase {
             };
         }
 
-        const preguntas = parseBriefQuestions(paper.assignmentBrief);
+        const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
         const stepInputs: ReadonlyArray<ProposeStepCorpusStepInput> = plannableSteps.map(step =>
             buildPlannerStepInput(step, paper, questionsOfStep(step, preguntas).map(q => q.text)),
         );
@@ -144,6 +146,8 @@ export class ProposeStepCorpusAllocationsUseCase {
             };
         }
 
+        conGramaticaEnLaSintaxis(nextPerStep, plannableSteps, preguntas, paper);
+
         const nextPlan: StepSourcePlan = {
             perStep: nextPerStep,
             defaults: paper.stepPlan.defaults,
@@ -159,6 +163,37 @@ export class ProposeStepCorpusAllocationsUseCase {
             allocatedStepCount: Object.keys(result.allocations).length,
             nonEmptyAllocationCount,
             ...(result.promptUsed !== undefined && { promptUsed: result.promptUsed }),
+        };
+    }
+}
+
+/**
+ * Cada paso con una pregunta de sintaxis lleva una gramática, con rol
+ * técnico. El prompt del planificador ya lo pide y en el TP #7 igual dejó a
+ * Robertson sólo en 3:13, fuera de 3:18 y de su pregunta sobre el participio
+ * (#15). Se valida después, en código: si falta, se agrega la primera
+ * gramática del corpus que no esté excluida del trabajo.
+ */
+function conGramaticaEnLaSintaxis(
+    perStep: Record<string, StepSourcePlanEntry>,
+    steps: ReadonlyArray<ExegeticalStep>,
+    preguntas: ReturnType<typeof parseBriefQuestions>,
+    paper: ExegeticalPaper,
+): void {
+    const gramatica = paper.sources.find(s =>
+        s.sourceType === 'grammar-syntax'
+        && !exclusionFor({ author: null, citationKey: s.citationKey ?? s.displayLabel }, paper.excludedSources));
+    if (!gramatica) return;
+    const gramaticas = new Set(paper.sources.filter(s => s.sourceType === 'grammar-syntax').map(s => s.id));
+    for (const step of steps) {
+        const entrada = perStep[step.id];
+        if (!entrada) continue;
+        if (!questionsOfStep(step, preguntas).some(q => isSyntaxQuestion(q.text))) continue;
+        if (entrada.pinnedSources.some(id => gramaticas.has(id))) continue;
+        perStep[step.id] = {
+            ...entrada,
+            pinnedSources: [...entrada.pinnedSources, gramatica.id],
+            pinnedSourceRoles: { ...(entrada.pinnedSourceRoles ?? {}), [gramatica.id]: 'technical' },
         };
     }
 }

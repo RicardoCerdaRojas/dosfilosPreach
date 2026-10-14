@@ -2,10 +2,18 @@ import type {
     ExegeticalPaper,
     IExegeticalPaperRepository,
     StepEmphasis,
+    SourceType,
     StepSourcePlan,
     UpdateStepPlanInput,
 } from '@dosfilos/domain';
 import { getEffectiveSectionStructuralExpectation } from '@dosfilos/domain';
+
+/** Los tipos que se citan dentro de un verso (no el trasfondo ni las monografías). */
+const TIPOS_DE_VERSO: ReadonlySet<SourceType> = new Set<SourceType>([
+    'commentary-critical', 'commentary-expository',
+    'grammar-syntax', 'lexicon-technical', 'theological-dictionary',
+    'critical-apparatus', 'textual-commentary', 'biblical-text-edition',
+]);
 
 /**
  * Patches the per-kind defaults of `paper.stepPlan`.
@@ -39,10 +47,17 @@ export class UpdateStepPlanUseCase {
             introduction: input.introduction ?? paper.stepPlan.defaults.introduction,
         };
 
+        // La marca de la propuesta viaja con el plan: sin ella, guardar el
+        // plan estructural hacía desaparecer el plan de uso de la vista
+        // (TP #7, #25). Igual que `UpdateStepCorpusAllocationUseCase`.
         const nextPlan: StepSourcePlan = {
             perStep: paper.stepPlan.perStep,
             defaults: nextDefaults,
             updatedAt: new Date(),
+            ...(paper.stepPlan.proposedAt !== undefined && { proposedAt: paper.stepPlan.proposedAt }),
+            ...(paper.stepPlan.proposalCorpusSourceIds !== undefined && {
+                proposalCorpusSourceIds: paper.stepPlan.proposalCorpusSourceIds,
+            }),
         };
 
         return this.paperRepository.setStepPlan(input.ownerId, input.paperId, nextPlan);
@@ -65,8 +80,20 @@ export class UpdateStepPlanUseCase {
         kind: 'introduction' | 'verse' | 'conclusion',
     ): StepEmphasis {
         const expectation = getEffectiveSectionStructuralExpectation(paper, kind);
+        const sugeridos = [...(expectation?.emphasizedTypes ?? [])];
+        // Los versos también sugieren lo que la rúbrica EXIGE y se cita en un
+        // verso: en el TP #7 la rúbrica pedía «Comentario expositivo ≥1», la
+        // sugerencia de «Versos» no lo traía y el ancla quedó en 0 (#18). Van
+        // al final: el primero decide el modo del trabajo (`paperModeOf`).
+        if (kind === 'verse') {
+            for (const req of paper.rubric?.sourceRequirements ?? []) {
+                if (req.minimum > 0 && TIPOS_DE_VERSO.has(req.sourceType) && !sugeridos.includes(req.sourceType)) {
+                    sugeridos.push(req.sourceType);
+                }
+            }
+        }
         return {
-            emphasizedTypes: expectation?.emphasizedTypes ?? [],
+            emphasizedTypes: sugeridos,
             deemphasizedTypes: [],
             citationOverrides: [],
         };
