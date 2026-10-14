@@ -29,6 +29,7 @@ import { SelectionCart } from './SelectionCart';
 import { LemmaPagesPanel } from './LemmaPagesPanel';
 import { PassagePagesPanel } from './PassagePagesPanel';
 import { GrammarSectionsPanel } from './GrammarSectionsPanel';
+import { BuscarEnElLibro } from './BuscarEnElLibro';
 
 /**
  * Los tres paneles del selector: índice, hoja y carrito.
@@ -340,6 +341,9 @@ export function SourcePagesWorkspace({
     }, [pickSheet]);
 
     const printedCurrent = printedLabelForSheet(currentSheet, numbering, printedPageOffset);
+    // Lo buscado en el libro se resalta en la hoja (fase F, F5).
+    const [terminoBuscado, setTerminoBuscado] = useState<string | null>(null);
+    const irAHoja = useCallback((sheet: number) => goToSheet(sheet), [goToSheet]);
     const isCurrentSelected = selectedSheets.has(currentSheet);
 
     return (
@@ -466,6 +470,15 @@ export function SourcePagesWorkspace({
                         </div>
                     </div>
 
+                    <BuscarEnElLibro
+                        resourceId={resourceId}
+                        numbering={numbering}
+                        printedPageOffset={printedPageOffset}
+                        currentSheet={currentSheet}
+                        onGo={irAHoja}
+                        onSearchTerm={setTerminoBuscado}
+                    />
+
                     {anchor !== null && (
                         <p className="shrink-0 border-b border-border bg-primary/10 px-3 py-1.5 text-[11px] text-foreground">
                             {t('paperSetup.subSteps.corpus.picker.viewer.rangeHint', { sheet: anchor })}
@@ -477,6 +490,7 @@ export function SourcePagesWorkspace({
                             url={pdf.data?.url ?? null}
                             sheet={currentSheet}
                             selected={isCurrentSelected}
+                            searchTerm={terminoBuscado}
                         />
                     </div>
                 </div>
