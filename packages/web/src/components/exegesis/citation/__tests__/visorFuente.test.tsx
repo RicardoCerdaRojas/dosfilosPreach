@@ -51,7 +51,7 @@ function Abridor({ resourceId }: { resourceId?: string }) {
 }
 const montar = (resourceId?: string) => render(
     <SourceViewerProvider>
-        <textarea aria-label="texto del trabajo" defaultValue="El dativo…" />
+        <textarea data-testid="texto-del-trabajo" defaultValue="El dativo…" />
         <Abridor resourceId={resourceId} />
         <SourceViewerSlot />
     </SourceViewerProvider>,
@@ -72,7 +72,7 @@ describe('Visor de fuente — panel y ampliado', () => {
         montar();
         fireEvent.click(screen.getByText('abrir'));
         expect(screen.queryByRole('dialog')).toBeNull();
-        const texto = screen.getByLabelText('texto del trabajo') as HTMLTextAreaElement;
+        const texto = screen.getByTestId('texto-del-trabajo') as HTMLTextAreaElement;
         fireEvent.change(texto, { target: { value: 'escribo mientras miro el libro' } });
         expect(texto.value).toBe('escribo mientras miro el libro');
     });
