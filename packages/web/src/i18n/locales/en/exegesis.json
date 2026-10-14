@@ -1113,6 +1113,12 @@
           "willReplace": "Will replace current excerpts",
           "filterAll": "All ({{count}})",
           "smartMatchTitle": "Recommended for this passage",
+          "rubricGap": {
+            "title": "Missing for the rubric",
+            "requirement_one": "{{type}}: {{count}} missing.",
+            "requirement_other": "{{type}}: {{count}} missing.",
+            "porPaginas": "It isn't found by searching the passage: add it, then choose its pages in the corpus."
+          },
           "smartMatchLoading": "Computing recommendations…",
           "chunksRelevant_one": "✨ {{count}} relevant excerpt",
           "chunksRelevant_other": "✨ {{count}} relevant excerpts",

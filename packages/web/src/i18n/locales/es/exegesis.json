@@ -1113,6 +1113,12 @@
           "willReplace": "Reemplazará excerpts actuales",
           "filterAll": "Todos ({{count}})",
           "smartMatchTitle": "Recomendado para este pasaje",
+          "rubricGap": {
+            "title": "Falta para la rúbrica",
+            "requirement_one": "{{type}}: falta {{count}}.",
+            "requirement_other": "{{type}}: faltan {{count}}.",
+            "porPaginas": "No se encuentra buscando el pasaje: agrega el libro y luego elige sus páginas en el corpus."
+          },
           "smartMatchLoading": "Calculando recomendaciones…",
           "chunksRelevant_one": "✨ {{count}} fragmento relevante",
           "chunksRelevant_other": "✨ {{count}} fragmentos relevantes",
