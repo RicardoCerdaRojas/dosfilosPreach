@@ -1,4 +1,6 @@
 import { SourcesWithoutScopeNotice } from '@/components/exegesis/SourcesWithoutScopeNotice';
+import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
+import { destinoDeFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import { SeriesCorpusOffer } from '@/components/exegesis/SeriesCorpusOffer';
 import { rubricLabel } from '@/components/exegesis/setup/rubricLabel';
 import { useEffect, useState } from 'react';
@@ -966,6 +968,7 @@ function SourcesCard({
     isRemoving: boolean;
     t: (key: string) => string;
 }) {
+    const sourceViewer = useSourceViewer();
     return (
         <section className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
             <header className="flex items-center gap-2 mb-3">
@@ -987,7 +990,7 @@ function SourcesCard({
             ) : (
                 <ul className="space-y-1.5">
                     {paper.sources.map(s => (
-                        <SourceRow key={s.id} source={s} onRemove={() => onRemove(s.id)} disabled={isRemoving} t={t} />
+                        <SourceRow key={s.id} source={s} onOpen={() => sourceViewer.open(destinoDeFuente(paper.id, s))} onRemove={() => onRemove(s.id)} disabled={isRemoving} t={t} />
                     ))}
                 </ul>
             )}
@@ -1005,11 +1008,14 @@ function SourcesCard({
 
 function SourceRow({
     source,
+    onOpen,
     onRemove,
     disabled,
     t,
 }: {
     source: ProjectSource;
+    /** Abre la fuente en el visor, junto al trabajo (fase F). */
+    onOpen: () => void;
     onRemove: () => void;
     disabled: boolean;
     t: (key: string) => string;
@@ -1018,7 +1024,14 @@ function SourceRow({
     return (
         <li className="group flex items-start gap-2 rounded-md border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 px-2.5 py-2">
             <BookOpenText className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
+            <button
+                type="button"
+                onClick={onOpen}
+                disabled={isStyleTemplate}
+                title={t('detail.sources.open')}
+                className="flex-1 min-w-0 text-left rounded-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
+                data-testid="abrir-fuente-del-trabajo"
+            >
                 <p className="text-xs font-medium text-slate-800 dark:text-slate-100 truncate">
                     {source.displayLabel}
                 </p>
@@ -1030,7 +1043,7 @@ function SourceRow({
                     {t(`sourceTypes.${source.sourceType}.label`)}
                     {source.citationKey && !isStyleTemplate ? ` · ${source.citationKey}` : ''}
                 </p>
-            </div>
+            </button>
             <button
                 type="button"
                 onClick={onRemove}

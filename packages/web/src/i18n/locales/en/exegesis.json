@@ -2152,6 +2152,7 @@
       "body": "We'll produce one step per verse of the passage, plus conclusion, introduction, and final assembly."
     },
     "steps": {
+      "openCitation": "See it in the book",
       "startCta": "Start generation",
       "generating": "Generating...",
       "regenerating": "Regenerating…",
@@ -2267,6 +2268,7 @@
       "changeCta": "Edit in setup"
     },
     "sources": {
+      "open": "Open in the viewer",
       "title": "Project corpus",
       "none": "No sources yet. Add them so the orchestrator can interact with them.",
       "addCta": "Edit in setup",

@@ -2152,6 +2152,7 @@
       "body": "Vamos a producir un paso por verso del pasaje, más conclusión, introducción y ensamble final."
     },
     "steps": {
+      "openCitation": "Ver en el libro",
       "startCta": "Iniciar generación",
       "generating": "Generando...",
       "regenerating": "Regenerando…",
@@ -2267,6 +2268,7 @@
       "changeCta": "Editar en configuración"
     },
     "sources": {
+      "open": "Abrir en el visor",
       "title": "Corpus del trabajo",
       "none": "Sin fuentes todavía. Agrégalas para que el orquestador pueda interactuar con ellas.",
       "addCta": "Editar en configuración",

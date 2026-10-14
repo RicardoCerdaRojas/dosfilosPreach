@@ -18,8 +18,6 @@ import {
     MoreVertical,
     Undo2,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,6 +28,9 @@ import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/Cano
 import type { CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
 import { useRegisterCitationSink, useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
 import { insertarEnCursor } from '@/components/exegesis/citation/citarDesdeVisor';
+import { destinoDeCita, type CitaEnlazada } from '@/components/exegesis/citation/destinosDelVisor';
+import { ProsaConCitas } from '@/components/exegesis/citation/ProsaConCitas';
+import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
@@ -409,13 +410,28 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
      * El texto no cambia al marcar una casilla. Atarlo a `previewMarkdown`
      * hace que ese re-render no cueste nada.
      */
+    // Las citas de la prosa que nombran una fuente del trabajo se pueden
+    // pulsar: abren el visor en su página (fase F). El trabajo ya está en
+    // caché por la página que monta esta tarjeta.
+    const { paper: paperDeLasCitas } = useExegesisPaper(paperId);
+    // Atado al TEXTO de las claves, no a la identidad del trabajo: marcar una
+    // casilla del documento cambia el trabajo entero y no debe volver a
+    // dibujar la prosa (ver abajo).
+    const clavesTexto = (paperDeLasCitas?.sources ?? []).map(s => s.citationKey ?? s.displayLabel).join('\u0001');
+    const clavesDelTrabajo = useMemo(() => (clavesTexto ? clavesTexto.split('\u0001') : []), [clavesTexto]);
+    const abrirCitaDeLaProsa = useCallback(
+        (cita: CitaEnlazada) => sourceViewer.open(destinoDeCita(paperId, cita)),
+        [sourceViewer, paperId],
+    );
+    const tituloCita = t('detail.steps.openCitation');
     const markdownRenderizado = useMemo(() => (
-        <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {previewMarkdown}
-            </ReactMarkdown>
-        </div>
-    ), [previewMarkdown]);
+        <ProsaConCitas
+            markdown={previewMarkdown}
+            claves={clavesDelTrabajo}
+            onOpenCita={abrirCitaDeLaProsa}
+            tituloCita={tituloCita}
+        />
+    ), [previewMarkdown, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita]);
 
     const anyPipelinePending =
         generateStep.isPending
