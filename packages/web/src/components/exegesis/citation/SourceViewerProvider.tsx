@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type Dispatch, type KeyboardEvent, type ReactNode, type SetStateAction } from 'react';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { CitationSourceModal, type CitationTarget } from './CitationSourceModal';
@@ -35,7 +35,19 @@ interface SourceViewerState {
     mode: SourceViewerMode;
 }
 
+/**
+ * Adónde va una cita hecha en el visor: el editor abierto (el lápiz de un paso
+ * o del ensamble). Se registra mientras está abierto; sin ninguno, «Citar»
+ * copia al portapapeles (decisión del fundador, fase F).
+ */
+export interface CitationSink {
+    /** Dónde se va a insertar, para decirlo antes de hacerlo («Santiago 3:18»). */
+    label: string;
+    insert: (cita: string) => void;
+}
+
 const ApiContext = createContext<SourceViewerApi | null>(null);
+const SinkContext = createContext<{ sink: CitationSink | null; setSinks: Dispatch<SetStateAction<CitationSink[]>> } | null>(null);
 const StateContext = createContext<(SourceViewerState & { setMode: (m: SourceViewerMode) => void; close: () => void }) | null>(null);
 
 export function SourceViewerProvider({ children }: { children: ReactNode }) {
@@ -45,11 +57,38 @@ export function SourceViewerProvider({ children }: { children: ReactNode }) {
     const setMode = useCallback((mode: SourceViewerMode) => setState(s => ({ ...s, mode })), []);
     const api = useMemo(() => ({ open, close }), [open, close]);
     const full = useMemo(() => ({ ...state, setMode, close }), [state, setMode, close]);
+    // Una PILA y no un solo destino: con dos editores abiertos, cerrar el
+    // segundo devuelve el destino al primero en vez de dejar ninguno.
+    const [pila, setSinks] = useState<CitationSink[]>([]);
+    const sinks = useMemo(() => ({ sink: pila.at(-1) ?? null, setSinks }), [pila]);
     return (
         <ApiContext.Provider value={api}>
-            <StateContext.Provider value={full}>{children}</StateContext.Provider>
+            <SinkContext.Provider value={sinks}>
+                <StateContext.Provider value={full}>{children}</StateContext.Provider>
+            </SinkContext.Provider>
         </ApiContext.Provider>
     );
+}
+
+/** El editor que recibe las citas, si hay uno abierto. */
+export function useCitationSink(): CitationSink | null {
+    return useContext(SinkContext)?.sink ?? null;
+}
+
+/**
+ * Un editor se ofrece como destino de las citas mientras está abierto. El
+ * último abierto es el destino; pasar `null` (o desmontarse) lo retira y el
+ * destino vuelve al anterior que siga abierto.
+ * El objeto tiene que ser estable (`useMemo`): cada objeto nuevo es otro
+ * registro.
+ */
+export function useRegisterCitationSink(sink: CitationSink | null) {
+    const setSinks = useContext(SinkContext)?.setSinks;
+    useEffect(() => {
+        if (!sink || !setSinks) return;
+        setSinks(pila => [...pila.filter(s => s !== sink), sink]);
+        return () => setSinks(pila => pila.filter(s => s !== sink));
+    }, [sink, setSinks]);
 }
 
 /**

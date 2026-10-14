@@ -10,7 +10,9 @@ vi.mock('@/i18n', () => ({
     useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k) }),
 }));
 vi.mock('@/components/exegesis/setup/page-picker/PdfPageViewer', () => ({
-    PdfPageViewer: ({ sheet }: { sheet: number }) => <div data-testid="hoja">hoja {sheet}</div>,
+    PdfPageViewer: ({ sheet, onTextSelected }: { sheet: number; onTextSelected?: (t: string | null) => void }) => (
+        <div><span data-testid="hoja">hoja {sheet}</span><button type="button" onClick={() => onTextSelected?.('But this is tautologous')}>seleccionar</button></div>
+    ),
 }));
 vi.mock('@/hooks/exegesis/useDocumentTextSearch', () => ({
     useDocumentTextSearch: () => ({ data: undefined, isLoading: false, isError: false }),
@@ -24,10 +26,14 @@ vi.mock('../useCitationSheet', () => ({
             label: target?.label ?? target?.sourceKey ?? '', citationKey: target?.sourceKey ?? null,
             pdfUrl: 'https://pdf', loading: false, totalSheets: 340, anchorSheet: 224, viewSheet: 224,
             printedOfView: 204, printedOf: () => 204, goTo: () => {}, goToPageInput: () => true,
+            anchorFor: (sheet: number) => (sheet === 224 ? 'p. 204' : `hoja ${sheet}`),
         };
     },
 }));
-const { SourceViewerProvider, SourceViewerSlot, useSourceViewer } = await import('../SourceViewerProvider');
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+const { SourceViewerProvider, SourceViewerSlot, useSourceViewer, useRegisterCitationSink } = await import('../SourceViewerProvider');
+const { useMemo, useRef, useState } = await import('react');
+const { insertarEnCursor } = await import('../citarDesdeVisor');
 
 beforeEach(() => { cleanup(); llamadas.length = 0; });
 
@@ -110,3 +116,101 @@ describe('Visor de fuente — panel y ampliado', () => {
         expect(screen.queryByTestId('source-viewer-panel')).toBeNull();
     });
 });
+
+/** Un editor mínimo que se ofrece como destino, como el lápiz de un paso. */
+function Editor({ activo = true }: { activo?: boolean }) {
+    const [texto, setTexto] = useState('rara vez indica agente.');
+    const ref = useRef<HTMLTextAreaElement>(null);
+    const sink = useMemo(() => (activo ? {
+        label: 'Santiago 3:18',
+        insert: (cita: string) => {
+            const el = ref.current!;
+            setTexto(insertarEnCursor(el.value, el.selectionStart, el.selectionEnd, cita).valor);
+        },
+    } : null), [activo]);
+    useRegisterCitationSink(sink);
+    return <textarea ref={ref} aria-label="editor" value={texto} onChange={e => setTexto(e.target.value)} />;
+}
+const conEditor = (activo = true) => render(
+    <SourceViewerProvider>
+        <Editor activo={activo} />
+        <Abridor />
+        <SourceViewerSlot />
+    </SourceViewerProvider>,
+);
+
+describe('Visor de fuente — citar', () => {
+    it('arma la cita de la hoja que se mira, con la página impresa', () => {
+        montar();
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.getByTestId('cita-armada').textContent).toBe('(McCartney, p. 204)');
+    });
+
+    it('con un editor abierto, «Citar en el texto» la inserta donde está el cursor', () => {
+        conEditor();
+        fireEvent.click(screen.getByText('abrir'));
+        const editor = screen.getByLabelText('editor') as HTMLTextAreaElement;
+        editor.setSelectionRange(22, 22);
+        expect(screen.getByTestId('citar-barra').textContent).toContain('sourceViewer.insertsInto {"label":"Santiago 3:18"}');
+        fireEvent.click(screen.getByText('sourceViewer.citeHere'));
+        expect(editor.value).toBe('rara vez indica agente (McCartney, p. 204).');
+    });
+
+    it('con una frase seleccionada, «Con la frase» inserta la cita textual', () => {
+        conEditor();
+        fireEvent.click(screen.getByText('abrir'));
+        const editor = screen.getByLabelText('editor') as HTMLTextAreaElement;
+        editor.setSelectionRange(23, 23);
+        fireEvent.click(screen.getByText('seleccionar'));
+        fireEvent.click(screen.getByText('sourceViewer.withQuote'));
+        expect(editor.value).toBe('rara vez indica agente. «But this is tautologous» (McCartney, p. 204)');
+    });
+
+    it('sin editor abierto, copia la cita (no hay dónde insertarla)', async () => {
+        const writeText = vi.fn(async () => {});
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+        conEditor(false);
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.queryByText('sourceViewer.citeHere')).toBeNull();
+        await act(async () => { fireEvent.click(screen.getByText('sourceViewer.copyCitation')); });
+        expect(writeText).toHaveBeenCalledWith('(McCartney, p. 204)');
+    });
+
+    it('al cerrarse el editor deja de ser destino', () => {
+        const { rerender } = conEditor(true);
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.getByText('sourceViewer.citeHere')).toBeInTheDocument();
+        rerender(
+            <SourceViewerProvider>
+                <Editor activo={false} />
+                <Abridor />
+                <SourceViewerSlot />
+            </SourceViewerProvider>,
+        );
+        expect(screen.queryByText('sourceViewer.citeHere')).toBeNull();
+    });
+
+    it('con dos editores abiertos, cerrar el segundo devuelve el destino al primero', () => {
+        function Dos({ segundo }: { segundo: boolean }) {
+            return (
+                <SourceViewerProvider>
+                    <Editor activo />
+                    {segundo && <EditorB />}
+                    <Abridor />
+                    <SourceViewerSlot />
+                </SourceViewerProvider>
+            );
+        }
+        const { rerender } = render(<Dos segundo />);
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.getByTestId('citar-barra').textContent).toContain('Santiago 3:15');
+        rerender(<Dos segundo={false} />);
+        expect(screen.getByTestId('citar-barra').textContent).toContain('Santiago 3:18');
+    });
+});
+
+function EditorB() {
+    const sink = useMemo(() => ({ label: 'Santiago 3:15', insert: () => {} }), []);
+    useRegisterCitationSink(sink);
+    return null;
+}

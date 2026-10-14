@@ -2499,7 +2499,18 @@
     "panelLabel": "Source viewer",
     "expand": "Expand to full screen",
     "close": "Close the viewer",
-    "backToPanel": "Back to the panel"
+    "backToPanel": "Back to the panel",
+    "citeHere": "Cite in the text",
+    "copy": "Copy",
+    "copyCitation": "Copy the citation",
+    "withQuote": "With the quote",
+    "pageHint": "Citation for this page",
+    "selectionHint": "Selected phrase",
+    "insertsInto": "It is inserted at the cursor, in {{label}}.",
+    "noEditor": "No text is open: the citation is copied so you can paste it anywhere.",
+    "inserted": "Citation inserted in {{label}}.",
+    "copied": "Citation copied.",
+    "copyFailed": "The citation could not be copied."
   },
   "citationViewer": {
     "pageWithSheet": "Sheet {{sheet}} of the file · printed page {{printed}}",

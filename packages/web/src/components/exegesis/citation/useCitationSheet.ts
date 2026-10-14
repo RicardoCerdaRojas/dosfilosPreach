@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { isCitableSourceType } from '@dosfilos/domain';
+import { citationAnchorFor, isCitableSourceType } from '@dosfilos/domain';
 import { useDocumentPageIndex, useDocumentPdfUrl } from '@/hooks/exegesis/useDocumentPageIndex';
 import { usePageNumbering } from '@/hooks/library/usePageNumbering';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -79,6 +79,16 @@ export function useCitationSheet(paperId: string | null, citation: CitationTarge
         viewSheet,
         printedOfView: printedOfSheet(viewSheet, ctx),
         printedOf: (sheet: number) => printedOfSheet(sheet, ctx),
+        /**
+         * Cómo se cita una hoja: «p. N» con la numeración confirmada del
+         * libro, «hoja N» sin ella. La MISMA regla que usa el análisis
+         * (`citationAnchorFor`): el desfase deducido sirve para navegar, no
+         * para escribir una página en el trabajo.
+         */
+        anchorFor: (sheet: number) => citationAnchorFor(
+            { sheet, section: index.data?.pages.find(p => p.sheet === sheet)?.section ?? null },
+            numberingState.data?.numbering ?? null,
+        ),
         goTo,
         goToPageInput,
     };

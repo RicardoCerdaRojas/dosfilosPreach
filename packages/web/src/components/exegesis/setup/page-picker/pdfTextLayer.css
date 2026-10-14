@@ -1,0 +1,66 @@
+/*
+ * La capa de texto de pdf.js: el texto de la hoja, transparente y en su lugar,
+ * encima del dibujo. Es lo que permite SELECCIONAR una frase para citarla
+ * (fase F). Copiado de las reglas `.textLayer` de `pdfjs-dist/web/pdf_viewer.css`
+ * (5.x) en vez de importar el visor entero: sólo hace falta esta capa.
+ * `--total-scale-factor` lo pone el componente con la escala de la hoja.
+ */
+.textLayer {
+    position: absolute;
+    text-align: initial;
+    inset: 0;
+    overflow: clip;
+    opacity: 1;
+    line-height: 1;
+    text-size-adjust: none;
+    forced-color-adjust: none;
+    transform-origin: 0 0;
+    caret-color: CanvasText;
+    z-index: 0;
+    --min-font-size: 1;
+    --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+    --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.textLayer :is(span, br) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+.textLayer > :not(.markedContent),
+.textLayer .markedContent span:not(.markedContent) {
+    z-index: 1;
+    --font-height: 0;
+    font-size: calc(var(--text-scale-factor) * var(--font-height));
+    --scale-x: 1;
+    --rotate: 0deg;
+    transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.textLayer .markedContent { display: contents; }
+.textLayer span[role="img"] { user-select: none; cursor: default; }
+.textLayer ::selection { background: rgba(37, 99, 235, 0.3); }
+.textLayer br::selection { background: transparent; }
+.textLayer .endOfContent {
+    display: block;
+    position: absolute;
+    inset: 100% 0 0;
+    z-index: 0;
+    cursor: default;
+    user-select: none;
+}
+.textLayer.selecting .endOfContent { top: 0; }
+
+/*
+ * pdf.js mide las fuentes en un canvas propio que cuelga de <body>. Sin esta
+ * regla (en pdf_viewer.css existe) puede quedar a la vista un rectángulo negro
+ * de 300×150 al pie de la página (revisión adversarial de la fase F).
+ */
+.hiddenCanvasElement {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    display: none;
+}

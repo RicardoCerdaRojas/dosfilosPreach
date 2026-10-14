@@ -32,6 +32,10 @@ describe('useCitationSheet — por recurso o por clave del trabajo', () => {
         expect(result.current.label).toBe('The Message of James');
         expect(pedidos.at(-1)).toBe('res-motyer');
     });
+    it('la cita de una hoja sin numeración confirmada es «hoja N», no una página adivinada', () => {
+        const { result } = renderHook(() => useCitationSheet('p1', { sourceKey: 'McCartney', page: 204, pageKind: 'printed' }, true));
+        expect(result.current.anchorFor(224)).toBe('hoja 224');
+    });
     it('una clave que no está en el trabajo y sin recurso: no hay documento', () => {
         const { result } = renderHook(() => useCitationSheet('p1', { sourceKey: 'Wallace', page: 165 }, true));
         expect(result.current.resourceId).toBeNull();

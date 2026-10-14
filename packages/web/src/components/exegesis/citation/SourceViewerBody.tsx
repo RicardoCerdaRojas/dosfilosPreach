@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { BookOpen, Loader2, SearchX } from 'lucide-react';
+import { BookOpen, ClipboardCopy, Loader2, Quote, SearchX, TextCursorInput } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
@@ -8,6 +9,8 @@ import { CitationViewerToolbar, type SearchScope } from './CitationViewerToolbar
 import { useCitationSheet } from './useCitationSheet';
 import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
 import type { CitationTarget, ViewedSheet } from './CitationSourceModal';
+import { useCitationSink, type CitationSink } from './SourceViewerProvider';
+import { citaParaInsertar } from './citarDesdeVisor';
 
 /**
  * El libro abierto: encabezado, barra (hojear, ir a página, buscar, zoom),
@@ -41,6 +44,8 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
     const [search, setSearch] = useState('');
     const [scope, setScope] = useState<SearchScope>('sheet');
     const [matches, setMatches] = useState(0);
+    const [seleccion, setSeleccion] = useState<string | null>(null);
+    const sink = useCitationSink();
     const view = useCitationSheet(paperId, target, open);
     const bookSearch = useDocumentTextSearch(view.resourceId, search, open && scope === 'book');
 
@@ -53,6 +58,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
         setSearch('');
         setScope('sheet');
         setMatches(0);
+        setSeleccion(null);
     }, [target?.sourceKey, target?.resourceId, target?.page, target?.verbatimQuote]);
 
     // Las flechas hojean, salvo cuando el lector está escribiendo.
@@ -144,6 +150,8 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                             zoom={zoom === 1 ? 'fit' : zoom}
                             searchTerm={search.trim() || null}
                             onSearchMatches={setMatches}
+                            selectable
+                            onTextSelected={setSeleccion}
                         />
                     )}
                 </div>
@@ -153,6 +161,13 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                     </aside>
                 )}
             </div>
+            {hasDocument && !view.loading && view.citationKey && (
+                <CitarBarra
+                    cita={citaParaInsertar(view.citationKey, view.anchorFor(view.viewSheet))}
+                    frase={seleccion}
+                    sink={sink}
+                />
+            )}
         </div>
     );
 }
@@ -192,3 +207,66 @@ function Centered({ icon, children }: { icon: ReactNode; children: ReactNode }) 
         </div>
     );
 }
+
+/**
+ * Citar la hoja que se mira (fase F, F2). Con un editor abierto, la cita se
+ * inserta donde está su cursor; sin ninguno, se copia. Con una frase
+ * seleccionada, además se puede citar textual: «frase» (Clave, p. N).
+ */
+function CitarBarra({ cita, frase, sink }: { cita: string; frase: string | null; sink: CitationSink | null }) {
+    const { t } = useTranslation('exegesis');
+    const conFrase = frase ? `«${frase}» ${cita}` : null;
+
+    const insertar = (texto: string) => {
+        if (!sink) return;
+        sink.insert(texto);
+        toast.success(t('sourceViewer.inserted', { label: sink.label }));
+    };
+    const copiar = async (texto: string) => {
+        try {
+            await navigator.clipboard.writeText(texto);
+            toast.success(t('sourceViewer.copied'));
+        } catch {
+            toast.error(t('sourceViewer.copyFailed'));
+        }
+    };
+
+    return (
+        <div className="border-t border-border bg-card px-5 py-3 space-y-2 print:hidden" data-testid="citar-barra">
+            <div className="flex items-baseline justify-between gap-3">
+                <span className="text-xs text-muted-foreground">
+                    {frase ? t('sourceViewer.selectionHint') : t('sourceViewer.pageHint')}
+                </span>
+                <span className="font-serif text-sm font-semibold text-foreground" data-testid="cita-armada">{cita}</span>
+            </div>
+            {frase && <p className="m-0 text-xs italic text-muted-foreground line-clamp-2">«{frase}»</p>}
+            <div className="flex flex-wrap gap-2">
+                {sink ? (
+                    <button type="button" onClick={() => insertar(cita)} className={PRIMARIO}>
+                        <TextCursorInput className="h-4 w-4" aria-hidden="true" />{t('sourceViewer.citeHere')}
+                    </button>
+                ) : (
+                    <button type="button" onClick={() => void copiar(cita)} className={PRIMARIO}>
+                        <ClipboardCopy className="h-4 w-4" aria-hidden="true" />{t('sourceViewer.copyCitation')}
+                    </button>
+                )}
+                {conFrase && (
+                    <button type="button" onClick={() => (sink ? insertar(conFrase) : void copiar(conFrase))} className={SECUNDARIO}>
+                        <Quote className="h-4 w-4" aria-hidden="true" />{t('sourceViewer.withQuote')}
+                    </button>
+                )}
+                {sink && (
+                    <button type="button" onClick={() => void copiar(cita)} className={SECUNDARIO}>
+                        <ClipboardCopy className="h-4 w-4" aria-hidden="true" />{t('sourceViewer.copy')}
+                    </button>
+                )}
+            </div>
+            <p className="m-0 text-[11px] text-muted-foreground">
+                {sink ? t('sourceViewer.insertsInto', { label: sink.label }) : t('sourceViewer.noEditor')}
+            </p>
+        </div>
+    );
+}
+
+const PRIMARIO = 'inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+const SECUNDARIO = 'inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';

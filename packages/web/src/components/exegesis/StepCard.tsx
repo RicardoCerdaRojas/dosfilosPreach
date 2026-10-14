@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     Wand2,
     Loader2,
@@ -28,7 +28,8 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useReopenStep } from '@/hooks/exegesis/useReopenStep';
 import { CanonicalAnalysisStudyView } from '@/components/exegesis/canonical/CanonicalAnalysisStudyView';
 import type { CitationTarget } from '@/components/exegesis/citation/CitationSourceModal';
-import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
+import { useRegisterCitationSink, useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
+import { insertarEnCursor } from '@/components/exegesis/citation/citarDesdeVisor';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
@@ -494,6 +495,22 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const stepLabel = step.verseRef
         ? formatPassageReference(step.verseRef, language)
         : t(`detail.steps.kind.${step.kind}`);
+
+    // Mientras se edita, este paso recibe las citas hechas en el visor de
+    // fuente: «Citar en el texto» las inserta donde está el cursor (fase F).
+    // El textarea conserva su cursor aunque el foco pase al visor.
+    const editorRef = useRef<HTMLTextAreaElement>(null);
+    const citationSink = useMemo(() => (editing ? {
+        label: stepLabel,
+        insert: (cita: string) => {
+            const el = editorRef.current;
+            if (!el) return;
+            const { valor, cursor } = insertarEnCursor(el.value, el.selectionStart, el.selectionEnd, cita);
+            setEditDraft(valor);
+            requestAnimationFrame(() => { el.focus(); el.setSelectionRange(cursor, cursor); });
+        },
+    } : null), [editing, stepLabel]);
+    useRegisterCitationSink(citationSink);
     const handleAdaptiveRegenerate = (regenerationHint?: string) => {
         if (shouldRegenerateCanonically) {
             return handleAnalyzeCanonically(regenerationHint);
@@ -971,6 +988,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 {editing && (
                     <div className="space-y-2">
                         <textarea
+                            ref={editorRef}
                             value={editDraft}
                             onChange={(e) => setEditDraft(e.target.value)}
                             className="w-full min-h-[200px] rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
