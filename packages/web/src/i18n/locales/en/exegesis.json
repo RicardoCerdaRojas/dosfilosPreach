@@ -2514,7 +2514,10 @@
     "noEditor": "No text is open: the citation is copied so you can paste it anywhere.",
     "inserted": "Citation inserted in {{label}}.",
     "copied": "Citation copied.",
-    "copyFailed": "The citation could not be copied."
+    "copyFailed": "The citation could not be copied.",
+    "index": "Book index",
+    "clear": "Clear",
+    "clearSelection": "Clear the selected phrase"
   },
   "citationViewer": {
     "pageWithSheet": "Sheet {{sheet}} of the file · printed page {{printed}}",

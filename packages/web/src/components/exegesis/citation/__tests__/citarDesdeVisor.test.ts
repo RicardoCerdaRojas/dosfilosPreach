@@ -6,6 +6,11 @@ describe('citar desde el visor', () => {
     it('arma la cita con la forma que el sistema reconoce', () => {
         expect(citaParaInsertar('McCartney', 'p. 204')).toBe('(McCartney, p. 204)');
         expect(citaParaInsertar(' Robertson ', 'hoja 613 ')).toBe('(Robertson, hoja 613)');
+        // Lo vio el fundador: «(McCartney, hoja 8, § Series Preface)». La sección sobra en el texto.
+        expect(citaParaInsertar('McCartney', 'hoja 8, § Series Preface')).toBe('(McCartney, hoja 8)');
+        expect(citaParaInsertar('McCartney', 'p. 204, § 3:18')).toBe('(McCartney, p. 204)');
+        // Un libro sin páginas impresas se cita por sección: ésa se queda.
+        expect(citaParaInsertar('BDAG', '§ πραΰτης')).toBe('(BDAG, § πραΰτης)');
     });
 
     it('inserta en el cursor, con un espacio si quedaría pegada a una palabra', () => {

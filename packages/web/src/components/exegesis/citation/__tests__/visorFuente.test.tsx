@@ -18,6 +18,7 @@ vi.mock('@/hooks/exegesis/useDocumentTextSearch', () => ({
     useDocumentTextSearch: () => ({ data: undefined, isLoading: false, isError: false }),
 }));
 const llamadas: Array<{ paperId: string | null; resourceId?: string }> = [];
+const irA = vi.fn();
 vi.mock('../useCitationSheet', () => ({
     useCitationSheet: (paperId: string | null, target: { resourceId?: string; sourceKey: string; label?: string } | null) => {
         llamadas.push({ paperId, resourceId: target?.resourceId });
@@ -25,8 +26,9 @@ vi.mock('../useCitationSheet', () => ({
             source: null, resourceId: target?.resourceId ?? (target ? 'res-del-trabajo' : null),
             label: target?.label ?? target?.sourceKey ?? '', citationKey: target?.sourceKey ?? null,
             pdfUrl: 'https://pdf', loading: false, totalSheets: 340, anchorSheet: 224, viewSheet: 224,
-            printedOfView: 204, printedOf: () => 204, goTo: () => {}, goToPageInput: () => true,
-            anchorFor: (sheet: number) => (sheet === 224 ? 'p. 204' : `hoja ${sheet}`),
+            printedOfView: 204, printedOf: () => 204, goTo: irA, goToPageInput: () => true,
+            anchorFor: (sheet: number) => (sheet === 224 ? 'p. 204, § 3:18' : `hoja ${sheet}`),
+            pages: [{ sheet: 223, section: 'James 3:13–18', firstLine: 'x' }, { sheet: 224, section: null, firstLine: 'Hartin goes on to argue' }],
         };
     },
 }));
@@ -260,5 +262,34 @@ describe('Visor de fuente — navegación y foco', () => {
         expect(screen.getByTestId('source-viewer-panel')).toBeInTheDocument();
         fireEvent.click(screen.getByText('ir /dashboard/sermons'));
         expect(screen.queryByTestId('source-viewer-panel')).toBeNull();
+    });
+});
+
+describe('Visor de fuente — lo que pidió el fundador al probarlo', () => {
+    it('ampliado: un índice de hojas para ir a cualquier parte', () => {
+        montar();
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.queryByTestId('indice-del-libro')).toBeNull();
+        fireEvent.click(screen.getByLabelText('sourceViewer.expand'));
+        const indice = screen.getByTestId('indice-del-libro');
+        expect(indice.textContent).toContain('James 3:13–18');
+        fireEvent.click(screen.getByText('Hartin goes on to argue').closest('button')!);
+        expect(irA).toHaveBeenCalledWith(224);
+    });
+
+    it('la frase seleccionada se puede quitar, y vuelve la cita de la página', () => {
+        montar();
+        fireEvent.click(screen.getByText('abrir'));
+        fireEvent.click(screen.getByText('seleccionar'));
+        expect(screen.getByTestId('citar-barra').textContent).toContain('But this is tautologous');
+        fireEvent.click(screen.getByLabelText('sourceViewer.clearSelection'));
+        expect(screen.getByTestId('citar-barra').textContent).not.toContain('But this is tautologous');
+        expect(screen.queryByText('sourceViewer.withQuote')).toBeNull();
+    });
+
+    it('la cita del texto lleva autor y página, sin la sección', () => {
+        montar();
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.getByTestId('cita-armada').textContent).toBe('(McCartney, p. 204)');
     });
 });

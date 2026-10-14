@@ -1,11 +1,12 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { BookOpen, ClipboardCopy, Loader2, Quote, SearchX, TextCursorInput } from 'lucide-react';
+import { BookOpen, ClipboardCopy, Loader2, Quote, SearchX, TextCursorInput, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
 import { BookSearchResults } from './BookSearchResults';
 import { CitationViewerToolbar, type SearchScope } from './CitationViewerToolbar';
+import { IndiceDelLibro } from './IndiceDelLibro';
 import { useCitationSheet } from './useCitationSheet';
 import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
 import type { CitationTarget, ViewedSheet } from './CitationSourceModal';
@@ -97,7 +98,9 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
 
     return (
         <div className="flex h-full min-h-0 flex-col" onKeyDown={onKeyDown} data-testid="source-viewer">
-            <div className="flex items-start gap-3 border-b border-border px-5 py-3">
+            {/* Ampliado, el modal pone su propia X arriba a la derecha: se le
+                deja lugar para que no tape «Volver al panel». */}
+            <div className={cn('flex items-start gap-3 border-b border-border px-5 py-3', layout === 'full' && 'pr-14')}>
                 <div className="min-w-0 flex-1 space-y-1">
                     {renderTitle ? renderTitle(title) : <h2 className="m-0">{title}</h2>}
                     <p className="text-xs text-muted-foreground">
@@ -130,7 +133,11 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
             {layout === 'panel' && results}
 
             <div className={cn('flex-1 min-h-0 flex', layout === 'full' ? 'flex-col md:flex-row' : 'flex-col')}>
-                {layout === 'full' && results}
+                {/* Ampliado, a la izquierda: los resultados si se está buscando en
+                    el libro; si no, el índice para ir a cualquier hoja. */}
+                {layout === 'full' && (results || (hasDocument && !view.loading && (
+                    <IndiceDelLibro pages={view.pages} printedOf={view.printedOf} currentSheet={view.viewSheet} onGo={view.goTo} />
+                )))}
                 <div className="flex-1 min-h-0 min-w-0 bg-muted/30">
                     {!hasDocument ? (
                         <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
@@ -166,6 +173,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                     cita={citaParaInsertar(view.citationKey, view.anchorFor(view.viewSheet))}
                     frase={seleccion}
                     sink={sink}
+                    onLimpiar={() => { setSeleccion(null); window.getSelection()?.removeAllRanges(); }}
                 />
             )}
         </div>
@@ -213,7 +221,7 @@ function Centered({ icon, children }: { icon: ReactNode; children: ReactNode }) 
  * inserta donde está su cursor; sin ninguno, se copia. Con una frase
  * seleccionada, además se puede citar textual: «frase» (Clave, p. N).
  */
-function CitarBarra({ cita, frase, sink }: { cita: string; frase: string | null; sink: CitationSink | null }) {
+function CitarBarra({ cita, frase, sink, onLimpiar }: { cita: string; frase: string | null; sink: CitationSink | null; onLimpiar: () => void }) {
     const { t } = useTranslation('exegesis');
     const conFrase = frase ? `«${frase}» ${cita}` : null;
 
@@ -239,7 +247,16 @@ function CitarBarra({ cita, frase, sink }: { cita: string; frase: string | null;
                 </span>
                 <span className="font-serif text-sm font-semibold text-foreground" data-testid="cita-armada">{cita}</span>
             </div>
-            {frase && <p className="m-0 text-xs italic text-muted-foreground line-clamp-2">«{frase}»</p>}
+            {frase && (
+                <div className="flex items-start gap-2">
+                    <p className="m-0 flex-1 text-xs italic text-muted-foreground line-clamp-2">«{frase}»</p>
+                    {/* Si se seleccionó mal, se descarta la frase y vuelve la cita de la página. */}
+                    <button type="button" onClick={onLimpiar} aria-label={t('sourceViewer.clearSelection')} title={t('sourceViewer.clearSelection')}
+                        className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />{t('sourceViewer.clear')}
+                    </button>
+                </div>
+            )}
             <div className="flex flex-wrap gap-2">
                 {sink ? (
                     <button type="button" onClick={() => insertar(cita)} className={PRIMARIO}>

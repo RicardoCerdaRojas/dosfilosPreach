@@ -2514,7 +2514,10 @@
     "noEditor": "No hay un texto abierto: la cita se copia para pegarla donde quieras.",
     "inserted": "Cita insertada en {{label}}.",
     "copied": "Cita copiada.",
-    "copyFailed": "No se pudo copiar la cita."
+    "copyFailed": "No se pudo copiar la cita.",
+    "index": "Índice del libro",
+    "clear": "Quitar",
+    "clearSelection": "Quitar la frase seleccionada"
   },
   "citationViewer": {
     "pageWithSheet": "Hoja {{sheet}} del archivo · lleva impreso el {{printed}}",

@@ -10,9 +10,17 @@
  * página que el lector del trabajo no encuentra en el libro.
  */
 
-/** «(McCartney, p. 204)». */
+/**
+ * «(McCartney, p. 204)».
+ *
+ * El ancla del análisis lleva además la sección («p. 204, § 3:18», «hoja 8,
+ * § Series Preface»): al modelo le sirve para ubicarse, pero en el texto del
+ * trabajo la cita es autor y página. La sección sólo queda cuando es lo único
+ * que hay (un libro sin páginas impresas se cita por sección).
+ */
 export function citaParaInsertar(clave: string, ancla: string): string {
-    return `(${clave.trim()}, ${ancla.trim()})`;
+    const limpia = /^(p\.|hoja)\s/.test(ancla.trim()) ? ancla.trim().replace(/,\s*§.*$/, '') : ancla.trim();
+    return `(${clave.trim()}, ${limpia})`;
 }
 
 /**

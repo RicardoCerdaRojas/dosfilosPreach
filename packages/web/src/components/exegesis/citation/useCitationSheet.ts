@@ -89,6 +89,8 @@ export function useCitationSheet(paperId: string | null, citation: CitationTarge
         viewSheet,
         printedOfView: printedOfSheet(viewSheet, ctx),
         printedOf: (sheet: number) => printedOfSheet(sheet, ctx),
+        /** Las hojas del libro con su sección y primer renglón, para el índice. */
+        pages: index.data?.pages ?? [],
         /**
          * Cómo se cita una hoja: «p. N» con la numeración confirmada del
          * libro, «hoja N» sin ella. La MISMA regla que usa el análisis
