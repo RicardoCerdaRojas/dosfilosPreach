@@ -523,3 +523,31 @@ describe('AnalyzeVerseCanonicallyUseCase — lo fijado va primero (TP #7)', () =
         expect(analyzer.analyzeVerse.mock.calls[0][0].sources[0].pinnedChars).toBeUndefined();
     });
 });
+
+describe('AnalyzeVerseCanonicallyUseCase — una fuente extraída vacía no cubre la rúbrica', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('Robertson sin un fragmento: el analizador sabe que falta la gramática (TP #7)', async () => {
+        const robertson: ProjectSource = {
+            ...makeSource('Robertson', 'res-r'),
+            sourceType: 'grammar-syntax',
+            excerptRecipe: null,
+            excerpts: [],
+        };
+        const paper = {
+            ...makePaper([makeSource('Tuggy', 'res-a'), robertson]),
+            rubric: { sourceRequirements: [{ sourceType: 'grammar-syntax', minimum: 1, justification: '' }] },
+        } as unknown as ExegeticalPaper;
+        const { useCase, analyzer } = buildUseCase({
+            paper,
+            analysis: analysisCiting(['Tuggy']),
+            retrievedFor: ['res-a'],
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        expect(analyzer.analyzeVerse.mock.calls[0][0].missingSourceTypes).toEqual([
+            { sourceType: 'grammar-syntax', minimum: 1, have: 0 },
+        ]);
+    });
+});

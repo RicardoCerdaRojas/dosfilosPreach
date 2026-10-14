@@ -26,6 +26,7 @@ import {
     pericopeContextRange,
     EMPTY_VERIFICATION_SUMMARY,
     computeRubricCompliance,
+    isEmptyExtractedSource,
     formatPassageReference,
     citationAnchorFor,
     relabelExcerptAnchor,
@@ -147,7 +148,8 @@ export class AnalyzeVerseCanonicallyUseCase {
 
             const missingSourceTypes = paper.rubric
                 ? computeRubricCompliance(
-                    paper.sources.map(s => s.sourceType),
+                    // Una fuente extraída vacía no cubre su tipo (TP #7).
+                    paper.sources.filter(s => !isEmptyExtractedSource(s)).map(s => s.sourceType),
                     paper.rubric,
                 ).requirements.filter(r => !r.satisfied && r.required > 0).map(r => ({
                     sourceType: r.sourceType,

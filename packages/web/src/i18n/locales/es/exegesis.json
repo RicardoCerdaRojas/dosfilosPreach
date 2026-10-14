@@ -1359,6 +1359,7 @@
         },
         "sinPaginas": {
           "body": "Sin páginas para este pasaje: el análisis busca en el libro entero lo que habla de cada versículo. Elegir las páginas del pasaje es más preciso y deja ver qué entra.",
+          "vacia": "La extracción no encontró fragmentos de este pasaje: esta fuente no aporta nada al análisis ni cuenta para la rúbrica. Elige sus páginas; en una gramática, las secciones que tratan las formas del pasaje.",
           "cta": "Elegir páginas"
         },
         "suggestion": {

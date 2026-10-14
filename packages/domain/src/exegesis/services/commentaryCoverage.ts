@@ -2,6 +2,7 @@ import type { BibleBookId } from '../../bible/canon/BibleCanon';
 import type { LibraryResource } from '../../entities/LibraryResource';
 import type { ProjectSource } from '../entities/ProjectSource';
 import type { SourceType } from '../entities/SourceType';
+import { isEmptyExtractedSource } from './curatedScope';
 
 /**
  * Si un comentario comenta el libro del pasaje.
@@ -44,14 +45,17 @@ export function commentaryBookCoverage(
 
 /**
  * Los tipos con que la rúbrica cuenta el corpus: un comentario que comenta
- * OTROS libros no suma al requisito de comentario.
+ * OTROS libros no suma al requisito de comentario, y una fuente extraída
+ * vacía no suma a nada (TP #7: Robertson, sin un fragmento, cumplía
+ * «Gramática ≥1»).
  */
 export function sourceTypesForRubric(
-    sources: ReadonlyArray<Pick<ProjectSource, 'sourceType' | 'sourceLibraryResourceId' | 'corpusId'>>,
+    sources: ReadonlyArray<Pick<ProjectSource, 'sourceType' | 'sourceLibraryResourceId' | 'corpusId' | 'excerptRecipe' | 'mode' | 'excerpts' | 'extractedAt'>>,
     resourceOf: (id: string) => Pick<LibraryResource, 'coversBibleBooks' | 'scope'> | null | undefined,
     bookId: BibleBookId,
 ): SourceType[] {
     return sources
+        .filter(s => !isEmptyExtractedSource(s))
         .filter(s => !isCommentaryType(s.sourceType)
             || commentaryBookCoverage(
                 (s.sourceLibraryResourceId ? resourceOf(s.sourceLibraryResourceId) : null) ?? resourceOf(s.corpusId),

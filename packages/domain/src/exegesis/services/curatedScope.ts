@@ -56,6 +56,27 @@ export function isSourceWithoutScope(
 }
 
 /**
+ * Una fuente citable que se extrajo y no trajo NADA: modo fragmentos, cero
+ * fragmentos, sin páginas elegidas. No aporta texto al análisis
+ * (`retrievalScopeOf` devuelve null) y, sin este aviso, nadie lo sabía.
+ *
+ * TP #7 (Santiago 3:13-18, 2026-10-14): Robertson —la única gramática
+ * permitida— quedó así, porque una gramática no se encuentra buscando el
+ * pasaje. El corpus dijo «cumple la rúbrica» con la gramática vacía y el
+ * análisis de 3:13 no la citó aunque el plan se la asignó. `extractedAt`
+ * distingue «terminó y no halló nada» de «todavía extrae».
+ */
+export function isEmptyExtractedSource(
+    source: Pick<ProjectSource, 'sourceType' | 'excerptRecipe' | 'mode' | 'excerpts' | 'extractedAt'>,
+): boolean {
+    return isCitableSourceType(source.sourceType)
+        && !hasCuratedScope(source)
+        && source.mode === 'extracted-excerpts'
+        && (source.excerpts?.length ?? 0) === 0
+        && source.extractedAt !== null;
+}
+
+/**
  * ¿Esta fuente se organiza por lema o por categoría (léxico, diccionario,
  * gramática)? Esas no se extraen por cercanía al pasaje: se eligen sus páginas
  * en el selector, por las formas del texto.

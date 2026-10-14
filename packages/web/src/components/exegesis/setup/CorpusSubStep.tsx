@@ -48,6 +48,7 @@ import {
     deriveCitationKeyFromAuthor,
     usesExtractedExcerpts,
     hasCuratedScope,
+    isEmptyExtractedSource,
     isSourceWithoutScope,
     declaresNoFolios,
     countSheets,
@@ -1051,7 +1052,13 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                     <p className="text-sm font-medium text-foreground truncate inline-flex items-center gap-1.5">
                         {source.displayLabel}
                         {isExtracted && (
-                            <span className="text-[10px] font-medium rounded-full bg-success-subtle text-success-subtle-foreground border border-success/30 px-1.5 py-0 leading-tight">
+                            <span className={cn(
+                                'text-[10px] font-medium rounded-full border px-1.5 py-0 leading-tight',
+                                // «0 fragmentos» en verde parecía un logro (TP #7, Robertson).
+                                isEmptyExtractedSource(source)
+                                    ? 'bg-warning-subtle text-warning-subtle-foreground border-warning/30'
+                                    : 'bg-success-subtle text-success-subtle-foreground border-success/30',
+                            )}>
                                 {/* Con páginas elegidas se guardan las hojas, no fragmentos:
                                     «0 excerpts» la hacía parecer vacía. */}
                                 {hasCuratedScope(source)
@@ -1102,6 +1109,9 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
 
             {isSourceWithoutScope(source) && (
                 <SourceSinPaginas paperId={paper.id} sourceId={source.id} />
+            )}
+            {isEmptyExtractedSource(source) && (
+                <SourceSinPaginas paperId={paper.id} sourceId={source.id} vacia />
             )}
 
             {isCitable && libraryResource && declaresNoFolios(libraryResource.pageNumbering) && (

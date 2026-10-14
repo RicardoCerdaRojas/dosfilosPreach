@@ -1359,6 +1359,7 @@
         },
         "sinPaginas": {
           "body": "No pages for this passage: the analysis searches the whole book for what bears on each verse. Choosing the passage pages is more precise and shows what goes in.",
+          "vacia": "Extraction found no excerpts for this passage: this source adds nothing to the analysis and does not count toward the rubric. Choose its pages; for a grammar, the sections that cover the passage's forms.",
           "cta": "Choose pages"
         },
         "suggestion": {
