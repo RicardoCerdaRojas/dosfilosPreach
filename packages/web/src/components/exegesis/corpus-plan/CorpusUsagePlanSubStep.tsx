@@ -20,6 +20,7 @@ import {
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { PinnedSourcesPicker } from './PinnedSourcesPicker';
 import { nombreCortoDeFuente } from './nombreCortoDeFuente';
+import { PasosFueraDelPlan } from './PasosFueraDelPlan';
 
 interface CorpusUsagePlanSubStepProps {
     paper: ExegeticalPaper;
@@ -62,7 +63,10 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
         () => paper.steps.filter(s => s.kind !== 'assembly' && pertenceAlDocumento(s)).sort((a, b) => a.order - b.order),
         [paper.steps],
     );
-    const fueraDelDocumento = paper.steps.filter(s => s.kind !== 'assembly' && !pertenceAlDocumento(s)).length;
+    const fueraDelDocumento = useMemo(
+        () => paper.steps.filter(s => s.kind !== 'assembly' && !pertenceAlDocumento(s)).sort((a, b) => a.order - b.order),
+        [paper.steps],
+    );
 
     const stale = isStepPlanStale(paper);
     const hasProposal = paper.stepPlan.proposedAt != null;
@@ -225,11 +229,7 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
                                     ].join(' ')}
                                 >
                                     <CoveragePanel paper={paper} plannableSteps={plannableSteps} />
-                                    {fueraDelDocumento > 0 && (
-                                        <p className="text-[11px] text-muted-foreground">
-                                            {t('paperSetup.subSteps.corpus-plan.outsideDocument', { count: fueraDelDocumento })}
-                                        </p>
-                                    )}
+                                    <PasosFueraDelPlan paperId={paper.id} steps={fueraDelDocumento} />
 
                                     <div className="rounded-lg border border-border bg-card overflow-hidden">
                                         <table className="w-full text-sm">

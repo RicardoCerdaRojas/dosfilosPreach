@@ -86,7 +86,10 @@ export function questionsOfStep(
 export function inclusionAtBirth(
     step: Pick<ExegeticalStep, 'kind' | 'verseRef'>,
     questions: ReadonlyArray<BriefQuestion>,
+    /** El encuadre en texto: «Sin introducción, sin conclusión» saca el marco (TP #7, #14). */
+    brief?: string | null,
 ): boolean | undefined {
+    if ((step.kind === 'introduction' || step.kind === 'conclusion') && briefOmitsFrame(brief, step.kind)) return false;
     // Sólo cuentan las preguntas que nombran un versículo: «1. Traduzca el
     // pasaje» o «1. Mínimo tres fuentes» también abren con número, y si
     // ninguna tiene versículo, decidir por ellas dejaría el documento entero
@@ -103,6 +106,55 @@ export function inclusionAtBirth(
 }
 
 /**
+ * Si el encuadre dice, en texto, que el trabajo va sin introducción o sin
+ * conclusión. TP #7: «Sin introducción, sin conclusión» estaba escrito y las
+ * dos secciones seguían en el documento (#14).
+ */
+const SIN_MARCO: Record<'introduction' | 'conclusion', RegExp> = {
+    introduction: /\b(?:sin|no\s+(?:incluya|incluir|lleva|llevar?)(?:\s+una?)?)\s+introducci[óo]n|\b(?:without|no)\s+(?:an?\s+)?introduction/i,
+    conclusion: /\b(?:sin|no\s+(?:incluya|incluir|lleva|llevar?)(?:\s+una?)?)\s+(?:introducci[óo]n\s*(?:,|ni|y|o)\s*(?:sin\s+)?)?conclusi[óo]n|\b(?:without|no)\s+(?:an?\s+)?(?:introduction\s*(?:,|or|and|nor)\s*(?:no\s+)?)?conclusion/i,
+};
+
+export function briefOmitsFrame(brief: string | null | undefined, kind: 'introduction' | 'conclusion'): boolean {
+    return !!brief && SIN_MARCO[kind].test(brief);
+}
+
+/** Un paso cuya inclusión cambia con la edición del encuadre. */
+export interface InclusionChange {
+    stepId: string;
+    kind: 'verse' | 'introduction' | 'conclusion';
+    verseRef: ExegeticalStep['verseRef'];
+    include: boolean;
+}
+
+/**
+ * Qué pasos entran o salen del documento por una edición del encuadre.
+ *
+ * `inclusionAtBirth` corría sólo al crear los pasos: en el TP #7 se agregó
+ * «(Stg. 3:15)» a una pregunta y 3:15 siguió fuera (#16). Se proponen sólo los
+ * pasos que la EDICIÓN mueve —lo que el encuadre viejo decía distinto que el
+ * nuevo— y que hoy no están ya donde el nuevo los pone: lo que el estudiante
+ * decidió a mano por otra razón no se toca.
+ */
+export function inclusionChangesFromBriefEdit(
+    paper: Pick<ExegeticalPaper, 'steps' | 'assignmentBrief' | 'passage'>,
+    nextBrief: string | null,
+): InclusionChange[] {
+    const antes = parseBriefQuestions(paper.assignmentBrief, paper.passage);
+    const despues = parseBriefQuestions(nextBrief, paper.passage);
+    const out: InclusionChange[] = [];
+    for (const step of paper.steps) {
+        if (step.kind !== 'verse' && step.kind !== 'introduction' && step.kind !== 'conclusion') continue;
+        const nuevo = inclusionAtBirth(step, despues, nextBrief);
+        if (nuevo === undefined) continue;
+        if (nuevo === inclusionAtBirth(step, antes, paper.assignmentBrief)) continue;
+        if (nuevo === pertenceAlDocumento(step)) continue;
+        out.push({ stepId: step.id, kind: step.kind, verseRef: step.verseRef, include: nuevo });
+    }
+    return out;
+}
+
+/**
  * Si el marco (introducción o conclusión) queda fuera del documento.
  *
  * Con los pasos ya sembrados, lo dicen ellos (el estudiante puede haberlos
@@ -116,7 +168,7 @@ export function frameLeftOut(
 ): boolean {
     const deEseTipo = paper.steps.filter(s => s.kind === kind);
     if (deEseTipo.length > 0) return deEseTipo.every(s => !pertenceAlDocumento(s));
-    return inclusionAtBirth({ kind, verseRef: null }, parseBriefQuestions(paper.assignmentBrief, paper.passage)) === false;
+    return inclusionAtBirth({ kind, verseRef: null }, parseBriefQuestions(paper.assignmentBrief, paper.passage), paper.assignmentBrief) === false;
 }
 
 /**

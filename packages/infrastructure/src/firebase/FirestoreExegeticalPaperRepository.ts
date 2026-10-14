@@ -550,7 +550,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // lo que no responde ninguna nace fuera (`inclusionAtBirth`).
             const preguntas = parseBriefQuestions(data.assignmentBrief ?? null, passage);
             for (const step of newSteps) {
-                const incluido = inclusionAtBirth(step, preguntas);
+                const incluido = inclusionAtBirth(step, preguntas, data.assignmentBrief ?? null);
                 if (incluido !== undefined) step.includeInDocument = incluido;
             }
 

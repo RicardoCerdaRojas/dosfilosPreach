@@ -445,6 +445,16 @@
       "tooLong_one": "{{count}} character over the limit: trim it to save.",
       "tooLong_other": "{{count}} characters over the limit: trim it to save.",
       "appliesFromNow": "Already generated content doesn't change: the new framing applies from the next generation.",
+      "inclusion": {
+        "title": "This framing changes the document's sections",
+        "enters": "{{name}}: this framing gives it an answer to write. Include it in the document?",
+        "leaves": "{{name}}: the framing leaves it out. Remove it from the document?",
+        "apply": "Apply",
+        "keep": "Leave as is",
+        "applied_one": "{{count}} section updated",
+        "applied_other": "{{count}} sections updated",
+        "failed": "Could not change the document. Try again."
+      },
       "gaps": {
         "usePreachingTemplate": "Use preaching template",
         "gapTitle": "This brief is not usable by the system yet",
@@ -1399,6 +1409,8 @@
       "corpus-plan": {
         "outsideDocument_one": "1 step is left out of the document (the brief doesn't ask for it): it isn't planned.",
         "outsideDocument_other": "{{count}} steps are left out of the document (the brief doesn't ask for them): they aren't planned.",
+        "includeStepAria": "Include {{name}} in the document",
+        "includeStepHint": "Tap one to include it; then propose the plan again to give it sources.",
         "tab": "Usage plan",
         "heading": "Corpus usage plan",
         "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Pinned sources get priority during generation, but the model can still reach for the others when relevant.",

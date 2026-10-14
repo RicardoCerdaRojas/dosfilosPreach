@@ -445,6 +445,16 @@
       "tooLong_one": "Sobra {{count}} carácter: recórtalo para poder guardar.",
       "tooLong_other": "Sobran {{count}} caracteres: recórtalo para poder guardar.",
       "appliesFromNow": "Lo ya generado no cambia: el encuadre nuevo se usa desde la próxima generación.",
+      "inclusion": {
+        "title": "Con este encuadre cambian las secciones del documento",
+        "enters": "{{name}}: con este encuadre le toca una respuesta. ¿Incluirla en el documento?",
+        "leaves": "{{name}}: el encuadre la deja fuera. ¿Sacarla del documento?",
+        "apply": "Aplicar",
+        "keep": "Dejar como está",
+        "applied_one": "{{count}} sección actualizada",
+        "applied_other": "{{count}} secciones actualizadas",
+        "failed": "No se pudo cambiar el documento. Intenta de nuevo."
+      },
       "gaps": {
         "usePreachingTemplate": "Usar plantilla de predicación",
         "gapTitle": "Este encuadre todavía no le sirve al sistema",
@@ -1399,6 +1409,8 @@
       "corpus-plan": {
         "outsideDocument_one": "1 paso queda fuera del documento (el encuadre no lo pide): no se planifica.",
         "outsideDocument_other": "{{count}} pasos quedan fuera del documento (el encuadre no los pide): no se planifican.",
+        "includeStepAria": "Incluir {{name}} en el documento",
+        "includeStepHint": "Toca uno para incluirlo; después vuelve a proponer el plan para repartirle fuentes.",
         "tab": "Plan de uso",
         "heading": "Plan de uso del corpus",
         "description": "Asigna fuentes específicas a cada verso o sección. Te proponemos una distribución basada en el pasaje y el corpus; tú revisas y ajustas. Las fuentes asignadas tienen prioridad en la generación, pero el modelo puede usar las demás cuando sea pertinente.",
