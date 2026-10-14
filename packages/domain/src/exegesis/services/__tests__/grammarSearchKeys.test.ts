@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { foldKey, grammarKeysFromMorphology, grammarSearchKeys, sectionsCoveredBy, sectionsForKeys, titleNamesOriginalForm } from '../grammarSearchKeys';
+import { foldKey, grammarKeysFromMorphology, grammarSearchKeys, sectionsCoveredBy, sectionsForKeys, sectionLabelForRange, titleNamesCategoryOnlyAfterPreposition, titleNamesOriginalForm } from '../grammarSearchKeys';
 
 /** El encuadre real del trabajo de Santiago 2:1-13. */
 const ENCUADRE = `Trabajo práctico semanal de exégesis del NT sobre Santiago 2:1-13.
@@ -221,5 +221,52 @@ describe('grammarKeysFromMorphology', () => {
         const k = grammarKeysFromMorphology([{ morphology: { tokens: [g('P'), g('N'), g('I')] } }]);
         expect(k.categories).toEqual(expect.arrayContaining(['participi', 'participl', 'infinitiv']));
         expect(k.categories).not.toContain('indicativ');
+    });
+});
+
+/**
+ * TP #7 (Robertson): para «genitiv» se proponían «5. With the Genitive»,
+ * «3. With Genitive?», «(h) WITH GENITIVE ALONE.», «(b) WITH GENITIVES.» y
+ * «(d) WITH BOTH PREPOSITION AND GENITIVE» —preposiciones y artículo—, y
+ * ninguna era el capítulo del caso genitivo.
+ */
+describe('sectionsForKeys — la categoría como complemento de una preposición no cuenta', () => {
+    const claves = { originalForms: [], categories: ['genitiv'] } as never;
+    it('descarta «With the Genitive» y similares; deja la sección del caso', () => {
+        const secciones = [
+            { sheet: 697, section: '5. With the Genitive.' },
+            { sheet: 708, section: '3. With Genitive?' },
+            { sheet: 845, section: '(h) WITH GENITIVE ALONE.' },
+            { sheet: 869, section: '(b) WITH GENITIVES.' },
+            { sheet: 570, section: 'VIII. The Genitive (True) Case' },
+            { sheet: 578, section: 'The Subjective Genitive' },
+        ];
+        expect(sectionsForKeys(secciones, claves).map(s => s.sheet)).toEqual([570, 578]);
+    });
+    it('si además nombra la categoría fuera de la preposición, cuenta', () => {
+        expect(titleNamesCategoryOnlyAfterPreposition('Genitive with the genitive', 'genitiv')).toBe(false);
+        expect(titleNamesCategoryOnlyAfterPreposition('con el genitivo', 'genitiv')).toBe(true);
+        expect(titleNamesCategoryOnlyAfterPreposition('The Genitive Case', 'genitiv')).toBe(false);
+    });
+    it('con una forma griega del encuadre se propone igual (corroborada)', () => {
+        const r = sectionsForKeys([{ sheet: 618, section: '5. With the Genitive: ἐν' }], { originalForms: ['εν'], categories: ['genitiv'] } as never);
+        expect(r.map(s => s.sheet)).toEqual([618]);
+    });
+});
+
+describe('sectionLabelForRange — el rótulo de un tramo', () => {
+    const secciones = [
+        { sheet: 560, section: '(i) DOUBLE ACCUSATIVE.' },
+        { sheet: 572, section: 'VIII. The Genitive (True) Case' },
+        { sheet: 578, section: 'The Subjective Genitive' },
+    ];
+    it('REGRESIÓN TP #7: nombra la primera sección que empieza ADENTRO, no la que viene corriendo', () => {
+        expect(sectionLabelForRange(secciones, { start: 570, end: 593 })).toEqual({ section: 'VIII. The Genitive (True) Case', count: 3, continues: false });
+    });
+    it('si no empieza ninguna adentro, «sigue de» la que corre', () => {
+        expect(sectionLabelForRange(secciones, { start: 600, end: 610 })).toEqual({ section: 'The Subjective Genitive', count: 1, continues: true });
+    });
+    it('sin secciones, nada', () => {
+        expect(sectionLabelForRange([], { start: 1, end: 2 })).toBeNull();
     });
 });

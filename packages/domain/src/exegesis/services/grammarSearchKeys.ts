@@ -236,6 +236,22 @@ export function titleNamesCategory(title: string, category: string): boolean {
     return foldKey(title).includes(category);
 }
 
+/**
+ * Si el título nombra la categoría sólo como complemento de una preposición:
+ * «5. With the Genitive», «(b) WITH GENITIVES», «con el genitivo».
+ *
+ * En el TP #7 (Robertson), las cinco secciones propuestas para «genitiv» eran
+ * de este tipo —preposiciones o el artículo «con genitivos»— y ninguna era el
+ * capítulo del caso genitivo, que era lo que la pregunta pedía. Una sección
+ * así trata de otra cosa (la preposición) y no se propone por la categoría;
+ * sí se propone si además nombra una forma griega del encuadre.
+ */
+export function titleNamesCategoryOnlyAfterPreposition(title: string, category: string): boolean {
+    const t = foldKey(title);
+    const tras = new RegExp(`(?:^|[^\\p{L}])(?:with|con)\\s+(?:(?:the|both|el|la|los|las)\\s+)?${category}`, 'u');
+    return tras.test(t) && !t.replace(new RegExp(`(?:with|con)\\s+(?:(?:the|both|el|la|los|las)\\s+)?${category}`, 'gu'), '').includes(category);
+}
+
 export interface SectionProposal {
     sheet: number;
     section: string;
@@ -291,7 +307,7 @@ export function sectionsForKeys(
         if (!title || vistas.has(title)) continue;
 
         const griegas = keys.originalForms.filter(g => titleNamesOriginalForm(title, g));
-        const categorias = keys.categories.filter(c => titleNamesCategory(title, c));
+        const categorias = keys.categories.filter(c => titleNamesCategory(title, c) && !titleNamesCategoryOnlyAfterPreposition(title, c));
         if (griegas.length === 0 && categorias.length === 0) continue;
 
         vistas.set(title, {
@@ -335,6 +351,27 @@ export function sectionsCoveredBy(
     const adentro = ordenadas.filter(s => s.sheet >= range.start && s.sheet <= range.end);
     const corriendo = [...ordenadas].reverse().find(s => s.sheet < range.start);
     return corriendo ? [corriendo, ...adentro] : adentro;
+}
+
+/**
+ * Cómo se rotula un tramo de hojas en el carrito.
+ *
+ * Con la PRIMERA sección que empieza adentro, no con la que viene corriendo
+ * desde antes: en el TP #7 el tramo 570–593 de Robertson (el genitivo) salía
+ * rotulado «(i) Double accusative», la última sección que el índice había
+ * visto ANTES del tramo. Si no empieza ninguna adentro, se dice que el tramo
+ * sigue esa sección («sigue de…»), que es lo único cierto que se sabe.
+ */
+export function sectionLabelForRange(
+    sections: ReadonlyArray<{ sheet: number; section: string | null }>,
+    range: { start: number; end: number },
+): { section: string; count: number; continues: boolean } | null {
+    const covered = sectionsCoveredBy(sections, range);
+    if (covered.length === 0) return null;
+    const adentro = covered.filter(c => c.sheet >= range.start);
+    return adentro.length > 0
+        ? { section: adentro[0]!.section, count: covered.length, continues: false }
+        : { section: covered[0]!.section, count: 1, continues: true };
 }
 
 /** Tallo hebreo (código OSHB) → término del glosario. Qal no: está en todas partes. */

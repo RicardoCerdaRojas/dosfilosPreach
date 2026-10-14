@@ -961,6 +961,7 @@
             "saving": "Saving…",
             "confirm_one": "Add {{count}} sheet to the paper",
             "confirm_other": "Add {{count}} sheets to the paper",
+            "sectionContinues": "continues «{{section}}»",
             "sectionsCovered": "{{section}} · covers {{count}} sections",
             "perVerse": "{{chars}} characters reach each verse. The paper's chosen sheets add up to {{admitted}}; each verse consults what is about it, up to {{cap}}.",
             "otherExcerpts": "Excerpts from other sources travel whole: {{chars}} characters.",

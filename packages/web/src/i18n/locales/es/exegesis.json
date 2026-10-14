@@ -961,6 +961,7 @@
             "saving": "Guardando…",
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
+            "sectionContinues": "sigue de «{{section}}»",
             "sectionsCovered": "{{section}} · cubre {{count}} secciones",
             "perVerse": "Por versículo llegan {{chars}} caracteres. Las hojas elegidas del trabajo suman {{admitted}}; de ellas se consulta lo de cada versículo, hasta {{cap}}.",
             "otherExcerpts": "Los fragmentos de otras fuentes van completos: {{chars}} caracteres.",
