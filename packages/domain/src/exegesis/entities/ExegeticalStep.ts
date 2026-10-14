@@ -327,3 +327,20 @@ export function isAbandonedGeneration(
     if (typeof updatedAt !== 'number' || Number.isNaN(updatedAt)) return false;
     return now.getTime() - updatedAt > ABANDONED_GENERATION_AFTER_MS;
 }
+
+/**
+ * La versión cuyas citas se revisan: la que espera revisión, si hay una; si no,
+ * la aceptada.
+ *
+ * Aceptar acepta SIEMPRE `current`, y el servidor la bloquea mientras tenga
+ * citas sin revisar. La página de revisión y «Verificar» miraban `accepted ??
+ * current`: en un paso regenerado después de aceptarse revisaban la versión
+ * VIEJA, y la nueva seguía bloqueada sin camino (TP #7, #29).
+ */
+export function versionUnderReview(
+    step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted'>,
+): ExegeticalStepVersion | null {
+    return step.state === 'awaiting-review'
+        ? step.current ?? step.accepted
+        : step.accepted ?? step.current;
+}

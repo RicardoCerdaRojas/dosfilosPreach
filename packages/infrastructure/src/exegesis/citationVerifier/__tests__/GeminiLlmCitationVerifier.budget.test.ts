@@ -96,11 +96,35 @@ describe('verificador de citas — la página citada sobrevive al tope', () => {
             .map((h, i) => ({ text: `fragmento ${i} de la hoja ${h}`, pageHint: `hoja ${h}` }));
         const out = selectEvidenceChunks(calvino, '60', { maxChunks: 8, maxCharsPerChunk: 4000 });
         expect(out.some(c => c.pageHint === 'hoja 60')).toBe(true);
-        expect(out.map(c => c.pageHint).slice(0, 3)).toEqual(['hoja 59', 'hoja 60', 'hoja 61']);
+        expect(out.map(c => c.pageHint).slice(0, 3)).toEqual(['hoja 60', 'hoja 59', 'hoja 61']);
     });
 
     it('quita duplicados que llegan por dos caminos', () => {
         const out = selectEvidenceChunks([craigie[6]!, { ...craigie[6]! }], '206', { maxChunks: 8, maxCharsPerChunk: 4000 });
         expect(out).toHaveLength(1);
+    });
+});
+
+/**
+ * TP #7 (#33): «McCartney, 204» salió «no encontrada» con la nota «los
+ * fragmentos de la página 204 tratan otros asuntos»; estaba en la 204. Los
+ * de la 203 iban primero y el tope dejaba fuera parte de la 204.
+ */
+describe('verificador de citas — la página citada no se corta', () => {
+    const c = (page: number, text: string) => ({ text, pageHint: `p. ${page}` });
+    const caps = { maxChunks: 4, maxCharsPerChunk: 4000 };
+
+    it('los fragmentos de la página citada van primero', () => {
+        const elegidos = selectEvidenceChunks(
+            [c(203, 'a1'), c(203, 'a2'), c(203, 'a3'), c(204, 'b1'), c(204, 'this is tautologous')],
+            '204', caps,
+        ).map(x => x.text);
+        expect(elegidos.slice(0, 2)).toEqual(['b1', 'this is tautologous']);
+    });
+
+    it('entra entera aunque pase el tope', () => {
+        const pagina = Array.from({ length: 6 }, (_, i) => c(204, `trozo ${i}`));
+        const elegidos = selectEvidenceChunks([c(203, 'vecina'), ...pagina], '204', caps).map(x => x.text);
+        expect(elegidos).toEqual(pagina.map(x => x.text));
     });
 });

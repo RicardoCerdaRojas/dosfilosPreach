@@ -9,6 +9,7 @@ import {
     isUnreviewedCitationsError,
     mapVerdictsByPath,
     unreviewedBlockingCitations,
+    versionUnderReview,
     type AnalysisClaim,
     type CitationEdit,
     type CitationStatus,
@@ -25,8 +26,8 @@ export type ReviewFilter = CitationStatus | 'all';
 /**
  * Estado y acciones de la página de revisión de un paso.
  *
- * Todo lo derivado sale de la versión que se está revisando: la aceptada si
- * existe, si no la actual. Los veredictos se indexan por ruta para que la
+ * Todo lo derivado sale de la versión que se está revisando
+ * (`versionUnderReview`): la que espera revisión, si no la aceptada. Los veredictos se indexan por ruta para que la
  * vista del análisis y el panel de evidencia hablen de la misma cita.
  */
 export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
@@ -35,7 +36,8 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
     const [selectedPath, setSelectedPath] = useState<string | null>(null);
     const [filter, setFilter] = useState<ReviewFilter>('all');
 
-    const version = step.accepted ?? step.current;
+    // La que se va a aceptar, si espera revisión (TP #7, #29).
+    const version = versionUnderReview(step);
     const analysis = version?.canonicalAnalysis ?? null;
 
     const verdicts = useMemo(

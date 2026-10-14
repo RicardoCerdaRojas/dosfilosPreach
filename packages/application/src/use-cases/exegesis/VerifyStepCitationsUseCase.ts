@@ -18,7 +18,7 @@ import {
     printedLabelIn,
     type AnalysisClaim,
 } from '@dosfilos/domain';
-import { findUnsupportedWitnessClaims } from '@dosfilos/domain';
+import { findUnsupportedWitnessClaims, versionUnderReview } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 import { VerifierSourcesBuilder } from '../../services/exegesis/VerifierSourcesBuilder';
 
@@ -28,8 +28,8 @@ export interface VerifyStepCitationsInput {
     stepId: string;
     /**
      * Which version of the step to verify. Optional — when omitted the
-     * use case picks `accepted ?? current`, matching the version the
-     * UI displays.
+     * use case picks `versionUnderReview` (the one awaiting review, else
+     * the accepted one), the version accepting would act on.
      */
     versionId?: string;
 }
@@ -253,7 +253,7 @@ function pickVersion(
     if (versionId) {
         return step.versions.find(v => v.id === versionId) ?? null;
     }
-    return step.accepted ?? step.current;
+    return versionUnderReview(step);
 }
 
 /**

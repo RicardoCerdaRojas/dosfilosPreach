@@ -94,6 +94,12 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             `- NEVER invent source keys, page numbers, or quotes. If you cannot back a claim with a configured source, mark it tentative in confidenceFlags or omit the claim entirely.`,
             `- Each excerpt is headed by its anchor ("--- p. 83 ---", "--- hoja 87 ---" or "--- § 2.3 ---"). Put that number in "page". When the anchor is "§ …" (the book has no printed pages), set "page" to 0 and copy the section, without "§", into "locator".`,
             `- For ideas drawn from your own general knowledge (not from the configured corpus), set the relevant confidenceFlag to "tentative" — do not fabricate citations.`,
+            // TP #7 (Santiago 3:15): tres alarmas eran análisis propio colgado
+            // de Varner y Robertson en las notas al pie.
+            `- A source listed in "sources" vouches for what that sentence or note says. List a work only when ITS provided text says it. When a note or claim is your own analysis, leave "sources" empty: hanging your analysis on an author attributes to them what they did not write.`,
+            // TP #7 (#24): una nota decía «La asignación de Robertson como
+            // fuente técnica no autoriza a reconstruir una sección ausente…».
+            `- The output is the student's paper. Never write about the corpus, the excerpts, the usage plan, source roles or what the provided material lacks. If the material does not support a point, omit it or mark it tentative in confidenceFlags.`,
             corpusGapsBlock,
             ``,
             `## Style guide constraints`,
@@ -139,6 +145,8 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `- NUNCA inventes claves de fuente, números de página o citas verbatim. Si no puedes respaldar una afirmación con una fuente configurada, márcala como tentative en confidenceFlags u omítela completamente.`,
         `- Cada fragmento viene encabezado por su ancla («--- p. 83 ---», «--- hoja 87 ---» o «--- § 2.3 ---»). Ese número va en "page". Cuando el ancla es «§ …» (el libro no tiene páginas impresas), pon "page" en 0 y copia la sección, sin «§», en "locator".`,
         `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), pon el confidenceFlag relevante en "tentative" — NO fabriques citas.`,
+        `- Una fuente listada en "sources" responde por lo que dice esa oración o esa nota. Lista una obra sólo cuando SU texto provisto lo dice. Cuando la nota o la afirmación es análisis tuyo, deja "sources" vacío: colgar tu análisis de un autor es atribuirle lo que no escribió.`,
+        `- Lo que escribes es el trabajo del estudiante. Nunca hables del corpus, de los fragmentos, del plan de uso, de los roles de las fuentes ni de lo que falta en el material provisto. Si el material no sostiene un punto, omítelo o márcalo tentative en confidenceFlags.`,
         corpusGapsBlock,
         ``,
         `## Restricciones de la guía de estilo`,
