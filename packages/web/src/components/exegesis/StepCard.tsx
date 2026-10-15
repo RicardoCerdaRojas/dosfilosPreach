@@ -35,7 +35,7 @@ import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { Link, useNavigate } from 'react-router-dom';
-import { assemblyContents, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
+import { applyPageLabelStyle, assemblyContents, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
 import type { PaperFormatting } from '@dosfilos/domain';
 import { AssemblyManifest } from '@/components/exegesis/AssemblyManifest';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
@@ -225,8 +225,14 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const showActions = isReview;
     const showAccepted = isAccepted;
 
+    // La prosa como se ENTREGA: con «(Autor, N)» si la rúbrica lo pide así. El
+    // editor mostraba «(Autor, p. N)», la forma interna, y el estudiante no
+    // sabía cuál iba al documento (TP #6, #25). Es la misma transformación
+    // del exportador, y aplicarla dos veces no cambia nada.
+    const prosaEntregada = useMemo(() => applyPageLabelStyle(previewMarkdown, formatting), [previewMarkdown, formatting]);
+
     const startEdit = () => {
-        setEditDraft(previewMarkdown);
+        setEditDraft(prosaEntregada);
         setEditing(true);
     };
 
@@ -434,12 +440,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const tituloCita = t('detail.steps.openCitation');
     const markdownRenderizado = useMemo(() => (
         <ProsaConCitas
-            markdown={previewMarkdown}
+            markdown={prosaEntregada}
             claves={clavesDelTrabajo}
             onOpenCita={abrirCitaDeLaProsa}
             tituloCita={tituloCita}
         />
-    ), [previewMarkdown, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita]);
+    ), [prosaEntregada, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita]);
 
     const anyPipelinePending =
         generateStep.isPending
