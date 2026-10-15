@@ -34,7 +34,8 @@ import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
 import { useExcludedSourceConfirm } from './useExcludedSourceConfirm';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useRankedLibrary } from '@/hooks/exegesis/useRankedLibrary';
-import { faltaParaLaRubrica } from './faltaParaLaRubrica';
+import { faltaParaLaRubrica, tipoDelRecurso } from './faltaParaLaRubrica';
+import { recomendablePorPasaje } from './recomendadoPorPasaje';
 import { FaltaParaLaRubricaSection } from './FaltaParaLaRubricaSection';
 
 /** How many top-ranked resources get auto-checked when the dialog opens. */
@@ -151,11 +152,21 @@ export function ExtractFromLibraryDialog({
     // change; `null` for unranked resources (those never matched any
     // chunk for this paper's passage). Drives the badge + the
     // top-section partition below.
+    // Lo que el pasaje recomienda de verdad: sin comentarios de otro libro
+    // bíblico ni libros con uno o dos fragmentos que no son de consulta
+    // (TP #7, #6). Lo usan la sección de arriba y la preselección.
+    const recomendados = useMemo(() => {
+        const porId = new Map(resources.map(r => [r.id, r] as const));
+        return ranking.ranked.filter(rk => {
+            const res = porId.get(rk.resourceId);
+            return !res || recomendablePorPasaje(res, rk, paper.passage.bookId);
+        });
+    }, [ranking.ranked, resources, paper.passage.bookId]);
     const rankByResource = useMemo(() => {
         const map = new Map<string, RankedResource>();
-        for (const r of ranking.ranked) map.set(r.resourceId, r);
+        for (const r of recomendados) map.set(r.resourceId, r);
         return map;
-    }, [ranking.ranked]);
+    }, [recomendados]);
 
     // Filter + sort: indexed resources first (so they're easiest to
     // select), then by title. Search filters against title + author.
@@ -241,14 +252,14 @@ export function ExtractFromLibraryDialog({
         const next = autoSelection({
             sources: paper.sources,
             resources,
-            ranked: ranking.ranked,
+            ranked: recomendados,
             isIndexed: r => libraryService.getResourceIndexStatus(r) === 'indexed',
             topN: AUTO_SELECT_TOP_N,
             isExcluded: r => exclusionFor({ author: r.author }, exclusiones) !== null,
         });
         if (next.size > 0) setSelections(next);
         setAutoSelectionApplied(true);
-    }, [ranking.isLoading, ranking.ranked, resources, selections.size, autoSelectionApplied, paper.sources, exclusiones]);
+    }, [ranking.isLoading, recomendados, resources, selections.size, autoSelectionApplied, paper.sources, exclusiones]);
 
     // Count cached vs uncached for the "All" chip caption — gives the
     // user a sense of how much classification investment exists.
@@ -693,9 +704,15 @@ function ResourceRow({
                         {/* Cached classification hint — only when not
                             currently selected, to avoid duplicating
                             info already visible in the picker below. */}
-                        {!isSelected && resource.exegeticalType && (
+                        {/* El tipo con que entra al corpus, aunque la biblioteca
+                            no lo tenga guardado: sin él, Varner, McCartney y
+                            Ropes salían sin tipo y no se sabía si contaban para
+                            la rúbrica (TP #7, #5). El deducido lo dice. */}
+                        {!isSelected && (
                             <span className="text-[10px] text-muted-foreground italic truncate">
-                                · {t(`sourceTypes.${resource.exegeticalType}.label`)}
+                                · {resource.exegeticalType
+                                    ? t(`sourceTypes.${resource.exegeticalType}.label`)
+                                    : t('paperSetup.subSteps.corpus.extract.inferredType', { type: t(`sourceTypes.${tipoDelRecurso(resource)}.label`) })}
                             </span>
                         )}
                         {/* Después de qué ES el libro, cuánto VALE. El conteo

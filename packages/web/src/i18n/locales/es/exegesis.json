@@ -1124,6 +1124,7 @@
           "willReplace": "Reemplazará excerpts actuales",
           "filterAll": "Todos ({{count}})",
           "smartMatchTitle": "Recomendado para este pasaje",
+          "inferredType": "{{type}} (según la biblioteca)",
           "rubricGap": {
             "title": "Falta para la rúbrica",
             "requirement_one": "{{type}}: falta {{count}}.",
