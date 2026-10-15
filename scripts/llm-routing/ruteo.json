@@ -300,36 +300,44 @@
       "reasoning": "none"
     },
     "adjudicateAnchorRefutes": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     },
     "reviewVerifiedMisreading": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     },
     "evaluateCoverageEngagement": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     },
     "evaluateGenreEngagement": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     },
     "evaluateClaimSourceFidelity.escalation": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
     },
     "sanitizeSermonCitations": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     },
     "teachingSuite.generarPlan": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     },
     "teachingSuite.proponerOutlineCurso": {
-      "provider": "anthropic",
-      "model": "claude-sonnet-4-6"
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     }
   }
 }

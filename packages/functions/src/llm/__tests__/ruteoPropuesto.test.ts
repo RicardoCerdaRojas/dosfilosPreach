@@ -48,4 +48,9 @@ describe('la tabla de ruteo propuesta', () => {
     it('las funciones del servidor tienen ruta propia (sin ella seguirían en Sonnet, no en la de por defecto)', () => {
         for (const f of FUNCIONES_DEL_SERVIDOR) expect(tabla[f], f).toBeDefined();
     });
+
+    it('ninguna función queda en Anthropic (decisión del fundador, 2026-10-15)', () => {
+        const enAnthropic = Object.entries(tabla).filter(([, r]) => r.provider === 'anthropic').map(([f]) => f);
+        expect(enAnthropic).toEqual([]);
+    });
 });
