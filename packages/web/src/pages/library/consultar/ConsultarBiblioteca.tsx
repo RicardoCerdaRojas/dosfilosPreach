@@ -10,6 +10,7 @@ import { apellidoDelAutor } from '../apellidoDelAutor';
 import { RespuestaConCitas } from '@/components/library/consulta/RespuestaConCitas';
 import { etiquetaDeFuente, type LibroParaCitar } from './citasDeRespuesta';
 import { SelectorDeAlcance, type LibroElegible } from './SelectorDeAlcance';
+import { BuscarTemas } from './BuscarTemas';
 import { useConsultas } from './useConsultas';
 
 /**
@@ -29,6 +30,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     const [abiertaId, setAbiertaId] = useState<string | null>(null);
     const [alcance, setAlcance] = useState<AlcanceDeConsulta>({ tipo: 'todo' });
     const [texto, setTexto] = useState('');
+    /** «Preguntar» (respuesta redactada y guardada) o «Buscar temas» (U5: dónde se habla de algo). */
+    const [modo, setModo] = useState<'preguntar' | 'temas'>('preguntar');
     const finRef = useRef<HTMLDivElement>(null);
 
     const libros = useMemo(() => new Map<string, LibroParaCitar>(
@@ -76,7 +79,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
         }, 'full');
     };
 
-    const nueva = () => { setAbiertaId(null); setTexto(''); limpiarError(); };
+    const nueva = () => { setAbiertaId(null); setTexto(''); setModo('preguntar'); limpiarError(); };
     const rotuloDeAlcance = (a: AlcanceDeConsulta) => a.tipo === 'todo'
         ? t('consult.scopeAll')
         : a.ids.length === 1 ? (libros.get(a.ids[0]!)?.title ?? t('consult.scopeBooks', { count: 1 })) : t('consult.scopeBooks', { count: a.ids.length });
@@ -106,7 +109,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                             <li key={c.id} className="group relative">
                                 <button
                                     type="button"
-                                    onClick={() => { setAbiertaId(c.id); limpiarError(); }}
+                                    onClick={() => { setAbiertaId(c.id); setModo('preguntar'); limpiarError(); }}
                                     aria-current={c.id === abiertaId ? 'true' : undefined}
                                     className={cn(
                                         'w-full rounded-md px-2 py-2 pr-8 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -142,8 +145,26 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                             <h2 className="font-serif text-2xl font-semibold text-foreground">{t('consult.title')}</h2>
                             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('consult.subtitle')}</p>
                         </div>
+                        <div role="tablist" aria-label={t('consult.modeLabel')} className="inline-flex rounded-md border border-border p-0.5">
+                            {(['preguntar', 'temas'] as const).map(m => (
+                                <button
+                                    key={m}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={modo === m}
+                                    onClick={() => setModo(m)}
+                                    className={cn(
+                                        'min-h-9 rounded px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        modo === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                                    )}
+                                >
+                                    {m === 'preguntar' ? t('consult.modeAsk') : t('consult.modeTopics')}
+                                </button>
+                            ))}
+                        </div>
                         <SelectorDeAlcance libros={elegibles} alcance={alcance} onCambiar={setAlcance} />
-                        {!enCurso && (
+                        {modo === 'temas' && <BuscarTemas alcance={alcance} etiquetar={etiquetar} onAbrir={abrirFuente} />}
+                        {modo === 'preguntar' && !enCurso && (
                             <div className="flex flex-wrap gap-2">
                                 {(['example1', 'example2', 'example3'] as const).map(k => (
                                     <button
@@ -161,6 +182,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                     </div>
                 )}
 
+                {(modo === 'preguntar' || abierta) && (<>
                 <div className="flex-1 space-y-8">
                     {abierta?.turnos.map((turno, i) => (
                         <article key={`${abierta.id}-${i}`} className="space-y-3">
@@ -209,6 +231,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                     </div>
                     <p className="mt-1 px-1 text-xs text-muted-foreground">{t('consult.footnote')}</p>
                 </form>
+                </>)}
             </section>
         </div>
     );

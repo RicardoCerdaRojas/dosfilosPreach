@@ -5,6 +5,7 @@ import type { ConsultaGuardada } from '@dosfilos/infrastructure';
 /** Fase «biblioteca consultable», U3: la pestaña «Consultar». */
 const open = vi.fn();
 const consultar = vi.fn();
+const temas = vi.fn();
 let alCambiar: ((c: ConsultaGuardada[]) => void) | null = null;
 vi.mock('@/components/exegesis/citation/SourceViewerProvider', () => ({ useSourceViewer: () => ({ open, close: vi.fn() }) }));
 vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'u1' } }) }));
@@ -13,6 +14,7 @@ vi.mock('@dosfilos/infrastructure', () => ({
     consultarBiblioteca: (...a: unknown[]) => consultar(...a),
     escucharConsultas: (_u: string, cb: (c: ConsultaGuardada[]) => void) => { alCambiar = cb; cb([]); return () => {}; },
     borrarConsulta: vi.fn(),
+    buscarTemasEnBiblioteca: (...a: unknown[]) => temas(...a),
 }));
 const { ConsultarBiblioteca } = await import('../ConsultarBiblioteca');
 
@@ -60,5 +62,18 @@ describe('Consultar la biblioteca', () => {
         fireEvent.click(screen.getByLabelText('consult.send'));
         expect((await screen.findByRole('alert')).textContent).toContain('límite de 50');
         expect(caja.value).toBe('Una pregunta');
+    });
+
+    it('«Buscar temas» busca con el alcance elegido, agrupa por libro y cada hoja abre el visor', async () => {
+        temas.mockResolvedValue([{ resourceId: 'v', titulo: varner.title, autor: 'William Varner', hojas: [{ hoja: 192, seccion: 'Paragraph 22', extracto: 'Diaspora encyclical…', score: 0.8 }] }]);
+        render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
+        fireEvent.click(screen.getByText('consult.modeTopics'));
+        expect(screen.queryByLabelText('consult.placeholder')).toBeNull();
+        fireEvent.change(screen.getByLabelText('consult.topicPlaceholder'), { target: { value: 'la oración' } });
+        fireEvent.click(screen.getByText('consult.topicSearch'));
+        await waitFor(() => expect(temas).toHaveBeenCalledWith('la oración', { tipo: 'todo' }));
+        const hoja = await screen.findByText('(Varner, p. 188)');
+        fireEvent.click(hoja);
+        expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 192, resourceId: 'v', label: varner.title } }, 'full');
     });
 });

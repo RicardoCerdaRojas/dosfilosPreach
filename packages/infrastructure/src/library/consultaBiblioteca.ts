@@ -100,3 +100,26 @@ export function escucharConsultas(
 export async function borrarConsulta(id: string): Promise<void> {
     await deleteDoc(doc(db, 'library_consultations', id));
 }
+
+/** Una hoja donde se habla del tema buscado (U5). */
+export interface HojaDelTema {
+    hoja: number | null;
+    seccion: string;
+    extracto: string;
+    score: number;
+}
+
+export interface LibroDelTema {
+    resourceId: string;
+    titulo: string;
+    autor: string;
+    hojas: HojaDelTema[];
+}
+
+/** «Buscar temas»: dónde se habla de algo en la biblioteca, sin respuesta redactada. */
+export async function buscarTemasEnBiblioteca(consulta: string, alcance: AlcanceDeConsulta): Promise<LibroDelTema[]> {
+    const callable = httpsCallable<{ consulta: string; alcance: AlcanceDeConsulta }, { libros: LibroDelTema[] }>(
+        getFunctions(), 'buscarTemasEnBiblioteca', { timeout: 70_000 },
+    );
+    return (await callable({ consulta, alcance })).data.libros;
+}

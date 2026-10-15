@@ -498,6 +498,13 @@
     "askThisBook": "Preguntar a este libro",
     "bookIntro": "Pregúntale algo a este libro. La respuesta sale sólo de sus páginas; toca una cita para ir a la hoja.",
     "searchingBook": "Buscando en el libro…",
-    "placeholderBook": "¿Qué quieres saber de este libro?"
+    "placeholderBook": "¿Qué quieres saber de este libro?",
+    "modeLabel": "Qué quieres hacer",
+    "modeAsk": "Preguntar",
+    "modeTopics": "Buscar temas",
+    "topicPlaceholder": "Un tema: la oración, la sabiduría de lo alto, el juramento…",
+    "topicSearch": "Buscar",
+    "topicHint": "Muestra dónde se habla del tema en tus libros, por significado y no sólo por palabra. No redacta respuesta ni cuenta como consulta.",
+    "topicNone": "No encontré ese tema en tus libros."
   }
 }

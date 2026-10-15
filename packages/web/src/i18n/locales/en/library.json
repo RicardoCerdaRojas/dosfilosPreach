@@ -498,6 +498,13 @@
     "askThisBook": "Ask this book",
     "bookIntro": "Ask this book something. The answer comes only from its pages; tap a citation to go to the sheet.",
     "searchingBook": "Searching the book…",
-    "placeholderBook": "What do you want to know from this book?"
+    "placeholderBook": "What do you want to know from this book?",
+    "modeLabel": "What do you want to do",
+    "modeAsk": "Ask",
+    "modeTopics": "Find topics",
+    "topicPlaceholder": "A topic: prayer, wisdom from above, oaths…",
+    "topicSearch": "Search",
+    "topicHint": "Shows where your books discuss the topic, by meaning and not only by word. It doesn't write an answer or count as a query.",
+    "topicNone": "I couldn't find that topic in your books."
   }
 }
