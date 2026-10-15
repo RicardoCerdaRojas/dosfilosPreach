@@ -54,6 +54,13 @@ service cloud.firestore {
       allow read: if isOwner(resource.data.ownerId) || isSuperAdmin();
       allow write: if false;
     }
+    // Consultas a la biblioteca (fase «biblioteca consultable», 2026-10-15).
+    // Las escribe sólo el servidor (`consultarBiblioteca`); el dueño las lee
+    // y puede borrarlas de su historial.
+    match /library_consultations/{id} {
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create, update: if false;
+    }
     // Biblioteca de láminas reutilizables (F4 «trinquete») — el cliente LEE las
     // suyas para reusarlas; promover/eliminar va por callable (Admin SDK).
     // (La colección de ocurrencias `teachingCanvasForms` es server-only: el

@@ -23,6 +23,8 @@ export const FUNCIONES_DEL_SERVIDOR = [
     'sanitizeSermonCitations',
     'teachingSuite.generarPlan',
     'teachingSuite.proponerOutlineCurso',
+    // Fase «biblioteca consultable» (2026-10-15): nacen en el ruteo, con Luna.
+    'library.consult',
 ] as const;
 export type FuncionDelServidor = typeof FUNCIONES_DEL_SERVIDOR[number];
 
