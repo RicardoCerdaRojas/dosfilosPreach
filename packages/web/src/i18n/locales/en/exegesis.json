@@ -2192,6 +2192,8 @@
         "cancel": "Cancel",
         "previewTitle": "This is how the paragraph reads",
         "atParagraphEnd": "It goes at the end of the paragraph: the reference sentence wasn't found.",
+        "alreadyStated": "The section already says this: “{{sentence}}”. Inserting it would repeat it.",
+        "insertAnyway": "Insert anyway",
         "assembled": "The paper is already assembled: after inserting, assemble again so the document includes it.",
         "lostCitations": "The wording dropped these citations: {{citations}}. Ask for another proposal or check it before inserting.",
         "inserted": "Idea added",

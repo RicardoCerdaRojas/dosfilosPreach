@@ -5,7 +5,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
  * «Agregar una idea» (TP #6, #22): el estudiante ve la oración resaltada en
  * su párrafo y sólo al insertar se guarda.
  */
-vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o?.citations ? `${k}:${o.citations}` : k) }) }));
+vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o?.citations ? `${k}:${o.citations}` : o?.sentence ? `${k}:${o.sentence}` : k) }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const mutateAsync = vi.fn();
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ placeIdeaInSection: { mutateAsync, isPending: false } }) }));
@@ -56,5 +56,16 @@ describe('una respuesta que llega después de cerrar no se muestra al reabrir', 
         resolver({ markdown: 'x', sentence: 'S.', paragraph: 'S.', anchored: true, lostCitations: [], placement: { paragraphIndex: 0, afterSentence: '', sentence: 'S.' } });
         await new Promise(r => setTimeout(r, 0));
         expect(screen.queryByText('detail.steps.addIdea.insert')).not.toBeInTheDocument();
+    });
+});
+
+describe('si la sección ya lo dice', () => {
+    it('lo avisa y el botón dice «Insertar igual»', async () => {
+        mutateAsync.mockResolvedValueOnce({ markdown: 'x', sentence: 'S.', paragraph: 'S.', anchored: true, lostCitations: [],
+            alreadyStated: 'McCartney prefiere el dativo de ventaja (McCartney, 204).', placement: { paragraphIndex: 0, afterSentence: '', sentence: 'S.' } });
+        abrir();
+        fireEvent.click(screen.getByText('detail.steps.addIdea.propose'));
+        expect(await screen.findByText('detail.steps.addIdea.alreadyStated:McCartney prefiere el dativo de ventaja (McCartney, 204).')).toBeInTheDocument();
+        expect(screen.getByText('detail.steps.addIdea.insertAnyway')).toBeInTheDocument();
     });
 });

@@ -21,6 +21,12 @@ export interface IdeaPlacement {
     afterSentence: string;
     /** La idea redactada: una o dos oraciones, con la cita del estudiante. */
     sentence: string;
+    /**
+     * Si la sección YA dice la idea, la oración que la dice, copiada tal
+     * cual; vacía si no. En el bakeoff (2026-10-15) Luna y Sol insertaron
+     * la objeción de McCartney (p. 204) que la oración anterior ya traía.
+     */
+    alreadyStated?: string;
 }
 
 export interface IdeaInsertion {
@@ -78,6 +84,16 @@ function finDeOracion(texto: string, desde: number): number {
 /** Los párrafos que se le muestran al asistente, en el orden que `paragraphIndex` usa. */
 export function proseParagraphs(markdown: string): string[] {
     return tramos(markdown).map(t => t.text);
+}
+
+/**
+ * El encabezado bajo el que está cada párrafo de `proseParagraphs`, o `null`.
+ * En un documento ensamblado cada pregunta es un encabezado: sin él, el
+ * asistente elegía el párrafo sin saber qué pregunta responde.
+ */
+export function paragraphHeadings(markdown: string): Array<string | null> {
+    const encabezados = [...markdown.matchAll(/^[ \t]*#{1,6}[ \t]+(.+?)[ \t]*$/gm)].map(m => ({ at: m.index ?? 0, text: m[1]!.trim() }));
+    return tramos(markdown).map(t => encabezados.filter(h => h.at < t.start).pop()?.text ?? null);
 }
 
 /**
@@ -145,6 +161,8 @@ export function citationsLost(idea: string, sentence: string): string[] {
 /** Lo que el puerto recibe para ubicar la idea. */
 export interface PlaceIdeaInput {
     paragraphs: ReadonlyArray<string>;
+    /** El encabezado de cada párrafo (`paragraphHeadings`), si los hay. */
+    headings?: ReadonlyArray<string | null>;
     idea: string;
     language: 'es' | 'en';
 }

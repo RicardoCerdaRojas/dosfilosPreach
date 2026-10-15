@@ -40,3 +40,36 @@ describe('PlaceIdeaInSectionUseCase', () => {
         expect(repo.saveManualEdit).not.toHaveBeenCalled();
     });
 });
+
+describe('lo ya dicho se avisa sólo si está de verdad en la sección', () => {
+    const correr = async (alreadyStated: string) => {
+        const repo = { getPaper: vi.fn().mockResolvedValue(paper) };
+        const placer = { placeIdea: vi.fn().mockResolvedValue({
+            placement: { paragraphIndex: 0, afterSentence: '', sentence: 'S.', alreadyStated }, tokensUsed: 1, modelId: 'm',
+        }) };
+        return new PlaceIdeaInSectionUseCase(repo as never, placer as never).execute({ ownerId: 'o', paperId: 'p', stepId: 's', idea: 'x' });
+    };
+    it('una oración que está en la sección, se avisa', async () => {
+        expect((await correr('La mansedumbre es sabiduría.')).alreadyStated).toBe('La mansedumbre es sabiduría.');
+    });
+    it('una que el asistente imaginó, no', async () => {
+        expect((await correr('Esto no está.')).alreadyStated).toBe('');
+    });
+});
+
+describe('en el ensamble, la idea se ubica sobre el documento', () => {
+    it('lee `assembledMarkdown`, no la versión vieja del paso', async () => {
+        const conEnsamble = { ...paper, assembledMarkdown: 'DOCUMENTO NUEVO.', steps: [{ id: 's', kind: 'assembly', state: 'accepted', current: { markdown: 'VIEJO.' }, accepted: { markdown: 'VIEJO.' } }] };
+        const placer = { placeIdea: vi.fn().mockResolvedValue({ placement: { paragraphIndex: 0, afterSentence: '', sentence: 'S.', alreadyStated: '' }, tokensUsed: 1, modelId: 'm' }) };
+        const r = await new PlaceIdeaInSectionUseCase({ getPaper: vi.fn().mockResolvedValue(conEnsamble) } as never, placer as never)
+            .execute({ ownerId: 'o', paperId: 'p', stepId: 's', idea: 'x' });
+        expect(r.markdown).toBe('DOCUMENTO NUEVO. S.');
+    });
+    it('lo ya dicho se reconoce aunque cambien espacios, comillas o «p.»', async () => {
+        const conSalto = { ...paper, steps: [{ ...paper.steps[0], current: { id: 'v2', markdown: 'Ropes lo dice\nasí (Ropes, p. 244).' } }] };
+        const placer = { placeIdea: vi.fn().mockResolvedValue({ placement: { paragraphIndex: 0, afterSentence: '', sentence: 'S.', alreadyStated: 'Ropes lo dice así (Ropes, 244).' }, tokensUsed: 1, modelId: 'm' }) };
+        const r = await new PlaceIdeaInSectionUseCase({ getPaper: vi.fn().mockResolvedValue(conSalto) } as never, placer as never)
+            .execute({ ownerId: 'o', paperId: 'p', stepId: 's', idea: 'x' });
+        expect(r.alreadyStated).toBe('Ropes lo dice así (Ropes, 244).');
+    });
+});

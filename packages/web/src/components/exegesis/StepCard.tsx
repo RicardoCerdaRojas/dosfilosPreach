@@ -57,6 +57,7 @@ import { CreditPacksDialog } from '@/pages/library/components/CreditPacksDialog'
 import {
     formatPassageReference,
     isAbandonedGeneration,
+    stepTextForEditing,
     versionUnderReview,
     ABANDONED_GENERATION_AFTER_MS,
     operationRequiresPreConfirm,
@@ -80,6 +81,8 @@ interface StepCardProps {
     allSteps?: ReadonlyArray<ExegeticalStep>;
     /** El encuadre del trabajo, para decir qué pregunta responde cada paso. */
     assignmentBrief?: string | null;
+    /** El documento ensamblado: la tarjeta del ensamble lo muestra y lo edita. */
+    assembledMarkdown?: string | null;
     /** El pasaje: en uno de un solo capítulo, «el versículo 15» es de ese capítulo. */
     passage?: { chapterStart: number; chapterEnd: number } | null;
     /** Si el trabajo ya está ensamblado: decide si recomponer lo alcanza. */
@@ -119,7 +122,7 @@ interface StepCardProps {
  * El documento sigue siendo legible por sí solo: dice `generating`, y el
  * `updatedAt` que está al lado dice desde cuándo.
  */
-export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, passage = null, hasAssembly = false, wordsPerShare = null, formatting = null }: StepCardProps) {
+export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, passage = null, assembledMarkdown = null, hasAssembly = false, wordsPerShare = null, formatting = null }: StepCardProps) {
     const { t } = useTranslation('exegesis');
     const {
         generateStep,
@@ -224,7 +227,11 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // makes the UI lie about what was just produced.
     const previewMarkdown = isReview
         ? step.current?.markdown ?? step.accepted?.markdown ?? ''
-        : step.accepted?.markdown ?? step.current?.markdown ?? '';
+        // El ensamble aceptado muestra y edita el DOCUMENTO, no su versión
+        // vieja (`stepTextForEditing`).
+        : step.kind === 'assembly'
+            ? stepTextForEditing(step, assembledMarkdown)
+            : step.accepted?.markdown ?? step.current?.markdown ?? '';
 
     const showActions = isReview;
     const showAccepted = isAccepted;
@@ -1332,7 +1339,9 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 onInsert={async (placement) => {
                     await saveStepEdit.mutateAsync({ paperId, stepId: step.id, markdown: insertIdea(prosaEntregada, placement).markdown });
                 }}
-                assembled={hasAssembly}
+                // En el ensamble la idea YA entra al documento: «vuelve a
+                // ensamblar» la borraría (revisión adversarial).
+                assembled={hasAssembly && step.kind !== 'assembly'}
                 onQuotaError={handleQuotaError}
             />
             <VerseRecomposeDialog

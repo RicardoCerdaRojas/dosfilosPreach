@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { citationsLost, insertIdea, proseParagraphs } from '../ideaPlacement';
+import { citationsLost, insertIdea, paragraphHeadings, proseParagraphs } from '../ideaPlacement';
 
 /**
  * TP #6 (#22): para sumar una evidencia (Mayor, pp. 14 y 111) había que
@@ -88,5 +88,13 @@ describe('citationsLost — por autor y página', () => {
     });
     it('una página romana perdida, se avisa', () => {
         expect(citationsLost('dice (Moo, xiv)', 'lo dice Moo.')).toEqual(['(Moo, xiv)']);
+    });
+});
+
+describe('paragraphHeadings — qué pregunta responde cada párrafo', () => {
+    it('cada párrafo lleva el encabezado bajo el que está', () => {
+        const md = '# Santiago 3:13-18\n\n## ¿Qué modifica…?\n\nUno.\n\nDos.\n\n## ¿Cuál es el sujeto…?\n\nTres.';
+        expect(paragraphHeadings(md)).toEqual(['¿Qué modifica…?', '¿Qué modifica…?', '¿Cuál es el sujeto…?']);
+        expect(paragraphHeadings('Sin encabezados.')).toEqual([null]);
     });
 });
