@@ -33,6 +33,9 @@ import { useResourceUpload } from './hooks/useResourceUpload';
 import { useResourceMutations } from './hooks/useResourceMutations';
 import { cn } from '@/lib/utils';
 import { UploadConsentModal } from '@/components/library/UploadConsentModal';
+import { ConsultarBiblioteca } from './consultar/ConsultarBiblioteca';
+import { LibraryTabs } from './components/LibraryTabs';
+import { useVistaDeBiblioteca } from './hooks/useVistaDeBiblioteca';
 
 type ViewMode = 'grid' | 'list';
 
@@ -144,7 +147,8 @@ export function LibraryManager() {
     // The URL is read once on mount; subsequent typing in the search
     // box only updates local state — we don't push back to the URL to
     // avoid a noisy history.
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { vista, cambiarVista } = useVistaDeBiblioteca(searchParams, setSearchParams);
     const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') ?? '');
     const [categoryFilter, setCategoryFilter] = useState<ResourceType | 'all'>('all');
     const [onlyWithoutBooks, setOnlyWithoutBooks] = useState(false);
@@ -263,6 +267,10 @@ export function LibraryManager() {
                     onToggleUploadForm={handleToggleUploadForm}
                 />
 
+                <LibraryTabs vista={vista} onCambiar={cambiarVista} />
+                {vista === 'consultar' ? (
+                    <ConsultarBiblioteca resources={data.resources} indexStatus={data.indexStatus} />
+                ) : (<>
                 <BalanceBanner />
 
                 {/* Status callouts — stacked, each fires only when its
@@ -404,6 +412,7 @@ export function LibraryManager() {
                         ))}
                     </div>
                 )}
+                </>)}
             </div>
 
             <EditResourceModal

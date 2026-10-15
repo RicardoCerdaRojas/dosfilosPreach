@@ -460,5 +460,40 @@
     "title": "{{count}} recurso(s) sin numeración confirmada",
     "body": "Hasta que digas qué número lleva impresa cada hoja, sus citas van a decir «hoja N» — un número del archivo que no existe en el ejemplar impreso, y que nadie puede comprobar.",
     "action": "Calibrar"
+  },
+  "tabs": {
+    "books": "Mis libros",
+    "consult": "Consultar"
+  },
+  "consult": {
+    "title": "Pregúntale a tus libros",
+    "subtitle": "Las respuestas salen sólo de los libros de tu biblioteca, con su cita. Toca una cita para ver la página en el libro.",
+    "scopeLabel": "Buscar en:",
+    "scopeAll": "Toda mi biblioteca",
+    "scopePick": "Elegir libros…",
+    "scopeBooks_one": "{{count}} libro",
+    "scopeBooks_other": "{{count}} libros",
+    "scopeSearch": "Buscar un libro…",
+    "scopeEmpty": "No hay libros con ese nombre.",
+    "example1": "¿Qué rasgos tiene la sabiduría de lo alto en Santiago 3:17?",
+    "example2": "¿Cómo se relaciona Santiago 5:12 con Mateo 5?",
+    "example3": "¿Qué dicen mis libros sobre la oración por los enfermos?",
+    "placeholder": "Escribe tu pregunta…",
+    "placeholderFollowUp": "Sigue preguntando sobre lo mismo…",
+    "send": "Preguntar",
+    "searching": "Buscando en tus libros…",
+    "footnote": "Cada pregunta cuenta como una consulta de tu plan. Enter para enviar; Mayús + Enter para un salto de línea.",
+    "askingIn": "Consultando en:",
+    "new": "Nueva consulta",
+    "history": "Consultas anteriores",
+    "historyEmpty": "Aquí quedarán tus consultas.",
+    "delete": "Borrar consulta",
+    "deleteConfirm": "¿Borrar esta consulta de tu historial?",
+    "sources_one": "{{count}} fuente",
+    "sources_other": "{{count}} fuentes",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "openInBook": "Ver en el libro",
+    "errorGeneric": "No se pudo responder. Intenta de nuevo en unos minutos."
   }
 }
