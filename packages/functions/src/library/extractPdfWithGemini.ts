@@ -24,6 +24,7 @@ import { censusOf } from './scriptCensus';
 import { modoDeCobro, type ExtractionVersion } from './extractionVersions';
 import { salidaCortada } from './partirTanda';
 import { leerPaginasDelPdf } from './textoDelPdf';
+import { camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from './medirExtraccion';
 import { randomUUID } from 'crypto';
 import { MODEL_VISION } from '../llm/modelCatalog';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
@@ -767,8 +768,20 @@ export const extractPdfWithGemini = onObjectFinalized(
             // Note: requestedMode === undefined (legacy uploads) gets no
             // warning — we don't know what they asked for.
 
+            // Lo que faltó, medido contra el PDF y no contra lo que el
+            // extractor dice haber devuelto (auditoría de la biblioteca,
+            // 2026-10-15). La capa de texto distingue una página en blanco de
+            // una que el extractor dejó vacía.
+            const medicion = medirExtraccion(
+                structuredMarkdown ?? extractedText,
+                expectedPageCount ?? null,
+                await capaDeTextoPorPagina(fs.readFileSync(tempFilePath), 30_000),
+                extractedText,
+            );
+
             // Update Firestore document with extracted text and ready status
             const updateData: Record<string, any> = {
+                ...camposDeMedicion(medicion, FieldValue.delete()),
                 textContent: finalText,
                 textExtractionStatus: 'ready',
                 extractedAt: new Date(),

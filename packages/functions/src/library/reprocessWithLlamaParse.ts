@@ -10,6 +10,7 @@ import { consumePagesAdmin, readBalance } from './processingBalance';
 import { recordLlamaParseUsage, selectLlamaParseAccount } from './llamaParseAccountSelector';
 import { isMarkerOnlyMarkdown } from './indexCoverage';
 import { truncateUtf8 } from './truncateUtf8';
+import { camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from './medirExtraccion';
 import { randomUUID } from 'crypto';
 import { censusOf } from './scriptCensus';
 import { abrirFicha, cerrarFicha, cronometrar, preflightDe } from './fichaDeCorrida';
@@ -204,7 +205,12 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
             });
             const structuredContentUrl = `gs://${bucketName}/${mdPath}`;
 
+            // Lo que faltó, medido contra el PDF (auditoría 2026-10-15).
+            const capa = await capaDeTextoPorPagina(fs.readFileSync(tempFilePath), 120_000);
+            const medicion = medirExtraccion(structuredMarkdown, capa?.length ?? null, capa, extractedText);
+
             await resourceRef.update({
+                ...camposDeMedicion(medicion, FieldValue.delete()),
                 textContent: finalText,
                 textExtractionStatus: 'ready',
                 extractedAt: new Date(),

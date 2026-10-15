@@ -326,6 +326,8 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         (resource as any).extractionProgress = data.extractionProgress ?? undefined;
         (resource as any).indexingWarning = data.indexingWarning ?? undefined;
         (resource as any).paginasFaltantes = data.paginasFaltantes ?? undefined;
+        resource.pdfPageCount = typeof data.pdfPageCount === 'number' ? data.pdfPageCount : undefined;
+        resource.textoEstructuradoVacio = data.textoEstructuradoVacio === true ? true : undefined;
         // Numeración impresa por tramos. Ausente en todo recurso subido antes
         // de la calibración: `undefined` significa «no se sabe», y quien cite
         // debe rotular el número como hoja en vez de fingir una página.

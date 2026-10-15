@@ -1,6 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getStorage } from 'firebase-admin/storage';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from './medirExtraccion';
+import { truncateUtf8 } from './truncateUtf8';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -255,7 +257,10 @@ export const processWithGemini = onCall<ProcessRequest>(
             let finalText = extractedText;
             let wasTruncated = false;
             if (textBytes > FIRESTORE_TEXT_LIMIT_BYTES) {
-                finalText = extractedText.substring(0, FIRESTORE_TEXT_LIMIT_BYTES);
+                // Por bytes, no por caracteres: 900 000 caracteres de griego o
+                // hebreo pasan el límite de 1 MiB del documento (auditoría
+                // 2026-10-15).
+                finalText = truncateUtf8(extractedText, FIRESTORE_TEXT_LIMIT_BYTES);
                 wasTruncated = true;
             }
 
@@ -268,7 +273,12 @@ export const processWithGemini = onCall<ProcessRequest>(
             });
             const structuredContentUrl = `gs://${bucketName}/${mdPath}`;
 
+            // Lo que faltó, medido contra el PDF (auditoría 2026-10-15).
+            const capa = await capaDeTextoPorPagina(fs.readFileSync(tempFilePath), 120_000);
+            const medicion = medirExtraccion(structuredMarkdown, expectedPageCount ?? capa?.length ?? null, capa, extractedText);
+
             await resourceRef.update({
+                ...camposDeMedicion(medicion, FieldValue.delete()),
                 textContent: finalText,
                 textExtractionStatus: 'ready',
                 extractedAt: new Date(),
