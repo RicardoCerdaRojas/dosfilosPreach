@@ -1,5 +1,6 @@
 import { MAX_FALTANTES_LISTADAS, type PaginasFaltantes } from './coberturaDePaginas';
 import { isMarkerOnlyMarkdown } from './indexCoverage';
+import { readFileSync } from 'node:fs';
 import { leerPaginasDelPdf } from './textoDelPdf';
 
 /**
@@ -95,14 +96,12 @@ export function medirExtraccion(
  * `null` si no se pudo leer. Un PDF escaneado da ceros: entonces sólo cuentan
  * las páginas ausentes.
  */
-export async function capaDeTextoPorPagina(buffer: Buffer, esperaMs = 60_000): Promise<number[] | null> {
+export async function capaDeTextoPorPagina(pdf: Buffer | string, esperaMs = 60_000): Promise<number[] | null> {
     try {
-        // Con tope: medir no puede comerse el plazo de la extracción. Sin capa,
-        // la medición sigue con las páginas ausentes.
-        const paginas = await Promise.race([
-            leerPaginasDelPdf(buffer),
-            new Promise<never>((_, rechazar) => setTimeout(() => rechazar(new Error(`más de ${esperaMs} ms`)), esperaMs).unref?.()),
-        ]);
+        // Con tope que DETIENE la lectura (no sólo deja de esperarla): medir
+        // no puede comerse el plazo ni la memoria de la extracción.
+        const buffer = typeof pdf === 'string' ? readFileSync(pdf) : pdf;
+        const paginas = await leerPaginasDelPdf(buffer, Date.now() + esperaMs);
         return paginas.map(p => p.text.replace(/\s/g, '').length);
     } catch (err) {
         console.warn('[medirExtraccion] no se pudo leer la capa de texto del PDF', err instanceof Error ? err.message : err);
@@ -113,8 +112,11 @@ export async function capaDeTextoPorPagina(buffer: Buffer, esperaMs = 60_000): P
 /** Los campos que la medición escribe en el recurso. */
 export function camposDeMedicion(m: MedicionDeExtraccion, borrar: unknown): Record<string, unknown> {
     return {
-        ...(m.pdfPageCount ? { pdfPageCount: m.pdfPageCount } : {}),
-        paginasFaltantes: m.paginasFaltantes.total > 0 ? m.paginasFaltantes : borrar,
+        // Sin el total del PDF no se sabe qué falta: no se toca lo que ya
+        // estaba (no se borra una lista escrita por la cola).
+        ...(m.pdfPageCount
+            ? { pdfPageCount: m.pdfPageCount, paginasFaltantes: m.paginasFaltantes.total > 0 ? m.paginasFaltantes : borrar }
+            : {}),
         textoEstructuradoVacio: m.textoVacio ? true : borrar,
     };
 }

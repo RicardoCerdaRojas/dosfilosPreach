@@ -32,11 +32,14 @@ function arg(nombre: string): string | undefined {
 }
 
 /** `gs://bucket/ruta` o la URL de descarga de Firebase → ruta dentro del bucket. */
-export function rutaEnStorage(url: string | undefined): string | null {
+export function ubicacionEnStorage(url: string | undefined): { bucket: string; ruta: string } | null {
     if (!url) return null;
-    if (url.startsWith('gs://')) return url.split('/').slice(3).join('/');
-    const m = url.match(/\/o\/([^?]+)/);
-    return m ? decodeURIComponent(m[1]!) : null;
+    if (url.startsWith('gs://')) {
+        const [bucket, ...ruta] = url.slice(5).split('/');
+        return { bucket: bucket!, ruta: ruta.join('/') };
+    }
+    const m = url.match(/\/b\/([^/]+)\/o\/([^?]+)/);
+    return m ? { bucket: m[1]!, ruta: decodeURIComponent(m[2]!) } : null;
 }
 
 interface Fila {
@@ -60,7 +63,6 @@ async function main(): Promise<void> {
     const escribir = process.argv.includes('--escribir');
     if (!admin.apps.length) admin.initializeApp({ projectId: PROJECT_ID, storageBucket: BUCKET });
     const db = admin.firestore();
-    const bucket = admin.storage().bucket();
 
     const snap = await db.collection('library_resources').where('userId', '==', uid).get();
     console.log(`${snap.size} recursos de ${uid}${escribir ? ' — ESCRIBIENDO en producción' : ' (sólo lectura)'}`);
@@ -75,14 +77,18 @@ async function main(): Promise<void> {
             hebreo: 0, griego: 0,
         };
         try {
-            const rutaPdf = rutaEnStorage(d.storageUrl);
-            if (!rutaPdf || !rutaPdf.toLowerCase().endsWith('.pdf')) { filas.push(fila); continue; }
-            const [pdf] = await bucket.file(rutaPdf).download();
+            const pdfEn = ubicacionEnStorage(d.storageUrl);
+            if (!pdfEn || !pdfEn.ruta.toLowerCase().endsWith('.pdf')) { filas.push(fila); continue; }
+            const [pdf] = await admin.storage().bucket(pdfEn.bucket).file(pdfEn.ruta).download();
             const capa = await capaDeTextoPorPagina(pdf, 300_000);
-            const rutaMd = rutaEnStorage(d.structuredContentUrl);
-            const md = rutaMd ? (await bucket.file(rutaMd).download())[0].toString('utf8') : '';
+            const mdEn = ubicacionEnStorage(d.structuredContentUrl);
+            const md = mdEn ? (await admin.storage().bucket(mdEn.bucket).file(mdEn.ruta).download())[0].toString('utf8') : '';
             const respaldo = typeof d.textContent === 'string' ? d.textContent : '';
-            const medicion = medirExtraccion(md || respaldo, capa?.length ?? null, capa, respaldo);
+            // Sin `structured.md`, la única fuente es `textContent`; si está
+            // truncado, todo lo que quedó después del corte parecería faltar:
+            // no se mide (total desconocido).
+            const soloTruncado = !md && d.wasTruncated === true;
+            const medicion = medirExtraccion(md || respaldo, soloTruncado ? null : capa?.length ?? null, capa, respaldo);
             const todo = md + respaldo;
             Object.assign(fila, {
                 pdfPageCount: medicion.pdfPageCount,

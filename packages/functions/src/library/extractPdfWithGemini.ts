@@ -772,10 +772,14 @@ export const extractPdfWithGemini = onObjectFinalized(
             // extractor dice haber devuelto (auditoría de la biblioteca,
             // 2026-10-15). La capa de texto distingue una página en blanco de
             // una que el extractor dejó vacía.
+            // Por la capa de texto (`7.0-pdfjs-lineas`) la extracción ES la
+            // capa: leerla otra vez no agrega nada y duplica el costo en los
+            // PDF más grandes.
+            const capa = extractionVersion === '7.0-pdfjs-lineas' ? null : await capaDeTextoPorPagina(tempFilePath, 30_000);
             const medicion = medirExtraccion(
                 structuredMarkdown ?? extractedText,
-                expectedPageCount ?? null,
-                await capaDeTextoPorPagina(fs.readFileSync(tempFilePath), 30_000),
+                expectedPageCount ?? capa?.length ?? null,
+                capa,
                 extractedText,
             );
 

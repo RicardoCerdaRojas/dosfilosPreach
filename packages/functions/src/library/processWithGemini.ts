@@ -211,6 +211,9 @@ export const processWithGemini = onCall<ProcessRequest>(
                 // como estaba antes de este cambio — nunca peor.
             }
 
+            // La capa de texto se lee en paralelo con la extracción, no al
+            // final: medir no puede empujar la función más allá de su plazo.
+            const capaPromesa = capaDeTextoPorPagina(tempFilePath, 120_000);
             const extraer = () => conAtribucion(rutaDeFicha(runId), () => extractWithGemini(
                 tempFilePath,
                 resourceId,
@@ -274,7 +277,7 @@ export const processWithGemini = onCall<ProcessRequest>(
             const structuredContentUrl = `gs://${bucketName}/${mdPath}`;
 
             // Lo que faltó, medido contra el PDF (auditoría 2026-10-15).
-            const capa = await capaDeTextoPorPagina(fs.readFileSync(tempFilePath), 120_000);
+            const capa = await capaPromesa;
             const medicion = medirExtraccion(structuredMarkdown, expectedPageCount ?? capa?.length ?? null, capa, extractedText);
 
             await resourceRef.update({

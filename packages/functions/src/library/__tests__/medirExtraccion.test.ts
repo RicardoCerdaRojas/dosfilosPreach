@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { caracteresPorPagina, camposDeMedicion, medirExtraccion } from '../medirExtraccion';
+import { describe, it, expect, vi } from 'vitest';
+import { PDFDocument } from 'pdf-lib';
+import { caracteresPorPagina, camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from '../medirExtraccion';
 
 /**
  * Auditoría de la biblioteca del fundador (2026-10-15): `pageCount` guardaba
@@ -54,5 +55,21 @@ describe('medirExtraccion', () => {
         const respaldo = `[PAGE 1]\n${TEXTO}\n[PAGE 2]\n${TEXTO}`;
         expect(medirExtraccion(md, 2, [900, 900], respaldo).paginasFaltantes.total).toBe(0);
         expect(medirExtraccion(md, 2, [900, 900]).paginasFaltantes.total).toBe(2);
+    });
+
+    it('sin el total del PDF no toca las faltantes ya guardadas (no las borra)', () => {
+        const BORRAR = Symbol('borrar');
+        const campos = camposDeMedicion(medirExtraccion(pagina(1, TEXTO), null), BORRAR);
+        expect('paginasFaltantes' in campos).toBe(false);
+        expect('pdfPageCount' in campos).toBe(false);
+    });
+
+    it('el tope de tiempo DETIENE la lectura de la capa de texto', async () => {
+        const doc = await PDFDocument.create();
+        for (let i = 0; i < 3; i++) doc.addPage();
+        const buffer = Buffer.from(await doc.save());
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        expect(await capaDeTextoPorPagina(buffer, -1)).toBeNull();
+        expect(await capaDeTextoPorPagina(buffer, 60_000)).toEqual([0, 0, 0]);
     });
 });

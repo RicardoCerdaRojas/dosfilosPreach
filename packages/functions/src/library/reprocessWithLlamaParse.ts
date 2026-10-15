@@ -159,6 +159,10 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
             });
 
             const buffer = fs.readFileSync(tempFilePath);
+            // La capa de texto se lee EN PARALELO mientras LlamaParse trabaja
+            // (casi todo es espera de red): leerla al final podía empujar la
+            // función más allá de sus 900 s con los créditos ya gastados.
+            const capaPromesa = capaDeTextoPorPagina(buffer, 120_000);
             const client = new LlamaParseClient(selected.apiKey);
             const result = await client.parseDocument(buffer, `${resourceId}.pdf`, {
                 mode: 'fast',
@@ -206,7 +210,7 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
             const structuredContentUrl = `gs://${bucketName}/${mdPath}`;
 
             // Lo que faltó, medido contra el PDF (auditoría 2026-10-15).
-            const capa = await capaDeTextoPorPagina(fs.readFileSync(tempFilePath), 120_000);
+            const capa = await capaPromesa;
             const medicion = medirExtraccion(structuredMarkdown, capa?.length ?? null, capa, extractedText);
 
             await resourceRef.update({
