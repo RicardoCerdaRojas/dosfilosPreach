@@ -52,6 +52,12 @@ export interface LlmGenerateOptions {
      * el ruteo sólo manda pedidos con esquema a quien lo soporta.
      */
     responseSchema?: object;
+    /**
+     * Corta el pedido. Lo honra el adaptador de OpenAI; lo usa
+     * `clientePorRuta` para que el respaldo alcance antes del límite de la
+     * función.
+     */
+    signal?: AbortSignal;
 }
 
 export interface ILlmClient {

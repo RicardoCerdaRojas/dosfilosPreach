@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const rutaPropiaPara = vi.fn();
 vi.mock('../ruteoDeModelos', () => ({ rutaPropiaPara: (f: string) => rutaPropiaPara(f) }));
 vi.mock('../llmUsageRecorder', () => ({ recordLlmUsage: vi.fn() }));
-const { ClienteConRespaldo, clientePorRuta } = await import('../clientePorRuta');
+const { ClienteConRespaldo, clientePorRuta, MENSAJE_SIN_RESPUESTA } = await import('../clientePorRuta');
 const { AnthropicLlmClient } = await import('../AnthropicLlmClient');
 const { OpenAiLlmClient } = await import('../OpenAiLlmClient');
 
@@ -34,25 +34,40 @@ describe('clientePorRuta', () => {
     });
 });
 
-describe('ClienteConRespaldo', () => {
+describe('ClienteConRespaldo — plazo de la función, no de cada llamada', () => {
     const ok = (t: string) => ({ generate: vi.fn().mockResolvedValue(t) });
-    const falla = () => ({ generate: vi.fn().mockRejectedValue(new Error('credit balance is too low')) });
+    const falla = () => ({ generate: vi.fn().mockRejectedValue(new Error('OpenAI HTTP 429: insufficient_quota')) });
+    beforeEach(() => { vi.spyOn(console, 'warn').mockImplementation(() => {}); vi.spyOn(console, 'error').mockImplementation(() => {}); });
 
-    it('si el proveedor falla con tiempo, responde Gemini', async () => {
-        const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        await expect(new ClienteConRespaldo(falla(), ok('de gemini'), 'f', 30_000).generate({ prompt: 'x' })).resolves.toBe('de gemini');
-        expect(String(aviso.mock.calls[0]![0])).toContain('cae a Gemini');
-        aviso.mockRestore();
+    it('si el proveedor falla con tiempo, responde Gemini con un tope de salida holgado', async () => {
+        const gemini = ok('de gemini');
+        await expect(new ClienteConRespaldo(falla(), gemini, 'f', 60_000).generate({ prompt: 'x', maxOutputTokens: 1024 })).resolves.toBe('de gemini');
+        expect(gemini.generate.mock.calls[0]![0].maxOutputTokens).toBe(8192);
     });
-    it('si falla tarde, el error sube: Gemini no alcanzaría', async () => {
+
+    it('el pedido al principal se corta antes de invadir la reserva del respaldo', async () => {
+        const principal = ok('ok');
+        await new ClienteConRespaldo(principal, ok('x'), 'f', 60_000).generate({ prompt: 'x' });
+        expect(principal.generate.mock.calls[0]![0].signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('caído una vez, el resto de la función va directo a Gemini', async () => {
+        const principal = falla();
+        const c = new ClienteConRespaldo(principal, ok('g'), 'f', 120_000);
+        for (let i = 0; i < 5; i++) await c.generate({ prompt: 'x' });
+        expect(principal.generate).toHaveBeenCalledTimes(1);
+    });
+
+    it('si ya no queda tiempo, no intenta Gemini; el mensaje no nombra proveedores', async () => {
         let t = 0;
-        const lento = { generate: vi.fn(async () => { t = 40_000; throw new Error('timeout'); }) };
-        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-        await expect(new ClienteConRespaldo(lento, ok('x'), 'f', 30_000, () => t).generate({ prompt: 'x' })).rejects.toThrow('timeout');
-        error.mockRestore();
+        const lento = { generate: vi.fn(async () => { t = 50_000; throw new Error('OpenAI HTTP 500'); }) };
+        const gemini = ok('x');
+        const p = new ClienteConRespaldo(lento, gemini, 'f', 60_000, () => t).generate({ prompt: 'x' });
+        await expect(p).rejects.toThrow(MENSAJE_SIN_RESPUESTA);
+        expect(gemini.generate).not.toHaveBeenCalled();
     });
+
     it('sin clave del proveedor, va directo a Gemini', async () => {
-        vi.spyOn(console, 'warn').mockImplementation(() => {});
-        await expect(new ClienteConRespaldo(null, ok('de gemini'), 'f', 30_000).generate({ prompt: 'x' })).resolves.toBe('de gemini');
+        await expect(new ClienteConRespaldo(null, ok('de gemini'), 'f', 60_000).generate({ prompt: 'x' })).resolves.toBe('de gemini');
     });
 });

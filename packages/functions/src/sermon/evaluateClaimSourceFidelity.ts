@@ -262,7 +262,7 @@ async function runMarkerFidelity(
                     prompt,
                     temperature: 0.2,
                     responseMimeType: 'application/json',
-                    maxOutputTokens: 1024,
+                    maxOutputTokens: 4096, // Sol razona dentro del mismo tope (revisión de #769).
                 });
                 const re = parseSonnetVerdict(raw);
                 return {

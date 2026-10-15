@@ -37,6 +37,9 @@ export interface OpcionesDeCliente {
     maxOutputTokens?: number;
 }
 
+/** Lo que ve el usuario si no responde nadie: sin nombres de proveedor ni de modelo. */
+export const MENSAJE_SIN_RESPUESTA = 'El asistente no respondió. Intenta de nuevo en unos minutos.';
+
 /**
  * El cliente que la función usa: el de su ruta propia (o Sonnet), con Gemini
  * de respaldo si ése falla y queda tiempo.
@@ -49,14 +52,14 @@ export async function clientePorRuta(opciones: OpcionesDeCliente): Promise<ILlmC
         ? new GeminiLlmClient(gemini, MODEL_DEEP, opciones.usage)
         : null;
     if (!principal && !respaldo) {
-        throw new Error(`${opciones.usage.feature}: no hay clave para ${ruta.provider} ni para Gemini`);
+        console.error(`[clientePorRuta] ${opciones.usage.feature}: no hay clave para ${ruta.provider} ni para Gemini`);
+        throw new Error(MENSAJE_SIN_RESPUESTA);
     }
     return new ClienteConRespaldo(
         principal,
         respaldo,
         `${opciones.usage.feature} (${ruta.provider}/${ruta.model})`,
-        // La mitad del timeout: Gemini tiene que alcanzar a responder.
-        opciones.timeoutSeconds * 1000 / 2,
+        opciones.timeoutSeconds * 1000,
     );
 }
 
@@ -73,32 +76,63 @@ function construir(ruta: RutaDeModelo, opciones: OpcionesDeCliente): ILlmClient 
     return clave ? new GeminiLlmClient(clave, ruta.model, opciones.usage) : null;
 }
 
-/** Prueba el principal; si falla con tiempo de sobra, Gemini. Exportada para las pruebas. */
+/** La parte del límite que se guarda para que Gemini alcance a responder. */
+export const RESERVA_PARA_RESPALDO = 0.4;
+/** Con razonamiento, Gemini 2.5 cobra lo pensado del mismo tope de salida. */
+const TOPE_MINIMO_DEL_RESPALDO = 8192;
+
+/**
+ * Prueba el principal; si falla y queda tiempo, Gemini. Exportada para las
+ * pruebas.
+ *
+ * El plazo es el de la FUNCIÓN, no el de cada llamada: hay funciones que
+ * hacen treinta seguidas con el mismo cliente. El pedido al principal se corta
+ * antes de invadir la reserva del respaldo, y si el principal falla una vez,
+ * el resto de la función va directo a Gemini (revisión adversarial de #769).
+ */
 export class ClienteConRespaldo implements ILlmClient {
+    private readonly vence: number;
+    private principalCaido = false;
+
     constructor(
         private readonly principal: ILlmClient | null,
         private readonly respaldo: ILlmClient | null,
         private readonly etiqueta: string,
-        private readonly sinRespaldoTrasMs: number,
+        private readonly limiteMs: number,
         private readonly ahora: () => number = () => Date.now(),
-    ) {}
+    ) {
+        this.vence = this.ahora() + limiteMs;
+    }
 
     async generate(options: LlmGenerateOptions): Promise<string> {
-        if (!this.principal) {
-            console.warn(`[clientePorRuta] ${this.etiqueta}: sin clave; va por Gemini`);
-            return this.respaldo!.generate(options);
-        }
-        const desde = this.ahora();
+        if (!this.principal || this.principalCaido) return this.porRespaldo(options, null);
+        const reserva = this.respaldo ? this.limiteMs * RESERVA_PARA_RESPALDO : 0;
+        const margen = this.vence - this.ahora() - reserva;
         try {
-            return await this.principal.generate(options);
+            return await this.principal.generate({ ...options, signal: AbortSignal.timeout(Math.max(1_000, margen)) });
         } catch (err) {
-            const motivo = err instanceof Error ? err.message : err;
-            if (!this.respaldo || this.ahora() - desde > this.sinRespaldoTrasMs) {
-                console.error(`[clientePorRuta] ${this.etiqueta} falló; sin respaldo:`, motivo);
-                throw err;
-            }
-            console.warn(`[clientePorRuta] ${this.etiqueta} cae a Gemini:`, motivo);
-            return this.respaldo.generate(options);
+            this.principalCaido = true;
+            return this.porRespaldo(options, err);
+        }
+    }
+
+    private async porRespaldo(options: LlmGenerateOptions, causa: unknown): Promise<string> {
+        const motivo = causa instanceof Error ? causa.message : causa;
+        const queda = this.vence - this.ahora();
+        if (!this.respaldo || queda < this.limiteMs * RESERVA_PARA_RESPALDO * 0.5) {
+            console.error(`[clientePorRuta] ${this.etiqueta} sin respuesta (queda ${Math.round(queda / 1000)} s):`, motivo);
+            throw new Error(MENSAJE_SIN_RESPUESTA);
+        }
+        if (causa) console.warn(`[clientePorRuta] ${this.etiqueta} cae a Gemini:`, motivo);
+        try {
+            return await this.respaldo.generate({
+                ...options,
+                signal: undefined,
+                ...(options.maxOutputTokens ? { maxOutputTokens: Math.max(options.maxOutputTokens, TOPE_MINIMO_DEL_RESPALDO) } : {}),
+            });
+        } catch (err) {
+            console.error(`[clientePorRuta] ${this.etiqueta}: también falló Gemini:`, err instanceof Error ? err.message : err);
+            throw new Error(MENSAJE_SIN_RESPUESTA);
         }
     }
 }
