@@ -24,10 +24,11 @@ import { PDFDocument } from 'pdf-lib';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-    compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas,
+    compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, rellenarConCapa, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas,
     PAGINAS_POR_TRAMO, type Tramo,
 } from '../packages/functions/src/library/loteDeExtraccion';
-import { camposDeMedicion, capaDeTextoPorPagina } from '../packages/functions/src/library/medirExtraccion';
+import { camposDeMedicion } from '../packages/functions/src/library/medirExtraccion';
+import { leerPaginasDelPdf } from '../packages/functions/src/library/textoDelPdf';
 import { censusOf } from '../packages/functions/src/library/scriptCensus';
 import { truncateUtf8 } from '../packages/functions/src/library/truncateUtf8';
 import { MODEL_VISION } from '../packages/functions/src/llm/modelCatalog';
@@ -223,14 +224,24 @@ async function recoger(estado: Estado): Promise<boolean> {
     return todo;
 }
 
-/** La capa de texto del PDF por página (pdfjs tarda minutos en un libro grande: se guarda en el lote). */
-async function capaDelLibro(rid: string): Promise<number[] | null> {
-    const archivo = join(dir(), `${rid}.capa.json`);
+/** El texto de la capa del PDF por página (pdfjs tarda minutos en un libro grande: se guarda en el lote). */
+async function textoDeLaCapa(rid: string): Promise<string[] | null> {
+    const archivo = join(dir(), `${rid}.capa-texto.json`);
     if (existsSync(archivo)) return JSON.parse(readFileSync(archivo, 'utf8'));
     const d = (await admin.firestore().collection('library_resources').doc(rid).get()).data()!;
-    const capa = await capaDeTextoPorPagina((await bajar(d.storageUrl))!, 300_000);
-    if (capa) writeFileSync(archivo, JSON.stringify(capa));
-    return capa;
+    try {
+        const textos = (await leerPaginasDelPdf((await bajar(d.storageUrl))!, Date.now() + 300_000)).map(p => p.text);
+        writeFileSync(archivo, JSON.stringify(textos));
+        return textos;
+    } catch (err) {
+        console.warn(`  sin capa de texto para ${rid}: ${err instanceof Error ? err.message : err}`);
+        return null;
+    }
+}
+
+/** Caracteres (sin espacios) de la capa por página: lo mismo que mide producción. */
+async function capaDelLibro(rid: string): Promise<number[] | null> {
+    return (await textoDeLaCapa(rid))?.map(t => t.replace(/\s/g, '').length) ?? null;
 }
 
 async function reintentar(): Promise<void> {
@@ -250,7 +261,11 @@ async function reintentar(): Promise<void> {
     // Una página sola que ya falló sola una vez no se pide más (en blanco o
     // ilegible): sin esto se pediría para siempre y frenaría al libro.
     const sola = (t: Tramo) => t.desde === t.hasta;
-    const abandonar = fallos.filter(f => sola(f) && (f.intento ?? 1) >= 2);
+    // También: una página sola que volvió en blanco ya por segunda vez (antes en
+    // un tramo mayor), y un tramo chico que RECITATION sigue cortando. Al
+    // aplicar, esas páginas se rellenan con la capa de texto del PDF.
+    const abandonar = fallos.filter(f => (sola(f) && ((f.intento ?? 1) >= 2 || (f.estado === 'incompleto' && f.ronda > 1)))
+        || (f.estado === 'fallo' && /RECITATION/.test(f.motivo ?? '') && f.hasta - f.desde < 3));
     abandonar.forEach(f => { f.estado = 'abandonado'; f.motivo = `${f.motivo ?? ''}; se abandona tras ${f.intento} intentos`; });
     const reintentables = fallos.filter(f => !abandonar.includes(f));
     if (reintentables.length === 0) { guardarEstado(estado); console.log(`No hay tramos que reintentar (${abandonar.length} páginas abandonadas).`); return; }
@@ -287,7 +302,10 @@ async function aplicar(): Promise<void> {
         const ref = admin.firestore().collection('library_resources').doc(libro.rid);
         const d = (await ref.get()).data()!;
         const capa = await capaDelLibro(libro.rid);
-        const nuevo = unirPaginas(existsSync(archivoDePaginas(libro.rid)) ? JSON.parse(readFileSync(archivoDePaginas(libro.rid), 'utf8')) : []);
+        const leidas: GeminiPage[] = existsSync(archivoDePaginas(libro.rid)) ? JSON.parse(readFileSync(archivoDePaginas(libro.rid), 'utf8')) : [];
+        const relleno = rellenarConCapa(leidas, libro.totalPaginas, (await textoDeLaCapa(libro.rid)) ?? []);
+        if (relleno.rellenadas.length > 0) console.log(`  (${libro.titulo.slice(0, 40)}: ${relleno.rellenadas.length} páginas con el texto del PDF: ${relleno.rellenadas.slice(0, 15).join(', ')}${relleno.rellenadas.length > 15 ? '…' : ''})`);
+        const nuevo = unirPaginas(relleno.paginas);
         const mdActual = d.structuredContentUrl ? (await bajar(d.structuredContentUrl))!.toString('utf8') : '';
         const tcActual = typeof d.textContent === 'string' ? d.textContent : '';
         const medidaActual = medirTexto(mdActual || tcActual, libro.totalPaginas, capa, tcActual);
@@ -335,7 +353,7 @@ async function aplicar(): Promise<void> {
                 extractionFailureReason: null,
                 extractionWarning: null,
                 scriptCensus: censusOf(nuevo.texto),
-                reprocesadoEnLote: { lote: estado.nombre, fecha: new Date(), motivo: cmp.motivo },
+                reprocesadoEnLote: { lote: estado.nombre, fecha: new Date(), motivo: cmp.motivo, paginasConTextoDelPdf: relleno.rellenadas },
                 updatedAt: new Date(),
             });
         } catch (err) {

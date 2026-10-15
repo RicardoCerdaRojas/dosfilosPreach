@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
+import { compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, rellenarConCapa, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
 import { medirExtraccion } from '../medirExtraccion';
 import { PROMPT_DE_EXTRACCION } from '../geminiExtraction';
 import { repararEscapes } from '../rescatarPaginas';
@@ -144,5 +144,14 @@ describe('separarEnBlanco', () => {
     it('un libro escaneado (sin capa) se sigue pidiendo entero', () => {
         expect(separarEnBlanco([{ desde: 2, hasta: 4 }], [0, 0, 0, 10]).pedir).toEqual([{ desde: 2, hasta: 4 }]);
         expect(separarEnBlanco([{ desde: 2, hasta: 4 }], null).enBlanco).toEqual([]);
+    });
+});
+
+describe('rellenarConCapa', () => {
+    const LARGA = 'palabra '.repeat(60);
+    it('sólo rellena páginas sin texto del modelo que en el PDF sí tienen texto', () => {
+        const r = rellenarConCapa([{ page: 1, text: 'a', md: 'a' }, { page: 2, text: '', md: '' }], 4, [LARGA, LARGA, 'corto', LARGA]);
+        expect(r.rellenadas).toEqual([2, 4]);
+        expect(unirPaginas(r.paginas).paginas.map(p => p.md?.slice(0, 7))).toEqual(['a', 'palabra', 'palabra']);
     });
 });

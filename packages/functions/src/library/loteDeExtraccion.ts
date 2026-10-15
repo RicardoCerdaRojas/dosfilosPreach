@@ -146,6 +146,29 @@ export function separarEnBlanco(faltan: ReadonlyArray<Tramo>, capa: ReadonlyArra
     return { pedir, enBlanco };
 }
 
+/**
+ * Rellena con la capa de texto del PDF las páginas que el modelo no pudo leer
+ * (las devolvió en blanco una y otra vez, o RECITATION las cortó) y que en el
+ * PDF sí tienen texto. En biblioteca1 (2026-10-15) fueron ~27 páginas, casi
+ * todas de Kregel Salmos: mejor el texto del PDF que una página perdida.
+ */
+export function rellenarConCapa(
+    paginas: ReadonlyArray<GeminiPage>,
+    total: number,
+    textoDeLaCapa: ReadonlyArray<string>,
+): { paginas: GeminiPage[]; rellenadas: number[] } {
+    const conTexto = new Set(paginas.filter(tieneTexto).map(p => p.page));
+    const rellenadas: number[] = [];
+    const nuevas: GeminiPage[] = [];
+    for (let n = 1; n <= total; n++) {
+        const capa = (textoDeLaCapa[n - 1] ?? '').trim();
+        if (conTexto.has(n) || capa.replace(/\s/g, '').length <= CAPA_CON_TEXTO) continue;
+        nuevas.push({ page: n, text: capa, md: capa });
+        rellenadas.push(n);
+    }
+    return { paginas: [...paginas, ...nuevas], rellenadas };
+}
+
 function tieneTexto(p: { text?: string; md?: string }): boolean {
     return Boolean((p.md ?? p.text ?? '').trim());
 }
