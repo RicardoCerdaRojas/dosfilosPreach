@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compararExtracciones, leerRespuestaDeTramo, partirTramo, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
+import { compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
 import { medirExtraccion } from '../medirExtraccion';
 import { PROMPT_DE_EXTRACCION } from '../geminiExtraction';
 import { repararEscapes } from '../rescatarPaginas';
@@ -35,6 +35,12 @@ describe('leerRespuestaDeTramo', () => {
     it('descarta números fuera del tramo', () => {
         const r = leerRespuestaDeTramo({ text: JSON.stringify({ pages: [{ page: 1, md: 'a' }, { page: 9, md: 'b' }] }), finishReason: 'STOP' }, tramo);
         expect(r.ok && r.paginas.map(p => p.page)).toEqual([101]);
+    });
+    it('con justo las páginas del tramo pero numeradas con el folio, manda la posición', () => {
+        const uno = leerRespuestaDeTramo({ text: JSON.stringify({ pages: [{ page: 5, md: 'folio 5' }] }), finishReason: 'STOP' }, { desde: 77, hasta: 77 });
+        expect(uno.ok && uno.paginas.map(p => p.page)).toEqual([77]);
+        const tres = leerRespuestaDeTramo({ text: JSON.stringify({ pages: [{ page: 40, md: 'a' }, { page: 41, md: 'b' }, { page: 42, md: 'c' }] }), finishReason: 'STOP' }, tramo);
+        expect(tres.ok && tres.paginas.map(p => p.page)).toEqual([101, 102, 103]);
     });
 });
 
@@ -102,5 +108,20 @@ describe('repararEscapes', () => {
         expect(repararEscapes('a \\| b')).toBe('a \\\\| b');
         expect(repararEscapes('\\n \\" \\\\')).toBe('\\n \\" \\\\');
         expect(repararEscapes('\\\\|')).toBe('\\\\|');
+    });
+});
+
+describe('medirTexto', () => {
+    it('sin capa de texto, el total del PDF sigue contando las páginas ausentes', () => {
+        const texto = '<!-- page: 1 -->\n' + 'texto '.repeat(30);
+        expect(medirTexto(texto, 3, null).paginasFaltantes.total).toBe(2);
+    });
+});
+
+describe('rescate con escapes inválidos', () => {
+    it('una respuesta cortada con \\| se rescata igual', () => {
+        const cortada = '{"pages":[{"page":1,"md":"| a \\| b |"},{"page":2,"md":"sin cerr';
+        const r = leerRespuestaDeTramo({ text: cortada, finishReason: 'STOP' }, { desde: 1, hasta: 2 });
+        expect(r.ok && r.paginas[0]!.md).toBe('| a \\| b |');
     });
 });

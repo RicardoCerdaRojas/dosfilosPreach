@@ -14,6 +14,7 @@
  *   npx tsx scripts/reprocesar-en-lote.ts reintentar <nombre>      # parte en dos los tramos que fallaron
  *   npx tsx scripts/reprocesar-en-lote.ts aplicar <nombre>         # compara y muestra, no escribe
  *   npx tsx scripts/reprocesar-en-lote.ts aplicar <nombre> --escribir   # escribe en PRODUCCIÓN
+ *   (… --aceptar-incompletos: aplica aunque queden páginas omitidas sin reintentar)
  *
  * Necesita GEMINI_API_KEY en el entorno y credenciales de Google por defecto.
  */
@@ -30,6 +31,7 @@ import { camposDeMedicion, capaDeTextoPorPagina } from '../packages/functions/sr
 import { censusOf } from '../packages/functions/src/library/scriptCensus';
 import { truncateUtf8 } from '../packages/functions/src/library/truncateUtf8';
 import { MODEL_VISION } from '../packages/functions/src/llm/modelCatalog';
+import { pricingFor } from '../packages/functions/src/llm/llmCost';
 import type { GeminiPage } from '../packages/functions/src/library/geminiExtraction';
 import { ubicacionEnStorage } from './lib/storage';
 
@@ -38,15 +40,27 @@ const BUCKET = 'dosfilosapp.firebasestorage.app';
 const LIMITE_TEXTCONTENT = 900_000;
 const VERSION = '6.0-gemini-cola';
 const MODELO_VIEJO = new Set(['4.0-gemini-standard', '6.0-gemini-cola', '2.0-gemini']);
-/** Precio del lote = la mitad del de línea (USD por millón; 3.8 Flash hasta 2026-12-31). Supuesto: documentado por Google, a confirmar en la factura. */
-const PRECIO_LOTE = { entrada: 0.75 / 2, salida: 3.75 / 2 };
+/** Precio del lote = la mitad del de línea. Supuesto: documentado por Google, a confirmar en la factura. */
+const precioDelLote = () => { const p = pricingFor(MODEL_VISION); return { entrada: p.inputPer1M / 2, salida: p.outputPer1M / 2 }; };
+/** Estados finales de un lote que no terminó bien: sus tramos pendientes ya no van a volver. */
+const TERMINO_MAL = new Set(['JOB_STATE_FAILED', 'JOB_STATE_CANCELLED', 'JOB_STATE_EXPIRED']);
 
-interface TramoDelLote extends Tramo { rid: string; ronda: number; indice: number; estado: 'pendiente' | 'ok' | 'fallo' | 'incompleto' | 'reemplazado'; motivo?: string; faltan?: Tramo[] }
+interface TramoDelLote extends Tramo {
+    rid: string;
+    ronda: number;
+    indice: number;
+    /** `abandonado`: una página sola que falló dos veces seguidas (en blanco, ilegible); no frena al libro. */
+    estado: 'pendiente' | 'ok' | 'fallo' | 'incompleto' | 'reemplazado' | 'abandonado';
+    motivo?: string;
+    faltan?: Tramo[];
+    /** Veces seguidas que esta página se pidió sola. */
+    intento?: number;
+}
 interface Estado {
     nombre: string;
     creado: string;
     libros: Array<{ rid: string; titulo: string; uid: string; totalPaginas: number }>;
-    rondas: Array<{ job: string; creada: string }>;
+    rondas: Array<{ job: string; creada: string; archivos?: string[]; archivosBorrados?: boolean }>;
     tramos: TramoDelLote[];
     uso: { entrada: number; salida: number };
 }
@@ -75,6 +89,7 @@ async function cargarPdf(buf: Buffer): Promise<PDFDocument> {
 /** Corta los tramos, los sube a Gemini y crea un lote con ellos. */
 async function crearRonda(estado: Estado, tramos: TramoDelLote[]): Promise<void> {
     const pedidos = [];
+    const archivos: string[] = [];
     const pdfs = new Map<string, PDFDocument>();
     for (const t of tramos) {
         if (!pdfs.has(t.rid)) {
@@ -86,10 +101,11 @@ async function crearRonda(estado: Estado, tramos: TramoDelLote[]): Promise<void>
         for (const p of await dst.copyPages(src, Array.from({ length: t.hasta - t.desde + 1 }, (_, i) => t.desde - 1 + i))) dst.addPage(p);
         const subido = await ai.files.upload({ file: new Blob([await dst.save()], { type: 'application/pdf' }), config: { mimeType: 'application/pdf' } });
         pedidos.push(pedidoDeTramo(subido.uri!));
+        if (subido.name) archivos.push(subido.name);
         process.stdout.write('.');
     }
     const job = await ai.batches.create({ model: MODEL_VISION, src: pedidos, config: { displayName: `reproceso-${estado.nombre}-r${estado.rondas.length + 1}` } });
-    estado.rondas.push({ job: job.name!, creada: new Date().toISOString() });
+    estado.rondas.push({ job: job.name!, creada: new Date().toISOString(), archivos });
     console.log(`\nlote creado: ${job.name} (${pedidos.length} tramos)`);
 }
 
@@ -126,6 +142,13 @@ async function preparar(): Promise<void> {
     console.log(`${estado.libros.length} libros, ${paginas} páginas, ${estado.tramos.length} tramos. Ver: estado ${nombre}`);
 }
 
+/** Los tramos subidos ocupan cuota de la Files API hasta que vencen (48 h): se borran al leer la ronda. */
+async function borrarArchivos(ronda: Estado['rondas'][number]): Promise<void> {
+    if (ronda.archivosBorrados || !ronda.archivos?.length) return;
+    await Promise.all(ronda.archivos.map(name => ai.files.delete({ name }).catch(() => undefined)));
+    ronda.archivosBorrados = true;
+}
+
 /** Recoge lo que terminó; deja los tramos en ok o fallo. */
 async function recoger(estado: Estado): Promise<boolean> {
     let todo = true;
@@ -133,6 +156,11 @@ async function recoger(estado: Estado): Promise<boolean> {
         const job = await ai.batches.get({ name: estado.rondas[r]!.job });
         const tramos = estado.tramos.filter(t => t.ronda === r + 1);
         console.log(`ronda ${r + 1}: ${job.state} (${tramos.length} tramos)`);
+        if (job.state && TERMINO_MAL.has(job.state)) {
+            tramos.filter(t => t.estado === 'pendiente').forEach(t => { t.estado = 'fallo'; t.motivo = `el lote terminó en ${job.state}`; });
+            await borrarArchivos(estado.rondas[r]!);
+            continue;
+        }
         if (job.state !== 'JOB_STATE_SUCCEEDED') { if (tramos.some(t => t.estado === 'pendiente')) todo = false; continue; }
         const respuestas = job.dest?.inlinedResponses ?? [];
         tramos.forEach((t, i) => {
@@ -159,9 +187,12 @@ async function recoger(estado: Estado): Promise<boolean> {
             }
             t.estado = 'ok';
         });
+        guardarEstado(estado);
+        await borrarArchivos(estado.rondas[r]!);
     }
     guardarEstado(estado);
-    const costo = (estado.uso.entrada * PRECIO_LOTE.entrada + estado.uso.salida * PRECIO_LOTE.salida) / 1e6;
+    const precio = precioDelLote();
+    const costo = (estado.uso.entrada * precio.entrada + estado.uso.salida * precio.salida) / 1e6;
     const fallos = estado.tramos.filter(t => t.estado === 'fallo' || t.estado === 'incompleto');
     console.log(`tramos: ${estado.tramos.filter(t => t.estado === 'ok').length} ok, ${fallos.length} con falla o incompletos, ${estado.tramos.filter(t => t.estado === 'pendiente').length} pendientes. Costo estimado en lote: US$${costo.toFixed(2)}`);
     for (const f of fallos.slice(0, 20)) console.log(`  falla ${f.rid.slice(0, 8)} ${f.desde}-${f.hasta}: ${f.motivo}`);
@@ -174,10 +205,17 @@ async function reintentar(): Promise<void> {
     const fallos = estado.tramos.filter(t => t.estado === 'fallo' || t.estado === 'incompleto');
     if (fallos.length === 0) { console.log('No hay tramos que reintentar.'); return; }
     const ronda = estado.rondas.length + 1;
+    // Una página sola que ya falló sola una vez no se pide más (en blanco o
+    // ilegible): sin esto se pediría para siempre y frenaría al libro.
+    const sola = (t: Tramo) => t.desde === t.hasta;
+    const abandonar = fallos.filter(f => sola(f) && (f.intento ?? 1) >= 2);
+    abandonar.forEach(f => { f.estado = 'abandonado'; f.motivo = `${f.motivo ?? ''}; se abandona tras ${f.intento} intentos`; });
+    const reintentables = fallos.filter(f => !abandonar.includes(f));
+    if (reintentables.length === 0) { guardarEstado(estado); console.log(`No hay tramos que reintentar (${abandonar.length} páginas abandonadas).`); return; }
     // Un tramo que falló entero se parte en dos; uno incompleto pide sólo lo que faltó.
-    const nuevos: TramoDelLote[] = fallos.flatMap(f => (f.estado === 'incompleto' ? f.faltan ?? [] : partirTramo(f))
-        .map(t => ({ ...t, rid: f.rid, ronda, indice: -1, estado: 'pendiente' as const })));
-    fallos.forEach(f => { f.estado = 'reemplazado'; f.motivo = `partido en la ronda ${ronda}`; });
+    const nuevos: TramoDelLote[] = reintentables.flatMap(f => (f.estado === 'incompleto' ? f.faltan ?? [] : partirTramo(f))
+        .map(t => ({ ...t, rid: f.rid, ronda, indice: -1, estado: 'pendiente' as const, intento: sola(t) && sola(f) ? (f.intento ?? 1) + 1 : 1 })));
+    reintentables.forEach(f => { f.estado = 'reemplazado'; f.motivo = `partido en la ronda ${ronda}`; });
     nuevos.forEach((t, i) => { t.indice = estado.tramos.length + i; });
     estado.tramos.push(...nuevos);
     await crearRonda(estado, nuevos);
@@ -186,13 +224,17 @@ async function reintentar(): Promise<void> {
 
 async function aplicar(): Promise<void> {
     const escribir = process.argv.includes('--escribir');
+    const aceptarIncompletos = process.argv.includes('--aceptar-incompletos');
     const estado = leerEstado();
     await recoger(estado);
     for (const libro of estado.libros) {
-        const pendientes = estado.tramos.filter(t => t.rid === libro.rid && (t.estado === 'pendiente' || t.estado === 'fallo'));
-        const incompletos = estado.tramos.filter(t => t.rid === libro.rid && t.estado === 'incompleto').length;
-        if (incompletos > 0) console.log(`  (${libro.titulo.slice(0, 40)}: ${incompletos} tramos incompletos; «reintentar» pide las páginas que faltaron)`);
-        if (pendientes.length > 0) { console.log(`- ${libro.titulo.slice(0, 50)}: faltan ${pendientes.length} tramos; se espera`); continue; }
+        const delLibro = estado.tramos.filter(t => t.rid === libro.rid);
+        // Un tramo incompleto todavía tiene páginas por pedir: aplicar ahora y
+        // otra vez después de reintentar dejaría un respaldo de la versión parcial.
+        const pendientes = delLibro.filter(t => t.estado === 'pendiente' || t.estado === 'fallo' || (t.estado === 'incompleto' && !aceptarIncompletos));
+        const abandonadas = delLibro.filter(t => t.estado === 'abandonado').map(t => t.desde);
+        if (pendientes.length > 0) { console.log(`- ${libro.titulo.slice(0, 50)}: faltan ${pendientes.length} tramos (${pendientes.map(t => t.estado).join(', ')}); se espera`); continue; }
+        if (abandonadas.length > 0) console.log(`  (${libro.titulo.slice(0, 40)}: páginas abandonadas ${abandonadas.join(', ')})`);
         const ref = admin.firestore().collection('library_resources').doc(libro.rid);
         const d = (await ref.get()).data()!;
         const pdf = (await bajar(d.storageUrl))!;
@@ -200,8 +242,8 @@ async function aplicar(): Promise<void> {
         const nuevo = unirPaginas(existsSync(archivoDePaginas(libro.rid)) ? JSON.parse(readFileSync(archivoDePaginas(libro.rid), 'utf8')) : []);
         const mdActual = d.structuredContentUrl ? (await bajar(d.structuredContentUrl))!.toString('utf8') : '';
         const tcActual = typeof d.textContent === 'string' ? d.textContent : '';
-        const medidaActual = medirTexto(mdActual || tcActual, capa, tcActual);
-        const medidaNueva = medirTexto(nuevo.markdown, capa, nuevo.texto);
+        const medidaActual = medirTexto(mdActual || tcActual, libro.totalPaginas, capa, tcActual);
+        const medidaNueva = medirTexto(nuevo.markdown, libro.totalPaginas, capa, nuevo.texto);
         const mejoraPorModelo = MODELO_VIEJO.has(d.extractionVersion) ? d.extractionModel !== MODEL_VISION : d.extractionVersion !== VERSION;
         // Una sola copia del texto actual: `structured.md` y `textContent` son el
         // mismo libro, y sumarlos contaba dos veces su griego y su hebreo.
@@ -213,35 +255,48 @@ async function aplicar(): Promise<void> {
         if (!escribir || !cmp.reemplazar) continue;
 
         const bucket = admin.storage().bucket();
-        const mdPath = `users/${libro.uid}/library/${libro.rid}/structured.md`;
-        if (mdActual) {
-            await bucket.file(`users/${libro.uid}/library/${libro.rid}/structured.antes-del-lote-${estado.nombre}.md`).save(mdActual, { contentType: 'text/markdown; charset=utf-8' });
-        }
+        const carpeta = `users/${libro.uid}/library/${libro.rid}`;
+        const mdPath = `${carpeta}/structured.md`;
+        // Respaldo de AMBOS textos (en los libros de LlamaParse el md trae sólo
+        // marcas y el texto real vive en `textContent`), con la hora en el
+        // nombre y sin pisar nunca uno anterior.
+        const sello = `antes-del-lote-${estado.nombre}-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+        const sinPisar = { preconditionOpts: { ifGenerationMatch: 0 } };
+        if (mdActual) await bucket.file(`${carpeta}/structured.${sello}.md`).save(mdActual, { contentType: 'text/markdown; charset=utf-8', ...sinPisar });
+        if (tcActual) await bucket.file(`${carpeta}/textContent.${sello}.txt`).save(tcActual, { contentType: 'text/plain; charset=utf-8', ...sinPisar });
         await bucket.file(mdPath).save(nuevo.markdown, { contentType: 'text/markdown; charset=utf-8', metadata: { resourceId: libro.rid, extractionVersion: VERSION } });
         const recortado = truncateUtf8(nuevo.texto, LIMITE_TEXTCONTENT);
-        // Dos escrituras: el indexador automático se dispara al PASAR a «ready».
-        await ref.update({ textExtractionStatus: 'processing', updatedAt: new Date() });
-        await ref.update({
-            ...camposDeMedicion(medidaNueva, admin.firestore.FieldValue.delete()),
-            textContent: recortado,
-            textExtractionStatus: 'ready',
-            extractedAt: new Date(),
-            pageCount: nuevo.paginas.length,
-            characterCount: nuevo.texto.length,
-            extractedWithGemini: true,
-            extractedWithLlamaParse: false,
-            extractionVersion: VERSION,
-            extractionModel: MODEL_VISION,
-            structuredContentUrl: `gs://${BUCKET}/${mdPath}`,
-            needsReindex: true,
-            wasTruncated: recortado.length < nuevo.texto.length,
-            extractionError: null,
-            extractionFailureReason: null,
-            extractionWarning: null,
-            scriptCensus: censusOf(nuevo.texto),
-            reprocesadoEnLote: { lote: estado.nombre, fecha: new Date(), motivo: cmp.motivo },
-            updatedAt: new Date(),
-        });
+        try {
+            // Dos escrituras: el indexador automático se dispara al PASAR a «ready».
+            await ref.update({ textExtractionStatus: 'processing', updatedAt: new Date() });
+            await ref.update({
+                ...camposDeMedicion(medidaNueva, admin.firestore.FieldValue.delete()),
+                textContent: recortado,
+                textExtractionStatus: 'ready',
+                extractedAt: new Date(),
+                pageCount: nuevo.paginas.length,
+                characterCount: nuevo.texto.length,
+                extractedWithGemini: true,
+                extractedWithLlamaParse: false,
+                extractionVersion: VERSION,
+                extractionModel: MODEL_VISION,
+                structuredContentUrl: `gs://${BUCKET}/${mdPath}`,
+                needsReindex: true,
+                wasTruncated: recortado.length < nuevo.texto.length,
+                extractionError: null,
+                extractionFailureReason: null,
+                extractionWarning: null,
+                scriptCensus: censusOf(nuevo.texto),
+                reprocesadoEnLote: { lote: estado.nombre, fecha: new Date(), motivo: cmp.motivo },
+                updatedAt: new Date(),
+            });
+        } catch (err) {
+            // El libro no puede quedar con el md nuevo y el documento viejo, ni
+            // en «processing» (el barrido lo marcaría fallido): se deshace.
+            if (mdActual) await bucket.file(mdPath).save(mdActual, { contentType: 'text/markdown; charset=utf-8' });
+            await ref.update({ textExtractionStatus: d.textExtractionStatus ?? 'ready', updatedAt: new Date() });
+            throw err;
+        }
         console.log(`  escrito; el índice se rehace solo`);
     }
 }

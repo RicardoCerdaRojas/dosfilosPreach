@@ -1,7 +1,7 @@
 import { configDeExtraccion, PROMPT_DE_EXTRACCION, type GeminiPage } from './geminiExtraction';
 import { markdownAPlano } from './markdownAPlano';
 import { pagesToMarkdown, pagesToMarkedText } from './llamaParseClient';
-import { parsearRespuesta, rescatarPaginas } from './rescatarPaginas';
+import { parsearRespuesta, repararEscapes, rescatarPaginas } from './rescatarPaginas';
 import { medirExtraccion, type MedicionDeExtraccion } from './medirExtraccion';
 
 /**
@@ -79,14 +79,19 @@ export function leerRespuestaDeTramo(
     try {
         crudas = parsearRespuesta<{ pages?: typeof crudas }>(texto).pages ?? [];
     } catch {
-        crudas = rescatarPaginas(texto);
+        crudas = rescatarPaginas(repararEscapes(texto));
         rescatado = true;
     }
     if (crudas.length === 0) return { ok: false, motivo: 'sin páginas legibles' };
     const largo = tramo.hasta - tramo.desde + 1;
+    // Si trajo justo las páginas del tramo pero con números fuera de él (p. ej.
+    // el folio impreso), la posición manda: si no, un tramo de una página
+    // volvería siempre «vacío» y se pediría sin fin.
+    const fueraDeRango = (p: { page?: number }) => typeof p.page === 'number' && (p.page < 1 || p.page > largo);
+    const porPosicion = crudas.length === largo && crudas.some(fueraDeRango);
     const paginas = crudas
         .map((p, i) => ({
-            page: tramo.desde - 1 + (typeof p.page === 'number' ? p.page : i + 1),
+            page: tramo.desde - 1 + (!porPosicion && typeof p.page === 'number' ? p.page : i + 1),
             text: typeof p.md === 'string' ? markdownAPlano(p.md) : (p.text ?? ''),
             md: p.md,
         }))
@@ -167,7 +172,12 @@ export function compararExtracciones(
     return { ...base, reemplazar: true, motivo: mejoras.join('; ') };
 }
 
-/** Mide un texto contra el PDF (atajo para el script y las pruebas). */
-export function medirTexto(texto: string, capa: ReadonlyArray<number> | null, respaldo?: string): MedicionDeExtraccion {
-    return medirExtraccion(texto, capa?.length ?? null, capa, respaldo);
+/**
+ * Mide un texto contra el PDF (atajo para el script y las pruebas). El total
+ * viene del PDF (pdf-lib), no de la capa de texto: si la capa no se pudo leer
+ * (plazo vencido), medir sin total daría 0 faltantes en los dos textos y
+ * anularía el guardia de `compararExtracciones`.
+ */
+export function medirTexto(texto: string, totalPaginas: number, capa: ReadonlyArray<number> | null, respaldo?: string): MedicionDeExtraccion {
+    return medirExtraccion(texto, totalPaginas, capa, respaldo);
 }
