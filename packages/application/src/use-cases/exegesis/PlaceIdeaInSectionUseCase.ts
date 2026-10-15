@@ -4,7 +4,7 @@ import {
     insertIdea,
     paragraphHeadings,
     proseParagraphs,
-    versionUnderReview,
+    stepTextForEditing,
     type IdeaPlacement,
     type IExegeticalPaperRepository,
     type IIdeaPlacer,
@@ -63,8 +63,8 @@ export class PlaceIdeaInSectionUseCase {
         if (!paper) throw new Error(`Paper ${input.paperId} not found`);
         const step = paper.steps.find(s => s.id === input.stepId);
         if (!step) throw new Error(`Step ${input.stepId} not found`);
-        const version = versionUnderReview(step);
-        const prosa = applyPageLabelStyle(version?.markdown ?? '', paper.rubric?.formatting ?? null);
+        // El mismo texto que la tarjeta muestra: en el ensamble, el documento.
+        const prosa = applyPageLabelStyle(stepTextForEditing(step, paper.assembledMarkdown), paper.rubric?.formatting ?? null);
 
         const reservation = await ExegesisCreditReservation.open(input.ownerId, 'placeIdeaInSection');
         try {
@@ -84,7 +84,7 @@ export class PlaceIdeaInSectionUseCase {
                 lostCitations: citationsLost(idea, placement.sentence),
                 // Sólo si la oración está de verdad en la sección: no se avisa
                 // de una repetición que el asistente imaginó.
-                alreadyStated: placement.alreadyStated && prosa.includes(placement.alreadyStated) ? placement.alreadyStated : '',
+                alreadyStated: placement.alreadyStated && comparable(prosa).includes(comparable(placement.alreadyStated)) ? placement.alreadyStated : '',
                 placement,
             };
         } catch (err) {
@@ -92,4 +92,16 @@ export class PlaceIdeaInSectionUseCase {
             throw err;
         }
     }
+}
+
+/**
+ * Para decidir si una oración está en el texto: el asistente la copia con
+ * otro espacio, otras comillas o con «p.» (revisión adversarial).
+ */
+function comparable(texto: string): string {
+    return texto.normalize('NFC')
+        .replace(/[“”«»„"]/g, '"').replace(/[‘’‚']/g, "'")
+        .replace(/\bpp?\.\s*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
 }

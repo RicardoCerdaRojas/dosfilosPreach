@@ -37,7 +37,9 @@ export class SaveStepEditUseCase {
         // Sólo se escribía al aceptar, y en el TP #7 las tres ediciones del
         // fundador quedaron en el paso mientras la exportación seguía con la
         // versión generada (leído en producción, 2026-10-15).
-        if (step.kind === 'assembly' && step.accepted) {
+        // Un ensamble vaciado no reemplaza al documento: `SaveAssembledPaperUseCase`
+        // tampoco lo acepta, y el exportador caería a armarlo de los pasos.
+        if (step.kind === 'assembly' && step.accepted?.markdown.trim()) {
             await this.paperRepository.updatePaper(input.ownerId, input.paperId, {
                 assembledMarkdown: step.accepted.markdown,
             });

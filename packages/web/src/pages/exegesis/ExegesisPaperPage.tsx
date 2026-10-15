@@ -804,6 +804,7 @@ function StepsPanel({
                             allSteps={paper.steps}
                             assignmentBrief={paper.assignmentBrief}
                             passage={paper.passage}
+                            assembledMarkdown={paper.assembledMarkdown}
                             hasAssembly={!!paper.assembledMarkdown?.trim()}
                             wordsPerShare={wordsPerShare}
                             formatting={formatting}

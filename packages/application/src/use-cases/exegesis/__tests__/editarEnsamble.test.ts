@@ -25,3 +25,11 @@ describe('editar el ensamble actualiza el documento que se exporta', () => {
         expect(r.updatePaper).not.toHaveBeenCalled();
     });
 });
+
+describe('un ensamble vaciado no reemplaza al documento', () => {
+    it('no escribe un documento vacío', async () => {
+        const r = { saveManualEdit: vi.fn().mockResolvedValue({ id: 's', kind: 'assembly', accepted: { markdown: '  ' } }), updatePaper: vi.fn(), setPhase: vi.fn() };
+        await new SaveStepEditUseCase(r as never).execute({ ownerId: 'o', paperId: 'p', stepId: 's', markdown: '  ' });
+        expect(r.updatePaper).not.toHaveBeenCalled();
+    });
+});

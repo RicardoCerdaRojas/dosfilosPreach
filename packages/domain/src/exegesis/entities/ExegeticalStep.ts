@@ -346,3 +346,22 @@ export function versionUnderReview(
         ? step.accepted ?? step.current
         : step.current ?? step.accepted;
 }
+
+/**
+ * El texto de un paso que se muestra y se edita.
+ *
+ * En el ENSAMBLE aceptado es el documento (`paper.assembledMarkdown`) y no
+ * la versión del paso: otros caminos escriben el documento sin tocar el
+ * paso —recomponer un versículo lo empalma, «Guardar al paper» lo
+ * reemplaza—, y editar desde la versión vieja del paso pisaría ese texto
+ * (revisión adversarial, 2026-10-15). En revisión manda el borrador nuevo.
+ */
+export function stepTextForEditing(
+    step: Pick<ExegeticalStep, 'kind' | 'state' | 'current' | 'accepted'>,
+    assembledMarkdown: string | null | undefined,
+): string {
+    if (step.kind === 'assembly' && step.state !== 'awaiting-review' && assembledMarkdown?.trim()) {
+        return assembledMarkdown;
+    }
+    return versionUnderReview(step)?.markdown ?? '';
+}
