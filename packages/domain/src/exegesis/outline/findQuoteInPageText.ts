@@ -70,20 +70,30 @@ function normalizeForSearch(input: string): NormalizedText {
     const sourceIndex: number[] = [];
 
     for (let i = 0; i < normalized.length; i++) {
-        const folded = fold(normalized[i]!);
-        if (folded === '') continue;
-        chars.push(folded);
-        sourceIndex.push(i);
+        // Un carácter puede plegar a más de una letra: cada una lleva su origen.
+        for (const letra of fold(normalized[i]!)) {
+            chars.push(letra);
+            sourceIndex.push(i);
+        }
     }
 
     return { text: chars.join(''), sourceIndex };
 }
 
-/** Un carácter en su forma comparable, o '' cuando no cuenta. */
+/**
+ * Un carácter en su forma comparable, o '' cuando no cuenta.
+ *
+ * Las marcas no cuentan: acentos, espíritus e iota suscrita del griego, y
+ * niqud y cantilación del hebreo. Así «גיא» encuentra «בְּגֵ֪יא» y
+ * «προ παντων» encuentra «πρὸ πάντων» (pedido del fundador, 2026-10-15). La
+ * ñ se conserva: «año» no es «ano». Igual que `fold` en
+ * `functions/src/library/documentTextSearch.ts` (prueba de paridad allá).
+ */
 function fold(char: string): string {
     if (/[\s -]/.test(char)) return '';
-    if (/[‐-―−]/.test(char)) return '';
+    if (/[‐-―−\u05BE]/.test(char)) return '';   // guiones y el maqaf hebreo
     if (/[‘’‛′]/.test(char)) return "'";
     if (/[“”‟″«»]/.test(char)) return '"';
-    return char.toLowerCase();
+    if (char === 'ñ' || char === 'Ñ') return 'ñ';
+    return char.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[ςϲ]/g, 'σ');
 }
