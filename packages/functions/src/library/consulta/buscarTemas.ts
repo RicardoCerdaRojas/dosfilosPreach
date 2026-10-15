@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { appCheckCallableOptions } from '../../config/appCheckOptions';
 import { consumeRateLimitToken } from '../../shared/rateLimit';
 import { LARGO_EXTRACTO, type FragmentoRecuperado } from './armarConsulta';
-import { leerAlcance } from './consultarBiblioteca';
+import { leerAlcance } from './alcance';
 import { recuperarFragmentos } from './recuperarFragmentos';
 
 /**

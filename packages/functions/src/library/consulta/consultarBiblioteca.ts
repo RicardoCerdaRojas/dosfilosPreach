@@ -6,6 +6,10 @@ import { clientePorRuta, MENSAJE_SIN_RESPUESTA } from '../../llm/clientePorRuta'
 import { armarPedido, leerRespuesta, tituloDeConsulta, type FuenteCitada, type TurnoAnterior } from './armarConsulta';
 import { revisarCuota, sumarConsulta } from './cuotaDeConsultas';
 import { recuperarFragmentos, type Alcance } from './recuperarFragmentos';
+import { leerAlcance } from './alcance';
+
+// Se reexporta: quien lo importaba de acá sigue igual.
+export { leerAlcance };
 
 /**
  * «Consultar» la biblioteca (fase «biblioteca consultable», U2): una pregunta
@@ -17,7 +21,6 @@ import { recuperarFragmentos, type Alcance } from './recuperarFragmentos';
 const COLECCION = 'library_consultations';
 const TIMEOUT_S = 120;
 const MAX_PREGUNTA = 2000;
-const MAX_LIBROS = 200;
 /** Una consulta muy larga se vuelve lenta de leer y pesada de guardar: se empieza otra. */
 export const MAX_TURNOS = 40;
 /**
@@ -45,18 +48,6 @@ export interface TurnoGuardado {
     respuesta: string;
     fuentes: FuenteCitada[];
     creado: Date;
-}
-
-export function leerAlcance(crudo: unknown): Alcance {
-    const a = (crudo ?? {}) as { tipo?: unknown; ids?: unknown };
-    if (a.tipo === 'todo') return { tipo: 'todo' };
-    if (a.tipo === 'libros' && Array.isArray(a.ids)) {
-        const ids = [...new Set(a.ids.filter((x): x is string => typeof x === 'string' && x.trim() !== '').map(x => x.trim()))];
-        if (ids.length === 0) throw new HttpsError('invalid-argument', 'Elige al menos un libro.');
-        if (ids.length > MAX_LIBROS) throw new HttpsError('invalid-argument', `Elige a lo sumo ${MAX_LIBROS} libros.`);
-        return { tipo: 'libros', ids };
-    }
-    throw new HttpsError('invalid-argument', 'alcance inválido');
 }
 
 /**
