@@ -551,3 +551,29 @@ describe('AnalyzeVerseCanonicallyUseCase — una fuente extraída vacía no cubr
         ]);
     });
 });
+
+describe('AnalyzeVerseCanonicallyUseCase — lo que el estudiante editó va con lo fijado', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('el fragmento editado abre el texto de la fuente y entra en la parte reservada', async () => {
+        const conEditado: ProjectSource = {
+            ...makeSource('Tuggy', 'res-a'),
+            excerptRecipe: null,
+            excerpts: [
+                { text: 'EDITADO-POR-EL-ESTUDIANTE', sourceLocation: 'p. 10', userEdited: true },
+                { text: 'del corpus', sourceLocation: 'p. 149', sheet: 149 },
+            ] as never,
+        };
+        const { useCase, analyzer } = buildUseCase({
+            paper: makePaper([conEditado]),
+            analysis: analysisCiting(['Tuggy']),
+            retrievedFor: ['res-a'],
+        });
+
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+
+        const [fuente] = analyzer.analyzeVerse.mock.calls[0][0].sources;
+        expect(fuente.textContent.indexOf('EDITADO-POR-EL-ESTUDIANTE')).toBeLessThan(fuente.textContent.indexOf('texto real de la fuente'));
+        expect(fuente.pinnedChars).toBeGreaterThanOrEqual(fuente.textContent.indexOf('EDITADO-POR-EL-ESTUDIANTE') + 'EDITADO-POR-EL-ESTUDIANTE'.length);
+    });
+});

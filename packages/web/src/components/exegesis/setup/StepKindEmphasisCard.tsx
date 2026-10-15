@@ -69,17 +69,17 @@ export function StepKindEmphasisCard({ paper, kind, icon }: StepKindEmphasisCard
     // Whether the persisted plan diverges from the rubric suggestion.
     // Lets the UI badge "tu plan personalizado" vs "default".
     const isCustomized = useMemo(() => {
-        const sameLength =
-            persistedEmphasis.emphasizedTypes.length === rubricSuggestion.emphasizedTypes.length &&
-            persistedEmphasis.deemphasizedTypes.length === rubricSuggestion.deemphasizedTypes.length;
-        if (!sameLength) return true;
-        const setEq = (a: ReadonlyArray<SourceType>, b: ReadonlyArray<SourceType>) => {
-            const setA = new Set(a);
-            return b.every(x => setA.has(x));
-        };
-        return !(setEq(persistedEmphasis.emphasizedTypes, rubricSuggestion.emphasizedTypes)
-            && setEq(persistedEmphasis.deemphasizedTypes, rubricSuggestion.deemphasizedTypes));
-    }, [persistedEmphasis, rubricSuggestion]);
+        const iguales = (a: ReadonlyArray<SourceType>, b: ReadonlyArray<SourceType>) =>
+            a.length === b.length && b.every(x => a.includes(x));
+        const coincide = (emphasized: ReadonlyArray<SourceType>) =>
+            iguales(persistedEmphasis.emphasizedTypes, emphasized)
+            && iguales(persistedEmphasis.deemphasizedTypes, rubricSuggestion.deemphasizedTypes);
+        // La sugerencia de antes (sin los tipos de la rúbrica) tampoco es una
+        // personalización: los trabajos guardados con ella decían
+        // «personalizado» sin que nadie los tocara (revisión de la fase TP #7).
+        const anterior = getEffectiveSectionStructuralExpectation(paper, kind)?.emphasizedTypes ?? [];
+        return !coincide(rubricSuggestion.emphasizedTypes) && !coincide(anterior);
+    }, [persistedEmphasis, rubricSuggestion, paper, kind]);
 
     // Borrador local: arranca de lo guardado (o de la sugerencia) y solo se
     // resincroniza cuando ese contenido cambia. Ver `useBorradorDeEnfasis`.

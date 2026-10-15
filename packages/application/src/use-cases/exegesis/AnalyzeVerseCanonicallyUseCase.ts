@@ -479,18 +479,22 @@ export class AnalyzeVerseCanonicallyUseCase {
                 const anchor = (c: { sheet: number | null; section: string | null }) =>
                     citationAnchorFor(c, numbering);
                 // Los fragmentos que el usuario editó (o sin hoja) no están en
-                // el corpus: van siempre, después de lo recuperado.
+                // el corpus: van siempre.
                 const siempre = scope?.kind === 'excerpt-sheets' ? scope.alwaysExcerpts : [];
                 const anchorOf = (e: { sourceLocation: string; sheet?: number; section?: string }) =>
                     relabelExcerptAnchor(e.sourceLocation, numbering, e);
                 // Lo fijado va primero: si el prompt tiene que recortar esta fuente,
                 // recorta lo consultado y no las hojas que el estudiante fijó (TP #7).
                 const { fijados, consultados } = fijadoPrimero(retrieved);
-                const parteFijada = fijados.map(c => `--- ${anchor(c)} ---\n${c.text}`).join('\n\n');
+                // Lo editado por el estudiante también es suyo: va con lo fijado,
+                // en la parte reservada, y no al final donde se cortaba primero.
+                const parteFijada = [
+                    ...fijados.map(c => `--- ${anchor(c)} ---\n${c.text}`),
+                    ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
+                ].join('\n\n');
                 const textContent = [
                     ...(parteFijada ? [parteFijada] : []),
                     ...consultados.map(c => `--- ${anchor(c)} ---\n${c.text}`),
-                    ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
                 ].join('\n\n');
                 contexts.push({
                     corpusId: source.corpusId,
@@ -500,7 +504,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                     ...(plannedRole ? { plannedRole } : {}),
                     textContent,
                     ...(parteFijada ? { pinnedChars: parteFijada.length } : {}),
-                    excerptAnchors: [...fijados.map(anchor), ...consultados.map(anchor), ...siempre.map(anchorOf)],
+                    excerptAnchors: [...fijados.map(anchor), ...siempre.map(anchorOf), ...consultados.map(anchor)],
                     priority,
                 });
                 continue;
