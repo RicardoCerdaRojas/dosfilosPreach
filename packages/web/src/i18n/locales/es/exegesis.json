@@ -2142,6 +2142,7 @@
       "composeDevotionalFromAnalyses": "Componer devocional",
       "composeStudyGuideFromAnalyses": "Componer guía de estudio",
       "verifyStepCitations": "Verificar citas (paso)",
+      "placeIdeaInSection": "Agregar una idea (sección)",
       "runCoherencePass": "Revisión de coherencia",
       "extractRubricFromText": "Extraer rúbrica (texto)",
       "extractRubricFromDocument": "Extraer rúbrica (documento)",
@@ -2179,6 +2180,23 @@
       "body": "Vamos a producir un paso por verso del pasaje, más conclusión, introducción y ensamble final."
     },
     "steps": {
+      "addIdea": {
+        "action": "Agregar una idea",
+        "title": "Agregar una idea a {{section}}",
+        "description": "Escribe la idea con su cita. El asistente la redacta en una o dos oraciones y elige dónde va; el resto de la sección no cambia. La ves antes de insertarla.",
+        "label": "La idea y su cita",
+        "placeholder": "Ej.: Mayor muestra el mismo uso del genitivo con paralelos (Mayor, 14).",
+        "propose": "Proponer",
+        "again": "Proponer otra",
+        "insert": "Insertar",
+        "cancel": "Cancelar",
+        "previewTitle": "Así queda el párrafo",
+        "atParagraphEnd": "Va al final del párrafo: no se halló la oración de referencia.",
+        "lostCitations": "La redacción perdió estas citas: {{citations}}. Pide otra propuesta o revísala antes de insertar.",
+        "inserted": "Idea agregada",
+        "failed": "No se pudo proponer la idea. Intenta de nuevo.",
+        "insertFailed": "No se pudo guardar la sección. Intenta de nuevo."
+      },
       "openCitation": "Ver en el libro",
       "startCta": "Iniciar generación",
       "generating": "Generando...",

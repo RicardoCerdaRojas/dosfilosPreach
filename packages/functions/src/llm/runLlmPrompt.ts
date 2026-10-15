@@ -118,6 +118,8 @@ export const PROXY_FEATURES = [
     // Todos corren en `gemini-2.5-pro` por defecto y traen `topP` explícito, así
     // que caen en la rama de config completa.
     'exegesis.composeVerse',
+    // «Agregar una idea a esta sección»: una o dos oraciones y dónde van.
+    'exegesis.placeIdea',
     'exegesis.composeIntroduction',
     'exegesis.composeConclusion',
     'exegesis.composeSermon',

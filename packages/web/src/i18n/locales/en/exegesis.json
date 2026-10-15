@@ -2142,6 +2142,7 @@
       "composeDevotionalFromAnalyses": "Compose devotional",
       "composeStudyGuideFromAnalyses": "Compose study guide",
       "verifyStepCitations": "Verify citations (step)",
+      "placeIdeaInSection": "Add an idea (section)",
       "runCoherencePass": "Coherence review",
       "extractRubricFromText": "Extract rubric (text)",
       "extractRubricFromDocument": "Extract rubric (document)",
@@ -2179,6 +2180,23 @@
       "body": "We'll produce one step per verse of the passage, plus conclusion, introduction, and final assembly."
     },
     "steps": {
+      "addIdea": {
+        "action": "Add an idea",
+        "title": "Add an idea to {{section}}",
+        "description": "Write the idea with its citation. The assistant phrases it in one or two sentences and picks where it goes; the rest of the section stays the same. You see it before inserting.",
+        "label": "The idea and its citation",
+        "placeholder": "E.g.: Mayor shows the same genitive use with parallels (Mayor, 14).",
+        "propose": "Propose",
+        "again": "Propose another",
+        "insert": "Insert",
+        "cancel": "Cancel",
+        "previewTitle": "This is how the paragraph reads",
+        "atParagraphEnd": "It goes at the end of the paragraph: the reference sentence wasn't found.",
+        "lostCitations": "The wording dropped these citations: {{citations}}. Ask for another proposal or check it before inserting.",
+        "inserted": "Idea added",
+        "failed": "Couldn't propose the idea. Try again.",
+        "insertFailed": "Couldn't save the section. Try again."
+      },
       "openCitation": "See it in the book",
       "startCta": "Start generation",
       "generating": "Generating...",

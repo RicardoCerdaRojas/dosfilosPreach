@@ -18,6 +18,7 @@ import {
     GeminiDevotionalComposer,
     GeminiIntroductionComposer,
     GeminiVerseAcademicComposer,
+    GeminiIdeaPlacer,
     GeminiExegesisOrchestrator,
     GeminiSermonComposer,
     GeminiStudyGuideComposer,
@@ -115,6 +116,7 @@ import {
     ComposeIntroductionFromAnalysesUseCase,
     SetStepInclusionUseCase,
     ComposeVerseAcademicProseUseCase,
+    PlaceIdeaInSectionUseCase,
     ComposeSermonFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,
     GenerateStepUseCase,
@@ -267,6 +269,7 @@ class ExegesisService {
     // PERSISTS on that version's `markdown` field so re-renders are
     // free until the analysis changes.
     public composeVerseAcademicProse: ComposeVerseAcademicProseUseCase;
+    public placeIdeaInSection: PlaceIdeaInSectionUseCase;
 
     // Ministry composers (Phase 6) — sermon / devotional / study
     // guide composed from the same `CanonicalVerseAnalysis` artifact.
@@ -671,6 +674,12 @@ class ExegesisService {
             termGlossaryRepository,
             voiceProfileRepository,
             proseReader,
+        );
+
+        // «Agregar una idea»: una o dos oraciones y dónde van (TP #6, #22).
+        this.placeIdeaInSection = new PlaceIdeaInSectionUseCase(
+            paperRepository,
+            new GeminiIdeaPlacer(exegesisModelId),
         );
 
         // Ministry composers (sermon / devotional / study guide).
