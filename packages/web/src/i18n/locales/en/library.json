@@ -115,6 +115,8 @@
     "metaPagesMissing_one": "{{count}} unread",
     "metaPagesMissing_other": "{{count}} unread",
     "metaPagesMissingDetail": "These pages could not be read: {{paginas}}. This is usually a scanning defect, not the book. A citation to one of them will have no text behind it.",
+    "metaTextEmpty": "unstructured text",
+    "metaTextEmptyDetail": "This book's page-by-page text came out empty; searches use a backup copy, which may be cut short in long books. Reprocessing is recommended.",
     "metaPagesTitleActual": "Actual pages",
     "metaPagesTitleEstimated": "Estimated pages (approx.)",
     "actions": {

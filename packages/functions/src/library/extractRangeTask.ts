@@ -2,6 +2,7 @@ import { onTaskDispatched } from 'firebase-functions/v2/tasks';
 import { getFunctions } from 'firebase-admin/functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from './medirExtraccion';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -323,6 +324,11 @@ async function ensamblarYGuardar(
         return;
     }
 
+    // Lo que faltó, medido contra el PDF (auditoría 2026-10-15): además de las
+    // páginas que ningún tramo devolvió, las que volvieron vacías teniendo
+    // texto en el PDF. Si el PDF no se puede leer, quedan las ausentes.
+    const medicion = medirExtraccion(libro.markdown, totalPaginas, await capaDelPdfDelRecurso(ref), libro.text);
+
     const bucket = getStorage().bucket();
     const mdPath = `users/${userId}/library/${resourceId}/structured.md`;
     await bucket.file(mdPath).save(libro.markdown, {
@@ -351,7 +357,7 @@ async function ensamblarYGuardar(
         // Qué páginas no volvieron. El piso de cobertura ya decidió que el
         // libro sirve; esto deja constancia de lo que igual se perdió, para que
         // una cita a una página ausente pueda avisarse.
-        paginasFaltantes: libro.faltantes.total > 0 ? libro.faltantes : FieldValue.delete(),
+        ...camposDeMedicion(medicion, FieldValue.delete()),
         // Este camino no escribía el censo, así que un libro largo quedaba sin
         // él —o con el de su extracción anterior— y la tarjeta juzgaba texto
         // que ya no existía.
@@ -367,7 +373,7 @@ async function ensamblarYGuardar(
         model: MODEL_VISION,
         pagesExpected: totalPaginas,
         pagesEmitted: libro.pageCount,
-        pagesMissing: libro.faltantes.total,
+        pagesMissing: medicion.paginasFaltantes.total,
         text: libro.text,
     });
 
@@ -387,4 +393,17 @@ async function ensamblarYGuardar(
         console.warn(`[Rango] ${resourceId}: no se pudo descontar el saldo:`, err);
     }
     await limpiarRangos(userId, resourceId, runId);
+}
+
+/** La capa de texto del PDF del recurso, para medir; `null` si no se puede. */
+async function capaDelPdfDelRecurso(ref: FirebaseFirestore.DocumentReference): Promise<number[] | null> {
+    try {
+        const snap = await ref.get();
+        const { bucket, path: ruta } = parseFirebaseStorageLocation(snap.data()?.storageUrl || '', getStorage().bucket().name);
+        const [buffer] = await getStorage().bucket(bucket).file(ruta).download();
+        return await capaDeTextoPorPagina(buffer, 120_000);
+    } catch (err) {
+        console.warn('[Rango] no se pudo leer el PDF para medir', err instanceof Error ? err.message : err);
+        return null;
+    }
 }

@@ -193,6 +193,17 @@ export interface LibraryResource {
         paginas: number[];
     };
     /**
+     * Páginas del PDF, contadas en el PDF. `pageCount` es lo que DEVOLVIÓ el
+     * extractor: con él un hueco interno no se veía (auditoría 2026-10-15).
+     */
+    pdfPageCount?: number;
+    /**
+     * El `structured.md` trae las marcas de página y ningún texto (13 libros
+     * de LlamaParse en la auditoría). El índice sale entonces del
+     * `textContent`, que puede estar truncado.
+     */
+    textoEstructuradoVacio?: boolean;
+    /**
      * Avance de una extracción que corre por rangos en una cola.
      *
      * Un libro largo dejó de extraerse en una invocación: ahora es una cadena
@@ -547,6 +558,10 @@ export class LibraryResourceEntity implements LibraryResource {
     public extractionProgress?: LibraryResource['extractionProgress'];
     /** Páginas que la extracción no consiguió. Ver `LibraryResource`. */
     public paginasFaltantes?: LibraryResource['paginasFaltantes'];
+    /** Páginas contadas en el PDF. Ver `LibraryResource`. */
+    public pdfPageCount?: number;
+    /** El texto estructurado no trae texto. Ver `LibraryResource`. */
+    public textoEstructuradoVacio?: boolean;
     /**
      * ADR-006 / PR 0.3 — rights-aware citation metadata. Owned by
      * deserialization; legacy docs default to `license: 'unknown'` +

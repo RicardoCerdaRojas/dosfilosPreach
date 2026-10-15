@@ -201,7 +201,8 @@ export function ResourceCard({
     const fileSizeMB = resource.sizeBytes > 0
         ? (resource.sizeBytes / (1024 * 1024)).toFixed(2)
         : null;
-    const pageCount = resource.pageCount || resource.metadata?.pageCount;
+    // Las del PDF, si se contaron: `pageCount` son las que devolvió el extractor.
+    const pageCount = resource.pdfPageCount || resource.pageCount || resource.metadata?.pageCount;
     // Sólo se muestra si de verdad falta algo: un «0 páginas perdidas» en cada
     // tarjeta enseñaría a ignorar el aviso justo cuando importa.
     const faltantes = resource.paginasFaltantes && resource.paginasFaltantes.total > 0
@@ -609,6 +610,14 @@ export function ResourceCard({
                                     <span className="mx-1.5 text-border">·</span>
                                     <span className="text-warning-subtle-foreground" title={faltantesDetalle}>
                                         {t('card.metaPagesMissing', { count: faltantes.total })}
+                                    </span>
+                                </>
+                            ) : null}
+                            {resource.textoEstructuradoVacio ? (
+                                <>
+                                    <span className="mx-1.5 text-border">·</span>
+                                    <span className="text-warning-subtle-foreground" title={t('card.metaTextEmptyDetail')}>
+                                        {t('card.metaTextEmpty')}
                                     </span>
                                 </>
                             ) : null}

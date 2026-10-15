@@ -74,7 +74,11 @@ export function renglonesDePagina(items: ReadonlyArray<ItemDeTexto>): string {
  * `pdfjs` descifra por su cuenta los PDF con protección de permisos —los
  * libros comprados—, que es lo que `pdf-lib` no sabe hacer.
  */
-export async function leerPaginasDelPdf(buffer: Buffer): Promise<PaginaDePdf[]> {
+export async function leerPaginasDelPdf(
+    buffer: Buffer,
+    /** Si vence, se deja de leer y se libera el documento (`medirExtraccion`). */
+    vence?: number,
+): Promise<PaginaDePdf[]> {
     // Importación diferida: `pdfjs` es un módulo ES y este paquete compila a
     // CommonJS. Cargarlo al usarlo también evita pagarlo en cada arranque en
     // frío de las funciones que nunca leen un PDF.
@@ -88,6 +92,10 @@ export async function leerPaginasDelPdf(buffer: Buffer): Promise<PaginaDePdf[]> 
 
     const paginas: PaginaDePdf[] = [];
     for (let numero = 1; numero <= doc.numPages; numero++) {
+        if (vence !== undefined && Date.now() > vence) {
+            await doc.destroy();
+            throw new Error(`se dejó de leer el PDF en la página ${numero} de ${doc.numPages}: se acabó el tiempo`);
+        }
         const pagina = await doc.getPage(numero);
         const contenido = await pagina.getTextContent();
         paginas.push({ numero, text: renglonesDePagina(contenido.items as ItemDeTexto[]) });
