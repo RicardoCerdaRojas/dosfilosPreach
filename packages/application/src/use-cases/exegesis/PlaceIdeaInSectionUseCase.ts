@@ -2,6 +2,7 @@ import {
     applyPageLabelStyle,
     citationsLost,
     insertIdea,
+    paragraphHeadings,
     proseParagraphs,
     versionUnderReview,
     type IdeaPlacement,
@@ -26,6 +27,8 @@ export interface PlaceIdeaInSectionOutput {
     paragraph: string;
     /** Falso si la idea fue al final del párrafo porque la referencia no estaba. */
     anchored: boolean;
+    /** La oración de la sección que ya dice la idea, o vacía. */
+    alreadyStated: string;
     /** Citas que el estudiante escribió y la redacción perdió. */
     lostCitations: string[];
     /**
@@ -68,6 +71,7 @@ export class PlaceIdeaInSectionUseCase {
             reservation.markLlmContacted();
             const { placement } = await this.placer.placeIdea({
                 paragraphs: proseParagraphs(prosa),
+                headings: paragraphHeadings(prosa),
                 idea,
                 language: paper.displayLanguage,
             });
@@ -78,6 +82,9 @@ export class PlaceIdeaInSectionUseCase {
                 paragraph: r.paragraph,
                 anchored: r.anchored,
                 lostCitations: citationsLost(idea, placement.sentence),
+                // Sólo si la oración está de verdad en la sección: no se avisa
+                // de una repetición que el asistente imaginó.
+                alreadyStated: placement.alreadyStated && prosa.includes(placement.alreadyStated) ? placement.alreadyStated : '',
                 placement,
             };
         } catch (err) {

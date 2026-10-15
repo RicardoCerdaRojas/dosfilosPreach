@@ -40,3 +40,19 @@ describe('PlaceIdeaInSectionUseCase', () => {
         expect(repo.saveManualEdit).not.toHaveBeenCalled();
     });
 });
+
+describe('lo ya dicho se avisa sólo si está de verdad en la sección', () => {
+    const correr = async (alreadyStated: string) => {
+        const repo = { getPaper: vi.fn().mockResolvedValue(paper) };
+        const placer = { placeIdea: vi.fn().mockResolvedValue({
+            placement: { paragraphIndex: 0, afterSentence: '', sentence: 'S.', alreadyStated }, tokensUsed: 1, modelId: 'm',
+        }) };
+        return new PlaceIdeaInSectionUseCase(repo as never, placer as never).execute({ ownerId: 'o', paperId: 'p', stepId: 's', idea: 'x' });
+    };
+    it('una oración que está en la sección, se avisa', async () => {
+        expect((await correr('La mansedumbre es sabiduría.')).alreadyStated).toBe('La mansedumbre es sabiduría.');
+    });
+    it('una que el asistente imaginó, no', async () => {
+        expect((await correr('Esto no está.')).alreadyStated).toBe('');
+    });
+});

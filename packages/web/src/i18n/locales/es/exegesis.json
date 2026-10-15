@@ -2192,6 +2192,8 @@
         "cancel": "Cancelar",
         "previewTitle": "Así queda el párrafo",
         "atParagraphEnd": "Va al final del párrafo: no se halló la oración de referencia.",
+        "alreadyStated": "La sección ya dice esto: «{{sentence}}». Insertarla la repetiría.",
+        "insertAnyway": "Insertar igual",
         "assembled": "El trabajo ya está ensamblado: después de insertar, vuelve a ensamblar para que el documento lo lleve.",
         "lostCitations": "La redacción perdió estas citas: {{citations}}. Pide otra propuesta o revísala antes de insertar.",
         "inserted": "Idea agregada",

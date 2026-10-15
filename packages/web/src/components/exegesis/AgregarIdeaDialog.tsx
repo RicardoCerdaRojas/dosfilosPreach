@@ -109,6 +109,12 @@ export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, section
                         <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm leading-relaxed text-foreground">
                             <ParrafoConIdea parrafo={propuesta.paragraph} oracion={propuesta.sentence} />
                         </p>
+                        {propuesta.alreadyStated && (
+                            <p className="flex items-start gap-1.5 rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-[11px] text-warning-subtle-foreground">
+                                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                {t('detail.steps.addIdea.alreadyStated', { sentence: propuesta.alreadyStated })}
+                            </p>
+                        )}
                         {assembled && (
                             <p className="text-[11px] text-muted-foreground">{t('detail.steps.addIdea.assembled')}</p>
                         )}
@@ -133,9 +139,9 @@ export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, section
                         {t(propuesta ? 'detail.steps.addIdea.again' : 'detail.steps.addIdea.propose')}
                     </Button>
                     {propuesta && (
-                        <Button type="button" onClick={insertar} disabled={guardando || pidiendo}>
+                        <Button type="button" variant={propuesta.alreadyStated ? 'outline' : 'default'} onClick={insertar} disabled={guardando || pidiendo}>
                             {guardando ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1.5" />}
-                            {t('detail.steps.addIdea.insert')}
+                            {t(propuesta.alreadyStated ? 'detail.steps.addIdea.insertAnyway' : 'detail.steps.addIdea.insert')}
                         </Button>
                     )}
                 </DialogFooter>
