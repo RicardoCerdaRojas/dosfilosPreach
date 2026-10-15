@@ -234,7 +234,14 @@ async function reintentar(): Promise<void> {
     const reintentables = fallos.filter(f => !abandonar.includes(f));
     if (reintentables.length === 0) { guardarEstado(estado); console.log(`No hay tramos que reintentar (${abandonar.length} páginas abandonadas).`); return; }
     // Un tramo que falló entero se parte en dos; uno incompleto pide sólo lo que faltó.
-    const nuevos: TramoDelLote[] = reintentables.flatMap(f => (f.estado === 'incompleto' ? f.faltan ?? [] : partirTramo(f))
+    // Si lo que falta es el tramo entero (volvió todo en blanco), se parte:
+    // pedirlo igual otra vez no avanza nunca.
+    const aPedir = (f: TramoDelLote): Tramo[] => {
+        const faltan = f.estado === 'incompleto' ? f.faltan ?? [] : [];
+        const sinAvance = faltan.length === 0 || (faltan.length === 1 && faltan[0]!.desde === f.desde && faltan[0]!.hasta === f.hasta);
+        return sinAvance ? partirTramo(f) : faltan;
+    };
+    const nuevos: TramoDelLote[] = reintentables.flatMap(f => aPedir(f)
         .map(t => ({ ...t, rid: f.rid, ronda, indice: -1, estado: 'pendiente' as const, intento: sola(t) && sola(f) ? (f.intento ?? 1) + 1 : 1 })));
     reintentables.forEach(f => { f.estado = 'reemplazado'; f.motivo = `partido en la ronda ${ronda}`; });
     nuevos.forEach((t, i) => { t.indice = estado.tramos.length + i; });
