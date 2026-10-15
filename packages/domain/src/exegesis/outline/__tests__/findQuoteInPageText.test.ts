@@ -31,6 +31,20 @@ describe('findQuoteInPageText', () => {
         expect(match).not.toBeNull();
     });
 
+    it('resalta el hebreo y el griego escritos sin vocales ni acentos (2026-10-15)', () => {
+        const hebreo = 'גַּ֘ם כִּֽי־אֵלֵ֨ךְ בְּגֵ֪יא צַלְמָ֡וֶת';
+        const h = findQuoteInPageText('גיא', hebreo, { ignorarMarcas: true });
+        expect(h && hebreo.slice(h.start, h.end)).toBe('גֵ֪יא');
+        const griego = 'sounded by the Adjunct πρὸ πάντων which appears';
+        const g = findQuoteInPageText('προ παντων', griego, { ignorarMarcas: true });
+        expect(g && griego.slice(g.start, g.end)).toBe('πρὸ πάντων');
+    });
+
+    it('una cita textual exige sus vocales: otra vocalización no se da por hallada', () => {
+        expect(findQuoteInPageText('דִּבֶּר', 'וַיֹּאמֶר דָּבָר אֶחָד')).toBeNull();
+        expect(findQuoteInPageText('דָּבָר', 'וַיֹּאמֶר דָּבָר אֶחָד')).not.toBeNull();
+    });
+
     it('no encuentra una frase reescrita', () => {
         const page = 'Puesto que el grupo denota un servicio restrictivo, es el término apropiado.';
 

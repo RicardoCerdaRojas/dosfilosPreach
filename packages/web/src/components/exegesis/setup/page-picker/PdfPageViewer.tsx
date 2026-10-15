@@ -325,7 +325,7 @@ export function PdfPageViewer({
                     let count = 0;
                     let from = 0;
                     while (from < pageText.length) {
-                        const hit = findQuoteInPageText(searchTerm!, pageText.slice(from));
+                        const hit = findQuoteInPageText(searchTerm!, pageText.slice(from), { ignorarMarcas: true });
                         if (!hit) break;
                         boxes.push(...bandsFor(from + hit.start, from + hit.end));
                         count += 1;

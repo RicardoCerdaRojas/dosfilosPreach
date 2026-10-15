@@ -27,6 +27,8 @@ export interface NumberingState {
     lastSheet: number;
     /** `null` cuando no hay nada guardado y lo que se ve es una deducción del momento. */
     storedOrigin: PageNumbering['origin'] | null;
+    /** De quién es el libro (`userId` del recurso): «Preguntar a este libro» sólo busca en los propios. */
+    ownerId: string | null;
 }
 
 /**
@@ -69,6 +71,7 @@ export function usePageNumbering(resourceId: string | null) {
                 numbering,
                 lastSheet,
                 storedOrigin: stored?.origin ?? null,
+                ownerId: (resource as { userId?: string } | null)?.userId ?? null,
                 points: calibrationSheets(numbering, lastSheet).map(sheet => ({
                     sheet,
                     proposed: printedLabelIn(numbering, sheet),

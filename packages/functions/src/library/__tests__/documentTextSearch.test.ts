@@ -18,17 +18,30 @@ describe('paridad con el buscador de la hoja abierta (@dosfilos/domain)', () => 
         ['restored', 'make re-\nstored Jacob to him'],           // guion de renglón
         ['la casa', 'entró en lacasa'],                          // espacios
         ['"cita"', 'una «cita» entre comillas'],                 // comillas
+        // Sin vocales ni acentos (pedido del fundador, 2026-10-15).
+        ['גיא', 'גַּ֘ם כִּֽי־אֵלֵ֨ךְ בְּגֵ֪יא צַלְמָ֡וֶת'],              // niqud y cantilación (BHS, Sal 23:4)
+        ['כי אלך', 'גַּ֘ם כִּֽי־אֵלֵ֨ךְ בְּגֵ֪יא'],                     // maqaf
+        ['προ παντων', 'There is a new note sounded by πρὸ πάντων here'], // acentos griegos
+        ['λογος', 'ὁ Λόγος σὰρξ ἐγένετο'],                         // mayúscula y sigma final
+        ['τῷ λογῳ', 'ἐν τῷ λόγῳ'],                                   // iota suscrita
+        ['exegesis', 'la exégesis del pasaje'],                    // acentos latinos
     ];
 
     it.each(casos)('«%s» se encuentra en los dos lados', (termino, texto) => {
         expect(occurrencesIn(texto, foldForSearch(termino).text).length).toBeGreaterThan(0);
-        expect(findQuoteInPageText(termino, texto)).not.toBeNull();
+        // El visor busca lo que el lector escribe ignorando marcas, como el servidor.
+        expect(findQuoteInPageText(termino, texto, { ignorarMarcas: true })).not.toBeNull();
+    });
+
+    it('la ñ no se pliega: «año» no encuentra «ano»', () => {
+        expect(occurrencesIn('el ano', foldForSearch('año').text)).toEqual([]);
+        expect(findQuoteInPageText('año', 'el ano', { ignorarMarcas: true })).toBeNull();
     });
 
     it('lo que no está, no está en ninguno de los dos', () => {
         const texto = 'The Hiphil delocutive pertains to the causing of an event.';
         expect(occurrencesIn(texto, foldForSearch('Polel').text)).toEqual([]);
-        expect(findQuoteInPageText('Polel', texto)).toBeNull();
+        expect(findQuoteInPageText('Polel', texto, { ignorarMarcas: true })).toBeNull();
     });
 });
 
@@ -41,6 +54,12 @@ describe('occurrencesIn', () => {
         const texto = 'antes del Polel';
         const [at] = occurrencesIn(texto, foldForSearch('Polel').text);
         expect(texto.slice(at!, at! + 5)).toBe('Polel');
+    });
+
+    it('sin vocales, la posición cae sobre la palabra con sus puntos', () => {
+        const texto = 'גַּ֘ם כִּֽי־אֵלֵ֨ךְ בְּגֵ֪יא צַלְמָ֡וֶת';
+        const [at] = occurrencesIn(texto, foldForSearch('גיא').text);
+        expect(texto.normalize('NFC').slice(at!, at! + 5).startsWith('ג')).toBe(true);
     });
 
     it('un término vacío no encuentra nada', () => {

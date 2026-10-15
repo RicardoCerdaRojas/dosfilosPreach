@@ -103,5 +103,9 @@ export function useCitationSheet(paperId: string | null, citation: CitationTarge
         ),
         goTo,
         goToPageInput,
+        /** La numeración del libro tal como la ve el visor (guardada o deducida; quien cita decide si le basta). */
+        numbering: numberingState.data?.numbering ?? null,
+        /** De quién es el libro; `null` mientras carga o si no se sabe. */
+        ownerId: numberingState.data?.ownerId ?? null,
     };
 }

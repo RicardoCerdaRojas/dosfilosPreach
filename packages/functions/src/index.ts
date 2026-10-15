@@ -35,6 +35,9 @@ export { deleteCanvasComponent } from './teaching-suite/deleteCanvasComponent';
 export { getExegesisPapersSummary } from './exegesis/getExegesisPapersSummary';
 export { getSermonsListSummary } from './sermon/getSermonsListSummary';
 export { retrieveChunks } from './library/retrieveChunks';
+// Fase «biblioteca consultable» (2026-10-15): preguntar a los libros del usuario.
+export { consultarBiblioteca } from './library/consulta/consultarBiblioteca';
+export { buscarTemasEnBiblioteca } from './library/consulta/buscarTemas';
 // Lectura estructural del índice: tabla de contenidos y texto por tramo.
 // Complementan a `retrieveChunks` — responden "qué parte de este libro
 // trata este pasaje" en vez de "qué se parece a esta consulta".
