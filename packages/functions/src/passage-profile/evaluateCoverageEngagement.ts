@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { shadowLlmAllowed } from '../llm/llmBudget';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
-import { AnthropicLlmClient } from '../llm/AnthropicLlmClient';
+import { clientePorRuta } from '../llm/clientePorRuta';
 import { judgeEngagement, type EngagementInput } from './coverageEngagement';
 
 /**
@@ -19,14 +19,10 @@ function str(v: unknown): string {
 }
 
 export const evaluateCoverageEngagement = onCall(
-    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 60 },
+    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY'], timeoutSeconds: 60 },
     async (request) => {
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'User must be authenticated');
-        }
-        const anthropicKey = process.env.ANTHROPIC_API_KEY;
-        if (!anthropicKey) {
-            throw new HttpsError('failed-precondition', 'ANTHROPIC_API_KEY secret not configured');
         }
         const data = request.data ?? {};
         const input: EngagementInput = {
@@ -54,9 +50,9 @@ export const evaluateCoverageEngagement = onCall(
         }
 
         try {
-            const sonnet = new AnthropicLlmClient(anthropicKey, undefined, undefined, {
-                feature: 'evaluateCoverageEngagement',
-                userId: request.auth?.uid,
+            const sonnet = await clientePorRuta({
+                usage: { feature: 'evaluateCoverageEngagement', userId: request.auth?.uid },
+                timeoutSeconds: 60,
             });
             const judgment = await judgeEngagement(sonnet, input);
             return { judgment, modelTier: 'sonnet' as const };

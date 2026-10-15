@@ -65,7 +65,7 @@ export class OpenAiLlmClient implements ILlmClient {
                 : quiereJson ? { text: { format: { type: 'json_object' } } } : {}),
         };
 
-        const body = await this.pedir(cuerpo);
+        const body = await this.pedir(cuerpo, options.signal);
         const uso = body.usage ?? {};
         this.lastTotalTokens = typeof uso.total_tokens === 'number' ? uso.total_tokens : null;
         this.lastUsage = { input: uso.input_tokens ?? 0, output: uso.output_tokens ?? 0 };
@@ -95,7 +95,7 @@ export class OpenAiLlmClient implements ILlmClient {
         }
     }
 
-    private async pedir(cuerpo: unknown): Promise<RespuestaOpenAi> {
+    private async pedir(cuerpo: unknown, senal?: AbortSignal): Promise<RespuestaOpenAi> {
         let ultimo: unknown;
         for (let intento = 1; intento <= REINTENTOS; intento++) {
             const res = await this.fetchImpl(URL_RESPONSES, {
@@ -104,7 +104,7 @@ export class OpenAiLlmClient implements ILlmClient {
                 body: JSON.stringify(cuerpo),
                 // Un pedido colgado no llegaba nunca al respaldo: corría hasta
                 // los 540 s de la función. A los 300 s se corta y cae a Gemini.
-                signal: AbortSignal.timeout(ESPERA_OPENAI_MS),
+                signal: senal ?? AbortSignal.timeout(ESPERA_OPENAI_MS),
             });
             if (res.ok) return (await res.json()) as RespuestaOpenAi;
 

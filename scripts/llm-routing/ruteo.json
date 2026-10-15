@@ -298,6 +298,46 @@
       "provider": "openai",
       "model": "gpt-6-luna",
       "reasoning": "none"
+    },
+    "adjudicateAnchorRefutes": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "reviewVerifiedMisreading": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "evaluateCoverageEngagement": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "evaluateGenreEngagement": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "evaluateClaimSourceFidelity.escalation": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "sanitizeSermonCitations": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "teachingSuite.generarPlan": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
+    },
+    "teachingSuite.proponerOutlineCurso": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     }
   }
 }

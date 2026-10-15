@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
 import type { ILlmClient } from '../llm/LlmClient';
 import { GeminiLlmClient } from '../llm/GeminiLlmClient';
-import { AnthropicLlmClient } from '../llm/AnthropicLlmClient';
+import { clientePorRuta } from '../llm/clientePorRuta';
 import {
     buildFidelityFlashBatchPrompt,
     buildFidelitySonnetEscalationPrompt,
@@ -130,7 +130,7 @@ interface EvaluateResult {
 export const evaluateClaimSourceFidelity = onCall(
     {
         ...appCheckCallableOptions(),
-        secrets: ['GEMINI_API_KEY', 'ANTHROPIC_API_KEY'],
+        secrets: ['GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY'],
         timeoutSeconds: 120,
     },
     async (request): Promise<EvaluateResult> => {
@@ -138,12 +138,8 @@ export const evaluateClaimSourceFidelity = onCall(
             throw new HttpsError('unauthenticated', 'User must be authenticated');
         }
         const geminiKey = process.env.GEMINI_API_KEY;
-        const anthropicKey = process.env.ANTHROPIC_API_KEY;
         if (!geminiKey) {
             throw new HttpsError('failed-precondition', 'GEMINI_API_KEY secret not configured');
-        }
-        if (!anthropicKey) {
-            throw new HttpsError('failed-precondition', 'ANTHROPIC_API_KEY secret not configured');
         }
 
         const data = request.data ?? {};
@@ -179,9 +175,9 @@ export const evaluateClaimSourceFidelity = onCall(
             feature: 'evaluateClaimSourceFidelity',
             userId: request.auth?.uid,
         });
-        const sonnet: ILlmClient = new AnthropicLlmClient(anthropicKey, undefined, undefined, {
-            feature: 'evaluateClaimSourceFidelity.escalation',
-            userId: request.auth?.uid,
+        const sonnet: ILlmClient = await clientePorRuta({
+            usage: { feature: 'evaluateClaimSourceFidelity.escalation', userId: request.auth?.uid },
+            timeoutSeconds: 120,
         });
 
         const generatedAtMs = Date.now();
@@ -266,7 +262,7 @@ async function runMarkerFidelity(
                     prompt,
                     temperature: 0.2,
                     responseMimeType: 'application/json',
-                    maxOutputTokens: 1024,
+                    maxOutputTokens: 4096, // Sol razona dentro del mismo tope (revisión de #769).
                 });
                 const re = parseSonnetVerdict(raw);
                 return {

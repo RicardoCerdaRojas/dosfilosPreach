@@ -20,7 +20,7 @@ export const generarPlanJob = onDocumentCreated(
     region: 'us-central1',
     timeoutSeconds: 540,
     memory: '512MiB',
-    secrets: ['ANTHROPIC_API_KEY'],
+    secrets: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY'],
     retry: false,
   },
   async (event) => {
@@ -44,12 +44,6 @@ export const generarPlanJob = onDocumentCreated(
     const fail = (mensaje: string) =>
       snap.ref.set({ estado: 'error', error: mensaje, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
 
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!anthropicKey) {
-      console.error(`[generarPlanJob] ${jobId}: ANTHROPIC_API_KEY no configurada`);
-      await fail('Servicio de generación no disponible. Reintenta más tarde.');
-      return;
-    }
 
     const db = getFirestore();
     try {
@@ -69,7 +63,6 @@ export const generarPlanJob = onDocumentCreated(
       }
 
       const plan = await generarPlan({
-        anthropicKey,
         estudio: material,
         genero,
         modalidad: (job.modalidad as Modalidad | null) ?? undefined,

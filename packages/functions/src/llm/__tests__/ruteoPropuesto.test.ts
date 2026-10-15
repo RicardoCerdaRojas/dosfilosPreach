@@ -4,6 +4,7 @@ import * as path from 'path';
 import { leerRutaPorDefecto, leerTabla } from '../ruteoDeModelos';
 import { PROXY_FEATURES } from '../runLlmPrompt';
 import { LLM_PRICING } from '../llmCost';
+import { FUNCIONES_DEL_SERVIDOR } from '../clientePorRuta';
 
 /**
  * La tabla que se carga en `config/llmRouting` vive versionada en
@@ -21,8 +22,8 @@ describe('la tabla de ruteo propuesta', () => {
         expect(Object.keys(tabla).length).toBe(Object.keys(doc.features).length);
     });
 
-    it('cada función existe en el proxy', () => {
-        const conocidas = new Set<string>(PROXY_FEATURES);
+    it('cada función existe en el proxy o entre las del servidor', () => {
+        const conocidas = new Set<string>([...PROXY_FEATURES, ...FUNCIONES_DEL_SERVIDOR]);
         const desconocidas = Object.keys(tabla).filter((f) => !conocidas.has(f));
         expect(desconocidas, `funciones que el proxy no conoce: ${desconocidas.join(', ')}`).toEqual([]);
     });
@@ -42,5 +43,14 @@ describe('la tabla de ruteo propuesta', () => {
         const porDefecto = leerRutaPorDefecto(doc);
         expect(porDefecto?.model).toBe('gpt-6-luna');
         expect(porDefecto!.model in LLM_PRICING).toBe(true);
+    });
+
+    it('las funciones del servidor tienen ruta propia (sin ella seguirían en Sonnet, no en la de por defecto)', () => {
+        for (const f of FUNCIONES_DEL_SERVIDOR) expect(tabla[f], f).toBeDefined();
+    });
+
+    it('ninguna función queda en Anthropic (decisión del fundador, 2026-10-15)', () => {
+        const enAnthropic = Object.entries(tabla).filter(([, r]) => r.provider === 'anthropic').map(([f]) => f);
+        expect(enAnthropic).toEqual([]);
     });
 });
