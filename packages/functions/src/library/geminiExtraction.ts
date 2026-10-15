@@ -8,7 +8,7 @@ import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { MODEL_VISION } from '../llm/modelCatalog';
 import { markdownAPlano } from './markdownAPlano';
 import { permitirEsperasLargas } from '../llm/esperaLargaHttp';
-import { rescatarPaginas, conMarkdown } from './rescatarPaginas';
+import { parsearRespuesta, rescatarPaginas, conMarkdown } from './rescatarPaginas';
 import { verificarCobertura, convieneReintentarTanda } from './coberturaDePaginas';
 import { convieneParir } from './partirTanda';
 import {
@@ -79,6 +79,40 @@ permitirEsperasLargas();
  * Single PDF page as Gemini returned it. Same shape as `LlamaParsePage`
  * so the formatters downstream work without branching by engine.
  */
+/**
+ * La consigna de la extracción por visión. Exportada para que el reproceso en
+ * lote (`loteDeExtraccion`) pida EXACTAMENTE lo mismo que la extracción en
+ * línea: dos consignas que deberían coincidir terminan no coincidiendo.
+ */
+export const PROMPT_DE_EXTRACCION = `Extrae el texto completo de este PDF página por página.
+
+Reglas:
+1. Una entrada por página física, en orden, numeradas desde 1 según su posición en el archivo.
+2. Preserva la estructura en markdown: encabezados con # / ##, párrafos separados, listas con -, tablas en formato markdown.
+3. Transcribe el griego y el hebreo EXACTAMENTE como aparecen: griego politónico con espíritus, acentos e iota suscrita; hebreo con niqqud y acentos de cantilación. No normalices ni corrijas ninguna forma.
+4. No traduzcas términos teológicos ni citas bíblicas.
+5. No uses LaTeX ni notación matemática: nada de $...$, \\text ni ^{...}. Escribe los superíndices y las letras de nota del aparato como caracteres Unicode (ᵃ ᵇ ᶜ ¹ ²) pegados donde aparecen.
+6. NO incluyas el número de página impreso en el contenido.
+
+Devuelve JSON con esta estructura exacta:
+{
+  "pages": [
+    { "page": 1, "md": "contenido de la página en markdown" }
+  ]
+}
+
+Si una página está vacía, devuelve "md": "" pero conserva la entrada para no romper la numeración.`;
+
+/** La configuración de la llamada de extracción (en línea y en lote). */
+export function configDeExtraccion() {
+    return {
+        responseMimeType: 'application/json',
+        maxOutputTokens: PRESUPUESTO_SALIDA,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        mediaResolution: MediaResolution.MEDIA_RESOLUTION_HIGH,
+    };
+}
+
 export interface GeminiPage {
     page: number;
     text: string;
@@ -202,24 +236,7 @@ async function extractGeminiPagesSinglePass(
     // (`thoughtsTokenCount`) y se suma a la densidad que calibra las tandas.
     //
     // Resolución ALTA: es con la que el bakeoff leyó la cantilación de la BHS.
-    const prompt = `Extrae el texto completo de este PDF página por página.
-
-Reglas:
-1. Una entrada por página física, en orden, numeradas desde 1 según su posición en el archivo.
-2. Preserva la estructura en markdown: encabezados con # / ##, párrafos separados, listas con -, tablas en formato markdown.
-3. Transcribe el griego y el hebreo EXACTAMENTE como aparecen: griego politónico con espíritus, acentos e iota suscrita; hebreo con niqqud y acentos de cantilación. No normalices ni corrijas ninguna forma.
-4. No traduzcas términos teológicos ni citas bíblicas.
-5. No uses LaTeX ni notación matemática: nada de $...$, \\text ni ^{...}. Escribe los superíndices y las letras de nota del aparato como caracteres Unicode (ᵃ ᵇ ᶜ ¹ ²) pegados donde aparecen.
-6. NO incluyas el número de página impreso en el contenido.
-
-Devuelve JSON con esta estructura exacta:
-{
-  "pages": [
-    { "page": 1, "md": "contenido de la página en markdown" }
-  ]
-}
-
-Si una página está vacía, devuelve "md": "" pero conserva la entrada para no romper la numeración.`;
+    const prompt = PROMPT_DE_EXTRACCION;
 
     const result = await ai.models.generateContent({
         model: MODEL_VISION,
@@ -230,12 +247,7 @@ Si una página está vacía, devuelve "md": "" pero conserva la entrada para no 
                 { fileData: { mimeType: geminiFile.mimeType ?? 'application/pdf', fileUri: geminiFile.uri } },
             ],
         }],
-        config: {
-            responseMimeType: 'application/json',
-            maxOutputTokens: PRESUPUESTO_SALIDA,
-            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-            mediaResolution: MediaResolution.MEDIA_RESOLUTION_HIGH,
-        },
+        config: configDeExtraccion(),
     });
 
     // Se mide ANTES del guard de truncado: una respuesta truncada igual se
@@ -270,7 +282,8 @@ Si una página está vacía, devuelve "md": "" pero conserva la entrada para no 
 
     let parsed: { pages?: Array<{ page: number; text?: string; md?: string }> };
     try {
-        parsed = JSON.parse(responseText);
+        // Con los escapes reparados si hace falta (`\|` en las tablas).
+        parsed = parsearRespuesta(responseText);
     } catch {
         // NO es truncamiento: `finishReason` ya se verificó arriba y la
         // respuesta llegó entera. El aparato crítico mezcla paréntesis

@@ -20,6 +20,7 @@
 import admin from 'firebase-admin';
 import { writeFileSync } from 'node:fs';
 import { camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from '../packages/functions/src/library/medirExtraccion';
+import { ubicacionEnStorage } from './lib/storage';
 
 const PROJECT_ID = 'dosfilosapp';
 const BUCKET = 'dosfilosapp.firebasestorage.app';
@@ -29,17 +30,6 @@ const MODELO_ACTUAL = 'gemini-3.8-flash';
 function arg(nombre: string): string | undefined {
     const i = process.argv.indexOf(nombre);
     return i >= 0 ? process.argv[i + 1] : undefined;
-}
-
-/** `gs://bucket/ruta` o la URL de descarga de Firebase → ruta dentro del bucket. */
-export function ubicacionEnStorage(url: string | undefined): { bucket: string; ruta: string } | null {
-    if (!url) return null;
-    if (url.startsWith('gs://')) {
-        const [bucket, ...ruta] = url.slice(5).split('/');
-        return { bucket: bucket!, ruta: ruta.join('/') };
-    }
-    const m = url.match(/\/b\/([^/]+)\/o\/([^?]+)/);
-    return m ? { bucket: m[1]!, ruta: decodeURIComponent(m[2]!) } : null;
 }
 
 interface Fila {

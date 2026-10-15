@@ -101,3 +101,34 @@ export function rescatarPaginas(crudo: string): PaginaRescatada[] {
 export function conMarkdown(paginas: ReadonlyArray<PaginaRescatada>): number {
     return paginas.filter(p => p.md !== undefined && p.md.length > 0).length;
 }
+
+/**
+ * Duplica las barras invertidas que no forman un escape JSON válido.
+ *
+ * El modelo escribe tablas de markdown con `\|` (una barra dentro de una
+ * celda), y `\|` no es un escape de JSON: la respuesta entera dejaba de
+ * leerse y el rescate tampoco la salvaba. Pasó con tres páginas del análisis
+ * de cláusulas de Varner en la primera prueba del reproceso en lote
+ * (2026-10-15). Se recorre carácter a carácter para no romper `\\` (una barra
+ * ya escapada) seguido de otro carácter.
+ */
+export function repararEscapes(crudo: string): string {
+    let out = '';
+    for (let i = 0; i < crudo.length; i++) {
+        const c = crudo[i]!;
+        if (c !== '\\') { out += c; continue; }
+        const sig = crudo[i + 1];
+        if (sig !== undefined && '"\\/bfnrtu'.includes(sig)) { out += c + sig; i++; continue; }
+        out += '\\\\';
+    }
+    return out;
+}
+
+/** `JSON.parse`, y si falla, otra vez con los escapes reparados. */
+export function parsearRespuesta<T>(crudo: string): T {
+    try {
+        return JSON.parse(crudo) as T;
+    } catch {
+        return JSON.parse(repararEscapes(crudo)) as T;
+    }
+}

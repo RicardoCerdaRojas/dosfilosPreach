@@ -118,3 +118,6 @@ __pycache__/
 recurso.pdf
 capa.txt
 estructurado.md
+
+# Estado local del reproceso en lote (scripts/reprocesar-en-lote.ts)
+scripts/.lotes/
