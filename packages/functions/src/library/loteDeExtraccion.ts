@@ -107,8 +107,11 @@ export function leerRespuestaDeTramo(
  * devuelto coincidía con el libro), sólo omitió páginas. La extracción en línea
  * relee el tramo corto; en lote se piden sólo las que faltaron.
  */
-export function tramosQueFaltan(tramo: Tramo, devueltas: ReadonlyArray<{ page: number }>): Tramo[] {
-    const vistas = new Set(devueltas.map(p => p.page));
+export function tramosQueFaltan(tramo: Tramo, devueltas: ReadonlyArray<{ page: number; text?: string; md?: string }>): Tramo[] {
+    // Una página devuelta en blanco cuenta como no devuelta (Metzger, NICNT
+    // Santiago, 2026-10-15: páginas con texto en el PDF que volvieron vacías).
+    // Una página de verdad en blanco se pide sola dos veces y se abandona.
+    const vistas = new Set(devueltas.filter(tieneTexto).map(p => p.page));
     const faltan: Tramo[] = [];
     for (let n = tramo.desde; n <= tramo.hasta; n++) {
         if (vistas.has(n)) continue;
@@ -119,14 +122,28 @@ export function tramosQueFaltan(tramo: Tramo, devueltas: ReadonlyArray<{ page: n
     return faltan;
 }
 
-/** El libro unido: una entrada por página, la última gana (como la cola). */
+function tieneTexto(p: { text?: string; md?: string }): boolean {
+    return Boolean((p.md ?? p.text ?? '').trim());
+}
+
+/** El libro unido: una entrada por página, la última gana (como la cola), salvo que venga en blanco y ya hubiera texto. */
 export function unirPaginas(paginas: ReadonlyArray<GeminiPage>): { markdown: string; texto: string; paginas: GeminiPage[] } {
     const porPagina = new Map<number, GeminiPage>();
-    for (const p of paginas) porPagina.set(p.page, p);
+    for (const p of paginas) {
+        const previa = porPagina.get(p.page);
+        if (previa && tieneTexto(previa) && !tieneTexto(p)) continue;
+        porPagina.set(p.page, p);
+    }
     const unidas = [...porPagina.values()].sort((a, b) => a.page - b.page);
     return { markdown: pagesToMarkdown(unidas), texto: pagesToMarkedText(unidas), paginas: unidas };
 }
 
+/**
+ * Debajo de esto, el griego o el hebreo «perdido» es ruido: en la auditoría
+ * eran letras latinas que el OCR viejo leyó como griegas («Το establish»,
+ * «Ν.», «ω-»), y el texto nuevo las corrige.
+ */
+const MIN_ESCRITURA = 200;
 const HEBREO = /[֐-׿]/g;
 const GRIEGO = /[Ͱ-Ͽἀ-῿]/g;
 
@@ -141,7 +158,8 @@ export interface Comparacion {
  * Si el texto nuevo reemplaza al actual. Nunca deja un libro peor:
  *  - no puede faltarle MÁS páginas que al actual;
  *  - no puede perder más del 10 % del griego ni del hebreo (el modelo nuevo
- *    lee mejor, no menos; perder escritura es señal de una lectura rota);
+ *    lee mejor, no menos; perder escritura es señal de una lectura rota),
+ *    si había al menos `MIN_ESCRITURA` caracteres;
  *  - y tiene que mejorar algo: menos faltantes, texto estructurado que ya no
  *    está vacío, o un modelo mejor (`mejoraPorModelo`).
  */
@@ -160,8 +178,9 @@ export function compararExtracciones(
     const n = resumen(nueva);
     const base = { actual: a, nueva: n };
     if (n.faltantes > a.faltantes) return { ...base, reemplazar: false, motivo: `faltan más páginas (${n.faltantes} contra ${a.faltantes})` };
-    if (n.hebreo < a.hebreo * 0.9) return { ...base, reemplazar: false, motivo: `pierde hebreo (${n.hebreo} contra ${a.hebreo})` };
-    if (n.griego < a.griego * 0.9) return { ...base, reemplazar: false, motivo: `pierde griego (${n.griego} contra ${a.griego})` };
+    const pierde = (antes: number, despues: number) => antes >= MIN_ESCRITURA && despues < antes * 0.9;
+    if (pierde(a.hebreo, n.hebreo)) return { ...base, reemplazar: false, motivo: `pierde hebreo (${n.hebreo} contra ${a.hebreo})` };
+    if (pierde(a.griego, n.griego)) return { ...base, reemplazar: false, motivo: `pierde griego (${n.griego} contra ${a.griego})` };
     if (n.textoVacio) return { ...base, reemplazar: false, motivo: 'el texto nuevo también está vacío' };
     const mejoras = [
         n.faltantes < a.faltantes ? `faltantes ${a.faltantes} → ${n.faltantes}` : '',

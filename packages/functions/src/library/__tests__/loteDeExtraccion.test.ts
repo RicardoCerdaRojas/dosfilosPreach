@@ -51,6 +51,10 @@ describe('unirPaginas', () => {
         expect(u.markdown).toContain('<!-- page: 1 -->');
         expect(u.texto).toContain('[PAGE 2]');
     });
+    it('una página en blanco no pisa a una con texto', () => {
+        const u = unirPaginas([{ page: 1, text: 'a', md: 'a' }, { page: 1, text: '', md: '' }]);
+        expect(u.paginas.map(p => p.md)).toEqual(['a']);
+    });
 });
 
 describe('compararExtracciones — nunca deja un libro peor', () => {
@@ -70,6 +74,9 @@ describe('compararExtracciones — nunca deja un libro peor', () => {
         const heb = 'בְּרֵאשִׁית בָּרָא '.repeat(20);
         expect(compararExtracciones(caso(md(3, heb)), caso(md(3, LARGO)), true)).toMatchObject({ reemplazar: false, motivo: expect.stringContaining('hebreo') });
     });
+    it('perder un puñado de letras «griegas» (ruido del OCR viejo) no frena', () => {
+        expect(compararExtracciones(caso(md(3, LARGO + ' Το Ν.')), caso(md(3, LARGO)), true).reemplazar).toBe(true);
+    });
     it('igual de completo, sólo cambia el modelo: reemplaza si el modelo mejora; si no, no', () => {
         expect(compararExtracciones(caso(md(3, LARGO)), caso(md(3, LARGO)), true).reemplazar).toBe(true);
         expect(compararExtracciones(caso(md(3, LARGO)), caso(md(3, LARGO)), false).reemplazar).toBe(false);
@@ -83,13 +90,16 @@ describe('compararExtracciones — nunca deja un libro peor', () => {
 /** Varner (2026-10-15): tramos de 20 que volvieron con 15, sin correr la numeración. */
 describe('tramosQueFaltan', () => {
     it('agrupa las páginas omitidas para pedirlas otra vez', () => {
-        const devueltas = [81, 82, 84, 85, 86, 90, 91, 92, 93, 94, 95, 96, 97, 98, 100].map(page => ({ page }));
+        const devueltas = [81, 82, 84, 85, 86, 90, 91, 92, 93, 94, 95, 96, 97, 98, 100].map(page => ({ page, md: 'x' }));
         expect(tramosQueFaltan({ desde: 81, hasta: 100 }, devueltas)).toEqual([
             { desde: 83, hasta: 83 }, { desde: 87, hasta: 89 }, { desde: 99, hasta: 99 },
         ]);
     });
+    it('una página devuelta en blanco se vuelve a pedir', () => {
+        expect(tramosQueFaltan({ desde: 1, hasta: 3 }, [{ page: 1, md: 'a' }, { page: 2, md: '  ' }, { page: 3, text: 'c' }])).toEqual([{ desde: 2, hasta: 2 }]);
+    });
     it('un tramo completo no pide nada', () => {
-        expect(tramosQueFaltan({ desde: 1, hasta: 3 }, [{ page: 1 }, { page: 2 }, { page: 3 }])).toEqual([]);
+        expect(tramosQueFaltan({ desde: 1, hasta: 3 }, [{ page: 1, md: 'a' }, { page: 2, md: 'b' }, { page: 3, md: 'c' }])).toEqual([]);
     });
 });
 

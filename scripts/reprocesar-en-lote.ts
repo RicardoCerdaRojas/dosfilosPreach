@@ -149,6 +149,26 @@ async function borrarArchivos(ronda: Estado['rondas'][number]): Promise<void> {
     ronda.archivosBorrados = true;
 }
 
+/**
+ * Revisa los tramos «ok» contra TODAS las páginas guardadas del libro: una
+ * página que volvió en blanco (y que ninguna ronda posterior llenó) deja el
+ * tramo incompleto para que `reintentar` la pida otra vez.
+ */
+function revisarTramosOk(estado: Estado): void {
+    for (const libro of estado.libros) {
+        const ok = estado.tramos.filter(t => t.rid === libro.rid && t.estado === 'ok');
+        if (ok.length === 0 || !existsSync(archivoDePaginas(libro.rid))) continue;
+        const unidas = unirPaginas(JSON.parse(readFileSync(archivoDePaginas(libro.rid), 'utf8'))).paginas;
+        for (const t of ok) {
+            const faltan = tramosQueFaltan(t, unidas.filter(p => p.page >= t.desde && p.page <= t.hasta));
+            if (faltan.length === 0) continue;
+            t.estado = 'incompleto';
+            t.faltan = faltan;
+            t.motivo = `páginas en blanco: ${faltan.map(f => f.desde === f.hasta ? f.desde : `${f.desde}-${f.hasta}`).join(', ')}`;
+        }
+    }
+}
+
 /** Recoge lo que terminó; deja los tramos en ok o fallo. */
 async function recoger(estado: Estado): Promise<boolean> {
     let todo = true;
@@ -190,6 +210,7 @@ async function recoger(estado: Estado): Promise<boolean> {
         guardarEstado(estado);
         await borrarArchivos(estado.rondas[r]!);
     }
+    revisarTramosOk(estado);
     guardarEstado(estado);
     const precio = precioDelLote();
     const costo = (estado.uso.entrada * precio.entrada + estado.uso.salida * precio.salida) / 1e6;
