@@ -2,7 +2,7 @@ import { configDeExtraccion, PROMPT_DE_EXTRACCION, type GeminiPage } from './gem
 import { markdownAPlano } from './markdownAPlano';
 import { pagesToMarkdown, pagesToMarkedText } from './llamaParseClient';
 import { parsearRespuesta, repararEscapes, rescatarPaginas } from './rescatarPaginas';
-import { CAPA_CON_TEXTO, medirExtraccion, type MedicionDeExtraccion } from './medirExtraccion';
+import { CAPA_CON_TEXTO, MIN_CARACTERES_PAGINA, medirExtraccion, type MedicionDeExtraccion } from './medirExtraccion';
 
 /**
  * Reproceso de libros en LOTE (Gemini Batch API, mitad de precio, hasta 24 h).
@@ -111,7 +111,7 @@ export function tramosQueFaltan(tramo: Tramo, devueltas: ReadonlyArray<{ page: n
     // Una página devuelta en blanco cuenta como no devuelta (Metzger, NICNT
     // Santiago, 2026-10-15: páginas con texto en el PDF que volvieron vacías).
     // Una página de verdad en blanco se pide sola dos veces y se abandona.
-    const vistas = new Set(devueltas.filter(tieneTexto).map(p => p.page));
+    const vistas = new Set(devueltas.filter(paginaLeida).map(p => p.page));
     const faltan: Tramo[] = [];
     for (let n = tramo.desde; n <= tramo.hasta; n++) {
         if (vistas.has(n)) continue;
@@ -157,20 +157,35 @@ export function rellenarConCapa(
     total: number,
     textoDeLaCapa: ReadonlyArray<string>,
 ): { paginas: GeminiPage[]; rellenadas: number[] } {
-    const conTexto = new Set(paginas.filter(tieneTexto).map(p => p.page));
+    const conTexto = new Set(paginas.filter(paginaLeida).map(p => p.page));
+    const vistas = new Set(paginas.map(p => p.page));
     const rellenadas: number[] = [];
     const nuevas: GeminiPage[] = [];
     for (let n = 1; n <= total; n++) {
         const capa = (textoDeLaCapa[n - 1] ?? '').trim();
-        if (conTexto.has(n) || capa.replace(/\s/g, '').length <= CAPA_CON_TEXTO) continue;
-        nuevas.push({ page: n, text: capa, md: capa });
-        rellenadas.push(n);
+        if (!conTexto.has(n) && capa.replace(/\s/g, '').length > CAPA_CON_TEXTO) {
+            nuevas.push({ page: n, text: capa, md: capa });
+            rellenadas.push(n);
+        } else if (!vistas.has(n)) {
+            // Una página que el modelo omitió del todo (en blanco también en el
+            // PDF) igual lleva su marca: sin ella la medición la cuenta AUSENTE
+            // y el libro parece peor que el actual, que sí la marca.
+            nuevas.push({ page: n, text: '', md: '' });
+        }
     }
     return { paginas: [...paginas, ...nuevas], rellenadas };
 }
 
-function tieneTexto(p: { text?: string; md?: string }): boolean {
-    return Boolean((p.md ?? p.text ?? '').trim());
+/**
+ * Si el modelo LEYÓ la página: el MISMO criterio que la medición
+ * (`medirExtraccion`), contando como cuenta ella —el contenido que queda bajo
+ * la marca, sin espacios—. Un folio o un título corrido («12», «JAMES 3») no
+ * es una página leída; con criterios distintos, el lote no la volvía a pedir y
+ * la medición la contaba faltante (revisión adversarial del lote).
+ */
+export function paginaLeida(p: { text?: string; md?: string }): boolean {
+    const contenido = (p.md && p.md.trim()) || (p.text && p.text.trim()) || '';
+    return contenido.replace(/\s/g, '').length >= MIN_CARACTERES_PAGINA;
 }
 
 /** El libro unido: una entrada por página, la última gana (como la cola), salvo que venga en blanco y ya hubiera texto. */
@@ -178,7 +193,7 @@ export function unirPaginas(paginas: ReadonlyArray<GeminiPage>): { markdown: str
     const porPagina = new Map<number, GeminiPage>();
     for (const p of paginas) {
         const previa = porPagina.get(p.page);
-        if (previa && tieneTexto(previa) && !tieneTexto(p)) continue;
+        if (previa && paginaLeida(previa) && !paginaLeida(p)) continue;
         porPagina.set(p.page, p);
     }
     const unidas = [...porPagina.values()].sort((a, b) => a.page - b.page);

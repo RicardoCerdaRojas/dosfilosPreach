@@ -225,13 +225,19 @@ async function recoger(estado: Estado): Promise<boolean> {
 }
 
 /** El texto de la capa del PDF por página (pdfjs tarda minutos en un libro grande: se guarda en el lote). */
+/** Una lectura por libro y por corrida, aunque haya fallado: pdfjs puede tardar 5 minutos en vencer. */
+const capasLeidas = new Map<string, string[] | null>();
+
 async function textoDeLaCapa(rid: string): Promise<string[] | null> {
+    if (capasLeidas.has(rid)) return capasLeidas.get(rid)!;
     const archivo = join(dir(), `${rid}.capa-texto.json`);
     if (existsSync(archivo)) return JSON.parse(readFileSync(archivo, 'utf8'));
+    capasLeidas.set(rid, null);
     const d = (await admin.firestore().collection('library_resources').doc(rid).get()).data()!;
     try {
         const textos = (await leerPaginasDelPdf((await bajar(d.storageUrl))!, Date.now() + 300_000)).map(p => p.text);
         writeFileSync(archivo, JSON.stringify(textos));
+        capasLeidas.set(rid, textos);
         return textos;
     } catch (err) {
         console.warn(`  sin capa de texto para ${rid}: ${err instanceof Error ? err.message : err}`);
@@ -256,7 +262,9 @@ async function reintentar(): Promise<void> {
         if (pedir.length === 0) { f.estado = 'ok'; f.motivo = `páginas en blanco en el PDF: ${enBlanco.join(', ')}`; }
     }
     const fallos = estado.tramos.filter(t => t.estado === 'fallo' || t.estado === 'incompleto');
-    if (fallos.length === 0) { console.log('No hay tramos que reintentar.'); return; }
+    // Guardar SIEMPRE: lo de arriba pudo resolver tramos (páginas en blanco en
+    // el PDF); sin guardar, el libro quedaba «incompleto» para siempre.
+    if (fallos.length === 0) { guardarEstado(estado); console.log('No hay tramos que reintentar.'); return; }
     const ronda = estado.rondas.length + 1;
     // Una página sola que ya falló sola una vez no se pide más (en blanco o
     // ilegible): sin esto se pediría para siempre y frenaría al libro.
@@ -266,7 +274,7 @@ async function reintentar(): Promise<void> {
     // aplicar, esas páginas se rellenan con la capa de texto del PDF.
     const abandonar = fallos.filter(f => (sola(f) && ((f.intento ?? 1) >= 2 || (f.estado === 'incompleto' && f.ronda > 1)))
         || (f.estado === 'fallo' && /RECITATION/.test(f.motivo ?? '') && f.hasta - f.desde < 3));
-    abandonar.forEach(f => { f.estado = 'abandonado'; f.motivo = `${f.motivo ?? ''}; se abandona tras ${f.intento} intentos`; });
+    abandonar.forEach(f => { f.estado = 'abandonado'; f.motivo = `${f.motivo ?? ''}; se abandona tras ${f.intento ?? 2} intentos`; });
     const reintentables = fallos.filter(f => !abandonar.includes(f));
     if (reintentables.length === 0) { guardarEstado(estado); console.log(`No hay tramos que reintentar (${abandonar.length} páginas abandonadas).`); return; }
     // Un tramo que falló entero se parte en dos; uno incompleto pide sólo lo que faltó.

@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, rellenarConCapa, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
+import { compararExtracciones, leerRespuestaDeTramo, medirTexto, paginaLeida, partirTramo, rellenarConCapa, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
 import { medirExtraccion } from '../medirExtraccion';
 import { PROMPT_DE_EXTRACCION } from '../geminiExtraction';
+
+/** Una página leída de verdad: al menos los 40 caracteres de la medición. */
+const LEIDA = 'Texto de una página leída de verdad, con más de cuarenta letras.';
 import { repararEscapes } from '../rescatarPaginas';
 
 describe('planearTramos y partirTramo', () => {
@@ -52,8 +55,8 @@ describe('unirPaginas', () => {
         expect(u.texto).toContain('[PAGE 2]');
     });
     it('una página en blanco no pisa a una con texto', () => {
-        const u = unirPaginas([{ page: 1, text: 'a', md: 'a' }, { page: 1, text: '', md: '' }]);
-        expect(u.paginas.map(p => p.md)).toEqual(['a']);
+        const u = unirPaginas([{ page: 1, text: LEIDA, md: LEIDA }, { page: 1, text: '', md: '' }, { page: 1, text: '12', md: '12' }]);
+        expect(u.paginas.map(p => p.md)).toEqual([LEIDA]);
     });
 });
 
@@ -90,16 +93,16 @@ describe('compararExtracciones — nunca deja un libro peor', () => {
 /** Varner (2026-10-15): tramos de 20 que volvieron con 15, sin correr la numeración. */
 describe('tramosQueFaltan', () => {
     it('agrupa las páginas omitidas para pedirlas otra vez', () => {
-        const devueltas = [81, 82, 84, 85, 86, 90, 91, 92, 93, 94, 95, 96, 97, 98, 100].map(page => ({ page, md: 'x' }));
+        const devueltas = [81, 82, 84, 85, 86, 90, 91, 92, 93, 94, 95, 96, 97, 98, 100].map(page => ({ page, md: LEIDA }));
         expect(tramosQueFaltan({ desde: 81, hasta: 100 }, devueltas)).toEqual([
             { desde: 83, hasta: 83 }, { desde: 87, hasta: 89 }, { desde: 99, hasta: 99 },
         ]);
     });
     it('una página devuelta en blanco se vuelve a pedir', () => {
-        expect(tramosQueFaltan({ desde: 1, hasta: 3 }, [{ page: 1, md: 'a' }, { page: 2, md: '  ' }, { page: 3, text: 'c' }])).toEqual([{ desde: 2, hasta: 2 }]);
+        expect(tramosQueFaltan({ desde: 1, hasta: 3 }, [{ page: 1, md: LEIDA }, { page: 2, md: '  ' }, { page: 3, text: LEIDA }])).toEqual([{ desde: 2, hasta: 2 }]);
     });
     it('un tramo completo no pide nada', () => {
-        expect(tramosQueFaltan({ desde: 1, hasta: 3 }, [{ page: 1, md: 'a' }, { page: 2, md: 'b' }, { page: 3, md: 'c' }])).toEqual([]);
+        expect(tramosQueFaltan({ desde: 1, hasta: 3 }, [{ page: 1, md: LEIDA }, { page: 2, md: LEIDA }, { page: 3, md: LEIDA }])).toEqual([]);
     });
 });
 
@@ -150,8 +153,24 @@ describe('separarEnBlanco', () => {
 describe('rellenarConCapa', () => {
     const LARGA = 'palabra '.repeat(60);
     it('sólo rellena páginas sin texto del modelo que en el PDF sí tienen texto', () => {
-        const r = rellenarConCapa([{ page: 1, text: 'a', md: 'a' }, { page: 2, text: '', md: '' }], 4, [LARGA, LARGA, 'corto', LARGA]);
+        const r = rellenarConCapa([{ page: 1, text: LEIDA, md: LEIDA }, { page: 2, text: '', md: '' }], 4, [LARGA, LARGA, 'corto', LARGA]);
         expect(r.rellenadas).toEqual([2, 4]);
-        expect(unirPaginas(r.paginas).paginas.map(p => p.md?.slice(0, 7))).toEqual(['a', 'palabra', 'palabra']);
+        expect(unirPaginas(r.paginas).paginas.map(p => p.md?.slice(0, 7))).toEqual([LEIDA.slice(0, 7), 'palabra', '', 'palabra']);
+    });
+});
+
+describe('un solo criterio de «página leída» (revisión adversarial del lote)', () => {
+    it('un folio o un título corrido no es una página leída: se vuelve a pedir y se rellena', () => {
+        expect(paginaLeida({ md: 'JAMES 3' })).toBe(false);
+        expect(tramosQueFaltan({ desde: 12, hasta: 12 }, [{ page: 12, md: '12' }])).toEqual([{ desde: 12, hasta: 12 }]);
+        const capa = Array(12).fill('palabra '.repeat(60));
+        expect(rellenarConCapa([{ page: 12, text: '12', md: '12' }], 12, capa).rellenadas).toContain(12);
+    });
+    it('una página omitida y en blanco también en el PDF lleva su marca: la medición no la cuenta ausente', () => {
+        const capa = ['palabra '.repeat(60), '', 'palabra '.repeat(60)];
+        const r = rellenarConCapa([{ page: 1, text: LEIDA, md: LEIDA }, { page: 3, text: LEIDA, md: LEIDA }], 3, capa);
+        const u = unirPaginas(r.paginas);
+        expect(u.markdown).toContain('<!-- page: 2 -->');
+        expect(medirTexto(u.markdown, 3, capa.map(c => c.replace(/\s/g, '').length)).paginasFaltantes.total).toBe(0);
     });
 });
