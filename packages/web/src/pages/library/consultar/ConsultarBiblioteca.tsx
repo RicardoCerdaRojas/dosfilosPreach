@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Loader2, MessageSquarePlus, Search, SendHorizontal, Trash2 } from 'lucide-react';
 import type { LibraryResourceEntity } from '@dosfilos/domain';
 import type { AlcanceDeConsulta, ConsultaGuardada, FuenteDeConsulta } from '@dosfilos/infrastructure';
@@ -7,8 +7,8 @@ import { useFirebase } from '@/context/firebase-context';
 import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
 import { cn } from '@/lib/utils';
 import { apellidoDelAutor } from '../apellidoDelAutor';
-import type { LibroParaCitar } from './citasDeRespuesta';
-import { RespuestaConCitas } from './RespuestaConCitas';
+import { RespuestaConCitas } from '@/components/library/consulta/RespuestaConCitas';
+import { etiquetaDeFuente, type LibroParaCitar } from './citasDeRespuesta';
 import { SelectorDeAlcance, type LibroElegible } from './SelectorDeAlcance';
 import { useConsultas } from './useConsultas';
 
@@ -34,6 +34,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     const libros = useMemo(() => new Map<string, LibroParaCitar>(
         resources.map(r => [r.id, { author: r.author, title: r.title, pageNumbering: r.pageNumbering ?? null }]),
     ), [resources]);
+    const etiquetar = useCallback((f: FuenteDeConsulta) => etiquetaDeFuente(f, libros.get(f.resourceId)), [libros]);
+    const tituloDe = useCallback((f: FuenteDeConsulta) => libros.get(f.resourceId)?.title ?? f.titulo, [libros]);
     const elegibles: LibroElegible[] = useMemo(() => resources
         .filter(r => indexStatus[r.id] === 'indexed')
         .map(r => ({ id: r.id, title: r.title, author: r.author ?? '' }))
@@ -163,7 +165,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                     {abierta?.turnos.map((turno, i) => (
                         <article key={`${abierta.id}-${i}`} className="space-y-3">
                             <h3 className="text-base font-semibold text-foreground">{turno.pregunta}</h3>
-                            <RespuestaConCitas turno={turno} libros={libros} onAbrirFuente={abrirFuente} />
+                            <RespuestaConCitas turno={turno} etiquetar={etiquetar} tituloDe={tituloDe} onAbrirFuente={abrirFuente} />
                         </article>
                     ))}
                     {esperandoAqui && enCurso && (

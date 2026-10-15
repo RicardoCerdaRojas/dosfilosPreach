@@ -293,3 +293,17 @@ describe('Visor de fuente — lo que pidió el fundador al probarlo', () => {
         expect(screen.getByTestId('cita-armada').textContent).toBe('(McCartney, p. 204)');
     });
 });
+
+describe('Visor de fuente — preguntar a este libro (biblioteca consultable, U4)', () => {
+    it('sólo ampliado: el botón cambia el índice por la conversación con el libro, y vuelve', () => {
+        montar();
+        fireEvent.click(screen.getByText('abrir'));
+        expect(screen.queryByTestId('preguntar-a-este-libro')).toBeNull();
+        fireEvent.click(screen.getByLabelText('sourceViewer.expand'));
+        fireEvent.click(screen.getByTestId('preguntar-a-este-libro'));
+        expect(screen.getByTestId('preguntar-al-libro')).toBeTruthy();
+        expect(screen.queryByTestId('indice-del-libro')).toBeNull();
+        fireEvent.click(screen.getByTestId('preguntar-a-este-libro'));
+        expect(screen.getByTestId('indice-del-libro')).toBeTruthy();
+    });
+});

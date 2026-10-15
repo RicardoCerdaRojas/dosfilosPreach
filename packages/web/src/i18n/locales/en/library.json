@@ -494,6 +494,10 @@
     "copy": "Copy",
     "copied": "Copied",
     "openInBook": "See it in the book",
-    "errorGeneric": "Couldn't answer. Please try again in a few minutes."
+    "errorGeneric": "Couldn't answer. Please try again in a few minutes.",
+    "askThisBook": "Ask this book",
+    "bookIntro": "Ask this book something. The answer comes only from its pages; tap a citation to go to the sheet.",
+    "searchingBook": "Searching the book…",
+    "placeholderBook": "What do you want to know from this book?"
   }
 }

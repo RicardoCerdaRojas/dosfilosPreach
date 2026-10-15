@@ -5,25 +5,32 @@ import { BookOpen, Check, ChevronDown, Copy } from 'lucide-react';
 import type { FuenteDeConsulta, TurnoDeConsulta } from '@dosfilos/infrastructure';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { enlazarFuentes, etiquetaDeFuente, PREFIJO_FUENTE, textoConCitas, type LibroParaCitar } from './citasDeRespuesta';
+import { enlazarFuentes, PREFIJO_FUENTE, textoConCitas, type EtiquetarFuente } from './citasDeRespuesta';
 
 /**
- * Una respuesta de «Consultar» con sus citas pulsables (abren el visor en la
- * página) y la lista de fuentes que usó (fase «biblioteca consultable», U3).
+ * Una respuesta de «Consultar» con sus citas pulsables y la lista de fuentes
+ * que usó (fase «biblioteca consultable», U3 y U4). La usan la pestaña de la
+ * Biblioteca (las citas abren el visor) y el visor (las citas lo llevan a la
+ * hoja).
  */
-export function RespuestaConCitas({ turno, libros, onAbrirFuente }: {
+export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, compacta = false }: {
     turno: TurnoDeConsulta;
-    libros: ReadonlyMap<string, LibroParaCitar>;
+    /** Cómo se cita cada fuente: «(Varner, p. 188)». */
+    etiquetar: EtiquetarFuente;
+    /** El título del libro de una fuente, para la lista de fuentes. */
+    tituloDe?: (fuente: FuenteDeConsulta) => string;
     onAbrirFuente: (fuente: FuenteDeConsulta) => void;
+    /** En el visor, el texto es más chico. */
+    compacta?: boolean;
 }) {
     const { t } = useTranslation('library');
-    const { markdown, enlaces } = useMemo(() => enlazarFuentes(turno.respuesta, turno.fuentes, libros), [turno, libros]);
+    const { markdown, enlaces } = useMemo(() => enlazarFuentes(turno.respuesta, turno.fuentes, etiquetar), [turno, etiquetar]);
     const [verFuentes, setVerFuentes] = useState(false);
     const [copiado, setCopiado] = useState(false);
 
     const copiar = async () => {
         try {
-            await navigator.clipboard.writeText(textoConCitas(turno.respuesta, turno.fuentes, libros));
+            await navigator.clipboard.writeText(textoConCitas(turno.respuesta, turno.fuentes, etiquetar));
             setCopiado(true);
             setTimeout(() => setCopiado(false), 1800);
         } catch { /* sin portapapeles: el botón no cambia */ }
@@ -31,7 +38,7 @@ export function RespuestaConCitas({ turno, libros, onAbrirFuente }: {
 
     return (
         <div className="space-y-3">
-            <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
+            <div className={cn('prose dark:prose-invert max-w-none leading-relaxed', compacta ? 'prose-sm' : 'prose-base')}>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -89,9 +96,9 @@ export function RespuestaConCitas({ turno, libros, onAbrirFuente }: {
                                 className="group w-full rounded-md p-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                                 <span className="font-serif text-sm font-semibold text-foreground group-hover:text-primary">
-                                    {etiquetaDeFuente(f, libros.get(f.resourceId))}
+                                    {etiquetar(f)}
                                 </span>
-                                <span className="ml-2 text-xs text-muted-foreground">{libros.get(f.resourceId)?.title ?? f.titulo}</span>
+                                {tituloDe && <span className="ml-2 text-xs text-muted-foreground">{tituloDe(f)}</span>}
                                 {f.seccion && <span className="block text-xs text-muted-foreground">§ {f.seccion}</span>}
                                 <span className="mt-1 block text-sm text-muted-foreground line-clamp-3">{f.extracto}</span>
                             </button>

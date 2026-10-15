@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { BookOpen, ClipboardCopy, Loader2, Quote, SearchX, TextCursorInput, X } from 'lucide-react';
+import { BookOpen, ClipboardCopy, Loader2, MessageCircleQuestion, Quote, SearchX, TextCursorInput, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
 import type { CitationTarget, ViewedSheet } from './CitationSourceModal';
 import { useCitationSink, type CitationSink } from './SourceViewerProvider';
 import { citaParaInsertar } from './citarDesdeVisor';
+import { PreguntarAlLibro } from '@/components/library/consulta/PreguntarAlLibro';
 
 /**
  * El libro abierto: encabezado, barra (hojear, ir a página, buscar, zoom),
@@ -46,6 +47,10 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
     const [scope, setScope] = useState<SearchScope>('sheet');
     const [matches, setMatches] = useState(0);
     const [seleccion, setSeleccion] = useState<string | null>(null);
+    // «Preguntar a este libro» (fase «biblioteca consultable», U4): ocupa la
+    // columna izquierda del ampliado en lugar del índice.
+    const [preguntando, setPreguntando] = useState(false);
+    const { t: tl } = useTranslation('library');
     const sink = useCitationSink();
     const view = useCitationSheet(paperId, target, open);
     const bookSearch = useDocumentTextSearch(view.resourceId, search, open && scope === 'book');
@@ -60,6 +65,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
         setScope('sheet');
         setMatches(0);
         setSeleccion(null);
+        setPreguntando(false);
     }, [target?.sourceKey, target?.resourceId, target?.page, target?.verbatimQuote, target?.openAt?.page]);
 
     // Las flechas hojean, salvo cuando el lector está escribiendo.
@@ -77,6 +83,9 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
     const isCitation = !target?.resourceId;
     const viewed: ViewedSheet = { sheet: view.viewSheet, printed: view.printedOfView, isAnchor: view.viewSheet === view.anchorSheet };
     const showResults = hasDocument && scope === 'book' && search.trim().length >= 2;
+    // Buscar en el libro vuelve a mostrar los resultados donde estaba preguntando.
+    useEffect(() => { if (showResults) setPreguntando(false); }, [showResults]);
+    const puedePreguntar = layout === 'full' && hasDocument && !!view.resourceId;
     const results = showResults && (
         <BookSearchResults
             hits={bookSearch.data?.hits ?? []}
@@ -111,7 +120,26 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                     </p>
                     <StatusLine hasDocument={hasDocument} hasQuote={hasQuote} quoteFound={quoteFound} quote={target?.verbatimQuote ?? ''} isCitation={isCitation} />
                 </div>
-                {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
+                {(actions || puedePreguntar) && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                        {puedePreguntar && (
+                            <button
+                                type="button"
+                                onClick={() => setPreguntando(p => !p)}
+                                aria-pressed={preguntando}
+                                className={cn(
+                                    'inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                    preguntando ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground hover:bg-muted',
+                                )}
+                                data-testid="preguntar-a-este-libro"
+                            >
+                                <MessageCircleQuestion className="h-4 w-4" />
+                                {tl('consult.askThisBook')}
+                            </button>
+                        )}
+                        {actions}
+                    </div>
+                )}
             </div>
 
             {hasDocument && (
@@ -135,7 +163,15 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
             <div className={cn('flex-1 min-h-0 flex', layout === 'full' ? 'flex-col md:flex-row' : 'flex-col')}>
                 {/* Ampliado, a la izquierda: los resultados si se está buscando en
                     el libro; si no, el índice para ir a cualquier hoja. */}
-                {layout === 'full' && (results || (hasDocument && !view.loading && (
+                {layout === 'full' && preguntando && view.resourceId ? (
+                    <div className="flex min-h-0 max-h-[45vh] md:max-h-none md:w-96 md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-border bg-card/40">
+                        <PreguntarAlLibro
+                            resourceId={view.resourceId}
+                            etiquetar={f => citaParaInsertar(view.citationKey ?? view.label, view.anchorFor(f.hoja ?? 1))}
+                            onIrAHoja={view.goTo}
+                        />
+                    </div>
+                ) : layout === 'full' && (results || (hasDocument && !view.loading && (
                     <IndiceDelLibro pages={view.pages} printedOf={view.printedOf} currentSheet={view.viewSheet} onGo={view.goTo} />
                 )))}
                 <div className="flex-1 min-h-0 min-w-0 bg-muted/30">
