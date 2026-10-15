@@ -24,6 +24,8 @@ export function useConsultas(userId: string | null | undefined) {
     const [cargando, setCargando] = useState(true);
     const [enCurso, setEnCurso] = useState<PreguntaEnCurso | null>(null);
     const [error, setError] = useState<string | null>(null);
+    /** El historial no se pudo leer (p. ej. el índice todavía se está creando): se dice. */
+    const [errorHistorial, setErrorHistorial] = useState(false);
     const enviando = useRef(false);
     /**
      * Consultas NUEVAS que ya respondió el callable y todavía no llegaron por
@@ -38,9 +40,10 @@ export function useConsultas(userId: string | null | undefined) {
         return escucharConsultas(userId, lista => {
             setConsultas(lista);
             setCargando(false);
+            setErrorHistorial(false);
             // Una consulta nueva que ya llegó por el historial deja de ser «reciente».
             setRecientes(prev => Object.fromEntries(Object.entries(prev).filter(([id]) => !lista.some(c => c.id === id))));
-        }, () => setCargando(false));
+        }, () => { setCargando(false); setErrorHistorial(true); });
     }, [userId]);
 
     const preguntar = useCallback(async (pregunta: string, destino: { consultaId: string } | { alcance: AlcanceDeConsulta }): Promise<string | null> => {
@@ -73,5 +76,5 @@ export function useConsultas(userId: string | null | undefined) {
         await borrarConsulta(id);
     }, []);
 
-    return { consultas, cargando, enCurso, error, limpiarError: () => setError(null), recientes, preguntar, borrar };
+    return { consultas, cargando, errorHistorial, enCurso, error, limpiarError: () => setError(null), recientes, preguntar, borrar };
 }

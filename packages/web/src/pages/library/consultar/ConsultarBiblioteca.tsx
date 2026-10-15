@@ -6,9 +6,9 @@ import { useTranslation } from '@/i18n';
 import { useFirebase } from '@/context/firebase-context';
 import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
 import { cn } from '@/lib/utils';
-import { apellidoDelAutor } from '../apellidoDelAutor';
+import { apellidoDelAutor } from '@/components/library/apellidoDelAutor';
 import { RespuestaConCitas } from '@/components/library/consulta/RespuestaConCitas';
-import { etiquetaDeFuente, type LibroParaCitar } from './citasDeRespuesta';
+import { etiquetaDeFuente, type LibroParaCitar } from '@/components/library/consulta/etiquetaDeFuente';
 import { SelectorDeAlcance, type LibroElegible } from './SelectorDeAlcance';
 import { BuscarTemas } from './BuscarTemas';
 import { useConsultas } from './useConsultas';
@@ -26,8 +26,12 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     const { t } = useTranslation('library');
     const { user } = useFirebase();
     const visor = useSourceViewer();
-    const { consultas, cargando, enCurso, error, limpiarError, recientes, preguntar, borrar } = useConsultas(user?.uid);
+    const { consultas, cargando, errorHistorial, enCurso, error, limpiarError, recientes, preguntar, borrar } = useConsultas(user?.uid);
     const [abiertaId, setAbiertaId] = useState<string | null>(null);
+    // La consulta que se mira AHORA: si el pastor abre otra mientras responde,
+    // la respuesta no lo saca de ahí (revisión adversarial, U3).
+    const abiertaRef = useRef<string | null>(null);
+    abiertaRef.current = abiertaId;
     const [alcance, setAlcance] = useState<AlcanceDeConsulta>({ tipo: 'todo' });
     const [texto, setTexto] = useState('');
     /** «Preguntar» (respuesta redactada y guardada) o «Buscar temas» (U5: dónde se habla de algo). */
@@ -58,9 +62,10 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
         const pregunta = texto.trim();
         if (!pregunta || enCurso) return;
         setTexto('');
+        const origen = abierta?.id ?? null;
         const id = await preguntar(pregunta, abierta ? { consultaId: abierta.id } : { alcance });
-        if (id) setAbiertaId(id);
-        else setTexto(pregunta);   // falló: la pregunta vuelve a la caja
+        if (!id) { if (abiertaRef.current === origen) setTexto(pregunta); return; }   // falló: la pregunta vuelve a la caja
+        if (abiertaRef.current === origen) setAbiertaId(id);
     };
     const alTeclear = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar(); }
@@ -101,6 +106,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                 <h2 className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('consult.history')}</h2>
                 {cargando ? (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : errorHistorial ? (
+                    <p className="text-sm text-muted-foreground">{t('consult.historyError')}</p>
                 ) : consultas.length === 0 ? (
                     <p className="text-sm text-muted-foreground">{t('consult.historyEmpty')}</p>
                 ) : (
@@ -123,7 +130,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                                     type="button"
                                     onClick={() => { if (window.confirm(t('consult.deleteConfirm'))) { void borrar(c.id); if (c.id === abiertaId) nueva(); } }}
                                     aria-label={t('consult.delete')}
-                                    className="absolute right-1 top-1.5 rounded p-1.5 text-muted-foreground opacity-0 hover:bg-background hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+                                    className="absolute right-1 top-1.5 rounded p-1.5 text-muted-foreground hover:bg-background hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:opacity-0 md:group-hover:opacity-100"
                                 >
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </button>
@@ -145,13 +152,12 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                             <h2 className="font-serif text-2xl font-semibold text-foreground">{t('consult.title')}</h2>
                             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('consult.subtitle')}</p>
                         </div>
-                        <div role="tablist" aria-label={t('consult.modeLabel')} className="inline-flex rounded-md border border-border p-0.5">
+                        <div role="group" aria-label={t('consult.modeLabel')} className="inline-flex rounded-md border border-border p-0.5">
                             {(['preguntar', 'temas'] as const).map(m => (
                                 <button
                                     key={m}
                                     type="button"
-                                    role="tab"
-                                    aria-selected={modo === m}
+                                    aria-pressed={modo === m}
                                     onClick={() => setModo(m)}
                                     className={cn(
                                         'min-h-9 rounded px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',

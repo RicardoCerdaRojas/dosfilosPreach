@@ -23,7 +23,8 @@ export function motivoSinCuota(limite: number | undefined, usadas: number): stri
 export async function revisarCuota(userId: string): Promise<string | null> {
     const db = getFirestore();
     const usuario = (await db.collection('users').doc(userId).get()).data();
-    const planId: string = usuario?.subscription?.planId ?? 'free';
+    // Igual que Facultad (`UsageLimitsService.canQuery`): sin plan, «basic».
+    const planId: string = usuario?.subscription?.planId || 'basic';
     const [plan, contador] = await Promise.all([
         db.collection('plans').doc(planId).get(),
         db.doc(`users/${userId}/usage_counters/${periodoActual()}`).get(),

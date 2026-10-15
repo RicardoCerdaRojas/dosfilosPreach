@@ -76,4 +76,19 @@ describe('Consultar la biblioteca', () => {
         fireEvent.click(hoja);
         expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 192, resourceId: 'v', label: varner.title } }, 'full');
     });
+
+    it('si abre otra consulta mientras responde, la respuesta no lo saca de ahí', async () => {
+        let responder!: (v: unknown) => void;
+        consultar.mockReturnValue(new Promise(r => { responder = r; }));
+        const otra: ConsultaGuardada = { ...guardada, id: 'c2', titulo: 'Otra consulta', turnos: [{ ...guardada.turnos[0]!, pregunta: 'Otra consulta' }] };
+        render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
+        act(() => alCambiar!([guardada, otra]));
+        fireEvent.click(screen.getByText('¿Qué dice de 5:12?', { selector: 'span' }));
+        fireEvent.change(screen.getByLabelText('consult.placeholder'), { target: { value: '¿Y 5:13?' } });
+        fireEvent.click(screen.getByLabelText('consult.send'));
+        fireEvent.click(screen.getByText('Otra consulta', { selector: 'span' }));
+        await act(async () => { responder({ consultaId: 'c1', turno: guardada.turnos[0] }); });
+        expect(screen.getByText('Otra consulta', { selector: 'span' }).closest('button')!.getAttribute('aria-current')).toBe('true');
+    });
 });
+

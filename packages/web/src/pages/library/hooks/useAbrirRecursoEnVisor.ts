@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { LibraryResourceEntity } from '@dosfilos/domain';
 import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProvider';
-import { apellidoDelAutor } from '../apellidoDelAutor';
+import { apellidoDelAutor } from '@/components/library/apellidoDelAutor';
 
 // Se reexporta: las pruebas y quien ya lo importaba de acá siguen igual.
 export { apellidoDelAutor };

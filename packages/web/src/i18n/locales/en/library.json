@@ -505,6 +505,7 @@
     "topicPlaceholder": "A topic: prayer, wisdom from above, oaths…",
     "topicSearch": "Search",
     "topicHint": "Shows where your books discuss the topic, by meaning and not only by word. It doesn't write an answer or count as a query.",
-    "topicNone": "I couldn't find that topic in your books."
+    "topicNone": "I couldn't find that topic in your books.",
+    "historyError": "Your question history couldn't be loaded. Reload the page in a moment."
   }
 }

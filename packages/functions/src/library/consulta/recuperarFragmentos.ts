@@ -51,6 +51,27 @@ export function topePorLibro(alcance: Alcance, total = FRAGMENTOS_POR_CONSULTA):
     return Math.max(3, Math.ceil(total / 3));
 }
 
+/** Los ids en tandas que caben en un `in` de Firestore. */
+export function enTandas<T>(ids: ReadonlyArray<T>, tam = MAX_IN): T[][] {
+    const tandas: T[][] = [];
+    for (let i = 0; i < ids.length; i += tam) tandas.push(ids.slice(i, i + tam));
+    return tandas;
+}
+
+function aFragmento(d: FirebaseFirestore.QueryDocumentSnapshot): FragmentoRecuperado {
+    const data = d.data();
+    const sectionPath = (data.metadata?.sectionPath as string[] | undefined) ?? [];
+    return {
+        resourceId: String(data.resourceId ?? ''),
+        titulo: String(data.resourceTitle ?? 'Documento sin título'),
+        autor: String(data.resourceAuthor ?? ''),
+        hoja: typeof data.metadata?.page === 'number' ? data.metadata.page : null,
+        seccion: sectionPath.length > 0 ? sectionPath.join(' › ') : String(data.metadata?.section ?? ''),
+        texto: sanitizeExtractedText(String(data.text ?? '')).text,
+        score: Math.max(0, 1 - Number(data._distance ?? 0) / 2),
+    };
+}
+
 export async function recuperarFragmentos(
     pregunta: string,
     userId: string,
@@ -59,35 +80,29 @@ export async function recuperarFragmentos(
     total = FRAGMENTOS_POR_CONSULTA,
 ): Promise<FragmentoRecuperado[]> {
     const vector = await embedQuery(pregunta, apiKey);
-    const db = getFirestore();
-    // Mismo orden de filtros que `retrieveChunks` (userId → resourceId): el
-    // índice vectorial que existe es (userId, resourceId, embedding).
-    let q: FirebaseFirestore.Query = db.collection('document_chunks').where('userId', '==', userId);
-    const ids = alcance.tipo === 'libros' ? [...new Set(alcance.ids)] : [];
-    if (ids.length > 0 && ids.length <= MAX_IN) q = q.where('resourceId', 'in', ids);
-    const pozo = ids.length > 0 ? POZO_MAXIMO : Math.min(POZO_MAXIMO, total * 4);
-    const snap = await q.findNearest({
+    // SIEMPRE por `userId`: la consulta es de la biblioteca del usuario, y un
+    // id de otro usuario en el alcance no puede traer sus fragmentos. Mismo
+    // orden de filtros que `retrieveChunks` (userId → resourceId): el índice
+    // vectorial que existe es (userId, resourceId, embedding).
+    const base = getFirestore().collection('document_chunks').where('userId', '==', userId);
+    const cercanos = async (q: FirebaseFirestore.Query, limite: number) => (await q.findNearest({
         vectorField: 'embedding',
         queryVector: vector,
-        limit: pozo,
+        limit: limite,
         distanceMeasure: 'COSINE',
         distanceResultField: '_distance',
-    }).get();
+    }).get()).docs.map(aFragmento);
 
-    const fragmentos: FragmentoRecuperado[] = snap.docs.map(d => {
-        const data = d.data();
-        const sectionPath = (data.metadata?.sectionPath as string[] | undefined) ?? [];
-        return {
-            resourceId: String(data.resourceId ?? ''),
-            titulo: String(data.resourceTitle ?? 'Documento sin título'),
-            autor: String(data.resourceAuthor ?? ''),
-            hoja: typeof data.metadata?.page === 'number' ? data.metadata.page : null,
-            seccion: sectionPath.length > 0 ? sectionPath.join(' › ') : String(data.metadata?.section ?? ''),
-            texto: sanitizeExtractedText(String(data.text ?? '')).text,
-            score: Math.max(0, 1 - Number(data._distance ?? 0) / 2),
-        };
-    });
-    return elegirDelPozo(fragmentos, {
+    const ids = alcance.tipo === 'libros' ? [...new Set(alcance.ids)] : [];
+    // Con más de 30 libros, una búsqueda por tanda de 30 y se mezclan por
+    // similitud: buscar en toda la biblioteca y filtrar dejaba afuera libros
+    // elegidos cuando la biblioteca es grande (revisión adversarial, U2).
+    const pozo = ids.length > 0
+        ? (await Promise.all(enTandas(ids).map(t => cercanos(base.where('resourceId', 'in', t), POZO_MAXIMO))))
+            .flat().sort((a, b) => b.score - a.score)
+        : await cercanos(base, Math.min(POZO_MAXIMO, total * 4));
+
+    return elegirDelPozo(pozo, {
         ids: ids.length > 0 ? new Set(ids) : undefined,
         porLibro: topePorLibro(alcance, total),
         total,

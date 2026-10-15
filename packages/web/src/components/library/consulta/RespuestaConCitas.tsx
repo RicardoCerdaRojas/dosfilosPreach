@@ -41,6 +41,9 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
             <div className={cn('prose dark:prose-invert max-w-none leading-relaxed', compacta ? 'prose-sm' : 'prose-base')}>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
+                    // Una imagen en la respuesta vendría del texto de un libro (o
+                    // de una instrucción metida en él): no se carga nada externo.
+                    disallowedElements={['img']}
                     components={{
                         a: ({ href, children, node: _node, ...rest }) => {
                             const citadas = href?.startsWith(PREFIJO_FUENTE) ? enlaces[Number(href.slice(PREFIJO_FUENTE.length))] : undefined;

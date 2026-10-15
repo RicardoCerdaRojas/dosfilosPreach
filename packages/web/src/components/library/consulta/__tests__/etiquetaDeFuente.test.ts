@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PageNumbering } from '@dosfilos/domain';
 import type { FuenteDeConsulta } from '@dosfilos/infrastructure';
-import { etiquetaDeFuente } from '../citasDeRespuesta';
+import { etiquetaDeFuente } from '../etiquetaDeFuente';
 
 const fuente = (n: number, resourceId: string, hoja: number): FuenteDeConsulta => ({
     n, resourceId, titulo: `Libro ${resourceId}`, autor: 'Varner, William', hoja, seccion: '', extracto: '',
@@ -20,5 +20,11 @@ describe('etiquetaDeFuente', () => {
     });
     it('sin el libro a mano, usa el autor guardado en la fuente', () => {
         expect(etiquetaDeFuente(fuente(1, 'v', 10), undefined)).toBe('(Varner, hoja 10)');
+    });
+    it('sin hoja no inventa página: «s. p.»', () => {
+        expect(etiquetaDeFuente({ ...fuente(1, 'v', 1), hoja: null }, { author: 'William Varner', pageNumbering: calibrada })).toBe('(Varner, s. p.)');
+    });
+    it('la clave del visor manda sobre el apellido', () => {
+        expect(etiquetaDeFuente(fuente(1, 'v', 192), { clave: 'Varner2014', author: 'William Varner', pageNumbering: calibrada })).toBe('(Varner2014, p. 188)');
     });
 });

@@ -13,6 +13,8 @@ import type { CitationTarget, ViewedSheet } from './CitationSourceModal';
 import { useCitationSink, type CitationSink } from './SourceViewerProvider';
 import { citaParaInsertar } from './citarDesdeVisor';
 import { PreguntarAlLibro } from '@/components/library/consulta/PreguntarAlLibro';
+import { etiquetaDeFuente } from '@/components/library/consulta/etiquetaDeFuente';
+import { useFirebase } from '@/context/firebase-context';
 
 /**
  * El libro abierto: encabezado, barra (hojear, ir a página, buscar, zoom),
@@ -51,6 +53,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
     // columna izquierda del ampliado en lugar del índice.
     const [preguntando, setPreguntando] = useState(false);
     const { t: tl } = useTranslation('library');
+    const { user } = useFirebase();
     const sink = useCitationSink();
     const view = useCitationSheet(paperId, target, open);
     const bookSearch = useDocumentTextSearch(view.resourceId, search, open && scope === 'book');
@@ -85,7 +88,10 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
     const showResults = hasDocument && scope === 'book' && search.trim().length >= 2;
     // Buscar en el libro vuelve a mostrar los resultados donde estaba preguntando.
     useEffect(() => { if (showResults) setPreguntando(false); }, [showResults]);
-    const puedePreguntar = layout === 'full' && hasDocument && !!view.resourceId;
+    // Sólo en libros PROPIOS: la consulta busca en la biblioteca del usuario, y
+    // en un libro del corpus o de otro respondería siempre «no encontré nada»
+    // (revisión adversarial, U4).
+    const puedePreguntar = layout === 'full' && hasDocument && !!view.resourceId && !!user?.uid && view.ownerId === user.uid;
     const results = showResults && (
         <BookSearchResults
             hits={bookSearch.data?.hits ?? []}
@@ -163,15 +169,18 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
             <div className={cn('flex-1 min-h-0 flex', layout === 'full' ? 'flex-col md:flex-row' : 'flex-col')}>
                 {/* Ampliado, a la izquierda: los resultados si se está buscando en
                     el libro; si no, el índice para ir a cualquier hoja. */}
-                {layout === 'full' && preguntando && view.resourceId ? (
-                    <div className="flex min-h-0 max-h-[45vh] md:max-h-none md:w-96 md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-border bg-card/40">
+                {/* Montado mientras se pueda preguntar, aunque se vea el índice:
+                    apagar «Preguntar» no borra la conversación. */}
+                {puedePreguntar && view.resourceId && (
+                    <div className={cn('min-h-0 max-h-[45vh] md:max-h-none md:w-96 md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-border bg-card/40', preguntando ? 'flex' : 'hidden')}>
                         <PreguntarAlLibro
                             resourceId={view.resourceId}
-                            etiquetar={f => citaParaInsertar(view.citationKey ?? view.label, view.anchorFor(f.hoja ?? 1))}
+                            etiquetar={f => etiquetaDeFuente(f, { clave: view.citationKey, title: view.label, pageNumbering: view.numbering })}
                             onIrAHoja={view.goTo}
                         />
                     </div>
-                ) : layout === 'full' && (results || (hasDocument && !view.loading && (
+                )}
+                {layout === 'full' && !(puedePreguntar && preguntando) && (results || (hasDocument && !view.loading && (
                     <IndiceDelLibro pages={view.pages} printedOf={view.printedOf} currentSheet={view.viewSheet} onGo={view.goTo} />
                 )))}
                 <div className="flex-1 min-h-0 min-w-0 bg-muted/30">

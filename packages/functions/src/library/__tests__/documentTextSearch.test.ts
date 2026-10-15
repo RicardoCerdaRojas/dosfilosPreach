@@ -29,18 +29,19 @@ describe('paridad con el buscador de la hoja abierta (@dosfilos/domain)', () => 
 
     it.each(casos)('«%s» se encuentra en los dos lados', (termino, texto) => {
         expect(occurrencesIn(texto, foldForSearch(termino).text).length).toBeGreaterThan(0);
-        expect(findQuoteInPageText(termino, texto)).not.toBeNull();
+        // El visor busca lo que el lector escribe ignorando marcas, como el servidor.
+        expect(findQuoteInPageText(termino, texto, { ignorarMarcas: true })).not.toBeNull();
     });
 
     it('la ñ no se pliega: «año» no encuentra «ano»', () => {
         expect(occurrencesIn('el ano', foldForSearch('año').text)).toEqual([]);
-        expect(findQuoteInPageText('año', 'el ano')).toBeNull();
+        expect(findQuoteInPageText('año', 'el ano', { ignorarMarcas: true })).toBeNull();
     });
 
     it('lo que no está, no está en ninguno de los dos', () => {
         const texto = 'The Hiphil delocutive pertains to the causing of an event.';
         expect(occurrencesIn(texto, foldForSearch('Polel').text)).toEqual([]);
-        expect(findQuoteInPageText('Polel', texto)).toBeNull();
+        expect(findQuoteInPageText('Polel', texto, { ignorarMarcas: true })).toBeNull();
     });
 });
 

@@ -88,6 +88,32 @@
 - **Devuelve libros y páginas impresas**, agrupados por libro, con el extracto y la sección (`sectionPath`). Se ordenan por relevancia, y cada resultado abre el visor.
 - **Es rápida y barata:** sólo hace el embedding de la consulta, sin generación. Se ofrece como un modo de la misma pestaña («Buscar temas» / «Preguntar»).
 
+### Revisión adversarial de la etapa 1 (2026-10-15)
+
+No hubo fugas entre usuarios. Se corrigió lo siguiente:
+
+- **Marcas mal escritas:** las marcas que el asistente escribe a su manera («[F2, F5]», «[f3]») quedaban literales. Ahora se normalizan.
+- **Se guarda antes de cobrar:** si la consulta se borró mientras se esperaba, no se cobra.
+- **Tope por tamaño** de la consulta (700 KB), además del tope por turnos.
+- **Más de 30 libros:** una búsqueda por cada tanda de 30. Antes se buscaba en toda la biblioteca y se filtraba, y eso dejaba fuera libros elegidos.
+- **Plan por defecto:** «basic», igual que Facultad.
+- **El respaldo recibe el tiempo que le queda** a la función, no los 120 s enteros.
+- **Tope de 60 preguntas por hora.**
+- **Una sola regla para citar** en la pestaña y en el visor: numeración confirmada; si no, «hoja N»; sin hoja, «s. p.». Antes el visor podía inventar la página de la hoja 1.
+- **«Preguntar a este libro»** sólo aparece en libros propios. La conversación no se pierde al volver al índice.
+- **Una cita textual exige sus vocales:** el resaltado ignora las marcas sólo en lo que el lector escribe.
+- **Si el pastor abre otra consulta mientras responde,** la respuesta no lo saca de ahí.
+- **El error del historial se muestra.**
+- **Las imágenes del markdown no se cargan.**
+- **El borrado de cuenta incluye `library_consultations`.**
+
+Queda pendiente, porque ya pasaba antes de esta fase: los índices del resaltado apuntan al texto en NFC. Un PDF con formas de presentación hebreas puede correr el resaltado.
+
+### Deploy de la etapa 1 (en este orden)
+
+1. **Antes de desplegar functions:** cargar la ruta `library.consult` (Luna) en `config/llmRouting`, con el OK del fundador. Sin ella, `clientePorRuta` cae a Sonnet.
+2. **Con el deploy del PR:** las reglas de Firestore (`library_consultations`) y el índice compuesto `library_consultations (userId, actualizada desc)`. Mientras el índice se construye, el historial muestra el aviso de error.
+
 ---
 
 ## Etapa 2: pasajes y resúmenes (otro PR)

@@ -27,13 +27,25 @@ export interface QuoteMatch {
     end: number;
 }
 
-export function findQuoteInPageText(quote: string, pageText: string): QuoteMatch | null {
+export interface OpcionesDeBusqueda {
+    /**
+     * Ignorar vocales, acentos y espíritus (niqud, cantilación, tildes). Para
+     * lo que el lector ESCRIBE en «Buscar en el libro» («גיא», «προ παντων»).
+     * Una cita textual no: resaltar «דִּבֶּר» donde dice «דָּבָר» daría por
+     * hallada una cita con otra vocalización, y el verificador de citas no la
+     * acepta (revisión adversarial de la fase «biblioteca consultable»).
+     */
+    ignorarMarcas?: boolean;
+}
+
+export function findQuoteInPageText(quote: string, pageText: string, opciones: OpcionesDeBusqueda = {}): QuoteMatch | null {
     if (!quote.trim() || !pageText) return null;
 
-    const needle = normalizeForSearch(quote).text;
+    const plegar = opciones.ignorarMarcas === true;
+    const needle = normalizeForSearch(quote, plegar).text;
     if (!needle) return null;
 
-    const haystack = normalizeForSearch(pageText);
+    const haystack = normalizeForSearch(pageText, plegar);
     const at = haystack.text.indexOf(needle);
     if (at === -1) return null;
 
@@ -64,14 +76,14 @@ interface NormalizedText {
  * renglón —«comple-⏎tamente», «pala-⏎bra»— y quien la lee transcribe la
  * palabra entera; conservar el guion hacía fallar citas verdaderas.
  */
-function normalizeForSearch(input: string): NormalizedText {
+function normalizeForSearch(input: string, ignorarMarcas: boolean): NormalizedText {
     const normalized = input.normalize('NFC');
     const chars: string[] = [];
     const sourceIndex: number[] = [];
 
     for (let i = 0; i < normalized.length; i++) {
         // Un carácter puede plegar a más de una letra: cada una lleva su origen.
-        for (const letra of fold(normalized[i]!)) {
+        for (const letra of fold(normalized[i]!, ignorarMarcas)) {
             chars.push(letra);
             sourceIndex.push(i);
         }
@@ -83,17 +95,18 @@ function normalizeForSearch(input: string): NormalizedText {
 /**
  * Un carácter en su forma comparable, o '' cuando no cuenta.
  *
- * Las marcas no cuentan: acentos, espíritus e iota suscrita del griego, y
- * niqud y cantilación del hebreo. Así «גיא» encuentra «בְּגֵ֪יא» y
- * «προ παντων» encuentra «πρὸ πάντων» (pedido del fundador, 2026-10-15). La
- * ñ se conserva: «año» no es «ano». Igual que `fold` en
+ * Con `ignorarMarcas`, las marcas no cuentan: acentos, espíritus e iota
+ * suscrita del griego, y niqud y cantilación del hebreo. Así «גיא» encuentra
+ * «בְּגֵ֪יא» y «προ παντων» encuentra «πρὸ πάντων» (pedido del fundador,
+ * 2026-10-15). La ñ se conserva: «año» no es «ano». Así pliega `fold` en
  * `functions/src/library/documentTextSearch.ts` (prueba de paridad allá).
  */
-function fold(char: string): string {
+function fold(char: string, ignorarMarcas: boolean): string {
     if (/[\s -]/.test(char)) return '';
     if (/[‐-―−\u05BE]/.test(char)) return '';   // guiones y el maqaf hebreo
     if (/[‘’‛′]/.test(char)) return "'";
     if (/[“”‟″«»]/.test(char)) return '"';
+    if (!ignorarMarcas) return char.toLowerCase();
     if (char === 'ñ' || char === 'Ñ') return 'ñ';
     return char.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[ςϲ]/g, 'σ');
 }

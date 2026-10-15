@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('firebase-functions/v2/https', async (orig) => ({ ...(await orig<object>()), onCall: (_o: unknown, h: unknown) => h }));
 
-import { armarPedido, leerRespuesta, tituloDeConsulta, type FragmentoRecuperado } from '../armarConsulta';
+import { armarPedido, leerRespuesta, normalizarMarcas, tituloDeConsulta, type FragmentoRecuperado } from '../armarConsulta';
 import { elegirDelPozo, topePorLibro } from '../recuperarFragmentos';
 import { motivoSinCuota, periodoActual } from '../cuotaDeConsultas';
 import { consultaDeBusqueda, leerAlcance } from '../consultarBiblioteca';
@@ -48,6 +48,17 @@ describe('leerRespuesta', () => {
     it('recorta el extracto guardado', () => {
         const r = leerRespuesta('[F1]', [frag('a', 1, 'x'.repeat(1000))]);
         expect(r.fuentes[0]!.extracto.length).toBeLessThanOrEqual(401);
+    });
+});
+
+describe('normalizarMarcas', () => {
+    it('lleva las marcas escritas a su manera a la forma única', () => {
+        expect(normalizarMarcas('a [F2, F5] b [F2; F5] c [f3] d [F2,5] e [F1]')).toBe('a [F2][F5] b [F2][F5] c [F3] d [F2][F5] e [F1]');
+    });
+    it('y entonces cuentan como citas', () => {
+        const r = leerRespuesta('X [F1, F2].', [frag('a', 1), frag('b', 2)]);
+        expect(r.respuesta).toBe('X [F1][F2].');
+        expect(r.fuentes.map(f => f.n)).toEqual([1, 2]);
     });
 });
 

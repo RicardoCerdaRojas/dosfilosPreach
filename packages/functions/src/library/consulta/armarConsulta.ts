@@ -81,6 +81,16 @@ export function armarPedido(
 
 const MARCA = /\[F(\d{1,3})\]/g;
 
+/**
+ * Las marcas que el asistente escribe a su manera —«[F2, F5]», «[F2; F5]»,
+ * «[f2]», «[F2,5]»— pasadas a la forma única «[F2][F5]». Sin esto quedaban
+ * literales en la respuesta, sin cita ni enlace (revisión adversarial, U2).
+ */
+export function normalizarMarcas(texto: string): string {
+    return texto.replace(/\[\s*[Ff]\s*\d{1,3}(?:\s*[,;]\s*[Ff]?\s*\d{1,3})*\s*\]/g, grupo =>
+        (grupo.match(/\d{1,3}/g) ?? []).map(n => `[F${Number(n)}]`).join(''));
+}
+
 function quitarMarcas(texto: string): string {
     return texto.replace(MARCA, '').replace(/[ \t]{2,}/g, ' ');
 }
@@ -94,7 +104,7 @@ export function leerRespuesta(
     fragmentos: ReadonlyArray<FragmentoRecuperado>,
 ): { respuesta: string; fuentes: FuenteCitada[] } {
     const citadas = new Set<number>();
-    const respuesta = texto.replace(MARCA, (marca, num: string) => {
+    const respuesta = normalizarMarcas(texto).replace(MARCA, (marca, num: string) => {
         const n = Number(num);
         if (n < 1 || n > fragmentos.length) return '';
         citadas.add(n);

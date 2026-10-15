@@ -29,10 +29,13 @@ vi.mock('../useCitationSheet', () => ({
             printedOfView: 204, printedOf: () => 204, goTo: irA, goToPageInput: () => true,
             anchorFor: (sheet: number) => (sheet === 224 ? 'p. 204, § 3:18' : `hoja ${sheet}`),
             pages: [{ sheet: 223, section: 'James 3:13–18', firstLine: 'x' }, { sheet: 224, section: null, firstLine: 'Hartin goes on to argue' }],
+            numbering: null, ownerId: dueno,
         };
     },
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'yo' } }) }));
+let dueno: string | null = 'yo';
 const { SourceViewerProvider, SourceViewerSlot, useSourceViewer, useRegisterCitationSink } = await import('../SourceViewerProvider');
 const { useMemo, useRef, useState } = await import('react');
 const { MemoryRouter, useNavigate } = await import('react-router-dom');
@@ -305,5 +308,14 @@ describe('Visor de fuente — preguntar a este libro (biblioteca consultable, U4
         expect(screen.queryByTestId('indice-del-libro')).toBeNull();
         fireEvent.click(screen.getByTestId('preguntar-a-este-libro'));
         expect(screen.getByTestId('indice-del-libro')).toBeTruthy();
+    });
+
+    it('en un libro que no es del usuario (corpus, otro dueño) no se ofrece', () => {
+        dueno = 'otro';
+        montar();
+        fireEvent.click(screen.getByText('abrir'));
+        fireEvent.click(screen.getByLabelText('sourceViewer.expand'));
+        expect(screen.queryByTestId('preguntar-a-este-libro')).toBeNull();
+        dueno = 'yo';
     });
 });

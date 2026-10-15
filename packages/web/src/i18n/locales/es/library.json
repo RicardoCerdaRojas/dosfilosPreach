@@ -505,6 +505,7 @@
     "topicPlaceholder": "Un tema: la oración, la sabiduría de lo alto, el juramento…",
     "topicSearch": "Buscar",
     "topicHint": "Muestra dónde se habla del tema en tus libros, por significado y no sólo por palabra. No redacta respuesta ni cuenta como consulta.",
-    "topicNone": "No encontré ese tema en tus libros."
+    "topicNone": "No encontré ese tema en tus libros.",
+    "historyError": "No se pudo cargar tu historial de consultas. Recarga la página en un momento."
   }
 }
