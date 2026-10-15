@@ -438,6 +438,15 @@ export function useExegesisPapers() {
         },
     });
 
+    // «Agregar una idea a esta sección»: calcula y NO guarda, así que no
+    // invalida nada. La inserción se guarda con `saveStepEdit`.
+    const placeIdeaInSection = useMutation({
+        mutationFn: async ({ paperId, stepId, idea }: { paperId: string; stepId: string; idea: string }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.placeIdeaInSection.execute({ ownerId: user.uid, paperId, stepId, idea });
+        },
+    });
+
     // Ministry composers (Phase 6) — sermon, devotional, study guide.
     // None of them mutate paper state, so no cache invalidation
     // needed. The output goes to the user via copy/download/handoff
@@ -738,6 +747,7 @@ export function useExegesisPapers() {
         generateStep,
         acceptStep,
         setStepInclusion,
+        placeIdeaInSection,
         saveStepEdit,
         verifyStepCitations,
         reviewCitation,

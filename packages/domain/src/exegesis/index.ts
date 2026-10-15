@@ -107,6 +107,7 @@ export * from './repositories/IVoiceProfileRepository';
 export * from './repositories/IWorkProfileRepository';
 export * from './services/bibliography';
 export * from './services/paperBibliography';
+export * from './services/ideaPlacement';
 export * from './services/pericopeContext';
 export * from './services/assemblyContents';
 export * from './services/coverSuggestion';

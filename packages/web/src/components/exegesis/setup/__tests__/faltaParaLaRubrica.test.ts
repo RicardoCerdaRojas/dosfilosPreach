@@ -75,3 +75,13 @@ describe('faltaParaLaRubrica — recomendar por TIPO lo que la rúbrica pide', (
         expect(faltaParaLaRubrica({ ...base, paper: trabajo([], null) })).toEqual([]);
     });
 });
+
+describe('un comentario de otro libro no cubre el requisito (revisión adversarial)', () => {
+    it('Kistemaker, 1 y 2 Pedro y Judas, no aparece para «Comentario expositivo» en Santiago', () => {
+        const kistemaker = recurso('kistemaker', 'commentary-expository', { coversBibleBooks: ['1PE', '2PE', 'JUD'], scope: 'book' });
+        const varner = recurso('varner', 'commentary-expository', { coversBibleBooks: ['JAS'], scope: 'book' });
+        const paper = trabajo([], { sourceRequirements: [{ sourceType: 'commentary-expository', minimum: 1, justification: '' }] });
+        const [falta] = faltaParaLaRubrica({ ...base, resources: [kistemaker, varner], candidatos: [kistemaker, varner], paper });
+        expect(falta!.resources.map(r => r.id)).toEqual(['varner']);
+    });
+});

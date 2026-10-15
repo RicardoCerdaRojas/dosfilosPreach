@@ -118,6 +118,11 @@ export {
     type ComposeVerseAcademicProseOutput,
 } from './ComposeVerseAcademicProseUseCase';
 export {
+    PlaceIdeaInSectionUseCase,
+    type PlaceIdeaInSectionInput,
+    type PlaceIdeaInSectionOutput,
+} from './PlaceIdeaInSectionUseCase';
+export {
     ComposeSermonFromAnalysesUseCase,
     ComposeDevotionalFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,

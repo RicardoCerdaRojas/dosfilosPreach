@@ -1,5 +1,7 @@
 import {
+    commentaryBookCoverage,
     computeRubricCompliance,
+    isCommentaryType,
     isPickedByPages,
     sourceTypesForRubric,
     type ExegeticalPaper,
@@ -67,6 +69,10 @@ export function faltaParaLaRubrica({
             porPaginas: isPickedByPages({ sourceType: req.sourceType }),
             resources: candidatos.filter(r =>
                 tipoDelRecurso(r) === req.sourceType
+                // Un comentario de otro libro no cumple el requisito
+                // (`sourceTypesForRubric`): ofrecerlo aquí sería prometer
+                // lo que no da (revisión adversarial).
+                && !(isCommentaryType(req.sourceType) && commentaryBookCoverage(r, paper.passage.bookId) === 'other-books')
                 && !enElCorpus.has(r.id)
                 && !yaRecomendados.has(r.id)
                 && !esExcluido(r)),

@@ -40,6 +40,8 @@ export type ExegesisOperationKey =
     | 'composeDevotionalFromAnalyses'
     | 'composeStudyGuideFromAnalyses'
     | 'verifyStepCitations'
+    // «Agregar una idea a esta sección»: una o dos oraciones, no la sección.
+    | 'placeIdeaInSection'
     | 'runCoherencePass'
     | 'extractRubricFromText'
     | 'extractRubricFromDocument'
@@ -136,6 +138,12 @@ export const EXEGESIS_OPERATION_CATALOG: Readonly<Record<ExegesisOperationKey, E
         estimatedCostUsd: 0.05,
         requiresPreConfirm: false,
         displayKeyI18n: 'studies.operations.verifyStepCitations',
+    },
+    placeIdeaInSection: {
+        key: 'placeIdeaInSection',
+        estimatedCostUsd: 0.02,
+        requiresPreConfirm: false,
+        displayKeyI18n: 'studies.operations.placeIdeaInSection',
     },
     runCoherencePass: {
         key: 'runCoherencePass',

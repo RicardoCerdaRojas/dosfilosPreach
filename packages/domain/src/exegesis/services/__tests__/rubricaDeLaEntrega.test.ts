@@ -62,6 +62,11 @@ describe('applyPageLabelStyle', () => {
         expect(applyPageLabelStyle('(Moo, p. xiv) (cf. p. ej. Mayor)', PARENTETICA_SIN_P)).toBe('(Moo, xiv) (cf. p. ej. Mayor)');
     });
 
+    it('aplicarla dos veces no cambia nada: el editor ya muestra la forma entregada (TP #6, #25)', () => {
+        const una = applyPageLabelStyle('Así (Carballosa, p. 208) y (Wallace, hoja 87).', PARENTETICA_SIN_P);
+        expect(applyPageLabelStyle(una, PARENTETICA_SIN_P)).toBe(una);
+    });
+
     it('«hoja N» no se toca: dice que la página impresa se desconoce', () => {
         expect(applyPageLabelStyle('(Wallace, hoja 87)', PARENTETICA_SIN_P)).toBe('(Wallace, hoja 87)');
     });
