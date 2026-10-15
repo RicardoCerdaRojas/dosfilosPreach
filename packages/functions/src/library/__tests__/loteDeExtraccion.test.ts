@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
+import { compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
 import { medirExtraccion } from '../medirExtraccion';
 import { PROMPT_DE_EXTRACCION } from '../geminiExtraction';
 import { repararEscapes } from '../rescatarPaginas';
@@ -133,5 +133,16 @@ describe('rescate con escapes inválidos', () => {
         const cortada = '{"pages":[{"page":1,"md":"| a \\| b |"},{"page":2,"md":"sin cerr';
         const r = leerRespuestaDeTramo({ text: cortada, finishReason: 'STOP' }, { desde: 1, hasta: 2 });
         expect(r.ok && r.paginas[0]!.md).toBe('| a \\| b |');
+    });
+});
+
+describe('separarEnBlanco', () => {
+    const capa = [900, 0, 900, 900, 5, 900];
+    it('con capa de texto, las páginas vacías en el PDF no se vuelven a pedir', () => {
+        expect(separarEnBlanco([{ desde: 2, hasta: 4 }, { desde: 5, hasta: 6 }], capa)).toEqual({ pedir: [{ desde: 3, hasta: 4 }, { desde: 6, hasta: 6 }], enBlanco: [2, 5] });
+    });
+    it('un libro escaneado (sin capa) se sigue pidiendo entero', () => {
+        expect(separarEnBlanco([{ desde: 2, hasta: 4 }], [0, 0, 0, 10]).pedir).toEqual([{ desde: 2, hasta: 4 }]);
+        expect(separarEnBlanco([{ desde: 2, hasta: 4 }], null).enBlanco).toEqual([]);
     });
 });

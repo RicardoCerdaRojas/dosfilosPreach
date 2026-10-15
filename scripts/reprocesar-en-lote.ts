@@ -24,7 +24,7 @@ import { PDFDocument } from 'pdf-lib';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-    compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas,
+    compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas,
     PAGINAS_POR_TRAMO, type Tramo,
 } from '../packages/functions/src/library/loteDeExtraccion';
 import { camposDeMedicion, capaDeTextoPorPagina } from '../packages/functions/src/library/medirExtraccion';
@@ -159,8 +159,11 @@ function revisarTramosOk(estado: Estado): void {
         const ok = estado.tramos.filter(t => t.rid === libro.rid && t.estado === 'ok');
         if (ok.length === 0 || !existsSync(archivoDePaginas(libro.rid))) continue;
         const unidas = unirPaginas(JSON.parse(readFileSync(archivoDePaginas(libro.rid), 'utf8'))).paginas;
+        // Una página abandonada cuenta como devuelta: ya no se pide.
+        const abandonadas = estado.tramos.filter(t => t.rid === libro.rid && t.estado === 'abandonado')
+            .flatMap(t => Array.from({ length: t.hasta - t.desde + 1 }, (_, i) => ({ page: t.desde + i, md: '(abandonada)' })));
         for (const t of ok) {
-            const faltan = tramosQueFaltan(t, unidas.filter(p => p.page >= t.desde && p.page <= t.hasta));
+            const faltan = tramosQueFaltan(t, [...unidas, ...abandonadas].filter(p => p.page >= t.desde && p.page <= t.hasta));
             if (faltan.length === 0) continue;
             t.estado = 'incompleto';
             t.faltan = faltan;
@@ -220,9 +223,27 @@ async function recoger(estado: Estado): Promise<boolean> {
     return todo;
 }
 
+/** La capa de texto del PDF por página (pdfjs tarda minutos en un libro grande: se guarda en el lote). */
+async function capaDelLibro(rid: string): Promise<number[] | null> {
+    const archivo = join(dir(), `${rid}.capa.json`);
+    if (existsSync(archivo)) return JSON.parse(readFileSync(archivo, 'utf8'));
+    const d = (await admin.firestore().collection('library_resources').doc(rid).get()).data()!;
+    const capa = await capaDeTextoPorPagina((await bajar(d.storageUrl))!, 300_000);
+    if (capa) writeFileSync(archivo, JSON.stringify(capa));
+    return capa;
+}
+
 async function reintentar(): Promise<void> {
     const estado = leerEstado();
     await recoger(estado);
+    // Páginas que volvieron en blanco y en el PDF también lo están: no se piden más.
+    for (const f of estado.tramos.filter(t => t.estado === 'incompleto' && t.faltan?.length)) {
+        const { pedir, enBlanco } = separarEnBlanco(f.faltan!, await capaDelLibro(f.rid));
+        if (enBlanco.length === 0) continue;
+        estado.tramos.push(...enBlanco.map(n => ({ desde: n, hasta: n, rid: f.rid, ronda: 0, indice: -1, estado: 'abandonado' as const, motivo: 'en blanco también en el PDF' })));
+        f.faltan = pedir;
+        if (pedir.length === 0) { f.estado = 'ok'; f.motivo = `páginas en blanco en el PDF: ${enBlanco.join(', ')}`; }
+    }
     const fallos = estado.tramos.filter(t => t.estado === 'fallo' || t.estado === 'incompleto');
     if (fallos.length === 0) { console.log('No hay tramos que reintentar.'); return; }
     const ronda = estado.rondas.length + 1;
@@ -265,8 +286,7 @@ async function aplicar(): Promise<void> {
         if (abandonadas.length > 0) console.log(`  (${libro.titulo.slice(0, 40)}: páginas abandonadas ${abandonadas.join(', ')})`);
         const ref = admin.firestore().collection('library_resources').doc(libro.rid);
         const d = (await ref.get()).data()!;
-        const pdf = (await bajar(d.storageUrl))!;
-        const capa = await capaDeTextoPorPagina(pdf, 300_000);
+        const capa = await capaDelLibro(libro.rid);
         const nuevo = unirPaginas(existsSync(archivoDePaginas(libro.rid)) ? JSON.parse(readFileSync(archivoDePaginas(libro.rid), 'utf8')) : []);
         const mdActual = d.structuredContentUrl ? (await bajar(d.structuredContentUrl))!.toString('utf8') : '';
         const tcActual = typeof d.textContent === 'string' ? d.textContent : '';

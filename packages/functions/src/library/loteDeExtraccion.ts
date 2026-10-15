@@ -2,7 +2,7 @@ import { configDeExtraccion, PROMPT_DE_EXTRACCION, type GeminiPage } from './gem
 import { markdownAPlano } from './markdownAPlano';
 import { pagesToMarkdown, pagesToMarkedText } from './llamaParseClient';
 import { parsearRespuesta, repararEscapes, rescatarPaginas } from './rescatarPaginas';
-import { medirExtraccion, type MedicionDeExtraccion } from './medirExtraccion';
+import { CAPA_CON_TEXTO, medirExtraccion, type MedicionDeExtraccion } from './medirExtraccion';
 
 /**
  * Reproceso de libros en LOTE (Gemini Batch API, mitad de precio, hasta 24 h).
@@ -120,6 +120,30 @@ export function tramosQueFaltan(tramo: Tramo, devueltas: ReadonlyArray<{ page: n
         else faltan.push({ desde: n, hasta: n });
     }
     return faltan;
+}
+
+/**
+ * De las páginas que volvieron en blanco, cuáles vale la pena pedir otra vez.
+ * Si el libro tiene capa de texto (la mitad de sus páginas con más de
+ * `CAPA_CON_TEXTO` caracteres) y la página está vacía en ella, está en blanco
+ * de verdad: en el lote del 2026-10-15, 188 de 212 páginas que volvían en
+ * blanco una y otra vez no tenían texto en el PDF. Un libro escaneado sin capa
+ * no dice nada: se sigue pidiendo (con el tope de dos intentos por página).
+ */
+export function separarEnBlanco(faltan: ReadonlyArray<Tramo>, capa: ReadonlyArray<number> | null): { pedir: Tramo[]; enBlanco: number[] } {
+    const conCapa = capa !== null && capa.filter(c => c > CAPA_CON_TEXTO).length * 2 >= capa.length;
+    if (!conCapa) return { pedir: [...faltan], enBlanco: [] };
+    const enBlanco: number[] = [];
+    const pedir: Tramo[] = [];
+    for (const t of faltan) {
+        for (let n = t.desde; n <= t.hasta; n++) {
+            if ((capa[n - 1] ?? 0) <= CAPA_CON_TEXTO) { enBlanco.push(n); continue; }
+            const ultimo = pedir[pedir.length - 1];
+            if (ultimo && ultimo.hasta === n - 1) ultimo.hasta = n;
+            else pedir.push({ desde: n, hasta: n });
+        }
+    }
+    return { pedir, enBlanco };
 }
 
 function tieneTexto(p: { text?: string; md?: string }): boolean {
