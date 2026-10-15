@@ -64,3 +64,21 @@ describe('la sección sabe qué pregunta responde', () => {
         expect(userMessage).not.toContain('Esto es el encargo');
     });
 });
+
+/**
+ * TP #7 (#32): el fundador reescribió las cuatro respuestas: «núcleo
+ * semántico», «sustantivo rector»… «no lo entiendo y no lo escribiría yo».
+ */
+describe('el registro del autor', () => {
+    it('tercera persona, cita en la misma oración, sin jerga ni intensificadores', () => {
+        const { systemInstruction } = buildVerseProsePrompt(entrada());
+        expect(systemInstruction).toContain('Tercera persona impersonal');
+        expect(systemInstruction).toContain('La cita va en la MISMA oración');
+        expect(systemInstruction).toContain('núcleo semántico');
+        expect(systemInstruction).toContain('Sin intensificadores');
+    });
+    it('con una pregunta, la morfología completa abre la respuesta', () => {
+        expect(buildVerseProsePrompt(entrada([PREGUNTA])).systemInstruction).toContain('abre con su morfología completa');
+        expect(buildVerseProsePrompt(entrada()).systemInstruction).not.toContain('abre con su morfología completa');
+    });
+});

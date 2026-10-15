@@ -12,6 +12,7 @@ import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBrief
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
+    nextAssignmentDate,
     type ExegeticalStrategy,
     type PassageReference,
     type SupportedLanguage,
@@ -93,10 +94,18 @@ export function ExegesisCreatePage() {
     const perfilAplicado = useRef(false);
 
     const aplicarPerfil = useCallback((profile: WorkProfile | null) => {
+        // Elegir «sin perfil» también es una decisión: el perfil por defecto
+        // que llegue tarde no la pisa.
+        perfilAplicado.current = true;
         setWorkProfileId(profile?.id ?? null);
         if (!profile) return;
-        perfilAplicado.current = true;
-        setRubricTemplateId(profile.rubricTemplateId);
+        // Un perfil guardado antes del 2026-10-07 no creaba plantilla y quedó
+        // con `null`, que al crear significa «sin plantilla: la del sistema»
+        // (12 páginas, 13 fuentes). En el TP #7 el perfil «TP Semanal» era
+        // así y el trabajo nació con la rúbrica del paper (#1). Sin rúbrica,
+        // el perfil no opina: el selector queda como estaba y se avisa.
+        // Sin rúbrica vuelve a automático: no hereda la del perfil anterior.
+        setRubricTemplateId(profile.rubricTemplateId ?? undefined);
         setBriefDelPerfilId(profile.briefTemplateId);
         setExegeticalStrategy(profile.exegeticalStrategy);
         setCoverFromProfile(profile.cover ?? null);
@@ -141,7 +150,11 @@ export function ExegesisCreatePage() {
             // dato que menos cambia entre trabajos del mismo curso y el que
             // más molesta retipear.
             if (coverFromProfile) {
-                await updatePaperCover.mutateAsync({ paperId: paper.id, cover: coverFromProfile });
+                // La fecha, del mes en curso: el perfil guarda la de la
+                // entrega con que se creó, y el TP #7 salió «SEPTIEMBRE 2026»
+                // en octubre (el #4 del TP #6, por el camino del perfil).
+                const cover = { ...coverFromProfile, date: nextAssignmentDate(coverFromProfile.date, new Date()) };
+                await updatePaperCover.mutateAsync({ paperId: paper.id, cover });
             }
             toast.success(t('create.toast.created'));
             navigate(`/dashboard/exegesis/${paper.id}/setup`);
@@ -226,7 +239,7 @@ export function ExegesisCreatePage() {
                         <StrategyOption
                             value="dialectical"
                             selected={exegeticalStrategy === 'dialectical'}
-                            onSelect={() => setExegeticalStrategy('dialectical')}
+                            onSelect={() => { perfilAplicado.current = true; setExegeticalStrategy('dialectical'); }}
                             recommended
                             title={t('create.strategy.dialectical.title')}
                             body={t('create.strategy.dialectical.body')}
@@ -234,7 +247,7 @@ export function ExegesisCreatePage() {
                         <StrategyOption
                             value="free"
                             selected={exegeticalStrategy === 'free'}
-                            onSelect={() => setExegeticalStrategy('free')}
+                            onSelect={() => { perfilAplicado.current = true; setExegeticalStrategy('free'); }}
                             title={t('create.strategy.free.title')}
                             body={t('create.strategy.free.body')}
                         />
@@ -263,6 +276,9 @@ export function ExegesisCreatePage() {
                             ))}
                         </select>
                         <p className="text-[11px] text-muted-foreground">{t('paperSetup.workProfile.pickHint')}</p>
+                        {perfilElegido && perfilElegido.rubricTemplateId === null && (
+                            <p className="text-[11px] text-warning-subtle-foreground">{t('paperSetup.workProfile.noRubric')}</p>
+                        )}
                     </div>
                 )}
 
@@ -275,7 +291,7 @@ export function ExegesisCreatePage() {
                     <div className="space-y-2">
                         <RubricTemplatePicker
                             value={rubricTemplateId}
-                            onChange={setRubricTemplateId}
+                            onChange={next => { perfilAplicado.current = true; setRubricTemplateId(next); }}
                             rubrics={rubrics}
                             defaultRubric={defaultRubric}
                         />

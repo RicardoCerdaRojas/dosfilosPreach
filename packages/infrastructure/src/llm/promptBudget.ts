@@ -117,7 +117,41 @@ export const VERSE_CORPUS_SPACE_CHARS = MAX_PROMPT_CHARS - SAFETY_MARGIN_CHARS -
  *
  * Si todo cabe, nadie se recorta. Si no, se recortan las que más traen.
  */
+/** Lo que conserva, como mínimo, el texto sin fijar de cada fuente. */
+export const PISO_SIN_FIJAR = 4_000;
+
 export function allocateSourceBudgets(
+    lengths: ReadonlyArray<number>,
+    weights: ReadonlyArray<number>,
+    totalChars: number,
+    /**
+     * Lo que cada fuente tiene GARANTIZADO antes del reparto: las hojas que el
+     * estudiante fijó (TP #7). Se reserva primero; lo que sobra se reparte como
+     * siempre. Si lo reservado no cabe entero, se achica en proporción —nunca
+     * más que el total— y el llamador lo registra.
+     */
+    reserved: ReadonlyArray<number> = [],
+): number[] {
+    const total = Math.max(0, totalChars);
+    const pedido = lengths.map((len, i) => Math.min(len, Math.max(0, reserved[i] ?? 0)));
+    const sumaPedido = pedido.reduce((s, n) => s + n, 0);
+    // Lo fijado no se queda con todo: cada fuente con texto sin fijar conserva
+    // un piso. Sin él, un fijado enorme dejaba a las demás —el ancla
+    // incluida— en «[contenido truncado]» (revisión adversarial de B). Un
+    // piso por fuente y no un porcentaje: un 70 % volvía a truncar lo fijado
+    // de Robertson en el caso del TP #7.
+    const piso = lengths.reduce((sum, len, i) => sum + Math.min(PISO_SIN_FIJAR, Math.max(0, len - pedido[i]!)), 0);
+    const tope = Math.max(0, total - piso);
+    const escala = sumaPedido > tope ? tope / sumaPedido : 1;
+    const base = pedido.map(n => Math.floor(n * escala));
+    // Si lo fijado ya se achicó, lo que queda es el piso de las otras: una
+    // fuente recortada no compite por él.
+    const restante = lengths.map((len, i) => (escala < 1 && pedido[i]! > 0 ? 0 : len - base[i]!));
+    const resto = repartir(restante, weights, total - base.reduce((s, n) => s + n, 0));
+    return base.map((n, i) => n + resto[i]!);
+}
+
+function repartir(
     lengths: ReadonlyArray<number>,
     weights: ReadonlyArray<number>,
     totalChars: number,
@@ -140,4 +174,21 @@ export function allocateSourceBudgets(
         pending = pending.filter(i => !fit.includes(i));
     }
     return budgets;
+}
+
+/**
+ * Si a alguna fuente no le cupo entero lo que el estudiante fijó, lo deja en
+ * el registro: es la señal de que fijó más de lo que entra en un paso.
+ */
+export function avisarFijadoRecortado(
+    sources: ReadonlyArray<{ citationKey?: string | null; displayLabel?: string; pinnedChars?: number }>,
+    budgets: ReadonlyArray<number>,
+    label: string,
+): void {
+    sources.forEach((s, i) => {
+        const fijado = s.pinnedChars ?? 0;
+        if (fijado > 0 && (budgets[i] ?? 0) < fijado) {
+            console.warn(`[${label}] lo fijado de ${s.citationKey ?? s.displayLabel ?? '?'} no cabe entero`, { fijado, presupuesto: budgets[i] });
+        }
+    });
 }

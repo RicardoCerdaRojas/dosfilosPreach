@@ -136,6 +136,13 @@ export interface ExegesisSourceContext {
      */
     textContent: string;
     /**
+     * Cuántos caracteres del PRINCIPIO de `textContent` son hojas que el
+     * estudiante fijó. El prompt les reserva lugar antes de repartir el resto
+     * y, si tiene que recortar la fuente, recorta lo que viene después (TP #7:
+     * las páginas fijadas de Robertson no llegaban).
+     */
+    pinnedChars?: number;
+    /**
      * Set when the source is in `'extracted-excerpts'` mode. Lists
      * the per-excerpt anchors (`"p. 47, § 3.2"`) so the prompt
      * template can ask Gemini to cite using these stable labels —

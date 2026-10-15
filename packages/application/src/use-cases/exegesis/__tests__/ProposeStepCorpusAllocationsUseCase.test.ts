@@ -65,3 +65,38 @@ describe('el plan de uso respeta el encuadre', () => {
         expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v6.pinnedSourceRoles).toEqual({ na28: 'anchor' });
     });
 });
+
+/**
+ * TP #7 (#15): el plan dejó a Robertson sólo en 3:13 y no en 3:18, cuya
+ * pregunta era sobre el participio τοῖς ποιοῦσιν.
+ */
+describe('la pregunta de sintaxis lleva su gramática', () => {
+    const fuentes = [
+        { id: 'na28', sourceType: 'critical-apparatus', displayLabel: 'NA28', citationKey: 'NA28' },
+        { id: 'wallace', sourceType: 'grammar-syntax', displayLabel: 'Greek Grammar Beyond the Basics', citationKey: 'Wallace' },
+        { id: 'robertson', sourceType: 'grammar-syntax', displayLabel: 'A Grammar of the Greek NT', citationKey: 'Robertson' },
+    ];
+
+    it('si el planificador la dejó fuera, se agrega con rol técnico, saltando la excluida', async () => {
+        const { useCase, paperRepository } = build(
+            { sources: fuentes, excludedSources: [{ key: 'Wallace' }] },
+            { v6: { pinnedSources: ['na28'], rationale: 'aparato' }, v7: { pinnedSources: ['na28'], rationale: 'x' } },
+        );
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        const plan = paperRepository.setStepPlan.mock.calls[0]![2];
+        // v7: «¿qué uso del dativo…?» es de sintaxis.
+        expect(plan.perStep.v7.pinnedSources).toEqual(['na28', 'robertson']);
+        expect(plan.perStep.v7.pinnedSourceRoles).toEqual({ robertson: 'technical' });
+        // v6: «¿cómo se puntúa?» es de crítica textual, no se toca.
+        expect(plan.perStep.v6.pinnedSources).toEqual(['na28']);
+    });
+
+    it('si ya lleva una gramática, no se agrega otra', async () => {
+        const { useCase, paperRepository } = build(
+            { sources: fuentes },
+            { v7: { pinnedSources: ['wallace'], rationale: 'x' } },
+        );
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v7.pinnedSources).toEqual(['wallace']);
+    });
+});

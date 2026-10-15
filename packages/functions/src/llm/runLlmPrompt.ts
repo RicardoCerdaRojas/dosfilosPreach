@@ -300,9 +300,16 @@ export const runLlmPrompt = onCall(
             } else if (ruta.provider === 'gemini') {
                 model = ruta.model;
             } else {
-                return await porOtroProveedor(ruta.provider, ruta.model, ruta.reasoning, {
-                    feature, uid, system, prompt, data,
-                });
+                const otro = await conRespaldo(
+                    () => porOtroProveedor(ruta.provider as 'openai' | 'anthropic', ruta.model, ruta.reasoning, {
+                        feature, uid, system, prompt, data,
+                    }),
+                    `${feature} (${ruta.provider}/${ruta.model})`,
+                );
+                if (otro) return otro;
+                // Respaldo EN SILENCIO (decisión del fundador, TP #7): el pedido
+                // sigue por Gemini con el modelo que pidió el navegador, y el
+                // medidor lo registra como cualquier llamada de Gemini.
             }
         }
 
@@ -507,5 +514,42 @@ async function porOtroProveedor(
         throw new HttpsError('internal', err instanceof Error ? err.message : 'runLlmPrompt failed');
     }
 }
+
+/**
+ * Lo que pide la ruta a otro proveedor, con Gemini de respaldo.
+ *
+ * En el TP #7 (Santiago 3:13-18) OpenAI tumbó tres veces en un día un paso
+ * del trabajo: el planificador entró en bucle hasta `max_output_tokens`, el
+ * filtro de uso rechazó un prompt sobre «sabiduría demoníaca» (Stg 3:15) y un
+ * corte de red (ECONNRESET) dejó un análisis a medias. Ninguna era culpa del
+ * trabajo, y en las tres el estudiante quedó trabado. Cualquier falla del otro
+ * proveedor devuelve `null` y el pedido sigue por Gemini; queda registrada en
+ * los logs con «cae a Gemini» para poder medir cuántas veces pasa.
+ */
+export async function conRespaldo<T>(
+    intento: () => Promise<T>,
+    etiqueta: string,
+    reloj: { ahora: () => number } = { ahora: () => Date.now() },
+): Promise<T | null> {
+    const desde = reloj.ahora();
+    try {
+        return await intento();
+    } catch (err) {
+        const motivo = err instanceof Error ? err.message : err;
+        // Una falla tardía no cae: Gemini empezaría de cero con menos de cuatro
+        // minutos del límite de 540 s, la función moriría a mitad y el
+        // navegador reintentaría la cadena entera, cobrando dos veces
+        // (revisión adversarial de A).
+        if (reloj.ahora() - desde > SIN_RESPALDO_TRAS_MS) {
+            console.error(`[runLlmPrompt] ${etiqueta} falló tarde; sin tiempo para Gemini:`, motivo);
+            throw err;
+        }
+        console.warn(`[runLlmPrompt] ${etiqueta} cae a Gemini:`, motivo);
+        return null;
+    }
+}
+
+/** Después de esto ya no queda tiempo para que Gemini termine dentro de los 540 s. */
+export const SIN_RESPALDO_TRAS_MS = 310_000;
 
 type RutaRazonamiento = import('./ruteoDeModelos').RutaDeModelo['reasoning'];

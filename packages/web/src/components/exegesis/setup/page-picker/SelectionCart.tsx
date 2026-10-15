@@ -4,6 +4,7 @@ import {
     CURATED_CORPUS_BUDGET_CHARS,
     printedLabelForSheet,
     sectionsCoveredBy,
+    sectionLabelForRange,
     withPageSelection,
     type CorpusFootprint,
     type PageNumbering,
@@ -97,14 +98,18 @@ export function SelectionCart({
      * Y el número dice tanto como el nombre: un tramo que cubre quince
      * secciones no es una elección quirúrgica, y nada lo decía.
      */
+    // Con la primera sección que empieza ADENTRO (`sectionLabelForRange`): en
+    // el TP #7 el genitivo de Robertson salía como «(i) Double accusative».
     const labelFor = (range: SheetRange): { text: string; covered: ReadonlyArray<string> } => {
         const covered = sectionsCoveredBy(sections, range);
-        if (covered.length === 0) return { text: '', covered: [] };
-        const first = covered[0]!.section;
+        const rotulo = sectionLabelForRange(sections, range);
+        if (!rotulo) return { text: '', covered: [] };
         return {
-            text: covered.length > 1
-                ? t('paperSetup.subSteps.corpus.picker.cart.sectionsCovered', { section: first, count: covered.length })
-                : first,
+            text: rotulo.continues
+                ? t('paperSetup.subSteps.corpus.picker.cart.sectionContinues', { section: rotulo.section })
+                : rotulo.count > 1
+                    ? t('paperSetup.subSteps.corpus.picker.cart.sectionsCovered', { section: rotulo.section, count: rotulo.count })
+                    : rotulo.section,
             covered: covered.map(c => c.section),
         };
     };

@@ -3,7 +3,7 @@ import { buildEmptyCanonicalVerseAnalysis } from '../../entities/CanonicalVerseA
 import type { CanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { ExegeticalPaper } from '../../entities/ExegeticalPaper';
 import { exportPaperToMarkdown } from '../../entities/exportPaperToMarkdown';
-import { buildPaperBibliography, citedSourceKeys } from '../paperBibliography';
+import { buildPaperBibliography, citedSourceKeys, uncitedRubricRequirements } from '../paperBibliography';
 import type { BibliographySourceRow } from '../paperBibliography';
 
 const analisisCitando = (...sourceKeys: string[]): CanonicalVerseAnalysis => ({
@@ -180,5 +180,62 @@ describe('exportPaperToMarkdown — la bibliografía llega al documento', () => 
         // en inglés («faltan: author, title…») dentro de un trabajo en
         // español (TP #6, 2026-10-07).
         expect(md).toContain('- The Epistle of James (NICNT). [FICHA INCOMPLETA, faltan: autor, título, ciudad, editorial, año]');
+    });
+});
+
+/**
+ * TP #7 (#30): el documento citó 5 de las 7 fuentes. NA28 y Tuggy estaban
+ * citados en los análisis, no en la prosa, y la bibliografía los listó.
+ */
+describe('con documento ensamblado, lo citado es lo que cita el documento', () => {
+    const fuente = (citationKey: string, sourceType: string) => ({ citationKey, displayLabel: citationKey, sourceType });
+    const tp7 = {
+        ...paper([{ aceptado: analisisCitando('McCartney', 'NA28', 'Tuggy') }]),
+        sources: [fuente('McCartney', 'commentary-expository'), fuente('NA28', 'critical-apparatus'), fuente('Tuggy', 'lexicon-technical')],
+        assembledMarkdown: 'La lectura epexegética es la mejor (McCartney, 203). Santiago lo dice así.',
+        rubric: { sourceRequirements: [
+            { sourceType: 'commentary-expository', minimum: 1 },
+            { sourceType: 'critical-apparatus', minimum: 1 },
+        ] },
+    } as unknown as ExegeticalPaper;
+
+    it('NA28 y Tuggy no se citan en el documento: no van a la bibliografía', () => {
+        expect([...citedSourceKeys(tp7)]).toEqual(['McCartney']);
+    });
+
+    it('el requisito del aparato queda sin cita, y se nombra la fuente que lo cubriría', () => {
+        expect(uncitedRubricRequirements(tp7)).toEqual([
+            { sourceType: 'critical-apparatus', required: 1, cited: 0, uncited: ['NA28'] },
+        ]);
+    });
+
+    it('una fuente quitada del corpus que el documento cita no desaparece', () => {
+        const quitada = { ...tp7, assembledMarkdown: 'Lo dice Wallace (Wallace, 54).',
+            steps: paper([{ aceptado: analisisCitando('Wallace') }]).steps } as unknown as ExegeticalPaper;
+        expect([...citedSourceKeys(quitada)]).toEqual(['Wallace']);
+    });
+
+    it('sin documento ensamblado, siguen contando los análisis aceptados', () => {
+        const sinEnsamble = { ...tp7, assembledMarkdown: null } as ExegeticalPaper;
+        expect([...citedSourceKeys(sinEnsamble)].sort()).toEqual(['McCartney', 'NA28', 'Tuggy']);
+        expect(uncitedRubricRequirements(sinEnsamble)).toEqual([]);
+    });
+});
+
+/** Revisión adversarial de H: anclas que el sistema escribe y los patrones no leían. */
+describe('lo citado con anclas romanas, de sección, s.v. y hoja', () => {
+    it.each([
+        '(Moo, p. xiv)', '(Arnold y Choi, § 3.2.1)', '(BDAG, s.v. σοφία)', '(Wallace, hoja 87)',
+    ])('%s cuenta como cita', cita => {
+        const p = {
+            steps: [], assembledMarkdown: `Una afirmación ${cita}.`,
+            sources: ['Moo', 'Arnold y Choi', 'BDAG', 'Wallace'].map(k => ({ citationKey: k, displayLabel: k, sourceType: 'other' })),
+        } as unknown as ExegeticalPaper;
+        expect(citedSourceKeys(p).size).toBe(1);
+    });
+    it('un pie de imprenta no es una cita', () => {
+        const p = { steps: [], assembledMarkdown: 'Libro (Grand Rapids: Eerdmans, 2009).',
+            sources: [{ citationKey: 'Moo', displayLabel: 'Moo', sourceType: 'other' }] } as unknown as ExegeticalPaper;
+        expect(citedSourceKeys(p).size).toBe(0);
     });
 });

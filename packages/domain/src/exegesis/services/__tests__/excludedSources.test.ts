@@ -71,6 +71,14 @@ describe('lo que se propone y lo que leen los pasos que redactan', () => {
         expect(proposeExclusions(null)).toEqual([]);
     });
 
+    it('sin título, la propuesta nombra el pasaje (TP #7, #2 y #10: decía «trabajo anterior»)', () => {
+        const [e] = proposeExclusions({
+            paperId: 'p6', title: null, createdAt: new Date(), citedSourceKeys: ['Adamson'],
+            passage: { bookId: 'JAS', chapterStart: 3, chapterEnd: 3, verseStart: 1, verseEnd: 12 },
+        } as never, 'es');
+        expect(e!.previousPaperTitle).toMatch(/3:1.?12/);
+    });
+
     it('el encuadre lleva las exclusiones al final, en el idioma del trabajo', () => {
         const es = briefWithExclusions({ assignmentBrief: 'Cuatro preguntas.', excludedSources: tp5, displayLanguage: 'es' });
         // Adelante: un encuadre largo se recorta por el final.

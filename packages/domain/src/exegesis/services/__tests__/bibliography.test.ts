@@ -6,6 +6,8 @@ import {
     hasCompleteBibliography,
     missingBibliographyFields,
     proposeSortedAuthor,
+    sortedAuthorOf,
+    withFullTitle,
     type BibliographicData,
 } from '../bibliography';
 
@@ -104,11 +106,18 @@ describe('missingBibliographyFields', () => {
 });
 
 describe('proposeSortedAuthor — nombres que no se ordenan moviendo la última palabra', () => {
-    it('deja el nombre coordinado tal cual', () => {
+    it('invierte sólo el primer coautor (Turabian)', () => {
         // «Choi, Bill T. Arnold and John H.» llegaba impreso a la
-        // bibliografía del trabajo.
-        expect(proposeSortedAuthor('Bill T. Arnold and John H. Choi')).toBe('Bill T. Arnold and John H. Choi');
-        expect(proposeSortedAuthor('Gordon J. Wenham y John Walton')).toBe('Gordon J. Wenham y John Walton');
+        // bibliografía; después, NA28 salió sin invertir (TP #7).
+        expect(proposeSortedAuthor('Bill T. Arnold and John H. Choi')).toBe('Arnold, Bill T., and John H. Choi');
+        expect(proposeSortedAuthor('Gordon J. Wenham y John Walton')).toBe('Wenham, Gordon J., y John Walton');
+        expect(proposeSortedAuthor('Eberhard Nestle y Kurt Aland')).toBe('Nestle, Eberhard, y Kurt Aland');
+    });
+
+    it('un «ordenado» igual al autor se vuelve a proponer; uno escrito a mano, no', () => {
+        expect(sortedAuthorOf({ author: 'Eberhard Nestle y Kurt Aland', authorSorted: 'Eberhard Nestle y Kurt Aland' }))
+            .toBe('Nestle, Eberhard, y Kurt Aland');
+        expect(sortedAuthorOf({ author: 'Eberhard Nestle y Kurt Aland', authorSorted: 'Nestle-Aland' })).toBe('Nestle-Aland');
     });
 
     it('deja el sufijo de linaje tal cual', () => {
@@ -125,5 +134,31 @@ describe('proposeSortedAuthor — nombres que no se ordenan moviendo la última 
     it('sigue ordenando el nombre corriente', () => {
         expect(proposeSortedAuthor('Allen P. Ross')).toBe('Ross, Allen P.');
         expect(proposeSortedAuthor('Ricardo Cerda Rojas')).toBe('Rojas, Ricardo Cerda');
+    });
+});
+
+/** TP #7: Varner salió *The Book of James* sin «: A New Perspective». */
+describe('withFullTitle', () => {
+    it('completa el subtítulo que la ficha perdió', () => {
+        expect(withFullTitle({ title: 'The Book of James' }, 'The Book of James: A New Perspective').title)
+            .toBe('The Book of James: A New Perspective');
+    });
+    it('otra diferencia no se toca: la decide la persona', () => {
+        expect(withFullTitle({ title: 'James' }, 'James and the Jesus Tradition').title).toBe('James');
+        expect(withFullTitle({ title: 'The Epistle of James' }, 'Commentary on James').title).toBe('The Epistle of James');
+    });
+});
+
+/** Revisión adversarial de H. */
+describe('autores que no son coautores', () => {
+    it('un apellido compuesto con «y» no se parte', () => {
+        expect(proposeSortedAuthor('José Ortega y Gasset')).toBe('José Ortega y Gasset');
+        expect(proposeSortedAuthor('Santiago Ramón y Cajal')).toBe('Santiago Ramón y Cajal');
+    });
+    it('un autor institucional guardado tal cual se respeta', () => {
+        expect(sortedAuthorOf({ author: 'United Bible Societies', authorSorted: 'United Bible Societies' })).toBe('United Bible Societies');
+    });
+    it('un guion no es un subtítulo (suele venir del nombre del archivo)', () => {
+        expect(withFullTitle({ title: 'James' }, 'James - McCartney').title).toBe('James');
     });
 });

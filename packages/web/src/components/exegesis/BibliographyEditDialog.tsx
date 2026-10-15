@@ -107,7 +107,9 @@ export function BibliographyEditDialog({ open, onOpenChange, resourceId, display
             // —«Ricardo Cerda Rojas» ordena por «Cerda Rojas»—.
             if (field !== 'author') return { ...d, [field]: value };
             const proposal = proposeSortedAuthor(value);
-            const untouched = d.authorSorted === '' || d.authorSorted === proposeSortedAuthor(d.author);
+            // Igual al autor también es «sin tocar»: así quedó guardado cuando
+            // la propuesta no sabía invertir coautores.
+            const untouched = d.authorSorted === '' || d.authorSorted === proposeSortedAuthor(d.author) || d.authorSorted === d.author;
             return { ...d, author: value, authorSorted: untouched ? proposal : d.authorSorted };
         });
     };

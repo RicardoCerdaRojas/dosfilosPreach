@@ -29,13 +29,20 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     // Claves de la propuesta que el estudiante desmarcó: lo citado la vez
     // pasada incluye léxicos y gramáticas que el sílabo suele permitir.
     const [desmarcadas, setDesmarcadas] = useState<Set<string>>(new Set());
+    // La propuesta que se está revisando. Cada marca se GUARDA al momento:
+    // antes vivía sólo aquí, y en el TP #7 NA28 desmarcada volvió marcada al
+    // refrescar, los pasos que redactan no recibían la decisión (#9) y su
+    // tarjeta seguía diciendo «no debería entrar» (#11). La lista sigue a la
+    // vista hasta «Listo» aunque ya esté guardada.
+    const [enRevision, setEnRevision] = useState<ReadonlyArray<ExcludedSource> | null>(null);
 
     const confirmadas = paper.excludedSources ?? null;
-    const propuesta = useMemo(
-        () => (confirmadas === null ? proposeExclusions(previousDelivery(papers, paper.id)) : []),
-        [confirmadas, papers, paper.id],
+    const sugerida = useMemo(
+        () => (confirmadas === null ? proposeExclusions(previousDelivery(papers, paper.id), paper.displayLanguage) : []),
+        [confirmadas, papers, paper.id, paper.displayLanguage],
     );
-    const lista = confirmadas ?? [];
+    const propuesta = enRevision ?? sugerida;
+    const lista = enRevision ? [] : (confirmadas ?? []);
 
     const guardar = async (excludedSources: ReadonlyArray<ExcludedSource>): Promise<boolean> => {
         try {
@@ -55,12 +62,17 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
         if (await guardar([...lista, { key, previousPaperTitle: null }])) setNueva('');
     };
 
-    const alternar = (key: string) => setDesmarcadas(prev => {
-        const next = new Set(prev);
+    const alternar = (key: string) => {
+        const next = new Set(desmarcadas);
         if (next.has(key)) next.delete(key); else next.add(key);
-        return next;
-    });
+        setDesmarcadas(next);
+        setEnRevision(propuesta);
+        void guardar(propuesta.filter(e => !next.has(e.key)));
+    };
     const elegidas = propuesta.filter(e => !desmarcadas.has(e.key));
+    const terminar = async (excludedSources: ReadonlyArray<ExcludedSource>) => {
+        if (await guardar(excludedSources)) setEnRevision(null);
+    };
 
     const ocupado = updatePaperExcludedSources.isPending;
 
@@ -91,6 +103,9 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                                         type="checkbox"
                                         checked={!desmarcadas.has(e.key)}
                                         onChange={() => alternar(e.key)}
+                                        // Una marca a la vez: dos guardados en vuelo podían
+                                        // volver en desorden y dejar la lista vieja.
+                                        disabled={ocupado}
                                         className="h-3.5 w-3.5 rounded border-border accent-primary"
                                     />
                                     {e.key}
@@ -99,12 +114,15 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                         ))}
                     </ul>
                     <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" disabled={ocupado || elegidas.length === 0} onClick={() => void guardar(elegidas)}>
-                            {t('paperSetup.subSteps.corpus.excluded.accept')}
+                        <Button type="button" size="sm" disabled={ocupado} onClick={() => void terminar(elegidas)}>
+                            {t(enRevision ? 'paperSetup.subSteps.corpus.excluded.done' : 'paperSetup.subSteps.corpus.excluded.accept')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" disabled={ocupado} onClick={() => void guardar([])}>
+                        <Button type="button" size="sm" variant="outline" disabled={ocupado} onClick={() => void terminar([])}>
                             {t('paperSetup.subSteps.corpus.excluded.decline')}
                         </Button>
+                        {enRevision && (
+                            <span className="self-center text-[11px] text-muted-foreground">{t('paperSetup.subSteps.corpus.excluded.savedAsYouGo')}</span>
+                        )}
                     </div>
                 </div>
             )}

@@ -2,6 +2,9 @@ import type { ILlmClient, LlmGenerateOptions } from './LlmClient';
 import { recordLlmUsage, type LlmUsageContext } from './llmUsageRecorder';
 import { esquemaEstricto, quitarNulosOpcionales } from './esquemaEstricto';
 
+/** Cuánto se espera a OpenAI antes de cortar y caer a Gemini (supuesto: no medido con Sol). */
+export const ESPERA_OPENAI_MS = 300_000;
+
 /**
  * Adaptador de OpenAI para el port `ILlmClient`.
  *
@@ -99,6 +102,9 @@ export class OpenAiLlmClient implements ILlmClient {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(cuerpo),
+                // Un pedido colgado no llegaba nunca al respaldo: corría hasta
+                // los 540 s de la función. A los 300 s se corta y cae a Gemini.
+                signal: AbortSignal.timeout(ESPERA_OPENAI_MS),
             });
             if (res.ok) return (await res.json()) as RespuestaOpenAi;
 

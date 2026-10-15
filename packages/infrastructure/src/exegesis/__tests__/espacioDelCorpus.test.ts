@@ -108,3 +108,39 @@ describe('allocateSourceBudgets', () => {
         }
     });
 });
+
+/**
+ * TP #7: con 7 fuentes, a Robertson (124.000 caracteres FIJADOS: genitivo,
+ * dativo, perifrástico) le tocó una séptima parte y el recorte se llevó lo
+ * fijado. El análisis de 3:15 dijo «las páginas 880–881 no están incluidas».
+ */
+describe('lo fijado tiene lugar reservado', () => {
+    it('allocateSourceBudgets: lo reservado primero, el resto como siempre', () => {
+        const [rob, a, b] = allocateSourceBudgets([124_000, 60_000, 60_000], [1, 1, 1], 150_000, [124_000, 0, 0]);
+        expect(rob).toBe(124_000);
+        expect(a! + b!).toBe(26_000);
+        // Sin reserva, Robertson se queda con su parte, como en el TP #7.
+        expect(allocateSourceBudgets([124_000, 60_000, 60_000], [1, 1, 1], 150_000)[0]).toBe(50_000);
+    });
+
+    it('lo fijado no deja a las demás fuentes vacías: cada una conserva un piso', () => {
+        const [fijada, ancla] = allocateSourceBudgets([200_000, 60_000], [1, 1], 150_000, [200_000, 0]);
+        expect(ancla).toBeGreaterThanOrEqual(4_000);
+        expect(fijada! + ancla!).toBeLessThanOrEqual(150_000);
+    });
+
+    it('si lo reservado no cabe, se achica en proporción y nunca pasa del total', () => {
+        const r = allocateSourceBudgets([100_000, 100_000], [1, 1], 100_000, [100_000, 100_000]);
+        expect(r).toEqual([50_000, 50_000]);
+        expect(allocateSourceBudgets([10_000], [1], 100_000, [50_000])).toEqual([10_000]);
+    });
+
+    it('en el prompt real, lo fijado (al principio del texto de la fuente) llega entero', () => {
+        const fijado = 'F'.repeat(110_000) + 'PERIFRASTICO-881';
+        const robertson = { ...fuente('Robertson', 0), textContent: fijado + '\n\n' + 'c'.repeat(40_000), pinnedChars: fijado.length };
+        const otras = ['A', 'B', 'C', 'D', 'E', 'G'].map(k => fuente(k, 30_000));
+        const { userMessage } = buildAnalyzerPrompt(versiculo([robertson as never, ...otras]));
+        expect(userMessage).toContain('PERIFRASTICO-881');
+        expect(userMessage.length).toBeLessThanOrEqual(MAX_PROMPT_CHARS);
+    });
+});

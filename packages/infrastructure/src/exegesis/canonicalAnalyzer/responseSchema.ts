@@ -497,7 +497,13 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                             'Frase verbatim de uno de los campos prosaicos del análisis. Composer fuzzy-matchea para colocar el marcador.',
                     },
                     text: { type: 'string', description: 'Cuerpo de la nota al pie. 1-3 oraciones.' },
-                    sources: { type: 'array', items: SOURCE_CITATION_SCHEMA() },
+                    sources: {
+                        type: 'array',
+                        description:
+                            'Sólo las obras cuyo texto provisto DICE lo que dice la nota, con su página. ' +
+                            'Si la nota es análisis propio, arreglo vacío: colgarla de un autor le atribuye lo que no escribió.',
+                        items: SOURCE_CITATION_SCHEMA(),
+                    },
                 },
                 required: ['anchorPhrase', 'text', 'sources'],
             },

@@ -38,6 +38,25 @@ export interface CorpusChunk {
     section: string | null;
     /** Cercanía a la consulta, en [0,1]. Los fijados no la usan. */
     score: number;
+    /**
+     * Lo eligió y fijó el estudiante (`pinnedRanges`). Lo fijado tiene que
+     * llegar ENTERO al modelo: en el TP #7, las páginas fijadas de Robertson
+     * (el perifrástico de 3:15, el dativo de 3:18) se recortaban en el prompt
+     * y el análisis decía «no están en el corpus suministrado».
+     */
+    pinned?: boolean;
+}
+
+/**
+ * Los fragmentos de una fuente con lo fijado PRIMERO (cada grupo en orden de
+ * documento). Así, si el prompt tiene que recortar una fuente, recorta lo
+ * consultado y no lo que el estudiante fijó.
+ */
+export function fijadoPrimero<T extends { pinned?: boolean }>(chunks: ReadonlyArray<T>): { fijados: T[]; consultados: T[] } {
+    return {
+        fijados: chunks.filter(c => c.pinned),
+        consultados: chunks.filter(c => !c.pinned),
+    };
 }
 
 export interface SelectForPromptInput {

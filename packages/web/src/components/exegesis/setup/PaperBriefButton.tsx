@@ -6,14 +6,17 @@ import {
     briefGaps,
     buildPreachingBrief,
     buildSourcesAndFormatBlock,
+    inclusionChangesFromBriefEdit,
     inferGenreFromBook,
     parseBriefQuestions,
     previousDelivery,
     type BibleBookId,
     type ExegeticalPaper,
+    type InclusionChange,
     type LiteraryGenre,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
+import { CambiosDeInclusion } from './CambiosDeInclusion';
 import {
     Dialog,
     DialogContent,
@@ -56,6 +59,8 @@ export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
     const { updatePaperBrief, papers } = useExegesisPapers();
     const [abierto, setAbierto] = useState(false);
     const [borrador, setBorrador] = useState<string | null>(null);
+    // Lo que la edición recién guardada mueve dentro o fuera del documento.
+    const [cambios, setCambios] = useState<ReadonlyArray<InclusionChange>>([]);
     // El bloque de preguntas de la plantilla cambia según el género; arranca
     // con el del libro del pasaje y se puede cambiar.
     const [genero, setGenero] = useState<LiteraryGenre>(() => inferGenreFromBook(paper.passage.bookId as BibleBookId));
@@ -75,11 +80,14 @@ export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
 
     const guardar = async () => {
         if (edicion?.tipo !== 'listo') return;
+        // Se calcula contra el encuadre ANTERIOR, antes de guardar.
+        const mueve = inclusionChangesFromBriefEdit(paper, edicion.valor);
         try {
             await updatePaperBrief.mutateAsync({ paperId: paper.id, assignmentBrief: edicion.valor });
             toast.success(t('paperSetup.brief.saved'));
             setBorrador(null);
-            setAbierto(false);
+            if (mueve.length > 0) setCambios(mueve);
+            else setAbierto(false);
         } catch (err) {
             console.error('[exegesis] no se pudo guardar el encuadre:', err);
             toast.error(t('paperSetup.brief.saveFailed'));
@@ -96,6 +104,7 @@ export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
         if (guardando) return;
         setAbierto(false);
         setBorrador(null);
+        setCambios([]);
     };
 
     return (
@@ -119,7 +128,10 @@ export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
                         <DialogTitle>{t('paperSetup.brief.heading')}</DialogTitle>
                         <DialogDescription>{t('paperSetup.brief.description')}</DialogDescription>
                     </DialogHeader>
-                    {!editando && (
+                    {!editando && cambios.length > 0 && (
+                        <CambiosDeInclusion paperId={paper.id} cambios={cambios} onDone={cerrar} />
+                    )}
+                    {!editando && cambios.length === 0 && (
                         <div className="space-y-3">
                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{actual}</p>
                             <div className="flex justify-end">

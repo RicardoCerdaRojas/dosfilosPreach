@@ -34,6 +34,8 @@ import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
 import { useExcludedSourceConfirm } from './useExcludedSourceConfirm';
 import { useExtractExcerpts } from '@/hooks/exegesis/useExtractExcerpts';
 import { useRankedLibrary } from '@/hooks/exegesis/useRankedLibrary';
+import { faltaParaLaRubrica } from './faltaParaLaRubrica';
+import { FaltaParaLaRubricaSection } from './FaltaParaLaRubricaSection';
 
 /** How many top-ranked resources get auto-checked when the dialog opens. */
 const AUTO_SELECT_TOP_N = 5;
@@ -182,6 +184,21 @@ export function ExtractFromLibraryDialog({
         });
     }, [resources, searchTerm, groupFilter]);
 
+    // Requisitos de la rúbrica sin cubrir y los libros del tipo que falta,
+    // aunque no hablen del pasaje (TP #7: una gramática). Los que ya
+    // recomienda el pasaje se quedan arriba.
+    const faltas = useMemo(() => faltaParaLaRubrica({
+        paper,
+        resources,
+        candidatos: filtered,
+        yaRecomendados: new Set(rankByResource.keys()),
+        esExcluido: r => exclusionFor({ author: r.author }, exclusiones) !== null,
+    }), [paper, resources, filtered, rankByResource, exclusiones]);
+    const porRubrica = useMemo(
+        () => new Set(faltas.flatMap(f => f.resources.map(r => r.id))),
+        [faltas],
+    );
+
     // Partition the filtered list into the "top matches" section
     // (rendered at the top, always visible) and the "rest" (collapsed
     // behind a toggle when `showAllResources === false`). Top matches
@@ -193,7 +210,7 @@ export function ExtractFromLibraryDialog({
         const rest: LibraryResource[] = [];
         for (const r of filtered) {
             if (rankByResource.has(r.id)) top.push(r);
-            else rest.push(r);
+            else if (!porRubrica.has(r.id)) rest.push(r);
         }
         // Re-sort top by score desc (filtered already brought ready-first).
         top.sort((a, b) => {
@@ -203,7 +220,7 @@ export function ExtractFromLibraryDialog({
         });
         const excluida = (r: LibraryResource) => exclusionFor({ author: r.author }, exclusiones) !== null;
         return { topMatches: excludedLast(top, excluida), restMatches: excludedLast(rest, excluida) };
-    }, [filtered, rankByResource, exclusiones]);
+    }, [filtered, rankByResource, exclusiones, porRubrica]);
 
     // One-shot auto pre-selection of the top-N ranked resources after
     // the ranking lands. We only do this when the ranking is non-empty
@@ -432,6 +449,28 @@ export function ExtractFromLibraryDialog({
                                     </ul>
                                 </section>
                             ) : null}
+
+                            <FaltaParaLaRubricaSection
+                                faltas={faltas}
+                                renderRow={r => {
+                                    const isSelected = selections.has(r.id);
+                                    return (
+                                        <ResourceRow
+                                            resource={r}
+                                            status={libraryService.getResourceIndexStatus(r)}
+                                            isSelectable={libraryService.getResourceIndexStatus(r) === 'indexed'}
+                                            isSelected={isSelected}
+                                            willReplace={isSelected && alreadyExcerptedIds.has(r.id)}
+                                            hasPages={withPagesIds.has(r.id)}
+                                            entry={selections.get(r.id) ?? null}
+                                            onToggle={() => toggleResource(r)}
+                                            onUpdate={(patch) => updateSelection(r.id, patch)}
+                                            rankInfo={null}
+                                            exclusion={exclusionDe(r)}
+                                        />
+                                    );
+                                }}
+                            />
 
                             {/* Toggle to reveal the long tail. Hidden
                                 when there's nothing to hide (rest empty)

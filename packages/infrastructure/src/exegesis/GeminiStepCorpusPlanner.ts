@@ -52,20 +52,21 @@ export class GeminiStepCorpusPlanner implements IStepCorpusPlanner {
                 system: systemInstruction,
                 prompt: userMessage,
                 responseMimeType: 'application/json',
+                // Esquema estricto con los ids REALES de pasos y fuentes
+                // (TP #7): sin él, Luna entró en bucle escribiendo JSON libre
+                // durante 181 s hasta el tope, y un id inventado se perdía
+                // en silencio al parsear.
+                ...(plannerResponseSchema(input) ? { responseSchema: plannerResponseSchema(input)! } : {}),
                 // Bumped from 0.2 → 0.4 so the model commits to assignments
                 // instead of hedging when a verse is between two plausible
                 // sources. Still well below the "creative" range, so output
                 // stays comparable across regenerations.
                 temperature: 0.4,
                 topP: 0.9,
-                // Bumped 8k → 32k after observing truncation on a paper
-                // with 16 sources × 15 steps. The full coverage rules
-                // (every step gets ≥1 source + every source appears ≥1
-                // time) push the response into the 4-8k range easily,
-                // and rationales add another 1-2k. 32k gives 4× headroom
-                // even for ~30 sources × ~30 steps. Pro 2.5 supports up
-                // to 65k so we're nowhere near the model ceiling.
-                maxOutputTokens: 32768,
+                // Proporcional a los pasos (`plannerOutputCap`): 32k fijos
+                // dejaban que un bucle corriera 3 minutos antes de fallar
+                // (TP #7, 4 pasos). Un plan normal ocupa ~400 tokens por paso.
+                maxOutputTokens: plannerOutputCap(input.steps.length),
             }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS }),
             { contextLabel: 'GeminiStepCorpusPlanner' },
         );
@@ -78,6 +79,60 @@ export class GeminiStepCorpusPlanner implements IStepCorpusPlanner {
             promptUsed: userMessage,
         };
     }
+}
+
+/**
+ * Tope de salida del planificador: ~400 tokens por paso más margen, entre 16k
+ * y 32k. Un plan de 16 fuentes × 15 pasos ocupaba 4-8k (por eso se había
+ * subido a 32k fijos); con 4 pasos, 32k sólo servían para que un bucle tardara
+ * 3 minutos en fallar. El piso es 16k y no 4k: en Gemini —la ruta de
+ * respaldo— el razonamiento se cobra del MISMO tope, y con 4k un plan de
+ * cuatro pasos podía volver vacío (revisión adversarial de A). El bucle lo
+ * corta el esquema estricto, no el tope.
+ */
+export function plannerOutputCap(steps: number): number {
+    return Math.min(32_768, Math.max(16_384, 2_048 + steps * 400));
+}
+
+/**
+ * Esquema de la respuesta con los ids reales: el modelo no puede inventar un
+ * paso ni una fuente, ni un rol fuera de los tres. Las asignaciones van en un
+ * ARREGLO y no en un objeto por id porque el modo estricto no admite claves
+ * libres. Sin fuentes o sin pasos, no hay enumeración posible: sin esquema.
+ */
+export function plannerResponseSchema(input: Pick<ProposeStepCorpusInput, 'steps' | 'sources'>): object | null {
+    const stepIds = input.steps.map(s => s.id);
+    const sourceIds = input.sources.map(s => s.id);
+    if (stepIds.length === 0 || sourceIds.length === 0) return null;
+    return {
+        type: 'object',
+        properties: {
+            allocations: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        stepId: { type: 'string', enum: stepIds },
+                        pinnedSources: { type: 'array', items: { type: 'string', enum: sourceIds } },
+                        pinnedSourceRoles: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    sourceId: { type: 'string', enum: sourceIds },
+                                    role: { type: 'string', enum: ['anchor', 'contrast', 'technical'] },
+                                },
+                                required: ['sourceId', 'role'],
+                            },
+                        },
+                        rationale: { type: 'string' },
+                    },
+                    required: ['stepId', 'pinnedSources', 'pinnedSourceRoles', 'rationale'],
+                },
+            },
+        },
+        required: ['allocations'],
+    };
 }
 
 // ── Prompt construction ─────────────────────────────────────────────────
@@ -206,17 +261,18 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
         ? `**Devuelve JSON con esta estructura exacta:**`
         : `**Return JSON with this exact structure:**`;
     const schemaExample = `{
-  "allocations": {
-    "<step-id>": {
+  "allocations": [
+    {
+      "stepId": "<step-id>",
       "pinnedSources": ["<source-id-anchor>", "<source-id-contrast>", "<source-id-technical>"],
-      "pinnedSourceRoles": {
-        "<source-id-anchor>": "anchor",
-        "<source-id-contrast>": "contrast",
-        "<source-id-technical>": "technical"
-      },
+      "pinnedSourceRoles": [
+        { "sourceId": "<source-id-anchor>", "role": "anchor" },
+        { "sourceId": "<source-id-contrast>", "role": "contrast" },
+        { "sourceId": "<source-id-technical>", "role": "technical" }
+      ],
       "rationale": "${isSpanish ? 'Una oración breve nombrando los roles.' : 'One short sentence naming the roles.'}"
     }
-  }
+  ]
 }`;
 
     const constraints = isSpanish
@@ -260,17 +316,21 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
 
 // ── Response parsing ────────────────────────────────────────────────────
 
+interface RawAllocation {
+    stepId?: unknown;
+    pinnedSources?: unknown;
+    pinnedSourceRoles?: unknown;
+    rationale?: unknown;
+}
+
+/** El arreglo del esquema estricto, o el objeto por id de antes (un modelo sin esquema). */
 interface ParsedPlannerResponse {
-    allocations?: Record<string, {
-        pinnedSources?: unknown;
-        pinnedSourceRoles?: unknown;
-        rationale?: unknown;
-    }>;
+    allocations?: RawAllocation[] | Record<string, RawAllocation>;
 }
 
 const VALID_ROLES = new Set(['anchor', 'contrast', 'technical']);
 
-function parsePlannerJson(rawJson: string): ParsedPlannerResponse {
+export function parsePlannerJson(rawJson: string): ParsedPlannerResponse {
     try {
         const parsed = JSON.parse(rawJson);
         if (typeof parsed !== 'object' || parsed === null) {
@@ -283,10 +343,13 @@ function parsePlannerJson(rawJson: string): ParsedPlannerResponse {
     }
 }
 
-function mapToAllocations(parsed: ParsedPlannerResponse): Record<string, ProposedAllocation> {
+export function mapToAllocations(parsed: ParsedPlannerResponse): Record<string, ProposedAllocation> {
     const out: Record<string, ProposedAllocation> = {};
     if (!parsed.allocations || typeof parsed.allocations !== 'object') return out;
-    for (const [stepId, raw] of Object.entries(parsed.allocations)) {
+    const entradas: Array<[string, RawAllocation]> = Array.isArray(parsed.allocations)
+        ? parsed.allocations.flatMap(a => (typeof a?.stepId === 'string' ? [[a.stepId, a] as [string, RawAllocation]] : []))
+        : Object.entries(parsed.allocations);
+    for (const [stepId, raw] of entradas) {
         if (typeof stepId !== 'string' || stepId.length === 0) continue;
         const pinned = Array.isArray(raw?.pinnedSources)
             ? raw.pinnedSources.filter((id): id is string => typeof id === 'string' && id.length > 0)
@@ -297,7 +360,12 @@ function mapToAllocations(parsed: ParsedPlannerResponse): Record<string, Propose
         const pinnedSet = new Set(pinned);
         const roles: Record<string, 'anchor' | 'contrast' | 'technical'> = {};
         if (raw?.pinnedSourceRoles && typeof raw.pinnedSourceRoles === 'object') {
-            for (const [id, role] of Object.entries(raw.pinnedSourceRoles as Record<string, unknown>)) {
+            // Arreglo de { sourceId, role } (esquema estricto) u objeto id → rol.
+            const pares: Array<[string, unknown]> = Array.isArray(raw.pinnedSourceRoles)
+                ? (raw.pinnedSourceRoles as Array<{ sourceId?: unknown; role?: unknown }>)
+                    .flatMap(r => (typeof r?.sourceId === 'string' ? [[r.sourceId, r.role] as [string, unknown]] : []))
+                : Object.entries(raw.pinnedSourceRoles as Record<string, unknown>);
+            for (const [id, role] of pares) {
                 if (!pinnedSet.has(id)) continue;
                 if (typeof role !== 'string' || !VALID_ROLES.has(role)) continue;
                 roles[id] = role as 'anchor' | 'contrast' | 'technical';

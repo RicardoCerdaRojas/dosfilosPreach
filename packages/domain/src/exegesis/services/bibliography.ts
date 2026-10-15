@@ -105,8 +105,16 @@ export function proposeSortedAuthor(author: string): string {
     if (!clean || clean.includes(',')) return clean;
     // Con dos autores, mover la última palabra al frente produce basura:
     // «Bill T. Arnold and John H. Choi» daba «Choi, Bill T. Arnold and
-    // John H.», y eso se imprimía en la bibliografía del trabajo. Un
-    // nombre coordinado se deja como está y lo ordena la persona.
+    // John H.». Se invierte sólo el PRIMERO, como pide Turabian: «Arnold,
+    // Bill T., and John H. Choi». Antes se dejaba tal cual, y NA28 salió
+    // «Eberhard Nestle y Kurt Aland.», ordenada por «Eberhard» (TP #7).
+    const coordinado = clean.match(/^(.+?)\s+(and|y|e|&)\s+(.+)$/i);
+    // Sólo si lo de después de la conjunción es un nombre con apellido: «Ortega
+    // y Gasset» y «Ramón y Cajal» son UN apellido compuesto, no coautores.
+    if (coordinado && !LINAJE.test(clean) && coordinado[3]!.trim().split(/\s+/).length >= 2) {
+        const primero = proposeSortedAuthor(coordinado[1]!);
+        return primero === coordinado[1] ? clean : `${primero}, ${coordinado[2]} ${coordinado[3]}`;
+    }
     if (NO_SE_ORDENA_SOLO.test(clean)) return clean;
     const parts = clean.split(' ');
     if (parts.length < 2) return clean;
@@ -125,6 +133,22 @@ export function proposeSortedAuthor(author: string): string {
  * de linaje: «Walter C. Kaiser Jr.» daba «Jr., Walter C. Kaiser».
  */
 const NO_SE_ORDENA_SOLO = /\s(and|y|e|&)\s|\s&\s|[\s,](jr|sr|ii|iii)\.?$/i;
+const LINAJE = /[\s,](jr|sr|ii|iii)\.?$/i;
+
+/**
+ * El autor como se imprime y se ordena en la bibliografía. Un `authorSorted`
+ * idéntico al autor es el que se guardó cuando la propuesta no sabía invertir
+ * coautores: no es una decisión de la persona, y se vuelve a proponer.
+ */
+export function sortedAuthorOf(data: Pick<BibliographicData, 'author' | 'authorSorted'>): string {
+    const autor = (data.author ?? '').trim();
+    const ordenado = (data.authorSorted ?? '').trim();
+    // Sólo un nombre coordinado guardado tal cual se vuelve a proponer: «United
+    // Bible Societies» igual al autor es una decisión, no un descuido.
+    if (!ordenado) return proposeSortedAuthor(autor);
+    if (ordenado === autor && /\s(and|y|e|&)\s/i.test(autor)) return proposeSortedAuthor(autor);
+    return ordenado;
+}
 
 /**
  * La entrada de bibliografía, en Turabian:
@@ -138,7 +162,7 @@ const NO_SE_ORDENA_SOLO = /\s(and|y|e|&)\s|\s&\s|[\s,](jr|sr|ii|iii)\.?$/i;
  */
 export function formatBibliographyEntry(data: BibliographicData): string {
     const parts: string[] = [];
-    const author = (data.authorSorted ?? '').trim() || proposeSortedAuthor((data.author ?? '').trim());
+    const author = sortedAuthorOf(data);
     // «Ross, Allen P.» ya termina en punto: agregarle otro deja «P..».
     if (author) parts.push(author.endsWith('.') ? author : `${author}.`);
 
@@ -228,4 +252,25 @@ function appendPages(text: string, pages?: string): string {
     const p = (pages ?? '').trim();
     if (!text) return p;
     return p ? `${text}, ${p}` : text;
+}
+
+/**
+ * La ficha con el título completo del libro cuando la ficha trae sólo el
+ * principio.
+ *
+ * TP #7: Varner salió *The Book of James* en la bibliografía, y el libro de
+ * la biblioteca se llama *The Book of James: A New Perspective*. La ficha y
+ * el recurso guardan el título por separado (el #26 del TP #6). Sólo se
+ * completa cuando el del recurso EMPIEZA por el de la ficha y sigue con un
+ * subtítulo: cualquier otra diferencia la decide la persona.
+ */
+export function withFullTitle<T extends Pick<BibliographicData, 'title'>>(data: T, resourceTitle: string | null | undefined): T {
+    const corto = (data.title ?? '').trim();
+    const largo = (resourceTitle ?? '').trim();
+    if (!corto || largo.length <= corto.length) return data;
+    if (!largo.toLocaleLowerCase().startsWith(corto.toLocaleLowerCase())) return data;
+    // Sólo «:» o «.»: un guion suele venir del nombre del archivo («James -
+    // McCartney»), y eso no es un subtítulo.
+    if (!/^\s*[:.]\s*\S/.test(largo.slice(corto.length))) return data;
+    return { ...data, title: largo };
 }

@@ -445,6 +445,16 @@
       "tooLong_one": "{{count}} character over the limit: trim it to save.",
       "tooLong_other": "{{count}} characters over the limit: trim it to save.",
       "appliesFromNow": "Already generated content doesn't change: the new framing applies from the next generation.",
+      "inclusion": {
+        "title": "This framing changes the document's sections",
+        "enters": "{{name}}: this framing gives it an answer to write. Include it in the document?",
+        "leaves": "{{name}}: the framing leaves it out. Remove it from the document?",
+        "apply": "Apply",
+        "keep": "Leave as is",
+        "applied_one": "{{count}} section updated",
+        "applied_other": "{{count}} sections updated",
+        "failed": "Could not change the document. Try again."
+      },
       "gaps": {
         "usePreachingTemplate": "Use preaching template",
         "gapTitle": "This brief is not usable by the system yet",
@@ -737,6 +747,7 @@
           "strategy-only": "Strategy only"
         },
         "presetEdited": "{{preset}} · edited",
+        "templateEdited": "{{name}} · edited",
         "presetSystem": "{{preset}} · system"
       },
       "manifest": {
@@ -961,6 +972,7 @@
             "saving": "Saving…",
             "confirm_one": "Add {{count}} sheet to the paper",
             "confirm_other": "Add {{count}} sheets to the paper",
+            "sectionContinues": "continues «{{section}}»",
             "sectionsCovered": "{{section}} · covers {{count}} sections",
             "perVerse": "{{chars}} characters reach each verse. The paper's chosen sheets add up to {{admitted}}; each verse consults what is about it, up to {{cap}}.",
             "otherExcerpts": "Excerpts from other sources travel whole: {{chars}} characters.",
@@ -1112,6 +1124,12 @@
           "willReplace": "Will replace current excerpts",
           "filterAll": "All ({{count}})",
           "smartMatchTitle": "Recommended for this passage",
+          "rubricGap": {
+            "title": "Missing for the rubric",
+            "requirement_one": "{{type}}: {{count}} missing.",
+            "requirement_other": "{{type}}: {{count}} missing.",
+            "porPaginas": "It isn't found by searching the passage: add it, then choose its pages in the corpus."
+          },
           "smartMatchLoading": "Computing recommendations…",
           "chunksRelevant_one": "✨ {{count}} relevant excerpt",
           "chunksRelevant_other": "✨ {{count}} relevant excerpts",
@@ -1322,6 +1340,8 @@
           "previousFallback": "previous paper",
           "accept": "Exclude them",
           "decline": "Not needed",
+          "done": "Done",
+          "savedAsYouGo": "Each mark is already saved.",
           "citedIn": "cited in {{paper}}",
           "byYou": "added by you",
           "remove": "Remove {{source}} from excluded",
@@ -1358,6 +1378,7 @@
         },
         "sinPaginas": {
           "body": "No pages for this passage: the analysis searches the whole book for what bears on each verse. Choosing the passage pages is more precise and shows what goes in.",
+          "vacia": "Extraction found no excerpts for this passage: this source adds nothing to the analysis and does not count toward the rubric. Choose its pages; for a grammar, the sections that cover the passage's forms.",
           "cta": "Choose pages"
         },
         "suggestion": {
@@ -1391,6 +1412,8 @@
       "corpus-plan": {
         "outsideDocument_one": "1 step is left out of the document (the brief doesn't ask for it): it isn't planned.",
         "outsideDocument_other": "{{count}} steps are left out of the document (the brief doesn't ask for them): they aren't planned.",
+        "includeStepAria": "Include {{name}} in the document",
+        "includeStepHint": "Tap one to include it; then propose the plan again to give it sources.",
         "tab": "Usage plan",
         "heading": "Corpus usage plan",
         "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Pinned sources get priority during generation, but the model can still reach for the others when relevant.",
@@ -1560,7 +1583,8 @@
       "saveFailed": "The profile could not be saved.",
       "pickLabel": "Work profile",
       "pickNone": "No profile",
-      "pickHint": "Fills in rubric, brief, style guide and method. You can change any of them before creating."
+      "pickHint": "Fills in rubric, brief, style guide and method. You can change any of them before creating.",
+      "noRubric": "This profile doesn't store a rubric: choose it below. To make it remember one, save the profile again from a paper with the right rubric."
     },
     "voice": {
       "heading": "How I write",
@@ -2388,6 +2412,10 @@
       "title": "Citation data",
       "dialogTitle": "Bibliographic record",
       "allComplete": "Every book has its data: the bibliography comes from the book, not from the assistant.",
+      "rubricTitle": "Before exporting: the rubric asks for sources the document doesn't cite",
+      "rubricDescription": "The bibliography lists only what the document cites. Cite those sources in the text, or export anyway if your professor doesn't require them.",
+      "rubricUncited": "{{type}}: {{cited}} of {{required}} cited. In the corpus but uncited: {{sources}}.",
+      "rubricMissing": "{{type}}: {{cited}} of {{required}} cited, and there's no other in the corpus.",
       "someMissing": "{{count}} book(s) are missing data. Without it the bibliography is incomplete or the assistant invents it.",
       "missingFields": "Missing: {{fields}}.",
       "previewLabel": "How it will appear in the bibliography",

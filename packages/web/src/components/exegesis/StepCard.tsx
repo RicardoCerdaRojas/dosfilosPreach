@@ -55,6 +55,7 @@ import { CreditPacksDialog } from '@/pages/library/components/CreditPacksDialog'
 import {
     formatPassageReference,
     isAbandonedGeneration,
+    versionUnderReview,
     ABANDONED_GENERATION_AFTER_MS,
     operationRequiresPreConfirm,
     type ExegesisOperationKey,
@@ -77,6 +78,8 @@ interface StepCardProps {
     allSteps?: ReadonlyArray<ExegeticalStep>;
     /** El encuadre del trabajo, para decir qué pregunta responde cada paso. */
     assignmentBrief?: string | null;
+    /** El pasaje: en uno de un solo capítulo, «el versículo 15» es de ese capítulo. */
+    passage?: { chapterStart: number; chapterEnd: number } | null;
     /** Si el trabajo ya está ensamblado: decide si recomponer lo alcanza. */
     hasAssembly?: boolean;
     /**
@@ -114,7 +117,7 @@ interface StepCardProps {
  * El documento sigue siendo legible por sí solo: dice `generating`, y el
  * `updatedAt` que está al lado dice desde cuándo.
  */
-export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, hasAssembly = false, wordsPerShare = null, formatting = null }: StepCardProps) {
+export function StepCard({ step, paperId, language, allSteps, assignmentBrief = null, passage = null, hasAssembly = false, wordsPerShare = null, formatting = null }: StepCardProps) {
     const { t } = useTranslation('exegesis');
     const {
         generateStep,
@@ -305,7 +308,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         }
         void runAnalyzeCanonically(regenerationHint);
     };
-    const preguntas = useMemo(() => parseBriefQuestions(assignmentBrief), [assignmentBrief]);
+    const capInicio = passage?.chapterStart;
+    const capFin = passage?.chapterEnd;
+    const preguntas = useMemo(
+        () => parseBriefQuestions(assignmentBrief, capInicio !== undefined && capFin !== undefined ? { chapterStart: capInicio, chapterEnd: capFin } : null),
+        [assignmentBrief, capInicio, capFin],
+    );
     /** La pregunta del encuadre que le toca a este versículo. */
     const preguntaPropia = step.kind === 'verse' && step.verseRef
         ? questionsForVerse(preguntas, step.verseRef.chapterStart, step.verseRef.verseStart ?? 1)
@@ -577,7 +585,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // dialog opens regardless of success/failure so the user always
     // sees feedback.
     const handleVerifyCitations = async () => {
-        const targetVersion = step.accepted ?? step.current;
+        // La versión que se va a aceptar, no la aceptada vieja (TP #7, #29).
+        const targetVersion = versionUnderReview(step);
         if (!targetVersion) return;
         setVerifyDialogOpen(true);
         try {
@@ -609,7 +618,11 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             return [
                 { key: 'regenerate', label: t('detail.steps.action.regenerate'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: versionEnVuelo, pending: anyPipelinePending },
                 { key: 'edit', label: t('detail.steps.action.editManual'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: versionEnVuelo },
-                { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo || !step.current, pending: verifyStepCitations.isPending },
+                // Con análisis, las citas se revisan en su página: el diálogo
+                // sólo mostraba, y aceptar seguía bloqueado (TP #7, #29).
+                step.current?.canonicalAnalysis
+                    ? { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath }
+                    : { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo || !step.current, pending: verifyStepCitations.isPending },
             ];
         }
         if (showAccepted && !editing) {
@@ -1079,17 +1092,26 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                 {t('canonical.actions.analyzeFromAccepted')}
                             </Button>
                         )}
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleVerifyCitations}
-                            disabled={versionEnVuelo || !step.current}
-                            className="ml-auto"
-                            title={t('canonical.verify.button.tooltip')}
-                        >
-                            {verifyStepCitations.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />}
-                            {t('canonical.verify.button.label')}
-                        </Button>
+                        {step.current?.canonicalAnalysis ? (
+                            <Button asChild size="sm" variant="ghost" className="ml-auto">
+                                <Link to={reviewPath} title={t('canonical.review.linkTooltip')}>
+                                    <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+                                    {t('canonical.review.link')}
+                                </Link>
+                            </Button>
+                        ) : (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleVerifyCitations}
+                                disabled={versionEnVuelo || !step.current}
+                                className="ml-auto"
+                                title={t('canonical.verify.button.tooltip')}
+                            >
+                                {verifyStepCitations.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />}
+                                {t('canonical.verify.button.label')}
+                            </Button>
+                        )}
                     </div>
                 </footer>
             )}

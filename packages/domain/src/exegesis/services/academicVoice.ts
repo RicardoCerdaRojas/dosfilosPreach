@@ -272,3 +272,40 @@ export function buildAcademicVoiceBlock(
         ];
     return [...cabecera, ...samples.map(s => `"""${s.excerpt}"""`)].join('\n');
 }
+
+/**
+ * Reglas de registro que valen para todo compositor académico, con o sin
+ * muestras del autor.
+ *
+ * TP #7 (Santiago 3:13-18, #32): el fundador reescribió las cuatro respuestas
+ * a mano porque el compositor escribía «núcleo semántico», «sustantivo
+ * rector», «adjudicación exegética» —«no lo entiendo y no lo escribiría
+ * yo»—. Al simplificar, además, la cita quedó en otra oración que lo que
+ * respaldaba y el verificador la reprobó. Tercera persona: decisión del
+ * fundador (2026-10-14).
+ */
+export function buildAcademicRegisterBlock(
+    language: 'es' | 'en',
+    opts: { answersQuestions?: boolean } = {},
+): string {
+    const reglas = language === 'en'
+        ? [
+            'REGISTER (hard rules):',
+            '- Impersonal third person ("it is preferable", "this reading is adopted"). Never "I" or "we".',
+            '- The register of a graduate seminary student: plain sentences, explicit connectors. Technical terms only when they are grammar categories (epexegetical genitive, dative of advantage), explained the first time. No jargon such as "semantic core", "head noun", "exegetical adjudication".',
+            '- Every Greek or Hebrew word carries its English gloss the first time.',
+            '- A citation goes in the SAME sentence as what that source says. Never split a claim from its citation.',
+            '- No intensifiers the source does not support ("strong support", "considerably", "clearly"): state what the source says, with its own force.',
+            ...(opts.answersQuestions ? ['- When answering a question about a form (a genitive, a participle, a phrase), open with its full morphology (case, number, gender / tense, voice, mood, person) before interpreting it.'] : []),
+        ]
+        : [
+            'REGISTRO (reglas duras):',
+            '- Tercera persona impersonal («se prefiere», «se adopta esta lectura»). Nunca «yo» ni «nosotros».',
+            '- El registro de un seminarista de posgrado: oraciones claras, conectores explícitos. Términos técnicos sólo si son categorías de la gramática (genitivo epexegético, dativo de ventaja), explicados la primera vez. Nada de jerga como «núcleo semántico», «sustantivo rector», «adjudicación exegética».',
+            '- Cada palabra griega o hebrea lleva su glosa en español la primera vez.',
+            '- La cita va en la MISMA oración que lo que esa fuente dice. Nunca separes una afirmación de su cita.',
+            '- Sin intensificadores que la fuente no respalda («sólido apoyo», «considerablemente», «claramente»): di lo que la fuente dice, con su propia fuerza.',
+            ...(opts.answersQuestions ? ['- Cuando respondes una pregunta sobre una forma (un genitivo, un participio, una frase), abre con su morfología completa (caso, número, género / tiempo, voz, modo, persona) antes de interpretarla.'] : []),
+        ];
+    return reglas.join('\n');
+}

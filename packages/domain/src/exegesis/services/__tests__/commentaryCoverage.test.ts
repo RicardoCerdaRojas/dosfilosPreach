@@ -8,6 +8,8 @@ import type { BibleBookId } from '../../../bible/canon/BibleCanon';
  */
 const JAS = 'JAS' as BibleBookId;
 const ROM = 'ROM' as BibleBookId;
+/** Una fuente en documento completo: lo que no viene al caso de cada prueba. */
+const fuente = <T extends object>(o: T) => ({ mode: 'full-document' as const, excerpts: [], excerptRecipe: null, extractedAt: null, ...o });
 
 describe('si un comentario comenta el libro del pasaje', () => {
     it('lo comenta, o comenta la Biblia o un testamento sin detallar libros', () => {
@@ -35,21 +37,32 @@ describe('lo que cuenta la rúbrica', () => {
 
     it('REGRESIÓN: un comentario de OTRO libro no suma al requisito de comentario', () => {
         const tipos = sourceTypesForRubric([
-            { sourceType: 'commentary-expository', sourceLibraryResourceId: 'moo', corpusId: 'c1' },
-            { sourceType: 'commentary-expository', sourceLibraryResourceId: 'romanos', corpusId: 'c2' },
+            fuente({ sourceType: 'commentary-expository', sourceLibraryResourceId: 'moo', corpusId: 'c1' }),
+            fuente({ sourceType: 'commentary-expository', sourceLibraryResourceId: 'romanos', corpusId: 'c2' }),
         ], de, JAS);
         expect(tipos).toEqual(['commentary-expository']);
     });
 
     it('sin libro registrado sigue contando (el archivo subido desde el corpus queda así)', () => {
         expect(sourceTypesForRubric([
-            { sourceType: 'commentary-critical', sourceLibraryResourceId: null, corpusId: 'subido' },
+            fuente({ sourceType: 'commentary-critical', sourceLibraryResourceId: null, corpusId: 'subido' }),
         ], de, JAS)).toEqual(['commentary-critical']);
+    });
+
+    it('una fuente extraída sin un fragmento no cuenta (TP #7: Robertson cumplía «Gramática ≥1»)', () => {
+        const vacia = {
+            sourceType: 'grammar-syntax' as const, sourceLibraryResourceId: null, corpusId: 'robertson',
+            mode: 'extracted-excerpts' as const, excerpts: [], excerptRecipe: null, extractedAt: new Date(),
+        };
+        expect(sourceTypesForRubric([vacia], de, JAS)).toEqual([]);
+        // Con sus páginas elegidas, vuelve a contar.
+        const conPaginas = { ...vacia, excerptRecipe: { sheetRanges: [{ start: 570, end: 571 }], proposedRanges: [], pinnedRanges: [], passageFingerprint: '' } };
+        expect(sourceTypesForRubric([conPaginas], de, JAS)).toEqual(['grammar-syntax']);
     });
 
     it('sólo afecta a los comentarios: una gramática de alcance amplio cuenta igual', () => {
         expect(sourceTypesForRubric([
-            { sourceType: 'grammar-syntax', sourceLibraryResourceId: 'romanos', corpusId: 'c3' },
+            fuente({ sourceType: 'grammar-syntax', sourceLibraryResourceId: 'romanos', corpusId: 'c3' }),
         ], de, JAS)).toEqual(['grammar-syntax']);
     });
 });

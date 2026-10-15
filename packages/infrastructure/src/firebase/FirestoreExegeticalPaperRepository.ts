@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions, versionUnderReview } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -548,9 +548,9 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
 
             // Con el encuadre en preguntas, el documento son las respuestas:
             // lo que no responde ninguna nace fuera (`inclusionAtBirth`).
-            const preguntas = parseBriefQuestions(data.assignmentBrief ?? null);
+            const preguntas = parseBriefQuestions(data.assignmentBrief ?? null, passage);
             for (const step of newSteps) {
-                const incluido = inclusionAtBirth(step, preguntas);
+                const incluido = inclusionAtBirth(step, preguntas, data.assignmentBrief ?? null);
                 if (incluido !== undefined) step.includeInDocument = incluido;
             }
 
@@ -678,9 +678,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         markdown: string
     ): Promise<ExegeticalStep> {
         return this.mutateStep(ownerId, paperId, stepId, (step) => {
-            // Edits are anchored to whatever was previously accepted (or
-            // current, as a fallback).
-            const parent = step.accepted ?? step.current;
+            // La edición parte de la versión EN REVISIÓN: en un paso
+            // regenerado tras aceptarse, el borrador sale de `current` y
+            // tomar `accepted` le pegaba el análisis, los veredictos y las
+            // revisiones de la versión vieja (revisión adversarial de C).
+            const parent = versionUnderReview(step);
 
             const versioned = buildManualEditVersion(parent ?? null, markdown);
             step.versions = [...step.versions, versioned];

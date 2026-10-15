@@ -12,7 +12,8 @@ const CRAIGIE = [203, 203, 204, 204, 205, 205, 206, 206, 207, 207, 208].map(chun
 describe('prioritizeChunksForCitedPage', () => {
     it('pone primero los fragmentos de la página citada y sus vecinas', () => {
         const out = prioritizeChunksForCitedPage(CRAIGIE, '206');
-        expect(out.slice(0, 6).map(c => c.pageHint)).toEqual(['p. 205', 'p. 205', 'p. 206', 'p. 206', 'p. 207', 'p. 207']);
+        // La citada primero (TP #7, #33), después sus vecinas.
+        expect(out.slice(0, 6).map(c => c.pageHint)).toEqual(['p. 206', 'p. 206', 'p. 205', 'p. 205', 'p. 207', 'p. 207']);
         expect(out).toHaveLength(CRAIGIE.length);
     });
 
@@ -23,7 +24,7 @@ describe('prioritizeChunksForCitedPage', () => {
 
     it('un rango citado cubre todas sus páginas', () => {
         const out = prioritizeChunksForCitedPage(CRAIGIE, '206–207');
-        expect(out.slice(0, 7).map(c => c.pageHint)).toEqual(['p. 205', 'p. 205', 'p. 206', 'p. 206', 'p. 207', 'p. 207', 'p. 208']);
+        expect(out.slice(0, 7).map(c => c.pageHint)).toEqual(['p. 206', 'p. 206', 'p. 207', 'p. 207', 'p. 205', 'p. 205', 'p. 208']);
     });
 
     it('sin página citada no reordena', () => {
@@ -79,5 +80,17 @@ describe('pagesOverlap — el mismo criterio para los tres verificadores', () =>
     it('sin número, se comparan como texto', () => {
         expect(pagesOverlap('ad loc.', 'ad loc.')).toBe(true);
         expect(pagesOverlap('ad loc.', 'ci')).toBe(false);
+    });
+});
+
+describe('prioritizeChunksForCitedPage — la página citada antes que sus vecinas', () => {
+    // TP #7 (#33): una cita a la 204 recibía primero los fragmentos de la 203.
+    const c = (page: number, text: string) => ({ text, pageHint: `p. ${page}` });
+    it('la citada primero, después las vecinas en su orden, después el resto', () => {
+        const orden = prioritizeChunksForCitedPage(
+            [c(200, 'lejos'), c(203, 'a'), c(203, 'b'), c(204, 'tautologous'), c(205, 'c')],
+            '204',
+        ).map(x => x.text);
+        expect(orden).toEqual(['tautologous', 'a', 'b', 'c', 'lejos']);
     });
 });

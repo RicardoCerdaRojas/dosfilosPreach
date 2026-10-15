@@ -15,6 +15,12 @@ import type { VerifierSourceChunk } from '../ports/ICitationVerifier';
  * `window` es cuántas páginas a cada lado cuentan como vecinas: una cita
  * suele apoyarse en la página anterior o siguiente cuando el argumento
  * cruza el corte de página.
+ *
+ * Dentro de las cercanas, la citada va PRIMERO. Iban en orden de hoja, así
+ * que una cita a la 204 recibía antes los fragmentos de la 203, y el tope de
+ * fragmentos podía dejar fuera los de la 204: en el TP #7 «McCartney, 204»
+ * salió «no encontrada» («los fragmentos de la página 204 tratan otros
+ * asuntos») y el fundador la halló en la 204 impresa (#33).
  */
 export function prioritizeChunksForCitedPage(
     chunks: ReadonlyArray<VerifierSourceChunk>,
@@ -23,14 +29,23 @@ export function prioritizeChunksForCitedPage(
 ): VerifierSourceChunk[] {
     const range = parsePageRange(citedPages);
     if (!range) return [...chunks];
+    const cited: VerifierSourceChunk[] = [];
     const near: VerifierSourceChunk[] = [];
     const rest: VerifierSourceChunk[] = [];
     for (const chunk of chunks) {
         const page = pageNumberOfHint(chunk.pageHint);
-        const isNear = page !== null && page >= range.start - window && page <= range.end + window;
-        (isNear ? near : rest).push(chunk);
+        if (page !== null && page >= range.start && page <= range.end) cited.push(chunk);
+        else if (page !== null && page >= range.start - window && page <= range.end + window) near.push(chunk);
+        else rest.push(chunk);
     }
-    return [...near, ...rest];
+    return [...cited, ...near, ...rest];
+}
+
+/** Si el fragmento es de una página que la cita nombra (no una vecina). */
+export function isOnCitedPage(chunk: VerifierSourceChunk, citedPages: string | null): boolean {
+    const range = parsePageRange(citedPages);
+    const page = pageNumberOfHint(chunk.pageHint);
+    return range !== null && page !== null && page >= range.start && page <= range.end;
 }
 
 /** Primer número de un rótulo de página: «p. 559» → 559, «hoja 12» → 12, «p. ccxxii» → null. */

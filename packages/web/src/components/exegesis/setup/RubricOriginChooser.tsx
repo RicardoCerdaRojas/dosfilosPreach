@@ -508,7 +508,12 @@ export function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }:
     // Inline picker for the template card. Toggles open when the
     // student clicks the template card; collapses back when they
     // pick + apply or click the card again.
-    const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+    // Abierta de entrada: elegir una plantilla tomaba tres pasos y la lista
+    // vivía escondida bajo la tarjeta (TP #7, #4).
+    const [templatePickerOpen, setTemplatePickerOpen] = useState(true);
+    const plantillaEnUso = rubric.sourceTemplateId
+        ? rubrics.find(r => r.id === rubric.sourceTemplateId)?.displayName ?? null
+        : null;
 
     // Confirmation routing: when the current rubric is user-edited,
     // any apply action confirms before firing. We stash the pending
@@ -597,7 +602,9 @@ export function RubricSetupChooser({ paper, rubric, onPhotoOrPdf, onPasteText }:
             label: t('paperSetup.subSteps.rubric.chooser.cards.template.label'),
             hint: rubrics.length === 0
                 ? t('paperSetup.subSteps.rubric.chooser.cards.template.empty')
-                : t('paperSetup.subSteps.rubric.chooser.cards.template.hint', { count: rubrics.length }),
+                : activeCard === 'template' && plantillaEnUso
+                    ? plantillaEnUso
+                    : t('paperSetup.subSteps.rubric.chooser.cards.template.hint', { count: rubrics.length }),
             onClick: () => setTemplatePickerOpen(o => !o),
             disabled: rubrics.length === 0,
         },

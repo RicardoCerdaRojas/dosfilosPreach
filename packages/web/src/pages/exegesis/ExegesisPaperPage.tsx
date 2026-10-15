@@ -84,6 +84,7 @@ import {
     paperIsDelivered,
     parseBriefQuestions,
     sectionBudgets,
+    uncitedRubricRequirements,
 } from '@dosfilos/domain';
 
 /**
@@ -326,7 +327,7 @@ export function ExegesisPaperPage() {
      * diálogo que deja completarlas ANTES de bajar el archivo (TP #6).
      */
     const pedirExport = (formato: 'docx' | 'md') => {
-        if (bibliography.some(e => !e.text)) {
+        if (bibliography.some(e => !e.text) || uncitedRubricRequirements(paper).length > 0) {
             setExportPendiente(formato);
             return;
         }
@@ -739,7 +740,7 @@ function StepsPanel({
     const formatting = paper.rubric?.formatting ?? null;
     const wordsPerShare = sectionBudgets(
         paper.rubric?.expectedLength ?? null,
-        documentSections(steps, parseBriefQuestions(paper.assignmentBrief)),
+        documentSections(steps, parseBriefQuestions(paper.assignmentBrief, paper.passage)),
         formatting,
     ).perShare;
 
@@ -802,6 +803,7 @@ function StepsPanel({
                             language={language}
                             allSteps={paper.steps}
                             assignmentBrief={paper.assignmentBrief}
+                            passage={paper.passage}
                             hasAssembly={!!paper.assembledMarkdown?.trim()}
                             wordsPerShare={wordsPerShare}
                             formatting={formatting}

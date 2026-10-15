@@ -17,6 +17,7 @@ import {
     RubricSetupChooser,
 } from './RubricOriginChooser';
 import { rubricLabel } from './rubricLabel';
+import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 
 /**
  * La rúbrica, desde el encabezado del setup, junto a Encuadre y Portada.
@@ -30,6 +31,7 @@ import { rubricLabel } from './rubricLabel';
  */
 export function PaperRubricButton({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
+    const { rubrics: plantillas } = useUserRubrics();
     const [open, setOpen] = useState(false);
     const [vista, setVista] = useState<'elegir' | 'texto' | 'documento'>('elegir');
     const rubric = paper.rubric;
@@ -45,7 +47,7 @@ export function PaperRubricButton({ paper }: { paper: ExegeticalPaper }) {
                 <FileCheck2 className="h-3.5 w-3.5" />
                 {t('paperSetup.rubricButton.label')}
                 {rubric && (
-                    <span className="text-[11px] text-muted-foreground">· {rubricLabel(rubric, t)}</span>
+                    <span className="text-[11px] text-muted-foreground">· {rubricLabel(rubric, t, plantillas)}</span>
                 )}
             </Button>
             <Dialog open={open} onOpenChange={abrir}>

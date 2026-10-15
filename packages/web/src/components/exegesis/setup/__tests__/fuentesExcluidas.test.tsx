@@ -124,9 +124,11 @@ describe('la propuesta y sus bordes (revisión)', () => {
     it('se excluyen sólo las marcadas: una gramática citada la vez pasada se puede desmarcar', () => {
         resumenes = [resumen('tp5', 1, ['Varner', 'Wallace'], 'TP #5'), resumen('tp6', 6, [], 'TP #6')];
         render(<ExcludedSourcesCard paper={trabajo(undefined)} />);
+        // Desmarcar ya guarda (TP #7, #9); «Listo» confirma lo mismo.
         fireEvent.click(screen.getByLabelText('Wallace'));
-        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.excluded.accept'));
         expect(guardar).toHaveBeenCalledWith({ paperId: 'tp6', excludedSources: [{ key: 'Varner', previousPaperTitle: 'TP #5' }] });
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.excluded.done'));
+        expect(guardar).toHaveBeenLastCalledWith({ paperId: 'tp6', excludedSources: [{ key: 'Varner', previousPaperTitle: 'TP #5' }] });
     });
 
     it('con la propuesta pendiente no se puede agregar a mano (la descartaría)', () => {

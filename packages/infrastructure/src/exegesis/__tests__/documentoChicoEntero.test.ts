@@ -54,3 +54,17 @@ describe('documento completo chico: viaja entero', () => {
         expect(rankeadas.flat()).toEqual(['mediano']);
     });
 });
+
+/** TP #7: lo fijado sale marcado, para que el prompt le reserve lugar y lo ponga primero. */
+describe('lo fijado sale marcado', () => {
+    it('los fragmentos de los tramos fijados llevan `pinned`; los rankeados no', async () => {
+        tamanos.rob = 900_000;
+        const r = await new CallableCuratedCorpusRetriever().retrieve({
+            userId: 'u', query: 'q', budgetChars: 100_000,
+            sources: [{ resourceId: 'rob', sheetRanges: [{ start: 1, end: 9 }], pinnedRanges: [{ start: 1, end: 1 }] }],
+        });
+        const chunks = r.byResource.rob!;
+        expect(chunks.filter(c => c.pinned).map(c => c.text)).toEqual(['rob parte 1', 'rob parte 2']);
+        expect(chunks.every(c => c.pinned || c.text === 'rankeado')).toBe(true);
+    });
+});

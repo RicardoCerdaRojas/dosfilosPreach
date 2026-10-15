@@ -1,3 +1,4 @@
+import { nombreCortoDeFuente } from './nombreCortoDeFuente';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -108,6 +109,10 @@ export function PinnedSourcesPicker({
                     {selected.map(id => {
                         const source = sourcesById.get(id);
                         const label = source?.displayLabel ?? id;
+                        // La clave de cita (McCartney, Ropes) y no el título
+                        // cortado: con títulos de 40 letras no se sabía de quién
+                        // era cada ficha (TP #7, #26). El título va en el tooltip.
+                        const corto = source ? nombreCortoDeFuente(source) : id;
                         const role = roles?.[id];
                         return (
                             <Badge
@@ -150,7 +155,7 @@ export function PinnedSourcesPicker({
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
-                                <span className="truncate">{label}</span>
+                                <span className="truncate">{corto}</span>
                                 <button
                                     type="button"
                                     onClick={() => remove(id)}

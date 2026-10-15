@@ -236,6 +236,7 @@ export class CallableCuratedCorpusRetriever implements ICuratedCorpusRetriever {
                         // en 1 para que cualquier orden por relevancia lo ponga
                         // adelante en vez de al final.
                         score: 1,
+                        pinned: true,
                     }));
                 } catch (err) {
                     console.warn('[CuratedCorpus] no se pudieron leer los tramos fijados', {

@@ -445,6 +445,16 @@
       "tooLong_one": "Sobra {{count}} carácter: recórtalo para poder guardar.",
       "tooLong_other": "Sobran {{count}} caracteres: recórtalo para poder guardar.",
       "appliesFromNow": "Lo ya generado no cambia: el encuadre nuevo se usa desde la próxima generación.",
+      "inclusion": {
+        "title": "Con este encuadre cambian las secciones del documento",
+        "enters": "{{name}}: con este encuadre le toca una respuesta. ¿Incluirla en el documento?",
+        "leaves": "{{name}}: el encuadre la deja fuera. ¿Sacarla del documento?",
+        "apply": "Aplicar",
+        "keep": "Dejar como está",
+        "applied_one": "{{count}} sección actualizada",
+        "applied_other": "{{count}} secciones actualizadas",
+        "failed": "No se pudo cambiar el documento. Intenta de nuevo."
+      },
       "gaps": {
         "usePreachingTemplate": "Usar plantilla de predicación",
         "gapTitle": "Este encuadre todavía no le sirve al sistema",
@@ -737,6 +747,7 @@
           "strategy-only": "Sólo estrategia"
         },
         "presetEdited": "{{preset}} · editada",
+        "templateEdited": "{{name}} · editada",
         "presetSystem": "{{preset}} · sistema"
       },
       "manifest": {
@@ -961,6 +972,7 @@
             "saving": "Guardando…",
             "confirm_one": "Agregar {{count}} hoja al trabajo",
             "confirm_other": "Agregar {{count}} hojas al trabajo",
+            "sectionContinues": "sigue de «{{section}}»",
             "sectionsCovered": "{{section}} · cubre {{count}} secciones",
             "perVerse": "Por versículo llegan {{chars}} caracteres. Las hojas elegidas del trabajo suman {{admitted}}; de ellas se consulta lo de cada versículo, hasta {{cap}}.",
             "otherExcerpts": "Los fragmentos de otras fuentes van completos: {{chars}} caracteres.",
@@ -1112,6 +1124,12 @@
           "willReplace": "Reemplazará excerpts actuales",
           "filterAll": "Todos ({{count}})",
           "smartMatchTitle": "Recomendado para este pasaje",
+          "rubricGap": {
+            "title": "Falta para la rúbrica",
+            "requirement_one": "{{type}}: falta {{count}}.",
+            "requirement_other": "{{type}}: faltan {{count}}.",
+            "porPaginas": "No se encuentra buscando el pasaje: agrega el libro y luego elige sus páginas en el corpus."
+          },
           "smartMatchLoading": "Calculando recomendaciones…",
           "chunksRelevant_one": "✨ {{count}} fragmento relevante",
           "chunksRelevant_other": "✨ {{count}} fragmentos relevantes",
@@ -1322,6 +1340,8 @@
           "previousFallback": "trabajo anterior",
           "accept": "Excluirlas",
           "decline": "No hace falta",
+          "done": "Listo",
+          "savedAsYouGo": "Cada marca ya quedó guardada.",
           "citedIn": "citada en {{paper}}",
           "byYou": "agregada por ti",
           "remove": "Quitar {{source}} de las excluidas",
@@ -1358,6 +1378,7 @@
         },
         "sinPaginas": {
           "body": "Sin páginas para este pasaje: el análisis busca en el libro entero lo que habla de cada versículo. Elegir las páginas del pasaje es más preciso y deja ver qué entra.",
+          "vacia": "La extracción no encontró fragmentos de este pasaje: esta fuente no aporta nada al análisis ni cuenta para la rúbrica. Elige sus páginas; en una gramática, las secciones que tratan las formas del pasaje.",
           "cta": "Elegir páginas"
         },
         "suggestion": {
@@ -1391,6 +1412,8 @@
       "corpus-plan": {
         "outsideDocument_one": "1 paso queda fuera del documento (el encuadre no lo pide): no se planifica.",
         "outsideDocument_other": "{{count}} pasos quedan fuera del documento (el encuadre no los pide): no se planifican.",
+        "includeStepAria": "Incluir {{name}} en el documento",
+        "includeStepHint": "Toca uno para incluirlo; después vuelve a proponer el plan para repartirle fuentes.",
         "tab": "Plan de uso",
         "heading": "Plan de uso del corpus",
         "description": "Asigna fuentes específicas a cada verso o sección. Te proponemos una distribución basada en el pasaje y el corpus; tú revisas y ajustas. Las fuentes asignadas tienen prioridad en la generación, pero el modelo puede usar las demás cuando sea pertinente.",
@@ -1560,7 +1583,8 @@
       "saveFailed": "No se pudo guardar el perfil.",
       "pickLabel": "Perfil de trabajo",
       "pickNone": "Sin perfil",
-      "pickHint": "Rellena rúbrica, encuadre, guía de estilo y método. Puedes cambiar cualquiera antes de crear."
+      "pickHint": "Rellena rúbrica, encuadre, guía de estilo y método. Puedes cambiar cualquiera antes de crear.",
+      "noRubric": "Este perfil no guarda una rúbrica: elígela abajo. Para que la recuerde, vuelve a guardar el perfil desde un trabajo con la rúbrica correcta."
     },
     "voice": {
       "heading": "Cómo escribo yo",
@@ -2388,6 +2412,10 @@
       "title": "Datos para citar",
       "dialogTitle": "Ficha bibliográfica",
       "allComplete": "Todos los libros tienen sus datos: la bibliografía sale del libro, no del asistente.",
+      "rubricTitle": "Antes de exportar: la rúbrica pide fuentes que el documento no cita",
+      "rubricDescription": "La bibliografía lista sólo lo que el documento cita. Cita esas fuentes en el texto, o exporta igual si tu profesor no las exige.",
+      "rubricUncited": "{{type}}: citadas {{cited}} de {{required}}. En el corpus sin citar: {{sources}}.",
+      "rubricMissing": "{{type}}: citadas {{cited}} de {{required}}, y no hay otra en el corpus.",
       "someMissing": "A {{count}} libro(s) les faltan datos. Sin ellos la bibliografía queda coja o el asistente los inventa.",
       "missingFields": "Faltan: {{fields}}.",
       "previewLabel": "Así saldrá en la bibliografía",

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Pencil } from 'lucide-react';
-import type { BibliographyEntry, ExegeticalPaper } from '@dosfilos/domain';
+import { uncitedRubricRequirements, type BibliographyEntry, type ExegeticalPaper } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { usePaperBibliography, type PaperBibliographyRow } from '@/hooks/exegesis/usePaperBibliography';
 import { BibliographyEditDialog } from './BibliographyEditDialog';
@@ -42,6 +42,10 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
     // apenas se completan: se ven pasar a verde.
     const [shown] = useState(() => entries.filter(e => !e.text).map(e => e.citationKey));
     const pendientes = entries.filter(e => !e.text).length;
+    // La bibliografía lista sólo lo citado: un requisito de la rúbrica cuya
+    // fuente el documento no cita sale de la bibliografía (TP #7, #30).
+    const faltasDeRubrica = useMemo(() => uncitedRubricRequirements(paper), [paper]);
+    const algoPendiente = pendientes > 0 || faltasDeRubrica.length > 0;
     const visibles = shown.map(key => {
         const entry = entries.find(e => e.citationKey === key);
         // Una cita a un libro que ya no está en el corpus no tiene ficha que
@@ -56,10 +60,32 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>
-                            {pendientes > 0 ? t('detail.bibliography.gate.title', { count: pendientes }) : t('detail.bibliography.gate.allComplete')}
+                            {pendientes > 0
+                                ? t('detail.bibliography.gate.title', { count: pendientes })
+                                : faltasDeRubrica.length > 0
+                                    ? t('detail.bibliography.gate.rubricTitle')
+                                    : t('detail.bibliography.gate.allComplete')}
                         </DialogTitle>
-                        <DialogDescription>{t('detail.bibliography.gate.description')}</DialogDescription>
+                        <DialogDescription>
+                            {pendientes > 0 || faltasDeRubrica.length === 0
+                                ? t('detail.bibliography.gate.description')
+                                : t('detail.bibliography.gate.rubricDescription')}
+                        </DialogDescription>
                     </DialogHeader>
+                    {faltasDeRubrica.length > 0 && (
+                        <ul className="space-y-1.5 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2">
+                            {faltasDeRubrica.map(f => (
+                                <li key={f.sourceType} className="text-xs text-warning-subtle-foreground">
+                                    {t(f.uncited.length > 0 ? 'detail.bibliography.gate.rubricUncited' : 'detail.bibliography.gate.rubricMissing', {
+                                        type: t(`sourceTypes.${f.sourceType}.label`),
+                                        cited: f.cited,
+                                        required: f.required,
+                                        sources: f.uncited.join(', '),
+                                    })}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                     <ul className="space-y-2">
                         {visibles.map(item => (
                             <li key={item.key}>
@@ -91,8 +117,8 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
                     </ul>
                     <DialogFooter>
                         <Button type="button" variant="ghost" onClick={onCancel}>{t('detail.bibliography.gate.cancel')}</Button>
-                        <Button type="button" variant={pendientes > 0 ? 'outline' : 'default'} onClick={onExport}>
-                            {pendientes > 0 ? t('detail.bibliography.gate.exportAnyway') : t('detail.bibliography.gate.export')}
+                        <Button type="button" variant={algoPendiente ? 'outline' : 'default'} onClick={onExport}>
+                            {algoPendiente ? t('detail.bibliography.gate.exportAnyway') : t('detail.bibliography.gate.export')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, classifyOriginalLanguageAbsence, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
+import { citationAnchorFor, classifyOriginalLanguageAbsence, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, isOnCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -355,7 +355,9 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
  *      repiten los admitidos).
  *   3. Los fragmentos con página preceden a los que no la tienen, para que
  *      el cotejo de página conserve con qué compararse.
- *   4. Tope de fragmentos y de caracteres por fragmento.
+ *   4. Tope de fragmentos y de caracteres por fragmento. La página citada
+ *      entra ENTERA aunque pase el tope: cortarla deja al modelo juzgando
+ *      la cita sin la parte que la sostiene (TP #7, #33: «McCartney, 204»).
  *
  * Pura y exportada para poder afirmar en una prueba que la página citada
  * sobrevive al recorte.
@@ -378,8 +380,11 @@ export function selectEvidenceChunks(
         if (!!a.pageHint === !!b.pageHint) return 0;
         return a.pageHint ? -1 : 1;
     });
+    const deLaCitada = sorted.filter(c => isOnCitedPage(c, citedPages)).length;
     return sorted
-        .slice(0, caps.maxChunks)
+        // Entera, pero con techo: una cita a un rango largo («Robertson,
+        // 570-593») traía 50 fragmentos y pasaba el tope del prompt.
+        .slice(0, Math.min(Math.max(caps.maxChunks, deLaCitada), caps.maxChunks * 3))
         .map(c => ({
             text: c.text.length > caps.maxCharsPerChunk ? c.text.slice(0, caps.maxCharsPerChunk) : c.text,
             pageHint: c.pageHint,

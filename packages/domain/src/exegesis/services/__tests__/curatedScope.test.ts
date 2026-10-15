@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { WHOLE_DOCUMENT_RANGE, hasCuratedScope, isPickedByPages, isSourceWithoutScope, retrievalScopeOf } from '../curatedScope';
+import { WHOLE_DOCUMENT_RANGE, hasCuratedScope, isEmptyExtractedSource, isPickedByPages, isSourceWithoutScope, retrievalScopeOf } from '../curatedScope';
 
 describe('hasCuratedScope — de dónde sale el texto de una fuente', () => {
     const conTramos = (n: number) => ({
@@ -90,5 +90,40 @@ describe('retrievalScopeOf — dónde buscar para un versículo', () => {
 
     it('una plantilla de estilo: nada', () => {
         expect(retrievalScopeOf({ ...base, mode: 'full-document', sourceType: 'style-template-paper' })).toBeNull();
+    });
+});
+
+describe('isEmptyExtractedSource — se extrajo y no trajo nada', () => {
+    // TP #7 (Santiago 3:13-18): Robertson, `extracted-excerpts`, 0 fragmentos,
+    // sin páginas. El corpus no avisó y la rúbrica lo contó como gramática.
+    const robertson = {
+        sourceType: 'grammar-syntax' as const,
+        mode: 'extracted-excerpts' as const,
+        excerpts: [],
+        excerptRecipe: null,
+        extractedAt: new Date('2026-10-14'),
+    };
+    const receta = { sheetRanges: [{ start: 570, end: 571 }], proposedRanges: [], pinnedRanges: [], passageFingerprint: '' };
+
+    it('Robertson tal como quedó en el TP #7: sí, y no aporta texto', () => {
+        expect(isEmptyExtractedSource(robertson)).toBe(true);
+        expect(retrievalScopeOf(robertson)).toBeNull();
+        // La pregunta vieja no la veía: por eso no había aviso.
+        expect(isSourceWithoutScope(robertson)).toBe(false);
+    });
+    it('con páginas elegidas ya aporta: no', () => {
+        expect(isEmptyExtractedSource({ ...robertson, excerptRecipe: receta })).toBe(false);
+    });
+    it('con un fragmento: no', () => {
+        expect(isEmptyExtractedSource({ ...robertson, excerpts: [{ text: 'x' }] as never })).toBe(false);
+    });
+    it('todavía extrae (sin `extractedAt`): no', () => {
+        expect(isEmptyExtractedSource({ ...robertson, extractedAt: null })).toBe(false);
+    });
+    it('en documento completo se lee entero: no', () => {
+        expect(isEmptyExtractedSource({ ...robertson, mode: 'full-document' })).toBe(false);
+    });
+    it('una plantilla de estilo no se cita: no', () => {
+        expect(isEmptyExtractedSource({ ...robertson, sourceType: 'style-template-paper' as const })).toBe(false);
     });
 });

@@ -6,6 +6,7 @@ import {
     buildPaperBibliography,
     isCitableSourceType,
     missingBibliographyFields,
+    withFullTitle,
     type BibliographicData,
     type BibliographyEntry,
     type ExegeticalPaper,
@@ -50,6 +51,7 @@ export function usePaperBibliography(paper: ExegeticalPaper | null | undefined):
         const byId = new Map(resources.map(r => [r.id, r as {
             bibliography?: BibliographicData | null;
             userId?: string;
+            title?: string;
         }]));
 
         return paper.sources
@@ -57,7 +59,9 @@ export function usePaperBibliography(paper: ExegeticalPaper | null | undefined):
             .map(s => {
                 const resourceId = s.sourceLibraryResourceId ?? s.corpusId;
                 const resource = byId.get(resourceId);
-                const data = resource?.bibliography ?? null;
+                const ficha = resource?.bibliography ?? null;
+                // Con el subtítulo del libro si la ficha lo perdió (TP #7, Varner).
+                const data = ficha ? withFullTitle(ficha, resource?.title) : null;
                 return {
                     sourceId: s.id,
                     resourceId,

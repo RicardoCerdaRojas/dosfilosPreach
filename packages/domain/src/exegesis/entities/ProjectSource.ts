@@ -344,12 +344,25 @@ export function usesExtractedExcerpts(source: Pick<ProjectSource, 'mode' | 'exce
 }
 
 export function isExcerptSetStale(
-    source: Pick<ProjectSource, 'mode' | 'excerpts' | 'extractionFingerprint'>,
+    source: Pick<ProjectSource, 'mode' | 'excerpts' | 'extractionFingerprint'> & { excerptRecipe?: ExcerptRecipe | null },
     livePaper: { passageRef: string; assignmentBrief: string | null },
 ): boolean {
     if (!usesExtractedExcerpts(source)) return false;
     if (!source.extractionFingerprint) return false;
-    return source.extractionFingerprint !== computeExtractionFingerprint(livePaper.passageRef, livePaper.assignmentBrief);
+    const actual = computeExtractionFingerprint(livePaper.passageRef, livePaper.assignmentBrief);
+    // Las páginas elegidas a mano no dependen del encuadre: sólo las vuelve
+    // viejas un cambio de PASAJE. En el TP #7 agregar «(Stg. 3:15)» a una
+    // pregunta marcó desactualizadas las siete fuentes, y «Re-extraer» sobre
+    // una con páginas las habría reemplazado por búsqueda semántica (#21).
+    if ((source.excerptRecipe?.sheetRanges.length ?? 0) > 0) {
+        return pasajeDeLaHuella(source.extractionFingerprint) !== pasajeDeLaHuella(actual);
+    }
+    return source.extractionFingerprint !== actual;
+}
+
+/** `v1|santiago 3:13-18|…` → `santiago 3:13-18`. */
+function pasajeDeLaHuella(huella: string): string {
+    return huella.split('|')[1] ?? huella;
 }
 
 /**

@@ -1,6 +1,9 @@
 import type { BibliographicData, RequiredBibliographyField } from './bibliography';
-import { formatBibliographyEntry, missingBibliographyFields, proposeSortedAuthor } from './bibliography';
+import { formatBibliographyEntry, missingBibliographyFields, sortedAuthorOf } from './bibliography';
 import { collectAnalysisClaims } from './analysisClaims';
+import { findInlineCitations, resolvesToCitedSource } from './inlineCitations';
+import { computeRubricCompliance } from '../entities/PaperRubric';
+import type { SourceType } from '../entities/SourceType';
 import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
 
 /**
@@ -52,13 +55,72 @@ export interface BibliographyEntry {
  * documento y no debe dejar entrada en la bibliografía.
  */
 export function citedSourceKeys(paper: ExegeticalPaper): ReadonlySet<string> {
+    // Con el documento ensamblado, lo citado es lo que ESE texto cita. Los
+    // análisis traen más de lo que llega a la prosa: en el TP #7 NA28 y Tuggy
+    // estaban citados en los análisis, no en el documento, y la bibliografía
+    // los listó igual (#30).
     const keys = new Set<string>();
     for (const step of paper.steps) {
         const analysis = step.accepted?.canonicalAnalysis;
         if (!analysis) continue;
         for (const claim of collectAnalysisClaims(analysis)) keys.add(claim.sourceKey);
     }
-    return keys;
+    const ensamblado = paper.assembledMarkdown?.trim();
+    if (!ensamblado) return keys;
+    // Las claves de los análisis también se buscan: una fuente quitada del
+    // corpus después de generar sigue citada en el texto y no puede
+    // desaparecer de la bibliografía en silencio.
+    return keysCitedIn(ensamblado, [...new Set([...(paper.sources ?? []).map(s => s.citationKey ?? s.displayLabel), ...keys])]);
+}
+
+/** Las claves del corpus que un texto cita, por la misma regla del exportador. */
+export function keysCitedIn(markdown: string, keys: ReadonlyArray<string>): ReadonlySet<string> {
+    const out = new Set<string>();
+    for (const cita of findInlineCitations(markdown, keys)) {
+        const key = keys.find(k => resolvesToCitedSource(cita.author, [k]));
+        if (key) out.add(key);
+    }
+    // Las anclas que el propio sistema escribe y los patrones no leen:
+    // «(Moo, p. xiv)», «(Arnold y Choi, § 3.2.1)», «(BDAG, s.v. σοφία)»,
+    // «(Wallace, hoja 87)». Un paréntesis que ABRE con la clave y una coma
+    // es una cita de esa fuente (revisión adversarial de H).
+    for (const m of markdown.matchAll(/\(\s*([^(),]{1,60}?)\s*,[^()]*\)/g)) {
+        const key = keys.find(k => resolvesToCitedSource(m[1]!, [k]));
+        if (key) out.add(key);
+    }
+    return out;
+}
+
+/** Un requisito de la rúbrica que el documento no cumple con lo que CITA. */
+export interface UncitedRubricRequirement {
+    sourceType: SourceType;
+    required: number;
+    cited: number;
+    /** Fuentes del corpus de ese tipo que el documento no cita. */
+    uncited: ReadonlyArray<string>;
+}
+
+/**
+ * Requisitos de la rúbrica que el documento no cumple con lo citado.
+ *
+ * La bibliografía lista sólo lo citado (decisión del fundador, 2026-10-14):
+ * una fuente del corpus que el texto no cita sale de la bibliografía, y con
+ * ella el requisito que cubría. Se avisa antes de exportar (TP #7, #30: el
+ * documento citó 5 de 7 fuentes; NA28 y Tuggy quedaron sin cita).
+ */
+export function uncitedRubricRequirements(paper: ExegeticalPaper): UncitedRubricRequirement[] {
+    if (!paper.rubric) return [];
+    const citadas = citedSourceKeys(paper);
+    const clave = (s: ExegeticalPaper['sources'][number]) => s.citationKey ?? s.displayLabel;
+    const tipos = paper.sources.filter(s => citadas.has(clave(s))).map(s => s.sourceType);
+    return computeRubricCompliance(tipos, paper.rubric).requirements
+        .filter(r => r.required > 0 && !r.satisfied)
+        .map(r => ({
+            sourceType: r.sourceType,
+            required: r.required,
+            cited: r.have,
+            uncited: paper.sources.filter(s => s.sourceType === r.sourceType && !citadas.has(clave(s))).map(clave),
+        }));
 }
 
 /**
@@ -120,8 +182,7 @@ export function buildPaperBibliography(
  */
 function claveDeOrden(entry: BibliographyEntry, rows: ReadonlyArray<BibliographySourceRow>): string {
     const data = rows.find(r => r.citationKey === entry.citationKey)?.data;
-    const sorted = (data?.authorSorted ?? '').trim()
-        || proposeSortedAuthor((data?.author ?? '').trim());
+    const sorted = data ? sortedAuthorOf(data) : '';
     return (sorted || entry.displayLabel).toLocaleLowerCase('es');
 }
 

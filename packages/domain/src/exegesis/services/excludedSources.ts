@@ -1,3 +1,4 @@
+import { formatPassageReference } from '../../bible/canon/passage-reference';
 import type { PreviousDelivery } from './sourceMemory';
 
 /**
@@ -27,9 +28,16 @@ export interface ExcludedSource {
  * entrega anterior. El estudiante las confirma o las edita; el sistema no
  * decide cuántas semanas hay que esperar.
  */
-export function proposeExclusions(previous: PreviousDelivery | null): ExcludedSource[] {
+export function proposeExclusions(
+    previous: PreviousDelivery | null,
+    language: 'es' | 'en' = 'es',
+): ExcludedSource[] {
     if (!previous) return [];
-    return previous.citedSourceKeys.map(key => ({ key, previousPaperTitle: previous.title ?? null }));
+    // Sin título, el pasaje: con `null` la propuesta decía «(trabajo
+    // anterior)» y las confirmadas, «agregada por ti», aunque la tarjeta de
+    // NA28 sí sabía que era «Santiago 3:1-12» (TP #7, #2 y #10).
+    const origen = previous.title?.trim() || formatPassageReference(previous.passage, language);
+    return previous.citedSourceKeys.map(key => ({ key, previousPaperTitle: origen }));
 }
 
 /** Sin acentos, mayúsculas ni puntuación: «Martín» y «martin.» son la misma clave. */

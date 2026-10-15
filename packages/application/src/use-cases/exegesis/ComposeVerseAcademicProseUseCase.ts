@@ -167,7 +167,7 @@ export class ComposeVerseAcademicProseUseCase {
             const glossary = await this.loadGlossary(input.ownerId);
             const voiceSamples = await this.loadVoiceSamples(input.ownerId);
             const manifest = await this.loadStyleManifest(input.ownerId, paper);
-            const preguntas = parseBriefQuestions(paper.assignmentBrief);
+            const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
             const propias = questionsOfStep(step, preguntas);
             // La cifra que el autor escribe al recomponer ES el presupuesto.
             // Antes el presupuesto calculado iba a la instrucción de sistema
@@ -313,7 +313,7 @@ export class ComposeVerseAcademicProseUseCase {
         // (ver `replaceVerseSectionExact`). Sin preguntas, el de siempre, que
         // acepta «### Santiago 1:2 — La prueba» del compositor del trabajo
         // entero.
-        const hayPreguntas = parseBriefQuestions(paper.assignmentBrief).length > 0;
+        const hayPreguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage).length > 0;
         const next = porPregunta ?? (hayPreguntas
             ? replaceVerseSectionExact(assembled, key, prose)
             : replaceVerseSection(assembled, key, prose));

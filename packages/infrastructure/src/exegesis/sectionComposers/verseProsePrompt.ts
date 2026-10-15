@@ -1,4 +1,5 @@
 import {
+    buildAcademicRegisterBlock,
     buildAcademicVoiceBlock,
     buildCitationFormBlock,
     buildWordBudgetBlock,
@@ -108,7 +109,9 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
 
     const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, glossaryBlock,
         buildCitationFormBlock(input.citationForm ?? null, lang),
-        buildWordBudgetBlock(target ?? input.wordBudget ?? null, lang), voiceBlock]
+        buildWordBudgetBlock(target ?? input.wordBudget ?? null, lang),
+        buildAcademicRegisterBlock(lang, { answersQuestions: (input.sectionQuestions ?? []).length > 0 }),
+        voiceBlock]
         .filter(Boolean)
         .join('\n');
 
