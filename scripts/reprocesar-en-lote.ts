@@ -100,16 +100,25 @@ async function preparar(): Promise<void> {
     mkdirSync(dir(), { recursive: true });
     const porTramo = Number(opcion('--por-tramo') ?? PAGINAS_POR_TRAMO);
     const estado: Estado = { nombre, creado: new Date().toISOString(), libros: [], rondas: [], tramos: [], uso: { entrada: 0, salida: 0 } };
+    const saltados: string[] = [];
     for (const rid of ids) {
         const doc = await admin.firestore().collection('library_resources').doc(rid).get();
         const d = doc.data();
         if (!d) throw new Error(`No existe ${rid}`);
-        const pdf = await cargarPdf((await bajar(d.storageUrl))!);
-        const total = pdf.getPageCount();
+        // Un PDF que pdf-lib no puede abrir (mal formado) no frena el lote:
+        // se salta y se avisa. La extracción en línea tampoco podría cortarlo.
+        let total: number;
+        try {
+            total = (await cargarPdf((await bajar(d.storageUrl))!)).getPageCount();
+        } catch (err) {
+            saltados.push(`${String(d.title).slice(0, 60)} (${rid}): ${err instanceof Error ? err.message.slice(0, 80) : err}`);
+            continue;
+        }
         estado.libros.push({ rid, titulo: String(d.title ?? ''), uid: d.userId, totalPaginas: total });
         for (const t of planearTramos(total, porTramo)) estado.tramos.push({ ...t, rid, ronda: 1, indice: -1, estado: 'pendiente' });
         console.log(`${String(d.title).slice(0, 60)}: ${total} páginas`);
     }
+    if (saltados.length > 0) console.log(`SALTADOS (el PDF no se pudo abrir):\n  ${saltados.join('\n  ')}`);
     estado.tramos.forEach((t, i) => { t.indice = i; });
     await crearRonda(estado, estado.tramos);
     guardarEstado(estado);
