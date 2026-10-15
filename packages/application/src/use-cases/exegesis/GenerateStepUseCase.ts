@@ -300,9 +300,13 @@ export class GenerateStepUseCase {
                 const { fijados, consultados } = fijadoPrimero(retrieved);
                 // Lo editado por el estudiante también es suyo: va con lo fijado,
                 // en la parte reservada, y no al final donde se cortaba primero.
+                // Sólo lo EDITADO: los fragmentos viejos sin hoja no son una
+                // decisión del estudiante y no le quitan lugar a lo fijado.
+                const editados = siempre.filter(e => e.userEdited);
+                const sinHoja = siempre.filter(e => !e.userEdited);
                 const parteFijada = [
                     ...fijados.map(c => `--- ${anchor(c)} ---\n${c.text}`),
-                    ...siempre.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
+                    ...editados.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
                 ].join('\n\n');
                 contexts.push({
                     corpusId: source.corpusId,
@@ -312,9 +316,10 @@ export class GenerateStepUseCase {
                     textContent: [
                         ...(parteFijada ? [parteFijada] : []),
                         ...consultados.map(c => `--- ${anchor(c)} ---\n${c.text}`),
+                        ...sinHoja.map(e => `--- ${anchorOf(e)} ---\n${e.text}`),
                     ].join('\n\n'),
                     ...(parteFijada ? { pinnedChars: parteFijada.length } : {}),
-                    excerptAnchors: [...fijados.map(anchor), ...siempre.map(anchorOf), ...consultados.map(anchor)],
+                    excerptAnchors: [...fijados.map(anchor), ...editados.map(anchorOf), ...consultados.map(anchor), ...sinHoja.map(anchorOf)],
                     priority,
                 });
                 continue;

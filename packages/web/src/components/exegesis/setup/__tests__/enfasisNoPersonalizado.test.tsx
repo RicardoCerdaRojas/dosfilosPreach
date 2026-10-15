@@ -18,9 +18,9 @@ vi.mock('@dosfilos/application', () => ({
 const { StepKindEmphasisCard } = await import('../StepKindEmphasisCard');
 
 const emphasis = (emphasizedTypes: string[]) => ({ emphasizedTypes, deemphasizedTypes: [], citationOverrides: [] });
-const paper = (guardado: string[]) => ({
+const paper = (guardado: string[], anterior: string[] = ['commentary-critical', 'grammar-syntax']) => ({
     id: 'p',
-    structuralExpectations: [{ section: 'verse', emphasizedTypes: ['commentary-critical', 'grammar-syntax'], justification: 'x' }],
+    structuralExpectations: [{ section: 'verse', emphasizedTypes: anterior, justification: 'x' }],
     rubric: { provenance: 'user-edited', sourceRequirements: [{ sourceType: 'commentary-expository', minimum: 1 }] },
     stepPlan: { defaults: { verse: emphasis(guardado), introduction: emphasis([]), conclusion: emphasis([]) }, perStep: {} },
 }) as never;
@@ -33,5 +33,12 @@ describe('la insignia «personalizado» del plan estructural', () => {
     it('aparece con una elección propia', () => {
         render(<StepKindEmphasisCard paper={paper(['historical-background'])} kind="verse" icon={null} />);
         expect(screen.getByText('paperSetup.subSteps.plan.savedHint')).toBeInTheDocument();
+    });
+});
+
+describe('vaciar a propósito sí es una elección', () => {
+    it('con la sugerencia anterior vacía, un énfasis vacío se marca personalizado', () => {
+        render(<StepKindEmphasisCard paper={paper([], [])} kind="verse" icon={null} />);
+        expect(screen.getAllByText('paperSetup.subSteps.plan.savedHint').length).toBeGreaterThan(0);
     });
 });

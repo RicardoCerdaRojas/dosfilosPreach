@@ -78,7 +78,9 @@ export function StepKindEmphasisCard({ paper, kind, icon }: StepKindEmphasisCard
         // personalización: los trabajos guardados con ella decían
         // «personalizado» sin que nadie los tocara (revisión de la fase TP #7).
         const anterior = getEffectiveSectionStructuralExpectation(paper, kind)?.emphasizedTypes ?? [];
-        return !coincide(rubricSuggestion.emphasizedTypes) && !coincide(anterior);
+        // Una sugerencia anterior VACÍA no cuenta: vaciar a propósito sí es
+        // una elección.
+        return !coincide(rubricSuggestion.emphasizedTypes) && !(anterior.length > 0 && coincide(anterior));
     }, [persistedEmphasis, rubricSuggestion, paper, kind]);
 
     // Borrador local: arranca de lo guardado (o de la sugerencia) y solo se

@@ -22,8 +22,12 @@ describe('recomendablePorPasaje', () => {
     it('una obra de consulta con un fragmento sí: toca el versículo en una línea', () => {
         expect(recomendablePorPasaje(recurso({ exegeticalType: 'grammar-syntax' }), rk(1), JAS)).toBe(true);
     });
-    it('un comentario de Santiago con pocos fragmentos depende de su peso, no de su libro', () => {
-        const moo = recurso({ exegeticalType: 'commentary-critical', coversBibleBooks: ['JAS'], scope: 'book' });
-        expect(recomendablePorPasaje(moo, rk(1), JAS)).toBe(true);
+    it('un comentario de Santiago va aunque tenga un fragmento, crítico o expositivo', () => {
+        expect(recomendablePorPasaje(recurso({ exegeticalType: 'commentary-critical', coversBibleBooks: ['JAS'], scope: 'book' }), rk(1), JAS)).toBe(true);
+        expect(recomendablePorPasaje(recurso({ exegeticalType: 'commentary-expository', coversBibleBooks: ['JAS'], scope: 'book' }), rk(1), JAS)).toBe(true);
+    });
+    it('«peso técnico» no basta: un crítico sin libro registrado o un artículo con un fragmento, no', () => {
+        expect(recomendablePorPasaje(recurso({ exegeticalType: 'commentary-critical' }), rk(1), JAS)).toBe(false);
+        expect(recomendablePorPasaje(recurso({ exegeticalType: 'journal-article' }), rk(1), JAS)).toBe(false);
     });
 });
