@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { writeAuditLog } from '../admin/auditLog';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
-import { AnthropicLlmClient } from '../llm/AnthropicLlmClient';
+import { clientePorRuta } from '../llm/clientePorRuta';
 import { adjudicateRefutes, type RefutesVerdict } from './adjudicateRefutes';
 
 /**
@@ -83,7 +83,7 @@ async function resolveProvenance(
 }
 
 export const reviewVerifiedMisreading = onCall(
-    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 120 },
+    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY'], timeoutSeconds: 120 },
     async (request) => {
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'User must be authenticated');
@@ -94,11 +94,6 @@ export const reviewVerifiedMisreading = onCall(
         const callerDoc = await db.collection('users').doc(callerUid).get();
         if (!callerDoc.exists || callerDoc.data()?.role !== 'super_admin') {
             throw new HttpsError('permission-denied', 'Only the floor reviewer can review verified misreadings');
-        }
-
-        const anthropicKey = process.env.ANTHROPIC_API_KEY;
-        if (!anthropicKey) {
-            throw new HttpsError('failed-precondition', 'ANTHROPIC_API_KEY secret not configured');
         }
 
         const data = request.data ?? {};
@@ -127,9 +122,9 @@ export const reviewVerifiedMisreading = onCall(
         const whyWrong = str(entry.whyWrong);
         const anchors = Array.isArray(entry.correctiveAnchors) ? entry.correctiveAnchors : [];
 
-        const sonnet = new AnthropicLlmClient(anthropicKey, undefined, undefined, {
-            feature: 'reviewVerifiedMisreading',
-            userId: request.auth?.uid,
+        const sonnet = await clientePorRuta({
+            usage: { feature: 'reviewVerifiedMisreading', userId: request.auth?.uid },
+            timeoutSeconds: 120,
         });
         const perAnchor: PerAnchor[] = [];
         const updatedAnchors: Record<string, unknown>[] = [];

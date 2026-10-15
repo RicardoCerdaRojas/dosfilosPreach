@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
-import { AnthropicLlmClient } from '../llm/AnthropicLlmClient';
+import { clientePorRuta } from '../llm/clientePorRuta';
 import { buildOutlinePrompt, type GeneroSoportado } from './buildOutlinePrompt';
 import { MENSAJE_NO_DISPONIBLE } from './planGeneration';
 
@@ -62,7 +62,7 @@ function coerceOutline(raw: string): Sesion[] {
 }
 
 export const proponerOutlineCurso = onCall(
-  { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 120 },
+  { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY'], timeoutSeconds: 120 },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Authentication required');
     const ownerId = request.auth.uid;
@@ -77,11 +77,6 @@ export const proponerOutlineCurso = onCall(
     const sugeridas = Number(input.sesionesSugeridas);
     const sesionesSugeridas =
       Number.isFinite(sugeridas) && sugeridas > 0 ? Math.min(Math.round(sugeridas), MAX_SESIONES) : undefined;
-
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (!anthropicKey) {
-      throw new HttpsError('failed-precondition', 'ANTHROPIC_API_KEY secret not configured');
-    }
 
     const db = getFirestore();
     const estudioSnap = await db.collection('extractions').doc(estudioId).get();
@@ -102,9 +97,9 @@ export const proponerOutlineCurso = onCall(
       sesionesSugeridas,
     });
 
-    const llm = new AnthropicLlmClient(anthropicKey, undefined, undefined, {
-      feature: 'teachingSuite.proponerOutlineCurso',
-      userId: ownerId,
+    const llm = await clientePorRuta({
+      usage: { feature: 'teachingSuite.proponerOutlineCurso', userId: ownerId },
+      timeoutSeconds: 120,
     });
     let raw: string;
     try {

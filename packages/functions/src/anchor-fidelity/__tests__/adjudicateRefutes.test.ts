@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ILlmClient, LlmGenerateOptions } from '../../llm/LlmClient';
-import { AnthropicLlmClient } from '../../llm/AnthropicLlmClient';
+import { clienteDeEval } from '../../llm/__tests__/clienteDeEval';
 import { adjudicateRefutes, parseRefutes, type AdjudicateRefutesInput } from '../adjudicateRefutes';
 
 /** Fake client que devuelve un JSON fijo (prueba plumbing, no juicio). */
@@ -103,8 +103,9 @@ const CASES: EvalCase[] = [
     },
 ];
 
-describe.runIf(Boolean(process.env.ANTHROPIC_API_KEY))('adjudicateRefutes — eval vivo (Sonnet)', () => {
-    const client = new AnthropicLlmClient(process.env.ANTHROPIC_API_KEY as string);
+const EVAL = clienteDeEval();
+describe.runIf(Boolean(EVAL))(`adjudicateRefutes — eval vivo (${EVAL?.nombre})`, () => {
+    const client = EVAL?.cliente as ILlmClient;
     const RUNS = Number(process.env.PROFILE_EVAL_RUNS ?? 5);
 
     for (const c of CASES) {

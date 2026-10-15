@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
-import { AnthropicLlmClient } from '../llm/AnthropicLlmClient';
+import { clientePorRuta } from '../llm/clientePorRuta';
 import { adjudicateRefutes, type AdjudicateRefutesInput } from './adjudicateRefutes';
 
 /**
@@ -18,14 +18,10 @@ function str(v: unknown): string {
 }
 
 export const adjudicateAnchorRefutes = onCall(
-    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 60 },
+    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY'], timeoutSeconds: 60 },
     async (request) => {
         if (!request.auth) {
             throw new HttpsError('unauthenticated', 'User must be authenticated');
-        }
-        const anthropicKey = process.env.ANTHROPIC_API_KEY;
-        if (!anthropicKey) {
-            throw new HttpsError('failed-precondition', 'ANTHROPIC_API_KEY secret not configured');
         }
         const data = request.data ?? {};
         const input: AdjudicateRefutesInput = {
@@ -38,9 +34,9 @@ export const adjudicateAnchorRefutes = onCall(
         if (!input.anchorVerseText) throw new HttpsError('invalid-argument', 'anchorVerseText is required');
 
         try {
-            const sonnet = new AnthropicLlmClient(anthropicKey, undefined, undefined, {
-                feature: 'adjudicateAnchorRefutes',
-                userId: request.auth?.uid,
+            const sonnet = await clientePorRuta({
+                usage: { feature: 'adjudicateAnchorRefutes', userId: request.auth?.uid },
+                timeoutSeconds: 60,
             });
             const adjudication = await adjudicateRefutes(sonnet, input);
             return { adjudication, modelTier: 'sonnet' as const };

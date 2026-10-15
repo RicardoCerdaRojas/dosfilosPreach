@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
-import { AnthropicLlmClient } from '../llm/AnthropicLlmClient';
+import { clientePorRuta } from '../llm/clientePorRuta';
+import type { ILlmClient } from '../llm/LlmClient';
 
 /**
  * Fidelidad de citas en la redacción (opción B, parte 2) — SANITIZADO quirúrgico.
@@ -35,7 +36,7 @@ interface SanitizeItem {
     fabricated: Array<{ author: string; quote: string }>;
 }
 
-async function rewriteOne(client: AnthropicLlmClient, item: SanitizeItem): Promise<string> {
+async function rewriteOne(client: ILlmClient, item: SanitizeItem): Promise<string> {
     if (!item.text.trim() || item.fabricated.length === 0) return item.text;
     const list = item.fabricated
         .map((f) => `- ${f.author || '(autor)'}: "${f.quote}"`)
@@ -57,11 +58,9 @@ Reescribe el párrafo quitando esa(s) atribución(es). Devuelve solo el párrafo
 }
 
 export const sanitizeSermonCitations = onCall(
-    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 120 },
+    { ...appCheckCallableOptions(), secrets: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY'], timeoutSeconds: 120 },
     async (request) => {
         if (!request.auth) throw new HttpsError('unauthenticated', 'User must be authenticated');
-        const anthropicKey = process.env.ANTHROPIC_API_KEY;
-        if (!anthropicKey) throw new HttpsError('failed-precondition', 'ANTHROPIC_API_KEY secret not configured');
 
         const rawItems = Array.isArray(request.data?.items) ? request.data.items : [];
         const items: SanitizeItem[] = rawItems.slice(0, 30).map((it: Record<string, unknown>) => ({
@@ -76,9 +75,9 @@ export const sanitizeSermonCitations = onCall(
         if (items.length === 0) throw new HttpsError('invalid-argument', 'items is required');
 
         try {
-            const sonnet = new AnthropicLlmClient(anthropicKey, undefined, undefined, {
-                feature: 'sanitizeSermonCitations',
-                userId: request.auth?.uid,
+            const sonnet = await clientePorRuta({
+                usage: { feature: 'sanitizeSermonCitations', userId: request.auth?.uid },
+                timeoutSeconds: 120,
             });
             const rewritten: string[] = [];
             for (const item of items) {

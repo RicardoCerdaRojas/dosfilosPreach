@@ -298,6 +298,38 @@
       "provider": "openai",
       "model": "gpt-6-luna",
       "reasoning": "none"
+    },
+    "adjudicateAnchorRefutes": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
+    },
+    "reviewVerifiedMisreading": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
+    },
+    "evaluateCoverageEngagement": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
+    },
+    "evaluateGenreEngagement": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
+    },
+    "evaluateClaimSourceFidelity.escalation": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
+    },
+    "sanitizeSermonCitations": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
+    },
+    "teachingSuite.generarPlan": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
+    },
+    "teachingSuite.proponerOutlineCurso": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6"
     }
   }
 }

@@ -116,6 +116,19 @@ let cache: { ruteo: Ruteo; hasta: number } | null = null;
  * el comportamiento anterior: nunca peor.
  */
 export async function rutaPara(feature: string): Promise<RutaDeModelo | null> {
+    return rutaEn(await ruteoVigente(), feature);
+}
+
+/**
+ * Sólo la entrada PROPIA de la función, sin `porDefecto`. La usan las
+ * funciones del servidor que eligen su modelo (`clientePorRuta`): caer en la
+ * de por defecto les cambiaría el modelo sin que nadie lo decidiera.
+ */
+export async function rutaPropiaPara(feature: string): Promise<RutaDeModelo | null> {
+    return (await ruteoVigente()).tabla[feature] ?? null;
+}
+
+async function ruteoVigente(): Promise<Ruteo> {
     const ahora = Date.now();
     if (!cache || cache.hasta < ahora) {
         try {
@@ -127,7 +140,7 @@ export async function rutaPara(feature: string): Promise<RutaDeModelo | null> {
             cache = { ruteo: { tabla: {}, porDefecto: null }, hasta: ahora + VIGENCIA_MS };
         }
     }
-    return rutaEn(cache.ruteo, feature);
+    return cache.ruteo;
 }
 
 /** Sólo para pruebas. */

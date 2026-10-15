@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ILlmClient, LlmGenerateOptions } from '../../llm/LlmClient';
-import { AnthropicLlmClient } from '../../llm/AnthropicLlmClient';
+import { clienteDeEval } from '../../llm/__tests__/clienteDeEval';
 import { judgeEngagement, parseEngagement, isSubstantive, type EngagementInput } from '../coverageEngagement';
 
 /**
@@ -97,8 +97,9 @@ describe('coverageEngagement — plumbing determinista (sin LLM real)', () => {
  *
  *   ANTHROPIC_API_KEY=sk-... yarn workspace @dosfilos/functions test
  */
-describe.runIf(Boolean(process.env.ANTHROPIC_API_KEY))('coverageEngagement — eval vivo (Sonnet)', () => {
-    const client = new AnthropicLlmClient(process.env.ANTHROPIC_API_KEY as string);
+const EVAL = clienteDeEval();
+describe.runIf(Boolean(EVAL))(`coverageEngagement — eval vivo (${EVAL?.nombre})`, () => {
+    const client = EVAL?.cliente as ILlmClient;
 
     // Una corrida por fila — barrido base.
     for (const r of ROWS.filter((x) => x.expect.substantive)) {

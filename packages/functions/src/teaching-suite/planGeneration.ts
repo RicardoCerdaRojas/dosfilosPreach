@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { AnthropicLlmClient } from '../llm/AnthropicLlmClient';
+import { clientePorRuta } from '../llm/clientePorRuta';
 import { buildPlanPrompt, type GeneroSoportado, type Modalidad, type PromptRefs } from './buildPlanPrompt';
 
 /**
@@ -95,7 +95,6 @@ export function coerceCandidate(
 }
 
 export interface GenerarPlanArgs {
-  anthropicKey: string;
   estudio: string;
   genero: GeneroSoportado;
   modalidad?: Modalidad;
@@ -109,7 +108,7 @@ export interface GenerarPlanArgs {
 
 /** Genera un candidato a `plan` (una sesión). Lanza Error plano si falla. */
 export async function generarPlan(args: GenerarPlanArgs): Promise<Record<string, unknown>> {
-  const { anthropicKey, estudio, genero, modalidad, marcaId, idSugerido, alcance, erroresPrevios, userId } = args;
+  const { estudio, genero, modalidad, marcaId, idSugerido, alcance, erroresPrevios, userId } = args;
   const { system, prompt } = buildPlanPrompt({
     refs: loadRefs(genero),
     estudio,
@@ -122,9 +121,9 @@ export async function generarPlan(args: GenerarPlanArgs): Promise<Record<string,
     erroresPrevios,
   });
 
-  const llm = new AnthropicLlmClient(anthropicKey, undefined, undefined, {
-    feature: 'teachingSuite.generarPlan',
-    userId,
+  const llm = await clientePorRuta({
+    usage: { feature: 'teachingSuite.generarPlan', userId },
+    timeoutSeconds: 540,
   });
   let raw: string;
   try {
