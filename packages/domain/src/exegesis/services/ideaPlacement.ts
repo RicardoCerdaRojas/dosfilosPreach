@@ -34,16 +34,45 @@ export interface IdeaInsertion {
 
 interface Tramo { start: number; end: number; text: string }
 
-/** Los párrafos de prosa, con su posición en el texto. Los encabezados no cuentan. */
+/** Encabezado, lista, tabla o cita: no son prosa donde entre una idea. */
+const ENCABEZADO = /^\s*#/;
+const NO_ES_PROSA = /^\s*(?:[-*+]\s|\d+[.)]\s|\||>)/;
+
+/**
+ * Los párrafos de prosa, con su posición exacta en el texto.
+ *
+ * Línea por línea: un encabezado corta el bloque aunque no lo separe una
+ * línea en blanco («## Sub\nPárrafo…»), y los bloques de lista, tabla o cita
+ * no se ofrecen (la idea quedaba dentro de un ítem). Acepta CRLF.
+ */
 function tramos(markdown: string): Tramo[] {
     const out: Tramo[] = [];
-    const re = /[^\n](?:[^\n]|\n(?![ \t]*\n))*/g;
-    for (let m = re.exec(markdown); m; m = re.exec(markdown)) {
-        const text = m[0];
-        if (/^\s*#/.test(text) || !text.trim()) continue;
-        out.push({ start: m.index, end: m.index + text.length, text });
+    let actual: { start: number; end: number } | null = null;
+    const cerrar = () => {
+        if (actual) {
+            const text = markdown.slice(actual.start, actual.end);
+            if (text.trim() && !NO_ES_PROSA.test(text)) out.push({ ...actual, text });
+        }
+        actual = null;
+    };
+    const re = /[^\r\n]*(?:\r?\n|$)/g;
+    for (let m = re.exec(markdown); m && m[0].length > 0; m = re.exec(markdown)) {
+        const linea = m[0].replace(/\r?\n$/, '');
+        const start = m.index;
+        const end = start + linea.length;
+        if (!linea.trim() || ENCABEZADO.test(linea)) { cerrar(); continue; }
+        if (actual) actual.end = end; else actual = { start, end };
     }
+    cerrar();
     return out;
+}
+
+/** Dónde termina la oración que empieza o contiene `desde` (índice dentro del párrafo). */
+function finDeOracion(texto: string, desde: number): number {
+    // Si lo anterior ya cierra oración, ahí es.
+    if (/[.!?…]["»”')\]]*\s*$/.test(texto.slice(0, desde))) return desde;
+    const m = /[.!?…]+["»”')\]]*(?=\s|$)/.exec(texto.slice(desde));
+    return m ? desde + m.index + m[0].length : texto.length;
 }
 
 /** Los párrafos que se le muestran al asistente, en el orden que `paragraphIndex` usa. */
@@ -70,7 +99,10 @@ export function insertIdea(markdown: string, placement: IdeaPlacement): IdeaInse
     const ancla = placement.afterSentence.trim();
     const dentro = ancla ? p.text.indexOf(ancla) : -1;
     const anchored = dentro >= 0;
-    const corte = anchored ? p.start + dentro + ancla.length : p.end;
+    // Siempre en un límite de oración: si el asistente copió la oración sin
+    // su punto, o sólo su comienzo, la idea caía en medio (revisión
+    // adversarial).
+    const corte = p.start + (anchored ? finDeOracion(p.text, dentro + ancla.length) : p.text.length);
     // Un espacio antes; y uno después sólo si lo que sigue no lo trae.
     const sigue = markdown.slice(corte, p.end);
     const insercion = ` ${sentence}${sigue && !/^\s/.test(sigue) ? ' ' : ''}`;
@@ -85,10 +117,29 @@ export function insertIdea(markdown: string, placement: IdeaPlacement): IdeaInse
  * se avisa antes de insertar.
  */
 export function citationsLost(idea: string, sentence: string): string[] {
-    const citas = idea.match(/\([^()]*\d[^()]*\)/g) ?? [];
-    const norma = (s: string) => s.replace(/\s+/g, ' ').replace(/\bpp?\.\s*/g, '').trim();
+    const norma = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const redactada = norma(sentence);
-    return citas.filter(c => !redactada.includes(norma(c)));
+    const perdidas: string[] = [];
+    for (const m of idea.matchAll(/\(([^()]*)\)/g)) {
+        const dentro = m[1]!;
+        // Una referencia bíblica no es una cita de fuente.
+        if (/\d+\s*:\s*\d+/.test(dentro)) continue;
+        // Cada cita del paréntesis («Mayor, 14; Moo, 170»): autor + páginas.
+        for (const parte of dentro.split(';')) {
+            const autor = norma(parte).replace(/^\s*(?:cf\.|vease|véase|see)\s+/, '').match(/\p{L}[\p{L}'-]+/u)?.[0];
+            const texto = norma(parte);
+            // Páginas: los números, y un romano sólo justo después de la coma
+            // («Moo, xiv»): suelto, «mi» o «di» también lo parecen.
+            const paginas = [
+                ...(texto.match(/\d+/g) ?? []),
+                ...[...texto.matchAll(/,\s*(?:pp?\.\s*)?([ivxlcdm]+)\b/g)].map(r => r[1]!),
+            ];
+            if (!autor || paginas.length === 0) continue;
+            const esta = redactada.includes(autor) && paginas.every(pg => new RegExp(`\\b${pg}\\b`).test(redactada));
+            if (!esta) perdidas.push(`(${parte.trim()})`);
+        }
+    }
+    return perdidas;
 }
 
 /** Lo que el puerto recibe para ubicar la idea. */

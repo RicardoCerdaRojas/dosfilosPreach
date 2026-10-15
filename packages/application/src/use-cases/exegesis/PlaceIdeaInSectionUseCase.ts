@@ -4,6 +4,7 @@ import {
     insertIdea,
     proseParagraphs,
     versionUnderReview,
+    type IdeaPlacement,
     type IExegeticalPaperRepository,
     type IIdeaPlacer,
 } from '@dosfilos/domain';
@@ -27,6 +28,11 @@ export interface PlaceIdeaInSectionOutput {
     anchored: boolean;
     /** Citas que el estudiante escribió y la redacción perdió. */
     lostCitations: string[];
+    /**
+     * Dónde y qué. Al insertar se vuelve a aplicar sobre el texto VIGENTE:
+     * guardar `markdown` pisaría lo que haya cambiado mientras tanto.
+     */
+    placement: IdeaPlacement;
 }
 
 /**
@@ -72,6 +78,7 @@ export class PlaceIdeaInSectionUseCase {
                 paragraph: r.paragraph,
                 anchored: r.anchored,
                 lostCitations: citationsLost(idea, placement.sentence),
+                placement,
             };
         } catch (err) {
             await reservation.refundIfPreLlm();

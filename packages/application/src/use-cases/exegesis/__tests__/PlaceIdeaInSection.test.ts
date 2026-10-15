@@ -35,6 +35,7 @@ describe('PlaceIdeaInSectionUseCase', () => {
         expect(placer.placeIdea.mock.calls[0]![0].paragraphs[0]).toContain('(McCartney, 198)');
         expect(r.markdown).toBe('El genitivo es epexegético (McCartney, 198). Mayor lo confirma (Mayor, 14). La mansedumbre es sabiduría.\n\nOtra lectura lo toma como fuente.');
         expect(r.anchored).toBe(true);
+        expect(r.placement.sentence).toBe('Mayor lo confirma (Mayor, 14).');
         expect(r.lostCitations).toEqual([]);
         expect(repo.saveManualEdit).not.toHaveBeenCalled();
     });

@@ -57,3 +57,36 @@ describe('citationsLost — la cita que el estudiante verificó no se pierde', (
         expect(citationsLost('Mayor lo dice (Mayor, 14)', 'Así lo muestra Mayor.')).toEqual(['(Mayor, 14)']);
     });
 });
+
+/** Revisión adversarial de «Agregar una idea». */
+describe('insertIdea — bordes', () => {
+    it('sin el punto final en la referencia, igual corta en el fin de la oración', () => {
+        const r = insertIdea('Uno dice algo. Dos sigue.', { paragraphIndex: 0, afterSentence: 'Uno dice algo', sentence: 'Nueva (Mayor, 14).' });
+        expect(r.markdown).toBe('Uno dice algo. Nueva (Mayor, 14). Dos sigue.');
+    });
+    it('con sólo el comienzo de la oración, la idea va después de la oración entera', () => {
+        const r = insertIdea('La sabiduría es pura y pacífica. Otra.', { paragraphIndex: 0, afterSentence: 'La sabiduría es pura', sentence: 'X.' });
+        expect(r.markdown).toBe('La sabiduría es pura y pacífica. X. Otra.');
+    });
+    it('un encabezado pegado corta el bloque, y listas y tablas no se ofrecen', () => {
+        const md = '## Sub\nPárrafo uno.\n- ítem uno.\n\n| a | b |\n\nTexto.\n## Sig';
+        expect(proseParagraphs(md)).toEqual(['Párrafo uno.\n- ítem uno.', 'Texto.']);
+        const r = insertIdea(md, { paragraphIndex: 1, afterSentence: '', sentence: 'X.' });
+        expect(r.markdown).toBe('## Sub\nPárrafo uno.\n- ítem uno.\n\n| a | b |\n\nTexto. X.\n## Sig');
+    });
+    it('con CRLF, los párrafos se separan igual', () => {
+        expect(proseParagraphs('Uno.\r\n\r\nDos.')).toEqual(['Uno.', 'Dos.']);
+    });
+});
+
+describe('citationsLost — por autor y página', () => {
+    it('sin alarmas falsas', () => {
+        expect(citationsLost('dice (Mayor 14)', 'lo dice (Mayor, 14).')).toEqual([]);
+        expect(citationsLost('dice (cf. Mayor, p. 14)', 'lo dice (Mayor, 14).')).toEqual([]);
+        expect(citationsLost('dice (Mayor, 14; Moo, 170)', 'lo dice (Mayor, 14) y (Moo, 170).')).toEqual([]);
+        expect(citationsLost('como en (Stg 3:7)', 'como en Santiago 3:7.')).toEqual([]);
+    });
+    it('una página romana perdida, se avisa', () => {
+        expect(citationsLost('dice (Moo, xiv)', 'lo dice Moo.')).toEqual(['(Moo, xiv)']);
+    });
+});

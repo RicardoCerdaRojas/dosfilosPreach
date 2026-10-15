@@ -37,7 +37,7 @@ import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { AgregarIdeaDialog } from '@/components/exegesis/AgregarIdeaDialog';
 import { Link, useNavigate } from 'react-router-dom';
-import { applyPageLabelStyle, assemblyContents, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
+import { applyPageLabelStyle, assemblyContents, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
 import type { PaperFormatting } from '@dosfilos/domain';
 import { AssemblyManifest } from '@/components/exegesis/AssemblyManifest';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
@@ -628,9 +628,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             return [
                 { key: 'regenerate', label: t('detail.steps.action.regenerate'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: versionEnVuelo, pending: anyPipelinePending },
                 { key: 'edit', label: t('detail.steps.action.editManual'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: versionEnVuelo },
-                ...(previewMarkdown.trim()
-                    ? [{ key: 'idea', label: t('detail.steps.addIdea.action'), icon: <MessageSquarePlus className={ic} />, onClick: () => setIdeaOpen(true), disabled: versionEnVuelo }]
-                    : []),
+
                 // Con análisis, las citas se revisan en su página: el diálogo
                 // sólo mostraba, y aceptar seguía bloqueado (TP #7, #29).
                 step.current?.canonicalAnalysis
@@ -1090,12 +1088,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <Pencil className="h-3.5 w-3.5 mr-1.5" />
                             {t('detail.steps.action.editManual')}
                         </Button>
-                        {previewMarkdown.trim() && (
-                            <Button size="sm" variant="ghost" onClick={() => setIdeaOpen(true)} disabled={versionEnVuelo}>
-                                <MessageSquarePlus className="h-3.5 w-3.5 mr-1.5" />
-                                {t('detail.steps.addIdea.action')}
-                            </Button>
-                        )}
+
                         {/* Migrate-to-canonical entry point also lives in
                             the awaiting-review footer for verse steps that
                             haven't yet been analyzed canonically. Saves the
@@ -1333,7 +1326,13 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 paperId={paperId}
                 stepId={step.id}
                 sectionLabel={stepLabel}
-                onInsert={async (markdown) => { await saveStepEdit.mutateAsync({ paperId, stepId: step.id, markdown }); }}
+                // Sólo en secciones aceptadas: en revisión, guardar como
+                // edición acepta el paso y se salta la revisión de citas.
+                // Se aplica sobre el texto VIGENTE, no sobre el de la propuesta.
+                onInsert={async (placement) => {
+                    await saveStepEdit.mutateAsync({ paperId, stepId: step.id, markdown: insertIdea(prosaEntregada, placement).markdown });
+                }}
+                assembled={hasAssembly}
                 onQuotaError={handleQuotaError}
             />
             <VerseRecomposeDialog

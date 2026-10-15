@@ -2192,6 +2192,7 @@
         "cancel": "Cancel",
         "previewTitle": "This is how the paragraph reads",
         "atParagraphEnd": "It goes at the end of the paragraph: the reference sentence wasn't found.",
+        "assembled": "The paper is already assembled: after inserting, assemble again so the document includes it.",
         "lostCitations": "The wording dropped these citations: {{citations}}. Ask for another proposal or check it before inserting.",
         "inserted": "Idea added",
         "failed": "Couldn't propose the idea. Try again.",

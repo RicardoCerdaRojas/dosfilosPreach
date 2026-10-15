@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PlaceIdeaInSectionOutput } from '@dosfilos/application';
+import type { IdeaPlacement } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -24,14 +25,16 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
  * insertarla. Lo demás queda idéntico: la inserción la hace el código, no el
  * asistente.
  */
-export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, sectionLabel, onInsert, onQuotaError }: {
+export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, sectionLabel, onInsert, onQuotaError, assembled = false }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     paperId: string;
     stepId: string;
     sectionLabel: string;
-    /** Guarda la sección con la idea puesta. */
-    onInsert: (markdown: string) => Promise<void>;
+    /** Guarda la sección con la idea puesta sobre el texto vigente. */
+    onInsert: (placement: IdeaPlacement) => Promise<void>;
+    /** El trabajo ya está ensamblado: el documento no cambia solo. */
+    assembled?: boolean;
     /** Sin créditos: lo maneja la tarjeta, que tiene el diálogo de compra. */
     onQuotaError: (err: unknown) => boolean;
 }) {
@@ -41,14 +44,21 @@ export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, section
     const [propuesta, setPropuesta] = useState<PlaceIdeaInSectionOutput | null>(null);
     const [guardando, setGuardando] = useState(false);
 
+    // Cada apertura es una sesión: una respuesta que llega después de cerrar
+    // no se muestra en la siguiente (revisión adversarial).
+    const sesion = useRef(0);
     useEffect(() => {
-        if (!open) { setIdea(''); setPropuesta(null); setGuardando(false); }
+        sesion.current += 1;
+        setIdea(''); setPropuesta(null); setGuardando(false);
     }, [open]);
 
     const proponer = async () => {
+        const mia = sesion.current;
         try {
-            setPropuesta(await placeIdeaInSection.mutateAsync({ paperId, stepId, idea }));
+            const r = await placeIdeaInSection.mutateAsync({ paperId, stepId, idea });
+            if (mia === sesion.current) setPropuesta(r);
         } catch (err) {
+            if (mia !== sesion.current) return;
             if (onQuotaError(err)) { onOpenChange(false); return; }
             console.error('[exegesis] place idea failed:', err);
             toast.error(t('detail.steps.addIdea.failed'));
@@ -59,7 +69,7 @@ export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, section
         if (!propuesta) return;
         setGuardando(true);
         try {
-            await onInsert(propuesta.markdown);
+            await onInsert(propuesta.placement);
             toast.success(t('detail.steps.addIdea.inserted'));
             onOpenChange(false);
         } catch (err) {
@@ -73,7 +83,7 @@ export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, section
     const pidiendo = placeIdeaInSection.isPending;
 
     return (
-        <Dialog open={open} onOpenChange={o => { if (!guardando) onOpenChange(o); }}>
+        <Dialog open={open} onOpenChange={o => { if (!guardando && !placeIdeaInSection.isPending) onOpenChange(o); }}>
             <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{t('detail.steps.addIdea.title', { section: sectionLabel })}</DialogTitle>
@@ -99,6 +109,9 @@ export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, section
                         <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm leading-relaxed text-foreground">
                             <ParrafoConIdea parrafo={propuesta.paragraph} oracion={propuesta.sentence} />
                         </p>
+                        {assembled && (
+                            <p className="text-[11px] text-muted-foreground">{t('detail.steps.addIdea.assembled')}</p>
+                        )}
                         {!propuesta.anchored && (
                             <p className="text-[11px] text-muted-foreground">{t('detail.steps.addIdea.atParagraphEnd')}</p>
                         )}
@@ -112,7 +125,7 @@ export function AgregarIdeaDialog({ open, onOpenChange, paperId, stepId, section
                 )}
 
                 <DialogFooter className="gap-2">
-                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={guardando}>
+                    <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={guardando || placeIdeaInSection.isPending}>
                         {t('detail.steps.addIdea.cancel')}
                     </Button>
                     <Button type="button" variant={propuesta ? 'outline' : 'default'} onClick={proponer} disabled={!idea.trim() || pidiendo || guardando}>
