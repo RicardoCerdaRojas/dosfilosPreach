@@ -4,14 +4,15 @@ import { appCheckCallableOptions } from '../../config/appCheckOptions';
 import { consumeRateLimitToken } from '../../shared/rateLimit';
 import { LARGO_EXTRACTO, type FragmentoRecuperado } from './armarConsulta';
 import { leerAlcance } from './alcance';
-import { recuperarFragmentos } from './recuperarFragmentos';
+import { buscarPertinentes } from './recuperarFragmentos';
 
 /**
  * «Buscar temas» (fase «biblioteca consultable», U5): dónde se habla de algo
  * en la biblioteca, por significado y SIN respuesta redactada. Devuelve libros
- * y hojas con su extracto, agrupados por libro. No llama al asistente: es el
- * embedding de la consulta y una búsqueda vectorial, así que no cuenta como
- * consulta del plan (tiene su propio tope por hora, como Facultad).
+ * y hojas con su extracto, agrupados por libro. Desde la fase «buscador de la
+ * biblioteca» los candidatos se reordenan por pertinencia (Luna, ~US$0,0014 y
+ * ~4 s por búsqueda, medido) y sólo se muestra lo que pasa el corte. No cuenta
+ * como consulta del plan (tiene su propio tope por hora).
  */
 
 /** Fragmentos que se miran: más que en «Preguntar», porque acá no se leen enteros. */
@@ -34,12 +35,13 @@ export interface LibroDelTema {
 }
 
 /**
- * Agrupa por libro, en el orden del mejor fragmento de cada uno; dentro de un
- * libro, por relevancia, y una hoja aparece una sola vez (la de mejor score).
+ * Agrupa por libro CONSERVANDO el orden recibido (ya viene de mayor a menor
+ * pertinencia): los libros, en el orden de su mejor fragmento; dentro de un
+ * libro, en ese mismo orden, y una hoja aparece una sola vez (la primera).
  */
 export function agruparPorLibro(fragmentos: ReadonlyArray<FragmentoRecuperado>): LibroDelTema[] {
     const libros = new Map<string, LibroDelTema>();
-    for (const f of [...fragmentos].sort((a, b) => b.score - a.score)) {
+    for (const f of fragmentos) {
         let libro = libros.get(f.resourceId);
         if (!libro) {
             libro = { resourceId: f.resourceId, titulo: f.titulo, autor: f.autor, hojas: [] };
@@ -63,7 +65,8 @@ export const buscarTemasEnBiblioteca = onCall(
         region: 'us-central1',
         memory: '1GiB',
         timeoutSeconds: 60,
-        secrets: ['GEMINI_API_KEY'],
+        // Reordenar llama al asistente (ruta `library.rerank`), con Gemini de respaldo.
+        secrets: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY'],
     },
     async (request) => {
         if (!request.auth) throw new HttpsError('unauthenticated', 'Sign-in required');
@@ -80,8 +83,8 @@ export const buscarTemasEnBiblioteca = onCall(
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) throw new HttpsError('failed-precondition', 'No se pudo buscar en tu biblioteca.');
         try {
-            const fragmentos = await recuperarFragmentos(consulta, userId, alcance, apiKey, FRAGMENTOS_DE_TEMAS);
-            return { libros: agruparPorLibro(fragmentos) };
+            const { fragmentos, reordenado } = await buscarPertinentes(consulta, userId, alcance, apiKey, { total: FRAGMENTOS_DE_TEMAS, timeoutSeconds: 40 });
+            return { libros: agruparPorLibro(fragmentos), reordenado };
         } catch (err) {
             console.error('[buscarTemasEnBiblioteca] falló la búsqueda:', err);
             throw new HttpsError('unavailable', 'No se pudo buscar en tu biblioteca. Intenta de nuevo en unos minutos.');

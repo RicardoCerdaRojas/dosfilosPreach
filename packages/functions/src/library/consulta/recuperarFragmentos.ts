@@ -2,6 +2,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { embedQuery } from '../retrieveChunks';
 import { sanitizeExtractedText } from '../sanitizeExtractedText';
 import type { FragmentoRecuperado } from './armarConsulta';
+import { aplicarReorden, puntuarCandidatos, type FragmentoReordenado } from './reordenar';
 
 /**
  * Los fragmentos de la biblioteca del usuario que mejor responden una
@@ -62,6 +63,7 @@ function aFragmento(d: FirebaseFirestore.QueryDocumentSnapshot): FragmentoRecupe
     const data = d.data();
     const sectionPath = (data.metadata?.sectionPath as string[] | undefined) ?? [];
     return {
+        id: d.id,
         resourceId: String(data.resourceId ?? ''),
         titulo: String(data.resourceTitle ?? 'Documento sin título'),
         autor: String(data.resourceAuthor ?? ''),
@@ -72,12 +74,16 @@ function aFragmento(d: FirebaseFirestore.QueryDocumentSnapshot): FragmentoRecupe
     };
 }
 
-export async function recuperarFragmentos(
+/**
+ * Los candidatos por vectores, ordenados por similitud, SIN cortar por libro
+ * ni por total: es lo que recibe el reordenador.
+ */
+export async function recuperarCandidatos(
     pregunta: string,
     userId: string,
     alcance: Alcance,
     apiKey: string,
-    total = FRAGMENTOS_POR_CONSULTA,
+    limite: number,
 ): Promise<FragmentoRecuperado[]> {
     const vector = await embedQuery(pregunta, apiKey);
     // SIEMPRE por `userId`: la consulta es de la biblioteca del usuario, y un
@@ -97,14 +103,67 @@ export async function recuperarFragmentos(
     // Con más de 30 libros, una búsqueda por tanda de 30 y se mezclan por
     // similitud: buscar en toda la biblioteca y filtrar dejaba afuera libros
     // elegidos cuando la biblioteca es grande (revisión adversarial, U2).
-    const pozo = ids.length > 0
-        ? (await Promise.all(enTandas(ids).map(t => cercanos(base.where('resourceId', 'in', t), POZO_MAXIMO))))
-            .flat().sort((a, b) => b.score - a.score)
-        : await cercanos(base, Math.min(POZO_MAXIMO, total * 4));
+    if (ids.length === 0) return cercanos(base, Math.min(POZO_MAXIMO, limite));
+    // Con varios libros elegidos, un pozo amplio por tanda y un tope por libro
+    // ANTES de reordenar: si no, un comentario denso ocupa casi todos los
+    // candidatos y un libro elegido no llega a verse (revisión adversarial, R1).
+    const pozo = (await Promise.all(enTandas(ids).map(t => cercanos(base.where('resourceId', 'in', t), POZO_MAXIMO))))
+        .flat().sort((a, b) => b.score - a.score);
+    const pedidos = new Set(ids);
+    return elegirDelPozo(pozo.filter(f => pedidos.has(f.resourceId)), { porLibro: Math.max(4, Math.ceil(limite / ids.length)), total: limite });
+}
 
-    return elegirDelPozo(pozo, {
-        ids: ids.length > 0 ? new Set(ids) : undefined,
-        porLibro: topePorLibro(alcance, total),
-        total,
-    });
+/** Sólo vectores, sin reordenar (el camino de antes; queda como respaldo). */
+export async function recuperarFragmentos(
+    pregunta: string,
+    userId: string,
+    alcance: Alcance,
+    apiKey: string,
+    total = FRAGMENTOS_POR_CONSULTA,
+): Promise<FragmentoRecuperado[]> {
+    const pozo = await recuperarCandidatos(pregunta, userId, alcance, apiKey, total * 4);
+    return elegirDelPozo(pozo, { porLibro: topePorLibro(alcance, total), total });
+}
+
+/** Candidatos que se reordenan: el banco midió con 40. */
+export const CANDIDATOS_A_REORDENAR = 40;
+/**
+ * Pertinencia mínima (0–10) para mostrar un fragmento. Calibrada con el banco
+ * (`scripts/rag-eval/`, 2026-10-16): con ≥7 se muestran ~20 por búsqueda y el
+ * 84 % trata el tema, dejando afuera ~3,5 pertinentes de ~20; con ≥6, 81 % y
+ * 2,5; con ≥8, 87 % pero se pierden 6. El fundador pidió menos resultados que
+ * no tengan que ver: se prefiere la precisión.
+ */
+export const UMBRAL_DE_PERTINENCIA = 7;
+
+/**
+ * Lo pertinente: candidatos por vectores, reordenados por cuán directamente
+ * tratan lo buscado, y cortados por el umbral. Si el reordenador falla, queda
+ * el orden de los vectores, sin umbral (degrada, no rompe), y `reordenado`
+ * lo dice.
+ */
+export async function buscarPertinentes(
+    busqueda: string,
+    userId: string,
+    alcance: Alcance,
+    apiKey: string,
+    opciones: { total: number; timeoutSeconds: number; candidatos?: number; umbral?: number; contexto?: string | null },
+): Promise<{ fragmentos: FragmentoReordenado[]; reordenado: boolean }> {
+    // Los vectores buscan con la conversación (para que «¿y el aceite?»
+    // encuentre algo); el reordenador puntúa contra la pregunta, con la
+    // anterior sólo como contexto.
+    const consultaVectorial = opciones.contexto?.trim() ? `${opciones.contexto.trim()}\n${busqueda}` : busqueda;
+    const candidatos = await recuperarCandidatos(consultaVectorial, userId, alcance, apiKey, opciones.candidatos ?? CANDIDATOS_A_REORDENAR);
+    const porLibro = topePorLibro(alcance, opciones.total);
+    const puntajes = await puntuarCandidatos(busqueda, candidatos, userId, opciones.timeoutSeconds, opciones.contexto);
+    if (!puntajes) {
+        return {
+            fragmentos: elegirDelPozo(candidatos, { porLibro, total: opciones.total }).map(f => ({ ...f, pertinencia: null })),
+            reordenado: false,
+        };
+    }
+    return {
+        fragmentos: aplicarReorden(candidatos, puntajes, { umbral: opciones.umbral ?? UMBRAL_DE_PERTINENCIA, porLibro, total: opciones.total }),
+        reordenado: true,
+    };
 }

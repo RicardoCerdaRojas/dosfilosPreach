@@ -11,6 +11,8 @@
  */
 
 export interface FragmentoRecuperado {
+    /** El id del fragmento en `document_chunks` (para no repetirlo y para el banco de evaluación). */
+    id?: string;
     resourceId: string;
     titulo: string;
     autor: string;

@@ -65,7 +65,7 @@ describe('Consultar la biblioteca', () => {
     });
 
     it('«Buscar temas» busca con el alcance elegido, agrupa por libro y cada hoja abre el visor', async () => {
-        temas.mockResolvedValue([{ resourceId: 'v', titulo: varner.title, autor: 'William Varner', hojas: [{ hoja: 192, seccion: 'Paragraph 22', extracto: 'Diaspora encyclical…', score: 0.8 }] }]);
+        temas.mockResolvedValue({ reordenado: false, libros: [{ resourceId: 'v', titulo: varner.title, autor: 'William Varner', hojas: [{ hoja: 192, seccion: 'Paragraph 22', extracto: 'Diaspora encyclical…', score: 0.8 }] }] });
         render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
         fireEvent.click(screen.getByText('consult.modeTopics'));
         expect(screen.queryByLabelText('consult.placeholder')).toBeNull();
@@ -73,6 +73,8 @@ describe('Consultar la biblioteca', () => {
         fireEvent.click(screen.getByText('consult.topicSearch'));
         await waitFor(() => expect(temas).toHaveBeenCalledWith('la oración', { tipo: 'todo' }));
         const hoja = await screen.findByText('(Varner, p. 188)');
+        // Si no se pudo ordenar por pertinencia, se dice.
+        expect(screen.getByText('consult.topicApproximate')).toBeTruthy();
         fireEvent.click(hoja);
         expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 192, resourceId: 'v', label: varner.title } }, 'full');
     });

@@ -5,7 +5,7 @@ vi.mock('firebase-functions/v2/https', async (orig) => ({ ...(await orig<object>
 import { armarPedido, leerRespuesta, normalizarMarcas, tituloDeConsulta, type FragmentoRecuperado } from '../armarConsulta';
 import { elegirDelPozo, topePorLibro } from '../recuperarFragmentos';
 import { motivoSinCuota, periodoActual } from '../cuotaDeConsultas';
-import { consultaDeBusqueda, leerAlcance } from '../consultarBiblioteca';
+import { leerAlcance } from '../consultarBiblioteca';
 import { agruparPorLibro } from '../buscarTemas';
 
 const frag = (resourceId: string, hoja: number, texto = 'texto del libro'): FragmentoRecuperado => ({
@@ -112,17 +112,10 @@ describe('leerAlcance', () => {
     });
 });
 
-describe('consultaDeBusqueda', () => {
-    it('una pregunta que sigue busca también con la anterior', () => {
-        expect(consultaDeBusqueda('¿y Moo?', [{ pregunta: '¿Qué es la sabiduría en Stg 3:17?', respuesta: '…' }])).toBe('¿Qué es la sabiduría en Stg 3:17?\n¿y Moo?');
-        expect(consultaDeBusqueda('¿Qué es?', [])).toBe('¿Qué es?');
-    });
-});
-
 describe('agruparPorLibro (buscar temas)', () => {
-    it('libros en el orden de su mejor fragmento, hojas por relevancia y sin repetir', () => {
-        const f = (rid: string, hoja: number, score: number) => ({ ...frag(rid, hoja), score });
-        const r = agruparPorLibro([f('a', 10, 0.5), f('b', 3, 0.9), f('a', 12, 0.7), f('b', 3, 0.6), f('a', 10, 0.4)]);
+    it('conserva el orden de pertinencia recibido: libros por su mejor fragmento, hojas sin repetir', () => {
+        const f = (rid: string, hoja: number) => frag(rid, hoja);
+        const r = agruparPorLibro([f('b', 3), f('a', 12), f('a', 10), f('b', 3), f('a', 10)]);
         expect(r.map(l => l.resourceId)).toEqual(['b', 'a']);
         expect(r[0]!.hojas.map(h => h.hoja)).toEqual([3]);
         expect(r[1]!.hojas.map(h => h.hoja)).toEqual([12, 10]);
