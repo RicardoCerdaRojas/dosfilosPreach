@@ -66,6 +66,7 @@ export function HistorialDeConsultas({ consultas, cargando, error, actualId, rot
                                                 )}
                                             >
                                                 <span
+                                                    role="img"
                                                     aria-label={c.tipo === 'temas' ? t('consult.savedTopic') : t('consult.savedQuestion')}
                                                     className={cn('flex h-7 w-7 flex-none items-center justify-center rounded-lg', actual ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}
                                                 >

@@ -71,7 +71,11 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
         const origen = abierta?.id ?? null;
         const id = await preguntar(pregunta, abierta ? { consultaId: abierta.id } : { alcance });
         if (!id) { if (abiertaRef.current === origen) setTexto(pregunta); return; }   // falló: la pregunta vuelve a la caja
-        if (abiertaRef.current === origen) setAbiertaId(id);
+        if (abiertaRef.current === origen) {
+            setAbiertaId(id);
+            // La caja se mueve abajo (fija) al abrirse la conversación: el foco la sigue.
+            if (!origen) requestAnimationFrame(() => document.getElementById('pregunta-biblioteca')?.focus());
+        }
     };
     const alTeclear = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar(); }
@@ -116,6 +120,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
 
     return (
         <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_17rem]">
+            <div className="order-last lg:order-none">
             <HistorialDeConsultas
                 consultas={consultas}
                 cargando={cargando}
@@ -126,6 +131,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                 onNueva={nueva}
                 onBorrar={borrarConsulta}
             />
+            </div>
 
             <section className="flex min-h-[60vh] min-w-0 flex-col gap-7">
                 {abierta?.tipo === 'temas' ? (
@@ -136,7 +142,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                         </p>
                         <h3 className="m-0 font-serif text-[28px] font-bold leading-tight text-foreground">{abierta.temas?.consulta ?? abierta.titulo}</h3>
                         {abierta.temas && abierta.temas.libros.length > 0
-                            ? <ResultadosDeTemas libros={abierta.temas.libros} etiquetar={etiquetar} onAbrir={abrirFuente} aproximado={!abierta.temas.reordenado} />
+                            // `key`: el filtro por libro es de ESTA búsqueda; otra empieza sin filtro.
+                            ? <ResultadosDeTemas key={abierta.id} libros={abierta.temas.libros} etiquetar={etiquetar} onAbrir={abrirFuente} aproximado={!abierta.temas.reordenado} />
                             : <p className="text-sm text-muted-foreground">{t('consult.topicNone')}</p>}
                     </div>
                 ) : abierta ? (

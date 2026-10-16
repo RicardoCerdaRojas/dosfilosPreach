@@ -516,12 +516,10 @@
     "historyAskMeta_other": "{{count}} preguntas",
     "group_hoy": "Hoy",
     "group_ayer": "Ayer",
-    "group_semana": "Esta semana",
+    "group_semana": "Últimos 7 días",
     "group_antes": "Anteriores",
     "savedQuestion": "Pregunta",
-    "topicSummary": "{{pasajes}} pasajes en {{libros}} libros tratan el tema",
     "topicOrderRelevance": "ordenados por pertinencia",
-    "topicOrderApprox": "orden aproximado",
     "topicFilter": "Filtrar por libro",
     "topicAll": "Todos · {{count}}",
     "topicPassages_one": "{{count}} pasaje",
@@ -533,6 +531,10 @@
     "examplesTitle": "Para empezar",
     "relevance1": "Pertinencia baja",
     "relevance2": "Pertinencia media",
-    "relevance3": "Pertinencia alta"
+    "relevance3": "Pertinencia alta",
+    "topicSummary_one": "{{count}} pasaje en {{libros}} trata el tema",
+    "topicSummary_other": "{{count}} pasajes en {{libros}} tratan el tema",
+    "topicBooks_one": "{{count}} libro",
+    "topicBooks_other": "{{count}} libros"
   }
 }

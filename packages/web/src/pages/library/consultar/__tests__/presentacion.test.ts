@@ -34,5 +34,8 @@ describe('barrasDePertinencia, inicialDe, paginaDeCita', () => {
     it('página de una cita armada', () => {
         expect(paginaDeCita('(Varner, p. 187)')).toBe('p. 187');
         expect(paginaDeCita('(Moo, hoja 30)')).toBe('hoja 30');
+        expect(paginaDeCita('(Santiago: comentario, tomo 2, p. 5)')).toBe('p. 5');
+        expect(paginaDeCita('(Wallace, § 2.3)')).toBe('§ 2.3');
+        expect(paginaDeCita('(Varner, s. p.)')).toBe('s. p.');
     });
 });

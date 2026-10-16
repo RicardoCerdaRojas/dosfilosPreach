@@ -24,6 +24,8 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir, onGuardada, envoltori
     const [libros, setLibros] = useState<LibroDelTema[] | null>(null);
     const [aproximado, setAproximado] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    /** Cada búsqueda nueva empieza sin filtro por libro. */
+    const [busqueda, setBusqueda] = useState(0);
 
     const buscar = async (e: FormEvent) => {
         e.preventDefault();
@@ -34,6 +36,7 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir, onGuardada, envoltori
         try {
             const r = await buscarTemasEnBiblioteca(consulta, alcance);
             setLibros(r.libros);
+            setBusqueda(n => n + 1);
             setAproximado(!r.reordenado);
             if (r.consultaId) onGuardada?.(r.consultaId);
         } catch (err) {
@@ -75,7 +78,7 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir, onGuardada, envoltori
             {error && <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
             {buscando && <EsqueletoDeResultados />}
             {!buscando && libros && libros.length === 0 && <p className="text-sm text-muted-foreground">{t('consult.topicNone')}</p>}
-            {!buscando && libros && libros.length > 0 && <ResultadosDeTemas libros={libros} etiquetar={etiquetar} onAbrir={onAbrir} aproximado={aproximado} />}
+            {!buscando && libros && libros.length > 0 && <ResultadosDeTemas key={busqueda} libros={libros} etiquetar={etiquetar} onAbrir={onAbrir} aproximado={aproximado} />}
         </div>
     );
 }
@@ -84,7 +87,7 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir, onGuardada, envoltori
 function EsqueletoDeResultados() {
     const { t } = useTranslation('library');
     return (
-        <div className="flex flex-col gap-4" role="status" aria-label={t('consult.searchingBook')}>
+        <div className="flex flex-col gap-4" role="status" aria-label={t('consult.searching')}>
             {[0, 1].map(i => (
                 <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
                     <div className="flex items-center gap-3.5 border-b border-border/60 px-5 py-4">

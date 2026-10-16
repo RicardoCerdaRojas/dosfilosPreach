@@ -107,7 +107,7 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
                                 <span className="font-bible text-[15px] font-semibold text-foreground group-hover:text-primary">
                                     {etiquetar(f)}
                                 </span>
-                                {tituloDe && <span className="truncate text-xs text-muted-foreground">{tituloDe(f)}</span>}
+                                {tituloDe && <span className="truncate text-xs text-muted-foreground">{tituloDe(f)}{f.seccion ? ` · § ${f.seccion.split('›').pop()!.trim()}` : ''}</span>}
                                 <span className="line-clamp-3 font-serif text-[13px] leading-relaxed text-foreground/75"><TextoConEscrituras texto={f.extracto} /></span>
                             </button>
                         </li>

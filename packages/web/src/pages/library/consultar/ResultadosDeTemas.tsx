@@ -39,9 +39,11 @@ export function ResultadosDeTemas({ libros, etiquetar, onAbrir, aproximado = fal
         <div className="flex flex-col gap-5" data-testid="temas-por-libro">
             <div className="flex flex-col gap-3">
                 <p className="m-0 text-[15px] text-foreground/80">
-                    {t('consult.topicSummary', { pasajes, libros: libros.length })}
-                    <span className="text-muted-foreground"> · {aproximado ? t('consult.topicOrderApprox') : t('consult.topicOrderRelevance')}</span>
+                    {t('consult.topicSummary', { count: pasajes, libros: t('consult.topicBooks', { count: libros.length }) })}
+                    {!aproximado && <span className="text-muted-foreground"> · {t('consult.topicOrderRelevance')}</span>}
                 </p>
+                {/* Sin reordenar, el resumen no puede afirmar que todo trata el tema. */}
+                {aproximado && <p className="m-0 rounded-xl bg-warning-subtle px-3 py-2 text-sm text-warning-subtle-foreground">{t('consult.topicApproximate')}</p>}
                 {libros.length > 1 && (
                     <div className="flex flex-wrap gap-2" role="group" aria-label={t('consult.topicFilter')}>
                         <button type="button" aria-pressed={filtro === null} onClick={() => setFiltro(null)} className={chip(filtro === null)}>
@@ -87,7 +89,8 @@ export function ResultadosDeTemas({ libros, etiquetar, onAbrir, aproximado = fal
                                             <span className="font-bible text-[22px] font-semibold leading-none text-foreground">{paginaDeCita(etiquetar(fuente))}</span>
                                             {barras > 0 && (
                                                 <span role="img" aria-label={t(`consult.relevance${barras}`)} className="flex gap-[3px]">
-                                                    {[1, 2, 3].map(n => <span key={n} className={cn('h-1 w-4 rounded-full', n <= barras ? 'bg-secondary' : 'bg-border')} />)}
+                                                    {/* Dorado oscuro de la marca: el dorado claro sobre blanco no llega a 3:1. */}
+                                                    {[1, 2, 3].map(n => <span key={n} className={cn('h-1 w-4 rounded-full', n <= barras ? 'bg-warning-subtle-foreground' : 'bg-muted-foreground/25')} />)}
                                                 </span>
                                             )}
                                         </span>

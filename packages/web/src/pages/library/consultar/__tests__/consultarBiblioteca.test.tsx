@@ -75,7 +75,7 @@ describe('Consultar la biblioteca', () => {
         // En la ficha del libro, la página en grande (el autor ya está en la cabecera).
         const hoja = await screen.findByText('p. 188');
         // Si no se pudo ordenar por pertinencia, se dice.
-        expect(screen.getByText(/consult\.topicOrderApprox/)).toBeTruthy();
+        expect(screen.getByText('consult.topicApproximate')).toBeTruthy();
         fireEvent.click(hoja);
         expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 192, resourceId: 'v', label: varner.title } }, 'full');
         // Queda marcada en el historial cuando el listener la trae.
@@ -125,6 +125,20 @@ describe('Consultar la biblioteca', () => {
         const griego = screen.getByText('ἡ εὐχή τῆς πίστεως');
         expect(griego.getAttribute('lang')).toBe('grc');
         expect(griego.className).toContain('font-greek');
+    });
+
+    it('el filtro por libro no pasa de una búsqueda guardada a otra', async () => {
+        const libro = (rid: string, titulo: string) => ({ resourceId: rid, titulo, autor: `Autor ${rid}`, hojas: [{ hoja: 1, seccion: '', extracto: titulo, score: 0.8, pertinencia: 9 }] });
+        const a: ConsultaGuardada = { id: 'ta', tipo: 'temas', titulo: 'Tema A', alcance: { tipo: 'todo' }, turnos: [], actualizada: new Date(), temas: { consulta: 'Tema A', reordenado: true, libros: [libro('x', 'Libro X'), libro('y', 'Libro Y')] } };
+        const b: ConsultaGuardada = { id: 'tb', tipo: 'temas', titulo: 'Tema B', alcance: { tipo: 'todo' }, turnos: [], actualizada: new Date(), temas: { consulta: 'Tema B', reordenado: true, libros: [libro('z', 'Libro Z'), libro('w', 'Libro W')] } };
+        render(<ConsultarBiblioteca resources={[] as never} indexStatus={{}} />);
+        act(() => alCambiar!([a, b]));
+        fireEvent.click(screen.getByText('Tema A', { selector: 'span' }));
+        fireEvent.click(screen.getByText('x · 1'));
+        expect(screen.queryByText('Libro Y', { selector: 'h3' })).toBeNull();
+        fireEvent.click(screen.getByText('Tema B', { selector: 'span' }));
+        expect(screen.getByText('Libro Z', { selector: 'h3' })).toBeTruthy();
+        expect(screen.getByText('Libro W', { selector: 'h3' })).toBeTruthy();
     });
 });
 
