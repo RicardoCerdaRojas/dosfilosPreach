@@ -117,9 +117,12 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
         />
     );
     const mostrarConversacion = (modo === 'preguntar' && !abierta) || (!!abierta && abierta.tipo !== 'temas');
+    const conRiel = !!abierta && abierta.tipo !== 'temas' && abierta.turnos.some(t => t.fuentes.length > 0);
 
     return (
-        <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_17rem]">
+        // La tercera columna (el riel de fuentes) sólo existe dentro de una
+        // conversación: reservada siempre, dejaba un hueco a la derecha.
+        <div className={cn('grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)]', conRiel && 'xl:grid-cols-[16rem_minmax(0,1fr)_17rem]')}>
             <div className="order-last lg:order-none">
             <HistorialDeConsultas
                 consultas={consultas}
@@ -225,7 +228,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                 </>)}
             </section>
 
-            {abierta && abierta.tipo !== 'temas' && (
+            {conRiel && abierta && (
                 <div className="hidden xl:block">
                     <div className="sticky top-6">
                         <FuentesDeLaConsulta turnos={abierta.turnos} etiquetar={etiquetar} tituloDe={tituloDe} onAbrir={abrirFuente} />

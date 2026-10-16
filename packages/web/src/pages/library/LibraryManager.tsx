@@ -23,7 +23,7 @@ import { LibraryAttentionCallout } from './components/LibraryAttentionCallout';
 import { LibraryStatusCallout } from './components/LibraryStatusCallout';
 import { LibraryProgress } from './components/LibraryProgress';
 import { LibraryCalibrationCallout } from './components/LibraryCalibrationCallout';
-import { LibraryUploadForm } from './components/LibraryUploadForm';
+import { LibraryUploadDialog } from './components/LibraryUploadDialog';
 import { LibraryFilters } from './components/LibraryFilters';
 import { MetadataBackfillBanner } from './components/MetadataBackfillBanner';
 import { LibraryEmptyState } from './components/LibraryEmptyState';
@@ -172,6 +172,8 @@ export function LibraryManager() {
         onConsentRequired: () => setConsentModalOpen(true),
         onSuccess: () => {
             setShowUploadForm(false);
+            // La ficha del libro nuevo (con el avance de la extracción) está en «Mis libros».
+            cambiarVista('libros');
             // Balance changed — invalidate the cached gate so the
             // next "Agregar recurso" click sees fresh state (the
             // user might have crossed into 0-balance territory).
@@ -304,20 +306,6 @@ export function LibraryManager() {
                     «hoja N»: un número del archivo que no existe en el libro. */}
                 <LibraryCalibrationCallout resources={data.resources} />
 
-                {showUploadForm && (
-                    <LibraryUploadForm
-                        categories={data.categories}
-                        file={upload.file}
-                        fileSizeWarning={upload.fileSizeWarning}
-                        metadata={upload.metadata}
-                        uploading={upload.uploading}
-                        uploadProgress={upload.uploadProgress}
-                        smartMatchInference={upload.smartMatchInference}
-                        onFileChange={upload.handleFileChange}
-                        onMetadataChange={upload.setMetadata}
-                        onSubmit={upload.handleSubmit}
-                    />
-                )}
 
                 <LibraryFilters
                     categories={data.categories}
@@ -414,6 +402,8 @@ export function LibraryManager() {
                 )}
                 </>)}
             </div>
+
+            <LibraryUploadDialog open={showUploadForm} onOpenChange={setShowUploadForm} categories={data.categories} upload={upload} />
 
             <EditResourceModal
                 resource={resourceToEdit}

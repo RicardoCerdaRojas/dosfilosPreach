@@ -140,5 +140,10 @@ describe('Consultar la biblioteca', () => {
         expect(screen.getByText('Libro Z', { selector: 'h3' })).toBeTruthy();
         expect(screen.getByText('Libro W', { selector: 'h3' })).toBeTruthy();
     });
+
+    it('sin conversación abierta no se reserva la columna del riel (el contenido usa todo el ancho)', () => {
+        const { container } = render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
+        expect(container.innerHTML).not.toContain('xl:grid-cols-[16rem_minmax(0,1fr)_17rem]');
+    });
 });
 
