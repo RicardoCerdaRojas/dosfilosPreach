@@ -188,6 +188,26 @@ export function paginaLeida(p: { text?: string; md?: string }): boolean {
     return contenido.replace(/\s/g, '').length >= MIN_CARACTERES_PAGINA;
 }
 
+/**
+ * Los tramos sin ciertas páginas (las abandonadas: en blanco también en el
+ * PDF, o que el modelo no lee), reagrupados. Antes se las marcaba con un
+ * texto corto para que «contaran como devueltas», y desde el criterio de
+ * página leída (40 caracteres) ese texto ya no contaba: el tramo quedaba
+ * «incompleto» para siempre (lote biblioteca2, 2026-10-17).
+ */
+export function sinPaginas(tramos: ReadonlyArray<Tramo>, quitar: ReadonlySet<number>): Tramo[] {
+    const salida: Tramo[] = [];
+    for (const t of tramos) {
+        for (let n = t.desde; n <= t.hasta; n++) {
+            if (quitar.has(n)) continue;
+            const ultimo = salida[salida.length - 1];
+            if (ultimo && ultimo.hasta === n - 1) ultimo.hasta = n;
+            else salida.push({ desde: n, hasta: n });
+        }
+    }
+    return salida;
+}
+
 /** El libro unido: una entrada por página, la última gana (como la cola), salvo que venga en blanco y ya hubiera texto. */
 export function unirPaginas(paginas: ReadonlyArray<GeminiPage>): { markdown: string; texto: string; paginas: GeminiPage[] } {
     const porPagina = new Map<number, GeminiPage>();
