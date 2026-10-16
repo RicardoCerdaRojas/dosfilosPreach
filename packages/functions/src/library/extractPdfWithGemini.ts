@@ -24,6 +24,7 @@ import { censusOf } from './scriptCensus';
 import { modoDeCobro, type ExtractionVersion } from './extractionVersions';
 import { salidaCortada } from './partirTanda';
 import { leerPaginasDelPdf } from './textoDelPdf';
+import { esCopiaDescifrada, prepararPdfDescargado } from './reemplazarPdfCifrado';
 import { camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from './medirExtraccion';
 import { randomUUID } from 'crypto';
 import { MODEL_VISION } from '../llm/modelCatalog';
@@ -295,6 +296,13 @@ export const extractPdfWithGemini = onObjectFinalized(
         const userId = libraryPathMatch[1];
         const resourceId = libraryPathMatch[2];
 
+        // La copia descifrada la escribimos nosotros, más abajo, mientras ya
+        // se extrae el libro: su llegada no es una subida nueva.
+        if (esCopiaDescifrada(event.data.metadata)) {
+            console.log(`🔓 [Extract] ${filePath}: copia descifrada por la extracción en curso; no se extrae otra vez`);
+            return;
+        }
+
         console.log(`📚 [Extract] Processing for user: ${userId}, resource: ${resourceId}`);
 
         try {
@@ -367,6 +375,9 @@ export const extractPdfWithGemini = onObjectFinalized(
             const tempFilePath = path.join(os.tmpdir(), `${resourceId}.pdf`);
 
             await file.download({ destination: tempFilePath });
+            // Un PDF con cifrado de permisos se descifra acá, una vez, y
+            // reemplaza al de Storage: la cola por rangos lo vuelve a bajar.
+            await prepararPdfDescargado(file, tempFilePath);
             const stats = fs.statSync(tempFilePath);
             const fileSizeMB = stats.size / 1024 / 1024;
             console.log(`📥 [Extract] Downloaded file: ${fileSizeMB.toFixed(2)} MB`);
