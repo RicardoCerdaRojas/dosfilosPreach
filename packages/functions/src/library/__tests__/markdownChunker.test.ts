@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { chunkStructuredMarkdown } from '../markdownChunker';
+import { chunkStructuredMarkdown, esTituloIlegible, limpiarParaIndexar } from '../markdownChunker';
 
 /**
  * Regression guard for the bug that killed the RAG index of a 425-page
@@ -86,3 +86,56 @@ describe('chunkStructuredMarkdown — sectionPath integrity', () => {
         expect(last.sectionPath).not.toContain(undefined);
     });
 });
+
+describe('fase «buscador», etapa 2: fragmentos limpios', () => {
+    const partir = chunkStructuredMarkdown;
+    const palabras = Array.from({ length: 1500 }, (_, i) => `palabra${i}`);
+    const texto = `<!-- page: 1 -->\n${palabras.join(' ')}`;
+
+    it('ningún fragmento empieza ni termina en medio de una palabra, y no se pierde ninguna', () => {
+        const chunks = partir(texto, { maxChars: 2000, minChars: 200, overlapChars: 150 });
+        expect(chunks.length).toBeGreaterThan(5);
+        for (const c of chunks) {
+            const ps = c.text.split(/\s+/);
+            expect(ps[0]).toMatch(/^palabra\d+$/);
+            expect(ps[ps.length - 1]).toMatch(/^palabra\d+$/);
+        }
+        const vistas = new Set(chunks.flatMap(c => c.text.split(/\s+/)));
+        expect(palabras.every(p => vistas.has(p))).toBe(true);
+    });
+
+    it('los fragmentos se solapan (el contexto de un corte llega al siguiente)', () => {
+        const chunks = partir(texto, { maxChars: 2000, minChars: 200, overlapChars: 150 });
+        const fin = chunks[0]!.text.split(/\s+/).slice(-3);
+        expect(chunks[1]!.text.startsWith(fin[0]!) || chunks[1]!.text.includes(fin[2]!)).toBe(true);
+    });
+
+    it('los títulos ilegibles del OCR no son títulos; los buenos sí', () => {
+        for (const malo of ['τ πνμ μν υ', 's ωσ', '7 κ ατοι βλασφημουσιν τ καλν νομα τ', "25“.Oμοωs δ καì 'Pααβ n πóρνn οκ ξ εργων"]) {
+            expect(esTituloIlegible(malo)).toBe(true);
+        }
+        for (const bueno of ['5:1–18 CONCLUSION', '2.3 El genitivo', '15. ἡ εὐχή', 'James 3:13–18', 'Excursus H', 'The Epistle of James', 'C. Part 2: Faith and Prayer (5:13–18)',
+            // Falsos positivos hallados en la biblioteca real:
+            '19.38 ὁ ἐρχόμενος ὁ βασιλεύς {C}', 'CAPÍTULO 4: LA PREPOSICIÓN, εἰμί y EL ADJETIVO', 'B. τίθημι (θε*) y ἵστημι (στα *)', 'Y descendiendo a Jope,… (1:3)', 'B. Demonstrative Pronouns: pointers—οὗτος, ἐκεῖνος, ὅδε (325-35)']) {
+            expect(esTituloIlegible(bueno)).toBe(false);
+        }
+        const chunks = partir('<!-- page: 1 -->\n# Capítulo 1\n\n###### τ πνμ μν υ\n\n' + 'texto '.repeat(60), { minChars: 10 });
+        expect(chunks.every(c => c.sectionPath.join('|') === 'Capítulo 1')).toBe(true);
+    });
+
+    it('sin cercas de código; las tablas HTML pasan a texto con sus celdas', () => {
+        expect(limpiarParaIndexar('```python\nIn the Introduction I have stated\n```')).not.toContain('```');
+        expect(limpiarParaIndexar('```python\nIn the Introduction')).toContain('In the Introduction');
+        const t = limpiarParaIndexar('<table><tr><th>P</th><th>C</th></tr><tr><td>ἀλείψαντες</td><td>αὐτὸν</td></tr></table>');
+        expect(t).not.toMatch(/<\/?t[a-z]*>/);
+        expect(t).toContain('ἀλείψαντες');
+        expect(t).toContain('αὐτὸν');
+    });
+
+    it('el chunker aplica la limpieza: ningún fragmento sale con cercas de código', () => {
+        const chunks = partir('<!-- page: 1 -->\n```python\n' + 'In the Introduction I have stated '.repeat(20) + '\n```', { minChars: 10 });
+        expect(chunks.length).toBeGreaterThan(0);
+        expect(chunks.every(c => !c.text.includes('```'))).toBe(true);
+    });
+});
+
