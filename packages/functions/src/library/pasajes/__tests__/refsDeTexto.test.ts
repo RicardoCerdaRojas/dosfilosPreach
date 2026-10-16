@@ -138,7 +138,18 @@ describe('refsDeTexto — revisión adversarial', () => {
         expect(refsDeTexto('Phlm 6')).toEqual(['PHM.1', 'PHM.1.6']);
         expect(refsDeTexto('3 John 4')).toEqual(['3JN.1', '3JN.1.4']);
         expect(refsDeTexto('Obad 15')).toEqual(['OBA.1', 'OBA.1.15']);
-        expect(refsDeTexto('Jud 4')).toEqual(['JUD.1', 'JUD.1.4']); // «Jud» → Judas por la preferencia
+        // En prosa la abreviatura corta no basta: «AB 37» es la Anchor Bible, no Abdías.
+        expect(refsDeTexto('Jud 4')).toEqual([]);
+        expect(refsDeTexto('(AB 37A; New York: Doubleday, 1995)')).toEqual([]);
+        expect(refsDeConsulta('jud 4')).toEqual(['JUD.1.4', 'JUD.1']);
+    });
+
+    it('libros de un capítulo: un versículo que no existe no es una cita de ese libro', () => {
+        expect(refsDeTexto('19* Amos . 21* Obadiah 23* Jonah')).toEqual([]); // índice: página 23; Abdías tiene 21
+        expect(refsDeTexto('Abdías 21')).toEqual(['OBA.1', 'OBA.1.21']);
+        expect(refsDeTexto('OBADIAH 91')).toEqual([]);
+        expect(refsDeTexto('συναθλεω en Filemon 1:27')).toEqual([]);
+        expect(refsDeTexto('Judas 1:24-30')).toEqual(['JUD.1', 'JUD.1.24', 'JUD.1.25']);
     });
 
     it('rangos de capítulos y rangos que cruzan de capítulo', () => {

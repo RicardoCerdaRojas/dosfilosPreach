@@ -118,6 +118,14 @@ function libroDeUnCapitulo(clave: string): string | null {
     return ids.length === 1 || PREFERENCIA_SI_AMBIGUA[clave] === unicos[0] ? unicos[0]! : null;
 }
 
+/**
+ * Versículos de los libros de un solo capítulo. Ahí no hay capítulo que
+ * descarte una cifra imposible, y medido en la biblioteca (2026-10-16) se
+ * colaban «AB 37» (Anchor Bible), los números de página de un índice
+ * («Obadiah 23», «OBADIAH 91») y erratas («Filemon 1:27»).
+ */
+const VERSICULOS_DE_UN_CAPITULO: Readonly<Record<string, number>> = { OBA: 21, PHM: 25, '2JN': 13, '3JN': 15, JUD: 25 };
+
 /** Los versículos de «14» o «14-16»; un rango absurdo deja sólo el comienzo. */
 function versiculosDe(desdeStr: string | undefined, hastaStr: string | undefined): number[] {
     const desde = desdeStr === undefined ? 0 : Number(desdeStr);
@@ -160,6 +168,8 @@ function citasYTramos(texto: string, opciones: OpcionesDeRefs = {}): { citas: Ci
         if (versStr === undefined) {
             const unico = libroDeUnCapitulo(clave);
             if (unico && finCapSoloStr === undefined) {
+                // En prosa, sólo con el nombre entero: «AB 37» es la Anchor Bible.
+                if (enProsa && corta) continue;
                 const versiculos = versiculosDe(capStr, undefined);
                 if (versiculos.length > 0) {
                     citas.push({ texto: cita, libro: unico, capitulo: 1, versiculos });
@@ -240,8 +250,12 @@ function continuacion(plano: string, desde: number, libro: string, capituloInici
 function claves(citas: ReadonlyArray<Cita>): string[] {
     const refs = new Set<string>();
     for (const c of citas) {
+        const tope = VERSICULOS_DE_UN_CAPITULO[c.libro];
+        const versiculos = tope === undefined ? c.versiculos : c.versiculos.filter(v => v <= tope);
+        // Sólo versículos imposibles («Filemon 1:27»): la cita entera no es de ese libro.
+        if (c.versiculos.length > 0 && versiculos.length === 0) continue;
         refs.add(`${c.libro}.${c.capitulo}`);
-        for (const v of c.versiculos) refs.add(`${c.libro}.${c.capitulo}.${v}`);
+        for (const v of versiculos) refs.add(`${c.libro}.${c.capitulo}.${v}`);
         if (refs.size >= REFS_POR_FRAGMENTO) break;
     }
     return [...refs].slice(0, REFS_POR_FRAGMENTO);
