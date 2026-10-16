@@ -116,10 +116,15 @@ export interface LibroDelTema {
     hojas: HojaDelTema[];
 }
 
-/** «Buscar temas»: dónde se habla de algo en la biblioteca, sin respuesta redactada. */
-export async function buscarTemasEnBiblioteca(consulta: string, alcance: AlcanceDeConsulta): Promise<LibroDelTema[]> {
-    const callable = httpsCallable<{ consulta: string; alcance: AlcanceDeConsulta }, { libros: LibroDelTema[] }>(
+/**
+ * «Buscar temas»: dónde se habla de algo en la biblioteca, sin respuesta
+ * redactada. `reordenado: false` cuando no se pudo ordenar por pertinencia y
+ * queda el orden aproximado de los vectores.
+ */
+export async function buscarTemasEnBiblioteca(consulta: string, alcance: AlcanceDeConsulta): Promise<{ libros: LibroDelTema[]; reordenado: boolean }> {
+    const callable = httpsCallable<{ consulta: string; alcance: AlcanceDeConsulta }, { libros: LibroDelTema[]; reordenado?: boolean }>(
         getFunctions(), 'buscarTemasEnBiblioteca', { timeout: 70_000 },
     );
-    return (await callable({ consulta, alcance })).data.libros;
+    const r = (await callable({ consulta, alcance })).data;
+    return { libros: r.libros, reordenado: r.reordenado !== false };
 }

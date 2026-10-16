@@ -17,6 +17,7 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir }: {
     const [texto, setTexto] = useState('');
     const [buscando, setBuscando] = useState(false);
     const [libros, setLibros] = useState<LibroDelTema[] | null>(null);
+    const [aproximado, setAproximado] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const buscar = async (e: FormEvent) => {
@@ -26,7 +27,9 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir }: {
         setBuscando(true);
         setError(null);
         try {
-            setLibros(await buscarTemasEnBiblioteca(consulta, alcance));
+            const r = await buscarTemasEnBiblioteca(consulta, alcance);
+            setLibros(r.libros);
+            setAproximado(!r.reordenado);
         } catch (err) {
             const mensaje = err instanceof Error ? err.message : String(err);
             setError(/\s/.test(mensaje) ? mensaje : t('consult.errorGeneric'));
@@ -64,6 +67,7 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir }: {
             <p className="text-xs text-muted-foreground">{t('consult.topicHint')}</p>
 
             {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+            {libros && aproximado && <p className="text-sm text-muted-foreground">{t('consult.topicApproximate')}</p>}
             {libros && libros.length === 0 && <p className="text-sm text-muted-foreground">{t('consult.topicNone')}</p>}
             {libros && libros.length > 0 && (
                 <ul className="space-y-5" data-testid="temas-por-libro">

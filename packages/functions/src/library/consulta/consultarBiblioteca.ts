@@ -5,7 +5,7 @@ import { consumeRateLimitToken } from '../../shared/rateLimit';
 import { clientePorRuta, MENSAJE_SIN_RESPUESTA } from '../../llm/clientePorRuta';
 import { armarPedido, leerRespuesta, tituloDeConsulta, type FuenteCitada, type TurnoAnterior } from './armarConsulta';
 import { revisarCuota, sumarConsulta } from './cuotaDeConsultas';
-import { recuperarFragmentos, type Alcance } from './recuperarFragmentos';
+import { buscarPertinentes, FRAGMENTOS_POR_CONSULTA, type Alcance } from './recuperarFragmentos';
 import { leerAlcance } from './alcance';
 
 // Se reexporta: quien lo importaba de acá sigue igual.
@@ -101,7 +101,10 @@ export const consultarBiblioteca = onCall(
         if (!apiKey) throw new HttpsError('failed-precondition', MENSAJE_SIN_RESPUESTA);
         let fragmentos;
         try {
-            fragmentos = await recuperarFragmentos(consultaDeBusqueda(pregunta, anteriores), userId, alcance, apiKey);
+            // Candidatos por vectores, reordenados por pertinencia y cortados
+            // (fase «buscador de la biblioteca»). Si nada pasa el corte, la
+            // respuesta dice que no encontró: mejor que responder con lo que no trata el tema.
+            ({ fragmentos } = await buscarPertinentes(consultaDeBusqueda(pregunta, anteriores), userId, alcance, apiKey, { total: FRAGMENTOS_POR_CONSULTA, timeoutSeconds: 30 }));
         } catch (err) {
             console.error('[consultarBiblioteca] no se pudieron recuperar fragmentos:', err);
             throw new HttpsError('unavailable', 'No se pudo buscar en tu biblioteca. Intenta de nuevo en unos minutos.');

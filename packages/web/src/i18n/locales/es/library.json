@@ -504,8 +504,9 @@
     "modeTopics": "Buscar temas",
     "topicPlaceholder": "Un tema: la oración, la sabiduría de lo alto, el juramento…",
     "topicSearch": "Buscar",
-    "topicHint": "Muestra dónde se habla del tema en tus libros, por significado y no sólo por palabra. No redacta respuesta ni cuenta como consulta.",
+    "topicHint": "Muestra los pasajes de tus libros que más directamente tratan el tema, por significado y no sólo por palabra. No redacta respuesta ni cuenta como consulta.",
     "topicNone": "No encontré ese tema en tus libros.",
-    "historyError": "No se pudo cargar tu historial de consultas. Recarga la página en un momento."
+    "historyError": "No se pudo cargar tu historial de consultas. Recarga la página en un momento.",
+    "topicApproximate": "No se pudo afinar esta búsqueda: el orden es aproximado y puede incluir pasajes que no tratan el tema."
   }
 }

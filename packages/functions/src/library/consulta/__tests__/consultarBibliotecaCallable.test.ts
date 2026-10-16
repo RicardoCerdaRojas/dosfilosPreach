@@ -21,7 +21,7 @@ const sumar = vi.fn();
 vi.mock('../cuotaDeConsultas', () => ({ revisarCuota: async () => null, sumarConsulta: (...a: unknown[]) => sumar(...a) }));
 vi.mock('../../../shared/rateLimit', () => ({ consumeRateLimitToken: async () => true }));
 let fragmentos: unknown[] = [];
-vi.mock('../recuperarFragmentos', () => ({ recuperarFragmentos: async () => fragmentos }));
+vi.mock('../recuperarFragmentos', () => ({ FRAGMENTOS_POR_CONSULTA: 14, buscarPertinentes: async () => ({ fragmentos, reordenado: true }) }));
 vi.mock('../../../llm/clientePorRuta', () => ({
     MENSAJE_SIN_RESPUESTA: 'sin respuesta',
     clientePorRuta: async () => ({ generate: async () => 'Respuesta [F1].' }),
