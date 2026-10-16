@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compararExtracciones, leerRespuestaDeTramo, medirTexto, paginaLeida, partirTramo, rellenarConCapa, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
+import { compararExtracciones, leerRespuestaDeTramo, medirTexto, paginaLeida, partirTramo, rellenarConCapa, separarEnBlanco, sinPaginas, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas } from '../loteDeExtraccion';
 import { medirExtraccion } from '../medirExtraccion';
 import { PROMPT_DE_EXTRACCION } from '../geminiExtraction';
 
@@ -172,5 +172,12 @@ describe('un solo criterio de «página leída» (revisión adversarial del lote
         const u = unirPaginas(r.paginas);
         expect(u.markdown).toContain('<!-- page: 2 -->');
         expect(medirTexto(u.markdown, 3, capa.map(c => c.replace(/\s/g, '').length)).paginasFaltantes.total).toBe(0);
+    });
+});
+
+describe('sinPaginas (lote biblioteca2, 2026-10-17)', () => {
+    it('quita las páginas abandonadas de lo que falta y reagrupa', () => {
+        expect(sinPaginas([{ desde: 3, hasta: 7 }, { desde: 10, hasta: 10 }], new Set([4, 5, 10]))).toEqual([{ desde: 3, hasta: 3 }, { desde: 6, hasta: 7 }]);
+        expect(sinPaginas([{ desde: 1, hasta: 2 }], new Set([1, 2]))).toEqual([]);
     });
 });

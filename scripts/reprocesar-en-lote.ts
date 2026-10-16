@@ -24,7 +24,7 @@ import { PDFDocument } from 'pdf-lib';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-    compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, rellenarConCapa, separarEnBlanco, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas,
+    compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, rellenarConCapa, separarEnBlanco, sinPaginas, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas,
     PAGINAS_POR_TRAMO, type Tramo,
 } from '../packages/functions/src/library/loteDeExtraccion';
 import { camposDeMedicion } from '../packages/functions/src/library/medirExtraccion';
@@ -160,11 +160,11 @@ function revisarTramosOk(estado: Estado): void {
         const ok = estado.tramos.filter(t => t.rid === libro.rid && t.estado === 'ok');
         if (ok.length === 0 || !existsSync(archivoDePaginas(libro.rid))) continue;
         const unidas = unirPaginas(JSON.parse(readFileSync(archivoDePaginas(libro.rid), 'utf8'))).paginas;
-        // Una página abandonada cuenta como devuelta: ya no se pide.
-        const abandonadas = estado.tramos.filter(t => t.rid === libro.rid && t.estado === 'abandonado')
-            .flatMap(t => Array.from({ length: t.hasta - t.desde + 1 }, (_, i) => ({ page: t.desde + i, md: '(abandonada)' })));
+        // Una página abandonada ya no se pide: se quita de lo que falta.
+        const abandonadas = new Set(estado.tramos.filter(t => t.rid === libro.rid && t.estado === 'abandonado')
+            .flatMap(t => Array.from({ length: t.hasta - t.desde + 1 }, (_, i) => t.desde + i)));
         for (const t of ok) {
-            const faltan = tramosQueFaltan(t, [...unidas, ...abandonadas].filter(p => p.page >= t.desde && p.page <= t.hasta));
+            const faltan = sinPaginas(tramosQueFaltan(t, unidas.filter(p => p.page >= t.desde && p.page <= t.hasta)), abandonadas);
             if (faltan.length === 0) continue;
             t.estado = 'incompleto';
             t.faltan = faltan;
