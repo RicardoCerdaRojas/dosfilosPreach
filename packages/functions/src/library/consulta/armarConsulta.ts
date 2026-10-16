@@ -10,6 +10,25 @@
  * citas guardadas se corrigen solas.
  */
 
+import { markdownAPlano } from '../markdownAPlano';
+
+/**
+ * El extracto que se MUESTRA (y se guarda): sin marcas de tablas, etiquetas
+ * HTML ni bloques de código, que en pantalla se veían crudos («| :--- |»,
+ * «<table>», «```python»; fundador, 2026-10-16). Sólo para mostrar: el texto
+ * indexado y el que lee el asistente no se tocan.
+ */
+export function extractoLegible(texto: string, largo = LARGO_EXTRACTO): string {
+    const limpio = markdownAPlano(texto)
+        .replace(/```[a-z]*/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/(^|\s)\|?\s*:?-{3,}:?\s*(?=\||\s|$)/g, ' ')
+        .replace(/\|/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return limpio.length > largo ? `${limpio.slice(0, largo)}…` : limpio;
+}
+
 export interface FragmentoRecuperado {
     /** El id del fragmento en `document_chunks` (para no repetirlo y para el banco de evaluación). */
     id?: string;
@@ -114,7 +133,6 @@ export function leerRespuesta(
     }).replace(/[ \t]{2,}/g, ' ').trim();
     const fuentes = [...citadas].sort((a, b) => a - b).map(n => {
         const f = fragmentos[n - 1]!;
-        const texto = f.texto.replace(/\s+/g, ' ').trim();
         return {
             n,
             resourceId: f.resourceId,
@@ -122,7 +140,7 @@ export function leerRespuesta(
             autor: f.autor,
             hoja: f.hoja,
             seccion: f.seccion,
-            extracto: texto.length > LARGO_EXTRACTO ? `${texto.slice(0, LARGO_EXTRACTO)}…` : texto,
+            extracto: extractoLegible(f.texto),
         };
     });
     return { respuesta, fuentes };

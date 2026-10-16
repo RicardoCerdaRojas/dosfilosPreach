@@ -74,6 +74,8 @@ export const consultarBiblioteca = onCall(
             // Una consulta que sigue conserva su alcance: el de la primera pregunta.
             const snap = await db.collection(COLECCION).doc(consultaId).get();
             if (!snap.exists || snap.data()?.userId !== userId) throw new HttpsError('not-found', 'No se encontró la consulta.');
+            // Una búsqueda de temas guardada no es una conversación.
+            if (snap.data()?.tipo === 'temas') throw new HttpsError('failed-precondition', 'Esta es una búsqueda de temas: empieza una consulta nueva para preguntar.');
             const turnos = (snap.data()?.turnos ?? []) as TurnoAnterior[];
             if (turnos.length >= MAX_TURNOS || JSON.stringify(turnos).length > MAX_BYTES_DE_CONSULTA) throw new HttpsError('failed-precondition', 'Esta consulta ya es muy larga. Empieza una nueva.');
             alcance = leerAlcance(snap.data()?.alcance);

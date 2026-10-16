@@ -23,7 +23,7 @@ const varner = {
     pageNumbering: { segments: [{ fromSheet: 5, toSheet: 244, offset: -4 }], origin: 'confirmed' },
 };
 const guardada: ConsultaGuardada = {
-    id: 'c1', titulo: '¿Qué dice de 5:12?', alcance: { tipo: 'libros', ids: ['v'] }, actualizada: new Date(),
+    id: 'c1', tipo: 'preguntar', titulo: '¿Qué dice de 5:12?', alcance: { tipo: 'libros', ids: ['v'] }, actualizada: new Date(),
     turnos: [{
         pregunta: '¿Qué dice de 5:12?',
         respuesta: 'Es el logion más explícito de Jesús en la carta [F2].',
@@ -65,7 +65,7 @@ describe('Consultar la biblioteca', () => {
     });
 
     it('«Buscar temas» busca con el alcance elegido, agrupa por libro y cada hoja abre el visor', async () => {
-        temas.mockResolvedValue({ reordenado: false, libros: [{ resourceId: 'v', titulo: varner.title, autor: 'William Varner', hojas: [{ hoja: 192, seccion: 'Paragraph 22', extracto: 'Diaspora encyclical…', score: 0.8 }] }] });
+        temas.mockResolvedValue({ consultaId: 't9', reordenado: false, libros: [{ resourceId: 'v', titulo: varner.title, autor: 'William Varner', hojas: [{ hoja: 192, seccion: 'Paragraph 22', extracto: 'Diaspora encyclical…', score: 0.8 }] }] });
         render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
         fireEvent.click(screen.getByText('consult.modeTopics'));
         expect(screen.queryByLabelText('consult.placeholder')).toBeNull();
@@ -91,6 +91,20 @@ describe('Consultar la biblioteca', () => {
         fireEvent.click(screen.getByText('Otra consulta', { selector: 'span' }));
         await act(async () => { responder({ consultaId: 'c1', turno: guardada.turnos[0] }); });
         expect(screen.getByText('Otra consulta', { selector: 'span' }).closest('button')!.getAttribute('aria-current')).toBe('true');
+    });
+
+    it('una búsqueda de temas guardada se abre desde el historial, sin caja para preguntar', async () => {
+        const tema: ConsultaGuardada = {
+            id: 't1', tipo: 'temas', titulo: 'la oración por los enfermos', alcance: { tipo: 'todo' }, turnos: [], actualizada: new Date(),
+            temas: { consulta: 'la oración por los enfermos', reordenado: true, libros: [{ resourceId: 'v', titulo: varner.title, autor: 'William Varner', hojas: [{ hoja: 191, seccion: '', extracto: '¹³Κακοπαθεῖ τις', score: 0.8 }] }] },
+        };
+        render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
+        act(() => alCambiar!([tema]));
+        fireEvent.click(screen.getByText('la oración por los enfermos', { selector: 'span' }));
+        expect(screen.getByTestId('temas-guardados')).toBeTruthy();
+        expect(screen.queryByLabelText('consult.placeholder')).toBeNull();
+        fireEvent.click(screen.getByText('(Varner, p. 187)'));
+        expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 191, resourceId: 'v', label: varner.title } }, 'full');
     });
 });
 

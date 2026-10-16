@@ -61,4 +61,10 @@ describe('consultarBiblioteca', () => {
         docs.set('grande', { userId: 'yo', alcance: { tipo: 'todo' }, turnos: [{ pregunta: 'x', respuesta: 'y'.repeat(800_000) }] });
         await expect(llamar({ pregunta: '¿Y?', consultaId: 'grande' })).rejects.toMatchObject({ code: 'failed-precondition' });
     });
+    it('una búsqueda de temas guardada no admite preguntas de seguimiento', async () => {
+        docs.set('tema', { userId: 'yo', tipo: 'temas', alcance: { tipo: 'todo' }, turnos: [] });
+        await expect(llamar({ pregunta: '¿Y?', consultaId: 'tema' })).rejects.toMatchObject({ code: 'failed-precondition' });
+        expect(sumar).not.toHaveBeenCalled();
+    });
 });
+

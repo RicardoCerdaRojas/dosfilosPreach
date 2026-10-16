@@ -507,6 +507,8 @@
     "topicHint": "Muestra los pasajes de tus libros que más directamente tratan el tema, por significado y no sólo por palabra. No redacta respuesta ni cuenta como consulta.",
     "topicNone": "No encontré ese tema en tus libros.",
     "historyError": "No se pudo cargar tu historial de consultas. Recarga la página en un momento.",
-    "topicApproximate": "No se pudo afinar esta búsqueda: el orden es aproximado y puede incluir pasajes que no tratan el tema."
+    "topicApproximate": "No se pudo afinar esta búsqueda: el orden es aproximado y puede incluir pasajes que no tratan el tema.",
+    "savedTopic": "Búsqueda de temas",
+    "topicSavedIn": "Búsqueda de temas en:"
   }
 }

@@ -33,9 +33,13 @@ export interface TurnoDeConsulta {
 
 export interface ConsultaGuardada {
     id: string;
+    /** Una conversación («Preguntar») o una búsqueda de temas guardada. */
+    tipo: 'preguntar' | 'temas';
     titulo: string;
     alcance: AlcanceDeConsulta;
     turnos: TurnoDeConsulta[];
+    /** Sólo en una búsqueda de temas: lo que se buscó y lo que se encontró. */
+    temas?: { consulta: string; libros: LibroDelTema[]; reordenado: boolean };
     actualizada: Date;
 }
 
@@ -64,8 +68,10 @@ const fecha = (v: unknown): Date => (v && typeof (v as Timestamp).toDate === 'fu
 
 function aConsulta(id: string, d: Record<string, unknown>): ConsultaGuardada {
     const turnos = Array.isArray(d.turnos) ? d.turnos as Array<Record<string, unknown>> : [];
+    const temas = d.temas as { consulta?: unknown; libros?: unknown; reordenado?: unknown } | undefined;
     return {
         id,
+        tipo: d.tipo === 'temas' ? 'temas' : 'preguntar',
         titulo: String(d.titulo ?? ''),
         alcance: (d.alcance as AlcanceDeConsulta) ?? { tipo: 'todo' },
         turnos: turnos.map(t => ({
@@ -74,6 +80,13 @@ function aConsulta(id: string, d: Record<string, unknown>): ConsultaGuardada {
             fuentes: Array.isArray(t.fuentes) ? t.fuentes as FuenteDeConsulta[] : [],
             creado: fecha(t.creado),
         })),
+        ...(d.tipo === 'temas' && temas ? {
+            temas: {
+                consulta: String(temas.consulta ?? ''),
+                libros: Array.isArray(temas.libros) ? temas.libros as LibroDelTema[] : [],
+                reordenado: temas.reordenado !== false,
+            },
+        } : {}),
         actualizada: fecha(d.actualizada),
     };
 }
@@ -121,10 +134,10 @@ export interface LibroDelTema {
  * redactada. `reordenado: false` cuando no se pudo ordenar por pertinencia y
  * queda el orden aproximado de los vectores.
  */
-export async function buscarTemasEnBiblioteca(consulta: string, alcance: AlcanceDeConsulta): Promise<{ libros: LibroDelTema[]; reordenado: boolean }> {
-    const callable = httpsCallable<{ consulta: string; alcance: AlcanceDeConsulta }, { libros: LibroDelTema[]; reordenado?: boolean }>(
+export async function buscarTemasEnBiblioteca(consulta: string, alcance: AlcanceDeConsulta): Promise<{ libros: LibroDelTema[]; reordenado: boolean; consultaId: string | null }> {
+    const callable = httpsCallable<{ consulta: string; alcance: AlcanceDeConsulta }, { libros: LibroDelTema[]; reordenado?: boolean; consultaId?: string | null }>(
         getFunctions(), 'buscarTemasEnBiblioteca', { timeout: 70_000 },
     );
     const r = (await callable({ consulta, alcance })).data;
-    return { libros: r.libros, reordenado: r.reordenado !== false };
+    return { libros: r.libros, reordenado: r.reordenado !== false, consultaId: r.consultaId ?? null };
 }
