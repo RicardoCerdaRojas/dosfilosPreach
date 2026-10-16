@@ -3,6 +3,7 @@ import { embedQuery } from '../retrieveChunks';
 import { sanitizeExtractedText } from '../sanitizeExtractedText';
 import type { FragmentoRecuperado } from './armarConsulta';
 import { aplicarReorden, puntuarCandidatos, type FragmentoReordenado } from './reordenar';
+import { refsDeConsulta } from '../pasajes/refsDeTexto';
 
 /**
  * Los fragmentos de la biblioteca del usuario que mejor responden una
@@ -113,6 +114,96 @@ export async function recuperarCandidatos(
     return elegirDelPozo(pozo.filter(f => pedidos.has(f.resourceId)), { porLibro: Math.max(4, Math.ceil(limite / ids.length)), total: limite });
 }
 
+/** Candidatos que se piden por pasaje cuando la búsqueda nombra uno (etapa 3). */
+export const CUPO_POR_PASAJE = 16;
+/** Candidatos de más que admite el reordenador cuando hay pasaje (40 + 8). */
+const EXTRA_POR_PASAJE = 8;
+/**
+ * Fragmentos que se leen de cada libro. La lectura va SIEMPRE libro por
+ * libro: un `limit` sobre toda la biblioteca devuelve en orden de id, y como
+ * el id empieza con el del recurso, llenaba el tope con los primeros libros
+ * del abecedario (revisión adversarial, etapa 3).
+ */
+export const LECTURA_POR_LIBRO = 12;
+
+/** Un versículo pedido pesa más que su capítulo («Santiago 5» en el encabezado). */
+const PESO_DEL_VERSICULO = 2;
+
+/**
+ * Los mejores por pasaje: más peso de lo pedido primero (cada versículo
+ * vale 2, cada capítulo 1); a igualdad, la hoja más temprana. Un tope por
+ * libro, para que un comentario del libro buscado no ocupe todo el cupo.
+ */
+export function elegirPorPasaje(
+    docs: ReadonlyArray<{ fragmento: FragmentoRecuperado; refs: ReadonlyArray<string> }>,
+    refs: ReadonlyArray<string>,
+    cupo: number,
+): FragmentoRecuperado[] {
+    const pedidas = new Set(refs);
+    const puntuados = docs
+        .map(d => ({
+            f: d.fragmento,
+            n: d.refs.reduce((n, r) => n + (pedidas.has(r) ? (r.split('.').length === 3 ? PESO_DEL_VERSICULO : 1) : 0), 0),
+        }))
+        .filter(x => x.n > 0)
+        .sort((a, b) => (b.n - a.n) || ((a.f.hoja ?? Infinity) - (b.f.hoja ?? Infinity)));
+    return elegirDelPozo(puntuados.map(x => x.f), { porLibro: Math.max(4, Math.ceil(cupo / 3)), total: cupo });
+}
+
+/** Los libros del usuario (para leer por pasaje libro por libro). */
+async function librosDelUsuario(userId: string): Promise<string[]> {
+    const snap = await getFirestore().collection('library_resources').where('userId', '==', userId).select().get();
+    return snap.docs.map(d => d.id);
+}
+
+/**
+ * Los fragmentos que NOMBRAN el pasaje buscado («Santiago 5:14»), por el
+ * índice `refs` que deja el indexador. Los vectores no ven la cita: un
+ * fragmento que discute Stg 5:14 sin repetir las palabras de la búsqueda
+ * quedaba lejos. Si el índice falta (se está construyendo, o el fragmento es
+ * anterior al relleno) devuelve vacío: degrada a sólo vectores, no rompe.
+ */
+export async function recuperarPorPasaje(
+    refs: ReadonlyArray<string>,
+    userId: string,
+    alcance: Alcance,
+    cupo = CUPO_POR_PASAJE,
+): Promise<FragmentoRecuperado[]> {
+    if (refs.length === 0) return [];
+    // SIEMPRE por `userId`, también cuando el alcance trae ids: un id ajeno no lee nada.
+    const base = getFirestore().collection('document_chunks').where('userId', '==', userId);
+    const leer = async (resourceId: string) => (await base
+        .where('resourceId', '==', resourceId)
+        .where('refs', 'array-contains-any', refs.slice(0, 30))
+        .select('resourceId', 'resourceTitle', 'resourceAuthor', 'metadata', 'text', 'refs')
+        .limit(LECTURA_POR_LIBRO)
+        .get()).docs.map(d => ({ fragmento: { ...aFragmento(d), score: 0 }, refs: (d.get('refs') as string[] | undefined) ?? [] }));
+    try {
+        const ids = alcance.tipo === 'libros' ? [...new Set(alcance.ids)] : await librosDelUsuario(userId);
+        const docs = (await Promise.all(ids.map(leer))).flat();
+        return elegirPorPasaje(docs, refs, cupo);
+    } catch (err) {
+        console.warn(`[recuperarPorPasaje] sin índice de pasajes, sigo con vectores: ${err instanceof Error ? err.message.slice(0, 200) : err}`);
+        return [];
+    }
+}
+
+/** Primero los del pasaje, después los de vectores, sin repetir. */
+export function unirCandidatos(
+    porPasaje: ReadonlyArray<FragmentoRecuperado>,
+    porVector: ReadonlyArray<FragmentoRecuperado>,
+): FragmentoRecuperado[] {
+    const vistos = new Set<string>();
+    const out: FragmentoRecuperado[] = [];
+    for (const f of [...porPasaje, ...porVector]) {
+        const clave = f.id ?? `${f.resourceId}:${f.hoja}:${f.texto.slice(0, 60)}`;
+        if (vistos.has(clave)) continue;
+        vistos.add(clave);
+        out.push(f);
+    }
+    return out;
+}
+
 /** Sólo vectores, sin reordenar (el camino de antes; queda como respaldo). */
 export async function recuperarFragmentos(
     pregunta: string,
@@ -153,12 +244,25 @@ export async function buscarPertinentes(
     // encuentre algo); el reordenador puntúa contra la pregunta, con la
     // anterior sólo como contexto.
     const consultaVectorial = opciones.contexto?.trim() ? `${opciones.contexto.trim()}\n${busqueda}` : busqueda;
-    const candidatos = await recuperarCandidatos(consultaVectorial, userId, alcance, apiKey, opciones.candidatos ?? CANDIDATOS_A_REORDENAR);
+    // Si la búsqueda nombra un pasaje, una parte del cupo va a los fragmentos
+    // que lo citan (etapa 3); el reordenador los puntúa igual que al resto.
+    const refs = refsDeConsulta(busqueda);
+    const total = opciones.candidatos ?? CANDIDATOS_A_REORDENAR;
+    const [porVector, porPasaje] = await Promise.all([
+        recuperarCandidatos(consultaVectorial, userId, alcance, apiKey, total),
+        recuperarPorPasaje(refs, userId, alcance),
+    ]);
+    // Los del pasaje van primero; suman a lo sumo `EXTRA_POR_PASAJE` al total
+    // y el resto del lugar lo ceden los vectores más lejanos.
+    const candidatos = unirCandidatos(porPasaje, porVector).slice(0, total + Math.min(porPasaje.length, EXTRA_POR_PASAJE));
     const porLibro = topePorLibro(alcance, opciones.total);
     const puntajes = await puntuarCandidatos(busqueda, candidatos, userId, opciones.timeoutSeconds, opciones.contexto);
     if (!puntajes) {
+        // Sin reordenador nadie juzgó los del pasaje: manda el orden de los
+        // vectores, y los del pasaje quedan detrás.
+        const respaldo = unirCandidatos(porVector, porPasaje);
         return {
-            fragmentos: elegirDelPozo(candidatos, { porLibro, total: opciones.total }).map(f => ({ ...f, pertinencia: null })),
+            fragmentos: elegirDelPozo(respaldo, { porLibro, total: opciones.total }).map(f => ({ ...f, pertinencia: null })),
             reordenado: false,
         };
     }

@@ -126,11 +126,36 @@ Es lo que más mejora (medido).
 - **Mayor:** reextraer o limpiar las marcas «```python» (968 fragmentos).
 - **Al indexar:** quitar marcas de código, y no indexar tablas sin prosa ni fragmentos de menos de 150 caracteres que no sean de un léxico.
 
-### Etapa 3: índice de pasajes y vector con contexto (otro PR, con reindexado)
+### Etapa 3: índice de pasajes (un PR, sin reindexar)
 
-- **Al indexar,** cada fragmento guarda los pasajes bíblicos que cita (`refs: ['JAS 5:14', …]`), con las expresiones del modo «referencia» que ya existen. Una consulta que nombra un pasaje trae también esos fragmentos. Esto es la base de la etapa 2 de la biblioteca consultable («¿Qué dicen mis libros sobre Santiago 3:13?»).
-- **El vector se arma con libro, autor y sección,** más el `title` del modelo.
-- **Reindexado versionado** (`indexerVersion` 3.0), libro por libro. Costo estimado: ~US$5 en embeddings para los 51.000 fragmentos, sin medir. Se avisa antes porque Gemini es prepago.
+**Lo que se hizo (2026-10-16).** Cada fragmento guarda los pasajes bíblicos que nombra, como claves `JAS.5` y `JAS.5.14`. Las claves salen de su texto y del encabezado de su sección: «Santiago 5:13-18» rige todo lo que cuelga de él. Una búsqueda que nombra un pasaje («Santiago 5:14», «santiago 5:14-15 aceite») suma hasta 16 fragmentos que lo citan, y el reordenador los puntúa igual que al resto (40 + 8 candidatos como mucho).
+
+- **El reconocedor** (`functions/src/library/pasajes/`) usa una copia del canon del dominio, con prueba de paridad. A esa copia le suma las abreviaturas de los comentarios que el dominio no tiene («Matt», «Exod», «Pss», «Mr», «I Co»). No van en el dominio porque allí también se infiere el libro por las palabras del título de una obra.
+  - Reconoce grafías en español y en inglés, rangos de versículos y de capítulos («5:14-16», «Mateo 5-7», «1:18-3:20») y listas («Ac 7.12; 8.40», «Rom 2:6, 12»).
+  - En los libros de un solo capítulo, la cifra es el versículo: «Judas 4».
+  - En la prosa exige mayúscula inicial («the time is 5:30» no es Isaías), y una cita no cruza de renglón.
+  - **El encabezado da el contexto.** Con «Santiago 5» › «vv. 13-18», o con «Romans» › «8:28-30», el «v. 14» y el «1:17» sueltos del texto se leen como de ese libro. Antes se tapan las citas que ya tienen libro, para que el «5:14» de «Rom 5:14» siga siendo Romanos. Un encabezado que sólo nombra el libro («Numbers», en una gramática) no basta para leer las cifras del texto.
+- **Revisado a mano** sobre 8.000 fragmentos reales (617 grafías distintas): los errores son raros, como «W. J., Jr. 14» o un índice «Calvin, John 2.3.1d».
+- **Lo que los vectores no ven (medido, biblioteca del fundador, 54.170 fragmentos):**
+
+| Búsqueda | Fragmentos que citan el pasaje | De ellos, entre los 40 de los vectores |
+|---|---|---|
+| Santiago 5:14 | 94 | 9 |
+| la unción con aceite en Santiago 5:14-15 | 117 | 18 |
+| Salmo 23:4 | 26 | 5 |
+| Juan 3:16 | 135 | 20 |
+| Génesis 2:17 | 34 | 5 |
+| Jonás 4:6 | 72 | 4 |
+| Santiago 3:6 la lengua es un fuego | 83 | 11 |
+| Santiago 2:14-26 fe y obras | 293 | 17 |
+
+- **Sin reindexar.** El indexador escribe `refs` en los fragmentos nuevos sin cambiar `indexerVersion`. Los 93.852 existentes se completan con `scripts/rellenar-refs.ts`, que no vuelve a calcular los vectores. Es idempotente y cuesta unos US$0,17 en escrituras. El 62 % de los fragmentos nombra algún pasaje: 806.000 claves, 8,6 por fragmento.
+- **La lectura va libro por libro** (12 fragmentos por libro), con el índice (resourceId, userId, refs). Un `limit` sobre toda la biblioteca devolvía en orden de id, y llenaba el tope con los libros que van primero en el abecedario. El índice de campo único de `refs` está apagado: no se usa, y sus entradas cuentan para el tamaño de las tandas del indexador. Si una tanda de 500 resulta demasiado grande, se parte en dos.
+- **Una búsqueda con versículo también pide su capítulo.** El versículo pesa 2 y el capítulo 1.
+- **Sin reordenador** (si falla), manda el orden de los vectores y los fragmentos del pasaje van detrás, porque nadie los juzgó.
+- Mientras el índice se construye, o si falta el relleno, la búsqueda por pasaje devuelve vacío y queda la de vectores.
+
+**El vector con contexto se pospone.** Agregar libro, autor y sección al vector dio 0,63 contra 0,59 dentro del mismo pozo de candidatos. No justifica reindexar toda la biblioteca (~US$5 estimados, sin medir) mientras el reordenador ya lleva la precisión a 0,93. Se hace cuando haya que reindexar por otra razón.
 
 ## Fuera de esta fase
 

@@ -7,6 +7,7 @@ import { isStructuredExtractionVersion } from './extractionVersions';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { describeSanitization, sanitizeExtractedText } from './sanitizeExtractedText';
 import { assessIndexCoverage, describeIndexCoverage } from './indexCoverage';
+import { refsDeFragmento } from './pasajes/refsDeTexto';
 
 interface IndexRequest {
     resourceId: string;
@@ -239,6 +240,8 @@ export const indexStructuredDocument = onCall<IndexRequest>(
                         startChar: c.charStart,
                         endChar: c.charEnd,
                     },
+                    // Los pasajes bíblicos que nombra, para buscar por pasaje (etapa 3).
+                    refs: refsDeFragmento(c.text, c.sectionPath),
                     stores,
                     indexerVersion: INDEXER_VERSION,
                     createdAt: now,
@@ -424,13 +427,13 @@ export async function indexResourceChunks(
         const writeStart = Date.now();
         let writtenChunks = 0;
         for (let i = 0; i < survivors.length; i += BATCH_WRITE_LIMIT) {
-            const batch = db.batch();
             const slice = survivors.slice(i, i + BATCH_WRITE_LIMIT);
+            const escrituras: Escritura[] = [];
             for (let j = 0; j < slice.length; j++) {
                 const { chunk: c, vector } = slice[j]!;
                 const chunkIndex = i + j;
                 const id = `${resourceId}_chunk_${chunkIndex}`;
-                batch.set(db.collection(CHUNK_COLLECTION).doc(id), {
+                escrituras.push([db.collection(CHUNK_COLLECTION).doc(id), {
                     resourceId,
                     resourceTitle: title,
                     resourceAuthor: author,
@@ -446,12 +449,14 @@ export async function indexResourceChunks(
                         startChar: c.charStart,
                         endChar: c.charEnd,
                     },
+                    // Los pasajes bíblicos que nombra, para buscar por pasaje (etapa 3).
+                    refs: refsDeFragmento(c.text, c.sectionPath),
                     stores,
                     indexerVersion: INDEXER_VERSION,
                     createdAt: now,
-                });
+                }]);
             }
-            await batch.commit();
+            await escribirEnTandas(db, escrituras);
             writtenChunks += slice.length;
             // Heartbeat per batch — without this the indexer is
             // completely silent for the duration of the writes,
@@ -699,6 +704,30 @@ async function discardPartialIndex(
             `[IndexStructured] ${resourceId}: could not discard partial index — `
             + `chunks may be orphaned: ${cleanupErr?.message ?? cleanupErr}`,
         );
+    }
+}
+
+type Escritura = [FirebaseFirestore.DocumentReference, FirebaseFirestore.DocumentData];
+
+/**
+ * Escribe en una tanda y, si Firestore la rechaza por grande, la parte en dos
+ * y reintenta. Las entradas de índice cuentan para ese límite, y desde la
+ * etapa 3 cada fragmento suma las de `refs` (hasta 120 en un diccionario):
+ * una tanda de 500 que antes pasaba podría dejar de pasar.
+ */
+export async function escribirEnTandas(db: FirebaseFirestore.Firestore, escrituras: ReadonlyArray<Escritura>): Promise<void> {
+    if (escrituras.length === 0) return;
+    const batch = db.batch();
+    for (const [ref, data] of escrituras) batch.set(ref, data);
+    try {
+        await batch.commit();
+    } catch (err) {
+        const grande = err instanceof Error && /too big|too large|exceeds the maximum|INVALID_ARGUMENT/i.test(err.message);
+        if (!grande || escrituras.length <= 1) throw err;
+        const mitad = Math.ceil(escrituras.length / 2);
+        console.warn(`[IndexStructured] tanda de ${escrituras.length} demasiado grande; la parto en dos`);
+        await escribirEnTandas(db, escrituras.slice(0, mitad));
+        await escribirEnTandas(db, escrituras.slice(mitad));
     }
 }
 
