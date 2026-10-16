@@ -116,7 +116,8 @@ describe('fase «buscador», etapa 2: fragmentos limpios', () => {
         }
         for (const bueno of ['5:1–18 CONCLUSION', '2.3 El genitivo', '15. ἡ εὐχή', 'James 3:13–18', 'Excursus H', 'The Epistle of James', 'C. Part 2: Faith and Prayer (5:13–18)',
             // Falsos positivos hallados en la biblioteca real:
-            '19.38 ὁ ἐρχόμενος ὁ βασιλεύς {C}', 'CAPÍTULO 4: LA PREPOSICIÓN, εἰμί y EL ADJETIVO', 'B. τίθημι (θε*) y ἵστημι (στα *)', 'Y descendiendo a Jope,… (1:3)', 'B. Demonstrative Pronouns: pointers—οὗτος, ἐκεῖνος, ὅδε (325-35)']) {
+            '19.38 ὁ ἐρχόμενος ὁ βασιλεύς {C}', 'CAPÍTULO 4: LA PREPOSICIÓN, εἰμί y EL ADJETIVO', 'B. τίθημι (θε*) y ἵστημι (στα *)', 'Y descendiendo a Jope,… (1:3)', 'B. Demonstrative Pronouns: pointers—οὗτος, ἐκεῖνος, ὅδε (325-35)',
+            'Agape/ἀγάπη', 'Juan 3:16 — ἀγαπάω/love', 'Section B λόγος', 'Dagesh in ב ג ד כ פ ת', 'Las letras א ב ג']) {
             expect(esTituloIlegible(bueno)).toBe(false);
         }
         const chunks = partir('<!-- page: 1 -->\n# Capítulo 1\n\n###### τ πνμ μν υ\n\n' + 'texto '.repeat(60), { minChars: 10 });
@@ -136,6 +137,30 @@ describe('fase «buscador», etapa 2: fragmentos limpios', () => {
         const chunks = partir('<!-- page: 1 -->\n```python\n' + 'In the Introduction I have stated '.repeat(20) + '\n```', { minChars: 10 });
         expect(chunks.length).toBeGreaterThan(0);
         expect(chunks.every(c => !c.text.includes('```'))).toBe(true);
+    });
+
+    it('no pierde texto con una «palabra» muy larga sin espacios (revisión adversarial)', () => {
+        const largo = 'palabra '.repeat(300) + 'x'.repeat(5000) + ' fin'.repeat(300);
+        const chunks = partir(`<!-- page: 1 -->\n${largo}`, { maxChars: 2000, minChars: 200, overlapChars: 150 });
+        const xs = chunks.reduce((n, c) => n + (c.text.match(/x/g) ?? []).length, 0);
+        expect(xs).toBeGreaterThanOrEqual(5000);
+        const indice = 'Capítulo uno ' + '.'.repeat(700) + ' 5 ' + 'texto '.repeat(400);
+        const ci = partir(`<!-- page: 1 -->\n${indice}`, { maxChars: 600, minChars: 50, overlapChars: 100 });
+        expect(ci.reduce((n, c) => n + (c.text.match(/\./g) ?? []).length, 0)).toBeGreaterThanOrEqual(700);
+    });
+
+    it('el texto corto bajo un título descartado (o al comienzo de página) no se pierde, y sin «#»', () => {
+        const md = '<!-- page: 4 -->\n###### s ωσ\n\nLa sabiduría de lo alto es primeramente pura, después pacífica, amable.\n\n## 3:18 Fruto de justicia\n\n' + 'texto '.repeat(80);
+        const chunks = partir(md, { maxChars: 2000, minChars: 200, overlapChars: 150 });
+        const todo = chunks.map(c => c.text).join('\n');
+        expect(todo).toContain('primeramente pura');
+        expect(todo).not.toContain('######');
+    });
+
+    it('limpiar no se come palabras ni notación de grafemas', () => {
+        expect(limpiarParaIndexar('```In the Introduction')).toContain('In the Introduction');
+        expect(limpiarParaIndexar('the grapheme <b> and <p> differ')).toBe('the grapheme <b> and <p> differ');
+        expect(limpiarParaIndexar('<TABLE><TR><TD>uno</TD></TR></TABLE>')).not.toMatch(/<\/?T/);
     });
 });
 
