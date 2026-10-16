@@ -372,6 +372,12 @@ export class ProcessingBalanceService {
      * downstream). The split favors the bucket that was last drained:
      * we top up the plan bucket first to avoid pretending the user has
      * more pack credits than they bought.
+     *
+     * DESDE EL 2026-10-16 LAS REGLAS LO RECHAZAN: el cliente sólo puede bajar
+     * su saldo de exégesis (antes podía ponerse el que quisiera). El que lo
+     * llama (`ExegesisCreditReservation.refundIfPreLlm`) traga el error, así
+     * que una falla previa al modelo cuesta la reserva. El arreglo es llevar
+     * el cobro de exégesis al servidor (fase pendiente).
      */
     async refundExegesis(userId: string, costUsd: number): Promise<void> {
         if (costUsd <= 0) return;
