@@ -123,7 +123,9 @@ service cloud.firestore {
     match /greek_sessions/{sessionId} {
       // Super admins can read all sessions for analytics
       allow get: if isOwner(resource.data.userId) || isSuperAdmin();
-      allow list: if isAuthenticated() || isSuperAdmin();
+      // Sólo lo propio (o el super admin). Antes cualquier sesión listaba las
+      // de todos (2026-10-16); toda consulta del cliente filtra por userId.
+      allow list: if isOwner(resource.data.userId) || isSuperAdmin();
       allow update, delete: if isOwner(resource.data.userId);
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
 
@@ -200,7 +202,9 @@ service cloud.firestore {
     // Stores completed detective sessions for analytics and progress tracking
     match /hebrewDetectiveSessions/{sessionId} {
       allow get: if isOwner(resource.data.userId) || isSuperAdmin();
-      allow list: if isAuthenticated() || isSuperAdmin();
+      // Sólo lo propio (o el super admin). Antes cualquier sesión listaba las
+      // de todos (2026-10-16); toda consulta del cliente filtra por userId.
+      allow list: if isOwner(resource.data.userId) || isSuperAdmin();
       allow update, delete: if isOwner(resource.data.userId);
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
     }
@@ -210,7 +214,9 @@ service cloud.firestore {
     // Read by UsageLimitsService for monthly quota counting and by analytics.
     match /hebrew_user_sessions/{sessionId} {
       allow get: if isOwner(resource.data.userId) || isSuperAdmin();
-      allow list: if isAuthenticated() || isSuperAdmin();
+      // Sólo lo propio (o el super admin). Antes cualquier sesión listaba las
+      // de todos (2026-10-16); toda consulta del cliente filtra por userId.
+      allow list: if isOwner(resource.data.userId) || isSuperAdmin();
       allow update, delete: if isOwner(resource.data.userId);
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
     }
@@ -488,7 +494,9 @@ service cloud.firestore {
     // Sermon Series collection (legacy collection name kept for backward compat)
     match /series/{seriesId} {
       allow get: if isOwner(resource.data.userId) || isSuperAdmin();
-      allow list: if isAuthenticated() || isSuperAdmin();
+      // Sólo lo propio (o el super admin). Antes cualquier sesión listaba las
+      // de todos (2026-10-16); toda consulta del cliente filtra por userId.
+      allow list: if isOwner(resource.data.userId) || isSuperAdmin();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isOwner(resource.data.userId);
       allow delete: if isOwner(resource.data.userId);
@@ -500,7 +508,9 @@ service cloud.firestore {
     // /series/.
     match /sermon_series/{seriesId} {
       allow get: if isOwner(resource.data.userId) || isSuperAdmin();
-      allow list: if isAuthenticated() || isSuperAdmin();
+      // Sólo lo propio (o el super admin). Antes cualquier sesión listaba las
+      // de todos (2026-10-16); toda consulta del cliente filtra por userId.
+      allow list: if isOwner(resource.data.userId) || isSuperAdmin();
       allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
       allow update: if isOwner(resource.data.userId);
       allow delete: if isOwner(resource.data.userId);
