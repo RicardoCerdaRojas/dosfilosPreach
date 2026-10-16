@@ -11,6 +11,7 @@ import { RespuestaConCitas } from '@/components/library/consulta/RespuestaConCit
 import { etiquetaDeFuente, type LibroParaCitar } from '@/components/library/consulta/etiquetaDeFuente';
 import { SelectorDeAlcance, type LibroElegible } from './SelectorDeAlcance';
 import { BuscarTemas } from './BuscarTemas';
+import { ResultadosDeTemas } from './ResultadosDeTemas';
 import { useConsultas } from './useConsultas';
 
 /**
@@ -36,6 +37,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     const [texto, setTexto] = useState('');
     /** «Preguntar» (respuesta redactada y guardada) o «Buscar temas» (U5: dónde se habla de algo). */
     const [modo, setModo] = useState<'preguntar' | 'temas'>('preguntar');
+    /** La búsqueda de temas que se está viendo recién hecha: se marca en el historial. */
+    const [temaReciente, setTemaReciente] = useState<string | null>(null);
     const finRef = useRef<HTMLDivElement>(null);
 
     const libros = useMemo(() => new Map<string, LibroParaCitar>(
@@ -117,13 +120,16 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                                 <button
                                     type="button"
                                     onClick={() => { setAbiertaId(c.id); setModo('preguntar'); limpiarError(); }}
-                                    aria-current={c.id === abiertaId ? 'true' : undefined}
+                                    aria-current={c.id === abiertaId || (!abiertaId && modo === 'temas' && c.id === temaReciente) ? 'true' : undefined}
                                     className={cn(
                                         'w-full rounded-md px-2 py-2 pr-8 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                        c.id === abiertaId ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                        c.id === abiertaId || (!abiertaId && modo === 'temas' && c.id === temaReciente) ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )}
                                 >
-                                    <span className="line-clamp-2">{c.titulo}</span>
+                                    <span className="line-clamp-2">
+                                        {c.tipo === 'temas' && <Search className="mr-1 inline h-3.5 w-3.5 align-[-2px]" aria-label={t('consult.savedTopic')} />}
+                                        {c.titulo}
+                                    </span>
                                     <span className="mt-0.5 block truncate text-xs text-muted-foreground">{rotuloDeAlcance(c.alcance)}</span>
                                 </button>
                                 <button
@@ -142,7 +148,19 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
 
             {/* Conversación */}
             <section className="flex min-h-[60vh] flex-col gap-6">
-                {abierta ? (
+                {abierta?.tipo === 'temas' ? (
+                    // Una búsqueda de temas guardada: se vuelve a ver tal cual, sin repetirla.
+                    <div className="space-y-4" data-testid="temas-guardados">
+                        <p className="text-sm text-muted-foreground">
+                            {t('consult.topicSavedIn')} <span className="font-medium text-foreground">{rotuloDeAlcance(abierta.alcance)}</span>
+                        </p>
+                        <h3 className="text-base font-semibold text-foreground">{abierta.temas?.consulta ?? abierta.titulo}</h3>
+                        {abierta.temas && !abierta.temas.reordenado && <p className="text-sm text-muted-foreground">{t('consult.topicApproximate')}</p>}
+                        {abierta.temas && abierta.temas.libros.length > 0
+                            ? <ResultadosDeTemas libros={abierta.temas.libros} etiquetar={etiquetar} onAbrir={abrirFuente} />
+                            : <p className="text-sm text-muted-foreground">{t('consult.topicNone')}</p>}
+                    </div>
+                ) : abierta ? (
                     <p className="text-sm text-muted-foreground">
                         {t('consult.askingIn')} <span className="font-medium text-foreground">{rotuloDeAlcance(abierta.alcance)}</span>
                     </p>
@@ -169,7 +187,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                             ))}
                         </div>
                         <SelectorDeAlcance libros={elegibles} alcance={alcance} onCambiar={setAlcance} />
-                        {modo === 'temas' && <BuscarTemas alcance={alcance} etiquetar={etiquetar} onAbrir={abrirFuente} />}
+                        {modo === 'temas' && <BuscarTemas alcance={alcance} etiquetar={etiquetar} onAbrir={abrirFuente} onGuardada={setTemaReciente} />}
                         {modo === 'preguntar' && !enCurso && (
                             <div className="flex flex-wrap gap-2">
                                 {(['example1', 'example2', 'example3'] as const).map(k => (
@@ -188,7 +206,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                     </div>
                 )}
 
-                {(modo === 'preguntar' || abierta) && (<>
+                {((modo === 'preguntar' && !abierta) || (abierta && abierta.tipo !== 'temas')) && (<>
                 <div className="flex-1 space-y-8">
                     {abierta?.turnos.map((turno, i) => (
                         <article key={`${abierta.id}-${i}`} className="space-y-3">

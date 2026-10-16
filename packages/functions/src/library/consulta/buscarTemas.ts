@@ -2,9 +2,9 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { appCheckCallableOptions } from '../../config/appCheckOptions';
 import { consumeRateLimitToken } from '../../shared/rateLimit';
-import { LARGO_EXTRACTO, type FragmentoRecuperado } from './armarConsulta';
+import { extractoLegible, tituloDeConsulta, type FragmentoRecuperado } from './armarConsulta';
 import { leerAlcance } from './alcance';
-import { buscarPertinentes } from './recuperarFragmentos';
+import { buscarPertinentes, type Alcance } from './recuperarFragmentos';
 
 /**
  * «Buscar temas» (fase «biblioteca consultable», U5): dónde se habla de algo
@@ -48,15 +48,53 @@ export function agruparPorLibro(fragmentos: ReadonlyArray<FragmentoRecuperado>):
             libros.set(f.resourceId, libro);
         }
         if (libro.hojas.some(h => h.hoja === f.hoja && f.hoja !== null)) continue;
-        const texto = f.texto.replace(/\s+/g, ' ').trim();
         libro.hojas.push({
             hoja: f.hoja,
             seccion: f.seccion,
-            extracto: texto.length > LARGO_EXTRACTO ? `${texto.slice(0, LARGO_EXTRACTO)}…` : texto,
+            extracto: extractoLegible(f.texto),
             score: Math.round(f.score * 1000) / 1000,
         });
     }
     return [...libros.values()];
+}
+
+/**
+ * La búsqueda guardada en `library_consultations`, con `tipo: 'temas'` y el
+ * resultado en `temas`. Si guardar falla, la búsqueda igual se muestra: el
+ * historial no puede costarle el resultado al pastor.
+ */
+async function guardarBusqueda(userId: string, consulta: string, alcance: Alcance, libros: LibroDelTema[], reordenado: boolean): Promise<string | null> {
+    try {
+        const ahora = new Date();
+        const db = getFirestore();
+        const titulo = tituloDeConsulta(consulta);
+        // La misma búsqueda (mismas palabras y mismo alcance) se ACTUALIZA: si
+        // no, repetirla llenaba el historial y empujaba fuera de la lista las
+        // conversaciones (revisión adversarial). Sólo igualdades: no pide índice.
+        const previas = await db.collection('library_consultations').where('userId', '==', userId).where('titulo', '==', titulo).limit(20).get();
+        const misma = previas.docs.find(d => d.data().tipo === 'temas'
+            && d.data().temas?.consulta === consulta
+            && JSON.stringify(d.data().alcance) === JSON.stringify(alcance));
+        if (misma) {
+            await misma.ref.update({ temas: { consulta, libros, reordenado }, actualizada: ahora });
+            return misma.id;
+        }
+        const ref = db.collection('library_consultations').doc();
+        await ref.set({
+            userId,
+            tipo: 'temas',
+            titulo,
+            alcance,
+            turnos: [],
+            temas: { consulta, libros, reordenado },
+            creada: ahora,
+            actualizada: ahora,
+        });
+        return ref.id;
+    } catch (err) {
+        console.error('[buscarTemasEnBiblioteca] no se pudo guardar en el historial:', err);
+        return null;
+    }
 }
 
 export const buscarTemasEnBiblioteca = onCall(
@@ -84,7 +122,11 @@ export const buscarTemasEnBiblioteca = onCall(
         if (!apiKey) throw new HttpsError('failed-precondition', 'No se pudo buscar en tu biblioteca.');
         try {
             const { fragmentos, reordenado } = await buscarPertinentes(consulta, userId, alcance, apiKey, { total: FRAGMENTOS_DE_TEMAS, timeoutSeconds: 40 });
-            return { libros: agruparPorLibro(fragmentos), reordenado };
+            const libros = agruparPorLibro(fragmentos);
+            // Queda en el historial, como las preguntas (pedido del fundador,
+            // 2026-10-16): una búsqueda útil se vuelve a abrir sin repetirla.
+            const consultaId = await guardarBusqueda(userId, consulta, alcance, libros, reordenado);
+            return { libros, reordenado, consultaId };
         } catch (err) {
             console.error('[buscarTemasEnBiblioteca] falló la búsqueda:', err);
             throw new HttpsError('unavailable', 'No se pudo buscar en tu biblioteca. Intenta de nuevo en unos minutos.');

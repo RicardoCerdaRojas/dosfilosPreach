@@ -58,7 +58,7 @@ export function useConsultas(userId: string | null | undefined) {
             // Una consulta nueva puede llegar antes por el callable que por el historial.
             if (!consultaId && 'alcance' in destino) {
                 setRecientes(prev => ({ ...prev, [r.consultaId]: {
-                    id: r.consultaId, titulo: pregunta, alcance: destino.alcance, turnos: [r.turno], actualizada: r.turno.creado,
+                    id: r.consultaId, tipo: 'preguntar', titulo: pregunta, alcance: destino.alcance, turnos: [r.turno], actualizada: r.turno.creado,
                 } }));
             }
             return r.consultaId;

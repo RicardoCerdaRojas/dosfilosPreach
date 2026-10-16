@@ -507,6 +507,8 @@
     "topicHint": "Shows the passages in your books that most directly discuss the topic, by meaning and not only by word. It doesn't write an answer or count as a query.",
     "topicNone": "I couldn't find that topic in your books.",
     "historyError": "Your question history couldn't be loaded. Reload the page in a moment.",
-    "topicApproximate": "This search couldn't be refined: the order is approximate and may include passages that don't discuss the topic."
+    "topicApproximate": "This search couldn't be refined: the order is approximate and may include passages that don't discuss the topic.",
+    "savedTopic": "Topic search",
+    "topicSavedIn": "Topic search in:"
   }
 }

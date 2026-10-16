@@ -10,6 +10,31 @@
  * citas guardadas se corrigen solas.
  */
 
+import { markdownAPlano } from '../markdownAPlano';
+
+/**
+ * El extracto que se MUESTRA (y se guarda): sin marcas de tablas, etiquetas
+ * HTML ni bloques de código, que en pantalla se veían crudos («| :--- |»,
+ * «<table>», «```python»; fundador, 2026-10-16). Sólo para mostrar: el texto
+ * indexado y el que lee el asistente no se tocan.
+ */
+export function extractoLegible(texto: string, largo = LARGO_EXTRACTO): string {
+    // Separadores de tabla sólo pegados a «|» (antes de pasar a texto plano,
+    // que convierte las barras en espacios): «---» en una frase es texto.
+    const sinSeparadores = texto.replace(/\|\s*:?-{3,}:?\s*(?=\|)/g, '|');
+    const limpio = markdownAPlano(sinSeparadores)
+        .replace(/```[a-z]*/gi, ' ')
+        // Sólo etiquetas de TABLA y saltos: «<» y «>» sueltos, «<B>» (el
+        // Vaticano) o «<b>»/«<p>» (notación de grafemas) son texto en las
+        // gramáticas («*qatal < *qatala», «el códice <A>»). Mismo criterio que
+        // `limpiarParaIndexar` del chunker.
+        .replace(/<\/?(?:table|thead|tbody|tfoot|tr|td|th|br|caption|colgroup|col)\b[^>]*>/gi, ' ')
+        .replace(/\|/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return limpio.length > largo ? `${limpio.slice(0, largo)}…` : limpio;
+}
+
 export interface FragmentoRecuperado {
     /** El id del fragmento en `document_chunks` (para no repetirlo y para el banco de evaluación). */
     id?: string;
@@ -114,7 +139,6 @@ export function leerRespuesta(
     }).replace(/[ \t]{2,}/g, ' ').trim();
     const fuentes = [...citadas].sort((a, b) => a - b).map(n => {
         const f = fragmentos[n - 1]!;
-        const texto = f.texto.replace(/\s+/g, ' ').trim();
         return {
             n,
             resourceId: f.resourceId,
@@ -122,7 +146,7 @@ export function leerRespuesta(
             autor: f.autor,
             hoja: f.hoja,
             seccion: f.seccion,
-            extracto: texto.length > LARGO_EXTRACTO ? `${texto.slice(0, LARGO_EXTRACTO)}…` : texto,
+            extracto: extractoLegible(f.texto),
         };
     });
     return { respuesta, fuentes };

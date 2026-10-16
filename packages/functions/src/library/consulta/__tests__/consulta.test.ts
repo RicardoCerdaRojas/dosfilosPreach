@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('firebase-functions/v2/https', async (orig) => ({ ...(await orig<object>()), onCall: (_o: unknown, h: unknown) => h }));
 
-import { armarPedido, leerRespuesta, normalizarMarcas, tituloDeConsulta, type FragmentoRecuperado } from '../armarConsulta';
+import { armarPedido, extractoLegible, leerRespuesta, normalizarMarcas, tituloDeConsulta, type FragmentoRecuperado } from '../armarConsulta';
 import { elegirDelPozo, topePorLibro } from '../recuperarFragmentos';
 import { motivoSinCuota, periodoActual } from '../cuotaDeConsultas';
 import { leerAlcance } from '../consultarBiblioteca';
@@ -119,5 +119,24 @@ describe('agruparPorLibro (buscar temas)', () => {
         expect(r.map(l => l.resourceId)).toEqual(['b', 'a']);
         expect(r[0]!.hojas.map(h => h.hoja)).toEqual([3]);
         expect(r[1]!.hojas.map(h => h.hoja)).toEqual([12, 10]);
+    });
+});
+
+describe('extractoLegible', () => {
+    it('quita tablas, etiquetas HTML y bloques de código; conserva el texto (griego incluido)', () => {
+        const varner = '| P | S |\n| :---: | :---: |\n| ἀσθενεῖ | τις ἐν ὑμῖν |\n<table><tr><td>ἀλείψαντες</td></tr></table>';
+        expect(extractoLegible(varner)).toBe('P S ἀσθενεῖ τις ἐν ὑμῖν ἀλείψαντες');
+        expect(extractoLegible('```python 168 THE EPISTLE OF ST. JAMES')).toBe('168 THE EPISTLE OF ST. JAMES');
+        expect(extractoLegible('**15. ἡ εὐχή.** The prayer')).toBe('15. ἡ εὐχή. The prayer');
+    });
+    it('recorta al largo pedido', () => {
+        expect(extractoLegible('palabra '.repeat(200), 20)).toBe('palabra palabra pala…');
+    });
+    it('no borra «<», «>» ni «---» que son texto (revisión adversarial)', () => {
+        expect(extractoLegible('*qatal < *qatala; luego qatal > qāṭal')).toBe('*qatal < *qatala; luego qatal > qāṭal');
+        expect(extractoLegible('El códice <A> y <B>')).toBe('El códice <A> y <B>');
+        expect(extractoLegible('the grapheme <b> and <p> differ')).toBe('the grapheme <b> and <p> differ');
+        expect(extractoLegible('El aoristo --- dice Moo --- es puntual')).toBe('El aoristo --- dice Moo --- es puntual');
+        expect(extractoLegible('| | | | :--- | :--- | | ¹³Κακοπαθεῖ')).toBe('¹³Κακοπαθεῖ');
     });
 });
