@@ -298,16 +298,20 @@ describe('Visor de fuente — lo que pidió el fundador al probarlo', () => {
 });
 
 describe('Visor de fuente — preguntar a este libro (biblioteca consultable, U4)', () => {
-    it('sólo ampliado: el botón cambia el índice por la conversación con el libro, y vuelve', () => {
+    it('sólo ampliado: abre la conversación a la derecha de la hoja, con el índice a la vista', () => {
         montar();
         fireEvent.click(screen.getByText('abrir'));
         expect(screen.queryByTestId('preguntar-a-este-libro')).toBeNull();
         fireEvent.click(screen.getByLabelText('sourceViewer.expand'));
         fireEvent.click(screen.getByTestId('preguntar-a-este-libro'));
-        expect(screen.getByTestId('preguntar-al-libro')).toBeTruthy();
-        expect(screen.queryByTestId('indice-del-libro')).toBeNull();
+        const chat = screen.getByTestId('preguntar-al-libro');
+        const indice = screen.getByTestId('indice-del-libro');
+        const hoja = screen.getByTestId('hoja');
+        // Orden en pantalla: índice, hoja, conversación.
+        expect(indice.compareDocumentPosition(hoja) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(hoja.compareDocumentPosition(chat) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         fireEvent.click(screen.getByTestId('preguntar-a-este-libro'));
-        expect(screen.getByTestId('indice-del-libro')).toBeTruthy();
+        expect(screen.getByTestId('preguntar-al-libro').parentElement!.className).toContain('hidden');
     });
 
     it('en un libro que no es del usuario (corpus, otro dueño) no se ofrece', () => {
