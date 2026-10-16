@@ -46,8 +46,9 @@ export function chunkStructuredMarkdown(
     const minChars = options.minChars ?? DEFAULT_MIN;
     const overlapChars = options.overlapChars ?? DEFAULT_OVERLAP;
 
+    // Step 0: sin cercas de código ni etiquetas de tabla HTML (ver limpiarParaIndexar).
     // Step 1: extract page-blocks from the page markers
-    const pageBlocks = splitByPageMarkers(markdown);
+    const pageBlocks = splitByPageMarkers(limpiarParaIndexar(markdown));
 
     // Step 2: for each page, split by headings and track the heading hierarchy
     const rawChunks: MarkdownChunk[] = [];
@@ -81,8 +82,12 @@ export function chunkStructuredMarkdown(
 
             // If the section body is small, keep it as one chunk
             if (section.body.length <= maxChars) {
-                const text = section.body.trim();
-                if (text.length >= minChars || section.headingLevel !== null) {
+                const text = quitarMarcasDeTitulo(section.body).trim();
+                // Un texto corto sin título (el final de un párrafo que viene de
+                // la página anterior, o el cuerpo de un título ilegible
+                // descartado) se conserva: mergeTinyChunks lo junta con el
+                // vecino. Antes se tiraba y ese texto no existía en el índice.
+                if (text.length > 0) {
                     rawChunks.push({
                         text,
                         page: block.page,
@@ -98,7 +103,7 @@ export function chunkStructuredMarkdown(
 
             // Body too big — split into character-based chunks with overlap
             const pieces = splitIntoOverlappingChunks(
-                section.body,
+                quitarMarcasDeTitulo(section.body),
                 maxChars,
                 overlapChars,
                 section.charStart
@@ -173,6 +178,9 @@ function splitBySections(text: string): Section[] {
 
     let m: RegExpExecArray | null;
     while ((m = headingRegex.exec(text)) !== null) {
+        // Una línea ilegible marcada como título (griego roto del OCR) no es
+        // un título: queda en el cuerpo y no ensucia el breadcrumb.
+        if (esTituloIlegible(m[2])) continue;
         headings.push({
             level: m[1].length,
             text: m[2].trim(),
@@ -221,6 +229,44 @@ function splitBySections(text: string): Section[] {
     return sections;
 }
 
+/**
+ * Un título que en realidad es una línea ilegible del OCR. En Mayor (LlamaParse
+ * 3.0) los únicos 7 títulos eran griego roto («τ πνμ μν υ», «s ωσ», «25“.Oμοωs δ
+ * καì 'Pααβ…») y quedaban como sección de cientos de fragmentos. Señales: una
+ * palabra que mezcla letras griegas y latinas, muchas «palabras» de una sola
+ * letra, o un largo que ningún título tiene.
+ */
+export function esTituloIlegible(titulo: string): boolean {
+    const t = titulo.trim();
+    // Un «título» de más de 150 caracteres es un párrafo marcado por error.
+    if (t.length > 150) return true;
+    const palabras = t.split(/\s+/).filter(Boolean);
+    const griego = (p: string) => /[\u0370-\u03FF\u1F00-\u1FFF]/.test(p);
+    // Mezcla de alfabetos DENTRO de una palabra («Oμοωs»); la puntuación separa
+    // palabras («pointers—οὗτος» son dos, Wallace).
+    const piezas = t.split(/[\s\u2010-\u2015\-.,;:()\[\]{}«»"“”'‘’*/\\|]+/).filter(Boolean);
+    if (piezas.some(p => griego(p) && /[A-Za-z]/.test(p))) return true;
+    // Letra suelta SOSPECHOSA: una sola letra, sin espíritu ni acento (el
+    // artículo «ὁ», «ἡ» es legítimo) y que no sea una conjunción o artículo de
+    // una letra («y», «o», «a», «e», «u»). Revisado contra los 17.511 títulos
+    // de la biblioteca del fundador (2026-10-16).
+    // Sólo latinas y griegas: una gramática de hebreo enumera letras sueltas
+    // («Dagesh in ב ג ד כ פ ת») y es un título legítimo.
+    const sospechosa = (p: string) => /^[A-Za-z\u0370-\u03FF\u1F00-\u1FFF]$/.test(p) && p.normalize('NFD').length === 1 && !/^[yoaeuYOAEUI]$/.test(p);
+    const sueltas = palabras.filter(sospechosa);
+    // Una letra latina MINÚSCULA suelta junto a griego («s ωσ», «… 'Pααβ n
+    // πóρνn»); una mayúscula suele ser un rótulo («Section B λόγος»).
+    if (palabras.some(griego) && sueltas.some(p => /^[a-z]$/.test(p))) return true;
+    return palabras.length >= 3 && sueltas.length >= 2 && sueltas.length / palabras.length >= 0.3;
+}
+
+/**
+ * Corta en trozos de hasta `maxChars` con `overlapChars` de solapamiento, sin
+ * partir palabras: cada trozo termina en un límite (párrafo, oración o
+ * espacio) y el siguiente EMPIEZA en un límite de palabra. Antes el comienzo
+ * avanzaba un paso fijo y caía en medio de una palabra («imonio», «convicte»;
+ * medido en la biblioteca del fundador, 2026-10-16).
+ */
 function splitIntoOverlappingChunks(
     text: string,
     maxChars: number,
@@ -228,35 +274,76 @@ function splitIntoOverlappingChunks(
     baseOffset: number
 ): Array<{ text: string; charStart: number; charEnd: number }> {
     const pieces: Array<{ text: string; charStart: number; charEnd: number }> = [];
-    const step = Math.max(1, maxChars - overlapChars);
+    let start = 0;
 
-    for (let i = 0; i < text.length; i += step) {
-        let end = Math.min(i + maxChars, text.length);
+    while (start < text.length) {
+        let end = Math.min(start + maxChars, text.length);
 
-        // Try to end at a sentence/paragraph boundary if we're not at EOF
+        // Terminar en un límite (párrafo, oración, espacio) si no es el final.
         if (end < text.length) {
             const searchWindow = Math.floor(maxChars * 0.2);
             const boundaryRegions = [
                 text.lastIndexOf('\n\n', end),
-                text.lastIndexOf('. ', end),
+                text.lastIndexOf('. ', end) >= 0 ? text.lastIndexOf('. ', end) + 1 : -1,
                 text.lastIndexOf(' ', end),
             ];
-            const bestBoundary = Math.max(...boundaryRegions.filter(b => b > i + step));
+            const bestBoundary = Math.max(...boundaryRegions.filter(b => b > start + maxChars / 2));
             if (bestBoundary > 0 && (end - bestBoundary) <= searchWindow) {
                 end = bestBoundary;
             }
         }
 
         pieces.push({
-            text: text.substring(i, end),
-            charStart: baseOffset + i,
+            text: text.substring(start, end),
+            charStart: baseOffset + start,
             charEnd: baseOffset + end,
         });
 
         if (end >= text.length) break;
+
+        // El siguiente empieza `overlapChars` antes, pero en el comienzo de
+        // una palabra; y siempre avanza.
+        let next = Math.max(start + 1, end - overlapChars);
+        if (next > 0 && /\S/.test(text[next - 1]!) && /\S/.test(text[next] ?? '')) {
+            const hastaEspacio = text.slice(next).search(/\s/);
+            // Nunca más allá del final del trozo anterior: una «palabra» muy larga
+            // (puntos guía, griego o hebreo sin espacios, una URL) dejaba texto
+            // fuera de todo fragmento (revisión adversarial).
+            next = hastaEspacio < 0 || next + hastaEspacio > end ? end : next + hastaEspacio;
+        }
+        while (next < text.length && /\s/.test(text[next]!)) next++;
+        start = next > start ? next : end;
     }
 
     return pieces;
+}
+
+/** Los «#» de una línea de título que quedó en el cuerpo (un título ilegible descartado). */
+function quitarMarcasDeTitulo(texto: string): string {
+    return texto.replace(/^#{1,6}\s+/gm, '');
+}
+
+/**
+ * El markdown listo para partir e indexar: sin las cercas de bloque de código
+ * que dejó un lector («```python» envolvía todo Mayor: 968 fragmentos) y con
+ * las tablas HTML pasadas a texto (celdas separadas, renglones por fila). El
+ * contenido no se toca.
+ */
+export function limpiarParaIndexar(md: string): string {
+    return md
+        // Una línea que es sólo una cerca («```» o «```python»).
+        .replace(/^\s*```[\w-]*\s*$/gm, '')
+        // Una cerca dentro de la línea: sólo con una etiqueta de lenguaje
+        // conocida, para no comerse la palabra pegada («```In the…»).
+        .replace(/```(?:python|py|javascript|js|typescript|ts|json|text|txt|plaintext|markdown|md|html|xml|bash|sh|latex|tex)?(?![\w])/gi, ' ')
+        // Sólo etiquetas de TABLA (minúsculas o mayúsculas): «<b>» y «<p>»
+        // son notación de grafemas en las gramáticas y se dejan.
+        .replace(/<\/(?:tr|thead|tbody|tfoot|table|caption)>/gi, '\n')
+        .replace(/<\/(?:td|th)>/gi, ' | ')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/?(?:table|thead|tbody|tfoot|tr|td|th|caption|colgroup|col)\b[^>]*>/gi, ' ')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n');
 }
 
 function detectChunkType(text: string): MarkdownChunk['chunkType'] {
