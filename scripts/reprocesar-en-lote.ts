@@ -21,7 +21,7 @@
 import admin from 'firebase-admin';
 import { GoogleGenAI } from '@google/genai';
 import { PDFDocument } from 'pdf-lib';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
     compararExtracciones, leerRespuestaDeTramo, medirTexto, partirTramo, rellenarConCapa, separarEnBlanco, sinPaginas, pedidoDeTramo, planearTramos, tramosQueFaltan, unirPaginas,
@@ -83,8 +83,20 @@ async function bajar(url: string | undefined): Promise<Buffer | null> {
     return b;
 }
 
+/**
+ * Un PDF cifrado NO se abre con `ignoreEncryption`: pdf-lib no descifra, el
+ * recorte sale en blanco y el modelo devuelve páginas vacías que se cobran
+ * (ver `geminiExtraction.ts`). Pasó acá con el léxico de Ortiz en el lote
+ * `biblioteca4` (2026-10-16): 807 páginas en blanco. Se rechaza al preparar,
+ * como la extracción en línea; descifrarlo es un paso aparte.
+ */
 async function cargarPdf(buf: Buffer): Promise<PDFDocument> {
-    try { return await PDFDocument.load(buf); } catch { return PDFDocument.load(buf, { ignoreEncryption: true }); }
+    try {
+        return await PDFDocument.load(buf);
+    } catch (err) {
+        if (err instanceof Error && /encrypted/i.test(err.message)) throw new Error('el PDF está cifrado: hay que descifrarlo antes (qpdf --decrypt)');
+        throw err;
+    }
 }
 
 /** Corta los tramos, los sube a Gemini y crea un lote con ellos. */
@@ -136,6 +148,11 @@ async function preparar(): Promise<void> {
         console.log(`${String(d.title).slice(0, 60)}: ${total} páginas`);
     }
     if (saltados.length > 0) console.log(`SALTADOS (el PDF no se pudo abrir):\n  ${saltados.join('\n  ')}`);
+    if (estado.tramos.length === 0) {
+        rmSync(dir(), { recursive: true });
+        console.log('Ningún libro se pudo abrir: no se creó el lote.');
+        return;
+    }
     estado.tramos.forEach((t, i) => { t.indice = i; });
     await crearRonda(estado, estado.tramos);
     guardarEstado(estado);
