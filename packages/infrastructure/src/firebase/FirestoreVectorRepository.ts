@@ -14,6 +14,8 @@ import {
     ChunkSearchResult
 } from '@dosfilos/domain';
 import { db } from '../config/firebase';
+import { duenosLegibles, uidDeLaSesion } from './duenioDeFragmentos';
+
 
 /**
  * FirestoreVectorRepository
@@ -108,7 +110,7 @@ export class FirestoreVectorRepository implements IVectorRepository {
             for (const resourceBatch of resourceBatches) {
                 const batchQuery = query(
                     collection(db, FirestoreVectorRepository.COLLECTION_NAME),
-                    where('userId', '==', filter.userId),
+                    where('userId', '==', uidDeLaSesion()),
                     where('resourceId', 'in', resourceBatch)
                 );
 
@@ -127,7 +129,7 @@ export class FirestoreVectorRepository implements IVectorRepository {
         // No resource filter - query all chunks for user
         const chunksQuery = query(
             collection(db, FirestoreVectorRepository.COLLECTION_NAME),
-            where('userId', '==', filter.userId)
+            where('userId', '==', uidDeLaSesion())
         );
 
         const snapshot = await getDocs(chunksQuery);
@@ -142,6 +144,7 @@ export class FirestoreVectorRepository implements IVectorRepository {
     async deleteByResourceId(resourceId: string): Promise<void> {
         const chunksQuery = query(
             collection(db, FirestoreVectorRepository.COLLECTION_NAME),
+            where('userId', '==', uidDeLaSesion()),
             where('resourceId', '==', resourceId)
         );
 
@@ -168,48 +171,37 @@ export class FirestoreVectorRepository implements IVectorRepository {
      * Check if a resource has been indexed
      */
     /**
-     * Igual que `hasIndex` pero para muchos, en una consulta por cada 30.
+     * Igual que `hasIndex` pero para muchos: una consulta de un documento por
+     * recurso, en paralelo. Antes era una consulta `in` por cada 30 que traía
+     * TODOS los fragmentos de esos libros —con sus vectores— sólo para ver
+     * cuáles tenían alguno; y no filtraba por dueño, que las reglas ahora
+     * exigen (lo propio y la biblioteca común, ver `duenioDeFragmentos`).
      *
-     * TREINTA ES EL TOPE DE FIRESTORE para el operador `in`, el mismo límite que
-     * ya respeta la búsqueda por recursos de este repositorio.
-     *
-     * No se puede pedir `limit(1)` como en la versión de uno solo: acá hace falta
-     * ver AL MENOS un chunk de cada recurso, y un límite global devolvería el
-     * primero del lote y dejaría a los demás pareciendo no indexados. Se leen los
-     * chunks del lote y se juntan los `resourceId` distintos que aparecen.
-     *
-     * Un lote que falla NO tumba a los demás: se registra y los otros siguen —
-     * si algo va mal, es preferible que unas insignias digan "sin indexar" a que
-     * la pantalla entera no cargue.
+     * Un recurso que falla NO tumba a los demás: se registra y los otros
+     * siguen. Es preferible que una insignia diga "sin indexar" a que la
+     * pantalla entera no cargue.
      */
     async hasIndexBatch(resourceIds: readonly string[]): Promise<Set<string>> {
         const indexados = new Set<string>();
         if (resourceIds.length === 0) return indexados;
-
-        const lotes: string[][] = [];
-        for (let i = 0; i < resourceIds.length; i += 30) {
-            lotes.push(resourceIds.slice(i, i + 30) as string[]);
-        }
-
+        const duenos = duenosLegibles();
         await Promise.all(
-            lotes.map(async (lote) => {
+            [...new Set(resourceIds)].map(async (resourceId) => {
                 try {
                     const snapshot = await getDocs(
                         query(
                             collection(db, FirestoreVectorRepository.COLLECTION_NAME),
-                            where('resourceId', 'in', lote),
+                            where('userId', 'in', duenos),
+                            where('resourceId', '==', resourceId),
+                            limit(1),
                         ),
                     );
-                    for (const d of snapshot.docs) {
-                        const id = d.data()?.resourceId;
-                        if (typeof id === 'string') indexados.add(id);
-                    }
+                    if (!snapshot.empty) indexados.add(resourceId);
                 } catch (error) {
-                    console.error('❌ hasIndexBatch error para un lote:', error);
+                    console.error(`❌ hasIndexBatch error para ${resourceId}:`, error);
                 }
             }),
         );
-
         return indexados;
     }
 
@@ -217,6 +209,7 @@ export class FirestoreVectorRepository implements IVectorRepository {
         try {
             const chunksQuery = query(
                 collection(db, FirestoreVectorRepository.COLLECTION_NAME),
+                where('userId', 'in', duenosLegibles()),
                 where('resourceId', '==', resourceId),
                 limit(1)
             );

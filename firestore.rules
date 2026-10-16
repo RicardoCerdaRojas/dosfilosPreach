@@ -515,14 +515,22 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // Document Chunks collection (for semantic search)
-    // Note: read/delete rules are relaxed because batch operations need to work
-    // The actual resource access is protected by library_resources rules
+    // Fragmentos de la biblioteca (búsqueda, consulta, citas). Son el texto
+    // de los libros de cada usuario: sólo el dueño los lee o los borra.
+    // Antes cualquier sesión podía leer y BORRAR los de otros (2026-10-16).
+    // También se leen los de la biblioteca común (`__system__`, textos de
+    // dominio público), que el planificador mezcla con los propios.
+    // Toda consulta del cliente filtra por dueño (Firestore rechaza entera la
+    // que no lo garantice): `userId in [uid, '__system__']` para leer,
+    // `userId == uid` para borrar. Los libros «core» de un administrador y
+    // la administración van por callables (Admin SDK).
     match /document_chunks/{chunkId} {
-      allow read: if isAuthenticated(); // Allow read for batch queries
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isAuthenticated(); // Allow delete for batch operations
+      allow read: if isOwner(resource.data.userId)
+                  || (isAuthenticated() && resource.data.userId == '__system__');
+      allow delete: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+                    && request.resource.data.userId == resource.data.userId;
     }
 
     // Contact Leads collection (from landing page)

@@ -83,13 +83,20 @@ export class GeminiPlanGenerator implements IPlanGenerator {
             // STRICT QUERY: Use ONLY user's input. AI titles/objectives can be hallucinated or abstract.
             // We want to find exactly what the user asked for in their library.
             const searchQuery = `${request.topicOrBook} ${request.subtopicsOrRange || ''}`;
-            const searchResults = await this.documentProcessor.searchRelevantChunks(
-                searchQuery,
-                resourceIds,
-                15 // Get top 15 most relevant chunks
-            );
-            relevantChunks = searchResults.map(r => r.chunk);
-            console.log(`Found ${relevantChunks.length} relevant chunks`);
+            // Sin fuentes la estructura sale igual (como el objetivo, arriba):
+            // un fallo de la búsqueda —p. ej. una pestaña abierta desde antes
+            // de las reglas nuevas de `document_chunks`— no tumba el plan.
+            try {
+                const searchResults = await this.documentProcessor.searchRelevantChunks(
+                    searchQuery,
+                    resourceIds,
+                    15 // Get top 15 most relevant chunks
+                );
+                relevantChunks = searchResults.map(r => r.chunk);
+                console.log(`Found ${relevantChunks.length} relevant chunks`);
+            } catch (err) {
+                console.warn('No se pudieron leer los fragmentos para la estructura; sigue sin fuentes:', err);
+            }
         }
 
         // 2. Build prompt with verified context
