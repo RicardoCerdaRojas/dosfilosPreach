@@ -59,7 +59,7 @@ export interface TierAvailabilityProp {
     fileSizeMB: number;
 }
 
-interface LibraryUploadFormProps {
+export interface LibraryUploadFormProps {
     /** Categories available in the dropdown — sourced from `categoryService`. */
     categories: LibraryCategory[];
     /** Selected file (or null if not yet picked). */
