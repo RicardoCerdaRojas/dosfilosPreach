@@ -176,9 +176,11 @@ async function marcarFalloDeRango(carga: CargaDeRango, err: unknown): Promise<vo
  * usuario a repetir lo que ya falló tres veces.
  */
 export function mensajeParaLaPantalla(motivo: string, rango: string): string {
+    // Los cifrados sin contraseña se descifran al entrar (`reemplazarPdfCifrado`);
+    // si uno llega igual hasta acá, reprocesarlo lo descifra.
     if (/encrypted/i.test(motivo)) {
         return 'El PDF está protegido y no se pudieron recortar sus páginas. '
-            + 'Quita la protección del archivo o sube otra copia.';
+            + 'Vuelve a procesarlo; si sigue fallando, sube otra copia sin protección.';
     }
     return `El procesamiento falló en las páginas ${rango} y no pudo continuar. Vuelve a intentarlo.`;
 }

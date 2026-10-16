@@ -29,6 +29,7 @@ import {
 } from '../packages/functions/src/library/loteDeExtraccion';
 import { camposDeMedicion } from '../packages/functions/src/library/medirExtraccion';
 import { leerPaginasDelPdf } from '../packages/functions/src/library/textoDelPdf';
+import { descifrarPdf } from '../packages/functions/src/library/descifrarPdf';
 import { censusOf } from '../packages/functions/src/library/scriptCensus';
 import { truncateUtf8 } from '../packages/functions/src/library/truncateUtf8';
 import { MODEL_VISION } from '../packages/functions/src/llm/modelCatalog';
@@ -86,17 +87,14 @@ async function bajar(url: string | undefined): Promise<Buffer | null> {
 /**
  * Un PDF cifrado NO se abre con `ignoreEncryption`: pdf-lib no descifra, el
  * recorte sale en blanco y el modelo devuelve páginas vacías que se cobran
- * (ver `geminiExtraction.ts`). Pasó acá con el léxico de Ortiz en el lote
- * `biblioteca4` (2026-10-16): 807 páginas en blanco. Se rechaza al preparar,
- * como la extracción en línea; descifrarlo es un paso aparte.
+ * (pasó con el léxico de Ortiz en el lote `biblioteca4`, 2026-10-16: 807
+ * páginas en blanco). Se descifra de verdad con qpdf, en memoria, igual que
+ * al subir (`descifrarPdf`). Uno que pide contraseña para abrirse se salta.
  */
 async function cargarPdf(buf: Buffer): Promise<PDFDocument> {
-    try {
-        return await PDFDocument.load(buf);
-    } catch (err) {
-        if (err instanceof Error && /encrypted/i.test(err.message)) throw new Error('el PDF está cifrado: hay que descifrarlo antes (qpdf --decrypt)');
-        throw err;
-    }
+    const descifrado = await descifrarPdf(buf);
+    if (descifrado.estado === 'pide-contrasena') throw new Error('el PDF pide contraseña para abrirse');
+    return PDFDocument.load(descifrado.estado === 'descifrado' ? descifrado.bytes : buf);
 }
 
 /** Corta los tramos, los sube a Gemini y crea un lote con ellos. */

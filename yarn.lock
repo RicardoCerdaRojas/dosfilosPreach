@@ -4451,6 +4451,11 @@
     "@emnapi/runtime" "^1.4.3"
     "@tybys/wasm-util" "^0.10.0"
 
+"@neslinesli93/qpdf-wasm@0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@neslinesli93/qpdf-wasm/-/qpdf-wasm-0.3.0.tgz#fc32b0ef137f178d23e97f7ccca8285170165bd4"
+  integrity sha512-ObyTmabopTMwN6AGwrEkmDbdmM5wnwlRdn9jnJYQ2KbBUPdPDcfNf1QkcWFOVD+qIgSqILz9nK51e22T+x+gkQ==
+
 "@nodable/entities@^2.1.0":
   version "2.1.0"
   resolved "https://registry.npmjs.org/@nodable/entities/-/entities-2.1.0.tgz"

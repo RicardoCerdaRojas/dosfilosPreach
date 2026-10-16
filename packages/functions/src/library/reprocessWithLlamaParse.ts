@@ -14,6 +14,7 @@ import { camposDeMedicion, capaDeTextoPorPagina, medirExtraccion } from './medir
 import { randomUUID } from 'crypto';
 import { censusOf } from './scriptCensus';
 import { abrirFicha, cerrarFicha, cronometrar, preflightDe } from './fichaDeCorrida';
+import { PdfConContrasenaError, prepararPdfDescargado } from './reemplazarPdfCifrado';
 
 const ADMIN_EMAIL = 'rdocerda@gmail.com';
 
@@ -136,6 +137,14 @@ export const reprocessWithLlamaParse = onCall<ReprocessRequest>(
         // Download PDF to temp
         const tempFilePath = path.join(os.tmpdir(), `${resourceId}.pdf`);
         await file.download({ destination: tempFilePath });
+        // Un libro subido antes de que se descifraran los PDF al entrar.
+        try {
+            await prepararPdfDescargado(file, tempFilePath);
+        } catch (err) {
+            try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }
+            if (err instanceof PdfConContrasenaError) throw new HttpsError('failed-precondition', err.message);
+            throw err;
+        }
         const stats = fs.statSync(tempFilePath);
         console.log(`[Reprocess] ${data.title ?? resourceId}: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 

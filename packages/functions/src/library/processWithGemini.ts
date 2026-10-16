@@ -16,6 +16,7 @@ import { MODEL_VISION } from '../llm/modelCatalog';
 import { conAtribucion } from '../llm/atribucionDeConsumo';
 import { abrirFicha, anotarEncolado, cerrarFicha, cronometrar, preflightDe, rutaDeFicha } from './fichaDeCorrida';
 import { consumePagesAdmin } from './processingBalance';
+import { PdfConContrasenaError, prepararPdfDescargado } from './reemplazarPdfCifrado';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse');
 
@@ -118,6 +119,14 @@ export const processWithGemini = onCall<ProcessRequest>(
 
         const tempFilePath = path.join(os.tmpdir(), `${resourceId}.pdf`);
         await file.download({ destination: tempFilePath });
+        // Un libro subido antes de que se descifraran los PDF al entrar.
+        try {
+            await prepararPdfDescargado(file, tempFilePath);
+        } catch (err) {
+            try { fs.unlinkSync(tempFilePath); } catch { /* ignore */ }
+            if (err instanceof PdfConContrasenaError) throw new HttpsError('failed-precondition', err.message);
+            throw err;
+        }
         const stats = fs.statSync(tempFilePath);
         const sizeMB = stats.size / 1024 / 1024;
         console.log(`[ProcessGemini] ${data.title ?? resourceId}: ${sizeMB.toFixed(2)} MB`);

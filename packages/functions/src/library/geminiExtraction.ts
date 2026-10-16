@@ -35,9 +35,12 @@ import {
  * páginas —cobradas— pisando el texto anterior. Un fallo ruidoso se
  * convirtió en uno silencioso que además cobra.
  *
- * Un PDF con cifrado de permisos se rechaza al entrar, con un mensaje que
- * dice qué hacer. Descifrarlo de verdad necesita otra biblioteca (qpdf o
- * mupdf), y eso es una decisión aparte, no una bandera.
+ * Desde 2026-10-16 un PDF con cifrado de permisos se descifra DE VERDAD al
+ * entrar, con qpdf (`descifrarPdf` + `reemplazarPdfCifrado`), y la copia
+ * descifrada reemplaza al archivo en Storage; uno que pide contraseña se
+ * rechaza con un mensaje. Pueden llegar acá cifrados igual: los de más de
+ * 60 MB (qpdf no entra en la memoria de la función) y los que qpdf no abre.
+ * Para esos sigue valiendo lo de arriba: nunca `ignoreEncryption`.
  */
 
 // ── Batched Gemini extraction ───────────────────────────────────────────
