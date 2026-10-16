@@ -1,5 +1,5 @@
 import { FirebaseAuthRepository, db } from '@dosfilos/infrastructure';
-import { UserEntity, buildDefaultFeatureFlags } from '@dosfilos/domain';
+import { UserEntity, buildFreeUserProfile } from '@dosfilos/domain';
 import { httpsCallable, getFunctions } from 'firebase/functions';
 import { signInWithCustomToken, getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -231,22 +231,9 @@ export class AuthService {
             );
 
             await setDoc(doc(db, 'users', user.id), {
-                email: input.email,
-                displayName: input.displayName,
-                photoURL: null,
-                status: 'active',
-                preferredLanguage: input.locale,
-                subscription: {
-                    planId: 'free',
-                    status: 'active',
-                    stripePriceId: null,
-                    cancelAtPeriodEnd: false,
-                },
-                metadata: { source: 'organic' },
-                // Toda cuenta estrena el flujo de fidelidad pastoral. Sin esto el
-                // usuario nuevo entra a la app pre-Pastoral Fidelity (pasó de verdad:
-                // cuentas de pago usando la versión vieja del producto sin saberlo).
-                featureFlags: buildDefaultFeatureFlags(),
+                // El correo de Auth, no el tipeado: Auth lo guarda normalizado
+                // y las reglas exigen que coincida con el de la sesión.
+                ...buildFreeUserProfile({ email: user.email ?? input.email, displayName: input.displayName, locale: input.locale }),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });

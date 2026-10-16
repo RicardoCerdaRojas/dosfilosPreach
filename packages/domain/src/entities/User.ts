@@ -382,6 +382,37 @@ export function buildDefaultFeatureFlags(): FeatureFlags {
 }
 
 /**
+ * El documento `users/{uid}` de una cuenta Free recién registrada, sin las
+ * fechas (las pone quien escribe, con la hora del servidor).
+ *
+ * Las reglas de Firestore (`altaFreeValida`) aceptan EXACTAMENTE esta forma:
+ * sin rol, plan Free, sin saldo y los flags por defecto. Lo usan el registro
+ * (`AuthService.registerFree`) y la prueba de reglas, para que no haya dos
+ * copias que se separen: un campo nuevo acá sin tocar la regla dejaría al
+ * usuario con cuenta en Auth y sin perfil.
+ */
+export function buildFreeUserProfile(input: { email: string; displayName: string; locale: string }) {
+    return {
+        email: input.email,
+        displayName: input.displayName,
+        photoURL: null,
+        status: 'active' as const,
+        preferredLanguage: input.locale,
+        subscription: {
+            planId: 'free' as const,
+            status: 'active' as const,
+            stripePriceId: null,
+            cancelAtPeriodEnd: false,
+        },
+        metadata: { source: 'organic' as const },
+        // Toda cuenta estrena el flujo de fidelidad pastoral. Sin esto el
+        // usuario nuevo entra a la app pre-Pastoral Fidelity (pasó de verdad:
+        // cuentas de pago usando la versión vieja del producto sin saberlo).
+        featureFlags: buildDefaultFeatureFlags(),
+    };
+}
+
+/**
  * Prerequisitos TRANSITIVOS (ancestros) de un flag — todo lo que debe estar ON
  * para que funcione. Encender el flag implica encender este conjunto (up auto).
  */

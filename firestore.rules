@@ -11,10 +11,10 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    function isFunction() {
-      // Cloud Functions have special admin access
-      return request.auth.token.firebase.sign_in_provider == 'custom';
-    }
+    // (Había un `isFunction()` que daba por «función» a toda sesión con token
+    // personalizado: también las de «Entrar como usuario» y las recién
+    // registradas. Se quitó el 2026-10-16: las funciones usan Admin SDK y no
+    // pasan por estas reglas.)
     
     // Check if user is super admin (for analytics dashboard)
     function isSuperAdmin() {
@@ -225,20 +225,90 @@ service cloud.firestore {
     }
     
     // Users collection
-    // Note: isSuperAdmin() with get() doesn't work for list operations
-    // Frontend enforces role-based access control
+    // Los flags con que nace toda cuenta (`DEFAULT_FEATURE_FLAGS` del
+    // dominio; la prueba de reglas los compara). Un usuario no se enciende
+    // otros: los demás los da el super admin por callable.
+    function soloFlagsPorDefecto(ff) {
+      let porDefecto = ['pastoral_fidelity_flow', 'pastoral_word_study', 'three_witnesses',
+                        'study_depth', 'contra_scan', 'conduccion_corazon',
+                        'passage_profile', 'sermon_draft_shadow'];
+      return ff.keys().hasOnly(porDefecto) && ff.keys().hasAll(porDefecto)
+          && ff.values().hasOnly([true]);
+    }
+
+    // La cuenta Free que crea el cliente al registrarse (las de pago las
+    // crea `completeRegistration` con Admin SDK). Nada de rol, saldo ni plan.
+    // La forma sale de `buildFreeUserProfile` (dominio), que usan el
+    // registro y la prueba de reglas.
+    function altaFreeValida(uid) {
+      let d = request.resource.data;
+      return isOwner(uid)
+          && d.keys().hasOnly(['email', 'displayName', 'photoURL', 'status', 'preferredLanguage',
+                               'subscription', 'metadata', 'featureFlags', 'createdAt', 'updatedAt'])
+          && d.email == request.auth.token.email
+          && d.status == 'active'
+          && d.subscription == {'planId': 'free', 'status': 'active', 'stripePriceId': null, 'cancelAtPeriodEnd': false}
+          && d.metadata == {'source': 'organic'}
+          && d.displayName is string && d.displayName.size() <= 200
+          && d.createdAt == request.time && d.updatedAt == request.time
+          && soloFlagsPorDefecto(d.featureFlags);
+    }
+
+    // El cobro de exégesis se descuenta desde el cliente
+    // (`ProcessingBalanceService.consumeExegesis`): sólo puede BAJAR el saldo.
+    // Hasta el 2026-10-16 un usuario podía ponerse el saldo que quisiera. El
+    // reembolso por falla previa al modelo sube el saldo y queda denegado
+    // (pasa poco, son centavos, y el error ya se traga) hasta que el cobro
+    // de exégesis viva en el servidor.
+    function soloDescuentoDeExegesis() {
+      let antes = resource.data.get('processingBalance', {});
+      let despues = request.resource.data.processingBalance;
+      return despues.diff(antes).affectedKeys().hasOnly(['planExegesisUsd', 'packExegesisUsd',
+                                                         'exegesisUsdAvailable', 'exegesisSpentTotalUsd', 'updatedAt'])
+          && despues.get('planExegesisUsd', 0) >= 0
+          && despues.get('packExegesisUsd', 0) >= 0
+          && despues.get('planExegesisUsd', 0) <= antes.get('planExegesisUsd', 0)
+          && despues.get('packExegesisUsd', 0) <= antes.get('packExegesisUsd', 0)
+          // El agregado se acota contra los baldes NUEVOS, no contra el
+          // agregado viejo: un perfil sin `exegesisUsdAvailable` (o con uno
+          // desfasado) no puede quedar sin poder usar la exégesis.
+          && despues.get('exegesisUsdAvailable', 0) <= despues.get('planExegesisUsd', 0) + despues.get('packExegesisUsd', 0)
+          && despues.get('exegesisSpentTotalUsd', 0) >= antes.get('exegesisSpentTotalUsd', 0);
+    }
+
     match /users/{userId} {
-      // Allow read for authenticated users (needed for admin dashboard and Core Library)
-      // Security is enforced at the application level with role checks
-      allow get, list: if isAuthenticated();
-      
-      // Allow write for owner
-      allow write: if isOwner(userId);
-      
-      // Allow Cloud Functions to update subscription fields
-      allow update: if isFunction() &&
-                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['subscription', 'stripeCustomerId', 'updatedAt', 'analytics', 'role', 'metadata', 'featureFlags']));
-      
+      // Hasta el 2026-10-16 cualquier sesión leía y listaba todos los
+      // usuarios (correos, planes), cada uno podía escribirse cualquier campo
+      // —`role: 'super_admin'`, el plan, el saldo, los flags—, y cualquier
+      // sesión con token personalizado podía escribir el rol de CUALQUIER
+      // usuario. Ahora:
+      //   - leer: el propio, o el super admin (panel de usuarios);
+      //   - crear: sólo la cuenta Free, con sus valores fijos;
+      //   - actualizar: sólo perfil, idioma, confesión y el descuento de
+      //     exégesis. El rol, el plan, Stripe, los flags, el estado y la
+      //     analítica los escriben las funciones (Admin SDK);
+      //   - borrar: nunca desde el cliente (lo hacen las callables
+      //     `requestAccountDeletion` y, la de admin, `deleteUser`).
+      allow get: if isOwner(userId) || isSuperAdmin();
+      allow list: if isSuperAdmin();
+      allow create: if altaFreeValida(userId);
+      allow update: if isOwner(userId)
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                         'displayName', 'photoURL', 'email', 'updatedAt', 'preferredLanguage',
+                         'declaredConfession', 'confessionVisibility', 'confessionAffirmedAt',
+                         'useConfessionalWitnesses', 'processingBalance'])
+                    // El correo queda como estaba o pasa a ser el de la sesión (el
+                    // login con Google lo reescribe desde Auth).
+                    && (request.resource.data.get('email', null) == resource.data.get('email', null)
+                        || request.resource.data.get('email', null) == request.auth.token.email)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['processingBalance'])
+                        || soloDescuentoDeExegesis())
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['updatedAt'])
+                        || request.resource.data.updatedAt == request.time)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayName'])
+                        || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 200));
+      allow delete: if false;
+
       // User settings subcollection (library categories, etc.)
       match /settings/{settingId} {
         allow read: if isOwner(userId);
@@ -287,21 +357,22 @@ service cloud.firestore {
       // see their progress vs plan limits. Cloud Functions write the counter
       // increments; the user can read but never modify directly.
       match /usage_counters/{periodKey} {
-        allow read: if isOwner(userId);
-        allow write: if isFunction();
+        // El super admin lo lee en la pestaña de uso del panel.
+        allow read: if isOwner(userId) || isSuperAdmin();
+        allow write: if false; // sólo funciones (Admin SDK)
       }
 
       // Bonus grants (Stripe webhook idempotency markers for plan-bonus pages).
       // Read-only for the owner so the dashboard can show grant history.
       match /bonus_grants/{grantId} {
         allow read: if isOwner(userId);
-        allow write: if isFunction();
+        allow write: if false; // sólo funciones (Admin SDK)
       }
 
       // Credit-pack purchases (Stripe webhook records for one-time pack buys).
       match /credit_pack_purchases/{purchaseId} {
         allow read: if isOwner(userId);
-        allow write: if isFunction();
+        allow write: if false; // sólo funciones (Admin SDK)
       }
     }
     
@@ -611,7 +682,7 @@ service cloud.firestore {
     // Only admin or Cloud Functions can modify
     match /plans/{planId} {
       allow read: if true; // Public read for landing page
-      allow write: if isFunction() || isSuperAdmin();
+      allow write: if isSuperAdmin();
     }
 
     // Plan Translations collection (i18n for plans)
@@ -619,7 +690,7 @@ service cloud.firestore {
     // Only admin or Cloud Functions can modify
     match /plan_translations/{planId} {
       allow read: if true; // Public read for landing page
-      allow write: if isFunction() || isSuperAdmin();
+      allow write: if isSuperAdmin();
     }
 
     // Preaching Plans collection
@@ -646,14 +717,14 @@ service cloud.firestore {
     // Only super admins can read, only Cloud Functions can write
     match /daily_metrics/{metricId} {
       allow read: if isSuperAdmin();
-      allow write: if isFunction();
+      allow write: if false; // sólo funciones (Admin SDK)
     }
     
     // User Activities - User session tracking
     // Only super admins can read, only Cloud Functions can write
     match /user_activities/{activityId} {
       allow read: if isSuperAdmin();
-      allow write: if isFunction();
+      allow write: if false; // sólo funciones (Admin SDK)
     }
     
     // Geographic Events - Anonymous tracking allowed
