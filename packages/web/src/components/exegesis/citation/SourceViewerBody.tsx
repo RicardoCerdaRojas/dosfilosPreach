@@ -49,8 +49,8 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
     const [scope, setScope] = useState<SearchScope>('sheet');
     const [matches, setMatches] = useState(0);
     const [seleccion, setSeleccion] = useState<string | null>(null);
-    // «Preguntar a este libro» (fase «biblioteca consultable», U4): ocupa la
-    // columna izquierda del ampliado en lugar del índice.
+    // «Preguntar a este libro» (fase «biblioteca consultable», U4): una columna
+    // a la derecha de la hoja; el índice queda a la izquierda.
     const [preguntando, setPreguntando] = useState(false);
     const { t: tl } = useTranslation('library');
     const { user } = useFirebase();
@@ -86,8 +86,6 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
     const isCitation = !target?.resourceId;
     const viewed: ViewedSheet = { sheet: view.viewSheet, printed: view.printedOfView, isAnchor: view.viewSheet === view.anchorSheet };
     const showResults = hasDocument && scope === 'book' && search.trim().length >= 2;
-    // Buscar en el libro vuelve a mostrar los resultados donde estaba preguntando.
-    useEffect(() => { if (showResults) setPreguntando(false); }, [showResults]);
     // Sólo en libros PROPIOS: la consulta busca en la biblioteca del usuario, y
     // en un libro del corpus o de otro respondería siempre «no encontré nada»
     // (revisión adversarial, U4).
@@ -169,18 +167,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
             <div className={cn('flex-1 min-h-0 flex', layout === 'full' ? 'flex-col md:flex-row' : 'flex-col')}>
                 {/* Ampliado, a la izquierda: los resultados si se está buscando en
                     el libro; si no, el índice para ir a cualquier hoja. */}
-                {/* Montado mientras se pueda preguntar, aunque se vea el índice:
-                    apagar «Preguntar» no borra la conversación. */}
-                {puedePreguntar && view.resourceId && (
-                    <div className={cn('min-h-0 max-h-[45vh] md:max-h-none md:w-96 md:shrink-0 flex-col border-b md:border-b-0 md:border-r border-border bg-card/40', preguntando ? 'flex' : 'hidden')}>
-                        <PreguntarAlLibro
-                            resourceId={view.resourceId}
-                            etiquetar={f => etiquetaDeFuente(f, { clave: view.citationKey, title: view.label, pageNumbering: view.numbering })}
-                            onIrAHoja={view.goTo}
-                        />
-                    </div>
-                )}
-                {layout === 'full' && !(puedePreguntar && preguntando) && (results || (hasDocument && !view.loading && (
+                {layout === 'full' && (results || (hasDocument && !view.loading && (
                     <IndiceDelLibro pages={view.pages} printedOf={view.printedOf} currentSheet={view.viewSheet} onGo={view.goTo} />
                 )))}
                 <div className="flex-1 min-h-0 min-w-0 bg-muted/30">
@@ -207,6 +194,19 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                         />
                     )}
                 </div>
+                {/* A la DERECHA de la hoja: el índice (o los resultados) sigue a
+                    la izquierda, para hojear mientras se lee la respuesta
+                    (pedido del fundador al probarlo, 2026-10-15). Montado
+                    mientras se pueda preguntar: apagarlo no borra la conversación. */}
+                {puedePreguntar && view.resourceId && (
+                    <div className={cn('min-h-0 max-h-[45vh] md:max-h-none md:w-96 md:shrink-0 flex-col border-t md:border-t-0 md:border-l border-border bg-card/40', preguntando ? 'flex' : 'hidden')}>
+                        <PreguntarAlLibro
+                            resourceId={view.resourceId}
+                            etiquetar={f => etiquetaDeFuente(f, { clave: view.citationKey, title: view.label, pageNumbering: view.numbering })}
+                            onIrAHoja={view.goTo}
+                        />
+                    </div>
+                )}
                 {aside && (
                     <aside className="md:w-[380px] md:max-w-[40vw] shrink-0 max-h-[40vh] md:max-h-none overflow-y-auto border-t md:border-t-0 md:border-l border-border bg-background p-4">
                         {aside(viewed)}
