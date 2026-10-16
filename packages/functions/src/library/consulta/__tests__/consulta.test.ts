@@ -135,6 +135,7 @@ describe('extractoLegible', () => {
     it('no borra «<», «>» ni «---» que son texto (revisión adversarial)', () => {
         expect(extractoLegible('*qatal < *qatala; luego qatal > qāṭal')).toBe('*qatal < *qatala; luego qatal > qāṭal');
         expect(extractoLegible('El códice <A> y <B>')).toBe('El códice <A> y <B>');
+        expect(extractoLegible('the grapheme <b> and <p> differ')).toBe('the grapheme <b> and <p> differ');
         expect(extractoLegible('El aoristo --- dice Moo --- es puntual')).toBe('El aoristo --- dice Moo --- es puntual');
         expect(extractoLegible('| | | | :--- | :--- | | ¹³Κακοπαθεῖ')).toBe('¹³Κακοπαθεῖ');
     });

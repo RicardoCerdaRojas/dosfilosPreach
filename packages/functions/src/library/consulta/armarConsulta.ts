@@ -24,10 +24,11 @@ export function extractoLegible(texto: string, largo = LARGO_EXTRACTO): string {
     const sinSeparadores = texto.replace(/\|\s*:?-{3,}:?\s*(?=\|)/g, '|');
     const limpio = markdownAPlano(sinSeparadores)
         .replace(/```[a-z]*/gi, ' ')
-        // Sólo etiquetas HTML conocidas y en minúsculas (como las deja la
-        // extracción): «<» y «>» sueltos, o «<B>» (el Vaticano), son texto en las
-        // gramáticas («*qatal < *qatala», «el códice <A>»).
-        .replace(/<\/?(?:table|thead|tbody|tfoot|tr|td|th|br|hr|p|div|span|sup|sub|b|i|u|em|strong|small|caption|colgroup|col)\b[^>]*>/g, ' ')
+        // Sólo etiquetas de TABLA y saltos: «<» y «>» sueltos, «<B>» (el
+        // Vaticano) o «<b>»/«<p>» (notación de grafemas) son texto en las
+        // gramáticas («*qatal < *qatala», «el códice <A>»). Mismo criterio que
+        // `limpiarParaIndexar` del chunker.
+        .replace(/<\/?(?:table|thead|tbody|tfoot|tr|td|th|br|caption|colgroup|col)\b[^>]*>/gi, ' ')
         .replace(/\|/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
