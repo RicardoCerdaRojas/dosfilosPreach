@@ -507,11 +507,45 @@ service cloud.firestore {
     }
 
     // Library Resources collection
+    // Los recursos de la biblioteca de cada usuario: título, autor y el TEXTO
+    // EXTRAÍDO completo (`textContent`). Hasta el 2026-10-16 cualquier sesión
+    // los leía todos. Ahora se leen:
+    //   - los propios;
+    //   - los de la biblioteca común (`__system__`, dominio público);
+    //   - todos, el super admin (panel de usuarios, semilla CORE).
+    // Los libros «core» de otros usuarios los lee el servidor (callables con
+    // Admin SDK); el cliente no los pide. Toda consulta del cliente filtra
+    // por `userId` (Firestore rechaza entera la que no garantice la regla).
     match /library_resources/{resourceId} {
-      // Allow read for authenticated users (needed for Core Library queries with isCore filter)
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
-      allow update: if isOwner(resource.data.userId);
+      // `resource == null`: pedir un recurso borrado dice «no existe» (sin
+      // datos) en vez de «permiso denegado»; las fuentes de un trabajo que
+      // apuntan a un libro ya borrado lo esperan así. Deja distinguir si un id
+      // existe, pero los ids de las subidas son UUID aleatorios y los
+      // predecibles (la semilla) son catálogo de la biblioteca común.
+      allow get: if resource == null
+                 || isOwner(resource.data.userId)
+                 || (isAuthenticated() && resource.data.userId == '__system__')
+                 || isSuperAdmin();
+      allow list: if isOwner(resource.data.userId)
+                  || (isAuthenticated() && resource.data.userId == '__system__')
+                  || isSuperAdmin();
+      // Nadie se publica solo en lo compartido (era posible hasta el
+      // 2026-10-16): ni pasando un recurso propio a `__system__`, ni
+      // marcándolo fuente del sistema, ni metiéndolo en un store CORE
+      // (`coreStores`: el indexador lo copia a `document_chunks.stores` y la
+      // búsqueda por store entra en las citas de los sermones de todos).
+      // Un usuario sólo puede dejar `coreStores` vacío o sin cambios; el
+      // super admin arma los stores.
+      allow create: if isOwner(request.resource.data.userId)
+                    && ((request.resource.data.get('isSystemSource', false) != true
+                         && request.resource.data.get('coreStores', []).size() == 0)
+                        || isSuperAdmin());
+      allow update: if isOwner(resource.data.userId)
+                    && request.resource.data.userId == resource.data.userId
+                    && ((!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isSystemSource'])
+                         && (request.resource.data.get('coreStores', []) == resource.data.get('coreStores', [])
+                             || request.resource.data.get('coreStores', []).size() == 0))
+                        || isSuperAdmin());
       allow delete: if isOwner(resource.data.userId);
     }
 

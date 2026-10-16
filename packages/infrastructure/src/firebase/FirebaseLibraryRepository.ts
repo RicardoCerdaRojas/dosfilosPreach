@@ -88,18 +88,16 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
         return snapshot.docs.map(doc => this.firestoreToResource(doc.id, doc.data()));
     }
 
+    /**
+     * Los recursos «core» globales (`coreStores` con `'global'`). Devuelve
+     * vacío a propósito: nada escribe `'global'` (las claves de los stores
+     * son exegesis, homiletics, generic…) y en producción hay 0 (2026-10-16).
+     * Además, la consulta no filtraba por dueño, y las reglas de
+     * `library_resources` ahora la rechazarían entera: tumbaba el
+     * planificador. Los libros core se leen en el servidor (callables).
+     */
     async findCoreResources(): Promise<LibraryResourceEntity[]> {
-        // Core resources are those where coreStores includes 'global' OR some specific store
-        // For simplicity, we assume any resource with isCore=true or in 'global' store
-        // Since isCore is not a top-level field in the entity but coreStores is, we check coreStores
-        const q = query(
-            collection(db, this.collectionName),
-            where('coreStores', 'array-contains', 'global'),
-            orderBy('createdAt', 'desc')
-        );
-
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => this.firestoreToResource(doc.id, doc.data()));
+        return [];
     }
 
     subscribeToUserResources(
