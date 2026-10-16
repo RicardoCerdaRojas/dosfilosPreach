@@ -25,6 +25,8 @@ export const FUNCIONES_DEL_SERVIDOR = [
     'teachingSuite.proponerOutlineCurso',
     // Fase «biblioteca consultable» (2026-10-15): nacen en el ruteo, con Luna.
     'library.consult',
+    // Fase «buscador de la biblioteca» (2026-10-16): reordenar los candidatos.
+    'library.rerank',
 ] as const;
 export type FuncionDelServidor = typeof FUNCIONES_DEL_SERVIDOR[number];
 

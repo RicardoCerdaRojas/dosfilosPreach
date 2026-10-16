@@ -343,6 +343,11 @@
       "provider": "openai",
       "model": "gpt-6-luna",
       "reasoning": "none"
+    },
+    "library.rerank": {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "reasoning": "none"
     }
   }
 }
