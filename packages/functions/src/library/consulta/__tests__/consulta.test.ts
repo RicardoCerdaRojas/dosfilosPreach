@@ -132,4 +132,10 @@ describe('extractoLegible', () => {
     it('recorta al largo pedido', () => {
         expect(extractoLegible('palabra '.repeat(200), 20)).toBe('palabra palabra pala…');
     });
+    it('no borra «<», «>» ni «---» que son texto (revisión adversarial)', () => {
+        expect(extractoLegible('*qatal < *qatala; luego qatal > qāṭal')).toBe('*qatal < *qatala; luego qatal > qāṭal');
+        expect(extractoLegible('El códice <A> y <B>')).toBe('El códice <A> y <B>');
+        expect(extractoLegible('El aoristo --- dice Moo --- es puntual')).toBe('El aoristo --- dice Moo --- es puntual');
+        expect(extractoLegible('| | | | :--- | :--- | | ¹³Κακοπαθεῖ')).toBe('¹³Κακοπαθεῖ');
+    });
 });

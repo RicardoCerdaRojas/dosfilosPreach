@@ -77,6 +77,9 @@ describe('Consultar la biblioteca', () => {
         expect(screen.getByText('consult.topicApproximate')).toBeTruthy();
         fireEvent.click(hoja);
         expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 192, resourceId: 'v', label: varner.title } }, 'full');
+        // Queda marcada en el historial cuando el listener la trae.
+        act(() => alCambiar!([{ id: 't9', tipo: 'temas', titulo: 'la oración', alcance: { tipo: 'todo' }, turnos: [], actualizada: new Date() }]));
+        expect(screen.getByText('la oración', { selector: 'span' }).closest('button')!.getAttribute('aria-current')).toBe('true');
     });
 
     it('si abre otra consulta mientras responde, la respuesta no lo saca de ahí', async () => {

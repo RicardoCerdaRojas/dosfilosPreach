@@ -37,6 +37,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     const [texto, setTexto] = useState('');
     /** «Preguntar» (respuesta redactada y guardada) o «Buscar temas» (U5: dónde se habla de algo). */
     const [modo, setModo] = useState<'preguntar' | 'temas'>('preguntar');
+    /** La búsqueda de temas que se está viendo recién hecha: se marca en el historial. */
+    const [temaReciente, setTemaReciente] = useState<string | null>(null);
     const finRef = useRef<HTMLDivElement>(null);
 
     const libros = useMemo(() => new Map<string, LibroParaCitar>(
@@ -118,10 +120,10 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                                 <button
                                     type="button"
                                     onClick={() => { setAbiertaId(c.id); setModo('preguntar'); limpiarError(); }}
-                                    aria-current={c.id === abiertaId ? 'true' : undefined}
+                                    aria-current={c.id === abiertaId || (!abiertaId && modo === 'temas' && c.id === temaReciente) ? 'true' : undefined}
                                     className={cn(
                                         'w-full rounded-md px-2 py-2 pr-8 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                        c.id === abiertaId ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                        c.id === abiertaId || (!abiertaId && modo === 'temas' && c.id === temaReciente) ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )}
                                 >
                                     <span className="line-clamp-2">
@@ -185,7 +187,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                             ))}
                         </div>
                         <SelectorDeAlcance libros={elegibles} alcance={alcance} onCambiar={setAlcance} />
-                        {modo === 'temas' && <BuscarTemas alcance={alcance} etiquetar={etiquetar} onAbrir={abrirFuente} />}
+                        {modo === 'temas' && <BuscarTemas alcance={alcance} etiquetar={etiquetar} onAbrir={abrirFuente} onGuardada={setTemaReciente} />}
                         {modo === 'preguntar' && !enCurso && (
                             <div className="flex flex-wrap gap-2">
                                 {(['example1', 'example2', 'example3'] as const).map(k => (

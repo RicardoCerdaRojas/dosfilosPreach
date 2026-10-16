@@ -66,11 +66,24 @@ export function agruparPorLibro(fragmentos: ReadonlyArray<FragmentoRecuperado>):
 async function guardarBusqueda(userId: string, consulta: string, alcance: Alcance, libros: LibroDelTema[], reordenado: boolean): Promise<string | null> {
     try {
         const ahora = new Date();
-        const ref = getFirestore().collection('library_consultations').doc();
+        const db = getFirestore();
+        const titulo = tituloDeConsulta(consulta);
+        // La misma búsqueda (mismas palabras y mismo alcance) se ACTUALIZA: si
+        // no, repetirla llenaba el historial y empujaba fuera de la lista las
+        // conversaciones (revisión adversarial). Sólo igualdades: no pide índice.
+        const previas = await db.collection('library_consultations').where('userId', '==', userId).where('titulo', '==', titulo).limit(20).get();
+        const misma = previas.docs.find(d => d.data().tipo === 'temas'
+            && d.data().temas?.consulta === consulta
+            && JSON.stringify(d.data().alcance) === JSON.stringify(alcance));
+        if (misma) {
+            await misma.ref.update({ temas: { consulta, libros, reordenado }, actualizada: ahora });
+            return misma.id;
+        }
+        const ref = db.collection('library_consultations').doc();
         await ref.set({
             userId,
             tipo: 'temas',
-            titulo: tituloDeConsulta(consulta),
+            titulo,
             alcance,
             turnos: [],
             temas: { consulta, libros, reordenado },

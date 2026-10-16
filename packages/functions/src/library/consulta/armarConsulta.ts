@@ -19,10 +19,15 @@ import { markdownAPlano } from '../markdownAPlano';
  * indexado y el que lee el asistente no se tocan.
  */
 export function extractoLegible(texto: string, largo = LARGO_EXTRACTO): string {
-    const limpio = markdownAPlano(texto)
+    // Separadores de tabla sólo pegados a «|» (antes de pasar a texto plano,
+    // que convierte las barras en espacios): «---» en una frase es texto.
+    const sinSeparadores = texto.replace(/\|\s*:?-{3,}:?\s*(?=\|)/g, '|');
+    const limpio = markdownAPlano(sinSeparadores)
         .replace(/```[a-z]*/gi, ' ')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/(^|\s)\|?\s*:?-{3,}:?\s*(?=\||\s|$)/g, ' ')
+        // Sólo etiquetas HTML conocidas y en minúsculas (como las deja la
+        // extracción): «<» y «>» sueltos, o «<B>» (el Vaticano), son texto en las
+        // gramáticas («*qatal < *qatala», «el códice <A>»).
+        .replace(/<\/?(?:table|thead|tbody|tfoot|tr|td|th|br|hr|p|div|span|sup|sub|b|i|u|em|strong|small|caption|colgroup|col)\b[^>]*>/g, ' ')
         .replace(/\|/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();

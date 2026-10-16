@@ -7,12 +7,14 @@ import { ResultadosDeTemas } from './ResultadosDeTemas';
 /**
  * «Buscar temas» (fase «biblioteca consultable», U5): dónde se habla de algo
  * en la biblioteca, agrupado por libro, sin respuesta redactada. Cada hoja
- * abre el visor. No se guarda en el historial: es una búsqueda.
+ * abre el visor. Queda en el historial (el servidor la guarda) y se marca ahí.
  */
-export function BuscarTemas({ alcance, etiquetar, onAbrir }: {
+export function BuscarTemas({ alcance, etiquetar, onAbrir, onGuardada }: {
     alcance: AlcanceDeConsulta;
     etiquetar: (fuente: FuenteDeConsulta) => string;
     onAbrir: (fuente: FuenteDeConsulta) => void;
+    /** El id con que quedó en el historial, para marcarla ahí. */
+    onGuardada?: (consultaId: string) => void;
 }) {
     const { t } = useTranslation('library');
     const [texto, setTexto] = useState('');
@@ -31,6 +33,7 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir }: {
             const r = await buscarTemasEnBiblioteca(consulta, alcance);
             setLibros(r.libros);
             setAproximado(!r.reordenado);
+            if (r.consultaId) onGuardada?.(r.consultaId);
         } catch (err) {
             const mensaje = err instanceof Error ? err.message : String(err);
             setError(/\s/.test(mensaje) ? mensaje : t('consult.errorGeneric'));
