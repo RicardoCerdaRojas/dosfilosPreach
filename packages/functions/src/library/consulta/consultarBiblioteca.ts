@@ -50,15 +50,6 @@ export interface TurnoGuardado {
     creado: Date;
 }
 
-/**
- * Lo que se busca: la pregunta y, si sigue una conversación, la pregunta
- * anterior, para que «¿y Moo qué dice?» busque de lo mismo.
- */
-export function consultaDeBusqueda(pregunta: string, anteriores: ReadonlyArray<TurnoAnterior>): string {
-    const previa = anteriores[anteriores.length - 1]?.pregunta;
-    return previa ? `${previa}\n${pregunta}` : pregunta;
-}
-
 export const consultarBiblioteca = onCall(
     {
         ...appCheckCallableOptions(),
@@ -104,7 +95,11 @@ export const consultarBiblioteca = onCall(
             // Candidatos por vectores, reordenados por pertinencia y cortados
             // (fase «buscador de la biblioteca»). Si nada pasa el corte, la
             // respuesta dice que no encontró: mejor que responder con lo que no trata el tema.
-            ({ fragmentos } = await buscarPertinentes(consultaDeBusqueda(pregunta, anteriores), userId, alcance, apiKey, { total: FRAGMENTOS_POR_CONSULTA, timeoutSeconds: 30 }));
+            ({ fragmentos } = await buscarPertinentes(pregunta, userId, alcance, apiKey, {
+                total: FRAGMENTOS_POR_CONSULTA,
+                timeoutSeconds: 30,
+                contexto: anteriores[anteriores.length - 1]?.pregunta ?? null,
+            }));
         } catch (err) {
             console.error('[consultarBiblioteca] no se pudieron recuperar fragmentos:', err);
             throw new HttpsError('unavailable', 'No se pudo buscar en tu biblioteca. Intenta de nuevo en unos minutos.');
@@ -118,7 +113,9 @@ export const consultarBiblioteca = onCall(
             const { system, prompt } = armarPedido(pregunta, fragmentos, anteriores);
             // El reloj del asistente (y de su respaldo) es lo que le QUEDA a la
             // función, no los 120 s enteros: la recuperación ya gastó una parte.
-            const quedan = Math.max(20, TIMEOUT_S - Math.ceil((Date.now() - inicio) / 1000) - MARGEN_S);
+            const quedan = TIMEOUT_S - Math.ceil((Date.now() - inicio) / 1000) - MARGEN_S;
+            // Sin tiempo para responder bien: mejor decirlo que pasar el plazo de la función.
+            if (quedan < 15) throw new HttpsError('unavailable', MENSAJE_SIN_RESPUESTA);
             const llm = await clientePorRuta({
                 usage: { feature: 'library.consult', userId },
                 timeoutSeconds: quedan,

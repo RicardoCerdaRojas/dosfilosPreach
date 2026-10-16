@@ -8,7 +8,8 @@
  * `juicios.json` (sólo ids de fragmentos y notas, sin texto), así repetir
  * cuesta sólo lo nuevo. Todo cambio del buscador se mide acá antes de entrar.
  *
- * Uso (lee producción, no escribe):
+ * Uso (lee producción; sólo escribe el registro de consumo, atribuido a
+ * `library.rerank.eval` para que no se confunda con el de los usuarios):
  *   GEMINI_API_KEY=… OPENAI_API_KEY=… npx tsx scripts/rag-eval/evaluar.ts --uid <uid>
  *
  * Límite: 10 búsquedas y un juez automático. Sirve para COMPARAR métodos, no
@@ -19,7 +20,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { OpenAiLlmClient } from '../../packages/functions/src/llm/OpenAiLlmClient';
 import { recuperarCandidatos } from '../../packages/functions/src/library/consulta/recuperarFragmentos';
-import { armarPedidoDeReorden, leerPuntajes } from '../../packages/functions/src/library/consulta/reordenar';
+import { armarPedidoDeReorden, ESQUEMA_DE_PUNTAJES, leerPuntajes, TOPE_DE_SALIDA } from '../../packages/functions/src/library/consulta/reordenar';
 import type { FragmentoRecuperado } from '../../packages/functions/src/library/consulta/armarConsulta';
 
 export const CONSULTAS = [
@@ -36,7 +37,7 @@ export const CONSULTAS = [
 ];
 
 const arg = (n: string) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : undefined; };
-const UID = arg('--uid');
+const UID: string = arg('--uid') ?? '';
 if (!UID) throw new Error('Falta --uid <uid>');
 const GEMINI = process.env.GEMINI_API_KEY!;
 const OPENAI = process.env.OPENAI_API_KEY!;
@@ -56,7 +57,7 @@ async function conEspera<T>(f: () => Promise<T>): Promise<T> {
     }
 }
 
-const juez = new OpenAiLlmClient(OPENAI, 'gpt-6-luna', undefined, 'low');
+const juez = new OpenAiLlmClient(OPENAI, 'gpt-6-luna', { feature: 'library.rerank.eval' }, 'low');
 async function juzgar(consulta: string, frs: Array<FragmentoRecuperado & { id: string }>): Promise<void> {
     const faltan = frs.filter(f => juicios[clave(consulta, f.id)] === undefined);
     for (let i = 0; i < faltan.length; i += 8) {
@@ -69,7 +70,7 @@ async function juzgar(consulta: string, frs: Array<FragmentoRecuperado & { id: s
     }
 }
 
-const reordenador = new OpenAiLlmClient(OPENAI, 'gpt-6-luna', undefined, 'none');
+const reordenador = new OpenAiLlmClient(OPENAI, 'gpt-6-luna', { feature: 'library.rerank.eval' }, 'none');
 const UMBRALES = [4, 5, 6, 7, 8];
 const filas: Array<{ base: number; reord: number; porUmbral: Record<number, { prec: number; mostrados: number; perdidos: number }> }> = [];
 
@@ -79,7 +80,7 @@ async function main(): Promise<void> {
         await juzgar(consulta, candidatos);
         const { system, prompt } = armarPedidoDeReorden(consulta, candidatos);
         const t = Date.now();
-        const puntajes = leerPuntajes(await conEspera(() => reordenador.generate({ system, prompt, responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 6000 })), candidatos.length);
+        const puntajes = leerPuntajes(await conEspera(() => reordenador.generate({ system, prompt, responseMimeType: 'application/json', responseSchema: ESQUEMA_DE_PUNTAJES, temperature: 0, maxOutputTokens: TOPE_DE_SALIDA })), candidatos.length);
         const ms = Date.now() - t;
         const nota = (f: { id: string }) => juicios[clave(consulta, f.id)] ?? 0;
         const reord = candidatos.map((f, i) => ({ f, s: puntajes[i] ?? -1, i })).sort((a, b) => b.s - a.s || a.i - b.i);

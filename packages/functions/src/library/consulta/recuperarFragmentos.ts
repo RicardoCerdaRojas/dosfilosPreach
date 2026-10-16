@@ -103,12 +103,14 @@ export async function recuperarCandidatos(
     // Con más de 30 libros, una búsqueda por tanda de 30 y se mezclan por
     // similitud: buscar en toda la biblioteca y filtrar dejaba afuera libros
     // elegidos cuando la biblioteca es grande (revisión adversarial, U2).
-    const pozo = ids.length > 0
-        ? (await Promise.all(enTandas(ids).map(t => cercanos(base.where('resourceId', 'in', t), Math.min(POZO_MAXIMO, limite)))))
-            .flat().sort((a, b) => b.score - a.score)
-        : await cercanos(base, Math.min(POZO_MAXIMO, limite));
-    const pedidos = ids.length > 0 ? new Set(ids) : null;
-    return (pedidos ? pozo.filter(f => pedidos.has(f.resourceId)) : pozo).slice(0, limite);
+    if (ids.length === 0) return cercanos(base, Math.min(POZO_MAXIMO, limite));
+    // Con varios libros elegidos, un pozo amplio por tanda y un tope por libro
+    // ANTES de reordenar: si no, un comentario denso ocupa casi todos los
+    // candidatos y un libro elegido no llega a verse (revisión adversarial, R1).
+    const pozo = (await Promise.all(enTandas(ids).map(t => cercanos(base.where('resourceId', 'in', t), POZO_MAXIMO))))
+        .flat().sort((a, b) => b.score - a.score);
+    const pedidos = new Set(ids);
+    return elegirDelPozo(pozo.filter(f => pedidos.has(f.resourceId)), { porLibro: Math.max(4, Math.ceil(limite / ids.length)), total: limite });
 }
 
 /** Sólo vectores, sin reordenar (el camino de antes; queda como respaldo). */
@@ -145,11 +147,15 @@ export async function buscarPertinentes(
     userId: string,
     alcance: Alcance,
     apiKey: string,
-    opciones: { total: number; timeoutSeconds: number; candidatos?: number; umbral?: number },
+    opciones: { total: number; timeoutSeconds: number; candidatos?: number; umbral?: number; contexto?: string | null },
 ): Promise<{ fragmentos: FragmentoReordenado[]; reordenado: boolean }> {
-    const candidatos = await recuperarCandidatos(busqueda, userId, alcance, apiKey, opciones.candidatos ?? CANDIDATOS_A_REORDENAR);
+    // Los vectores buscan con la conversación (para que «¿y el aceite?»
+    // encuentre algo); el reordenador puntúa contra la pregunta, con la
+    // anterior sólo como contexto.
+    const consultaVectorial = opciones.contexto?.trim() ? `${opciones.contexto.trim()}\n${busqueda}` : busqueda;
+    const candidatos = await recuperarCandidatos(consultaVectorial, userId, alcance, apiKey, opciones.candidatos ?? CANDIDATOS_A_REORDENAR);
     const porLibro = topePorLibro(alcance, opciones.total);
-    const puntajes = await puntuarCandidatos(busqueda, candidatos, userId, opciones.timeoutSeconds);
+    const puntajes = await puntuarCandidatos(busqueda, candidatos, userId, opciones.timeoutSeconds, opciones.contexto);
     if (!puntajes) {
         return {
             fragmentos: elegirDelPozo(candidatos, { porLibro, total: opciones.total }).map(f => ({ ...f, pertinencia: null })),

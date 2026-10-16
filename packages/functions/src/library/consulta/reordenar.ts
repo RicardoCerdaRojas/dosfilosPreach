@@ -22,6 +22,24 @@ export interface FragmentoReordenado extends FragmentoRecuperado {
 /** Texto de cada candidato que lee el reordenador: alcanza para juzgar y mantiene el pedido chico. */
 export const LARGO_PARA_REORDENAR = 1200;
 
+/**
+ * La forma de la respuesta, ESTRICTA: una lista de {n, s}. Medido
+ * (2026-10-16): 40 puntajes son ~330 tokens; una vez Luna se desbocó hasta el
+ * tope de 6 000. Con esquema y un tope de 1 500, un desborde falla rápido y
+ * se reintenta.
+ */
+export const ESQUEMA_DE_PUNTAJES = {
+    type: 'object',
+    properties: {
+        p: {
+            type: 'array',
+            items: { type: 'object', properties: { n: { type: 'integer' }, s: { type: 'integer' } }, required: ['n', 's'] },
+        },
+    },
+    required: ['p'],
+};
+export const TOPE_DE_SALIDA = 1500;
+
 /** Las instrucciones; el texto de los libros va aparte y es material, no órdenes. */
 const SISTEMA = [
     'Eres un evaluador de pertinencia para la biblioteca de un pastor.',
@@ -32,12 +50,22 @@ const SISTEMA = [
     'Responde sólo JSON: {"p":[{"n":1,"s":0}]} con un elemento por fragmento.',
 ].join('\n');
 
-export function armarPedidoDeReorden(busqueda: string, candidatos: ReadonlyArray<FragmentoRecuperado>): { system: string; prompt: string } {
+export function armarPedidoDeReorden(
+    busqueda: string,
+    candidatos: ReadonlyArray<FragmentoRecuperado>,
+    /** La pregunta anterior de la conversación: aclara a qué se refiere «¿y el aceite?», pero NO es parte de lo buscado. */
+    contexto?: string | null,
+): { system: string; prompt: string } {
     const lista = candidatos.map((f, i) => {
         const donde = [f.autor, f.seccion ? `§ ${f.seccion}` : ''].filter(Boolean).join(' ');
-        return `### n: ${i + 1}\n${donde}\n${f.texto.slice(0, LARGO_PARA_REORDENAR)}`;
+        // Un renglón del libro que imite la cabecera no puede pasar por otro candidato.
+        const texto = f.texto.slice(0, LARGO_PARA_REORDENAR).replace(/^\s*#{1,6}\s*n\s*:/gim, '');
+        return `### n: ${i + 1}\n${donde}\n${texto}`;
     }).join('\n\n');
-    return { system: SISTEMA, prompt: `Lo que busca el pastor: «${busqueda.trim()}»\n\n${lista}` };
+    const previo = contexto?.trim()
+        ? `Viene de esta pregunta anterior (sólo para entender a qué se refiere; no se puntúa contra ella): «${contexto.trim()}»\n`
+        : '';
+    return { system: SISTEMA, prompt: `${previo}Lo que busca el pastor: «${busqueda.trim()}»\n\n${lista}` };
 }
 
 /**
@@ -99,15 +127,38 @@ export async function puntuarCandidatos(
     candidatos: ReadonlyArray<FragmentoRecuperado>,
     userId: string,
     timeoutSeconds: number,
+    contexto?: string | null,
 ): Promise<Array<number | null> | null> {
     if (candidatos.length === 0) return [];
     try {
-        const llm = await clientePorRuta({ usage: { feature: 'library.rerank', userId }, timeoutSeconds, maxOutputTokens: 6000 });
-        const { system, prompt } = armarPedidoDeReorden(busqueda, candidatos);
-        const crudo = await llm.generate({ system, prompt, responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 6000 });
-        const puntajes = leerPuntajes(crudo, candidatos.length);
-        // Una respuesta que no puntuó casi nada no sirve para cortar: se trata como falla.
-        return puntajes.filter(p => p !== null).length >= Math.ceil(candidatos.length / 2) ? puntajes : null;
+        // Sin respaldo de Gemini y con plazo DURO: si no responde a tiempo, la
+        // búsqueda sigue con el orden de los vectores en vez de vencer la función.
+        const llm = await clientePorRuta({ usage: { feature: 'library.rerank', userId }, timeoutSeconds, maxOutputTokens: TOPE_DE_SALIDA, sinRespaldo: true });
+        const { system, prompt } = armarPedidoDeReorden(busqueda, candidatos, contexto);
+        const vence = Date.now() + timeoutSeconds * 1000;
+        let vencio: ReturnType<typeof setTimeout> | undefined;
+        const plazo = new Promise<never>((_, rechazar) => { vencio = setTimeout(() => rechazar(new Error(`el reordenador pasó los ${timeoutSeconds} s`)), timeoutSeconds * 1000); });
+        try {
+            // Un intento y, si falla rápido (un desborde, una respuesta ilegible)
+            // y queda al menos la mitad del plazo, otro.
+            for (let intento = 1; ; intento++) {
+                try {
+                    const crudo = await Promise.race([
+                        llm.generate({ system, prompt, responseMimeType: 'application/json', responseSchema: ESQUEMA_DE_PUNTAJES, temperature: 0, maxOutputTokens: TOPE_DE_SALIDA }),
+                        plazo,
+                    ]);
+                    const puntajes = leerPuntajes(crudo, candidatos.length);
+                    // Una respuesta que no puntuó casi nada no sirve para cortar: se trata como falla.
+                    if (puntajes.filter(p => p !== null).length >= Math.ceil(candidatos.length / 2)) return puntajes;
+                    throw new Error('puntuó menos de la mitad de los candidatos');
+                } catch (err) {
+                    const quedaMitad = vence - Date.now() > (timeoutSeconds * 1000) / 2;
+                    if (intento >= 2 || !quedaMitad || /pasó los/.test(String((err as Error)?.message))) throw err;
+                }
+            }
+        } finally {
+            clearTimeout(vencio);
+        }
     } catch (err) {
         console.warn('[reordenar] no se pudo reordenar; queda el orden de los vectores:', err instanceof Error ? err.message : err);
         return null;

@@ -100,17 +100,24 @@ consulta
 Es lo que más mejora (medido).
 
 - **R1. Reordenar con Luna**, con ruta `library.rerank` y respaldo sin reordenar.
-  - **Medido con el pedido de producción** (`scripts/rag-eval/evaluar.ts`, 2026-10-16): la proporción de los 10 primeros que trata el tema sube de 0,59 a 0,88. Luna tarda ~3–4,6 s por búsqueda.
+  - **Medido con el pedido de producción** (`scripts/rag-eval/evaluar.ts`, 2026-10-16, ya con la salida en esquema estricto): la proporción de los 10 primeros que tratan el tema sube de **0,59 a 0,93**. Luna tarda ~2,9–3,6 s por búsqueda.
   - **Umbral calibrado: ≥ 7.**
 
     | Umbral | Resultados por búsqueda | Tratan el tema | Pertinentes que quedan afuera |
     |---|---|---|---|
-    | ≥ 6 | ~22 | 81 % | ~2,5 |
-    | **≥ 7** | **~20** | **84 %** | **~3,5 de ~20** |
-    | ≥ 8 | ~16 | 87 % | ~6 |
+    | ≥ 6 | ~23 | 79 % | ~2,2 |
+    | **≥ 7** | **~21** | **81 %** | **~3,3** |
+    | ≥ 8 | ~17 | 86 % | ~5,5 |
 
-  - **Se eligió ≥ 7** porque el fundador pidió menos resultados que no tienen que ver con el tema.
-  - **En «la oración por los enfermos»** el juez acepta 6 de los 10 primeros. Tres de los otros son el propio texto de Santiago 5:14 (traducción, diagrama, cita), que el juez calificó «de paso». El cuarto es una tabla latina de Mayor, ruido que se ataca en la etapa 2.
+    Se eligió ≥ 7 porque el fundador pidió menos resultados que no tienen que ver con el tema.
+  - **Revisión adversarial.** Se corrigieron estos puntos:
+    - el reordenador no cae al respaldo caro (Gemini 2.5 Pro) y tiene un plazo duro: si falla, sigue el orden de los vectores;
+    - la salida va en esquema estricto, con un tope de 1.500 tokens y un reintento. Una vez Luna se desbocó hasta el tope de 6.000;
+    - con varios libros elegidos, cada libro tiene un mínimo de candidatos, para que uno denso no tape a los demás;
+    - en un seguimiento («¿y el aceite?»), la pregunta anterior va como contexto y no como lo buscado;
+    - un renglón del libro que imite la cabecera de un candidato no pasa por otro candidato;
+    - el banco registra su consumo como `library.rerank.eval`.
+  - **Deploy.** Cargar la ruta `library.rerank` en `config/llmRouting` **antes** de desplegar functions. Sin ella, el reordenador caería a Sonnet.
 - **R2. «Buscar temas» y «Consultar»** usan el reordenador. «Buscar temas» muestra sólo lo que pasa el corte, y su texto de ayuda deja de decir «no redacta respuesta ni cuenta como consulta» si empieza a costar algo.
 - **R3. El banco en el repo.** El script, las 10 búsquedas, los juicios y un comando para comparar.
 

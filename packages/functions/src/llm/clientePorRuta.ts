@@ -39,6 +39,13 @@ export interface OpcionesDeCliente {
     timeoutSeconds: number;
     /** Tope de salida que usaba el adaptador de Anthropic (4096 por defecto). */
     maxOutputTokens?: number;
+    /**
+     * Sin el respaldo de Gemini: para quien ya tiene un respaldo propio más
+     * barato. El reordenador de la biblioteca, si falla, sigue con el orden de
+     * los vectores; caer a Gemini 2.5 Pro sin plazo costaba 20–30 veces más y
+     * podía pasar el plazo de la función (revisión adversarial, 2026-10-16).
+     */
+    sinRespaldo?: boolean;
 }
 
 /** Lo que ve el usuario si no responde nadie: sin nombres de proveedor ni de modelo. */
@@ -52,7 +59,7 @@ export async function clientePorRuta(opciones: OpcionesDeCliente): Promise<ILlmC
     const ruta = (await rutaPropiaPara(opciones.usage.feature)) ?? RUTA_SONNET;
     const principal = construir(ruta, opciones);
     const gemini = process.env.GEMINI_API_KEY;
-    const respaldo = ruta.provider !== 'gemini' && gemini
+    const respaldo = ruta.provider !== 'gemini' && gemini && !opciones.sinRespaldo
         ? new GeminiLlmClient(gemini, MODEL_DEEP, opciones.usage)
         : null;
     if (!principal && !respaldo) {

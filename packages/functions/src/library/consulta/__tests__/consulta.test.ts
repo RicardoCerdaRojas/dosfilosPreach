@@ -5,7 +5,7 @@ vi.mock('firebase-functions/v2/https', async (orig) => ({ ...(await orig<object>
 import { armarPedido, leerRespuesta, normalizarMarcas, tituloDeConsulta, type FragmentoRecuperado } from '../armarConsulta';
 import { elegirDelPozo, topePorLibro } from '../recuperarFragmentos';
 import { motivoSinCuota, periodoActual } from '../cuotaDeConsultas';
-import { consultaDeBusqueda, leerAlcance } from '../consultarBiblioteca';
+import { leerAlcance } from '../consultarBiblioteca';
 import { agruparPorLibro } from '../buscarTemas';
 
 const frag = (resourceId: string, hoja: number, texto = 'texto del libro'): FragmentoRecuperado => ({
@@ -109,13 +109,6 @@ describe('leerAlcance', () => {
         expect(() => leerAlcance({ tipo: 'libros', ids: [] })).toThrow();
         expect(() => leerAlcance({ tipo: 'otro' })).toThrow();
         expect(() => leerAlcance(undefined)).toThrow();
-    });
-});
-
-describe('consultaDeBusqueda', () => {
-    it('una pregunta que sigue busca también con la anterior', () => {
-        expect(consultaDeBusqueda('¿y Moo?', [{ pregunta: '¿Qué es la sabiduría en Stg 3:17?', respuesta: '…' }])).toBe('¿Qué es la sabiduría en Stg 3:17?\n¿y Moo?');
-        expect(consultaDeBusqueda('¿Qué es?', [])).toBe('¿Qué es?');
     });
 });
 
