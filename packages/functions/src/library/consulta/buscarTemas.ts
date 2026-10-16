@@ -25,6 +25,8 @@ export interface HojaDelTema {
     seccion: string;
     extracto: string;
     score: number;
+    /** 0–10, del reordenador; `null` si no se pudo reordenar. La pantalla lo muestra en barras. */
+    pertinencia: number | null;
 }
 
 export interface LibroDelTema {
@@ -39,7 +41,7 @@ export interface LibroDelTema {
  * pertinencia): los libros, en el orden de su mejor fragmento; dentro de un
  * libro, en ese mismo orden, y una hoja aparece una sola vez (la primera).
  */
-export function agruparPorLibro(fragmentos: ReadonlyArray<FragmentoRecuperado>): LibroDelTema[] {
+export function agruparPorLibro(fragmentos: ReadonlyArray<FragmentoRecuperado & { pertinencia?: number | null }>): LibroDelTema[] {
     const libros = new Map<string, LibroDelTema>();
     for (const f of fragmentos) {
         let libro = libros.get(f.resourceId);
@@ -53,6 +55,7 @@ export function agruparPorLibro(fragmentos: ReadonlyArray<FragmentoRecuperado>):
             seccion: f.seccion,
             extracto: extractoLegible(f.texto),
             score: Math.round(f.score * 1000) / 1000,
+            pertinencia: f.pertinencia ?? null,
         });
     }
     return [...libros.values()];

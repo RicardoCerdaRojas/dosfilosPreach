@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ConsultaGuardada } from '@dosfilos/infrastructure';
 
 /** Fase «biblioteca consultable», U3: la pestaña «Consultar». */
@@ -72,9 +72,10 @@ describe('Consultar la biblioteca', () => {
         fireEvent.change(screen.getByLabelText('consult.topicPlaceholder'), { target: { value: 'la oración' } });
         fireEvent.click(screen.getByText('consult.topicSearch'));
         await waitFor(() => expect(temas).toHaveBeenCalledWith('la oración', { tipo: 'todo' }));
-        const hoja = await screen.findByText('(Varner, p. 188)');
+        // En la ficha del libro, la página en grande (el autor ya está en la cabecera).
+        const hoja = await screen.findByText('p. 188');
         // Si no se pudo ordenar por pertinencia, se dice.
-        expect(screen.getByText('consult.topicApproximate')).toBeTruthy();
+        expect(screen.getByText(/consult\.topicOrderApprox/)).toBeTruthy();
         fireEvent.click(hoja);
         expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 192, resourceId: 'v', label: varner.title } }, 'full');
         // Queda marcada en el historial cuando el listener la trae.
@@ -106,8 +107,24 @@ describe('Consultar la biblioteca', () => {
         fireEvent.click(screen.getByText('la oración por los enfermos', { selector: 'span' }));
         expect(screen.getByTestId('temas-guardados')).toBeTruthy();
         expect(screen.queryByLabelText('consult.placeholder')).toBeNull();
-        fireEvent.click(screen.getByText('(Varner, p. 187)'));
+        fireEvent.click(screen.getByText('p. 187'));
         expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 191, resourceId: 'v', label: varner.title } }, 'full');
+    });
+
+    it('una conversación muestra el riel de fuentes con sus páginas, y el griego va en su fuente', async () => {
+        const conGriego: ConsultaGuardada = {
+            ...guardada,
+            turnos: [{ ...guardada.turnos[0]!, respuesta: 'Dice ἡ εὐχή τῆς πίστεως [F2].' }],
+        };
+        render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
+        act(() => alCambiar!([conGriego]));
+        fireEvent.click(screen.getByText('¿Qué dice de 5:12?', { selector: 'span' }));
+        const rail = await screen.findByTestId('fuentes-de-la-consulta');
+        fireEvent.click(within(rail).getByText('p. 186'));
+        expect(open).toHaveBeenCalledWith({ paperId: null, citation: { sourceKey: 'Varner', page: 190, resourceId: 'v', label: varner.title } }, 'full');
+        const griego = screen.getByText('ἡ εὐχή τῆς πίστεως');
+        expect(griego.getAttribute('lang')).toBe('grc');
+        expect(griego.className).toContain('font-greek');
     });
 });
 

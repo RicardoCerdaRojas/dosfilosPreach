@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { Loader2, MessageSquarePlus, Search, SendHorizontal, Trash2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import type { LibraryResourceEntity } from '@dosfilos/domain';
 import type { AlcanceDeConsulta, ConsultaGuardada, FuenteDeConsulta } from '@dosfilos/infrastructure';
 import { useTranslation } from '@/i18n';
@@ -12,6 +12,9 @@ import { etiquetaDeFuente, type LibroParaCitar } from '@/components/library/cons
 import { SelectorDeAlcance, type LibroElegible } from './SelectorDeAlcance';
 import { BuscarTemas } from './BuscarTemas';
 import { ResultadosDeTemas } from './ResultadosDeTemas';
+import { BarraDeConsulta } from './BarraDeConsulta';
+import { HistorialDeConsultas } from './HistorialDeConsultas';
+import { FuentesDeLaConsulta } from './FuentesDeLaConsulta';
 import { useConsultas } from './useConsultas';
 
 /**
@@ -94,169 +97,169 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     // Los errores del servidor vienen en español; los de transporte («internal»), no.
     const mensajeDeError = error && /\s/.test(error) ? error : error ? t('consult.errorGeneric') : null;
 
-    return (
-        <div className="grid gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
-            {/* Historial */}
-            <aside className="space-y-3 md:border-r md:border-border md:pr-4" aria-label={t('consult.history')}>
-                <button
-                    type="button"
-                    onClick={nueva}
-                    className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                    <MessageSquarePlus className="h-4 w-4" />
-                    {t('consult.new')}
-                </button>
-                <h2 className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('consult.history')}</h2>
-                {cargando ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : errorHistorial ? (
-                    <p className="text-sm text-muted-foreground">{t('consult.historyError')}</p>
-                ) : consultas.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t('consult.historyEmpty')}</p>
-                ) : (
-                    <ul className="max-h-[60vh] space-y-1 overflow-y-auto">
-                        {consultas.map(c => (
-                            <li key={c.id} className="group relative">
-                                <button
-                                    type="button"
-                                    onClick={() => { setAbiertaId(c.id); setModo('preguntar'); limpiarError(); }}
-                                    aria-current={c.id === abiertaId || (!abiertaId && modo === 'temas' && c.id === temaReciente) ? 'true' : undefined}
-                                    className={cn(
-                                        'w-full rounded-md px-2 py-2 pr-8 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                        c.id === abiertaId || (!abiertaId && modo === 'temas' && c.id === temaReciente) ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                                    )}
-                                >
-                                    <span className="line-clamp-2">
-                                        {c.tipo === 'temas' && <Search className="mr-1 inline h-3.5 w-3.5 align-[-2px]" aria-label={t('consult.savedTopic')} />}
-                                        {c.titulo}
-                                    </span>
-                                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">{rotuloDeAlcance(c.alcance)}</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { if (window.confirm(t('consult.deleteConfirm'))) { void borrar(c.id); if (c.id === abiertaId) nueva(); } }}
-                                    aria-label={t('consult.delete')}
-                                    className="absolute right-1 top-1.5 rounded p-1.5 text-muted-foreground hover:bg-background hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:opacity-0 md:group-hover:opacity-100"
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </aside>
+    const borrarConsulta = (id: string) => {
+        if (window.confirm(t('consult.deleteConfirm'))) { void borrar(id); if (id === abiertaId) nueva(); }
+    };
+    const abrirConsulta = (id: string) => { setAbiertaId(id); setModo('preguntar'); limpiarError(); };
+    const selectorDeAlcance = <SelectorDeAlcance libros={elegibles} alcance={alcance} onCambiar={setAlcance} />;
+    const caja = (
+        <CajaDePregunta
+            texto={texto}
+            onTexto={setTexto}
+            onEnviar={() => void enviar()}
+            onTeclear={alTeclear}
+            enviando={!!enCurso}
+            placeholder={abierta ? t('consult.placeholderFollowUp') : t('consult.placeholder')}
+        />
+    );
+    const mostrarConversacion = (modo === 'preguntar' && !abierta) || (!!abierta && abierta.tipo !== 'temas');
 
-            {/* Conversación */}
-            <section className="flex min-h-[60vh] flex-col gap-6">
+    return (
+        <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_17rem]">
+            <HistorialDeConsultas
+                consultas={consultas}
+                cargando={cargando}
+                error={errorHistorial}
+                actualId={abiertaId ?? (modo === 'temas' ? temaReciente : null)}
+                rotuloDeAlcance={rotuloDeAlcance}
+                onAbrir={abrirConsulta}
+                onNueva={nueva}
+                onBorrar={borrarConsulta}
+            />
+
+            <section className="flex min-h-[60vh] min-w-0 flex-col gap-7">
                 {abierta?.tipo === 'temas' ? (
                     // Una búsqueda de temas guardada: se vuelve a ver tal cual, sin repetirla.
-                    <div className="space-y-4" data-testid="temas-guardados">
-                        <p className="text-sm text-muted-foreground">
+                    <div className="flex flex-col gap-5" data-testid="temas-guardados">
+                        <p className="m-0 text-[13px] text-muted-foreground">
                             {t('consult.topicSavedIn')} <span className="font-medium text-foreground">{rotuloDeAlcance(abierta.alcance)}</span>
                         </p>
-                        <h3 className="text-base font-semibold text-foreground">{abierta.temas?.consulta ?? abierta.titulo}</h3>
-                        {abierta.temas && !abierta.temas.reordenado && <p className="text-sm text-muted-foreground">{t('consult.topicApproximate')}</p>}
+                        <h3 className="m-0 font-serif text-[28px] font-bold leading-tight text-foreground">{abierta.temas?.consulta ?? abierta.titulo}</h3>
                         {abierta.temas && abierta.temas.libros.length > 0
-                            ? <ResultadosDeTemas libros={abierta.temas.libros} etiquetar={etiquetar} onAbrir={abrirFuente} />
+                            ? <ResultadosDeTemas libros={abierta.temas.libros} etiquetar={etiquetar} onAbrir={abrirFuente} aproximado={!abierta.temas.reordenado} />
                             : <p className="text-sm text-muted-foreground">{t('consult.topicNone')}</p>}
                     </div>
                 ) : abierta ? (
-                    <p className="text-sm text-muted-foreground">
-                        {t('consult.askingIn')} <span className="font-medium text-foreground">{rotuloDeAlcance(abierta.alcance)}</span>
+                    <p className="m-0 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+                        {t('consult.askingIn')}
+                        <span className="rounded-full border border-border bg-card px-2.5 py-0.5 font-medium text-foreground">{rotuloDeAlcance(abierta.alcance)}</span>
                     </p>
                 ) : (
-                    <div className="space-y-4">
-                        <div>
-                            <h2 className="font-serif text-2xl font-semibold text-foreground">{t('consult.title')}</h2>
-                            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t('consult.subtitle')}</p>
+                    <div className="flex flex-col gap-6">
+                        <div className="flex flex-col gap-2">
+                            <h2 className="m-0 font-serif text-[32px] font-bold leading-tight tracking-tight text-foreground">{t('consult.title')}</h2>
+                            <p className="m-0 max-w-2xl font-serif text-[15px] leading-relaxed text-muted-foreground">{t('consult.subtitle')}</p>
                         </div>
-                        <div role="group" aria-label={t('consult.modeLabel')} className="inline-flex rounded-md border border-border p-0.5">
-                            {(['preguntar', 'temas'] as const).map(m => (
-                                <button
-                                    key={m}
-                                    type="button"
-                                    aria-pressed={modo === m}
-                                    onClick={() => setModo(m)}
-                                    className={cn(
-                                        'min-h-9 rounded px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                        modo === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-                                    )}
-                                >
-                                    {m === 'preguntar' ? t('consult.modeAsk') : t('consult.modeTopics')}
-                                </button>
-                            ))}
-                        </div>
-                        <SelectorDeAlcance libros={elegibles} alcance={alcance} onCambiar={setAlcance} />
-                        {modo === 'temas' && <BuscarTemas alcance={alcance} etiquetar={etiquetar} onAbrir={abrirFuente} onGuardada={setTemaReciente} />}
-                        {modo === 'preguntar' && !enCurso && (
-                            <div className="flex flex-wrap gap-2">
-                                {(['example1', 'example2', 'example3'] as const).map(k => (
-                                    <button
-                                        key={k}
-                                        type="button"
-                                        onClick={() => setTexto(t(`consult.${k}`))}
-                                        className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-dashed border-border px-3 text-left text-sm text-muted-foreground hover:border-primary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        <Search className="h-3.5 w-3.5 shrink-0" />
-                                        {t(`consult.${k}`)}
-                                    </button>
-                                ))}
+                        {modo === 'temas' ? (
+                            <BuscarTemas
+                                alcance={alcance}
+                                etiquetar={etiquetar}
+                                onAbrir={abrirFuente}
+                                onGuardada={setTemaReciente}
+                                envoltorio={contenido => <BarraDeConsulta modo={modo} onModo={setModo} alcance={selectorDeAlcance}>{contenido}</BarraDeConsulta>}
+                            />
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                <BarraDeConsulta modo={modo} onModo={setModo} alcance={selectorDeAlcance}>{caja}</BarraDeConsulta>
+                                <p className="m-0 px-1 text-xs text-muted-foreground">{t('consult.footnote')}</p>
+                                {!enCurso && (
+                                    <div className="flex flex-col gap-2 pt-2">
+                                        <span className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('consult.examplesTitle')}</span>
+                                        <div className="grid gap-2 sm:grid-cols-3">
+                                            {(['example1', 'example2', 'example3'] as const).map(k => (
+                                                <button
+                                                    key={k}
+                                                    type="button"
+                                                    onClick={() => setTexto(t(`consult.${k}`))}
+                                                    className="rounded-xl border border-border bg-card p-3.5 text-left font-serif text-sm leading-snug text-foreground/80 transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                >
+                                                    {t(`consult.${k}`)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
                 )}
 
-                {((modo === 'preguntar' && !abierta) || (abierta && abierta.tipo !== 'temas')) && (<>
-                <div className="flex-1 space-y-8">
-                    {abierta?.turnos.map((turno, i) => (
-                        <article key={`${abierta.id}-${i}`} className="space-y-3">
-                            <h3 className="text-base font-semibold text-foreground">{turno.pregunta}</h3>
-                            <RespuestaConCitas turno={turno} etiquetar={etiquetar} tituloDe={tituloDe} onAbrirFuente={abrirFuente} />
-                        </article>
-                    ))}
-                    {esperandoAqui && enCurso && (
-                        <article className="space-y-3" aria-live="polite">
-                            <h3 className="text-base font-semibold text-foreground">{enCurso.pregunta}</h3>
-                            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                {t('consult.searching')}
+                {mostrarConversacion && (<>
+                    <div className="flex flex-1 flex-col gap-9">
+                        {abierta?.turnos.map((turno, i) => (
+                            <article key={`${abierta.id}-${i}`} className="flex flex-col gap-3 border-b border-border/60 pb-8 last:border-0">
+                                <h3 className={cn('m-0 font-serif font-bold leading-tight text-foreground', i === 0 ? 'text-[28px]' : 'text-[22px]')}>{turno.pregunta}</h3>
+                                <RespuestaConCitas turno={turno} etiquetar={etiquetar} tituloDe={tituloDe} onAbrirFuente={abrirFuente} />
+                            </article>
+                        ))}
+                        {esperandoAqui && enCurso && (
+                            <article className="flex flex-col gap-3" aria-live="polite">
+                                <h3 className="m-0 font-serif text-[22px] font-bold leading-tight text-foreground">{enCurso.pregunta}</h3>
+                                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    {t('consult.searching')}
+                                </p>
+                            </article>
+                        )}
+                        {mensajeDeError && (
+                            <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                                {mensajeDeError}
                             </p>
-                        </article>
-                    )}
-                    {mensajeDeError && (
-                        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                            {mensajeDeError}
-                        </p>
-                    )}
-                    <div ref={finRef} />
-                </div>
-
-                <form onSubmit={e => void enviar(e)} className="sticky bottom-0 bg-background pb-2 pt-2">
-                    <div className="flex items-end gap-2 rounded-lg border border-border bg-card p-2 focus-within:ring-2 focus-within:ring-ring">
-                        <label htmlFor="pregunta-biblioteca" className="sr-only">{t('consult.placeholder')}</label>
-                        <textarea
-                            id="pregunta-biblioteca"
-                            value={texto}
-                            onChange={e => setTexto(e.target.value)}
-                            onKeyDown={alTeclear}
-                            rows={2}
-                            maxLength={2000}
-                            placeholder={abierta ? t('consult.placeholderFollowUp') : t('consult.placeholder')}
-                            className="min-h-[3rem] flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!texto.trim() || !!enCurso}
-                            aria-label={t('consult.send')}
-                            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            {enCurso ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
-                        </button>
+                        )}
+                        <div ref={finRef} />
                     </div>
-                    <p className="mt-1 px-1 text-xs text-muted-foreground">{t('consult.footnote')}</p>
-                </form>
+
+                    {abierta && (
+                        <div className="sticky bottom-4 flex flex-col gap-1">
+                            <div className="rounded-2xl border border-border bg-card p-1.5 shadow-[0_12px_32px_-16px_rgba(15,23,42,0.25)]">{caja}</div>
+                            <p className="m-0 px-2 text-xs text-muted-foreground">{t('consult.footnote')}</p>
+                        </div>
+                    )}
                 </>)}
             </section>
+
+            {abierta && abierta.tipo !== 'temas' && (
+                <div className="hidden xl:block">
+                    <div className="sticky top-6">
+                        <FuentesDeLaConsulta turnos={abierta.turnos} etiquetar={etiquetar} tituloDe={tituloDe} onAbrir={abrirFuente} />
+                    </div>
+                </div>
+            )}
         </div>
+    );
+}
+
+/** La caja de la pregunta: serif, Enter envía, Mayús + Enter salta de línea. */
+function CajaDePregunta({ texto, onTexto, onEnviar, onTeclear, enviando, placeholder }: {
+    texto: string;
+    onTexto: (t: string) => void;
+    onEnviar: () => void;
+    onTeclear: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+    enviando: boolean;
+    placeholder: string;
+}) {
+    const { t } = useTranslation('library');
+    return (
+        <form onSubmit={e => { e.preventDefault(); onEnviar(); }} className="flex items-end gap-2 p-1">
+            <label htmlFor="pregunta-biblioteca" className="sr-only">{t('consult.placeholder')}</label>
+            <textarea
+                id="pregunta-biblioteca"
+                value={texto}
+                onChange={e => onTexto(e.target.value)}
+                onKeyDown={onTeclear}
+                rows={2}
+                maxLength={2000}
+                placeholder={placeholder}
+                className="min-h-[3.25rem] flex-1 resize-none bg-transparent px-3 py-2 font-serif text-[17px] leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
+            <button
+                type="submit"
+                disabled={!texto.trim() || enviando}
+                aria-label={t('consult.send')}
+                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+                {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
+            </button>
+        </form>
     );
 }

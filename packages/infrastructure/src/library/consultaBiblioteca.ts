@@ -120,6 +120,8 @@ export interface HojaDelTema {
     seccion: string;
     extracto: string;
     score: number;
+    /** 0–10, del reordenador; ausente en búsquedas guardadas antes del rediseño. */
+    pertinencia?: number | null;
 }
 
 export interface LibroDelTema {

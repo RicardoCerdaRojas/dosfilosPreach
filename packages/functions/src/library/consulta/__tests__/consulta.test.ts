@@ -120,6 +120,10 @@ describe('agruparPorLibro (buscar temas)', () => {
         expect(r[0]!.hojas.map(h => h.hoja)).toEqual([3]);
         expect(r[1]!.hojas.map(h => h.hoja)).toEqual([12, 10]);
     });
+    it('guarda la pertinencia del reordenador para mostrarla', () => {
+        const r = agruparPorLibro([{ ...frag('a', 3), pertinencia: 9 }, frag('b', 1)]);
+        expect(r.map(l => l.hojas[0]!.pertinencia)).toEqual([9, null]);
+    });
 });
 
 describe('extractoLegible', () => {

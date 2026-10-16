@@ -6,6 +6,7 @@ import type { FuenteDeConsulta, TurnoDeConsulta } from '@dosfilos/infrastructure
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { enlazarFuentes, PREFIJO_FUENTE, textoConCitas, type EtiquetarFuente } from './citasDeRespuesta';
+import { conEscrituras, TextoConEscrituras } from './TextoConEscrituras';
 
 /**
  * Una respuesta de «Consultar» con sus citas pulsables y la lista de fuentes
@@ -38,13 +39,18 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
 
     return (
         <div className="space-y-3">
-            <div className={cn('prose dark:prose-invert max-w-none leading-relaxed', compacta ? 'prose-sm' : 'prose-base')}>
+            {/* La respuesta es texto de ESTUDIO: en la serif de la marca, con
+                medida de lectura (rediseño, 2026-10-17). */}
+            <div className={cn('prose dark:prose-invert max-w-[68ch] font-serif prose-p:my-4 prose-p:leading-[1.85] prose-strong:text-foreground', compacta ? 'prose-sm' : 'text-[17px]')}>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     // Una imagen en la respuesta vendría del texto de un libro (o
                     // de una instrucción metida en él): no se carga nada externo.
                     disallowedElements={['img']}
                     components={{
+                        p: ({ children, node: _node, ...rest }) => <p {...rest}>{conEscrituras(children)}</p>,
+                        li: ({ children, node: _node, ...rest }) => <li {...rest}>{conEscrituras(children)}</li>,
+                        em: ({ children, node: _node, ...rest }) => <em {...rest}>{conEscrituras(children)}</em>,
                         a: ({ href, children, node: _node, ...rest }) => {
                             const citadas = href?.startsWith(PREFIJO_FUENTE) ? enlaces[Number(href.slice(PREFIJO_FUENTE.length))] : undefined;
                             if (!citadas) return <a href={href} {...rest}>{children}</a>;
@@ -53,7 +59,7 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
                                     type="button"
                                     onClick={() => onAbrirFuente(citadas[0]!)}
                                     title={t('consult.openInBook')}
-                                    className="cursor-pointer rounded-sm border-b border-dashed border-primary/70 bg-transparent p-0 [font:inherit] text-inherit hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="mx-0.5 cursor-pointer whitespace-nowrap rounded border-0 bg-secondary/15 px-1.5 py-px align-baseline font-bible text-[0.95em] font-semibold text-foreground transition-colors hover:bg-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     data-testid="cita-de-consulta"
                                 >
                                     {children}
@@ -72,7 +78,7 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
                         type="button"
                         onClick={() => setVerFuentes(v => !v)}
                         aria-expanded={verFuentes}
-                        className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-foreground/75 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                         <BookOpen className="h-4 w-4" />
                         {t('consult.sources', { count: turno.fuentes.length })}
@@ -82,7 +88,7 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
                 <button
                     type="button"
                     onClick={() => void copiar()}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-foreground/75 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                     {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     {copiado ? t('consult.copied') : t('consult.copy')}
@@ -90,20 +96,19 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
             </div>
 
             {verFuentes && (
-                <ol className="space-y-2 border-l-2 border-primary/30 pl-4" data-testid="fuentes-de-consulta">
+                <ol className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2" data-testid="fuentes-de-consulta">
                     {turno.fuentes.map(f => (
                         <li key={f.n}>
                             <button
                                 type="button"
                                 onClick={() => onAbrirFuente(f)}
-                                className="group w-full rounded-md p-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                className="group flex h-full w-full flex-col gap-1 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                                <span className="font-serif text-sm font-semibold text-foreground group-hover:text-primary">
+                                <span className="font-bible text-[15px] font-semibold text-foreground group-hover:text-primary">
                                     {etiquetar(f)}
                                 </span>
-                                {tituloDe && <span className="ml-2 text-xs text-muted-foreground">{tituloDe(f)}</span>}
-                                {f.seccion && <span className="block text-xs text-muted-foreground">§ {f.seccion}</span>}
-                                <span className="mt-1 block text-sm text-muted-foreground line-clamp-3">{f.extracto}</span>
+                                {tituloDe && <span className="truncate text-xs text-muted-foreground">{tituloDe(f)}</span>}
+                                <span className="line-clamp-3 font-serif text-[13px] leading-relaxed text-foreground/75"><TextoConEscrituras texto={f.extracto} /></span>
                             </button>
                         </li>
                     ))}
