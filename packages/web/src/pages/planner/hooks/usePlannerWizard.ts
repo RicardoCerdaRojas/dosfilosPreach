@@ -81,11 +81,11 @@ export function usePlannerWizard() {
                 const allResources = [...coreRes, ...userRes.filter(ur => !coreRes.some(cr => cr.id === ur.id))];
                 setResources(allResources);
 
-                // EL ESTADO DE ÍNDICE, EN UNA CONSULTA POR CADA TREINTA. Antes
-                // se preguntaba recurso por recurso dentro de un `for` con
-                // `await`: con una biblioteca de cincuenta libros eran cincuenta
-                // viajes a Firestore EN FILA sólo para pintar cincuenta
-                // insignias, y el planificador no abría hasta terminarlos.
+                // EL ESTADO DE ÍNDICE, TODO EN PARALELO. Antes se preguntaba
+                // recurso por recurso dentro de un `for` con `await`: con una
+                // biblioteca de cincuenta libros eran cincuenta viajes a
+                // Firestore EN FILA sólo para pintar cincuenta insignias, y el
+                // planificador no abría hasta terminarlos.
                 const indexados = await libraryService.indexedResourcesAmong(
                     allResources.map(r => r.id),
                 );

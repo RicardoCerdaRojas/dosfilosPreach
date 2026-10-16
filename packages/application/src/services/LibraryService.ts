@@ -309,7 +309,8 @@ export class LibraryService {
      * ¿Cuáles de estos recursos están indexados?
      *
      * La alternativa era llamar a `isResourceIndexed` en un bucle, que es como
-     * estaba: una consulta por recurso, en fila. Acá va una por cada treinta.
+     * estaba: una consulta por recurso, en fila. Acá van todas en paralelo,
+     * de un documento cada una.
      *
      * Sin RAG configurado devuelve el conjunto vacío, igual que la versión de
      * uno solo devuelve `false`: no se puede afirmar que algo esté indexado

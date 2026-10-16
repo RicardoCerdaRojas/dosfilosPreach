@@ -229,7 +229,7 @@ export class RAGService {
         return this.vectorRepository.hasIndex(resourceId);
     }
 
-    /** ¿Cuáles de estos recursos están indexados? Una consulta por cada 30. */
+    /** ¿Cuáles de estos recursos están indexados? Una consulta de un documento por recurso, en paralelo. */
     async indexedAmong(resourceIds: readonly string[]): Promise<Set<string>> {
         return this.vectorRepository.hasIndexBatch(resourceIds);
     }

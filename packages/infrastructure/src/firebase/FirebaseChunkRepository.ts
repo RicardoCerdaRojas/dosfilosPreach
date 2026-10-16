@@ -12,7 +12,9 @@ import {
     VectorValue,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { duenosLegibles, uidDeLaSesion } from './duenioDeFragmentos';
 import { DocumentChunkEntity } from '@dosfilos/domain';
+
 
 /**
  * FirebaseChunkRepository
@@ -49,6 +51,7 @@ export class FirebaseChunkRepository {
     async findByResourceId(resourceId: string): Promise<DocumentChunkEntity[]> {
         const q = query(
             collection(db, this.collectionName),
+            where('userId', '==', uidDeLaSesion()),
             where('resourceId', '==', resourceId)
         );
 
@@ -69,6 +72,7 @@ export class FirebaseChunkRepository {
     async firstChunksText(resourceId: string, count = 8): Promise<string> {
         const q = query(
             collection(db, this.collectionName),
+            where('userId', 'in', duenosLegibles()),
             where('resourceId', '==', resourceId),
             where('chunkIndex', 'in', Array.from({ length: count }, (_, i) => i)),
         );
@@ -83,10 +87,11 @@ export class FirebaseChunkRepository {
     /**
      * Get all chunks for a user's library
      */
-    async findByUserId(userId: string): Promise<DocumentChunkEntity[]> {
+    async findByUserId(_userId: string): Promise<DocumentChunkEntity[]> {
         const q = query(
             collection(db, this.collectionName),
-            where('userId', '==', userId)
+            // Siempre la sesión: las reglas no dejan leer los de otro.
+            where('userId', '==', uidDeLaSesion())
         );
 
         const snapshot = await getDocs(q);
@@ -107,6 +112,8 @@ export class FirebaseChunkRepository {
             const batchIds = resourceIds.slice(i, i + batchSize);
             const q = query(
                 collection(db, this.collectionName),
+                // 2 dueños × 10 recursos = 20 combinaciones (Firestore admite 30).
+                where('userId', 'in', duenosLegibles()),
                 where('resourceId', 'in', batchIds)
             );
             const snapshot = await getDocs(q);
