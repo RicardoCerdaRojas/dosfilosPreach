@@ -43,11 +43,14 @@ export class CreateUserRubricFromTextUseCase {
 
         let rubric: PaperRubric;
         if (input.rawText && input.rawText.trim().length >= 30) {
+            // Gratis: va por una etiqueta del proxy que no cobra (el cobro de
+            // exégesis vive en el servidor y exige reserva para `extractRubric`).
             const extracted = await this.rubricExtractor.extract({
                 rawText: input.rawText.trim(),
                 source: 'text',
                 sourceCorpusId: null,
                 language: input.language ?? 'es',
+                gratuita: true,
             });
             const now = new Date();
             rubric = {

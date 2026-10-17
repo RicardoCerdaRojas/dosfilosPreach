@@ -202,3 +202,14 @@ describe('users — actualizar', () => {
         await assertFails(deleteDoc(doc(db, 'users', PASTOR)));
     });
 });
+
+describe('users — cobro de exégesis en el servidor', () => {
+    it('las reservas y la métrica de la sombra no las lee ni escribe el cliente', async () => {
+        await sembrar();
+        const db = sesion(PASTOR);
+        await assertFails(getDoc(doc(db, 'users', PASTOR, 'exegesis_reservas', 'r1')));
+        await assertFails(setDoc(doc(db, 'users', PASTOR, 'exegesis_reservas', 'r1'), { estado: 'abierta', costoUsd: 0 }));
+        await assertFails(getDoc(doc(db, 'metricas_cobro_exegesis', '2026-10-17')));
+        await assertSucceeds(getDoc(doc(env.authenticatedContext(ADMIN).firestore(), 'metricas_cobro_exegesis', '2026-10-17')));
+    });
+});

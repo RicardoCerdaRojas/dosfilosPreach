@@ -10,6 +10,7 @@ import { GeminiLlmClient } from './GeminiLlmClient';
 import { recordLlmUsage } from './llmUsageRecorder';
 import { LLM_PRICING } from './llmCost';
 import { consumeRateLimitToken } from '../shared/rateLimit';
+import { cobrarLlamadaDeExegesis } from '../exegesis/cobroDeExegesis';
 import { readBudgetConfig } from './llmBudget';
 import { MODEL_FAST } from './modelCatalog';
 import { withGeminiRetry } from './geminiRetry';
@@ -138,6 +139,9 @@ export const PROXY_FEATURES = [
     // transformador y los seis pases del asistente expositivo.
     'exegesis.detectPericopes',
     'exegesis.extractRubric',
+    // La misma lectura, gratis: crear una rúbrica propia desde un texto
+    // (`CreateUserRubricFromText`). No cobra, así que no pide reserva.
+    'exegesis.createUserRubric',
     'exegesis.extractStyleManifest',
     // Leer la ficha bibliográfica de la página de créditos del propio libro.
     // Llamada corta, una por libro y a pedido: el usuario pulsa «leer del
@@ -280,6 +284,25 @@ export const runLlmPrompt = onCall(
                 'Demasiadas consultas seguidas. Espera unos minutos antes de continuar.',
             );
         }
+
+        // La imagen se valida ANTES del cobro: una inválida no puede dejar
+        // una reserva usada sin que el modelo se haya llamado.
+        const imagenPedida = data.inlineImage as { mimeType?: unknown; base64?: unknown } | undefined;
+        if (imagenPedida) {
+            if (!String(imagenPedida.mimeType ?? '').startsWith('image/')) {
+                throw new HttpsError('invalid-argument', `inlineImage.mimeType no soportado: ${String(imagenPedida.mimeType ?? '')}`);
+            }
+            const b64 = String(imagenPedida.base64 ?? '');
+            if (!b64 || b64.length > MAX_INLINE_IMAGE_B64_CHARS) {
+                throw new HttpsError('invalid-argument', 'inlineImage.base64 vacío o demasiado grande');
+            }
+        }
+
+        // El cobro de exégesis (2026-10-17): una etiqueta que cobra toma una
+        // reserva ANTES de llamar al modelo, y el servidor marca que el modelo
+        // se contactó. En sombra sólo se mide; en obligatorio, sin reserva no
+        // hay llamada.
+        await cobrarLlamadaDeExegesis(uid, feature, cfg.cobroExegesis);
 
         // Camino con TOOLS (fileSearch del tutor de griego): el port es
         // texto→texto y no las cubre, así que acá se usa el SDK directo y se

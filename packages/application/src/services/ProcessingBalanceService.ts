@@ -7,6 +7,8 @@ import {
     setDoc,
     updateDoc,
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { llamarConReintentoDeSesion } from '@dosfilos/infrastructure';
 import type { ProcessingBalance, ProcessingMode } from '@dosfilos/domain';
 
 export type { ProcessingMode } from '@dosfilos/domain';
@@ -325,143 +327,54 @@ export class ProcessingBalanceService {
     }
 
     /**
-     * Atomically debits `costUsd` from the user's exégesis budget.
-     * Plan bucket drains first (it resets monthly so wasting it is
-     * silly), then the pack bucket. Throws
-     * `InsufficientExegesisCreditsError` when the combined buckets
-     * can't cover the request.
+     * Reserva el costo de una operación de exégesis EN EL SERVIDOR
+     * (`abrirReservaDeExegesis`, fase «el cobro de la exégesis pasa al
+     * servidor», 2026-10-17). El servidor toma el costo de su catálogo, no de
+     * acá: `costUsd` queda sólo para quien llama (telemetría).
      *
-     * Caller is responsible for invoking `refundExegesis` if the
-     * downstream operation fails BEFORE the LLM was contacted —
-     * see use-case wrappers for the policy. Failures AFTER the LLM
-     * was hit are not refundable (tokens were paid).
+     * Lanza `InsufficientExegesisCreditsError` cuando el saldo no alcanza, como
+     * antes, así el aviso de compra de `StepCard` sigue igual. `reservaId` hace
+     * idempotente un reintento: no cobra dos veces.
      */
-    async consumeExegesis(userId: string, costUsd: number): Promise<void> {
-        if (costUsd <= 0) return;
-        const balance = await this.getBalance(userId);
-        const planAvailable = balance.planExegesisUsd ?? 0;
-        const packAvailable = balance.packExegesisUsd ?? 0;
-        const total = planAvailable + packAvailable;
-        if (total < costUsd) {
-            throw new InsufficientExegesisCreditsError(costUsd, total);
+    async consumeExegesis(
+        _userId: string,
+        _costUsd: number,
+        reserva: { operation: string; reservaId: string },
+    ): Promise<void> {
+        const abrir = httpsCallable<{ operacion: string; reservaId: string }, unknown>(getFunctions(), 'abrirReservaDeExegesis');
+        try {
+            // Idempotente por `reservaId`: reintentar tras renovar la sesión no cobra dos veces.
+            await llamarConReintentoDeSesion(() => abrir({ operacion: reserva.operation, reservaId: reserva.reservaId }));
+        } catch (err) {
+            const e = err as { code?: string; details?: { reason?: string; neededUsd?: number; availableUsd?: number } };
+            if (e.code === 'functions/resource-exhausted' && e.details?.reason === 'insufficient-exegesis-credits') {
+                throw new InsufficientExegesisCreditsError(Number(e.details.neededUsd ?? 0), Number(e.details.availableUsd ?? 0));
+            }
+            // La web puede salir antes que las funciones en el deploy: mientras
+            // el callable no exista, la operación sigue sin reserva (el
+            // servidor está en sombra y sólo lo anota).
+            if (e.code === 'functions/not-found') {
+                console.warn('[ProcessingBalanceService] abrirReservaDeExegesis todavía no existe; sigue sin reserva');
+                return;
+            }
+            throw err;
         }
-
-        const fromPlan = Math.min(planAvailable, costUsd);
-        const fromPack = costUsd - fromPlan;
-
-        const newPlan = planAvailable - fromPlan;
-        const newPack = packAvailable - fromPack;
-
-        const db = getFirestore();
-        const ref = doc(db, this.USERS, userId);
-
-        await updateDoc(ref, {
-            'processingBalance.planExegesisUsd': newPlan,
-            'processingBalance.packExegesisUsd': newPack,
-            'processingBalance.exegesisUsdAvailable': newPlan + newPack,
-            'processingBalance.exegesisSpentTotalUsd':
-                (balance.exegesisSpentTotalUsd ?? 0) + costUsd,
-            'processingBalance.updatedAt': serverTimestamp(),
-        });
     }
 
     /**
-     * Refunds `costUsd` to the user's exégesis budget. Used by the
-     * use-case error path when an operation fails BEFORE the Gemini
-     * call (validation error, missing entity, quota exceeded
-     * downstream). The split favors the bucket that was last drained:
-     * we top up the plan bucket first to avoid pretending the user has
-     * more pack credits than they bought.
-     *
-     * DESDE EL 2026-10-16 LAS REGLAS LO RECHAZAN: el cliente sólo puede bajar
-     * su saldo de exégesis (antes podía ponerse el que quisiera). El que lo
-     * llama (`ExegesisCreditReservation.refundIfPreLlm`) traga el error, así
-     * que una falla previa al modelo cuesta la reserva. El arreglo es llevar
-     * el cobro de exégesis al servidor (fase pendiente).
+     * Devuelve una reserva cuyo modelo nunca se llamó
+     * (`liberarReservaDeExegesis`). El servidor decide si corresponde: sabe si
+     * el modelo se contactó, y lo de una reserva ya usada no vuelve.
      */
-    async refundExegesis(userId: string, costUsd: number): Promise<void> {
-        if (costUsd <= 0) return;
-        const balance = await this.getBalance(userId);
-        const planAvailable = balance.planExegesisUsd ?? 0;
-        const packAvailable = balance.packExegesisUsd ?? 0;
-
-        const newPlan = planAvailable + costUsd;
-        const newPack = packAvailable;
-
-        const db = getFirestore();
-        const ref = doc(db, this.USERS, userId);
-
-        await updateDoc(ref, {
-            'processingBalance.planExegesisUsd': newPlan,
-            'processingBalance.packExegesisUsd': newPack,
-            'processingBalance.exegesisUsdAvailable': newPlan + newPack,
-            'processingBalance.exegesisSpentTotalUsd': Math.max(
-                0,
-                (balance.exegesisSpentTotalUsd ?? 0) - costUsd,
-            ),
-            'processingBalance.updatedAt': serverTimestamp(),
-        });
+    async refundExegesis(_userId: string, _costUsd: number, reserva: { reservaId: string }): Promise<void> {
+        const liberar = httpsCallable<{ reservaId: string }, unknown>(getFunctions(), 'liberarReservaDeExegesis');
+        await llamarConReintentoDeSesion(() => liberar({ reservaId: reserva.reservaId }));
     }
 
-    /**
-     * Credits `usdAmount` to the user's exégesis PACK bucket. Used by
-     * the Stripe webhook when an `exegesis-*` pack is purchased.
-     * Idempotent given a stable caller (the webhook deduplicates per
-     * Stripe session id).
-     */
-    async addExegesisPack(userId: string, usdAmount: number): Promise<void> {
-        if (usdAmount <= 0) return;
-        const balance = await this.getBalance(userId);
-        const planExisting = balance.planExegesisUsd ?? 0;
-        const newPack = (balance.packExegesisUsd ?? 0) + usdAmount;
-
-        const db = getFirestore();
-        const ref = doc(db, this.USERS, userId);
-
-        const snap = await getDoc(ref);
-        if (!snap.exists() || !snap.data()?.processingBalance) {
-            await setDoc(
-                ref,
-                { processingBalance: { ...ZERO_BALANCE } },
-                { merge: true },
-            );
-        }
-
-        await updateDoc(ref, {
-            'processingBalance.packExegesisUsd': newPack,
-            'processingBalance.exegesisUsdAvailable': planExisting + newPack,
-            'processingBalance.updatedAt': serverTimestamp(),
-        });
-    }
-
-    /**
-     * SETs the user's exégesis PLAN bucket to `usdAmount`. Used by the
-     * monthly billing-cycle webhook to reset the plan allowance at
-     * the start of each billing period. Pack bucket is untouched.
-     */
-    async setExegesisPlanQuota(userId: string, usdAmount: number): Promise<void> {
-        const balance = await this.getBalance(userId);
-        const newPlan = Math.max(0, usdAmount);
-        const packExisting = balance.packExegesisUsd ?? 0;
-
-        const db = getFirestore();
-        const ref = doc(db, this.USERS, userId);
-
-        const snap = await getDoc(ref);
-        if (!snap.exists() || !snap.data()?.processingBalance) {
-            await setDoc(
-                ref,
-                { processingBalance: { ...ZERO_BALANCE } },
-                { merge: true },
-            );
-        }
-
-        await updateDoc(ref, {
-            'processingBalance.planExegesisUsd': newPlan,
-            'processingBalance.exegesisUsdAvailable': newPlan + packExisting,
-            'processingBalance.updatedAt': serverTimestamp(),
-        });
-    }
+    // `addExegesisPack` y `setExegesisPlanQuota` vivían acá y subían el saldo
+    // desde el navegador. No los llamaba nadie (los abonos los hace el
+    // servidor: webhook de Stripe, cuota mensual) y desde #785 las reglas los
+    // rechazan. Se quitaron con el cobro en el servidor (2026-10-17).
 }
 
 export const processingBalanceService = new ProcessingBalanceService();

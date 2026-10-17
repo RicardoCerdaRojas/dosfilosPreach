@@ -22,6 +22,13 @@ export interface LlmBudgetConfig {
     alertPcts: number[];
     /** Tope de llamadas al proxy por usuario y por hora. */
     proxyMaxCallsPerHourPerUser: number;
+    /**
+     * El cobro de exégesis en el servidor (2026-10-17). En `sombra`,
+     * `runLlmPrompt` registra las llamadas que cobran sin reserva válida pero
+     * no las rechaza; en `obligatorio`, las rechaza. Se pasa a obligatorio con
+     * el OK del fundador, después de unos días en sombra.
+     */
+    cobroExegesis: 'sombra' | 'obligatorio';
 }
 
 export const DEFAULT_BUDGET: LlmBudgetConfig = {
@@ -33,6 +40,7 @@ export const DEFAULT_BUDGET: LlmBudgetConfig = {
     // Con 13 usuarios esto es holgado; existe para que un cliente manipulado (o
     // un bucle accidental en la UI) no vacíe el presupuesto en una tarde.
     proxyMaxCallsPerHourPerUser: 120,
+    cobroExegesis: 'sombra',
 };
 
 export async function readBudgetConfig(): Promise<LlmBudgetConfig> {
@@ -47,6 +55,7 @@ export async function readBudgetConfig(): Promise<LlmBudgetConfig> {
                 d.proxyMaxCallsPerHourPerUser,
                 DEFAULT_BUDGET.proxyMaxCallsPerHourPerUser,
             ),
+            cobroExegesis: d.cobroExegesis === 'obligatorio' ? 'obligatorio' : 'sombra',
         };
     } catch (err) {
         console.warn('[llmBudget] no se pudo leer la config; se usan los defaults', err);

@@ -224,6 +224,10 @@
       "provider": "gemini",
       "model": "gemini-3.8-flash"
     },
+    "exegesis.createUserRubric": {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash"
+    },
     "exegesis.extractStyleManifest": {
       "provider": "openai",
       "model": "gpt-6-luna",

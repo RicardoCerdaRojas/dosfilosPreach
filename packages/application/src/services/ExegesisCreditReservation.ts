@@ -23,13 +23,15 @@ import { fireExegesisPricingEvent } from './exegesisPricingTracker';
  *   4. On error, the caller invokes `refundIfPreLlm()` which checks
  *      the marker and refunds when appropriate.
  *
- * Operations whose catalog cost is 0 (e.g. classifier with $0.001
- * stub, or future free ops) skip the reservation entirely and the
- * refund call becomes a no-op — cheaper than special-casing in every
- * UC.
+ * Desde el 2026-10-17 la reserva vive en el SERVIDOR
+ * (`abrirReservaDeExegesis`): el servidor cobra del catálogo, `runLlmPrompt`
+ * marca cuándo se contactó el modelo y el reembolso sólo procede si no se
+ * contactó. Una clave de costo cero (fuera del catálogo) no reserva.
  */
 export class ExegesisCreditReservation {
     readonly costUsd: number;
+    /** El id de la reserva en el servidor (lo genera el navegador: reintentar no cobra dos veces). */
+    readonly reservaId: string;
     private llmContacted = false;
     private refunded = false;
 
@@ -38,6 +40,7 @@ export class ExegesisCreditReservation {
         readonly operation: ExegesisOperationKey,
     ) {
         this.costUsd = getExegesisOperationCostUsd(operation);
+        this.reservaId = nuevoReservaId();
     }
 
     static async open(
@@ -45,6 +48,8 @@ export class ExegesisCreditReservation {
         operation: ExegesisOperationKey,
     ): Promise<ExegesisCreditReservation> {
         const reservation = new ExegesisCreditReservation(userId, operation);
+        // Costo cero = clave fuera del catálogo: no hay nada que reservar (y el
+        // servidor rechazaría una operación que no conoce).
         if (reservation.costUsd <= 0) {
             return reservation;
         }
@@ -54,7 +59,10 @@ export class ExegesisCreditReservation {
             costUsd: reservation.costUsd,
         });
         try {
-            await processingBalanceService.consumeExegesis(userId, reservation.costUsd);
+            await processingBalanceService.consumeExegesis(userId, reservation.costUsd, {
+                operation,
+                reservaId: reservation.reservaId,
+            });
         } catch (err) {
             if (err instanceof InsufficientExegesisCreditsError) {
                 fireExegesisPricingEvent('exegesis.quota.exceeded', {
@@ -90,7 +98,8 @@ export class ExegesisCreditReservation {
         this.refunded = true;
         if (this.llmContacted || this.costUsd <= 0) return;
         try {
-            await processingBalanceService.refundExegesis(this.userId, this.costUsd);
+            // El servidor decide si corresponde: sabe si el modelo se contactó.
+            await processingBalanceService.refundExegesis(this.userId, this.costUsd, { reservaId: this.reservaId });
             fireExegesisPricingEvent('exegesis.quota.refunded', {
                 ownerId: this.userId,
                 operation: this.operation,
@@ -101,4 +110,11 @@ export class ExegesisCreditReservation {
             console.error('[ExegesisCreditReservation] refund failed:', err);
         }
     }
+}
+
+/** Un id de reserva: UUID si el navegador lo tiene, si no algo equivalente. */
+function nuevoReservaId(): string {
+    const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+    if (c?.randomUUID) return c.randomUUID();
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }

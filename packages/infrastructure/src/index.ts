@@ -37,6 +37,7 @@ export * from './sermon-repurposer/GeminiSermonRepurposer';
 export * from './gemini/GeminiPlanGenerator';
 export * from './gemini/GeminiEmbeddingService';
 export * from './llm/proxyLlmClient'; // 🌱 Puerto ILlmClient sobre el proxy del servidor
+export { llamarConReintentoDeSesion } from './llm/callableLlm';
 // Tope de caracteres del prompt. Lo consume también la interfaz, para que el
 // medidor de presupuesto del corpus mida contra el número real y no una copia.
 export { MAX_PROMPT_CHARS, PRIOR_ANALYSES_BUDGET_CHARS, VERSE_CORPUS_SPACE_CHARS } from './llm/promptBudget';

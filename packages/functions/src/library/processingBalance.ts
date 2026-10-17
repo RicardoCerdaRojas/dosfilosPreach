@@ -225,34 +225,6 @@ export async function setPlanQuotaAdmin(
 // client-side service. Same dual-write pattern (plan + pack +
 // aggregate available) the page buckets use.
 
-interface ExegesisBucketShape {
-    planExegesisUsd?: number;
-    packExegesisUsd?: number;
-    exegesisUsdAvailable?: number;
-    exegesisSpentTotalUsd?: number;
-}
-
-async function readExegesisBucket(userId: string): Promise<Required<ExegesisBucketShape>> {
-    const db = getFirestore();
-    const snap = await db.collection('users').doc(userId).get();
-    const balance = snap.data()?.processingBalance as ExegesisBucketShape | undefined;
-    if (!balance) {
-        return {
-            planExegesisUsd: 0,
-            packExegesisUsd: 0,
-            exegesisUsdAvailable: 0,
-            exegesisSpentTotalUsd: 0,
-        };
-    }
-    const plan = balance.planExegesisUsd ?? 0;
-    const pack = balance.packExegesisUsd ?? 0;
-    return {
-        planExegesisUsd: plan,
-        packExegesisUsd: pack,
-        exegesisUsdAvailable: balance.exegesisUsdAvailable ?? plan + pack,
-        exegesisSpentTotalUsd: balance.exegesisSpentTotalUsd ?? 0,
-    };
-}
 
 /**
  * Credits `usdAmount` to the user's exégesis PACK bucket. Used by the
@@ -261,24 +233,7 @@ async function readExegesisBucket(userId: string): Promise<Required<ExegesisBuck
  */
 export async function addExegesisPackAdmin(userId: string, usdAmount: number): Promise<void> {
     if (usdAmount <= 0) return;
-    const db = getFirestore();
-    const ref = db.collection('users').doc(userId);
-    const snap = await ref.get();
-    const bucket = await readExegesisBucket(userId);
-    const newPack = bucket.packExegesisUsd + usdAmount;
-
-    if (!snap.exists || !snap.data()?.processingBalance) {
-        await ref.set(
-            { processingBalance: { ...ZERO_BUCKETS } },
-            { merge: true },
-        );
-    }
-
-    await ref.update({
-        'processingBalance.packExegesisUsd': newPack,
-        'processingBalance.exegesisUsdAvailable': bucket.planExegesisUsd + newPack,
-        'processingBalance.updatedAt': FieldValue.serverTimestamp(),
-    });
+    await escribirBaldesDeExegesis(userId, ({ plan, pack }) => ({ plan, pack: pack + usdAmount }));
 }
 
 /**
@@ -288,24 +243,43 @@ export async function addExegesisPackAdmin(userId: string, usdAmount: number): P
  *
  * Pack bucket is untouched. Caller MUST deduplicate by invoice/sub id
  * before invoking — this function unconditionally overwrites.
+ *
+ * Deja un sello nuevo en `exegesisPlanPeriodo`: una reserva de exégesis
+ * abierta antes de la renovación, si se devuelve, no suma lo del plan viejo
+ * al plan nuevo (`reservasDeExegesis.devolver`).
  */
 export async function setExegesisPlanQuotaAdmin(userId: string, usdAmount: number): Promise<void> {
+    await escribirBaldesDeExegesis(userId, ({ pack }) => ({ plan: Math.max(0, usdAmount), pack }), { nuevoPeriodo: true });
+}
+
+/**
+ * Los baldes de exégesis se leen y se escriben en una TRANSACCIÓN: desde
+ * 2026-10-17 el cobro de exégesis también descuenta en el servidor
+ * (`reservasDeExegesis`), y un abono y un descuento simultáneos se pisaban.
+ */
+async function escribirBaldesDeExegesis(
+    userId: string,
+    cambio: (b: { plan: number; pack: number }) => { plan: number; pack: number },
+    opciones: { nuevoPeriodo?: boolean } = {},
+): Promise<void> {
     const db = getFirestore();
     const ref = db.collection('users').doc(userId);
-    const snap = await ref.get();
-    const bucket = await readExegesisBucket(userId);
-    const newPlan = Math.max(0, usdAmount);
-
-    if (!snap.exists || !snap.data()?.processingBalance) {
-        await ref.set(
-            { processingBalance: { ...ZERO_BUCKETS } },
-            { merge: true },
-        );
-    }
-
-    await ref.update({
-        'processingBalance.planExegesisUsd': newPlan,
-        'processingBalance.exegesisUsdAvailable': newPlan + bucket.packExegesisUsd,
-        'processingBalance.updatedAt': FieldValue.serverTimestamp(),
+    await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const balance = (snap.data()?.processingBalance ?? null) as Record<string, unknown> | null;
+        const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+        const { plan, pack } = cambio({ plan: num(balance?.planExegesisUsd), pack: num(balance?.packExegesisUsd) });
+        const campos: Record<string, unknown> = {
+            planExegesisUsd: plan,
+            packExegesisUsd: pack,
+            exegesisUsdAvailable: plan + pack,
+            updatedAt: FieldValue.serverTimestamp(),
+            ...(opciones.nuevoPeriodo ? { exegesisPlanPeriodo: Date.now() } : {}),
+        };
+        if (!balance) {
+            tx.set(ref, { processingBalance: { ...ZERO_BUCKETS, ...campos } }, { merge: true });
+        } else {
+            tx.update(ref, Object.fromEntries(Object.entries(campos).map(([k, v]) => [`processingBalance.${k}`, v])));
+        }
     });
 }
