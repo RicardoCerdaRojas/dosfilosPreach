@@ -1,107 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
-import type { Firestore } from 'firebase-admin/firestore';
-import type { GeminiDelLote } from '../geminiDelLote';
-import type { Lote, RespuestaCruda } from '../estadoDelLote';
+import type { Lote } from '../estadoDelLote';
 import {
     abandonarLibroEnTarea, cancelarLote, crearJobSiToca, lanzarLote, procesarLibro, reintentarLote, sondearLote,
-    type CargaDeLote, type Dependencias,
 } from '../orquestarLote';
+import { armar, lanzar, PLAZO, prepararPdfs, responder } from './fakesDelLote';
 
-/** Firestore en memoria: lo justo que usa la orquestación (doc, create, transacción, getAll). */
-function firestoreFalso() {
-    const docs = new Map<string, Record<string, unknown>>();
-    const copia = <T>(x: T): T => JSON.parse(JSON.stringify(x));
-    const ref = (c: string, id: string) => ({
-        path: `${c}/${id}`, id,
-        get: async () => ({ id, exists: docs.has(`${c}/${id}`), data: () => (docs.has(`${c}/${id}`) ? copia(docs.get(`${c}/${id}`)) : undefined) }),
-        create: async (d: Record<string, unknown>) => {
-            if (docs.has(`${c}/${id}`)) throw Object.assign(new Error('ALREADY_EXISTS'), { code: 6 });
-            docs.set(`${c}/${id}`, copia(d));
-        },
-        set: async (d: Record<string, unknown>) => { docs.set(`${c}/${id}`, copia(d)); },
-    });
-    type Ref = ReturnType<typeof ref>;
-    const db = {
-        collection: (c: string) => ({ doc: (id: string) => ref(c, id) }),
-        getAll: (...refs: Ref[]) => Promise.all(refs.map(r => r.get())),
-        runTransaction: async <T>(fn: (tx: unknown) => Promise<T>) => fn({
-            get: (r: Ref) => r.get(),
-            set: (r: Ref, d: Record<string, unknown>) => { docs.set(r.path, copia(d)); },
-        }),
-    };
-    return { db: db as unknown as Firestore, docs };
-}
-
-function geminiFalso() {
-    const g = {
-        subidos: [] as string[],
-        jobs: [] as Array<{ nombre: string; pedidos: Array<{ indice: number; uri: string }> }>,
-        cancelados: [] as string[],
-        borrados: [] as string[],
-        huerfano: null as string | null,
-        estados: new Map<string, { estado: string; respuestas: RespuestaCruda[] | null }>(),
-    };
-    const api: GeminiDelLote = {
-        subirPdf: async () => { const n = `files/${g.subidos.length}`; g.subidos.push(n); return { name: n, uri: `https://f/${n}` }; },
-        crearJob: async (nombre, pedidos) => { g.jobs.push({ nombre, pedidos: [...pedidos] }); return `batches/${g.jobs.length}`; },
-        buscarJob: async () => g.huerfano,
-        verJob: async job => g.estados.get(job) ?? { estado: 'JOB_STATE_RUNNING', respuestas: null },
-        cancelarJob: async job => { g.cancelados.push(job); },
-        borrarArchivo: async n => { g.borrados.push(n); },
-    };
-    return { g, api };
-}
-
-const texto = (n: number) => `Contenido legible de la página ${n} con bastante texto para contar como leída.`;
-const responder = (indice: number, paginas: number[]): RespuestaCruda => ({
-    metadata: { tramo: String(indice) }, finishReason: 'STOP', error: null, entrada: 2000, salida: 1000,
-    text: JSON.stringify({ pages: paginas.map(p => ({ page: p, md: texto(p) })) }),
-});
-
-async function pdfDe(paginas: number): Promise<Buffer> {
-    const doc = await PDFDocument.create();
-    for (let i = 0; i < paginas; i++) doc.addPage([200, 200]);
-    return Buffer.from(await doc.save());
-}
-
-let PDF_25: Buffer;
-let PDF_10: Buffer;
-beforeAll(async () => { PDF_25 = await pdfDe(25); PDF_10 = await pdfDe(10); });
-
-function armar(extra: Partial<{ archivos: Record<string, Buffer> }> = {}) {
-    const { db, docs } = firestoreFalso();
-    const { g, api } = geminiFalso();
-    const guardados = new Map<string, string>();
-    const archivos: Record<string, Buffer> = { 'users/u/a.pdf': PDF_25, 'users/u/b.pdf': PDF_10, ...extra.archivos };
-    const encolados: CargaDeLote[] = [];
-    const gastos: Array<{ entrada: number; salida: number }> = [];
-    let reloj = 1_000_000;
-    const d: Dependencias = {
-        db, gemini: api, bucketPorDefecto: 'b',
-        almacen: {
-            bajar: async ({ path }) => { if (!archivos[path]) throw new Error(`no existe ${path}`); return archivos[path]!; },
-            guardar: async (p, c) => { guardados.set(p, c); },
-            leer: async p => guardados.get(p) ?? null,
-            listar: async prefijo => [...guardados.keys()].filter(k => k.startsWith(prefijo)),
-        },
-        ahora: () => (reloj += 1000),
-        usdDeLote: (e, s) => (e * 0.375 + s * 1.875) / 1e6,
-        registrarGasto: async uso => { gastos.push(uso); },
-        encolar: async c => { encolados.push(c); },
-    };
-    const recurso = (id: string, extraR: Record<string, unknown> = {}) => docs.set(`library_resources/${id}`, {
-        title: `Libro ${id}`, userId: 'u', mimeType: 'application/pdf', storageUrl: `gs://b/users/u/${id.toLowerCase()}.pdf`,
-        textExtractionStatus: 'ready', extractionVersion: '3.0-llamaparse', ...extraR,
-    });
-    recurso('A');
-    recurso('B');
-    const lote = () => docs.get('admin_lotes/b6') as unknown as Lote;
-    return { d, g, docs, guardados, encolados, gastos, recurso, lote };
-}
-
-const lanzar = (d: Dependencias, ids = ['A', 'B']) => lanzarLote(d, { nombre: 'b6', dueno: 'u', ids, estimadoUsd: 0.07, por: 'admin', email: 'a@x' });
-const PLAZO = Number.MAX_SAFE_INTEGER;
+beforeAll(prepararPdfs);
 
 describe('lanzar', () => {
     it('valida los libros y encola uno por libro', async () => {

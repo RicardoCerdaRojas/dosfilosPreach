@@ -720,7 +720,8 @@
       "gemini": "Visión (una invocación)",
       "gemini-queue": "Visión (en cola)",
       "pdfjs": "Capa de texto",
-      "unknown": "Sin motor"
+      "unknown": "Sin motor",
+      "batch": "Reproceso en lote (aplicado)"
     },
     "preflight": {
       "title": "¿El informe previo predijo el resultado?",
@@ -768,7 +769,8 @@
     "path": {
       "upload": "Subida",
       "reprocess-premium": "Reproceso premium",
-      "reprocess-vision": "Reproceso por imágenes"
+      "reprocess-vision": "Reproceso por imágenes",
+      "batch-reprocess": "Reproceso en lote"
     },
     "alert": {
       "reversed-hebrew": "Hebreo invertido",
@@ -781,7 +783,7 @@
   },
   "batch": {
     "title": "Reproceso en lote",
-    "subtitle": "Qué libros conviene volver a leer, cuánto costaría, y los lotes lanzados. «Preparar lote» y «Reintentar» gastan, y piden confirmación; ningún libro cambia desde aquí.",
+    "subtitle": "Qué libros conviene volver a leer, cuánto costaría, y los lotes lanzados: seguirlos, compararlos y aplicarlos. «Preparar lote» y «Reintentar» gastan, y piden confirmación.",
     "owner": "Biblioteca de",
     "loadError": "No se pudieron cargar los libros.",
     "empty": "Esta biblioteca no tiene libros.",
@@ -848,8 +850,8 @@
       "button": "Preparar lote",
       "orTerminal": "O en la terminal:",
       "confirmTitle": "¿Preparar el lote «{{nombre}}»?",
-      "confirmBody_one": "Se corta y se envía {{count}} libro ({{paginas}} páginas). Costo estimado: unos {{usd}}; con reintentos, unos {{conReintentos}}. El resultado tarda hasta 24 horas y ningún libro cambia hasta que se aplique (aplicar desde el panel llega en la próxima versión).",
-      "confirmBody_other": "Se cortan y se envían {{count}} libros ({{paginas}} páginas). Costo estimado: unos {{usd}}; con reintentos, unos {{conReintentos}}. El resultado tarda hasta 24 horas y ningún libro cambia hasta que se aplique (aplicar desde el panel llega en la próxima versión).",
+      "confirmBody_one": "Se corta y se envía {{count}} libro ({{paginas}} páginas). Costo estimado: unos {{usd}}; con reintentos, unos {{conReintentos}}. El resultado tarda hasta 24 horas y ningún libro cambia hasta que se aplique.",
+      "confirmBody_other": "Se cortan y se envían {{count}} libros ({{paginas}} páginas). Costo estimado: unos {{usd}}; con reintentos, unos {{conReintentos}}. El resultado tarda hasta 24 horas y ningún libro cambia hasta que se aplique.",
       "confirm": "Preparar (unos {{usd}})",
       "cancel": "Volver",
       "done_one": "Lote «{{nombre}}» lanzado con {{count}} libro.",
@@ -908,6 +910,34 @@
       "retryBody_one": "Se pide de nuevo, como mucho, {{count}} página (unos {{usd}}). Las páginas en blanco también en el PDF, o que ya fallaron solas, se abandonan sin pedirlas. Cada reintento es una ronda nueva que se cobra aparte.",
       "retryBody_other": "Se piden de nuevo, como mucho, {{count}} páginas (unos {{usd}}). Las páginas en blanco también en el PDF, o que ya fallaron solas, se abandonan sin pedirlas. Cada reintento es una ronda nueva que se cobra aparte.",
       "retryConfirm": "Reintentar (unos {{usd}})"
+    },
+    "apply": {
+      "compare": "Comparar",
+      "apply": "Aplicar",
+      "actions": "Acciones",
+      "comparison": "Comparación",
+      "compareAll_one": "Comparar {{count}} libro",
+      "compareAll_other": "Comparar {{count}} libros",
+      "applyAll_one": "Aplicar {{count}} que mejora",
+      "applyAll_other": "Aplicar los {{count}} que mejoran",
+      "hint": "Comparar no toca el libro. Aplicar guarda un respaldo y sólo reemplaza si mejora sin perder nada.",
+      "improves": "Mejora: se reemplaza",
+      "keeps": "Se queda como está",
+      "numbers": "Faltan {{faltan}} · hebreo {{hebreo}} · griego {{griego}}",
+      "filled_one": "{{count}} página con el texto del PDF (el lote no la leyó)",
+      "filled_other": "{{count}} páginas con el texto del PDF (el lote no las leyó)",
+      "stale": "Hay una ronda nueva: vuelve a comparar.",
+      "applied": "Aplicado",
+      "unchanged": "Sin cambios",
+      "done": "«{{titulo}}» reemplazado; el índice se rehace solo.",
+      "kept": "«{{titulo}}» se queda como está: {{motivo}}",
+      "incompleteTitle": "¿Aplicar «{{titulo}}» con tramos que fallaron?",
+      "incompleteBody_one": "{{count}} tramo no se leyó entero. Sus páginas quedan con el texto del PDF, o vacías si el PDF no lo trae (un escaneo). Si después reintentas, se puede volver a aplicar sólo si esta vez no se reemplaza.",
+      "incompleteBody_other": "{{count}} tramos no se leyeron enteros. Sus páginas quedan con el texto del PDF, o vacías si el PDF no lo trae (un escaneo). Si después reintentas, se puede volver a aplicar sólo si esta vez no se reemplaza.",
+      "incompleteConfirm": "Aplicar igual",
+      "applyAllTitle_one": "¿Aplicar {{count}} libro?",
+      "applyAllTitle_other": "¿Aplicar {{count}} libros?",
+      "applyAllBody": "Se aplican de a uno los libros cuya comparación está al día, mejora y no tiene tramos con fallas. Cada uno guarda un respaldo del texto actual y se vuelve a indexar."
     }
   }
 }

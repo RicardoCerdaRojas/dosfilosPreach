@@ -20,7 +20,7 @@ export { alertFailedIndexing } from './library/alertFailedIndexing';
 export { sweepStalledExtractions } from './library/sweepStalledExtractions';
 export { getExtractionRuns } from './library/getExtractionRuns';
 export { getBatchCandidates } from './library/candidatosDeLote';
-export { launchBatch, retryBatch, cancelBatch, getBatchJobs, batchBookTask, pollBatchJobs } from './library/funcionesDelLote';
+export { launchBatch, retryBatch, cancelBatch, getBatchJobs, batchBookTask, pollBatchJobs, compareBatchBook, applyBatchBook } from './library/funcionesDelLote';
 export { incrementUsage } from './usage/incrementUsage';
 export { getGreekDashboardSessions } from './greek-tutor/getGreekDashboardSessions';
 export { getFacultyDashboardSessions } from './faculty/getFacultyDashboardSessions';
