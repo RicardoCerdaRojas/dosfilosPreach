@@ -535,6 +535,27 @@
     "topicSummary_one": "{{count}} passage in {{libros}} discusses the topic",
     "topicSummary_other": "{{count}} passages in {{libros}} discuss the topic",
     "topicBooks_one": "{{count}} book",
-    "topicBooks_other": "{{count}} books"
+    "topicBooks_other": "{{count}} books",
+    "summary": {
+      "map": "Book map",
+      "section": "Summarize this chapter",
+      "mapTitle": "Book map",
+      "sectionTitle": "Summary: {{titulo}}",
+      "rangeTitle": "Summary from {{desde}} to {{hasta}}",
+      "sectionTitleLoading": "Chapter summary",
+      "loadingMap": "Building the map from the book's sections…",
+      "loadingSection": "Reading the chapter…",
+      "themes": "Themes",
+      "ideas": "Main ideas",
+      "saved": "Saved: viewing it again doesn't count as a query.",
+      "counted": "Counted as one query of your plan. It's saved to view again.",
+      "close": "Close summary",
+      "hint": "Short, with their pages. Each new summary counts as one query.",
+      "page": "p. {{pagina}}",
+      "sheet": "sheet {{hoja}}",
+      "countedUnsaved": "Counted as one query of your plan, but it couldn't be saved: asking again counts again."
+    },
+    "passageHeading": "What your books say about {{pasaje}}",
+    "passageAuthors": "Discussed by"
   }
 }

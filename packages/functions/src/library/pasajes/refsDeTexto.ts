@@ -368,3 +368,38 @@ export function refsDeFragmento(texto: string, seccion: ReadonlyArray<string> | 
     if (contexto?.firme) citas.push(...citasConContexto(tapar(propias.plano, propias.tramos), contexto));
     return claves(citas);
 }
+
+/**
+ * El pasaje que nombra una pregunta, para mostrarlo («¿Qué dicen mis libros
+ * sobre génesis 2:17?» → «Génesis 2:17»): la cita como la escribió el pastor
+ * —con sus acentos—, con la primera LETRA en mayúscula. `null` si la pregunta
+ * no nombra ninguno con seguridad (fase «biblioteca consultable», U6).
+ *
+ * En una pregunta no se exige mayúscula, así que una cifra sola tras una
+ * grafía corta es una palabra común: «dan 3 razones», «la sal 2 veces», «mi 2
+ * pregunta» (revisión adversarial). Hace falta un versículo («stg 3:13») o el
+ * nombre entero del libro («santiago 3»), y que deje alguna clave.
+ */
+export function etiquetaDePasaje(pregunta: string): string | null {
+    const citas = citasDeTexto(pregunta, { exigirMayuscula: false });
+    const primera = citas.find(c => {
+        const grafia = c.texto.replace(/[\d\s:.,\-–—]+$/g, '').replace(/[^\p{L}]/gu, '');
+        return (c.versiculos.length > 0 || grafia.length >= 4) && claves([c]).length > 0;
+    });
+    if (!primera) return null;
+    // `citasDeTexto` busca sin acentos: se arma el mismo texto llevando, por
+    // cada posición, la del original, para recortar la cita de ahí.
+    let plano = '';
+    const origen: number[] = [];
+    for (let i = 0; i < pregunta.length; i++) {
+        const sin = pregunta[i]!.normalize('NFD').replace(/\p{M}/gu, '');
+        for (const c of sin) { plano += c; origen.push(i); }
+    }
+    const desde = plano.indexOf(primera.texto);
+    const recorte = desde >= 0
+        ? pregunta.slice(origen[desde]!, origen[desde + primera.texto.length - 1]! + 1)
+        : primera.texto;
+    const limpio = recorte.replace(/\s+/g, ' ').trim().replace(/[.,;:]+$/, '');
+    // «1 cor 13:4» → «1 Cor 13:4»: la mayúscula va en la primera letra, no en la cifra.
+    return limpio.replace(/\p{L}/u, l => l.toUpperCase());
+}

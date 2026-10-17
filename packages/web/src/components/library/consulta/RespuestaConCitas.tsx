@@ -7,6 +7,7 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { enlazarFuentes, PREFIJO_FUENTE, textoConCitas, type EtiquetarFuente } from './citasDeRespuesta';
 import { conEscrituras, TextoConEscrituras } from './TextoConEscrituras';
+import { autoresDelPasaje } from './autoresDelPasaje';
 
 /**
  * Una respuesta de «Consultar» con sus citas pulsables y la lista de fuentes
@@ -27,6 +28,7 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
     const { t } = useTranslation('library');
     const { markdown, enlaces } = useMemo(() => enlazarFuentes(turno.respuesta, turno.fuentes, etiquetar), [turno, etiquetar]);
     const [verFuentes, setVerFuentes] = useState(false);
+    const autores = useMemo(() => (turno.pasaje ? autoresDelPasaje(turno.fuentes, etiquetar) : []), [turno, etiquetar]);
     const [copiado, setCopiado] = useState(false);
 
     const copiar = async () => {
@@ -39,6 +41,36 @@ export function RespuestaConCitas({ turno, etiquetar, tituloDe, onAbrirFuente, c
 
     return (
         <div className="space-y-3">
+            {/* U6: una pregunta sobre un pasaje responde por autor; arriba, quiénes
+                lo tratan y en qué páginas (cada una abre el libro ahí). */}
+            {turno.pasaje && (
+                <div className="space-y-2 rounded-xl border border-secondary/40 bg-secondary/10 px-3 py-2.5" data-testid="pasaje-de-la-respuesta">
+                    <p className="m-0 font-serif text-[15px] font-bold text-foreground">
+                        {t('consult.passageHeading', { pasaje: turno.pasaje })}
+                    </p>
+                    {autores.length > 0 && (
+                        <p className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-foreground/80">
+                            {/* `foreground/70`, no `muted`: sobre el dorado claro, `muted` no llega a 4,5:1. */}
+                            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/70">{t('consult.passageAuthors')}</span>
+                            {autores.map(a => (
+                                <span key={a.autor} className="inline-flex flex-wrap items-baseline gap-x-1">
+                                    <span className="font-semibold text-foreground">{a.autor}</span>
+                                    {a.paginas.map(p => (
+                                        <button
+                                            key={`${p.fuente.resourceId}-${p.etiqueta}`}
+                                            type="button"
+                                            onClick={() => onAbrirFuente(p.fuente)}
+                                            className="inline-flex min-h-11 items-center rounded px-1 font-bible text-[14px] font-semibold text-foreground/80 underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0"
+                                        >
+                                            {p.etiqueta}
+                                        </button>
+                                    ))}
+                                </span>
+                            ))}
+                        </p>
+                    )}
+                </div>
+            )}
             {/* La respuesta es texto de ESTUDIO: en la serif de la marca, con
                 medida de lectura (rediseño, 2026-10-17). */}
             <div className={cn('prose dark:prose-invert max-w-[68ch] font-serif prose-p:my-4 prose-p:leading-[1.85] prose-strong:text-foreground', compacta ? 'prose-sm' : 'text-[17px]')}>

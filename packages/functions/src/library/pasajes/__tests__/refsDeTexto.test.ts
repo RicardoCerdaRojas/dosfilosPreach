@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BIBLE_CANON } from '@dosfilos/domain';
 import { CANON_BIBLICO, GRAFIAS_DE_COMENTARIOS, PREFERENCIA_SI_AMBIGUA } from '../canonBiblico';
-import { refsDeConsulta, refsDeFragmento, refsDeTexto, REFS_POR_FRAGMENTO } from '../refsDeTexto';
+import { etiquetaDePasaje, refsDeConsulta, refsDeFragmento, refsDeTexto, REFS_POR_FRAGMENTO } from '../refsDeTexto';
 
 /**
  * El canon de `functions` es copia del dominio. Si se agrega una grafía allá
@@ -229,5 +229,28 @@ describe('refsDeFragmento', () => {
 
     it('sin sección, sólo el texto', () => {
         expect(refsDeFragmento('Stg 5:14', null)).toEqual(['JAS.5', 'JAS.5.14']);
+    });
+});
+
+describe('etiquetaDePasaje (U6)', () => {
+    it('la cita como la escribió el pastor, con sus acentos y mayúscula inicial', () => {
+        expect(etiquetaDePasaje('¿Qué dicen mis libros sobre santiago 3:13?')).toBe('Santiago 3:13');
+        expect(etiquetaDePasaje('qué enseña génesis 2:17 sobre la muerte')).toBe('Génesis 2:17');
+        expect(etiquetaDePasaje('stg 5:14-15 y el aceite')).toBe('Stg 5:14-15');
+    });
+    it('sin pasaje, null', () => {
+        expect(etiquetaDePasaje('la oración por los enfermos')).toBeNull();
+    });
+    it('palabras comunes con una cifra NO son un pasaje (revisión adversarial)', () => {
+        for (const q of ['los autores dan 3 razones', 'la sal 2 veces', 'mi 2 pregunta', 'el mal 3 veces', 'he 11', 'est 3 cosas', 'num 3']) {
+            expect(etiquetaDePasaje(q), q).toBeNull();
+        }
+    });
+    it('el nombre entero sin versículo sí; un versículo que no existe, no', () => {
+        expect(etiquetaDePasaje('santiago 3')).toBe('Santiago 3');
+        expect(etiquetaDePasaje('judas 30')).toBeNull();
+    });
+    it('la mayúscula va en la primera letra', () => {
+        expect(etiquetaDePasaje('1 cor 13:4')).toBe('1 Cor 13:4');
     });
 });

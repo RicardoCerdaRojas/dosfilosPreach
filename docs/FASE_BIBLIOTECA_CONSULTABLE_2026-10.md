@@ -135,7 +135,7 @@ Queda pendiente, porque ya pasaba antes de esta fase: los índices del resaltado
 
 - **Capítulo o tramo de páginas:** se leen sólo los fragmentos de ese tramo (`metadata.page`), con un tope de **60 páginas**. Si el tramo es más largo, se pide uno más corto. El resultado tiene a lo sumo **250 palabras**, más 3 a 5 ideas principales, cada una con su página impresa.
 - **Libro entero, como «mapa del libro»:** no se lee el libro. Se arma con el índice de secciones (`sectionPath`, que ya está en los fragmentos) y con el **primer fragmento de cada sección**. El resultado tiene a lo sumo **300 palabras**, más la lista de temas, cada uno con sus páginas. Para entrar en detalle, se pide el resumen de un capítulo.
-- **Caché:** `library_summaries/{resourceId}_{tramo}`. Pedirlo otra vez no cuesta. Se invalida cuando el libro se reextrae (`extractedAt`).
+- **Caché:** `library_summaries/{resourceId}_{tramo}`. Pedirlo otra vez no cuesta. Se invalida cuando el libro se **reindexa** (`indexedAt`, ajustado el 2026-10-17: los resúmenes salen del índice, no de la extracción).
 - **Costo:**
   - *supuesto, a medir en U7:* un capítulo de 60 páginas son unos 45.000 tokens de entrada, del orden de centavos. El mapa de un libro de 800 páginas, con unas 150 secciones, son unos 50.000 tokens, también centavos;
   - leer el libro entero rondaría los 600.000 tokens, y eso es lo que se evita.
@@ -147,6 +147,22 @@ Queda pendiente, porque ya pasaba antes de esta fase: los índices del resaltado
 - **Cuota (decidido el 2026-10-17):** cada resumen nuevo cuenta como una consulta del plan. Volver a ver uno guardado no cuenta.
 
 ---
+
+### Etapa 2: lo hecho y la revisión adversarial (2026-10-17)
+
+- **U6 (modo pasaje):**
+  - **Cuándo entra.** Hace falta un versículo («stg 3:13») o el nombre entero del libro («santiago 3»). Así «dan 3 razones» o «la sal 2 veces» no lo activan.
+  - **Con un solo libro** (el visor) no se ordena por autor, aunque las claves del pasaje se buscan igual.
+  - **Tope por libro.** Rige solo con toda la biblioteca: si el pastor eligió los libros, ya eligió a los autores.
+  - **Seguimientos.** «¿y Moo?» hereda las claves del pasaje anterior para buscar, con el cupo normal.
+  - **Sin reordenador,** los fragmentos del pasaje van primero.
+  - **El pasaje se guarda** solo si hubo fragmentos.
+- **U7 (resúmenes):**
+  - **Primero la caché, después la cuota y el tope por hora, y al final la lectura del libro.** Volver a ver un resumen no lee el libro. «Este capítulo» guarda un alias por hoja.
+  - **Capítulos largos.** Uno de más de 60 hojas se parte en bloques fijos desde su comienzo, sin salirse de él, y se rotula «parte k de n». Dos hojas del mismo bloque dan un solo resumen y un solo cobro.
+  - **Pedidos simultáneos.** El mismo pedido en curso no sale dos veces.
+  - **Respaldo del modelo.** El pedido describe la forma exacta del JSON, para que el respaldo también sirva.
+  - **Mapa de un diccionario.** Toma secciones parejas a lo largo del libro, no las primeras.
 
 ## Fuera de esta fase
 

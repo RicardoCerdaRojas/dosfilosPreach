@@ -204,6 +204,8 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                             resourceId={view.resourceId}
                             etiquetar={f => etiquetaDeFuente(f, { clave: view.citationKey, title: view.label, pageNumbering: view.numbering })}
                             onIrAHoja={view.goTo}
+                            hojaActual={view.viewSheet}
+                            paginaImpresa={view.printedOf}
                         />
                     </div>
                 )}

@@ -27,6 +27,8 @@ export const FUNCIONES_DEL_SERVIDOR = [
     'library.consult',
     // Fase «buscador de la biblioteca» (2026-10-16): reordenar los candidatos.
     'library.rerank',
+    // Biblioteca consultable, etapa 2 (2026-10-17): resúmenes breves (U7).
+    'library.summarize',
 ] as const;
 export type FuncionDelServidor = typeof FUNCIONES_DEL_SERVIDOR[number];
 

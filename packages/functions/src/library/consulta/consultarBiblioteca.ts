@@ -7,6 +7,7 @@ import { armarPedido, leerRespuesta, tituloDeConsulta, type FuenteCitada, type T
 import { revisarCuota, sumarConsulta } from './cuotaDeConsultas';
 import { buscarPertinentes, FRAGMENTOS_POR_CONSULTA, type Alcance } from './recuperarFragmentos';
 import { leerAlcance } from './alcance';
+import { etiquetaDePasaje, refsDeConsulta } from '../pasajes/refsDeTexto';
 
 // Se reexporta: quien lo importaba de acá sigue igual.
 export { leerAlcance };
@@ -48,6 +49,8 @@ export interface TurnoGuardado {
     respuesta: string;
     fuentes: FuenteCitada[];
     creado: Date;
+    /** U6: el pasaje que nombra la pregunta («Santiago 3:13»), si nombra uno. */
+    pasaje?: string;
 }
 
 export const consultarBiblioteca = onCall(
@@ -70,6 +73,8 @@ export const consultarBiblioteca = onCall(
         const db = getFirestore();
         let alcance: Alcance;
         let anteriores: TurnoAnterior[] = [];
+        /** El pasaje del último turno que nombró uno: «¿y Moo?» lo sigue. */
+        let pasajeAnterior: string | null = null;
         if (consultaId) {
             // Una consulta que sigue conserva su alcance: el de la primera pregunta.
             const snap = await db.collection(COLECCION).doc(consultaId).get();
@@ -80,6 +85,8 @@ export const consultarBiblioteca = onCall(
             if (turnos.length >= MAX_TURNOS || JSON.stringify(turnos).length > MAX_BYTES_DE_CONSULTA) throw new HttpsError('failed-precondition', 'Esta consulta ya es muy larga. Empieza una nueva.');
             alcance = leerAlcance(snap.data()?.alcance);
             anteriores = turnos.map(t => ({ pregunta: t.pregunta, respuesta: t.respuesta }));
+            const conPasaje = [...turnos].reverse().find(t => typeof (t as { pasaje?: unknown }).pasaje === 'string') as { pasaje?: string } | undefined;
+            pasajeAnterior = conPasaje?.pasaje ?? null;
         } else {
             alcance = leerAlcance(entrada.alcance);
         }
@@ -90,6 +97,15 @@ export const consultarBiblioteca = onCall(
         if (!permitido) throw new HttpsError('resource-exhausted', 'Demasiadas preguntas seguidas. Espera unos minutos.');
         const inicio = Date.now();
 
+        // U6: «¿Qué dicen mis libros sobre Santiago 3:13?» entra en modo pasaje.
+        // No con un solo libro (el visor): ahí no hay autores que ordenar, y
+        // las claves del pasaje igual se buscan.
+        const unSoloLibro = alcance.tipo === 'libros' && alcance.ids.length === 1;
+        const pasaje = unSoloLibro ? null : etiquetaDePasaje(pregunta);
+        // Un seguimiento que no nombra pasaje hereda las claves del anterior
+        // para buscar, con el cupo normal (el modo completo le quitaría
+        // profundidad justo a «¿y Moo?»).
+        const refsHeredadas = !pasaje && pasajeAnterior ? refsDeConsulta(pasajeAnterior) : [];
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) throw new HttpsError('failed-precondition', MENSAJE_SIN_RESPUESTA);
         let fragmentos;
@@ -101,6 +117,8 @@ export const consultarBiblioteca = onCall(
                 total: FRAGMENTOS_POR_CONSULTA,
                 timeoutSeconds: 30,
                 contexto: anteriores[anteriores.length - 1]?.pregunta ?? null,
+                modoPasaje: pasaje !== null,
+                refsHeredadas,
             }));
         } catch (err) {
             console.error('[consultarBiblioteca] no se pudieron recuperar fragmentos:', err);
@@ -112,7 +130,7 @@ export const consultarBiblioteca = onCall(
         if (fragmentos.length === 0) {
             respuesta = SIN_FRAGMENTOS;
         } else {
-            const { system, prompt } = armarPedido(pregunta, fragmentos, anteriores);
+            const { system, prompt } = armarPedido(pregunta, fragmentos, anteriores, { pasaje });
             // El reloj del asistente (y de su respaldo) es lo que le QUEDA a la
             // función, no los 120 s enteros: la recuperación ya gastó una parte.
             const quedan = TIMEOUT_S - Math.ceil((Date.now() - inicio) / 1000) - MARGEN_S;
@@ -134,7 +152,9 @@ export const consultarBiblioteca = onCall(
             if (!respuesta) throw new HttpsError('unavailable', MENSAJE_SIN_RESPUESTA);
         }
 
-        const turno: TurnoGuardado = { pregunta, respuesta, fuentes, creado: new Date() };
+        // El pasaje se guarda sólo si hubo qué responder: «Lo que dicen tus
+        // libros sobre X» arriba de «no encontré nada» confunde.
+        const turno: TurnoGuardado = { pregunta, respuesta, fuentes, creado: new Date(), ...(pasaje && fragmentos.length > 0 ? { pasaje } : {}) };
         const ref = consultaId ? db.collection(COLECCION).doc(consultaId) : db.collection(COLECCION).doc();
         // Primero se guarda y DESPUÉS se cuenta: si guardar falla (la consulta
         // se borró mientras se esperaba), no se cobra una respuesta que el

@@ -535,6 +535,27 @@
     "topicSummary_one": "{{count}} pasaje en {{libros}} trata el tema",
     "topicSummary_other": "{{count}} pasajes en {{libros}} tratan el tema",
     "topicBooks_one": "{{count}} libro",
-    "topicBooks_other": "{{count}} libros"
+    "topicBooks_other": "{{count}} libros",
+    "summary": {
+      "map": "Mapa del libro",
+      "section": "Resumir este capítulo",
+      "mapTitle": "Mapa del libro",
+      "sectionTitle": "Resumen: {{titulo}}",
+      "rangeTitle": "Resumen de {{desde}} a {{hasta}}",
+      "sectionTitleLoading": "Resumen del capítulo",
+      "loadingMap": "Armando el mapa con las secciones del libro…",
+      "loadingSection": "Leyendo el capítulo…",
+      "themes": "Temas",
+      "ideas": "Ideas principales",
+      "saved": "Guardado: volver a verlo no cuenta como consulta.",
+      "counted": "Contó como una consulta de tu plan. Queda guardado para volver a verlo.",
+      "close": "Cerrar el resumen",
+      "hint": "Breves y con sus páginas. Cada resumen nuevo cuenta como una consulta.",
+      "page": "p. {{pagina}}",
+      "sheet": "hoja {{hoja}}",
+      "countedUnsaved": "Contó como una consulta de tu plan, pero no se pudo guardar: volver a pedirlo cuenta otra vez."
+    },
+    "passageHeading": "Lo que dicen tus libros sobre {{pasaje}}",
+    "passageAuthors": "Lo tratan"
   }
 }
