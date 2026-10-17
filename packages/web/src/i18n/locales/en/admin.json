@@ -781,14 +781,16 @@
   },
   "batch": {
     "title": "Batch reprocessing",
-    "subtitle": "Which books are worth reading again, what it would cost, and the command to launch it. This screen doesn't spend or write anything.",
+    "subtitle": "Which books are worth reading again, what it would cost, and the launched batches. “Prepare batch” and “Retry” spend, after confirming; no book changes from here.",
     "owner": "Library of",
     "loadError": "Couldn't load the books.",
     "empty": "This library has no books.",
     "tabs": {
       "candidates": "Candidates",
       "past_one": "Applied batches ({{count}})",
-      "past_other": "Applied batches ({{count}})"
+      "past_other": "Applied batches ({{count}})",
+      "running_one": "Panel batches ({{count}} running)",
+      "running_other": "Panel batches ({{count}} running)"
     },
     "candidates": {
       "title": "Books",
@@ -841,6 +843,71 @@
       "empty": "No batch has been applied to this library yet.",
       "meta_one": "{{count}} book replaced · {{fecha}}",
       "meta_other": "{{count}} books replaced · {{fecha}}"
+    },
+    "launch": {
+      "button": "Prepare batch",
+      "orTerminal": "Or in the terminal:",
+      "confirmTitle": "Prepare batch “{{nombre}}”?",
+      "confirmBody_one": "{{count}} book ({{paginas}} pages) will be split and sent. Estimated cost: about {{usd}}; with retries, about {{conReintentos}}. Results take up to 24 hours and no book changes until they are applied (applying from the panel comes in the next version).",
+      "confirmBody_other": "{{count}} books ({{paginas}} pages) will be split and sent. Estimated cost: about {{usd}}; with retries, about {{conReintentos}}. Results take up to 24 hours and no book changes until they are applied (applying from the panel comes in the next version).",
+      "confirm": "Prepare (about {{usd}})",
+      "cancel": "Back",
+      "done_one": "Batch “{{nombre}}” launched with {{count}} book.",
+      "done_other": "Batch “{{nombre}}” launched with {{count}} books."
+    },
+    "jobs": {
+      "hint": "The server checks batches every 10 minutes; a batch takes up to 24 hours.",
+      "empty": "No batch has been launched from the panel yet.",
+      "loadError": "Couldn't load the batches.",
+      "state": {
+        "preparando": "Preparing",
+        "en-curso": "Running",
+        "listo": "Done",
+        "cancelado": "Cancelled",
+        "fallido": "Failed"
+      },
+      "meta_one": "{{fecha}} · {{count}} book · {{paginas}} pages · {{por}}",
+      "meta_other": "{{fecha}} · {{count}} books · {{paginas}} pages · {{por}}",
+      "retry_one": "Retry what failed ({{count}})",
+      "retry_other": "Retry what failed ({{count}})",
+      "cancel": "Cancel",
+      "progress": "{{ok}} of {{total}} sections read",
+      "progressLabel": "Progress: {{pct}}%",
+      "cost": "Actual cost {{usd}} · estimated {{estimado}}",
+      "counts": {
+        "pendiente_one": "{{count}} pending",
+        "pendiente_other": "{{count}} pending",
+        "incompleto_one": "{{count}} incomplete",
+        "incompleto_other": "{{count}} incomplete",
+        "fallo_one": "{{count}} failed",
+        "fallo_other": "{{count}} failed",
+        "abandonado_one": "{{count}} page abandoned",
+        "abandonado_other": "{{count}} pages abandoned"
+      },
+      "round_one": "Round {{numero}}: {{count}} section, {{estado}}",
+      "round_other": "Round {{numero}}: {{count}} sections, {{estado}}",
+      "roundRead": "read",
+      "roundRunning": "running",
+      "books_one": "Show {{count}} book",
+      "books_other": "Show {{count}} books",
+      "sections": "Sections",
+      "book": {
+        "por-preparar": "Preparing",
+        "saltado": "Skipped"
+      },
+      "bookSections": "{{ok}} read · {{pendiente}} pending · {{fallas}} failed",
+      "cancelTitle": "Cancel batch “{{nombre}}”?",
+      "cancelBody": "Whatever is running is cancelled and the uploaded sections are deleted. What was already read is kept. Work the service already processed may still be billed.",
+      "cancelConfirm": "Cancel batch",
+      "cancelDone": "Batch cancelled.",
+      "retryNothing_one": "Nothing to retry ({{count}} page abandoned).",
+      "retryNothing_other": "Nothing to retry ({{count}} pages abandoned).",
+      "retryDone_one": "Round {{ronda}} launched with {{count}} book.",
+      "retryDone_other": "Round {{ronda}} launched with {{count}} books.",
+      "retryTitle": "Retry what failed in “{{nombre}}”?",
+      "retryBody_one": "At most {{count}} page is requested again (about {{usd}}). Pages that are blank in the PDF too, or already failed alone, are abandoned without asking. Each retry is a new round, billed separately.",
+      "retryBody_other": "At most {{count}} pages are requested again (about {{usd}}). Pages that are blank in the PDF too, or already failed alone, are abandoned without asking. Each retry is a new round, billed separately.",
+      "retryConfirm": "Retry (about {{usd}})"
     }
   }
 }

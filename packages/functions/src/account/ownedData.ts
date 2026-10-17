@@ -41,6 +41,9 @@ export const OWNED_BY_FIELD: ReadonlyArray<{ collection: string; field: string }
     { collection: 'funnel_events', field: 'userId' },
     { collection: 'geo_events', field: 'userId' },
     { collection: 'extraction_runs', field: 'userId' },
+    // El reproceso en lote: `dueno` es el dueño de los libros. Sus páginas y
+    // su capa de texto viven en `users/{uid}/lotes/` y caen con su Storage.
+    { collection: 'admin_lotes', field: 'dueno' },
     { collection: 'passageProfileShadow', field: 'userId' },
     { collection: 'sermonDraftShadow', field: 'userId' },
     // Desde B2 llevan `userId`; las anteriores se borran por su sermón o su

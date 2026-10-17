@@ -160,6 +160,11 @@ export function nombreDeLote(texto: string): string {
     return texto.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 }
 
+/** El nombre con que se lanza: el escrito (saneado) o uno con la fecha. Mismo formato que exige `launchBatch`. */
+export function nombreElegido(nombre: string, hoy: Date = new Date()): string {
+    return nombreDeLote(nombre) || `lote-${hoy.toISOString().slice(0, 10)}`;
+}
+
 /**
  * El comando de la terminal, mientras lanzar desde el panel llega en el PR 2.
  * La clave va DENTRO de la orden (regla de secretos: nunca guardada ni a la
@@ -167,7 +172,7 @@ export function nombreDeLote(texto: string): string {
  * («Ya existe scripts/.lotes/lote»). Un id que no es de Firestore no entra.
  */
 export function comandoDePreparar(nombre: string, ids: ReadonlyArray<string>, hoy: Date = new Date()): string {
-    const elegido = nombreDeLote(nombre) || `lote-${hoy.toISOString().slice(0, 10)}`;
+    const elegido = nombreElegido(nombre, hoy);
     const validos = ids.filter(id => /^[A-Za-z0-9_-]+$/.test(id));
     return `GEMINI_API_KEY="$(gcloud secrets versions access latest --secret=GEMINI_API_KEY --project=dosfilosapp)" npx tsx scripts/reprocesar-en-lote.ts preparar ${elegido} --ids ${validos.join(',')}`;
 }
