@@ -57,15 +57,17 @@ export function HistorialDeConsultas({ consultas, cargando, error, actualId, rot
         <nav className="flex flex-col gap-4" aria-label={t('consult.history')}>
             {/* «Nueva» chico en el encabezado: el botón negro de ancho completo
                 era lo más oscuro de la pantalla y competía con el botón principal. */}
-            <div className="flex items-center gap-1 pl-2.5">
-                <h2 className="m-0 flex-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('consult.history')}</h2>
+            {/* Sin rótulo visible: los grupos («Hoy», «Ayer») ya dicen qué es
+                la lista, y el rótulo apretaba la fila (pedido del fundador). */}
+            <h2 className="sr-only">{t('consult.history')}</h2>
+            <div className="flex items-center gap-1">
                 <button
                     type="button"
                     onClick={onNueva}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-card px-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-flex h-9 flex-1 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13.5px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                    <Plus className="h-3.5 w-3.5" />
-                    {t('consult.newShort')}
+                    <Plus className="h-4 w-4" />
+                    {t('consult.new')}
                 </button>
                 {onPlegar && (
                     <button type="button" onClick={() => onPlegar(true)} aria-label={t('consult.historyClose')} title={t('consult.historyClose')} className={cn(icono, 'hidden lg:inline-flex')}>

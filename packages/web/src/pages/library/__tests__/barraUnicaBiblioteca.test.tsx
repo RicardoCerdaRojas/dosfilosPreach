@@ -26,11 +26,13 @@ describe('avisos de la biblioteca en la barra', () => {
 
 describe('historial plegable', () => {
     const props = { consultas: [], cargando: false, error: false, actualId: null, rotuloDeAlcance: () => '', onAbrir: vi.fn(), onBorrar: vi.fn() };
-    it('desplegado: «Nueva» chico y el botón para plegarlo', () => {
+    it('desplegado: «Nueva consulta» y el botón para plegarlo, sin rótulo visible', () => {
         const plegar = vi.fn();
         const nueva = vi.fn();
         render(<HistorialDeConsultas {...props} onNueva={nueva} onPlegar={plegar} />);
-        fireEvent.click(screen.getByText('consult.newShort'));
+        // Sin rótulo visible «Consultas anteriores»: sólo para lectores de pantalla.
+        expect(screen.getByText('consult.history').className).toContain('sr-only');
+        fireEvent.click(screen.getByText('consult.new'));
         expect(nueva).toHaveBeenCalled();
         fireEvent.click(screen.getByLabelText('consult.historyClose'));
         expect(plegar).toHaveBeenCalledWith(true);
