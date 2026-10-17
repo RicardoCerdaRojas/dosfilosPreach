@@ -120,9 +120,14 @@ Queda pendiente, porque ya pasaba antes de esta fase: los índices del resaltado
 
 ### U6. «¿Qué dicen mis libros sobre Santiago 3:13?»
 
-- **Si la consulta es una referencia bíblica,** se busca el pasaje con el modo `referencia`, que ya existe, en cada libro del alcance (con concurrencia limitada).
-- **Para cada libro con apariciones,** se toman las páginas y se arma una respuesta **por autor**: «Varner (p. 120) entiende… McCartney (pp. 203–204) …». Cada autor lleva sus citas.
-- **Riesgo medido:** buscar en un libro tarda 1,5–1,8 s. Con 60 libros en paralelo de a 8, serían unos 12–15 s (es una *suposición, a medir en U6*). Si es mucho, se precalcula un índice de referencias por libro al indexar, que es el camino que ya usa `documentPageIndex`.
+> **Actualizado el 2026-10-17.** La etapa 3 del buscador (#779, #783) ya dejó un **índice de pasajes**: cada fragmento sabe qué versículos cita, y también resuelve el «v. 14» de un comentario por su encabezado. Medido en producción, trae los fragmentos de un pasaje en **1–3 s**. El plan original calculaba 12–15 s buscando libro por libro. U6 se apoya en ese índice.
+
+- **En «Preguntar»:** si la pregunta nombra un pasaje («¿Qué dicen mis libros sobre Santiago 3:13?», «stg 5:14-15»), la consulta entra en **modo pasaje**:
+  - más lugar para los fragmentos que citan el pasaje, y a lo sumo unos pocos por libro, para que hablen varios autores;
+  - una respuesta **organizada por autor**: «Varner (p. 120) entiende… McCartney (pp. 203–204)…», cada uno con sus citas;
+  - si sólo un autor trata el pasaje, lo dice.
+- **En la pantalla:** arriba de la respuesta, «Lo que dicen tus libros sobre **Santiago 3:13**», con la lista de autores que lo tratan y sus páginas. Se toca una página y abre el libro ahí.
+- **Costo:** igual que una pregunta, con la misma ruta (`library.consult`) y la misma cuota.
 
 ### U7. Resúmenes breves que leen poco
 
@@ -135,6 +140,11 @@ Queda pendiente, porque ya pasaba antes de esta fase: los índices del resaltado
   - *supuesto, a medir en U7:* un capítulo de 60 páginas son unos 45.000 tokens de entrada, del orden de centavos. El mapa de un libro de 800 páginas, con unas 150 secciones, son unos 50.000 tokens, también centavos;
   - leer el libro entero rondaría los 600.000 tokens, y eso es lo que se evita.
 - **Ruta en el ruteo:** `library.summarize`.
+- **Dónde se pide** (detalle agregado el 2026-10-17):
+  - en el visor, en el panel del libro, aparecen «Mapa del libro» y «Resumir estas páginas»; esta última propone el capítulo donde estás, según `sectionPath`;
+  - en «Buscar temas», cada tarjeta de libro tiene «Mapa del libro».
+  - El resumen se guarda y se ve sin volver a pedirlo.
+- **Cuota (decidido el 2026-10-17):** cada resumen nuevo cuenta como una consulta del plan. Volver a ver uno guardado no cuenta.
 
 ---
 
