@@ -429,7 +429,7 @@ export function SermonDetailPage() {
 
             <Button 
               onClick={() => navigate(`/preach/${sermon.id}`)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+              className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground shadow-sm"
             >
               <BookOpen className="h-4 w-4 xl:mr-2" />
               <span className="hidden xl:inline">{t('actions.present')}</span>

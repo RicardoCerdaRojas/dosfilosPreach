@@ -108,7 +108,7 @@ export function CitationViewerToolbar({ viewSheet, totalSheets, onGo, onGoToPage
                         aria-pressed={scope === value}
                         className={cn(
                             'px-2 py-1 text-[11px]',
-                            scope === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
+                            scope === value ? 'bg-primary-solid text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
                         )}
                     >
                         {t(`citationViewer.scope.${value}`)}

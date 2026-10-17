@@ -39,7 +39,7 @@ export function PlanCard({
       {/* Highlight Badge (e.g., "Más Popular") */}
       {hasHighlight && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-primary text-primary-foreground">
+          <Badge className="bg-primary-solid text-primary-foreground">
             <Zap className="h-3 w-3 mr-1" />
             {plan.highlightText}
           </Badge>

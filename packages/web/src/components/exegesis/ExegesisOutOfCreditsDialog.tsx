@@ -134,7 +134,7 @@ export function ExegesisOutOfCreditsDialog({
                                             onUpgradePlan?.();
                                             onOpenChange(false);
                                         }}
-                                        className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+                                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground w-full"
                                     >
                                         <Sparkles className="h-4 w-4 mr-1.5" />
                                         {t('quota.outOfCredits.upgradeCta')}
@@ -167,7 +167,7 @@ export function ExegesisOutOfCreditsDialog({
                                             onOpenChange(false);
                                         }}
                                         disabled={!onBuyPacks}
-                                        className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+                                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground w-full"
                                     >
                                         <Sparkles className="h-4 w-4 mr-1.5" />
                                         {t('quota.outOfCredits.buyPackCta')}

@@ -264,7 +264,7 @@ export function StepKindEmphasisCard({ paper, kind, icon }: StepKindEmphasisCard
                     type="button"
                     onClick={handleSave}
                     disabled={updateStepPlan.isPending}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                 >
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     {t('paperSetup.subSteps.plan.saveButton')}

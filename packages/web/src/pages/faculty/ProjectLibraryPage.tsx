@@ -116,7 +116,7 @@ export function ProjectLibraryPage() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)]">
+        <div className="flex flex-col h-[calc(100vh-var(--alto-barra))]">
             <header className="border-b px-6 py-4 flex items-center gap-3 shrink-0">
                 <Button
                     variant="ghost"

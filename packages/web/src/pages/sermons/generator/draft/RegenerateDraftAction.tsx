@@ -113,7 +113,7 @@ export function RegenerateDraftAction({
                     {workshopHasDecisions && (
                         <AlertDialogAction
                             onClick={onGoToWorkshop}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            className="bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover"
                         >
                             <PenLine className="mr-2 h-4 w-4" />
                             {t('drafting.regenerateConfirm.goToWorkshop')}

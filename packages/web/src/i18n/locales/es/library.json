@@ -463,7 +463,8 @@
   },
   "tabs": {
     "books": "Mis libros",
-    "consult": "Consultar"
+    "consult": "Consultar",
+    "label": "Vistas de la biblioteca"
   },
   "consult": {
     "title": "Pregúntale a tus libros",
@@ -556,6 +557,13 @@
       "countedUnsaved": "Contó como una consulta de tu plan, pero no se pudo guardar: volver a pedirlo cuenta otra vez."
     },
     "passageHeading": "Lo que dicen tus libros sobre {{pasaje}}",
-    "passageAuthors": "Lo tratan"
+    "passageAuthors": "Lo tratan",
+    "howItWorks": "Cómo funciona",
+    "historyOpen": "Mostrar el historial",
+    "historyClose": "Plegar el historial"
+  },
+  "notices": {
+    "pill_one": "{{count}} aviso",
+    "pill_other": "{{count}} avisos"
   }
 }

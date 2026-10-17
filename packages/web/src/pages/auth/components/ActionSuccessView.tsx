@@ -62,7 +62,7 @@ export function ActionSuccessView({ mode, continueUrl }: ActionSuccessViewProps)
 
                 <Button
                     onClick={() => navigate(target, { replace: true })}
-                    className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                    className="w-full h-11 bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover font-medium"
                 >
                     {user ? t('action.success.ctaDashboard') : t('action.success.ctaLogin')}
                     <ArrowRight className="h-4 w-4 ml-2" aria-hidden />

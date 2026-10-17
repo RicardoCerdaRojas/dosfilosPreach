@@ -83,7 +83,7 @@ export function PlannerLayout({ children, context, isChatOpen, onChatOpenChange 
     }, []);
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+        <div className="flex h-[calc(100vh-var(--alto-barra))] overflow-hidden">
             {/* Main Content (Wizard) */}
             <div className={cn(
                 "flex-1 overflow-y-auto bg-background transition-all duration-300",
@@ -96,7 +96,7 @@ export function PlannerLayout({ children, context, isChatOpen, onChatOpenChange 
             <div 
                 ref={resizeRef}
                 className={cn(
-                    "border-l bg-background transition-all ease-in-out absolute right-0 top-16 bottom-0 z-20 lg:static lg:top-0 lg:h-full shadow-xl lg:shadow-none flex",
+                    "border-l bg-background transition-all ease-in-out absolute right-0 top-[var(--alto-barra)] bottom-0 z-20 lg:static lg:top-0 lg:h-full shadow-xl lg:shadow-none flex",
                     showChat ? "translate-x-0" : "translate-x-full lg:translate-x-0 lg:w-0 lg:border-l-0 lg:overflow-hidden",
                     isMaximized && "w-full border-l-0",
                     isResizing && "transition-none"

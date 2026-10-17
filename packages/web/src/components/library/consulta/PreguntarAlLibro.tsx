@@ -139,7 +139,7 @@ export function PreguntarAlLibro({ resourceId, etiquetar, onIrAHoja, hojaActual,
                         type="submit"
                         disabled={!texto.trim() || !!enCurso}
                         aria-label={t('consult.send')}
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                         {enCurso ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
                     </button>

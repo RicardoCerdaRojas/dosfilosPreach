@@ -350,7 +350,7 @@ export function FacultyDirectoryPage() {
                             <Button
                                 onClick={() => void handleStartOrchestrated(orchestratorInput)}
                                 disabled={(!orchestratorInput.trim() && !pendingAttachment) || isBusy || agents.length === 0}
-                                className="shrink-0 h-10 w-10 p-0 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40 text-primary-foreground shadow-sm transition-all"
+                                className="shrink-0 h-10 w-10 p-0 rounded-xl bg-primary-solid hover:bg-primary-solid-hover disabled:opacity-40 text-primary-foreground shadow-sm transition-all"
                             >
                                 <Send className="h-4 w-4" />
                             </Button>
@@ -385,7 +385,7 @@ export function FacultyDirectoryPage() {
                                     disabled={isBusy || agents.length === 0}
                                     className={
                                         isFeatured
-                                            ? "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary hover:bg-primary/90 border border-primary text-primary-foreground text-xs font-semibold shadow-sm transition-colors disabled:opacity-40"
+                                            ? "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary-solid hover:bg-primary-solid-hover border border-primary text-primary-foreground text-xs font-semibold shadow-sm transition-colors disabled:opacity-40"
                                             : "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted hover:bg-secondary border border-border text-foreground text-xs font-medium transition-colors disabled:opacity-40"
                                     }
                                 >

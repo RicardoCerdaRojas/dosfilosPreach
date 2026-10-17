@@ -85,7 +85,7 @@ export const PlansEmptyState: React.FC = () => {
                             size="sm"
                             className={cn(
                                 'justify-between w-full transition-colors',
-                                !recommended && 'group-hover:bg-primary group-hover:text-primary-foreground',
+                                !recommended && 'group-hover:bg-primary-solid group-hover:text-primary-foreground',
                             )}
                             onClick={(e) => {
                                 e.stopPropagation();

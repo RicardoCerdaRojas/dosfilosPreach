@@ -106,7 +106,7 @@ export function PlannerWizard() {
                             isActive || isCompleted ? 'text-primary font-medium' : 'text-muted-foreground'
                         }`}>
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${
-                                isActive || isCompleted ? 'bg-primary text-primary-foreground border-primary' : 'border-muted'
+                                isActive || isCompleted ? 'bg-primary-solid text-primary-foreground border-primary' : 'border-muted'
                             }`}>
                                 {idx + 1}
                             </div>
@@ -612,7 +612,7 @@ export function PlannerWizard() {
                                 <Button variant="outline" onClick={() => setStep('objective')}>
                                     <ArrowLeft className="mr-2 h-4 w-4" /> {t('buttons.back')}
                                 </Button>
-                                <Button onClick={handleFinalize} size="lg" className="bg-primary text-primary-foreground">
+                                <Button onClick={handleFinalize} size="lg" className="bg-primary-solid text-primary-foreground">
                                     <Save className="mr-2 h-4 w-4" /> {t('structure.finalizeAndSave')}
                                 </Button>
                             </div>

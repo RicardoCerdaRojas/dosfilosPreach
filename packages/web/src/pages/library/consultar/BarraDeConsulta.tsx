@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { Info } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 export type ModoDeConsulta = 'preguntar' | 'temas';
@@ -8,11 +10,16 @@ export type ModoDeConsulta = 'preguntar' | 'temas';
  * El buscador en un solo bloque (rediseño, 2026-10-17): el modo y el alcance
  * arriba, la caja abajo. Antes eran tres piezas sueltas en la página.
  */
-export function BarraDeConsulta({ modo, onModo, alcance, children }: {
+export function BarraDeConsulta({ modo, onModo, alcance, ayuda, children }: {
     modo: ModoDeConsulta;
     onModo: (m: ModoDeConsulta) => void;
     /** El selector de alcance (un chip). */
     alcance: ReactNode;
+    /**
+     * Cómo funciona este modo (cuenta o no como consulta, qué muestra). Va en
+     * un ⓘ y no como nota fija bajo la caja (fase «barra única»).
+     */
+    ayuda?: string;
     /** La caja: la pregunta o el tema. */
     children: ReactNode;
 }) {
@@ -36,7 +43,24 @@ export function BarraDeConsulta({ modo, onModo, alcance, children }: {
                         </button>
                     ))}
                 </div>
-                {alcance}
+                <div className="flex items-center gap-1.5">
+                    {alcance}
+                    {ayuda && (
+                        // Popover y no tooltip: se abre también tocándolo en el teléfono.
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    aria-label={t('consult.howItWorks')}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                    <Info className="h-4 w-4" aria-hidden="true" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-72 text-[13px] leading-relaxed text-foreground">{ayuda}</PopoverContent>
+                        </Popover>
+                    )}
+                </div>
             </div>
             {children}
         </div>

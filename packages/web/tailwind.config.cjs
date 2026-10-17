@@ -22,7 +22,10 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					// Botones llenos: AA con texto blanco en todos los temas (index.css).
+					solid: 'hsl(var(--primary-solid))',
+					'solid-hover': 'hsl(var(--primary-solid-hover))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',

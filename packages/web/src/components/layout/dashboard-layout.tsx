@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SourceViewerProvider, SourceViewerSlot } from '@/components/exegesis/citation/SourceViewerProvider';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
-import { ThemeToggleButtons } from '@/components/theme-toggle-buttons';
 import { cn } from '@/lib/utils';
-import { LanguageSwitcher } from '@/i18n/components/LanguageSwitcher';
+import { BarraDePaginaContexto } from './barra-de-pagina-contexto';
+import { PreferenciasDeVista } from './preferencias-de-vista';
 import { useSmartTriggers } from '@/hooks/useSmartTriggers';
 import { useLibrarySync } from '@/hooks/library';
 import { FloatingHelpButton } from '@/components/onboarding';
@@ -43,10 +43,12 @@ export function DashboardLayout() {
   // separado. Sin esto, el shell agrega su scroll y su padding, y la página
   // queda más alta que el viewport.
   const isSourcePages = /\/dashboard\/exegesis\/[^/]+\/fuentes\/[^/]+\/paginas$/.test(location.pathname);
+  const [espacioDeLaBarra, setEspacioDeLaBarra] = useState<HTMLDivElement | null>(null);
   const isFullScreen = isPlanner || isGenerator || isSermonDetail || isBible || isSourcePages;
 
   return (
     <SourceViewerProvider>
+    <BarraDePaginaContexto.Provider value={espacioDeLaBarra}>
     <SidebarProvider>
       <AutoCollapseOnFaculty />
       <AppSidebar />
@@ -57,15 +59,17 @@ export function DashboardLayout() {
         {/* Impersonation banner — only renders while a super admin views as another user */}
         <ImpersonationBanner />
 
-        {/* Header with toggle button */}
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        {/* La barra única de la app (fase «barra única», 2026-10-17): el menú,
+            el espacio donde cada página pone su título, pestañas y botones
+            (`<BarraDePagina>`), e idioma y tema en un solo botón. */}
+        {/* En el teléfono la barra puede tener dos filas: los controles de la
+            página bajan a la segunda (ver `BarraDePagina`). */}
+        <header className="flex min-h-[var(--alto-barra)] shrink-0 items-center gap-3 border-b bg-background px-3 py-1.5 sm:h-[var(--alto-barra)] sm:px-4 sm:py-0">
           <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-
-          <div className="ml-auto flex items-center gap-2">
-            <LanguageSwitcher variant="ghost" showLabel={false} />
-            <ThemeToggleButtons />
-          </div>
+          <Separator orientation="vertical" className="h-4" />
+          <div ref={setEspacioDeLaBarra} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 sm:flex-nowrap sm:gap-4" />
+          <Separator orientation="vertical" className="h-4" />
+          <PreferenciasDeVista />
         </header>
         
         {/* Main content + el visor de fuente en su propia columna: abierto en
@@ -84,6 +88,7 @@ export function DashboardLayout() {
       <FloatingHelpButton />
       <DashboardTour run={tour.run} onComplete={tour.markComplete} />
     </SidebarProvider>
+    </BarraDePaginaContexto.Provider>
     </SourceViewerProvider>
   );
 }

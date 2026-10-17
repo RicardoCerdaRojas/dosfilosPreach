@@ -4,6 +4,7 @@ import { Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import type { LibraryResourceEntity } from '@dosfilos/domain';
+import { needsCalibration } from './necesitaCalibrar';
 
 /**
  * Recursos listos que todavía no dicen qué número lleva impresa cada hoja.
@@ -30,8 +31,6 @@ import type { LibraryResourceEntity } from '@dosfilos/domain';
  * desde un cartel permanente.
  */
 
-/** Ventana de «recién subido». Ver el comentario de arriba. */
-const DIAS_RECIENTE = 7;
 export function LibraryCalibrationCallout({ resources }: { resources: LibraryResourceEntity[] }) {
     const { t } = useTranslation('library');
     const navigate = useNavigate();
@@ -60,20 +59,4 @@ export function LibraryCalibrationCallout({ resources }: { resources: LibraryRes
             </Button>
         </div>
     );
-}
-
-function needsCalibration(resource: LibraryResourceEntity): boolean {
-    if (resource.textExtractionStatus !== 'ready') return false;
-    // Un recurso de una sola página no se cita por página; preguntarlo sería ruido.
-    if ((resource.pageCount ?? 0) < 2) return false;
-    const numbering = (resource as { pageNumbering?: { origin?: string } | null }).pageNumbering;
-    if (numbering?.origin === 'confirmed') return false;
-    return esReciente((resource as { extractedAt?: Date | null }).extractedAt);
-}
-
-function esReciente(extractedAt: Date | null | undefined): boolean {
-    if (!extractedAt) return false;
-    const cuando = extractedAt instanceof Date ? extractedAt.getTime() : Date.parse(String(extractedAt));
-    if (!Number.isFinite(cuando)) return false;
-    return Date.now() - cuando < DIAS_RECIENTE * 24 * 60 * 60 * 1000;
 }

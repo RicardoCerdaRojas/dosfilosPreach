@@ -1001,7 +1001,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     className={cn(
                                         'px-2.5 py-1 rounded transition-colors',
                                         viewMode === 'prose'
-                                            ? 'bg-primary text-primary-foreground'
+                                            ? 'bg-primary-solid text-primary-foreground'
                                             : 'text-muted-foreground hover:text-foreground',
                                     )}
                                 >
@@ -1013,7 +1013,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     className={cn(
                                         'px-2.5 py-1 rounded transition-colors',
                                         viewMode === 'study'
-                                            ? 'bg-primary text-primary-foreground'
+                                            ? 'bg-primary-solid text-primary-foreground'
                                             : 'text-muted-foreground hover:text-foreground',
                                     )}
                                 >

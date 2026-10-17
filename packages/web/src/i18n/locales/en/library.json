@@ -463,7 +463,8 @@
   },
   "tabs": {
     "books": "My books",
-    "consult": "Ask"
+    "consult": "Ask",
+    "label": "Library views"
   },
   "consult": {
     "title": "Ask your books",
@@ -556,6 +557,13 @@
       "countedUnsaved": "Counted as one query of your plan, but it couldn't be saved: asking again counts again."
     },
     "passageHeading": "What your books say about {{pasaje}}",
-    "passageAuthors": "Discussed by"
+    "passageAuthors": "Discussed by",
+    "howItWorks": "How it works",
+    "historyOpen": "Show history",
+    "historyClose": "Collapse history"
+  },
+  "notices": {
+    "pill_one": "{{count}} notice",
+    "pill_other": "{{count}} notices"
   }
 }

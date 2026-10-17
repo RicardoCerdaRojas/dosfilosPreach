@@ -56,6 +56,9 @@
 
 @layer base {
   :root {
+    /* Alto de la barra única de la app (fase «barra única», 2026-10-17). Las
+       pantallas completas restan esto, no un 4rem copiado. */
+    --alto-barra: 52px;
     /* DosFilos Theme - Light Mode */
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
@@ -67,6 +70,11 @@
        under one brand colour. */
     --primary: 244 76% 59%;
     --primary-foreground: 210 40% 98%;
+    /* Fondo de los botones llenos: el primario, oscurecido si hace falta
+       para que el texto blanco llegue a AA (4,5:1). En índigo ya llega. */
+    --primary-solid: 244 76% 59%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 244 76% 53%;
 
     /* Secondary - Dorado (sabiduría, divinidad) */
     --secondary: 45 93% 47%;
@@ -169,6 +177,11 @@
 
     --primary: 244 76% 59%;
     --primary-foreground: 210 40% 98%;
+    /* Fondo de los botones llenos: el primario, oscurecido si hace falta
+       para que el texto blanco llegue a AA (4,5:1). En índigo ya llega. */
+    --primary-solid: 244 76% 59%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 244 76% 53%;
 
     --secondary: 45 93% 47%;
     --secondary-foreground: 222 47% 11%;
@@ -235,6 +248,11 @@
 
     --primary: 244 76% 59%;
     --primary-foreground: 210 40% 98%;
+    /* Fondo de los botones llenos: el primario, oscurecido si hace falta
+       para que el texto blanco llegue a AA (4,5:1). En índigo ya llega. */
+    --primary-solid: 244 76% 59%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 244 76% 53%;
 
     --secondary: 45 93% 47%;
     --secondary-foreground: 222 47% 11%;
@@ -296,24 +314,36 @@
   [data-theme="purple"] {
     --primary: 271 91% 65%;
     --primary-foreground: 0 0% 100%;
+    --primary-solid: 271 91% 58%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 271 91% 52%;
     --ring: 271 91% 65%;
   }
 
   [data-theme="purple"].dark {
     --primary: 271 91% 65%;
     --primary-foreground: 0 0% 100%;
+    --primary-solid: 271 91% 58%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 271 91% 52%;
   }
 
   /* Color Theme: Green Hope */
   [data-theme="green"] {
     --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
+    --primary-solid: 160 84% 28%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 160 84% 22%;
     --ring: 160 84% 39%;
   }
 
   [data-theme="green"].dark {
     --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
+    --primary-solid: 160 84% 28%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 160 84% 22%;
   }
 
   /* Color theme "blue" intentionally has no override block.
@@ -327,12 +357,18 @@
   [data-theme="orange"] {
     --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
+    --primary-solid: 24 95% 38%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 24 95% 32%;
     --ring: 24 95% 53%;
   }
 
   [data-theme="orange"].dark {
     --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
+    --primary-solid: 24 95% 38%;
+    /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
+    --primary-solid-hover: 24 95% 32%;
   }
 }
 

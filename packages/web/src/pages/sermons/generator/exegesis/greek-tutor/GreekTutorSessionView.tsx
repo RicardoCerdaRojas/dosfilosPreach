@@ -660,7 +660,7 @@ export const GreekTutorSessionView: React.FC<GreekTutorSessionViewProps> = ({ in
                                             onClick={() => setChatMode('contextual')}
                                             className={`flex-1 px-3 py-1.5 text-xs rounded-md transition-colors ${
                                                 chatMode === 'contextual'
-                                                    ? 'bg-primary text-primary-foreground'
+                                                    ? 'bg-primary-solid text-primary-foreground'
                                                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                             }`}
                                         >
@@ -670,7 +670,7 @@ export const GreekTutorSessionView: React.FC<GreekTutorSessionViewProps> = ({ in
                                             onClick={() => setChatMode('general')}
                                             className={`flex-1 px-3 py-1.5 text-xs rounded-md transition-colors ${
                                                 chatMode === 'general'
-                                                    ? 'bg-primary text-primary-foreground'
+                                                    ? 'bg-primary-solid text-primary-foreground'
                                                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                             }`}
                                         >
@@ -811,7 +811,7 @@ export const GreekTutorSessionView: React.FC<GreekTutorSessionViewProps> = ({ in
                     {/* Mobile hamburger - only visible on small screens */}
                     <button
                         onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-                        className="md:hidden fixed bottom-4 right-4 z-50 p-3 bg-primary text-primary-foreground rounded-full shadow-lg"
+                        className="md:hidden fixed bottom-4 right-4 z-50 p-3 bg-primary-solid text-primary-foreground rounded-full shadow-lg"
                     >
                         {isMobileSidebarOpen ? (
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

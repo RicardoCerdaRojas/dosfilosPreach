@@ -342,7 +342,7 @@ export function FacultyChatPage() {
     // ── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] bg-muted/30 font-sans">
+        <div className="flex flex-col h-[calc(100vh-var(--alto-barra))] bg-muted/30 font-sans">
             {/*
              * No global page header. Rail toggles live as edge-tabs
              * on each rail (FacultySessionSidebar / FacultyExtractionPanel),

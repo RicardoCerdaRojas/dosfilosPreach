@@ -131,7 +131,7 @@ export function ExegesisPreConfirmDialog({
                         <Button
                             onClick={onConfirm}
                             disabled={Boolean(insufficient) || Boolean(isExecuting)}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                            className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
                         >
                             {isExecuting && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
                             {t('quota.preConfirm.confirm')}

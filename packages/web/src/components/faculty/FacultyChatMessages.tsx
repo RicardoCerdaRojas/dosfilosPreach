@@ -259,7 +259,7 @@ export function FacultyChatMessages({
                         className={cn(
                             "relative text-[15px] leading-relaxed transition-shadow duration-500",
                             msg.role === 'user'
-                                ? "bg-primary text-primary-foreground rounded-3xl rounded-tr-sm px-6 py-3.5 max-w-[85%] md:max-w-[70%] shadow-sm font-medium"
+                                ? "bg-primary-solid text-primary-foreground rounded-3xl rounded-tr-sm px-6 py-3.5 max-w-[85%] md:max-w-[70%] shadow-sm font-medium"
                                 : "w-full max-w-[42rem] min-w-0 bg-card border border-border shadow-sm rounded-3xl rounded-tl-sm px-6 py-5",
                             msg.id && highlightedIds.has(msg.id) && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                         )}

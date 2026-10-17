@@ -81,7 +81,7 @@ export function CreateSeriesCard({
                 <Button
                     onClick={onCreate}
                     disabled={creating || preachableUnits.length === 0}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground disabled:opacity-50"
                 >
                     {creating && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
                     {t('expository.create.cta', { count: preachableUnits.length })}

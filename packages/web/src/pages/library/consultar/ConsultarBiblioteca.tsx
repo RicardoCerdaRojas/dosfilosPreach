@@ -31,6 +31,10 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     const { user } = useFirebase();
     const visor = useSourceViewer();
     const { consultas, cargando, errorHistorial, enCurso, error, limpiarError, recientes, preguntar, borrar } = useConsultas(user?.uid);
+    /** Sin consultas guardadas: el único momento en que el título, la bajada y los ejemplos ayudan. */
+    const primeraVez = !cargando && !errorHistorial && consultas.length === 0;
+    const [plegado, setPlegado] = useState(leerPlegado);
+    const plegar = (v: boolean) => { setPlegado(v); guardarPlegado(v); };
     const [abiertaId, setAbiertaId] = useState<string | null>(null);
     // La consulta que se mira AHORA: si el pastor abre otra mientras responde,
     // la respuesta no lo saca de ahí (revisión adversarial, U3).
@@ -122,7 +126,11 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     return (
         // La tercera columna (el riel de fuentes) sólo existe dentro de una
         // conversación: reservada siempre, dejaba un hueco a la derecha.
-        <div className={cn('grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)]', conRiel && 'xl:grid-cols-[16rem_minmax(0,1fr)_17rem]')}>
+        <div className={cn(
+            'grid gap-6 xl:gap-8',
+            plegado ? 'lg:grid-cols-[2.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[15rem_minmax(0,1fr)]',
+            conRiel && (plegado ? 'xl:grid-cols-[2.5rem_minmax(0,1fr)_17rem]' : 'xl:grid-cols-[15rem_minmax(0,1fr)_17rem]'),
+        )}>
             <div className="order-last lg:order-none">
             <HistorialDeConsultas
                 consultas={consultas}
@@ -133,6 +141,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                 onAbrir={abrirConsulta}
                 onNueva={nueva}
                 onBorrar={borrarConsulta}
+                plegado={plegado}
+                onPlegar={plegar}
             />
             </div>
 
@@ -143,7 +153,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                         <p className="m-0 text-[13px] text-muted-foreground">
                             {t('consult.topicSavedIn')} <span className="font-medium text-foreground">{rotuloDeAlcance(abierta.alcance)}</span>
                         </p>
-                        <h3 className="m-0 font-serif text-[28px] font-bold leading-tight text-foreground">{abierta.temas?.consulta ?? abierta.titulo}</h3>
+                        <h2 className="m-0 font-serif text-[28px] font-bold leading-tight text-foreground">{abierta.temas?.consulta ?? abierta.titulo}</h2>
                         {abierta.temas && abierta.temas.libros.length > 0
                             // `key`: el filtro por libro es de ESTA búsqueda; otra empieza sin filtro.
                             ? <ResultadosDeTemas key={abierta.id} libros={abierta.temas.libros} etiquetar={etiquetar} onAbrir={abrirFuente} aproximado={!abierta.temas.reordenado} />
@@ -156,23 +166,28 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                     </p>
                 ) : (
                     <div className="flex flex-col gap-6">
-                        <div className="flex flex-col gap-2">
-                            <h2 className="m-0 font-serif text-[32px] font-bold leading-tight tracking-tight text-foreground">{t('consult.title')}</h2>
-                            <p className="m-0 max-w-2xl font-serif text-[15px] leading-relaxed text-muted-foreground">{t('consult.subtitle')}</p>
-                        </div>
+                        {/* El título y la bajada sólo la primera vez (sin consultas
+                            guardadas): en el uso diario empujaban la caja hacia abajo. */}
+                        {primeraVez && (
+                            <div className="flex flex-col gap-2">
+                                <h2 className="m-0 font-serif text-[28px] font-bold leading-tight tracking-tight text-foreground">{t('consult.title')}</h2>
+                                <p className="m-0 max-w-2xl font-serif text-[15px] leading-relaxed text-muted-foreground">{t('consult.subtitle')}</p>
+                            </div>
+                        )}
                         {modo === 'temas' ? (
                             <BuscarTemas
                                 alcance={alcance}
                                 etiquetar={etiquetar}
                                 onAbrir={abrirFuente}
                                 onGuardada={setTemaReciente}
-                                envoltorio={contenido => <BarraDeConsulta modo={modo} onModo={setModo} alcance={selectorDeAlcance}>{contenido}</BarraDeConsulta>}
+                                envoltorio={contenido => <BarraDeConsulta modo={modo} onModo={setModo} alcance={selectorDeAlcance} ayuda={t('consult.topicHint')}>{contenido}</BarraDeConsulta>}
                             />
                         ) : (
                             <div className="flex flex-col gap-3">
-                                <BarraDeConsulta modo={modo} onModo={setModo} alcance={selectorDeAlcance}>{caja}</BarraDeConsulta>
-                                <p className="m-0 px-1 text-xs text-muted-foreground">{t('consult.footnote')}</p>
-                                {!enCurso && (
+                                <BarraDeConsulta modo={modo} onModo={setModo} alcance={selectorDeAlcance} ayuda={t('consult.footnote')}>{caja}</BarraDeConsulta>
+                                {/* La primera vez el costo se dice a la vista, antes de gastar; después, en el ⓘ. */}
+                                {primeraVez && <p className="m-0 px-1 text-xs text-muted-foreground">{t('consult.footnote')}</p>}
+                                {!enCurso && primeraVez && (
                                     <div className="flex flex-col gap-2 pt-2">
                                         <span className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('consult.examplesTitle')}</span>
                                         <div className="grid gap-2 sm:grid-cols-3">
@@ -222,6 +237,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                     {abierta && (
                         <div className="sticky bottom-4 flex flex-col gap-1">
                             <div className="rounded-2xl border border-border bg-card p-1.5 shadow-[0_12px_32px_-16px_rgba(15,23,42,0.25)]">{caja}</div>
+                            {/* Abajo no empuja nada, y dentro de la conversación no hay ⓘ: se queda. */}
                             <p className="m-0 px-2 text-xs text-muted-foreground">{t('consult.footnote')}</p>
                         </div>
                     )}
@@ -266,10 +282,19 @@ function CajaDePregunta({ texto, onTexto, onEnviar, onTeclear, enviando, placeho
                 type="submit"
                 disabled={!texto.trim() || enviando}
                 aria-label={t('consult.send')}
-                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-solid text-primary-foreground transition-colors hover:bg-primary-solid-hover disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
                 {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
             </button>
         </form>
     );
+}
+
+/** El historial plegado se recuerda en este navegador (una comodidad: si el almacenamiento falla, abre desplegado). */
+const CLAVE_PLEGADO = 'biblioteca.consultar.historialPlegado';
+function leerPlegado(): boolean {
+    try { return window.localStorage.getItem(CLAVE_PLEGADO) === '1'; } catch { return false; }
+}
+function guardarPlegado(v: boolean): void {
+    try { window.localStorage.setItem(CLAVE_PLEGADO, v ? '1' : '0'); } catch { /* sin almacenamiento: no se recuerda */ }
 }

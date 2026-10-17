@@ -176,7 +176,7 @@ export function ExegesisPaperSetupPage() {
                 <footer className="flex items-center justify-end pt-6">
                     <Button
                         onClick={() => navigate(`/dashboard/exegesis/${paperId}`)}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
                     >
                         {t('paperSetup.goToPaper')}
                     </Button>

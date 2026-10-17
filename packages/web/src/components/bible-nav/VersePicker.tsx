@@ -139,7 +139,7 @@ const NumberPicker: React.FC<{ numbers: readonly number[]; selected: number; onC
                         onClick={() => onChange(n)}
                         className={cn(
                             'aspect-square rounded-md text-xs font-semibold flex items-center justify-center transition-all',
-                            selected === n ? 'bg-primary text-primary-foreground shadow scale-105' : 'bg-muted/50 hover:bg-muted text-foreground',
+                            selected === n ? 'bg-primary-solid text-primary-foreground shadow scale-105' : 'bg-muted/50 hover:bg-muted text-foreground',
                         )}
                     >
                         {n}

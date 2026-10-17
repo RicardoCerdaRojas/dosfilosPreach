@@ -44,5 +44,13 @@
     "prevVerse": "Versículo anterior",
     "nextVerse": "Versículo siguiente",
     "chooseBook": "Seleccionar libro"
+  },
+  "preferences": {
+    "title": "Idioma y tema",
+    "theme": "Tema",
+    "language": "Idioma",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Como el sistema"
   }
 }

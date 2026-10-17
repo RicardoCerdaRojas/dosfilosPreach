@@ -86,7 +86,7 @@ export const VersePreview: React.FC<VersePreviewProps> = ({ verse, isLoading, on
         <button
           id="ht-preview-analyze-btn"
           onClick={onAnalyze}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow hover:bg-primary/90 active:scale-[0.98] transition-all"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-solid text-primary-foreground font-semibold text-sm shadow hover:bg-primary-solid-hover active:scale-[0.98] transition-all"
         >
           <SparklesIcon className="w-4 h-4" />
           Analizar este versículo

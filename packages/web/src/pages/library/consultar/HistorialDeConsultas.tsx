@@ -1,4 +1,4 @@
-import { Loader2, MessageSquareText, Plus, Search, Trash2 } from 'lucide-react';
+import { Loader2, MessageSquareText, PanelLeftClose, PanelLeftOpen, Plus, Search, Trash2 } from 'lucide-react';
 import type { AlcanceDeConsulta, ConsultaGuardada } from '@dosfilos/infrastructure';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ const ORDEN: GrupoDeFecha[] = ['hoy', 'ayer', 'semana', 'antes'];
  * con un ícono por tipo (búsqueda de temas o pregunta) y un resumen debajo,
  * para que dos entradas con el mismo título se distingan.
  */
-export function HistorialDeConsultas({ consultas, cargando, error, actualId, rotuloDeAlcance, onAbrir, onNueva, onBorrar }: {
+export function HistorialDeConsultas({ consultas, cargando, error, actualId, rotuloDeAlcance, onAbrir, onNueva, onBorrar, plegado = false, onPlegar }: {
     consultas: ReadonlyArray<ConsultaGuardada>;
     cargando: boolean;
     error: boolean;
@@ -20,6 +20,9 @@ export function HistorialDeConsultas({ consultas, cargando, error, actualId, rot
     onAbrir: (id: string) => void;
     onNueva: () => void;
     onBorrar: (id: string) => void;
+    /** Plegado (sólo en pantallas anchas): un riel con «abrir» y «nueva», y la consulta usa el ancho. */
+    plegado?: boolean;
+    onPlegar?: (plegado: boolean) => void;
 }) {
     const { t } = useTranslation('library');
     const grupos = ORDEN
@@ -29,16 +32,49 @@ export function HistorialDeConsultas({ consultas, cargando, error, actualId, rot
         ? t('consult.historyTopicMeta', { count: c.temas?.libros.reduce((n, l) => n + l.hojas.length, 0) ?? 0 })
         : t('consult.historyAskMeta', { count: c.turnos.length });
 
+    const icono = 'inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
+    // Plegado vale sólo en pantallas anchas: en una angosta (un iPad que gira,
+    // una ventana que se achica) el historial se ve completo, o no quedaría
+    // ni la lista ni «Nueva».
+    if (plegado) {
+        return (<>
+            <nav className="hidden flex-col items-center gap-1 lg:flex" aria-label={t('consult.history')}>
+                <button type="button" onClick={() => onPlegar?.(false)} aria-label={t('consult.historyOpen')} title={t('consult.historyOpen')} className={icono}>
+                    <PanelLeftOpen className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={onNueva} aria-label={t('consult.new')} title={t('consult.new')} className={icono}>
+                    <Plus className="h-4 w-4" />
+                </button>
+            </nav>
+            <div className="lg:hidden">
+                <HistorialDeConsultas {...{ consultas, cargando, error, actualId, rotuloDeAlcance, onAbrir, onNueva, onBorrar }} />
+            </div>
+        </>);
+    }
+
     return (
-        <nav className="flex flex-col gap-5" aria-label={t('consult.history')}>
-            <button
-                type="button"
-                onClick={onNueva}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-foreground px-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-                <Plus className="h-4 w-4" />
-                {t('consult.new')}
-            </button>
+        <nav className="flex flex-col gap-4" aria-label={t('consult.history')}>
+            {/* «Nueva» chico en el encabezado: el botón negro de ancho completo
+                era lo más oscuro de la pantalla y competía con el botón principal. */}
+            {/* Sin rótulo visible: los grupos («Hoy», «Ayer») ya dicen qué es
+                la lista, y el rótulo apretaba la fila (pedido del fundador). */}
+            <h2 className="sr-only">{t('consult.history')}</h2>
+            <div className="flex items-center gap-1">
+                <button
+                    type="button"
+                    onClick={onNueva}
+                    className="inline-flex h-9 flex-1 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[13.5px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    <Plus className="h-4 w-4" />
+                    {t('consult.new')}
+                </button>
+                {onPlegar && (
+                    <button type="button" onClick={() => onPlegar(true)} aria-label={t('consult.historyClose')} title={t('consult.historyClose')} className={cn(icono, 'hidden lg:inline-flex')}>
+                        <PanelLeftClose className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
 
             {cargando ? (
                 <Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" />

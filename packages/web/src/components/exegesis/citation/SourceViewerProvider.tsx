@@ -174,10 +174,10 @@ function Visor() {
             tabIndex={-1}
             aria-label={t('sourceViewer.panelLabel')}
             onKeyDown={onKeyDown}
-            // Alto = la ventana menos el encabezado de la app (h-16): con 100svh
+            // Alto = la ventana menos la barra de la app (`--alto-barra`): con 100svh
             // la barra «Citar» quedaba 64 px bajo el borde en las páginas que
             // hacen scroll de ventana (medido en la revisión adversarial).
-            className="fixed inset-0 z-50 flex flex-col bg-background outline-none md:sticky md:inset-auto md:top-0 md:z-auto md:h-[calc(100svh-4rem)] md:w-[min(600px,45vw)] md:shrink-0 md:self-start md:border-l md:border-border md:shadow-[-12px_0_32px_-16px_rgba(15,23,42,0.18)] print:hidden"
+            className="fixed inset-0 z-50 flex flex-col bg-background outline-none md:sticky md:inset-auto md:top-0 md:z-auto md:h-[calc(100svh-var(--alto-barra))] md:w-[min(600px,45vw)] md:shrink-0 md:self-start md:border-l md:border-border md:shadow-[-12px_0_32px_-16px_rgba(15,23,42,0.18)] print:hidden"
             data-testid="source-viewer-panel"
         >
             <SourceViewerBody

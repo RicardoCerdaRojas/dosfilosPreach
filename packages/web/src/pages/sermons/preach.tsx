@@ -482,7 +482,7 @@ export function PreachModePage() {
       </div>
 
       {/* Main Content Area with Resizable Panels */}
-      <div className="flex-1 w-full h-[calc(100vh-64px)] overflow-hidden">
+      <div className="flex-1 w-full h-[calc(100vh-var(--alto-barra))] overflow-hidden">
         {(showAnnotations || showStudyPanel) ? (
           <ResizablePanelGroup direction="horizontal" className="h-full w-full rounded-lg border">
             <ResizablePanel defaultSize={showAnnotations && showStudyPanel ? 50 : 60} minSize={30}>

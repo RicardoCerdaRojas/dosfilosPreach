@@ -204,7 +204,7 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                     <Button
                         type="button"
                         onClick={() => openDialog(null)}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                     >
                         <Upload className="h-3 w-3 mr-1" />
                         {t('paperSetup.subSteps.corpus.list.addCta')}
@@ -766,7 +766,7 @@ function EmptySourcesState({ onAdd }: { onAdd: () => void }) {
                 type="button"
                 onClick={onAdd}
                 size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
             >
                 <Upload className="h-3 w-3 mr-1" />
                 {t('paperSetup.subSteps.corpus.list.addCta')}
@@ -840,7 +840,7 @@ function ExtractHeroCard({
                 <Button
                     type="button"
                     onClick={onExtract}
-                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+                    className="w-full sm:w-auto bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground gap-1.5"
                 >
                     <Sparkles className="h-4 w-4" />
                     {t('paperSetup.subSteps.corpus.hero.primaryCta')}
@@ -892,7 +892,7 @@ function ExtractHeroCard({
                 <Button
                     type="button"
                     onClick={onExtract}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground gap-1.5"
                 >
                     <Sparkles className="h-4 w-4" />
                     {t('paperSetup.subSteps.corpus.hero.primaryCta')}
@@ -1324,7 +1324,7 @@ function StaleBanner({
                 size="sm"
                 onClick={onReExtract}
                 disabled={isReExtracting}
-                className="text-[11px] h-7 gap-1 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+                className="text-[11px] h-7 gap-1 bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground shrink-0"
             >
                 {isReExtracting
                     ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -1490,7 +1490,7 @@ function ExcerptsReviewPanel({
                         type="button"
                         onClick={handleSave}
                         disabled={updateSource.isPending}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] h-7"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-[11px] h-7"
                     >
                         {updateSource.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
                         {t('paperSetup.subSteps.corpus.excerpts.save')}
@@ -2135,7 +2135,7 @@ function AddSourceDialog({
                             <Button
                                 type="submit"
                                 disabled={!canSubmit}
-                                className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm gap-1.5"
+                                className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-sm gap-1.5"
                             >
                                 {uploading ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -2390,7 +2390,7 @@ function LibraryPicker({
                                         className={[
                                             'h-4 w-4 mt-0.5 shrink-0 rounded border-2 flex items-center justify-center transition-colors',
                                             picked
-                                                ? 'bg-primary border-primary text-primary-foreground'
+                                                ? 'bg-primary-solid border-primary text-primary-foreground'
                                                 : 'border-border bg-card',
                                         ].join(' ')}
                                     >

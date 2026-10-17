@@ -106,7 +106,7 @@ export function ActionResetForm({ email, onConfirm }: ActionResetFormProps) {
 
                 <Button
                     type="submit"
-                    className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                    className="w-full h-11 bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover font-medium"
                     disabled={submitting}
                 >
                     {submitting ? t('action.reset.submitting') : t('action.reset.submit')}

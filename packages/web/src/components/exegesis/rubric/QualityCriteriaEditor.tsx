@@ -341,7 +341,7 @@ function ExtractFromImageDialog({
                             type="button"
                             onClick={handleSubmit}
                             disabled={!file || isBusy}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                            className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                         >
                             {isBusy ? (
                                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
