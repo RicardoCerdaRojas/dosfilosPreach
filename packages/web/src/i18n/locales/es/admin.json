@@ -778,5 +778,69 @@
       "mixed-scripts": "Escrituras mezcladas",
       "missing-pages": "Faltan páginas"
     }
+  },
+  "batch": {
+    "title": "Reproceso en lote",
+    "subtitle": "Qué libros conviene volver a leer, cuánto costaría y el comando para lanzarlo. Esta pantalla no gasta ni escribe.",
+    "owner": "Biblioteca de",
+    "loadError": "No se pudieron cargar los libros.",
+    "empty": "Esta biblioteca no tiene libros.",
+    "tabs": {
+      "candidates": "Candidatos",
+      "past_one": "Lotes aplicados ({{count}})",
+      "past_other": "Lotes aplicados ({{count}})"
+    },
+    "candidates": {
+      "title": "Libros",
+      "subtitle_one": "Conviene reprocesar {{count}}.",
+      "subtitle_other": "Conviene reprocesar {{count}}.",
+      "pickRecommended": "Elegir los recomendados",
+      "select": "Elegir",
+      "selectBook": "Elegir «{{titulo}}»",
+      "book": "Libro",
+      "reasons": "Por qué",
+      "pages": "Páginas",
+      "size": "Tamaño",
+      "reader": "Leído con",
+      "excluded": "No entra en un lote"
+    },
+    "reason": {
+      "none": "Bien leído",
+      "faltan": "Faltan {{faltan}} de {{de}} páginas",
+      "vacio": "Texto vacío",
+      "sinVision": "Leído sin visión",
+      "modeloViejo": "Modelo anterior",
+      "yaReprocesado": "Ya reprocesado ({{lote}})",
+      "grande": "Más de 60 MB: si está cifrado, sólo se descifra en la terminal",
+      "enProceso": "Se está extrayendo",
+      "fallido": "La extracción falló",
+      "sinExtraer": "Sin extraer",
+      "sinMedir": "Sin medir"
+    },
+    "estimate": {
+      "selection_one": "{{count}} libro",
+      "selection_other": "{{count}} libros",
+      "pages_one": "{{count}} página",
+      "pages_other": "{{count}} páginas",
+      "batch": "En lote:",
+      "withRetries": "con reintentos, {{usd}}",
+      "online": "En línea costaría {{usd}}",
+      "noPages_one": "{{count}} libro sin número de páginas no entra en la cuenta.",
+      "noPages_other": "{{count}} libros sin número de páginas no entran en la cuenta.",
+      "large_one": "{{count}} libro pesa más de 60 MB: si está cifrado, sólo la terminal lo descifra (el panel no podrá).",
+      "large_other": "{{count}} libros pesan más de 60 MB: si están cifrados, sólo la terminal los descifra (el panel no podrá).",
+      "doubled": "Desde 2027 el precio del modelo es el doble: la cuenta ya lo incluye.",
+      "name": "Nombre del lote",
+      "copy": "Copiar comando",
+      "copied": "Copiado",
+      "approxPages_one": "{{count}} libro cuenta las páginas extraídas, no las del PDF: el costo puede quedar corto.",
+      "approxPages_other": "{{count}} libros cuentan las páginas extraídas, no las del PDF: el costo puede quedar corto.",
+      "nearRise": "Faltan menos de dos días para que el precio se duplique: un lote tarda hasta 24 h y podría cobrarse al precio nuevo."
+    },
+    "past": {
+      "empty": "Todavía no se aplicó ningún lote a esta biblioteca.",
+      "meta_one": "{{count}} libro reemplazado · {{fecha}}",
+      "meta_other": "{{count}} libros reemplazados · {{fecha}}"
+    }
   }
 }
