@@ -7,11 +7,11 @@ import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Progress } from '@/components/ui/progress';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { estimar } from '@/lib/loteReport';
 import type { EstadoDelLote, ResumenDeLote } from '@/hooks/admin/useBatchJobs';
 import { formatUsd } from '../extraction-runs/format';
+import { BatchBooksTable } from './BatchBooksTable';
 
 // Texto en `foreground` o en su par `*-subtle-foreground`: AA sobre el fondo suave.
 const TONO: Record<EstadoDelLote, string> = {
@@ -91,42 +91,13 @@ export function BatchJobCard({ lote, onReintentar, onCancelar, ocupado }: {
                 </ul>
             </div>
 
-            <Collapsible>
+            <Collapsible defaultOpen={lote.libros.some(b => b.listo && !b.aplicado)}>
                 <CollapsibleTrigger className="group inline-flex min-h-9 items-center gap-1 rounded-md text-sm font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
                     {t('batch.jobs.books', { count: lote.libros.length })}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-2">
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{t('batch.candidates.book')}</TableHead>
-                                    <TableHead className="text-right">{t('batch.candidates.pages')}</TableHead>
-                                    <TableHead>{t('batch.jobs.sections')}</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {lote.libros.map(b => (
-                                    <TableRow key={b.rid}>
-                                        <TableCell className="max-w-[22rem]">
-                                            <div className="truncate font-medium">{b.titulo}</div>
-                                            {b.estado !== 'preparado' && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    {t(`batch.jobs.book.${b.estado}`)}{b.motivo ? `: ${b.motivo}` : ''}
-                                                </div>
-                                            )}
-                                            {b.fallas.map(f => <div key={f} className="truncate text-xs text-muted-foreground" title={f}>{f}</div>)}
-                                        </TableCell>
-                                        <TableCell className="text-right tabular-nums">{b.paginas ?? '—'}</TableCell>
-                                        <TableCell className="text-xs">
-                                            {t('batch.jobs.bookSections', { ok: b.tramos.ok, pendiente: b.tramos.pendiente, fallas: b.tramos.fallo + b.tramos.incompleto })}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    <BatchBooksTable lote={lote} />
                 </CollapsibleContent>
             </Collapsible>
 

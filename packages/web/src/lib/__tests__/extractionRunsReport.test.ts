@@ -39,6 +39,9 @@ function run(parcial: Partial<ExtractionRun>): ExtractionRun {
 }
 
 describe('finalEngine', () => {
+    it('aplicar un lote va aparte, aunque escriba la versión de la cola', () => {
+        expect(finalEngine(run({ path: 'batch-reprocess', extractionVersion: '6.0-gemini-cola' }))).toBe('batch');
+    });
     it('manda la versión que produjo el texto', () => {
         expect(finalEngine(run({ extractionVersion: '6.0-gemini-cola' }))).toBe('gemini-queue');
     });
