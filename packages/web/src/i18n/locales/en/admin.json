@@ -778,5 +778,69 @@
       "mixed-scripts": "Mixed scripts",
       "missing-pages": "Missing pages"
     }
+  },
+  "batch": {
+    "title": "Batch reprocessing",
+    "subtitle": "Which books are worth reading again, what it would cost, and the command to launch it. This screen doesn't spend or write anything.",
+    "owner": "Library of",
+    "loadError": "Couldn't load the books.",
+    "empty": "This library has no books.",
+    "tabs": {
+      "candidates": "Candidates",
+      "past_one": "Applied batches ({{count}})",
+      "past_other": "Applied batches ({{count}})"
+    },
+    "candidates": {
+      "title": "Books",
+      "subtitle_one": "{{count}} worth reprocessing.",
+      "subtitle_other": "{{count}} worth reprocessing.",
+      "pickRecommended": "Pick recommended",
+      "select": "Select",
+      "selectBook": "Select “{{titulo}}”",
+      "book": "Book",
+      "reasons": "Why",
+      "pages": "Pages",
+      "size": "Size",
+      "reader": "Read with",
+      "excluded": "Can't go in a batch"
+    },
+    "reason": {
+      "none": "Read well",
+      "faltan": "{{faltan}} of {{de}} pages missing",
+      "vacio": "Empty text",
+      "sinVision": "Read without vision",
+      "modeloViejo": "Older model",
+      "yaReprocesado": "Already reprocessed ({{lote}})",
+      "grande": "Over 60 MB: if encrypted, only the terminal can decrypt it",
+      "enProceso": "Being extracted",
+      "fallido": "Extraction failed",
+      "sinExtraer": "Not extracted",
+      "sinMedir": "Not measured"
+    },
+    "estimate": {
+      "selection_one": "{{count}} book",
+      "selection_other": "{{count}} books",
+      "pages_one": "{{count}} page",
+      "pages_other": "{{count}} pages",
+      "batch": "Batch:",
+      "withRetries": "with retries, {{usd}}",
+      "online": "Online it would cost {{usd}}",
+      "noPages_one": "{{count}} book without a page count isn't included.",
+      "noPages_other": "{{count}} books without a page count aren't included.",
+      "large_one": "{{count}} book is over 60 MB: if encrypted, only the terminal can decrypt it (the panel won't).",
+      "large_other": "{{count}} books are over 60 MB: if encrypted, only the terminal can decrypt them (the panel won't).",
+      "doubled": "From 2027 the model price doubles: the estimate includes it.",
+      "name": "Batch name",
+      "copy": "Copy command",
+      "copied": "Copied",
+      "approxPages_one": "{{count}} book counts extracted pages, not the PDF's: the cost may run short.",
+      "approxPages_other": "{{count}} books count extracted pages, not the PDF's: the cost may run short.",
+      "nearRise": "Less than two days until the price doubles: a batch takes up to 24 h and may be billed at the new price."
+    },
+    "past": {
+      "empty": "No batch has been applied to this library yet.",
+      "meta_one": "{{count}} book replaced · {{fecha}}",
+      "meta_other": "{{count}} books replaced · {{fecha}}"
+    }
   }
 }

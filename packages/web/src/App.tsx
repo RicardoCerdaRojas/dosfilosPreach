@@ -85,6 +85,7 @@ const UserDetailPage = lazy(() => import('@/pages/admin/users/UserDetailPage').t
 const AuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage').then(m => ({ default: m.AuditLogPage })));
 const LlmCostDashboard = lazy(() => import('@/pages/admin/LlmCostDashboard').then(m => ({ default: m.LlmCostDashboard })));
 const ExtractionRunsDashboard = lazy(() => import('@/pages/admin/ExtractionRunsDashboard').then(m => ({ default: m.ExtractionRunsDashboard })));
+const BatchReprocessDashboard = lazy(() => import('@/pages/admin/BatchReprocessDashboard').then(m => ({ default: m.BatchReprocessDashboard })));
 const LlamaParseMonitoring = lazy(() => import('@/pages/admin/LlamaParseMonitoring'));
 const TutorManagement = lazy(() => import('@/pages/admin/TutorManagement'));
 const TutorEditor = lazy(() => import('@/pages/admin/TutorEditor'));
@@ -402,6 +403,7 @@ function App() {
             <Route path="admin/audit-log" element={<AuditLogPage />} />
             <Route path="admin/llm-cost" element={<LlmCostDashboard />} />
             <Route path="admin/extraction-runs" element={<ExtractionRunsDashboard />} />
+            <Route path="admin/lotes" element={<BatchReprocessDashboard />} />
             <Route path="admin/llamaparse-monitoring" element={<LlamaParseMonitoring />} />
             <Route path="admin/tutors" element={<TutorManagement />} />
             <Route path="admin/tutors/new" element={<TutorEditor />} />

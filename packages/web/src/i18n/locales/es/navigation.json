@@ -25,7 +25,8 @@
         "integrations": "Integraciones",
         "admin": "Admin",
         "contactLeads": "Leads de Contacto",
-        "extractionRuns": "Extracción de libros"
+        "extractionRuns": "Extracción de libros",
+        "batchReprocess": "Reproceso en lote"
     },
     "groups": {
         "study": "Mis Estudios",

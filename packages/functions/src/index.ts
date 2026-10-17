@@ -19,6 +19,7 @@ export { extractRangeTask } from './library/extractRangeTask';
 export { alertFailedIndexing } from './library/alertFailedIndexing';
 export { sweepStalledExtractions } from './library/sweepStalledExtractions';
 export { getExtractionRuns } from './library/getExtractionRuns';
+export { getBatchCandidates } from './library/candidatosDeLote';
 export { incrementUsage } from './usage/incrementUsage';
 export { getGreekDashboardSessions } from './greek-tutor/getGreekDashboardSessions';
 export { getFacultyDashboardSessions } from './faculty/getFacultyDashboardSessions';
