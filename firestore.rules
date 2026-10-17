@@ -260,12 +260,12 @@ service cloud.firestore {
           && soloFlagsPorDefecto(d.featureFlags);
     }
 
-    // El cobro de exégesis se descuenta desde el cliente
-    // (`ProcessingBalanceService.consumeExegesis`): sólo puede BAJAR el saldo.
-    // Hasta el 2026-10-16 un usuario podía ponerse el saldo que quisiera. El
-    // reembolso por falla previa al modelo sube el saldo y queda denegado
-    // (pasa poco, son centavos, y el error ya se traga) hasta que el cobro
-    // de exégesis viva en el servidor.
+    // Desde el 2026-10-17 el cobro de exégesis vive en el SERVIDOR
+    // (`abrirReservaDeExegesis`, `runLlmPrompt`): el navegador nuevo ya no
+    // escribe el saldo. Esto queda para los navegadores con la versión vieja
+    // abierta: sólo pueden BAJAR el saldo (hasta el 2026-10-16 se podían
+    // poner el que quisieran). Cuando el cobro pase a obligatorio, se cierra
+    // `processingBalance` al cliente.
     function soloDescuentoDeExegesis() {
       let antes = resource.data.get('processingBalance', {});
       let despues = request.resource.data.processingBalance;
@@ -723,6 +723,13 @@ service cloud.firestore {
     // 📊 ANALYTICS COLLECTIONS
     // ===========================
     
+    // Medición del cobro de exégesis en sombra (2026-10-17): llamadas que
+    // cobran con y sin reserva, por día. Las escribe `runLlmPrompt`.
+    match /metricas_cobro_exegesis/{dia} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+
     // Daily Metrics - Aggregated analytics data
     // Only super admins can read, only Cloud Functions can write
     match /daily_metrics/{metricId} {

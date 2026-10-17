@@ -249,10 +249,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
 
     /**
      * Catches the Fase-2 InsufficientExegesisCreditsError thrown by
-     * any exegesis mutation (the use case calls
-     * `processingBalanceService.consumeExegesis` before the LLM call;
-     * if the bucket can't cover the catalog cost, the error
-     * propagates here). Opens the OutOfCredits dialog with the
+     * any exegesis mutation (the use case opens a reservation before the
+     * LLM call; since 2026-10-17 the SERVER charges it —
+     * `abrirReservaDeExegesis`— and answers «sin saldo», which
+     * `processingBalanceService.consumeExegesis` turns into this error). Opens the OutOfCredits dialog with the
      * needed-USD pre-populated. Returns true when handled so the
      * caller can skip the generic toast.
      */

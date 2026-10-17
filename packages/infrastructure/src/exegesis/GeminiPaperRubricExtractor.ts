@@ -70,7 +70,7 @@ export class GeminiPaperRubricExtractor implements IPaperRubricExtractor {
         // backoff before surfacing the failure to the user.
         const { text: rawJson, tokensUsed } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
-                feature: 'exegesis.extractRubric',
+                feature: input.gratuita ? 'exegesis.createUserRubric' : 'exegesis.extractRubric',
                 model: this.modelName,
                 system: systemInstruction,
                 prompt: userMessage,

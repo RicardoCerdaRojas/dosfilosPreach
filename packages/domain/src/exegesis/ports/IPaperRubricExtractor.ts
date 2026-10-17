@@ -40,6 +40,13 @@ export interface ExtractRubricInput {
      */
     rawText: string;
     /**
+     * `true` cuando la extracción es GRATIS para el pastor (crear una rúbrica
+     * propia a partir de un texto, `CreateUserRubricFromText`): el adaptador
+     * usa una etiqueta del proxy que no cobra (`exegesis.createUserRubric`).
+     * Sin esto, la etiqueta de siempre exige una reserva de saldo.
+     */
+    gratuita?: boolean;
+    /**
      * Inline image data when the rubric was uploaded / pasted as an
      * image (PNG / JPEG / WEBP) instead of a PDF or text. The extractor
      * sends this to Gemini Vision multimodally so the rubric is parsed

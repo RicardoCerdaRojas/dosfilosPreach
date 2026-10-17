@@ -45,22 +45,30 @@ describe('ExegesisCreditReservation', () => {
             'user-1',
             'analyzeVerseCanonically',
         );
-        // analyzeVerseCanonically catalog cost = $0.10
-        expect(consumeExegesisMock).toHaveBeenCalledWith('user-1', 0.10);
+        // analyzeVerseCanonically catalog cost = $0.10. El servidor cobra por
+        // la OPERACIÓN (su catálogo); el id hace idempotente un reintento.
+        expect(consumeExegesisMock).toHaveBeenCalledWith('user-1', 0.10, {
+            operation: 'analyzeVerseCanonically',
+            reservaId: reservation.reservaId,
+        });
         expect(reservation.costUsd).toBe(0.10);
+        expect(reservation.reservaId).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
     });
 
-    it('skips consume when the operation cost is 0 (e.g. classifySourceType)', async () => {
-        // classifySourceType catalog cost is $0.001 — non-zero. Use an
-        // unrecognized key to exercise the zero-cost short-circuit
-        // (catalog returns 0 for unknown keys).
+    it('una clave de costo cero (fuera del catálogo) no reserva ni reembolsa', async () => {
         consumeExegesisMock.mockResolvedValue(undefined);
-        const reservation = await ExegesisCreditReservation.open(
-            'user-1',
-            'totallyMadeUpOperation' as any,
-        );
-        expect(consumeExegesisMock).not.toHaveBeenCalled();
+        const reservation = await ExegesisCreditReservation.open('user-1', 'totallyMadeUpOperation' as any);
         expect(reservation.costUsd).toBe(0);
+        expect(consumeExegesisMock).not.toHaveBeenCalled();
+        await reservation.refundIfPreLlm();
+        expect(refundExegesisMock).not.toHaveBeenCalled();
+    });
+
+    it('cada reserva tiene su id (operaciones en paralelo no se confunden)', async () => {
+        consumeExegesisMock.mockResolvedValue(undefined);
+        const a = await ExegesisCreditReservation.open('user-1', 'analyzeVerseCanonically');
+        const b = await ExegesisCreditReservation.open('user-1', 'analyzeVerseCanonically');
+        expect(a.reservaId).not.toBe(b.reservaId);
     });
 
     it('propagates InsufficientExegesisCreditsError from consume', async () => {
@@ -80,8 +88,8 @@ describe('ExegesisCreditReservation', () => {
             'composeAcademicPaper',
         );
         await reservation.refundIfPreLlm();
-        // composeAcademicPaper cost = $0.20
-        expect(refundExegesisMock).toHaveBeenCalledWith('user-1', 0.20);
+        // composeAcademicPaper cost = $0.20; el servidor devuelve por id.
+        expect(refundExegesisMock).toHaveBeenCalledWith('user-1', 0.20, { reservaId: reservation.reservaId });
     });
 
     it('does NOT refund when markLlmContacted was called', async () => {

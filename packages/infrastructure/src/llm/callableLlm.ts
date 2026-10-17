@@ -223,6 +223,21 @@ async function renovarLasCredenciales(): Promise<boolean> {
     return renovada;
 }
 
+/**
+ * El mismo escudo para otros callables: si el servidor rechaza por
+ * credenciales, se renuevan y se reintenta UNA vez. Sirve para callables
+ * cuyo rechazo por credenciales ocurre antes de hacer nada, o que son
+ * idempotentes (las reservas del cobro de exégesis, por `reservaId`).
+ */
+export async function llamarConReintentoDeSesion<T>(llamar: () => Promise<T>): Promise<T> {
+    try {
+        return await llamar();
+    } catch (err) {
+        if (!esFaltaDeSesion(err) || !(await renovarLasCredenciales())) throw err;
+        return llamar();
+    }
+}
+
 export async function runLlmPrompt(
     options: CallableLlmOptions,
     transport: CallableLlmTransport = {},

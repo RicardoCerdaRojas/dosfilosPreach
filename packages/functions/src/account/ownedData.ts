@@ -91,6 +91,8 @@ export const SUBCOLLECTIONS_OF_USERS: readonly string[] = [
     'monthly_grants',
     'quota_warnings',
     'wp_publishes_hourly',
+    // Reservas del cobro de exégesis en el servidor (2026-10-17).
+    'exegesis_reservas',
 ];
 
 /** Colecciones donde el id del documento ES el uid (con sus subcolecciones). */
@@ -135,6 +137,7 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = {
     llamaparseAccounts: 'cuentas del sistema',
     rate_limits: 'contadores por IP, caducan solos',
     daily_metrics: 'métricas agregadas, sin datos personales',
+    metricas_cobro_exegesis: 'conteo diario de llamadas por etiqueta, sin usuario',
     global_metrics: 'métricas agregadas, sin datos personales',
     global_metrics_daily: 'métricas agregadas, sin datos personales',
     admin_audit_log: 'registro de auditoría: se conserva por obligación (el borrado mismo queda anotado, sin correo)',
