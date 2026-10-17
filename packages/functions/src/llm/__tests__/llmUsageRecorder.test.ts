@@ -116,3 +116,15 @@ describe('buildUsagePatch — forma del documento', () => {
         expect('usdFromFallbackPricing' in buildUsagePatch({ ...record, model: 'inventado' })).toBe(true);
     });
 });
+
+describe('factorDePrecio (Batch API a mitad de precio)', () => {
+    it('el lote se cuenta a la mitad en el día, el modelo y la atribución', async () => {
+        const { usdDe } = await import('../llmUsageRecorder');
+        const base = { feature: 'library.batchReprocess', model: 'gemini-3.8-flash', inputTokens: 1_000_000, outputTokens: 1_000_000 };
+        const lista = usdDe(base, new Date('2026-10-17'));
+        expect(lista).toBeCloseTo(estimateUsd('gemini-3.8-flash', 1_000_000, 1_000_000, new Date('2026-10-17')), 9);
+        expect(usdDe({ ...base, factorDePrecio: 0.5 }, new Date('2026-10-17'))).toBeCloseTo(lista / 2, 9);
+        const patch = buildUsagePatch({ ...base, factorDePrecio: 0.5 }, new Date('2026-10-17')) as { usd: { operand: number } };
+        expect(patch.usd.operand).toBeCloseTo(lista / 2, 9);
+    });
+});

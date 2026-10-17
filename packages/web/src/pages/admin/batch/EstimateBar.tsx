@@ -1,20 +1,28 @@
 import { useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Loader2, Play } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { comandoDePreparar, estimar, type Candidato } from '@/lib/loteReport';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { comandoDePreparar, estimar, nombreElegido, type Candidato } from '@/lib/loteReport';
 import { cn } from '@/lib/utils';
 import { formatUsd } from '../extraction-runs/format';
 
 /**
- * Lo que costaría reprocesar lo elegido, en lote y —para comparar— en línea,
- * y el comando de la terminal para lanzarlo (lanzar desde el panel llega en
- * el PR 2 de la fase).
+ * Lo que costaría reprocesar lo elegido, en lote y —para comparar— en línea.
+ * «Preparar lote» lo lanza desde el panel, después de confirmar el costo; el
+ * comando de la terminal queda para los PDF que sólo ella puede abrir.
  */
-export function EstimateBar({ elegidos }: { elegidos: Candidato[] }) {
+export function EstimateBar({ elegidos, onLanzar, lanzando = false }: {
+    elegidos: Candidato[];
+    /** Lanza el lote con este nombre y su costo estimado. */
+    onLanzar?: (nombre: string, estimadoUsd: number) => void;
+    lanzando?: boolean;
+}) {
     const { t } = useTranslation('admin');
     const [nombre, setNombre] = useState('');
     const [copiado, setCopiado] = useState(false);
+    const [confirmar, setConfirmar] = useState(false);
     const e = estimar(elegidos);
     const comando = comandoDePreparar(nombre, elegidos.map(c => c.id));
     const grandes = elegidos.filter(c => c.motivos.includes('grande')).length;
@@ -60,6 +68,17 @@ export function EstimateBar({ elegidos }: { elegidos: Candidato[] }) {
                         placeholder="biblioteca6"
                         className="h-9 w-40 rounded-md border border-border bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
+                    {onLanzar && (
+                        <Button size="sm" onClick={() => setConfirmar(true)} disabled={lanzando}>
+                            {lanzando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                            <span className="ml-1.5">{t('batch.launch.button')}</span>
+                        </Button>
+                    )}
+                </div>
+            )}
+            {e.libros > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{t('batch.launch.orTerminal')}</span>
                     <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs" title={comando}>{comando}</code>
                     <button
                         type="button"
@@ -70,6 +89,18 @@ export function EstimateBar({ elegidos }: { elegidos: Candidato[] }) {
                         {copiado ? t('batch.estimate.copied') : t('batch.estimate.copy')}
                     </button>
                 </div>
+            )}
+            {onLanzar && (
+                <ConfirmDialog
+                    open={confirmar}
+                    onOpenChange={setConfirmar}
+                    destructive={false}
+                    title={t('batch.launch.confirmTitle', { nombre: nombreElegido(nombre) })}
+                    body={t('batch.launch.confirmBody', { count: e.libros, paginas: e.paginas, usd: formatUsd(e.loteUsd), conReintentos: formatUsd(e.conReintentosUsd) })}
+                    confirmLabel={t('batch.launch.confirm', { usd: formatUsd(e.conReintentosUsd) })}
+                    cancelLabel={t('batch.launch.cancel')}
+                    onConfirm={() => onLanzar(nombreElegido(nombre), e.conReintentosUsd)}
+                />
             )}
         </Card>
     );

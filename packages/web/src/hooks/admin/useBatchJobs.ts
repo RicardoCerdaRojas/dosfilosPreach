@@ -1,0 +1,59 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
+export type EstadoDeTramo = 'pendiente' | 'ok' | 'fallo' | 'incompleto' | 'reemplazado' | 'abandonado';
+export type EstadoDelLote = 'preparando' | 'en-curso' | 'listo' | 'cancelado' | 'fallido';
+
+/** COPIA de `ResumenDeLote` (`functions/src/library/estadoDelLote.ts`): web no importa functions. */
+export interface ResumenDeLote {
+    id: string;
+    estado: EstadoDelLote;
+    motivo: string | null;
+    creado: number;
+    actualizado: number;
+    creadoPorEmail: string | null;
+    dueno: string;
+    estimadoUsd: number;
+    usd: number;
+    paginas: number;
+    rondas: Array<{ numero: number; estadoJob: string | null; leida: boolean; tramos: number }>;
+    tramos: Record<EstadoDeTramo, number>;
+    /** Páginas que «Reintentar» volvería a pedir, como mucho. */
+    paginasConFallas: number;
+    libros: Array<{
+        rid: string; titulo: string; estado: 'por-preparar' | 'preparado' | 'saltado'; motivo: string | null; paginas: number | null;
+        tramos: Record<EstadoDeTramo, number>;
+        fallas: string[];
+    }>;
+    puedeReintentar: boolean;
+    puedeCancelar: boolean;
+}
+
+const CLAVE = ['admin', 'batchJobs'] as const;
+const llamar = <I, O>(nombre: string) => async (datos: I) => (await httpsCallable<I, O>(getFunctions(), nombre)(datos)).data;
+
+/**
+ * Los lotes del reproceso (`getBatchJobs`, super admin). Mientras alguno está
+ * en marcha se refresca cada minuto; el sondeo del servidor corre cada 10.
+ */
+export function useBatchJobs() {
+    return useQuery({
+        queryKey: CLAVE,
+        queryFn: async () => (await llamar<Record<string, never>, { lotes: ResumenDeLote[] }>('getBatchJobs')({})).lotes,
+        refetchInterval: q => ((q.state.data ?? []).some(l => l.estado === 'preparando' || l.estado === 'en-curso') ? 60_000 : false),
+        staleTime: 30_000,
+    });
+}
+
+export interface PedidoDeLote { nombre: string; ownerUid: string; ids: string[]; estimadoUsd: number }
+
+/** Lanzar, reintentar y cancelar: cada uno refresca la lista. */
+export function useBatchActions() {
+    const qc = useQueryClient();
+    const refrescar = () => qc.invalidateQueries({ queryKey: CLAVE });
+    return {
+        lanzar: useMutation({ mutationFn: llamar<PedidoDeLote, { id: string; libros: number }>('launchBatch'), onSuccess: refrescar }),
+        reintentar: useMutation({ mutationFn: llamar<{ loteId: string }, { ronda: number | null; libros: number; abandonadas: number }>('retryBatch'), onSuccess: refrescar }),
+        cancelar: useMutation({ mutationFn: llamar<{ loteId: string }, { ok: boolean }>('cancelBatch'), onSuccess: refrescar }),
+    };
+}

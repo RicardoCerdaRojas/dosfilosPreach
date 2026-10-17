@@ -29,7 +29,10 @@ export type AdminAuditAction =
     | 'anchor_fidelity.ingest_misreading'
     | 'anchor_fidelity.review_misreading'
     | 'anchor_fidelity.update_misreading'
-    | 'anchor_fidelity.delete_misreading';
+    | 'anchor_fidelity.delete_misreading'
+    | 'library.batch_launch'
+    | 'library.batch_retry'
+    | 'library.batch_cancel';
 
 interface WriteAuditLogParams {
     /** Firebase UID of the admin who triggered the action. */

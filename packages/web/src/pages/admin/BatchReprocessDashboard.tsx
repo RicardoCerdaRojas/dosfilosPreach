@@ -7,17 +7,20 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import { useBatchCandidates } from '@/hooks/admin/useBatchCandidates';
+import { useBatchActions, useBatchJobs } from '@/hooks/admin/useBatchJobs';
 import { esRecomendado } from '@/lib/loteReport';
 import { CandidatesTable } from './batch/CandidatesTable';
 import { EstimateBar } from './batch/EstimateBar';
 import { PastBatches } from './batch/PastBatches';
+import { BatchJobs } from './batch/BatchJobs';
 
 /**
- * Reproceso en lote (docs/FASE_LOTE_SUPER_ADMIN_2026-10.md, PR 1: ver,
- * auditar y estimar). Los libros de una biblioteca ordenados por lo que
- * conviene reprocesar, el costo de lo elegido y el comando para lanzarlo.
- * No gasta ni escribe. Sólo administración.
+ * Reproceso en lote (docs/FASE_LOTE_SUPER_ADMIN_2026-10.md, PR 1 y 2). Los
+ * libros de una biblioteca ordenados por lo que conviene reprocesar, el costo
+ * de lo elegido, «Preparar lote» (gasta, con confirmación) y el seguimiento
+ * de los lotes lanzados. Aplicar el resultado llega en el PR 3. Sólo administración.
  */
 export function BatchReprocessDashboard() {
     const { t } = useTranslation('admin');
@@ -37,6 +40,21 @@ export function BatchReprocessDashboard() {
     });
     const elegirRecomendados = () => setElegidos(new Set(candidatos.filter(esRecomendado).map(c => c.id)));
     const cambiarDueno = (uid: string) => { setDueno(uid); setElegidos(new Set()); };
+    const [pestana, setPestana] = useState('candidatos');
+    const lotes = useBatchJobs();
+    const { lanzar } = useBatchActions();
+    const enMarcha = (lotes.data ?? []).filter(l => l.estado === 'preparando' || l.estado === 'en-curso').length;
+    const lanzarLote = (nombre: string, estimadoUsd: number) => {
+        if (!data) return;
+        lanzar.mutate({ nombre, ownerUid: data.dueno, ids: seleccion.map(c => c.id), estimadoUsd }, {
+            onSuccess: r => {
+                toast.success(t('batch.launch.done', { nombre: r.id, count: r.libros }));
+                setElegidos(new Set());
+                setPestana('enMarcha');
+            },
+            onError: err => toast.error(err instanceof Error ? err.message : String(err)),
+        });
+    };
 
     return (
         <div className="p-4 sm:p-6 space-y-6 max-w-6xl">
@@ -70,21 +88,25 @@ export function BatchReprocessDashboard() {
             </div>
 
             {cargando && <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
-            {error && <Card className="p-4 border-destructive text-sm text-destructive">{t('batch.loadError')}</Card>}
-            {data && !cargando && candidatos.length === 0 && <Card className="p-6 text-sm text-muted-foreground">{t('batch.empty')}</Card>}
+            {error && <Card className="p-4 border-destructive text-sm text-foreground">{t('batch.loadError')}</Card>}
 
-            {data && !cargando && candidatos.length > 0 && (
-                <Tabs defaultValue="candidatos">
+            {!cargando && (
+                <Tabs value={pestana} onValueChange={setPestana}>
                     <TabsList>
                         <TabsTrigger value="candidatos">{t('batch.tabs.candidates')}</TabsTrigger>
-                        <TabsTrigger value="lotes">{t('batch.tabs.past', { count: data.lotes.length })}</TabsTrigger>
+                        <TabsTrigger value="enMarcha">{t('batch.tabs.running', { count: enMarcha })}</TabsTrigger>
+                        <TabsTrigger value="lotes">{t('batch.tabs.past', { count: data?.lotes.length ?? 0 })}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="candidatos" className="space-y-4">
-                        <CandidatesTable candidatos={candidatos} elegidos={elegidos} onAlternar={alternar} onElegirRecomendados={elegirRecomendados} />
-                        <EstimateBar elegidos={seleccion} />
+                        {data && candidatos.length === 0 && <Card className="p-6 text-sm text-muted-foreground">{t('batch.empty')}</Card>}
+                        {candidatos.length > 0 && <CandidatesTable candidatos={candidatos} elegidos={elegidos} onAlternar={alternar} onElegirRecomendados={elegirRecomendados} />}
+                        <EstimateBar elegidos={seleccion} onLanzar={lanzarLote} lanzando={lanzar.isPending} />
+                    </TabsContent>
+                    <TabsContent value="enMarcha">
+                        <BatchJobs lotes={lotes.data} cargando={lotes.isLoading} error={lotes.error} />
                     </TabsContent>
                     <TabsContent value="lotes">
-                        <PastBatches lotes={data.lotes} />
+                        <PastBatches lotes={data?.lotes ?? []} />
                     </TabsContent>
                 </Tabs>
             )}

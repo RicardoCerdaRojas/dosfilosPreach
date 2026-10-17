@@ -142,6 +142,16 @@ describe('paridad con functions', () => {
         const fuente = readFileSync(resolve(raiz, 'modelCatalog.ts'), 'utf8');
         expect(fuente).toMatch(new RegExp(`export const MODEL_VISION = '${MODELO_ACTUAL.replace(/\./g, '\\.')}';`));
     });
+    it('ResumenDeLote del hook = el de estadoDelLote (mismos campos)', () => {
+        const campos = (fuente: string) => {
+            const bloque = fuente.match(/export interface ResumenDeLote \{([\s\S]*?)\n\}/)?.[1] ?? '';
+            return [...bloque.matchAll(/^ {4}(\w+)\??:/gm)].map(m => m[1]).sort();
+        };
+        const servidor = campos(readFileSync(resolve(raiz, '../library/estadoDelLote.ts'), 'utf8'));
+        const web = campos(readFileSync(resolve(__dirname, '../../hooks/admin/useBatchJobs.ts'), 'utf8'));
+        expect(servidor.length).toBeGreaterThan(10);
+        expect(web).toEqual(servidor);
+    });
     it('precio en línea y fecha de la suba = llmCost', () => {
         const fuente = readFileSync(resolve(raiz, 'llmCost.ts'), 'utf8');
         const bloque = fuente.match(new RegExp(`'${MODELO_ACTUAL.replace(/\./g, '\\.')}': \\{([\\s\\S]*?)\\n    \\}`))?.[1] ?? '';

@@ -44,6 +44,12 @@ export interface LlmUsageRecord extends LlmUsageContext {
      * apagarlo en una feature concreta.
      */
     thinkingTokens?: number;
+    /**
+     * Lo que se paga del precio de lista: 0,5 en la Batch API de Gemini (el
+     * reproceso en lote). Sin esto, el panel de costos contaba el lote al
+     * doble de lo que se factura.
+     */
+    factorDePrecio?: number;
 }
 
 /** Clave del documento del día, en UTC (mismo huso que los jobs programados). */
@@ -93,9 +99,15 @@ export function salidaFacturable(record: LlmUsageRecord): number {
     return (record.outputTokens || 0) + (record.thinkingTokens || 0);
 }
 
+/** El costo de una llamada, con el descuento si lo tiene. */
+export function usdDe(record: LlmUsageRecord, now: Date = new Date()): number {
+    const factor = record.factorDePrecio ?? 1;
+    return estimateUsd(record.model, record.inputTokens, salidaFacturable(record), now) * (Number.isFinite(factor) && factor >= 0 ? factor : 1);
+}
+
 export function buildUsagePatch(record: LlmUsageRecord, now: Date = new Date()): Record<string, unknown> {
     const { model, feature, userId, inputTokens } = record;
-    const usd = estimateUsd(model, inputTokens, salidaFacturable(record));
+    const usd = usdDe(record, now);
     const inc = FieldValue.increment;
     const inTok = inputTokens || 0;
     const outTok = record.outputTokens || 0;
@@ -143,14 +155,14 @@ export function buildAttributionPatch(record: LlmUsageRecord): Record<string, un
             inputTokens: inc(record.inputTokens || 0),
             outputTokens: inc(record.outputTokens || 0),
             thinkingTokens: inc(record.thinkingTokens || 0),
-            usd: inc(estimateUsd(record.model, record.inputTokens, salidaFacturable(record))),
+            usd: inc(usdDe(record)),
         },
     };
 }
 
 export async function recordLlmUsage(record: LlmUsageRecord, now: Date = new Date()): Promise<void> {
     try {
-        const usd = estimateUsd(record.model, record.inputTokens, salidaFacturable(record));
+        const usd = usdDe(record, now);
         const db = admin.firestore();
         const atribucion = atribucionActual();
         await Promise.all([

@@ -781,14 +781,16 @@
   },
   "batch": {
     "title": "Reproceso en lote",
-    "subtitle": "Qué libros conviene volver a leer, cuánto costaría y el comando para lanzarlo. Esta pantalla no gasta ni escribe.",
+    "subtitle": "Qué libros conviene volver a leer, cuánto costaría, y los lotes lanzados. «Preparar lote» y «Reintentar» gastan, y piden confirmación; ningún libro cambia desde aquí.",
     "owner": "Biblioteca de",
     "loadError": "No se pudieron cargar los libros.",
     "empty": "Esta biblioteca no tiene libros.",
     "tabs": {
       "candidates": "Candidatos",
       "past_one": "Lotes aplicados ({{count}})",
-      "past_other": "Lotes aplicados ({{count}})"
+      "past_other": "Lotes aplicados ({{count}})",
+      "running_one": "Lotes del panel ({{count}} en marcha)",
+      "running_other": "Lotes del panel ({{count}} en marcha)"
     },
     "candidates": {
       "title": "Libros",
@@ -841,6 +843,71 @@
       "empty": "Todavía no se aplicó ningún lote a esta biblioteca.",
       "meta_one": "{{count}} libro reemplazado · {{fecha}}",
       "meta_other": "{{count}} libros reemplazados · {{fecha}}"
+    },
+    "launch": {
+      "button": "Preparar lote",
+      "orTerminal": "O en la terminal:",
+      "confirmTitle": "¿Preparar el lote «{{nombre}}»?",
+      "confirmBody_one": "Se corta y se envía {{count}} libro ({{paginas}} páginas). Costo estimado: unos {{usd}}; con reintentos, unos {{conReintentos}}. El resultado tarda hasta 24 horas y ningún libro cambia hasta que se aplique (aplicar desde el panel llega en la próxima versión).",
+      "confirmBody_other": "Se cortan y se envían {{count}} libros ({{paginas}} páginas). Costo estimado: unos {{usd}}; con reintentos, unos {{conReintentos}}. El resultado tarda hasta 24 horas y ningún libro cambia hasta que se aplique (aplicar desde el panel llega en la próxima versión).",
+      "confirm": "Preparar (unos {{usd}})",
+      "cancel": "Volver",
+      "done_one": "Lote «{{nombre}}» lanzado con {{count}} libro.",
+      "done_other": "Lote «{{nombre}}» lanzado con {{count}} libros."
+    },
+    "jobs": {
+      "hint": "El servidor revisa los lotes cada 10 minutos; un lote tarda hasta 24 horas.",
+      "empty": "Todavía no se lanzó ningún lote desde el panel.",
+      "loadError": "No se pudieron cargar los lotes.",
+      "state": {
+        "preparando": "Preparando",
+        "en-curso": "En curso",
+        "listo": "Listo",
+        "cancelado": "Cancelado",
+        "fallido": "Falló"
+      },
+      "meta_one": "{{fecha}} · {{count}} libro · {{paginas}} páginas · {{por}}",
+      "meta_other": "{{fecha}} · {{count}} libros · {{paginas}} páginas · {{por}}",
+      "retry_one": "Reintentar lo que falló ({{count}})",
+      "retry_other": "Reintentar lo que falló ({{count}})",
+      "cancel": "Cancelar",
+      "progress": "{{ok}} de {{total}} tramos leídos",
+      "progressLabel": "Avance: {{pct}} %",
+      "cost": "Costo real {{usd}} · estimado {{estimado}}",
+      "counts": {
+        "pendiente_one": "{{count}} pendiente",
+        "pendiente_other": "{{count}} pendientes",
+        "incompleto_one": "{{count}} incompleto",
+        "incompleto_other": "{{count}} incompletos",
+        "fallo_one": "{{count}} con falla",
+        "fallo_other": "{{count}} con falla",
+        "abandonado_one": "{{count}} página abandonada",
+        "abandonado_other": "{{count}} páginas abandonadas"
+      },
+      "round_one": "Ronda {{numero}}: {{count}} tramo, {{estado}}",
+      "round_other": "Ronda {{numero}}: {{count}} tramos, {{estado}}",
+      "roundRead": "leída",
+      "roundRunning": "en curso",
+      "books_one": "Ver {{count}} libro",
+      "books_other": "Ver {{count}} libros",
+      "sections": "Tramos",
+      "book": {
+        "por-preparar": "Preparando",
+        "saltado": "Saltado"
+      },
+      "bookSections": "{{ok}} leídos · {{pendiente}} pendientes · {{fallas}} con fallas",
+      "cancelTitle": "¿Cancelar el lote «{{nombre}}»?",
+      "cancelBody": "Se cancela lo que esté en curso y se borran los recortes subidos. Lo ya leído se conserva. Lo que el servicio ya haya procesado puede cobrarse igual.",
+      "cancelConfirm": "Cancelar el lote",
+      "cancelDone": "Lote cancelado.",
+      "retryNothing_one": "No hay nada que reintentar ({{count}} página abandonada).",
+      "retryNothing_other": "No hay nada que reintentar ({{count}} páginas abandonadas).",
+      "retryDone_one": "Ronda {{ronda}} lanzada con {{count}} libro.",
+      "retryDone_other": "Ronda {{ronda}} lanzada con {{count}} libros.",
+      "retryTitle": "¿Reintentar lo que falló en «{{nombre}}»?",
+      "retryBody_one": "Se pide de nuevo, como mucho, {{count}} página (unos {{usd}}). Las páginas en blanco también en el PDF, o que ya fallaron solas, se abandonan sin pedirlas. Cada reintento es una ronda nueva que se cobra aparte.",
+      "retryBody_other": "Se piden de nuevo, como mucho, {{count}} páginas (unos {{usd}}). Las páginas en blanco también en el PDF, o que ya fallaron solas, se abandonan sin pedirlas. Cada reintento es una ronda nueva que se cobra aparte.",
+      "retryConfirm": "Reintentar (unos {{usd}})"
     }
   }
 }
