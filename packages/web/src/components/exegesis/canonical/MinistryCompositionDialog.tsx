@@ -225,7 +225,7 @@ export function MinistryCompositionDialog({
                             <p className="text-[11px] text-muted-foreground italic">
                                 {t('canonical.ministry.idleHint')}
                             </p>
-                            <Button onClick={handleCompose} className="bg-primary hover:bg-primary/90 text-primary-foreground self-start">
+                            <Button onClick={handleCompose} className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground self-start">
                                 <Sparkles className="h-4 w-4 mr-1.5" />
                                 {t('canonical.ministry.cta')}
                             </Button>
@@ -259,7 +259,7 @@ export function MinistryCompositionDialog({
                                         className={[
                                             'px-2.5 py-1 rounded transition-colors',
                                             view === 'rendered'
-                                                ? 'bg-primary text-primary-foreground'
+                                                ? 'bg-primary-solid text-primary-foreground'
                                                 : 'text-muted-foreground hover:text-foreground',
                                         ].join(' ')}
                                     >
@@ -271,7 +271,7 @@ export function MinistryCompositionDialog({
                                         className={[
                                             'px-2.5 py-1 rounded transition-colors',
                                             view === 'raw'
-                                                ? 'bg-primary text-primary-foreground'
+                                                ? 'bg-primary-solid text-primary-foreground'
                                                 : 'text-muted-foreground hover:text-foreground',
                                         ].join(' ')}
                                     >

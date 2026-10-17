@@ -142,7 +142,7 @@ export const VerseSelector: React.FC<VerseSelectorProps> = ({
                   type="button"
                   key={book.morphhbKey}
                   onClick={() => handleBookSelect(book.morphhbKey)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex justify-between items-center ${selectedBook === book.morphhbKey ? 'bg-primary text-primary-foreground font-semibold' : 'hover:bg-muted text-foreground'}`}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex justify-between items-center ${selectedBook === book.morphhbKey ? 'bg-primary-solid text-primary-foreground font-semibold' : 'hover:bg-muted text-foreground'}`}
                 >
                   <span>{book.nameSpanish}</span>
                   <span className={`text-xs ${selectedBook === book.morphhbKey ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{book.morphhbKey}</span>
@@ -168,7 +168,7 @@ export const VerseSelector: React.FC<VerseSelectorProps> = ({
                     type="button"
                     key={'ch'+ch}
                     onClick={() => handleChapterSelect(ch)}
-                    className={`aspect-square rounded-lg text-sm font-semibold flex items-center justify-center transition-all ${selectedChapter === ch ? 'bg-primary text-primary-foreground shadow-md scale-105' : 'bg-muted/50 hover:bg-muted text-foreground'}`}
+                    className={`aspect-square rounded-lg text-sm font-semibold flex items-center justify-center transition-all ${selectedChapter === ch ? 'bg-primary-solid text-primary-foreground shadow-md scale-105' : 'bg-muted/50 hover:bg-muted text-foreground'}`}
                   >
                     {ch}
                   </button>
@@ -191,7 +191,7 @@ export const VerseSelector: React.FC<VerseSelectorProps> = ({
                     type="button"
                     key={'v'+v}
                     onClick={() => onVerseChange(v)}
-                    className={`aspect-square rounded-lg text-sm font-semibold flex items-center justify-center transition-all ${selectedVerse === v ? 'bg-primary text-primary-foreground shadow-md scale-105' : 'bg-muted/50 hover:bg-muted text-foreground'}`}
+                    className={`aspect-square rounded-lg text-sm font-semibold flex items-center justify-center transition-all ${selectedVerse === v ? 'bg-primary-solid text-primary-foreground shadow-md scale-105' : 'bg-muted/50 hover:bg-muted text-foreground'}`}
                   >
                     {v}
                   </button>
@@ -208,7 +208,7 @@ export const VerseSelector: React.FC<VerseSelectorProps> = ({
         id="ht-analyze-btn"
         onClick={onAnalyze}
         disabled={!canAnalyze}
-        className="w-full h-12 rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shrink-0"
+        className="w-full h-12 rounded-xl bg-primary-solid text-primary-foreground text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary-solid-hover active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shrink-0"
       >
         {isLoadingBook ? (
           <>

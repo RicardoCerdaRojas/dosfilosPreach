@@ -182,7 +182,7 @@ export function AddDocsDialog({ open, contextKey, userId, onClose, onDone }: Pro
                                                     }}
                                                 >
                                                     <TableCell className="text-center">
-                                                        <div className={cn("h-4 w-4 mx-auto rounded-sm border flex items-center justify-center shrink-0", isSelected ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground")}>
+                                                        <div className={cn("h-4 w-4 mx-auto rounded-sm border flex items-center justify-center shrink-0", isSelected ? "bg-primary-solid border-primary text-primary-foreground" : "border-muted-foreground")}>
                                                             {isSelected && <CheckCircle className="h-3 w-3" />}
                                                         </div>
                                                     </TableCell>

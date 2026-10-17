@@ -221,7 +221,7 @@ export function FacultyChatInput({
                                 size="icon"
                                 className={cn(
                                     "h-10 w-10 rounded-full transition-all duration-300 shadow-sm",
-                                    canSubmit ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "bg-muted text-muted-foreground"
+                                    canSubmit ? "bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground" : "bg-muted text-muted-foreground"
                                 )}
                                 disabled={!canSubmit}
                             >

@@ -80,7 +80,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                                     isComplete
                                         ? 'bg-success text-success-foreground'
                                         : isActive
-                                            ? 'bg-primary text-primary-foreground'
+                                            ? 'bg-primary-solid text-primary-foreground'
                                             : 'bg-muted text-muted-foreground'
                                 )}
                             >
@@ -108,7 +108,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
             {/* Active phase callout */}
             {activePhase && !roadmap.allComplete && (
                 <div className="bg-info-subtle border border-info/30 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="h-11 w-11 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                    <div className="h-11 w-11 rounded-lg bg-primary-solid text-primary-foreground flex items-center justify-center shrink-0">
                         <activePhase.icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -124,7 +124,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                     </div>
                     <Button
                         onClick={() => onPhaseCta(activePhase.cta.kind)}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium gap-1.5 shrink-0"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground font-medium gap-1.5 shrink-0"
                     >
                         {activePhase.cta.label}
                         <ChevronRight className="h-4 w-4" />

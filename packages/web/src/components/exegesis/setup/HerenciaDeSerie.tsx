@@ -134,7 +134,7 @@ export function HerenciaDeSerie({ paper }: { paper: ExegeticalPaper }) {
                     type="button"
                     onClick={traer}
                     disabled={elegidos.length === 0 || heredar.isPending}
-                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary-solid px-3.5 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-primary-solid-hover disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {heredar.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
                     {heredar.isPending && avance

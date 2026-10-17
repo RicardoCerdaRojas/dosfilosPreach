@@ -142,7 +142,7 @@ export function FacultyLibraryPage() {
 
     if (isCompletelyEmpty) {
         return (
-            <div className="flex flex-col h-[calc(100vh-4rem)] bg-background">
+            <div className="flex flex-col h-[calc(100vh-var(--alto-barra))] bg-background">
                 <header className="border-b px-6 py-4 flex items-center gap-3 shrink-0">
                     <Sparkles className="w-5 h-5 text-primary" />
                     <div className="flex-1">
@@ -165,7 +165,7 @@ export function FacultyLibraryPage() {
                         </div>
                         <Button
                             onClick={() => navigate('/dashboard/faculty')}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                            className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground gap-2"
                         >
                             <MessageSquareQuote className="h-4 w-4" />
                             {t('library.empty.cta')}
@@ -178,7 +178,7 @@ export function FacultyLibraryPage() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)]">
+        <div className="flex flex-col h-[calc(100vh-var(--alto-barra))]">
             <header className="border-b px-6 py-4 flex items-center gap-3 shrink-0">
                 <Sparkles className="w-5 h-5 text-primary" />
                 <div className="flex-1">

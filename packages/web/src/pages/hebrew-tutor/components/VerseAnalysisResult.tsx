@@ -776,7 +776,7 @@ const TranslationPanel: React.FC<TranslationPanelProps> = ({
             <button
               onClick={handleSave}
               disabled={saving || draft.trim() === text.trim()}
-              className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="text-xs px-3 py-1.5 rounded-lg bg-primary-solid text-primary-foreground font-semibold hover:bg-primary-solid-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? 'Guardando…' : 'Guardar'}
             </button>

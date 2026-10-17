@@ -108,7 +108,7 @@ export const ConceptsLibraryModal: React.FC<ConceptsLibraryModalProps> = ({
                                         onClick={() => handleJumpTo(index)}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                                             index === currentIndex
-                                                ? 'bg-primary text-primary-foreground font-medium'
+                                                ? 'bg-primary-solid text-primary-foreground font-medium'
                                                 : 'hover:bg-muted text-foreground/80'
                                         }`}
                                     >
@@ -172,7 +172,7 @@ export const ConceptsLibraryModal: React.FC<ConceptsLibraryModalProps> = ({
                                     onClick={() => handleJumpTo(index)}
                                     className={`w-full text-left px-3 py-2 rounded text-xs transition-colors ${
                                         index === currentIndex
-                                            ? 'bg-primary text-primary-foreground'
+                                            ? 'bg-primary-solid text-primary-foreground'
                                             : 'hover:bg-muted'
                                     }`}
                                 >

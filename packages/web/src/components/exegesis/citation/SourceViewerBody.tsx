@@ -133,7 +133,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                                 aria-pressed={preguntando}
                                 className={cn(
                                     'inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                    preguntando ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground hover:bg-muted',
+                                    preguntando ? 'border-primary bg-primary-solid text-primary-foreground' : 'border-border text-foreground hover:bg-muted',
                                 )}
                                 data-testid="preguntar-a-este-libro"
                             >
@@ -332,5 +332,5 @@ function CitarBarra({ cita, frase, sink, onLimpiar }: { cita: string; frase: str
     );
 }
 
-const PRIMARIO = 'inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+const PRIMARIO = 'inline-flex h-10 items-center gap-2 rounded-lg bg-primary-solid px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-solid-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 const SECUNDARIO = 'inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';

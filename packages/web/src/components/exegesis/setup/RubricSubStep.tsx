@@ -283,14 +283,14 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                 <button
                     type="button"
                     onClick={() => setEditTab('prescriptive')}
-                    className={`px-3 py-1.5 rounded transition-colors ${editTab === 'prescriptive' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-3 py-1.5 rounded transition-colors ${editTab === 'prescriptive' ? 'bg-primary-solid text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                     {t('paperSetup.subSteps.rubric.editor.tabPrescriptive')}
                 </button>
                 <button
                     type="button"
                     onClick={() => setEditTab('qualitative')}
-                    className={`px-3 py-1.5 rounded transition-colors ${editTab === 'qualitative' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-3 py-1.5 rounded transition-colors ${editTab === 'qualitative' ? 'bg-primary-solid text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                     {t('paperSetup.subSteps.rubric.editor.tabQualitative')}
                 </button>
@@ -471,7 +471,7 @@ function RubricEditor({ paper, rubric }: RubricEditorProps) {
                     type="button"
                     onClick={handleSave}
                     disabled={updatePending}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                 >
                     {updatePending ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -551,7 +551,7 @@ function RubricSummaryView({
                 <Button
                     type="button"
                     onClick={onEdit}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs shrink-0"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs shrink-0"
                 >
                     <Pencil className="h-3 w-3 mr-1" />
                     {t('paperSetup.subSteps.rubric.summary.editCta')}
@@ -805,7 +805,7 @@ function SaveAsTemplateAction({ paper }: { paper: ExegeticalPaper }) {
                 type="button"
                 onClick={handleSave}
                 disabled={saveAsTemplate.isPending}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
             >
                 {saveAsTemplate.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
                 {t('paperSetup.subSteps.rubric.templates.saveConfirm')}

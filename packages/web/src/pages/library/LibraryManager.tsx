@@ -8,21 +8,20 @@ import { useFirebase } from '@/context/firebase-context';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { LibraryResourceEntity, ResourceType } from '@dosfilos/domain';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BarraDePagina } from '@/components/layout/barra-de-pagina';
 import { ResourceCard } from './ResourceCard';
 import { resourceAnchorId, useHighlightedResource } from './hooks/useHighlightedResource';
 import { EditResourceModal } from './EditResourceModal';
 import { PhasePreferenceModal } from './PhasePreferenceModal';
 import { ConfigureCoreStoresModal } from './ConfigureCoreStoresModal';
-import { LibraryHeader } from './components/LibraryHeader';
 import { BalanceBanner } from './components/BalanceBanner';
 import { CreditPacksDialog } from './components/CreditPacksDialog';
 import { UpgradeRequiredModal } from '@/components/upgrade';
 import { processingBalanceService } from '@dosfilos/application';
-import { LibraryAttentionCallout } from './components/LibraryAttentionCallout';
-import { LibraryStatusCallout } from './components/LibraryStatusCallout';
+import { AvisosDeLaBiblioteca } from './components/AvisosDeLaBiblioteca';
 import { LibraryProgress } from './components/LibraryProgress';
-import { LibraryCalibrationCallout } from './components/LibraryCalibrationCallout';
 import { LibraryUploadDialog } from './components/LibraryUploadDialog';
 import { LibraryFilters } from './components/LibraryFilters';
 import { MetadataBackfillBanner } from './components/MetadataBackfillBanner';
@@ -260,51 +259,48 @@ export function LibraryManager() {
 
     return (
         <>
-            <div className="w-full max-w-7xl mx-auto px-6 lg:px-10 py-5 lg:py-6 space-y-6">
-                <LibraryHeader
-                    totalCount={data.resources.length}
-                    readyCount={data.indexedCount}
-                    pendingCount={data.actionablePendingCount}
-                    isUploadFormOpen={showUploadForm}
-                    onToggleUploadForm={handleToggleUploadForm}
-                />
-
-                <LibraryTabs vista={vista} onCambiar={cambiarVista} />
+            {/* Un solo encabezado (fase «barra única», 2026-10-17): el título,
+                las dos vistas y las acciones viven en la barra de la app. */}
+            <BarraDePagina
+                titulo={t('header.title')}
+                dato={<>
+                    {t('header.metaCount', { count: data.resources.length })}
+                    {data.indexedCount > 0 && <> · {t('header.metaReady', { count: data.indexedCount })}</>}
+                </>}
+                controles={<LibraryTabs vista={vista} onCambiar={cambiarVista} />}
+                acciones={vista === 'libros' && (<>
+                    <AvisosDeLaBiblioteca
+                        resources={data.resources}
+                        pendingCount={data.actionablePendingCount}
+                        extractingCount={data.extractingCount}
+                        indexFailed={data.indexFailedResources}
+                        failedCount={data.failedCount}
+                        isProcessing={processing.bulkProcessing}
+                        onProcessAll={() => processing.processAll(data.resources, data.indexStatus)}
+                        onRetryIndexing={() => processing.retryFailedIndexing(data.indexFailedResources)}
+                    />
+                    <Button
+                        size="sm"
+                        onClick={handleToggleUploadForm}
+                        className="gap-1.5"
+                        // En el teléfono el rótulo se oculta: el nombre va igual.
+                        aria-label={showUploadForm ? t('header.closeButton') : t('header.addButton')}
+                    >
+                        {showUploadForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        <span className="hidden sm:inline">{showUploadForm ? t('header.closeButton') : t('header.addButton')}</span>
+                    </Button>
+                </>)}
+            />
+            {/* Todo el ancho: antes se cortaba en 1280 px (`max-w-7xl`). */}
+            <div className={cn('w-full space-y-5 px-2 py-3 sm:px-4 lg:px-6', vista === 'consultar' && 'py-2')}>
                 {vista === 'consultar' ? (
                     <ConsultarBiblioteca resources={data.resources} indexStatus={data.indexStatus} />
                 ) : (<>
                 <BalanceBanner />
 
-                {/* Status callouts — stacked, each fires only when its
-                    state has resources. Order: actionable (needs click)
-                    → extracting (just wait) → index failed (retry, free)
-                    → extraction failed (needs re-upload). User sees only
-                    what's relevant to them. */}
-                <LibraryAttentionCallout
-                    pendingCount={data.actionablePendingCount}
-                    isProcessing={processing.bulkProcessing}
-                    onProcessAll={() => processing.processAll(data.resources, data.indexStatus)}
-                />
-                <LibraryStatusCallout
-                    variant="extracting"
-                    count={data.extractingCount}
-                />
-                <LibraryStatusCallout
-                    variant="indexFailed"
-                    count={data.indexFailedResources.length}
-                    onRetry={() => processing.retryFailedIndexing(data.indexFailedResources)}
-                    isRetrying={processing.bulkProcessing}
-                />
-                <LibraryStatusCallout
-                    variant="failed"
-                    count={data.failedCount}
-                />
-
+                {/* Los avisos de estado (por procesar, extrayendo, falló, sin
+                    calibrar) viven en la pastilla de la barra: `AvisosDeLaBiblioteca`. */}
                 <LibraryProgress progress={processing.bulkProcessing ? processing.bulkProgress : null} />
-
-                {/* Sin numeración confirmada, las citas de un recurso dicen
-                    «hoja N»: un número del archivo que no existe en el libro. */}
-                <LibraryCalibrationCallout resources={data.resources} />
 
 
                 <LibraryFilters
@@ -357,7 +353,7 @@ export function LibraryManager() {
                 ) : (
                     <div className={cn(
                         viewMode === 'grid'
-                            ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                            ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
                             : 'space-y-2'
                     )}>
                         {filteredResources.map(resource => (

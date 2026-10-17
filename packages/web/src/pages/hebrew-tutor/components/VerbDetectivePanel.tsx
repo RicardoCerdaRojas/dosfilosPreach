@@ -213,7 +213,7 @@ export const VerbDetectivePanel: React.FC<VerbDetectivePanelProps> = ({
                             {t('detective.srDescription')}
                         </SheetDescription>
                         <div className="flex items-center gap-2 pr-8">
-                            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-primary-solid text-primary-foreground flex items-center justify-center flex-shrink-0">
                                 <MagnifyingGlassIcon className="w-4 h-4" />
                             </div>
                             <div>

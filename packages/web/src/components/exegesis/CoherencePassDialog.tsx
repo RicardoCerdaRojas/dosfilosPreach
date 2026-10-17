@@ -76,7 +76,7 @@ export function CoherencePassDialog({
                         </p>
                         <Button
                             onClick={handleRun}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                            className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
                         >
                             <Sparkles className="h-4 w-4 mr-1.5" />
                             {t('coherence.dialog.runCta')}

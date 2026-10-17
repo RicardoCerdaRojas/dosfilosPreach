@@ -266,7 +266,7 @@ export function AssignmentBriefPicker({ currentBody, onApply }: AssignmentBriefP
                         <Button
                             onClick={confirmSave}
                             disabled={!pendingName.trim() || saving}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            className="bg-primary-solid text-primary-foreground hover:bg-primary-solid-hover"
                         >
                             {saving && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
                             {t('create.brief.templates.saveConfirm')}

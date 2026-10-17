@@ -154,7 +154,7 @@ export const GreekTutorIntroView: React.FC<GreekTutorIntroViewProps> = ({
                         />
 
                         <Button
-                            className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm hover:shadow-md transition-all group"
+                            className="w-full h-12 text-base font-semibold bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground gap-2 shadow-sm hover:shadow-md transition-all group"
                             onClick={handleStart}
                             disabled={!passage.trim()}
                         >

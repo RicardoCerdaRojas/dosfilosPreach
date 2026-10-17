@@ -240,7 +240,7 @@ export function ExegesisPage() {
                         </Button>
                         <Button
                             onClick={goToSetup}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+                            className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground shrink-0"
                             size="sm"
                         >
                             <Plus className="h-4 w-4 mr-1.5" />
@@ -477,7 +477,7 @@ function PhaseChip({ active, onClick, label }: { active: boolean; onClick: () =>
             className={[
                 'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                 active
-                    ? 'border-primary bg-primary text-primary-foreground'
+                    ? 'border-primary bg-primary-solid text-primary-foreground'
                     : 'border-border bg-card text-muted-foreground hover:bg-accent',
             ].join(' ')}
             aria-pressed={active}

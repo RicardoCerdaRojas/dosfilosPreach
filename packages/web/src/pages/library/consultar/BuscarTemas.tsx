@@ -65,14 +65,13 @@ export function BuscarTemas({ alcance, etiquetar, onAbrir, onGuardada, envoltori
                         <button
                             type="submit"
                             disabled={texto.trim().length < 2 || buscando}
-                            className="inline-flex min-h-12 flex-none items-center gap-2 rounded-xl bg-primary px-5 text-[15px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            className="inline-flex min-h-12 flex-none items-center gap-2 rounded-xl bg-primary-solid px-5 text-[15px] font-semibold text-primary-foreground transition-colors hover:bg-primary-solid-hover disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
                             {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                             {t('consult.topicSearch')}
                         </button>
                     </form>,
                 )}
-                <p className="px-1 text-xs text-muted-foreground">{t('consult.topicHint')}</p>
             </div>
 
             {error && <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}

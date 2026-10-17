@@ -81,7 +81,7 @@ export const ProjectsEmptyState: React.FC<ProjectsEmptyStateProps> = ({ onCreate
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="justify-between w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                            className="justify-between w-full group-hover:bg-primary-solid group-hover:text-primary-foreground transition-colors"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onCreateProject(type);

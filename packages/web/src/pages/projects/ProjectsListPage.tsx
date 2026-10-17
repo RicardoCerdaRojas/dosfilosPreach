@@ -254,7 +254,7 @@ export function ProjectsListPage() {
                         </div>
                         <Button
                             onClick={handleOpenCreate}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium gap-1.5 shrink-0"
+                            className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground font-medium gap-1.5 shrink-0"
                             size="sm"
                         >
                             <Plus className="h-4 w-4" />

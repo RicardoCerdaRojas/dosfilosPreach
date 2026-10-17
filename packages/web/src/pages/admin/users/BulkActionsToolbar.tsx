@@ -40,7 +40,7 @@ export function BulkActionsToolbar({
 
     return (
         <>
-            <div className="sticky top-2 z-10 mb-4 bg-primary text-primary-foreground rounded-lg px-4 py-2.5 flex items-center gap-3 shadow-md">
+            <div className="sticky top-2 z-10 mb-4 bg-primary-solid text-primary-foreground rounded-lg px-4 py-2.5 flex items-center gap-3 shadow-md">
                 <span className="text-sm font-semibold">
                     {t('users.bulkActions.selectedCount', { count: selectedCount })}
                 </span>

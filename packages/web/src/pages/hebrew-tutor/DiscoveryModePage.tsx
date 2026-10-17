@@ -382,7 +382,7 @@ export const DiscoveryModePage: React.FC<DiscoveryModePageProps> = ({
 
                   <button
                     onClick={openDetective}
-                    className="mt-2 flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
+                    className="mt-2 flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-primary-solid text-primary-foreground font-bold text-sm shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:bg-primary-solid-hover active:scale-[0.97] transition-all duration-200"
                   >
                     <SearchIcon className="w-4.5 h-4.5" />
                     {t('discovery.investigate.start')}
@@ -482,7 +482,7 @@ export const DiscoveryModePage: React.FC<DiscoveryModePageProps> = ({
               <button
                 onClick={handleComposingSubmit}
                 disabled={!dm.studentFullTranslation.trim()}
-                className="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+                className="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary-solid text-primary-foreground font-bold text-sm shadow-lg hover:bg-primary-solid-hover disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
               >
                 <SendIcon className="w-4 h-4" />
                 {t('discovery.compose.submit')}

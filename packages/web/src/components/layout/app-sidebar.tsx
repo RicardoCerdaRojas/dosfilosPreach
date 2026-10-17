@@ -388,7 +388,7 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2.5 w-full px-2 py-2 hover:bg-sidebar-accent rounded-md transition-colors cursor-pointer">
                   <Avatar className="h-9 w-9 shrink-0">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                    <AvatarFallback className="bg-primary-solid text-primary-foreground text-xs font-semibold">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>

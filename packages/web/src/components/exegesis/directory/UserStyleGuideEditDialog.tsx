@@ -240,7 +240,7 @@ export function UserStyleGuideEditDialog({ open, onOpenChange, guide }: UserStyl
                         type="button"
                         onClick={handleSave}
                         disabled={!canSubmit}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                     >
                         {saving ? (
                             <Loader2 className="h-3 w-3 mr-1 animate-spin" aria-hidden />
@@ -334,7 +334,7 @@ function ManifestEmpty({ guide }: { guide: UserStyleGuide }) {
                 type="button"
                 onClick={handleExtract}
                 disabled={extractManifest.isPending}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs gap-1.5"
+                className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs gap-1.5"
             >
                 {extractManifest.isPending
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />

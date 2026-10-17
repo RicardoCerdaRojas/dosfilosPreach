@@ -123,7 +123,7 @@ export function UserStyleGuidesSection() {
                         type="button"
                         onClick={() => setShowUploadForm(true)}
                         size="sm"
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-7"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs h-7"
                     >
                         <Upload className="h-3 w-3 mr-1" />
                         {t('directory.styleGuides.uploadCta')}
@@ -346,7 +346,7 @@ function UploadGuideForm({ onUploaded, firstGuide, uploadGuide }: UploadGuideFor
                 <Button
                     type="submit"
                     disabled={!canSubmit}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                 >
                     {uploading ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />

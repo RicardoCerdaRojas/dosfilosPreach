@@ -307,7 +307,7 @@ export function UserRubricEditDialog({ open, onOpenChange, rubric }: UserRubricE
                         type="button"
                         onClick={handleSave}
                         disabled={!canSubmit}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                     >
                         {saving ? (
                             <Loader2 className="h-3 w-3 mr-1 animate-spin" />

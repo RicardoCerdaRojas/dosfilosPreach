@@ -145,7 +145,7 @@ function NoManifestState({ guide, paper }: { guide: UserStyleGuide; paper: Exege
                     type="button"
                     onClick={handleExtract}
                     disabled={extractManifest.isPending}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                 >
                     {extractManifest.isPending ? (
                         <>

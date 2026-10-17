@@ -33,7 +33,7 @@ export function FloatingHelpButton() {
                 transition={{ duration: 0.3, delay: 0.5, type: 'spring', stiffness: 200, damping: 18 }}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
-                className="tour-target-help fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center print:hidden"
+                className="tour-target-help fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-primary-solid text-primary-foreground shadow-lg hover:shadow-xl flex items-center justify-center print:hidden"
             >
                 <HelpCircle className="h-5 w-5" />
             </motion.button>

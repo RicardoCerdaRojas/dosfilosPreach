@@ -330,7 +330,7 @@ export function ExpandedSection({
                     <Card key={i} className="p-4 border-primary ring-1 ring-primary">
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-solid text-primary-foreground flex items-center justify-center text-xs font-bold">
                             {i + 1}
                           </div>
                           <span className="font-semibold text-sm">Editando Elemento</span>
@@ -385,7 +385,7 @@ export function ExpandedSection({
                   <Card key={i} className="p-4 border-primary ring-1 ring-primary">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-solid text-primary-foreground flex items-center justify-center text-xs font-bold">
                           {i + 1}
                         </div>
                         <span className="font-semibold text-sm">Editando Elemento</span>
@@ -600,7 +600,7 @@ export function ExpandedSection({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-solid text-primary-foreground flex items-center justify-center font-bold">
                             {i + 1}
                           </div>
                           <h3 className="font-semibold">Editando Punto {i + 1}</h3>

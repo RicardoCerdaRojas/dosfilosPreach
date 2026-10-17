@@ -96,7 +96,7 @@ export function UserRubricsSection() {
                         type="button"
                         onClick={() => setShowCreateForm(true)}
                         size="sm"
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-7"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs h-7"
                     >
                         <Plus className="h-3 w-3 mr-1" />
                         {t('directory.rubrics.createCta')}
@@ -324,7 +324,7 @@ function CreateRubricForm({ onDone }: { onDone: () => void }) {
                     <Button
                         type="submit"
                         disabled={!canSubmit}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                     >
                         {submitting ? (
                             <Loader2 className="h-3 w-3 mr-1 animate-spin" />

@@ -103,7 +103,7 @@ export const VerseNavBar: React.FC<VerseNavBarProps> = ({
         id="ht-analyze-btn"
         onClick={onAnalyze}
         disabled={isAnalyzing || isLoadingIndex || !selectedBook}
-        className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-primary-solid text-primary-foreground text-sm font-semibold shadow-sm hover:bg-primary-solid-hover active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isAnalyzing ? (
           <>

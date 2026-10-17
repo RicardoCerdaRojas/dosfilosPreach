@@ -362,7 +362,7 @@ export function CalendarView({ sermons, onStartDraft, onContinue, onUpdateDate, 
                   className={cn(
                     "px-3 py-1 text-xs rounded-full transition-all",
                     statusFilter === 'all' 
-                      ? "bg-primary text-primary-foreground" 
+                      ? "bg-primary-solid text-primary-foreground" 
                       : "bg-secondary hover:bg-secondary/80"
                   )}
                   onClick={() => setStatusFilter('all')}

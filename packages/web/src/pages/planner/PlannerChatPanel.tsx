@@ -194,14 +194,14 @@ export function PlannerChatPanel({ context, className, isMaximized, onToggleMaxi
                         )}>
                             <div className={cn(
                                 "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                                item.message.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                item.message.role === 'user' ? "bg-primary-solid text-primary-foreground" : "bg-muted"
                             )}>
                                 {item.message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                             </div>
                             <div className="flex flex-col gap-1">
                                 <div className={cn(
                                     "p-3 rounded-lg text-sm",
-                                    item.message.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                    item.message.role === 'user' ? "bg-primary-solid text-primary-foreground" : "bg-muted"
                                 )}>
                                     <div className={cn(
                                         "prose prose-sm max-w-none break-words",

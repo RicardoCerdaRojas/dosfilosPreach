@@ -345,7 +345,7 @@ export function ExegesisCreatePage() {
                     <Button
                         disabled={!canCreate}
                         onClick={handleCreate}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
                     >
                         {isCreating && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
                         {t('create.submit')}

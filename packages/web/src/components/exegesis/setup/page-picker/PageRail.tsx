@@ -131,7 +131,7 @@ export function PageRail({
                                 }
                                 className={`shrink-0 mt-0.5 h-5 w-5 rounded border text-xs leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                     isSelected
-                                        ? 'border-primary bg-primary text-primary-foreground'
+                                        ? 'border-primary bg-primary-solid text-primary-foreground'
                                         : 'border-border text-muted-foreground hover:bg-accent'
                                 }`}
                             >

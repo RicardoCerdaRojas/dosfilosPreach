@@ -51,7 +51,7 @@ export const SermonsEmptyState: React.FC = () => {
                         </div>
                         <Button
                             variant="ghost"
-                            className="justify-between w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                            className="justify-between w-full group-hover:bg-primary-solid group-hover:text-primary-foreground transition-colors"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(href);

@@ -258,7 +258,7 @@ function SavedCompositionState({
                         className={[
                             'px-2.5 py-1 rounded transition-colors',
                             view === 'rendered'
-                                ? 'bg-primary text-primary-foreground'
+                                ? 'bg-primary-solid text-primary-foreground'
                                 : 'text-muted-foreground hover:text-foreground',
                         ].join(' ')}
                     >
@@ -270,7 +270,7 @@ function SavedCompositionState({
                         className={[
                             'px-2.5 py-1 rounded transition-colors',
                             view === 'raw'
-                                ? 'bg-primary text-primary-foreground'
+                                ? 'bg-primary-solid text-primary-foreground'
                                 : 'text-muted-foreground hover:text-foreground',
                         ].join(' ')}
                     >
@@ -282,7 +282,7 @@ function SavedCompositionState({
                         <Copy className="h-3.5 w-3.5 mr-1" />
                         {t('canonical.compose.copy')}
                     </Button>
-                    <Button size="sm" onClick={onCompose} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Button size="sm" onClick={onCompose} className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground">
                         <Sparkles className="h-3.5 w-3.5 mr-1" />
                         {t('canonical.compose.recompose')}
                     </Button>
@@ -316,7 +316,7 @@ function IdleState({ onCompose }: { onCompose: (persist?: boolean) => void }) {
             <p className="text-sm text-foreground max-w-md leading-relaxed">
                 {t('canonical.compose.idleBody')}
             </p>
-            <Button onClick={() => onCompose(false)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button onClick={() => onCompose(false)} className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground">
                 <Sparkles className="h-4 w-4 mr-1.5" />
                 {t('canonical.compose.cta')}
             </Button>
@@ -396,7 +396,7 @@ function SuccessView({
                         className={[
                             'px-2.5 py-1 rounded transition-colors',
                             view === 'rendered'
-                                ? 'bg-primary text-primary-foreground'
+                                ? 'bg-primary-solid text-primary-foreground'
                                 : 'text-muted-foreground hover:text-foreground',
                         ].join(' ')}
                     >
@@ -408,7 +408,7 @@ function SuccessView({
                         className={[
                             'px-2.5 py-1 rounded transition-colors',
                             view === 'raw'
-                                ? 'bg-primary text-primary-foreground'
+                                ? 'bg-primary-solid text-primary-foreground'
                                 : 'text-muted-foreground hover:text-foreground',
                         ].join(' ')}
                     >
@@ -443,7 +443,7 @@ function SuccessView({
                     <Button
                         size="sm"
                         onClick={onSaveToPaper}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
                         title={t('canonical.compose.saveToPaperTooltip')}
                     >
                         <Sparkles className="h-3.5 w-3.5 mr-1" />

@@ -44,5 +44,13 @@
     "prevVerse": "Previous verse",
     "nextVerse": "Next verse",
     "chooseBook": "Choose a book"
+  },
+  "preferences": {
+    "title": "Language and theme",
+    "theme": "Theme",
+    "language": "Language",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Match system"
   }
 }

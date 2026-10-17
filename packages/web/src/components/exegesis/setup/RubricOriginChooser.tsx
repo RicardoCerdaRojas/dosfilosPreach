@@ -158,7 +158,7 @@ export function RubricExtractFromTextPanel({ paper, onExtracted }: RubricExtract
                     type="button"
                     onClick={handleExtract}
                     disabled={!canSubmit}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                 >
                     {isExtracting ? (
                         <>
@@ -216,14 +216,14 @@ export function ExtractSourceTabs({
                 <button
                     type="button"
                     onClick={() => setTab('text')}
-                    className={`px-3 py-1.5 rounded transition-colors ${tab === 'text' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-3 py-1.5 rounded transition-colors ${tab === 'text' ? 'bg-primary-solid text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                     {t('paperSetup.subSteps.rubric.extract.tabText')}
                 </button>
                 <button
                     type="button"
                     onClick={() => setTab('document')}
-                    className={`px-3 py-1.5 rounded transition-colors ${tab === 'document' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-3 py-1.5 rounded transition-colors ${tab === 'document' ? 'bg-primary-solid text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                     {t('paperSetup.subSteps.rubric.extract.tabDocument')}
                 </button>
@@ -380,7 +380,7 @@ export function RubricExtractFromDocumentPanel({ paper, onExtracted }: RubricExt
                     type="button"
                     onClick={handleSubmit}
                     disabled={!canSubmit}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                    className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                 >
                     {isBusy ? (
                         <>

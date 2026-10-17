@@ -228,7 +228,7 @@ export const TranslationComparison: React.FC<TranslationComparisonProps> = ({
         </button>
         <button
           onClick={onNextVerse}
-          className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow hover:bg-primary/90 active:scale-[0.98] transition-all"
+          className="px-6 py-2.5 rounded-xl bg-primary-solid text-primary-foreground text-sm font-semibold shadow hover:bg-primary-solid-hover active:scale-[0.98] transition-all"
         >
           {t('discovery.comparison.next', { defaultValue: 'Siguiente versículo →' })}
         </button>

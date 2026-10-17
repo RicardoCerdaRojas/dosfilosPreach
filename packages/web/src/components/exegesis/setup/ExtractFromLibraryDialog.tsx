@@ -579,7 +579,7 @@ export function ExtractFromLibraryDialog({
                             type="button"
                             onClick={handleExtract}
                             disabled={selectedCount === 0 || extractExcerpts.isPending}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+                            className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground text-xs"
                         >
                             {extractExcerpts.isPending ? (
                                 <>
@@ -834,7 +834,7 @@ function GroupChip({ active, onClick, label }: { active: boolean; onClick: () =>
             className={[
                 'rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors',
                 active
-                    ? 'border-primary bg-primary text-primary-foreground'
+                    ? 'border-primary bg-primary-solid text-primary-foreground'
                     : 'border-border bg-card text-muted-foreground hover:bg-accent',
             ].join(' ')}
             aria-pressed={active}

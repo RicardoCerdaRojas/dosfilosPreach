@@ -26,7 +26,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <div className={cn(
         "rounded-lg p-3 overflow-hidden flex-1 min-w-0 max-w-[75%] text-sm",
         isUser 
-          ? "bg-primary text-primary-foreground" 
+          ? "bg-primary-solid text-primary-foreground" 
           : "bg-muted"
       )}>
         <ReactMarkdown 

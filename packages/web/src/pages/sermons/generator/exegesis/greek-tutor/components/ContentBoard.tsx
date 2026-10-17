@@ -238,7 +238,7 @@ export const ContentBoard: React.FC<ContentBoardProps> = ({
                                                 {onRetrySyntax && (
                                                     <button
                                                         onClick={onRetrySyntax}
-                                                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium text-sm flex-shrink-0 ml-4 flex items-center gap-2"
+                                                        className="px-4 py-2 bg-primary-solid text-primary-foreground rounded-md hover:bg-primary-solid-hover transition-colors font-medium text-sm flex-shrink-0 ml-4 flex items-center gap-2"
                                                     >
                                                         <RotateCcw className="w-4 h-4" />
                                                         Reintentar
