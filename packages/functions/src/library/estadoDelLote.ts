@@ -69,6 +69,26 @@ export interface LibroDelLote {
     totalPaginas: number | null;
     estado: 'por-preparar' | 'preparado' | 'saltado';
     motivo?: string;
+    /** El PDF que se cortó: aplicar exige que siga siendo el mismo (PR 3). */
+    pdf?: { ruta: string; generacion: string | null } | null;
+    /** La última comparación entre el texto actual y el nuevo. */
+    comparacion?: ComparacionGuardada | null;
+    /** Una aplicación en curso (ms): dos «Aplicar» a la vez no escriben dos veces. */
+    aplicando?: number | null;
+    aplicado?: { fecha: number; reemplazado: boolean; motivo: string } | null;
+}
+
+/** Lo que se muestra de una comparación (sólo números y el motivo, nunca texto del libro). */
+export interface ComparacionGuardada {
+    reemplazar: boolean;
+    motivo: string;
+    actual: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
+    nueva: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
+    /** Páginas que se rellenan con la capa de texto del PDF (el modelo no las leyó). */
+    rellenadas: number;
+    /** Rondas leídas cuando se comparó: si se lee otra, la comparación quedó vieja. */
+    rondasLeidas: number;
+    calculada: number;
 }
 
 export interface RondaDelLote {
@@ -80,6 +100,8 @@ export interface RondaDelLote {
     /** Lo que costó esta ronda, para anotarlo en el panel de costos una sola vez. */
     uso: { entrada: number; salida: number; usd: number };
     gastoRegistrado: boolean;
+    /** Cuándo se leyó (ms). */
+    leidaEn?: number;
     /** Ya se revisaron sus libros contra todas sus páginas (`revisarTramosOk`). */
     revisada: boolean;
     fallosAlCrear: number;
@@ -169,7 +191,7 @@ export function estadoGeneral(l: Lote): EstadoDelLote {
 export function registrarLibro(
     l: Lote,
     rid: string,
-    r: { totalPaginas: number; tramos: Array<Tramo & { archivo: ArchivoSubido }> } | { saltado: string },
+    r: { totalPaginas: number; tramos: Array<Tramo & { archivo: ArchivoSubido }>; pdf?: LibroDelLote['pdf'] } | { saltado: string },
     ahora: number,
 ): boolean {
     const libro = l.libros.find(b => b.rid === rid);
@@ -185,6 +207,7 @@ export function registrarLibro(
     } else {
         libro.estado = 'preparado';
         libro.totalPaginas = r.totalPaginas;
+        libro.pdf = r.pdf ?? null;
         for (const t of r.tramos) {
             l.tramos.push({ desde: t.desde, hasta: t.hasta, rid, ronda: 1, indice: l.tramos.length, estado: 'pendiente', archivo: t.archivo });
         }
@@ -412,6 +435,7 @@ export function aplicarLectura(l: Lote, numero: number, lectura: LecturaDeRonda,
         if (c.faltan !== undefined) t.faltan = c.faltan;
     }
     r.leida = true;
+    r.leidaEn = ahora;
     r.estadoJob = lectura.estadoJob;
     r.uso = { entrada: lectura.entrada, salida: lectura.salida, usd };
     // Una ronda sin pedidos leídos (el job terminó mal) no tiene nada que revisar.
@@ -489,7 +513,10 @@ export function planearReintento(
         if (pedir.length === 0) { f.estado = 'ok'; f.motivo = `páginas en blanco en el PDF: ${enBlanco.join(', ')}`; }
     }
     l.actualizado = ahora;
-    const fallos = l.tramos.filter(t => t.estado === 'fallo' || t.estado === 'incompleto');
+    // Un libro ya reemplazado no se vuelve a pedir: sus páginas nuevas no se
+    // podrían aplicar (se cobrarían de balde).
+    const reemplazados = new Set(l.libros.filter(b => b.aplicado?.reemplazado).map(b => b.rid));
+    const fallos = l.tramos.filter(t => (t.estado === 'fallo' || t.estado === 'incompleto') && !reemplazados.has(t.rid));
     if (fallos.length === 0) { l.estado = estadoGeneral(l); return nada; }
     const abandonar = fallos.filter(f => (sola(f) && ((f.intento ?? 1) >= 2 || (f.estado === 'incompleto' && f.ronda > 1)))
         || (f.estado === 'fallo' && /RECITATION/.test(f.motivo ?? '') && f.hasta - f.desde < 3));
@@ -549,6 +576,71 @@ export function soltarCandado(l: Lote, por: string): void {
     if (l.candado?.por === por) l.candado = null;
 }
 
+// ── Aplicar (PR 3) ──────────────────────────────────────────────────────────
+
+/** Cuánto vale un reclamo de «Aplicar» (una escritura de libro tarda segundos). */
+export const VENCE_APLICACION_MS = 10 * 60_000;
+
+/**
+ * Si un libro ya se puede aplicar, igual que el script:
+ *  - con tramos pendientes, no (todavía llegan páginas), ni con una ronda
+ *    leída sin revisar (sus páginas en blanco aún figuran «ok»);
+ *  - con un tramo en «fallo», no: el script tampoco aplicaba (ese tramo no
+ *    trajo nada; se reintenta o se abandona);
+ *  - con tramos incompletos, sólo si se acepta (`--aceptar-incompletos`):
+ *    aplicar ahora y otra vez tras reintentar deja un respaldo de la parcial.
+ * Un libro que se aplicó y se quedó como estaba («no mejora») se puede volver
+ * a aplicar si llega una ronda nueva; uno ya reemplazado, no.
+ */
+export function listoParaAplicar(l: Lote, rid: string): { listo: boolean; incompletos: number; motivo: string | null } {
+    const no = (motivo: string) => ({ listo: false, incompletos: 0, motivo });
+    const libro = l.libros.find(b => b.rid === rid);
+    if (!libro || libro.estado !== 'preparado') return no('el libro no se preparó');
+    if (libro.aplicado?.reemplazado) return no('ya se aplicó');
+    if (l.estado === 'cancelado') return no('el lote está cancelado');
+    const tramos = l.tramos.filter(t => t.rid === rid);
+    if (tramos.some(t => t.estado === 'pendiente')) return no('todavía hay tramos en curso');
+    const rondas = new Set(tramos.map(t => t.ronda));
+    if (l.rondas.some(r => rondas.has(r.numero) && (!r.leida || !r.revisada))) return no('la última ronda todavía se está revisando');
+    const fallos = tramos.filter(t => t.estado === 'fallo').length;
+    if (fallos > 0) return no(`${fallos} tramos fallaron: reintenta primero`);
+    if (libro.aplicado && libro.aplicado.fecha >= Math.max(0, ...l.rondas.filter(r => rondas.has(r.numero)).map(r => r.leidaEn ?? 0))) {
+        return no('ya se comparó al aplicar y no mejoraba: reintenta para traer más páginas');
+    }
+    return { listo: true, incompletos: tramos.filter(t => t.estado === 'incompleto').length, motivo: null };
+}
+
+export function registrarComparacion(l: Lote, rid: string, c: Omit<ComparacionGuardada, 'rondasLeidas' | 'calculada'>, ahora: number): boolean {
+    const libro = l.libros.find(b => b.rid === rid);
+    if (!libro) return false;
+    libro.comparacion = { ...c, motivo: recortar(c.motivo), rondasLeidas: l.rondas.filter(r => r.leida).length, calculada: ahora };
+    return true;
+}
+
+/** Quien llama se adjudica aplicar el libro; falla si no está listo o si otro lo está aplicando. */
+export function reclamarAplicacion(l: Lote, rid: string, aceptarIncompletos: boolean, ahora: number): string | null {
+    const listo = listoParaAplicar(l, rid);
+    if (!listo.listo) return listo.motivo;
+    if (listo.incompletos > 0 && !aceptarIncompletos) return `faltan ${listo.incompletos} tramos: reintenta o aplica igual`;
+    const libro = l.libros.find(b => b.rid === rid)!;
+    if (libro.aplicando && ahora - libro.aplicando < VENCE_APLICACION_MS) return 'ya se está aplicando';
+    libro.aplicando = ahora;
+    return null;
+}
+
+export function registrarAplicacion(l: Lote, rid: string, r: { reemplazado: boolean; motivo: string }, ahora: number): void {
+    const libro = l.libros.find(b => b.rid === rid);
+    if (!libro) return;
+    libro.aplicando = null;
+    libro.aplicado = { fecha: ahora, reemplazado: r.reemplazado, motivo: recortar(r.motivo) };
+    l.actualizado = ahora;
+}
+
+export function soltarAplicacion(l: Lote, rid: string): void {
+    const libro = l.libros.find(b => b.rid === rid);
+    if (libro && !libro.aplicado) libro.aplicando = null;
+}
+
 /** Lo que muestra el panel: sin los recortes ni las marcas internas. */
 export interface ResumenDeLote {
     id: string;
@@ -569,6 +661,13 @@ export interface ResumenDeLote {
         rid: string; titulo: string; estado: LibroDelLote['estado']; motivo: string | null; paginas: number | null;
         tramos: Record<EstadoDeTramo, number>;
         fallas: string[];
+        /** Se puede aplicar ya (con `incompletos` > 0, sólo aceptándolo). */
+        listo: boolean;
+        incompletos: number;
+        comparacion: ComparacionGuardada | null;
+        /** La comparación es de antes de la última ronda leída: hay que volver a comparar. */
+        comparacionVieja: boolean;
+        aplicado: LibroDelLote['aplicado'];
     }>;
     puedeReintentar: boolean;
     puedeCancelar: boolean;
@@ -588,19 +687,26 @@ export function resumirLote(l: Lote): ResumenDeLote {
         paginas: l.libros.reduce((n, b) => n + (b.totalPaginas ?? 0), 0),
         rondas: l.rondas.map(r => ({ numero: r.numero, estadoJob: r.estadoJob, leida: r.leida, tramos: tramosDeRonda(l, r.numero).length })),
         tramos: t,
-        paginasConFallas: l.tramos.reduce((n, x) => n + (x.estado === 'fallo'
+        paginasConFallas: l.tramos.filter(x => !l.libros.find(b => b.rid === x.rid)?.aplicado?.reemplazado).reduce((n, x) => n + (x.estado === 'fallo'
             ? x.hasta - x.desde + 1
             : x.estado === 'incompleto' ? (x.faltan ?? []).reduce((m, f) => m + f.hasta - f.desde + 1, 0) : 0), 0),
         libros: l.libros.map(b => {
             const delLibro = l.tramos.filter(x => x.rid === b.rid);
+            const listo = listoParaAplicar(l, b.rid);
             return {
                 rid: b.rid, titulo: b.titulo, estado: b.estado, motivo: b.motivo ?? null, paginas: b.totalPaginas,
                 tramos: contar(delLibro),
                 fallas: delLibro.filter(x => x.estado === 'fallo' || x.estado === 'incompleto')
                     .slice(0, 8).map(x => `${x.desde}–${x.hasta}: ${x.motivo ?? x.estado}`),
+                listo: listo.listo,
+                incompletos: listo.incompletos,
+                comparacion: b.comparacion ?? null,
+                comparacionVieja: !!b.comparacion && b.comparacion.rondasLeidas !== l.rondas.filter(r => r.leida).length,
+                aplicado: b.aplicado ?? null,
             };
         }),
-        puedeReintentar: !terminado(l) && l.rondas.length > 0 && l.rondas.every(r => r.leida) && t.fallo + t.incompleto > 0,
+        puedeReintentar: !terminado(l) && l.rondas.length > 0 && l.rondas.every(r => r.leida)
+            && l.tramos.some(x => (x.estado === 'fallo' || x.estado === 'incompleto') && !l.libros.find(b => b.rid === x.rid)?.aplicado?.reemplazado),
         puedeCancelar: !terminado(l) && l.estado !== 'listo',
     };
 }

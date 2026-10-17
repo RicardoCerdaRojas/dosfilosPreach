@@ -34,7 +34,7 @@ export function rutaDeFicha(runId: string): string {
 }
 
 /** Por dónde entró la corrida. */
-export type CaminoDeCorrida = 'upload' | 'reprocess-premium' | 'reprocess-vision';
+export type CaminoDeCorrida = 'upload' | 'reprocess-premium' | 'reprocess-vision' | 'batch-reprocess';
 
 /**
  * Cómo terminó. `superseded` es la corrida que quedó abierta cuando arrancó

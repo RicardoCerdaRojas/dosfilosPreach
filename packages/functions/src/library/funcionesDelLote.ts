@@ -4,11 +4,12 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
 import { getFunctions } from 'firebase-admin/functions';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
-import { writeAuditLog } from '../admin/auditLog';
+import { writeAuditLog, writeAuditLogAndWait } from '../admin/auditLog';
 import { MODEL_VISION } from '../llm/modelCatalog';
 import { estimateUsd } from '../llm/llmCost';
 import { recordLlmUsage } from '../llm/llmUsageRecorder';
 import { geminiDelLote } from './geminiDelLote';
+import { aplicarLibro, compararLibro } from './aplicarLote';
 import { COLECCION_DE_LOTES, resumirLote, type Lote } from './estadoDelLote';
 import {
     abandonarLibroEnTarea, cancelarLote, ErrorDelLote, lanzarLote, procesarLibro, reintentarLote, sondearLote,
@@ -26,15 +27,38 @@ const COLA = 'locations/us-central1/functions/batchBookTask';
 const FACTOR_DE_LOTE = 0.5;
 const INTENTOS_POR_LIBRO = 3;
 
+/** Comparar y aplicar no llaman a Gemini: no necesitan la clave. */
+function dependenciasSinGemini(): Dependencias {
+    return dependenciasCon(null);
+}
+
+const sinGemini = new Proxy({}, { get: () => () => { throw new Error('esta función no usa Gemini'); } }) as Dependencias['gemini'];
+
 function dependencias(): Dependencias {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new HttpsError('failed-precondition', 'GEMINI_API_KEY secret not configured');
+    return dependenciasCon(apiKey);
+}
+
+function dependenciasCon(apiKey: string | null): Dependencias {
     const bucket = admin.storage().bucket();
     return {
         db: admin.firestore(),
         bucketPorDefecto: bucket.name,
         almacen: {
             bajar: async ({ bucket: b, path }) => (await admin.storage().bucket(b).file(path).download())[0],
+            generacion: async ({ bucket: b, path }) => {
+                const [meta] = await admin.storage().bucket(b).file(path).getMetadata();
+                return meta.generation !== undefined ? String(meta.generation) : null;
+            },
+            borrar: async path => { await bucket.file(path).delete({ ignoreNotFound: true }); },
+            escribir: async (path, contenido, o) => {
+                await bucket.file(path).save(contenido, {
+                    contentType: o.contentType,
+                    ...(o.metadata ? { metadata: { metadata: o.metadata } } : {}),
+                    ...(o.sinPisar ? { preconditionOpts: { ifGenerationMatch: 0 } } : {}),
+                });
+            },
             guardar: async (path, contenido) => { await bucket.file(path).save(contenido, { contentType: 'application/json; charset=utf-8' }); },
             leer: async path => {
                 const archivo = bucket.file(path);
@@ -43,7 +67,7 @@ function dependencias(): Dependencias {
             },
             listar: async prefijo => (await bucket.getFiles({ prefix: prefijo }))[0].map(f => f.name),
         },
-        gemini: geminiDelLote(apiKey),
+        gemini: apiKey ? geminiDelLote(apiKey) : sinGemini,
         ahora: () => Date.now(),
         usdDeLote: (entrada, salida) => estimateUsd(MODEL_VISION, entrada, salida) * FACTOR_DE_LOTE,
         registrarGasto: uso => recordLlmUsage({
@@ -112,6 +136,33 @@ export const cancelBatch = onCall({ ...appCheckCallableOptions(), secrets: ['GEM
     await cancelarLote(dependencias(), loteId).catch(comoHttps);
     writeAuditLog({ actorUid: yo.uid, actorEmail: yo.email ?? undefined, action: 'library.batch_cancel', details: { lote: loteId } });
     return { ok: true };
+});
+
+const idDeLibro = (data: unknown) => {
+    const rid = (data as { rid?: unknown } | undefined)?.rid;
+    if (typeof rid !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(rid)) throw new HttpsError('invalid-argument', 'Falta el libro');
+    return rid;
+};
+
+/** «Comparar»: el texto actual de un libro contra el nuevo (no escribe el libro). */
+export const compareBatchBook = onCall({ ...appCheckCallableOptions(), timeoutSeconds: 300, memory: '2GiB' }, async request => {
+    await exigirSuperAdmin(request);
+    return compararLibro(dependenciasSinGemini(), idDeLote(request.data), idDeLibro(request.data)).catch(comoHttps);
+});
+
+/** «Aplicar»: reemplaza el texto del libro si mejora sin perder nada (respaldo, reindexado, ficha, auditoría). */
+export const applyBatchBook = onCall({ ...appCheckCallableOptions(), timeoutSeconds: 300, memory: '2GiB' }, async request => {
+    const yo = await exigirSuperAdmin(request);
+    const loteId = idDeLote(request.data);
+    const rid = idDeLibro(request.data);
+    const aceptarIncompletos = (request.data as { aceptarIncompletos?: unknown }).aceptarIncompletos === true;
+    const dueno = (await admin.firestore().collection(COLECCION_DE_LOTES).doc(loteId).get()).data()?.dueno as string | undefined;
+    // La auditoría se escribe apenas el libro cambió, esperándola: si después
+    // falla anotarlo en el lote, el cambio igual queda registrado.
+    return aplicarLibro(dependenciasSinGemini(), { loteId, rid, aceptarIncompletos, por: yo.uid }, r => writeAuditLogAndWait({
+        actorUid: yo.uid, actorEmail: yo.email ?? undefined, action: 'library.batch_apply', targetUid: dueno,
+        details: { lote: loteId, rid, aceptarIncompletos, motivo: r.motivo },
+    })).catch(comoHttps);
 });
 
 /** Los lotes, del más nuevo al más viejo, resumidos (sin los recortes ni las marcas internas). */

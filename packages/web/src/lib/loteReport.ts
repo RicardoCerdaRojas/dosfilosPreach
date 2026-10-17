@@ -7,6 +7,8 @@
  * visión con un modelo anterior. El costo sale de los lotes reales.
  */
 
+import type { ResumenDeLote } from '@/hooks/admin/useBatchJobs';
+
 /** Lo que devuelve `getBatchCandidates` por libro (sólo metadatos, nunca texto). */
 export interface CandidatoCrudo {
     id: string;
@@ -195,4 +197,12 @@ export function lotesPasados(candidatos: ReadonlyArray<CandidatoCrudo>): LotePas
         porLote.set(r.lote, lote);
     }
     return [...porLote.values()].sort((a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''));
+}
+
+/**
+ * «Aplicar los que mejoran» toma sólo lo seguro: listo, sin aplicar, sin
+ * tramos con fallas, con una comparación al día que dice que reemplaza.
+ */
+export function aplicablesSinPreguntar<L extends ResumenDeLote['libros'][number]>(libros: ReadonlyArray<L>): L[] {
+    return libros.filter(b => b.listo && !b.aplicado?.reemplazado && b.incompletos === 0 && !!b.comparacion?.reemplazar && !b.comparacionVieja);
 }

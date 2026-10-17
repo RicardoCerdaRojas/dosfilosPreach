@@ -272,4 +272,13 @@ describe('lo que quedó a medias (revisión adversarial)', () => {
         marcarArchivosBorrados(l, [1]);
         expect(l.tramos.every(t => t.archivo === null)).toBe(true);
     });
+
+    it('un libro ya reemplazado no se vuelve a pedir al reintentar', () => {
+        const l = loteEnCurso();
+        aplicarLectura(l, 1, leerRonda(l, 1, 'JOB_STATE_FAILED', null), 0, T0);
+        l.libros[0]!.aplicado = { fecha: T0, reemplazado: true, motivo: 'x' };
+        expect(resumirLote(l).paginasConFallas).toBe(10);
+        const plan = planearReintento(l, new Map(), T0);
+        expect(plan.libros).toEqual(['B']);
+    });
 });
