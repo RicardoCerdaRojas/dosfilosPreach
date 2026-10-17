@@ -116,6 +116,15 @@ export async function recuperarCandidatos(
 
 /** Candidatos que se piden por pasaje cuando la búsqueda nombra uno (etapa 3). */
 export const CUPO_POR_PASAJE = 16;
+/** U6: en una pregunta sobre un pasaje, los que lo citan pesan más que los vectores. */
+export const CUPO_EN_MODO_PASAJE = 24;
+/**
+ * U6: candidatos de más que admite el reordenador en modo pasaje (40 + 16 =
+ * 56). El banco midió con 40; esto es un supuesto a medir contra el plazo.
+ */
+const EXTRA_EN_MODO_PASAJE = 16;
+/** U6: fragmentos por libro en modo pasaje, para que hablen varios autores. */
+export const POR_LIBRO_EN_MODO_PASAJE = 3;
 /** Candidatos de más que admite el reordenador cuando hay pasaje (40 + 8). */
 const EXTRA_POR_PASAJE = 8;
 /**
@@ -238,7 +247,24 @@ export async function buscarPertinentes(
     userId: string,
     alcance: Alcance,
     apiKey: string,
-    opciones: { total: number; timeoutSeconds: number; candidatos?: number; umbral?: number; contexto?: string | null },
+    opciones: {
+        total: number;
+        timeoutSeconds: number;
+        candidatos?: number;
+        umbral?: number;
+        contexto?: string | null;
+        /**
+         * La pregunta es sobre un pasaje (U6): más lugar para los fragmentos
+         * que lo citan y a lo sumo `POR_LIBRO_EN_MODO_PASAJE` por libro, para
+         * que hablen varios autores.
+         */
+        modoPasaje?: boolean;
+        /**
+         * Claves de un pasaje que la pregunta no nombra pero sigue: en «¿y
+         * Moo?», las del turno anterior. Se buscan con el cupo normal.
+         */
+        refsHeredadas?: readonly string[];
+    },
 ): Promise<{ fragmentos: FragmentoReordenado[]; reordenado: boolean }> {
     // Los vectores buscan con la conversación (para que «¿y el aceite?»
     // encuentre algo); el reordenador puntúa contra la pregunta, con la
@@ -246,21 +272,29 @@ export async function buscarPertinentes(
     const consultaVectorial = opciones.contexto?.trim() ? `${opciones.contexto.trim()}\n${busqueda}` : busqueda;
     // Si la búsqueda nombra un pasaje, una parte del cupo va a los fragmentos
     // que lo citan (etapa 3); el reordenador los puntúa igual que al resto.
-    const refs = refsDeConsulta(busqueda);
+    const refs = [...new Set([...refsDeConsulta(busqueda), ...(opciones.refsHeredadas ?? [])])].slice(0, 30);
     const total = opciones.candidatos ?? CANDIDATOS_A_REORDENAR;
     const [porVector, porPasaje] = await Promise.all([
         recuperarCandidatos(consultaVectorial, userId, alcance, apiKey, total),
-        recuperarPorPasaje(refs, userId, alcance),
+        recuperarPorPasaje(refs, userId, alcance, opciones.modoPasaje ? CUPO_EN_MODO_PASAJE : CUPO_POR_PASAJE),
     ]);
     // Los del pasaje van primero; suman a lo sumo `EXTRA_POR_PASAJE` al total
     // y el resto del lugar lo ceden los vectores más lejanos.
-    const candidatos = unirCandidatos(porPasaje, porVector).slice(0, total + Math.min(porPasaje.length, EXTRA_POR_PASAJE));
-    const porLibro = topePorLibro(alcance, opciones.total);
+    const extra = opciones.modoPasaje ? EXTRA_EN_MODO_PASAJE : EXTRA_POR_PASAJE;
+    const candidatos = unirCandidatos(porPasaje, porVector).slice(0, total + Math.min(porPasaje.length, extra));
+    // En modo pasaje sobre TODA la biblioteca, varios autores antes que
+    // muchas páginas de uno. Si el pastor eligió los libros, la variedad ya
+    // está: no se recorta (revisión adversarial).
+    const porLibro = opciones.modoPasaje && alcance.tipo === 'todo'
+        ? Math.min(POR_LIBRO_EN_MODO_PASAJE, topePorLibro(alcance, opciones.total))
+        : topePorLibro(alcance, opciones.total);
     const puntajes = await puntuarCandidatos(busqueda, candidatos, userId, opciones.timeoutSeconds, opciones.contexto);
     if (!puntajes) {
         // Sin reordenador nadie juzgó los del pasaje: manda el orden de los
-        // vectores, y los del pasaje quedan detrás.
-        const respaldo = unirCandidatos(porVector, porPasaje);
+        // vectores, y los del pasaje quedan detrás. Salvo en modo pasaje: la
+        // respuesta va por autor SOBRE el pasaje, y los que lo citan son lo
+        // más cercano a pertinente que hay.
+        const respaldo = opciones.modoPasaje ? unirCandidatos(porPasaje, porVector) : unirCandidatos(porVector, porPasaje);
         return {
             fragmentos: elegirDelPozo(respaldo, { porLibro, total: opciones.total }).map(f => ({ ...f, pertinencia: null })),
             reordenado: false,

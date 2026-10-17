@@ -159,4 +159,22 @@ describe('buscarPertinentes con un pasaje en la búsqueda', () => {
         expect(puntuados[0]).toHaveLength(48);
         expect(puntuados[0]!.filter(id => id.startsWith('p'))).toHaveLength(16);
     });
+
+    it('U6, modo pasaje: a lo sumo 3 por libro, para que hablen varios autores', async () => {
+        docsVectoriales = [];
+        docsDelIndice = Array.from({ length: 12 }, (_, i) => chunk(`a${String(i).padStart(2, '0')}`, 'unLibro', ['JAS.3.13']))
+            .concat(Array.from({ length: 4 }, (_, i) => chunk(`b${i}`, 'otroLibro', ['JAS.3.13'])));
+        librosDelUsuario = ['unLibro', 'otroLibro'];
+        const r = await buscarPertinentes('santiago 3:13', 'yo', { tipo: 'todo' }, 'k', { total: 14, timeoutSeconds: 5, modoPasaje: true });
+        const porLibro = (id: string) => r.fragmentos.filter(f => f.resourceId === id).length;
+        expect(porLibro('unLibro')).toBeLessThanOrEqual(3);
+        expect(porLibro('otroLibro')).toBeGreaterThan(0);
+    });
+
+    it('U6, modo pasaje con libros ELEGIDOS: no se recorta a 3 por libro', async () => {
+        docsVectoriales = [];
+        docsDelIndice = Array.from({ length: 10 }, (_, i) => chunk(`a${String(i).padStart(2, '0')}`, 'unLibro', ['JAS.3.13']));
+        const r = await buscarPertinentes('santiago 3:13', 'yo', { tipo: 'libros', ids: ['unLibro', 'otroLibro'] }, 'k', { total: 14, timeoutSeconds: 5, modoPasaje: true });
+        expect(r.fragmentos.filter(f => f.resourceId === 'unLibro').length).toBeGreaterThan(3);
+    });
 });

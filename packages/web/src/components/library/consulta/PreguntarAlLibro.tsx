@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { Loader2, SendHorizontal } from 'lucide-react';
-import { consultarBiblioteca, type FuenteDeConsulta, type TurnoDeConsulta } from '@dosfilos/infrastructure';
+import { BookMarked, Loader2, ScrollText, SendHorizontal } from 'lucide-react';
+import { consultarBiblioteca, type FuenteDeConsulta, type PedidoDeResumen, type TurnoDeConsulta } from '@dosfilos/infrastructure';
 import { useTranslation } from '@/i18n';
 import { RespuestaConCitas } from './RespuestaConCitas';
+import { ResumenDelLibro } from './ResumenDelLibro';
 import type { EtiquetarFuente } from './citasDeRespuesta';
 
 /**
@@ -11,11 +12,15 @@ import type { EtiquetarFuente } from './citasDeRespuesta';
  * abierto como alcance; las citas llevan el visor a su hoja sin cerrarlo. La
  * conversación queda en el historial de la Biblioteca.
  */
-export function PreguntarAlLibro({ resourceId, etiquetar, onIrAHoja }: {
+export function PreguntarAlLibro({ resourceId, etiquetar, onIrAHoja, hojaActual, paginaImpresa }: {
     resourceId: string;
     /** Cómo se cita una fuente: la regla del «Copiar la cita» del visor. */
     etiquetar: EtiquetarFuente;
     onIrAHoja: (hoja: number) => void;
+    /** U7: la hoja que se está leyendo, para «Resumir este capítulo». */
+    hojaActual?: number;
+    /** U7: la página impresa de una hoja (numeración calibrada), o `null`. */
+    paginaImpresa?: (hoja: number) => string | number | null;
 }) {
     const { t } = useTranslation('library');
     const [consultaId, setConsultaId] = useState<string | null>(null);
@@ -24,9 +29,18 @@ export function PreguntarAlLibro({ resourceId, etiquetar, onIrAHoja }: {
     const [enCurso, setEnCurso] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const finRef = useRef<HTMLDivElement>(null);
+    const [resumen, setResumen] = useState<PedidoDeResumen | null>(null);
+    /** El botón que abrió el resumen: al cerrarlo, el foco vuelve ahí. */
+    const abrioResumen = useRef<HTMLButtonElement | null>(null);
+    const resumenRef = useRef<HTMLDivElement>(null);
+    const idDelResumen = `resumen-${resourceId}`;
+    const abrirResumen = (pedido: PedidoDeResumen, boton: HTMLButtonElement) => { abrioResumen.current = boton; setResumen(pedido); };
+    const cerrarResumen = () => { setResumen(null); abrioResumen.current?.focus(); };
+    // Con una conversación larga, el resumen aparece arriba y fuera de vista: se trae.
+    useEffect(() => { if (resumen) resumenRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [resumen]);
 
-    // Otro libro, otra conversación.
-    useEffect(() => { setConsultaId(null); setTurnos([]); setTexto(''); setError(null); }, [resourceId]);
+    // Otro libro, otra conversación (y ningún resumen del anterior).
+    useEffect(() => { setConsultaId(null); setTurnos([]); setTexto(''); setError(null); setResumen(null); }, [resourceId]);
     useEffect(() => { finRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [turnos.length, enCurso]);
 
     const enviar = async (e?: FormEvent) => {
@@ -61,6 +75,32 @@ export function PreguntarAlLibro({ resourceId, etiquetar, onIrAHoja }: {
     return (
         <div className="flex h-full min-h-0 flex-col" data-testid="preguntar-al-libro">
             <div className="flex-1 space-y-6 overflow-y-auto p-3">
+                {/* U7: resúmenes breves del libro abierto. */}
+                <div className="flex flex-wrap gap-2" role="group" aria-label={t('consult.summary.hint')}>
+                    <button type="button" onClick={e => abrirResumen({ resourceId, tipo: 'mapa' }, e.currentTarget)} aria-controls={idDelResumen} className={botonDeResumen}>
+                        <BookMarked className="h-3.5 w-3.5" aria-hidden="true" />{t('consult.summary.map')}
+                    </button>
+                    {hojaActual !== undefined && (
+                        <button type="button" onClick={e => abrirResumen({ resourceId, tipo: 'seccion', hoja: hojaActual }, e.currentTarget)} aria-controls={idDelResumen} className={botonDeResumen}>
+                            <ScrollText className="h-3.5 w-3.5" aria-hidden="true" />{t('consult.summary.section')}
+                        </button>
+                    )}
+                </div>
+                {resumen && (
+                    <div ref={resumenRef}>
+                    <ResumenDelLibro
+                        id={idDelResumen}
+                        pedido={resumen}
+                        paginaDeHoja={h => {
+                            const impresa = paginaImpresa?.(h);
+                            return impresa != null ? t('consult.summary.page', { pagina: impresa }) : t('consult.summary.sheet', { hoja: h });
+                        }}
+                        onIrAHoja={onIrAHoja}
+                        onCerrar={cerrarResumen}
+                        compacta
+                    />
+                    </div>
+                )}
                 {turnos.length === 0 && !enCurso && (
                     <p className="text-sm text-muted-foreground">{t('consult.bookIntro')}</p>
                 )}
@@ -108,3 +148,5 @@ export function PreguntarAlLibro({ resourceId, etiquetar, onIrAHoja }: {
         </div>
     );
 }
+
+const botonDeResumen = 'inline-flex min-h-11 sm:min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px] font-medium text-foreground/80 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';

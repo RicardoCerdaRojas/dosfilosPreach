@@ -165,3 +165,12 @@ describe('library_resources — escribir', () => {
         await assertSucceeds(setDoc(doc(db, 'library_resources', 'semilla'), recurso(ADMIN, { isSystemSource: true })));
     });
 });
+
+describe('library_summaries (U7)', () => {
+    it('el cliente no lee ni escribe los resúmenes (los sirve el servidor tras verificar al dueño)', async () => {
+        await sembrar();
+        const db = env.authenticatedContext(PASTOR).firestore();
+        await assertFails(getDoc(doc(db, 'library_summaries', 'mio_mapa')));
+        await assertFails(setDoc(doc(db, 'library_summaries', 'mio_mapa'), { userId: PASTOR, resultado: {} }));
+    });
+});

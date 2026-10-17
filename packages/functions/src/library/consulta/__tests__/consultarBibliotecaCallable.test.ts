@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 /** El callable: de quién es la consulta, y cuándo se cuenta (revisión adversarial, U2). */
 vi.mock('firebase-functions/v2/https', async (orig) => ({ ...(await orig<object>()), onCall: (_o: unknown, h: unknown) => h }));
 const docs = new Map<string, Record<string, unknown>>();
+const sistemas: string[] = [];
 let fallaGuardar = false;
 vi.mock('firebase-admin/firestore', () => ({
     FieldValue: { arrayUnion: (x: unknown) => ({ arrayUnion: x }) },
@@ -21,17 +22,18 @@ const sumar = vi.fn();
 vi.mock('../cuotaDeConsultas', () => ({ revisarCuota: async () => null, sumarConsulta: (...a: unknown[]) => sumar(...a) }));
 vi.mock('../../../shared/rateLimit', () => ({ consumeRateLimitToken: async () => true }));
 let fragmentos: unknown[] = [];
-vi.mock('../recuperarFragmentos', () => ({ FRAGMENTOS_POR_CONSULTA: 14, buscarPertinentes: async () => ({ fragmentos, reordenado: true }) }));
+const opcionesDeBusqueda: Array<Record<string, unknown>> = [];
+vi.mock('../recuperarFragmentos', () => ({ FRAGMENTOS_POR_CONSULTA: 14, buscarPertinentes: async (_b: string, _u: string, _a: unknown, _k: string, o: Record<string, unknown>) => { opcionesDeBusqueda.push(o); return { fragmentos, reordenado: true }; } }));
 vi.mock('../../../llm/clientePorRuta', () => ({
     MENSAJE_SIN_RESPUESTA: 'sin respuesta',
-    clientePorRuta: async () => ({ generate: async () => 'Respuesta [F1].' }),
+    clientePorRuta: async () => ({ generate: async (p: { system: string }) => { sistemas.push(p.system); return 'Respuesta [F1].'; } }),
 }));
 const { consultarBiblioteca } = await import('../consultarBiblioteca');
 const llamar = (data: unknown, uid = 'yo') => (consultarBiblioteca as unknown as (r: unknown) => Promise<{ consultaId: string }>)({ auth: { uid }, data });
 const frag = { resourceId: 'v', titulo: 'V', autor: 'Varner', hoja: 190, seccion: '', texto: 'texto', score: 0.9 };
 
 beforeEach(() => {
-    docs.clear(); sumar.mockReset(); fallaGuardar = false; fragmentos = [frag];
+    docs.clear(); sumar.mockReset(); fallaGuardar = false; fragmentos = [frag]; opcionesDeBusqueda.length = 0; sistemas.length = 0;
     process.env.GEMINI_API_KEY = 'k';
 });
 
@@ -66,5 +68,37 @@ describe('consultarBiblioteca', () => {
         await expect(llamar({ pregunta: '¿Y?', consultaId: 'tema' })).rejects.toMatchObject({ code: 'failed-precondition' });
         expect(sumar).not.toHaveBeenCalled();
     });
-});
 
+    it('U6: una pregunta sobre un pasaje entra en modo pasaje, pide la respuesta por autor y guarda el pasaje', async () => {
+        const r = await llamar({ pregunta: '¿Qué dicen mis libros sobre santiago 3:13?', alcance: { tipo: 'todo' } });
+        expect(opcionesDeBusqueda[0]).toMatchObject({ modoPasaje: true });
+        expect(sistemas[0]).toContain('Santiago 3:13');
+        expect(sistemas[0]).toContain('POR AUTOR');
+        expect((docs.get(r.consultaId)!.turnos as Array<Record<string, unknown>>)[0]).toMatchObject({ pasaje: 'Santiago 3:13' });
+    });
+
+    it('U6: una pregunta sin pasaje sigue como siempre', async () => {
+        const r = await llamar({ pregunta: '¿Qué es la oración de fe?', alcance: { tipo: 'todo' } });
+        expect(opcionesDeBusqueda[0]).toMatchObject({ modoPasaje: false });
+        expect(sistemas[0]).not.toContain('POR AUTOR');
+        expect((docs.get(r.consultaId)!.turnos as Array<Record<string, unknown>>)[0]!.pasaje).toBeUndefined();
+    });
+
+    it('U6: con un solo libro (el visor) no hay modo pasaje ni regla por autor', async () => {
+        await llamar({ pregunta: '¿Qué dice de santiago 3:13?', alcance: { tipo: 'libros', ids: ['v'] } });
+        expect(opcionesDeBusqueda[0]).toMatchObject({ modoPasaje: false });
+        expect(sistemas[0]).not.toContain('POR AUTOR');
+    });
+
+    it('U6: «¿y Moo?» hereda las claves del pasaje anterior para buscar (sin modo pasaje)', async () => {
+        docs.set('mia', { userId: 'yo', alcance: { tipo: 'todo' }, turnos: [{ pregunta: 'stg 3:13', respuesta: 'r', fuentes: [], pasaje: 'Stg 3:13' }] });
+        await llamar({ pregunta: '¿y Moo?', consultaId: 'mia' });
+        expect(opcionesDeBusqueda[0]).toMatchObject({ modoPasaje: false, refsHeredadas: ['JAS.3.13', 'JAS.3'] });
+    });
+
+    it('U6: sin fragmentos no se guarda el pasaje (no se muestra «Lo que dicen tus libros…» sobre nada)', async () => {
+        fragmentos = [];
+        const r = await llamar({ pregunta: '¿Qué dicen sobre santiago 3:13?', alcance: { tipo: 'todo' } });
+        expect((docs.get(r.consultaId)!.turnos as Array<Record<string, unknown>>)[0]!.pasaje).toBeUndefined();
+    });
+});

@@ -29,6 +29,8 @@ export interface TurnoDeConsulta {
     respuesta: string;
     fuentes: FuenteDeConsulta[];
     creado: Date;
+    /** U6: el pasaje que nombra la pregunta («Santiago 3:13»): la respuesta va por autor. */
+    pasaje?: string;
 }
 
 export interface ConsultaGuardada {
@@ -79,6 +81,7 @@ function aConsulta(id: string, d: Record<string, unknown>): ConsultaGuardada {
             respuesta: String(t.respuesta ?? ''),
             fuentes: Array.isArray(t.fuentes) ? t.fuentes as FuenteDeConsulta[] : [],
             creado: fecha(t.creado),
+            ...(typeof t.pasaje === 'string' && t.pasaje ? { pasaje: t.pasaje } : {}),
         })),
         ...(d.tipo === 'temas' && temas ? {
             temas: {
@@ -143,3 +146,44 @@ export async function buscarTemasEnBiblioteca(consulta: string, alcance: Alcance
     const r = (await callable({ consulta, alcance })).data;
     return { libros: r.libros, reordenado: r.reordenado !== false, consultaId: r.consultaId ?? null };
 }
+
+// ── U7: resúmenes breves ──
+
+/**
+ * Qué resumir: el mapa del libro (sin leerlo entero), el capítulo donde está
+ * una hoja, o un tramo de hasta 60 hojas.
+ */
+export type PedidoDeResumen =
+    | { resourceId: string; tipo: 'mapa' }
+    | { resourceId: string; tipo: 'seccion'; hoja: number }
+    | { resourceId: string; tipo: 'paginas'; desde: number; hasta: number };
+
+export interface ResumenDeLibro {
+    tipo: 'mapa' | 'seccion' | 'paginas';
+    desde: number | null;
+    hasta: number | null;
+    /** El título de la sección resumida, si es una. */
+    titulo: string | null;
+    resumen: string;
+    /** Temas (mapa) o ideas principales (tramo), con sus hojas. */
+    puntos: Array<{ texto: string; hojas: number[] }>;
+    /** Ya estaba guardado: no costó ni contó. */
+    guardado: boolean;
+    /** Contó, pero no se pudo guardar: volver a pedirlo cuesta otra vez. */
+    sinGuardar?: boolean;
+}
+
+/** U7: el resumen breve de un libro o de un tramo (cada uno nuevo cuenta como una consulta). */
+export async function resumirEnBiblioteca(pedido: PedidoDeResumen): Promise<ResumenDeLibro> {
+    // El mismo pedido en curso no sale dos veces: cerrar y volver a abrir el
+    // mapa mientras se arma cobraba dos resúmenes (revisión adversarial).
+    const clave = JSON.stringify(pedido);
+    const enCurso = resumenesEnCurso.get(clave);
+    if (enCurso) return enCurso;
+    const callable = httpsCallable<PedidoDeResumen, ResumenDeLibro>(getFunctions(), 'resumirEnBiblioteca', { timeout: TIMEOUT_MS });
+    const promesa = callable(pedido).then(r => r.data).finally(() => resumenesEnCurso.delete(clave));
+    resumenesEnCurso.set(clave, promesa);
+    return promesa;
+}
+
+const resumenesEnCurso = new Map<string, Promise<ResumenDeLibro>>();

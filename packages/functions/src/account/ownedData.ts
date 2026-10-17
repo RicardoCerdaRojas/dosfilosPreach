@@ -18,6 +18,8 @@ export const OWNED_BY_FIELD: ReadonlyArray<{ collection: string; field: string }
     // userId
     { collection: 'sermons', field: 'userId' },
     { collection: 'library_consultations', field: 'userId' },
+    // Resúmenes de la biblioteca (U7): `userId` es el dueño del libro.
+    { collection: 'library_summaries', field: 'userId' },
     { collection: 'greek_sessions', field: 'userId' },
     { collection: 'hebrewDetectiveSessions', field: 'userId' },
     { collection: 'hebrew_user_sessions', field: 'userId' },

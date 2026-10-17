@@ -87,11 +87,25 @@ function rotuloDeFragmento(f: FragmentoRecuperado, n: number): string {
     return `[F${n}] ${f.autor || 'Autor desconocido'}, «${f.titulo}»${donde ? ` (${donde})` : ''}\n${f.texto.trim()}`;
 }
 
+/**
+ * U6: cuando la pregunta es sobre un pasaje, la respuesta se ordena por
+ * autor, como se lee un comentario de comentarios.
+ */
+export function reglaDePasaje(pasaje: string): string {
+    return [
+        `La pregunta es sobre un pasaje: ${pasaje}. Organiza la respuesta POR AUTOR:`,
+        '- un párrafo por autor, que empieza con su apellido en negrita («**Varner** entiende…»), con sus marcas;',
+        '- primero los que tratan el pasaje de frente; si dos coinciden o discrepan, dilo;',
+        '- si sólo un autor lo trata, dilo con claridad. No llenes con autores que sólo lo mencionan de paso.',
+    ].join('\n');
+}
+
 /** El pedido al asistente: las reglas, la conversación previa, los fragmentos numerados y la pregunta. */
 export function armarPedido(
     pregunta: string,
     fragmentos: ReadonlyArray<FragmentoRecuperado>,
     anteriores: ReadonlyArray<TurnoAnterior> = [],
+    opciones: { pasaje?: string | null } = {},
 ): { system: string; prompt: string } {
     const previos = anteriores.slice(-TURNOS_DE_CONTEXTO)
         .map(t => `Pregunta: ${t.pregunta}\nRespuesta: ${quitarMarcas(t.respuesta)}`)
@@ -103,7 +117,8 @@ export function armarPedido(
             : 'No se encontraron fragmentos en los libros del pastor para esta pregunta.',
         `Pregunta del pastor: ${pregunta.trim()}`,
     ].filter(Boolean);
-    return { system: SISTEMA, prompt: partes.join('\n\n====\n\n') };
+    const system = opciones.pasaje ? `${SISTEMA}\n\n${reglaDePasaje(opciones.pasaje)}` : SISTEMA;
+    return { system, prompt: partes.join('\n\n====\n\n') };
 }
 
 const MARCA = /\[F(\d{1,3})\]/g;

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { ArrowUpRight, BookMarked } from 'lucide-react';
 import type { FuenteDeConsulta, LibroDelTema } from '@dosfilos/infrastructure';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { apellidoDelAutor } from '@/components/library/apellidoDelAutor';
 import { TextoConEscrituras } from '@/components/library/consulta/TextoConEscrituras';
+import { ResumenDelLibro } from '@/components/library/consulta/ResumenDelLibro';
 import { barrasDePertinencia, inicialDe, paginaDeCita, seccionCorta } from './presentacion';
 
 /** Una hoja del resultado, con la forma de una fuente para citarla y abrirla igual. */
@@ -31,6 +32,15 @@ export function ResultadosDeTemas({ libros, etiquetar, onAbrir, aproximado = fal
     const { t } = useTranslation('library');
     const [filtro, setFiltro] = useState<string | null>(null);
     const [todos, setTodos] = useState(false);
+    /** U7: los libros cuyo mapa está abierto. */
+    const [conMapa, setConMapa] = useState<ReadonlySet<string>>(new Set());
+    /** Al cerrar un mapa con su X, el foco vuelve al botón de su tarjeta. */
+    const botonesDeMapa = useRef(new Map<string, HTMLButtonElement>());
+    const alternarMapa = (id: string) => setConMapa(prev => {
+        const sig = new Set(prev);
+        if (sig.has(id)) sig.delete(id); else sig.add(id);
+        return sig;
+    });
     const pasajes = useMemo(() => libros.reduce((n, l) => n + l.hojas.length, 0), [libros]);
     const visibles = filtro ? libros.filter(l => l.resourceId === filtro) : todos ? libros : libros.slice(0, LIBROS_A_LA_VISTA);
     const clave = (l: LibroDelTema) => apellidoDelAutor(l.autor) || l.titulo;
@@ -72,7 +82,28 @@ export function ResultadosDeTemas({ libros, etiquetar, onAbrir, aproximado = fal
                             <h3 className="m-0 font-serif text-[17px] font-bold leading-snug text-foreground">{libro.titulo}</h3>
                             <span className="text-[13px] text-muted-foreground">{[libro.autor, t('consult.topicPassages', { count: libro.hojas.length })].filter(Boolean).join(' · ')}</span>
                         </div>
+                        <button
+                            type="button"
+                            ref={b => { if (b) botonesDeMapa.current.set(libro.resourceId, b); }}
+                            onClick={() => alternarMapa(libro.resourceId)}
+                            aria-expanded={conMapa.has(libro.resourceId)}
+                            aria-controls={`mapa-${libro.resourceId}`}
+                            className="inline-flex min-h-11 sm:min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px] font-medium text-foreground/80 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <BookMarked className="h-3.5 w-3.5" aria-hidden="true" />{t('consult.summary.map')}
+                        </button>
                     </header>
+                    {conMapa.has(libro.resourceId) && (
+                        <div className="border-b border-border/60 px-5 py-4">
+                            <ResumenDelLibro
+                                id={`mapa-${libro.resourceId}`}
+                                pedido={{ resourceId: libro.resourceId, tipo: 'mapa' }}
+                                paginaDeHoja={h => paginaDeCita(etiquetar(comoFuente(libro, { hoja: h, seccion: '', extracto: '', score: 0, pertinencia: null })))}
+                                onIrAHoja={h => onAbrir(comoFuente(libro, { hoja: h, seccion: '', extracto: '', score: 0, pertinencia: null }))}
+                                onCerrar={() => { alternarMapa(libro.resourceId); botonesDeMapa.current.get(libro.resourceId)?.focus(); }}
+                            />
+                        </div>
+                    )}
                     <ol className="m-0 list-none divide-y divide-border/60 p-0">
                         {libro.hojas.map(h => {
                             const fuente = comoFuente(libro, h);
