@@ -10,7 +10,7 @@ import { assessHebrewDirection, type PdfVerdict } from '@dosfilos/domain';
  */
 
 export type RunOutcome = 'running' | 'ready' | 'failed' | 'stalled' | 'cancelled' | 'superseded';
-export type EngineKey = 'llamaparse' | 'gemini' | 'gemini-queue' | 'pdfjs' | 'unknown';
+export type EngineKey = 'llamaparse' | 'gemini' | 'gemini-queue' | 'pdfjs' | 'batch' | 'unknown';
 
 export interface RunFidelity {
     totalChars: number;
@@ -39,7 +39,7 @@ export interface ExtractionRun {
     runId: string;
     resourceId: string;
     userId: string;
-    path: 'upload' | 'reprocess-premium' | 'reprocess-vision';
+    path: 'upload' | 'reprocess-premium' | 'reprocess-vision' | 'batch-reprocess';
     outcome: RunOutcome;
     startedAt: string | null;
     finishedAt: string | null;
@@ -99,6 +99,9 @@ export const POR_VERSION: Record<string, Exclude<EngineKey, 'unknown'>> = {
 
 /** El motor que decidió la corrida: el que produjo el texto, o el último que se probó. */
 export function finalEngine(run: ExtractionRun): EngineKey {
+    // Aplicar un lote no es una corrida de un motor: va aparte, para no
+    // sumarle a la cola corridas de segundos y costo cero.
+    if (run.path === 'batch-reprocess') return 'batch';
     const porVersion = run.extractionVersion ? POR_VERSION[run.extractionVersion] : undefined;
     if (porVersion) return porVersion;
     const ultimo = run.engines?.[run.engines.length - 1];

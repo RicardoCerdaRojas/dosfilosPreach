@@ -24,9 +24,25 @@ export interface ResumenDeLote {
         rid: string; titulo: string; estado: 'por-preparar' | 'preparado' | 'saltado'; motivo: string | null; paginas: number | null;
         tramos: Record<EstadoDeTramo, number>;
         fallas: string[];
+        listo: boolean;
+        incompletos: number;
+        comparacion: ComparacionDeLibro | null;
+        comparacionVieja: boolean;
+        aplicado: { fecha: number; reemplazado: boolean; motivo: string } | null;
     }>;
     puedeReintentar: boolean;
     puedeCancelar: boolean;
+}
+
+/** COPIA de `ComparacionGuardada` (`estadoDelLote.ts`). */
+export interface ComparacionDeLibro {
+    reemplazar: boolean;
+    motivo: string;
+    actual: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
+    nueva: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
+    rellenadas: number;
+    rondasLeidas: number;
+    calculada: number;
 }
 
 const CLAVE = ['admin', 'batchJobs'] as const;
@@ -47,7 +63,7 @@ export function useBatchJobs() {
 
 export interface PedidoDeLote { nombre: string; ownerUid: string; ids: string[]; estimadoUsd: number }
 
-/** Lanzar, reintentar y cancelar: cada uno refresca la lista. */
+/** Lanzar, reintentar, cancelar, comparar y aplicar: cada uno refresca la lista. */
 export function useBatchActions() {
     const qc = useQueryClient();
     const refrescar = () => qc.invalidateQueries({ queryKey: CLAVE });
@@ -55,5 +71,7 @@ export function useBatchActions() {
         lanzar: useMutation({ mutationFn: llamar<PedidoDeLote, { id: string; libros: number }>('launchBatch'), onSuccess: refrescar }),
         reintentar: useMutation({ mutationFn: llamar<{ loteId: string }, { ronda: number | null; libros: number; abandonadas: number }>('retryBatch'), onSuccess: refrescar }),
         cancelar: useMutation({ mutationFn: llamar<{ loteId: string }, { ok: boolean }>('cancelBatch'), onSuccess: refrescar }),
+        comparar: useMutation({ mutationFn: llamar<{ loteId: string; rid: string }, Omit<ComparacionDeLibro, 'rondasLeidas' | 'calculada'>>('compareBatchBook'), onSettled: refrescar }),
+        aplicar: useMutation({ mutationFn: llamar<{ loteId: string; rid: string; aceptarIncompletos: boolean }, { reemplazado: boolean; motivo: string }>('applyBatchBook'), onSettled: refrescar }),
     };
 }

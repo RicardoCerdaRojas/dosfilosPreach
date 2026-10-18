@@ -32,7 +32,8 @@ export type AdminAuditAction =
     | 'anchor_fidelity.delete_misreading'
     | 'library.batch_launch'
     | 'library.batch_retry'
-    | 'library.batch_cancel';
+    | 'library.batch_cancel'
+    | 'library.batch_apply';
 
 interface WriteAuditLogParams {
     /** Firebase UID of the admin who triggered the action. */
@@ -61,8 +62,16 @@ interface WriteAuditLogParams {
  * reports.
  */
 export function writeAuditLog(params: WriteAuditLogParams): void {
+    void writeAuditLogAndWait(params);
+}
+
+/**
+ * Lo mismo, esperándolo: para una acción que ya cambió datos de un usuario y
+ * sigue con otros pasos que pueden fallar (aplicar un lote). Nunca lanza.
+ */
+export async function writeAuditLogAndWait(params: WriteAuditLogParams): Promise<void> {
     const db = getFirestore();
-    db.collection('admin_audit_log')
+    await db.collection('admin_audit_log')
         .add({
             actorUid: params.actorUid,
             actorEmail: params.actorEmail ?? null,

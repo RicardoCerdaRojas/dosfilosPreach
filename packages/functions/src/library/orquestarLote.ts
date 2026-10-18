@@ -12,6 +12,7 @@ import {
     MAX_TRAMOS_POR_LOTE, NOMBRE_DE_LOTE, nombreDeJob, nuevoLote, pedidosDeRonda, planearReintento, prefijoDePaginas,
     reclamarRonda, registrarJob, registrarLibro, registrarSubida, revisarTramosOk, rondasSinGasto, rondasSinRevisar,
     rutaDeCapa, rutaDePaginas, soltarCandado, tomarCandado, tramosDeRonda, vigilarTareas, JOB_BIEN, JOB_MAL, type Lote,
+    type LibroDelLote,
 } from './estadoDelLote';
 
 /**
@@ -25,6 +26,11 @@ import {
 /** Lo que la orquestación usa de afuera: inyectado para probarla sin red. */
 export interface Almacen {
     bajar(ruta: { bucket: string; path: string }): Promise<Buffer>;
+    /** La generación del objeto: cambia si el archivo se reemplaza. */
+    generacion(ruta: { bucket: string; path: string }): Promise<string | null>;
+    /** Escribe en el bucket por defecto; `sinPisar` falla si el archivo ya existe. */
+    escribir(path: string, contenido: string, opciones: { contentType: string; sinPisar?: boolean; metadata?: Record<string, string> }): Promise<void>;
+    borrar(path: string): Promise<void>;
     guardar(path: string, contenido: string): Promise<void>;
     leer(path: string): Promise<string | null>;
     listar(prefijo: string): Promise<string[]>;
@@ -56,13 +62,13 @@ const ref = (d: Dependencias, id: string) => d.db.collection(COLECCION_DE_LOTES)
 /** Firestore rechaza `undefined`: el lote se guarda como JSON plano. */
 const plano = (l: Lote) => JSON.parse(JSON.stringify(l)) as Record<string, unknown>;
 
-async function leerLote(d: Dependencias, id: string): Promise<Lote | null> {
+export async function leerLote(d: Dependencias, id: string): Promise<Lote | null> {
     const s = await ref(d, id).get();
     return s.exists ? (s.data() as Lote) : null;
 }
 
 /** Relee el lote dentro de una transacción, le aplica `fn` y lo guarda si cambió. */
-async function actualizar<T>(d: Dependencias, id: string, fn: (l: Lote) => T): Promise<T> {
+export async function actualizar<T>(d: Dependencias, id: string, fn: (l: Lote) => T): Promise<T> {
     return d.db.runTransaction(async tx => {
         const s = await tx.get(ref(d, id));
         if (!s.exists) throw new ErrorDelLote('not-found', 'El lote no existe');
@@ -128,12 +134,14 @@ export async function lanzarLote(d: Dependencias, p: {
 // ── La tarea de un libro ────────────────────────────────────────────────────
 
 /** El PDF abierto, descifrado si hace falta; o por qué no se puede usar. */
-async function abrirPdf(d: Dependencias, rid: string): Promise<{ pdf: PDFDocument; bytes: Buffer } | { saltado: string }> {
+async function abrirPdf(d: Dependencias, rid: string): Promise<{ pdf: PDFDocument; bytes: Buffer; origen: NonNullable<LibroDelLote['pdf']> } | { saltado: string }> {
     const recurso = (await d.db.collection('library_resources').doc(rid).get()).data();
     if (!recurso) return { saltado: 'el libro ya no existe' };
     const ubicacion = parseFirebaseStorageLocation(String(recurso.storageUrl ?? ''), d.bucketPorDefecto);
     if (!ubicacion.path) return { saltado: 'el libro no tiene el PDF' };
+    const generacion = await d.almacen.generacion(ubicacion);
     const original = await d.almacen.bajar(ubicacion);
+    const origen = { ruta: `${ubicacion.bucket}/${ubicacion.path}`, generacion };
     // Igual que la subida: qpdf necesita ~12 veces el archivo en memoria.
     if (original.length > TOPE_PARA_DESCIFRAR_EN_LA_NUBE && puedeEstarCifrado(original)) {
         return { saltado: 'está cifrado y pesa más de 60 MB: sólo se descifra en la terminal' };
@@ -142,7 +150,7 @@ async function abrirPdf(d: Dependencias, rid: string): Promise<{ pdf: PDFDocumen
     if (descifrado.estado === 'pide-contrasena') return { saltado: 'el PDF pide contraseña para abrirse' };
     const bytes = descifrado.estado === 'descifrado' ? descifrado.bytes : original;
     try {
-        return { pdf: await PDFDocument.load(bytes), bytes };
+        return { pdf: await PDFDocument.load(bytes), bytes, origen };
     } catch (err) {
         return { saltado: `el PDF no se pudo abrir (${err instanceof Error ? err.message.slice(0, 80) : 'error'})` };
     }
@@ -204,7 +212,7 @@ export async function procesarLibro(d: Dependencias, c: CargaDeLote, /** En `Dat
             } else {
                 const subidos = await subirTramos(d, abierto.pdf, tramos);
                 await guardarCapa(d, lote, c.rid, abierto.bytes, venceCapa());
-                await actualizar(d, c.loteId, l => registrarLibro(l, c.rid, { totalPaginas: total, tramos: subidos }, d.ahora()));
+                await actualizar(d, c.loteId, l => registrarLibro(l, c.rid, { totalPaginas: total, tramos: subidos, pdf: abierto.origen }, d.ahora()));
             }
         } else {
             const subidos = await subirTramos(d, abierto.pdf, porSubir);
@@ -252,7 +260,7 @@ export async function crearJobSiToca(d: Dependencias, loteId: string, ronda: num
 
 // ── El sondeo ───────────────────────────────────────────────────────────────
 
-async function paginasDelLibro(d: Dependencias, lote: Lote, rid: string): Promise<GeminiPage[]> {
+export async function paginasDelLibro(d: Dependencias, lote: Lote, rid: string): Promise<GeminiPage[]> {
     const rutas = await d.almacen.listar(prefijoDePaginas(lote, rid));
     const todas: GeminiPage[] = [];
     // En orden de ronda: si dos rondas traen la misma página, gana la última (`unirPaginas`).

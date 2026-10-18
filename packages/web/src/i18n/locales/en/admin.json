@@ -720,7 +720,8 @@
       "gemini": "Vision (single call)",
       "gemini-queue": "Vision (queued)",
       "pdfjs": "Text layer",
-      "unknown": "No engine"
+      "unknown": "No engine",
+      "batch": "Batch reprocess (applied)"
     },
     "preflight": {
       "title": "Did the pre-upload report predict the result?",
@@ -768,7 +769,8 @@
     "path": {
       "upload": "Upload",
       "reprocess-premium": "Premium reprocess",
-      "reprocess-vision": "Image reprocess"
+      "reprocess-vision": "Image reprocess",
+      "batch-reprocess": "Batch reprocess"
     },
     "alert": {
       "reversed-hebrew": "Reversed Hebrew",
@@ -781,7 +783,7 @@
   },
   "batch": {
     "title": "Batch reprocessing",
-    "subtitle": "Which books are worth reading again, what it would cost, and the launched batches. “Prepare batch” and “Retry” spend, after confirming; no book changes from here.",
+    "subtitle": "Which books are worth reading again, what it would cost, and the launched batches: follow, compare and apply them. “Prepare batch” and “Retry” spend, after confirming.",
     "owner": "Library of",
     "loadError": "Couldn't load the books.",
     "empty": "This library has no books.",
@@ -848,8 +850,8 @@
       "button": "Prepare batch",
       "orTerminal": "Or in the terminal:",
       "confirmTitle": "Prepare batch “{{nombre}}”?",
-      "confirmBody_one": "{{count}} book ({{paginas}} pages) will be split and sent. Estimated cost: about {{usd}}; with retries, about {{conReintentos}}. Results take up to 24 hours and no book changes until they are applied (applying from the panel comes in the next version).",
-      "confirmBody_other": "{{count}} books ({{paginas}} pages) will be split and sent. Estimated cost: about {{usd}}; with retries, about {{conReintentos}}. Results take up to 24 hours and no book changes until they are applied (applying from the panel comes in the next version).",
+      "confirmBody_one": "{{count}} book ({{paginas}} pages) will be split and sent. Estimated cost: about {{usd}}; with retries, about {{conReintentos}}. Results take up to 24 hours and no book changes until they are applied.",
+      "confirmBody_other": "{{count}} books ({{paginas}} pages) will be split and sent. Estimated cost: about {{usd}}; with retries, about {{conReintentos}}. Results take up to 24 hours and no book changes until they are applied.",
       "confirm": "Prepare (about {{usd}})",
       "cancel": "Back",
       "done_one": "Batch “{{nombre}}” launched with {{count}} book.",
@@ -908,6 +910,34 @@
       "retryBody_one": "At most {{count}} page is requested again (about {{usd}}). Pages that are blank in the PDF too, or already failed alone, are abandoned without asking. Each retry is a new round, billed separately.",
       "retryBody_other": "At most {{count}} pages are requested again (about {{usd}}). Pages that are blank in the PDF too, or already failed alone, are abandoned without asking. Each retry is a new round, billed separately.",
       "retryConfirm": "Retry (about {{usd}})"
+    },
+    "apply": {
+      "compare": "Compare",
+      "apply": "Apply",
+      "actions": "Actions",
+      "comparison": "Comparison",
+      "compareAll_one": "Compare {{count}} book",
+      "compareAll_other": "Compare {{count}} books",
+      "applyAll_one": "Apply {{count}} that improves",
+      "applyAll_other": "Apply the {{count}} that improve",
+      "hint": "Comparing doesn't touch the book. Applying keeps a backup and only replaces it if it improves without losing anything.",
+      "improves": "Improves: will replace",
+      "keeps": "Stays as it is",
+      "numbers": "Missing {{faltan}} · Hebrew {{hebreo}} · Greek {{griego}}",
+      "filled_one": "{{count}} page from the PDF's text (the batch didn't read it)",
+      "filled_other": "{{count}} pages from the PDF's text (the batch didn't read them)",
+      "stale": "There is a new round: compare again.",
+      "applied": "Applied",
+      "unchanged": "Unchanged",
+      "done": "“{{titulo}}” replaced; the index rebuilds on its own.",
+      "kept": "“{{titulo}}” stays as it is: {{motivo}}",
+      "incompleteTitle": "Apply “{{titulo}}” with failed sections?",
+      "incompleteBody_one": "{{count}} section wasn't fully read. Its pages keep the PDF's text, or stay empty if the PDF has none (a scan). If you retry later, it can be applied again only if it isn't replaced this time.",
+      "incompleteBody_other": "{{count}} sections weren't fully read. Their pages keep the PDF's text, or stay empty if the PDF has none (a scan). If you retry later, it can be applied again only if it isn't replaced this time.",
+      "incompleteConfirm": "Apply anyway",
+      "applyAllTitle_one": "Apply {{count}} book?",
+      "applyAllTitle_other": "Apply {{count}} books?",
+      "applyAllBody": "Books whose comparison is current, improves and has no failed sections are applied one by one. Each keeps a backup of the current text and is reindexed."
     }
   }
 }

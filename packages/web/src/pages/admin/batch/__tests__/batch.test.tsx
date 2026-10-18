@@ -3,6 +3,12 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { ordenarCandidatos, type CandidatoCrudo } from '@/lib/loteReport';
 
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k), i18n: { language: 'es' } }) }));
+const acciones = {
+    comparar: { mutateAsync: vi.fn(async () => ({})) },
+    aplicar: { mutateAsync: vi.fn(async () => ({ reemplazado: true, motivo: 'faltantes 3 → 0' })) },
+};
+vi.mock('@/hooks/admin/useBatchJobs', () => ({ useBatchActions: () => acciones }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const { CandidatesTable } = await import('../CandidatesTable');
 const { EstimateBar } = await import('../EstimateBar');
 
@@ -41,11 +47,12 @@ describe('panel del lote (PR 1)', () => {
 
 const { BatchJobCard } = await import('../BatchJobCard');
 const cero = { pendiente: 0, ok: 0, fallo: 0, incompleto: 0, reemplazado: 0, abandonado: 0 };
+const sinAplicar = { listo: false, incompletos: 0, comparacion: null, comparacionVieja: false, aplicado: null };
 const resumen = (extra: Record<string, unknown> = {}) => ({
     id: 'b6', estado: 'listo' as const, motivo: null, creado: Date.UTC(2026, 9, 17), actualizado: 0, creadoPorEmail: 'a@x', dueno: 'u',
     estimadoUsd: 0.5, usd: 0.42, paginas: 35, rondas: [{ numero: 1, estadoJob: 'JOB_STATE_SUCCEEDED', leida: true, tramos: 3 }],
     tramos: { ...cero, ok: 2, fallo: 1 }, paginasConFallas: 20,
-    libros: [{ rid: 'A', titulo: 'Libro A', estado: 'saltado' as const, motivo: 'el PDF pide contraseña', paginas: null, tramos: cero, fallas: [] }],
+    libros: [{ rid: 'A', titulo: 'Libro A', estado: 'saltado' as const, motivo: 'el PDF pide contraseña', paginas: null, tramos: cero, fallas: [], ...sinAplicar }],
     puedeReintentar: true, puedeCancelar: false, ...extra,
 });
 
@@ -84,5 +91,53 @@ describe('panel del lote (PR 2)', () => {
         expect(cancelar).not.toHaveBeenCalled();
         fireEvent.click(screen.getByText('batch.jobs.cancelConfirm'));
         expect(cancelar).toHaveBeenCalled();
+    });
+});
+
+const { BatchBooksTable } = await import('../BatchBooksTable');
+const { aplicablesSinPreguntar } = await import('@/lib/loteReport');
+const comparacion = (reemplazar: boolean) => ({
+    reemplazar, motivo: reemplazar ? 'faltantes 3 → 0' : 'no mejora nada', rellenadas: 2, rondasLeidas: 1, calculada: 0,
+    actual: { faltantes: 3, hebreo: 0, griego: 10, textoVacio: false }, nueva: { faltantes: 0, hebreo: 0, griego: 12, textoVacio: false },
+});
+const libro = (rid: string, extra: Record<string, unknown> = {}) => ({
+    rid, titulo: `Libro ${rid}`, estado: 'preparado' as const, motivo: null, paginas: 10, tramos: { ...cero, ok: 1 }, fallas: [],
+    ...sinAplicar, listo: true, ...extra,
+});
+
+describe('panel del lote (PR 3): comparar y aplicar', () => {
+    it('«Aplicar los que mejoran» toma sólo lo seguro', () => {
+        const libros = [
+            libro('ok', { comparacion: comparacion(true) }),
+            libro('noMejora', { comparacion: comparacion(false) }),
+            libro('vieja', { comparacion: comparacion(true), comparacionVieja: true }),
+            libro('fallas', { comparacion: comparacion(true), incompletos: 2 }),
+            libro('sinComparar'),
+            libro('hecho', { comparacion: comparacion(true), aplicado: { fecha: 0, reemplazado: true, motivo: 'x' } }),
+        ];
+        expect(aplicablesSinPreguntar(libros).map(b => b.rid)).toEqual(['ok']);
+    });
+
+    it('la comparación muestra los números; con tramos que fallaron, aplicar pide confirmación y la manda', async () => {
+        acciones.aplicar.mutateAsync.mockClear();
+        const lote = resumen({ libros: [libro('X', { comparacion: comparacion(true), incompletos: 2 })] });
+        render(<BatchBooksTable lote={lote} />);
+        const fila = screen.getByTestId('libro-X');
+        expect(fila.textContent).toContain('batch.apply.numbers:{"faltan":"3 → 0","hebreo":"0 → 0","griego":"10 → 12"}');
+        expect(fila.textContent).toContain('batch.apply.filled:{"count":2}');
+        fireEvent.click(screen.getByText('batch.apply.apply'));
+        expect(acciones.aplicar.mutateAsync).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByText('batch.apply.incompleteConfirm'));
+        await vi.waitFor(() => expect(acciones.aplicar.mutateAsync).toHaveBeenCalledWith({ loteId: 'b6', rid: 'X', aceptarIncompletos: true }));
+    });
+
+    it('aplicado: verde y sin botones; «no mejoraba» sin ronda nueva: neutro y sin botones', () => {
+        render(<BatchBooksTable lote={resumen({ libros: [
+            libro('Y', { listo: false, aplicado: { fecha: 0, reemplazado: false, motivo: 'no mejora' } }),
+            libro('Z', { listo: false, aplicado: { fecha: 0, reemplazado: true, motivo: 'faltantes 3 → 0' } }),
+        ] })} />);
+        expect(screen.getByTestId('libro-Y').textContent).toContain('batch.apply.unchanged');
+        expect(screen.getByTestId('libro-Z').textContent).toContain('batch.apply.applied');
+        expect(screen.queryByText('batch.apply.apply')).toBeNull();
     });
 });
