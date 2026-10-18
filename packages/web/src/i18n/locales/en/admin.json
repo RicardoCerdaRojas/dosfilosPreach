@@ -819,7 +819,8 @@
       "enProceso": "Being extracted",
       "fallido": "Extraction failed",
       "sinExtraer": "Not extracted",
-      "sinMedir": "Not measured"
+      "sinMedir": "Not measured",
+      "sinPdf": "Catalog entry, no PDF"
     },
     "estimate": {
       "selection_one": "{{count}} book",

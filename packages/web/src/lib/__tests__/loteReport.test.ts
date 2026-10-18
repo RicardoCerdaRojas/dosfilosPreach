@@ -52,6 +52,13 @@ describe('diagnosticar', () => {
         expect(sinMedir.motivos).toEqual(['sinMedir']);
         expect(sinMedir.prioridad).toBe(0);
     });
+    it('una ficha del catálogo del sistema (sin PDF) no es candidata ni «sin extraer»', () => {
+        const ficha = diagnosticar(base({ tienePdf: false, extractionVersion: null, extractionModel: null, pdfPageCount: null, pageCount: null, sizeBytes: 0 }));
+        expect(ficha).toMatchObject({ excluido: true, prioridad: 0, motivos: ['sinPdf'] });
+        expect(esRecomendado(ficha)).toBe(false);
+        // Una respuesta vieja sin el campo sigue como antes.
+        expect(diagnosticar(base({ extractionVersion: null })).motivos).toContain('sinExtraer');
+    });
     it('más de 60 MB lleva el aviso (si está cifrado, sólo la terminal lo descifra)', () => {
         expect(diagnosticar(base({ sizeBytes: 70 * 1024 * 1024 })).motivos).toContain('grande');
     });

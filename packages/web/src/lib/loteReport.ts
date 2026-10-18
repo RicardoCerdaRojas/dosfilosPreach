@@ -24,11 +24,13 @@ export interface CandidatoCrudo {
     extractionModel: string | null;
     textExtractionStatus: string | null;
     reprocesadoEnLote: { lote: string; fecha: string | null; motivo: string | null } | null;
+    /** Hay un PDF que leer (no es una ficha del catálogo del sistema). Ausente = sí (respuestas viejas). */
+    tienePdf?: boolean;
 }
 
 export type Motivo =
     | 'faltan' | 'vacio' | 'sinVision' | 'modeloViejo' | 'fallido' | 'sinExtraer'
-    | 'sinMedir' | 'yaReprocesado' | 'grande' | 'enProceso';
+    | 'sinMedir' | 'yaReprocesado' | 'grande' | 'enProceso' | 'sinPdf';
 
 export interface Candidato extends CandidatoCrudo {
     paginas: number | null;
@@ -68,14 +70,16 @@ export function diagnosticar(c: CandidatoCrudo): Candidato {
     if (v && !VERSIONES_DE_VISION.has(v) && !VERSIONES_EXCLUIDAS.has(v)) motivos.push('sinVision');
     if (v && VERSIONES_DE_VISION.has(v) && c.extractionModel !== MODELO_ACTUAL) motivos.push('modeloViejo');
     if (c.textExtractionStatus === 'failed') motivos.push('fallido');
-    else if (!v) motivos.push('sinExtraer');
+    else if (!v && c.tienePdf !== false) motivos.push('sinExtraer');
     // Sin medición no se puede decir que esté bien leído.
-    if (c.pdfPageCount === null && !c.paginasFaltantes) motivos.push('sinMedir');
+    if (c.tienePdf === false) motivos.push('sinPdf');
+    else if (c.pdfPageCount === null && !c.paginasFaltantes) motivos.push('sinMedir');
     if (c.reprocesadoEnLote) motivos.push('yaReprocesado');
     if ((c.sizeBytes ?? 0) > TOPE_CIFRADO_BYTES) motivos.push('grande');
     const enProceso = c.textExtractionStatus === 'processing';
     if (enProceso) motivos.push('enProceso');
     const excluido = enProceso
+        || c.tienePdf === false
         || (c.mimeType !== null && !c.mimeType.includes('pdf'))
         || (c.extractionVersion !== null && VERSIONES_EXCLUIDAS.has(c.extractionVersion));
 
