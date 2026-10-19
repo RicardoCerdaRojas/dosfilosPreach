@@ -5,7 +5,9 @@ import { censusOf } from './scriptCensus';
 import { truncateUtf8 } from './truncateUtf8';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { abrirFicha, cerrarFicha } from './fichaDeCorrida';
-import { compararExtracciones, medirTexto, rellenarConCapa, unirPaginas, type Comparacion } from './loteDeExtraccion';
+import {
+    compararExtracciones, conservarEscritura, medirTexto, paginasDelTexto, rellenarConCapa, unirPaginas, type Comparacion, type PaginaConservada,
+} from './loteDeExtraccion';
 import {
     reclamarAplicacion, registrarAplicacion, registrarComparacion, rutaDeCapa, soltarAplicacion, type Lote,
 } from './estadoDelLote';
@@ -27,6 +29,10 @@ const HEBREO_O_GRIEGO = /[Ͱ-Ͽἀ-῿֐-׿]/g;
 interface Calculo {
     cmp: Comparacion;
     rellenadas: number[];
+    /** Páginas donde el texto nuevo perdía griego o hebreo: conservan el actual. */
+    conservadas: PaginaConservada[];
+    /** Cuántas detectó (con desalineación, `conservadas` queda vacía y esto no). */
+    conservadasTotal: number;
     nuevo: ReturnType<typeof unirPaginas>;
     medidaNueva: ReturnType<typeof medirTexto>;
     mdActual: string;
@@ -52,12 +58,26 @@ async function calcular(d: Dependencias, lote: Lote, rid: string): Promise<Calcu
     const textosDeCapa = capaTexto ? (JSON.parse(capaTexto) as string[]) : null;
     const capa = textosDeCapa?.map(t => t.replace(/\s/g, '').length) ?? null;
     const relleno = rellenarConCapa(await paginasDelLibro(d, lote, rid), total, textosDeCapa ?? []);
-    const nuevo = unirPaginas(relleno.paginas);
     const enMd = recurso.structuredContentUrl ? parseFirebaseStorageLocation(String(recurso.structuredContentUrl), d.bucketPorDefecto) : null;
     const mdActual = enMd?.path
         ? (await d.almacen.bajar(enMd).catch(err => { if (noExiste(err)) return Buffer.from(''); throw err; })).toString('utf8')
         : '';
     const tcActual = typeof recurso.textContent === 'string' ? recurso.textContent : '';
+    // Página por página, el texto actual más completo de los dos (en los libros
+    // de LlamaParse el md trae sólo marcas y el texto vive en `textContent`).
+    const actualesMd = paginasDelTexto(mdActual);
+    const actualesTc = paginasDelTexto(tcActual);
+    // El textContent se guarda recortado a 900 KB: su última página puede estar
+    // cortada a la mitad, y conservarla la dejaría así para siempre.
+    if (recurso.wasTruncated === true || Buffer.byteLength(tcActual, 'utf8') >= LIMITE_TEXTCONTENT) {
+        const ultima = Math.max(-1, ...actualesTc.keys());
+        if (ultima >= 0) actualesTc.delete(ultima);
+    }
+    const sinEspacios = (t: string | undefined) => (t ?? '').replace(/\s/g, '').length;
+    const actuales = new Map([...new Set([...actualesMd.keys(), ...actualesTc.keys()])].map(n => [n,
+        sinEspacios(actualesMd.get(n)) >= sinEspacios(actualesTc.get(n)) ? actualesMd.get(n)! : actualesTc.get(n)!]));
+    const protegido = conservarEscritura(unirPaginas(relleno.paginas).paginas, actuales);
+    const nuevo = unirPaginas(protegido.paginas);
     const medidaActual = medirTexto(mdActual || tcActual, total, capa, tcActual);
     const medidaNueva = medirTexto(nuevo.markdown, total, capa, nuevo.texto);
     const mejoraPorModelo = VERSIONES_DE_VISION.has(recurso.extractionVersion)
@@ -67,11 +87,25 @@ async function calcular(d: Dependencias, lote: Lote, rid: string): Promise<Calcu
     // mismo libro, y sumarlos contaba dos veces su griego y su hebreo.
     const escritura = (t: string) => (t.match(HEBREO_O_GRIEGO) ?? []).length;
     const textoActual = escritura(mdActual) >= escritura(tcActual) ? mdActual : tcActual;
-    const cmp = compararExtracciones({ texto: textoActual, medicion: medidaActual }, { texto: nuevo.markdown, medicion: medidaNueva }, mejoraPorModelo);
-    return { cmp, rellenadas: relleno.rellenadas, nuevo, medidaNueva, mdActual, tcActual, recurso, leidoEn: snap.updateTime, total };
+    let cmp = compararExtracciones({ texto: textoActual, medicion: medidaActual }, { texto: nuevo.markdown, medicion: medidaNueva }, mejoraPorModelo);
+    if (protegido.desalineado) {
+        // Muchas páginas «pierden» escritura a la vez: no es griego perdido sino
+        // páginas que no se corresponden (numeración corrida, otro PDF). No se
+        // reemplaza: hay que mirarlo a mano.
+        cmp = { ...cmp, reemplazar: false, motivo: `${protegido.conservadas.length} páginas no coinciden con el texto actual en griego o hebreo: revisar a mano antes de reemplazar` };
+    }
+    const conservadas = protegido.desalineado ? [] : protegido.conservadas;
+    // Una página conservada ya no lleva el texto del PDF: no se cuenta en las dos listas.
+    const rellenadas = relleno.rellenadas.filter(n => !conservadas.some(c => c.pagina === n));
+    return { cmp, rellenadas, conservadas, conservadasTotal: protegido.conservadas.length, nuevo, medidaNueva, mdActual, tcActual, recurso, leidoEn: snap.updateTime, total };
 }
 
-const guardable = (c: Calculo) => ({ reemplazar: c.cmp.reemplazar, motivo: c.cmp.motivo, actual: c.cmp.actual, nueva: c.cmp.nueva, rellenadas: c.rellenadas.length });
+const guardable = (c: Calculo) => ({
+    reemplazar: c.cmp.reemplazar, motivo: c.cmp.motivo, actual: c.cmp.actual, nueva: c.cmp.nueva, rellenadas: c.rellenadas.length,
+    // Sólo números de página y conteos: nunca texto del libro.
+    conservadas: c.conservadas.slice(0, 40),
+    conservadasTotal: c.conservadas.length,
+});
 
 /** «Comparar»: calcula y guarda la comparación de un libro (sólo números y el motivo). */
 export async function compararLibro(d: Dependencias, loteId: string, rid: string) {
@@ -175,7 +209,10 @@ async function escribirLibro(d: Dependencias, lote: Lote, rid: string, c: Calcul
             extractionFailureReason: null,
             extractionWarning: null,
             scriptCensus: censusOf(c.nuevo.texto),
-            reprocesadoEnLote: { lote: lote.id, fecha: ahora(), motivo: c.cmp.motivo, paginasConTextoDelPdf: c.rellenadas },
+            reprocesadoEnLote: {
+                lote: lote.id, fecha: ahora(), motivo: c.cmp.motivo, paginasConTextoDelPdf: c.rellenadas,
+                paginasConTextoAnterior: c.conservadas.map(p => p.pagina),
+            },
             updatedAt: ahora(),
         });
     } catch (err) {

@@ -41,6 +41,10 @@ export interface ComparacionDeLibro {
     actual: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
     nueva: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
     rellenadas: number;
+    /** Páginas que conservan el texto actual: el nuevo perdía griego o hebreo ahí. */
+    conservadas?: Array<{ pagina: number; escritura: 'griego' | 'hebreo'; antes: number; despues: number }>;
+    /** El total (la lista viene con tope de 40). */
+    conservadasTotal?: number;
     rondasLeidas: number;
     calculada: number;
 }

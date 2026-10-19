@@ -1,6 +1,6 @@
 import type { GeminiPage } from './geminiExtraction';
 import {
-    leerRespuestaDeTramo, partirTramo, separarEnBlanco, sinPaginas, tramosQueFaltan, unirPaginas, type Tramo,
+    leerRespuestaDeTramo, listaDePaginas, partirTramo, separarEnBlanco, sinPaginas, tramosQueFaltan, unirPaginas, type Tramo,
 } from './loteDeExtraccion';
 
 /**
@@ -86,6 +86,10 @@ export interface ComparacionGuardada {
     nueva: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
     /** Páginas que se rellenan con la capa de texto del PDF (el modelo no las leyó). */
     rellenadas: number;
+    /** Páginas que conservan el texto actual porque el nuevo perdía griego o hebreo (`conservarEscritura`). */
+    conservadas?: Array<{ pagina: number; escritura: 'griego' | 'hebreo'; antes: number; despues: number }>;
+    /** El total (la lista se guarda con tope de 40). */
+    conservadasTotal?: number;
     /** Rondas leídas cuando se comparó: si se lee otra, la comparación quedó vieja. */
     rondasLeidas: number;
     calculada: number;
@@ -413,7 +417,9 @@ export function leerRonda(l: Lote, numero: number, estadoJob: string, respuestas
         lectura.paginas.set(t.rid, [...(lectura.paginas.get(t.rid) ?? []), ...leido.paginas]);
         const faltan = tramosQueFaltan(t, leido.paginas);
         lectura.cambios.push(faltan.length > 0
-            ? { indice: t.indice, estado: 'incompleto', faltan, motivo: `devolvió ${leido.paginas.length} de ${t.hasta - t.desde + 1}` }
+            // Qué páginas faltan, no cuántas volvieron: «devolvió 20 de 20» se
+            // leía como si no faltara nada cuando algunas volvieron en blanco.
+            ? { indice: t.indice, estado: 'incompleto', faltan, motivo: `sin leer: ${listaDePaginas(faltan)}` }
             : { indice: t.indice, estado: 'ok' });
     }
     return lectura;
@@ -480,7 +486,7 @@ export function revisarTramosOk(l: Lote, rid: string, paginas: ReadonlyArray<Gem
         if (faltan.length === 0) continue;
         t.estado = 'incompleto';
         t.faltan = faltan;
-        t.motivo = recortar(`páginas en blanco: ${faltan.map(f => (f.desde === f.hasta ? `${f.desde}` : `${f.desde}-${f.hasta}`)).join(', ')}`);
+        t.motivo = recortar(`sin leer: ${listaDePaginas(faltan)}`);
         cambiados++;
     }
     return cambiados;

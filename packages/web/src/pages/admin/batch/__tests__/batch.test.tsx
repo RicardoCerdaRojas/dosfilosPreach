@@ -140,4 +140,15 @@ describe('panel del lote (PR 3): comparar y aplicar', () => {
         expect(screen.getByTestId('libro-Z').textContent).toContain('batch.apply.applied');
         expect(screen.queryByText('batch.apply.apply')).toBeNull();
     });
+
+    it('dice qué páginas conservan el texto anterior y resume las fallas largas', () => {
+        const conGriego = { ...comparacion(true), conservadas: [301, 302, 319].map(p => ({ pagina: p, escritura: 'griego' as const, antes: 60, despues: 8 })) };
+        const fallas = Array.from({ length: 8 }, (_, i) => `${i * 20 + 1}–${i * 20 + 20}: sin leer: ${i * 20 + 2}`);
+        render(<BatchBooksTable lote={resumen({ libros: [libro('S', { comparacion: conGriego, fallas, tramos: { ...cero, ok: 3, incompleto: 16 } })] })} />);
+        const fila = screen.getByTestId('libro-S');
+        expect(fila.textContent).toContain('batch.apply.keptPages:{"count":3,"paginas":"301, 302, 319"}');
+        expect(fila.textContent).toContain('batch.apply.moreSections:{"count":13}');
+        expect(fila.textContent).not.toContain('61–80');
+    });
 });
+

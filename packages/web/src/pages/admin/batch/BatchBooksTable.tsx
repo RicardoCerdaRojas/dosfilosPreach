@@ -82,7 +82,11 @@ export function BatchBooksTable({ lote }: { lote: ResumenDeLote }) {
                                         {b.estado !== 'preparado' && (
                                             <div className="text-xs text-muted-foreground">{t(`batch.jobs.book.${b.estado}`)}{b.motivo ? `: ${b.motivo}` : ''}</div>
                                         )}
-                                        {b.fallas.map(f => <div key={f} className="truncate text-xs text-muted-foreground" title={f}>{f}</div>)}
+                                        {/* Tres y un resumen: la lista entera estiraba la fila (16 tramos en un libro). */}
+                                        {b.fallas.slice(0, 3).map(f => <div key={f} className="truncate text-xs text-muted-foreground" title={f}>{f}</div>)}
+                                        {b.tramos.fallo + b.tramos.incompleto > 3 && (
+                                            <div className="text-xs text-muted-foreground">{t('batch.apply.moreSections', { count: b.tramos.fallo + b.tramos.incompleto - 3 })}</div>
+                                        )}
                                     </TableCell>
                                     <TableCell className="text-right tabular-nums">{b.paginas ?? '—'}</TableCell>
                                     <TableCell className="text-xs">
@@ -101,6 +105,14 @@ export function BatchBooksTable({ lote }: { lote: ResumenDeLote }) {
                                                 </div>
                                                 <div className="text-muted-foreground">{c.motivo}</div>
                                                 {c.rellenadas > 0 && <div className="text-muted-foreground">{t('batch.apply.filled', { count: c.rellenadas })}</div>}
+                                                {(c.conservadas?.length ?? 0) > 0 && (
+                                                    <div className="text-foreground">
+                                                        {t('batch.apply.keptPages', {
+                                                            count: c.conservadasTotal ?? c.conservadas!.length,
+                                                            paginas: c.conservadas!.slice(0, 8).map(p => p.pagina).join(', ') + ((c.conservadasTotal ?? c.conservadas!.length) > 8 ? '…' : ''),
+                                                        })}
+                                                    </div>
+                                                )}
                                                 {b.comparacionVieja && <div className="text-foreground">{t('batch.apply.stale')}</div>}
                                             </div>
                                         ) : <span className="text-muted-foreground">—</span>}
