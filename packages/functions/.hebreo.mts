@@ -1,0 +1,34 @@
+import admin from 'firebase-admin';
+import { readFileSync } from 'node:fs';
+import { OpenAiLlmClient } from './src/llm/OpenAiLlmClient';
+import { ubicacionEnStorage } from '../../scripts/lib/storage';
+admin.initializeApp({ projectId: 'dosfilosapp' });
+const RID = process.env.RID ?? '18693555-44ad-4dae-a843-185a73b09223';
+const LOTE = process.env.LOTE ?? 'biblioteca3';
+const luna = new OpenAiLlmClient(process.env.OPENAI_API_KEY!, 'gpt-6-luna', { feature: 'library.quality.eval' }, 'low');
+const d = (await admin.firestore().doc(`library_resources/${RID}`).get()).data()!;
+const e = ubicacionEnStorage(d.structuredContentUrl);
+const viejoTexto = e ? (await admin.storage().bucket(e.bucket).file(e.ruta).download())[0].toString('utf8') : String(d.textContent ?? '');
+const porPagina = (t: string) => { const m = new Map<number, string>(); const partes = t.split(/<!--\s*page:\s*(\d+)\s*-->|\[PAGE\s+(\d+)\]/); for (let i = 1; i < partes.length; i += 3) { const n = Number(partes[i] ?? partes[i + 1]); m.set(n, (m.get(n) ?? '') + (partes[i + 2] ?? '')); } return m; };
+const viejo = porPagina(viejoTexto);
+const nuevas = (JSON.parse(readFileSync(`../../scripts/.lotes/${LOTE}/${RID}.paginas.json`, 'utf8')) as any[]);
+const heb = (t: string) => (t.match(/[א-ת]/g) ?? []).length;
+const candidatas = nuevas.filter(p => heb(p.md ?? '') > 60 && heb(viejo.get(p.page) ?? '') > 30).sort((a, b) => a.page - b.page);
+const k = Math.min(8, candidatas.length);
+const muestra = Array.from({ length: k }, (_, i) => candidatas[Math.floor((i + 0.5) * candidatas.length / k)]);
+let ganaNueva = 0, ganaVieja = 0, empate = 0; const nV: number[] = [], nN: number[] = [];
+for (const p of muestra) {
+  const nueva = String(p.md).slice(0, 1800), vieja = String(viejo.get(p.page)).slice(0, 1800);
+  const nuevaPrimero = p.page % 2 === 0;
+  const [A, B] = nuevaPrimero ? [nueva, vieja] : [vieja, nueva];
+  const prompt = `Dos transcripciones de la MISMA página de una gramática de hebreo bíblico. Evalúa SÓLO el hebreo: letras correctas, vocales (niqud) en su lugar, palabras íntegras y en el orden correcto. Ignora el formato.\nJSON: {"A":0-10,"B":0-10,"mejor":"A"|"B"|"igual","nota":"…"}\n\n### A\n${A}\n\n### B\n${B}`;
+  const r = JSON.parse(await luna.generate({ prompt, responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 3000 }));
+  const notaN = nuevaPrimero ? r.A : r.B, notaV = nuevaPrimero ? r.B : r.A;
+  nN.push(notaN); nV.push(notaV);
+  const mejor = r.mejor === 'igual' ? 'igual' : ((r.mejor === 'A') === nuevaPrimero ? 'nueva' : 'vieja');
+  if (mejor === 'nueva') ganaNueva++; else if (mejor === 'vieja') ganaVieja++; else empate++;
+  console.log(`p.${p.page}: vieja ${notaV} · nueva ${notaN} → ${mejor} | ${String(r.nota ?? '').slice(0, 120)}`);
+}
+const prom = (a: number[]) => (a.reduce((s, x) => s + x, 0) / a.length).toFixed(1);
+console.log(`\n${k} páginas · nota hebreo: vieja ${prom(nV)} → nueva ${prom(nN)} · gana nueva ${ganaNueva}, vieja ${ganaVieja}, igual ${empate}`);
+process.exit(0);

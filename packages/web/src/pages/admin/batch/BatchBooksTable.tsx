@@ -18,7 +18,7 @@ const mensaje = (err: unknown) => (err instanceof Error ? err.message : String(e
  * «Aplicar» lo reemplaza si mejora sin perder nada (con respaldo). Con tramos
  * que fallaron, aplicar pide confirmación: lo que falte queda como estaba.
  */
-export function BatchBooksTable({ lote }: { lote: ResumenDeLote }) {
+export function BatchBooksTable({ lote, autores }: { lote: ResumenDeLote; autores?: ReadonlyMap<string, string> }) {
     const { t } = useTranslation('admin');
     const { comparar, aplicar } = useBatchActions();
     const [ocupados, setOcupados] = useState<ReadonlySet<string>>(new Set());
@@ -79,6 +79,9 @@ export function BatchBooksTable({ lote }: { lote: ResumenDeLote }) {
                                 <TableRow key={b.rid} data-testid={`libro-${b.rid}`}>
                                     <TableCell className="max-w-[18rem]">
                                         <div className="truncate font-medium">{b.titulo}</div>
+                                        {(b.autor || autores?.get(b.rid)) && (
+                                            <div className="truncate text-xs text-muted-foreground">{b.autor || autores?.get(b.rid)}</div>
+                                        )}
                                         {b.estado !== 'preparado' && (
                                             <div className="text-xs text-muted-foreground">{t(`batch.jobs.book.${b.estado}`)}{b.motivo ? `: ${b.motivo}` : ''}</div>
                                         )}

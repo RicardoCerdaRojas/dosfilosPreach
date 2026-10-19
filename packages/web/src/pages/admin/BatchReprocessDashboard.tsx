@@ -42,6 +42,8 @@ export function BatchReprocessDashboard() {
     const cambiarDueno = (uid: string) => { setDueno(uid); setElegidos(new Set()); };
     const [pestana, setPestana] = useState('candidatos');
     const lotes = useBatchJobs();
+    // Los lotes anteriores al 2026-10-19 no guardan el autor: se toma de los libros ya cargados.
+    const autores = useMemo(() => new Map((data?.candidatos ?? []).map(c => [c.id, c.autor])), [data]);
     const { lanzar } = useBatchActions();
     const enMarcha = (lotes.data ?? []).filter(l => l.estado === 'preparando' || l.estado === 'en-curso').length;
     const lanzarLote = (nombre: string, estimadoUsd: number) => {
@@ -98,7 +100,7 @@ export function BatchReprocessDashboard() {
                         <EstimateBar elegidos={seleccion} onLanzar={lanzarLote} lanzando={lanzar.isPending} />
                     </TabsContent>
                     <TabsContent value="enMarcha">
-                        <BatchJobs lotes={lotes.data} cargando={lotes.isLoading} error={lotes.error} />
+                        <BatchJobs lotes={lotes.data} cargando={lotes.isLoading} error={lotes.error} autores={autores} />
                     </TabsContent>
                     <TabsContent value="lotes">
                         <PastBatches lotes={data?.lotes ?? []} />

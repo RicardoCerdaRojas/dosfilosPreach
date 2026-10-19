@@ -21,7 +21,7 @@ export interface ResumenDeLote {
     /** Páginas que «Reintentar» volvería a pedir, como mucho. */
     paginasConFallas: number;
     libros: Array<{
-        rid: string; titulo: string; estado: 'por-preparar' | 'preparado' | 'saltado'; motivo: string | null; paginas: number | null;
+        rid: string; titulo: string; autor?: string | null; estado: 'por-preparar' | 'preparado' | 'saltado'; motivo: string | null; paginas: number | null;
         tramos: Record<EstadoDeTramo, number>;
         fallas: string[];
         listo: boolean;

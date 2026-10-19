@@ -150,5 +150,12 @@ describe('panel del lote (PR 3): comparar y aplicar', () => {
         expect(fila.textContent).toContain('batch.apply.moreSections:{"count":13}');
         expect(fila.textContent).not.toContain('61–80');
     });
+
+    it('muestra el autor: el del lote o, si el lote es viejo, el de la biblioteca', () => {
+        render(<BatchBooksTable lote={resumen({ libros: [libro('N', { autor: 'Schreiner' }), libro('V')] })} autores={new Map([['V', 'Calvino'], ['N', 'otro']])} />);
+        expect(screen.getByTestId('libro-N').textContent).toContain('Schreiner');
+        expect(screen.getByTestId('libro-N').textContent).not.toContain('otro');
+        expect(screen.getByTestId('libro-V').textContent).toContain('Calvino');
+    });
 });
 

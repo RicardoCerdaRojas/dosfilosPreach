@@ -14,7 +14,9 @@ describe('lanzar', () => {
         x.recurso('D', { textExtractionStatus: 'processing' });
         await expect(lanzar(x.d, ['A', 'C', 'D'])).rejects.toMatchObject({ codigo: 'failed-precondition', message: expect.stringMatching(/otra biblioteca.*se está extrayendo/) });
         await expect(lanzarLote(x.d, { nombre: 'Mal Nombre', dueno: 'u', ids: ['A'], estimadoUsd: 0, por: 'a', email: null })).rejects.toMatchObject({ codigo: 'invalid-argument' });
+        x.recurso('A', { author: 'Juan Calvino' });
         expect(await lanzar(x.d)).toEqual({ id: 'b6', libros: 2 });
+        expect(x.lote().libros.map(l => l.autor)).toEqual(['Juan Calvino', '']);
         expect(x.encolados).toEqual([{ loteId: 'b6', rid: 'A', ronda: 1 }, { loteId: 'b6', rid: 'B', ronda: 1 }]);
         await expect(lanzar(x.d)).rejects.toMatchObject({ codigo: 'already-exists' });
     });

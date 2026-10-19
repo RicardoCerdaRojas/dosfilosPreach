@@ -65,6 +65,8 @@ export interface TramoDelLote extends Tramo {
 export interface LibroDelLote {
     rid: string;
     titulo: string;
+    /** Para reconocer el libro en el panel (los lotes anteriores al 2026-10-19 no lo tienen). */
+    autor?: string;
     uid: string;
     totalPaginas: number | null;
     estado: 'por-preparar' | 'preparado' | 'saltado';
@@ -165,7 +167,7 @@ const rondaNueva = (numero: number, ahora: number): RondaDelLote => ({
 
 export function nuevoLote(p: {
     id: string; dueno: string; creadoPor: string; creadoPorEmail: string | null;
-    libros: Array<{ rid: string; titulo: string; uid: string }>;
+    libros: Array<{ rid: string; titulo: string; autor?: string; uid: string }>;
     estimadoUsd: number; porTramo: number; ahora: number;
 }): Lote {
     return {
@@ -664,7 +666,7 @@ export interface ResumenDeLote {
     /** Páginas que «Reintentar» volvería a pedir, como mucho (para su confirmación). */
     paginasConFallas: number;
     libros: Array<{
-        rid: string; titulo: string; estado: LibroDelLote['estado']; motivo: string | null; paginas: number | null;
+        rid: string; titulo: string; autor: string | null; estado: LibroDelLote['estado']; motivo: string | null; paginas: number | null;
         tramos: Record<EstadoDeTramo, number>;
         fallas: string[];
         /** Se puede aplicar ya (con `incompletos` > 0, sólo aceptándolo). */
@@ -700,7 +702,7 @@ export function resumirLote(l: Lote): ResumenDeLote {
             const delLibro = l.tramos.filter(x => x.rid === b.rid);
             const listo = listoParaAplicar(l, b.rid);
             return {
-                rid: b.rid, titulo: b.titulo, estado: b.estado, motivo: b.motivo ?? null, paginas: b.totalPaginas,
+                rid: b.rid, titulo: b.titulo, autor: b.autor || null, estado: b.estado, motivo: b.motivo ?? null, paginas: b.totalPaginas,
                 tramos: contar(delLibro),
                 fallas: delLibro.filter(x => x.estado === 'fallo' || x.estado === 'incompleto')
                     .slice(0, 8).map(x => `${x.desde}–${x.hasta}: ${x.motivo ?? x.estado}`),

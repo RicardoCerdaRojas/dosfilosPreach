@@ -111,7 +111,7 @@ export async function lanzarLote(d: Dependencias, p: {
         else if (r.textExtractionStatus === 'processing') problemas.push(`${titulo}: se está extrayendo`);
         else if (VERSIONES_EXCLUIDAS.has(r.extractionVersion)) problemas.push(`${titulo}: es texto de dominio público`);
         else if (!r.storageUrl) problemas.push(`${titulo}: no tiene el PDF`);
-        return { rid: s.id, titulo, uid: String(r?.userId ?? '') };
+        return { rid: s.id, titulo, autor: String(r?.author ?? '').slice(0, 120), uid: String(r?.userId ?? '') };
     });
     if (problemas.length > 0) throw new ErrorDelLote('failed-precondition', `No entran en un lote: ${problemas.slice(0, 5).join('; ')}`);
 
