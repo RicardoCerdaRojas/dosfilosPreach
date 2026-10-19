@@ -21,6 +21,7 @@ const TONO: Record<Motivo, string> = {
     yaReprocesado: NEUTRO,
     grande: 'bg-warning-subtle text-warning-subtle-foreground',
     enProceso: NEUTRO,
+    sinPdf: NEUTRO,
 };
 
 const mb = (bytes: number | null) => (bytes === null ? '—' : `${(bytes / 1024 / 1024).toFixed(bytes > 10 * 1024 * 1024 ? 0 : 1)} MB`);

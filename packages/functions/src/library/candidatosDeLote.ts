@@ -27,11 +27,18 @@ export interface CandidatoCrudo {
     extractionModel: string | null;
     textExtractionStatus: string | null;
     reprocesadoEnLote: { lote: string; fecha: string | null; motivo: string | null } | null;
+    /**
+     * Hay un PDF que leer. Las entradas del catálogo del sistema
+     * (`isSystemSource`: confesiones, credos, el SBLGNT) son sólo la ficha,
+     * sin archivo: no se reprocesan (antes salían «Sin extraer» y recomendadas).
+     */
+    tienePdf: boolean;
 }
 
 const CAMPOS = [
     'title', 'author', 'mimeType', 'sizeBytes', 'pdfPageCount', 'pageCount', 'paginasFaltantes',
     'textoEstructuradoVacio', 'extractionVersion', 'extractionModel', 'textExtractionStatus', 'reprocesadoEnLote',
+    'isSystemSource', 'storageUrl',
 ] as const;
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -61,6 +68,7 @@ export function aCandidato(id: string, d: FirebaseFirestore.DocumentData): Candi
         extractionModel: str(d.extractionModel),
         textExtractionStatus: str(d.textExtractionStatus),
         reprocesadoEnLote: lote && str(lote.lote) ? { lote: str(lote.lote)!, fecha: fecha(lote.fecha), motivo: str(lote.motivo) } : null,
+        tienePdf: d.isSystemSource !== true && !!str(d.storageUrl),
     };
 }
 

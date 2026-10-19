@@ -819,7 +819,8 @@
       "enProceso": "Se está extrayendo",
       "fallido": "La extracción falló",
       "sinExtraer": "Sin extraer",
-      "sinMedir": "Sin medir"
+      "sinMedir": "Sin medir",
+      "sinPdf": "Ficha del catálogo, sin PDF"
     },
     "estimate": {
       "selection_one": "{{count}} libro",
