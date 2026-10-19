@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useBatchActions, type ResumenDeLote } from '@/hooks/admin/useBatchJobs';
 import { aplicablesSinPreguntar } from '@/lib/loteReport';
+import { RevisarEscritura } from './RevisarEscritura';
 
 type Libro = ResumenDeLote['libros'][number];
 const mensaje = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -122,9 +123,12 @@ export function BatchBooksTable({ lote, autores }: { lote: ResumenDeLote; autore
                                     </TableCell>
                                     <TableCell className="whitespace-nowrap text-right">
                                         {b.aplicado?.reemplazado ? (
-                                            <Badge variant="secondary" className="bg-success-subtle font-normal text-success-subtle-foreground">
-                                                <Check className="mr-1 h-3 w-3" />{t('batch.apply.applied')}
-                                            </Badge>
+                                            <div className="inline-flex flex-col items-end gap-1">
+                                                <Badge variant="secondary" className="bg-success-subtle font-normal text-success-subtle-foreground">
+                                                    <Check className="mr-1 h-3 w-3" />{t('batch.apply.applied')}
+                                                </Badge>
+                                                <RevisarEscritura rid={b.rid} lote={lote.id} titulo={b.titulo} />
+                                            </div>
                                         ) : b.aplicado && !b.listo ? (
                                             // Se comparó al aplicar y no mejoraba: neutro, no un «hecho» verde.
                                             <Badge variant="secondary" className="bg-muted font-normal text-foreground">{t('batch.apply.unchanged')}</Badge>

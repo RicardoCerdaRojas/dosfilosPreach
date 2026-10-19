@@ -4,6 +4,7 @@ import { ordenarCandidatos, type CandidatoCrudo } from '@/lib/loteReport';
 
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k), i18n: { language: 'es' } }) }));
 const acciones = {
+    revisarEscritura: { mutate: vi.fn(), isPending: false, variables: undefined as unknown },
     comparar: { mutateAsync: vi.fn(async () => ({})) },
     aplicar: { mutateAsync: vi.fn(async () => ({ reemplazado: true, motivo: 'faltantes 3 → 0' })) },
 };
@@ -156,6 +157,26 @@ describe('panel del lote (PR 3): comparar y aplicar', () => {
         expect(screen.getByTestId('libro-N').textContent).toContain('Schreiner');
         expect(screen.getByTestId('libro-N').textContent).not.toContain('otro');
         expect(screen.getByTestId('libro-V').textContent).toContain('Calvino');
+    });
+
+    it('«Revisar griego y hebreo»: revisa sin escribir y, si hay páginas, pide confirmación para reponerlas', async () => {
+        const { RevisarEscritura } = await import('../RevisarEscritura');
+        const llamadas: Array<{ escribir: boolean }> = [];
+        acciones.revisarEscritura.mutate = vi.fn((datos: { escribir: boolean }, o: { onSuccess: (r: unknown) => void }) => {
+            llamadas.push(datos);
+            o.onSuccess(datos.escribir
+                ? { paginas: [], desalineado: false, repuestas: [301, 302, 304], respaldo: 'x' }
+                : { paginas: [301, 302, 304].map(p => ({ pagina: p, escritura: "griego", antes: 9, despues: 0 })), total: 3, desalineado: false, repuestas: [], respaldo: "x" });
+        }) as never;
+        render(<RevisarEscritura rid="S" lote="prueba-2" titulo="Schreiner" />);
+        fireEvent.click(screen.getByText('batch.restore.check'));
+        expect(llamadas).toEqual([{ rid: 'S', lote: 'prueba-2', escribir: false }]);
+        expect(screen.getByText('batch.restore.found:{"count":3,"paginas":"301, 302, 304"}')).toBeTruthy();
+        fireEvent.click(screen.getByText('batch.restore.restore:{"count":3}'));
+        expect(llamadas).toHaveLength(1);
+        fireEvent.click(screen.getAllByText('batch.restore.restore:{"count":3}').at(-1)!);
+        expect(llamadas.at(-1)).toEqual({ rid: 'S', lote: 'prueba-2', escribir: true });
+        expect(screen.getByText('batch.restore.restored:{"count":3,"paginas":"301, 302, 304"}')).toBeTruthy();
     });
 });
 

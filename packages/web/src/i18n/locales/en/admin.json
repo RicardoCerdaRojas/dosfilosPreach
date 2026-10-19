@@ -943,6 +943,22 @@
       "moreSections_other": "and {{count}} more sections",
       "keptPages_one": "{{count}} page keeps the current text (the new one lost Greek or Hebrew): {{paginas}}",
       "keptPages_other": "{{count}} pages keep the current text (the new one lost Greek or Hebrew): {{paginas}}"
+    },
+    "restore": {
+      "check": "Check Greek and Hebrew",
+      "none": "No Greek or Hebrew lost.",
+      "misaligned": "The backup doesn't match page by page: nothing is restored.",
+      "found_one": "{{count}} page lost Greek or Hebrew: {{paginas}}",
+      "found_other": "{{count}} pages lost Greek or Hebrew: {{paginas}}",
+      "restore_one": "Restore {{count}} page",
+      "restore_other": "Restore {{count}} pages",
+      "restored_one": "Restored {{count}} page: {{paginas}}",
+      "restored_other": "Restored {{count}} pages: {{paginas}}",
+      "done_one": "“{{titulo}}”: {{count}} page restored; the index rebuilds on its own.",
+      "done_other": "“{{titulo}}”: {{count}} pages restored; the index rebuilds on its own.",
+      "confirmTitle": "Restore pages of “{{titulo}}”?",
+      "confirmBody_one": "{{count}} page is restored from the backup taken before batch “{{lote}}”. The rest of the book stays as it is. A backup of the current text is saved first.",
+      "confirmBody_other": "{{count}} pages are restored from the backup taken before batch “{{lote}}”. The rest of the book stays as it is. A backup of the current text is saved first."
     }
   }
 }

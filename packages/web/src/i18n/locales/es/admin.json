@@ -943,6 +943,22 @@
       "moreSections_other": "y {{count}} tramos más",
       "keptPages_one": "{{count}} página conserva el texto anterior (el nuevo perdía griego o hebreo): {{paginas}}",
       "keptPages_other": "{{count}} páginas conservan el texto anterior (el nuevo perdía griego o hebreo): {{paginas}}"
+    },
+    "restore": {
+      "check": "Revisar griego y hebreo",
+      "none": "Sin pérdidas de griego ni hebreo.",
+      "misaligned": "El respaldo no se corresponde página a página: no se repone nada.",
+      "found_one": "{{count}} página perdió griego o hebreo: {{paginas}}",
+      "found_other": "{{count}} páginas perdieron griego o hebreo: {{paginas}}",
+      "restore_one": "Reponer {{count}} página",
+      "restore_other": "Reponer {{count}} páginas",
+      "restored_one": "Repuesta {{count}} página: {{paginas}}",
+      "restored_other": "Repuestas {{count}} páginas: {{paginas}}",
+      "done_one": "«{{titulo}}»: repuesta {{count}} página; el índice se rehace solo.",
+      "done_other": "«{{titulo}}»: repuestas {{count}} páginas; el índice se rehace solo.",
+      "confirmTitle": "¿Reponer páginas de «{{titulo}}»?",
+      "confirmBody_one": "Se devuelve {{count}} página desde el respaldo de antes del lote «{{lote}}». El resto del libro queda como está. Antes se guarda un respaldo del texto actual.",
+      "confirmBody_other": "Se devuelven {{count}} páginas desde el respaldo de antes del lote «{{lote}}». El resto del libro queda como está. Antes se guarda un respaldo del texto actual."
     }
   }
 }

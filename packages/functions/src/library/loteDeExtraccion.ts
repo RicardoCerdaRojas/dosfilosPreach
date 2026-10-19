@@ -381,3 +381,21 @@ export function listaDePaginas(tramos: ReadonlyArray<Tramo>, max = 12): string {
     const partes = tramos.map(t => (t.desde === t.hasta ? `${t.desde}` : `${t.desde}–${t.hasta}`));
     return partes.length > max ? `${partes.slice(0, max).join(', ')} y ${partes.length - max} más` : partes.join(', ');
 }
+
+/**
+ * El texto de un libro página por página, desde sus dos formas guardadas: por
+ * página, la más completa (en los libros de LlamaParse el md trae sólo marcas
+ * y el texto vive en `textContent`). Si el `textContent` está recortado (900
+ * KB), su última página puede estar cortada a la mitad y no se usa.
+ */
+export function paginasMasCompletas(md: string, textContent: string, textContentRecortado: boolean): Map<number, string> {
+    const delMd = paginasDelTexto(md);
+    const delTc = paginasDelTexto(textContent);
+    if (textContentRecortado) {
+        const ultima = Math.max(-1, ...delTc.keys());
+        if (ultima >= 0) delTc.delete(ultima);
+    }
+    const largo = (t: string | undefined) => (t ?? '').replace(/\s/g, '').length;
+    return new Map([...new Set([...delMd.keys(), ...delTc.keys()])].map(n => [n,
+        largo(delMd.get(n)) >= largo(delTc.get(n)) ? delMd.get(n)! : delTc.get(n)!]));
+}

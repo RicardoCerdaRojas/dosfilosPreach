@@ -33,7 +33,8 @@ export type AdminAuditAction =
     | 'library.batch_launch'
     | 'library.batch_retry'
     | 'library.batch_cancel'
-    | 'library.batch_apply';
+    | 'library.batch_apply'
+    | 'library.batch_restore_pages';
 
 interface WriteAuditLogParams {
     /** Firebase UID of the admin who triggered the action. */

@@ -10,6 +10,7 @@ import { estimateUsd } from '../llm/llmCost';
 import { recordLlmUsage } from '../llm/llmUsageRecorder';
 import { geminiDelLote } from './geminiDelLote';
 import { aplicarLibro, compararLibro } from './aplicarLote';
+import { revisarOReponer } from './reponerPaginas';
 import { COLECCION_DE_LOTES, resumirLote, type Lote } from './estadoDelLote';
 import {
     abandonarLibroEnTarea, cancelarLote, ErrorDelLote, lanzarLote, procesarLibro, reintentarLote, sondearLote,
@@ -162,6 +163,21 @@ export const applyBatchBook = onCall({ ...appCheckCallableOptions(), timeoutSeco
     return aplicarLibro(dependenciasSinGemini(), { loteId, rid, aceptarIncompletos, por: yo.uid }, r => writeAuditLogAndWait({
         actorUid: yo.uid, actorEmail: yo.email ?? undefined, action: 'library.batch_apply', targetUid: dueno,
         details: { lote: loteId, rid, aceptarIncompletos, motivo: r.motivo },
+    })).catch(comoHttps);
+});
+
+/**
+ * «Revisar griego y hebreo» (escribir: false) y «Reponer páginas» (escribir:
+ * true) de un libro ya aplicado, contra su respaldo de antes del lote. Vale
+ * para los lotes del panel y para los de la terminal (biblioteca1…5).
+ */
+export const restoreBatchPages = onCall({ ...appCheckCallableOptions(), timeoutSeconds: 300, memory: '2GiB' }, async request => {
+    const yo = await exigirSuperAdmin(request);
+    const data = (request.data ?? {}) as { rid?: unknown; lote?: unknown; escribir?: unknown };
+    const p = { rid: String(data.rid ?? ''), lote: String(data.lote ?? ''), escribir: data.escribir === true };
+    return revisarOReponer(dependenciasSinGemini(), p, r => writeAuditLogAndWait({
+        actorUid: yo.uid, actorEmail: yo.email ?? undefined, action: 'library.batch_restore_pages', targetUid: r.dueno,
+        details: { lote: p.lote, rid: p.rid, paginas: r.repuestas },
     })).catch(comoHttps);
 });
 
