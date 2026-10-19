@@ -27,8 +27,9 @@ const TONO: Record<EstadoDelLote, string> = {
  * estimado y los libros. «Reintentar» abre una ronda con lo que falló;
  * «Cancelar» corta lo que esté en curso (lo ya leído se conserva).
  */
-export function BatchJobCard({ lote, onReintentar, onCancelar, ocupado }: {
+export function BatchJobCard({ lote, onReintentar, onCancelar, ocupado, autores }: {
     lote: ResumenDeLote;
+    autores?: ReadonlyMap<string, string>;
     onReintentar: () => void;
     onCancelar: () => void;
     ocupado: boolean;
@@ -97,7 +98,7 @@ export function BatchJobCard({ lote, onReintentar, onCancelar, ocupado }: {
                     {t('batch.jobs.books', { count: lote.libros.length })}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-2">
-                    <BatchBooksTable lote={lote} />
+                    <BatchBooksTable lote={lote} autores={autores} />
                 </CollapsibleContent>
             </Collapsible>
 

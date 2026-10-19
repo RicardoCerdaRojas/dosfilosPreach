@@ -1,6 +1,6 @@
 import type { GeminiPage } from './geminiExtraction';
 import {
-    leerRespuestaDeTramo, partirTramo, separarEnBlanco, sinPaginas, tramosQueFaltan, unirPaginas, type Tramo,
+    leerRespuestaDeTramo, listaDePaginas, partirTramo, separarEnBlanco, sinPaginas, tramosQueFaltan, unirPaginas, type Tramo,
 } from './loteDeExtraccion';
 
 /**
@@ -65,6 +65,8 @@ export interface TramoDelLote extends Tramo {
 export interface LibroDelLote {
     rid: string;
     titulo: string;
+    /** Para reconocer el libro en el panel (los lotes anteriores al 2026-10-19 no lo tienen). */
+    autor?: string;
     uid: string;
     totalPaginas: number | null;
     estado: 'por-preparar' | 'preparado' | 'saltado';
@@ -86,6 +88,10 @@ export interface ComparacionGuardada {
     nueva: { faltantes: number; hebreo: number; griego: number; textoVacio: boolean };
     /** Páginas que se rellenan con la capa de texto del PDF (el modelo no las leyó). */
     rellenadas: number;
+    /** Páginas que conservan el texto actual porque el nuevo perdía griego o hebreo (`conservarEscritura`). */
+    conservadas?: Array<{ pagina: number; escritura: 'griego' | 'hebreo'; antes: number; despues: number }>;
+    /** El total (la lista se guarda con tope de 40). */
+    conservadasTotal?: number;
     /** Rondas leídas cuando se comparó: si se lee otra, la comparación quedó vieja. */
     rondasLeidas: number;
     calculada: number;
@@ -161,7 +167,7 @@ const rondaNueva = (numero: number, ahora: number): RondaDelLote => ({
 
 export function nuevoLote(p: {
     id: string; dueno: string; creadoPor: string; creadoPorEmail: string | null;
-    libros: Array<{ rid: string; titulo: string; uid: string }>;
+    libros: Array<{ rid: string; titulo: string; autor?: string; uid: string }>;
     estimadoUsd: number; porTramo: number; ahora: number;
 }): Lote {
     return {
@@ -413,7 +419,9 @@ export function leerRonda(l: Lote, numero: number, estadoJob: string, respuestas
         lectura.paginas.set(t.rid, [...(lectura.paginas.get(t.rid) ?? []), ...leido.paginas]);
         const faltan = tramosQueFaltan(t, leido.paginas);
         lectura.cambios.push(faltan.length > 0
-            ? { indice: t.indice, estado: 'incompleto', faltan, motivo: `devolvió ${leido.paginas.length} de ${t.hasta - t.desde + 1}` }
+            // Qué páginas faltan, no cuántas volvieron: «devolvió 20 de 20» se
+            // leía como si no faltara nada cuando algunas volvieron en blanco.
+            ? { indice: t.indice, estado: 'incompleto', faltan, motivo: `sin leer: ${listaDePaginas(faltan)}` }
             : { indice: t.indice, estado: 'ok' });
     }
     return lectura;
@@ -480,7 +488,7 @@ export function revisarTramosOk(l: Lote, rid: string, paginas: ReadonlyArray<Gem
         if (faltan.length === 0) continue;
         t.estado = 'incompleto';
         t.faltan = faltan;
-        t.motivo = recortar(`páginas en blanco: ${faltan.map(f => (f.desde === f.hasta ? `${f.desde}` : `${f.desde}-${f.hasta}`)).join(', ')}`);
+        t.motivo = recortar(`sin leer: ${listaDePaginas(faltan)}`);
         cambiados++;
     }
     return cambiados;
@@ -658,7 +666,7 @@ export interface ResumenDeLote {
     /** Páginas que «Reintentar» volvería a pedir, como mucho (para su confirmación). */
     paginasConFallas: number;
     libros: Array<{
-        rid: string; titulo: string; estado: LibroDelLote['estado']; motivo: string | null; paginas: number | null;
+        rid: string; titulo: string; autor: string | null; estado: LibroDelLote['estado']; motivo: string | null; paginas: number | null;
         tramos: Record<EstadoDeTramo, number>;
         fallas: string[];
         /** Se puede aplicar ya (con `incompletos` > 0, sólo aceptándolo). */
@@ -694,7 +702,7 @@ export function resumirLote(l: Lote): ResumenDeLote {
             const delLibro = l.tramos.filter(x => x.rid === b.rid);
             const listo = listoParaAplicar(l, b.rid);
             return {
-                rid: b.rid, titulo: b.titulo, estado: b.estado, motivo: b.motivo ?? null, paginas: b.totalPaginas,
+                rid: b.rid, titulo: b.titulo, autor: b.autor || null, estado: b.estado, motivo: b.motivo ?? null, paginas: b.totalPaginas,
                 tramos: contar(delLibro),
                 fallas: delLibro.filter(x => x.estado === 'fallo' || x.estado === 'incompleto')
                     .slice(0, 8).map(x => `${x.desde}–${x.hasta}: ${x.motivo ?? x.estado}`),

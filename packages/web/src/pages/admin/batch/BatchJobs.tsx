@@ -8,7 +8,13 @@ import { BatchJobCard } from './BatchJobCard';
 const mensaje = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 /** Los lotes lanzados desde el panel, el más nuevo primero, con sus botones. */
-export function BatchJobs({ lotes, cargando, error }: { lotes: ResumenDeLote[] | undefined; cargando: boolean; error: unknown }) {
+export function BatchJobs({ lotes, cargando, error, autores }: {
+    lotes: ResumenDeLote[] | undefined;
+    cargando: boolean;
+    error: unknown;
+    /** Autor por libro, para los lotes que no lo guardan. */
+    autores?: ReadonlyMap<string, string>;
+}) {
     const { t } = useTranslation('admin');
     const { reintentar, cancelar } = useBatchActions();
     const ocupado = (id: string) => (reintentar.isPending && reintentar.variables?.loteId === id) || (cancelar.isPending && cancelar.variables?.loteId === id);
@@ -24,6 +30,7 @@ export function BatchJobs({ lotes, cargando, error }: { lotes: ResumenDeLote[] |
                 <BatchJobCard
                     key={l.id}
                     lote={l}
+                    autores={autores}
                     ocupado={ocupado(l.id)}
                     onReintentar={() => reintentar.mutate({ loteId: l.id }, {
                         onSuccess: r => toast.success(r.ronda === null

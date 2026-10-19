@@ -282,3 +282,102 @@ export function compararExtracciones(
 export function medirTexto(texto: string, totalPaginas: number, capa: ReadonlyArray<number> | null, respaldo?: string): MedicionDeExtraccion {
     return medirExtraccion(texto, totalPaginas, capa, respaldo);
 }
+
+/**
+ * El texto actual de un libro, página por página, desde cualquiera de sus dos
+ * formas: el `structured.md` (`<!-- page: N -->`, páginas separadas por
+ * `---`) o el `textContent` (`[PAGE N]`). Sin marcas, vacío.
+ */
+export function paginasDelTexto(texto: string): Map<number, string> {
+    const paginas = new Map<number, string>();
+    const marca = /<!--\s*page:\s*(\d+)\s*-->|\[PAGE (\d+)\]/g;
+    const cortes: Array<{ pagina: number; desde: number; hasta: number }> = [];
+    for (let m = marca.exec(texto); m; m = marca.exec(texto)) {
+        cortes.push({ pagina: Number(m[1] ?? m[2]), desde: m.index + m[0].length, hasta: texto.length });
+        if (cortes.length > 1) cortes[cortes.length - 2]!.hasta = m.index;
+    }
+    for (const c of cortes) {
+        const contenido = texto.slice(c.desde, c.hasta).replace(/\n\s*---\s*$/, '').trim();
+        // Una página repetida (no debería) conserva la versión con más texto.
+        if ((paginas.get(c.pagina)?.length ?? -1) < contenido.length) paginas.set(c.pagina, contenido);
+    }
+    return paginas;
+}
+
+/**
+ * Palabras de escritura que se cuentan por página: griego con al menos una
+ * letra que no se confunde con una latina (el OCR viejo leía «ΙΝΤRΟDUCΤΙΟΝ»
+ * con Ι Ν Τ Ο griegas: eso no es griego), y hebreo con consonantes (los
+ * puntos y acentos solos no cuentan: con y sin acentos no es «perder»). Tres
+ * letras como mínimo: las letras sueltas («ᾷ», «μ») no son palabras leídas.
+ */
+const PALABRA_GRIEGA = /[\u0370-\u03FF\u1F00-\u1FFF][\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F]{2,}/g;
+const GRIEGA_DISTINTIVA = /[\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u03B1-\u03BC\u03BE-\u03C9\u1F00-\u1FFF]/;
+const PALABRA_HEBREA = /[\u0590-\u05FF]*[\u05D0-\u05EA][\u0590-\u05FF]*[\u05D0-\u05EA][\u0590-\u05FF]*/g;
+const palabras = (texto: string, escritura: 'griego' | 'hebreo') => escritura === 'griego'
+    ? (texto.match(PALABRA_GRIEGA) ?? []).filter(p => GRIEGA_DISTINTIVA.test(p)).length
+    : (texto.match(PALABRA_HEBREA) ?? []).length;
+
+/** Debajo de esto, una página no tiene escritura que proteger. */
+export const MIN_PALABRAS_POR_PAGINA = 3;
+
+/**
+ * Si la página vieja y la nueva son la MISMA página del libro: al menos el
+ * 60 % de las palabras latinas (4+ letras) de la nueva están en la vieja.
+ * Una extracción vieja con la numeración corrida (el modelo numeraba por el
+ * folio impreso; pdf-parse partía en trozos iguales) tiene la «p. 120» en
+ * otro lugar del libro: conservarla duplicaría una página y perdería otra.
+ * Con menos de 8 palabras latinas no se puede saber, y no se conserva.
+ */
+function mismaPagina(vieja: string, nueva: string): boolean {
+    const latinas = (t: string) => (t.toLowerCase().match(/[a-záéíóúñü]{4,}/g) ?? []);
+    const enNueva = [...new Set(latinas(nueva))];
+    if (enNueva.length < 8) return false;
+    const enVieja = new Set(latinas(vieja));
+    return enNueva.filter(p => enVieja.has(p)).length >= enNueva.length * 0.6;
+}
+
+export interface PaginaConservada { pagina: number; escritura: 'griego' | 'hebreo'; antes: number; despues: number }
+
+/**
+ * La lectura nueva puede perder griego o hebreo en unas pocas páginas aunque
+ * mejore el libro: en Schreiner (1-2 Pedro, lote `prueba-2`, 2026-10-19) la
+ * nota 78 de la p. 302 decía «The term φθορᾷ … the parallel term
+ * φθαρήσονται» y la nueva «The term ᾷ … the parallel term shows»: pp. 301,
+ * 302 y 319. En el libro entero era un 2,5 %, y la regla de
+ * `compararExtracciones` (10 % del total) no lo veía.
+ *
+ * Una página nueva con menos de la mitad de las palabras griegas o hebreas
+ * de la actual, si es la misma página, conserva el texto actual. Se protege
+ * la página, no el libro. Si son muchas (más de 5 y del 3 % del libro), no es
+ * griego perdido sino otra cosa (numeración corrida, otro PDF): `desalineado`,
+ * no se conserva nada y quien llama no debe reemplazar.
+ */
+export function conservarEscritura(
+    nuevas: ReadonlyArray<GeminiPage>,
+    actuales: ReadonlyMap<number, string>,
+): { paginas: GeminiPage[]; conservadas: PaginaConservada[]; desalineado: boolean } {
+    const conservadas: PaginaConservada[] = [];
+    const paginas = nuevas.map(p => {
+        const actual = actuales.get(p.page);
+        if (!actual) return p;
+        const nueva = (p.md && p.md.trim()) || p.text || '';
+        for (const escritura of ['griego', 'hebreo'] as const) {
+            const antes = palabras(actual, escritura);
+            const despues = palabras(nueva, escritura);
+            if (antes >= MIN_PALABRAS_POR_PAGINA && despues < antes / 2 && mismaPagina(actual, nueva)) {
+                conservadas.push({ pagina: p.page, escritura, antes, despues });
+                return { page: p.page, text: markdownAPlano(actual), md: actual };
+            }
+        }
+        return p;
+    });
+    const desalineado = conservadas.length > Math.max(5, nuevas.length * 0.03);
+    return desalineado ? { paginas: [...nuevas], conservadas, desalineado } : { paginas, conservadas, desalineado };
+}
+
+/** «2, 7–9, 11»: páginas sueltas y tramos, para un motivo que se lee. */
+export function listaDePaginas(tramos: ReadonlyArray<Tramo>, max = 12): string {
+    const partes = tramos.map(t => (t.desde === t.hasta ? `${t.desde}` : `${t.desde}–${t.hasta}`));
+    return partes.length > max ? `${partes.slice(0, max).join(', ')} y ${partes.length - max} más` : partes.join(', ');
+}

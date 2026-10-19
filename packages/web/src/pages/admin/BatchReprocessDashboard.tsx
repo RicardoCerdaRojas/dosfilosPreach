@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Layers, Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -15,6 +14,7 @@ import { CandidatesTable } from './batch/CandidatesTable';
 import { EstimateBar } from './batch/EstimateBar';
 import { PastBatches } from './batch/PastBatches';
 import { BatchJobs } from './batch/BatchJobs';
+import { BarraDePagina } from '@/components/layout/barra-de-pagina';
 
 /**
  * Reproceso en lote (docs/FASE_LOTE_SUPER_ADMIN_2026-10.md, PR 1 y 2). Los
@@ -42,6 +42,8 @@ export function BatchReprocessDashboard() {
     const cambiarDueno = (uid: string) => { setDueno(uid); setElegidos(new Set()); };
     const [pestana, setPestana] = useState('candidatos');
     const lotes = useBatchJobs();
+    // Los lotes anteriores al 2026-10-19 no guardan el autor: se toma de los libros ya cargados.
+    const autores = useMemo(() => new Map((data?.candidatos ?? []).map(c => [c.id, c.autor])), [data]);
     const { lanzar } = useBatchActions();
     const enMarcha = (lotes.data ?? []).filter(l => l.estado === 'preparando' || l.estado === 'en-curso').length;
     const lanzarLote = (nombre: string, estimadoUsd: number) => {
@@ -57,36 +59,31 @@ export function BatchReprocessDashboard() {
     };
 
     return (
-        <div className="p-4 sm:p-6 space-y-6 max-w-6xl">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <Link to="/dashboard/admin" className="text-muted-foreground hover:text-foreground" aria-label={t('common.back')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                    <div>
-                        <h1 className="text-xl font-semibold flex items-center gap-2"><Layers className="h-5 w-5" /> {t('batch.title')}</h1>
-                        <p className="text-sm text-muted-foreground">{t('batch.subtitle')}</p>
-                    </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    {data && data.duenos.length > 0 && (
-                        <>
-                            <Label htmlFor="biblioteca-del-lote" className="text-sm text-muted-foreground">{t('batch.owner')}</Label>
-                            <Select value={dueno ?? data.dueno} onValueChange={cambiarDueno}>
-                                <SelectTrigger id="biblioteca-del-lote" className="w-64"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {data.duenos.map(d => <SelectItem key={d.uid} value={d.uid}>{d.email}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </>
-                    )}
-                    <Button variant="outline" size="sm" onClick={() => void refetch()} disabled={isFetching}>
-                        {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        <span className="ml-2">{t('common.refresh')}</span>
-                    </Button>
-                </div>
-            </div>
-
+        <>
+        {/* Barra única (docs/FASE_BARRA_UNICA_2026-10.md): el título, la
+            biblioteca y «Actualizar» van arriba; la bajada, al ⓘ de cada acción. */}
+        <BarraDePagina
+            titulo={t('batch.title')}
+            acciones={<>
+                {data && data.duenos.length > 0 && (
+                    <>
+                        <Label htmlFor="biblioteca-del-lote" className="hidden text-sm text-muted-foreground md:inline">{t('batch.owner')}</Label>
+                        <Select value={dueno ?? data.dueno} onValueChange={cambiarDueno}>
+                            <SelectTrigger id="biblioteca-del-lote" aria-label={t('batch.owner')} className="h-8 w-44 sm:w-60"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {data.duenos.map(d => <SelectItem key={d.uid} value={d.uid}>{d.email}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </>
+                )}
+                <Button variant="outline" size="sm" onClick={() => { void refetch(); void lotes.refetch(); }} disabled={isFetching || lotes.isFetching} aria-label={t('common.refresh')}>
+                    {isFetching || lotes.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">{t('common.refresh')}</span>
+                </Button>
+            </>}
+        />
+        {/* Todo el ancho: con `max-w-6xl` la tabla de libros cortaba los botones. */}
+        <div className="w-full space-y-5 px-2 py-3 sm:px-4 lg:px-6">
             {cargando && <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
             {error && <Card className="p-4 border-destructive text-sm text-foreground">{t('batch.loadError')}</Card>}
 
@@ -103,7 +100,7 @@ export function BatchReprocessDashboard() {
                         <EstimateBar elegidos={seleccion} onLanzar={lanzarLote} lanzando={lanzar.isPending} />
                     </TabsContent>
                     <TabsContent value="enMarcha">
-                        <BatchJobs lotes={lotes.data} cargando={lotes.isLoading} error={lotes.error} />
+                        <BatchJobs lotes={lotes.data} cargando={lotes.isLoading} error={lotes.error} autores={autores} />
                     </TabsContent>
                     <TabsContent value="lotes">
                         <PastBatches lotes={data?.lotes ?? []} />
@@ -111,5 +108,6 @@ export function BatchReprocessDashboard() {
                 </Tabs>
             )}
         </div>
+        </>
     );
 }

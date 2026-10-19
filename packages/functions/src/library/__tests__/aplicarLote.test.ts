@@ -198,5 +198,38 @@ describe('cuándo un libro se puede aplicar', () => {
         x.docs.set('admin_lotes/b6', l as unknown as Record<string, unknown>);
         expect(resumirLote(x.lote()).libros[0]!.listo).toBe(true);
     });
+
+    it('una página donde el texto nuevo pierde griego conserva el actual, y se dice (caso Schreiner)', async () => {
+        const griego = 'φθορᾷ φθαρήσονται ἀδικούμενοι μισθὸν ἀδικίας';
+        // El mismo texto de la página que lee el lote, más el griego que el lote perdió en la p. 7.
+        const actual = diez.map(n => `[PAGE ${n}]\nContenido legible de la página ${n} con bastante texto para contar como leída${n === 7 ? ` y la nota: ${griego}` : ''}.`).join('\n\n');
+        const x = await loteListo([responder(0, diez)], { textContent: actual });
+        const c = await compararLibro(x.d, 'b6', 'B');
+        expect(c.conservadas).toEqual([{ pagina: 7, escritura: 'griego', antes: 5, despues: 0 }]);
+        expect(c.conservadasTotal).toBe(1);
+        await aplicar(x);
+        const md = x.escritos.get('users/u/library/B/structured.md')!.contenido;
+        expect(md).toContain(griego);
+        expect(md).toContain('Contenido legible de la página 8');
+        expect(x.docs.get('library_resources/B')).toMatchObject({ reprocesadoEnLote: { paginasConTextoAnterior: [7] } });
+    });
+
+    it('la última página de un textContent recortado no se conserva (puede estar cortada a la mitad)', async () => {
+        const griego = 'φθορᾷ φθαρήσονται ἀδικούμενοι μισθὸν ἀδικίας';
+        const actual = diez.map(n => `[PAGE ${n}]\nContenido legible de la página ${n} con bastante texto para contar como leída${n === 10 ? ` y la nota: ${griego}` : ''}.`).join('\n\n');
+        const x = await loteListo([responder(0, diez)], { textContent: actual, wasTruncated: true });
+        expect((await compararLibro(x.d, 'b6', 'B')).conservadas).toEqual([]);
+    });
+
+    it('si muchas páginas «pierden» escritura a la vez (desalineación), no se reemplaza', async () => {
+        const griego = 'φθορᾷ φθαρήσονται ἀδικούμενοι μισθὸν ἀδικίας';
+        const actual = diez.map(n => `[PAGE ${n}]\nContenido legible de la página ${n} con bastante texto para contar como leída y la nota: ${griego}.`).join('\n\n');
+        const x = await loteListo([responder(0, diez)], { textContent: actual });
+        const c = await compararLibro(x.d, 'b6', 'B');
+        expect(c).toMatchObject({ reemplazar: false, motivo: expect.stringContaining('no coinciden'), conservadas: [], conservadasTotal: 0 });
+        const r = await aplicar(x);
+        expect(r.reemplazado).toBe(false);
+        expect(x.escritos.size).toBe(0);
+    });
 });
 

@@ -938,7 +938,11 @@
       "incompleteConfirm": "Apply anyway",
       "applyAllTitle_one": "Apply {{count}} book?",
       "applyAllTitle_other": "Apply {{count}} books?",
-      "applyAllBody": "Books whose comparison is current, improves and has no failed sections are applied one by one. Each keeps a backup of the current text and is reindexed."
+      "applyAllBody": "Books whose comparison is current, improves and has no failed sections are applied one by one. Each keeps a backup of the current text and is reindexed.",
+      "moreSections_one": "and {{count}} more section",
+      "moreSections_other": "and {{count}} more sections",
+      "keptPages_one": "{{count}} page keeps the current text (the new one lost Greek or Hebrew): {{paginas}}",
+      "keptPages_other": "{{count}} pages keep the current text (the new one lost Greek or Hebrew): {{paginas}}"
     }
   }
 }

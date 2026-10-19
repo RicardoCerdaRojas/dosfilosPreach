@@ -938,7 +938,11 @@
       "incompleteConfirm": "Aplicar igual",
       "applyAllTitle_one": "¿Aplicar {{count}} libro?",
       "applyAllTitle_other": "¿Aplicar {{count}} libros?",
-      "applyAllBody": "Se aplican de a uno los libros cuya comparación está al día, mejora y no tiene tramos con fallas. Cada uno guarda un respaldo del texto actual y se vuelve a indexar."
+      "applyAllBody": "Se aplican de a uno los libros cuya comparación está al día, mejora y no tiene tramos con fallas. Cada uno guarda un respaldo del texto actual y se vuelve a indexar.",
+      "moreSections_one": "y {{count}} tramo más",
+      "moreSections_other": "y {{count}} tramos más",
+      "keptPages_one": "{{count}} página conserva el texto anterior (el nuevo perdía griego o hebreo): {{paginas}}",
+      "keptPages_other": "{{count}} páginas conservan el texto anterior (el nuevo perdía griego o hebreo): {{paginas}}"
     }
   }
 }
