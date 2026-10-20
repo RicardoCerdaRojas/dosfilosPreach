@@ -141,6 +141,7 @@ export function armarCierre(cierre: CierreDeFicha, startedAt: Date | null, ahora
             removed: cierre.sanitizer.removed,
             byCategory: cierre.sanitizer.byCategory,
             greekBreathingsComposed: cierre.sanitizer.greekBreathingsComposed,
+            greekLookalikesFixed: cierre.sanitizer.greekLookalikesFixed ?? 0,
         };
     }
     if (typeof cierre.llamaParseCredits === 'number') patch.llamaParseCredits = cierre.llamaParseCredits;

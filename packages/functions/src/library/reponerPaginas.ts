@@ -115,6 +115,10 @@ export async function revisarOReponer(
     // Sólo un libro listo: uno fallido o pendiente no pasa a «ready» por reponer.
     if (recurso.textExtractionStatus !== 'ready') throw new ErrorDelLote('failed-precondition', 'El libro no está listo (se está extrayendo o falló): no se repone.');
 
+    // `unirPaginas` también cambia «µ» de micro por «μ» en todo el libro
+    // (`normalizeGreekLookalikes`): reponer arregla de paso las que el lote
+    // dejó. Es texto que cambia fuera de las páginas repuestas, a propósito; el
+    // respaldo `antes-de-reponer` guarda cómo estaba.
     const nuevo = unirPaginas(r.paginas);
     const repuestas = r.conservadas.map(c => c.pagina);
     const ahora = () => new Date(d.ahora());

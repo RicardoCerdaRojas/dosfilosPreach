@@ -102,3 +102,20 @@ describe('espíritus griegos: paridad entre domain y functions', () => {
         expect(normalizeGreekBreathings('ἀλλ᾽ αὐτὸς').composed).toBe(0);
     });
 });
+
+describe('«µ» de micro → «μ»: la misma regla en functions y en domain', () => {
+    const bloque = (fuente: string) => {
+        const i = fuente.indexOf('const LETRA_GRIEGA');
+        const j = fuente.indexOf('export function normalizeGreekLookalikes');
+        if (i < 0 || j < 0) throw new Error('No se encontró la regla de la «µ»');
+        return fuente.slice(i, fuente.indexOf('\n}\n', j));
+    };
+    it('el código de la regla es idéntico en las dos copias', () => {
+        const functions = readFileSync(join(__dirname, '../sanitizeExtractedText.ts'), 'utf8');
+        expect(bloque(domainSource())).toBe(bloque(functions));
+    });
+    it('el saneo de domain la aplica', () => {
+        expect(domainSource()).toContain('const parecidas = normalizeGreekLookalikes(greek.text);');
+    });
+});
+

@@ -96,6 +96,7 @@ export function consonantsOf(text: string): string {
 /** Una palabra griega sin acentos, espíritus ni mayúsculas, con sigma única. */
 export function greekFold(text: string): string {
     return text
+        .replace(/\u00B5/g, '\u03BC')   // «µ» de micro es una «μ» (como `griegoPlegado` en functions)
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
