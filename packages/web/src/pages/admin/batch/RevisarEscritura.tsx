@@ -43,6 +43,16 @@ export function RevisarEscritura({ rid, lote, titulo }: { rid: string; lote: str
                 <div>
                     {revision.repuestas.length > 0 ? (
                         <span className="text-foreground">{t('batch.restore.restored', { count: revision.repuestas.length, paginas: revision.repuestas.join(', ') })}</span>
+                    ) : revision.libroEntero ? (
+                        <span className={revision.libroEntero.pierde ? 'text-foreground' : 'text-muted-foreground'}>
+                            {revision.libroEntero.pierde
+                                ? t('batch.restore.wholeBookLost', {
+                                    griegoAntes: revision.libroEntero.griego.antes, griegoDespues: revision.libroEntero.griego.despues,
+                                    hebreoAntes: revision.libroEntero.hebreo.antes, hebreoDespues: revision.libroEntero.hebreo.despues,
+                                })
+                                : t('batch.restore.wholeBookNone')}
+                            {revision.libroEntero.recortado ? ` ${t('batch.restore.wholeBookTruncated')}` : null}
+                        </span>
                     ) : revision.desalineado ? (
                         <span className="text-foreground">{t('batch.restore.misaligned')}</span>
                     ) : paginas.length === 0 ? (

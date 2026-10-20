@@ -947,6 +947,9 @@
     "restore": {
       "check": "Revisar griego y hebreo",
       "none": "Sin pérdidas de griego ni hebreo.",
+      "wholeBookNone": "Sin pérdidas de griego ni hebreo (se comparó el libro entero: el respaldo no tenía páginas).",
+      "wholeBookLost": "Perdió escritura en el libro entero (griego {{griegoAntes}} → {{griegoDespues}} palabras; hebreo {{hebreoAntes}} → {{hebreoDespues}}). El respaldo no tiene páginas: no se puede reponer por página.",
+      "wholeBookTruncated": "El respaldo estaba recortado: la cuenta de antes se queda corta.",
       "misaligned": "El respaldo no se corresponde página a página: no se repone nada.",
       "found_one": "{{count}} página perdió griego o hebreo: {{paginas}}",
       "found_other": "{{count}} páginas perdieron griego o hebreo: {{paginas}}",

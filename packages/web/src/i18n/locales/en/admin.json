@@ -947,6 +947,9 @@
     "restore": {
       "check": "Check Greek and Hebrew",
       "none": "No Greek or Hebrew lost.",
+      "wholeBookNone": "No Greek or Hebrew lost (compared the whole book: the backup had no pages).",
+      "wholeBookLost": "Script lost across the whole book (Greek {{griegoAntes}} → {{griegoDespues}} words; Hebrew {{hebreoAntes}} → {{hebreoDespues}}). The backup has no pages: nothing can be restored page by page.",
+      "wholeBookTruncated": "The backup was truncated: the earlier count falls short.",
       "misaligned": "The backup doesn't match page by page: nothing is restored.",
       "found_one": "{{count}} page lost Greek or Hebrew: {{paginas}}",
       "found_other": "{{count}} pages lost Greek or Hebrew: {{paginas}}",
