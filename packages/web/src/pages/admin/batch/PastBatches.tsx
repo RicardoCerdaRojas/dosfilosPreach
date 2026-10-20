@@ -1,6 +1,7 @@
 import { useTranslation } from '@/i18n';
 import { Card } from '@/components/ui/card';
 import type { LotePasado } from '@/lib/loteReport';
+import { RevisarEscritura } from './RevisarEscritura';
 
 /** Los lotes ya aplicados a esta biblioteca: la marca que deja `aplicar` en cada libro. */
 export function PastBatches({ lotes }: { lotes: LotePasado[] }) {
@@ -17,9 +18,13 @@ export function PastBatches({ lotes }: { lotes: LotePasado[] }) {
                     </div>
                     <ul className="m-0 list-none space-y-1 p-0 text-sm">
                         {l.libros.map(b => (
-                            <li key={b.id} className="flex flex-wrap gap-x-2">
-                                <span className="font-medium">{b.titulo || b.id}</span>
-                                {b.motivo && <span className="text-muted-foreground">{b.motivo}</span>}
+                            <li key={b.id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-b border-border/60 py-1.5 last:border-0">
+                                <span className="flex min-w-0 flex-wrap gap-x-2">
+                                    <span className="font-medium">{b.titulo || b.id}</span>
+                                    {b.motivo && <span className="text-muted-foreground">{b.motivo}</span>}
+                                </span>
+                                {/* Aplicados sin la protección por página: pueden haber perdido griego o hebreo. */}
+                                <RevisarEscritura rid={b.id} lote={l.nombre} titulo={b.titulo || b.id} />
                             </li>
                         ))}
                     </ul>

@@ -49,6 +49,16 @@ export interface ComparacionDeLibro {
     calculada: number;
 }
 
+/** COPIA de `RevisionDeEscritura` (`functions/src/library/reponerPaginas.ts`). */
+export interface RevisionDeEscritura {
+    paginas: Array<{ pagina: number; escritura: 'griego' | 'hebreo'; antes: number; despues: number }>;
+    /** Cuántas son en total (la lista va con tope de 60). */
+    total: number;
+    desalineado: boolean;
+    repuestas: number[];
+    respaldo: string;
+}
+
 const CLAVE = ['admin', 'batchJobs'] as const;
 const llamar = <I, O>(nombre: string) => async (datos: I) => (await httpsCallable<I, O>(getFunctions(), nombre)(datos)).data;
 
@@ -76,6 +86,7 @@ export function useBatchActions() {
         reintentar: useMutation({ mutationFn: llamar<{ loteId: string }, { ronda: number | null; libros: number; abandonadas: number }>('retryBatch'), onSuccess: refrescar }),
         cancelar: useMutation({ mutationFn: llamar<{ loteId: string }, { ok: boolean }>('cancelBatch'), onSuccess: refrescar }),
         comparar: useMutation({ mutationFn: llamar<{ loteId: string; rid: string }, Omit<ComparacionDeLibro, 'rondasLeidas' | 'calculada'>>('compareBatchBook'), onSettled: refrescar }),
+        revisarEscritura: useMutation({ mutationFn: llamar<{ rid: string; lote: string; escribir: boolean }, RevisionDeEscritura>('restoreBatchPages'), onSettled: refrescar }),
         aplicar: useMutation({ mutationFn: llamar<{ loteId: string; rid: string; aceptarIncompletos: boolean }, { reemplazado: boolean; motivo: string }>('applyBatchBook'), onSettled: refrescar }),
     };
 }

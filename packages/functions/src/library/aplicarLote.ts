@@ -6,7 +6,7 @@ import { truncateUtf8 } from './truncateUtf8';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { abrirFicha, cerrarFicha } from './fichaDeCorrida';
 import {
-    compararExtracciones, conservarEscritura, medirTexto, paginasDelTexto, rellenarConCapa, unirPaginas, type Comparacion, type PaginaConservada,
+    compararExtracciones, conservarEscritura, medirTexto, paginasMasCompletas, rellenarConCapa, unirPaginas, type Comparacion, type PaginaConservada,
 } from './loteDeExtraccion';
 import {
     reclamarAplicacion, registrarAplicacion, registrarComparacion, rutaDeCapa, soltarAplicacion, type Lote,
@@ -63,19 +63,9 @@ async function calcular(d: Dependencias, lote: Lote, rid: string): Promise<Calcu
         ? (await d.almacen.bajar(enMd).catch(err => { if (noExiste(err)) return Buffer.from(''); throw err; })).toString('utf8')
         : '';
     const tcActual = typeof recurso.textContent === 'string' ? recurso.textContent : '';
-    // Página por página, el texto actual más completo de los dos (en los libros
-    // de LlamaParse el md trae sólo marcas y el texto vive en `textContent`).
-    const actualesMd = paginasDelTexto(mdActual);
-    const actualesTc = paginasDelTexto(tcActual);
-    // El textContent se guarda recortado a 900 KB: su última página puede estar
-    // cortada a la mitad, y conservarla la dejaría así para siempre.
-    if (recurso.wasTruncated === true || Buffer.byteLength(tcActual, 'utf8') >= LIMITE_TEXTCONTENT) {
-        const ultima = Math.max(-1, ...actualesTc.keys());
-        if (ultima >= 0) actualesTc.delete(ultima);
-    }
-    const sinEspacios = (t: string | undefined) => (t ?? '').replace(/\s/g, '').length;
-    const actuales = new Map([...new Set([...actualesMd.keys(), ...actualesTc.keys()])].map(n => [n,
-        sinEspacios(actualesMd.get(n)) >= sinEspacios(actualesTc.get(n)) ? actualesMd.get(n)! : actualesTc.get(n)!]));
+    // Página por página, el texto actual más completo de sus dos formas.
+    const actuales = paginasMasCompletas(mdActual, tcActual,
+        recurso.wasTruncated === true || Buffer.byteLength(tcActual, 'utf8') >= LIMITE_TEXTCONTENT);
     const protegido = conservarEscritura(unirPaginas(relleno.paginas).paginas, actuales);
     const nuevo = unirPaginas(protegido.paginas);
     const medidaActual = medirTexto(mdActual || tcActual, total, capa, tcActual);
