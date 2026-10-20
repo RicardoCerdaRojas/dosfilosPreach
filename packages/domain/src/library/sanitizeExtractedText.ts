@@ -100,6 +100,8 @@ export interface SanitizationReport {
     normalizedLineEndings: boolean;
     /** Espíritus griegos sueltos que se volvieron a pegar a su vocal. */
     greekBreathingsComposed: number;
+    /** Letras de otro alfabeto dentro de palabras griegas, cambiadas por la griega (`normalizeGreekLookalikes`). */
+    greekLookalikesFixed?: number;
 }
 
 export interface SanitizedText {
@@ -220,6 +222,41 @@ export function normalizeGreekBreathings(input: string): { text: string; compose
     return { text: out.join('').normalize('NFC'), composed };
 }
 
+/**
+ * El signo de micro «µ» (U+00B5) dentro de una palabra griega es una «μ»
+ * (U+03BC) mal codificada: a la vista son idénticas, pero la búsqueda no las
+ * iguala («μανθάνω» no encuentra «µανθάνω») y la clave del lema pierde la
+ * letra. Medido (lote `kittel-y-tuggy`, 2026-10-20): la lectura por visión
+ * del léxico de Tuggy trajo 1.946 «µ» y ninguna en la capa de texto del PDF;
+ * Kittel, ninguna. Sólo se cambia en contexto griego: junto a una letra
+ * griega o a otra «µ» (γάµµα), entre paréntesis dentro de la palabra
+ * (ἐμπί(µ)πλημι), como cifra (µ´) o junto a su mayúscula (Μ µ). Un «5 µg»
+ * suelto no se toca. Idempotente.
+ *
+ * ⚠️ Espejada en `packages/functions/src/library/sanitizeExtractedText.ts`
+ * (prueba de paridad allá).
+ */
+const LETRA_GRIEGA = '\\u0370-\\u03FF\\u1F00-\\u1FFF';
+const GRIEGO = `${LETRA_GRIEGA}\\u0300-\\u036F`;
+const MICRO_EN_GRIEGO = new RegExp([
+    // Pegada a una letra griega o a otra «µ» (γάµµα), también entre paréntesis
+    // dentro de la palabra: ἐμπί(µ)πλημι.
+    `\\u00B5(?=\\)?[${GRIEGO}\\u00B5])`,
+    // Detrás: una LETRA griega (con sus marcas). Una marca sola sobre una base
+    // latina («café» en NFD) no cuenta.
+    `(?<=[${LETRA_GRIEGA}][\\u0300-\\u036F]*\\(?)\\u00B5`,
+    // La cifra griega: µ´ (40).
+    '\\u00B5(?=[\\u00B4\\u0374\\u02B9])',
+    // La letra suelta junto a su mayúscula: «Μ µ», «Μ, µ».
+    '(?<=\\u039C[,\\s]{1,2})\\u00B5',
+].join('|'), 'g');
+
+export function normalizeGreekLookalikes(input: string): { text: string; fixed: number } {
+    let fixed = 0;
+    const text = input.replace(MICRO_EN_GRIEGO, () => { fixed++; return '\u03BC'; });
+    return { text, fixed };
+}
+
 function categoryOf(codePoint: number): SanitizedCategory | null {
     for (const [start, end, category] of SANITIZER_RANGES) {
         if (codePoint >= start && codePoint <= end) return category;
@@ -269,14 +306,16 @@ export function sanitizeExtractedText(input: string): SanitizedText {
     // signo y su vocal —que es exactamente lo que el saneo acaba de sacar—
     // rompería la regla de adyacencia y dejaría el espíritu suelto.
     const greek = normalizeGreekBreathings(out);
+    const parecidas = normalizeGreekLookalikes(greek.text);
 
     return {
-        text: greek.text,
+        text: parecidas.text,
         report: {
             removed,
             byCategory,
             normalizedLineEndings,
             greekBreathingsComposed: greek.composed,
+            greekLookalikesFixed: parecidas.fixed,
         },
     };
 }

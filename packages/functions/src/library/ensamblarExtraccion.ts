@@ -9,6 +9,7 @@
 
 import { getStorage } from 'firebase-admin/storage';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
+import { normalizeGreekLookalikes } from './sanitizeExtractedText';
 import { verificarCobertura, paginasQueFaltan, type PaginasFaltantes } from './coberturaDePaginas';
 import { carpetaDeRangos, type PaginaGuardada } from './corridaDeExtraccion';
 
@@ -88,9 +89,11 @@ export async function ensamblarDesdeRangos(
         throw new Error(`Extracción en cola incompleta: ${cobertura.motivo}`);
     }
 
+    // «µ» de micro → «μ» en palabras griegas (`normalizeGreekLookalikes`):
+    // lo que se guarda tiene que ser buscable igual que lo que se indexa.
     return {
-        text: pagesToMarkedText(merged),
-        markdown: pagesToMarkdown(merged),
+        text: normalizeGreekLookalikes(pagesToMarkedText(merged)).text,
+        markdown: normalizeGreekLookalikes(pagesToMarkdown(merged)).text,
         pageCount: merged.length,
         rangosLeidos: nombres.length,
         faltantes: paginasQueFaltan(merged, totalPaginas),

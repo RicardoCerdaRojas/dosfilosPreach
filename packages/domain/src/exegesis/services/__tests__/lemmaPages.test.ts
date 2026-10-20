@@ -133,3 +133,9 @@ describe('mergeLemmas', () => {
         expect(r.map(l => l.lemma)).toEqual(['קִיקָיוֹן', 'מָנָה']);
     });
 });
+
+describe('«µ» de micro (léxico de Tuggy, 2026-10-20)', () => {
+    it('la clave del lema la trata como «μ», igual que functions', () => {
+        expect(lemmaKey('µανθάνω')).toBe(lemmaKey('μανθάνω'));
+    });
+});

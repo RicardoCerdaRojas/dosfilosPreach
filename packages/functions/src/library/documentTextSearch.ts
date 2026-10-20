@@ -139,7 +139,10 @@ function foldForSearch(input: string): { text: string; sourceIndex: number[] } {
  * «προ παντων» encuentra «πρὸ πάντων» (pedido del fundador, 2026-10-15). La
  * ñ se conserva: «año» no es «ano».
  */
-function fold(char: string): string {
+function fold(original: string): string {
+    // «µ» de micro es una «μ» mal codificada (léxico de Tuggy, 2026-10-20):
+    // así un libro indexado antes del arreglo se encuentra igual.
+    const char = original === '\u00B5' ? '\u03BC' : original;
     if (/[\s -]/.test(char)) return '';
     if (/[‐-―−\u05BE]/.test(char)) return '';   // guiones y el maqaf hebreo
     if (/[‘’‛′]/.test(char)) return "'";
@@ -160,6 +163,7 @@ export function soloConsonantes(text: string): string {
 /** Una palabra griega sin acentos, espíritus ni mayúsculas, con sigma única. */
 export function griegoPlegado(text: string): string {
     return text
+        .replace(/\u00B5/g, '\u03BC')   // «µ» de micro es una «μ» (ver `fold`)
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
@@ -202,7 +206,9 @@ export function lemmaOccurrencesIn(text: string, clave: string): number[] {
 function wordKeysIn(text: string): Map<string, { at: number[] }> {
     const out = new Map<string, { at: number[] }>();
     const nfc = text.normalize('NFC');
-    for (const m of nfc.matchAll(/[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F]+/g)) {
+    // La «µ» de micro va dentro de la palabra: es una «μ» mal codificada y
+    // `griegoPlegado` la convierte (léxico de Tuggy, 2026-10-20).
+    for (const m of nfc.matchAll(/[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F\u00B5]+/g)) {
         const clave = /[\u05D0-\u05EA]/.test(m[0]) ? soloConsonantes(m[0]) : griegoPlegado(m[0]);
         if (!clave) continue;
         const hit = out.get(clave);

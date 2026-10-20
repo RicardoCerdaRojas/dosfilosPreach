@@ -84,3 +84,12 @@ describe('findQuoteInPageText', () => {
         expect(findQuoteInPageText('cita', '')).toBeNull();
     });
 });
+
+describe('«µ» de micro (léxico de Tuggy, 2026-10-20)', () => {
+    it('una cita con «μ» se encuentra en una página con «µ»', () => {
+        const pagina = 'Ver µετακινέω, mover.';
+        const r = findQuoteInPageText('μετακινέω', pagina);
+        expect(r).not.toBeNull();
+        expect(pagina.slice(r!.start, r!.end)).toBe('µετακινέω');
+    });
+});

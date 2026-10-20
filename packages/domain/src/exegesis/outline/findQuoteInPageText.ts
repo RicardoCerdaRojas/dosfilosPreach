@@ -101,7 +101,9 @@ function normalizeForSearch(input: string, ignorarMarcas: boolean): NormalizedTe
  * 2026-10-15). La ñ se conserva: «año» no es «ano». Así pliega `fold` en
  * `functions/src/library/documentTextSearch.ts` (prueba de paridad allá).
  */
-function fold(char: string, ignorarMarcas: boolean): string {
+function fold(original: string, ignorarMarcas: boolean): string {
+    // «µ» de micro es una «μ» mal codificada (léxico de Tuggy, 2026-10-20).
+    const char = original === '\u00B5' ? '\u03BC' : original;
     if (/[\s -]/.test(char)) return '';
     if (/[‐-―−\u05BE]/.test(char)) return '';   // guiones y el maqaf hebreo
     if (/[‘’‛′]/.test(char)) return "'";

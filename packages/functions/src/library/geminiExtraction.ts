@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
+import { normalizeGreekLookalikes } from './sanitizeExtractedText';
 import { MODEL_VISION } from '../llm/modelCatalog';
 import { markdownAPlano } from './markdownAPlano';
 import { permitirEsperasLargas } from '../llm/esperaLargaHttp';
@@ -173,9 +174,11 @@ export async function extractWithGemini(
     }
 
     const { pages } = await extractGeminiPagesSinglePass(tempFilePath, resourceId, apiKey, expectedPageCount, userId);
+    // «µ» de micro → «μ» en palabras griegas: este texto también lo guarda
+    // `processWithGemini` sin pasar por el saneo.
     return {
-        text: pagesToMarkedText(pages),
-        markdown: pagesToMarkdown(pages),
+        text: normalizeGreekLookalikes(pagesToMarkedText(pages)).text,
+        markdown: normalizeGreekLookalikes(pagesToMarkdown(pages)).text,
         pageCount: pages.length,
     };
 }
@@ -588,8 +591,8 @@ async function extractWithGeminiBatched(
     );
 
     return {
-        text: pagesToMarkedText(merged),
-        markdown: pagesToMarkdown(merged),
+        text: normalizeGreekLookalikes(pagesToMarkedText(merged)).text,
+        markdown: normalizeGreekLookalikes(pagesToMarkdown(merged)).text,
         pageCount: merged.length,
         paginasPorTanda: tamano,
     };

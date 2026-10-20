@@ -2,6 +2,7 @@ import { configDeExtraccion, PROMPT_DE_EXTRACCION, type GeminiPage } from './gem
 import { markdownAPlano } from './markdownAPlano';
 import { pagesToMarkdown, pagesToMarkedText } from './llamaParseClient';
 import { parsearRespuesta, repararEscapes, rescatarPaginas } from './rescatarPaginas';
+import { normalizeGreekLookalikes } from './sanitizeExtractedText';
 import { CAPA_CON_TEXTO, MIN_CARACTERES_PAGINA, medirExtraccion, type MedicionDeExtraccion } from './medirExtraccion';
 
 /**
@@ -208,10 +209,20 @@ export function sinPaginas(tramos: ReadonlyArray<Tramo>, quitar: ReadonlySet<num
     return salida;
 }
 
-/** El libro unido: una entrada por página, la última gana (como la cola), salvo que venga en blanco y ya hubiera texto. */
+/**
+ * El libro unido: una entrada por página, la última gana (como la cola), salvo
+ * que venga en blanco y ya hubiera texto. Cada página pasa por
+ * `normalizeGreekLookalikes` («µ» de micro → «μ»): así lo comparan, lo
+ * aplican y lo reponen ya corregido, sin volver a leer nada.
+ */
 export function unirPaginas(paginas: ReadonlyArray<GeminiPage>): { markdown: string; texto: string; paginas: GeminiPage[] } {
     const porPagina = new Map<number, GeminiPage>();
-    for (const p of paginas) {
+    for (const cruda of paginas) {
+        const p = {
+            ...cruda,
+            text: cruda.text === undefined ? cruda.text : normalizeGreekLookalikes(cruda.text).text,
+            ...(cruda.md === undefined ? {} : { md: normalizeGreekLookalikes(cruda.md).text }),
+        };
         const previa = porPagina.get(p.page);
         if (previa && paginaLeida(previa) && !paginaLeida(p)) continue;
         porPagina.set(p.page, p);
