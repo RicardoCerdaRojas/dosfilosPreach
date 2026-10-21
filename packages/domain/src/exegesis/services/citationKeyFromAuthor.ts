@@ -49,6 +49,28 @@ function surnameOf(raw: string): string {
     return tokens.slice(desde).join(' ');
 }
 
+/** El nombre de una edición crítica dentro de un título. */
+const NOMBRE_DE_EDICION = /(?:the\s+)?greek\s+new\s+testament|novum\s+testamentum\s+graece|nestle[\s-]*aland|biblia\s+hebraica\s+(?:stuttgartensia|quinta)/i;
+
+/**
+ * ¿El título es de una obra SOBRE la edición? Sólo cuando la clase de obra
+ * («Commentary», «Guide», «Introduction»…) va ANTES del nombre de la edición,
+ * o la edición viene después de «on / to / of / de / sobre»: «A Textual
+ * Commentary on the Greek New Testament» y «The Masorah of Biblia Hebraica
+ * Stuttgartensia» lo son. «Biblia Hebraica Quinta: General Introduction and
+ * Megilloth» o «Novum Testamentum Graece (Introduction in German and English)»
+ * son la edición misma y conservan su sigla (revisión adversarial).
+ */
+function esObraSobreLaEdicion(title: string): boolean {
+    const m = NOMBRE_DE_EDICION.exec(title);
+    if (!m) return false;
+    const antes = title.slice(0, m.index);
+    return OBRA_SOBRE_EL_TEXTO.test(antes) || /\b(?:on|to|of|for|de|del|sobre|al?)\s*$/i.test(antes);
+}
+
+/** Comentarios, léxicos, gramáticas y guías: la clase de obra que nombra una edición sin serlo. */
+const OBRA_SOBRE_EL_TEXTO = /\b(commentary|comentario|companion|guide|gu[ií]a|handbook|manual|lexicon|l[eé]xico|concordance|concordancia|grammar|gram[aá]tica|introduction|introducci[oó]n|analysis|an[aá]lisis|apparatus\s+explained)\b/i;
+
 /**
  * La sigla con que se cita una edición crítica, o `null`.
  *
@@ -57,6 +79,10 @@ function surnameOf(raw: string): string {
  * número se propone como NA28, la edición vigente.
  */
 function criticalEditionSigla(author: string, title: string): string | null {
+    // Una obra SOBRE la edición no es la edición. TP #8 (#14): «A Textual
+    // Commentary on the Greek New Testament (UBS4)», de Metzger, recibió la
+    // clave «UBS4» y la prosa habría citado «(UBS4, 683)».
+    if (esObraSobreLaEdicion(title)) return null;
     const todo = `${title} ${author}`;
     if (/novum\s+testamentum\s+graece|nestle[\s-]*aland/i.test(todo)) {
         const n = todo.match(/\bNA\s?(\d{2})\b/i)?.[1] ?? todo.match(/\b(2[5-9])(?:st|nd|rd|th|a|ª)?\b/)?.[1];
