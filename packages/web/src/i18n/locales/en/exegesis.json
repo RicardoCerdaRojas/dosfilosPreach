@@ -943,6 +943,8 @@
             "none": "No section found for this passage. Browse the document and pick the sheets by hand."
           },
           "rail": {
+            "pinSheet": "Pin sheet {{sheet}}",
+            "unpinSheet": "Unpin sheet {{sheet}}",
             "withHeadings": "Book index",
             "withoutHeadings": "Sheets · no headings",
             "shiftHint": "Click one sheet, then Shift-click another to take the whole span, in either order.",
@@ -955,6 +957,8 @@
             "resize": "Index width"
           },
           "viewer": {
+            "pinSheet": "Pin this sheet",
+            "unpinSheet": "Pinned",
             "loading": "Opening the document…",
             "loadFailed": "Could not open the document. Try again in a few seconds.",
             "pageFailed": "Could not show this sheet. Try another one or reopen the document.",
@@ -990,6 +994,7 @@
             "attachedWhole": "Added the whole document: the passage section was not found. Adjust the pages by hand."
           },
           "cart": {
+            "pinnedSome": "{{count}} of {{total}} sheets pinned",
             "title": "In the paper",
             "rangeCount_one": "{{count}} range",
             "rangeCount_other": "{{count}} ranges",

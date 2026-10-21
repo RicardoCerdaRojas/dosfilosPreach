@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Pin } from 'lucide-react';
 import { printedLabelForSheet, type PageIndexEntry, type PageNumbering, type SheetRange } from '@dosfilos/domain';
 
 /**
@@ -26,6 +27,9 @@ interface Props {
     currentSheet: number;
     onGoToSheet: (sheet: number, extend: boolean) => void;
     onToggleSheet: (sheet: number, extend: boolean) => void;
+    /** Hojas fijadas (A5, TP #8): se fija y desfija cada una, no sólo el tramo. */
+    pinned?: ReadonlySet<number>;
+    onTogglePinned?: (sheet: number) => void;
 }
 
 export function PageRail({
@@ -38,6 +42,8 @@ export function PageRail({
     currentSheet,
     onGoToSheet,
     onToggleSheet,
+    pinned,
+    onTogglePinned,
 }: Props) {
     const { t } = useTranslation('exegesis');
     const listRef = useRef<HTMLDivElement>(null);
@@ -118,6 +124,24 @@ export function PageRail({
                                     {page.section || page.firstLine}
                                 </span>
                             </button>
+                            {isSelected && onTogglePinned && (
+                                <button
+                                    type="button"
+                                    onClick={() => onTogglePinned(page.sheet)}
+                                    aria-pressed={!!pinned?.has(page.sheet)}
+                                    aria-label={pinned?.has(page.sheet)
+                                        ? t('paperSetup.subSteps.corpus.picker.rail.unpinSheet', { sheet: page.sheet })
+                                        : t('paperSetup.subSteps.corpus.picker.rail.pinSheet', { sheet: page.sheet })}
+                                    title={t('paperSetup.subSteps.corpus.picker.cart.pinHint')}
+                                    className={`shrink-0 mt-0.5 h-5 w-5 inline-flex items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                        pinned?.has(page.sheet)
+                                            ? 'bg-info-subtle text-info-subtle-foreground'
+                                            : 'text-muted-foreground/60 hover:bg-accent hover:text-foreground'
+                                    }`}
+                                >
+                                    <Pin className="h-3 w-3" aria-hidden="true" />
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={(e) => onToggleSheet(page.sheet, e.shiftKey)}

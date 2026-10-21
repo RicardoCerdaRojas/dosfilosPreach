@@ -943,6 +943,8 @@
             "none": "No encontramos una sección para este pasaje. Navega el documento y elige las hojas a mano."
           },
           "rail": {
+            "pinSheet": "Fijar la hoja {{sheet}}",
+            "unpinSheet": "Desfijar la hoja {{sheet}}",
             "withHeadings": "Índice del libro",
             "withoutHeadings": "Hojas · sin encabezados",
             "shiftHint": "Clic en una hoja y Shift + clic en otra para llevarte todo el tramo, en cualquier orden.",
@@ -955,6 +957,8 @@
             "resize": "Ancho del índice"
           },
           "viewer": {
+            "pinSheet": "Fijar esta hoja",
+            "unpinSheet": "Fijada",
             "loading": "Abriendo el documento…",
             "loadFailed": "No se pudo abrir el documento. Prueba de nuevo en unos segundos.",
             "pageFailed": "No se pudo mostrar esta hoja. Prueba con otra o vuelve a abrir el documento.",
@@ -990,6 +994,7 @@
             "attachedWhole": "Agregado el documento completo: no se encontró la sección del pasaje. Ajusta las páginas a mano."
           },
           "cart": {
+            "pinnedSome": "{{count}} de {{total}} hojas fijadas",
             "title": "En el trabajo",
             "rangeCount_one": "{{count}} tramo",
             "rangeCount_other": "{{count}} tramos",

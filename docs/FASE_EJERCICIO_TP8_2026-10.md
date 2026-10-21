@@ -138,6 +138,13 @@ Todo es determinista y usa los datos de A1, A2 y A3. Así el estudiante se enter
 - **Hoy:** `normalizeSheetRanges` (`documentPageIndex.ts:117-135`) funde las hojas contiguas, y «Fijar» compara el tramo exacto (`SourcePagesWorkspace.tsx:292-299`). Por eso no se puede fijar la 411 dentro de 407–418.
 - **Arreglo:** guardar `pinnedSheets` como un **conjunto de hojas**, independiente de los tramos. La interfaz permite fijar y desfijar cada hoja. El medidor y `readPinned` leen el conjunto. Los datos antiguos se migran tramo por tramo.
 
+**Hecho (2026-10-21):**
+- **Sin campo nuevo y sin migración.** `pinnedRanges` ya vivía aparte de los tramos y se recortaba a ellos (`clipRangesTo`), y el recuperador lee cualquier sub-tramo. Lo que fallaba era la interfaz, que comparaba el tramo exacto.
+- **Lo fijado se trata como un conjunto de hojas:** `togglePinnedSheet`, `togglePinnedRange`, `pinStateOfRange` y `subtractSheetRanges`.
+- **Se fija cada hoja desde el riel y desde el visor** («Fijar esta hoja»).
+- **El carrito muestra «1 de 12 hojas fijadas»** y su botón queda a medias (`aria-pressed="mixed"`).
+- **Arreglo de paso:** cuando el carrito fundía 407–418 con la 419, el botón decía «sin fijar» aunque las doce hojas siguieran fijadas.
+
 ### A6. El diálogo «Extraer de mi biblioteca» (#7, #8, #11, #14, #17)
 - **#7 · Lengua del pasaje:** filtrar u ordenar con `LibraryResource.scriptCensus` (la cantidad de caracteres griegos y hebreos) contra el testamento del pasaje, en `faltaParaLaRubrica.ts:72-80` y en `recomendablePorPasaje`.
 - **#14 · Clave de cita:** sale del autor, nunca de un paréntesis del título (Metzger salió como «UBS4»).

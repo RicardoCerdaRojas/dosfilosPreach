@@ -182,3 +182,57 @@ export function clipRangesTo(
     }
     return normalizeSheetRanges(out);
 }
+
+/**
+ * Lo fijado, hoja por hoja (TP #8, fase 8a, A5).
+ *
+ * «Fijar» comparaba el tramo exacto del carrito: con 407–418 elegido no había
+ * forma de fijar sólo la 411, la nota de Mayor sobre 4:3. Y al sumar la 419,
+ * el carrito fundía 407–419 y el tramo fijado 407–418 dejaba de «coincidir»:
+ * el botón decía «sin fijar» con doce hojas fijadas.
+ *
+ * No hizo falta otro campo: `pinnedRanges` ya vive aparte de los tramos y se
+ * recorta a ellos (`clipRangesTo`); el recuperador lee cualquier sub-tramo.
+ * Faltaban estas operaciones, que tratan lo fijado como un conjunto de hojas.
+ */
+export type RangePinState = 'all' | 'some' | 'none';
+
+/** Cuántas hojas del tramo están fijadas. */
+export function pinnedSheetCount(range: SheetRange, pinned: ReadonlyArray<SheetRange>): number {
+    return clipRangesTo(pinned, [range]).reduce((n, r) => n + (r.end - r.start + 1), 0);
+}
+
+export function pinStateOfRange(range: SheetRange, pinned: ReadonlyArray<SheetRange>): RangePinState {
+    const n = pinnedSheetCount(range, pinned);
+    return n === 0 ? 'none' : n === range.end - range.start + 1 ? 'all' : 'some';
+}
+
+/** Quita de unos tramos las hojas de otros. */
+export function subtractSheetRanges(
+    from: ReadonlyArray<SheetRange>,
+    remove: ReadonlyArray<SheetRange>,
+): SheetRange[] {
+    let out = normalizeSheetRanges(from);
+    for (const r of normalizeSheetRanges(remove)) {
+        out = out.flatMap(a => {
+            if (r.end < a.start || r.start > a.end) return [a];
+            const partes: SheetRange[] = [];
+            if (a.start < r.start) partes.push({ start: a.start, end: r.start - 1 });
+            if (a.end > r.end) partes.push({ start: r.end + 1, end: a.end });
+            return partes;
+        });
+    }
+    return out;
+}
+
+/** El botón del tramo: entero fijado → se desfija entero; si no, se fija entero. */
+export function togglePinnedRange(pinned: ReadonlyArray<SheetRange>, range: SheetRange): SheetRange[] {
+    return pinStateOfRange(range, pinned) === 'all'
+        ? subtractSheetRanges(pinned, [range])
+        : normalizeSheetRanges([...pinned, range]);
+}
+
+/** Fijar o desfijar UNA hoja, esté donde esté dentro de su tramo. */
+export function togglePinnedSheet(pinned: ReadonlyArray<SheetRange>, sheet: number): SheetRange[] {
+    return togglePinnedRange(pinned, { start: sheet, end: sheet });
+}

@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Pin, Sparkles } from 'lucide-react';
 import {
     clipRangesTo,
     countChars,
     countSheets,
     normalizeSheetRanges,
     printedLabelForSheet,
+    togglePinnedRange,
+    togglePinnedSheet,
     type PageIndexEntry,
     type SheetRange,
     type LemmaPageProposal,
@@ -289,14 +291,16 @@ export function SourcePagesWorkspace({
         });
     }, [ranges, t]);
 
+    // Lo fijado es un conjunto de hojas, no una lista de tramos del carrito
+    // (A5, TP #8): se fija la 411 dentro de 407–418, y un tramo que el carrito
+    // agranda sigue mostrando lo que tiene fijado.
     const togglePinned = useCallback((range: SheetRange) => {
-        setPinned(prev => {
-            const already = prev.some(p => p.start === range.start && p.end === range.end);
-            return already
-                ? prev.filter(p => !(p.start === range.start && p.end === range.end))
-                : normalizeSheetRanges([...prev, range]);
-        });
-    }, []);
+        setPinned(prev => togglePinnedRange(clipRangesTo(prev, ranges), range));
+    }, [ranges]);
+    const togglePinnedOne = useCallback((sheet: number) => {
+        setPinned(prev => togglePinnedSheet(clipRangesTo(prev, ranges), sheet));
+    }, [ranges]);
+    const pinnedSheets = useMemo(() => sheetsInRanges(effectivePinned), [effectivePinned]);
 
     const acceptProposal = useCallback(() => {
         touched.current = true;
@@ -404,6 +408,8 @@ export function SourcePagesWorkspace({
                             currentSheet={currentSheet}
                             onGoToSheet={goToSheet}
                             onToggleSheet={pickSheet}
+                            pinned={pinnedSheets}
+                            onTogglePinned={togglePinnedOne}
                         />
                     </div>
                 )}
@@ -459,6 +465,22 @@ export function SourcePagesWorkspace({
                                     ? t('paperSetup.subSteps.corpus.picker.viewer.startRange')
                                     : t('paperSetup.subSteps.corpus.picker.viewer.endRange', { sheet: anchor })}
                             </Button>
+                            {isCurrentSelected && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => togglePinnedOne(currentSheet)}
+                                    aria-pressed={pinnedSheets.has(currentSheet)}
+                                    title={t('paperSetup.subSteps.corpus.picker.cart.pinHint')}
+                                    className={pinnedSheets.has(currentSheet) ? 'bg-info-subtle text-info-subtle-foreground border-info/30' : ''}
+                                >
+                                    <Pin className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                                    {pinnedSheets.has(currentSheet)
+                                        ? t('paperSetup.subSteps.corpus.picker.viewer.unpinSheet')
+                                        : t('paperSetup.subSteps.corpus.picker.viewer.pinSheet')}
+                                </Button>
+                            )}
                             <Button
                                 type="button"
                                 variant={isCurrentSelected ? 'default' : 'outline'}
