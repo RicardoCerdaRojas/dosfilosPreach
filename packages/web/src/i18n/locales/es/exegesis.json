@@ -900,6 +900,7 @@
           "proposal": {
             "structural": "Encontramos la sección que trata este pasaje en el índice del comentario.",
             "semantic": "Este documento no trae encabezados por referencia: la sugerencia sale de coincidencia de contenido y conviene revisarla.",
+            "passage": "Encontramos las páginas que nombran los versículos con pregunta. Revisa que sean las que necesitas.",
             "accept": "Aceptar sugerencia",
             "pending": "Buscando la sección que trata este pasaje…",
             "none": "No encontramos una sección para este pasaje. Navega el documento y elige las hojas a mano."
@@ -945,6 +946,8 @@
             "tooLarge": "El corpus del trabajo es demasiado grande para guardarlo. Quita hojas de esta fuente o de otra.",
             "attachedStructural_one": "Agregado: la sección del pasaje, {{count}} hoja",
             "attachedStructural_other": "Agregado: la sección del pasaje, {{count}} hojas",
+            "attachedPassage_one": "Agregado: {{count}} hoja que nombra los versículos con pregunta",
+            "attachedPassage_other": "Agregado: {{count}} hojas que nombran los versículos con pregunta",
             "attachedSemantic_one": "Agregado: {{count}} hoja por coincidencia de contenido. Conviene revisarla.",
             "attachedSemantic_other": "Agregado: {{count}} hojas por coincidencia de contenido. Conviene revisarlas.",
             "attachedWhole": "Agregado el documento completo: no se encontró la sección del pasaje. Ajusta las páginas a mano."

@@ -40,6 +40,12 @@ export interface RetrieveCuratedCorpusInput {
     query: string;
     sources: ReadonlyArray<CuratedCorpusScope>;
     /**
+     * Las claves de canon del paso (`stepVerseKeys`): los fragmentos cuyo índice
+     * `refs` nombra alguna van primero, antes del parecido de texto (TP #8,
+     * fase 8a, A1). Vacío o ausente: sólo el parecido, como antes.
+     */
+    verseKeys?: ReadonlyArray<string>;
+    /**
      * Caracteres disponibles para el corpus en este paso. Lo decide quien arma
      * el prompt, que es el único que sabe cuánto ocupan las instrucciones, la
      * guía de estilo y los análisis previos.

@@ -4,7 +4,7 @@ import {
     proposeSheetRanges,
     type ProposalKind,
 } from '@dosfilos/infrastructure';
-import type { PassageReference, SheetRange, SourceRole, SourceType } from '@dosfilos/domain';
+import { questionVersesOfBrief, type PassageReference, type SheetRange, type SourceRole, type SourceType } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPapers } from './useExegesisPapers';
 import { useSelectSourcePages } from './useSelectSourcePages';
@@ -63,6 +63,8 @@ export function useAttachLibrarySource() {
                 assignmentBrief: input.assignmentBrief,
                 language: input.language,
                 pageIndex: index.pages,
+                sourceType: input.sourceType,
+                questionVerses: questionVersesOfBrief(input.assignmentBrief, input.passage),
             });
 
             if (proposal.ranges.length === 0) {

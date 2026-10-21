@@ -900,6 +900,7 @@
           "proposal": {
             "structural": "We found the section covering this passage in the commentary's own index.",
             "semantic": "This document has no reference headings, so the suggestion comes from content matching and is worth reviewing.",
+            "passage": "We found the pages that name the verses with a question. Check they are the ones you need.",
             "accept": "Accept suggestion",
             "pending": "Looking for the section covering this passage…",
             "none": "No section found for this passage. Browse the document and pick the sheets by hand."
@@ -945,6 +946,8 @@
             "tooLarge": "The paper corpus is too large to save. Remove sheets here or in another source.",
             "attachedStructural_one": "Added: the passage section, {{count}} sheet",
             "attachedStructural_other": "Added: the passage section, {{count}} sheets",
+            "attachedPassage_one": "Added: {{count}} page that names the verses with a question",
+            "attachedPassage_other": "Added: {{count}} pages that name the verses with a question",
             "attachedSemantic_one": "Added: {{count}} sheet by content match. Worth reviewing.",
             "attachedSemantic_other": "Added: {{count}} sheets by content match. Worth reviewing.",
             "attachedWhole": "Added the whole document: the passage section was not found. Adjust the pages by hand."

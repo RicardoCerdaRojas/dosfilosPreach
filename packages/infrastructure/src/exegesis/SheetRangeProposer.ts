@@ -1,7 +1,11 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
     briefForQuery,
+    normalizeSheetRanges,
     formatPassageReference,
+    isPickedByPages,
+    passageReferenceQuery,
+    proposePassageSheets,
     outlineStructureQuality,
     resolveOutlineReferences,
     selectChunksForPassage,
@@ -10,24 +14,32 @@ import {
     type PageIndexEntry,
     type PassageReference,
     type SheetRange,
+    type SourceType,
 } from '@dosfilos/domain';
+import { searchDocumentByReference } from './DocumentPageIndexClient';
 
 /**
  * Con qué hojas arranca el carrito del selector.
  *
- * Dos proponentes, en orden de confianza:
+ * Tres proponentes, en orden de confianza:
  *
  *   1. El índice del propio comentario, cuando el documento trae encabezados
  *      por referencia. Da la sección que trata el pasaje, corrida y completa.
- *   2. Coincidencia semántica contra el pasaje, para todo lo demás — que hoy es
- *      la mayoría de la biblioteca.
+ *   2. Las hojas que NOMBRAN los versículos con pregunta (la forma «Libro c:v»
+ *      del texto y el índice de pasajes `refs` de cada fragmento). Para un libro
+ *      que se elige por páginas —gramática, léxico, diccionario, aparato— va
+ *      PRIMERO: no se organiza por pasaje, y la sección o el parecido no lo
+ *      encuentran. TP #8 (2026-10-21, fase 8a, A1): la propuesta de Wallace
+ *      eran 14 tramos por parecido y ninguno contenía las tres hojas que
+ *      nombran Stg 4.
+ *   3. Coincidencia semántica contra el pasaje, para todo lo demás.
  *
  * Si ninguno encuentra nada, el carrito arranca vacío y la interfaz lo dice. No
  * se inventa un tramo: proponer las primeras hojas «por si acaso» sería repetir
  * en versión nueva el error que originó todo esto.
  */
 
-export type ProposalKind = 'structural' | 'semantic' | 'none';
+export type ProposalKind = 'structural' | 'passage' | 'semantic' | 'none';
 
 export interface SheetRangeProposal {
     ranges: SheetRange[];
@@ -74,18 +86,84 @@ export interface ProposeSheetRangesInput {
     language: 'es' | 'en';
     /** Índice de hojas, ya cargado por la interfaz. */
     pageIndex: ReadonlyArray<PageIndexEntry>;
+    /** El tipo de la fuente: decide el orden de los proponentes. */
+    sourceType?: SourceType;
+    /**
+     * Los versículos con pregunta del encuadre (`questionVerseNumbers`), o
+     * `null`/ausente para usar cualquier versículo del pasaje.
+     */
+    questionVerses?: ReadonlyArray<number> | null;
 }
+
+/**
+ * En un léxico o un diccionario, la hoja que nombra el versículo suele ser la
+ * lista de citas al FINAL de la entrada, y la definición empieza antes: Tuggy
+ * nombra Stg 4:1 en la h. 585 y define μέλος en la 584 (TP #8, #29). Se suma
+ * la hoja anterior hasta que exista la entrada completa por lema (A2).
+ */
+const HOJAS_ANTES_POR_TIPO: Partial<Record<SourceType, number>> = {
+    'lexicon-technical': 1,
+    'theological-dictionary': 1,
+};
 
 export async function proposeSheetRanges(
     input: ProposeSheetRangesInput,
 ): Promise<SheetRangeProposal> {
+    const porPaginas = input.sourceType ? isPickedByPages({ sourceType: input.sourceType }) : false;
+    if (porPaginas) {
+        const passage = await proposePassage(input);
+        if (passage.ranges.length > 0) return passage;
+    }
+
     const structural = await proposeStructural(input);
     if (structural.ranges.length > 0) return structural;
+
+    if (!porPaginas) {
+        const passage = await proposePassage(input);
+        if (passage.ranges.length > 0) return passage;
+    }
 
     const semantic = await proposeSemantic(input);
     if (semantic.ranges.length > 0) return semantic;
 
     return { ranges: [], kind: 'none' };
+}
+
+/**
+ * Las hojas que nombran los versículos con pregunta.
+ *
+ * Un fallo de la callable no rompe nada, igual que los otros proponentes: se
+ * devuelve vacío y se pasa al siguiente.
+ */
+async function proposePassage(input: ProposeSheetRangesInput): Promise<SheetRangeProposal> {
+    const query = passageReferenceQuery(input.passage);
+    if (!query) return { ranges: [], kind: 'none' };
+    try {
+        const { hits } = await searchDocumentByReference(input.resourceId, query);
+        const elegidas = proposePassageSheets(
+            hits.map(h => ({ sheet: h.sheet, count: h.count, verses: h.verses ?? [], snippet: h.snippet, section: h.section })),
+            input.questionVerses ?? null,
+        );
+        const antes = (input.sourceType && HOJAS_ANTES_POR_TIPO[input.sourceType]) ?? 0;
+        const existentes = new Set(input.pageIndex.map(e => e.sheet));
+        const ranges = normalizeSheetRanges(elegidas.map(r => ({ start: Math.max(1, r.start - antes), end: r.end })))
+            .map(r => ({ start: primeraExistente(r.start, r.end, existentes), end: r.end }))
+            .filter(r => r.start <= r.end);
+        return ranges.length > 0 ? { ranges, kind: 'passage' } : { ranges: [], kind: 'none' };
+    } catch (err) {
+        console.warn('[SheetRangeProposer] propuesta por pasaje no disponible', {
+            resourceId: input.resourceId,
+            error: (err as Error).message,
+        });
+        return { ranges: [], kind: 'none' };
+    }
+}
+
+/** La primera hoja del tramo que existe en el índice (la anterior puede no existir). */
+function primeraExistente(start: number, end: number, existentes: ReadonlySet<number>): number {
+    if (existentes.size === 0) return start;
+    for (let s = start; s <= end; s++) if (existentes.has(s)) return s;
+    return end + 1;
 }
 
 /**

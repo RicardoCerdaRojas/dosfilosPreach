@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, stepVerseKeys } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -338,6 +338,11 @@ export class AnalyzeVerseCanonicallyUseCase {
                 userId: paper.ownerId,
                 query,
                 sources: scopes,
+                verseKeys: stepVerseKeys(
+                    { kind: 'verse', verseRef },
+                    parseBriefQuestions(paper.assignmentBrief, paper.passage),
+                    paper.passage.bookId,
+                ),
                 budgetChars: CURATED_CORPUS_BUDGET_CHARS,
             });
         } catch (err) {

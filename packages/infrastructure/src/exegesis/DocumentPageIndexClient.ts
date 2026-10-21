@@ -208,6 +208,8 @@ export async function searchDocumentByReference(
         chapterEnd: number;
         verseStart: number | null;
         verseEnd: number | null;
+        /** El libro en el canon: con él el servidor también lee `refs` (TP #8, A1). */
+        bookId?: string;
     },
 ): Promise<DocumentTextSearchResult> {
     const callable = httpsCallable<

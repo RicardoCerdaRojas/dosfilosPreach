@@ -86,6 +86,12 @@ interface SearchRequest {
         chapterEnd: number;
         verseStart: number | null;
         verseEnd: number | null;
+        /**
+         * El libro en el canon (`JAS`). Con él también cuenta el índice de
+         * pasajes de cada fragmento (`refs`, que escribe el indexador), y no
+         * sólo la forma «Libro c:v» del texto (TP #8, fase 8a, A1).
+         */
+        bookId?: string;
     };
 }
 
@@ -276,6 +282,35 @@ export function referenceRegExp(names: ReadonlyArray<string>): RegExp {
 }
 
 /**
+ * Qué versículos del pasaje nombra el índice de pasajes de un fragmento.
+ *
+ * `refs` lo escribe el indexador (`refsDeFragmento`) con claves `LIBRO.c` y
+ * `LIBRO.c.v`. Encuentra lo que la expresión regular pierde: las listas
+ * («Jas 4:5, 6» da 4:5 y 4:6), «v. 3» dentro de la sección de un capítulo y
+ * las notas de un comentario rotuladas por su encabezado. TP #8 (2026-10-21):
+ * las tres hojas de Wallace que nombran Stg 4 tenían `refs`, y la propuesta
+ * automática no las miraba.
+ */
+export function referenceVersesFromRefs(
+    refs: unknown,
+    bookId: string,
+    enElPasaje: (chapter: number, verse: number) => boolean,
+): number[] {
+    if (!Array.isArray(refs) || !bookId) return [];
+    const prefijo = `${bookId}.`;
+    const verses = new Set<number>();
+    for (const clave of refs) {
+        if (typeof clave !== 'string' || !clave.startsWith(prefijo)) continue;
+        const [, c, v] = clave.split('.');
+        const chapter = Number(c);
+        const verse = Number(v);
+        if (!Number.isInteger(chapter) || !Number.isInteger(verse)) continue;
+        if (enElPasaje(chapter, verse)) verses.add(verse);
+    }
+    return [...verses].sort((a, b) => a - b);
+}
+
+/**
  * Qué versículos del pasaje nombra un texto, y dónde cae el primero.
  *
  * Devuelve las posiciones en el texto ORIGINAL para poder recortar el renglón
@@ -298,6 +333,20 @@ export function referenceOccurrencesIn(
         verses.add(verse);
     }
     return { at, verses: [...verses].sort((a, b) => a - b) };
+}
+
+/**
+ * Lo que halló la expresión regular, sumando lo que nombra `refs`. Si sólo
+ * `refs` nombra el pasaje, la hoja cuenta igual, con el renglón de contexto
+ * del comienzo del fragmento.
+ */
+export function conElIndiceDePasajes(
+    porTexto: { at: number[]; verses: number[] },
+    porRefs: number[],
+): { at: number[]; verses: number[] } {
+    if (porRefs.length === 0) return porTexto;
+    const verses = [...new Set([...porTexto.verses, ...porRefs])].sort((a, b) => a - b);
+    return { at: porTexto.at.length > 0 ? porTexto.at : [0], verses };
 }
 
 export function occurrencesIn(text: string, foldedTerm: string): number[] {
@@ -384,6 +433,7 @@ export const searchDocumentText = onCall<SearchRequest>(
             throw new HttpsError('invalid-argument', 'reference.names is required in mode "referencia"');
         }
         const referencia = modo === 'referencia' ? referenceRegExp(names) : null;
+        const libroDelPedido = typeof ref?.bookId === 'string' && /^[A-Z0-9]{2,4}$/.test(ref.bookId) ? ref.bookId : '';
         const enElPasaje = (chapter: number, verse: number): boolean => {
             const r = ref!;
             if (chapter < r.chapterStart || chapter > r.chapterEnd) return false;
@@ -405,7 +455,7 @@ export const searchDocumentText = onCall<SearchRequest>(
         const snapshot = await db
             .collection(CHUNK_COLLECTION)
             .where('resourceId', '==', resourceId)
-            .select('text', 'metadata', 'userId', 'stores')
+            .select('text', 'metadata', 'userId', 'stores', 'refs')
             .get();
 
         if (snapshot.empty) return { hits: [], truncated: false, scannedChunks: 0 };
@@ -424,7 +474,10 @@ export const searchDocumentText = onCall<SearchRequest>(
             const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : null;
             if (!text || sheet === null) continue;
             const encontrado = modo === 'referencia'
-                ? referenceOccurrencesIn(text, referencia!, enElPasaje)
+                ? conElIndiceDePasajes(
+                    referenceOccurrencesIn(text, referencia!, enElPasaje),
+                    referenceVersesFromRefs(data.refs, libroDelPedido, enElPasaje),
+                )
                 : { at: modo === 'lema' ? lemmaOccurrencesIn(text, aguja) : occurrencesIn(text, aguja), verses: [] };
             const at = encontrado.at;
             if (at.length === 0) continue;

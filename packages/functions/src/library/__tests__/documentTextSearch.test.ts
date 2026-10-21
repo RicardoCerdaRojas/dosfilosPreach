@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findQuoteInPageText, lemmaKey as lemmaKeyDelDominio } from '@dosfilos/domain';
-import { foldForSearch, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp } from '../documentTextSearch';
+import { conElIndiceDePasajes, foldForSearch, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp, referenceVersesFromRefs } from '../documentTextSearch';
 
 /**
  * Los dos buscadores tienen que plegar IGUAL.
@@ -209,3 +209,33 @@ describe('lemmaSheetsIn', () => {
         expect(r[lemmaKey('קִיקָיוֹן')]).toHaveLength(1);
     });
 });
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A1): la búsqueda por referencia sólo leía la
+ * forma «Libro c:v» del texto. El índice `refs` del fragmento encuentra lo que
+ * esa forma pierde.
+ */
+describe('referenceVersesFromRefs · el índice de pasajes del fragmento', () => {
+    const santiago4 = (c: number, v: number) => c === 4 && v >= 1 && v <= 10;
+
+    it('devuelve los versículos del pasaje que nombra `refs`', () => {
+        // Wallace, p. 533: «Jas 4:5, 6» — la regex sólo da 4:5; `refs` trae los dos.
+        expect(referenceVersesFromRefs(['JAS.4', 'JAS.4.5', 'JAS.4.6', 'ROM.9.15'], 'JAS', santiago4)).toEqual([5, 6]);
+    });
+
+    it('ignora otros libros, otros capítulos y claves de capítulo sin versículo', () => {
+        expect(referenceVersesFromRefs(['JAS.3.6', 'JAS.4', 'JON.4.2', 'JAS.4.11'], 'JAS', santiago4)).toEqual([]);
+    });
+
+    it('sin libro o sin `refs` no inventa nada', () => {
+        expect(referenceVersesFromRefs(['JAS.4.2'], '', santiago4)).toEqual([]);
+        expect(referenceVersesFromRefs(undefined, 'JAS', santiago4)).toEqual([]);
+    });
+
+    it('suma lo de `refs` a lo de la regex; si sólo `refs` lo nombra, la hoja cuenta', () => {
+        expect(conElIndiceDePasajes({ at: [12], verses: [5] }, [5, 6])).toEqual({ at: [12], verses: [5, 6] });
+        expect(conElIndiceDePasajes({ at: [], verses: [] }, [3])).toEqual({ at: [0], verses: [3] });
+        expect(conElIndiceDePasajes({ at: [7], verses: [2] }, [])).toEqual({ at: [7], verses: [2] });
+    });
+});
+

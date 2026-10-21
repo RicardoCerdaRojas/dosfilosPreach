@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { proposeSheetRanges, type ProposalKind } from '@dosfilos/infrastructure';
 import {
     checkRecipeConsistency, grammarKeysFromMorphology, grammarSearchKeys, lemmasOfAnalyses, mergeGrammarKeys, mergeLemmas,
-    normalizeSheetRanges, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
+    normalizeSheetRanges, questionVersesOfBrief, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -68,11 +68,13 @@ export function ExegesisSourcePagesPage() {
             assignmentBrief: paper.assignmentBrief,
             language: paper.displayLanguage,
             pageIndex: index.data.pages,
+            sourceType: source?.sourceType,
+            questionVerses: questionVersesOfBrief(paper.assignmentBrief, paper.passage),
         }).then(result => {
             if (!cancelled) setProposal(result);
         });
         return () => { cancelled = true; };
-    }, [user, paper, resourceId, index.data]);
+    }, [user, paper, resourceId, index.data, source?.sourceType]);
 
     /**
      * Los lemas que este trabajo va a buscar en el léxico.

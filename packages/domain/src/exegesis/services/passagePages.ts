@@ -1,5 +1,8 @@
 import { getBookById } from '../../bible/canon/BibleCanon';
 import type { PassageReference } from '../../bible/canon/passage-reference';
+import type { SheetRange } from '../entities/ProjectSource';
+import { normalizeSheetRanges } from '../outline/documentPageIndex';
+import { parseBriefQuestions } from './briefQuestions';
 
 /**
  * Dónde nombra un libro al pasaje del trabajo.
@@ -45,6 +48,11 @@ const MIN_LARGO_DE_GRAFIA = 3;
 export interface PassageReferenceQuery {
     /** Cómo puede estar escrito el libro. Sin repetir y en minúsculas. */
     names: string[];
+    /**
+     * El libro en el canon (`JAS`): con él el servidor también lee el índice de
+     * pasajes de cada fragmento (`refs`), no sólo la forma «Libro c:v».
+     */
+    bookId: string;
     /** Capítulos del pasaje, inclusive. */
     chapterStart: number;
     chapterEnd: number;
@@ -67,6 +75,7 @@ export function passageReferenceQuery(passage: PassageReference): PassageReferen
     if (names.length === 0) return null;
     return {
         names,
+        bookId: passage.bookId,
         chapterStart: passage.chapterStart,
         chapterEnd: passage.chapterEnd,
         verseStart: passage.verseStart,
@@ -128,3 +137,74 @@ export function rankPassageSheets(hits: ReadonlyArray<PassagePageHit>): PassageP
             || a.sheet - b.sheet)
         .slice(0, MAX_PASSAGE_SHEETS);
 }
+
+/** Hojas que propone, como máximo, el camino por pasaje. */
+export const MAX_PROPOSED_PASSAGE_SHEETS = 12;
+
+/**
+ * Los versículos con pregunta del encuadre, como números de versículo, o
+ * `null` si no hay ninguna o el pasaje cruza capítulos.
+ *
+ * `null` quiere decir «sirve cualquier versículo del pasaje». Con varios
+ * capítulos se devuelve `null` porque las hojas traen el NÚMERO de versículo
+ * sin el capítulo (`PassagePageHit.verses`), y filtrar por número mezclaría
+ * 3:2 con 4:2.
+ */
+export function questionVerseNumbers(
+    questions: ReadonlyArray<{ verses: ReadonlyArray<{ chapter: number; verse: number }> }>,
+    passage: Pick<PassageReference, 'chapterStart' | 'chapterEnd'>,
+): number[] | null {
+    if (passage.chapterStart !== passage.chapterEnd) return null;
+    const verses = new Set<number>();
+    for (const q of questions) {
+        for (const v of q.verses) if (v.chapter === passage.chapterStart) verses.add(v.verse);
+    }
+    return verses.size > 0 ? [...verses].sort((a, b) => a - b) : null;
+}
+
+/** Los versículos con pregunta de un encuadre, listos para `proposePassageSheets`. */
+export function questionVersesOfBrief(
+    brief: string | null | undefined,
+    passage: Pick<PassageReference, 'chapterStart' | 'chapterEnd'>,
+): number[] | null {
+    return questionVerseNumbers(parseBriefQuestions(brief, passage), passage);
+}
+
+/**
+ * Las hojas que conviene proponer de un libro que NOMBRA el pasaje: una
+ * gramática, un léxico, un diccionario o un aparato.
+ *
+ * TP #8 (2026-10-21, fase 8a, A1): la propuesta de Wallace eran 14 tramos por
+ * parecido de texto con el pasaje, y ninguno contenía las tres hojas que nombran
+ * Stg 4 (h. 569, 633, 698). Un libro que no se organiza por pasaje no se
+ * «parece» a Santiago 4: lo menciona en una línea.
+ *
+ * Primero cubre cada versículo con pregunta con su mejor hoja (la que nombra más
+ * versículos con pregunta, después más veces); después completa hasta `max` por
+ * el mismo orden. Sin versículos con pregunta (`target` nulo) sirve cualquier
+ * hoja que nombre el pasaje.
+ */
+export function proposePassageSheets(
+    hits: ReadonlyArray<PassagePageHit>,
+    target: ReadonlyArray<number> | null,
+    max: number = MAX_PROPOSED_PASSAGE_SHEETS,
+): SheetRange[] {
+    const objetivo = target ? new Set(target) : null;
+    const cubre = (h: PassagePageHit) => (objetivo ? h.verses.filter(v => objetivo.has(v)).length : h.verses.length);
+    const candidatas = [...hits]
+        .filter(h => cubre(h) > 0)
+        .sort((a, b) => cubre(b) - cubre(a) || b.count - a.count || a.sheet - b.sheet);
+
+    const elegidas = new Set<number>();
+    for (const v of target ?? []) {
+        if (elegidas.size >= max) break;
+        const mejor = candidatas.find(h => h.verses.includes(v) && !elegidas.has(h.sheet));
+        if (mejor) elegidas.add(mejor.sheet);
+    }
+    for (const h of candidatas) {
+        if (elegidas.size >= max) break;
+        elegidas.add(h.sheet);
+    }
+    return normalizeSheetRanges([...elegidas].map(sheet => ({ start: sheet, end: sheet })));
+}
+

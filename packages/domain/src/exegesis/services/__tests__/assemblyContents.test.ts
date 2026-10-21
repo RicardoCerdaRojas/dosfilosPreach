@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { ExegeticalPaper } from '../../entities/ExegeticalPaper';
-import { assembleMarkdown, assemblyContents, documentSections } from '../assemblyContents';
+import { assembleMarkdown, assemblyContents, documentSections, stepVerseKeys } from '../assemblyContents';
+import { parseBriefQuestions } from '../briefQuestions';
 
 /**
  * El ensamble volcaba el ANÁLISIS ESTRUCTURADO de los versículos sin prosa
@@ -127,5 +128,23 @@ describe('documentSections — entre cuántas secciones se reparte la extensión
             paso({ id: 'v1', kind: 'verse', order: 1, verse: 1, body: 'x' }),
         );
         expect(documentSections(p.steps)).toEqual({ verses: 1, shares: 1, introduction: false, conclusion: false });
+    });
+});
+
+/** TP #8 (2026-10-21, fase 8a, A1): las claves de canon que nombra un paso. */
+describe('stepVerseKeys', () => {
+    const paso = (verseStart: number) => ({ kind: 'verse' as const, verseRef: { bookId: 'JAS' as const, chapterStart: 4, chapterEnd: 4, verseStart, verseEnd: verseStart } });
+    const preguntas = parseBriefQuestions('1. ¿Qué significa αἰτεῖτε (Stg. 4:3)? ¿Qué relación tiene con el versículo anterior (4:2)?', { chapterStart: 4, chapterEnd: 4 });
+
+    it('suma al versículo del paso los que su pregunta pide mirar', () => {
+        expect(stepVerseKeys(paso(3), preguntas, 'JAS')).toEqual(['JAS.4.3', 'JAS.4.2']);
+    });
+
+    it('un paso sin pregunta lleva sólo su versículo', () => {
+        expect(stepVerseKeys(paso(7), preguntas, 'JAS')).toEqual(['JAS.4.7']);
+    });
+
+    it('la introducción no lleva claves', () => {
+        expect(stepVerseKeys({ kind: 'introduction', verseRef: null }, preguntas, 'JAS')).toEqual([]);
     });
 });

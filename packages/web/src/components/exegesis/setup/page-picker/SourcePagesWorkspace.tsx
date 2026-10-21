@@ -49,7 +49,7 @@ interface Props {
     printedPageOffset: number | null;
     resourceId: string;
     proposedRanges: ReadonlyArray<SheetRange>;
-    proposalKind: 'structural' | 'semantic' | 'none';
+    proposalKind: 'structural' | 'passage' | 'semantic' | 'none';
     /** La propuesta todavía se está calculando. */
     proposalPending: boolean;
     /** Selección guardada, cuando la fuente ya pasó por el selector. */
@@ -366,7 +366,9 @@ export function SourcePagesWorkspace({
                         <p className="flex-1 min-w-[220px] text-xs text-info-subtle-foreground">
                             {proposalKind === 'structural'
                                 ? t('paperSetup.subSteps.corpus.picker.proposal.structural')
-                                : t('paperSetup.subSteps.corpus.picker.proposal.semantic')}
+                                : proposalKind === 'passage'
+                                    ? t('paperSetup.subSteps.corpus.picker.proposal.passage')
+                                    : t('paperSetup.subSteps.corpus.picker.proposal.semantic')}
                         </p>
                         <Button type="button" variant="outline" size="sm" onClick={acceptProposal}>
                             {t('paperSetup.subSteps.corpus.picker.proposal.accept')}

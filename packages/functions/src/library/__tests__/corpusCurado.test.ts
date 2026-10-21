@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { indicesOf, rankCuratedChunks, MAX_CURATED_CHUNKS } from '../retrieveCuratedCorpus';
+import { claveDeVersiculosDelPedido, indicesOf, rankCuratedChunks, MAX_CURATED_CHUNKS } from '../retrieveCuratedCorpus';
 
 /**
  * La búsqueda entra en lo curado.
@@ -99,5 +99,40 @@ describe('indicesOf — cuantos fragmentos se leen por clave', () => {
     it('un tramo mal formado no se interpreta', () => {
         expect(indicesOf([{ start: 5, end: 3 }])).toBeNull();
         expect(indicesOf([{ start: -1, end: 3 }])).toBeNull();
+    });
+});
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A1): la hoja de Wallace que trata el infinitivo
+ * causal de Stg 4:2 lo menciona en una línea («Jas 4:2») y no se «parece» al
+ * versículo; por cercanía quedaba atrás de páginas que no lo nombran.
+ */
+describe('rankCuratedChunks — lo que nombra el versículo del paso va primero', () => {
+    it('un fragmento que nombra el versículo gana aunque esté más lejos', () => {
+        const out = rankCuratedChunks({
+            rows: [
+                fila(1, 70, 'parecido pero ajeno', [1, 0]),
+                fila(2, 71, 'nombra Stg 4:2', [0, 1], { refs: ['JAS.4', 'JAS.4.2'] }),
+            ],
+            resourceId: 'res-1', uid: 'u1', ranges: [{ start: 70, end: 80 }], vector: [1, 0], pool: 60,
+            verseKeys: new Set(['JAS.4.2']),
+        });
+        expect(out.map(c => c.text)).toEqual(['nombra Stg 4:2', 'parecido pero ajeno']);
+        expect(out[0]).not.toHaveProperty('nombra');
+    });
+
+    it('sin claves del paso ordena por cercanía, como antes', () => {
+        const out = rankear([
+            fila(1, 70, 'parecido', [1, 0]),
+            fila(2, 71, 'nombra', [0, 1], { refs: ['JAS.4.2'] }),
+        ]);
+        expect(out.map(c => c.text)).toEqual(['parecido', 'nombra']);
+    });
+});
+
+describe('claveDeVersiculosDelPedido', () => {
+    it('acepta sólo claves LIBRO.c.v, sin repetir', () => {
+        expect(claveDeVersiculosDelPedido(['JAS.4.2', 'JAS.4.2', 'JAS.4', 'x', 3, 'JAS.4.3'])).toEqual(['JAS.4.2', 'JAS.4.3']);
+        expect(claveDeVersiculosDelPedido(undefined)).toEqual([]);
     });
 });

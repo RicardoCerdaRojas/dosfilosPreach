@@ -70,6 +70,31 @@ export function questionsOfStep(
 }
 
 /**
+ * Las claves de canon (`JAS.4.3`) que debe nombrar un fragmento para servir a
+ * un paso: su versículo y los que sus preguntas piden mirar («¿qué relación
+ * tiene con el versículo anterior?» suma 4:2 a 4:3).
+ *
+ * TP #8 (2026-10-21, fase 8a, A1): con ellas la selección por versículo pone
+ * primero las hojas que NOMBRAN el versículo (el índice `refs`), antes del
+ * parecido de texto. Vacío si el paso no es un versículo.
+ */
+export function stepVerseKeys(
+    step: Pick<ExegeticalStep, 'kind' | 'verseRef'>,
+    questions: ReadonlyArray<BriefQuestion>,
+    bookId: string,
+): string[] {
+    if (step.kind !== 'verse' || !step.verseRef || !bookId) return [];
+    const claves = new Set<string>();
+    const desde = step.verseRef.verseStart ?? 1;
+    const hasta = step.verseRef.verseEnd ?? desde;
+    for (let v = desde; v <= hasta && claves.size < 20; v++) claves.add(`${bookId}.${step.verseRef.chapterStart}.${v}`);
+    for (const q of questionsOfStep(step, questions)) {
+        for (const v of q.verses) if (claves.size < 20) claves.add(`${bookId}.${v.chapter}.${v.verse}`);
+    }
+    return [...claves];
+}
+
+/**
  * Si un paso nace dentro del documento.
  *
  * Cuando el encuadre viene en preguntas numeradas, el documento son las

@@ -1870,6 +1870,8 @@ function AddSourceDialog({
                 // distintas de su parte.
                 if (outcome.kind === 'structural') {
                     toast.success(t('paperSetup.subSteps.corpus.picker.toast.attachedStructural', { count: outcome.sheetCount }));
+                } else if (outcome.kind === 'passage') {
+                    toast.success(t('paperSetup.subSteps.corpus.picker.toast.attachedPassage', { count: outcome.sheetCount }));
                 } else if (outcome.kind === 'semantic') {
                     toast.warning(t('paperSetup.subSteps.corpus.picker.toast.attachedSemantic', { count: outcome.sheetCount }));
                 } else {
