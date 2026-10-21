@@ -325,7 +325,7 @@ export function paginasDelTexto(texto: string): Map<number, string> {
 const PALABRA_GRIEGA = /[\u0370-\u03FF\u1F00-\u1FFF][\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F]{2,}/g;
 const GRIEGA_DISTINTIVA = /[\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u03B1-\u03BC\u03BE-\u03C9\u1F00-\u1FFF]/;
 const PALABRA_HEBREA = /[\u0590-\u05FF]*[\u05D0-\u05EA][\u0590-\u05FF]*[\u05D0-\u05EA][\u0590-\u05FF]*/g;
-const palabras = (texto: string, escritura: 'griego' | 'hebreo') => escritura === 'griego'
+export const palabrasDeEscritura = (texto: string, escritura: 'griego' | 'hebreo') => escritura === 'griego'
     ? (texto.match(PALABRA_GRIEGA) ?? []).filter(p => GRIEGA_DISTINTIVA.test(p)).length
     : (texto.match(PALABRA_HEBREA) ?? []).length;
 
@@ -374,8 +374,8 @@ export function conservarEscritura(
         if (!actual) return p;
         const nueva = (p.md && p.md.trim()) || p.text || '';
         for (const escritura of ['griego', 'hebreo'] as const) {
-            const antes = palabras(actual, escritura);
-            const despues = palabras(nueva, escritura);
+            const antes = palabrasDeEscritura(actual, escritura);
+            const despues = palabrasDeEscritura(nueva, escritura);
             if (antes >= MIN_PALABRAS_POR_PAGINA && despues < antes / 2 && mismaPagina(actual, nueva)) {
                 conservadas.push({ pagina: p.page, escritura, antes, despues });
                 return { page: p.page, text: markdownAPlano(actual), md: actual };

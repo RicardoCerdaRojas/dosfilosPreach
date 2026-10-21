@@ -178,5 +178,25 @@ describe('panel del lote (PR 3): comparar y aplicar', () => {
         expect(llamadas.at(-1)).toEqual({ rid: 'S', lote: 'prueba-2', escribir: true });
         expect(screen.getByText('batch.restore.restored:{"count":3,"paginas":"301, 302, 304"}')).toBeTruthy();
     });
+    it('«Revisar griego y hebreo» con un respaldo sin páginas: dice el libro entero y no ofrece reponer', async () => {
+        const { RevisarEscritura } = await import('../RevisarEscritura');
+        const base = { paginas: [], total: 0, desalineado: false, repuestas: [], respaldo: 'x' };
+        const respuesta = { actual: {} as unknown };
+        acciones.revisarEscritura.mutate = vi.fn((_: unknown, o: { onSuccess: (r: unknown) => void }) => o.onSuccess(respuesta.actual)) as never;
+
+        respuesta.actual = { ...base, libroEntero: { griego: { antes: 4, despues: 9 }, hebreo: { antes: 0, despues: 0 }, pierde: false, recortado: false } };
+        const sin = render(<RevisarEscritura rid="C" lote="biblioteca5" titulo="Chapell" />);
+        fireEvent.click(screen.getByText('batch.restore.check'));
+        expect(screen.getByRole('status').textContent).toBe('batch.restore.wholeBookNone');
+        expect(screen.queryByText(/batch\.restore\.restore/)).toBeNull();
+        sin.unmount();
+
+        respuesta.actual = { ...base, libroEntero: { griego: { antes: 80, despues: 20 }, hebreo: { antes: 5, despues: 5 }, pierde: true, recortado: true } };
+        render(<RevisarEscritura rid="M" lote="biblioteca5" titulo="Montoya" />);
+        fireEvent.click(screen.getByText('batch.restore.check'));
+        expect(screen.getByRole('status').textContent).toBe(
+            'batch.restore.wholeBookLost:{"griegoAntes":80,"griegoDespues":20,"hebreoAntes":5,"hebreoDespues":5} batch.restore.wholeBookTruncated');
+        expect(screen.queryByText(/batch\.restore\.restore/)).toBeNull();
+    });
 });
 

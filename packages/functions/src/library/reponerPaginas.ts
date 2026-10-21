@@ -2,7 +2,8 @@ import { censusOf } from './scriptCensus';
 import { truncateUtf8 } from './truncateUtf8';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { markdownAPlano } from './markdownAPlano';
-import { conservarEscritura, paginasMasCompletas, unirPaginas, type PaginaConservada } from './loteDeExtraccion';
+import { normalizeGreekLookalikes } from './sanitizeExtractedText';
+import { MIN_PALABRAS_POR_PAGINA, conservarEscritura, paginasMasCompletas, palabrasDeEscritura, unirPaginas, type PaginaConservada } from './loteDeExtraccion';
 import { NOMBRE_DE_LOTE } from './estadoDelLote';
 import { ErrorDelLote, type Dependencias } from './orquestarLote';
 
@@ -33,6 +34,29 @@ export interface RevisionDeEscritura {
     repuestas: number[];
     /** El respaldo con que se comparó (nombre del archivo). */
     respaldo: string;
+    /**
+     * El respaldo no tenía marcas de página (el texto plano de antes de la
+     * lectura por páginas): se compara el libro entero y no se repone nada.
+     */
+    libroEntero?: LibroEntero;
+}
+
+export interface LibroEntero {
+    griego: { antes: number; despues: number };
+    hebreo: { antes: number; despues: number };
+    /** El texto actual tiene menos griego o hebreo que el respaldo. */
+    pierde: boolean;
+    /** El respaldo era el `textContent` recortado (900 KB): su cuenta se queda corta. */
+    recortado: boolean;
+}
+
+/**
+ * Cuánto menos es «perder» en el libro entero: el texto viejo y el nuevo no
+ * cortan igual las palabras (guiones, notas), y unas pocas de diferencia no
+ * son escritura perdida.
+ */
+function pierdeEnElLibro(antes: number, despues: number): boolean {
+    return antes - despues > Math.max(MIN_PALABRAS_POR_PAGINA, antes * 0.02);
 }
 
 /**
@@ -40,17 +64,24 @@ export interface RevisionDeEscritura {
  * (aplicar dos veces el mismo lote deja un segundo respaldo con la salida
  * parcial del propio lote), y el md y el textContent del MISMO sello. El nombre
  * del lote se compara exacto: el prefijo de `prueba` también trae `prueba-3`.
+ *
+ * El primer lote (`prueba1`, 2026-10-15) guardó el respaldo sin sello
+ * (`structured.antes-del-lote-prueba1.md`), sólo el md, y el script de
+ * entonces lo pisaba al volver a aplicar: es el texto de antes del lote
+ * porque `prueba1` se aplicó una sola vez por libro. Cuenta como el más
+ * antiguo.
  */
 async function respaldoDelLote(d: Dependencias, carpeta: string, lote: string): Promise<{ md: string | null; tc: string | null; sello: string } | null> {
-    const exacto = new RegExp(`/(structured|textContent)\\.antes-del-lote-${lote}-(\\d{4}-\\d{2}-\\d{2}T[\\d-]+Z)\\.(md|txt)$`);
+    const exacto = new RegExp(`/(structured|textContent)\\.antes-del-lote-${lote}(?:-(\\d{4}-\\d{2}-\\d{2}T[\\d-]+Z))?\\.(md|txt)$`);
     const rutas = [
-        ...await d.almacen.listar(`${carpeta}/structured.antes-del-lote-${lote}-`),
-        ...await d.almacen.listar(`${carpeta}/textContent.antes-del-lote-${lote}-`),
+        ...await d.almacen.listar(`${carpeta}/structured.antes-del-lote-${lote}`),
+        ...await d.almacen.listar(`${carpeta}/textContent.antes-del-lote-${lote}`),
     ].filter(r => exacto.test(r));
-    const sellos = [...new Set(rutas.map(r => r.match(exacto)![2]!))].sort();
-    const sello = sellos[0];
-    if (!sello) return null;
-    const de = (tipo: string) => rutas.find(r => r.endsWith(`/${tipo}.antes-del-lote-${lote}-${sello}.${tipo === 'structured' ? 'md' : 'txt'}`)) ?? null;
+    if (rutas.length === 0) return null;
+    // Sin sello = '' = antes que cualquier sello.
+    const sello = [...new Set(rutas.map(r => r.match(exacto)![2] ?? ''))].sort()[0]!;
+    const sufijo = sello ? `-${sello}` : '';
+    const de = (tipo: string) => rutas.find(r => r.endsWith(`/${tipo}.antes-del-lote-${lote}${sufijo}.${tipo === 'structured' ? 'md' : 'txt'}`)) ?? null;
     return { md: de('structured'), tc: de('textContent'), sello };
 }
 
@@ -87,8 +118,15 @@ export async function revisarOReponer(
     if (!respaldoDe) throw new ErrorDelLote('not-found', `No hay respaldo de antes del lote «${p.lote}» para este libro.`);
     const mdRespaldo = respaldoDe.md ? (await d.almacen.leer(respaldoDe.md)) ?? '' : '';
     const tcRespaldo = respaldoDe.tc ? (await d.almacen.leer(respaldoDe.tc)) ?? '' : '';
-    const respaldo = paginasMasCompletas(mdRespaldo, tcRespaldo, Buffer.byteLength(tcRespaldo, 'utf8') >= LIMITE_TEXTCONTENT);
-    if (respaldo.size === 0) throw new ErrorDelLote('failed-precondition', 'El respaldo no tiene marcas de página: no se puede comparar página por página.');
+    const tcRecortado = Buffer.byteLength(tcRespaldo, 'utf8') >= LIMITE_TEXTCONTENT;
+    // El texto viejo puede traer la «µ» de micro por «μ» (#795): sin
+    // normalizar, sus palabras griegas no se cuentan y «perder» no se ve.
+    const respaldo = new Map([...paginasMasCompletas(mdRespaldo, tcRespaldo, tcRecortado)]
+        .map(([n, texto]) => [n, normalizeGreekLookalikes(texto).text] as const));
+    const nombreDelRespaldo = `antes-del-lote-${p.lote}${respaldoDe.sello ? `-${respaldoDe.sello}` : ''}`;
+    if (respaldo.size === 0 && !mdRespaldo.trim() && !tcRespaldo.trim()) {
+        throw new ErrorDelLote('failed-precondition', 'El respaldo está vacío: no hay con qué comparar.');
+    }
 
     // El texto actual: el md que escribió el lote (completo, una marca por página).
     const enMd = recurso.structuredContentUrl ? parseFirebaseStorageLocation(String(recurso.structuredContentUrl), d.bucketPorDefecto) : null;
@@ -102,6 +140,25 @@ export async function revisarOReponer(
     const actuales = paginasMasCompletas(mdActual, '', false);
     if (actuales.size === 0) throw new ErrorDelLote('failed-precondition', 'El texto actual del libro no tiene marcas de página.');
 
+    // Respaldo sin marcas de página (Chapell, Montoya, Guía TMS: antes del
+    // lote sólo tenían el texto plano de pdf-parse): se cuenta el libro
+    // entero. Dice si se perdió escritura, pero no hay página que reponer.
+    if (respaldo.size === 0) {
+        const elTc = tcRespaldo.length > mdRespaldo.length;
+        const viejo = normalizeGreekLookalikes(elTc ? tcRespaldo : mdRespaldo).text;
+        const contar = (e: 'griego' | 'hebreo') => ({ antes: palabrasDeEscritura(viejo, e), despues: palabrasDeEscritura(mdActual, e) });
+        const griego = contar('griego');
+        const hebreo = contar('hebreo');
+        return {
+            paginas: [], total: 0, desalineado: false, repuestas: [], respaldo: nombreDelRespaldo,
+            libroEntero: {
+                griego, hebreo,
+                pierde: pierdeEnElLibro(griego.antes, griego.despues) || pierdeEnElLibro(hebreo.antes, hebreo.despues),
+                recortado: elTc && tcRecortado,
+            },
+        };
+    }
+
     const paginasActuales = [...actuales].sort((a, b) => a[0] - b[0]).map(([page, texto]) => ({ page, text: markdownAPlano(texto), md: texto }));
     const r = conservarEscritura(paginasActuales, respaldo);
     const revision: RevisionDeEscritura = {
@@ -109,7 +166,7 @@ export async function revisarOReponer(
         total: r.desalineado ? 0 : r.conservadas.length,
         desalineado: r.desalineado,
         repuestas: [],
-        respaldo: `antes-del-lote-${p.lote}-${respaldoDe.sello}`,
+        respaldo: nombreDelRespaldo,
     };
     if (!p.escribir || r.desalineado || r.conservadas.length === 0) return revision;
     // Sólo un libro listo: uno fallido o pendiente no pasa a «ready» por reponer.

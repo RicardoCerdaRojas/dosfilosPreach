@@ -57,6 +57,13 @@ export interface RevisionDeEscritura {
     desalineado: boolean;
     repuestas: number[];
     respaldo: string;
+    /** El respaldo no tenía páginas: se comparó el libro entero y no se repone nada. */
+    libroEntero?: {
+        griego: { antes: number; despues: number };
+        hebreo: { antes: number; despues: number };
+        pierde: boolean;
+        recortado: boolean;
+    };
 }
 
 const CLAVE = ['admin', 'batchJobs'] as const;
