@@ -147,3 +147,51 @@ describe('parseCitations — el ancla en hojas', () => {
         expect(out[0]!.pages).toBe('61');
     });
 });
+
+/**
+ * TP #8 (2026-10-21, #42): el punto de una abreviatura se leía como fin de
+ * oración y la evidencia de la cita quedaba vacía o recortada.
+ */
+describe('parseCitations · el punto de una abreviatura no cierra la oración', () => {
+    it('«4:9ss. (Autor, N)» conserva la oración entera', () => {
+        const [cita] = parseCitations(
+            'Adamson enumera un evangelio hebreo perdido y una paráfrasis de 1QS 4:9ss. (Adamson, 171).',
+        );
+        expect(cita!.evidence).toBe('Adamson enumera un evangelio hebreo perdido y una paráfrasis de 1QS 4:9ss.');
+    });
+
+    it('«ss.» a mitad de oración no la corta', () => {
+        const [cita] = parseCitations('La paráfrasis de 1QS 4:9ss. propuesta por Gaster es tardía (Adamson, 171).');
+        expect(cita!.evidence).toBe('La paráfrasis de 1QS 4:9ss. propuesta por Gaster es tardía');
+    });
+
+    it('«cf.» y «vv.» a mitad de oración no la cortan', () => {
+        const [cita] = parseCitations('La misma idea aparece en el v. 6, cf. Pr 3:34, según Mayor (Mayor, 136).');
+        expect(cita!.evidence).toBe('La misma idea aparece en el v. 6, cf. Pr 3:34, según Mayor');
+    });
+
+    it('un punto pegado a la cita pertenece a la oración que la cita respalda', () => {
+        const [cita] = parseCitations('Primera idea. La fuente del dicho es desconocida. (Adamson, 170)');
+        expect(cita!.evidence).toBe('La fuente del dicho es desconocida.');
+    });
+
+    it('el fin de oración real se sigue respetando', () => {
+        const [cita] = parseCitations('Otra cosa distinta. La concesión de Mayor decide (Mayor, 133).');
+        expect(cita!.evidence).toBe('La concesión de Mayor decide');
+    });
+
+    it('«etc.» que cierra una oración la cierra: no arrastra la anterior (revisión adversarial)', () => {
+        const [cita] = parseCitations('Hay listas de vicios, virtudes, etc. Santiago contrapone dos sabidurías (Adamson, 171).');
+        expect(cita!.evidence).toBe('Santiago contrapone dos sabidurías');
+    });
+
+    it('«ss.» que cierra una oración también la cierra', () => {
+        const [cita] = parseCitations('Véase 1QS 4:9ss. Adamson ve un paralelo con Qumrán (Adamson, 171).');
+        expect(cita!.evidence).toBe('Adamson ve un paralelo con Qumrán');
+    });
+
+    it('una abreviatura de la lista del dominio («Dr.») tampoco corta', () => {
+        const [cita] = parseCitations('Primera idea. Según el Dr. Mayor la frase es causal (Mayor, 1).');
+        expect(cita!.evidence).toBe('Según el Dr. Mayor la frase es causal');
+    });
+});

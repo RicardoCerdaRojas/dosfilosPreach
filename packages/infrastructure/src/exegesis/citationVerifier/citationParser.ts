@@ -1,4 +1,4 @@
-import { findInlineCitations, type ParsedCitation } from '@dosfilos/domain';
+import { findInlineCitations, SENTENCE_ABBREVIATIONS, type ParsedCitation } from '@dosfilos/domain';
 
 /**
  * De las citas inline al reclamo que cada una sostiene.
@@ -102,12 +102,62 @@ function extractEvidence(
     return { text: sentence, fromQuote: false };
 }
 
+/**
+ * Abreviaturas cuyo punto NO cierra la oración. TP #8 (#42): en
+ * «…una paráfrasis de 1QS 4:9ss. (Adamson, 171)» el punto de «ss.» se leía
+ * como fin de oración, la evidencia quedaba vacía y la cita salía «revisión
+ * manual» con «No se pudo extraer el texto reclamado». En minúscula, sin el
+ * punto final.
+ *
+ * Dos clases (revisión adversarial):
+ * - las que van ANTES de algo («cf. Pr 3:34», «p. 53», «el Dr. Mayor») no
+ *   cortan nunca;
+ * - las que pueden CERRAR una oración («…virtudes, etc. Santiago…», «4:9ss.
+ *   Adamson…») cortan sólo si lo que sigue empieza con mayúscula. Si no, la
+ *   evidencia se tragaba la oración anterior y bajaba el puntaje de la cita.
+ *
+ * La base es la lista del dominio (`SENTENCE_ABBREVIATIONS`), la regla única
+ * de qué es una oración; aquí se suman las de las citas académicas.
+ */
+const PUEDEN_CERRAR = new Set(['etc', 's', 'ss', 'aprox', 'esp']);
+const ABREVIATURAS = new Set([
+    ...SENTENCE_ABBREVIATIONS,
+    ...PUEDEN_CERRAR,
+    'cf', 'p', 'pp', 'v', 'vv', 'n', 'nn', 'ed', 'eds', 'trad', 'vol', 'vols',
+    'cap', 'caps', 'núm', 'num', 'ibíd', 'ibid', 'op', 'cit', 'lit', 'fig', 'col', 'cols',
+    'ca', 'vs', 'i.e', 'e.g',
+]);
+
+/** ¿Lo que sigue al punto, saltando espacios, empieza con mayúscula? */
+function sigueMayuscula(markdown: string, i: number): boolean {
+    let j = i + 1;
+    while (j < markdown.length && /\s/.test(markdown[j]!)) j++;
+    return j < markdown.length && /\p{Lu}/u.test(markdown[j]!);
+}
+
+/** La palabra pegada al punto de `i`: «ss» en «4:9ss.», «i.e» en «i.e.». */
+function palabraAntesDelPunto(markdown: string, i: number): string {
+    let j = i - 1;
+    while (j >= 0 && /[\p{L}.]/u.test(markdown[j]!)) j--;
+    return markdown.slice(j + 1, i).toLowerCase();
+}
+
 function findSentenceStart(markdown: string, offset: number): number {
     // Stop at the closest of: `. `, `! `, `? `, `\n\n`, or start of file.
     for (let i = offset - 1; i >= 0; i--) {
         const c = markdown[i];
         const next = markdown[i + 1];
         if ((c === '.' || c === '!' || c === '?') && (next === ' ' || next === '\n')) {
+            // El punto de una abreviatura no cierra la oración.
+            if (c === '.') {
+                const palabra = palabraAntesDelPunto(markdown, i);
+                const cierra = PUEDEN_CERRAR.has(palabra) && sigueMayuscula(markdown, i);
+                if (ABREVIATURAS.has(palabra) && !cierra) continue;
+            }
+            // Un punto pegado a la cita, «… desconocida. (Adamson, 170)», cierra
+            // la MISMA oración que la cita respalda: se sigue buscando hacia
+            // atrás, o la evidencia queda vacía.
+            if (markdown.slice(i + 1, offset).trim() === '') continue;
             return i + 2;
         }
         if (c === '\n' && next === '\n') return i + 2;
