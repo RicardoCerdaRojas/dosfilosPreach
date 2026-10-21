@@ -81,7 +81,7 @@ export function RubricTemplatePicker({
             // instead of the create-time "automatic" wording, which
             // would falsely claim the system is auto-resolving.
             if (mode === 'apply') {
-                return { title: t('create.rubric.applyPlaceholder'), kind: 'placeholder' as const };
+                return { title: t('paperSetup.subSteps.rubric.templates.applyPlaceholder'), kind: 'placeholder' as const };
             }
             return defaultRubric
                 ? { title: t('create.rubric.useDefault', { name: defaultRubric.displayName }), kind: 'auto' as const }
