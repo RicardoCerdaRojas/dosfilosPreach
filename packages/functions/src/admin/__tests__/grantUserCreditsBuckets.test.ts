@@ -46,9 +46,16 @@ function leerFuente(): string {
 describe('grantUserCredits — acredita por el helper canónico', () => {
     it('delega en addPackAdmin', () => {
         const src = leerFuente();
-        expect(src).toContain("import { addPackAdmin }");
+        expect(src).toMatch(/import \{[^}]*\baddPackAdmin\b[^}]*\} from '\.\.\/library\/processingBalance'/);
         expect(src).toMatch(/addPackAdmin\(\s*userId,\s*'standard'/);
         expect(src).toMatch(/addPackAdmin\(\s*userId,\s*'premium'/);
+    });
+
+    it('los US$ de exégesis van por addExegesisPackAdmin, el helper del webhook (TP #8, #41)', () => {
+        const src = leerFuente();
+        expect(src).toMatch(/addExegesisPackAdmin\(\s*userId,\s*exegesisUsd\s*\)/);
+        expect(src).not.toMatch(/processingBalance\.exegesisUsdAvailable/);
+        expect(src).not.toMatch(/processingBalance\.packExegesisUsd/);
     });
 
     it('NO escribe el agregado a mano', () => {
@@ -65,5 +72,13 @@ describe('grantUserCredits — acredita por el helper canónico', () => {
         const src = leerFuente();
         expect(src).not.toMatch(/standardSpentTotal:\s*0/);
         expect(src).not.toMatch(/merge:\s*true/);
+    });
+
+    it('audita y ESPERA la auditoría antes de acreditar (revisión adversarial, TP #8)', () => {
+        const src = leerFuente();
+        const auditoria = src.indexOf('await writeAuditLogAndWait(');
+        expect(auditoria).toBeGreaterThan(-1);
+        expect(auditoria).toBeLessThan(src.indexOf('await addPackAdmin('));
+        expect(auditoria).toBeLessThan(src.indexOf('await addExegesisPackAdmin('));
     });
 });

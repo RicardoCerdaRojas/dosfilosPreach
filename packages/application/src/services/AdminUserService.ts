@@ -53,6 +53,8 @@ export interface GrantUserCreditsArgs {
     userId: string;
     standardPages?: number;
     premiumPages?: number;
+    /** US$ al balde `pack` de exégesis (TP #8, #41). */
+    exegesisUsd?: number;
     reason: string;
 }
 

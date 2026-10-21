@@ -50,6 +50,32 @@ export interface AuditLogServerFilters {
  * "subscribe + onChange" semantics with "fire and await" callable
  * semantics in one class makes it harder to read.
  */
+/**
+ * El saldo de procesamiento tal como lo guarda Firestore, con los Timestamp ya
+ * convertidos. Exportada para probarla sin Firestore.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mapProcessingBalance(raw: Record<string, any> | null | undefined): User['processingBalance'] {
+    return raw ? {
+        planStandardPages: raw.planStandardPages ?? 0,
+        planPremiumPages: raw.planPremiumPages ?? 0,
+        packStandardPages: raw.packStandardPages ?? 0,
+        packPremiumPages: raw.packPremiumPages ?? 0,
+        standardPagesAvailable: raw.standardPagesAvailable ?? 0,
+        premiumPagesAvailable: raw.premiumPagesAvailable ?? 0,
+        standardSpentTotal: raw.standardSpentTotal ?? 0,
+        premiumSpentTotal: raw.premiumSpentTotal ?? 0,
+        // Los baldes de exégesis (US$). Sin ellos el diálogo de otorgar
+        // mostraba «Balance actual: US$ 0,00» aunque hubiera saldo
+        // (TP #8, #41; revisión adversarial).
+        planExegesisUsd: raw.planExegesisUsd ?? 0,
+        packExegesisUsd: raw.packExegesisUsd ?? 0,
+        exegesisUsdAvailable: raw.exegesisUsdAvailable ?? 0,
+        exegesisSpentTotalUsd: raw.exegesisSpentTotalUsd ?? 0,
+        updatedAt: raw.updatedAt?.toDate(),
+    } : undefined;
+}
+
 export class AdminUserQueryService {
     /**
      * Subscribes to a single user doc. `onChange` fires with `null`
@@ -205,17 +231,7 @@ export class AdminUserQueryService {
                 firstAIGenerationAt: data.analytics.firstAIGenerationAt?.toDate(),
                 lastContentCreatedAt: data.analytics.lastContentCreatedAt?.toDate(),
             } : undefined,
-            processingBalance: data.processingBalance ? {
-                planStandardPages: data.processingBalance.planStandardPages ?? 0,
-                planPremiumPages: data.processingBalance.planPremiumPages ?? 0,
-                packStandardPages: data.processingBalance.packStandardPages ?? 0,
-                packPremiumPages: data.processingBalance.packPremiumPages ?? 0,
-                standardPagesAvailable: data.processingBalance.standardPagesAvailable ?? 0,
-                premiumPagesAvailable: data.processingBalance.premiumPagesAvailable ?? 0,
-                standardSpentTotal: data.processingBalance.standardSpentTotal ?? 0,
-                premiumSpentTotal: data.processingBalance.premiumSpentTotal ?? 0,
-                updatedAt: data.processingBalance.updatedAt?.toDate(),
-            } : undefined,
+            processingBalance: mapProcessingBalance(data.processingBalance),
             metadata: data.metadata,
             featureFlags: data.featureFlags ?? undefined,
             declaredConfession: data.declaredConfession ?? undefined,

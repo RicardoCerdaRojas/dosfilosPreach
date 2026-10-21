@@ -517,15 +517,18 @@
       }
     },
     "grantCreditsDialog": {
-      "title": "Acreditar páginas a {{name}}",
-      "description": "Suma páginas al balance del usuario. La acción queda registrada en el audit log con el motivo que indiques.",
+      "title": "Acreditar créditos a {{name}}",
+      "description": "Suma páginas o US$ de exégesis al saldo del usuario. La acción queda registrada en el audit log con el motivo que indiques.",
       "standardPages": "Páginas Estándar (Gemini)",
       "premiumPages": "Páginas Premium (LlamaParse)",
+      "exegesisUsd": "US$ de exégesis",
+      "exegesisHint": "Hasta US$ {{max}} por vez. Va al saldo de packs: no se pierde al renovar el plan.",
+      "overMax": "Supera el tope de US$ {{max}} por otorgamiento. Si de verdad hace falta más, hazlo en dos veces.",
       "reason": "Motivo (queda en el audit log)",
       "reasonPlaceholder": "Ej. Compensación por bug en extracción del 27/04, ticket #423",
       "currentBalance": "Balance actual",
       "afterGrant": "Después del grant",
-      "missingValues": "Indica al menos 1 página y un motivo.",
+      "missingValues": "Indica al menos un monto y un motivo.",
       "cancel": "Cancelar",
       "confirm": "Acreditar",
       "loading": "Acreditando..."
