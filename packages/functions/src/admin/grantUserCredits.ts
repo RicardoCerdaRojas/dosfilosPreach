@@ -1,13 +1,16 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
-import { writeAuditLog } from './auditLog';
-import { addPackAdmin } from '../library/processingBalance';
+import { writeAuditLogAndWait } from './auditLog';
+import { addPackAdmin, addExegesisPackAdmin } from '../library/processingBalance';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
+import { GrantInputError, parseGrantUserCreditsInput } from './grantUserCreditsInput';
 
 interface GrantUserCreditsRequest {
     userId: string;
     standardPages?: number;
     premiumPages?: number;
+    /** US$ de exégesis al balde `pack` (TP #8, #41). */
+    exegesisUsd?: number;
     reason: string;
 }
 
@@ -38,6 +41,10 @@ interface GrantUserCreditsRequest {
  * antes de incrementar: otorgar 500 páginas a alguien que tenía 1.031 lo
  * dejaba con 500 y le borraba el historial.
  *
+ * Los US$ de exégesis van al balde `pack` de exégesis por `addExegesisPackAdmin`,
+ * el mismo helper del webhook de Stripe: la transacción que mantiene
+ * `exegesisUsdAvailable = plan + pack` y no choca con un cobro simultáneo.
+ *
  * A `reason` is required and written to the audit log for compliance.
  *
  * Negative values (deductions) are NOT allowed via this function — that's
@@ -56,16 +63,14 @@ export const grantUserCredits = onCall<GrantUserCreditsRequest>(appCheckCallable
         throw new HttpsError('permission-denied', 'Only super admins can grant credits');
     }
 
-    const { userId, standardPages = 0, premiumPages = 0, reason } = request.data ?? ({} as GrantUserCreditsRequest);
-    if (!userId || !reason?.trim()) {
-        throw new HttpsError('invalid-argument', 'userId and reason are required');
+    let input;
+    try {
+        input = parseGrantUserCreditsInput(request.data);
+    } catch (e) {
+        if (e instanceof GrantInputError) throw new HttpsError('invalid-argument', e.message);
+        throw e;
     }
-    if (standardPages < 0 || premiumPages < 0) {
-        throw new HttpsError('invalid-argument', 'Negative grants are not allowed');
-    }
-    if (standardPages === 0 && premiumPages === 0) {
-        throw new HttpsError('invalid-argument', 'At least one of standardPages or premiumPages must be > 0');
-    }
+    const { userId, standardPages, premiumPages, exegesisUsd, reason } = input;
 
     const userRef = db.collection('users').doc(userId);
     const userDoc = await userRef.get();
@@ -73,6 +78,24 @@ export const grantUserCredits = onCall<GrantUserCreditsRequest>(appCheckCallable
         throw new HttpsError('not-found', `User ${userId} not found`);
     }
     const userData = userDoc.data()!;
+
+    // La auditoría se escribe ANTES de acreditar y se espera: si una
+    // acreditación falla a mitad de camino, queda el registro de lo que se
+    // intentó, y el admin no reintenta a ciegas duplicando lo que sí entró
+    // (revisión adversarial).
+    await writeAuditLogAndWait({
+        actorUid: callerUid,
+        actorEmail: callerDoc.data()?.email,
+        action: 'user.grant_credits',
+        targetUid: userId,
+        targetEmail: userData.email,
+        details: {
+            standardPages,
+            premiumPages,
+            exegesisUsd,
+            reason,
+        },
+    });
 
     // `addPackAdmin` siembra la estructura si falta, acredita el bucket pack y
     // deja el agregado cuadrado como plan + pack. No hay nada que escribir acá.
@@ -82,19 +105,9 @@ export const grantUserCredits = onCall<GrantUserCreditsRequest>(appCheckCallable
     if (premiumPages > 0) {
         await addPackAdmin(userId, 'premium', premiumPages);
     }
+    if (exegesisUsd > 0) {
+        await addExegesisPackAdmin(userId, exegesisUsd);
+    }
 
-    writeAuditLog({
-        actorUid: callerUid,
-        actorEmail: callerDoc.data()?.email,
-        action: 'user.grant_credits',
-        targetUid: userId,
-        targetEmail: userData.email,
-        details: {
-            standardPages,
-            premiumPages,
-            reason,
-        },
-    });
-
-    return { success: true, standardPages, premiumPages };
+    return { success: true, standardPages, premiumPages, exegesisUsd };
 });

@@ -143,6 +143,24 @@ describe('withFullTitle', () => {
         expect(withFullTitle({ title: 'The Book of James' }, 'The Book of James: A New Perspective').title)
             .toBe('The Book of James: A New Perspective');
     });
+    it('si la ficha ya trae el subtítulo aparte, no lo duplica (TP #8, #45)', () => {
+        const ficha = { title: 'Greek Grammar Beyond the Basics', subtitle: 'An Exegetical Syntax of the New Testament' };
+        const completa = withFullTitle(ficha, 'Greek Grammar Beyond the Basics: An Exegetical Syntax of the New Testament');
+        expect(completa).toBe(ficha);
+        expect(formatBibliographyEntry({ ...completa, author: 'Daniel B. Wallace' })).not.toMatch(/New Testament: An Exegetical/);
+    });
+    it('una ficha ya guardada con el subtítulo dentro del título no lo repite al imprimir', () => {
+        const guardada = {
+            author: 'Daniel B. Wallace',
+            title: 'Greek Grammar Beyond the Basics: An Exegetical Syntax of the New Testament',
+            subtitle: 'An Exegetical Syntax of the New Testament',
+        };
+        expect(formatBibliographyEntry(guardada)).toMatch(/Basics: An Exegetical Syntax of the New Testament\*/);
+        expect(formatBibliographyEntry(guardada)).not.toMatch(/New Testament: An Exegetical/);
+    });
+    it('un título que sólo contiene las palabras del subtítulo, sin «:», lo sigue sumando', () => {
+        expect(formatBibliographyEntry({ author: 'A B', title: 'Grace', subtitle: 'Grace' })).toMatch(/Grace: Grace/);
+    });
     it('otra diferencia no se toca: la decide la persona', () => {
         expect(withFullTitle({ title: 'James' }, 'James and the Jesus Tradition').title).toBe('James');
         expect(withFullTitle({ title: 'The Epistle of James' }, 'Commentary on James').title).toBe('The Epistle of James');

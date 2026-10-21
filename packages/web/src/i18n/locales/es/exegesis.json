@@ -2434,10 +2434,6 @@
       "title": "Datos para citar",
       "dialogTitle": "Ficha bibliográfica",
       "allComplete": "Todos los libros tienen sus datos: la bibliografía sale del libro, no del asistente.",
-      "rubricTitle": "Antes de exportar: la rúbrica pide fuentes que el documento no cita",
-      "rubricDescription": "La bibliografía lista sólo lo que el documento cita. Cita esas fuentes en el texto, o exporta igual si tu profesor no las exige.",
-      "rubricUncited": "{{type}}: citadas {{cited}} de {{required}}. En el corpus sin citar: {{sources}}.",
-      "rubricMissing": "{{type}}: citadas {{cited}} de {{required}}, y no hay otra en el corpus.",
       "someMissing": "A {{count}} libro(s) les faltan datos. Sin ellos la bibliografía queda coja o el asistente los inventa.",
       "missingFields": "Faltan: {{fields}}.",
       "previewLabel": "Así saldrá en la bibliografía",
@@ -2502,7 +2498,12 @@
         "allComplete": "Todas las fichas están completas.",
         "exportAnyway": "Exportar igual",
         "export": "Exportar",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "rubricTitle": "Antes de exportar: la rúbrica pide fuentes que el documento no cita",
+        "rubricDescription": "La bibliografía lista sólo lo que el documento cita. Cita esas fuentes en el texto, o exporta igual si tu profesor no las exige.",
+        "rubricUncited": "{{type}}: citadas {{cited}} de {{required}}. En el corpus sin citar: {{sources}}.",
+        "rubricMissing": "{{type}}: citadas {{cited}} de {{required}}, y no hay otra en el corpus.",
+        "notInCorpus": "Citado en el trabajo, pero ya no está en el corpus: vuelve a agregarlo o quita sus citas."
       },
       "bulk": {
         "cta_one": "Leer la portada que falta",

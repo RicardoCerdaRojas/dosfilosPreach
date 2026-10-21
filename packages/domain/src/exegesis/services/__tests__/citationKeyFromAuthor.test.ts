@@ -32,6 +32,19 @@ describe('deriveCitationKeyFromAuthor', () => {
         expect(deriveCitationKeyFromAuthor('Nestle-Aland', 'NA27')).toBe('NA27');
         expect(deriveCitationKeyFromAuthor('United Bible Societies', 'The Greek New Testament, 4th revised edition')).toBe('UBS4');
         expect(deriveCitationKeyFromAuthor('Elliger, K.; Rudolph, W.', 'Biblia Hebraica Stuttgartensia')).toBe('BHS');
+    });
+
+    it('REGRESIÓN (TP #8, #14): una obra SOBRE la edición se cita por su autor', () => {
+        expect(deriveCitationKeyFromAuthor('Metzger', 'A Textual Commentary on the Greek New Testament (UBS4)')).toBe('Metzger');
+        expect(deriveCitationKeyFromAuthor('Bruce M. Metzger', 'A Textual Commentary on the Greek New Testament')).toBe('Metzger');
+        expect(deriveCitationKeyFromAuthor('Roger L. Omanson', 'A Textual Guide to the Greek New Testament')).toBe('Omanson');
+        expect(deriveCitationKeyFromAuthor('Page H. Kelley', 'The Masorah of Biblia Hebraica Stuttgartensia: Introduction and Annotated Glossary')).toBe('Kelley');
+    });
+
+    it('la edición misma conserva su sigla aunque su título diga «Introduction» (revisión adversarial)', () => {
+        expect(deriveCitationKeyFromAuthor('Adrian Schenker', 'Biblia Hebraica Quinta: General Introduction and Megilloth')).toBe('BHQ');
+        expect(deriveCitationKeyFromAuthor('Nestle-Aland', 'Novum Testamentum Graece, 28th edition (Introduction in German and English)')).toBe('NA28');
+        expect(deriveCitationKeyFromAuthor('United Bible Societies', 'The Greek New Testament, 5th revised edition, with Spanish introduction and dictionary')).toBe('UBS5');
         // Un libro que sólo habla del NT griego no es una edición.
         expect(deriveCitationKeyFromAuthor('Daniel B. Wallace', 'Greek Grammar Beyond the Basics')).toBe('Wallace');
     });

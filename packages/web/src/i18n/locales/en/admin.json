@@ -517,15 +517,18 @@
       }
     },
     "grantCreditsDialog": {
-      "title": "Grant pages to {{name}}",
-      "description": "Add pages to the user's balance. This action is logged in the audit log with the reason you provide.",
+      "title": "Grant credits to {{name}}",
+      "description": "Add pages or exegesis USD to the user's balance. This action is logged in the audit log with the reason you provide.",
       "standardPages": "Standard pages (Gemini)",
       "premiumPages": "Premium pages (LlamaParse)",
+      "exegesisUsd": "Exegesis USD",
+      "exegesisHint": "Up to USD {{max}} at a time. Goes to the pack balance: it is not lost when the plan renews.",
+      "overMax": "Above the USD {{max}} limit per grant. If more is really needed, grant it in two steps.",
       "reason": "Reason (logged in audit log)",
       "reasonPlaceholder": "e.g., Compensation for extraction bug on 04/27, ticket #423",
       "currentBalance": "Current balance",
       "afterGrant": "After grant",
-      "missingValues": "Provide at least 1 page and a reason.",
+      "missingValues": "Provide at least one amount and a reason.",
       "cancel": "Cancel",
       "confirm": "Grant",
       "loading": "Granting..."

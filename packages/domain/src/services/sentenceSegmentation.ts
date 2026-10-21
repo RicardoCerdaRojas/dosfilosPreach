@@ -36,11 +36,19 @@ const TRAILING_CLOSERS = new Set(['"', "'", '»', '”', '’', ')', ']', '…']
  * trailing period. Kept short on purpose: every entry is a real form seen in
  * pastoral prose, and a missing one only produces an extra split.
  */
-const ABBREVIATIONS = new Set([
+const ABBREVIATIONS: ReadonlySet<string> = new Set([
     'sr', 'sra', 'srta', 'dr', 'dra', 'lic', 'prof', 'pbro', 'rvdo',
     'cap', 'vol', 'pág', 'pag', 'pp', 'ed', 'trad', 'cf', 'vs', 'etc',
     'ej', 'aprox', 'núm', 'num', 'a.c', 'd.c', 'mr', 'mrs', 'ms', 'st',
 ]);
+
+/**
+ * La misma lista, para quien corta oraciones con otra regla: el verificador de
+ * citas (`citationParser.ts`) la extiende con las abreviaturas de las citas
+ * académicas (s., ss., v., vv., n., p.). Antes tenía su propia lista, y las
+ * dos ya no coincidían (TP #8, revisión adversarial).
+ */
+export const SENTENCE_ABBREVIATIONS: ReadonlySet<string> = ABBREVIATIONS;
 
 /** A sentence and its half-open range `[start, end)` in the source text. */
 export interface SentenceSpan {

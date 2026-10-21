@@ -235,7 +235,21 @@ function titleWithSubtitle(data: BibliographicData): string {
     const title = (data.title ?? '').trim();
     const subtitle = (data.subtitle ?? '').trim();
     if (!title) return '';
-    return subtitle ? `${title}: ${subtitle}` : title;
+    if (!subtitle) return title;
+    return yaTraeElSubtitulo(title, subtitle) ? title : `${title}: ${subtitle}`;
+}
+
+/**
+ * Una ficha guardada antes del arreglo de `withFullTitle` (TP #8, #45) ya
+ * trae «Título: Subtítulo» en el título Y el subtítulo aparte: así salía dos
+ * veces. Cuenta sólo si el título TERMINA en «: subtítulo» o «. subtítulo».
+ */
+function yaTraeElSubtitulo(title: string, subtitle: string): boolean {
+    const norm = (x: string) => x.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+    const t = norm(title);
+    const st = norm(subtitle);
+    if (!t.endsWith(st)) return false;
+    return /[:.]$/.test(t.slice(0, t.length - st.length).trimEnd());
 }
 
 /** «Grand Rapids: Kregel, 2011», con lo que haya. */
@@ -263,10 +277,17 @@ function appendPages(text: string, pages?: string): string {
  * el recurso guardan el título por separado (el #26 del TP #6). Sólo se
  * completa cuando el del recurso EMPIEZA por el de la ficha y sigue con un
  * subtítulo: cualquier otra diferencia la decide la persona.
+ *
+ * Si la ficha YA trae su subtítulo aparte, no se toca: `titleWithSubtitle` lo
+ * agrega al imprimir. TP #8 (#45): Wallace salió «Greek Grammar Beyond the
+ * Basics: An Exegetical Syntax of the New Testament: An Exegetical Syntax of
+ * the New Testament» porque se completaba el título y el subtítulo volvía a
+ * sumarse.
  */
-export function withFullTitle<T extends Pick<BibliographicData, 'title'>>(data: T, resourceTitle: string | null | undefined): T {
+export function withFullTitle<T extends Pick<BibliographicData, 'title' | 'subtitle'>>(data: T, resourceTitle: string | null | undefined): T {
     const corto = (data.title ?? '').trim();
     const largo = (resourceTitle ?? '').trim();
+    if ((data.subtitle ?? '').trim()) return data;
     if (!corto || largo.length <= corto.length) return data;
     if (!largo.toLocaleLowerCase().startsWith(corto.toLocaleLowerCase())) return data;
     // Sólo «:» o «.»: un guion suele venir del nombre del archivo («James -
