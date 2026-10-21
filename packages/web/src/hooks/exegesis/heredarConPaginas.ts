@@ -5,12 +5,14 @@ import {
     type PageIndexEntry,
     type ProjectSource,
     type SheetRange,
+    type SourceType,
 } from '@dosfilos/domain';
+import type { ProposalKind } from '@dosfilos/infrastructure';
 
 /** Lo que propone el proponedor de hojas para un libro contra el pasaje. */
 export interface PropuestaDeHojas {
     ranges: ReadonlyArray<SheetRange>;
-    kind: 'structural' | 'semantic' | string;
+    kind: ProposalKind;
     pageIndex: ReadonlyArray<PageIndexEntry>;
 }
 
@@ -41,7 +43,13 @@ export interface ResultadoDeHerencia {
  */
 export async function heredarConPaginas(deps: {
     heredar: () => Promise<{ creadas: ProjectSource[]; fijadasDelHermano: Record<string, SheetRange[]> }>;
-    proponer: (resourceId: string) => Promise<PropuestaDeHojas>;
+    /**
+     * El tipo viaja para que una gramática o un léxico heredados reciban las
+     * hojas que nombran los versículos con pregunta, como al adjuntarlos
+     * (revisión de A1, TP #8): sin él, la herencia sólo probaba la sección y
+     * la coincidencia.
+     */
+    proponer: (resourceId: string, sourceType: SourceType) => Promise<PropuestaDeHojas>;
     guardar: (fuente: ProjectSource, propuesta: PropuestaDeHojas, hojas: SheetRange[], fijadas: SheetRange[]) => Promise<void>;
     concurrencia?: number;
     alAvanzar?: (hechas: number, total: number) => void;
@@ -61,7 +69,7 @@ export async function heredarConPaginas(deps: {
     const trabajar = async () => {
         for (let s = cola.shift(); s; s = cola.shift()) {
             try {
-                propuestas.set(s.id, await deps.proponer(s.sourceLibraryResourceId ?? s.corpusId));
+                propuestas.set(s.id, await deps.proponer(s.sourceLibraryResourceId ?? s.corpusId, s.sourceType));
             } catch (err) {
                 console.warn('[herencia] no se pudo proponer páginas', s.displayLabel, err);
                 propuestas.set(s.id, null);

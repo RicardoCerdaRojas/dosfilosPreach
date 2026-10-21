@@ -13,13 +13,10 @@ const KEY = 'exegesis-lemma-pages';
  * por cada apertura del selector. Se cachea porque los lemas no cambian
  * mientras el pasaje no cambie.
  */
-export function useLemmaPages(
-    resourceId: string | null,
-    lemmas: ReadonlyArray<{ lemma: string; term: string }>,
-    enabled: boolean,
-) {
+/** La consulta, para varios libros a la vez (`useCorpusQuestionReview`). Misma llave. */
+export function lemmaPagesQuery(resourceId: string | null, lemmas: ReadonlyArray<{ lemma: string; term: string }>) {
     const terms = lemmas.map(l => l.lemma).filter(l => l.trim().length > 0);
-    const query = useQuery({
+    return {
         queryKey: [KEY, resourceId, terms.join('|')],
         queryFn: async (): Promise<LemmaPageProposal[]> => {
             const { byTerm, entries } = await searchLemmasAndEntriesInDocument(resourceId!, terms);
@@ -33,11 +30,20 @@ export function useLemmaPages(
                 ...(entries[lemma] ? { entry: entries[lemma] } : {}),
             }));
         },
-        enabled: enabled && !!resourceId && terms.length > 0,
+        enabled: !!resourceId && terms.length > 0,
         staleTime: 30 * 60 * 1000,
         gcTime: 60 * 60 * 1000,
         retry: 1,
-    });
+    };
+}
+
+export function useLemmaPages(
+    resourceId: string | null,
+    lemmas: ReadonlyArray<{ lemma: string; term: string }>,
+    enabled: boolean,
+) {
+    const options = lemmaPagesQuery(resourceId, lemmas);
+    const query = useQuery({ ...options, enabled: enabled && options.enabled });
 
     return {
         proposals: query.data ?? [],

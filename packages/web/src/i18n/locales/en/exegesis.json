@@ -846,6 +846,43 @@
         "tab": "Corpus",
         "heading": "Paper corpus",
         "description": "Upload extracts specific to this passage with their academic type. We flag what's missing per the rubric.",
+        "questionReview": {
+          "title": "What answers each question?",
+          "loading_one": "Reviewing {{count}} source…",
+          "loading_other": "Reviewing {{count}} sources…",
+          "withWarnings_one": "{{count}} warning before generating the analysis.",
+          "withWarnings_other": "{{count}} warnings before generating the analysis.",
+          "allGood": "Every question has material in the corpus.",
+          "byQuestion": "See by question",
+          "questionHeading": "Question {{number}} · {{verses}}",
+          "noSource": "No source in the corpus names these verses.",
+          "page": "p. {{page}}",
+          "sheet": "sh. {{sheet}}",
+          "warning": {
+            "unrelated": "{{source}} does not name any verse with a question.",
+            "noPrintedPages": "{{source}} has no resolved printed pages: its citations cannot be checked.",
+            "missingSheets_one": "{{source}} discusses question {{questions}} ({{verses}}) on {{pages}}, outside the corpus.",
+            "missingSheets_other": "{{source}} discusses questions {{questions}} ({{verses}}) on {{pages}}, outside the corpus.",
+            "missingEntry": "The entry for {{term}} in {{source}} (question {{question}}) is incomplete in the corpus (missing {{pages}}).",
+            "missingEntryWhole": "The entry for {{term}} in {{source}} (question {{question}}, {{pages}}) is not in the corpus.",
+            "questionUncovered": "No page in the corpus names {{verses}} (question {{question}}).",
+            "failed": "{{source}} could not be reviewed. Reopen this tab to try again."
+          },
+          "action": {
+            "addAndPin": "Add and pin",
+            "remove": "Remove from corpus",
+            "calibrate": "Resolve numbering"
+          },
+          "chip": {
+            "pinned": "{{page}}: pinned, goes into every step",
+            "inCorpus": "{{page}}: in the corpus. Click to pin it",
+            "outside": "{{page}}: outside the corpus. Click to add and pin it"
+          },
+          "toast": {
+            "added": "Added and pinned {{pages}} from {{source}}.",
+            "addFailed": "The page could not be added. Try again."
+          }
+        },
         "gap": {
           "metTitle": "Your corpus meets the rubric",
           "metBody": "{{count}} sources attached — every minimum is satisfied. You can move on to the structural plan.",
@@ -1004,7 +1041,11 @@
             "structural": "Exact section",
             "semantic": "Approximate match",
             "structuralHint": "The document's section for this passage was taken whole and in order.",
-            "semanticHint": "This document has no reference headings, so the closest-matching fragments were pulled instead. Worth reviewing before generating."
+            "semanticHint": "This document has no reference headings, so the closest-matching fragments were pulled instead. Worth reviewing before generating.",
+            "passage": "By passage",
+            "passageHint": "The pages where the book names the verses with a question, from its passage index.",
+            "manual": "Picked by hand",
+            "manualHint": "You picked or adjusted these pages in the selector."
           },
           "remove": "Remove source",
           "viewOriginal": "Open the original PDF in a new tab",

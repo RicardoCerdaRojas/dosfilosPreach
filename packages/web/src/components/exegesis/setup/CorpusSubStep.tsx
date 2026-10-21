@@ -93,6 +93,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useAutoClassifyOtherSources } from '@/hooks/exegesis/useAutoClassifyOtherSources';
 import { SourceTypePicker } from './SourceTypePicker';
 import { RubricGapCard } from './RubricGapCard';
+import { CorpusQuestionReviewCard } from './CorpusQuestionReviewCard';
 import { CourseBibliographyCard } from './CourseBibliographyCard';
 import { RubricRigorIndicator } from '@/components/exegesis/rubric/RubricRigorIndicator';
 import { ExtractFromLibraryDialog } from './ExtractFromLibraryDialog';
@@ -249,6 +250,9 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                     ) && (
                         <RubricGapCard paper={paper} onPickType={(type) => openDialog(type)} />
                     )}
+                    {/* Antes de generar: qué hojas de cada fuente tratan cada
+                        pregunta, y lo que falta (TP #8, A4). */}
+                    <CorpusQuestionReviewCard paper={paper} />
                     <CourseBibliographyCard paper={paper} onAddResource={openDialogForResource} />
                     <CorpusSourcesList
                         paper={paper}

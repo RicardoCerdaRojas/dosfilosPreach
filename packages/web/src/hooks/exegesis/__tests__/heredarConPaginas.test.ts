@@ -13,7 +13,7 @@ function montar(creadas: unknown[], fijadas: Record<string, Array<{ start: numbe
     const guardadas: Array<{ id: string; hojas: unknown; fijadas: unknown }> = [];
     const proponer = vi.fn(async (resourceId: string) => {
         if (resourceId === 'lib-roto') throw new Error('callable caída');
-        return { ranges: rangos[resourceId] ?? [{ start: 10, end: 12 }], kind: 'structural', pageIndex: [] };
+        return { ranges: rangos[resourceId] ?? [{ start: 10, end: 12 }], kind: 'structural' as const, pageIndex: [] };
     });
     const deps = {
         heredar: async () => ({ creadas: creadas as never, fijadasDelHermano: fijadas }),
@@ -43,6 +43,8 @@ describe('heredarConPaginas', () => {
         const r = await heredarConPaginas(deps);
         expect(r.porLema).toBe(2);
         expect(proponer).toHaveBeenCalledTimes(1);
+        // El tipo viaja: el comentario recibe las hojas del pasaje después de su sección.
+        expect(proponer).toHaveBeenCalledWith('lib-burt', 'commentary-expository');
     });
 
     it('sin propuesta (o con error) la fuente queda sin páginas, no limitada a lo fijado', async () => {

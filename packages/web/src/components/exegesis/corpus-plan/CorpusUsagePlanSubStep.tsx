@@ -21,6 +21,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { PinnedSourcesPicker } from './PinnedSourcesPicker';
 import { nombreCortoDeFuente } from './nombreCortoDeFuente';
 import { PasosFueraDelPlan } from './PasosFueraDelPlan';
+import { CorpusQuestionReviewCard } from '../setup/CorpusQuestionReviewCard';
 
 interface CorpusUsagePlanSubStepProps {
     paper: ExegeticalPaper;
@@ -180,6 +181,10 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
 
             {hasCorpus && hasSteps && (
                 <>
+                    {/* Lo que falta en el corpus se dice antes de proponer el
+                        plan: el plan reparte las fuentes que hay (TP #8, A4). */}
+                    <CorpusQuestionReviewCard paper={paper} />
+
                     {!hasProposal && (
                         <EmptyProposalState
                             isLoading={propose.isPending}

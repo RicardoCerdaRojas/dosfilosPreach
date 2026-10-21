@@ -121,6 +121,19 @@ Es una tarjeta nueva en el Corpus y en el Plan de uso: **«¿Qué responde cada 
 
 Todo es determinista y usa los datos de A1, A2 y A3. Así el estudiante se entera de lo que falta **antes** de gastar en el análisis.
 
+**Medido (2026-10-21, solo lectura, corpus real del TP #8, `scripts/rag-eval/.medir-revision.ts`):**
+- **Corpus como se entregó:** un solo aviso, la entrada de λαμβάνω en Tuggy (550–551) fuera del corpus. Es material que la pregunta 3 nombra («οὐ λαμβάνετε»).
+- **Contrafáctico, sin Mayor 411 ni Tuggy 584 (el corpus antes de los arreglos a mano):** avisa los dos.
+  - «Mayor trata las preguntas 2 y 3 (4:2, 4:3) en p. 133, fuera del corpus».
+  - «La entrada de μέλεσιν en Tuggy está incompleta (sin p. 584)».
+- **Mayor 411 se detecta solo con las refs de A3.** Hace falta `rellenar-refs.ts --escribir` después del deploy. Con las refs de hoy, Mayor no nombra ningún versículo con pregunta.
+- **Tres reglas que salieron de la medición:**
+  1. **Un comentario del libro nunca recibe «no nombra ningún versículo».** Con las refs de hoy, Mayor salía como inútil, con la acción [Quitar del corpus].
+  2. **Un hueco dentro de la sección elegida avisa** (≤ 4 hojas a cada lado), aunque otra hoja del corpus nombre el versículo. Sin esta regla, la 413 («IV 3–5]») tapaba la falta de la 411.
+  3. **En un léxico manda la entrada del lema.** Tuggy 209 (δαπανάω) cita 4:3, pero la entrada de αἰτέω ya estaba en el corpus.
+- **Lo que no hace:** «Comentario crítico-técnico: 1 de 2… excluidas: Ropes y McCartney» queda para A7, que es donde se decide la regla por tipo.
+- **Modo de selección `passage`:** las propuestas por pasaje ya no se guardan como «Coincidencia aproximada». La selección hecha a mano tampoco: tiene su propio rótulo.
+
 ### A5. Fijar por hoja (#33)
 - **Hoy:** `normalizeSheetRanges` (`documentPageIndex.ts:117-135`) funde las hojas contiguas, y «Fijar» compara el tramo exacto (`SourcePagesWorkspace.tsx:292-299`). Por eso no se puede fijar la 411 dentro de 407–418.
 - **Arreglo:** guardar `pinnedSheets` como un **conjunto de hojas**, independiente de los tramos. La interfaz permite fijar y desfijar cada hoja. El medidor y `readPinned` leen el conjunto. Los datos antiguos se migran tramo por tramo.

@@ -16,7 +16,7 @@ export { CallableCuratedCorpusRetriever } from './CallableCuratedCorpusRetriever
 export { CallableCuratedCorpusReader } from './CallableCuratedCorpusReader';
 // Con qué hojas arranca el carrito: índice del comentario primero, coincidencia
 // semántica si el documento no trae estructura.
-export { proposeSheetRanges } from './SheetRangeProposer';
+export { proposeSheetRanges, selectionModeOf } from './SheetRangeProposer';
 export type { ProposalKind, SheetRangeProposal, ProposeSheetRangesInput } from './SheetRangeProposer';
 // Índice de hojas y PDF original, para el selector de páginas.
 export {

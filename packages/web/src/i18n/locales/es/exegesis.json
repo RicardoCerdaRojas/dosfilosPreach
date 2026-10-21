@@ -846,6 +846,43 @@
         "tab": "Corpus",
         "heading": "Corpus del trabajo",
         "description": "Sube los extractos específicos para este pasaje con tipo académico. Te avisamos qué falta según la rúbrica.",
+        "questionReview": {
+          "title": "¿Qué responde cada pregunta?",
+          "loading_one": "Revisando {{count}} fuente…",
+          "loading_other": "Revisando {{count}} fuentes…",
+          "withWarnings_one": "{{count}} aviso antes de generar el análisis.",
+          "withWarnings_other": "{{count}} avisos antes de generar el análisis.",
+          "allGood": "Cada pregunta tiene material en el corpus.",
+          "byQuestion": "Ver por pregunta",
+          "questionHeading": "Pregunta {{number}} · {{verses}}",
+          "noSource": "Ninguna fuente del corpus nombra estos versículos.",
+          "page": "p. {{page}}",
+          "sheet": "h. {{sheet}}",
+          "warning": {
+            "unrelated": "{{source}} no nombra ningún versículo con pregunta.",
+            "noPrintedPages": "{{source}} no tiene páginas impresas resueltas: sus citas no se podrán comprobar.",
+            "missingSheets_one": "{{source}} trata la pregunta {{questions}} ({{verses}}) en {{pages}}, fuera del corpus.",
+            "missingSheets_other": "{{source}} trata las preguntas {{questions}} ({{verses}}) en {{pages}}, fuera del corpus.",
+            "missingEntry": "La entrada de {{term}} en {{source}} (pregunta {{question}}) está incompleta en el corpus (sin {{pages}}).",
+            "missingEntryWhole": "La entrada de {{term}} en {{source}} (pregunta {{question}}, {{pages}}) no está en el corpus.",
+            "questionUncovered": "Ninguna página del corpus nombra {{verses}} (pregunta {{question}}).",
+            "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo."
+          },
+          "action": {
+            "addAndPin": "Agregar y fijar",
+            "remove": "Quitar del corpus",
+            "calibrate": "Resolver numeración"
+          },
+          "chip": {
+            "pinned": "{{page}}: fijada, entra a todos los pasos",
+            "inCorpus": "{{page}}: en el corpus. Pulsa para fijarla",
+            "outside": "{{page}}: fuera del corpus. Pulsa para agregarla y fijarla"
+          },
+          "toast": {
+            "added": "Se agregó y fijó {{pages}} de {{source}}.",
+            "addFailed": "No se pudo agregar la página. Inténtalo de nuevo."
+          }
+        },
         "gap": {
           "metTitle": "Tu corpus cumple la rúbrica",
           "metBody": "{{count}} fuentes adjuntas — todos los mínimos están satisfechos. Puedes avanzar al plan estructural.",
@@ -1004,7 +1041,11 @@
             "structural": "Sección exacta",
             "semantic": "Coincidencia aproximada",
             "structuralHint": "Se tomó la sección del documento dedicada a este pasaje, completa y en orden.",
-            "semanticHint": "El documento no trae encabezados por referencia, así que se trajeron los fragmentos más parecidos al pasaje. Conviene revisarlos antes de generar."
+            "semanticHint": "El documento no trae encabezados por referencia, así que se trajeron los fragmentos más parecidos al pasaje. Conviene revisarlos antes de generar.",
+            "passage": "Por pasaje",
+            "passageHint": "Las hojas donde el libro nombra los versículos con pregunta, según su índice de pasajes.",
+            "manual": "Elegida a mano",
+            "manualHint": "Las páginas las elegiste o corregiste tú en el selector."
           },
           "remove": "Quitar fuente",
           "viewOriginal": "Abrir el PDF original en una pestaña nueva",

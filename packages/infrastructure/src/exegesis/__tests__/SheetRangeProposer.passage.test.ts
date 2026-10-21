@@ -17,7 +17,7 @@ vi.mock('firebase/functions', () => ({
     },
 }));
 vi.mock('../DocumentPageIndexClient', () => ({ searchDocumentByReference: (...a: unknown[]) => referencia(...a) }));
-const { proposeSheetRanges } = await import('../SheetRangeProposer');
+const { proposeSheetRanges, selectionModeOf } = await import('../SheetRangeProposer');
 
 const indice = Array.from({ length: 900 }, (_, i) => ({ sheet: i + 1, chunkIndices: [i] }));
 const base = {
@@ -71,5 +71,13 @@ describe('proposeSheetRanges · por pasaje', () => {
         referencia.mockRejectedValue(new Error('caída'));
         const p = await proposeSheetRanges({ ...base, sourceType: 'grammar-syntax', questionVerses: [2] });
         expect(p.kind).toBe('semantic');
+    });
+});
+
+describe('selectionModeOf (A4)', () => {
+    it('la propuesta por pasaje se registra como tal, no como coincidencia aproximada', () => {
+        expect(selectionModeOf('passage')).toBe('passage');
+        expect(selectionModeOf('structural')).toBe('structural');
+        expect(selectionModeOf('semantic')).toBe('semantic');
     });
 });

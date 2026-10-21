@@ -11,6 +11,7 @@ import {
     selectChunksForPassage,
     sheetsForChunkRanges,
     type DocumentOutlineEntry,
+    type ExcerptSelectionMode,
     type PageIndexEntry,
     type PassageReference,
     type SheetRange,
@@ -40,6 +41,15 @@ import { searchDocumentByReference } from './DocumentPageIndexClient';
  */
 
 export type ProposalKind = 'structural' | 'passage' | 'semantic' | 'none';
+
+/**
+ * Cómo se registra en la fuente una propuesta aceptada tal cual. La de pasaje
+ * se guardaba como `semantic` y el corpus decía «Coincidencia aproximada» de
+ * las hojas que nombran el versículo (TP #8, 8a, A4).
+ */
+export function selectionModeOf(kind: ProposalKind): ExcerptSelectionMode {
+    return kind === 'structural' || kind === 'passage' ? kind : 'semantic';
+}
 
 export interface SheetRangeProposal {
     ranges: SheetRange[];

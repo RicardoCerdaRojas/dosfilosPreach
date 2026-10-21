@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import {
     fetchDocumentPageIndex,
     proposeSheetRanges,
+    selectionModeOf,
     type ProposalKind,
 } from '@dosfilos/infrastructure';
 import { questionVersesOfBrief, type PassageReference, type SheetRange, type SourceRole, type SourceType } from '@dosfilos/domain';
@@ -91,7 +92,7 @@ export function useAttachLibrarySource() {
                 pageIndex: index.pages,
                 // La propuesta se aceptó tal cual, sin pasar por ojo humano.
                 // Queda registrado para que el corpus pueda decirlo.
-                selectionMode: proposal.kind === 'structural' ? 'structural' : 'semantic',
+                selectionMode: selectionModeOf(proposal.kind),
             });
 
             return { kind: proposal.kind, sheetCount: countSheets(proposal.ranges) };

@@ -1,0 +1,148 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ExegeticalPaper } from '@dosfilos/domain';
+
+/**
+ * TP #8 (Santiago 4:1-10, 2026-10-21, fase 8a, A4): «¿Qué responde cada
+ * pregunta?». La nota de Mayor sobre 4:3 (h. 411 = p. 133) y la mitad de la
+ * entrada de μέλος en Tuggy (584) faltaban en el corpus y se supo recién al
+ * verificar las citas. La tarjeta lo dice antes de generar, con el arreglo.
+ */
+const hits: Record<string, Array<{ sheet: number; count: number; snippet: string; section: null; verses: number[] }>> = {};
+const searchDocumentByReference = vi.fn(async (id: string) => ({ hits: hits[id] ?? [], truncated: false, scannedChunks: 1 }));
+const searchLemmasAndEntriesInDocument = vi.fn(async () => ({
+    byTerm: { 'μέλος': [{ sheet: 585, count: 2, snippet: '', section: null }] },
+    entries: { 'μέλος': { startSheet: 584, endSheet: 585 } },
+}));
+vi.mock('@dosfilos/infrastructure', () => ({
+    searchDocumentByReference,
+    searchLemmasAndEntriesInDocument,
+    fetchDocumentPageIndex: vi.fn(async () => ({ pages: [], sections: [], printedPageOffset: null })),
+}));
+const tok = (text: string, lemma: string, pos: string) => ({ text, lemma, pos, tag: {}, transliteration: '' });
+vi.mock('@/hooks/exegesis/usePassageLemmas', () => ({
+    usePassageLemmas: () => ({
+        isLoading: false,
+        data: { hebrew: false, lemmas: [], entries: [{ chapter: 4, verse: 1, morphology: { reference: { chapter: 4, verse: 1 }, text: '', tokens: [tok('μέλεσιν', 'μέλος', 'N')] } }] },
+    }),
+}));
+const mayorNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 999, offset: -278 }] };
+vi.mock('@/hooks/library', () => ({
+    useLibrary: () => ({
+        resources: [
+            { id: 'r-mayor', pageNumbering: mayorNumbering },
+            { id: 'r-tuggy', pageNumbering: { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 999, offset: 0 }] } },
+            { id: 'r-runge', pageNumbering: null },
+        ],
+    }),
+}));
+const removeSource = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
+    useExegesisPapers: () => ({ removeSource: { mutateAsync: removeSource, isPending: false } }),
+}));
+const selectPages = vi.fn().mockResolvedValue({ excerptCount: 1, emptySheets: 0, expectedChunks: 1, incomplete: false });
+vi.mock('@/hooks/exegesis/useSelectSourcePages', () => ({
+    useSelectSourcePages: () => ({ mutateAsync: selectPages, isPending: false }),
+}));
+vi.mock('@/i18n', () => ({
+    useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k) }),
+}));
+const navigate = vi.fn();
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+
+const { CorpusQuestionReviewCard } = await import('../CorpusQuestionReviewCard');
+
+const fuente = (id: string, sourceType: string, sheetRanges: Array<{ start: number; end: number }>, extra: Record<string, unknown> = {}) => ({
+    id,
+    corpusId: `r-${id}`,
+    sourceLibraryResourceId: `r-${id}`,
+    sourceType,
+    displayLabel: id,
+    citationKey: id[0]!.toUpperCase() + id.slice(1),
+    mode: 'extracted-excerpts',
+    excerpts: [],
+    excerptRecipe: { sheetRanges, proposedRanges: [], pinnedRanges: [], passageFingerprint: 'x' },
+    ...extra,
+});
+
+const BRIEF = '1. ¿Qué significa el sustantivo μέλεσιν (Stg. 4:1)?\n2. ¿Por qué αἰτεῖτε en voz activa (Stg. 4:3)?';
+
+const trabajo = (sources: unknown[], assignmentBrief: string | null = BRIEF) => ({
+    id: 'tp8',
+    passage: { bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 1, verseEnd: 10 },
+    assignmentBrief,
+    displayLanguage: 'es',
+    steps: [],
+    sources,
+}) as unknown as ExegeticalPaper;
+
+const montar = (paper: ExegeticalPaper) => render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <CorpusQuestionReviewCard paper={paper} />
+    </QueryClientProvider>,
+);
+
+beforeEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    for (const k of Object.keys(hits)) delete hits[k];
+    hits['r-mayor'] = [
+        { sheet: 407, count: 4, snippet: '', section: null, verses: [1, 2] },
+        { sheet: 411, count: 3, snippet: '', section: null, verses: [2, 3] },
+    ];
+    hits['r-tuggy'] = [{ sheet: 585, count: 1, snippet: '', section: null, verses: [1] }];
+});
+
+describe('«¿Qué responde cada pregunta?»', () => {
+    it('avisa la nota de Mayor sobre 4:3 con su página impresa, y la agrega y fija SOLA', async () => {
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 410 }])]));
+        const aviso = await screen.findByText(/warning\.missingSheets/);
+        expect(aviso.textContent).toContain('"pages":"paperSetup.subSteps.corpus.questionReview.page {\\"page\\":\\"133\\"}"');
+        expect(aviso.textContent).toContain('"verses":"4:3"');
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.addAndPin'));
+        await waitFor(() => expect(selectPages).toHaveBeenCalled());
+        expect(selectPages.mock.calls[0]![0]).toMatchObject({
+            paperId: 'tp8',
+            libraryResourceId: 'r-mayor',
+            sheetRanges: [{ start: 407, end: 411 }],
+            pinnedRanges: [{ start: 411, end: 411 }],
+            selectionMode: 'manual',
+        });
+    });
+
+    it('avisa la entrada de μέλος incompleta en Tuggy: falta la 584', async () => {
+        montar(trabajo([fuente('tuggy', 'lexicon-technical', [{ start: 585, end: 585 }])]));
+        const aviso = await screen.findByText(/warning\.missingEntry/);
+        expect(aviso.textContent).toContain('"term":"μέλεσιν"');
+        expect(aviso.textContent).toContain('584');
+        expect(searchLemmasAndEntriesInDocument).toHaveBeenCalledWith('r-tuggy', ['μέλος']);
+    });
+
+    it('Runge no nombra ningún versículo con pregunta: se puede quitar, y pide resolver la numeración', async () => {
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }]), fuente('runge', 'grammar-syntax', [{ start: 100, end: 110 }])]));
+        await screen.findByText(/warning\.unrelated/);
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.remove'));
+        await waitFor(() => expect(removeSource).toHaveBeenCalledWith({ paperId: 'tp8', sourceId: 'runge' }));
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.calibrate'));
+        expect(navigate).toHaveBeenCalledWith(expect.stringContaining('r-runge'));
+    });
+
+    it('con todo en el corpus, lo dice', async () => {
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }])], '1. ¿Qué dice 4:3 (Stg. 4:3)?'));
+        expect(await screen.findByText('paperSetup.subSteps.corpus.questionReview.allGood')).toBeInTheDocument();
+    });
+
+    it('no busca en una fuente que no está en la biblioteca', async () => {
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }]), fuente('subida', 'commentary-critical', [{ start: 1, end: 2 }])]));
+        await screen.findByText('paperSetup.subSteps.corpus.questionReview.allGood');
+        expect(searchDocumentByReference).not.toHaveBeenCalledWith('r-subida', expect.anything());
+    });
+
+    it('sin preguntas con versículos del pasaje no se muestra', () => {
+        const { container } = montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }])], 'Predicar sobre la humildad.'));
+        expect(container).toBeEmptyDOMElement();
+        expect(searchDocumentByReference).not.toHaveBeenCalled();
+    });
+});
