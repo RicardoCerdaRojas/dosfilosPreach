@@ -87,7 +87,67 @@ describe('parseHeadingReference', () => {
     });
 });
 
+describe('parseHeadingReference — encabezado de página de un comentario de notas (TP #8, A3)', () => {
+    // Formas reales de Mayor, «The Epistle of St. James» (3.ª ed.): las páginas
+    // impares llevan «IV 2, 3] NOTES» y el comentario nunca dice «James».
+    it('lee capítulo en romanos y versículos con el libro del contexto', () => {
+        expect(parseHeadingReference('IV 2, 3] NOTES', 'JAS')).toEqual(ref('James 4:2-3'));
+        expect(parseHeadingReference('IV 2] NOTES', 'JAS')).toEqual(ref('James 4:2'));
+        expect(parseHeadingReference('IV 3–5] NOTES', 'JAS')).toEqual(ref('James 4:3-5'));
+        expect(parseHeadingReference('IV 6]', 'JAS')).toEqual(ref('James 4:6'));
+    });
+
+    it('cruza de capítulo', () => {
+        expect(parseHeadingReference('III 17–IV 1] NOTES', 'JAS')).toEqual(ref('James 3:17-4:1'));
+    });
+
+    it('sin libro del contexto no adivina', () => {
+        expect(parseHeadingReference('IV 2, 3] NOTES', null)).toBeNull();
+    });
+
+    it('rechaza lo que no es un encabezado de notas', () => {
+        expect(parseHeadingReference('IV 2, 3 NOTES', 'JAS')).toBeNull();
+        expect(parseHeadingReference('Chapter IV 2] and more', 'JAS')).toBeNull();
+        expect(parseHeadingReference('IV 5–3] NOTES', 'JAS')).toBeNull();
+        expect(parseHeadingReference('IQ 2] NOTES', 'JAS')).toBeNull();
+    });
+});
+
 describe('resolveOutlineReferences', () => {
+    it('lee los encabezados de Mayor con el libro del trabajo y las páginas pares heredan', () => {
+        const resolved = resolveOutlineReferences(
+            [
+                entry(0, 'IV 2, 3] NOTES', ['NOTES', 'IV 2, 3] NOTES'], 411),
+                entry(1, 'THE EPISTLE OF ST. JAMES', ['NOTES', 'THE EPISTLE OF ST. JAMES'], 412),
+                entry(2, 'IV 3–5] NOTES', ['NOTES', 'IV 3–5] NOTES'], 413),
+            ],
+            'JAS',
+        );
+
+        expect(resolved.map(e => e.resolution)).toEqual(['heading', 'inherited', 'heading']);
+        expect(resolved[1]!.reference).toEqual(ref('James 4:2-3'));
+        expect(resolved[2]!.reference).toEqual(ref('James 4:3-5'));
+    });
+
+    it('sin el libro del trabajo, el mismo documento no se lee', () => {
+        const resolved = resolveOutlineReferences([
+            entry(0, 'IV 2, 3] NOTES', ['NOTES', 'IV 2, 3] NOTES']),
+        ]);
+        expect(resolved[0]!.reference).toBeNull();
+    });
+
+    it('el libro del trabajo no se presta a una referencia desnuda', () => {
+        // Un comentario de Hebreos y Santiago sin libro en la miga: «1:1-3» no
+        // es Santiago 1:1-3 sólo porque el trabajo sea de Santiago.
+        const resolved = resolveOutlineReferences([entry(0, '1:1-3', ['Commentary'])], 'JAS');
+        expect(resolved[0]!.reference).toBeNull();
+    });
+
+    it('un libro nombrado en la miga manda sobre el del trabajo', () => {
+        const resolved = resolveOutlineReferences([entry(0, '1:1-3', ['Jonah'])], 'JAS');
+        expect(resolved[0]!.reference).toEqual(ref('Jonah 1:1-3'));
+    });
+
     it('hereda la referencia del encabezado hacia el cuerpo que le sigue', () => {
         const resolved = resolveOutlineReferences([
             entry(0, 'Jonah 1:1-3', ['Jonah', 'Jonah 1:1-3']),

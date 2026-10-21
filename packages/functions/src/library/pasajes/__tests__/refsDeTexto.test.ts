@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BIBLE_CANON } from '@dosfilos/domain';
 import { CANON_BIBLICO, GRAFIAS_DE_COMENTARIOS, PREFERENCIA_SI_AMBIGUA } from '../canonBiblico';
-import { etiquetaDePasaje, refsDeConsulta, refsDeFragmento, refsDeTexto, REFS_POR_FRAGMENTO } from '../refsDeTexto';
+import { etiquetaDePasaje, libroDelTitulo, refsDeConsulta, refsDeFragmento, refsDeTexto, REFS_POR_FRAGMENTO } from '../refsDeTexto';
 
 /**
  * El canon de `functions` es copia del dominio. Si se agrega una grafía allá
@@ -252,5 +252,48 @@ describe('etiquetaDePasaje (U6)', () => {
     });
     it('la mayúscula va en la primera letra', () => {
         expect(etiquetaDePasaje('1 cor 13:4')).toBe('1 Cor 13:4');
+    });
+});
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A3). Encabezados y notas reales de Mayor, *The
+ * Epistle of St. James* (fragmentos 812–827 en producción ese día): sus
+ * páginas no nombran el libro y el índice de pasajes quedaba vacío.
+ */
+describe('refsDeFragmento · comentarios clásicos de notas', () => {
+    it('lee «IV 2, 3] NOTES» con el libro del documento', () => {
+        expect(refsDeFragmento('cualquier texto', ['NOTES', 'IV 2, 3] NOTES'], 'JAS')).toEqual(['JAS.4', 'JAS.4.2', 'JAS.4.3']);
+    });
+
+    it('lee un tramo «IV 3–5] NOTES» y uno que cruza capítulos «III 17–IV 1] NOTES»', () => {
+        expect(refsDeFragmento('', ['NOTES', 'IV 3–5] NOTES'], 'JAS')).toEqual(['JAS.4', 'JAS.4.3', 'JAS.4.4', 'JAS.4.5']);
+        expect(refsDeFragmento('', ['NOTES', 'III 17–IV 1] NOTES'], 'JAS')).toEqual(['JAS.3', 'JAS.3.17', 'JAS.4', 'JAS.4.1']);
+    });
+
+    it('suma las notas «N. lema.]» del texto con el capítulo del encabezado', () => {
+        const texto = 'οὐκ ἔχετε.] Las palabras…\n\n3. αἰτεῖτε καὶ οὐ λαμβάνετε,] Yet in i. 5 he had said…';
+        expect(refsDeFragmento(texto, ['NOTES', 'IV 2] NOTES'], 'JAS')).toEqual(['JAS.4', 'JAS.4.2', 'JAS.4.3']);
+    });
+
+    it('una lista numerada sin griego ni hebreo no es una nota', () => {
+        expect(refsDeFragmento('1. Introduction]', ['NOTES', 'IV 2] NOTES'], 'JAS')).toEqual(['JAS.4', 'JAS.4.2']);
+    });
+
+    it('la coma enumera versículos sueltos, no un tramo', () => {
+        expect(refsDeFragmento('', ['NOTES', 'IV 2, 5] NOTES'], 'JAS')).toEqual(['JAS.4', 'JAS.4.2', 'JAS.4.5']);
+    });
+
+    it('una nota bajo un encabezado de varios capítulos no inventa el capítulo', () => {
+        expect(refsDeFragmento('3. αἰτεῖτε καὶ οὐ λαμβάνετε,]', ['James 4–5'])).toEqual(['JAS.4', 'JAS.5']);
+    });
+
+    it('sin el libro del documento, el encabezado de notas no se adivina', () => {
+        expect(refsDeFragmento('', ['NOTES', 'IV 2, 3] NOTES'])).toEqual([]);
+    });
+
+    it('«THE EPISTLE OF ST. JAMES» nombra el libro', () => {
+        expect(libroDelTitulo('THE EPISTLE OF ST. JAMES')).toBe('JAS');
+        expect(libroDelTitulo('The Epistle of James - the Greek text with introduction')).toBe('JAS');
+        expect(libroDelTitulo('Greek Grammar Beyond the Basics')).toBeNull();
     });
 });

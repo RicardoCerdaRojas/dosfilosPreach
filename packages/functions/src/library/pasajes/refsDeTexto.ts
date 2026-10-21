@@ -292,8 +292,92 @@ const SIN_LIBRO = new RegExp(`(?<![\\p{L}\\p{N}.:,])(\\d{1,3})${H}:${H}(\\d{1,3}
 /** «v. 14», «vv. 13-18», «vers. 4». */
 const VERSICULO_SUELTO = new RegExp(`(?<![\\p{L}])(?:vv?|vers|verses?|versiculos?)\\.?${H}(\\d{1,3})(?:${H}[-–—]${H}(\\d{1,3}))?(?![\\d:]*\\d)`, 'giu');
 
-/** Lo que precede al nombre en un encabezado que sólo nombra el libro. */
-const PREFIJO_DE_LIBRO = /^(?:(?:the\s+)?(?:book|epistle|letter|gospel)\s+(?:of|to)\s+(?:the\s+)?|(?:el\s+)?(?:libro|epistola|carta|evangelio)\s+(?:de|a)\s+(?:los\s+)?|comentario\s+(?:a|de|sobre)\s+(?:los\s+)?)/;
+/**
+ * Lo que precede al nombre en un encabezado que sólo nombra el libro. «st.» y
+ * «san»: Mayor rotula sus páginas «THE EPISTLE OF ST. JAMES» (TP #8, 8a, A3).
+ */
+const PREFIJO_DE_LIBRO = /^(?:(?:the\s+)?(?:book|epistle|letter|gospel)\s+(?:of|to)\s+(?:the\s+)?(?:st\.?\s+|saint\s+)?|(?:el\s+)?(?:libro|epistola|carta|evangelio)\s+(?:de|a)\s+(?:los\s+)?(?:san\s+|santo\s+)?|comentario\s+(?:a|de|sobre)\s+(?:los\s+)?)/;
+
+/**
+ * El encabezado de página de un comentario clásico de notas: el capítulo en
+ * números romanos, los versículos que comenta esa página y el «]» de la nota.
+ * Mayor, *The Epistle of St. James*: «IV 2] NOTES», «IV 2, 3] NOTES», «IV 3–5]
+ * NOTES», «III 17–IV 1] NOTES» (TP #8, fase 8a, A3). No nombra el libro: se
+ * lee con el libro del documento.
+ */
+const ENCABEZADO_DE_NOTAS = /^\s*([IVXL]{1,6})\s+(\d{1,3})((?:\s*[,–—-]\s*(?:[IVXL]{1,6}\s+)?\d{1,3})*)\s*\]\s*(?:notes?|notas?)?\s*$/i;
+
+/**
+ * La nota de un versículo dentro del texto: su número, el lema griego o
+ * hebreo que comenta y el «]». «3. αἰτεῖτε καὶ οὐ λαμβάνετε,]», «5. ἢ δοκεῖτε.]».
+ */
+const NOTA_DE_VERSICULO = /^[^\S\n]*(\d{1,3})\.[^\S\n]+([^\n\]]{1,120})\]/gm;
+const LETRA_ORIGINAL = /[\u0370-\u03FF\u1F00-\u1FFF\u0590-\u05FF]/;
+
+function romanoANumero(romano: string): number | null {
+    const valor: Record<string, number> = { I: 1, V: 5, X: 10, L: 50 };
+    let total = 0;
+    const r = romano.toUpperCase();
+    for (let i = 0; i < r.length; i++) {
+        const v = valor[r[i]!];
+        if (!v) return null;
+        const sig = valor[r[i + 1] ?? ''] ?? 0;
+        total += v < sig ? -v : v;
+    }
+    return total > 0 ? total : null;
+}
+
+/** Las citas que da un encabezado de notas, o `null` si no lo es. */
+function citasDeEncabezadoDeNotas(encabezado: string, libro: string): Cita[] | null {
+    const m = encabezado.match(ENCABEZADO_DE_NOTAS);
+    if (!m) return null;
+    const capitulo = romanoANumero(m[1]!);
+    if (!capitulo) return null;
+    const citas: Cita[] = [];
+    let cap = capitulo;
+    let ultimo = Number(m[2]);
+    let actual: Cita = { texto: encabezado, libro, capitulo: cap, versiculos: [ultimo] };
+    citas.push(actual);
+    for (const t of (m[3] ?? '').matchAll(/([,–—-])\s*(?:([IVXL]{1,6})\s+)?(\d{1,3})/gi)) {
+        const n = Number(t[3]);
+        const otroCap = t[2] ? romanoANumero(t[2]) : null;
+        if (otroCap && otroCap !== cap) {
+            cap = otroCap;
+            actual = { texto: encabezado, libro, capitulo: cap, versiculos: [n] };
+            citas.push(actual);
+        } else if (t[1] === ',') {
+            actual.versiculos.push(n);
+        } else {
+            for (let v = ultimo + 1; v <= n && v - ultimo <= RANGO_MAXIMO; v++) actual.versiculos.push(v);
+        }
+        ultimo = n;
+    }
+    return citas;
+}
+
+/** Las notas de versículo del texto, leídas con el capítulo del contexto. */
+function citasDeNotas(texto: string, contexto: Contexto): Cita[] {
+    if (contexto.capitulo === null) return [];
+    const versiculos: number[] = [];
+    for (const m of texto.matchAll(NOTA_DE_VERSICULO)) {
+        const v = Number(m[1]);
+        if (v >= 1 && v <= VERSICULO_MAXIMO && LETRA_ORIGINAL.test(m[2]!)) versiculos.push(v);
+    }
+    return versiculos.length > 0 ? [{ texto: '', libro: contexto.libro, capitulo: contexto.capitulo, versiculos }] : [];
+}
+
+/**
+ * El libro que nombra el título de un documento, si nombra uno solo:
+ * «The Epistle of James - the Greek text with introduction» → Santiago. Para
+ * leer los encabezados que no nombran el libro (`refsDeFragmento`).
+ */
+export function libroDelTitulo(titulo: string | null | undefined): string | null {
+    for (const parte of (titulo ?? '').split(/\s+[-–—:]\s+|:\s+/)) {
+        const libro = libroDelEncabezado(parte.trim());
+        if (libro) return libro;
+    }
+    return null;
+}
 
 /**
  * «Romans», «The Epistle of James», «Comentario a Romanos»: un encabezado que
@@ -338,10 +422,24 @@ function citasConContexto(texto: string, contexto: Contexto): Cita[] {
  * sueltos del texto. Cada encabezado se lee por separado: el último no se
  * pega a la primera cifra del texto.
  */
-export function refsDeFragmento(texto: string, seccion: ReadonlyArray<string> | null | undefined): string[] {
+export function refsDeFragmento(
+    texto: string,
+    seccion: ReadonlyArray<string> | null | undefined,
+    /**
+     * El libro del documento (`libroDelTitulo`), para los encabezados que no lo
+     * nombran: las páginas de Mayor dicen «IV 2, 3] NOTES» sin «James».
+     */
+    libroDelDocumento?: string | null,
+): string[] {
     const citas: Cita[] = [];
-    let contexto: Contexto | null = null;
+    let contexto: Contexto | null = libroDelDocumento ? { libro: libroDelDocumento, capitulo: null, firme: false } : null;
     for (const encabezado of seccion ?? []) {
+        const deNotas = contexto ? citasDeEncabezadoDeNotas(encabezado, contexto.libro) : null;
+        if (deNotas) {
+            citas.push(...deNotas);
+            contexto = { libro: contexto!.libro, capitulo: deNotas[deNotas.length - 1]!.capitulo, firme: true };
+            continue;
+        }
         const propias = citasDeTexto(encabezado);
         if (propias.length > 0) {
             citas.push(...propias);
@@ -366,6 +464,9 @@ export function refsDeFragmento(texto: string, seccion: ReadonlyArray<string> | 
     // Las cifras sueltas se leen con el contexto SIN las citas que ya tienen
     // libro: en un comentario de Santiago, el «5:14» de «Rom 5:14» es Romanos.
     if (contexto?.firme) citas.push(...citasConContexto(tapar(propias.plano, propias.tramos), contexto));
+    // Las notas «N. lema.]» de un comentario clásico, con el capítulo de su
+    // encabezado de página (A3).
+    if (contexto?.firme) citas.push(...citasDeNotas(texto, contexto));
     return claves(citas);
 }
 

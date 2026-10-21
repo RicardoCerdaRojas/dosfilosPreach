@@ -194,7 +194,7 @@ async function proposeStructural(input: ProposeSheetRangesInput): Promise<SheetR
         }
         if (entries.length === 0) return { ranges: [], kind: 'none' };
 
-        const resolved = resolveOutlineReferences(entries);
+        const resolved = resolveOutlineReferences(entries, input.passage.bookId);
         if (!outlineStructureQuality(resolved).usable) return { ranges: [], kind: 'none' };
 
         const selection = selectChunksForPassage(resolved, input.passage, {
