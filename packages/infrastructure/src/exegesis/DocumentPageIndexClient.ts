@@ -174,8 +174,29 @@ export async function searchLemmasInDocument(
     resourceId: string,
     terms: ReadonlyArray<string>,
 ): Promise<Record<string, DocumentSheetHit[]>> {
-    if (terms.length === 0) return {};
-    const callable = httpsCallable<{ resourceId: string; terms: string[]; mode: 'lemas' }, { byTerm: Record<string, DocumentSheetHit[]> }>(
+    return (await searchLemmasAndEntriesInDocument(resourceId, terms)).byTerm;
+}
+
+/** Dónde empieza y termina la entrada de un lema en un léxico o diccionario. */
+export interface LemmaEntrySpan {
+    startSheet: number;
+    endSheet: number;
+}
+
+/**
+ * Las hojas de cada lema Y su entrada (`lemmaEntriesIn` en functions), en la
+ * misma lectura del libro. TP #8 (fase 8a, A2): la hoja con más apariciones
+ * puede ser la lista de citas, no la definición.
+ */
+export async function searchLemmasAndEntriesInDocument(
+    resourceId: string,
+    terms: ReadonlyArray<string>,
+): Promise<{ byTerm: Record<string, DocumentSheetHit[]>; entries: Record<string, LemmaEntrySpan> }> {
+    if (terms.length === 0) return { byTerm: {}, entries: {} };
+    const callable = httpsCallable<
+        { resourceId: string; terms: string[]; mode: 'lemas' },
+        { byTerm: Record<string, DocumentSheetHit[]>; entries?: Record<string, LemmaEntrySpan> }
+    >(
         getFunctions(),
         'searchDocumentText',
         { timeout: INDEX_TIMEOUT_MS },
@@ -186,7 +207,10 @@ export async function searchLemmasInDocument(
     const tandas: string[][] = [];
     for (let i = 0; i < terms.length; i += LEMMA_TERMS_PER_CALL) tandas.push(terms.slice(i, i + LEMMA_TERMS_PER_CALL));
     const respuestas = await Promise.all(tandas.map(t => callable({ resourceId, terms: t, mode: 'lemas' })));
-    return Object.assign({}, ...respuestas.map(r => r.data?.byTerm ?? {}));
+    return {
+        byTerm: Object.assign({}, ...respuestas.map(r => r.data?.byTerm ?? {})),
+        entries: Object.assign({}, ...respuestas.map(r => r.data?.entries ?? {})),
+    };
 }
 
 /** El `MAX_TERMS` de `searchDocumentText` (functions no importa nada de aquí; hay prueba de paridad). */

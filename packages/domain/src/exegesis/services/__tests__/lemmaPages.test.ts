@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildEmptyCanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { CanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
-import { consonantsOf, lemmaKey, lemmasOfAnalyses, mergeLemmas, passageLemmas, rankLemmaSheets } from '../lemmaPages';
+import { consonantsOf, lemmaKey, lemmasOfAnalyses, mergeLemmas, passageLemmas, rankLemmaSheets, questionLemmas } from '../lemmaPages';
 
 const analisis = (term: string, lemma: string): CanonicalVerseAnalysis => ({
     ...buildEmptyCanonicalVerseAnalysis({ bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 3, verseEnd: 3 }),
@@ -137,5 +137,32 @@ describe('mergeLemmas', () => {
 describe('«µ» de micro (léxico de Tuggy, 2026-10-20)', () => {
     it('la clave del lema la trata como «μ», igual que functions', () => {
         expect(lemmaKey('µανθάνω')).toBe(lemmaKey('μανθάνω'));
+    });
+});
+
+/** TP #8 (2026-10-21, fase 8a, A2): los lemas de las palabras que escribe la consigna. */
+describe('questionLemmas', () => {
+    const tok = (text: string, lemma: string, pos: string) => ({ text, lemma, pos, tag: {} as never, transliteration: '' });
+    const versos = [
+        { chapter: 4, verse: 1, morphology: { reference: { chapter: 4, verse: 1 }, text: '', tokens: [tok('μέλεσιν', 'μέλος', 'N'), tok('ἐν', 'ἐν', 'P')] } },
+        { chapter: 4, verse: 2, morphology: { reference: { chapter: 4, verse: 2 }, text: '', tokens: [tok('φονεύετε', 'φονεύω', 'V')] } },
+        { chapter: 4, verse: 3, morphology: { reference: { chapter: 4, verse: 3 }, text: '', tokens: [tok('αἰτεῖτε', 'αἰτέω', 'V'), tok('καὶ', 'καί', 'C'), tok('οὐ', 'οὐ', 'D'), tok('λαμβάνετε', 'λαμβάνω', 'V')] } },
+    ] as never;
+    const preguntas = [
+        { number: 1, text: '¿Qué significa el sustantivo μέλεσιν (Stg. 4:1)?' },
+        { number: 2, text: '¿Qué denota φονεύετε (Stg. 4:2)?' },
+        { number: 3, text: '¿Qué significa αἰτεῖτε καὶ οὐ λαμβάνετε (Stg. 4:3)?' },
+        { number: 4, text: '¿Qué pasaje está citando Jacobo (Stg. 4:5)?' },
+    ];
+
+    it('pasa de la forma de la pregunta al lema, en el orden de las preguntas', () => {
+        expect(questionLemmas(preguntas, versos).map(l => [l.lemma, l.question])).toEqual([
+            ['μέλος', 1], ['φονεύω', 2], ['αἰτέω', 3], ['λαμβάνω', 3],
+        ]);
+    });
+
+    it('deja fuera lo que no es contenido (καί, οὐ) y lo que no está en el pasaje', () => {
+        const lemas = questionLemmas([{ number: 1, text: '¿Y λόγος καὶ οὐ?' }], versos);
+        expect(lemas).toEqual([]);
     });
 });

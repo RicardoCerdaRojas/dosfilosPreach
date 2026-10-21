@@ -259,6 +259,52 @@ export function lemmaSheetsIn(
     return out;
 }
 
+/** Cuántas hojas puede abarcar, como máximo, una entrada de léxico o de diccionario. */
+export const MAX_ENTRY_SHEETS = 8;
+
+/** Una línea que abre una entrada: el lema en negrita, o un título markdown. */
+const LINEA_DE_ENTRADA = /^[ \t]*(?:\*\*([^*\n]{1,120})\*\*|#{1,6}[ \t]+([^\n]{1,120}))/gm;
+const PRIMERA_PALABRA_ORIGINAL = /[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F\u00B5]+/;
+
+/**
+ * Las entradas de un léxico o diccionario: dónde empieza la de cada lema y
+ * hasta qué hoja llega.
+ *
+ * TP #8 (2026-10-21, fase 8a, A2): la hoja «con más apariciones» de un lema no
+ * es su entrada. Tuggy nombra μέλος con la lista de citas en la h. 585, y la
+ * definición («**μέλος, ους, τό.** *Miembro, parte del cuerpo*») está en la
+ * 584. Una entrada empieza en una línea que abre con el lema en negrita, o en
+ * un título, y termina donde empieza la siguiente.
+ *
+ * `chunks` en el orden del libro (por `chunkIndex`). Si el lema abre más de
+ * una línea, gana la primera. La entrada se corta en `maxSheets` hojas.
+ */
+export function lemmaEntriesIn(
+    chunks: ReadonlyArray<{ chunkIndex: number; text: string; sheet: number }>,
+    claves: ReadonlyArray<string>,
+    maxSheets: number = MAX_ENTRY_SHEETS,
+): Record<string, { startSheet: number; endSheet: number }> {
+    const buscadas = new Set(claves.filter(Boolean));
+    const ordenados = [...chunks].sort((a, b) => a.chunkIndex - b.chunkIndex);
+    const cabezas: Array<{ clave: string; sheet: number }> = [];
+    for (const chunk of ordenados) {
+        LINEA_DE_ENTRADA.lastIndex = 0;
+        for (const m of chunk.text.normalize('NFC').matchAll(LINEA_DE_ENTRADA)) {
+            const palabra = (m[1] ?? m[2] ?? '').match(PRIMERA_PALABRA_ORIGINAL)?.[0] ?? '';
+            const clave = /[\u05D0-\u05EA]/.test(palabra) ? soloConsonantes(palabra) : griegoPlegado(palabra);
+            if (clave) cabezas.push({ clave, sheet: chunk.sheet });
+        }
+    }
+    const out: Record<string, { startSheet: number; endSheet: number }> = {};
+    cabezas.forEach((cabeza, i) => {
+        if (!buscadas.has(cabeza.clave) || out[cabeza.clave]) return;
+        const siguiente = cabezas.slice(i + 1).find(c => c.clave !== cabeza.clave);
+        const fin = siguiente ? Math.max(cabeza.sheet, siguiente.sheet) : cabeza.sheet;
+        out[cabeza.clave] = { startSheet: cabeza.sheet, endSheet: Math.min(fin, cabeza.sheet + maxSheets - 1) };
+    });
+    return out;
+}
+
 /** Un texto suelto, listo para meterse dentro de una expresión regular. */
 function escapeRegExp(input: string): string {
     return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -405,7 +451,7 @@ export const searchDocumentText = onCall<SearchRequest>(
             const snapshot = await getFirestore()
                 .collection(CHUNK_COLLECTION)
                 .where('resourceId', '==', resourceId)
-                .select('text', 'metadata', 'userId', 'stores')
+                .select('text', 'metadata', 'userId', 'stores', 'chunkIndex')
                 .get();
             const readable = snapshot.docs.map(d => d.data()).filter(data => isReadable(data, uid));
             if (!snapshot.empty && readable.length === 0) {
@@ -415,13 +461,23 @@ export const searchDocumentText = onCall<SearchRequest>(
                 const text = typeof data.text === 'string' ? data.text : '';
                 const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : null;
                 const section = typeof data.metadata?.section === 'string' ? data.metadata.section : null;
-                return text && sheet !== null ? [{ text, sheet, section }] : [];
+                const chunkIndex = typeof data.chunkIndex === 'number' ? data.chunkIndex : 0;
+                return text && sheet !== null ? [{ text, sheet, section, chunkIndex }] : [];
             });
-            const porClave = lemmaSheetsIn(chunks, claves.filter(c => c.length >= MIN_TERM_LENGTH), SHEETS_PER_TERM);
+            const validas = claves.filter(c => c.length >= MIN_TERM_LENGTH);
+            const porClave = lemmaSheetsIn(chunks, validas, SHEETS_PER_TERM);
+            // Dónde empieza y termina la ENTRADA de cada lema (A2): la hoja con más
+            // apariciones puede ser la lista de citas, no la definición.
+            const entradas = lemmaEntriesIn(chunks, validas);
             const byTerm: Record<string, unknown> = {};
-            terms.forEach((t, i) => { byTerm[t] = porClave[claves[i]!] ?? []; });
-            console.log(`[DocumentTextSearch] ${resourceId} lemas: ${terms.length} términos, ${readable.length} chunks, una lectura`);
-            return { byTerm, scannedChunks: readable.length };
+            const entries: Record<string, { startSheet: number; endSheet: number }> = {};
+            terms.forEach((t, i) => {
+                byTerm[t] = porClave[claves[i]!] ?? [];
+                const entrada = entradas[claves[i]!];
+                if (entrada) entries[t] = entrada;
+            });
+            console.log(`[DocumentTextSearch] ${resourceId} lemas: ${terms.length} términos, ${Object.keys(entries).length} entradas, ${readable.length} chunks, una lectura`);
+            return { byTerm, entries, scannedChunks: readable.length };
         }
 
         // En modo referencia la aguja es el pasaje, no un término escrito.

@@ -41,6 +41,8 @@ export function useLexiconSuggestion(input: {
     lemmaProposals: ReadonlyArray<LemmaPageProposal>;
     sectionProposals: ReadonlyArray<SectionProposal>;
     pages: ReadonlyArray<PageIndexEntry>;
+    /** Los lemas que escribe la consigna, por `lemmaKey`, con su pregunta (A2). */
+    questionLemmas?: ReadonlyMap<string, number>;
 }): LexiconSuggestion | null {
     const frecuencia = useQuery({
         queryKey: ['exegesis-lemma-frequency', input.hebrew ? 'ot' : 'nt'],
@@ -61,14 +63,17 @@ export function useLexiconSuggestion(input: {
         // Por clave de lema, no por la grafía: el análisis escribe «חוס» o ά con
         // oxia y la morfología «חוּס» o U+03AC (revisión adversarial de B2).
         const hojas = new Map(input.lemmaProposals.map(p => [lemmaKey(p.lemma), p.sheets]));
+        const entradas = new Map(input.lemmaProposals.flatMap(p => (p.entry ? [[lemmaKey(p.lemma), p.entry] as const] : [])));
         const sugerencia = suggestLexiconSelection({
             lemmas: input.lemmas,
             sheetsOf: l => hojas.get(lemmaKey(l)) ?? [],
+            entryOf: l => entradas.get(lemmaKey(l)),
+            questionLemmas: input.questionLemmas,
             bibleCount: l => (input.hebrew ? (l.strong ? tabla[String(l.strong)] : undefined) : tabla[l.lemma]),
             commonFrom: input.hebrew ? COMMON_FROM.hebrew : COMMON_FROM.greek,
             sheetChars,
             budgetChars: SIN_TOPE,
         });
         return { ...sugerencia, frequencyCorpus: input.hebrew ? 'OT' : 'NT' };
-    }, [input.kind, input.hebrew, input.lemmas, input.lemmaProposals, input.sectionProposals, input.pages, frecuencia.data]);
+    }, [input.kind, input.hebrew, input.lemmas, input.lemmaProposals, input.sectionProposals, input.pages, input.questionLemmas, frecuencia.data]);
 }

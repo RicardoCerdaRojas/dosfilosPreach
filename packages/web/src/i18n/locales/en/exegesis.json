@@ -1396,7 +1396,8 @@
             "repeated_one": "once in the passage",
             "repeated_other": "{{count}} times in the passage",
             "common": "common: {{n}} times in {{corpus}}",
-            "section": "section “{{title}}”"
+            "section": "section “{{title}}”",
+            "question": "Asked by question {{number}} of the brief"
           },
           "corpus": {
             "OT": "the Old Testament",

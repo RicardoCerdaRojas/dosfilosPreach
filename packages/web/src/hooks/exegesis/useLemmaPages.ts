@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { searchLemmasInDocument } from '@dosfilos/infrastructure';
+import { searchLemmasAndEntriesInDocument } from '@dosfilos/infrastructure';
 import { rankLemmaSheets, type LemmaPageProposal } from '@dosfilos/domain';
 
 const KEY = 'exegesis-lemma-pages';
@@ -22,8 +22,16 @@ export function useLemmaPages(
     const query = useQuery({
         queryKey: [KEY, resourceId, terms.join('|')],
         queryFn: async (): Promise<LemmaPageProposal[]> => {
-            const byTerm = await searchLemmasInDocument(resourceId!, terms);
-            return lemmas.map(({ lemma, term }) => ({ lemma, term, sheets: rankLemmaSheets(byTerm[lemma] ?? []) }));
+            const { byTerm, entries } = await searchLemmasAndEntriesInDocument(resourceId!, terms);
+            // La entrada del lema, si el libro la abre en negrita o con un título
+            // (TP #8, fase 8a, A2): la hoja con más apariciones puede ser la
+            // lista de citas, no la definición.
+            return lemmas.map(({ lemma, term }) => ({
+                lemma,
+                term,
+                sheets: rankLemmaSheets(byTerm[lemma] ?? []),
+                ...(entries[lemma] ? { entry: entries[lemma] } : {}),
+            }));
         },
         enabled: enabled && !!resourceId && terms.length > 0,
         staleTime: 30 * 60 * 1000,

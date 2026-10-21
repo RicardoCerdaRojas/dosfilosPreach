@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findQuoteInPageText, lemmaKey as lemmaKeyDelDominio } from '@dosfilos/domain';
-import { conElIndiceDePasajes, foldForSearch, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp, referenceVersesFromRefs } from '../documentTextSearch';
+import { conElIndiceDePasajes, foldForSearch, griegoPlegado, lemmaEntriesIn, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp, referenceVersesFromRefs } from '../documentTextSearch';
 
 /**
  * Los dos buscadores tienen que plegar IGUAL.
@@ -239,3 +239,51 @@ describe('referenceVersesFromRefs · el índice de pasajes del fragmento', () =>
     });
 });
 
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A2). El texto es el de Tuggy en producción ese
+ * día (fragmentos 3531–3535 y la entrada αἰτέω de la h. 37).
+ */
+describe('lemmaEntriesIn · dónde empieza y termina la entrada de un lema', () => {
+    const tuggy = [
+        { chunkIndex: 3531, sheet: 584, text: '**Μελίτη, ης, ἡ.** *Malta*: Hch. 28:1.' },
+        { chunkIndex: 3532, sheet: 584, text: 'C) Forma conjugada sin inf. *Esperar, demorar*: Hch. 22:16.' },
+        { chunkIndex: 3533, sheet: 584, text: '**μέλος, ους, τό.** *Miembro, parte del cuerpo*. A.T. הֶגֶה Ez. 2:10.' },
+        { chunkIndex: 3534, sheet: 585, text: 'N.T., Mt. 5:29–30; Ro. 6:13; 1 Co. 12:12; Stg. 3:5–6; Stg. 4:1.' },
+        { chunkIndex: 3535, sheet: 585, text: '**Μελχί, ὁ.** Nombre prop. indecl., en la genealogía de Jesús.' },
+    ];
+
+    it('μέλος empieza en la 584, donde está la definición, y llega a la 585', () => {
+        expect(lemmaEntriesIn(tuggy, [griegoPlegado('μέλος')])).toEqual({ [griegoPlegado('μέλος')]: { startSheet: 584, endSheet: 585 } });
+    });
+
+    it('una entrada que termina en su hoja no se estira', () => {
+        const fragmentos = [
+            { chunkIndex: 1, sheet: 37, text: '154\n\n**αἰτέω.** (impera. αἴτει, med. αἰτοῦ). *Pedir, suplicar*.' },
+            { chunkIndex: 2, sheet: 37, text: '155\n\n**αἰσχύνη, ης, ἡ.** *Vergüenza*.' },
+        ];
+        expect(lemmaEntriesIn(fragmentos, [griegoPlegado('αἰτέω')])[griegoPlegado('αἰτέω')]).toEqual({ startSheet: 37, endSheet: 37 });
+    });
+
+    it('reconoce un título markdown como comienzo de entrada (diccionarios)', () => {
+        const kittel = [
+            { chunkIndex: 10, sheet: 31, text: '## αἰτέω [pedir], ἀπαιτέω\n\nEl uso general no apoya una distinción…' },
+            { chunkIndex: 11, sheet: 33, text: 'sigue la entrada' },
+            { chunkIndex: 12, sheet: 34, text: '## αἴτημα\n\n«Solicitud»' },
+        ];
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('αἰτέω')])[griegoPlegado('αἰτέω')]).toEqual({ startSheet: 31, endSheet: 34 });
+    });
+
+    it('una mención en negrita a mitad de renglón no abre entrada', () => {
+        const texto = [{ chunkIndex: 1, sheet: 9, text: 'Véase también **μέλος** en la p. 584.' }];
+        expect(lemmaEntriesIn(texto, [griegoPlegado('μέλος')])).toEqual({});
+    });
+
+    it('la entrada se corta en el tope de hojas', () => {
+        const largo = [
+            { chunkIndex: 1, sheet: 100, text: '**λόγος, ου, ὁ.** *Palabra*.' },
+            { chunkIndex: 2, sheet: 130, text: '**λοιδορέω.** *Injuriar*.' },
+        ];
+        expect(lemmaEntriesIn(largo, [griegoPlegado('λόγος')], 8)[griegoPlegado('λόγος')]).toEqual({ startSheet: 100, endSheet: 107 });
+    });
+});

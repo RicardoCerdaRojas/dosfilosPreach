@@ -24,6 +24,8 @@ export {
     searchDocumentByReference,
     searchDocumentText,
     searchLemmasInDocument,
+    searchLemmasAndEntriesInDocument,
+    type LemmaEntrySpan,
     fetchDocumentText,
     fetchDocumentPdfUrl,
     invalidateDocumentCaches,

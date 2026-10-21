@@ -34,6 +34,12 @@ export interface LemmaPageProposal {
     term: string;
     /** Hojas candidatas, la más probable primero. */
     sheets: SheetHitCount[];
+    /**
+     * Dónde empieza y termina su ENTRADA, si el libro la abre con el lema en
+     * negrita o en un título (`lemmaEntriesIn` en functions). TP #8, fase 8a,
+     * A2: la hoja con más apariciones puede ser la lista de citas.
+     */
+    entry?: { startSheet: number; endSheet: number };
 }
 
 /** Cuántas hojas se proponen por lema. Más allá de tres es ruido. */
@@ -207,3 +213,76 @@ export function mergeLemmas(
     }
     return out;
 }
+
+/** Un lema que la consigna nombra: la palabra que el profesor escribió en la pregunta. */
+export interface QuestionLemma {
+    lemma: string;
+    /** La palabra tal como está en la pregunta («μέλεσιν»). */
+    term: string;
+    /** El número de la pregunta que la nombra. */
+    question: number;
+}
+
+/**
+ * Los lemas de las palabras griegas o hebreas que ESCRIBE la consigna, en el
+ * orden de las preguntas.
+ *
+ * TP #8 (2026-10-21, fase 8a, A2): «¿Qué significa el sustantivo μέλεσιν?»
+ * pide la entrada de μέλος, y la selección sugerida la ordenaba por
+ * frecuencia entre todos los lemas del pasaje. La palabra se busca en la
+ * morfología del pasaje por su forma (`lemmaKey`), porque la pregunta trae la
+ * forma flexionada y el léxico encabeza por el lema. Una palabra que no está
+ * en el pasaje, o que no es contenido (καί, οὐ), no entra.
+ */
+export function questionLemmas(
+    questions: ReadonlyArray<{ number: number; text: string }>,
+    verses: ReadonlyArray<VerseMorphologyEntry>,
+    strongToLemma: (strong: number) => string | undefined = () => undefined,
+): QuestionLemma[] {
+    const porForma = new Map<string, string>();
+    for (const l of passageLemmasWithForms(verses, strongToLemma)) {
+        for (const forma of l.forms) if (!porForma.has(forma)) porForma.set(forma, l.lemma);
+    }
+    const vistos = new Set<string>();
+    const out: QuestionLemma[] = [];
+    for (const q of questions) {
+        for (const m of q.text.normalize('NFC').matchAll(/[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F\u00B5]+/g)) {
+            const lemma = porForma.get(lemmaKey(m[0]));
+            if (!lemma || vistos.has(lemmaKey(lemma))) continue;
+            vistos.add(lemmaKey(lemma));
+            out.push({ lemma, term: m[0], question: q.number });
+        }
+    }
+    return out;
+}
+
+/** Los lemas de contenido del pasaje con TODAS las formas en que aparecen. */
+function passageLemmasWithForms(
+    verses: ReadonlyArray<VerseMorphologyEntry>,
+    strongToLemma: (strong: number) => string | undefined,
+): Array<{ lemma: string; forms: string[] }> {
+    const out = new Map<string, { lemma: string; forms: Set<string> }>();
+    const add = (lemma: string, forma: string) => {
+        const key = lemmaKey(lemma);
+        if (key.length < 2) return;
+        const hit = out.get(key) ?? { lemma, forms: new Set<string>() };
+        hit.forms.add(lemmaKey(forma));
+        out.set(key, hit);
+    };
+    for (const v of verses) {
+        for (const t of v.morphology.tokens) {
+            if ('pos' in t) {
+                if (GREEK_CONTENT.has(t.pos)) add(t.lemma, t.text);
+                continue;
+            }
+            const morphemes = t.oshbMorphCode.replace(/^[HA]/, '').split('/');
+            if (!morphemes.some(m => /^(V|Nc|Ng|A)/.test(m))) continue;
+            const strong = t.lemma.split('/').map(p => p.trim()).find(p => /^\d+/.test(p));
+            const n = strong ? parseInt(strong, 10) : NaN;
+            const surface = t.text.replace(/\//g, '');
+            add((Number.isFinite(n) && strongToLemma(n)) || surface, surface);
+        }
+    }
+    return [...out.values()].map(v => ({ lemma: v.lemma, forms: [...v.forms] }));
+}
+

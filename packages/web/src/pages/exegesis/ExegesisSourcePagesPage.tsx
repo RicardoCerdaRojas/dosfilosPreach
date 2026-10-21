@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { proposeSheetRanges, type ProposalKind } from '@dosfilos/infrastructure';
 import {
     checkRecipeConsistency, grammarKeysFromMorphology, grammarSearchKeys, lemmasOfAnalyses, mergeGrammarKeys, mergeLemmas,
-    normalizeSheetRanges, questionVersesOfBrief, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
+    lemmaKey, normalizeSheetRanges, parseBriefQuestions, questionLemmas, questionVersesOfBrief, sectionsForKeys, type SheetRange } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -87,16 +87,29 @@ export function ExegesisSourcePagesPage() {
     const esGramatica = source?.sourceType === 'grammar-syntax';
     // La morfología del pasaje: lemas para el léxico, categorías para la gramática.
     const morfologia = usePassageLemmas(paper, esLexico || esGramatica);
+    // Las palabras griegas o hebreas que escribe la consigna, ya como lemas
+    // (TP #8, fase 8a, A2): «¿Qué significa μέλεσιν?» pide la entrada de μέλος.
+    const lemasDeLaConsigna = useMemo(
+        () => (paper && esLexico
+            ? questionLemmas(parseBriefQuestions(paper.assignmentBrief, paper.passage), morfologia.data?.entries ?? [])
+            : []),
+        [paper, esLexico, morfologia.data],
+    );
+    const preguntaDeLema = useMemo(
+        () => new Map(lemasDeLaConsigna.map(l => [lemmaKey(l.lemma), l.question] as const)),
+        [lemasDeLaConsigna],
+    );
     const lemmas = useMemo(() => {
         if (!paper || !esLexico) return [];
         const analyses = paper.steps
             .filter(step => step.kind === 'verse')
             .map(step => (step.accepted ?? step.current)?.canonicalAnalysis)
             .filter((a): a is NonNullable<typeof a> => !!a);
-        // Primero los que el análisis eligió como términos clave; después el
-        // resto del pasaje, de la morfología (`usePassageLemmas`).
-        return mergeLemmas(lemmasOfAnalyses(analyses), morfologia.data?.lemmas ?? []);
-    }, [paper, esLexico, morfologia.data]);
+        // Primero los que escribe la consigna (A2); después los que el análisis
+        // eligió como términos clave; después el resto del pasaje, de la
+        // morfología (`usePassageLemmas`).
+        return mergeLemmas(lemasDeLaConsigna, mergeLemmas(lemmasOfAnalyses(analyses), morfologia.data?.lemmas ?? []));
+    }, [paper, esLexico, morfologia.data, lemasDeLaConsigna]);
 
     // Espera a la morfología: buscar antes con los lemas del análisis y
     // después con todos sería leer el léxico dos veces.
@@ -138,6 +151,7 @@ export function ExegesisSourcePagesPage() {
         lemmaProposals: lemmaPages.proposals,
         sectionProposals,
         pages: index.data?.pages ?? [],
+        questionLemmas: preguntaDeLema,
     });
 
     // La numeración se pide para cualquier fuente, no sólo para los léxicos:

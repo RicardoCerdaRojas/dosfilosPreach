@@ -1396,7 +1396,8 @@
             "repeated_one": "1 vez en el pasaje",
             "repeated_other": "{{count}} veces en el pasaje",
             "common": "común: {{n}} veces en {{corpus}}",
-            "section": "sección «{{title}}»"
+            "section": "sección «{{title}}»",
+            "question": "La pide la pregunta {{number}} del encuadre"
           },
           "corpus": {
             "OT": "el Antiguo Testamento",
