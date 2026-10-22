@@ -144,7 +144,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // Citation verifier dialog state. Last results live here so the
     // user can re-open the dialog without re-running the verifier.
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
-    const [verifiedCitations, setVerifiedCitations] = useState<VerifiedCitation[]>([]);
+    // Los guardados, para que el diálogo no se vacíe al recargar (D5).
+    const [verifiedCitations, setVerifiedCitations] = useState<VerifiedCitation[]>(() => [...(step.current?.citationVerdicts ?? [])]);
     // Out-of-credits dialog. Triggered when any exegesis mutation
     // throws `InsufficientExegesisCreditsError` (Fase 2 reserve fails).
     const [outOfCreditsOpen, setOutOfCreditsOpen] = useState(false);
@@ -636,11 +637,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 { key: 'regenerate', label: t('detail.steps.action.regenerate'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: versionEnVuelo, pending: anyPipelinePending },
                 { key: 'edit', label: t('detail.steps.action.editManual'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: versionEnVuelo },
 
-                // Con análisis, las citas se revisan en su página: el diálogo
-                // sólo mostraba, y aceptar seguía bloqueado (TP #7, #29).
-                step.current?.canonicalAnalysis
-                    ? { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath }
-                    : { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo || !step.current, pending: verifyStepCitations.isPending },
+                // Las citas se revisan en su página, con o sin análisis: el
+                // diálogo sólo mostraba y se vaciaba al recargar (TP #7, #29;
+                // TP #8, 8b, D5).
+                { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath },
             ];
         }
         if (showAccepted && !editing) {
@@ -650,9 +650,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     ? [{ key: 'idea', label: t('detail.steps.addIdea.action'), icon: <MessageSquarePlus className={ic} />, onClick: () => setIdeaOpen(true), disabled: anyPipelinePending }]
                     : []),
                 { key: 'redo', label: t('detail.steps.action.redo'), icon: <Undo2 className={ic} />, onClick: () => reopenStep.mutate({ paperId, stepId: step.id }), disabled: reopenStep.isPending || anyPipelinePending },
-                canonicalAnalysis
-                    ? { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath }
-                    : { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo, pending: verifyStepCitations.isPending },
+                { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath },
             ];
             if (isVerse && canonicalAnalysis) {
                 acciones.push(

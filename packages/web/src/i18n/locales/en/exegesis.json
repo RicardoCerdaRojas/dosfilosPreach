@@ -2020,6 +2020,8 @@
       }
     },
     "review": {
+      "inProse": "in the prose",
+      "proseOnly": "This step has no structured analysis: its citations are in the list on the right.",
       "diagnosis": {
         "cta": "Diagnose this citation",
         "none": "No cause can be stated from what the verifier stored. Verify the step again so it searches the book.",

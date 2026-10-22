@@ -3,7 +3,8 @@ import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { paginaHallada } from '@/components/exegesis/review/paginaHallada';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
-import { formatPassageReference, type CitationStatus, type SupportedLanguage } from '@dosfilos/domain';
+import { formatPassageReference, isProsePath, type CitationStatus, type SupportedLanguage } from '@dosfilos/domain';
+import { citaDeLaProsa } from '@/components/exegesis/review/citaDeLaProsa';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
@@ -15,7 +16,8 @@ import { useStepReview } from '@/components/exegesis/review/useStepReview';
 import { OrphanCitationKeysNotice } from '@/components/exegesis/review/OrphanCitationKeysNotice';
 import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
 
-const FILTERS: ReadonlyArray<CitationStatus> = ['not-found', 'page-mismatch', 'fuzzy-low', 'manual-pending', 'verified'];
+// «Página no comprobable» bloquea aceptar y no tenía filtro (TP #8, D5).
+const FILTERS: ReadonlyArray<CitationStatus> = ['not-found', 'page-unverifiable', 'page-mismatch', 'fuzzy-low', 'manual-pending', 'verified'];
 
 /**
  * Revisar las citas de un paso antes de aceptarlo.
@@ -85,17 +87,30 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
     // escrito en el panel.
     const openSource = () => {
         const claim = r.selectedPath ? r.claims.get(r.selectedPath) : null;
-        if (!claim) return;
-        setOpenCitation({ sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator, verbatimQuote: claim.verbatimQuote });
+        // Se resalta la oración citada, o, en una paráfrasis, el tramo de la
+        // fuente que el verificador halló (D3/D6).
+        const resaltar = claim?.verbatimQuote ?? selectedVerdict?.supportingSpan?.text ?? null;
+        if (claim) {
+            setOpenCitation({ sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator, verbatimQuote: resaltar });
+            return;
+        }
+        // Una cita de la prosa no tiene afirmación en el análisis: se abre por
+        // su veredicto (D5).
+        const desdeVeredicto = selectedVerdict ? citaDeLaProsa(selectedVerdict) : null;
+        if (desdeVeredicto) setOpenCitation({ ...desdeVeredicto, verbatimQuote: resaltar });
     };
     // La página donde el verificador halló el apoyo, con la misma frase
     // resaltada: si está ahí, se ve (fase F).
     const openFound = () => {
         const claim = r.selectedPath ? r.claims.get(r.selectedPath) : null;
         const hallada = selectedVerdict ? paginaHallada(selectedVerdict) : null;
-        if (!claim || !hallada) return;
+        const base = claim
+            ? { sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator }
+            : selectedVerdict ? citaDeLaProsa(selectedVerdict) : null;
+        if (!base || !hallada) return;
         setOpenCitation({
-            sourceKey: claim.sourceKey, page: claim.page, pageKind: claim.pageKind, locator: claim.locator, verbatimQuote: claim.verbatimQuote,
+            ...base,
+            verbatimQuote: claim?.verbatimQuote ?? selectedVerdict?.supportingSpan?.text ?? null,
             openAt: { page: hallada.page, pageKind: hallada.pageKind },
         });
     };
@@ -209,7 +224,9 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                                 marks={{ verdicts: r.verdicts, reviewed: new Set(r.reviews.keys()), selectedPath: r.selectedPath, onSelect: select }}
                             />
                         ) : (
-                            <p className="text-sm text-muted-foreground">{t('canonical.review.noAnalysis')}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {r.verdicts.size > 0 ? t('canonical.review.proseOnly') : t('canonical.review.noAnalysis')}
+                            </p>
                         )}
                     </main>
 
@@ -231,6 +248,9 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                                     <button key={path} type="button" onClick={() => select(path)}
                                         className={`w-full text-left rounded-md px-2 py-1.5 text-xs hover:bg-accent ${r.selectedPath === path ? 'bg-accent' : ''}`}>
                                         <CitationLabel citation={v} />
+                                        {isProsePath(path) && (
+                                            <span className="ml-1 rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">{t('canonical.review.inProse')}</span>
+                                        )}
                                         <span className="block text-[11px] text-muted-foreground truncate">{v.note}</span>
                                     </button>
                                 ))}

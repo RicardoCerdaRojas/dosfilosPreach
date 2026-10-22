@@ -2020,6 +2020,8 @@
       }
     },
     "review": {
+      "inProse": "en la prosa",
+      "proseOnly": "Este paso no tiene análisis estructurado: sus citas están en la lista de la derecha.",
       "diagnosis": {
         "cta": "Diagnosticar esta cita",
         "none": "No hay una causa que se pueda afirmar con lo que el verificador guardó. Vuelve a verificar el paso para que busque en el libro.",

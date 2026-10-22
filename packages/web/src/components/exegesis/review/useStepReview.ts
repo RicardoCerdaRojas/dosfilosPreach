@@ -7,7 +7,7 @@ import {
     reviewedCitationCount,
     sourcesWithoutOriginalLanguage,
     isUnreviewedCitationsError,
-    mapVerdictsByPath,
+    mapAllVerdictsByPath,
     unreviewedBlockingCitations,
     versionUnderReview,
     type AnalysisClaim,
@@ -15,7 +15,6 @@ import {
     type CitationStatus,
     type ExegeticalPaper,
     type ExegeticalStep,
-    type VerifiedCitation,
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
@@ -41,7 +40,8 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
     const analysis = version?.canonicalAnalysis ?? null;
 
     const verdicts = useMemo(
-        () => (analysis ? mapVerdictsByPath(analysis, version?.citationVerdicts ?? []) : new Map<string, VerifiedCitation>()),
+        // Los de la prosa también (D5): antes se descartaban.
+        () => mapAllVerdictsByPath(analysis, version?.citationVerdicts ?? []),
         [analysis, version?.citationVerdicts],
     );
     const claims = useMemo(
