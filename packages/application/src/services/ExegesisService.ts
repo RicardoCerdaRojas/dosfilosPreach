@@ -33,6 +33,7 @@ import {
     RetrieveChunksExcerptExtractor,
     StructuralExcerptExtractor,
     CallableDocumentChunkReader,
+    CallableBookSearch,
     CallableCuratedCorpusRetriever,
     CallableCuratedCorpusReader,
     fetchDocumentText,
@@ -56,6 +57,7 @@ import { readResourceFullText } from './resourceFullText';
 import { sameAuthor } from '../use-cases/exegesis/VerifySermonCitationsUseCase';
 import { LibraryService } from './LibraryService';
 import { VerbatimFirstCitationVerifier } from './exegesis/VerbatimFirstCitationVerifier';
+import { BookSearchBeforeAlarmVerifier } from './exegesis/BookSearchBeforeAlarmVerifier';
 
 import {
     CreateExegeticalPaperUseCase,
@@ -528,11 +530,16 @@ class ExegesisService {
         // Las citas con oración textual se cotejan buscando la oración en
         // las hojas de la fuente, sin modelo; solo lo que no aparece —o no
         // trae oración— pasa al juicio del modelo.
-        const citationVerifier = new VerbatimFirstCitationVerifier(new GeminiLlmCitationVerifier({
-            modelName: exegesisModelId,
-            relevantChunkRetriever,
-            retrievalTopK: 5,
-        }));
+        // Y antes de alarmar, lee la página citada, sus vecinas y el libro
+        // entero (TP #8, 8b, D1): Adamson 171 → 170 salía «no encontrada».
+        const citationVerifier = new BookSearchBeforeAlarmVerifier(
+            new VerbatimFirstCitationVerifier(new GeminiLlmCitationVerifier({
+                modelName: exegesisModelId,
+                relevantChunkRetriever,
+                retrievalTopK: 5,
+            })),
+            new CallableBookSearch(new CallableDocumentChunkReader()),
+        );
         this.verifyStepCitations = new VerifyStepCitationsUseCase(
             paperRepository,
             contentReader,

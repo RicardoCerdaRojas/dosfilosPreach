@@ -12,6 +12,7 @@ export { readBibliographyFromCover, type CoverBibliographyResult } from './Cover
 export { RetrieveChunksExcerptExtractor } from './RetrieveChunksExcerptExtractor';
 export { StructuralExcerptExtractor } from './StructuralExcerptExtractor';
 export { CallableDocumentChunkReader } from './CallableDocumentChunkReader';
+export { CallableBookSearch } from './CallableBookSearch';
 export { CallableCuratedCorpusRetriever } from './CallableCuratedCorpusRetriever';
 export { CallableCuratedCorpusReader } from './CallableCuratedCorpusReader';
 // Con qué hojas arranca el carrito: índice del comentario primero, coincidencia

@@ -55,10 +55,34 @@ export function pageNumberOfHint(hint: string | null): number | null {
     return m ? parseInt(m[1]!, 10) : null;
 }
 
-/** «559», «559–60», «559-561», «559, 561» → primer tramo como rango. */
+/**
+ * «559», «559–60», «559-561» → el tramo. Una lista de páginas CONTIGUAS,
+ * «170, 171», es un solo tramo (TP #8, 8b, D1): antes se quedaba con la
+ * primera y una cita a dos páginas se cotejaba contra una. Una lista con
+ * saltos, «203, 206», da su primer tramo; el cotejo mira cada uno
+ * (`parsePageSpans`, `pagesOverlap`).
+ */
 export function parsePageRange(raw: string | null): { start: number; end: number } | null {
-    if (!raw) return null;
-    const cleaned = raw.replace(/\s+/g, '').replace(/[–—]/g, '-');
+    const tramos = parsePageSpans(raw);
+    return tramos[0] ?? null;
+}
+
+/** Los tramos de una lista de páginas, ordenados y con los contiguos fundidos. */
+export function parsePageSpans(raw: string | null): Array<{ start: number; end: number }> {
+    if (!raw) return [];
+    const tramos = raw.replace(/\s+/g, '').replace(/[–—]/g, '-').split(/[,;&]+/).map(tramoDePaginas).filter(
+        (t): t is { start: number; end: number } => t !== null);
+    // En el orden escrito: el primero es el que se abre y el que se cita.
+    const out: Array<{ start: number; end: number }> = [];
+    for (const t of tramos) {
+        const ultimo = out[out.length - 1];
+        if (ultimo && t.start <= ultimo.end + 1 && t.end >= ultimo.start) ultimo.end = Math.max(ultimo.end, t.end);
+        else out.push({ ...t });
+    }
+    return out;
+}
+
+function tramoDePaginas(cleaned: string): { start: number; end: number } | null {
     const m = cleaned.match(/^(\d+)(?:-(\d+))?/);
     if (!m) return null;
     const start = parseInt(m[1]!, 10);
@@ -81,11 +105,12 @@ export function parsePageRange(raw: string | null): { start: number; end: number
  * Cuando alguno de los dos rótulos no trae número —«ad loc.», «ci»— se
  * comparan como texto: es lo único honesto que se puede hacer.
  */
-export function pagesOverlap(citedRaw: string, matchedRaw: string): boolean {
-    const cited = parsePageRange(citedRaw);
-    const matched = parsePageRange(matchedRaw);
-    if (!cited || !matched) return citedRaw === matchedRaw;
-    return cited.start <= matched.end && matched.start <= cited.end;
+export function pagesOverlap(citedRaw: string | null, matchedRaw: string | null): boolean {
+    const cited = parsePageSpans(citedRaw);
+    const matched = parsePageSpans(matchedRaw);
+    if (cited.length === 0 || matched.length === 0) return citedRaw === matchedRaw;
+    // Cada tramo de la cita contra cada tramo hallado: «203, 206» no cubre la 204.
+    return cited.some(c => matched.some(m => c.start <= m.end && m.start <= c.end));
 }
 
 /**
@@ -117,4 +142,32 @@ export function pageVerdictFor(
     if (!citedPages) return 'ok';
     if (!matchedPage) return 'unverifiable';
     return pagesOverlap(citedPages, matchedPage) ? 'ok' : 'mismatch';
+}
+
+/**
+ * La prosa hereda lo que el análisis ya resolvió para la misma cita (TP #8,
+ * fase 8b, D1): misma fuente y páginas que se tocan. Wallace 662 pasó en el
+ * análisis, con su oración textual, y falló en el documento, donde se juzgó
+ * la paráfrasis de la prosa contra lo que el juez alcanzó a ver.
+ *
+ * Hereda la oración textual (si la prosa no trae una propia) y las otras
+ * fuentes de una afirmación de síntesis.
+ */
+export function inheritFromAnalysisCitations<T extends {
+    author: string; pages: string | null; evidence: string; evidenceIsQuoted: boolean; otherSources?: string[];
+}>(
+    prose: ReadonlyArray<T>,
+    analysis: ReadonlyArray<{ author: string; pages: string | null; evidence: string; evidenceIsQuoted: boolean; otherSources?: string[] }>,
+): T[] {
+    const clave = (k: string) => k.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    return prose.map(c => {
+        const par = analysis.find(a => clave(a.author) === clave(c.author) && pagesOverlap(a.pages, c.pages));
+        if (!par) return c;
+        const otras = [...new Set([...(c.otherSources ?? []), ...(par.otherSources ?? [])])];
+        return {
+            ...c,
+            ...(!c.evidenceIsQuoted && par.evidenceIsQuoted ? { evidence: par.evidence, evidenceIsQuoted: true } : {}),
+            ...(otras.length > 0 ? { otherSources: otras } : {}),
+        };
+    });
 }

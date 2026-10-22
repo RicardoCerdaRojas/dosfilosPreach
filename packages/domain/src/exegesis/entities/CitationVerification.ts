@@ -176,6 +176,15 @@ export interface VerifiedCitation extends ParsedCitation {
      * citation came back yellow vs red.
      */
     note: string | null;
+    /**
+     * Qué se leyó antes de este veredicto, cuando la primera pasada alarmó
+     * (TP #8, fase 8b, D1): `cited-page`, se halló al leer la página citada y
+     * sus vecinas enteras; `book`, en otra parte del libro (el veredicto pasa
+     * a «página no coincide» con la página hallada); `not-in-book`, se buscó
+     * en la página, sus vecinas y el libro entero sin hallarla. Ausente si no
+     * hizo falta buscar.
+     */
+    bookSearch?: 'cited-page' | 'book' | 'not-in-book';
 }
 
 /**

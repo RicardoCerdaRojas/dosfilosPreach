@@ -195,3 +195,21 @@ describe('parseCitations · el punto de una abreviatura no cierra la oración', 
         expect(cita!.evidence).toBe('Según el Dr. Mayor la frase es causal');
     });
 });
+
+/** TP #8 (8b, D1): varias fuentes en un paréntesis, cada una juzgada por su parte. */
+describe('parseCitations — un paréntesis con dos fuentes', () => {
+    it('comparten la oración y cada una sabe de la otra', () => {
+        const md = 'El ἐν indica la esfera del conflicto (Mayor, 129; Adamson, 166).';
+        const [mayor, adamson] = parseCitations(md);
+        expect(mayor!.evidence).toBe(adamson!.evidence);
+        expect(mayor!.evidence).toContain('la esfera del conflicto');
+        expect(mayor!.otherSources).toEqual(['Adamson']);
+        expect(adamson!.otherSources).toEqual(['Mayor']);
+    });
+
+    it('dos paréntesis distintos no se mezclan', () => {
+        const [a, b] = parseCitations('Uno (Mayor, 129). Otro (Adamson, 166).');
+        expect(a).not.toHaveProperty('otherSources');
+        expect(b).not.toHaveProperty('otherSources');
+    });
+});

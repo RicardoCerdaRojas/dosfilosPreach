@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, classifyOriginalLanguageAbsence, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, isOnCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
+import { citationAnchorFor, classifyOriginalLanguageAbsence, inheritFromAnalysisCitations, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, isOnCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -97,7 +97,10 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         const lookup = new SourceMatcher(input.sources);
         // Las citas ya reconocidas (el análisis canónico) mandan; el parser
         // es para la prosa, y sobre un markdown vacío devolvía cero citas.
-        const parsed = input.citations ? [...input.citations] : parseCitations(input.markdown);
+        const parsed = input.citations
+            ? [...input.citations]
+            // La prosa hereda lo que el análisis del paso ya resolvió (D1).
+            : inheritFromAnalysisCitations(parseCitations(input.markdown), input.inheritFrom ?? []);
 
         // Idioma explícito cuando el llamador lo sabe. Adivinarlo desde la
         // evidencia falla justo cuando la evidencia es una oración textual

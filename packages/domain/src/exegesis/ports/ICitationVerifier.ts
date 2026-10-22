@@ -59,6 +59,12 @@ export interface CitationVerifierInput {
      * una oración textual en el idioma de la fuente.
      */
     language?: 'es' | 'en';
+    /**
+     * Las citas del análisis del mismo paso, para que las de la prosa hereden
+     * lo ya resuelto: la oración textual y las otras fuentes (TP #8, 8b, D1).
+     * Sólo con `markdown`, en el camino de la prosa.
+     */
+    inheritFrom?: ReadonlyArray<ParsedCitation>;
     /** All citable sources attached to the paper. */
     sources: ReadonlyArray<VerifierSource>;
     /**
@@ -87,4 +93,16 @@ export interface CitationVerifierOutput {
  */
 export interface ICitationVerifier {
     verify(input: CitationVerifierInput): Promise<CitationVerifierOutput>;
+}
+
+/**
+ * Leer el libro de una fuente para ubicar una cita antes de alarmar (TP #8,
+ * fase 8b, D1). Lo implementa infraestructura con las callables de búsqueda y
+ * de fragmentos; el verificador no sabe de Firestore.
+ */
+export interface IBookSearch {
+    /** Las hojas donde aparece el término (búsqueda de texto plegado, el libro entero). */
+    sheetsWithTerm(resourceId: string, term: string): Promise<ReadonlyArray<{ sheet: number; count: number }>>;
+    /** El texto entero de unas hojas, una entrada por hoja. */
+    readSheets(resourceId: string, sheets: ReadonlyArray<number>): Promise<ReadonlyArray<{ sheet: number; text: string; section: string | null }>>;
 }

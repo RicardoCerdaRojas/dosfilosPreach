@@ -31,20 +31,41 @@ export function parseCitations(markdown: string): ParsedCitation[] {
     // tienen que seguir siendo válidos.
     const masked = maskRanges(markdown, accepted);
 
-    return accepted
-        .sort((a, b) => a.offset - b.offset)
-        .map(m => {
-            const evidence = extractEvidence(masked, m.offset);
-            return {
-                raw: m.raw,
-                author: m.author,
-                title: m.title,
-                pages: m.pages,
-                offset: m.offset,
-                evidence: evidence.text,
-                evidenceIsQuoted: evidence.fromQuote,
-            };
-        });
+    const ordenadas = [...accepted].sort((a, b) => a.offset - b.offset);
+    const grupos = parenthesisGroups(ordenadas);
+    return ordenadas.map((m, i) => {
+        // Todas las de un mismo paréntesis comparten la oración: cada una se
+        // juzga por SU parte (TP #8, 8b, D1). «(Mayor, 129; Adamson, 166)»
+        // salía falsa alarma porque cada una cargaba con la parte de la otra.
+        const primera = ordenadas[grupos[i]!.first]!;
+        const evidence = extractEvidence(masked, primera.offset);
+        const otras = grupos[i]!.members.filter(j => j !== i).map(j => ordenadas[j]!.author).filter(Boolean);
+        return {
+            raw: m.raw,
+            author: m.author,
+            title: m.title,
+            pages: m.pages,
+            offset: m.offset,
+            evidence: evidence.text,
+            evidenceIsQuoted: evidence.fromQuote,
+            ...(otras.length > 0 ? { otherSources: [...new Set(otras)] } : {}),
+        };
+    });
+}
+
+/**
+ * A qué paréntesis pertenece cada cita: una que abre con «;» sigue al de la
+ * anterior («(Mayor, 129; Adamson, 166)» son dos citas, la segunda con «;»).
+ */
+function parenthesisGroups(citas: ReadonlyArray<{ raw: string }>): Array<{ first: number; members: number[] }> {
+    const out: Array<{ first: number; members: number[] }> = [];
+    let actual: { first: number; members: number[] } | null = null;
+    citas.forEach((c, i) => {
+        if (actual && /^\s*;/.test(c.raw)) actual.members.push(i);
+        else { actual = { first: i, members: [i] }; }
+        out[i] = actual;
+    });
+    return out;
 }
 
 /** Tapa con espacios los tramos indicados, conservando la longitud y los offsets. */
