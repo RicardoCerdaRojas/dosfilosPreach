@@ -475,6 +475,12 @@ Debajo, un botón: [Recomponer con estas observaciones]. **No bloquea el Word**;
 
 **Medida:** con los análisis del TP #8, la prosa conserva los 3 criterios decisivos y Wallace 533, y el revisor detecta los 7 puntos que hubo que corregir a mano.
 
+**Hecho (E4):**
+- **«Componer prosa» es el botón principal** de un versículo aceptado sin prosa: en el pie, con el aviso «sin la prosa, este versículo no entra al documento», y en el encabezado cuando la tarjeta está cerrada (al recargar, las aceptadas se cierran). El ícono del encabezado queda solo para recomponer.
+- **«N de M versículos con prosa»** en la lista del ensamble.
+- **«Componer paper académico»** avisa, antes de pulsar, que reescribe el documento entero y se pierden las ediciones a mano. En el modo preguntas no aparece en el menú.
+- De paso: el costo del diálogo decía «Gemini Pro 2.5» en la interfaz; ahora dice «el asistente». Quedan otras menciones viejas en `exegesis.json` (`idleHint` de los artefactos, la revisión de coherencia), fuera de esta fase.
+
 ---
 
 ## F. La entrega: bibliografía, título y avisos (#43, #44, #45)

@@ -1809,6 +1809,7 @@
       }
     },
     "verseProse": {
+      "nextStepHint": "Sin la prosa, este versículo no entra al documento.",
       "button": {
         "compose": "Componer prosa académica",
         "recompose": "Recomponer prosa",
@@ -1913,7 +1914,7 @@
       "subtitle": "Generamos prosa académica TMS desde los análisis canónicos aceptados de cada verso. La guía de estilo configurada se aplica obligatoriamente.",
       "idleBody": "Los análisis canónicos de cada verso se transforman en un paper académico continuo: introducción + análisis verso por verso + conclusión + bibliografía. Las citas se aplican según la guía de estilo configurada.",
       "cta": "Componer paper",
-      "cost": "Cada composición consume una llamada de Gemini Pro 2.5 con contexto extenso. Revisa el resultado y pulsa «Guardar al paper» para conservarlo: sin eso se pierde al cerrar.",
+      "cost": "Cada composición es una llamada larga del asistente. Revisa el resultado y pulsa «Guardar al paper» para conservarlo: sin eso se pierde al cerrar.",
       "composingTitle": "Componiendo paper académico…",
       "composingBody": "Esto puede tardar entre 30 y 120 segundos según la cantidad de versos y la densidad del análisis.",
       "errorTitle": "No se pudo componer el paper",
@@ -1950,7 +1951,8 @@
       "savedToResourcesToast": "Guardado en Mis Recursos.",
       "saveToResourcesFailed": "No se pudo guardar en Mis Recursos. Intenta de nuevo.",
       "savedExists": "Hay una composición guardada en este paper.",
-      "savedHint": "Si los análisis de los versos cambiaron desde la última vez, reompone para que la salida refleje el estado actual.",
+      "savedHint": "Si los análisis de los versos cambiaron desde la última vez, recompón para que la salida refleje el estado actual.",
+      "rewriteWarning": "Componer el paper reescribe el documento entero desde los análisis: se pierden las ediciones a mano y la prosa compuesta en cada versículo.",
       "anchoring": {
         "headline_one": "{{count}} de {{total}} citas no podrán señalar una página del ejemplar impreso.",
         "headline_other": "{{count}} de {{total}} citas no podrán señalar una página del ejemplar impreso.",
@@ -2412,6 +2414,7 @@
       },
       "assembly": {
         "manifestTitle": "Esto entra al documento · {{count}} palabras",
+        "proseCount": "{{done}} de {{total}} versículos con prosa",
         "words": "{{count}} pal.",
         "pendingMark": "falta componer",
         "pendingHint_one": "1 sección elegida todavía no tiene prosa: no va a entrar al documento hasta que la compongas.",

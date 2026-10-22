@@ -507,10 +507,15 @@ export function ExegesisPaperPage() {
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setComposeDialogOpen(true)}>
-                                <NotebookPen className="h-4 w-4 mr-2" />
-                                {t('canonical.compose.menuItem')}
-                            </DropdownMenuItem>
+                            {/* Con preguntas, el documento sale del ensamble de la prosa
+                                de cada versículo; componerlo entero lo reescribiría sin
+                                las respuestas (TP #8, 8b, E4). */}
+                            {parseBriefQuestions(paper.assignmentBrief, paper.passage).length === 0 && (
+                                <DropdownMenuItem onClick={() => setComposeDialogOpen(true)}>
+                                    <NotebookPen className="h-4 w-4 mr-2" />
+                                    {t('canonical.compose.menuItem')}
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => setMinistryDialogOpen(true)}>
                                 <Sparkles className="h-4 w-4 mr-2" />
                                 {t('canonical.ministry.menuItem')}

@@ -179,6 +179,13 @@ export function AcademicCompositionDialog({
                     {!result && !composeAcademicPaper.isPending && !errorMessage && (
                         <CitationAnchoringNotice summary={anchoring} />
                     )}
+                    {/* Reescribe el documento entero: lo editado a mano y la prosa
+                        de cada versículo no sobreviven (TP #8, 8b, E4). */}
+                    {!result && !composeAcademicPaper.isPending && !errorMessage && (
+                        <p role="alert" className="rounded-md border border-warning/40 bg-warning-subtle px-3 py-2 text-[12px] text-warning-subtle-foreground">
+                            {t('canonical.compose.rewriteWarning')}
+                        </p>
+                    )}
 
                     {!result && !composeAcademicPaper.isPending && !errorMessage && (
                         savedAssembledMarkdown

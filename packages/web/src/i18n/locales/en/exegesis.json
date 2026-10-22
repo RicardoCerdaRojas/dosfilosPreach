@@ -1809,6 +1809,7 @@
       }
     },
     "verseProse": {
+      "nextStepHint": "Without prose, this verse does not enter the document.",
       "button": {
         "compose": "Compose academic prose",
         "recompose": "Recompose prose",
@@ -1913,7 +1914,7 @@
       "subtitle": "We generate TMS-style academic prose from the accepted canonical analyses of each verse. The configured style guide is mandatorily applied.",
       "idleBody": "The canonical analyses of each verse are turned into a continuous academic paper: introduction + verse-by-verse body + conclusion + bibliography. Citations follow the configured style guide.",
       "cta": "Compose paper",
-      "cost": "Each composition uses one Gemini Pro 2.5 call with extended context. Review the result and press \"Save to paper\" to keep it: otherwise it is lost on close.",
+      "cost": "Each composition is a long call to the assistant. Review the result and press \"Save to paper\" to keep it: otherwise it is lost when you close.",
       "composingTitle": "Composing academic paper…",
       "composingBody": "This may take 30 to 120 seconds depending on verse count and analysis density.",
       "errorTitle": "Could not compose the paper",
@@ -1951,6 +1952,7 @@
       "saveToResourcesFailed": "Could not save to My Resources. Please try again.",
       "savedExists": "A saved composition exists for this paper.",
       "savedHint": "If the verse analyses changed since last time, recompose so the output reflects the current state.",
+      "rewriteWarning": "Composing the paper rewrites the whole document from the analyses: manual edits and the prose composed for each verse are lost.",
       "anchoring": {
         "headline_one": "{{count}} of {{total}} citations will not point to a page of the printed copy.",
         "headline_other": "{{count}} of {{total}} citations will not point to a page of the printed copy.",
@@ -2412,6 +2414,7 @@
       },
       "assembly": {
         "manifestTitle": "This goes into the document · {{count}} words",
+        "proseCount": "{{done}} of {{total}} verses with prose",
         "words": "{{count}} w.",
         "pendingMark": "not composed",
         "pendingHint_one": "1 selected section has no prose yet: it will not enter the document until you compose it.",

@@ -59,6 +59,18 @@ export function AssemblyManifest({ contents, paperId, preguntas }: {
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {t('detail.steps.assembly.manifestTitle', { count: contents.words })}
             </p>
+            {(() => {
+                // «3 de 4 con prosa»: el versículo sin prosa no entra al
+                // documento, y eso se veía recién al abrir el archivo (TP #8, #36).
+                const total = contents.included.concat(contents.pending).filter(p => p.kind === 'verse').length;
+                const conProsa = contents.included.filter(p => p.kind === 'verse').length;
+                if (total === 0) return null;
+                return (
+                    <p className={cn('text-[12px] font-medium', conProsa < total ? 'text-warning-subtle-foreground' : 'text-success')}>
+                        {t('detail.steps.assembly.proseCount', { done: conProsa, total })}
+                    </p>
+                );
+            })()}
             <ul className="space-y-1">
                 {contents.included.map(p => fila(p, 'in'))}
                 {contents.pending.map(p => fila(p, 'pending'))}
