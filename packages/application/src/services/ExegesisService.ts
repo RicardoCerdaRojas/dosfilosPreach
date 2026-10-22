@@ -19,6 +19,7 @@ import {
     GeminiIntroductionComposer,
     GeminiVerseAcademicComposer,
     GeminiIdeaPlacer,
+    GeminiProseReviewer,
     GeminiExegesisOrchestrator,
     GeminiSermonComposer,
     GeminiStudyGuideComposer,
@@ -119,6 +120,7 @@ import {
     SetStepInclusionUseCase,
     ComposeVerseAcademicProseUseCase,
     PlaceIdeaInSectionUseCase,
+    ReviewVerseProseUseCase,
     ComposeSermonFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,
     GenerateStepUseCase,
@@ -272,6 +274,7 @@ class ExegesisService {
     // free until the analysis changes.
     public composeVerseAcademicProse: ComposeVerseAcademicProseUseCase;
     public placeIdeaInSection: PlaceIdeaInSectionUseCase;
+    public reviewVerseProse: ReviewVerseProseUseCase;
 
     // Ministry composers (Phase 6) — sermon / devotional / study
     // guide composed from the same `CanonicalVerseAnalysis` artifact.
@@ -687,6 +690,14 @@ class ExegesisService {
         this.placeIdeaInSection = new PlaceIdeaInSectionUseCase(
             paperRepository,
             new GeminiIdeaPlacer(exegesisModelId),
+        );
+
+        // «Revisión antes de entregar»: la prosa de un versículo contra los
+        // criterios del curso. Solo avisa (TP #8, 8b, E3).
+        this.reviewVerseProse = new ReviewVerseProseUseCase(
+            paperRepository,
+            styleGuideRepository,
+            new GeminiProseReviewer(exegesisModelId),
         );
 
         // Ministry composers (sermon / devotional / study guide).

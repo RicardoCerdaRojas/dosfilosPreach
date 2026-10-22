@@ -42,6 +42,9 @@ export type ExegesisOperationKey =
     | 'verifyStepCitations'
     // «Agregar una idea a esta sección»: una o dos oraciones, no la sección.
     | 'placeIdeaInSection'
+    // «Revisión antes de entregar»: lee la prosa de un versículo contra los
+    // criterios del curso (TP #8, 8b, E3).
+    | 'reviewVerseProse'
     | 'runCoherencePass'
     | 'extractRubricFromText'
     | 'extractRubricFromDocument'
@@ -144,6 +147,12 @@ export const EXEGESIS_OPERATION_CATALOG: Readonly<Record<ExegesisOperationKey, E
         estimatedCostUsd: 0.02,
         requiresPreConfirm: false,
         displayKeyI18n: 'studies.operations.placeIdeaInSection',
+    },
+    reviewVerseProse: {
+        key: 'reviewVerseProse',
+        estimatedCostUsd: 0.02,
+        requiresPreConfirm: false,
+        displayKeyI18n: 'studies.operations.reviewVerseProse',
     },
     runCoherencePass: {
         key: 'runCoherencePass',

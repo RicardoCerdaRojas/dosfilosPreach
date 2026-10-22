@@ -40,6 +40,7 @@ export const CATALOGO_DE_COBRO: Readonly<Record<string, OperacionCobrada>> = {
     // Una llamada por cita que no coincide textualmente, en dos pasadas.
     verifyStepCitations: { costoUsd: 0.05, etiquetas: ['exegesis.verifyCitation'], maxLlamadas: 100 },
     placeIdeaInSection: { costoUsd: 0.02, etiquetas: ['exegesis.placeIdea'], maxLlamadas: UNA },
+    reviewVerseProse: { costoUsd: 0.02, etiquetas: ['exegesis.reviewProse'], maxLlamadas: UNA },
     runCoherencePass: { costoUsd: 0.12, etiquetas: ['exegesis.reviewCoherence'], maxLlamadas: UNA },
     extractRubricFromText: { costoUsd: 0.02, etiquetas: ['exegesis.extractRubric'], maxLlamadas: UNA },
     extractRubricFromDocument: { costoUsd: 0.03, etiquetas: ['exegesis.extractRubric'], maxLlamadas: UNA },

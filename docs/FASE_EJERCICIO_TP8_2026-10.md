@@ -462,6 +462,12 @@ Una tarjeta «**Revisión antes de entregar**», por versículo. Hace dos clases
 
 Debajo, un botón: [Recomponer con estas observaciones]. **No bloquea el Word**; avisa.
 
+**Hecho (E3):** tarjeta «Revisión antes de entregar» bajo la prosa de cada versículo (`ProseReviewCard`).
+- **Controles fijos** (`reviewProseFixed`, dominio, sin modelo), que corren solos sobre la prosa a la vista: criterio decisivo ausente, gramática del curso que el análisis cita y la prosa no, cita de la prosa con alarma sin revisar, cita del análisis con alarma que la prosa repite, cierre doble, guion en rangos, grave griega (con excepciones para enclíticas y τίς/τί), comas dobles, párrafo en minúscula y repeticiones (sin contar la morfología ni el nombre de una fuente).
+- **Revisor con modelo** (`ReviewVerseProseUseCase` → `GeminiProseReviewer`, operación cobrada `reviewVerseProse`, etiqueta `exegesis.reviewProse`, US$ 0,02). Se pide con un botón y lee la prosa con los 10 criterios de serie (`proseReviewCriteria`), las reglas de la guía del curso, lo que decidió el análisis y la gramática citada. No guarda nada: si la prosa cambia, los hallazgos se dan por viejos.
+- **[Recomponer con estas observaciones]** arma la indicación con lo argumentativo (`proseReviewGuidance`). Lo mecánico (raya, acento, comas) se corrige a mano: recomponer por un acento reescribiría todo.
+- **Medido (solo lectura, prosa y ensamble reales del TP #8):** detecta los 4 arreglos que se hicieron a mano en el Word (título «4:1-10», «cuerpo,, dato», «φονεύετε» en minúscula, «paralelos más cercanos» ×2). Ningún aviso falso de acento en 1.350 palabras con griego. Las dos citas «bajas» que la prosa repite (Mayor 134 en 4:3, Mayor 135–136 en 4:5) son las afirmaciones mixtas de la bitácora. Avisa también Wallace 662 en 4:1, que la prosa quitó con razón porque la atribución era falsa: por eso la indicación dice «si corresponde». Los puntos de argumento (criterios 3–7) necesitan el modelo y quedan para la prueba del fundador.
+
 ### E4. El flujo
 - **#36:** al aceptar el análisis, el botón principal pasa a ser «Componer prosa». Hoy es un ícono gris de 28 px (`StepCard.tsx:657-666`).
 - Junto al ensamble va un contador «3 de 4 con prosa».

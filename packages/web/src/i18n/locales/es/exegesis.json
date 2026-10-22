@@ -1776,6 +1776,38 @@
       "recomposeFromAnalyses": "Recomponer desde análisis",
       "composeRetry": "Reintentar composición"
     },
+    "proseReview": {
+      "title": "Revisión antes de entregar",
+      "subtitle": "Avisa lo que suele corregirse en un trabajo académico. No bloquea el Word: lo decides tú.",
+      "count_one": "{{count}} aviso",
+      "count_other": "{{count}} avisos",
+      "clean": "Sin avisos",
+      "fixed": {
+        "missing-criterion": "Pregunta {{question}}: la prosa no usa el criterio decisivo del análisis: «{{criterion}}».",
+        "missing-grammar": "El análisis cita la gramática del curso ({{key}}, {{page}}) y la prosa no.",
+        "unverified-citation": "La cita {{excerpt}} no se pudo verificar y nadie la revisó.",
+        "repeated-alert": "La prosa repite la cita {{excerpt}}, que no se pudo verificar en el análisis.",
+        "double-closing": "Este cierre parece afirmar dos cosas: divídelo en dos oraciones.",
+        "hyphen-range": "Rango con guion: va con raya corta (–).",
+        "greek-grave": "Acento griego: el agudo final pasa a grave delante de otra palabra.",
+        "punctuation": "Puntuación: coma doble o espacio antes de la coma.",
+        "lowercase-start": "El párrafo empieza en minúscula.",
+        "repetition": "Repetición: «{{excerpt}}» aparece {{count}} veces."
+      },
+      "reviewer": {
+        "criterion": "Criterio {{number}}",
+        "clean": "El revisor no encontró fallas en los criterios del curso.",
+        "stale": "La prosa cambió después de la última revisión con los criterios: vuelve a revisarla."
+      },
+      "action": {
+        "review": "Revisar con los criterios del curso",
+        "reviewAgain": "Volver a revisar",
+        "recompose": "Recomponer con estas observaciones"
+      },
+      "toast": {
+        "failed": "No se pudo revisar la prosa. Intenta de nuevo."
+      }
+    },
     "verseProse": {
       "button": {
         "compose": "Componer prosa académica",
@@ -2244,6 +2276,7 @@
       "composeStudyGuideFromAnalyses": "Componer guía de estudio",
       "verifyStepCitations": "Verificar citas (paso)",
       "placeIdeaInSection": "Agregar una idea (sección)",
+      "reviewVerseProse": "Revisión antes de entregar (versículo)",
       "runCoherencePass": "Revisión de coherencia",
       "extractRubricFromText": "Extraer rúbrica (texto)",
       "extractRubricFromDocument": "Extraer rúbrica (documento)",

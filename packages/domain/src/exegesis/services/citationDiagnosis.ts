@@ -1,4 +1,5 @@
 import type { VerifiedCitation } from '../entities/CitationVerification';
+import { isCitationAlarm } from './citationReview';
 
 /**
  * «Diagnosticar esta cita» (TP #8, fase 8b, D4).
@@ -39,8 +40,6 @@ export interface CitationDiagnosis {
     remedy: CitationRemedy;
 }
 
-const ALARMAS = new Set(['not-found', 'fuzzy-low', 'page-mismatch', 'page-unverifiable']);
-
 /**
  * El diagnóstico de una alarma, o `null` cuando no es alarma o no hay con qué
  * diagnosticarla (la primera pasada todavía no buscó: sin D1 no se puede
@@ -54,7 +53,7 @@ export function diagnoseCitation(
     language: 'es' | 'en',
     knownAuthors: ReadonlyArray<string> = [],
 ): CitationDiagnosis | null {
-    if (!ALARMAS.has(verdict.status)) return null;
+    if (!isCitationAlarm(verdict.status)) return null;
     const es = language !== 'en';
 
     // 1 · Otra página: el verificador la halló en el libro, en otra página.

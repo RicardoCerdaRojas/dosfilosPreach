@@ -36,6 +36,7 @@ import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { AgregarIdeaDialog } from '@/components/exegesis/AgregarIdeaDialog';
+import { ProseReviewCard } from '@/components/exegesis/ProseReviewCard';
 import { Link, useNavigate } from 'react-router-dom';
 import { applyPageLabelStyle, assemblyContents, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
 import type { PaperFormatting } from '@dosfilos/domain';
@@ -234,6 +235,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             ? stepTextForEditing(step, assembledMarkdown)
             : step.accepted?.markdown ?? step.current?.markdown ?? '';
 
+    // La versión cuya prosa se ve: sus veredictos son los de esa prosa.
+    const versionALaVista = isReview ? step.current ?? step.accepted : step.accepted ?? step.current;
     const showActions = isReview;
     const showAccepted = isAccepted;
 
@@ -1029,6 +1032,23 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             // straight to study view so the user sees the
                             // structured payload that came back.
                             canonicalAnalysis && <CanonicalAnalysisStudyView analysis={canonicalAnalysis} onOpenCitation={openCitation} />
+                        )}
+                        {/* «Revisión antes de entregar» (TP #8, 8b, E3): avisa, no bloquea. */}
+                        {isVerse && canonicalAnalysis && previewMarkdown.trim() && viewMode === 'prose' && (isReview || showAccepted) && (
+                            <ProseReviewCard
+                                paperId={paperId}
+                                stepId={step.id}
+                                prose={prosaEntregada}
+                                analysis={canonicalAnalysis}
+                                verdicts={versionALaVista?.citationVerdicts ?? []}
+                                reviews={versionALaVista?.citationReviews ?? []}
+                                sources={paperDeLasCitas?.sources ?? []}
+                                language={language === 'en' ? 'en' : 'es'}
+                                onRecompose={(guidance) => handleComposeVerseProse(guidance)}
+                                recomposing={composeVerseAcademicProse.isPending}
+                                disabled={anyPipelinePending}
+                                onQuotaError={handleQuotaError}
+                            />
                         )}
                     </div>
                 )}

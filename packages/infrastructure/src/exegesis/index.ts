@@ -42,6 +42,7 @@ export { GeminiConclusionComposer } from './sectionComposers/GeminiConclusionCom
 export { GeminiIntroductionComposer } from './sectionComposers/GeminiIntroductionComposer';
 export { GeminiVerseAcademicComposer } from './sectionComposers/GeminiVerseAcademicComposer';
 export { GeminiIdeaPlacer } from './sectionComposers/GeminiIdeaPlacer';
+export { GeminiProseReviewer } from './proseReviewer/GeminiProseReviewer';
 export { GeminiSermonComposer } from './ministryComposers/GeminiSermonComposer';
 export { GeminiDevotionalComposer } from './ministryComposers/GeminiDevotionalComposer';
 export { GeminiStudyGuideComposer } from './ministryComposers/GeminiStudyGuideComposer';

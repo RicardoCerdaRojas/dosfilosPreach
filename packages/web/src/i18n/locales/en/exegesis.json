@@ -1776,6 +1776,38 @@
       "recomposeFromAnalyses": "Recompose from analyses",
       "composeRetry": "Retry composition"
     },
+    "proseReview": {
+      "title": "Review before delivery",
+      "subtitle": "Flags what usually gets corrected in an academic paper. It does not block the Word export: you decide.",
+      "count_one": "{{count}} warning",
+      "count_other": "{{count}} warnings",
+      "clean": "No warnings",
+      "fixed": {
+        "missing-criterion": "Question {{question}}: the prose does not use the analysis's decisive criterion: \"{{criterion}}\".",
+        "missing-grammar": "The analysis cites the course grammar ({{key}}, {{page}}) and the prose does not.",
+        "unverified-citation": "The citation {{excerpt}} could not be verified and nobody reviewed it.",
+        "repeated-alert": "The prose repeats the citation {{excerpt}}, which could not be verified in the analysis.",
+        "double-closing": "This closing sentence seems to state two things: split it in two.",
+        "hyphen-range": "Range with a hyphen: use an en dash (–).",
+        "greek-grave": "Greek accent: a final acute becomes grave before another word.",
+        "punctuation": "Punctuation: double comma or space before a comma.",
+        "lowercase-start": "The paragraph starts in lowercase.",
+        "repetition": "Repetition: \"{{excerpt}}\" appears {{count}} times."
+      },
+      "reviewer": {
+        "criterion": "Criterion {{number}}",
+        "clean": "The reviewer found no failures against the course criteria.",
+        "stale": "The prose changed after the last criteria review: review it again."
+      },
+      "action": {
+        "review": "Review with the course criteria",
+        "reviewAgain": "Review again",
+        "recompose": "Recompose with these notes"
+      },
+      "toast": {
+        "failed": "The prose could not be reviewed. Try again."
+      }
+    },
     "verseProse": {
       "button": {
         "compose": "Compose academic prose",
@@ -2244,6 +2276,7 @@
       "composeStudyGuideFromAnalyses": "Compose study guide",
       "verifyStepCitations": "Verify citations (step)",
       "placeIdeaInSection": "Add an idea (section)",
+      "reviewVerseProse": "Review before delivery (verse)",
       "runCoherencePass": "Coherence review",
       "extractRubricFromText": "Extract rubric (text)",
       "extractRubricFromDocument": "Extract rubric (document)",

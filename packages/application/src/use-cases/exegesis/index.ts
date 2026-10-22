@@ -123,6 +123,11 @@ export {
     type PlaceIdeaInSectionOutput,
 } from './PlaceIdeaInSectionUseCase';
 export {
+    ReviewVerseProseUseCase,
+    type ReviewVerseProseInput,
+    type ReviewVerseProseOutput,
+} from './ReviewVerseProseUseCase';
+export {
     ComposeSermonFromAnalysesUseCase,
     ComposeDevotionalFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,

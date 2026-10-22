@@ -28,6 +28,13 @@ export function mapVerdictsByPath(
     return out;
 }
 
+const ALARMAS: ReadonlySet<CitationStatus> = new Set<CitationStatus>(['not-found', 'fuzzy-low', 'page-mismatch', 'page-unverifiable']);
+
+/** Un veredicto que pide mirar la cita: el verificador no la respaldó. */
+export function isCitationAlarm(status: CitationStatus): boolean {
+    return ALARMAS.has(status);
+}
+
 /**
  * La ruta de una cita de la prosa (TP #8, fase 8b, D5). No vive en el
  * análisis, así que se identifica por su posición en el texto: es estable
