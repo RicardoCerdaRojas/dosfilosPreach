@@ -179,6 +179,8 @@ CRITERIOS POR TIPO (orientación, no obligación):
 - Trasfondo histórico, diccionarios teológicos: típicamente ancla o contraste de introducción y versos con tema doctrinal.
 - Monografías teológicas: ancla o contraste en conclusión y versos clave.
 
+MODO PREGUNTAS: si las restricciones del mensaje dicen que el trabajo responde preguntas puntuales, mandan ellas sobre los topes y la cobertura de arriba. Ahí cada paso lleva las fuentes que tienen material para su pregunta, sean cuantas sean, y una misma fuente puede servir a varios pasos.
+
 JUSTIFICACIÓN: una sola oración en español, NOMBRA explícitamente los roles. Ejemplo: "Ancla: Cranfield orienta la lectura paulina del genitivo absoluto. Contraste: Moo añade la perspectiva crítica de la nueva perspectiva. Técnica: BDAG confirma el campo semántico de \`δικαιοσύνη\`."`
         : `You are an expert biblical exegesis professor advising a seminary student on how to build the dialectical bibliography for each step of their paper.
 
@@ -214,6 +216,8 @@ TYPE CRITERIA (guidance, not obligation):
 - Historical background, theological dictionaries: usually anchor or contrast in introduction and theme-heavy verses.
 - Theological monographs: anchor or contrast in conclusion and key verses.
 
+QUESTIONS MODE: if the message constraints say the paper answers specific questions, they override the caps and coverage above. There each step takes the sources that have material for its question, however many, and one source may serve several steps.
+
 JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anchor: Cranfield orients the Pauline reading of the genitive absolute. Contrast: Moo adds the New Perspective's critical angle. Technical: BDAG confirms the semantic range of \`δικαιοσύνη\`."`;
 
     const passageLine = isSpanish
@@ -238,9 +242,11 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
     // Blass-Debrunner-Funk» a la de Robertson (TP Santiago 2:14-26), que no
     // tenía autor cargado.
     const sinAutor = isSpanish ? 'SIN AUTOR CARGADO' : 'NO AUTHOR ON FILE';
+    const rolDice = isSpanish ? 'rol en el corpus' : 'corpus role';
     const sourcesList = [
         ...input.sources.map(s =>
-            `- id="${s.id}" · type=${s.sourceType} · ${s.displayLabel} · ${s.citationKey ? `${isSpanish ? 'se nombra' : 'named'}: ${s.citationKey}` : sinAutor}`),
+            `- id="${s.id}" · type=${s.sourceType} · ${s.displayLabel} · ${s.citationKey ? `${isSpanish ? 'se nombra' : 'named'}: ${s.citationKey}` : sinAutor}`
+            + (s.chosenRole ? ` · ${rolDice}: ${s.chosenRole}` : '')),
         isSpanish
             ? `Nombra cada fuente SÓLO como se indica. Si dice «${sinAutor}», nómbrala por su título y nunca le atribuyas un autor: deducirlo del título es inventarlo.`
             : `Name each source ONLY as given. If it says "${sinAutor}", name it by its title and never attribute an author: inferring one from the title is inventing it.`,
@@ -250,10 +256,23 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
     // Las preguntas del encuadre bajo su paso: lo que la fuente tiene que
     // ayudar a responder ahí.
     const preguntaDice = isSpanish ? 'pregunta del encuadre' : 'brief question';
+    // Lo que cada fuente YA trae para el paso, del índice de pasajes y de las
+    // entradas de léxico (TP #8, 8a, B2): el planificador nunca veía una hoja.
+    const evidenciaDice = isSpanish ? 'evidencia en el corpus' : 'evidence in the corpus';
+    const nombreDe = (id: string) => {
+        const f = input.sources.find(x => x.id === id);
+        return f ? (f.citationKey ?? f.displayLabel) : id;
+    };
+    const hojasDice = (n: ReadonlyArray<number>) => `${isSpanish ? 'h.' : 'sh.'} ${n.join(', ')}`;
+    const lineaDeEvidencia = (e: NonNullable<ProposeStepCorpusInput['steps'][number]['evidence']>[number]) =>
+        `    · ${evidenciaDice}: id="${e.sourceId}" (${nombreDe(e.sourceId)}) ${hojasDice(e.sheets)}`
+        + (e.via === 'lemma' && e.term ? ` — ${isSpanish ? 'entrada de' : 'entry for'} ${e.term}` : '')
+        + (e.line ? ` — «${e.line.replace(/\s+/g, ' ').trim()}»` : '');
     const stepsList = input.steps
         .map(s => [
             `- id="${s.id}" · kind=${s.kind} · ${s.label}`,
             ...(s.questions ?? []).map(q => `    · ${preguntaDice}: ${q}`),
+            ...(s.evidence ?? []).map(lineaDeEvidencia),
         ].join('\n'))
         .join('\n');
 
@@ -275,7 +294,27 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
   ]
 }`;
 
-    const constraints = isSpanish
+    const constraints = input.questionsMode
+        ? (isSpanish
+            ? `Restricciones (este trabajo RESPONDE PREGUNTAS puntuales; no es un paper largo):
+- Usa SOLO los ids exactos listados arriba (no inventes nuevos).
+- Usa SOLO ids de pasos listados arriba.
+- TODOS los pasos deben aparecer en "allocations" con al menos 1 fuente con rol "anchor".
+- Cada fuente con «evidencia en el corpus» bajo un paso DEBE ir en ese paso: tiene las hojas que responden su pregunta. Decide su rol y qué voces se oponen.
+- Una fuente puede ir en VARIOS pasos: un léxico o un diccionario sirve a cada pregunta que pide una de sus palabras.
+- Elige además las fuentes que la pregunta pide aunque no tengan evidencia listada: una pregunta de crítica textual o de puntuación pide el aparato crítico y su comentario; una de sintaxis, la gramática.
+- No hay tope de fuentes por paso, y no hace falta que todas las fuentes aparezcan: una fuente sin nada para ninguna pregunta queda sin asignar.
+- Cada id en "pinnedSources" DEBE tener una entrada correspondiente en "pinnedSourceRoles". Si la fuente trae «rol en el corpus», úsalo salvo que la pregunta pida otro.`
+            : `Constraints (this paper ANSWERS SPECIFIC QUESTIONS; it is not a long paper):
+- Use ONLY the exact ids listed above (don't invent new ones).
+- Use ONLY step ids listed above.
+- ALL steps must appear in "allocations" with at least 1 source with role "anchor".
+- Every source with "evidence in the corpus" under a step MUST go in that step: it holds the pages that answer its question. Decide its role and which voices are opposed.
+- A source may go in SEVERAL steps: a lexicon or dictionary serves every question that asks for one of its words.
+- Also pick the sources the question calls for even without listed evidence: a text-critical or punctuation question calls for the critical apparatus and its commentary; a syntax question, the grammar.
+- There is no cap on sources per step, and not every source needs to appear: a source with nothing for any question stays unassigned.
+- Every id in "pinnedSources" MUST have a corresponding entry in "pinnedSourceRoles". If the source carries a "corpus role", use it unless the question calls for another.`)
+        : isSpanish
         ? `Restricciones:
 - Usa SOLO los ids exactos listados arriba (no inventes nuevos).
 - Usa SOLO ids de pasos listados arriba.

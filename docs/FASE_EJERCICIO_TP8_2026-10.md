@@ -209,6 +209,25 @@ Para cada paso con pregunta, toda fuente que tenga una hoja con `refs` del vers�
   - se quita la regla de cobertura (`PLN:284`), que choca con la anterior.
 - El modelo decide los roles y **qué voces se oponen**.
 
+**Hecho (B1 y B2 van juntos: B2 sin B1 no se puede medir):**
+- **Una sola evidencia.** El plan usa la de la tarjeta de A4 (`evidenceFromReview`), y solo las hojas que ya están en el corpus. Viaja desde la interfaz, que ya la tiene cargada; buscarla de nuevo sería leer cada libro dos veces.
+- **«Proponer plan» espera a la revisión.** Si la revisión todavía está cargando, el botón no se puede pulsar.
+- **Lo que ve el modelo, por paso:** la hoja, la palabra de la consigna y un renglón de hasta 300 caracteres, más el rol del corpus.
+- **Modo preguntas.** Se activa cuando algún paso trae preguntas con versículo. En ese modo se quitan:
+  - el tope de 4 fuentes por paso;
+  - «van en ese paso y no en otro»;
+  - la cobertura obligatoria del corpus.
+- **B1 en código.** Después del modelo, toda fuente con evidencia entra a su paso con el rol del corpus. La nota del paso lo dice: «También entra por sus páginas sobre la pregunta del paso: Tuggy».
+
+**Medido (determinista, antes del modelo; solo lectura con el corpus real y las refs de A3 simuladas):**
+- **4:1:** Mayor, Tuggy, Adamson y Kittel. ✓
+- **4:2:** Tuggy ✓, más Kittel y Wallace. Las dos tienen hojas fijadas que nombran 4:2. NA28 queda a cargo del modelo: la conjetura φθονεῖτε no nombra el versículo.
+- **4:3:** Kittel y Tuggy ✓, más Mayor y Adamson.
+- **4:5:** Wallace y Tuggy ✓, más Mayor, Adamson y Kittel.
+- **Mayor entra solo con las refs de A3**, después del relleno.
+
+El resultado contiene todo el plan que se armó a mano, menos NA28 en 4:2.
+
 ### B3. Editar el plan
 - **#23:** al agregar una fuente con «Editar», se precarga su `chosenRole` (`PinnedSourcesPicker.tsx:93-99`, `UpdateStepCorpusAllocationUseCase.ts:95-104`).
 - **#24:** si el estudiante cambia la asignación, la justificación del planificador se marca «editada por ti», en vez de quedar desactualizada.

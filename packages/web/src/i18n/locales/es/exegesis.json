@@ -1465,6 +1465,7 @@
         "citaPorSeccion": "Este libro no tiene páginas impresas: sus citas van por sección (§), que se encuentra en el ejemplar."
       },
       "corpus-plan": {
+        "waitingReview": "Esperando la revisión del corpus por pregunta: el plan la usa.",
         "outsideDocument_one": "1 paso queda fuera del documento (el encuadre no lo pide): no se planifica.",
         "outsideDocument_other": "{{count}} pasos quedan fuera del documento (el encuadre no los pide): no se planifican.",
         "includeStepAria": "Incluir {{name}} en el documento",

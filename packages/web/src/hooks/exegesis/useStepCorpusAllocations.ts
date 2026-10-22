@@ -1,4 +1,4 @@
-import type { SourceRole } from '@dosfilos/domain';
+import type { QuestionSourceEvidence, SourceRole } from '@dosfilos/domain';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { exegesisService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
@@ -16,11 +16,12 @@ export function useProposeStepCorpusAllocations() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (input: { paperId: string }) => {
+        mutationFn: async (input: { paperId: string; evidence?: ReadonlyArray<QuestionSourceEvidence> }) => {
             if (!user?.uid) throw new Error('User not authenticated');
             return exegesisService.proposeStepCorpusAllocations.execute({
                 ownerId: user.uid,
                 paperId: input.paperId,
+                ...(input.evidence ? { evidence: input.evidence } : {}),
             });
         },
         onSuccess: () => {

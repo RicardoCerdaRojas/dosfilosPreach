@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     addAndPinSheets,
+    evidenceFromReview,
     reviewCorpusByQuestion,
     type QuestionReviewSource,
 } from '../corpusQuestionReview';
@@ -269,5 +270,35 @@ describe('addAndPinSheets', () => {
             sheetRanges: [{ start: 407, end: 411 }, { start: 413, end: 417 }],
             pinnedRanges: [{ start: 411, end: 411 }],
         });
+    });
+});
+
+/** B1–B2 (TP #8): lo que el plan de uso recibe de la revisión. */
+describe('evidenceFromReview', () => {
+    it('sólo las hojas del corpus, con sus renglones', () => {
+        const conRenglon = {
+            ...mayor,
+            verseHits: [
+                { sheet: 407, count: 4, verses: [1, 2], snippet: 'IV 1] NOTES πόθεν πόλεμοι' },
+                { sheet: 411, count: 3, verses: [2, 3] },
+            ],
+        };
+        const ev = evidenceFromReview(revisar([conRenglon]));
+        expect(ev).toEqual([
+            { question: 1, sourceId: 'mayor', via: 'verse', sheets: [407], snippets: ['IV 1] NOTES πόθεν πόλεμοι'] },
+        ]);
+        // La 411 está afuera: la pregunta 2 no tiene evidencia de Mayor.
+        expect(ev.some(e => e.question === 2)).toBe(false);
+    });
+
+    it('la entrada del léxico entra con su palabra', () => {
+        const completa = { ...tuggy, verseHits: [], selected: [{ start: 584, end: 585 }] };
+        expect(evidenceFromReview(revisar([completa]))).toEqual([
+            { question: 1, sourceId: 'tuggy', via: 'lemma', term: 'μέλεσιν', sheets: [584, 585], snippets: [] },
+        ]);
+    });
+
+    it('sin revisión, nada', () => {
+        expect(evidenceFromReview(null)).toEqual([]);
     });
 });

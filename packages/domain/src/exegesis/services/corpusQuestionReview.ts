@@ -32,7 +32,7 @@ export interface QuestionReviewSource {
      * los versículos que nombra cada una (A1/A3). `null`: no se pudo buscar
      * (todavía cargando, o la búsqueda falló); la fuente no se juzga.
      */
-    verseHits: ReadonlyArray<{ sheet: number; count: number; verses: ReadonlyArray<number> }> | null;
+    verseHits: ReadonlyArray<{ sheet: number; count: number; verses: ReadonlyArray<number>; snippet?: string }> | null;
     /**
      * La entrada de cada lema de la consigna en este libro (A2). Sólo para
      * léxicos y diccionarios; `null` mientras carga o si falló.
@@ -66,6 +66,8 @@ export interface QuestionSheet {
     sheet: number;
     /** `pinned` implica `in-corpus`. */
     state: 'pinned' | 'in-corpus' | 'outside';
+    /** El renglón donde la hoja nombra el versículo, cuando la búsqueda lo trae. */
+    snippet?: string;
 }
 
 /** Lo que una fuente aporta a una pregunta. */
@@ -204,7 +206,7 @@ export function reviewCorpusByQuestion(input: {
                 l.question === row.number && l.entry && sheetsOf(l.entry).some(sheet => estado(sheet) !== 'outside'));
             const queNombran = source.verseHits
                 .filter(h => h.verses.some(v => row.verses.includes(v)))
-                .map(h => ({ sheet: h.sheet, count: h.count, state: estado(h.sheet) }));
+                .map(h => ({ sheet: h.sheet, count: h.count, state: estado(h.sheet), ...(h.snippet ? { snippet: h.snippet } : {}) }));
             if (queNombran.length > 0) {
                 tocaAlguna = true;
                 const dentro = queNombran.filter(h => h.state !== 'outside');
@@ -215,7 +217,7 @@ export function reviewCorpusByQuestion(input: {
                 row.sources.push({
                     sourceId: source.sourceId,
                     via: 'verse',
-                    sheets: mostradas.map(({ sheet, state }) => ({ sheet, state })),
+                    sheets: mostradas.map(({ sheet, state, snippet }) => ({ sheet, state, ...(snippet ? { snippet } : {}) })),
                 });
                 // Dos casos, y no cada mención de afuera: un comentario nombra
                 // el versículo en la introducción y en el índice, y avisar por
@@ -278,6 +280,48 @@ export function reviewCorpusByQuestion(input: {
     }
 
     return { rows, warnings, pending };
+}
+
+/**
+ * Lo que el corpus YA trae para cada pregunta, por fuente: la evidencia con
+ * que el plan de uso reparte (TP #8, fase 8a, B1–B2).
+ *
+ * El planificador recibía de cada fuente `id · tipo · título · clave` y nunca
+ * veía una hoja: dejó a Tuggy en un solo paso y a Kittel en otro, aunque los
+ * dos tenían hojas para tres preguntas. Esto es lo que muestra la tarjeta
+ * «¿Qué responde cada pregunta?», sin las hojas de afuera: lo que no está en
+ * el corpus no llega al prompt, así que no puede justificar una asignación.
+ */
+export interface QuestionSourceEvidence {
+    question: number;
+    sourceId: string;
+    via: 'verse' | 'lemma';
+    /** Con `via: 'lemma'`, la palabra de la consigna. */
+    term?: string;
+    /** Las hojas del corpus, en el orden de la revisión (más menciones primero). */
+    sheets: number[];
+    /** Renglones de contexto de esas hojas, cuando la búsqueda los trajo. */
+    snippets: string[];
+}
+
+export function evidenceFromReview(review: CorpusQuestionReview | null): QuestionSourceEvidence[] {
+    if (!review) return [];
+    const out: QuestionSourceEvidence[] = [];
+    for (const row of review.rows) {
+        for (const cov of row.sources) {
+            const dentro = cov.sheets.filter(h => h.state !== 'outside');
+            if (dentro.length === 0) continue;
+            out.push({
+                question: row.number,
+                sourceId: cov.sourceId,
+                via: cov.via,
+                ...(cov.term ? { term: cov.term } : {}),
+                sheets: dentro.map(h => h.sheet),
+                snippets: dentro.flatMap(h => (h.snippet ? [h.snippet] : [])),
+            });
+        }
+    }
+    return out;
 }
 
 /**

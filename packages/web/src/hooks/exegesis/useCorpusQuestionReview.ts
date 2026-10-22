@@ -138,7 +138,7 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
                 selected: f.selected,
                 pinned: f.source.excerptRecipe?.pinnedRanges ?? [],
                 verseHits: pasaje.isSuccess
-                    ? pasaje.data.map(h => ({ sheet: h.sheet, count: h.count, verses: h.verses }))
+                    ? pasaje.data.map(h => ({ sheet: h.sheet, count: h.count, verses: h.verses, snippet: h.snippet }))
                     : null,
                 ...(esLexica ? { lemmaEntries } : {}),
                 printedPages: printedPagesOf(f),

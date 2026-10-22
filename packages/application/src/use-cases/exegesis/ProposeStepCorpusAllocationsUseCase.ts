@@ -4,7 +4,10 @@ import {
     type ExegeticalStep,
     type IExegeticalPaperRepository,
     type IStepCorpusPlanner,
+    type ProposeStepCorpusEvidence,
     type ProposeStepCorpusStepInput,
+    type QuestionSourceEvidence,
+    type SourceRole,
     type StepSourcePlan,
     type StepSourcePlanEntry,
     briefWithExclusions,
@@ -13,11 +16,19 @@ import {
     parseBriefQuestions,
     pertenceAlDocumento,
     questionsOfStep,
+    resolveSourceRole,
 } from '@dosfilos/domain';
 
 export interface ProposeStepCorpusAllocationsInput {
     ownerId: string;
     paperId: string;
+    /**
+     * Lo que el corpus ya trae para cada pregunta (`evidenceFromReview`, la
+     * misma revisión que muestra la tarjeta «¿Qué responde cada pregunta?»).
+     * Viaja desde la interfaz porque ya está cargada ahí: buscarla otra vez
+     * sería leer cada libro dos veces (TP #8, fase 8a, B1–B2).
+     */
+    evidence?: ReadonlyArray<QuestionSourceEvidence>;
 }
 
 export interface ProposeStepCorpusAllocationsOutput {
@@ -87,8 +98,10 @@ export class ProposeStepCorpusAllocationsUseCase {
         }
 
         const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
+        const validSourceIds = new Set(paper.sources.map(s => s.id));
+        const evidenciaDe = evidenceOfStep(input.evidence ?? [], preguntas, validSourceIds);
         const stepInputs: ReadonlyArray<ProposeStepCorpusStepInput> = plannableSteps.map(step =>
-            buildPlannerStepInput(step, paper, questionsOfStep(step, preguntas).map(q => q.text)),
+            buildPlannerStepInput(step, paper, questionsOfStep(step, preguntas).map(q => q.text), evidenciaDe(step)),
         );
 
         const result = await this.planner.propose({
@@ -101,15 +114,16 @@ export class ProposeStepCorpusAllocationsUseCase {
                 sourceType: s.sourceType,
                 displayLabel: s.displayLabel,
                 citationKey: s.citationKey,
+                ...(s.chosenRole ? { chosenRole: s.chosenRole } : {}),
             })),
             steps: stepInputs,
+            questionsMode: preguntas.some(q => q.verses.length > 0),
         });
 
         // Sanitize: drop any pinnedSources that don't reference an
         // actual current source (LLM may hallucinate ids). Keep the
         // rationale even if pinnedSources ends up empty so the user
         // can see why the planner concluded "nothing to pin here".
-        const validSourceIds = new Set(paper.sources.map(s => s.id));
         const nextPerStep: Record<string, StepSourcePlanEntry> = { ...paper.stepPlan.perStep };
         let nonEmptyAllocationCount = 0;
 
@@ -146,6 +160,7 @@ export class ProposeStepCorpusAllocationsUseCase {
             };
         }
 
+        conLaEvidencia(nextPerStep, plannableSteps, evidenciaDe, paper);
         conGramaticaEnLaSintaxis(nextPerStep, plannableSteps, preguntas, paper);
 
         const nextPlan: StepSourcePlan = {
@@ -198,7 +213,97 @@ function conGramaticaEnLaSintaxis(
     }
 }
 
-function buildPlannerStepInput(step: ExegeticalStep, paper: ExegeticalPaper, questions: ReadonlyArray<string>): ProposeStepCorpusStepInput {
+/** Tope del renglón de evidencia que ve el planificador, por fuente y paso. */
+const MAX_EVIDENCE_LINE = 300;
+
+/**
+ * La evidencia de cada paso: la de las preguntas que le tocan, agrupada por
+ * fuente y forma (versículo o lema). Las fuentes que ya no están en el corpus
+ * no cuentan.
+ */
+function evidenceOfStep(
+    evidence: ReadonlyArray<QuestionSourceEvidence>,
+    preguntas: ReturnType<typeof parseBriefQuestions>,
+    validSourceIds: ReadonlySet<string>,
+): (step: ExegeticalStep) => ProposeStepCorpusEvidence[] {
+    return step => {
+        const numeros = new Set(questionsOfStep(step, preguntas).map(q => q.number));
+        const porClave = new Map<string, ProposeStepCorpusEvidence & { sheets: number[] }>();
+        for (const e of evidence) {
+            if (!numeros.has(e.question) || !validSourceIds.has(e.sourceId)) continue;
+            const clave = `${e.sourceId}|${e.via}|${e.term ?? ''}`;
+            const actual = porClave.get(clave);
+            if (actual) {
+                for (const h of e.sheets) if (!actual.sheets.includes(h)) actual.sheets.push(h);
+                if (!actual.line && e.snippets[0]) actual.line = e.snippets[0].slice(0, MAX_EVIDENCE_LINE);
+                continue;
+            }
+            porClave.set(clave, {
+                sourceId: e.sourceId,
+                sheets: [...e.sheets],
+                via: e.via,
+                ...(e.term ? { term: e.term } : {}),
+                ...(e.snippets[0] ? { line: e.snippets[0].slice(0, MAX_EVIDENCE_LINE) } : {}),
+            });
+        }
+        return [...porClave.values()];
+    };
+}
+
+/**
+ * B1 (TP #8, fase 8a): toda fuente con material en el corpus para la pregunta
+ * de un paso entra a ese paso, con su rol del corpus, la haya elegido el
+ * modelo o no. Es lo que se hizo a mano en el TP #8: Tuggy en los cuatro
+ * pasos, Kittel en 4:1, 4:3 y 4:5. El modelo sigue decidiendo los roles de lo
+ * que eligió; lo que se agrega aquí lleva el que el corpus le da, y la nota
+ * del paso lo dice.
+ */
+function conLaEvidencia(
+    perStep: Record<string, StepSourcePlanEntry>,
+    steps: ReadonlyArray<ExegeticalStep>,
+    evidenciaDe: (step: ExegeticalStep) => ProposeStepCorpusEvidence[],
+    paper: ExegeticalPaper,
+): void {
+    for (const step of steps) {
+        const ids = [...new Set(evidenciaDe(step).map(e => e.sourceId))];
+        if (ids.length === 0) continue;
+        const entrada: StepSourcePlanEntry = perStep[step.id] ?? {
+            stepId: step.id,
+            kind: step.kind,
+            emphasis: { emphasizedTypes: [], deemphasizedTypes: [], citationOverrides: [] },
+            pinnedSources: [],
+            suppressedSources: [],
+            note: null,
+        };
+        const faltan = ids.filter(id => !entrada.pinnedSources.includes(id));
+        if (faltan.length === 0) continue;
+        const roles: Record<string, SourceRole> = { ...(entrada.pinnedSourceRoles ?? {}) };
+        for (const id of faltan) {
+            const fuente = paper.sources.find(s => s.id === id)!;
+            roles[id] = resolveSourceRole(fuente).role ?? 'technical';
+        }
+        const nombres = faltan.map(id => {
+            const f = paper.sources.find(s => s.id === id)!;
+            return f.citationKey?.trim() || f.displayLabel;
+        }).join(', ');
+        const aviso = paper.displayLanguage === 'en'
+            ? `Also included for its pages on this step's question: ${nombres}.`
+            : `También entra${faltan.length > 1 ? 'n' : ''} por sus páginas sobre la pregunta del paso: ${nombres}.`;
+        perStep[step.id] = {
+            ...entrada,
+            pinnedSources: [...entrada.pinnedSources, ...faltan],
+            pinnedSourceRoles: roles,
+            note: entrada.note ? `${entrada.note} ${aviso}` : aviso,
+        };
+    }
+}
+
+function buildPlannerStepInput(
+    step: ExegeticalStep,
+    paper: ExegeticalPaper,
+    questions: ReadonlyArray<string>,
+    evidence: ReadonlyArray<ProposeStepCorpusEvidence> = [],
+): ProposeStepCorpusStepInput {
     const language = paper.displayLanguage;
     let label: string;
     if (step.kind === 'verse' && step.verseRef) {
@@ -216,5 +321,6 @@ function buildPlannerStepInput(step: ExegeticalStep, paper: ExegeticalPaper, que
         label,
         verseRef: step.verseRef,
         ...(questions.length > 0 ? { questions } : {}),
+        ...(evidence.length > 0 ? { evidence } : {}),
     };
 }

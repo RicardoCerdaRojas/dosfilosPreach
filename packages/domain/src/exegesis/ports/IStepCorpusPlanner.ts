@@ -2,6 +2,7 @@ import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { ExegeticalPaperPhase } from '../entities/ExegeticalPaper';
 import type { ExegeticalStepKind } from '../entities/ExegeticalStep';
 import type { SourceType } from '../entities/SourceType';
+import type { SourceRole } from '../entities/StepSourcePlan';
 
 /**
  * v1.7 — LLM proposer for the corpus-usage planning step.
@@ -40,6 +41,14 @@ export interface ProposeStepCorpusInput {
     sources: ReadonlyArray<ProposeStepCorpusSourceInput>;
     /** Generation steps to allocate against. */
     steps: ReadonlyArray<ProposeStepCorpusStepInput>;
+    /**
+     * El trabajo responde preguntas puntuales (algún paso trae preguntas con
+     * versículo). Cambia las reglas del reparto (TP #8, 8a, B2): sin tope de
+     * fuentes por paso, una fuente puede ir en varios pasos y no hay que
+     * cubrir todo el corpus. Las reglas de un paper largo dejaron a Tuggy y a
+     * Kittel en un solo paso cada uno.
+     */
+    questionsMode?: boolean;
 }
 
 export interface ProposeStepCorpusSourceInput {
@@ -50,6 +59,21 @@ export interface ProposeStepCorpusSourceInput {
     displayLabel: string;
     /** Optional citation key (author surname). */
     citationKey: string | null;
+    /** El rol que el estudiante le dio en el corpus, si eligió uno. */
+    chosenRole?: SourceRole | null;
+}
+
+/**
+ * Lo que una fuente del corpus trae para un paso: las hojas que nombran su
+ * versículo o la entrada de un lema de su pregunta (A1–A3), con un renglón.
+ */
+export interface ProposeStepCorpusEvidence {
+    sourceId: string;
+    sheets: ReadonlyArray<number>;
+    via: 'verse' | 'lemma';
+    term?: string;
+    /** Un renglón de contexto (≤ 300 caracteres), si lo hay. */
+    line?: string;
 }
 
 export interface ProposeStepCorpusStepInput {
@@ -70,6 +94,12 @@ export interface ProposeStepCorpusStepInput {
      * 3:11, que no tenía pregunta, y no en 3:6, que trataba la puntuación.
      */
     questions?: ReadonlyArray<string>;
+    /**
+     * Las fuentes que YA tienen material para las preguntas de este paso
+     * (TP #8, 8a, B1–B2). Entran al paso de todos modos; el modelo decide su
+     * rol y qué voces se oponen.
+     */
+    evidence?: ReadonlyArray<ProposeStepCorpusEvidence>;
 }
 
 export interface ProposeStepCorpusResult {

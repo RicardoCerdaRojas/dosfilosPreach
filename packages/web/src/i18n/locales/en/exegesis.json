@@ -1465,6 +1465,7 @@
         "citaPorSeccion": "This book has no printed pages: its citations go by section (§), which can be found in the copy."
       },
       "corpus-plan": {
+        "waitingReview": "Waiting for the corpus review by question: the plan uses it.",
         "outsideDocument_one": "1 step is left out of the document (the brief doesn't ask for it): it isn't planned.",
         "outsideDocument_other": "{{count}} steps are left out of the document (the brief doesn't ask for them): they aren't planned.",
         "includeStepAria": "Include {{name}} in the document",
