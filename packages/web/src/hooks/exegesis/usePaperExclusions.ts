@@ -1,6 +1,25 @@
 import { useMemo } from 'react';
-import { previousDelivery, proposeExclusions, type ExcludedSource, type ExegeticalPaper } from '@dosfilos/domain';
+import { previousDeliveries, proposeExclusions, type ExcludedSource, type ExegeticalPaper, type PreviousDelivery, type ProposedExclusion } from '@dosfilos/domain';
 import { useExegesisPapers } from './useExegesisPapers';
+
+/**
+ * La propuesta de exclusiones de un trabajo: lo citado en la entrega
+ * anterior, según la regla de su tipo (A7, TP #8), mirando también la
+ * entrega de antes para sugerir la otra gramática.
+ */
+export function useProposedExclusions(paper: Pick<ExegeticalPaper, 'id' | 'displayLanguage'>): {
+    proposal: ProposedExclusion[];
+    previous: PreviousDelivery | null;
+} {
+    const { papers } = useExegesisPapers();
+    return useMemo(() => {
+        const [previa, anterior] = previousDeliveries(papers, paper.id, 2);
+        return {
+            proposal: proposeExclusions(previa ?? null, paper.displayLanguage, { beforePrevious: anterior ?? null }),
+            previous: previa ?? null,
+        };
+    }, [papers, paper.id, paper.displayLanguage]);
+}
 
 /**
  * Las exclusiones que deben ver las LISTAS del corpus (orden, marca,
@@ -14,10 +33,7 @@ import { useExegesisPapers } from './useExegesisPapers';
  * Los pasos que REDACTAN no usan esto: sólo leen lo confirmado.
  */
 export function usePaperExclusions(paper: Pick<ExegeticalPaper, 'id' | 'excludedSources' | 'displayLanguage'>): ReadonlyArray<ExcludedSource> {
-    const { papers } = useExegesisPapers();
     const confirmadas = paper.excludedSources ?? null;
-    return useMemo(
-        () => confirmadas ?? proposeExclusions(previousDelivery(papers, paper.id), paper.displayLanguage),
-        [confirmadas, papers, paper.id, paper.displayLanguage],
-    );
+    const { proposal } = useProposedExclusions(paper);
+    return confirmadas ?? proposal;
 }

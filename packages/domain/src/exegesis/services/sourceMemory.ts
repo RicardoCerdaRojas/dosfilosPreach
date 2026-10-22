@@ -1,4 +1,5 @@
 import type { ExegesisPaperSummary } from '../entities/ExegesisPaperSummary';
+import type { SourceType } from '../entities/SourceType';
 
 /**
  * Qué citó el autor en su entrega anterior.
@@ -29,6 +30,13 @@ export interface PreviousDelivery {
     createdAt: Date;
     /** Lo que esa entrega citó. Ordenado, para que la lista no baile. */
     citedSourceKeys: ReadonlyArray<string>;
+    /**
+     * El tipo de cada clave citada, de las fuentes de esa entrega (TP #8, 8a,
+     * A7): la regla de no repetir es por tipo. Una clave sin fuente que la
+     * declare (citada por fuera del corpus) no aparece. Ausente: no se sabe,
+     * y todo se propone como antes.
+     */
+    citedSourceTypes?: Readonly<Record<string, SourceType>>;
 }
 
 /**
@@ -45,24 +53,42 @@ export function previousDelivery(
     summaries: ReadonlyArray<ExegesisPaperSummary>,
     currentPaperId: string,
 ): PreviousDelivery | null {
-    const actual = summaries.find(s => s.id === currentPaperId);
-    if (!actual) return null;
+    return previousDeliveries(summaries, currentPaperId, 1)[0] ?? null;
+}
 
-    const anteriores = summaries
+/**
+ * Las últimas `count` entregas anteriores, de la más reciente a la más vieja.
+ * La gramática se alterna (A7): para sugerir «la otra» hay que mirar dos.
+ */
+export function previousDeliveries(
+    summaries: ReadonlyArray<ExegesisPaperSummary>,
+    currentPaperId: string,
+    count: number,
+): PreviousDelivery[] {
+    const actual = summaries.find(s => s.id === currentPaperId);
+    if (!actual) return [];
+
+    return summaries
         .filter(s => s.id !== currentPaperId)
         .filter(s => s.citedSourceKeys.length > 0)
         .filter(s => s.createdAt.getTime() < actual.createdAt.getTime())
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    const previa = anteriores[0];
-    if (!previa) return null;
-    return {
-        paperId: previa.id,
-        title: previa.title ?? null,
-        passage: previa.passage,
-        createdAt: previa.createdAt,
-        citedSourceKeys: [...previa.citedSourceKeys].sort(),
-    };
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, count)
+        .map(previa => {
+            const citadas = new Set(previa.citedSourceKeys);
+            const tipos: Record<string, SourceType> = {};
+            for (const f of previa.sources ?? []) {
+                if (f.citationKey && citadas.has(f.citationKey) && !tipos[f.citationKey]) tipos[f.citationKey] = f.sourceType;
+            }
+            return {
+                paperId: previa.id,
+                title: previa.title ?? null,
+                passage: previa.passage,
+                createdAt: previa.createdAt,
+                citedSourceKeys: [...previa.citedSourceKeys].sort(),
+                citedSourceTypes: tipos,
+            };
+        });
 }
 
 /**

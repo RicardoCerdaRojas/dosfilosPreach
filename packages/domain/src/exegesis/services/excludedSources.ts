@@ -1,5 +1,6 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
-import type { PreviousDelivery } from './sourceMemory';
+import type { SourceType } from '../entities/SourceType';
+import { repeatedFromPreviousDelivery, type PreviousDelivery } from './sourceMemory';
 
 /**
  * Una fuente que este trabajo no puede usar.
@@ -24,20 +25,81 @@ export interface ExcludedSource {
 }
 
 /**
+ * Qué hace la regla de no repetir con cada tipo de fuente (TP #8, 8a, A7).
+ *
+ * - `exclude`: no se repite en semanas consecutivas. Los comentarios: es la
+ *   regla del sílabo del fundador («solo los comentarios críticos y
+ *   exegéticos»).
+ * - `alternate`: se puede repetir, pero conviene alternar. Las gramáticas:
+ *   el sílabo no las restringe y el fundador las alterna por prudencia
+ *   (Robertson una semana, Wallace la siguiente). Se propone excluirla y se
+ *   sugiere la otra.
+ * - `free`: no se propone. Léxicos, texto base, aparato y el resto: antes
+ *   la propuesta traía Tuggy, NA28 y Robertson, y el estudiante los
+ *   desmarcaba a mano cada semana (#1).
+ */
+export type SourceRepetitionRule = 'exclude' | 'alternate' | 'free';
+export type SourceRepetitionPolicy = Readonly<Partial<Record<SourceType, SourceRepetitionRule>>>;
+
+export const DEFAULT_SOURCE_REPETITION_POLICY: SourceRepetitionPolicy = {
+    'commentary-critical': 'exclude',
+    'commentary-expository': 'exclude',
+    'grammar-syntax': 'alternate',
+};
+
+/**
+ * La regla de un tipo. Sin tipo (una clave citada que ninguna fuente de esa
+ * entrega declara) se excluye, como antes: proponer de más se corrige con un
+ * clic; dejar pasar un comentario repetido, no.
+ */
+export function repetitionRuleFor(
+    type: SourceType | null | undefined,
+    policy: SourceRepetitionPolicy = DEFAULT_SOURCE_REPETITION_POLICY,
+): SourceRepetitionRule {
+    if (!type) return 'exclude';
+    return policy[type] ?? 'free';
+}
+
+/** Una exclusión propuesta, con por qué se propone. Al guardarse queda en `ExcludedSource`. */
+export interface ProposedExclusion extends ExcludedSource {
+    rule: Exclude<SourceRepetitionRule, 'free'>;
+    sourceType: SourceType | null;
+    /**
+     * Con `alternate`: las del mismo tipo citadas en la entrega anterior a la
+     * anterior que esta vez quedan libres. «Robertson (TP #7) → Wallace (TP #6)».
+     */
+    alternatives: string[];
+}
+
+/**
  * Las exclusiones que se proponen al abrir el corpus: lo citado en la
- * entrega anterior. El estudiante las confirma o las edita; el sistema no
- * decide cuántas semanas hay que esperar.
+ * entrega anterior, según la regla de su tipo. El estudiante las confirma o
+ * las edita; el sistema no decide cuántas semanas hay que esperar.
  */
 export function proposeExclusions(
     previous: PreviousDelivery | null,
     language: 'es' | 'en' = 'es',
-): ExcludedSource[] {
+    options: { beforePrevious?: PreviousDelivery | null; policy?: SourceRepetitionPolicy } = {},
+): ProposedExclusion[] {
     if (!previous) return [];
     // Sin título, el pasaje: con `null` la propuesta decía «(trabajo
     // anterior)» y las confirmadas, «agregada por ti», aunque la tarjeta de
     // NA28 sí sabía que era «Santiago 3:1-12» (TP #7, #2 y #10).
     const origen = previous.title?.trim() || formatPassageReference(previous.passage, language);
-    return previous.citedSourceKeys.map(key => ({ key, previousPaperTitle: origen }));
+    const tipoDe = (key: string): SourceType | null => previous.citedSourceTypes?.[key] ?? null;
+    const out: ProposedExclusion[] = [];
+    for (const key of previous.citedSourceKeys) {
+        const sourceType = tipoDe(key);
+        const rule = repetitionRuleFor(sourceType, options.policy);
+        if (rule === 'free') continue;
+        const antes = options.beforePrevious;
+        const alternatives = rule === 'alternate' && antes
+            ? antes.citedSourceKeys.filter(k =>
+                antes.citedSourceTypes?.[k] === sourceType && !previous.citedSourceKeys.includes(k))
+            : [];
+        out.push({ key, previousPaperTitle: origen, rule, sourceType, alternatives });
+    }
+    return out;
 }
 
 /** Sin acentos, mayúsculas ni puntuación: «Martín» y «martin.» son la misma clave. */
@@ -131,4 +193,24 @@ export function briefWithExclusions(
     // Primero: el planificador recorta el encuadre largo por el final, y la
     // exclusión es lo que no se puede perder.
     return paper.assignmentBrief?.trim() ? `${linea}\n\n${paper.assignmentBrief.trim()}` : linea;
+}
+
+/**
+ * ¿La fila de una fuente del corpus avisa «la citaste la vez pasada, no
+ * debería entrar»? (TP #8, fase 8a, A7, #15).
+ *
+ * Sólo mientras las exclusiones del trabajo no se confirmaron: si el
+ * estudiante revisó la propuesta y la dejó fuera de las excluidas, repetirle
+ * el aviso era discutirle lo que ya decidió. Y sólo para un tipo que la regla
+ * restringe: un léxico o el texto base se pueden repetir.
+ */
+export function warnsRepeatedSource(
+    source: { citationKey: string | null; sourceType: SourceType },
+    excludedSources: ReadonlyArray<ExcludedSource> | null | undefined,
+    previous: PreviousDelivery | null,
+    policy: SourceRepetitionPolicy = DEFAULT_SOURCE_REPETITION_POLICY,
+): boolean {
+    if (!source.citationKey || excludedSources != null) return false;
+    if (repetitionRuleFor(source.sourceType, policy) === 'free') return false;
+    return repeatedFromPreviousDelivery([source.citationKey], previous).size > 0;
 }

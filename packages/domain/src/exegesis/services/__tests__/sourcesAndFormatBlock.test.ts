@@ -9,8 +9,8 @@ import type { PreviousDelivery } from '../sourceMemory';
 const relleno = (n: number) => 'palabra corriente sin original. '.repeat(Math.ceil(n / 32)).slice(0, n);
 const TRANSLITERADO = 'The root hāyâ in the G-imperfect; compare ʾāmar, the ṣādê and the šîn of qûm. '.repeat(80);
 
-const trabajo = (sources: Array<{ citationKey: string | null; text: string }>, rubric = PREACHING_STUDY_RUBRIC) =>
-    ({ rubric, sources: sources.map(s => ({ citationKey: s.citationKey, excerpts: [{ text: s.text }] })) } as unknown as ExegeticalPaper);
+const trabajo = (sources: Array<{ citationKey: string | null; text: string; sourceType?: string }>, rubric = PREACHING_STUDY_RUBRIC) =>
+    ({ rubric, sources: sources.map(s => ({ citationKey: s.citationKey, sourceType: s.sourceType, excerpts: [{ text: s.text }] })) } as unknown as ExegeticalPaper);
 
 describe('buildSourcesAndFormatBlock — el sistema escribe lo que ya midió', () => {
     it('la forma de cita sale de la rúbrica elegida', () => {
@@ -70,6 +70,19 @@ describe('buildSourcesAndFormatBlock — el sistema escribe lo que ya midió', (
         expect(b).toContain('Si el plan no permite repetir');
         // Mayor está en el corpus pero no se citó la vez pasada.
         expect(b).not.toContain('Mayor');
+    });
+
+    it('no nombra un léxico ni el texto base repetidos: la regla es para comentarios (A7)', () => {
+        const previa: PreviousDelivery = {
+            paperId: 'tp7', title: 'TP #7', passage: {} as never,
+            createdAt: new Date(), citedSourceKeys: ['NA28', 'Ropes', 'Tuggy'],
+        };
+        const b = buildSourcesAndFormatBlock(trabajo([
+            { citationKey: 'Ropes', text: relleno(3000), sourceType: 'commentary-critical' },
+            { citationKey: 'Tuggy', text: `${relleno(3000)} μέλος`, sourceType: 'lexicon-technical' },
+            { citationKey: 'NA28', text: `${relleno(3000)} μέλος`, sourceType: 'critical-apparatus' },
+        ]), previa);
+        expect(b).toContain('Ya citadas en la entrega anterior (TP #7): Ropes.');
     });
 
     it('sin nada que decir queda sólo el formato, no un bloque vacío', () => {

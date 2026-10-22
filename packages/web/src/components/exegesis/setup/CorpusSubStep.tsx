@@ -42,7 +42,7 @@ import {
     getBookById,
     previousDelivery,
     emptySourceReason,
-    repeatedFromPreviousDelivery,
+    warnsRepeatedSource,
     excludedLast,
     exclusionFor,
     commentaryBookCoverage,
@@ -944,8 +944,8 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
      * lo dice el sílabo de cada curso, no este código.
      */
     const entregaPrevia = useMemo(() => previousDelivery(papers, paper.id), [papers, paper.id]);
-    const yaCitadaAntes = !!source.citationKey
-        && repeatedFromPreviousDelivery([source.citationKey], entregaPrevia).size > 0;
+    // Ver `warnsRepeatedSource` (A7, TP #8 #15).
+    const yaCitadaAntes = warnsRepeatedSource(source, paper.excludedSources, entregaPrevia);
     const library = useLibrary();
     const isCitable = CITABLE_SOURCE_TYPES.has(source.sourceType);
     const isExtracted = usesExtractedExcerpts(source);

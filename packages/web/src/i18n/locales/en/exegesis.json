@@ -884,6 +884,7 @@
           }
         },
         "gap": {
+          "onlyExcluded": "{{have}} of {{required}}: no source in your library allowed in this paper covers this type; the ones of this type are excluded ({{sources}}). You can submit with {{have}} of {{required}} or upload another book.",
           "metTitle": "Your corpus meets the rubric",
           "metBody": "{{count}} sources attached — every minimum is satisfied. You can move on to the structural plan.",
           "gapsTitle": "{{satisfied}} of {{total}} requirements met",
@@ -1384,6 +1385,9 @@
           "hint": "A grammar is indexed by category, not by passage. These are the sections naming what your brief asks about; the list follows the book order and is not trimmed."
         },
         "excluded": {
+          "alternate": "· grammar: may be repeated, better to alternate",
+          "alternateWith": "· grammar: may be repeated, better to alternate with {{others}}",
+          "freeByType": "{{sources}} not proposed: lexicons, the base text and its apparatus may be repeated.",
           "title": "Sources excluded from this paper",
           "hint": "What your syllabus or professor doesn't allow here. They appear last in every list, marked, and the assistant is told not to cite them.",
           "proposal": "In your previous paper ({{paper}}) you cited these sources. If your syllabus doesn't allow repeating them in consecutive weeks, check the ones to exclude from this paper:",

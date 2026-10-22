@@ -884,6 +884,7 @@
           }
         },
         "gap": {
+          "onlyExcluded": "{{have}} de {{required}}: ninguna fuente de tu biblioteca permitida en este trabajo cubre este tipo; las de este tipo están excluidas ({{sources}}). Puedes entregar con {{have}} de {{required}} o subir otro libro.",
           "metTitle": "Tu corpus cumple la rúbrica",
           "metBody": "{{count}} fuentes adjuntas — todos los mínimos están satisfechos. Puedes avanzar al plan estructural.",
           "gapsTitle": "{{satisfied}} de {{total}} requisitos satisfechos",
@@ -1384,6 +1385,9 @@
           "hint": "Una gramática se indexa por categorías, no por pasajes. Estas son las secciones que nombran lo que tu encuadre pregunta; la lista va en el orden del libro y no se recorta."
         },
         "excluded": {
+          "alternate": "· gramática: se puede repetir, conviene alternar",
+          "alternateWith": "· gramática: se puede repetir, conviene alternar con {{others}}",
+          "freeByType": "No se proponen {{sources}}: los léxicos, el texto base y su aparato se pueden repetir.",
           "title": "Fuentes excluidas de este trabajo",
           "hint": "Lo que tu plan de estudios o tu profesor no permite usar aquí. Aparecen al final de cada lista, marcadas, y se le indica al asistente que no las cite.",
           "proposal": "En tu entrega anterior ({{paper}}) citaste estas fuentes. Si tu plan no permite repetirlas en semanas consecutivas, marca las que excluyes de este trabajo:",

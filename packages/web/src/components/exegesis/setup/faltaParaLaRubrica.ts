@@ -79,3 +79,41 @@ export function faltaParaLaRubrica({
         }))
         .filter(f => f.resources.length > 0);
 }
+
+/**
+ * ¿Lo que falta de un tipo se puede cubrir con la biblioteca, o sólo con
+ * libros excluidos? (TP #8, fase 8a, A4/A7).
+ *
+ * En el TP #8 la rúbrica pedía dos comentarios crítico-técnicos, el único
+ * permitido era Mayor, y los otros de la biblioteca (Ropes, McCartney) eran
+ * de la semana anterior. La tarjeta decía «falta 1» y nada más: el estudiante
+ * buscaba en la biblioteca algo que no había. Decirlo ahorra la búsqueda y
+ * deja la decisión donde corresponde: aceptar 1 de 2 o subir otro libro.
+ *
+ * Fuera los que ya están en el corpus y, en comentarios, los de otros libros.
+ */
+export function bibliotecaDelTipo({
+    sourceType,
+    paper,
+    resources,
+    exclusionDe,
+}: {
+    sourceType: SourceType;
+    paper: Pick<ExegeticalPaper, 'sources' | 'passage'>;
+    resources: ReadonlyArray<LibraryResource>;
+    /** La clave excluida que alcanza a un libro, o `null`. */
+    exclusionDe: (resource: LibraryResource) => string | null;
+}): { permitidas: LibraryResource[]; excluidas: string[] } {
+    const enElCorpus = resourceIdsOf(paper.sources, () => true);
+    const delTipo = resources.filter(r =>
+        tipoDelRecurso(r) === sourceType
+        && !enElCorpus.has(r.id)
+        && !(isCommentaryType(sourceType) && commentaryBookCoverage(r, paper.passage.bookId) === 'other-books'));
+    const excluidas = new Set<string>();
+    const permitidas: LibraryResource[] = [];
+    for (const r of delTipo) {
+        const clave = exclusionDe(r);
+        if (clave) excluidas.add(clave); else permitidas.push(r);
+    }
+    return { permitidas, excluidas: [...excluidas].sort() };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { previousDelivery, repeatedFromPreviousDelivery } from '../sourceMemory';
+import { previousDeliveries, previousDelivery, repeatedFromPreviousDelivery } from '../sourceMemory';
 import type { ExegesisPaperSummary } from '../../entities/ExegesisPaperSummary';
 
 /**
@@ -72,5 +72,27 @@ describe('repeatedFromPreviousDelivery', () => {
 
     it('sin entrega anterior no señala nada', () => {
         expect(repeatedFromPreviousDelivery(['Ropes'], null).size).toBe(0);
+    });
+});
+
+/** TP #8 (2026-10-21, fase 8a, A7): la regla de no repetir es por tipo. */
+describe('previousDeliveries', () => {
+    const conFuentes = (id: string, dias: number, citadas: string[], fuentes: Array<[string, string]>) => ({
+        ...resumen(id, dias, citadas),
+        sources: fuentes.map(([citationKey, sourceType]) => ({ citationKey, sourceType, corpusId: citationKey, sourceLibraryResourceId: null, displayLabel: citationKey })),
+    }) as unknown as ExegesisPaperSummary;
+    const tp6 = conFuentes('tp6', 7, ['Wallace', 'Adamson'], [['Wallace', 'grammar-syntax'], ['Adamson', 'commentary-critical']]);
+    // Robertson en el corpus del TP #7 pero sin citar; Ropes citada y sin fuente que la declare.
+    const tp7 = conFuentes('tp7', 14, ['Ropes', 'Tuggy'], [['Tuggy', 'lexicon-technical'], ['Robertson', 'grammar-syntax']]);
+    const tp8 = conFuentes('tp8', 21, [], []);
+
+    it('las dos últimas entregas, de la más reciente a la más vieja', () => {
+        expect(previousDeliveries([tp6, tp8, tp7], 'tp8', 2).map(d => d.paperId)).toEqual(['tp7', 'tp6']);
+        expect(previousDeliveries([tp6, tp8, tp7], 'tp8', 1).map(d => d.paperId)).toEqual(['tp7']);
+    });
+
+    it('el tipo de cada clave CITADA sale de las fuentes de esa entrega', () => {
+        const [tp7Entregado] = previousDeliveries([tp6, tp7, tp8], 'tp8', 1);
+        expect(tp7Entregado!.citedSourceTypes).toEqual({ Tuggy: 'lexicon-technical' });
     });
 });

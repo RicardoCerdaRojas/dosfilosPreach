@@ -162,6 +162,21 @@ Todo es determinista y usa los datos de A1, A2 y A3. Así el estudiante se enter
   - Aplicarlo en `proposeExclusions`. El tipo sale de `previous.sources`, que ya viene en el resumen.
   - **#15:** si una fuente se desmarcó a propósito en la propuesta, su tarjeta no vuelve a avisar «no debería entrar».
 
+**Hecho y medido (2026-10-21, solo lectura, entregas reales, `scripts/rag-eval/.medir-exclusiones.ts`):**
+- **Antes de A7**, la propuesta para el TP #8 era McCartney, Motyer, NA28, Robertson, Ropes, Tuggy y Varner.
+- **Ahora propone** McCartney, Motyer, Ropes y Varner (excluir) y Robertson (alternar, «con Porter o Wallace»). Es exactamente la lista que el fundador escribió a mano en el encuadre.
+- **NA28 y Tuggy ya no se proponen.** La tarjeta dice por qué.
+- **Regla por tipo** (`DEFAULT_SOURCE_REPETITION_POLICY`):
+  - comentarios: `exclude`;
+  - gramáticas: `alternate`;
+  - el resto: `free`.
+
+  Una cita sin tipo conocido se excluye, como antes. El tipo sale de las fuentes de esa entrega (`PreviousDelivery.citedSourceTypes`).
+- **El bloque de fuentes del encuadre** ya no nombra léxicos ni texto base repetidos.
+- **#15:** con las exclusiones confirmadas, la fila de una fuente que se dejó fuera a propósito no vuelve a avisar (`warnsRepeatedSource`).
+- **De A4:** cuando lo que falta de un tipo solo se cubriría con libros excluidos, la tarjeta de la rúbrica lo dice: «1 de 2: … excluidas (McCartney, Ropes). Puedes entregar con 1 de 2 o subir otro libro». No hace falta un botón [Aceptar], porque la rúbrica no bloquea.
+- **Desvío del plan: la regla no va en el perfil de trabajo.** El perfil se copia por valor al crear, y el trabajo no guarda a cuál pertenece. La regla queda configurable en el dominio (`policy`), y la propuesta sigue siendo editable. Si otro curso pide otra regla, se agrega al perfil y se copia al crear, como la portada.
+
 ### A8. Cuando falla un proveedor, decirlo (#9)
 - **Hoy:**
   - Un 402 de Gemini (sin saldo prepago) en `retrieveChunks` se convierte en `internal` (`retrieveChunks.ts:285-296`).

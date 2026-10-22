@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { faltaParaLaRubrica } from '../faltaParaLaRubrica';
+import { bibliotecaDelTipo, faltaParaLaRubrica } from '../faltaParaLaRubrica';
 
 /**
  * TP #7 (Santiago 3:13-18): la rúbrica pedía «Gramática ≥1» y Robertson, la
@@ -83,5 +83,39 @@ describe('un comentario de otro libro no cubre el requisito (revisión adversari
         const paper = trabajo([], { sourceRequirements: [{ sourceType: 'commentary-expository', minimum: 1, justification: '' }] });
         const [falta] = faltaParaLaRubrica({ ...base, resources: [kistemaker, varner], candidatos: [kistemaker, varner], paper });
         expect(falta!.resources.map(r => r.id)).toEqual(['varner']);
+    });
+});
+
+/**
+ * TP #8 (Santiago 4:1-10): la rúbrica pedía dos comentarios crítico-técnicos,
+ * Mayor era el único permitido y Ropes y McCartney, los otros de la
+ * biblioteca, eran de la semana anterior. La tarjeta decía «falta 1» y nada más.
+ */
+describe('bibliotecaDelTipo — lo que falta, ¿se cubre o sólo con excluidas?', () => {
+    const mayor = recurso('mayor', 'commentary-critical', { coversBibleBooks: ['JAS'] });
+    const ropes = recurso('ropes', 'commentary-critical', { author: 'James Hardy Ropes', coversBibleBooks: ['JAS'] });
+    const mccartney = recurso('mccartney', 'commentary-critical', { author: 'Dan G. McCartney', coversBibleBooks: ['JAS'] });
+    const otroLibro = recurso('moo-romanos', 'commentary-critical', { coversBibleBooks: ['ROM'] });
+    const exclusionDe = (r: { author?: string }) => (/Ropes|McCartney/.test(r.author ?? '') ? r.author!.split(' ').pop()! : null);
+
+    it('con Mayor en el corpus, sólo quedan las excluidas', () => {
+        const r = bibliotecaDelTipo({
+            sourceType: 'commentary-critical',
+            paper: trabajo([fuenteDe('mayor', { sourceType: 'commentary-critical' })]),
+            resources: [mayor, ropes, mccartney, otroLibro],
+            exclusionDe: exclusionDe as never,
+        });
+        expect(r.permitidas).toEqual([]);
+        expect(r.excluidas).toEqual(['McCartney', 'Ropes']);
+    });
+
+    it('un comentario permitido que no está en el corpus sí cubre el tipo', () => {
+        const r = bibliotecaDelTipo({
+            sourceType: 'commentary-critical',
+            paper: trabajo([]),
+            resources: [mayor, ropes],
+            exclusionDe: exclusionDe as never,
+        });
+        expect(r.permitidas.map(x => x.id)).toEqual(['mayor']);
     });
 });

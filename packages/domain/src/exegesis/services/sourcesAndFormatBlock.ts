@@ -7,6 +7,7 @@ import {
 } from './originalLanguageEvidence';
 import type { PreviousDelivery } from './sourceMemory';
 import { repeatedFromPreviousDelivery } from './sourceMemory';
+import { repetitionRuleFor } from './excludedSources';
 
 /**
  * El bloque de FUENTES Y FORMATO del encuadre, escrito por el sistema.
@@ -82,8 +83,10 @@ export function buildSourcesAndFormatBlock(
 
     // 4. Lo citado en la entrega anterior. El sistema reporta el hecho; la
     //    regla de cuántas semanas hay que esperar la pone el sílabo.
+    //    Sólo las de un tipo que la regla restringe (A7): un léxico o el texto
+    //    base repetidos no son un problema, y la línea los nombraba igual.
     const repetidas = repeatedFromPreviousDelivery(
-        paper.sources.map(s => s.citationKey), previous,
+        paper.sources.filter(s => repetitionRuleFor(s.sourceType) !== 'free').map(s => s.citationKey), previous,
     );
     if (repetidas.size > 0 && previous) {
         lineas.push(
