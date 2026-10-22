@@ -39,8 +39,11 @@ export { STRATEGY_ONLY_RUBRIC_PRESET_ID };
  *   3. No default (or no rubricRepository wired) → repo's createPaper
  *      seeds the system default rubric.
  *
- * `initialSources` is accepted but currently ignored — sources are
- * collected later through the dedicated setup flow.
+ * `initialSources` (las fuentes por defecto de la serie) se agregan al nacer,
+ * sin fragmentos: llegan listas para extraer contra ESTE pasaje, igual que
+ * las que se heredan de un trabajo hermano. Antes se aceptaban y se
+ * descartaban, y la configuración exegética de la serie no llegaba a ningún
+ * trabajo (etapa 0).
  */
 
 /**
@@ -63,6 +66,14 @@ export class CreateExegeticalPaperUseCase {
         // rubric seeded by the repo). Wiring it on adds the
         // "auto-apply user default" behavior.
         private userRubricRepository?: IUserRubricRepository,
+        /**
+         * Para no agregar un libro que ya se borró de la biblioteca (la serie
+         * guarda la referencia y el libro puede no estar). Uno por uno y no la
+         * biblioteca entera: cada recurso pesa hasta 800 KB y una serie crea
+         * varios trabajos a la vez; además así se encuentran los libros
+         * compartidos de la plataforma. Sin él, se agregan todas.
+         */
+        private biblioteca?: { findById(id: string): Promise<{ id: string } | null> },
     ) { }
 
     async execute(input: CreateExegeticalPaperInput): Promise<ExegeticalPaper> {
@@ -73,7 +84,7 @@ export class CreateExegeticalPaperUseCase {
             throw new Error('CreateExegeticalPaperUseCase: passage required');
         }
 
-        const created = await this.paperRepository.createPaper({
+        const nacido = await this.paperRepository.createPaper({
             ownerId: input.ownerId,
             passage: input.passage,
             displayLanguage: input.displayLanguage,
@@ -85,6 +96,7 @@ export class CreateExegeticalPaperUseCase {
             seriesId: input.seriesId ?? null,
             pericopeId: input.pericopeId ?? null,
         });
+        const created = await this.addInitialSources(input, nacido);
 
         // Strategy-only preset short-circuits template resolution.
         // The repo seeded `buildDefaultRubric()` (TMS rigorous); we
@@ -131,6 +143,42 @@ export class CreateExegeticalPaperUseCase {
         }
 
         return created;
+    }
+
+    /** Agrega las fuentes iniciales y devuelve el trabajo con ellas. */
+    private async addInitialSources(input: CreateExegeticalPaperInput, paper: ExegeticalPaper): Promise<ExegeticalPaper> {
+        const pedidas = input.initialSources ?? [];
+        if (pedidas.length === 0) return paper;
+        const vistas = new Set<string>();
+        let orden = 0;
+        for (const s of pedidas) {
+            const recurso = s.sourceLibraryResourceId ?? s.corpusId;
+            if (vistas.has(recurso)) continue;
+            vistas.add(recurso);
+            if (this.biblioteca && s.sourceLibraryResourceId) {
+                const existe = await this.biblioteca.findById(s.sourceLibraryResourceId).catch(() => null);
+                if (!existe) continue;
+            }
+            await this.paperRepository.addSource(input.ownerId, paper.id, {
+                corpusId: s.corpusId,
+                sourceType: s.sourceType,
+                chosenRole: s.chosenRole ?? null,
+                displayLabel: s.displayLabel,
+                // Como `AddProjectSourceUseCase`: sin clave, la tarjeta de la fuente
+                // la propone desde el autor del libro.
+                citationKey: s.citationKey ?? null,
+                order: orden++,
+                mode: s.mode ?? 'full-document',
+                // Sin fragmentos: se extraen contra el pasaje de este trabajo.
+                excerpts: [],
+                excerptSelectionMode: null,
+                excerptRecipe: null,
+                sourceLibraryResourceId: s.sourceLibraryResourceId ?? null,
+                extractedAt: null,
+                extractionFingerprint: null,
+            });
+        }
+        return (await this.paperRepository.getPaper(input.ownerId, paper.id)) ?? paper;
     }
 
     private async resolveTemplateRubric(
