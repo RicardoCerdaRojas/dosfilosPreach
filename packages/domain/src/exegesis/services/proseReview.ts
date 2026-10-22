@@ -192,7 +192,8 @@ function citaLegible(autor: string, paginas: string | null, raw: string): string
 
 // ── 4 · El cierre doble (patrón 1 del profesor) ───────────────────────────
 
-const ENLACE_DOBLE = /;|,\s+y\s+(?:además|también|por\s+(?:lo\s+)?tanto|por\s+eso|así)\b|,\s+and\s+(?:also|therefore|thus|so)\b/iu;
+// `(?!\p{L})` y no `\b`: con `\b` (ASCII) «así» no cerraba nunca (revisión de 8b).
+const ENLACE_DOBLE = /;|,\s+y\s+(?:además|también|por\s+(?:lo\s+)?tanto|por\s+eso|así)(?!\p{L})|,\s+and\s+(?:also|therefore|thus|so)(?!\p{L})/iu;
 
 function doubleClosings(parrafos: ReadonlyArray<string>): ProseFinding[] {
     const out: ProseFinding[] = [];
@@ -202,7 +203,10 @@ function doubleClosings(parrafos: ReadonlyArray<string>): ProseFinding[] {
         const cierre = oraciones[oraciones.length - 1]!;
         // Lo citado o traducido entre « » no es del cierre: «…; entonces combaten…».
         // Y si la oración empieza dentro de una cita partida por un punto, desde donde cierra.
-        const sinParentesis = cierre.replace(/^[^«]*»/, '').replace(/\([^)]*\)/g, '').replace(/«[^»]*»|“[^”]*”|"[^"]*"/g, '«»');
+        const sinParentesis = cierre.replace(/^[^«]*»/, '').replace(/\([^)]*\)/g, '').replace(/«[^»]*»|“[^”]*”|"[^"]*"/g, '«»')
+            // Ni el griego citado (su «;» es el signo de interrogación, Stg 4:1) ni la cursiva.
+            .replace(/\*[^*]+\*|_[^_]+_/g, ' ')
+            .replace(/[\p{Script=Greek}\p{M}]+(?:\s+[\p{Script=Greek}\p{M}]+)*\s*;/gu, ' ');
         const largo = sinParentesis.split(/\s+/).filter(Boolean).length;
         if (ENLACE_DOBLE.test(sinParentesis) || (largo >= 40 && /,\s+(?:y|and)\s/u.test(sinParentesis))) {
             out.push({ kind: 'double-closing', excerpt: cierre });
@@ -218,6 +222,8 @@ const RANGO_CON_GUION = /(?<![\p{L}\p{N}/.-])(\d+(?::\d+)?)\s?[-‐‑]\s?(\d+(?
 function hyphenRanges(prose: string): ProseFinding[] {
     const out: ProseFinding[] = [];
     for (const m of sinEnlaces(prose).matchAll(RANGO_CON_GUION)) {
+        // «2026-10» es una fecha, no un rango.
+        if (/^\d{4}$/.test(m[1]!) && /^\d{2}$/.test(m[2]!)) continue;
         out.push({ kind: 'hyphen-range', excerpt: m[0], replacement: `${m[1]}–${m[2]}` });
     }
     return out;
@@ -243,7 +249,8 @@ function greekGraves(prose: string): ProseFinding[] {
         const w = palabras[i]!;
         const sig = palabras[i + 1]!;
         const entre = prose.slice(w.index! + w[0].length, sig.index!);
-        if (!/^\s+$/.test(entre)) continue;
+        // Solo espacio en la misma línea: dos párrafos no son una frase.
+        if (!/^[ \t\u00a0]+$/.test(entre)) continue;
         const nfd = w[0].normalize('NFD').toLowerCase();
         if (!OXITONO.test(nfd)) continue;
         const base = sinMarcas(w[0]);
@@ -349,8 +356,20 @@ export interface ProseReviewerFinding {
  */
 export function proseReviewCriteria(language: 'es' | 'en', courseRules: ReadonlyArray<string> = []): string[] {
     const base = language === 'en' ? CRITERIA_EN : CRITERIA_ES;
-    const propias = courseRules.map(r => r.trim()).filter(r => r && !base.some(b => normal(b) === normal(r)));
+    // Una regla del curso que dice lo mismo que una de serie (las nueve del
+    // profesor son, casi todas, la misma lista con otras palabras) no se
+    // suma: el revisor informaría la misma falla con dos números.
+    const propias = courseRules.map(r => r.trim()).filter(r => r && !base.some(b => parecidas(b, r)));
     return [...base, ...propias];
+}
+
+/** Dos reglas que comparten la mayoría de sus palabras distintivas. */
+function parecidas(a: string, b: string): boolean {
+    const pa = [...new Set(tokensOf(a).filter(w => w.length >= 5 && !VACIAS.has(w)))];
+    const pb = [...new Set(tokensOf(b).filter(w => w.length >= 5 && !VACIAS.has(w)))];
+    if (pa.length === 0 || pb.length === 0) return normal(a) === normal(b);
+    const comunes = pa.filter(w => pb.some(x => mismaRaiz(w, x))).length;
+    return comunes / Math.min(pa.length, pb.length) >= 0.6;
 }
 
 const CRITERIA_ES = [
@@ -462,9 +481,13 @@ function distintiva(w: string): boolean {
     return w.length >= 6 && !VACIAS.has(w);
 }
 
-/** Misma palabra salvo la desinencia: «activa»/«activas», «concesión»/«concede» no. */
+/**
+ * Misma palabra salvo la desinencia: «activa»/«activas». Seis letras como
+ * mínimo: con cinco, «concesión» valía por «concede» e «incluir» por
+ * «incluso», y un criterio ausente pasaba por presente (revisión de 8b).
+ */
 function mismaRaiz(a: string, b: string): boolean {
-    const n = Math.max(5, Math.min(a.length, b.length) - 2);
+    const n = Math.max(6, Math.min(a.length, b.length) - 2);
     return a.slice(0, n) === b.slice(0, n);
 }
 

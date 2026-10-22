@@ -207,3 +207,51 @@ describe('los criterios y la indicación para recomponer', () => {
         expect(proseReviewGuidance([], [], 'es')).toBe('');
     });
 });
+
+/** Revisión adversarial de 8b (E3). */
+describe('reviewProseFixed — bordes de la revisión', () => {
+    it('el «;» griego (interrogación) y la cursiva no son un cierre doble', () => {
+        expect(kinds('Primera oración. El texto dice πόθεν πόλεμοι καὶ πόθεν μάχαι ἐν ὑμῖν; y lo responde enseguida.')).toEqual([]);
+        expect(kinds('Primera oración. La pregunta *¿de dónde vienen; las guerras?* se responde así.')).toEqual([]);
+    });
+
+    it('«, y así» sí cierra doble', () => {
+        expect(kinds('Primera oración. La petición es mala, y así Dios no responde.')).toEqual(['double-closing']);
+    });
+
+    it('la grave no cruza de un párrafo al otro; una fecha no es un rango', () => {
+        expect(kinds('Dice ἀδελφοί\n\nἘκ τούτου sigue el texto.')).toEqual([]);
+        expect(kinds('Entregado el 2026-10 según el curso.')).toEqual([]);
+    });
+
+    it('un criterio ausente no pasa por presente con palabras de raíz parecida', () => {
+        const a = analisis({
+            questionAnswers: [{
+                questionNumber: 1, directAnswer: 'x', options: [], decision: 'y',
+                decisiveCriterion: { text: 'La concesión permite incluir la voz media', whyThisOverThat: '', sources: [] },
+            }],
+        });
+        // Con cinco letras, «conce», «permi» e «inclu» daban el criterio por presente.
+        expect(kinds('Mayor concede incluso permisos amplios.', a)).toContain('missing-criterion');
+    });
+});
+
+describe('proseReviewCriteria — las nueve reglas del plan no duplican las de serie', () => {
+    it('las reglas que repiten un criterio con otras palabras no se suman', () => {
+        const PLAN = [
+            'Cada oración de cierre afirma una sola cosa; dos afirmaciones van en dos oraciones.',
+            'La categoría gramatical tiene que coincidir con la traducción: si es genitivo descriptivo, la traducción no puede ser atributiva. Decir qué sustantivo califica a cuál.',
+            'Refutar una lectura rival con una razón del contexto, no repitiendo la definición de la categoría.',
+            'Si se anuncia un respaldo, decir qué aporta cada dato.',
+            'Un criterio decisivo tiene que distinguir entre las lecturas: si se cumple con las dos, no decide.',
+            'Toda afirmación muestra su relevancia para la pregunta, o se quita.',
+            'No usar la clasificación de un elemento para decidir otro sin mostrar la relación entre los dos.',
+            'Responder a cómo clasifica la gramática del curso la construcción, con su página.',
+            'Títulos entre « »; rangos de páginas y versículos con raya corta (–); concordancia, tildes y acentos griegos.',
+        ];
+        const base = proseReviewCriteria('es');
+        const con = proseReviewCriteria('es', PLAN);
+        // Solo la de títulos y raya es nueva.
+        expect(con.length - base.length).toBeLessThanOrEqual(1);
+    });
+});

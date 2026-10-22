@@ -114,7 +114,7 @@ export class VerifyStepCitationsUseCase {
 
             const { citations, summary } = target.canonicalAnalysis
                 ? await this.verifyAnalysisAndProse(target, sources, paper.displayLanguage, ownerId, stepId)
-                : await this.verifyMarkdown(target.markdown, sources, ownerId, stepId);
+                : await this.verifyMarkdown(target.markdown, sources, ownerId, stepId, paper.displayLanguage);
 
             await this.paperRepository.setStepVersionVerifications(
                 ownerId,
@@ -159,7 +159,9 @@ export class VerifyStepCitationsUseCase {
         // La prosa hereda lo que el análisis resolvió para la misma cita, y se
         // juzga en el idioma del trabajo (TP #8, 8b, D1): sin idioma, las notas
         // se adivinaban por la evidencia, a veces una oración en inglés.
-        const prosa = await this.verifyMarkdown(target.markdown, sources, ownerId, stepId, language, analysis.citations);
+        // Solo de las verificadas: heredar de una cita con alarma propaga la alarma.
+        const prosa = await this.verifyMarkdown(target.markdown, sources, ownerId, stepId, language,
+            analysis.citations.filter(c => c.status === 'verified'));
         const deLaProsa = prosa.citations.map(c => ({ ...c, origin: 'prose' as const }));
         const problemas = deLaProsa.filter(c => c.status !== 'verified').length;
         return {

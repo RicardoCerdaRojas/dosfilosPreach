@@ -173,9 +173,9 @@ export function isSyntaxQuestion(text: string): boolean {
  */
 export type BriefQuestionKind = 'identify' | 'lexical' | 'syntax' | 'textual';
 
-const IDENTIFICAR = /qu[ée] (pasaje|texto|cita|autor|libro)|de d[óo]nde (viene|proviene|sale)|a qui[ée]n|qui[ée]n(es)? |cu[áa]l es (el|la) (fuente|origen|pasaje|referente)|what (passage|text)|which (passage|text)|who /i;
+const IDENTIFICAR = /qu[ée] (pasaje|texto|cita|autor|libro)|de d[óo]nde (viene|proviene|sale)|a qui[ée]n|¿\s*qui[ée]n(es)?\b|cu[áa]l es (el|la) (fuente|origen|pasaje|referente)|what (passage|text)|which (passage|text)|^\s*(\d+[.)]\s*)?who\b/i;
 const LEXICA = /significa|significado|denota|qu[ée] sentido|quiere decir|\bmean(s|ing)?\b|denote/i;
-const TEXTUAL = /variante|cr[íi]tica textual|manuscrit|conjetura|aparato|lectura (original|alternativa|variante)|punt[úu][aá]|puntuaci|textual|variant|conjecture|punctuat/i;
+const TEXTUAL = /variante|cr[íi]tica textual|manuscrit|conjetura|aparato|lectura (original|alternativa|variante)|punt[úu][aá]|puntuaci|\btextual\b|variant|conjecture|punctuat/i;
 
 export function questionKinds(text: string): BriefQuestionKind[] {
     const out: BriefQuestionKind[] = [];

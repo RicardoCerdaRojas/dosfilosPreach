@@ -66,7 +66,7 @@ export function AssemblyManifest({ contents, paperId, preguntas }: {
                 const conProsa = contents.included.filter(p => p.kind === 'verse').length;
                 if (total === 0) return null;
                 return (
-                    <p className={cn('text-[12px] font-medium', conProsa < total ? 'text-warning-subtle-foreground' : 'text-success')}>
+                    <p className={cn('text-[12px] font-medium', conProsa < total ? 'text-warning-subtle-foreground' : 'text-success-subtle-foreground')}>
                         {t('detail.steps.assembly.proseCount', { done: conProsa, total })}
                     </p>
                 );

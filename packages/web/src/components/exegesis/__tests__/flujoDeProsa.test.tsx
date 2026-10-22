@@ -69,6 +69,12 @@ describe('después de aceptar, componer la prosa es lo principal', () => {
         expect(screen.getByText('canonical.verseProse.nextStepHint')).toBeInTheDocument();
     });
 
+    it('un versículo fuera del documento no lleva el botón en el encabezado (revisión de 8b)', () => {
+        const fuera = { ...paso(''), includeInDocument: false } as ExegeticalStep;
+        render(<StepCard step={fuera} paperId="p" language="es" />);
+        expect(screen.queryAllByRole('button', { name: new RegExp(COMPONER) }).filter(b => b.tagName === 'BUTTON')).toEqual([]);
+    });
+
     it('con prosa ya compuesta, no: queda recomponer', () => {
         render(<StepCard step={paso('La prosa del versículo.')} paperId="p" language="es" />);
         expect(screen.queryAllByRole('button', { name: new RegExp(COMPONER) }).filter(b => b.tagName === 'BUTTON')).toEqual([]);

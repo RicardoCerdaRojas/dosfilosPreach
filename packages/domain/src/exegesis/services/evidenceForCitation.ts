@@ -150,8 +150,11 @@ export function pageVerdictFor(
  * análisis, con su oración textual, y falló en el documento, donde se juzgó
  * la paráfrasis de la prosa contra lo que el juez alcanzó a ver.
  *
- * Hereda la oración textual (si la prosa no trae una propia) y las otras
- * fuentes de una afirmación de síntesis.
+ * Hereda SOLO las otras fuentes de una afirmación de síntesis. La oración
+ * textual no: reemplazar la evidencia de la prosa con la del análisis hacía
+ * que el juez nunca viera lo que la prosa afirma, y la frase heredada salía
+ * verde sin juicio (revisión de 8b). El llamador pasa solo las citas del
+ * análisis que se verificaron.
  */
 export function inheritFromAnalysisCitations<T extends {
     author: string; pages: string | null; evidence: string; evidenceIsQuoted: boolean; otherSources?: string[];
@@ -163,11 +166,8 @@ export function inheritFromAnalysisCitations<T extends {
     return prose.map(c => {
         const par = analysis.find(a => clave(a.author) === clave(c.author) && pagesOverlap(a.pages, c.pages));
         if (!par) return c;
-        const otras = [...new Set([...(c.otherSources ?? []), ...(par.otherSources ?? [])])];
-        return {
-            ...c,
-            ...(!c.evidenceIsQuoted && par.evidenceIsQuoted ? { evidence: par.evidence, evidenceIsQuoted: true } : {}),
-            ...(otras.length > 0 ? { otherSources: otras } : {}),
-        };
+        const otras = [...new Set([...(c.otherSources ?? []), ...(par.otherSources ?? [])])]
+            .filter(o => clave(o) !== clave(c.author));
+        return otras.length > 0 ? { ...c, otherSources: otras } : c;
     });
 }

@@ -107,9 +107,11 @@ describe('prioritizeChunksForCitedPage — la página citada antes que sus vecin
 describe('inheritFromAnalysisCitations', () => {
     const analisis = [{ author: 'Wallace', pages: '662', evidence: 'the infinitive of cause', evidenceIsQuoted: true, otherSources: ['Mayor'] }];
 
-    it('misma fuente y página: hereda la oración textual y las otras fuentes', () => {
+    it('misma fuente y página: hereda las otras fuentes, NO la oración (revisión de 8b)', () => {
+        // Con la oración heredada, el juez no veía lo que la prosa afirma y la
+        // frase del análisis salía verde sin juicio: Wallace 662, atribución falsa.
         const [c] = inheritFromAnalysisCitations([{ author: 'Wallace', pages: '662', evidence: 'un infinitivo causal', evidenceIsQuoted: false }], analisis);
-        expect(c).toMatchObject({ evidence: 'the infinitive of cause', evidenceIsQuoted: true, otherSources: ['Mayor'] });
+        expect(c).toMatchObject({ evidence: 'un infinitivo causal', evidenceIsQuoted: false, otherSources: ['Mayor'] });
     });
 
     it('una oración propia de la prosa no se pisa', () => {

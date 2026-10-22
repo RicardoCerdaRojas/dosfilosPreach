@@ -125,7 +125,8 @@ describe('collectAnalysisClaims — respuestas a las preguntas', () => {
         const claims = collectAnalysisClaims(a).map(c => [c.site, c.path, c.claim]);
         expect(claims).toEqual([
             ['answer-option', 'questionAnswers[0].options[0].defenders[0]', 'media = para sí: la voz'],
-            ['answer-criterion', 'questionAnswers[0].decisiveCriterion.sources[0]', 'la concesión sólo una la explica'],
+            // Solo el criterio: el «por qué» es del análisis (revisión de 8b).
+            ['answer-criterion', 'questionAnswers[0].decisiveCriterion.sources[0]', 'la concesión'],
         ]);
     });
 

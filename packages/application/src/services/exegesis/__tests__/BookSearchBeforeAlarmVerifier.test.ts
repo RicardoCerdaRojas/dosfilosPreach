@@ -34,8 +34,8 @@ function juez(primera: VerifiedCitation[]): ICitationVerifier & { verify: Return
     return { verify };
 }
 
-const libro = (hojas: Record<number, string>, hitsPorTermino: Record<string, number[]> = {}) => ({
-    sheetsWithTerm: vi.fn(async (_r: string, t: string) => (hitsPorTermino[t] ?? []).map(sheet => ({ sheet, count: 1 }))),
+const libro = (hojas: Record<number, string>, hitsPorTermino: Record<string, number[]> = {}, truncated = false) => ({
+    sheetsWithTerm: vi.fn(async (_r: string, t: string) => ({ hits: (hitsPorTermino[t] ?? []).map(sheet => ({ sheet, count: 1 })), truncated })),
     readSheets: vi.fn(async (_r: string, sheets: ReadonlyArray<number>) =>
         sheets.filter(s => hojas[s] !== undefined).map(sheet => ({ sheet, text: hojas[sheet]!, section: null as string | null }))),
 }) satisfies IBookSearch;
@@ -80,6 +80,18 @@ describe('BookSearchBeforeAlarmVerifier', () => {
         expect(citations[0]).toMatchObject({ status: 'page-mismatch', bookSearch: 'book' });
     });
 
+    it('una cita sin página hallada en el libro conserva el veredicto del juez (revisión de 8b)', async () => {
+        const j = juez([alarma({ pages: null, evidencePage: null, raw: 'Mayor' })]);
+        const original = j.verify.getMockImplementation()!;
+        j.verify.mockImplementation(async (input: CitationVerifierInput) => {
+            const out = await original(input) as { citations: VerifiedCitation[] };
+            return { citations: out.citations.map(c => (c.status === 'page-mismatch' ? { ...c, status: 'verified' as const } : c)) };
+        });
+        const b = libro({ 400: 'the active may include the force of the middle' }, { 'the active may include the force': [400] });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(citations[0]).toMatchObject({ status: 'verified', bookSearch: 'book' });
+    });
+
     it('sin hallarla en ninguna parte, el veredicto queda y la nota dice qué se leyó', async () => {
         const j = juez([alarma()]);
         const { citations } = await new BookSearchBeforeAlarmVerifier(j, libro({})).verify(entrada());
@@ -98,13 +110,74 @@ describe('BookSearchBeforeAlarmVerifier', () => {
         const j = juez([alarma({ author: 'Kittel', raw: 'Kittel, p. 32', matchedCorpusId: 'r-kittel' })]);
         const kittel = { ...FUENTE, corpusId: 'r-kittel', citationKey: 'Kittel', displayLabel: 'Kittel' };
         const b = {
-            sheetsWithTerm: vi.fn(async (r: string) => (r === 'r-mayor' ? [{ sheet: 411, count: 2 }] : [])),
+            sheetsWithTerm: vi.fn(async (r: string) => ({ hits: r === 'r-mayor' ? [{ sheet: 411, count: 2 }] : [], truncated: false })),
             readSheets: vi.fn(async (r: string, sheets: ReadonlyArray<number>) =>
                 r === 'r-mayor' ? sheets.map(sheet => ({ sheet, text: 'the active may include the force of the middle', section: null as string | null })) : []),
         } satisfies IBookSearch;
         const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify({ ...entrada(), sources: [kittel, FUENTE] });
         expect(citations[0]).toMatchObject({ status: 'not-found', bookSearch: 'not-in-book', foundInOtherSource: { sourceKey: 'Mayor', pageLabel: 'p. 133' } });
         expect(citations[0]!.note).toContain('lo dice Mayor (p. 133)');
+    });
+
+    it('«página no comprobable» que no se halla queda como estaba: nunca «no está en el libro» (revisión de 8b)', async () => {
+        const j = juez([alarma({ status: 'page-unverifiable' })]);
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, libro({})).verify(entrada());
+        expect(citations[0]).toMatchObject({ status: 'page-unverifiable', note: 'No aparece.' });
+        expect(citations[0]).not.toHaveProperty('bookSearch');
+    });
+
+    it('una búsqueda cortada por el servidor no prueba ausencia (revisión de 8b)', async () => {
+        const j = juez([alarma()]);
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, libro({}, {}, true)).verify(entrada());
+        expect(citations[0]).not.toHaveProperty('bookSearch');
+        expect(citations[0]!.note).toContain('vino incompleta');
+    });
+
+    it('«203, 206»: se leen los dos tramos y la hallada en la 206 vale (revisión de 8b)', async () => {
+        const j = juez([alarma({ pages: '128, 133', raw: 'Mayor, pp. 128, 133' })]);
+        const original = j.verify.getMockImplementation()!;
+        // Un juez que acepta cualquier página citada del tramo.
+        j.verify.mockImplementation(async (input: CitationVerifierInput) => {
+            const out = await original(input) as { citations: VerifiedCitation[] };
+            return { citations: out.citations.map(c => (c.matchedPage === '133' ? { ...c, status: 'verified' as const } : c)) };
+        });
+        const b = libro({ 411: 'the active may include the force of the middle' });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(b.readSheets.mock.calls[0]![1]).toEqual(expect.arrayContaining([406, 411]));
+        expect(citations[0]).toMatchObject({ status: 'verified', bookSearch: 'cited-page' });
+    });
+
+    it('la otra fuente no es una que la oración ya cita (revisión de 8b)', async () => {
+        const j = juez([alarma({ author: 'Kittel', raw: 'Kittel, p. 32', matchedCorpusId: 'r-kittel', otherSources: ['Mayor'] })]);
+        const kittel = { ...FUENTE, corpusId: 'r-kittel', citationKey: 'Kittel', displayLabel: 'Kittel' };
+        const b = {
+            sheetsWithTerm: vi.fn(async (r: string) => ({ hits: r === 'r-mayor' ? [{ sheet: 411, count: 2 }] : [], truncated: false })),
+            readSheets: vi.fn(async () => [] as Array<{ sheet: number; text: string; section: string | null }>),
+        } satisfies IBookSearch;
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify({ ...entrada(), sources: [kittel, FUENTE] });
+        expect(citations[0]).not.toHaveProperty('foundInOtherSource');
+        expect(b.sheetsWithTerm.mock.calls.every(c => c[0] !== 'r-mayor')).toBe(true);
+    });
+
+    it('cada búsqueda una sola vez, y como mucho doce alarmas releídas por pasada (revisión de 8b)', async () => {
+        const muchas = Array.from({ length: 15 }, (_x, i) => alarma({ offset: i }));
+        const j = juez(muchas);
+        const b = libro({});
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(citations.filter(c => c.bookSearch === 'not-in-book')).toHaveLength(12);
+        expect(citations.map(c => c.offset)).toEqual(muchas.map(c => c.offset));
+        const terminos = b.sheetsWithTerm.mock.calls.map(c => c[1]);
+        expect(new Set(terminos).size).toBe(terminos.length);
+    });
+
+    it('el segundo juicio no arrastra el tramo ni lo atribuido de la primera pasada, y lee la hoja entera', async () => {
+        const j = juez([alarma({ supportingSpan: { text: 'otra hoja', pageLabel: 'p. 99' }, takenFromSource: 'viejo' })]);
+        const b = libro({ 411: 'the active may include the force of the middle voice.' });
+        await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        const segunda = j.verify.mock.calls[1]![0] as CitationVerifierInput;
+        expect(segunda.citations![0]).not.toHaveProperty('supportingSpan');
+        expect(segunda.citations![0]).not.toHaveProperty('takenFromSource');
+        expect(segunda.maxCharsPerChunk).toBeGreaterThan(4000);
     });
 
     it('una cita verificada en la primera pasada no se toca', async () => {

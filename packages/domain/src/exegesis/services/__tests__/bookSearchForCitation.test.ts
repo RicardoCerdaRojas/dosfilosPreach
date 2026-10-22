@@ -39,7 +39,16 @@ describe('searchTermsForCitation', () => {
         expect(searchTermsForCitation(q, true)).toEqual([
             'The epexegetical view best fits James’s',
             'best fits James’s concerns about the',
+            'epexegetical', 'concerns', 'James’s',
         ]);
+    });
+
+    it('sin puntuación dentro de la frase, y con las palabras distintivas (revisión de 8b)', () => {
+        // El servidor conserva las comas: «the spirit, which» no coincidía con «the spirit which».
+        const t = searchTermsForCitation('the spirit, which he made to dwell in us, yearns jealously over us', true);
+        expect(t.filter(x => x.split(' ').length > 1).every(x => !/[,.;:]/.test(x))).toBe(true);
+        expect(t).toContain('which he made to dwell in');
+        expect(t).toContain('jealously');
     });
 
     it('una paráfrasis: las tres palabras más distintivas, sin relleno', () => {

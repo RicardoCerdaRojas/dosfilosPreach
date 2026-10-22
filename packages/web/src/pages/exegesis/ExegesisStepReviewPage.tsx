@@ -169,6 +169,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                                 {t('canonical.review.reviewedCount', { count: r.reviewedCount })}
                             </span>
                         )}
+                        {r.proseAlarmCount > 0 && <span className="text-[11px] text-muted-foreground">{t('canonical.review.proseNotBlocking', { count: r.proseAlarmCount })}</span>}
                         {r.blocking.length > 0 ? (
                             <span className="ml-auto text-xs text-destructive">{t('canonical.review.blocking', { count: r.blocking.length })}</span>
                         ) : r.reviewedCount > 0 && r.listed.length === 0 ? (
@@ -248,9 +249,8 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                                     <button key={path} type="button" onClick={() => select(path)}
                                         className={`w-full text-left rounded-md px-2 py-1.5 text-xs hover:bg-accent ${r.selectedPath === path ? 'bg-accent' : ''}`}>
                                         <CitationLabel citation={v} />
-                                        {isProsePath(path) && (
-                                            <span className="ml-1 rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">{t('canonical.review.inProse')}</span>
-                                        )}
+                                        {isProsePath(path) && <span className="ml-1 rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">{t('canonical.review.inProse')}</span>}
+                                        {r.claims.get(path)?.unverifiedQuote && <span className="ml-1 rounded-full border border-warning/40 px-1.5 text-[10px] text-warning-subtle-foreground">{t('canonical.review.unverifiedQuoteBadge')}</span>}
                                         <span className="block text-[11px] text-muted-foreground truncate">{v.note}</span>
                                     </button>
                                 ))}

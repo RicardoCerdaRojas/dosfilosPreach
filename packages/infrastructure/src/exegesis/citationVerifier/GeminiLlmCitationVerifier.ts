@@ -108,7 +108,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         const language = input.language ?? detectLanguage(parsed);
 
         const verdicts = await Promise.all(
-            parsed.map(p => this.verifyOne(p, lookup, language, input.userId ?? null)),
+            parsed.map(p => this.verifyOne(p, lookup, language, input.userId ?? null, input.maxCharsPerChunk)),
         );
 
         return { citations: verdicts };
@@ -119,6 +119,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         lookup: SourceMatcher,
         language: 'es' | 'en',
         userId: string | null,
+        maxCharsPerChunk?: number,
     ): Promise<VerifiedCitation> {
         const matched = lookup.match(parsed.author, parsed.title);
         if (!matched) {
@@ -171,6 +172,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         const chunks = this.prepareChunks(
             [...matched.chunks, ...retrievedChunks],
             parsed.evidencePage ?? parsed.pages,
+            maxCharsPerChunk,
         );
         if (chunks.length === 0) {
             // «No pude comprobar» no es «no existe».
@@ -300,10 +302,10 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         }
     }
 
-    private prepareChunks(chunks: ReadonlyArray<VerifierSourceChunk>, citedPages: string | null): VerifierSourceChunk[] {
+    private prepareChunks(chunks: ReadonlyArray<VerifierSourceChunk>, citedPages: string | null, maxCharsPerChunk?: number): VerifierSourceChunk[] {
         return selectEvidenceChunks(chunks, citedPages, {
             maxChunks: this.maxChunksPerCitation,
-            maxCharsPerChunk: this.maxCharsPerChunk,
+            maxCharsPerChunk: maxCharsPerChunk ?? this.maxCharsPerChunk,
         });
     }
 
@@ -530,7 +532,8 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
     const texto = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
     return {
         status, confidence, bestPageHint, citedPageSupports, reasoning,
-        takenFromSource: texto(parsed?.takenFromSource),
+        // Con tope, como la nota: hasta 300 veredictos viven en el documento del trabajo.
+        takenFromSource: texto(parsed?.takenFromSource).slice(0, MAX_SUPPORTING_QUOTE),
         supportingQuote: texto(parsed?.supportingQuote).slice(0, MAX_SUPPORTING_QUOTE),
     };
 }

@@ -124,6 +124,28 @@ export function renderVerseAnalysisProse(
     }
     if (opening.length > 0) paragraphs.push(opening.join('. ').replace(/\.\./g, '.'));
 
+    // ── Las respuestas a las preguntas del encuadre (revisión de 8b) ──
+    // Este texto reemplaza la prosa compuesta cuando falta algo del
+    // análisis: sin las respuestas, el respaldo perdía justo lo que el
+    // trabajo tenía que contestar.
+    for (const qa of analysis.questionAnswers ?? []) {
+        const partes: string[] = [];
+        if (qa.directAnswer?.trim()) {
+            partes.push(sentence(`${L(`Pregunta ${qa.questionNumber}`, `Question ${qa.questionNumber}`)}: ${qa.directAnswer.trim()}`));
+        }
+        const lecturas = (qa.options ?? [])
+            .filter(o => o.reading?.trim())
+            .map(o => `«${o.reading.trim()}»${o.argument?.trim() ? `, ${o.argument.trim()}` : ''}${cite(o.defenders ?? [])}`);
+        if (lecturas.length > 0) partes.push(sentence(`${L('Las lecturas propuestas son', 'The proposed readings are')}: ${lecturas.join('; ')}`));
+        const criterio = qa.decisiveCriterion;
+        if (criterio?.text?.trim()) {
+            partes.push(sentence(`${L('El criterio que decide es', 'The deciding criterion is')} ${criterio.text.trim()}${cite(criterio.sources ?? [])}`));
+            if (criterio.whyThisOverThat?.trim()) partes.push(sentence(criterio.whyThisOverThat));
+        }
+        if (qa.decision?.trim()) partes.push(sentence(`${L('Por eso', 'Therefore')}, ${qa.decision.trim()}`));
+        if (partes.length > 0) paragraphs.push(partes.join(' '));
+    }
+
     // ── Crítica textual ────────────────────────────────────────────
     const textual: string[] = [];
     if (analysis.textualCriticism.note.trim()) {

@@ -483,6 +483,56 @@ Debajo, un botón: [Recomponer con estas observaciones]. **No bloquea el Word**;
 
 ---
 
+## Revisión adversarial de 8b (2026-10-22)
+
+Tres revisores en paralelo (C+E1–E2, D, E3–E4). 32 hallazgos; cada uno se verificó leyendo el código. Se arreglaron todos salvo los de abajo. Cada arreglo tiene su prueba, y cada prueba se rompió una vez con una mutación.
+
+**Los dos altos:**
+- **La prosa heredaba la frase del análisis** y el juez nunca veía lo que la prosa afirma. La frase heredada salía verde sin juicio. Es el caso de Wallace 662: la atribución era falsa y la alarma de la prosa era la correcta. Ahora la prosa hereda solo las otras fuentes, y solo de las citas del análisis que se verificaron.
+- **«Se buscó en todo el libro» era a menudo falso.** Las frases se buscaban sin la puntuación que el servidor conserva, y el servidor corta la lista en 80 hojas. Eso terminaba en «Quitar la cita». Ahora las frases salen de segmentos sin puntuación y van con las palabras distintivas. Una búsqueda cortada o fallida no afirma «no está en el libro».
+
+**El resto, arreglado:**
+- **Verificador:**
+  - «Página no comprobable» que no se halla queda como estaba: nunca «quitar» ni «otra fuente».
+  - La página citada se relee entera, hasta 12.000 caracteres.
+  - «203, 206» lee los dos tramos, y una página hallada que es una de las citadas vale.
+  - Cada búsqueda se hace una sola vez por pasada; se revisan 3 alarmas a la vez y como mucho 12 por pasada.
+  - La «otra fuente» no es una que la oración ya cita.
+  - El segundo juicio no arrastra el tramo de la primera pasada.
+  - `takenFromSource` tiene tope.
+  - El ensamble se juzga en el idioma del trabajo.
+  - El diálogo de la tarjeta se actualiza al cambiar de versión.
+- **Diagnóstico:** «Mayor» con mayúscula: «en mayor medida» ya no es «segunda mano».
+- **Revisión de citas:**
+  - Las revisiones de la prosa (`prosa@N`) se descartan con sus veredictos.
+  - La página dice «N de la prosa: avisan, no impiden aceptar».
+  - Una «frase no hallada» se marca en la lista.
+- **Análisis:**
+  - La cita del criterio decisivo es solo el criterio; el «por qué» es del análisis y rehacía la afirmación mixta.
+  - Corregir la página de un rango quita el final viejo y lo deja en el rastro.
+  - «intertextual», «contextual» y un «quien» relativo ya no cambian el tipo de pregunta.
+  - El bloque de fuentes y formato dice «Clave», no «Apellido».
+  - Un rango que cruza el cambio de numeración queda en su comienzo.
+- **Prosa:**
+  - Las alertas llevan el mismo rótulo que el análisis serializado («Adamson (hoja 171)») y una instrucción por clase.
+  - El texto de respaldo del compositor del paper trae las respuestas.
+- **Revisor de prosa:**
+  - El «;» griego y la cursiva no son cierre doble; «, y así» sí.
+  - La grave no cruza párrafos; «2026-10» no es un rango.
+  - Raíz de 6 letras para el criterio.
+  - Las reglas del curso que repiten un criterio de serie no se suman.
+  - Un hallazgo pagado sobrevive a una corrección a mano si su frase sigue, y queda en caché por paso (cerrar la tarjeta no lo pierde).
+  - Contraste AA en los textos «sin avisos».
+  - El aviso de «Componer paper» dice lo que de verdad pasa.
+  - El botón principal «Componer prosa» aparece solo en los versículos que van al documento.
+
+**Queda, a propósito:**
+- **Cobertura de las respuestas en `enforceAnalysisCoverage`.** No se agregan como ítems: harían caer más veces al texto de respaldo, y el compositor del paper entero no se ofrece en el modo preguntas.
+- **El costo de la verificación sigue fijo en US$ 0,05.** Se acotó el trabajo (tope, caché y concurrencia) en vez de escalar la reserva.
+- **El modo `lema` de la búsqueda** no se usa todavía para ubicar una cita.
+- **La marca de segunda mano** del análisis serializado sigue en inglés, como el resto de sus rótulos.
+- **Ruta del modelo `exegesis.reviewProse`.** Queda en `scripts/llm-routing/ruteo.json` (Sol, low, como `composeVerse`). Escribirla en `config/llmRouting` de producción pide el OK del fundador; sin ella, cae en `porDefecto`.
+
 ## F. La entrega: bibliografía, título y avisos (#43, #44, #45)
 
 - **#43 · BUG:** `IncompleteBibliographyGate.tsx:66-109` pide 6 claves `detail.bibliography.gate.*` que no existen en esa ruta. Están en `detail.bibliography.*` y en `detail.steps.gate.notInCorpus`, y por eso se ven las claves crudas. **Arreglo:** corregir las rutas y agregar una prueba que falle si un texto del aviso empieza con «detail.».

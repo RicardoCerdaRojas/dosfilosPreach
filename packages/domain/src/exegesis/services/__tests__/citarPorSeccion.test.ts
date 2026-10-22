@@ -48,6 +48,12 @@ describe('citedLocation', () => {
     it('página impresa', () => {
         expect(citedLocation({ sourceKey: 'W', page: 83, pageKind: 'printed' }, rotulo)).toBe('p. 83');
     });
+    it('un rango que cruza el cambio de numeración queda en su comienzo (revisión de 8b)', () => {
+        // Hojas 1–316 sin folio impreso; desde la 317, «p. N».
+        const mixto = (_k: string, p: number) => (p <= 316 ? `hoja ${p}` : `p. ${p - 278}`);
+        expect(citedLocation({ sourceKey: 'M', page: 314, pageEnd: 318, pageKind: 'sheet' }, mixto)).toBe('hoja 314');
+        expect(citedLocation({ sourceKey: 'M', page: 410, pageEnd: 411, pageKind: 'sheet' }, mixto)).toBe('p. 132–133');
+    });
 });
 
 describe('summarizeCitationAnchoring — la sección cuenta como anclada', () => {

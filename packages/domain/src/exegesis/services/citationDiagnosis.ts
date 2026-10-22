@@ -1,5 +1,6 @@
 import type { VerifiedCitation } from '../entities/CitationVerification';
 import { isCitationAlarm } from './citationReview';
+import { namesCitationKey } from './analysisClaims';
 
 /**
  * «Diagnosticar esta cita» (TP #8, fase 8b, D4).
@@ -88,7 +89,8 @@ export function diagnoseCitation(
     // la fuente reporta («Mayor, Knowling y Ropes entienden…»).
     const apoyo = verdict.supportingSpan?.text ?? '';
     const reportado = knownAuthors.find(a =>
-        a.trim().length >= 3 && normal(a) !== normal(verdict.author) && nombra(apoyo, a));
+        // Con mayúsculas: «Mayor» el autor, no «en mayor medida» (revisión de 8b).
+        a.trim().length >= 3 && normal(a) !== normal(verdict.author) && namesCitationKey(apoyo, a));
     if (reportado && apoyo) {
         return {
             cause: 'second-hand',
@@ -127,12 +129,6 @@ export function diagnoseCitation(
 
 function normal(s: string): string {
     return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-}
-
-/** ¿El texto nombra al autor como palabra entera? */
-function nombra(texto: string, autor: string): boolean {
-    const k = normal(autor).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`(^|[^\\p{L}])${k}([^\\p{L}]|$)`, 'u').test(normal(texto));
 }
 
 function recortar(s: string, max = 160): string {

@@ -238,3 +238,24 @@ describe('locateVerseSections — versos que se contienen', () => {
         expect(locateVerseSections(md, ['Santiago 1:2'])).toBeNull();
     });
 });
+
+/** Revisión de 8b: el texto de respaldo conserva las respuestas a las preguntas. */
+describe('renderVerseAnalysisProse — las respuestas', () => {
+    it('la respuesta, las lecturas con quién las defiende, el criterio con su cita y la decisión', async () => {
+        const { renderVerseAnalysisProse } = await import('../renderVerseAnalysisProse');
+        const { buildEmptyCanonicalVerseAnalysis } = await import('../../entities/CanonicalVerseAnalysis');
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            questionAnswers: [{
+                questionNumber: 3, directAnswer: 'no hay distinción de voces', decision: 'se traduce «piden» las dos veces',
+                options: [{ reading: 'la media es pedir para sí', argument: 'la alternancia es intencional', defenders: [{ sourceKey: 'Mayor', page: 133, pageKind: 'printed' as const }] }],
+                decisiveCriterion: { text: 'la concesión de Mayor sobre la activa', whyThisOverThat: 'Solo la lectura sin distinción la explica', sources: [{ sourceKey: 'Mayor', page: 133, pageKind: 'printed' as const }] },
+            }],
+        };
+        const t = renderVerseAnalysisProse(a, 'es', { includeHeading: false });
+        expect(t).toContain('Pregunta 3: no hay distinción de voces.');
+        expect(t).toContain('«la media es pedir para sí», la alternancia es intencional (Mayor, p. 133)');
+        expect(t).toContain('El criterio que decide es la concesión de Mayor sobre la activa (Mayor, p. 133).');
+        expect(t).toContain('Por eso, se traduce «piden» las dos veces.');
+    });
+});

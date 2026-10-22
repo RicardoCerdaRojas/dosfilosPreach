@@ -46,6 +46,16 @@ describe('buildManualEditVersion', () => {
         expect(v.verifications).toEqual({ counts: { verified: 16 } });
     });
 
+    it('las revisiones de la prosa (`prosa@N`) no: se pegarían a otra cita (revisión de 8b)', () => {
+        const v = buildManualEditVersion(padre({
+            citationReviews: [
+                { path: 'commentatorEngagement[0]', note: 'miré la página', reviewedAt: new Date() },
+                { path: 'prosa@120', note: 'la de la prosa', reviewedAt: new Date() },
+            ],
+        }), 'Otra redacción.');
+        expect(v.citationReviews!.map(r => r.path)).toEqual(['commentatorEngagement[0]']);
+    });
+
     it('sin análisis, el resumen SÍ se reinicia', () => {
         // Ahí la verificación lee el markdown, y una edición la invalida.
         // Ése era el motivo original de reiniciarlo y se conserva.

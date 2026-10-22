@@ -35,6 +35,16 @@ const analisis = (): CanonicalVerseAnalysis => ({
     }],
 } as unknown as CanonicalVerseAnalysis);
 
+describe('corregir la página de un rango (revisión de 8b)', () => {
+    it('el final del rango viejo se va con la corrección', () => {
+        const a = analisis();
+        (a.commentatorEngagement[0] as { pageEnd?: number }).pageEnd = 449;
+        const d = editCitationAt(a, 'commentatorEngagement[0]', { kind: 'page', page: 170, pageKind: 'printed' });
+        expect(d.commentatorEngagement[0]).toMatchObject({ page: 170 });
+        expect(d.commentatorEngagement[0]).not.toHaveProperty('pageEnd');
+    });
+});
+
 describe('parseCitationPath', () => {
     it('toda ruta que produce el recolector se puede recorrer', () => {
         for (const claim of collectAnalysisClaims(analisis())) {

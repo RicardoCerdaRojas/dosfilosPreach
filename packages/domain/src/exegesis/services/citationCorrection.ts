@@ -27,7 +27,7 @@ export interface CitationCorrection {
     path: string;
     kind: CitationEdit['kind'];
     /** Cómo estaba antes: página y unidad, o la oración que había. */
-    before: { page: number; pageKind?: CitationPageKind; verbatimQuote?: string | null };
+    before: { page: number; pageEnd?: number; pageKind?: CitationPageKind; verbatimQuote?: string | null };
     after: { page?: number; pageKind?: CitationPageKind; verbatimQuote?: string | null };
     correctedAt: Date;
 }
@@ -117,7 +117,12 @@ export function editCitationAt(
 
     const apply = (leaf: Leaf): Leaf | typeof REMOVE => {
         if (edit.kind === 'remove') return REMOVE;
-        if (edit.kind === 'page') return { ...leaf, page: edit.page, pageKind: edit.pageKind };
+        if (edit.kind === 'page') {
+            // Corregir la página corrige la cita entera: el final del rango
+            // viejo no sirve con otro comienzo (448–449 → «170–449»).
+            const { pageEnd: _fin, ...sinRango } = leaf;
+            return { ...sinRango, page: edit.page, pageKind: edit.pageKind };
+        }
         const quote = edit.quote.trim();
         // Corregir la oración resuelve la que no se halló (C5): el aviso se va.
         const { unverifiedQuote: _sinVerificar, ...sinAviso } = leaf;

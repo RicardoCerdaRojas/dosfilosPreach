@@ -145,9 +145,9 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     const alertsBlock = alertas.length > 0
         ? [
             lang === 'en'
-                ? 'ANALYSIS CITATIONS THE VERIFIER COULD NOT SUPPORT (do not repeat them as they are: use the page where it was found, or leave the claim without that citation):'
-                : 'CITAS DEL ANÁLISIS QUE EL VERIFICADOR NO PUDO RESPALDAR (no las repitas tal cual: usa la página donde se halló, o deja la afirmación sin esa cita):',
-            ...alertas.map(a => `- ${a.citation} — ${a.status}${a.foundAt ? ` (${lang === 'en' ? 'found at' : 'hallada en'} ${a.foundAt})` : ''}`),
+                ? 'ANALYSIS CITATIONS THE VERIFIER COULD NOT SUPPORT (do not repeat them as they are; do what each line says):'
+                : 'CITAS DEL ANÁLISIS QUE EL VERIFICADOR NO PUDO RESPALDAR (no las repitas tal cual; haz lo que dice cada línea):',
+            ...alertas.map(a => `- ${a.citation} — ${instruccionDeAlerta(a, lang)}`),
         ].join('\n')
         : '';
 
@@ -237,4 +237,19 @@ function describeSource(s: ComposerSourceMetadata): string {
     const imprint = [s.city, s.publisher, s.year ? String(s.year) : ''].filter(Boolean);
     if (imprint.length > 0) parts.push(`(${imprint.join(': ')})`);
     return parts.join(', ');
+}
+
+/** Qué hacer con cada alarma, según su clase (revisión de 8b). */
+function instruccionDeAlerta(a: { status: string; foundAt?: string | null }, lang: 'es' | 'en'): string {
+    const en = lang === 'en';
+    if (a.status === 'page-mismatch' && a.foundAt) return en ? `found at ${a.foundAt}: cite that page` : `hallada en ${a.foundAt}: cita esa página`;
+    if (a.status === 'fuzzy-low') {
+        return en
+            ? 'the source supports only part of it: cite only what the source says; your conclusion goes in another sentence, without the citation'
+            : 'la fuente sostiene solo una parte: cita solo lo que dice la fuente; tu conclusión va en otra oración, sin la cita';
+    }
+    if (a.status === 'page-unverifiable') {
+        return en ? 'the page could not be checked: do not repeat that page number' : 'no se pudo comprobar la página: no repitas ese número de página';
+    }
+    return en ? 'the source does not say it: leave the claim without that citation, or remove it' : 'la fuente no lo dice: deja la afirmación sin esa cita, o quítala';
 }

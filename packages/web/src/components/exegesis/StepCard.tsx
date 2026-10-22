@@ -147,6 +147,14 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
     // Los guardados, para que el diálogo no se vacíe al recargar (D5).
     const [verifiedCitations, setVerifiedCitations] = useState<VerifiedCitation[]>(() => [...(step.current?.citationVerdicts ?? [])]);
+    // Otra versión (regenerada o recompuesta) trae sus propios veredictos: el
+    // estado inicial no se recalculaba y el diálogo mostraba los de la vieja
+    // (revisión de 8b).
+    const versionActualId = step.current?.id;
+    useEffect(() => {
+        setVerifiedCitations([...(step.current?.citationVerdicts ?? [])]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [versionActualId]);
     // Out-of-credits dialog. Triggered when any exegesis mutation
     // throws `InsufficientExegesisCreditsError` (Fase 2 reserve fails).
     const [outOfCreditsOpen, setOutOfCreditsOpen] = useState(false);
@@ -957,7 +965,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 {/* Lo mismo con la prosa: un versículo aceptado y sin prosa
                     no entra al documento, y al recargar la tarjeta está
                     cerrada (TP #8, #36; 8b, E4). */}
-                {showAccepted && !isExpanded && isVerse && canonicalAnalysis && !previewMarkdown.trim() && (
+                {showAccepted && !isExpanded && isVerse && canonicalAnalysis && !previewMarkdown.trim() && pertenceAlDocumento(step) && (
                     <Button
                         size="sm"
                         onClick={(e) => { e.stopPropagation(); void handleComposeVerseProse(); }}
@@ -1181,11 +1189,14 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         y el autor no sabía que faltaba (TP #8, #36; 8b, E4). */}
                     {isVerse && canonicalAnalysis && !previewMarkdown.trim() && (
                         <div className="basis-full flex flex-wrap items-center gap-2 pb-1">
+                            {/* Principal solo si el versículo va al documento: fuera
+                                de él, componer es opcional y cuesta (revisión de 8b). */}
                             <Button
                                 size="sm"
+                                variant={pertenceAlDocumento(step) ? 'default' : 'outline'}
                                 onClick={() => handleComposeVerseProse()}
                                 disabled={anyPipelinePending}
-                                className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
+                                className={pertenceAlDocumento(step) ? 'bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground' : undefined}
                             >
                                 {composeVerseAcademicProse.isPending
                                     ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -1279,7 +1290,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                 type="button"
                                 onClick={() => setRecomposeOpen(true)}
                                 disabled={anyPipelinePending}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-success disabled:opacity-50"
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
                                 title={t('canonical.verseProse.button.tooltip')}
                             >
                                 {composeVerseAcademicProse.isPending

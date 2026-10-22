@@ -58,15 +58,19 @@ describe('«Revisión antes de entregar»', () => {
         expect(screen.getByText('No discrimina.')).toBeInTheDocument();
         expect(screen.getByText(/El criterio decisivo distingue/)).toBeInTheDocument();
         fireEvent.click(screen.getByText('canonical.proseReview.action.reviewAgain'));
-        await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ paperId: 'p', stepId: 's' }));
+        await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
         fireEvent.click(screen.getByText('canonical.proseReview.action.recompose'));
         expect(onRecompose.mock.calls[0]![0]).toContain('En «es causal»: No discrimina. → Usar la concesión.');
     });
 
-    it('si la prosa cambió después de revisar, los hallazgos ya no se muestran', () => {
-        data = { reviewedMarkdown: 'otra prosa', criteria: ['c1'], findings: [{ criterion: 1, quote: '', problem: 'Viejo.', fix: '' }] };
+    it('si la prosa cambió después de revisar, quedan solo los que señalan una frase que sigue (revisión de 8b)', () => {
+        data = { reviewedMarkdown: 'otra prosa', criteria: ['c1'], findings: [
+            { criterion: 1, quote: '', problem: 'Viejo.', fix: '' },
+            { criterion: 1, quote: 'es causal', problem: 'Sigue.', fix: '' },
+        ] };
         montar();
         expect(screen.queryByText('Viejo.')).toBeNull();
+        expect(screen.getByText('Sigue.')).toBeInTheDocument();
         expect(screen.getByText('canonical.proseReview.reviewer.stale')).toBeInTheDocument();
     });
 

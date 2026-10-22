@@ -28,7 +28,8 @@ describe('citationAlertsOf', () => {
             ] as never,
             citationReviews: [{ path: 'commentatorEngagement[1]', note: 'revisada', reviewedAt: new Date() }],
         });
-        expect(alertas).toEqual([{ citation: 'Adamson, p. 171', status: 'page-mismatch', foundAt: 'p. 170' }]);
+        // Con el rótulo del análisis serializado: el libro sin folios dice «hoja».
+        expect(alertas).toEqual([{ citation: 'Adamson (hoja 171)', status: 'page-mismatch', foundAt: 'p. 170' }]);
     });
 
     it('sin análisis, nada', () => {

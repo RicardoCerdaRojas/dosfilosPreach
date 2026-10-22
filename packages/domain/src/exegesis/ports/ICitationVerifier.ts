@@ -65,6 +65,12 @@ export interface CitationVerifierInput {
      * Sólo con `markdown`, en el camino de la prosa.
      */
     inheritFrom?: ReadonlyArray<ParsedCitation>;
+    /**
+     * Tope de caracteres por fragmento. Sin él, el del adaptador (4.000). Al
+     * releer la página citada se pasa uno mayor: una hoja densa perdía su
+     * parte de abajo (revisión de 8b).
+     */
+    maxCharsPerChunk?: number;
     /** All citable sources attached to the paper. */
     sources: ReadonlyArray<VerifierSource>;
     /**
@@ -102,7 +108,11 @@ export interface ICitationVerifier {
  */
 export interface IBookSearch {
     /** Las hojas donde aparece el término (búsqueda de texto plegado, el libro entero). */
-    sheetsWithTerm(resourceId: string, term: string): Promise<ReadonlyArray<{ sheet: number; count: number }>>;
+    sheetsWithTerm(resourceId: string, term: string): Promise<{
+        hits: ReadonlyArray<{ sheet: number; count: number }>;
+        /** El servidor cortó la lista: lo que no vino puede estar en el libro. */
+        truncated: boolean;
+    }>;
     /** El texto entero de unas hojas, una entrada por hoja. */
     readSheets(resourceId: string, sheets: ReadonlyArray<number>): Promise<ReadonlyArray<{ sheet: number; text: string; section: string | null }>>;
 }

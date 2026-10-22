@@ -1952,7 +1952,7 @@
       "saveToResourcesFailed": "No se pudo guardar en Mis Recursos. Intenta de nuevo.",
       "savedExists": "Hay una composición guardada en este paper.",
       "savedHint": "Si los análisis de los versos cambiaron desde la última vez, recompón para que la salida refleje el estado actual.",
-      "rewriteWarning": "Componer el paper reescribe el documento entero desde los análisis: se pierden las ediciones a mano y la prosa compuesta en cada versículo.",
+      "rewriteWarning": "Al guardarlo, el paper compuesto reemplaza el documento ensamblado: se pierden las ediciones hechas a mano en el documento. La prosa de cada versículo no cambia.",
       "anchoring": {
         "headline_one": "{{count}} de {{total}} citas no podrán señalar una página del ejemplar impreso.",
         "headline_other": "{{count}} de {{total}} citas no podrán señalar una página del ejemplar impreso.",
@@ -2055,6 +2055,7 @@
     },
     "review": {
       "inProse": "en la prosa",
+      "unverifiedQuoteBadge": "frase no hallada",
       "proseOnly": "Este paso no tiene análisis estructurado: sus citas están en la lista de la derecha.",
       "diagnosis": {
         "cta": "Diagnosticar esta cita",
@@ -2170,6 +2171,8 @@
         "transliterated": "Este libro translitera. Escribe el original en alfabeto latino —«la raíz hāyâ»— siguiendo la convención de su colección, así que la discusión puede ser correcta; lo que no hay es la forma en caracteres. No hay nada que re-extraer: si la afirmación depende de la grafía, apóyala en una fuente que traiga el original."
       },
       "reviewedCount": "{{count}} revisadas a mano",
+      "proseNotBlocking_one": "1 de la prosa: avisa, no impide aceptar",
+      "proseNotBlocking_other": "{{count}} de la prosa: avisan, no impiden aceptar",
       "allReviewed": "Todas las observaciones quedaron revisadas."
     },
     "recompose": {

@@ -39,7 +39,7 @@ interface ProseReviewCardProps {
  */
 export function ProseReviewCard(props: ProseReviewCardProps) {
     const { t } = useTranslation('exegesis');
-    const review = useReviewVerseProse();
+    const review = useReviewVerseProse(props.paperId, props.stepId);
     const [abierta, setAbierta] = useState(false);
 
     const claves = useMemo(() => props.sources.map(s => s.citationKey ?? s.displayLabel), [props.sources]);
@@ -57,15 +57,21 @@ export function ProseReviewCard(props: ProseReviewCardProps) {
     }), [props.prose, props.analysis, props.verdicts, props.reviews, claves, gramaticas]);
 
     const resultado = review.data ?? null;
-    // Los hallazgos señalan la prosa que se revisó: si cambió, ya no aplican.
+    // Los hallazgos señalan la prosa que se revisó. Si cambió (una raya o un
+    // acento corregidos a mano, que es lo que la tarjeta recomienda), siguen
+    // los que señalan una frase que todavía está; los demás ya no aplican.
     const vigente = resultado !== null && resultado.reviewedMarkdown === props.prose;
-    const delRevisor = vigente ? resultado.findings : [];
+    const delRevisor = resultado === null
+        ? []
+        : vigente
+            ? resultado.findings
+            : resultado.findings.filter(f => f.quote && comparable(props.prose).includes(comparable(f.quote)));
     const indicacion = proseReviewGuidance(fijos, delRevisor, props.language);
     const total = fijos.length + delRevisor.length;
 
     const revisar = async () => {
         try {
-            await review.mutateAsync({ paperId: props.paperId, stepId: props.stepId });
+            await review.mutateAsync();
         } catch (err) {
             if (props.onQuotaError(err)) return;
             console.error('[exegesis] review verse prose failed:', err);
@@ -89,7 +95,7 @@ export function ProseReviewCard(props: ProseReviewCardProps) {
                         {t('canonical.proseReview.count', { count: total })}
                     </span>
                 ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-success">
+                    <span className="inline-flex items-center gap-1 text-xs text-success-subtle-foreground">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         {t('canonical.proseReview.clean')}
                     </span>
@@ -107,8 +113,8 @@ export function ProseReviewCard(props: ProseReviewCardProps) {
                         </ul>
                     )}
 
-                    {vigente && (delRevisor.length === 0 ? (
-                        <p className="inline-flex items-center gap-1.5 text-xs text-success">
+                    {resultado !== null && (vigente || delRevisor.length > 0) && (delRevisor.length === 0 ? (
+                        <p className="inline-flex items-center gap-1.5 text-xs text-success-subtle-foreground">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             {t('canonical.proseReview.reviewer.clean')}
                         </p>
@@ -147,6 +153,11 @@ export function ProseReviewCard(props: ProseReviewCardProps) {
             )}
         </section>
     );
+}
+
+/** Para ver si una frase sigue en la prosa: sin comillas tipográficas ni espacios dobles. */
+function comparable(texto: string): string {
+    return texto.normalize('NFC').replace(/[“”«»„"]/g, '"').replace(/[‘’‚']/g, "'").replace(/[*_]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 function FixedFinding({ finding: f }: { finding: ProseFinding }) {

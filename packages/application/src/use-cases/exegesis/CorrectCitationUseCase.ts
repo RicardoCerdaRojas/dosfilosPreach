@@ -115,6 +115,7 @@ export class CorrectCitationUseCase {
             kind: edit.kind,
             before: {
                 page: claimBefore.page,
+                ...(claimBefore.pageEnd ? { pageEnd: claimBefore.pageEnd } : {}),
                 ...(claimBefore.pageKind ? { pageKind: claimBefore.pageKind } : {}),
                 ...(claimBefore.verbatimQuote !== null ? { verbatimQuote: claimBefore.verbatimQuote } : {}),
             },

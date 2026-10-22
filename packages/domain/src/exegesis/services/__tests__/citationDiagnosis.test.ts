@@ -66,4 +66,12 @@ describe('diagnoseCitation — el banco del TP #8', () => {
         const d = diagnoseCitation(v({ status: 'fuzzy-low', supportingSpan: { text: 'Adamson argues', pageLabel: null } }), 'es', CLAVES);
         expect(d!.cause).toBe('mixed-claim');
     });
+
+    it('«en mayor medida» no es Mayor: la segunda mano distingue mayúsculas (revisión de 8b)', () => {
+        const d = diagnoseCitation(v({
+            author: 'Wallace', status: 'fuzzy-low',
+            supportingSpan: { text: 'el presente se usa en mayor medida para lo vigente', pageLabel: 'p. 533' },
+        }), 'es', CLAVES);
+        expect(d!.cause).not.toBe('second-hand');
+    });
 });

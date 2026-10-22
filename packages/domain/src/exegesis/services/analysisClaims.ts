@@ -109,8 +109,9 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
             o.defenders.forEach((s, k) =>
                 push('answer-option', `questionAnswers[${i}].options[${j}].defenders[${k}]`, s, `${o.reading}: ${o.argument}`)));
         (q.decisiveCriterion?.sources ?? []).forEach((s, k) =>
-            push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.sources[${k}]`, s,
-                `${q.decisiveCriterion.text} ${q.decisiveCriterion.whyThisOverThat}`));
+            // Solo el criterio: el «por qué» es razonamiento del análisis, y
+            // juntarlo bajo la cita rehacía la afirmación mixta (revisión de 8b).
+            push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.sources[${k}]`, s, q.decisiveCriterion.text));
     });
     return out;
 }
@@ -180,7 +181,7 @@ export function otherSourcesOf(claim: AnalysisClaim, all: ReadonlyArray<Analysis
         const k = normaliza(c.sourceKey);
         if (k === propia || out.has(k)) continue;
         const hermana = entradaDe(c.path) === entrada && c.claim === claim.claim;
-        if (hermana || nombra(claim.claim, c.sourceKey)) out.set(k, c.sourceKey);
+        if (hermana || namesCitationKey(claim.claim, c.sourceKey)) out.set(k, c.sourceKey);
     }
     return [...out.values()];
 }
@@ -201,7 +202,7 @@ function normaliza(s: string): string {
  * Sin distinguirlas, cualquier afirmación con esa palabra pasaba por síntesis
  * y el verificador la juzgaba más laxo.
  */
-function nombra(texto: string, clave: string): boolean {
+export function namesCitationKey(texto: string, clave: string): boolean {
     const sinAcentos = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     const k = sinAcentos(clave).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (k.length < 3) return false;

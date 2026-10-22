@@ -18,8 +18,8 @@ export class CallableBookSearch implements IBookSearch {
     constructor(private readonly chunkReader: IDocumentChunkReader) { }
 
     async sheetsWithTerm(resourceId: string, term: string) {
-        const { hits } = await searchDocumentText(resourceId, term, 'texto');
-        return hits.map(h => ({ sheet: h.sheet, count: h.count }));
+        const { hits, truncated } = await searchDocumentText(resourceId, term, 'texto');
+        return { hits: hits.map(h => ({ sheet: h.sheet, count: h.count })), truncated: !!truncated };
     }
 
     async readSheets(resourceId: string, sheets: ReadonlyArray<number>) {

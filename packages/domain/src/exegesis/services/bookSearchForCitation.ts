@@ -1,5 +1,5 @@
 import type { ParsedCitation } from '../entities/CitationVerification';
-import { parsePageRange } from './evidenceForCitation';
+import { parsePageSpans } from './evidenceForCitation';
 import { hasResolvedNumbering, sheetForPrintedIn, type PageNumbering } from '../outline/pageNumbering';
 
 /**
@@ -15,6 +15,9 @@ import { hasResolvedNumbering, sheetForPrintedIn, type PageNumbering } from '../
 
 /** Hojas a cada lado de la citada que se leen siempre. */
 export const NEIGHBOUR_SHEETS = 2;
+/** Tramos de una cita que se leen, y hojas de cada tramo: un rango absurdo no lee el libro. */
+const MAX_TRAMOS = 3;
+const MAX_HOJAS_POR_TRAMO = 10;
 /** Hojas candidatas del libro que se vuelven a juzgar, como mucho. */
 export const MAX_CANDIDATE_SHEETS = 3;
 
@@ -31,16 +34,21 @@ export function sheetsAroundCitation(
     numbering: PageNumbering | null,
     neighbours: number = NEIGHBOUR_SHEETS,
 ): number[] {
-    const rango = parsePageRange(citation.pages ?? citation.evidencePage ?? null);
-    if (!rango) return [];
+    // Cada tramo de «203, 206»: leer solo el primero dejaba la 206 sin leer
+    // y la cita bien hecha salía «página no coincide» (revisión de 8b).
+    const tramos = parsePageSpans(citation.pages ?? citation.evidencePage ?? null);
+    if (tramos.length === 0) return [];
     const esHoja = /\bhoja\b|\bsheet\b/i.test(citation.raw ?? '') || !hasResolvedNumbering(numbering);
     const aHoja = (n: number): number | null => (esHoja ? n : sheetForPrintedIn(numbering, n));
-    const desde = aHoja(rango.start);
-    const hasta = aHoja(rango.end) ?? desde;
-    if (desde === null || hasta === null) return [];
-    const out: number[] = [];
-    for (let s = Math.max(1, Math.min(desde, hasta) - neighbours); s <= Math.max(desde, hasta) + neighbours; s++) out.push(s);
-    return out;
+    const out = new Set<number>();
+    for (const rango of tramos.slice(0, MAX_TRAMOS)) {
+        const desde = aHoja(rango.start);
+        const hasta = aHoja(rango.end) ?? desde;
+        if (desde === null || hasta === null) continue;
+        const fin = Math.min(Math.max(desde, hasta), Math.min(desde, hasta) + MAX_HOJAS_POR_TRAMO);
+        for (let s = Math.max(1, Math.min(desde, hasta) - neighbours); s <= fin + neighbours; s++) out.add(s);
+    }
+    return [...out].sort((a, b) => a - b);
 }
 
 const VACIAS = new Set([
@@ -56,24 +64,42 @@ const VACIAS = new Set([
 /**
  * Qué buscar en el libro para ubicar la cita.
  *
- * - Cita textual: dos tramos de seis palabras (el comienzo y el medio). Una
- *   frase literal es inconfundible y tolera que el resto se haya cortado.
+ * - Cita textual: hasta dos tramos de seis palabras sin puntuación dentro (de
+ *   los segmentos más largos), más las palabras distintivas. Una frase literal
+ *   es inconfundible; las palabras ubican la hoja si la puntuación difiere.
  * - Paráfrasis: las tres palabras más distintivas (las más largas que no son
  *   de relleno), incluidas las griegas y hebreas. Ubican la hoja; el juez
  *   decide si la sostiene.
  */
 export function searchTermsForCitation(evidence: string, evidenceIsQuoted: boolean): string[] {
     const palabras = evidence.normalize('NFC').split(/[^\p{L}\p{M}\p{N}'’-]+/u).filter(Boolean);
+    const claves = palabrasDistintivas(palabras);
     if (evidenceIsQuoted && palabras.length >= 6) {
-        const medio = Math.max(0, Math.floor(palabras.length / 2) - 3);
-        const tramos = [palabras.slice(0, 6), palabras.slice(medio, medio + 6)].map(t => t.join(' '));
-        return [...new Set(tramos)];
+        // Las frases, sin puntuación dentro: el servidor pliega espacios y
+        // guiones pero conserva comas y puntos, así que «the spirit, which»
+        // buscado como «the spirit which» no coincidía nunca (revisión de 8b).
+        // Y las palabras distintivas también: si la cita se transcribió con
+        // otra puntuación, la hoja se ubica por ellas.
+        const segmentos = evidence.normalize('NFC').split(/[,.;:!?¿¡()«»"“”[\]—–…·;]+/u)
+            .map(s => s.split(/[^\p{L}\p{M}\p{N}'’-]+/u).filter(Boolean))
+            .filter(s => s.length >= 4)
+            .sort((a, b) => b.length - a.length);
+        // El comienzo de los dos segmentos más largos; con uno solo, su
+        // comienzo y su medio (tolera que el resto se haya cortado).
+        const tramos = segmentos.length === 1 && segmentos[0]!.length >= 9
+            ? [segmentos[0]!.slice(0, 6), segmentos[0]!.slice(Math.floor(segmentos[0]!.length / 2) - 3).slice(0, 6)].map(t => t.join(' '))
+            : segmentos.slice(0, 2).map(t => t.slice(0, 6).join(' '));
+        return [...new Set([...tramos, ...claves])];
     }
+    return claves;
+}
+
+function palabrasDistintivas(palabras: ReadonlyArray<string>): string[] {
     const candidatas = [...new Set(palabras.filter(p => {
         const sinMarcas = p.normalize('NFD').replace(/\p{M}/gu, '');
         return sinMarcas.length >= 5 && !VACIAS.has(sinMarcas.toLowerCase());
     }))];
-    return candidatas.sort((a, b) => b.length - a.length).slice(0, 3);
+    return [...candidatas].sort((a, b) => b.length - a.length).slice(0, 3);
 }
 
 /**

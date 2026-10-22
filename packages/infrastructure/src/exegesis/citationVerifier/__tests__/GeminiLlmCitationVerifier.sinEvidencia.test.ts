@@ -69,13 +69,14 @@ describe('el verificador distingue no poder leer de no encontrar', () => {
 
 /** TP #8 (8b, D1): la prosa hereda la oración textual del análisis (sin red: la rama vuelve antes del modelo). */
 describe('la prosa hereda lo que el análisis resolvió', () => {
-    it('la cita de la prosa llega al juez con la oración del análisis y las otras fuentes', async () => {
+    it('la cita de la prosa llega al juez con SU afirmación y las otras fuentes del análisis (revisión de 8b)', async () => {
         const { citations } = await new GeminiLlmCitationVerifier().verify({
             markdown: 'Calvino lo juzga un exceso (Calvino, 60).',
             sources: [fuente([])],
             language: 'es',
             inheritFrom: [{ ...cita('Calvino'), pages: '60', evidence: 'la oración de Jonás es pecaminosa', evidenceIsQuoted: true, otherSources: ['Lutero'] }],
         });
-        expect(citations[0]).toMatchObject({ evidence: 'la oración de Jonás es pecaminosa', evidenceIsQuoted: true, otherSources: ['Lutero'] });
+        expect(citations[0]).toMatchObject({ evidenceIsQuoted: false, otherSources: ['Lutero'] });
+        expect(citations[0]!.evidence).toContain('exceso');
     });
 });

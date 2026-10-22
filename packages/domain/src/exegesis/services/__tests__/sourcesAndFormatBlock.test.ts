@@ -14,7 +14,7 @@ const trabajo = (sources: Array<{ citationKey: string | null; text: string; sour
 
 describe('buildSourcesAndFormatBlock — el sistema escribe lo que ya midió', () => {
     it('la forma de cita sale de la rúbrica elegida', () => {
-        expect(buildSourcesAndFormatBlock(trabajo([]), null)).toContain('(Apellido, p. N)');
+        expect(buildSourcesAndFormatBlock(trabajo([]), null)).toContain('(Clave, p. N)');
         expect(buildSourcesAndFormatBlock(trabajo([], DEFAULT_TMS_EXEGETICAL_RUBRIC), null))
             .toContain('nota al pie');
     });

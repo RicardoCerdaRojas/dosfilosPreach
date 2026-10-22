@@ -898,6 +898,11 @@ export function citedLocation(
     // Un rango (C3) se rotula «p. 170–171»: el final con el mismo rótulo que
     // el comienzo, sin repetir «p.».
     if (typeof c.pageEnd !== 'number' || !(c.pageEnd > c.page)) return desde;
-    const hasta = pageLabel(c.sourceKey, c.pageEnd, kind).split(' ').pop() ?? String(c.pageEnd);
+    const etiquetaFinal = pageLabel(c.sourceKey, c.pageEnd, kind);
+    // Si el rango cruza el cambio de numeración («hoja 314» … «p. 40»), dos
+    // unidades en una cita confunden: queda solo el comienzo (revisión de 8b).
+    const prefijo = (s: string) => s.replace(/[\d\s–-]+$/u, '');
+    if (prefijo(etiquetaFinal) !== prefijo(desde)) return desde;
+    const hasta = etiquetaFinal.split(' ').pop() ?? String(c.pageEnd);
     return `${desde}–${hasta}`;
 }

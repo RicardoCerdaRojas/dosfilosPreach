@@ -203,7 +203,9 @@ describe('la prosa sabe cómo citar y qué no repetir', () => {
         const input = { ...promptInput(), citationAlerts: [{ citation: 'Adamson, p. 171', status: 'page-mismatch', foundAt: 'p. 170' }] } as ComposeVerseInput;
         const { userMessage } = buildVerseProsePrompt(input);
         expect(userMessage).toContain('CITAS DEL ANÁLISIS QUE EL VERIFICADOR NO PUDO RESPALDAR');
-        expect(userMessage).toContain('- Adamson, p. 171 — page-mismatch (hallada en p. 170)');
+        expect(userMessage).toContain('- Adamson, p. 171 — hallada en p. 170: cita esa página');
+        const baja = buildVerseProsePrompt({ ...promptInput(), citationAlerts: [{ citation: 'Mayor (p. 134)', status: 'fuzzy-low' }] } as ComposeVerseInput).userMessage;
+        expect(baja).toContain('- Mayor (p. 134) — la fuente sostiene solo una parte');
     });
 
     it('sin alarmas, el bloque no aparece', () => {

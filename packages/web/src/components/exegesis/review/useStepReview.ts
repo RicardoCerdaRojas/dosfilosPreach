@@ -8,6 +8,8 @@ import {
     sourcesWithoutOriginalLanguage,
     isUnreviewedCitationsError,
     mapAllVerdictsByPath,
+    isProsePath,
+    isCitationAlarm,
     unreviewedBlockingCitations,
     versionUnderReview,
     type AnalysisClaim,
@@ -90,6 +92,13 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
      */
     const counts = useMemo(() => pendingCitationCounts(verdicts, new Set(reviews.keys())), [verdicts, reviews]);
     const reviewedCount = useMemo(() => reviewedCitationCount(verdicts, new Set(reviews.keys())), [verdicts, reviews]);
+    // Las alarmas de la prosa entran en los contadores pero no bloquean
+    // aceptar: se dice, para que «2 no encontradas» con «Aceptar» activo no
+    // parezca un error (revisión de 8b).
+    const proseAlarmCount = useMemo(
+        () => [...verdicts.entries()].filter(([path, v]) => isProsePath(path) && isCitationAlarm(v.status) && !reviews.has(path)).length,
+        [verdicts, reviews],
+    );
 
     /**
      * Citas visibles en la lista lateral, en el orden del análisis.
@@ -175,6 +184,7 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         reviews,
         blocking,
         counts,
+        proseAlarmCount,
         reviewedCount,
         unreadableOriginal,
         listed,

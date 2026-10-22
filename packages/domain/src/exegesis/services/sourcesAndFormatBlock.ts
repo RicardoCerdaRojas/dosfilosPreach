@@ -47,8 +47,10 @@ export function buildSourcesAndFormatBlock(
     // 1. Forma de cita: sale de la rúbrica y es lo que el exportador obedece.
     const fmt = paper.rubric?.formatting ?? DEFAULT_PAPER_FORMATTING;
     lineas.push(fmt.citationForm === 'parenthetical'
-        ? 'Citas parentéticas (Apellido, p. N), con la PÁGINA IMPRESA. Tercera persona.'
-        : 'Citas en nota al pie (Apellido, "Título", p. N), con la PÁGINA IMPRESA. Tercera persona.');
+        // Con la CLAVE de cita, como pide `citationStyle` (TP #8, #39: la prosa
+        // citó «Nestle y Aland» en vez de «NA28» y el verificador no la halló).
+        ? 'Citas parentéticas (Clave, p. N) con la clave de cita de cada fuente y la PÁGINA IMPRESA. Tercera persona.'
+        : 'Citas en nota al pie (Clave, "Título", p. N) con la clave de cita de cada fuente y la PÁGINA IMPRESA. Tercera persona.');
 
     // 2. Qué tipo de fuente ancla, según la rúbrica que el autor eligió.
     const verso = paper.rubric?.structuralExpectations.find(e => e.section === 'verse');

@@ -151,6 +151,15 @@ describe('questionKinds', () => {
         expect(questionKinds('¿Qué pasaje está citando Jacobo (Stg. 4:5)?')).toEqual(['identify']);
     });
 
+    it('«intertextual», «contextual» o un «quien» relativo no cambian el tipo (revisión de 8b)', () => {
+        expect(questionKinds('¿Qué relación intertextual hay entre Stg 4:6 y Pr 3:34?')).not.toContain('textual');
+        expect(questionKinds('¿Cuál es el sentido contextual de φθόνος?')).not.toContain('textual');
+        expect(questionKinds('Explique la función sintáctica y quien es el sujeto de λέγει.')).not.toContain('identify');
+        expect(questionKinds('Describe the writer who addresses the readers.')).not.toContain('identify');
+        expect(questionKinds('¿Quién es el autor de la cita?')).toContain('identify');
+        expect(questionKinds('Who wrote the quoted saying?')).toContain('identify');
+    });
+
     it('crítica textual y puntuación', () => {
         expect(questionKinds('En 3:6, ¿cómo se puntúa la frase?')).toEqual(['textual']);
         expect(questionKinds('¿Qué variante es preferible en 4:2?')).toEqual(['textual']);
