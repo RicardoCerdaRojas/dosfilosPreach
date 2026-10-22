@@ -29,7 +29,10 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
     const [color, setColor] = useState<ProjectColor>(project?.color || 'amber');
     // Un proyecto existente sin tipo arranca en «General», que es lo que hoy
     // muestra: guardar sin elegir no le cambia nada.
-    const tipoInicial = (): ProjectType => (project ? project.type ?? 'general' : initialType ?? 'sermon');
+    // `initialType` solo vale si es un tipo conocido: un llamador que pasa el
+    // evento del clic dejaba el estado con un objeto, y guardar fallaba.
+    const tipoValido = (t: unknown): t is ProjectType => typeof t === 'string' && t in PROJECT_TYPES;
+    const tipoInicial = (): ProjectType => (project ? project.type ?? 'general' : tipoValido(initialType) ? initialType : 'sermon');
     const [type, setType] = useState<ProjectType>(tipoInicial);
     const [contextNote, setContextNote] = useState(project?.contextNote || '');
 

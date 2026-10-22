@@ -253,7 +253,9 @@ export function ProjectsListPage() {
                             </button>
                         </div>
                         <Button
-                            onClick={handleOpenCreate}
+                            // Sin tipo: el evento del clic llegaba como `initialType`
+                            // y Firestore rechazaba el proyecto (regresión de #800).
+                            onClick={() => handleOpenCreate()}
                             className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground font-medium gap-1.5 shrink-0"
                             size="sm"
                         >
