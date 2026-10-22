@@ -2,7 +2,7 @@
 
 ## Estado
 
-`accepted`
+`accepted` — **su definición de proyecto la reemplaza el [ADR-046](ADR-046-project-is-a-container-of-studies.md)** (2026-10-22): el proyecto es un contenedor de muchos estudios, no la unidad de un pasaje. Sigue vigente su principio central: un estudio alimenta muchos productos derivados.
 
 ## Fecha
 
