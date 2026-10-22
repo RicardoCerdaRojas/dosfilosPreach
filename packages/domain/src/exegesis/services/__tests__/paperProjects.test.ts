@@ -14,3 +14,24 @@ describe('paperProjects (ADR-046)', () => {
         expect(projectsOfPaper({ linkedProjectIds: ['serie'] })).toEqual(['serie']);
     });
 });
+
+describe('projectSourcesMissingIn y matchesProjectFilter (ADR-046)', () => {
+    it('ofrece solo los libros del proyecto que el estudio no tiene (por recurso o por corpus)', async () => {
+        const { projectSourcesMissingIn } = await import('../paperProjects');
+        expect(projectSourcesMissingIn(['mayor', 'wallace', 'tuggy', 'mayor'], [
+            { sourceLibraryResourceId: 'mayor', corpusId: 'mayor' },
+            { sourceLibraryResourceId: null, corpusId: 'tuggy' },
+        ])).toEqual(['wallace']);
+        expect(projectSourcesMissingIn(undefined, [])).toEqual([]);
+    });
+
+    it('el filtro de la lista: todos, sueltos, o los de un proyecto (origen o vínculo)', async () => {
+        const { matchesProjectFilter } = await import('../paperProjects');
+        const suelto = {};
+        const deCurso = { projectId: 'curso' };
+        const colabora = { projectId: 'otro', linkedProjectIds: ['curso'] };
+        expect([suelto, deCurso, colabora].map(p => matchesProjectFilter(p, 'all'))).toEqual([true, true, true]);
+        expect([suelto, deCurso, colabora].map(p => matchesProjectFilter(p, 'none'))).toEqual([true, false, false]);
+        expect([suelto, deCurso, colabora].map(p => matchesProjectFilter(p, 'curso'))).toEqual([false, true, true]);
+    });
+});

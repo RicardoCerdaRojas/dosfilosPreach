@@ -1,4 +1,31 @@
 {
+  "paperProjects": {
+    "menuItem": "Add to a project",
+    "title": "Projects of this study",
+    "subtitle": "The origin project defines the study's brief (rubric, style guide, bibliography). With the others it collaborates: they show it and use it, without changing its rules.",
+    "origin": "Origin project",
+    "noOrigin": "None: it is a standalone study.",
+    "removeOrigin": "Remove the origin project",
+    "missingSources_one": "The project has 1 source this study does not have.",
+    "missingSources_other": "The project has {{count}} sources this study does not have.",
+    "addSources": "Add them to the corpus",
+    "linked": "Collaborates with",
+    "noLinked": "No other project.",
+    "unlink": "Stop collaborating with {{title}}",
+    "add": "Add to another project",
+    "pick": "Pick a project…",
+    "asOrigin": "As origin project",
+    "asLinked": "Collaborates with this project",
+    "hint": "Sources the study already has are left untouched.",
+    "chipLinked": "linked",
+    "filterAll": "All projects",
+    "filterNone": "No project",
+    "toast": {
+      "failed": "The study's project could not be changed.",
+      "sourcesAdded_one": "1 source was added.",
+      "sourcesAdded_other": "{{count}} sources were added."
+    }
+  },
   "directory": {
     "badge": "Assisted exegetical research papers",
     "heroTitle": "Exegetical Research",

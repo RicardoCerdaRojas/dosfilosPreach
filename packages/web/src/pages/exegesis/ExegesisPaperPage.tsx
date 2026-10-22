@@ -30,6 +30,7 @@ import {
     PanelRightOpen,
     ShieldAlert,
     Sparkles,
+    FolderKanban,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +64,7 @@ import { GlossaryCheckCard } from '@/components/exegesis/GlossaryCheckCard';
 import { CorpusCoverageReport } from '@/components/exegesis/corpus-plan/CorpusCoverageReport';
 import { PaperFacultyDrawer } from '@/components/exegesis/PaperFacultyDrawer';
 import { AcademicCompositionDialog } from '@/components/exegesis/canonical/AcademicCompositionDialog';
+import { AddToProjectDialog } from '@/components/exegesis/AddToProjectDialog';
 import { MinistryCompositionDialog } from '@/components/exegesis/canonical/MinistryCompositionDialog';
 import { CoherencePassDialog } from '@/components/exegesis/CoherencePassDialog';
 import { ExegesisQuotaBadge } from '@/components/exegesis/ExegesisQuotaBadge';
@@ -138,6 +140,7 @@ export function ExegesisPaperPage() {
     const [composeDialogOpen, setComposeDialogOpen] = useState(false);
     const [ministryDialogOpen, setMinistryDialogOpen] = useState(false);
     const [coherenceDialogOpen, setCoherenceDialogOpen] = useState(false);
+    const [projectsDialogOpen, setProjectsDialogOpen] = useState(false);
 
     // Reading layout preferences — persisted so the user's last choice
     // sticks across navigations. Sidebar visibility, reading mode (forces
@@ -520,6 +523,10 @@ export function ExegesisPaperPage() {
                                 <Sparkles className="h-4 w-4 mr-2" />
                                 {t('canonical.ministry.menuItem')}
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setProjectsDialogOpen(true)}>
+                                <FolderKanban className="h-4 w-4 mr-2" />
+                                {t('paperProjects.menuItem')}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setCoherenceDialogOpen(true)}>
                                 <ShieldAlert className="h-4 w-4 mr-2" />
                                 {t('coherence.menuItem')}
@@ -533,6 +540,8 @@ export function ExegesisPaperPage() {
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+
+                    <AddToProjectDialog open={projectsDialogOpen} onOpenChange={setProjectsDialogOpen} paper={paper} />
 
                     <AcademicCompositionDialog
                         open={composeDialogOpen}

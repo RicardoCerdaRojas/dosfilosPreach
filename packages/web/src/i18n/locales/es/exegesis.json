@@ -1,4 +1,31 @@
 {
+  "paperProjects": {
+    "menuItem": "Agregar a un proyecto",
+    "title": "Proyectos de este estudio",
+    "subtitle": "El proyecto de origen define el encargo del estudio (rúbrica, guía, bibliografía). Con los demás colabora: lo muestran y lo usan, sin cambiarle las reglas.",
+    "origin": "Proyecto de origen",
+    "noOrigin": "Ninguno: es un estudio suelto.",
+    "removeOrigin": "Quitar el proyecto de origen",
+    "missingSources_one": "El proyecto tiene 1 fuente que este estudio no tiene.",
+    "missingSources_other": "El proyecto tiene {{count}} fuentes que este estudio no tiene.",
+    "addSources": "Agregarlas al corpus",
+    "linked": "Colabora con",
+    "noLinked": "Ningún otro proyecto.",
+    "unlink": "Dejar de colaborar con {{title}}",
+    "add": "Agregar a otro proyecto",
+    "pick": "Elegir proyecto…",
+    "asOrigin": "Como proyecto de origen",
+    "asLinked": "Colabora con este proyecto",
+    "hint": "Las fuentes que el estudio ya tiene no se tocan.",
+    "chipLinked": "colabora",
+    "filterAll": "Todos los proyectos",
+    "filterNone": "Sin proyecto",
+    "toast": {
+      "failed": "No se pudo cambiar el proyecto del estudio.",
+      "sourcesAdded_one": "Se agregó 1 fuente.",
+      "sourcesAdded_other": "Se agregaron {{count}} fuentes."
+    }
+  },
   "directory": {
     "badge": "Trabajo de investigación exegética asistida",
     "heroTitle": "Investigación exegética",

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { NotebookPen, Plus, Sparkles, Loader2, AlertCircle, Search, X, Archive, BookOpen, FileText, ListChecks, Languages, LayoutGrid, List, PanelRight } from 'lucide-react';
+import { NotebookPen, Plus, Sparkles, Loader2, AlertCircle, Search, X, Archive, BookOpen, FileText, ListChecks, Languages, LayoutGrid, List, PanelRight, FolderKanban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { seriesService } from '@dosfilos/application';
@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { UserRubricsSection } from '@/components/exegesis/directory/UserRubricsSection';
 import { UserStyleGuidesSection } from '@/components/exegesis/directory/UserStyleGuidesSection';
 import { ExegesisQuotaBadge } from '@/components/exegesis/ExegesisQuotaBadge';
 import { CreditPacksDialog } from '@/pages/library/components/CreditPacksDialog';
 import {
     formatPassageReference,
+    matchesProjectFilter,
+    projectsOfPaper,
     type ExegesisPaperSummary,
     type ExegeticalPaperPhase,
     type SupportedLanguage,
@@ -79,6 +82,10 @@ export function ExegesisPage() {
     const [search, setSearch] = useState('');
     const [phaseFilter, setPhaseFilter] = useState<ExegeticalPaperPhase | 'all'>('all');
     const [includeArchived, setIncludeArchived] = useState(false);
+    // Por proyecto (ADR-046): 'all', 'none' (sueltos) o el id del proyecto.
+    const [projectFilter, setProjectFilter] = useState<string>('all');
+    const { projects } = useFacultyProjects();
+    const projectTitle = useMemo(() => new Map((projects ?? []).map(p => [p.id, p.title] as const)), [projects]);
 
     // Layout state. Both persist via localStorage so the user's
     // preference survives reloads.
@@ -117,19 +124,27 @@ export function ExegesisPage() {
             const isArchived = p.phase === 'archived' || p.archivedAt !== null;
             if (isArchived && !includeArchived) return false;
             if (phaseFilter !== 'all' && p.phase !== phaseFilter) return false;
+            if (!matchesProjectFilter(p, projectFilter)) return false;
             if (q.length > 0) {
                 const haystack = `${p.title ?? ''} ${formatPassageReference(p.passage, activeLanguage)}`.toLowerCase();
                 if (!haystack.includes(q)) return false;
             }
             return true;
         });
-    }, [papers, search, phaseFilter, includeArchived, activeLanguage]);
+    }, [papers, search, phaseFilter, includeArchived, activeLanguage, projectFilter]);
 
-    const hasActiveFilters = search.length > 0 || phaseFilter !== 'all' || includeArchived;
+    const hasActiveFilters = search.length > 0 || phaseFilter !== 'all' || includeArchived || projectFilter !== 'all';
     const clearFilters = () => {
         setSearch('');
         setPhaseFilter('all');
         setIncludeArchived(false);
+        setProjectFilter('all');
+    };
+    /** El proyecto de origen, o el primero con que colabora, para el rótulo de la tarjeta. */
+    const projectChip = (p: ExegesisPaperSummary): { title: string; linked: boolean } | null => {
+        const [primero] = projectsOfPaper(p);
+        const title = primero ? projectTitle.get(primero) : undefined;
+        return title ? { title, linked: p.projectId !== primero } : null;
     };
 
     return (
@@ -273,6 +288,9 @@ export function ExegesisPage() {
                                 totalCount={papers.length}
                                 hasActiveFilters={hasActiveFilters}
                                 onClear={clearFilters}
+                                projects={(projects ?? []).filter(p => !p.deletedAt)}
+                                projectFilter={projectFilter}
+                                onProjectFilterChange={setProjectFilter}
                             />
                         )}
 
@@ -325,6 +343,7 @@ export function ExegesisPage() {
                                         language={activeLanguage}
                                         t={t}
                                         seriesLink={paperToSeries.get(p.id) ?? null}
+                                        projectChip={projectChip(p)}
                                     />
                                 ))}
                             </ul>
@@ -340,6 +359,7 @@ export function ExegesisPage() {
                                         language={activeLanguage}
                                         t={t}
                                         seriesLink={paperToSeries.get(p.id) ?? null}
+                                        projectChip={projectChip(p)}
                                     />
                                 ))}
                             </ul>
@@ -381,6 +401,9 @@ interface PapersToolbarProps {
     totalCount: number;
     hasActiveFilters: boolean;
     onClear: () => void;
+    projects: ReadonlyArray<{ id: string; title: string }>;
+    projectFilter: string;
+    onProjectFilterChange: (v: string) => void;
 }
 
 function PapersToolbar({
@@ -395,9 +418,24 @@ function PapersToolbar({
     totalCount,
     hasActiveFilters,
     onClear,
+    projects,
+    projectFilter,
+    onProjectFilterChange,
 }: PapersToolbarProps) {
     return (
         <div className="mb-4 space-y-3">
+            {projects.length > 0 && (
+                <select
+                    aria-label={t('paperProjects.title')}
+                    value={projectFilter}
+                    onChange={(e) => onProjectFilterChange(e.target.value)}
+                    className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                    <option value="all">{t('paperProjects.filterAll')}</option>
+                    <option value="none">{t('paperProjects.filterNone')}</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+            )}
             <div className="relative">
                 <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <input
@@ -500,6 +538,8 @@ interface PaperCardProps {
      * when the paper is standalone.
      */
     seriesLink: { id: string; title: string } | null;
+    /** El proyecto del estudio (ADR-046), solo como rótulo. */
+    projectChip?: { title: string; linked: boolean } | null;
 }
 
 // Phase → semantic-token color map. Driving badge color from phase is
@@ -512,7 +552,7 @@ const PHASE_BADGE: Record<ExegeticalPaperPhase, string> = {
     'archived': 'bg-muted text-muted-foreground border-border',
 };
 
-function PaperCard({ paper, language, t, seriesLink }: PaperCardProps) {
+function PaperCard({ paper, language, t, seriesLink, projectChip }: PaperCardProps) {
     const navigate = useNavigate();
     const open = () => navigate(`/dashboard/exegesis/${paper.id}`);
     const isArchived = paper.phase === 'archived' || paper.archivedAt !== null;
@@ -594,6 +634,14 @@ function PaperCard({ paper, language, t, seriesLink }: PaperCardProps) {
                     <p className="text-[11.5px] text-muted-foreground italic leading-snug line-clamp-2">
                         “{briefSlice}”
                     </p>
+                )}
+
+                {projectChip && (
+                    <span className="inline-flex items-center gap-1.5 self-start max-w-full rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground">
+                        <FolderKanban className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{projectChip.title}</span>
+                        {projectChip.linked && <span className="shrink-0">· {t('paperProjects.chipLinked')}</span>}
+                    </span>
                 )}
 
                 {seriesLink && (
