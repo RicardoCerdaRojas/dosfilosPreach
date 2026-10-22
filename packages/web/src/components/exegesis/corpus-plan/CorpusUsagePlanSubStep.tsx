@@ -437,6 +437,12 @@ function PlanRow({
                         {note}
                     </p>
                 )}
+                {/* La nota habla de otra lista (TP #8, B3, #24). */}
+                {note && entry?.sourcesEditedAfterNote && (
+                    <p className="text-[11px] text-warning-subtle-foreground leading-snug" data-testid="nota-editada">
+                        {t('paperSetup.subSteps.corpus-plan.noteEdited')}
+                    </p>
+                )}
             </td>
         </tr>
     );

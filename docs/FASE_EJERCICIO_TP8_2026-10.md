@@ -232,6 +232,12 @@ El resultado contiene todo el plan que se armó a mano, menos NA28 en 4:2.
 - **#23:** al agregar una fuente con «Editar», se precarga su `chosenRole` (`PinnedSourcesPicker.tsx:93-99`, `UpdateStepCorpusAllocationUseCase.ts:95-104`).
 - **#24:** si el estudiante cambia la asignación, la justificación del planificador se marca «editada por ti», en vez de quedar desactualizada.
 
+**Hecho (B3):**
+- **#23:** la fuente que se agrega con «Editar» trae su rol del corpus: el que eligió el estudiante o, si no eligió, el de su tipo. Un mapa de roles explícito (el selector de rol) sigue mandando.
+- **#24:** si la lista de fuentes cambia después de la nota del planificador, el paso queda marcado `sourcesEditedAfterNote`. La interfaz lo dice: «Editaste las fuentes… el análisis sigue tu lista».
+- **Hallazgo de #24:** la nota llega al prompt del análisis (`planNote`). Ahora va con esa advertencia (`planNoteForPrompt`); antes, el analizador seguía el rol de una fuente que ya no estaba en el paso.
+- **Cuándo se borra la marca:** al proponer de nuevo o al escribir una nota propia.
+
 **Medida:** «Proponer plan» reproduce solo, en el TP #8, el plan que se armó a mano:
 - 4:1: Adamson, Mayor, Tuggy y Kittel;
 - 4:2: más Tuggy y NA28;

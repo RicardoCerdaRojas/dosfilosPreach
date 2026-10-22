@@ -1,9 +1,10 @@
-import type {
-    ExegeticalPaper,
-    SourceRole,
-    IExegeticalPaperRepository,
-    StepSourcePlan,
-    StepSourcePlanEntry,
+import {
+    resolveSourceRole,
+    type ExegeticalPaper,
+    type SourceRole,
+    type IExegeticalPaperRepository,
+    type StepSourcePlan,
+    type StepSourcePlanEntry,
 } from '@dosfilos/domain';
 
 export interface UpdateStepCorpusAllocationInput {
@@ -65,9 +66,12 @@ export interface UpdateStepCorpusAllocationInput {
  * la instrucción le manda copiarlos en vez de reclasificar. Perderlos en una
  * edición devuelve ese paso al estado que #698 corrigió, y en silencio.
  *
- * La fuente que se AGREGA queda sin rol a propósito. El plan no la asignó y
- * heredar el rol de la que salió sería inventar una decisión que nadie tomó;
- * sin rol, el analizador la clasifica, que es lo que hacía siempre.
+ * La fuente que se AGREGA trae el rol que ya tiene en el corpus —el que eligió
+ * el estudiante, o el de su tipo— (TP #8, B3, #23). No hereda el de la que
+ * salió: eso sí sería inventar una decisión que nadie tomó.
+ *
+ * Si la lista de fuentes cambia y la nota es del planificador, la entrada queda
+ * con `sourcesEditedAfterNote` (#24): la nota nombra otra lista.
  */
 export class UpdateStepCorpusAllocationUseCase {
     constructor(private paperRepository: IExegeticalPaperRepository) { }
@@ -97,11 +101,27 @@ export class UpdateStepCorpusAllocationUseCase {
         // asignó.
         // Un mapa explícito reemplaza; su ausencia conserva lo que había.
         const rolesPrevios = input.pinnedSourceRoles ?? existing?.pinnedSourceRoles ?? {};
+        const antes = new Set(existing?.pinnedSources ?? []);
         const sobreviven: Record<string, SourceRole> = {};
         for (const id of input.pinnedSources) {
             const rol = rolesPrevios[id];
-            if (rol) sobreviven[id] = rol;
+            if (rol) { sobreviven[id] = rol; continue; }
+            // La que ENTRA trae el rol que ya tiene en el corpus (TP #8, B3,
+            // #23): el fundador no supo qué rol ponerle a Kittel al agregarlo,
+            // y en el corpus ya decía «contraste». Sólo con un mapa implícito:
+            // uno explícito es la decisión de quien edita.
+            if (!input.pinnedSourceRoles && !antes.has(id)) {
+                const fuente = paper.sources.find(s => s.id === id);
+                const delCorpus = fuente ? resolveSourceRole(fuente).role : null;
+                if (delCorpus) sobreviven[id] = delCorpus;
+            }
         }
+        // ¿Cambió la lista de fuentes? Con la nota del planificador intacta,
+        // la nota habla de otra lista (#24).
+        const cambioLaLista = input.pinnedSources.length !== antes.size || input.pinnedSources.some(id => !antes.has(id));
+        const sourcesEditedAfterNote = input.note === undefined
+            ? (existing?.sourcesEditedAfterNote === true || (cambioLaLista && !!existing?.note))
+            : false;
         const rolesQueSobreviven = Object.keys(sobreviven).length > 0 ? sobreviven : null;
         const nextEntry: StepSourcePlanEntry = {
             stepId: input.stepId,
@@ -115,6 +135,7 @@ export class UpdateStepCorpusAllocationUseCase {
             ...(rolesQueSobreviven && { pinnedSourceRoles: rolesQueSobreviven }),
             suppressedSources: existing?.suppressedSources ?? [],
             note: input.note === undefined ? (existing?.note ?? null) : input.note,
+            ...(sourcesEditedAfterNote ? { sourcesEditedAfterNote: true } : {}),
         };
 
         const nextPlan: StepSourcePlan = {

@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, stepVerseKeys } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, stepVerseKeys } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -174,7 +174,7 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // Por qué el plan eligió este corpus para este paso. Se
                 // guardaba desde siempre con el comentario «the note is
                 // mentioned in the prompt», y ningún prompt la leía.
-                planNote: paper.stepPlan.perStep[step.id]?.note ?? null,
+                planNote: planNoteForPrompt(paper.stepPlan.perStep[step.id], paper.displayLanguage),
                 verseMorphology,
             };
 

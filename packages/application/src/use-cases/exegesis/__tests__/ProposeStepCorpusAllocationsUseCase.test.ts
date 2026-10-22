@@ -184,6 +184,13 @@ describe('el plan reparte con la evidencia del corpus', () => {
         expect(v3.evidence).toEqual([{ sourceId: 'mayor', sheets: [411, 413], via: 'verse', line: 'y'.repeat(300) }]);
     });
 
+    it('proponer de nuevo borra la marca de «editaste las fuentes» (B3, #24)', async () => {
+        const conMarca = { ...tp8, stepPlan: { perStep: { v1: { stepId: 'v1', kind: 'verse', pinnedSources: ['tuggy'], suppressedSources: [], note: 'vieja', sourcesEditedAfterNote: true } }, defaults: {}, updatedAt: new Date() } };
+        const { useCase, paperRepository } = build(conMarca, { v1: { pinnedSources: ['mayor'], rationale: 'Ancla: Mayor.' } });
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v1.sourcesEditedAfterNote).toBeUndefined();
+    });
+
     it('sin evidencia, el plan queda como lo dejó el modelo', async () => {
         const { useCase, paperRepository } = build(tp8, { v1: { pinnedSources: ['mayor'], rationale: 'x' } });
         await useCase.execute({ ownerId: 'o', paperId: 'p' });

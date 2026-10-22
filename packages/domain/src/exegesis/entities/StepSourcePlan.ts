@@ -108,6 +108,31 @@ export interface StepSourcePlanEntry {
      * later. Empty when the student took the default.
      */
     note: string | null;
+    /**
+     * El estudiante cambió las fuentes de este paso DESPUÉS de que el
+     * planificador escribió la nota (TP #8, 8a, B3, #24). La nota nombra roles
+     * de una lista que ya no es la del paso: la interfaz lo dice y el análisis
+     * la lee con esa advertencia (`planNoteForPrompt`). Proponer de nuevo lo
+     * borra.
+     */
+    sourcesEditedAfterNote?: boolean;
+}
+
+/**
+ * La nota del plan como la lee el análisis. Si el estudiante cambió las
+ * fuentes después, se antepone que la lista de fuentes manda: si no, el
+ * analizador seguía el rol de una fuente que ya no estaba en el paso.
+ */
+export function planNoteForPrompt(
+    entry: Pick<StepSourcePlanEntry, 'note' | 'sourcesEditedAfterNote'> | null | undefined,
+    language: 'es' | 'en',
+): string | null {
+    const note = entry?.note?.trim();
+    if (!note) return null;
+    if (!entry?.sourcesEditedAfterNote) return note;
+    return language === 'en'
+        ? `(The student changed this step's sources after this note; the source list prevails.) ${note}`
+        : `(El estudiante cambió las fuentes de este paso después de esta nota; manda la lista de fuentes.) ${note}`;
 }
 
 /**
