@@ -99,7 +99,13 @@ export class ProposeStepCorpusAllocationsUseCase {
 
         const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
         const validSourceIds = new Set(paper.sources.map(s => s.id));
-        const evidenciaDe = evidenceOfStep(input.evidence ?? [], preguntas, validSourceIds);
+        // Una fuente excluida del trabajo no recibe evidencia: B1 la fijaría y
+        // el análisis quedaría obligado a citarla, contra la exclusión que
+        // viaja en el mismo prompt (revisión adversarial de 8a).
+        const permitidas = new Set(paper.sources
+            .filter(s => !exclusionFor({ author: null, citationKey: s.citationKey ?? s.displayLabel }, paper.excludedSources))
+            .map(s => s.id));
+        const evidenciaDe = evidenceOfStep(input.evidence ?? [], preguntas, permitidas);
         const stepInputs: ReadonlyArray<ProposeStepCorpusStepInput> = plannableSteps.map(step =>
             buildPlannerStepInput(step, paper, questionsOfStep(step, preguntas).map(q => q.text), evidenciaDe(step)),
         );
@@ -117,7 +123,10 @@ export class ProposeStepCorpusAllocationsUseCase {
                 ...(s.chosenRole ? { chosenRole: s.chosenRole } : {}),
             })),
             steps: stepInputs,
-            questionsMode: preguntas.some(q => q.verses.length > 0),
+            // Sin evidencia (pasaje de varios capítulos, revisión vacía) se
+            // conservan las reglas de cobertura: el modo preguntas las quita
+            // porque la evidencia dice qué fuente sirve a qué pregunta.
+            questionsMode: preguntas.some(q => q.verses.length > 0) && stepInputs.some(st => (st.evidence?.length ?? 0) > 0),
         });
 
         // Sanitize: drop any pinnedSources that don't reference an
@@ -156,7 +165,7 @@ export class ProposeStepCorpusAllocationsUseCase {
                 pinnedSources: pinned,
                 ...(Object.keys(sanitizedRoles).length > 0 ? { pinnedSourceRoles: sanitizedRoles } : {}),
                 suppressedSources: existing?.suppressedSources ?? [],
-                note: allocation.rationale.trim() || existing?.note || null,
+                note: allocation.rationale.trim() || sinAvisoDeEvidencia(existing?.note ?? null),
             };
         }
 
@@ -289,13 +298,27 @@ function conLaEvidencia(
         const aviso = paper.displayLanguage === 'en'
             ? `Also included for its pages on this step's question: ${nombres}.`
             : `También entra${faltan.length > 1 ? 'n' : ''} por sus páginas sobre la pregunta del paso: ${nombres}.`;
+        // Si el modelo no reescribió la nota (omitió el paso o dejó la
+        // justificación vacía), la vieja ya trae el aviso de la propuesta
+        // anterior: se quita antes de poner el nuevo.
+        const base = sinAvisoDeEvidencia(entrada.note);
         perStep[step.id] = {
             ...entrada,
             pinnedSources: [...entrada.pinnedSources, ...faltan],
             pinnedSourceRoles: roles,
-            note: entrada.note ? `${entrada.note} ${aviso}` : aviso,
+            note: base ? `${base} ${aviso}` : aviso,
         };
     }
+}
+
+/** La nota sin el aviso de B1 que dejó una propuesta anterior. */
+function sinAvisoDeEvidencia(note: string | null): string | null {
+    if (!note) return null;
+    const limpia = note
+        .replace(/\s*También entran? por sus páginas sobre la pregunta del paso: [^\n]*?\.$/u, '')
+        .replace(/\s*Also included for its pages on this step's question: [^\n]*?\.$/u, '')
+        .trim();
+    return limpia || null;
 }
 
 function buildPlannerStepInput(

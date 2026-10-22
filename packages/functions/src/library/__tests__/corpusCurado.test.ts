@@ -119,6 +119,9 @@ describe('rankCuratedChunks — lo que nombra el versículo del paso va primero'
         });
         expect(out.map(c => c.text)).toEqual(['nombra Stg 4:2', 'parecido pero ajeno']);
         expect(out[0]).not.toHaveProperty('nombra');
+        // La marca viaja para que la selección del prompt la respete (revisión de 8a).
+        expect(out[0]!.namesVerse).toBe(true);
+        expect(out[1]).not.toHaveProperty('namesVerse');
     });
 
     it('sin claves del paso ordena por cercanía, como antes', () => {

@@ -20,6 +20,20 @@ function chunk(
 }
 
 describe('selectForPrompt', () => {
+    it('lo que nombra el versículo del paso gana sobre el coseno (TP #8, A1; revisión de 8a)', () => {
+        // Wallace nombra Stg 4:3 con coseno 0,1; cinco fragmentos de 0,99 no lo nombran.
+        const result = selectForPrompt({
+            pinned: [],
+            ranked: [
+                ...[100, 101, 102, 103, 104].map(i => chunk({ chunkIndex: i, score: 0.99 })),
+                chunk({ chunkIndex: 569, score: 0.1, namesVerse: true }),
+            ],
+            budgetChars: 3000,
+            perSourceFloorFraction: 0,
+        });
+        expect(result.chunks.map(c => c.chunkIndex)).toContain(569);
+    });
+
     it('mete primero lo fijado, aunque no gane el ranking', () => {
         // La introducción del libro no menciona el versículo, así que su puntaje
         // es bajo — y aun así el usuario la marcó.

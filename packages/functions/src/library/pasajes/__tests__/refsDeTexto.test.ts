@@ -291,6 +291,31 @@ describe('refsDeFragmento · comentarios clásicos de notas', () => {
         expect(refsDeFragmento('', ['NOTES', 'IV 2, 3] NOTES'])).toEqual([]);
     });
 
+    it('una nota al pie numerada de otro comentario no es un versículo (revisión de 8a)', () => {
+        // Con el capítulo del encabezado «Santiago 4:1-10», no de uno de notas.
+        expect(refsDeFragmento('12. Véase πειρασμός [BDAG, 793]\n45. Cf. ἀγάπη [sic]', ['Santiago 4:1-10']))
+            .not.toContain('JAS.4.12');
+        expect(refsDeFragmento('12. Véase πειρασμός [BDAG, 793]', ['Santiago 4:1-10'])).not.toContain('JAS.4.45');
+    });
+
+    it('las notas «N. lema]» sólo se leen bajo un encabezado de notas', () => {
+        // Un comentario corriente con la palabra griega al principio de la nota al pie.
+        expect(refsDeFragmento('12. πειρασμός, cf. BDAG 793]', ['Santiago 4:1-10'])).not.toContain('JAS.4.12');
+    });
+
+    it('la nota tiene que abrir con la palabra griega o hebrea', () => {
+        expect(refsDeFragmento('5. Cf. ἀγάπη y otros.]', ['NOTES', 'IV 2] NOTES'], 'JAS')).toEqual(['JAS.4', 'JAS.4.2']);
+    });
+
+    it('un capítulo que el libro no tiene no es un encabezado de notas', () => {
+        expect(refsDeFragmento('', ['NOTES', 'VI 2] NOTES'], 'JAS')).toEqual([]);
+        expect(refsDeFragmento('', ['NOTES', 'IV 17–VI 1] NOTES'], 'JAS')).toEqual([]);
+    });
+
+    it('un título que nombra dos libros no presta ninguno', () => {
+        expect(libroDelTitulo('Hebrews - James')).toBeNull();
+    });
+
     it('«THE EPISTLE OF ST. JAMES» nombra el libro', () => {
         expect(libroDelTitulo('THE EPISTLE OF ST. JAMES')).toBe('JAS');
         expect(libroDelTitulo('The Epistle of James - the Greek text with introduction')).toBe('JAS');

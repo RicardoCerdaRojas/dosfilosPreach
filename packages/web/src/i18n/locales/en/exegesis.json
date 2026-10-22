@@ -859,6 +859,7 @@
           "page": "p. {{page}}",
           "sheet": "sh. {{sheet}}",
           "warning": {
+            "unindexed": "{{source}} has no indexed text: its pages per question cannot be reviewed.",
             "unrelated": "{{source}} does not name any verse with a question.",
             "noPrintedPages": "{{source}} has no resolved printed pages: its citations cannot be checked.",
             "missingSheets_one": "{{source}} discusses question {{questions}} ({{verses}}) on {{pages}}, outside the corpus.",
@@ -869,6 +870,8 @@
             "failed": "{{source}} could not be reviewed. Reopen this tab to try again."
           },
           "action": {
+            "adjust": "Adjust pages",
+            "removeConfirm": "Remove? Click again",
             "addAndPin": "Add and pin",
             "remove": "Remove from corpus",
             "calibrate": "Resolve numbering"
@@ -1387,7 +1390,7 @@
         "excluded": {
           "alternate": "· grammar: may be repeated, better to alternate",
           "alternateWith": "· grammar: may be repeated, better to alternate with {{others}}",
-          "freeByType": "{{sources}} not proposed: lexicons, the base text and its apparatus may be repeated.",
+          "freeByType": "{{sources}} not proposed: the no-repeat rule is for commentaries (and grammars, better alternated); lexicons, dictionaries, the base text and the rest may be repeated.",
           "title": "Sources excluded from this paper",
           "hint": "What your syllabus or professor doesn't allow here. They appear last in every list, marked, and the assistant is told not to cite them.",
           "proposal": "In your previous paper ({{paper}}) you cited these sources. If your syllabus doesn't allow repeating them in consecutive weeks, check the ones to exclude from this paper:",

@@ -101,7 +101,9 @@ export class UpdateStepCorpusAllocationUseCase {
         // asignó.
         // Un mapa explícito reemplaza; su ausencia conserva lo que había.
         const rolesPrevios = input.pinnedSourceRoles ?? existing?.pinnedSourceRoles ?? {};
-        const antes = new Set(existing?.pinnedSources ?? []);
+        // Sólo las que siguen en el corpus: un id fantasma que el selector de
+        // rol ya no manda no es un cambio de la lista (revisión de 8a).
+        const antes = new Set((existing?.pinnedSources ?? []).filter(id => validSourceIds.has(id)));
         const sobreviven: Record<string, SourceRole> = {};
         for (const id of input.pinnedSources) {
             const rol = rolesPrevios[id];

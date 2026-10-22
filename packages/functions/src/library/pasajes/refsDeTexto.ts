@@ -285,6 +285,12 @@ interface Contexto {
     capitulo: number | null;
     /** Vino de una cita (con cifras), no de un encabezado que sólo dice «Numbers»: sólo así vale para el texto. */
     firme: boolean;
+    /**
+     * Vino de un encabezado de notas («IV 2, 3] NOTES»). Sólo entonces se leen
+     * las notas «N. lema.]» del texto: en otro comentario, «12. Véase
+     * πειρασμός [BDAG]» es una nota al pie, no el versículo 12 (revisión de 8a).
+     */
+    deNotas?: boolean;
 }
 
 /** «8:28-30» o «1:17» sin libro, leídos con el libro del contexto. */
@@ -311,7 +317,7 @@ const ENCABEZADO_DE_NOTAS = /^\s*([IVXL]{1,6})\s+(\d{1,3})((?:\s*[,–—-]\s*(?
  * La nota de un versículo dentro del texto: su número, el lema griego o
  * hebreo que comenta y el «]». «3. αἰτεῖτε καὶ οὐ λαμβάνετε,]», «5. ἢ δοκεῖτε.]».
  */
-const NOTA_DE_VERSICULO = /^[^\S\n]*(\d{1,3})\.[^\S\n]+([^\n\]]{1,120})\]/gm;
+const NOTA_DE_VERSICULO = /^[^\S\n]*(\d{1,3})\.[^\S\n]+([\u0370-\u03FF\u1F00-\u1FFF\u0590-\u05FF][^\n\]]{0,120})\]/gm;
 const LETRA_ORIGINAL = /[\u0370-\u03FF\u1F00-\u1FFF\u0590-\u05FF]/;
 
 function romanoANumero(romano: string): number | null {
@@ -333,6 +339,10 @@ function citasDeEncabezadoDeNotas(encabezado: string, libro: string): Cita[] | n
     if (!m) return null;
     const capitulo = romanoANumero(m[1]!);
     if (!capitulo) return null;
+    // El capítulo tiene que existir en el libro: «VI 2] NOTES» en Santiago no
+    // es Santiago 6 (revisión de 8a).
+    const maximo = armarPatron().capitulos.get(libro) ?? 0;
+    if (capitulo > maximo) return null;
     const citas: Cita[] = [];
     let cap = capitulo;
     let ultimo = Number(m[2]);
@@ -341,6 +351,7 @@ function citasDeEncabezadoDeNotas(encabezado: string, libro: string): Cita[] | n
     for (const t of (m[3] ?? '').matchAll(/([,–—-])\s*(?:([IVXL]{1,6})\s+)?(\d{1,3})/gi)) {
         const n = Number(t[3]);
         const otroCap = t[2] ? romanoANumero(t[2]) : null;
+        if (otroCap && otroCap > maximo) return null;
         if (otroCap && otroCap !== cap) {
             cap = otroCap;
             actual = { texto: encabezado, libro, capitulo: cap, versiculos: [n] };
@@ -357,7 +368,7 @@ function citasDeEncabezadoDeNotas(encabezado: string, libro: string): Cita[] | n
 
 /** Las notas de versículo del texto, leídas con el capítulo del contexto. */
 function citasDeNotas(texto: string, contexto: Contexto): Cita[] {
-    if (contexto.capitulo === null) return [];
+    if (contexto.capitulo === null || !contexto.deNotas) return [];
     const versiculos: number[] = [];
     for (const m of texto.matchAll(NOTA_DE_VERSICULO)) {
         const v = Number(m[1]);
@@ -372,11 +383,14 @@ function citasDeNotas(texto: string, contexto: Contexto): Cita[] {
  * leer los encabezados que no nombran el libro (`refsDeFragmento`).
  */
 export function libroDelTitulo(titulo: string | null | undefined): string | null {
+    // Un solo libro entre todas las partes: «Hebrews - James» no es de ninguno
+    // de los dos (revisión de 8a).
+    const libros = new Set<string>();
     for (const parte of (titulo ?? '').split(/\s+[-–—:]\s+|:\s+/)) {
         const libro = libroDelEncabezado(parte.trim());
-        if (libro) return libro;
+        if (libro) libros.add(libro);
     }
-    return null;
+    return libros.size === 1 ? [...libros][0]! : null;
 }
 
 /**
@@ -437,7 +451,7 @@ export function refsDeFragmento(
         const deNotas = contexto ? citasDeEncabezadoDeNotas(encabezado, contexto.libro) : null;
         if (deNotas) {
             citas.push(...deNotas);
-            contexto = { libro: contexto!.libro, capitulo: deNotas[deNotas.length - 1]!.capitulo, firme: true };
+            contexto = { libro: contexto!.libro, capitulo: deNotas[deNotas.length - 1]!.capitulo, firme: true, deNotas: true };
             continue;
         }
         const propias = citasDeTexto(encabezado);

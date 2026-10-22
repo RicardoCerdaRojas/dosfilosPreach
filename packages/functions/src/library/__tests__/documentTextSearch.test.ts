@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findQuoteInPageText, lemmaKey as lemmaKeyDelDominio } from '@dosfilos/domain';
-import { conElIndiceDePasajes, foldForSearch, griegoPlegado, lemmaEntriesIn, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp, referenceVersesFromRefs } from '../documentTextSearch';
+import { conElIndiceDePasajes, foldForSearch, griegoPlegado, lemmaEntriesIn, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp, referenceVersesFromRefs, recortarPorRelevancia, hojasDevueltas } from '../documentTextSearch';
 
 /**
  * Los dos buscadores tienen que plegar IGUAL.
@@ -285,5 +285,34 @@ describe('lemmaEntriesIn · dónde empieza y termina la entrada de un lema', () 
             { chunkIndex: 2, sheet: 130, text: '**λοιδορέω.** *Injuriar*.' },
         ];
         expect(lemmaEntriesIn(largo, [griegoPlegado('λόγος')], 8)[griegoPlegado('λόγος')]).toEqual({ startSheet: 100, endSheet: 107 });
+    });
+});
+
+/** Revisión de 8a: el modo referencia recortaba las 80 primeras hojas por número. */
+describe('recortarPorRelevancia', () => {
+    it('se queda con lo que más nombra, aunque caiga al final del libro, y lo devuelve en orden de hoja', () => {
+        const hojas = [
+            ...Array.from({ length: 5 }, (_, i) => ({ sheet: i + 1, count: 1, verses: [1] })),
+            { sheet: 938, count: 1, verses: [2, 3] },
+            { sheet: 700, count: 9, verses: [1] },
+        ];
+        expect(recortarPorRelevancia(hojas, 2).map(h => h.sheet)).toEqual([700, 938]);
+    });
+
+    it('sin versículos, por apariciones', () => {
+        expect(recortarPorRelevancia([{ sheet: 1, count: 1 }, { sheet: 2, count: 5 }], 1).map(h => h.sheet)).toEqual([2]);
+    });
+});
+
+describe('hojasDevueltas', () => {
+    const muchas = [
+        ...Array.from({ length: 85 }, (_, i) => ({ sheet: i + 1, count: 1, verses: [1] })),
+        { sheet: 938, count: 1, verses: [2, 3] },
+    ];
+    it('en modo referencia, la hoja del final que nombra más versículos entra', () => {
+        expect(hojasDevueltas('referencia', muchas).map(h => h.sheet)).toContain(938);
+    });
+    it('en modo texto, por número de hoja como siempre', () => {
+        expect(hojasDevueltas('texto', muchas).map(h => h.sheet)).not.toContain(938);
     });
 });

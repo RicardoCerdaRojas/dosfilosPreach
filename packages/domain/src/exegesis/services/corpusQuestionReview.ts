@@ -120,27 +120,25 @@ export interface CorpusQuestionReview {
 export const MAX_SHEETS_PER_QUESTION = 4;
 
 /**
- * Tipos que no se juzgan por nombrar versículos.
+ * Los ÚNICOS tipos que pueden recibir «no nombra ningún versículo con
+ * pregunta» (lista permitida, revisión adversarial de 8a): gramáticas,
+ * léxicos y diccionarios, que se eligen por página y cuyo índice nombra los
+ * versículos que citan como ejemplo (Runge en el TP #8).
  *
- * - El texto base y su aparato SON el pasaje: sus páginas imprimen «4» y «3»
- *   como números de capítulo y versículo, no «4:3», y el índice no las ve.
- *   Decirle al estudiante «NA28 no nombra ningún versículo» sería un consejo
- *   dañino.
- * - El paper modelo de estilo no se cita.
- * - Un comentario del libro trata el pasaje por definición. Que el índice no
- *   lo vea nombrar los versículos dice algo del índice, no del comentario:
- *   medido con el TP #8, Mayor escribe «iv. 3» y, antes de rellenar sus refs,
- *   salía «no nombra ningún versículo» → [Quitar del corpus], el peor consejo
- *   posible sobre el mejor comentario del corpus. El comentario de OTRO libro
- *   ya lo avisa la cobertura del comentario (`commentaryBookCoverage`).
- * - Léxicos y diccionarios se juzgan por la entrada del lema (ver abajo).
+ * Todo lo demás queda fuera a propósito:
+ * - un comentario del libro trata el pasaje por definición; medido con el
+ *   TP #8, Mayor escribe «iv. 3» y, antes de rellenar sus refs, salía como
+ *   inútil con [Quitar del corpus] (el comentario de OTRO libro ya lo avisa
+ *   `commentaryBookCoverage`);
+ * - el texto base y su aparato imprimen «4» y «3», no «4:3»;
+ * - Josefo, Filón, el trasfondo, las monografías, los artículos y Metzger
+ *   pueden servir sin nombrar nunca Stg 4:x.
+ * Los léxicos y diccionarios se juzgan además por la entrada del lema.
  */
-const SIN_JUICIO_POR_VERSICULO: ReadonlySet<SourceType> = new Set<SourceType>([
-    'biblical-text-edition',
-    'critical-apparatus',
-    'commentary-critical',
-    'commentary-expository',
-    'style-template-paper',
+const JUICIO_POR_VERSICULO: ReadonlySet<SourceType> = new Set<SourceType>([
+    'grammar-syntax',
+    'lexicon-technical',
+    'theological-dictionary',
 ]);
 
 /**
@@ -202,8 +200,10 @@ export function reviewCorpusByQuestion(input: {
             // En un léxico manda la entrada del lema: con la de αἰτέω en el
             // corpus, la hoja de otra palabra que cita 4:3 (Tuggy 209,
             // δαπανάω) no es material que falte para esa pregunta.
+            // Si la entrada está afuera, el aviso es `missing-entry`: sugerir
+            // además la hoja más citada (que puede ser de otra palabra) era ruido.
             const entradaEnElCorpus = esLexica && (source.lemmaEntries ?? []).some(l =>
-                l.question === row.number && l.entry && sheetsOf(l.entry).some(sheet => estado(sheet) !== 'outside'));
+                l.question === row.number && l.entry !== null);
             const queNombran = source.verseHits
                 .filter(h => h.verses.some(v => row.verses.includes(v)))
                 .map(h => ({ sheet: h.sheet, count: h.count, state: estado(h.sheet), ...(h.snippet ? { snippet: h.snippet } : {}) }));
@@ -265,7 +265,7 @@ export function reviewCorpusByQuestion(input: {
         // «No sirve para ninguna pregunta» sólo cuando hay con qué juzgar. Un
         // léxico sin lemas en la consigna no nombra versículos y no por eso
         // sobra: se juzga sólo si se buscó algún lema y no tuvo entrada.
-        const juzgable = !SIN_JUICIO_POR_VERSICULO.has(source.sourceType)
+        const juzgable = JUICIO_POR_VERSICULO.has(source.sourceType)
             && versiculosConPregunta.size > 0
             && (!esLexica || (source.lemmaEntries ?? []).length > 0);
         if (juzgable && !tocaAlguna) warnings.push({ kind: 'unrelated', sourceId: source.sourceId });

@@ -33,11 +33,14 @@ import { nombreCortoDeFuente } from '../corpus-plan/nombreCortoDeFuente';
 export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
     const navigate = useNavigate();
-    const { review, sources, failed, isLoading } = useCorpusQuestionReview(paper);
+    const { review, sources, failed, unindexed, isLoading } = useCorpusQuestionReview(paper);
     const { removeSource } = useExegesisPapers();
     const addAndPin = useAddAndPinSheets(paper);
     const [abierta, setAbierta] = useState(false);
     const [ocupada, setOcupada] = useState<string | null>(null);
+    // Quitar pide un segundo clic: no hay deshacer, y la fuente pierde su rol,
+    // su clave y lo fijado (revisión de 8a).
+    const [porQuitar, setPorQuitar] = useState<string | null>(null);
 
     if (!review || review.rows.length === 0 || sources.size === 0) return null;
 
@@ -71,6 +74,8 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
     };
 
     const quitar = async (sourceId: string) => {
+        if (porQuitar !== sourceId) { setPorQuitar(sourceId); return; }
+        setPorQuitar(null);
         setOcupada(`quitar:${sourceId}`);
         try {
             await removeSource.mutateAsync({ paperId: paper.id, sourceId });
@@ -84,7 +89,10 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
     };
 
     const avisos = review.warnings;
-    const conAvisos = avisos.length > 0 || failed.length > 0;
+    const noRevisadas = failed.length + unindexed.length;
+    const conAvisos = avisos.length > 0 || noRevisadas > 0;
+    const editable = (sourceId: string) => sources.get(sourceId)?.editable === true;
+    const ajustar = (sourceId: string) => navigate(`/dashboard/exegesis/${paper.id}/fuentes/${sourceId}/paginas`);
 
     return (
         <section
@@ -104,15 +112,15 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
                         {isLoading
-                            ? t('paperSetup.subSteps.corpus.questionReview.loading', { count: review.pending.length - failed.length })
+                            ? t('paperSetup.subSteps.corpus.questionReview.loading', { count: review.pending.length - noRevisadas })
                             : conAvisos
-                                ? t('paperSetup.subSteps.corpus.questionReview.withWarnings', { count: avisos.length + failed.length })
+                                ? t('paperSetup.subSteps.corpus.questionReview.withWarnings', { count: avisos.length + noRevisadas })
                                 : t('paperSetup.subSteps.corpus.questionReview.allGood')}
                     </p>
                 </div>
             </header>
 
-            {(avisos.length > 0 || failed.length > 0) && (
+            {conAvisos && (
                 <ul className="space-y-1.5">
                     {avisos.map((w, i) => (
                         <WarningItem
@@ -120,7 +128,10 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                             warning={w}
                             texto={textoDelAviso(t, w, { nombre, paginas, versiculos, fila })}
                             ocupada={ocupada}
+                            editable={'sourceId' in w ? editable(w.sourceId) : false}
+                            confirmingRemove={'sourceId' in w && porQuitar === w.sourceId}
                             onAdd={agregar}
+                            onAdjust={ajustar}
                             onRemove={quitar}
                             onCalibrate={sourceId => {
                                 const f = sources.get(sourceId);
@@ -131,6 +142,11 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                     {failed.map(sourceId => (
                         <li key={`fallo-${sourceId}`} className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-[11.5px] text-muted-foreground">
                             {t('paperSetup.subSteps.corpus.questionReview.warning.failed', { source: nombre(sourceId) })}
+                        </li>
+                    ))}
+                    {unindexed.map(sourceId => (
+                        <li key={`sin-indice-${sourceId}`} className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-[11.5px] text-muted-foreground">
+                            {t('paperSetup.subSteps.corpus.questionReview.warning.unindexed', { source: nombre(sourceId) })}
                         </li>
                     ))}
                 </ul>
@@ -156,6 +172,7 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                             nombre={nombre}
                             sources={sources}
                             ocupada={ocupada}
+                            editable={editable}
                             onAdd={agregar}
                         />
                     ))}
@@ -218,14 +235,21 @@ function WarningItem({
     warning,
     texto,
     ocupada,
+    editable,
+    confirmingRemove,
     onAdd,
+    onAdjust,
     onRemove,
     onCalibrate,
 }: {
     warning: CorpusReviewWarning;
     texto: string;
     ocupada: string | null;
+    /** La fuente tiene receta de páginas: se le pueden sumar hojas. */
+    editable: boolean;
+    confirmingRemove: boolean;
     onAdd: (sourceId: string, sheets: ReadonlyArray<number>) => void;
+    onAdjust: (sourceId: string) => void;
     onRemove: (sourceId: string) => void;
     onCalibrate: (sourceId: string) => void;
 }) {
@@ -235,9 +259,15 @@ function WarningItem({
 
     let accion: { label: string; run: () => void; clave: string } | null = null;
     if (warning.kind === 'missing-sheets' || warning.kind === 'missing-entry') {
-        accion = { label: t(`${base}.addAndPin`), run: () => onAdd(warning.sourceId, warning.sheets), clave: `${warning.sourceId}:${warning.sheets.join(',')}` };
+        accion = editable
+            ? { label: t(`${base}.addAndPin`), run: () => onAdd(warning.sourceId, warning.sheets), clave: `${warning.sourceId}:${warning.sheets.join(',')}` }
+            : { label: t(`${base}.adjust`), run: () => onAdjust(warning.sourceId), clave: `ajustar:${warning.sourceId}` };
     } else if (warning.kind === 'unrelated') {
-        accion = { label: t(`${base}.remove`), run: () => onRemove(warning.sourceId), clave: `quitar:${warning.sourceId}` };
+        accion = {
+            label: t(confirmingRemove ? `${base}.removeConfirm` : `${base}.remove`),
+            run: () => onRemove(warning.sourceId),
+            clave: `quitar:${warning.sourceId}`,
+        };
     } else if (warning.kind === 'no-printed-pages') {
         accion = { label: t(`${base}.calibrate`), run: () => onCalibrate(warning.sourceId), clave: `calibrar:${warning.sourceId}` };
     }
@@ -281,6 +311,7 @@ function QuestionItem({
     nombre,
     sources,
     ocupada,
+    editable,
     onAdd,
 }: {
     row: QuestionReviewRow;
@@ -288,6 +319,7 @@ function QuestionItem({
     nombre: (id: string) => string;
     sources: ReadonlyMap<string, ReviewedSource>;
     ocupada: string | null;
+    editable: (sourceId: string) => boolean;
     onAdd: (sourceId: string, sheets: ReadonlyArray<number>) => void;
 }) {
     const { t } = useTranslation('exegesis');
@@ -316,6 +348,7 @@ function QuestionItem({
                                     label={pageLabel(t, sources.get(cov.sourceId), h.sheet)}
                                     busy={ocupada === `${cov.sourceId}:${h.sheet}`}
                                     disabled={ocupada !== null}
+                                    editable={editable(cov.sourceId)}
                                     onPin={() => onAdd(cov.sourceId, [h.sheet])}
                                 />
                             ))}
@@ -336,17 +369,27 @@ function SheetChip({
     label,
     busy,
     disabled,
+    editable,
     onPin,
 }: {
     sheet: QuestionSheet;
     label: string;
     busy: boolean;
     disabled: boolean;
+    /** Sin receta de páginas (documento completo, fragmentos viejos) no se pulsa. */
+    editable: boolean;
     onPin: () => void;
 }) {
     const { t } = useTranslation('exegesis');
     const base = 'paperSetup.subSteps.corpus.questionReview.chip';
     const estado = t(`${base}.${sheet.state === 'in-corpus' ? 'inCorpus' : sheet.state}`, { page: label });
+    if (!editable && sheet.state !== 'pinned') {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 text-[10.5px] text-foreground" title={estado}>
+                {label}
+            </span>
+        );
+    }
     if (sheet.state === 'pinned') {
         return (
             <span

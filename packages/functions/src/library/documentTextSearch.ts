@@ -415,6 +415,30 @@ export function snippetAround(text: string, at: number): string {
     return `${from > 0 ? '…' : ''}${body}${to < text.length ? '…' : ''}`;
 }
 
+/** Qué hojas devuelve cada modo cuando hay más de `MAX_SHEETS`. */
+export function hojasDevueltas<T extends { sheet: number; count: number; verses?: ReadonlyArray<number> }>(
+    modo: 'texto' | 'lema' | 'referencia' | string,
+    porHoja: ReadonlyArray<T>,
+): T[] {
+    return modo === 'lema' || modo === 'referencia'
+        ? recortarPorRelevancia(porHoja, MAX_SHEETS)
+        : porHoja.slice(0, MAX_SHEETS);
+}
+
+/**
+ * Las `max` hojas que más nombran lo buscado, devueltas en orden de hoja:
+ * primero las que nombran más versículos, después las de más apariciones.
+ */
+export function recortarPorRelevancia<T extends { sheet: number; count: number; verses?: ReadonlyArray<number> }>(
+    hojas: ReadonlyArray<T>,
+    max: number,
+): T[] {
+    return [...hojas]
+        .sort((a, b) => ((b.verses?.length ?? 0) - (a.verses?.length ?? 0)) || (b.count - a.count) || (a.sheet - b.sheet))
+        .slice(0, max)
+        .sort((a, b) => a.sheet - b.sheet);
+}
+
 export { foldForSearch };
 
 /**
@@ -561,9 +585,10 @@ export const searchDocumentText = onCall<SearchRequest>(
         // En modo lema se recorta por APARICIONES y no por número de hoja: la
         // entrada de un verbo común (אמר, λέγω) puede caer después de la hoja
         // 80 y quedaba afuera antes de ordenarse por cantidad.
-        const hits = modo === 'lema'
-            ? [...all].sort((a, b) => (b.count - a.count) || (a.sheet - b.sheet)).slice(0, MAX_SHEETS).sort((a, b) => a.sheet - b.sheet)
-            : all.slice(0, MAX_SHEETS);
+        // En modo referencia, igual por lo que nombran: con `refs` un léxico
+        // nombra el pasaje en más de 80 hojas, y φονεύω (Φ, al final del libro)
+        // quedaba afuera por número de hoja (revisión de 8a).
+        const hits = hojasDevueltas(modo, all);
         const etiqueta = modo === 'referencia' ? `referencia ${names[0]} ${ref!.chapterStart}` : `«${term}»`;
         console.log(`[DocumentTextSearch] ${resourceId} ${etiqueta} (${modo}): ${readable.length} chunks → ${all.length} hojas`);
         return { hits, truncated: all.length > hits.length, scannedChunks: readable.length };

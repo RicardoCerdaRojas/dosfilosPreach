@@ -30,19 +30,26 @@ export function passagePagesQuery(resourceId: string | null, passage: PassageRef
     const query = passage ? passageReferenceQuery(passage) : null;
     return {
         queryKey: [KEY, resourceId, query?.bookId, query?.names.length, query?.chapterStart, query?.chapterEnd, query?.verseStart, query?.verseEnd],
-        queryFn: async (): Promise<PassagePageHit[]> => {
-            const { hits } = await searchDocumentByReference(resourceId!, query!);
-            return rankPassageSheets(hits.map(h => ({
-                sheet: h.sheet,
-                count: h.count,
-                verses: h.verses ?? [],
-                snippet: h.snippet,
-                section: h.section,
-            })));
+        // `scannedChunks` viaja: cero fragmentos es «sin índice», no «no nombra
+        // nada», y la revisión por pregunta no puede juzgar un libro sin índice.
+        queryFn: async (): Promise<{ proposals: PassagePageHit[]; scannedChunks: number }> => {
+            const { hits, scannedChunks } = await searchDocumentByReference(resourceId!, query!);
+            return {
+                proposals: rankPassageSheets(hits.map(h => ({
+                    sheet: h.sheet,
+                    count: h.count,
+                    verses: h.verses ?? [],
+                    snippet: h.snippet,
+                    section: h.section,
+                }))),
+                scannedChunks,
+            };
         },
         enabled: !!resourceId && !!query,
         staleTime: 30 * 60 * 1000,
         gcTime: 60 * 60 * 1000,
+        // Cada consulta lee el libro entero: volver a la pestaña no la repite.
+        refetchOnWindowFocus: false,
         retry: 1,
     };
 }
@@ -56,7 +63,7 @@ export function usePassagePages(
     const result = useQuery({ ...options, enabled: enabled && options.enabled });
 
     return {
-        proposals: result.data ?? [],
+        proposals: result.data?.proposals ?? [],
         isLoading: result.isLoading,
         isError: result.isError,
     };

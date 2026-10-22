@@ -294,12 +294,15 @@ export function SourcePagesWorkspace({
     // Lo fijado es un conjunto de hojas, no una lista de tramos del carrito
     // (A5, TP #8): se fija la 411 dentro de 407–418, y un tramo que el carrito
     // agranda sigue mostrando lo que tiene fijado.
+    // Sin recortar `prev` al carrito: una hoja fijada que salió un momento del
+    // carrito vuelve fijada al reagregarla (lo que se guarda y se mide sí se
+    // recorta, `effectivePinned`).
     const togglePinned = useCallback((range: SheetRange) => {
-        setPinned(prev => togglePinnedRange(clipRangesTo(prev, ranges), range));
-    }, [ranges]);
+        setPinned(prev => togglePinnedRange(prev, range));
+    }, []);
     const togglePinnedOne = useCallback((sheet: number) => {
-        setPinned(prev => togglePinnedSheet(clipRangesTo(prev, ranges), sheet));
-    }, [ranges]);
+        setPinned(prev => togglePinnedSheet(prev, sheet));
+    }, []);
     const pinnedSheets = useMemo(() => sheetsInRanges(effectivePinned), [effectivePinned]);
 
     const acceptProposal = useCallback(() => {

@@ -179,7 +179,7 @@ CRITERIOS POR TIPO (orientación, no obligación):
 - Trasfondo histórico, diccionarios teológicos: típicamente ancla o contraste de introducción y versos con tema doctrinal.
 - Monografías teológicas: ancla o contraste en conclusión y versos clave.
 
-MODO PREGUNTAS: si las restricciones del mensaje dicen que el trabajo responde preguntas puntuales, mandan ellas sobre los topes y la cobertura de arriba. Ahí cada paso lleva las fuentes que tienen material para su pregunta, sean cuantas sean, y una misma fuente puede servir a varios pasos.
+MODO PREGUNTAS: si las restricciones del mensaje dicen que el trabajo responde preguntas puntuales, mandan ellas sobre lo de arriba en los pasos de VERSO: cada uno lleva las fuentes que tienen material para su pregunta, sean cuantas sean; puede haber más de una técnica o más de un contraste; una misma fuente puede servir a varios pasos, y un léxico o un diccionario puede tener el rol que el estudiante le dio en el corpus. Sigue habiendo al menos un ancla por paso. Introducción y conclusión conservan su tope de 2.
 
 JUSTIFICACIÓN: una sola oración en español, NOMBRA explícitamente los roles. Ejemplo: "Ancla: Cranfield orienta la lectura paulina del genitivo absoluto. Contraste: Moo añade la perspectiva crítica de la nueva perspectiva. Técnica: BDAG confirma el campo semántico de \`δικαιοσύνη\`."`
         : `You are an expert biblical exegesis professor advising a seminary student on how to build the dialectical bibliography for each step of their paper.
@@ -216,7 +216,7 @@ TYPE CRITERIA (guidance, not obligation):
 - Historical background, theological dictionaries: usually anchor or contrast in introduction and theme-heavy verses.
 - Theological monographs: anchor or contrast in conclusion and key verses.
 
-QUESTIONS MODE: if the message constraints say the paper answers specific questions, they override the caps and coverage above. There each step takes the sources that have material for its question, however many, and one source may serve several steps.
+QUESTIONS MODE: if the message constraints say the paper answers specific questions, they override the above for VERSE steps: each takes the sources that have material for its question, however many; there may be more than one technical or contrast source; one source may serve several steps, and a lexicon or dictionary may take the role the student gave it in the corpus. Every step still has at least one anchor. Introduction and conclusion keep their cap of 2.
 
 JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anchor: Cranfield orients the Pauline reading of the genitive absolute. Contrast: Moo adds the New Perspective's critical angle. Technical: BDAG confirms the semantic range of \`δικαιοσύνη\`."`;
 
@@ -303,7 +303,7 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
 - Cada fuente con «evidencia en el corpus» bajo un paso DEBE ir en ese paso: tiene las hojas que responden su pregunta. Decide su rol y qué voces se oponen.
 - Una fuente puede ir en VARIOS pasos: un léxico o un diccionario sirve a cada pregunta que pide una de sus palabras.
 - Elige además las fuentes que la pregunta pide aunque no tengan evidencia listada: una pregunta de crítica textual o de puntuación pide el aparato crítico y su comentario; una de sintaxis, la gramática.
-- No hay tope de fuentes por paso, y no hace falta que todas las fuentes aparezcan: una fuente sin nada para ninguna pregunta queda sin asignar.
+- No hay tope de fuentes por paso de verso (introducción y conclusión: máximo 2), y no hace falta que todas las fuentes aparezcan: una fuente sin nada para ninguna pregunta queda sin asignar.
 - Cada id en "pinnedSources" DEBE tener una entrada correspondiente en "pinnedSourceRoles". Si la fuente trae «rol en el corpus», úsalo salvo que la pregunta pida otro.`
             : `Constraints (this paper ANSWERS SPECIFIC QUESTIONS; it is not a long paper):
 - Use ONLY the exact ids listed above (don't invent new ones).
@@ -312,7 +312,7 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
 - Every source with "evidence in the corpus" under a step MUST go in that step: it holds the pages that answer its question. Decide its role and which voices are opposed.
 - A source may go in SEVERAL steps: a lexicon or dictionary serves every question that asks for one of its words.
 - Also pick the sources the question calls for even without listed evidence: a text-critical or punctuation question calls for the critical apparatus and its commentary; a syntax question, the grammar.
-- There is no cap on sources per step, and not every source needs to appear: a source with nothing for any question stays unassigned.
+- There is no cap on sources per verse step (introduction and conclusion: at most 2), and not every source needs to appear: a source with nothing for any question stays unassigned.
 - Every id in "pinnedSources" MUST have a corresponding entry in "pinnedSourceRoles". If the source carries a "corpus role", use it unless the question calls for another.`)
         : isSpanish
         ? `Restricciones:

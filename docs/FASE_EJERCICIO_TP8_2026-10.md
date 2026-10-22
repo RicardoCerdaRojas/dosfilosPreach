@@ -246,6 +246,51 @@ El resultado contiene todo el plan que se armó a mano, menos NA28 en 4:2.
 
 ---
 
+## Revisión adversarial de 8a (2026-10-21)
+
+Tres revisores, uno por bloque: A1–A3, A4–A5 y A7–B3. Primero se lista lo **corregido**, cada punto con su prueba y su mutación.
+
+**Altos:**
+- **B1 forzaba en un paso una fuente excluida.** El análisis quedaba obligado a citarla, aunque el mismo prompt la prohibía.
+- **Un clic en una hoja de una fuente de documento completo** la reducía a esa sola hoja.
+- **«Quitar del corpus» salía para fuentes buenas:** Josefo, monografías, Metzger y libros sin índice. Ahora solo se juzgan gramáticas, léxicos y diccionarios. Un libro sin índice dice «no se pudo revisar», y quitar pide un segundo clic.
+- **El orden de A1 («nombra el versículo» primero) se perdía antes del prompt.** La selección volvía a ordenar por coseno, y el camino vectorial ni siquiera traía esas hojas.
+
+**Medios:**
+- un segundo «Agregar y fijar» deshacía el primero (ahora el caso de uso suma sobre el trabajo fresco);
+- «Agregar y fijar» borraba los fragmentos de una fuente sin receta (ahora ofrece «Ajustar páginas»);
+- reproponer duplicaba el aviso de B1 en la nota;
+- «cargando» se apagaba antes de tiempo;
+- en hebreo, los lemas de la consigna no usaban la tabla de Strong;
+- el modo referencia cortaba en las primeras 80 hojas por número;
+- las notas «N. lema]» se leían en cualquier comentario.
+
+**Bajos:**
+- encabezados de notas con un capítulo que el libro no tiene;
+- un título con dos libros;
+- el libro prestado que se filtraba a una referencia desnuda;
+- el prompt en modo preguntas (los roles, y los topes de introducción y conclusión);
+- el modo preguntas sin evidencia;
+- dos obras con la misma clave (manda la regla más restrictiva);
+- ruido de léxico;
+- la tarjeta de excluidas, que callaba sin explicar por qué;
+- el texto de lo que se repite libremente;
+- ids fantasma;
+- el contraste del alfiler del riel;
+- fijadas que se perdían al alternar;
+- volver a la pestaña repetía las consultas.
+
+**Diferido (bajo; anotado para 8b/8c):**
+- `lemmaEntriesIn` toma la primera negrita y estira hasta 8 hojas;
+- «III 17–IV 1]» pierde 3:18;
+- un paso creado solo por evidencia puede quedar sin ancla;
+- la gramática para alternar no se comprueba contra la biblioteca;
+- la marca de B3 no distingue la nota propia de la del planificador;
+- la búsqueda del pasaje se hace dos veces al abrir el selector;
+- el blanco de 20 px del riel (patrón previo).
+
+**Al pedir el OK para `rellenar-refs.ts --escribir`:** mirar primero el conteo `aEscribir` del ensayo. El libro del título ahora se presta también a los encabezados con referencia desnuda de cualquier comentario de un solo libro.
+
 ## C. El análisis responde la pregunta y separa la fuente de la inferencia (#35, #31, #34, criterios del profesor)
 
 **Problema:**

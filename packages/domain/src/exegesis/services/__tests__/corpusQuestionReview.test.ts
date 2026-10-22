@@ -192,6 +192,13 @@ describe('reviewCorpusByQuestion (TP #8, A4)', () => {
         expect(warnings.filter(w => 'sourceId' in w && w.sourceId === 'na28')).toEqual([]);
     });
 
+    it('un léxico con la entrada afuera avisa la entrada, no la hoja más citada de otra palabra (revisión de 8a)', () => {
+        const sinLaEntrada = { ...tuggy, selected: [{ start: 1, end: 2 }], verseHits: [{ sheet: 209, count: 3, verses: [1] }] };
+        const { warnings } = revisar([sinLaEntrada]);
+        expect(warnings.filter(w => w.kind === 'missing-sheets')).toEqual([]);
+        expect(warnings.some(w => w.kind === 'missing-entry')).toBe(true);
+    });
+
     it('no juzga a un léxico cuando la consigna no trae lemas', () => {
         const sinLemas = { ...tuggy, verseHits: [], lemmaEntries: [] };
         expect(revisar([sinLemas]).warnings.filter(w => w.kind === 'unrelated')).toEqual([]);

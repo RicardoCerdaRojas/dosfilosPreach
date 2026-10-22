@@ -91,7 +91,7 @@ export function ExegesisSourcePagesPage() {
     // (TP #8, fase 8a, A2): «¿Qué significa μέλεσιν?» pide la entrada de μέλος.
     const lemasDeLaConsigna = useMemo(
         () => (paper && esLexico
-            ? questionLemmas(parseBriefQuestions(paper.assignmentBrief, paper.passage), morfologia.data?.entries ?? [])
+            ? questionLemmas(parseBriefQuestions(paper.assignmentBrief, paper.passage), morfologia.data?.entries ?? [], morfologia.data?.strongToLemma)
             : []),
         [paper, esLexico, morfologia.data],
     );

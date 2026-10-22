@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { fetchDocumentPageIndex } from '@dosfilos/infrastructure';
-import { addAndPinSheets, type ExegeticalPaper, type SheetRange } from '@dosfilos/domain';
+import type { ExegeticalPaper } from '@dosfilos/domain';
 import { useSelectSourcePages } from './useSelectSourcePages';
 import type { ReviewedSource } from './useCorpusQuestionReview';
 
@@ -23,24 +23,26 @@ export function useAddAndPinSheets(paper: ExegeticalPaper | null | undefined) {
 
     const run = useCallback(async (fuente: ReviewedSource, sheets: ReadonlyArray<number>) => {
         if (!paper) throw new Error('Sin trabajo');
+        // Sólo sobre una selección por páginas. Un documento completo quedaba
+        // reducido a la hoja pulsada, y una fuente de fragmentos sin receta
+        // perdía sus fragmentos (también los editados): revisión de 8a.
+        if (!fuente.editable) throw new Error('La fuente no tiene páginas elegidas');
         const index = await fetchDocumentPageIndex(fuente.resourceId);
-        const actual: ReadonlyArray<SheetRange> = fuente.selected ?? [];
-        const { sheetRanges, pinnedRanges } = addAndPinSheets(
-            actual,
-            fuente.source.excerptRecipe?.pinnedRanges ?? [],
-            sheets,
-        );
+        const nuevas = sheets.map(sheet => ({ start: sheet, end: sheet }));
         return selectPages.mutateAsync({
             paperId: paper.id,
             libraryResourceId: fuente.resourceId,
             displayLabel: fuente.source.displayLabel,
             sourceType: fuente.source.sourceType,
             citationKey: fuente.source.citationKey,
-            sheetRanges,
-            pinnedRanges,
-            proposedRanges: fuente.source.excerptRecipe?.proposedRanges ?? [],
+            // Se suma sobre lo que el trabajo declara AHORA (lo lee el caso de
+            // uso): un segundo clic antes del refresco no deshace el primero.
+            sheetRanges: nuevas,
+            pinnedRanges: nuevas,
+            proposedRanges: [],
             pageIndex: index.pages,
             selectionMode: 'manual',
+            mergeWithExisting: true,
         });
     }, [paper, selectPages]);
 

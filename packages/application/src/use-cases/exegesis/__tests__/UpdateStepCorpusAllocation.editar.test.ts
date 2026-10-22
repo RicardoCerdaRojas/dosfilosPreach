@@ -88,6 +88,12 @@ describe('editar el plan de un paso (B3)', () => {
         expect(e.pinnedSourceRoles?.kittel).toBe('contrast');
     });
 
+    it('#24: un id fantasma que se cae no cuenta como cambio de la lista (revisión de 8a)', async () => {
+        const conFantasma = trabajo(undefined, { pinnedSources: ['mayor', 'tuggy', 'ya-no-existe'] });
+        const e = await correr(conFantasma, { pinnedSources: ['mayor', 'tuggy'], pinnedSourceRoles: { mayor: 'contrast', tuggy: 'technical' } });
+        expect(e.sourcesEditedAfterNote).toBeUndefined();
+    });
+
     it('#24: la marca se conserva en las ediciones siguientes', async () => {
         const e = await correr(trabajo('x', { sourcesEditedAfterNote: true }), { pinnedSources: ['mayor', 'tuggy'] });
         expect(e.sourcesEditedAfterNote).toBe(true);

@@ -49,6 +49,13 @@ export interface PassageMorphology {
     lemmas: PassageLemma[];
     /** El pasaje es hebreo (morphhb); si no, griego (MorphGNT). */
     hebrew: boolean;
+    /**
+     * Strong → lema, la misma tabla con que se armaron `lemmas`. Para quien
+     * lematiza otra cosa con esta morfología (los lemas de la consigna,
+     * `questionLemmas`): sin ella, en hebreo la pregunta quedaba con la forma
+     * flexionada y no coincidía con ningún lema (revisión de 8a).
+     */
+    strongToLemma: (strong: number) => string | undefined;
 }
 
 /**
@@ -79,7 +86,8 @@ export function usePassageLemmas(paper: ExegeticalPaper | null | undefined, enab
             const entries = leidas.flat();
             const hebrew = entries.some(e => e.morphology.tokens.some(t => 'oshbMorphCode' in t));
             const tabla = hebrew ? await tablaDeStrong() : null;
-            return { entries, lemmas: passageLemmas(entries, n => tabla?.[String(n)]), hebrew };
+            const strongToLemma = (n: number) => tabla?.[String(n)];
+            return { entries, lemmas: passageLemmas(entries, strongToLemma), hebrew, strongToLemma };
         },
         enabled: enabled && versos.length > 0,
         staleTime: Infinity,

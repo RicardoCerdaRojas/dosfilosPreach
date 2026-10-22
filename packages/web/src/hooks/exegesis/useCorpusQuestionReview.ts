@@ -27,6 +27,12 @@ export interface ReviewedSource {
     resource: LibraryResource;
     /** Lo que el corpus declara de esta fuente; `null` = el documento entero. */
     selected: SheetRange[] | null;
+    /**
+     * Se le pueden agregar y fijar hojas: tiene receta de páginas. Un
+     * documento completo o una fuente de fragmentos sin receta se ajustan en
+     * el selector (revisión de 8a).
+     */
+    editable: boolean;
 }
 
 export interface CorpusQuestionReviewState {
@@ -35,6 +41,8 @@ export interface CorpusQuestionReviewState {
     sources: ReadonlyMap<string, ReviewedSource>;
     /** Fuentes cuya búsqueda falló: no se juzgan, y la tarjeta lo dice. */
     failed: string[];
+    /** Fuentes sin fragmentos indexados: tampoco se juzgan. */
+    unindexed: string[];
     isLoading: boolean;
 }
 
@@ -71,7 +79,7 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
             if (!resource) continue;
             const selected = selectedSheetsOf(source);
             if (selected === undefined) continue;
-            out.set(source.id, { source, resourceId, resource, selected });
+            out.set(source.id, { source, resourceId, resource, selected, editable: !!source.excerptRecipe });
         }
         return out;
     }, [paper?.sources, resources]);
@@ -80,7 +88,7 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
 
     const morfologia = usePassageLemmas(paper, conPreguntas && lexicas.length > 0);
     const lemas = useMemo(
-        () => questionLemmas(questions, morfologia.data?.entries ?? []),
+        () => questionLemmas(questions, morfologia.data?.entries ?? [], morfologia.data?.strongToLemma),
         [questions, morfologia.data],
     );
 
@@ -104,12 +112,17 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
 
     return useMemo(() => {
         if (!conPreguntas || !passage) {
-            return { review: null, sources: fuentes, failed: [], isLoading: false };
+            return { review: null, sources: fuentes, failed: [], unindexed: [], isLoading: false };
         }
         const failed: string[] = [];
+        // Un libro sin fragmentos indexados (sin extraer, fallido, en
+        // reproceso) no «no nombra nada»: no se puede revisar.
+        const sinIndice: string[] = [];
         const entradas: QuestionReviewSource[] = lista.map((f, i) => {
             const pasaje = porPasaje[i]!;
             if (pasaje.isError) failed.push(f.source.id);
+            const indexado = !pasaje.isSuccess || pasaje.data.scannedChunks > 0;
+            if (!indexado) sinIndice.push(f.source.id);
             const esLexica = LEMMA_ENTRY_SOURCE_TYPES.has(f.source.sourceType);
             let lemmaEntries: QuestionReviewSource['lemmaEntries'];
             if (esLexica) {
@@ -137,19 +150,24 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
                 sourceType: f.source.sourceType,
                 selected: f.selected,
                 pinned: f.source.excerptRecipe?.pinnedRanges ?? [],
-                verseHits: pasaje.isSuccess
-                    ? pasaje.data.map(h => ({ sheet: h.sheet, count: h.count, verses: h.verses, snippet: h.snippet }))
+                verseHits: pasaje.isSuccess && indexado
+                    ? pasaje.data.proposals.map(h => ({ sheet: h.sheet, count: h.count, verses: h.verses, snippet: h.snippet }))
                     : null,
                 ...(esLexica ? { lemmaEntries } : {}),
                 printedPages: printedPagesOf(f),
             };
         });
         const review = reviewCorpusByQuestion({ questions, chapter: passage.chapterStart, sources: entradas });
+        // Sin repetir: un léxico cuyas dos búsquedas fallaron contaba dos veces
+        // y apagaba «cargando» con otra fuente todavía en vuelo (revisión de 8a).
+        const fallidas = [...new Set(failed)];
+        const sinIndiceUnicas = [...new Set(sinIndice)].filter(id => !fallidas.includes(id));
         return {
             review,
             sources: fuentes,
-            failed: [...new Set(failed)],
-            isLoading: review.pending.length > failed.length,
+            failed: fallidas,
+            unindexed: sinIndiceUnicas,
+            isLoading: review.pending.length > fallidas.length + sinIndiceUnicas.length,
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [conPreguntas, passage, fuentes, questions, lemas, morfologia.isLoading, clavePasaje, claveLema]);

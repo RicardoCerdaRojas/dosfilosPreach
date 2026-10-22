@@ -10,7 +10,8 @@ import type { ExegeticalPaper } from '@dosfilos/domain';
  * verificar las citas. La tarjeta lo dice antes de generar, con el arreglo.
  */
 const hits: Record<string, Array<{ sheet: number; count: number; snippet: string; section: null; verses: number[] }>> = {};
-const searchDocumentByReference = vi.fn(async (id: string) => ({ hits: hits[id] ?? [], truncated: false, scannedChunks: 1 }));
+const sinIndice = new Set<string>();
+const searchDocumentByReference = vi.fn(async (id: string) => ({ hits: hits[id] ?? [], truncated: false, scannedChunks: sinIndice.has(id) ? 0 : 1 }));
 const searchLemmasAndEntriesInDocument = vi.fn(async () => ({
     byTerm: { 'μέλος': [{ sheet: 585, count: 2, snippet: '', section: null }] },
     entries: { 'μέλος': { startSheet: 584, endSheet: 585 } },
@@ -88,6 +89,7 @@ beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
     for (const k of Object.keys(hits)) delete hits[k];
+    sinIndice.clear();
     hits['r-mayor'] = [
         { sheet: 407, count: 4, snippet: '', section: null, verses: [1, 2] },
         { sheet: 411, count: 3, snippet: '', section: null, verses: [2, 3] },
@@ -103,12 +105,14 @@ describe('«¿Qué responde cada pregunta?»', () => {
         expect(aviso.textContent).toContain('"verses":"4:3"');
         fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.addAndPin'));
         await waitFor(() => expect(selectPages).toHaveBeenCalled());
+        // Suma sobre lo que el trabajo declara AHORA (lo hace el caso de uso).
         expect(selectPages.mock.calls[0]![0]).toMatchObject({
             paperId: 'tp8',
             libraryResourceId: 'r-mayor',
-            sheetRanges: [{ start: 407, end: 411 }],
+            sheetRanges: [{ start: 411, end: 411 }],
             pinnedRanges: [{ start: 411, end: 411 }],
             selectionMode: 'manual',
+            mergeWithExisting: true,
         });
     });
 
@@ -124,6 +128,9 @@ describe('«¿Qué responde cada pregunta?»', () => {
         montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }]), fuente('runge', 'grammar-syntax', [{ start: 100, end: 110 }])]));
         await screen.findByText(/warning\.unrelated/);
         fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.remove'));
+        // Quitar no tiene deshacer: el primer clic sólo pide confirmación.
+        expect(removeSource).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.removeConfirm'));
         await waitFor(() => expect(removeSource).toHaveBeenCalledWith({ paperId: 'tp8', sourceId: 'runge' }));
         fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.calibrate'));
         expect(navigate).toHaveBeenCalledWith(expect.stringContaining('r-runge'));
@@ -138,6 +145,29 @@ describe('«¿Qué responde cada pregunta?»', () => {
         montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }]), fuente('subida', 'commentary-critical', [{ start: 1, end: 2 }])]));
         await screen.findByText('paperSetup.subSteps.corpus.questionReview.allGood');
         expect(searchDocumentByReference).not.toHaveBeenCalledWith('r-subida', expect.anything());
+    });
+
+    it('un documento completo no se toca desde la tarjeta: sus páginas no se pulsan (revisión de 8a)', async () => {
+        const entero = { ...fuente('mayor', 'commentary-critical', []), mode: 'full-document', excerptRecipe: null };
+        montar(trabajo([entero]));
+        await screen.findByText('paperSetup.subSteps.corpus.questionReview.allGood');
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.byQuestion'));
+        expect(screen.queryAllByRole('button', { name: /chip\./ })).toEqual([]);
+    });
+
+    it('una fuente de fragmentos sin receta ofrece «Ajustar páginas», no «Agregar y fijar»', async () => {
+        const vieja = { ...fuente('mayor', 'commentary-critical', []), excerptRecipe: null, excerpts: [{ text: 'x', sheet: 407 }] };
+        montar(trabajo([vieja]));
+        fireEvent.click(await screen.findByText('paperSetup.subSteps.corpus.questionReview.action.adjust'));
+        expect(navigate).toHaveBeenCalledWith('/dashboard/exegesis/tp8/fuentes/mayor/paginas');
+        expect(selectPages).not.toHaveBeenCalled();
+    });
+
+    it('un libro sin índice no se da por inútil: se dice que no se pudo revisar', async () => {
+        sinIndice.add('r-runge');
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }]), fuente('runge', 'grammar-syntax', [{ start: 100, end: 110 }])]));
+        await screen.findByText(/warning\.unindexed/);
+        expect(screen.queryByText(/warning\.unrelated/)).toBeNull();
     });
 
     it('sin preguntas con versículos del pasaje no se muestra', () => {

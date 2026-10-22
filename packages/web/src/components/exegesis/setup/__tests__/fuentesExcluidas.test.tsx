@@ -113,6 +113,19 @@ describe('la tarjeta de fuentes excluidas', () => {
         });
     });
 
+    it('si la semana pasada sólo citó léxicos y texto base, dice por qué no propone nada (revisión de 8a)', () => {
+        resumenes = [
+            { ...resumen('tp7', 3, ['NA28', 'Tuggy'], 'TP #7'), sources: [
+                { citationKey: 'NA28', sourceType: 'critical-apparatus', corpusId: 'n', sourceLibraryResourceId: null, displayLabel: 'NA28' },
+                { citationKey: 'Tuggy', sourceType: 'lexicon-technical', corpusId: 't', sourceLibraryResourceId: null, displayLabel: 'Tuggy' },
+            ] } as unknown as ExegesisPaperSummary,
+            resumen('tp6', 6, [], 'TP #8'),
+        ];
+        render(<ExcludedSourcesCard paper={trabajo(undefined)} />);
+        expect(screen.queryByText(/excluded\.proposal/)).not.toBeInTheDocument();
+        expect(screen.getByText(/excluded\.freeByType/)).toHaveTextContent('NA28, Tuggy');
+    });
+
     it('sin entrega anterior no propone nada', () => {
         resumenes = [resumen('tp6', 6, [], 'TP #6')];
         render(<ExcludedSourcesCard paper={trabajo(undefined)} />);

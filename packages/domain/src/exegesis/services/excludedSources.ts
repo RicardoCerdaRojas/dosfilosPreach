@@ -86,7 +86,13 @@ export function proposeExclusions(
     // anterior)» y las confirmadas, «agregada por ti», aunque la tarjeta de
     // NA28 sí sabía que era «Santiago 3:1-12» (TP #7, #2 y #10).
     const origen = previous.title?.trim() || formatPassageReference(previous.passage, language);
-    const tipoDe = (key: string): SourceType | null => previous.citedSourceTypes?.[key] ?? null;
+    // La regla más restrictiva entre las obras que comparten la clave.
+    const peso: Record<SourceRepetitionRule, number> = { exclude: 2, alternate: 1, free: 0 };
+    const tipoDe = (key: string): SourceType | null => {
+        const tipos = previous.citedSourceTypes?.[key] ?? [];
+        if (tipos.length === 0) return null;
+        return [...tipos].sort((a, b) => peso[repetitionRuleFor(b, options.policy)] - peso[repetitionRuleFor(a, options.policy)])[0]!;
+    };
     const out: ProposedExclusion[] = [];
     for (const key of previous.citedSourceKeys) {
         const sourceType = tipoDe(key);
@@ -95,7 +101,7 @@ export function proposeExclusions(
         const antes = options.beforePrevious;
         const alternatives = rule === 'alternate' && antes
             ? antes.citedSourceKeys.filter(k =>
-                antes.citedSourceTypes?.[k] === sourceType && !previous.citedSourceKeys.includes(k))
+                !!sourceType && !!antes.citedSourceTypes?.[k]?.includes(sourceType) && !previous.citedSourceKeys.includes(k))
             : [];
         out.push({ key, previousPaperTitle: origen, rule, sourceType, alternatives });
     }

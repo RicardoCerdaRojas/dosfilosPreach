@@ -144,17 +144,22 @@ export function resolveOutlineReferences(
             currentReference = null;
         }
 
-        const fromHeading = entry.section
-            ? parseHeadingReference(entry.section, currentBook)
-                ?? (!currentBook && fallbackBookId
-                    ? notesRunningHeadReference(entry.section.trim(), fallbackBookId)
-                    : null)
+        const fromHeading = entry.section ? parseHeadingReference(entry.section, currentBook) : null;
+        // El libro prestado lee SÓLO este encabezado y no pasa a ser el libro
+        // del documento: si no, un «1:1-3» posterior se leía como Santiago
+        // 1:1-3 (revisión de 8a), justo lo que este parámetro no debe hacer.
+        const prestada = !fromHeading && !currentBook && fallbackBookId && entry.section
+            ? notesRunningHeadReference(entry.section.trim(), fallbackBookId)
             : null;
 
         if (fromHeading) {
             currentBook = fromHeading.bookId;
             currentReference = fromHeading;
             return { ...entry, reference: fromHeading, resolution: 'heading' as const };
+        }
+        if (prestada) {
+            currentReference = prestada;
+            return { ...entry, reference: prestada, resolution: 'heading' as const };
         }
 
         if (currentReference) {
@@ -260,6 +265,8 @@ function notesRunningHeadReference(heading: string, bookId: BibleBookId): Passag
     if (!m) return null;
     const chapterStart = romanToNumber(m[1]!);
     if (!chapterStart) return null;
+    // El capítulo tiene que existir en el libro: «VI 2] NOTES» no es Santiago 6.
+    const chapters = getBookById(bookId)?.chapterCount ?? 0;
     const verseStart = Number(m[2]);
     let chapterEnd = chapterStart;
     let verseEnd = verseStart;
@@ -268,6 +275,7 @@ function notesRunningHeadReference(heading: string, bookId: BibleBookId): Passag
         if (otro) chapterEnd = otro;
         verseEnd = Number(t[2]);
     }
+    if (chapterEnd > chapters) return null;
     if (chapterEnd < chapterStart || (chapterEnd === chapterStart && verseEnd < verseStart)) return null;
     return { bookId, chapterStart, verseStart, chapterEnd, verseEnd };
 }

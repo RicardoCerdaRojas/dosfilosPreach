@@ -112,14 +112,14 @@ describe('la regla de no repetir, por tipo de fuente', () => {
         paperId: 'tp7', title: 'TP #7', passage: {} as never, createdAt: new Date(2026, 9, 14),
         citedSourceKeys: ['McCartney', 'NA28', 'Robertson', 'Ropes', 'Tuggy', 'Varner'],
         citedSourceTypes: {
-            McCartney: 'commentary-expository', NA28: 'critical-apparatus', Robertson: 'grammar-syntax',
-            Ropes: 'commentary-critical', Tuggy: 'lexicon-technical', Varner: 'commentary-expository',
+            McCartney: ['commentary-expository'], NA28: ['critical-apparatus'], Robertson: ['grammar-syntax'],
+            Ropes: ['commentary-critical'], Tuggy: ['lexicon-technical'], Varner: ['commentary-expository'],
         },
     } as const;
     const tp6 = {
         paperId: 'tp6', title: 'TP #6', passage: {} as never, createdAt: new Date(2026, 9, 7),
         citedSourceKeys: ['Adamson', 'Wallace', 'Tuggy'],
-        citedSourceTypes: { Adamson: 'commentary-critical', Wallace: 'grammar-syntax', Tuggy: 'lexicon-technical' },
+        citedSourceTypes: { Adamson: ['commentary-critical'], Wallace: ['grammar-syntax'], Tuggy: ['lexicon-technical'] },
     } as const;
 
     it('propone los comentarios y la gramática; el léxico y el texto base quedan libres', () => {
@@ -137,8 +137,14 @@ describe('la regla de no repetir, por tipo de fuente', () => {
     });
 
     it('no sugiere volver a la misma gramática si se usó las dos semanas', () => {
-        const conRobertson = { ...tp6, citedSourceKeys: ['Robertson'], citedSourceTypes: { Robertson: 'grammar-syntax' } } as const;
+        const conRobertson = { ...tp6, citedSourceKeys: ['Robertson'], citedSourceTypes: { Robertson: ['grammar-syntax'] } } as const;
         expect(proposeExclusions(tp7, 'es', { beforePrevious: conRobertson }).find(e => e.key === 'Robertson')!.alternatives).toEqual([]);
+    });
+
+    it('dos obras con la misma clave: manda la regla más restrictiva (revisión de 8a)', () => {
+        // La *Grammar* y las *Word Pictures* de Robertson, citadas como «Robertson».
+        const ambas = { ...tp7, citedSourceKeys: ['Robertson'], citedSourceTypes: { Robertson: ['grammar-syntax', 'commentary-expository'] } } as const;
+        expect(proposeExclusions(ambas, 'es')[0]!.rule).toBe('exclude');
     });
 
     it('la regla es configurable por tipo', () => {

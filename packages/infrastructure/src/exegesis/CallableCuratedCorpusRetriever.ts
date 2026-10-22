@@ -36,6 +36,8 @@ interface RankedChunkPayload {
     sheet: number | null;
     section: string | null;
     score: number;
+    /** Su índice de pasajes nombra el versículo del paso (A1). */
+    namesVerse?: true;
 }
 
 interface RankedResponse {

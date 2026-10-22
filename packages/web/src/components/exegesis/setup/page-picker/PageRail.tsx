@@ -136,7 +136,7 @@ export function PageRail({
                                     className={`shrink-0 mt-0.5 h-5 w-5 inline-flex items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                         pinned?.has(page.sheet)
                                             ? 'bg-info-subtle text-info-subtle-foreground'
-                                            : 'text-muted-foreground/60 hover:bg-accent hover:text-foreground'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                                     }`}
                                 >
                                     <Pin className="h-3 w-3" aria-hidden="true" />

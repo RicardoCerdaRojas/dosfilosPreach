@@ -110,6 +110,9 @@ export function claveDeVersiculosDelPedido(raw: unknown): string[] {
     return [...new Set(ok)].slice(0, MAX_VERSE_KEYS);
 }
 
+/** Tope de fragmentos que se traen por su índice de pasajes en el camino vectorial. */
+const MAX_POR_PASAJE = 20;
+
 /** ¿El índice de pasajes del fragmento nombra alguno de los versículos del paso? */
 export function nombraElVersiculo(refs: unknown, verseKeys: ReadonlySet<string>): boolean {
     if (verseKeys.size === 0 || !Array.isArray(refs)) return false;
@@ -289,7 +292,28 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                         })
                         .get();
 
-                    const kept = ordenarPorPasajeYCercania(snapshot.docs
+                    // El vecino más cercano trae los `pool` de mayor coseno y
+                    // ordenar después no rescata nada: la hoja que nombra el
+                    // versículo con coseno bajo ya quedó afuera (revisión de
+                    // 8a). Se traen aparte, por su índice de pasajes.
+                    const porPasaje = verseKeys.size > 0
+                        ? await db.collection(CHUNK_COLLECTION)
+                            .where('resourceId', '==', resourceId)
+                            .where('userId', '==', uid)
+                            .where('refs', 'array-contains-any', [...verseKeys].slice(0, 30))
+                            .select('chunkIndex', 'text', 'metadata', 'userId', 'stores', 'embedding', 'refs')
+                            .limit(MAX_POR_PASAJE)
+                            .get()
+                            .then(snap => rankCuratedChunks({
+                                rows: snap.docs.map(doc => doc.data()), resourceId, uid, ranges, vector, pool, verseKeys,
+                            }))
+                            .catch(err => {
+                                console.warn('[CuratedCorpus] sin fragmentos por pasaje', { resourceId, error: (err as Error).message });
+                                return [] as RankedCuratedChunk[];
+                            })
+                        : [];
+                    const vistos = new Set(porPasaje.map(c => c.chunkIndex));
+                    const cercanos = ordenarPorPasajeYCercania(snapshot.docs
                         .map(doc => doc.data())
                         // Acá manda la curaduría: lo que el usuario no admitió
                         // no entra, por cerca que haya quedado.
@@ -305,7 +329,8 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                             // "más grande es mejor", como el resto del sistema.
                             score: Math.max(0, Math.min(1, 1 - (typeof d._distance === 'number' ? d._distance : 1))),
                             nombra: nombraElVersiculo(d.refs, verseKeys),
-                        }))).map(({ nombra: _nombra, ...chunk }) => chunk);
+                        }))).map(conMarcaDeVersiculo).filter(c => !vistos.has(c.chunkIndex));
+                    const kept = [...porPasaje, ...cercanos];
 
                     return { resourceId, pool: snapshot.size, kept, failed: false };
                 } catch (err) {
@@ -361,6 +386,18 @@ export interface RankedCuratedChunk {
     sheet: number | null;
     section: string | null;
     score: number;
+    /**
+     * Su índice de pasajes nombra el versículo del paso. Viaja para que la
+     * selección del prompt lo respete: el orden de aquí se perdía porque
+     * `selectForPrompt` volvía a ordenar sólo por coseno (revisión de 8a).
+     * Ausente = no lo nombra.
+     */
+    namesVerse?: true;
+}
+
+/** Sin la marca interna; con `namesVerse` sólo cuando nombra el versículo. */
+function conMarcaDeVersiculo<T extends { nombra: boolean }>({ nombra, ...chunk }: T): Omit<T, 'nombra'> & { namesVerse?: true } {
+    return nombra ? { ...chunk, namesVerse: true as const } : chunk;
 }
 
 /**
@@ -400,7 +437,7 @@ export function rankCuratedChunks(input: {
             score: Math.max(0, Math.min(1, cosine(embeddingOf(row.embedding), input.vector))),
             nombra: nombraElVersiculo(row.refs, claves),
         })));
-    return ordenadas.slice(0, input.pool).map(({ nombra: _nombra, ...chunk }) => chunk);
+    return ordenadas.slice(0, input.pool).map(conMarcaDeVersiculo);
 }
 
 function embeddingOf(value: CuratedChunkRow['embedding']): number[] {

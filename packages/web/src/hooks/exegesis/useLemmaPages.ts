@@ -33,6 +33,7 @@ export function lemmaPagesQuery(resourceId: string | null, lemmas: ReadonlyArray
         enabled: !!resourceId && terms.length > 0,
         staleTime: 30 * 60 * 1000,
         gcTime: 60 * 60 * 1000,
+        refetchOnWindowFocus: false,
         retry: 1,
     };
 }

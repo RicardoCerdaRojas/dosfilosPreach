@@ -34,9 +34,11 @@ export interface PreviousDelivery {
      * El tipo de cada clave citada, de las fuentes de esa entrega (TP #8, 8a,
      * A7): la regla de no repetir es por tipo. Una clave sin fuente que la
      * declare (citada por fuera del corpus) no aparece. Ausente: no se sabe,
-     * y todo se propone como antes.
+     * y todo se propone como antes. Una lista porque dos obras pueden
+     * compartir clave (la *Grammar* y las *Word Pictures* de Robertson): la
+     * regla toma la más restrictiva.
      */
-    citedSourceTypes?: Readonly<Record<string, SourceType>>;
+    citedSourceTypes?: Readonly<Record<string, ReadonlyArray<SourceType>>>;
 }
 
 /**
@@ -76,9 +78,11 @@ export function previousDeliveries(
         .slice(0, count)
         .map(previa => {
             const citadas = new Set(previa.citedSourceKeys);
-            const tipos: Record<string, SourceType> = {};
+            const tipos: Record<string, SourceType[]> = {};
             for (const f of previa.sources ?? []) {
-                if (f.citationKey && citadas.has(f.citationKey) && !tipos[f.citationKey]) tipos[f.citationKey] = f.sourceType;
+                if (!f.citationKey || !citadas.has(f.citationKey)) continue;
+                const lista = (tipos[f.citationKey] ??= []);
+                if (!lista.includes(f.sourceType)) lista.push(f.sourceType);
             }
             return {
                 paperId: previa.id,

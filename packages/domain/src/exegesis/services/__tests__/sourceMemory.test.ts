@@ -93,6 +93,6 @@ describe('previousDeliveries', () => {
 
     it('el tipo de cada clave CITADA sale de las fuentes de esa entrega', () => {
         const [tp7Entregado] = previousDeliveries([tp6, tp7, tp8], 'tp8', 1);
-        expect(tp7Entregado!.citedSourceTypes).toEqual({ Tuggy: 'lexicon-technical' });
+        expect(tp7Entregado!.citedSourceTypes).toEqual({ Tuggy: ['lexicon-technical'] });
     });
 });

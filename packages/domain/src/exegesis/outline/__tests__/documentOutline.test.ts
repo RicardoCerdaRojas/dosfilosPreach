@@ -136,6 +136,20 @@ describe('resolveOutlineReferences', () => {
         expect(resolved[0]!.reference).toBeNull();
     });
 
+    it('el libro prestado no pasa a ser el libro del documento (revisión de 8a)', () => {
+        const resolved = resolveOutlineReferences([
+            entry(0, 'IV 2, 3] NOTES', ['NOTES']),
+            entry(1, '1:1-3', ['NOTES']),
+        ], 'JAS');
+        expect(resolved[0]!.reference).toEqual(ref('James 4:2-3'));
+        // «1:1-3» no es Santiago 1:1-3: hereda la nota anterior, no se lee con el libro prestado.
+        expect(resolved[1]!.resolution).toBe('inherited');
+    });
+
+    it('un capítulo que el libro no tiene no es un encabezado de notas', () => {
+        expect(parseHeadingReference('VI 2] NOTES', 'JAS')).toBeNull();
+    });
+
     it('el libro del trabajo no se presta a una referencia desnuda', () => {
         // Un comentario de Hebreos y Santiago sin libro en la miga: «1:1-3» no
         // es Santiago 1:1-3 sólo porque el trabajo sea de Santiago.

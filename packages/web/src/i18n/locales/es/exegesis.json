@@ -859,6 +859,7 @@
           "page": "p. {{page}}",
           "sheet": "h. {{sheet}}",
           "warning": {
+            "unindexed": "{{source}} no tiene su texto indexado: no se puede revisar qué páginas tratan cada pregunta.",
             "unrelated": "{{source}} no nombra ningún versículo con pregunta.",
             "noPrintedPages": "{{source}} no tiene páginas impresas resueltas: sus citas no se podrán comprobar.",
             "missingSheets_one": "{{source}} trata la pregunta {{questions}} ({{verses}}) en {{pages}}, fuera del corpus.",
@@ -869,6 +870,8 @@
             "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo."
           },
           "action": {
+            "adjust": "Ajustar páginas",
+            "removeConfirm": "¿Quitar? Pulsa de nuevo",
             "addAndPin": "Agregar y fijar",
             "remove": "Quitar del corpus",
             "calibrate": "Resolver numeración"
@@ -1387,7 +1390,7 @@
         "excluded": {
           "alternate": "· gramática: se puede repetir, conviene alternar",
           "alternateWith": "· gramática: se puede repetir, conviene alternar con {{others}}",
-          "freeByType": "No se proponen {{sources}}: los léxicos, el texto base y su aparato se pueden repetir.",
+          "freeByType": "No se proponen {{sources}}: la regla de no repetir es para comentarios (y gramáticas, que conviene alternar); léxicos, diccionarios, texto base y el resto se pueden repetir.",
           "title": "Fuentes excluidas de este trabajo",
           "hint": "Lo que tu plan de estudios o tu profesor no permite usar aquí. Aparecen al final de cada lista, marcadas, y se le indica al asistente que no las cite.",
           "proposal": "En tu entrega anterior ({{paper}}) citaste estas fuentes. Si tu plan no permite repetirlas en semanas consecutivas, marca las que excluyes de este trabajo:",

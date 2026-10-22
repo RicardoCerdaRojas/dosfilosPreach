@@ -39,11 +39,13 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     const sugerida = confirmadas === null ? propuestaPorTipo : [];
     const propuesta = enRevision ?? sugerida;
     // Lo citado que la regla deja libre, para decir por qué no está en la lista.
+    // También cuando no se propone nada: si la semana pasada sólo citó
+    // léxicos y texto base, la tarjeta callaba sin decir por qué.
     const libres = useMemo(() => {
-        if (!previous || propuesta.length === 0) return [];
+        if (!previous || confirmadas !== null || enRevision) return [];
         const propuestas = new Set(propuestaPorTipo.map(e => e.key));
         return previous.citedSourceKeys.filter(k => !propuestas.has(k));
-    }, [previous, propuesta.length, propuestaPorTipo]);
+    }, [previous, confirmadas, enRevision, propuestaPorTipo]);
     const lista = enRevision ? [] : (confirmadas ?? []);
 
     const guardar = async (excludedSources: ReadonlyArray<ExcludedSource>): Promise<boolean> => {
@@ -143,6 +145,12 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                         )}
                     </div>
                 </div>
+            )}
+
+            {propuesta.length === 0 && libres.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                    {t('paperSetup.subSteps.corpus.excluded.freeByType', { sources: libres.join(', ') })}
+                </p>
             )}
 
             {lista.length > 0 && (

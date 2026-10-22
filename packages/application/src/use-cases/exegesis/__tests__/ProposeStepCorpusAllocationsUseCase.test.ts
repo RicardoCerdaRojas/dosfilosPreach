@@ -191,6 +191,40 @@ describe('el plan reparte con la evidencia del corpus', () => {
         expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v1.sourcesEditedAfterNote).toBeUndefined();
     });
 
+    it('una fuente excluida del trabajo no entra por evidencia (revisión de 8a)', async () => {
+        const conRopes = {
+            ...tp8,
+            sources: [...tp8.sources, { id: 'ropes', sourceType: 'commentary-critical', displayLabel: 'Ropes', citationKey: 'Ropes' }],
+            excludedSources: [{ key: 'Ropes', previousPaperTitle: 'TP #7' }],
+        };
+        const { useCase, planner, paperRepository } = build(conRopes, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p', evidence: evidencia });
+        const v3 = planner.propose.mock.calls[0]![0].steps.find((s: { id: string }) => s.id === 'v3');
+        expect(v3.evidence.map((e: { sourceId: string }) => e.sourceId)).not.toContain('ropes');
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v3.pinnedSources).not.toContain('ropes');
+    });
+
+    it('reproponer no duplica el aviso de evidencia en la nota (revisión de 8a)', async () => {
+        const previo = {
+            ...tp8,
+            stepPlan: {
+                perStep: { v2: { stepId: 'v2', kind: 'verse', pinnedSources: ['mayor'], suppressedSources: [], note: 'Ancla: Mayor. También entra por sus páginas sobre la pregunta del paso: Tuggy.' } },
+                defaults: {}, updatedAt: new Date(),
+            },
+        };
+        // El modelo omite v2: la nota vieja se reutiliza.
+        const { useCase, paperRepository } = build(previo, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p', evidence: evidencia });
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v2.note)
+            .toBe('Ancla: Mayor. También entra por sus páginas sobre la pregunta del paso: Tuggy.');
+    });
+
+    it('sin evidencia no hay modo preguntas: se conserva la cobertura', async () => {
+        const { useCase, planner } = build(tp8, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        expect(planner.propose.mock.calls[0]![0].questionsMode).toBe(false);
+    });
+
     it('sin evidencia, el plan queda como lo dejó el modelo', async () => {
         const { useCase, paperRepository } = build(tp8, { v1: { pinnedSources: ['mayor'], rationale: 'x' } });
         await useCase.execute({ ownerId: 'o', paperId: 'p' });
