@@ -52,3 +52,13 @@ describe('el tipo del proyecto', () => {
         expect(updateProject.mock.calls[0]![0]).not.toHaveProperty('type');
     });
 });
+
+describe('«Nuevo proyecto» sin tipo elegido (regresión de #800)', () => {
+    it('un initialType que no es un tipo (el evento del clic) no llega a guardarse', async () => {
+        render(<ProjectEditDialog initialType={{ type: 'click' } as never} onClose={vi.fn()} />);
+        fireEvent.change(screen.getByRole('textbox', { name: /nombre/i }), { target: { value: 'Teología III' } });
+        guardar();
+        await waitFor(() => expect(createProject).toHaveBeenCalled());
+        expect(typeof createProject.mock.calls[0]![0].type).toBe('string');
+    });
+});
