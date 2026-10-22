@@ -46,8 +46,10 @@ export function canonicalVerseAnalysisSchema(
      * ser obligatorio (TP #8, fase 8b, C1). Sin preguntas el campo ni aparece:
      * pedirlo vacío en cada versículo de un paper largo es ruido en el prompt.
      */
-    options: { withQuestions?: boolean } = {},
+    options: { withQuestions?: boolean; grammarLabel?: string } = {},
 ) {
+    // C4: la gramática del corpus, no «Wallace» fijo (también lo decía en el hebreo).
+    const gramatica = options.grammarLabel?.trim() || voice.grammarsEs.replace(/^[^:]*:\s*/, '');
     return {
     type: 'object',
     description:
@@ -161,7 +163,7 @@ export function canonicalVerseAnalysisSchema(
                     description:
                         'Construcciones sintácticas clave: participios y su función, cláusulas relativas, ' +
                         'frases preposicionales con matiz por preposición + caso, construcciones de genitivo ' +
-                        'según las categorías de Wallace. Cada una con morfología + función + significancia interpretativa.',
+                        `según las categorías de ${gramatica}. Cada una con morfología + función + significancia interpretativa.`,
                     items: {
                         type: 'object',
                         properties: {
@@ -179,7 +181,7 @@ export function canonicalVerseAnalysisSchema(
                             syntacticFunction: {
                                 type: 'string',
                                 description:
-                                    'Función sintáctica anclada en categorías de Wallace. ' +
+                                    `Función sintáctica anclada en categorías de ${gramatica}. ` +
                                     'Ej.: "circunstancial temporal" / "esfera locativa" / "genitivo descriptivo".',
                             },
                             interpretiveSignificance: {

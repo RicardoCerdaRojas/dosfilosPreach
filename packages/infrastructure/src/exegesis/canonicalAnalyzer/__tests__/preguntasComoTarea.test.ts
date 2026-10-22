@@ -140,3 +140,34 @@ describe('rango y segunda mano en el esquema y el prompt (C3)', () => {
         expect(buildAnalyzerPrompt(entrada()).systemInstruction).toContain('el otro autor va en "via": nunca lo cites como si lo hubieras leído');
     });
 });
+
+/**
+ * TP #8 (8b, C4): las categorías estaban fijas en «Wallace», también en el
+ * hebreo, y el TP #7 usó Robertson. Patrón 8 del profesor: la respuesta
+ * responde a la clasificación de la gramática del curso.
+ */
+describe('la gramática del corpus, no «Wallace» fijo', () => {
+    const robertson = { sourceType: 'grammar-syntax', citationKey: 'Robertson', textContent: 'x', priority: 'primary' };
+
+    it('con una gramática en el corpus, sus categorías y la regla de responder según ella', () => {
+        const mayor = { sourceType: 'commentary-critical', citationKey: 'Mayor', textContent: 'x', priority: 'primary' };
+        const { userMessage } = buildAnalyzerPrompt(entrada({ sources: [mayor, robertson] as never }));
+        expect(userMessage).toContain('syntacticFunction (categorías de Robertson)');
+        expect(userMessage).toContain('Cuando la gramática del corpus (Robertson) clasifica una construcción');
+        expect(userMessage).not.toContain('categorías de Wallace');
+    });
+
+    it('sin gramática en el corpus, las de referencia del testamento y sin la regla', () => {
+        const { userMessage } = buildAnalyzerPrompt(entrada());
+        expect(userMessage).toContain('categorías de Wallace, BDF, Robertson');
+        expect(userMessage).not.toContain('Cuando la gramática del corpus');
+        const hebreo = buildAnalyzerPrompt(entrada({ verseRef: { bookId: 'RUT', chapterStart: 1, chapterEnd: 1, verseStart: 7, verseEnd: 7 } as never })).userMessage;
+        expect(hebreo).not.toContain('Wallace');
+    });
+
+    it('el esquema también', () => {
+        const sch = JSON.stringify(canonicalVerseAnalysisSchema(voiceFor('JAS'), { grammarLabel: 'Robertson' }));
+        expect(sch).toContain('categorías de Robertson');
+        expect(sch).not.toContain('Wallace');
+    });
+});

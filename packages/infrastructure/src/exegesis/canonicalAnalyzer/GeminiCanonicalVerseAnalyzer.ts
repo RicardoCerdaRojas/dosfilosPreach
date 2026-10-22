@@ -6,7 +6,7 @@ import {
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { LONG_GENERATION_TIMEOUT_MS } from '../../llm/llmTimeouts';
-import { buildAnalyzerPrompt } from './analyzerPrompts';
+import { buildAnalyzerPrompt, courseGrammarLabel } from './analyzerPrompts';
 import { canonicalVerseAnalysisSchema } from './responseSchema';
 import { voiceFor } from '../testamentVoice';
 import { mapToCanonicalVerseAnalysis } from './mapAnalyzerResponse';
@@ -75,6 +75,7 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
                 // contradiciendo al prompt que ya decía lo correcto.
                 responseSchema: canonicalVerseAnalysisSchema(voiceFor(input.verseRef.bookId), {
                     withQuestions: (input.sectionQuestions?.length ?? 0) > 0,
+                    grammarLabel: courseGrammarLabel(input.sources, voiceFor(input.verseRef.bookId).grammarsEs).label,
                 }),
                 temperature: 0.3,
                 topP: 0.9,

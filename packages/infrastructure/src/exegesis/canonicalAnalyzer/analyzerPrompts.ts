@@ -188,9 +188,29 @@ function buildUserMessage(input: AnalyzeVerseInput): string {
     );
 }
 
+/**
+ * La gramática con cuyas categorías se clasifica la sintaxis (TP #8, fase 8b,
+ * C4). Estaba fija en «Wallace», también en el hebreo, y el TP #7 usó
+ * Robertson. Es la gramática del CORPUS (el estudiante la alterna por
+ * semana); sin gramática en el corpus, la de referencia del testamento.
+ */
+export function courseGrammarLabel(
+    sources: ReadonlyArray<{ sourceType?: string; citationKey: string | null }>,
+    grammarsDefault: string,
+): { label: string; inCorpus: boolean } {
+    const claves = [...new Set(sources
+        .filter(s => s.sourceType === 'grammar-syntax' && s.citationKey?.trim())
+        .map(s => s.citationKey!.trim()))];
+    if (claves.length > 0) return { label: claves.join(', '), inCorpus: true };
+    // «Gramática/sintaxis griega: Wallace, BDF, Robertson» → «Wallace, BDF, Robertson».
+    return { label: grammarsDefault.replace(/^[^:]*:\s*/, ''), inCorpus: false };
+}
+
 function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): string {
     const lang = input.language;
     const voice = voiceFor(input.verseRef.bookId);
+    const gramaticaEs = courseGrammarLabel(input.sources, voice.grammarsEs);
+    const gramaticaEn = courseGrammarLabel(input.sources, voice.grammarsEn);
     const verse = formatPassageReference(input.verseRef, lang);
     const priorAnalysesBlock = formatPriorAnalyses(input.priorAcceptedAnalyses, lang);
     const emphasisBlock = formatStepEmphasis(input.stepEmphasis, lang);
@@ -210,7 +230,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
             ``,
             `**syntacticAnalysis.mainVerb** — Identify the main verb of the sentence containing this verse. Set to null when the verse is part of a longer sentence whose main verb lives elsewhere (participial chains, μέν…δέ pairs, periodic sentences); when null, populate "mainVerbNote" to explain.`,
             ``,
-            `**syntacticAnalysis.keyConstructions** — Each participle, relative clause, prepositional phrase, genitive construction. Each entry: text + morphology (in natural language: "${voice.morphologyEn}") + syntactic function (Wallace's categories) + interpretive significance.`,
+            `**syntacticAnalysis.keyConstructions** — Each participle, relative clause, prepositional phrase, genitive construction. Each entry: text + morphology (in natural language: "${voice.morphologyEn}") + syntactic function (${gramaticaEn.label}'s categories) + interpretive significance.${gramaticaEn.inCorpus ? ` When the corpus grammar (${gramaticaEn.label}) classifies a construction, classify it with THAT category and its page, and answer according to that classification: do not swap it for a category from another grammar.` : ''}`,
             ``,
             `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι and others when their argumentative function is notable. Use Levinsohn / Runge categories.`,
             ``,
@@ -259,7 +279,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
         ``,
         `**syntacticAnalysis.mainVerb** — Identifica el verbo principal de la oración que contiene este verso. Pon null cuando el verso es parte de una oración cuyo verbo principal vive en otro lado (cadenas participiales, pares μέν…δέ, oraciones periódicas); cuando es null, puebla "mainVerbNote" para explicar.`,
         ``,
-        `**syntacticAnalysis.keyConstructions** — Cada participio, cláusula relativa, frase preposicional, construcción de genitivo. Cada entrada: text + morphology (en lenguaje natural: "${voice.morphologyEs}") + syntacticFunction (categorías de Wallace) + interpretiveSignificance.`,
+        `**syntacticAnalysis.keyConstructions** — Cada participio, cláusula relativa, frase preposicional, construcción de genitivo. Cada entrada: text + morphology (en lenguaje natural: "${voice.morphologyEs}") + syntacticFunction (categorías de ${gramaticaEs.label}) + interpretiveSignificance.${gramaticaEs.inCorpus ? ` Cuando la gramática del corpus (${gramaticaEs.label}) clasifica una construcción, clasifícala con ESA categoría y su página, y responde según esa clasificación: no la cambies por la categoría de otra gramática.` : ''}`,
         ``,
         `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι y otras cuando su función argumentativa es notable. Usa categorías de Levinsohn / Runge.`,
         ``,
