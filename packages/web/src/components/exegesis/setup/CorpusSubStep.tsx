@@ -42,7 +42,7 @@ import {
     getBookById,
     previousDelivery,
     emptySourceReason,
-    repeatedFromPreviousDelivery,
+    warnsRepeatedSource,
     excludedLast,
     exclusionFor,
     commentaryBookCoverage,
@@ -93,6 +93,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useAutoClassifyOtherSources } from '@/hooks/exegesis/useAutoClassifyOtherSources';
 import { SourceTypePicker } from './SourceTypePicker';
 import { RubricGapCard } from './RubricGapCard';
+import { CorpusQuestionReviewCard } from './CorpusQuestionReviewCard';
 import { CourseBibliographyCard } from './CourseBibliographyCard';
 import { RubricRigorIndicator } from '@/components/exegesis/rubric/RubricRigorIndicator';
 import { ExtractFromLibraryDialog } from './ExtractFromLibraryDialog';
@@ -249,6 +250,9 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                     ) && (
                         <RubricGapCard paper={paper} onPickType={(type) => openDialog(type)} />
                     )}
+                    {/* Antes de generar: qué hojas de cada fuente tratan cada
+                        pregunta, y lo que falta (TP #8, A4). */}
+                    <CorpusQuestionReviewCard paper={paper} />
                     <CourseBibliographyCard paper={paper} onAddResource={openDialogForResource} />
                     <CorpusSourcesList
                         paper={paper}
@@ -940,8 +944,8 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
      * lo dice el sílabo de cada curso, no este código.
      */
     const entregaPrevia = useMemo(() => previousDelivery(papers, paper.id), [papers, paper.id]);
-    const yaCitadaAntes = !!source.citationKey
-        && repeatedFromPreviousDelivery([source.citationKey], entregaPrevia).size > 0;
+    // Ver `warnsRepeatedSource` (A7, TP #8 #15).
+    const yaCitadaAntes = warnsRepeatedSource(source, paper.excludedSources, entregaPrevia);
     const library = useLibrary();
     const isCitable = CITABLE_SOURCE_TYPES.has(source.sourceType);
     const isExtracted = usesExtractedExcerpts(source);
@@ -1870,6 +1874,8 @@ function AddSourceDialog({
                 // distintas de su parte.
                 if (outcome.kind === 'structural') {
                     toast.success(t('paperSetup.subSteps.corpus.picker.toast.attachedStructural', { count: outcome.sheetCount }));
+                } else if (outcome.kind === 'passage') {
+                    toast.success(t('paperSetup.subSteps.corpus.picker.toast.attachedPassage', { count: outcome.sheetCount }));
                 } else if (outcome.kind === 'semantic') {
                     toast.warning(t('paperSetup.subSteps.corpus.picker.toast.attachedSemantic', { count: outcome.sheetCount }));
                 } else {

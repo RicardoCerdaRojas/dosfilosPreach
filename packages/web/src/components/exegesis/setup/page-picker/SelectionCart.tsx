@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Pin, PinOff, X } from 'lucide-react';
 import {
     CURATED_CORPUS_BUDGET_CHARS,
+    pinStateOfRange,
+    pinnedSheetCount,
     printedLabelForSheet,
     sectionsCoveredBy,
     sectionLabelForRange,
@@ -83,9 +85,14 @@ export function SelectionCart({
     const percent = Math.round((conEsta.perStepChars / VERSE_CORPUS_SPACE_CHARS) * 100);
     const overBudget = conEsta.perStepChars > VERSE_CORPUS_SPACE_CHARS;
 
-    /** Un tramo está fijado cuando coincide exactamente con uno marcado. */
-    const isPinned = (range: SheetRange): boolean =>
-        pinnedRanges.some(p => p.start === range.start && p.end === range.end);
+    /**
+     * Cuánto del tramo está fijado: entero, en parte (hojas sueltas fijadas
+     * desde el riel o el visor, A5) o nada. Antes un tramo «estaba fijado»
+     * sólo si coincidía exactamente con uno marcado, y al agrandarlo el botón
+     * decía «sin fijar» con todas sus hojas fijadas.
+     */
+    const pinState = (range: SheetRange) => pinStateOfRange(range, pinnedRanges);
+    const isPinned = (range: SheetRange): boolean => pinState(range) === 'all';
 
     /**
      * Qué secciones cubre el tramo.
@@ -169,6 +176,14 @@ export function SelectionCart({
                                 <span className="block text-xs font-semibold tabular-nums text-foreground">
                                     {rangeLabel(range)}
                                 </span>
+                                {pinState(range) === 'some' && (
+                                    <span className="block text-[11px] text-info-subtle-foreground">
+                                        {t('paperSetup.subSteps.corpus.picker.cart.pinnedSome', {
+                                            count: pinnedSheetCount(range, pinnedRanges),
+                                            total: range.end - range.start + 1,
+                                        })}
+                                    </span>
+                                )}
                                 {(() => {
                                     const label = labelFor(range);
                                     if (!label.text) return null;
@@ -185,7 +200,7 @@ export function SelectionCart({
                             <button
                                 type="button"
                                 onClick={() => onTogglePinned(range)}
-                                aria-pressed={isPinned(range)}
+                                aria-pressed={pinState(range) === 'some' ? 'mixed' : isPinned(range)}
                                 title={t('paperSetup.subSteps.corpus.picker.cart.pinHint')}
                                 aria-label={isPinned(range)
                                     ? t('paperSetup.subSteps.corpus.picker.cart.unpin', { range: rangeLabel(range) })
@@ -193,10 +208,12 @@ export function SelectionCart({
                                 className={`shrink-0 rounded p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                     isPinned(range)
                                         ? 'text-info-subtle-foreground bg-info-subtle'
-                                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                                        : pinState(range) === 'some'
+                                            ? 'text-info-subtle-foreground hover:bg-info-subtle'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                                 }`}
                             >
-                                {isPinned(range)
+                                {pinState(range) !== 'none'
                                     ? <Pin className="h-3.5 w-3.5" aria-hidden="true" />
                                     : <PinOff className="h-3.5 w-3.5" aria-hidden="true" />}
                             </button>

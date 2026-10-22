@@ -185,3 +185,51 @@ describe('SelectSourcePagesUseCase · consistencia', () => {
         expect(result.incomplete).toBe(false);
     });
 });
+
+/**
+ * «Agregar y fijar» de la revisión por pregunta (TP #8, A4; revisión de 8a):
+ * suma sobre lo que el trabajo declara AHORA. Con la lista de la interfaz, un
+ * segundo clic antes del refresco deshacía el primero.
+ */
+describe('SelectSourcePagesUseCase — sumar a lo que ya hay', () => {
+    const existente = {
+        id: 'source-existing',
+        sourceLibraryResourceId: 'lib-1',
+        corpusId: 'lib-1',
+        excerpts: [],
+        extractionFingerprint: 'huella-vieja',
+        excerptRecipe: {
+            sheetRanges: [{ start: 60, end: 61 }],
+            proposedRanges: [{ start: 60, end: 60 }],
+            pinnedRanges: [{ start: 60, end: 60 }],
+            passageFingerprint: 'huella-vieja',
+        },
+    };
+
+    it('suma la hoja y la fija sin perder lo que había, y conserva la huella', async () => {
+        const { repo, reader } = makeDeps(makePaper([existente]));
+        await new SelectSourcePagesUseCase(repo as never, reader as never).execute({
+            ...BASE_INPUT,
+            sheetRanges: [{ start: 63, end: 63 }],
+            pinnedRanges: [{ start: 63, end: 63 }],
+            proposedRanges: [],
+            mergeWithExisting: true,
+        });
+        const patch = repo.updateSource.mock.calls[0]![3];
+        expect(patch.excerptRecipe).toEqual({
+            sheetRanges: [{ start: 60, end: 61 }, { start: 63, end: 63 }],
+            proposedRanges: [{ start: 60, end: 60 }],
+            pinnedRanges: [{ start: 60, end: 60 }, { start: 63, end: 63 }],
+            passageFingerprint: 'huella-vieja',
+        });
+        expect(patch.extractionFingerprint).toBe('huella-vieja');
+    });
+
+    it('sin páginas elegidas a las que sumar, no reescribe la fuente', async () => {
+        const { repo, reader } = makeDeps(makePaper([{ ...existente, excerptRecipe: null }]));
+        await expect(new SelectSourcePagesUseCase(repo as never, reader as never).execute({
+            ...BASE_INPUT, sheetRanges: [{ start: 63, end: 63 }], mergeWithExisting: true,
+        })).rejects.toThrow();
+        expect(repo.updateSource).not.toHaveBeenCalled();
+    });
+});

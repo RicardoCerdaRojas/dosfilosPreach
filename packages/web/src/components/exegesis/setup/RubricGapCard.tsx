@@ -1,7 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import {
+    exclusionFor,
     sourceTypesForRubric,
     computeRubricCompliance,
     getSourceTypeOrderIndex,
@@ -14,6 +15,7 @@ import { useLibrary } from '@/hooks/library';
 import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
 import { RecommendationsSection } from '../recommendations/RecommendationsSection';
 import { useAttachLibrarySource } from '@/hooks/exegesis/useAttachLibrarySource';
+import { bibliotecaDelTipo } from './faltaParaLaRubrica';
 
 /**
  * Visual gap analysis between the paper's corpus and its rubric.
@@ -182,6 +184,17 @@ function RequirementRow({
     const exclusiones = usePaperExclusions(paper);
     const label = t(`sourceTypes.${check.sourceType}.label`);
     const examples = t(`sourceTypes.${check.sourceType}.examples`);
+    // Lo que falta sólo se cubriría con libros excluidos (TP #8, A4/A7).
+    const soloExcluidas = useMemo(() => {
+        if (check.satisfied) return null;
+        const { permitidas, excluidas } = bibliotecaDelTipo({
+            sourceType: check.sourceType,
+            paper,
+            resources: library.resources,
+            exclusionDe: r => exclusionFor({ citationKey: null, author: r.author ?? null }, exclusiones)?.key ?? null,
+        });
+        return permitidas.length === 0 && excluidas.length > 0 ? excluidas : null;
+    }, [check.satisfied, check.sourceType, paper, library.resources, exclusiones]);
 
     return (
         <li className="flex items-start gap-2 text-xs">
@@ -222,6 +235,15 @@ function RequirementRow({
                 <p className="text-[11px] text-muted-foreground italic mt-0.5">
                     {examples}
                 </p>
+                {soloExcluidas && (
+                    <p className="text-warning-subtle-foreground leading-snug mt-1" data-testid="solo-excluidas">
+                        {t('paperSetup.subSteps.corpus.gap.onlyExcluded', {
+                            have: check.have,
+                            required: check.required,
+                            sources: soloExcluidas.join(', '),
+                        })}
+                    </p>
+                )}
                 {/* v1.7 corpus recommendations — curated bibliography
                     surfaced under each requirement gap. Renders an empty
                     state when no curation exists for (book × sourceType),

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Crosshair, Sparkles } from 'lucide-react';
+import { BookMarked, Crosshair, Hand, Sparkles } from 'lucide-react';
 import type { ExcerptSelectionMode } from '@dosfilos/domain';
 
 /**
@@ -15,26 +15,30 @@ import type { ExcerptSelectionMode } from '@dosfilos/domain';
  * acción que corresponde es distinta: la aproximada conviene revisarla
  * fragmento por fragmento antes de generar.
  *
+ * Cuatro modos (TP #8, 8a, A4): además de la sección y la coincidencia, las
+ * hojas que nombran los versículos con pregunta (`passage`) y las elegidas a
+ * mano (`manual`). Las dos se mostraban como «Coincidencia aproximada»: la más
+ * precisa y la que pasó por ojo humano, con el rótulo de la menos confiable.
+ *
  * No renderiza nada cuando la fuente es anterior a la selección estructural
  * (`null`): afirmar un modo que no se registró sería inventar.
  */
+const MODOS = {
+    structural: { Icon: Crosshair, tone: 'bg-info-subtle text-info-subtle-foreground border-info/30' },
+    passage: { Icon: BookMarked, tone: 'bg-info-subtle text-info-subtle-foreground border-info/30' },
+    manual: { Icon: Hand, tone: 'bg-muted text-foreground border-border' },
+    semantic: { Icon: Sparkles, tone: 'bg-warning-subtle text-warning-subtle-foreground border-warning/30' },
+} as const satisfies Record<ExcerptSelectionMode, unknown>;
+
 export function SourceSelectionModeBadge({ mode }: { mode: ExcerptSelectionMode | null }) {
     const { t } = useTranslation('exegesis');
 
     if (!mode) return null;
 
-    const isStructural = mode === 'structural';
-    const Icon = isStructural ? Crosshair : Sparkles;
-    const label = isStructural
-        ? t('paperSetup.subSteps.corpus.list.selectionMode.structural')
-        : t('paperSetup.subSteps.corpus.list.selectionMode.semantic');
-    const hint = isStructural
-        ? t('paperSetup.subSteps.corpus.list.selectionMode.structuralHint')
-        : t('paperSetup.subSteps.corpus.list.selectionMode.semanticHint');
-
-    const tone = isStructural
-        ? 'bg-info-subtle text-info-subtle-foreground border-info/30'
-        : 'bg-warning-subtle text-warning-subtle-foreground border-warning/30';
+    const { Icon, tone } = MODOS[mode] ?? MODOS.semantic;
+    const clave = mode in MODOS ? mode : 'semantic';
+    const label = t(`paperSetup.subSteps.corpus.list.selectionMode.${clave}`);
+    const hint = t(`paperSetup.subSteps.corpus.list.selectionMode.${clave}Hint`);
 
     return (
         <span

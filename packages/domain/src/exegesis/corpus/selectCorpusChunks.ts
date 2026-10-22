@@ -45,6 +45,12 @@ export interface CorpusChunk {
      * y el análisis decía «no están en el corpus suministrado».
      */
     pinned?: boolean;
+    /**
+     * Su índice de pasajes nombra el versículo del paso (TP #8, 8a, A1). Gana
+     * sobre el coseno en la selección: la hoja de Wallace que nombra Stg 4:3
+     * con coseno 0,1 perdía contra cinco fragmentos de 0,99 que no lo nombran.
+     */
+    namesVerse?: boolean;
 }
 
 /**
@@ -123,7 +129,7 @@ export function selectForPrompt(input: SelectForPromptInput): PromptSelection {
     const pinnedChars = used;
     const pinnedExhaustedBudget = pinnedChars >= budget && input.ranked.length > 0;
 
-    const byScore = [...input.ranked].sort((a, b) => b.score - a.score);
+    const byScore = [...input.ranked].sort((a, b) => Number(!!b.namesVerse) - Number(!!a.namesVerse) || b.score - a.score);
 
     // 2. El piso por fuente. Cada fuente toma sus mejores fragmentos
     //    hasta su cuota, sin competir contra las demás. Una fuente con

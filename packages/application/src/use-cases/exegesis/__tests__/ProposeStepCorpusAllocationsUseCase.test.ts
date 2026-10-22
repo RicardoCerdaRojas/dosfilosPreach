@@ -100,3 +100,134 @@ describe('la pregunta de sintaxis lleva su gramática', () => {
         expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v7.pinnedSources).toEqual(['wallace']);
     });
 });
+
+/**
+ * TP #8 (Santiago 4:1-10, 2026-10-21, fase 8a, B1–B2): el planificador nunca
+ * veía una hoja y dejó a Tuggy en un solo paso y a Kittel en otro, aunque los
+ * dos tenían material para tres preguntas.
+ */
+describe('el plan reparte con la evidencia del corpus', () => {
+    const tp8 = {
+        passage: { bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 1, verseEnd: 10 },
+        assignmentBrief: '1. ¿Qué significa el sustantivo μέλεσιν (Stg. 4:1)?\n2. ¿Qué denota φονεύετε (Stg. 4:2)?\n3. ¿Qué significa αἰτεῖτε (Stg. 4:3)?',
+        sources: [
+            { id: 'mayor', sourceType: 'commentary-critical', displayLabel: 'Mayor', citationKey: 'Mayor', chosenRole: 'anchor' },
+            { id: 'tuggy', sourceType: 'lexicon-technical', displayLabel: 'Tuggy', citationKey: 'Tuggy' },
+            { id: 'kittel', sourceType: 'theological-dictionary', displayLabel: 'Kittel', citationKey: 'Kittel', chosenRole: 'contrast' },
+        ],
+        steps: [1, 2, 3].map(v => ({
+            id: `v${v}`, kind: 'verse', order: v,
+            verseRef: { bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: v, verseEnd: v },
+        })),
+    };
+    const evidencia = [
+        { question: 1, sourceId: 'tuggy', via: 'lemma' as const, term: 'μέλεσιν', sheets: [584, 585], snippets: [] },
+        { question: 1, sourceId: 'mayor', via: 'verse' as const, sheets: [407], snippets: ['IV 1] NOTES 1. πόθεν πόλεμοι'] },
+        { question: 2, sourceId: 'tuggy', via: 'lemma' as const, term: 'φονεύετε', sheets: [938], snippets: [] },
+        { question: 3, sourceId: 'kittel', via: 'lemma' as const, term: 'αἰτεῖτε', sheets: [32], snippets: [] },
+        { question: 3, sourceId: 'tuggy', via: 'verse' as const, sheets: [37], snippets: ['x'.repeat(500)] },
+        // Una fuente que ya no está en el corpus no cuenta.
+        { question: 3, sourceId: 'ropes', via: 'verse' as const, sheets: [12], snippets: [] },
+    ];
+
+    it('el planificador ve la evidencia bajo cada paso, el rol del corpus y el modo preguntas', async () => {
+        const { useCase, planner } = build(tp8, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p', evidence: evidencia });
+        const entrada = planner.propose.mock.calls[0]![0];
+        expect(entrada.questionsMode).toBe(true);
+        expect(entrada.sources.find((s: { id: string }) => s.id === 'kittel').chosenRole).toBe('contrast');
+        const v1 = entrada.steps.find((s: { id: string }) => s.id === 'v1');
+        expect(v1.evidence).toEqual([
+            { sourceId: 'tuggy', sheets: [584, 585], via: 'lemma', term: 'μέλεσιν' },
+            { sourceId: 'mayor', sheets: [407], via: 'verse', line: 'IV 1] NOTES 1. πόθεν πόλεμοι' },
+        ]);
+        const v3 = entrada.steps.find((s: { id: string }) => s.id === 'v3');
+        expect(v3.evidence.map((e: { sourceId: string }) => e.sourceId)).toEqual(['kittel', 'tuggy']);
+        expect(v3.evidence[1].line).toHaveLength(300);
+    });
+
+    it('B1: lo que tiene evidencia entra al paso aunque el modelo lo haya dejado fuera, con su rol del corpus', async () => {
+        const { useCase, paperRepository } = build(tp8, {
+            v1: { pinnedSources: ['mayor'], pinnedSourceRoles: { mayor: 'anchor' }, rationale: 'Ancla: Mayor.' },
+            v2: { pinnedSources: ['mayor'], pinnedSourceRoles: { mayor: 'anchor' }, rationale: 'Ancla: Mayor.' },
+            v3: { pinnedSources: ['mayor', 'tuggy'], pinnedSourceRoles: { mayor: 'anchor', tuggy: 'contrast' }, rationale: 'x' },
+        });
+        await useCase.execute({ ownerId: 'o', paperId: 'p', evidence: evidencia });
+        const plan = paperRepository.setStepPlan.mock.calls[0]![2].perStep;
+        expect(plan.v1.pinnedSources).toEqual(['mayor', 'tuggy']);
+        // Tuggy sin rol elegido: el de su tipo.
+        expect(plan.v1.pinnedSourceRoles).toEqual({ mayor: 'anchor', tuggy: 'technical' });
+        expect(plan.v1.note).toBe('Ancla: Mayor. También entra por sus páginas sobre la pregunta del paso: Tuggy.');
+        expect(plan.v2.pinnedSources).toEqual(['mayor', 'tuggy']);
+        // Kittel con el rol que el estudiante le dio; el rol que el modelo eligió para Tuggy se respeta.
+        expect(plan.v3.pinnedSources).toEqual(['mayor', 'tuggy', 'kittel']);
+        expect(plan.v3.pinnedSourceRoles).toEqual({ mayor: 'anchor', tuggy: 'contrast', kittel: 'contrast' });
+        expect(plan.v3.pinnedSources).not.toContain('ropes');
+    });
+
+    it('un paso sin asignación del modelo igual recibe la evidencia', async () => {
+        const { useCase, paperRepository } = build(tp8, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p', evidence: evidencia });
+        const plan = paperRepository.setStepPlan.mock.calls[0]![2].perStep;
+        expect(plan.v2.pinnedSources).toEqual(['tuggy']);
+    });
+
+    it('dos evidencias de la misma fuente en un paso se juntan, y el renglón tiene tope', async () => {
+        const { useCase, planner } = build(tp8, {});
+        await useCase.execute({
+            ownerId: 'o', paperId: 'p', evidence: [
+                { question: 3, sourceId: 'mayor', via: 'verse', sheets: [411], snippets: [] },
+                { question: 3, sourceId: 'mayor', via: 'verse', sheets: [411, 413], snippets: ['y'.repeat(400)] },
+            ],
+        });
+        const v3 = planner.propose.mock.calls[0]![0].steps.find((s: { id: string }) => s.id === 'v3');
+        expect(v3.evidence).toEqual([{ sourceId: 'mayor', sheets: [411, 413], via: 'verse', line: 'y'.repeat(300) }]);
+    });
+
+    it('proponer de nuevo borra la marca de «editaste las fuentes» (B3, #24)', async () => {
+        const conMarca = { ...tp8, stepPlan: { perStep: { v1: { stepId: 'v1', kind: 'verse', pinnedSources: ['tuggy'], suppressedSources: [], note: 'vieja', sourcesEditedAfterNote: true } }, defaults: {}, updatedAt: new Date() } };
+        const { useCase, paperRepository } = build(conMarca, { v1: { pinnedSources: ['mayor'], rationale: 'Ancla: Mayor.' } });
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v1.sourcesEditedAfterNote).toBeUndefined();
+    });
+
+    it('una fuente excluida del trabajo no entra por evidencia (revisión de 8a)', async () => {
+        const conRopes = {
+            ...tp8,
+            sources: [...tp8.sources, { id: 'ropes', sourceType: 'commentary-critical', displayLabel: 'Ropes', citationKey: 'Ropes' }],
+            excludedSources: [{ key: 'Ropes', previousPaperTitle: 'TP #7' }],
+        };
+        const { useCase, planner, paperRepository } = build(conRopes, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p', evidence: evidencia });
+        const v3 = planner.propose.mock.calls[0]![0].steps.find((s: { id: string }) => s.id === 'v3');
+        expect(v3.evidence.map((e: { sourceId: string }) => e.sourceId)).not.toContain('ropes');
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v3.pinnedSources).not.toContain('ropes');
+    });
+
+    it('reproponer no duplica el aviso de evidencia en la nota (revisión de 8a)', async () => {
+        const previo = {
+            ...tp8,
+            stepPlan: {
+                perStep: { v2: { stepId: 'v2', kind: 'verse', pinnedSources: ['mayor'], suppressedSources: [], note: 'Ancla: Mayor. También entra por sus páginas sobre la pregunta del paso: Tuggy.' } },
+                defaults: {}, updatedAt: new Date(),
+            },
+        };
+        // El modelo omite v2: la nota vieja se reutiliza.
+        const { useCase, paperRepository } = build(previo, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p', evidence: evidencia });
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v2.note)
+            .toBe('Ancla: Mayor. También entra por sus páginas sobre la pregunta del paso: Tuggy.');
+    });
+
+    it('sin evidencia no hay modo preguntas: se conserva la cobertura', async () => {
+        const { useCase, planner } = build(tp8, {});
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        expect(planner.propose.mock.calls[0]![0].questionsMode).toBe(false);
+    });
+
+    it('sin evidencia, el plan queda como lo dejó el modelo', async () => {
+        const { useCase, paperRepository } = build(tp8, { v1: { pinnedSources: ['mayor'], rationale: 'x' } });
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v1.pinnedSources).toEqual(['mayor']);
+    });
+});

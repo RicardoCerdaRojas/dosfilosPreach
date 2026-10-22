@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { passageReferenceQuery, rankPassageSheets, verseInPassage, type PassagePageHit } from '../passagePages';
+import { passageReferenceQuery, proposePassageSheets, questionVerseNumbers, rankPassageSheets, verseInPassage, type PassagePageHit } from '../passagePages';
 
 const SANTIAGO = { bookId: 'JAS' as const, chapterStart: 2, chapterEnd: 2, verseStart: 1, verseEnd: 13 };
 
@@ -75,5 +75,54 @@ describe('rankPassageSheets — qué hoja se propone primero', () => {
     it('se corta en el tope, porque más allá nadie revisa', () => {
         const muchas = Array.from({ length: 65 }, (_, i) => hoja(i + 1, [9], 1));
         expect(rankPassageSheets(muchas)).toHaveLength(40);
+    });
+});
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A1). Los datos son los de producción ese día:
+ * las hojas de Wallace (Greek Grammar Beyond the Basics) que nombran Stg 4.
+ */
+describe('proposePassageSheets · las hojas de los versículos con pregunta', () => {
+    const hit = (sheet: number, verses: number[], count = verses.length): PassagePageHit =>
+        ({ sheet, verses, count, snippet: '', section: null });
+    const wallace = [hit(569, [5, 6]), hit(633, [2]), hit(698, [2]), hit(900, [7])];
+
+    it('propone las tres hojas de Wallace que nombran 4:2 y 4:5, y no la de 4:7', () => {
+        expect(proposePassageSheets(wallace, [1, 2, 3, 5])).toEqual([
+            { start: 569, end: 569 }, { start: 633, end: 633 }, { start: 698, end: 698 },
+        ]);
+    });
+
+    it('cubre primero cada versículo con pregunta aunque otra hoja nombre más veces otro', () => {
+        const hits = [hit(10, [2], 9), hit(11, [2], 8), hit(12, [2], 7), hit(50, [5], 1)];
+        expect(proposePassageSheets(hits, [2, 5], 2)).toEqual([{ start: 10, end: 10 }, { start: 50, end: 50 }]);
+    });
+
+    it('sin versículos con pregunta sirve cualquier hoja del pasaje', () => {
+        expect(proposePassageSheets(wallace, null)).toHaveLength(4);
+    });
+
+    it('funde hojas contiguas en un tramo', () => {
+        expect(proposePassageSheets([hit(584, [1]), hit(585, [1])], [1])).toEqual([{ start: 584, end: 585 }]);
+    });
+});
+
+describe('questionVerseNumbers', () => {
+    const preguntas = [
+        { verses: [{ chapter: 4, verse: 1 }] },
+        { verses: [{ chapter: 4, verse: 3 }, { chapter: 4, verse: 2 }] },
+        { verses: [{ chapter: 4, verse: 5 }] },
+    ];
+
+    it('junta los versículos que nombran las preguntas, también los de evidencia', () => {
+        expect(questionVerseNumbers(preguntas, { chapterStart: 4, chapterEnd: 4 })).toEqual([1, 2, 3, 5]);
+    });
+
+    it('con varios capítulos no filtra: las hojas traen el versículo sin capítulo', () => {
+        expect(questionVerseNumbers(preguntas, { chapterStart: 3, chapterEnd: 4 })).toBeNull();
+    });
+
+    it('sin preguntas no filtra', () => {
+        expect(questionVerseNumbers([], { chapterStart: 4, chapterEnd: 4 })).toBeNull();
     });
 });

@@ -120,6 +120,17 @@ const BARE_REF = /^\d+[:.]\d+(?:[-–—]\d+(?:[:.]\d+)?)?$/;
  */
 export function resolveOutlineReferences(
     entries: ReadonlyArray<DocumentOutlineEntry>,
+    /**
+     * El libro del pasaje del trabajo, para el encabezado de página de un
+     * comentario de notas cuando el documento no nombra su libro en ningún
+     * lado: Mayor dice «IV 2, 3] NOTES» y nunca «James» (TP #8, 8a, A3).
+     *
+     * Se presta SÓLO a esa forma (romanos + «]»), que no se confunde con
+     * nada. A una referencia desnuda «1:1-3» no: en un comentario de Hebreos
+     * y Santiago sin libro en la miga, leerla como Santiago arrastraría
+     * Hebreos 1 al pasaje por herencia. Un libro nombrado en la miga manda.
+     */
+    fallbackBookId: BibleBookId | null = null,
 ): ResolvedOutlineEntry[] {
     const ordered = [...entries].sort((a, b) => a.chunkIndex - b.chunkIndex);
 
@@ -133,14 +144,22 @@ export function resolveOutlineReferences(
             currentReference = null;
         }
 
-        const fromHeading = entry.section
-            ? parseHeadingReference(entry.section, currentBook)
+        const fromHeading = entry.section ? parseHeadingReference(entry.section, currentBook) : null;
+        // El libro prestado lee SÓLO este encabezado y no pasa a ser el libro
+        // del documento: si no, un «1:1-3» posterior se leía como Santiago
+        // 1:1-3 (revisión de 8a), justo lo que este parámetro no debe hacer.
+        const prestada = !fromHeading && !currentBook && fallbackBookId && entry.section
+            ? notesRunningHeadReference(entry.section.trim(), fallbackBookId)
             : null;
 
         if (fromHeading) {
             currentBook = fromHeading.bookId;
             currentReference = fromHeading;
             return { ...entry, reference: fromHeading, resolution: 'heading' as const };
+        }
+        if (prestada) {
+            currentReference = prestada;
+            return { ...entry, reference: prestada, resolution: 'heading' as const };
         }
 
         if (currentReference) {
@@ -214,7 +233,51 @@ export function parseHeadingReference(
         return withContextBook(cleaned, contextBookId);
     }
 
+    // 5. Encabezado de página de un comentario clásico de notas: capítulo en
+    //    romanos, los versículos de la página y el «]». Mayor: «IV 2] NOTES»,
+    //    «IV 2, 3] NOTES», «IV 3–5] NOTES», «III 17–IV 1] NOTES» (TP #8, 8a,
+    //    A3). La misma forma la reconoce `refsDeFragmento` en functions.
+    if (contextBookId) {
+        const deNotas = notesRunningHeadReference(cleaned, contextBookId);
+        if (deNotas) return deNotas;
+    }
+
     return null;
+}
+
+const NOTES_RUNNING_HEAD = /^([IVXL]{1,6})\s+(\d{1,3})((?:\s*[,–—-]\s*(?:[IVXL]{1,6}\s+)?\d{1,3})*)\s*\]\s*(?:notes?|notas?)?$/i;
+
+function romanToNumber(roman: string): number | null {
+    const value: Record<string, number> = { I: 1, V: 5, X: 10, L: 50 };
+    const r = roman.toUpperCase();
+    let total = 0;
+    for (let i = 0; i < r.length; i++) {
+        const v = value[r[i]!];
+        if (!v) return null;
+        total += v < (value[r[i + 1] ?? ''] ?? 0) ? -v : v;
+    }
+    return total > 0 ? total : null;
+}
+
+/** «IV 2, 3] NOTES» → el tramo que cubre esa página: del primer versículo al último. */
+function notesRunningHeadReference(heading: string, bookId: BibleBookId): PassageReference | null {
+    const m = heading.match(NOTES_RUNNING_HEAD);
+    if (!m) return null;
+    const chapterStart = romanToNumber(m[1]!);
+    if (!chapterStart) return null;
+    // El capítulo tiene que existir en el libro: «VI 2] NOTES» no es Santiago 6.
+    const chapters = getBookById(bookId)?.chapterCount ?? 0;
+    const verseStart = Number(m[2]);
+    let chapterEnd = chapterStart;
+    let verseEnd = verseStart;
+    for (const t of (m[3] ?? '').matchAll(/[,–—-]\s*(?:([IVXL]{1,6})\s+)?(\d{1,3})/gi)) {
+        const otro = t[1] ? romanToNumber(t[1]) : null;
+        if (otro) chapterEnd = otro;
+        verseEnd = Number(t[2]);
+    }
+    if (chapterEnd > chapters) return null;
+    if (chapterEnd < chapterStart || (chapterEnd === chapterStart && verseEnd < verseStart)) return null;
+    return { bookId, chapterStart, verseStart, chapterEnd, verseEnd };
 }
 
 /** Le presta el libro del contexto a una referencia sin libro. */

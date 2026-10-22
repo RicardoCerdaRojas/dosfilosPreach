@@ -2,9 +2,10 @@ import { useCallback } from 'react';
 import {
     fetchDocumentPageIndex,
     proposeSheetRanges,
+    selectionModeOf,
     type ProposalKind,
 } from '@dosfilos/infrastructure';
-import type { PassageReference, SheetRange, SourceRole, SourceType } from '@dosfilos/domain';
+import { questionVersesOfBrief, type PassageReference, type SheetRange, type SourceRole, type SourceType } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { useExegesisPapers } from './useExegesisPapers';
 import { useSelectSourcePages } from './useSelectSourcePages';
@@ -63,6 +64,8 @@ export function useAttachLibrarySource() {
                 assignmentBrief: input.assignmentBrief,
                 language: input.language,
                 pageIndex: index.pages,
+                sourceType: input.sourceType,
+                questionVerses: questionVersesOfBrief(input.assignmentBrief, input.passage),
             });
 
             if (proposal.ranges.length === 0) {
@@ -89,7 +92,7 @@ export function useAttachLibrarySource() {
                 pageIndex: index.pages,
                 // La propuesta se aceptó tal cual, sin pasar por ojo humano.
                 // Queda registrado para que el corpus pueda decirlo.
-                selectionMode: proposal.kind === 'structural' ? 'structural' : 'semantic',
+                selectionMode: selectionModeOf(proposal.kind),
             });
 
             return { kind: proposal.kind, sheetCount: countSheets(proposal.ranges) };

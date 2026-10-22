@@ -36,6 +36,8 @@ interface RankedChunkPayload {
     sheet: number | null;
     section: string | null;
     score: number;
+    /** Su índice de pasajes nombra el versículo del paso (A1). */
+    namesVerse?: true;
 }
 
 interface RankedResponse {
@@ -178,7 +180,12 @@ export class CallableCuratedCorpusRetriever implements ICuratedCorpusRetriever {
             }
             const respuestas = await Promise.all(tandas.map(async tanda => {
                 try {
-                    const response = await callable({ userId: input.userId, query: input.query, sources: tanda });
+                    const response = await callable({
+                        userId: input.userId,
+                        query: input.query,
+                        sources: tanda,
+                        ...(input.verseKeys?.length ? { verseKeys: [...input.verseKeys] } : {}),
+                    });
                     return {
                         chunks: response.data?.chunks ?? [],
                         failed: response.data?.failedSources ?? [],

@@ -846,7 +846,48 @@
         "tab": "Corpus",
         "heading": "Corpus del trabajo",
         "description": "Sube los extractos específicos para este pasaje con tipo académico. Te avisamos qué falta según la rúbrica.",
+        "questionReview": {
+          "title": "¿Qué responde cada pregunta?",
+          "loading_one": "Revisando {{count}} fuente…",
+          "loading_other": "Revisando {{count}} fuentes…",
+          "withWarnings_one": "{{count}} aviso antes de generar el análisis.",
+          "withWarnings_other": "{{count}} avisos antes de generar el análisis.",
+          "allGood": "Cada pregunta tiene material en el corpus.",
+          "byQuestion": "Ver por pregunta",
+          "questionHeading": "Pregunta {{number}} · {{verses}}",
+          "noSource": "Ninguna fuente del corpus nombra estos versículos.",
+          "page": "p. {{page}}",
+          "sheet": "h. {{sheet}}",
+          "warning": {
+            "unindexed": "{{source}} no tiene su texto indexado: no se puede revisar qué páginas tratan cada pregunta.",
+            "unrelated": "{{source}} no nombra ningún versículo con pregunta.",
+            "noPrintedPages": "{{source}} no tiene páginas impresas resueltas: sus citas no se podrán comprobar.",
+            "missingSheets_one": "{{source}} trata la pregunta {{questions}} ({{verses}}) en {{pages}}, fuera del corpus.",
+            "missingSheets_other": "{{source}} trata las preguntas {{questions}} ({{verses}}) en {{pages}}, fuera del corpus.",
+            "missingEntry": "La entrada de {{term}} en {{source}} (pregunta {{question}}) está incompleta en el corpus (sin {{pages}}).",
+            "missingEntryWhole": "La entrada de {{term}} en {{source}} (pregunta {{question}}, {{pages}}) no está en el corpus.",
+            "questionUncovered": "Ninguna página del corpus nombra {{verses}} (pregunta {{question}}).",
+            "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo."
+          },
+          "action": {
+            "adjust": "Ajustar páginas",
+            "removeConfirm": "¿Quitar? Pulsa de nuevo",
+            "addAndPin": "Agregar y fijar",
+            "remove": "Quitar del corpus",
+            "calibrate": "Resolver numeración"
+          },
+          "chip": {
+            "pinned": "{{page}}: fijada, entra a todos los pasos",
+            "inCorpus": "{{page}}: en el corpus. Pulsa para fijarla",
+            "outside": "{{page}}: fuera del corpus. Pulsa para agregarla y fijarla"
+          },
+          "toast": {
+            "added": "Se agregó y fijó {{pages}} de {{source}}.",
+            "addFailed": "No se pudo agregar la página. Inténtalo de nuevo."
+          }
+        },
         "gap": {
+          "onlyExcluded": "{{have}} de {{required}}: ninguna fuente de tu biblioteca permitida en este trabajo cubre este tipo; las de este tipo están excluidas ({{sources}}). Puedes entregar con {{have}} de {{required}} o subir otro libro.",
           "metTitle": "Tu corpus cumple la rúbrica",
           "metBody": "{{count}} fuentes adjuntas — todos los mínimos están satisfechos. Puedes avanzar al plan estructural.",
           "gapsTitle": "{{satisfied}} de {{total}} requisitos satisfechos",
@@ -900,11 +941,14 @@
           "proposal": {
             "structural": "Encontramos la sección que trata este pasaje en el índice del comentario.",
             "semantic": "Este documento no trae encabezados por referencia: la sugerencia sale de coincidencia de contenido y conviene revisarla.",
+            "passage": "Encontramos las páginas que nombran los versículos con pregunta. Revisa que sean las que necesitas.",
             "accept": "Aceptar sugerencia",
             "pending": "Buscando la sección que trata este pasaje…",
             "none": "No encontramos una sección para este pasaje. Navega el documento y elige las hojas a mano."
           },
           "rail": {
+            "pinSheet": "Fijar la hoja {{sheet}}",
+            "unpinSheet": "Desfijar la hoja {{sheet}}",
             "withHeadings": "Índice del libro",
             "withoutHeadings": "Hojas · sin encabezados",
             "shiftHint": "Clic en una hoja y Shift + clic en otra para llevarte todo el tramo, en cualquier orden.",
@@ -917,6 +961,8 @@
             "resize": "Ancho del índice"
           },
           "viewer": {
+            "pinSheet": "Fijar esta hoja",
+            "unpinSheet": "Fijada",
             "loading": "Abriendo el documento…",
             "loadFailed": "No se pudo abrir el documento. Prueba de nuevo en unos segundos.",
             "pageFailed": "No se pudo mostrar esta hoja. Prueba con otra o vuelve a abrir el documento.",
@@ -945,11 +991,14 @@
             "tooLarge": "El corpus del trabajo es demasiado grande para guardarlo. Quita hojas de esta fuente o de otra.",
             "attachedStructural_one": "Agregado: la sección del pasaje, {{count}} hoja",
             "attachedStructural_other": "Agregado: la sección del pasaje, {{count}} hojas",
+            "attachedPassage_one": "Agregado: {{count}} hoja que nombra los versículos con pregunta",
+            "attachedPassage_other": "Agregado: {{count}} hojas que nombran los versículos con pregunta",
             "attachedSemantic_one": "Agregado: {{count}} hoja por coincidencia de contenido. Conviene revisarla.",
             "attachedSemantic_other": "Agregado: {{count}} hojas por coincidencia de contenido. Conviene revisarlas.",
             "attachedWhole": "Agregado el documento completo: no se encontró la sección del pasaje. Ajusta las páginas a mano."
           },
           "cart": {
+            "pinnedSome": "{{count}} de {{total}} hojas fijadas",
             "title": "En el trabajo",
             "rangeCount_one": "{{count}} tramo",
             "rangeCount_other": "{{count}} tramos",
@@ -1001,7 +1050,11 @@
             "structural": "Sección exacta",
             "semantic": "Coincidencia aproximada",
             "structuralHint": "Se tomó la sección del documento dedicada a este pasaje, completa y en orden.",
-            "semanticHint": "El documento no trae encabezados por referencia, así que se trajeron los fragmentos más parecidos al pasaje. Conviene revisarlos antes de generar."
+            "semanticHint": "El documento no trae encabezados por referencia, así que se trajeron los fragmentos más parecidos al pasaje. Conviene revisarlos antes de generar.",
+            "passage": "Por pasaje",
+            "passageHint": "Las hojas donde el libro nombra los versículos con pregunta, según su índice de pasajes.",
+            "manual": "Elegida a mano",
+            "manualHint": "Las páginas las elegiste o corregiste tú en el selector."
           },
           "remove": "Quitar fuente",
           "viewOriginal": "Abrir el PDF original en una pestaña nueva",
@@ -1335,6 +1388,9 @@
           "hint": "Una gramática se indexa por categorías, no por pasajes. Estas son las secciones que nombran lo que tu encuadre pregunta; la lista va en el orden del libro y no se recorta."
         },
         "excluded": {
+          "alternate": "· gramática: se puede repetir, conviene alternar",
+          "alternateWith": "· gramática: se puede repetir, conviene alternar con {{others}}",
+          "freeByType": "No se proponen {{sources}}: la regla de no repetir es para comentarios (y gramáticas, que conviene alternar); léxicos, diccionarios, texto base y el resto se pueden repetir.",
           "title": "Fuentes excluidas de este trabajo",
           "hint": "Lo que tu plan de estudios o tu profesor no permite usar aquí. Aparecen al final de cada lista, marcadas, y se le indica al asistente que no las cite.",
           "proposal": "En tu entrega anterior ({{paper}}) citaste estas fuentes. Si tu plan no permite repetirlas en semanas consecutivas, marca las que excluyes de este trabajo:",
@@ -1393,7 +1449,8 @@
             "repeated_one": "1 vez en el pasaje",
             "repeated_other": "{{count}} veces en el pasaje",
             "common": "común: {{n}} veces en {{corpus}}",
-            "section": "sección «{{title}}»"
+            "section": "sección «{{title}}»",
+            "question": "La pide la pregunta {{number}} del encuadre"
           },
           "corpus": {
             "OT": "el Antiguo Testamento",
@@ -1411,6 +1468,8 @@
         "citaPorSeccion": "Este libro no tiene páginas impresas: sus citas van por sección (§), que se encuentra en el ejemplar."
       },
       "corpus-plan": {
+        "noteEdited": "Editaste las fuentes de este paso después de esta justificación: el análisis sigue tu lista.",
+        "waitingReview": "Esperando la revisión del corpus por pregunta: el plan la usa.",
         "outsideDocument_one": "1 paso queda fuera del documento (el encuadre no lo pide): no se planifica.",
         "outsideDocument_other": "{{count}} pasos quedan fuera del documento (el encuadre no los pide): no se planifican.",
         "includeStepAria": "Incluir {{name}} en el documento",

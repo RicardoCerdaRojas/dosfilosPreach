@@ -5,7 +5,12 @@ import {
     countChars,
     countSheets,
     normalizeSheetRanges,
+    pinStateOfRange,
+    pinnedSheetCount,
     sheetsForChunkRanges,
+    subtractSheetRanges,
+    togglePinnedRange,
+    togglePinnedSheet,
     type PageIndexEntry,
 } from '../documentPageIndex';
 
@@ -143,5 +148,45 @@ describe('clipRangesTo', () => {
 
     it('devuelve vacío sin tramos fijados', () => {
         expect(clipRangesTo([], [{ start: 1, end: 9 }])).toEqual([]);
+    });
+});
+
+/** TP #8 (2026-10-21, fase 8a, A5): fijar la 411 dentro de 407–418. */
+describe('lo fijado, hoja por hoja', () => {
+    const tramo = { start: 407, end: 418 };
+
+    it('fija una hoja dentro del tramo sin fijar el tramo', () => {
+        const fijadas = togglePinnedSheet([], 411);
+        expect(fijadas).toEqual([{ start: 411, end: 411 }]);
+        expect(pinStateOfRange(tramo, fijadas)).toBe('some');
+        expect(pinnedSheetCount(tramo, fijadas)).toBe(1);
+    });
+
+    it('desfija una hoja de un tramo fijado y lo parte en dos', () => {
+        expect(togglePinnedSheet([tramo], 411)).toEqual([{ start: 407, end: 410 }, { start: 412, end: 418 }]);
+    });
+
+    it('el tramo fijado entero sigue fijado cuando el carrito lo agranda', () => {
+        // Antes: 407–419 en el carrito no «coincidía» con 407–418 fijado.
+        expect(pinStateOfRange({ start: 407, end: 419 }, [tramo])).toBe('some');
+        expect(pinStateOfRange(tramo, [tramo])).toBe('all');
+    });
+
+    it('el botón del tramo fija todo lo que falta, y desfija sólo si estaba entero', () => {
+        expect(togglePinnedRange([{ start: 411, end: 411 }], tramo)).toEqual([tramo]);
+        expect(togglePinnedRange([tramo, { start: 500, end: 500 }], tramo)).toEqual([{ start: 500, end: 500 }]);
+    });
+
+    it('quita tramos que se pisan en los dos bordes', () => {
+        expect(subtractSheetRanges([{ start: 1, end: 10 }, { start: 20, end: 30 }], [{ start: 8, end: 22 }]))
+            .toEqual([{ start: 1, end: 7 }, { start: 23, end: 30 }]);
+        expect(subtractSheetRanges([{ start: 5, end: 6 }], [{ start: 1, end: 10 }])).toEqual([]);
+        // Lo que no se toca queda igual, esté antes o después.
+        expect(subtractSheetRanges([{ start: 1, end: 5 }, { start: 30, end: 31 }], [{ start: 10, end: 12 }]))
+            .toEqual([{ start: 1, end: 5 }, { start: 30, end: 31 }]);
+    });
+
+    it('sin nada fijado, el tramo no tiene hojas fijadas', () => {
+        expect(pinStateOfRange(tramo, [])).toBe('none');
     });
 });

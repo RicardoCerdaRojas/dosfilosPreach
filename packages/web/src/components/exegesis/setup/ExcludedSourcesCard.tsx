@@ -1,16 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Ban, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-    previousDelivery,
-    proposeExclusions,
-    type ExcludedSource,
-    type ExegeticalPaper,
-} from '@dosfilos/domain';
+import type { ExcludedSource, ExegeticalPaper, ProposedExclusion } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { useProposedExclusions } from '@/hooks/exegesis/usePaperExclusions';
 
 /**
  * Las fuentes que este trabajo no puede usar, como dato y no como frase del
@@ -24,7 +20,10 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
  */
 export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     const { t } = useTranslation('exegesis');
-    const { papers, updatePaperExcludedSources } = useExegesisPapers();
+    const { updatePaperExcludedSources } = useExegesisPapers();
+    // Por tipo (A7, TP #8): comentarios y gramáticas; los léxicos y el texto
+    // base se pueden repetir y ya no se proponen.
+    const { proposal: propuestaPorTipo, previous } = useProposedExclusions(paper);
     const [nueva, setNueva] = useState('');
     // Claves de la propuesta que el estudiante desmarcó: lo citado la vez
     // pasada incluye léxicos y gramáticas que el sílabo suele permitir.
@@ -34,19 +33,28 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     // refrescar, los pasos que redactan no recibían la decisión (#9) y su
     // tarjeta seguía diciendo «no debería entrar» (#11). La lista sigue a la
     // vista hasta «Listo» aunque ya esté guardada.
-    const [enRevision, setEnRevision] = useState<ReadonlyArray<ExcludedSource> | null>(null);
+    const [enRevision, setEnRevision] = useState<ReadonlyArray<ProposedExclusion> | null>(null);
 
     const confirmadas = paper.excludedSources ?? null;
-    const sugerida = useMemo(
-        () => (confirmadas === null ? proposeExclusions(previousDelivery(papers, paper.id), paper.displayLanguage) : []),
-        [confirmadas, papers, paper.id, paper.displayLanguage],
-    );
+    const sugerida = confirmadas === null ? propuestaPorTipo : [];
     const propuesta = enRevision ?? sugerida;
+    // Lo citado que la regla deja libre, para decir por qué no está en la lista.
+    // También cuando no se propone nada: si la semana pasada sólo citó
+    // léxicos y texto base, la tarjeta callaba sin decir por qué.
+    const libres = useMemo(() => {
+        if (!previous || confirmadas !== null || enRevision) return [];
+        const propuestas = new Set(propuestaPorTipo.map(e => e.key));
+        return previous.citedSourceKeys.filter(k => !propuestas.has(k));
+    }, [previous, confirmadas, enRevision, propuestaPorTipo]);
     const lista = enRevision ? [] : (confirmadas ?? []);
 
     const guardar = async (excludedSources: ReadonlyArray<ExcludedSource>): Promise<boolean> => {
         try {
-            await updatePaperExcludedSources.mutateAsync({ paperId: paper.id, excludedSources });
+            // Se guarda la exclusión, no por qué se propuso (`ProposedExclusion`).
+            await updatePaperExcludedSources.mutateAsync({
+                paperId: paper.id,
+                excludedSources: excludedSources.map(({ key, previousPaperTitle }) => ({ key, previousPaperTitle })),
+            });
             return true;
         } catch (err) {
             console.error('[exegesis] update excluded sources failed:', err);
@@ -109,10 +117,22 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                                         className="h-3.5 w-3.5 rounded border-border accent-primary"
                                     />
                                     {e.key}
+                                    {e.rule === 'alternate' && (
+                                        <span className="text-[11px] text-muted-foreground">
+                                            {e.alternatives.length > 0
+                                                ? t('paperSetup.subSteps.corpus.excluded.alternateWith', { others: e.alternatives.join(', ') })
+                                                : t('paperSetup.subSteps.corpus.excluded.alternate')}
+                                        </span>
+                                    )}
                                 </label>
                             </li>
                         ))}
                     </ul>
+                    {libres.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground">
+                            {t('paperSetup.subSteps.corpus.excluded.freeByType', { sources: libres.join(', ') })}
+                        </p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                         <Button type="button" size="sm" disabled={ocupado} onClick={() => void terminar(elegidas)}>
                             {t(enRevision ? 'paperSetup.subSteps.corpus.excluded.done' : 'paperSetup.subSteps.corpus.excluded.accept')}
@@ -125,6 +145,12 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                         )}
                     </div>
                 </div>
+            )}
+
+            {propuesta.length === 0 && libres.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                    {t('paperSetup.subSteps.corpus.excluded.freeByType', { sources: libres.join(', ') })}
+                </p>
             )}
 
             {lista.length > 0 && (

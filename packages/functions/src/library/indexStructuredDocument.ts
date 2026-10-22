@@ -7,7 +7,7 @@ import { isStructuredExtractionVersion } from './extractionVersions';
 import { parseFirebaseStorageLocation } from './storageLocation';
 import { describeSanitization, sanitizeExtractedText } from './sanitizeExtractedText';
 import { assessIndexCoverage, describeIndexCoverage } from './indexCoverage';
-import { refsDeFragmento } from './pasajes/refsDeTexto';
+import { libroDelTitulo, refsDeFragmento } from './pasajes/refsDeTexto';
 
 interface IndexRequest {
     resourceId: string;
@@ -241,7 +241,9 @@ export const indexStructuredDocument = onCall<IndexRequest>(
                         endChar: c.charEnd,
                     },
                     // Los pasajes bíblicos que nombra, para buscar por pasaje (etapa 3).
-                    refs: refsDeFragmento(c.text, c.sectionPath),
+                    // El libro del título lee los encabezados que no lo nombran
+                    // («IV 2, 3] NOTES» en Mayor; TP #8, fase 8a, A3).
+                    refs: refsDeFragmento(c.text, c.sectionPath, libroDelTitulo(title)),
                     stores,
                     indexerVersion: INDEXER_VERSION,
                     createdAt: now,
@@ -450,7 +452,9 @@ export async function indexResourceChunks(
                         endChar: c.charEnd,
                     },
                     // Los pasajes bíblicos que nombra, para buscar por pasaje (etapa 3).
-                    refs: refsDeFragmento(c.text, c.sectionPath),
+                    // El libro del título lee los encabezados que no lo nombran
+                    // («IV 2, 3] NOTES» en Mayor; TP #8, fase 8a, A3).
+                    refs: refsDeFragmento(c.text, c.sectionPath, libroDelTitulo(title)),
                     stores,
                     indexerVersion: INDEXER_VERSION,
                     createdAt: now,

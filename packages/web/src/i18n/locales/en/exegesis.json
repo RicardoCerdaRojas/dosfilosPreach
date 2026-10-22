@@ -846,7 +846,48 @@
         "tab": "Corpus",
         "heading": "Paper corpus",
         "description": "Upload extracts specific to this passage with their academic type. We flag what's missing per the rubric.",
+        "questionReview": {
+          "title": "What answers each question?",
+          "loading_one": "Reviewing {{count}} source…",
+          "loading_other": "Reviewing {{count}} sources…",
+          "withWarnings_one": "{{count}} warning before generating the analysis.",
+          "withWarnings_other": "{{count}} warnings before generating the analysis.",
+          "allGood": "Every question has material in the corpus.",
+          "byQuestion": "See by question",
+          "questionHeading": "Question {{number}} · {{verses}}",
+          "noSource": "No source in the corpus names these verses.",
+          "page": "p. {{page}}",
+          "sheet": "sh. {{sheet}}",
+          "warning": {
+            "unindexed": "{{source}} has no indexed text: its pages per question cannot be reviewed.",
+            "unrelated": "{{source}} does not name any verse with a question.",
+            "noPrintedPages": "{{source}} has no resolved printed pages: its citations cannot be checked.",
+            "missingSheets_one": "{{source}} discusses question {{questions}} ({{verses}}) on {{pages}}, outside the corpus.",
+            "missingSheets_other": "{{source}} discusses questions {{questions}} ({{verses}}) on {{pages}}, outside the corpus.",
+            "missingEntry": "The entry for {{term}} in {{source}} (question {{question}}) is incomplete in the corpus (missing {{pages}}).",
+            "missingEntryWhole": "The entry for {{term}} in {{source}} (question {{question}}, {{pages}}) is not in the corpus.",
+            "questionUncovered": "No page in the corpus names {{verses}} (question {{question}}).",
+            "failed": "{{source}} could not be reviewed. Reopen this tab to try again."
+          },
+          "action": {
+            "adjust": "Adjust pages",
+            "removeConfirm": "Remove? Click again",
+            "addAndPin": "Add and pin",
+            "remove": "Remove from corpus",
+            "calibrate": "Resolve numbering"
+          },
+          "chip": {
+            "pinned": "{{page}}: pinned, goes into every step",
+            "inCorpus": "{{page}}: in the corpus. Click to pin it",
+            "outside": "{{page}}: outside the corpus. Click to add and pin it"
+          },
+          "toast": {
+            "added": "Added and pinned {{pages}} from {{source}}.",
+            "addFailed": "The page could not be added. Try again."
+          }
+        },
         "gap": {
+          "onlyExcluded": "{{have}} of {{required}}: no source in your library allowed in this paper covers this type; the ones of this type are excluded ({{sources}}). You can submit with {{have}} of {{required}} or upload another book.",
           "metTitle": "Your corpus meets the rubric",
           "metBody": "{{count}} sources attached — every minimum is satisfied. You can move on to the structural plan.",
           "gapsTitle": "{{satisfied}} of {{total}} requirements met",
@@ -900,11 +941,14 @@
           "proposal": {
             "structural": "We found the section covering this passage in the commentary's own index.",
             "semantic": "This document has no reference headings, so the suggestion comes from content matching and is worth reviewing.",
+            "passage": "We found the pages that name the verses with a question. Check they are the ones you need.",
             "accept": "Accept suggestion",
             "pending": "Looking for the section covering this passage…",
             "none": "No section found for this passage. Browse the document and pick the sheets by hand."
           },
           "rail": {
+            "pinSheet": "Pin sheet {{sheet}}",
+            "unpinSheet": "Unpin sheet {{sheet}}",
             "withHeadings": "Book index",
             "withoutHeadings": "Sheets · no headings",
             "shiftHint": "Click one sheet, then Shift-click another to take the whole span, in either order.",
@@ -917,6 +961,8 @@
             "resize": "Index width"
           },
           "viewer": {
+            "pinSheet": "Pin this sheet",
+            "unpinSheet": "Pinned",
             "loading": "Opening the document…",
             "loadFailed": "Could not open the document. Try again in a few seconds.",
             "pageFailed": "Could not show this sheet. Try another one or reopen the document.",
@@ -945,11 +991,14 @@
             "tooLarge": "The paper corpus is too large to save. Remove sheets here or in another source.",
             "attachedStructural_one": "Added: the passage section, {{count}} sheet",
             "attachedStructural_other": "Added: the passage section, {{count}} sheets",
+            "attachedPassage_one": "Added: {{count}} page that names the verses with a question",
+            "attachedPassage_other": "Added: {{count}} pages that name the verses with a question",
             "attachedSemantic_one": "Added: {{count}} sheet by content match. Worth reviewing.",
             "attachedSemantic_other": "Added: {{count}} sheets by content match. Worth reviewing.",
             "attachedWhole": "Added the whole document: the passage section was not found. Adjust the pages by hand."
           },
           "cart": {
+            "pinnedSome": "{{count}} of {{total}} sheets pinned",
             "title": "In the paper",
             "rangeCount_one": "{{count}} range",
             "rangeCount_other": "{{count}} ranges",
@@ -1001,7 +1050,11 @@
             "structural": "Exact section",
             "semantic": "Approximate match",
             "structuralHint": "The document's section for this passage was taken whole and in order.",
-            "semanticHint": "This document has no reference headings, so the closest-matching fragments were pulled instead. Worth reviewing before generating."
+            "semanticHint": "This document has no reference headings, so the closest-matching fragments were pulled instead. Worth reviewing before generating.",
+            "passage": "By passage",
+            "passageHint": "The pages where the book names the verses with a question, from its passage index.",
+            "manual": "Picked by hand",
+            "manualHint": "You picked or adjusted these pages in the selector."
           },
           "remove": "Remove source",
           "viewOriginal": "Open the original PDF in a new tab",
@@ -1335,6 +1388,9 @@
           "hint": "A grammar is indexed by category, not by passage. These are the sections naming what your brief asks about; the list follows the book order and is not trimmed."
         },
         "excluded": {
+          "alternate": "· grammar: may be repeated, better to alternate",
+          "alternateWith": "· grammar: may be repeated, better to alternate with {{others}}",
+          "freeByType": "{{sources}} not proposed: the no-repeat rule is for commentaries (and grammars, better alternated); lexicons, dictionaries, the base text and the rest may be repeated.",
           "title": "Sources excluded from this paper",
           "hint": "What your syllabus or professor doesn't allow here. They appear last in every list, marked, and the assistant is told not to cite them.",
           "proposal": "In your previous paper ({{paper}}) you cited these sources. If your syllabus doesn't allow repeating them in consecutive weeks, check the ones to exclude from this paper:",
@@ -1393,7 +1449,8 @@
             "repeated_one": "once in the passage",
             "repeated_other": "{{count}} times in the passage",
             "common": "common: {{n}} times in {{corpus}}",
-            "section": "section “{{title}}”"
+            "section": "section “{{title}}”",
+            "question": "Asked by question {{number}} of the brief"
           },
           "corpus": {
             "OT": "the Old Testament",
@@ -1411,6 +1468,8 @@
         "citaPorSeccion": "This book has no printed pages: its citations go by section (§), which can be found in the copy."
       },
       "corpus-plan": {
+        "noteEdited": "You changed this step’s sources after this rationale: the analysis follows your list.",
+        "waitingReview": "Waiting for the corpus review by question: the plan uses it.",
         "outsideDocument_one": "1 step is left out of the document (the brief doesn't ask for it): it isn't planned.",
         "outsideDocument_other": "{{count}} steps are left out of the document (the brief doesn't ask for them): they aren't planned.",
         "includeStepAria": "Include {{name}} in the document",

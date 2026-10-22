@@ -23,7 +23,7 @@
  * Requiere credenciales de aplicación (`gcloud auth application-default login`).
  */
 import admin from 'firebase-admin';
-import { refsDeFragmento } from '../packages/functions/src/library/pasajes/refsDeTexto';
+import { libroDelTitulo, refsDeFragmento } from '../packages/functions/src/library/pasajes/refsDeTexto';
 
 const PROJECT_ID = 'dosfilosapp';
 const ESCRIBIR = process.argv.includes('--escribir');
@@ -40,7 +40,7 @@ const iguales = (a: ReadonlyArray<string> | undefined, b: ReadonlyArray<string>)
 async function main(): Promise<void> {
     let base: FirebaseFirestore.Query = db.collection('document_chunks');
     if (UID) base = base.where('userId', '==', UID);
-    base = base.orderBy(admin.firestore.FieldPath.documentId()).select('text', 'metadata', 'refs');
+    base = base.orderBy(admin.firestore.FieldPath.documentId()).select('text', 'metadata', 'refs', 'resourceTitle');
 
     const escritor = ESCRIBIR ? db.bulkWriter() : null;
     let leidos = 0, conPasaje = 0, aEscribir = 0, refsTotales = 0, escritos = 0;
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
         for (const d of snap.docs) {
             leidos++;
             const sectionPath = (d.get('metadata')?.sectionPath as string[] | undefined) ?? [];
-            const refs = refsDeFragmento(String(d.get('text') ?? ''), sectionPath);
+            const refs = refsDeFragmento(String(d.get('text') ?? ''), sectionPath, libroDelTitulo(String(d.get('resourceTitle') ?? '')));
             if (refs.length > 0) { conPasaje++; refsTotales += refs.length; }
             if (iguales(d.get('refs') as string[] | undefined, refs)) continue;
             aEscribir++;

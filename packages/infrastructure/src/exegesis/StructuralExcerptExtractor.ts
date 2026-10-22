@@ -185,7 +185,7 @@ export class StructuralExcerptExtractor implements IExcerptExtractor {
         const entries = expandSections(outline.sections);
         if (entries.length === 0) return null;
 
-        const resolved = resolveOutlineReferences(entries);
+        const resolved = resolveOutlineReferences(entries, input.passage.bookId);
         const quality = outlineStructureQuality(resolved);
         if (!quality.usable) {
             console.log('[StructuralExcerptExtractor] documento sin encabezados de referencia', {

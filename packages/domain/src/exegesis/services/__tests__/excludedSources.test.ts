@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { briefWithExclusions, excludedLast, exclusionFor, proposeExclusions } from '../excludedSources';
+import { briefWithExclusions, excludedLast, exclusionFor, proposeExclusions, repetitionRuleFor, warnsRepeatedSource } from '../excludedSources';
 
 /**
  * TP #6 (Santiago 3, 2026-10-07): el encuadre prohibía McCartney, Varner,
@@ -65,8 +65,9 @@ describe('lo que se propone y lo que leen los pasos que redactan', () => {
         expect(proposeExclusions({
             paperId: 'p5', title: 'TP #5', passage: {} as never, createdAt: new Date(), citedSourceKeys: ['Ropes', 'Varner'],
         })).toEqual([
-            { key: 'Ropes', previousPaperTitle: 'TP #5' },
-            { key: 'Varner', previousPaperTitle: 'TP #5' },
+            // Sin el tipo de cada cita, se propone todo, como antes de A7.
+            { key: 'Ropes', previousPaperTitle: 'TP #5', rule: 'exclude', sourceType: null, alternatives: [] },
+            { key: 'Varner', previousPaperTitle: 'TP #5', rule: 'exclude', sourceType: null, alternatives: [] },
         ]);
         expect(proposeExclusions(null)).toEqual([]);
     });
@@ -98,5 +99,86 @@ describe('una clave «et al.» (G)', () => {
         const aland = [{ key: 'Aland et al.', previousPaperTitle: null }];
         expect(exclusionFor({ author: 'Aland, Barbara; Aland, Kurt' }, aland)).not.toBeNull();
         expect(exclusionFor({ author: 'Ahmad Al' }, aland)).toBeNull();
+    });
+});
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A7): la regla del sílabo es sólo para los
+ * comentarios. La propuesta traía Tuggy, NA28 y Robertson, y el fundador los
+ * desmarcaba a mano cada semana (#1). La gramática se alterna por prudencia.
+ */
+describe('la regla de no repetir, por tipo de fuente', () => {
+    const tp7 = {
+        paperId: 'tp7', title: 'TP #7', passage: {} as never, createdAt: new Date(2026, 9, 14),
+        citedSourceKeys: ['McCartney', 'NA28', 'Robertson', 'Ropes', 'Tuggy', 'Varner'],
+        citedSourceTypes: {
+            McCartney: ['commentary-expository'], NA28: ['critical-apparatus'], Robertson: ['grammar-syntax'],
+            Ropes: ['commentary-critical'], Tuggy: ['lexicon-technical'], Varner: ['commentary-expository'],
+        },
+    } as const;
+    const tp6 = {
+        paperId: 'tp6', title: 'TP #6', passage: {} as never, createdAt: new Date(2026, 9, 7),
+        citedSourceKeys: ['Adamson', 'Wallace', 'Tuggy'],
+        citedSourceTypes: { Adamson: ['commentary-critical'], Wallace: ['grammar-syntax'], Tuggy: ['lexicon-technical'] },
+    } as const;
+
+    it('propone los comentarios y la gramática; el léxico y el texto base quedan libres', () => {
+        const propuesta = proposeExclusions(tp7, 'es', { beforePrevious: tp6 });
+        expect(propuesta.map(e => [e.key, e.rule])).toEqual([
+            ['McCartney', 'exclude'], ['Robertson', 'alternate'], ['Ropes', 'exclude'], ['Varner', 'exclude'],
+        ]);
+    });
+
+    it('la gramática sugiere la otra: Robertson la semana pasada, Wallace la anterior', () => {
+        const robertson = proposeExclusions(tp7, 'es', { beforePrevious: tp6 }).find(e => e.key === 'Robertson')!;
+        expect(robertson.alternatives).toEqual(['Wallace']);
+        // Sin la entrega anterior a la anterior no hay a cuál volver.
+        expect(proposeExclusions(tp7, 'es').find(e => e.key === 'Robertson')!.alternatives).toEqual([]);
+    });
+
+    it('no sugiere volver a la misma gramática si se usó las dos semanas', () => {
+        const conRobertson = { ...tp6, citedSourceKeys: ['Robertson'], citedSourceTypes: { Robertson: ['grammar-syntax'] } } as const;
+        expect(proposeExclusions(tp7, 'es', { beforePrevious: conRobertson }).find(e => e.key === 'Robertson')!.alternatives).toEqual([]);
+    });
+
+    it('dos obras con la misma clave: manda la regla más restrictiva (revisión de 8a)', () => {
+        // La *Grammar* y las *Word Pictures* de Robertson, citadas como «Robertson».
+        const ambas = { ...tp7, citedSourceKeys: ['Robertson'], citedSourceTypes: { Robertson: ['grammar-syntax', 'commentary-expository'] } } as const;
+        expect(proposeExclusions(ambas, 'es')[0]!.rule).toBe('exclude');
+    });
+
+    it('la regla es configurable por tipo', () => {
+        const todoLibre = { 'commentary-critical': 'free', 'commentary-expository': 'free', 'grammar-syntax': 'free' } as const;
+        expect(proposeExclusions(tp7, 'es', { policy: todoLibre })).toEqual([]);
+    });
+
+    it('un tipo sin regla es libre, y una cita sin tipo se excluye', () => {
+        expect(repetitionRuleFor('historical-background')).toBe('free');
+        expect(repetitionRuleFor('commentary-critical')).toBe('exclude');
+        expect(repetitionRuleFor('grammar-syntax')).toBe('alternate');
+        expect(repetitionRuleFor(null)).toBe('exclude');
+    });
+});
+
+describe('el aviso de «la citaste la vez pasada» en la fila de la fuente (#15)', () => {
+    const previa = { paperId: 'tp7', title: 'TP #7', passage: {} as never, createdAt: new Date(), citedSourceKeys: ['Ropes', 'Tuggy'] };
+    const ropes = { citationKey: 'Ropes', sourceType: 'commentary-critical' as const };
+
+    it('avisa un comentario repetido mientras las exclusiones no se confirmaron', () => {
+        expect(warnsRepeatedSource(ropes, null, previa)).toBe(true);
+    });
+
+    it('calla si el estudiante ya confirmó las exclusiones y la dejó fuera', () => {
+        expect(warnsRepeatedSource(ropes, [{ key: 'Varner', previousPaperTitle: 'TP #7' }], previa)).toBe(false);
+        expect(warnsRepeatedSource(ropes, [], previa)).toBe(false);
+    });
+
+    it('calla para un léxico, que se puede repetir', () => {
+        expect(warnsRepeatedSource({ citationKey: 'Tuggy', sourceType: 'lexicon-technical' }, null, previa)).toBe(false);
+    });
+
+    it('calla si no se citó la vez pasada o no tiene clave', () => {
+        expect(warnsRepeatedSource({ citationKey: 'Mayor', sourceType: 'commentary-critical' }, null, previa)).toBe(false);
+        expect(warnsRepeatedSource({ citationKey: null, sourceType: 'commentary-critical' }, null, previa)).toBe(false);
     });
 });

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { exegesisService } from '@dosfilos/application';
-import { fetchDocumentPageIndex, proposeSheetRanges } from '@dosfilos/infrastructure';
-import type { ExegeticalPaper } from '@dosfilos/domain';
+import { fetchDocumentPageIndex, proposeSheetRanges, selectionModeOf } from '@dosfilos/infrastructure';
+import { questionVersesOfBrief, type ExegeticalPaper } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { useSelectSourcePages } from './useSelectSourcePages';
 import { heredarConPaginas } from './heredarConPaginas';
@@ -46,7 +46,7 @@ export function useCorpusHeredado(paperId: string | null | undefined) {
             setAvance(null);
             return heredarConPaginas({
                 heredar: () => exegesisService.inheritCorpus.aplicar({ ownerId: uid, paperId, soloEstos: input.soloEstos }),
-                proponer: async resourceId => {
+                proponer: async (resourceId, sourceType) => {
                     const index = await fetchDocumentPageIndex(resourceId);
                     const p = await proposeSheetRanges({
                         resourceId,
@@ -55,6 +55,8 @@ export function useCorpusHeredado(paperId: string | null | undefined) {
                         assignmentBrief: input.paper.assignmentBrief,
                         language: input.paper.displayLanguage,
                         pageIndex: index.pages,
+                        sourceType,
+                        questionVerses: questionVersesOfBrief(input.paper.assignmentBrief, input.paper.passage),
                     });
                     return { ranges: p.ranges, kind: p.kind, pageIndex: index.pages };
                 },
@@ -72,7 +74,7 @@ export function useCorpusHeredado(paperId: string | null | undefined) {
                         pageIndex: propuesta.pageIndex,
                         // La propuesta se aceptó sin pasar por ojo humano, y
                         // queda dicho para que el corpus pueda mostrarlo.
-                        selectionMode: propuesta.kind === 'structural' ? 'structural' : 'semantic',
+                        selectionMode: selectionModeOf(propuesta.kind),
                     });
                 },
                 alAvanzar: (hechas, total) => setAvance({ hechas, total }),

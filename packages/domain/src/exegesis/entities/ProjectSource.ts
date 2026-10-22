@@ -187,7 +187,11 @@ export type ProjectSourceMode = 'full-document' | 'extracted-excerpts';
  * tiene que poder verlos al revisar el corpus, no solo en el momento de
  * extraer. `null` en fuentes anteriores a la selección estructural.
  */
-export type ExcerptSelectionMode = 'structural' | 'semantic' | 'manual';
+// `passage` (TP #8, fase 8a, A4): las hojas cuyo índice nombra los versículos
+// con pregunta. Antes se guardaba como `semantic` y el corpus le ponía
+// «Coincidencia aproximada» a la selección más precisa que hay para una
+// gramática o un léxico.
+export type ExcerptSelectionMode = 'structural' | 'passage' | 'semantic' | 'manual';
 
 /** Tramo de hojas físicas del PDF, ambos extremos inclusive. */
 export interface SheetRange {

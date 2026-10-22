@@ -38,7 +38,9 @@ export function SuggestedSelection({ suggestion, numbering, printedPageOffset, o
     const [open, setOpen] = useState(false);
     const n = (x: number) => x.toLocaleString(i18n.language);
     const corpus = t(`paperSetup.subSteps.corpus.suggestion.corpus.${suggestion.frequencyCorpus ?? 'bible'}`);
-    const sheets = suggestion.picked.map(p => p.sheet);
+    // Una entrada puede abarcar varias hojas (A2): se llevan todas.
+    const sheets = suggestion.picked.flatMap(p =>
+        Array.from({ length: Math.max(1, (p.endSheet ?? p.sheet) - p.sheet + 1) }, (_, i) => p.sheet + i));
     if (sheets.length === 0) return null;
 
     const motivo = (r: SuggestionReason): string => {
@@ -47,6 +49,7 @@ export function SuggestedSelection({ suggestion, numbering, printedPageOffset, o
             case 'repeated': return t('paperSetup.subSteps.corpus.suggestion.reason.repeated', { count: r.passageCount });
             case 'common': return t('paperSetup.subSteps.corpus.suggestion.reason.common', { n: n(r.bibleCount), corpus: corpus });
             case 'section': return t('paperSetup.subSteps.corpus.suggestion.reason.section', { title: r.title });
+            case 'question': return t('paperSetup.subSteps.corpus.suggestion.reason.question', { number: r.number });
         }
     };
     const rotulo = (sheet: number) => {
@@ -73,7 +76,9 @@ export function SuggestedSelection({ suggestion, numbering, printedPageOffset, o
                         {suggestion.picked.map(p => (
                             <li key={p.sheet} className="rounded-md border border-border px-3 py-2 text-xs">
                                 <div className="flex flex-wrap items-baseline gap-x-2">
-                                    <span className="tabular-nums font-medium text-foreground">{rotulo(p.sheet)}</span>
+                                    <span className="tabular-nums font-medium text-foreground">
+                                        {p.endSheet && p.endSheet > p.sheet ? `${rotulo(p.sheet)} – ${rotulo(p.endSheet)}` : rotulo(p.sheet)}
+                                    </span>
                                     {p.lemmas.map(l => (
                                         <span key={l} className="text-sm text-foreground" dir={/[\u05D0-\u05EA]/.test(l) ? 'rtl' : 'ltr'}>{l}</span>
                                     ))}

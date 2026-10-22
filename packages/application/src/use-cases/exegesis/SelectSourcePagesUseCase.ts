@@ -59,6 +59,15 @@ export interface SelectSourcePagesInput {
      * por ojo humano y cuál se aceptó automáticamente.
      */
     selectionMode?: ExcerptSelectionMode;
+    /**
+     * Sumar a lo que la fuente YA declara, leído del trabajo fresco, en vez de
+     * reemplazarlo: «Agregar y fijar» de la revisión por pregunta (TP #8, A4).
+     * Con la lista que traía la interfaz, un segundo clic antes de que el
+     * trabajo se refrescara deshacía el primero (revisión adversarial de 8a).
+     * Conserva la huella de pasaje de la receta: sumar una hoja no hace
+     * vigente una selección que estaba vieja.
+     */
+    mergeWithExisting?: boolean;
 }
 
 export interface SelectSourcePagesResult {
@@ -112,7 +121,12 @@ export class SelectSourcePagesUseCase {
         const paper = await this.paperRepository.getPaper(input.ownerId, input.paperId);
         if (!paper) throw new Error(`Paper ${input.paperId} not found`);
 
-        const sheetRanges = normalizeSheetRanges(input.sheetRanges);
+        const previa = sourceForResource(paper.sources, input.libraryResourceId);
+        const sumar = input.mergeWithExisting === true ? previa?.excerptRecipe ?? null : null;
+        if (input.mergeWithExisting && !sumar) {
+            throw new Error('La fuente no tiene páginas elegidas a las que sumar');
+        }
+        const sheetRanges = normalizeSheetRanges([...(sumar?.sheetRanges ?? []), ...input.sheetRanges]);
         if (sheetRanges.length === 0) {
             throw new Error('La selección no tiene ninguna hoja');
         }
@@ -147,15 +161,15 @@ export class SelectSourcePagesUseCase {
         const passageRef = formatPassageReference(paper.passage, paper.displayLanguage);
         const recipe: ExcerptRecipe = {
             sheetRanges,
-            proposedRanges: normalizeSheetRanges(input.proposedRanges),
+            proposedRanges: normalizeSheetRanges(sumar ? sumar.proposedRanges : input.proposedRanges),
             // Lo fijado se recorta a lo elegido: marcar una hoja y después
             // quitarla del carrito dejaría al medidor contando material que la
             // fuente ya no declara.
-            pinnedRanges: clipRangesTo(input.pinnedRanges ?? [], sheetRanges),
-            passageFingerprint: computeExtractionFingerprint(passageRef, paper.assignmentBrief),
+            pinnedRanges: clipRangesTo([...(sumar?.pinnedRanges ?? []), ...(input.pinnedRanges ?? [])], sheetRanges),
+            passageFingerprint: sumar?.passageFingerprint ?? computeExtractionFingerprint(passageRef, paper.assignmentBrief),
         };
 
-        const existing = sourceForResource(paper.sources, input.libraryResourceId);
+        const existing = previa;
 
         // Cuánto ocuparía el paper con esta fuente ya reemplazada. Se mide antes
         // de escribir porque el fallo de Firestore llega sin explicación y deja
@@ -185,7 +199,7 @@ export class SelectSourcePagesUseCase {
                 excerptSelectionMode: input.selectionMode ?? 'manual',
                 excerptRecipe: recipe,
                 extractedAt,
-                extractionFingerprint: recipe.passageFingerprint,
+                extractionFingerprint: sumar ? (existing.extractionFingerprint ?? recipe.passageFingerprint) : recipe.passageFingerprint,
             });
             return {
                 sourceId: existing.id,

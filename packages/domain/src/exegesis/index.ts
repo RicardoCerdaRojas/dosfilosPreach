@@ -94,6 +94,7 @@ export * from './services/preachingBriefTemplate';
 export * from './services/sourcesAndFormatBlock';
 export * from './services/lemmaPages';
 export * from './services/lexiconSuggestion';
+export * from './services/corpusQuestionReview';
 export * from './services/seriesPaperDefaults';
 export * from './services/paperDelivery';
 export * from './services/briefQuestionCandidates';

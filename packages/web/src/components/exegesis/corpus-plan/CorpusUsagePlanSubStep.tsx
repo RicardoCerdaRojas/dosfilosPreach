@@ -7,6 +7,7 @@ import {
     isStepPlanStale,
     pertenceAlDocumento,
     pinnedSourcesInCorpus,
+    evidenceFromReview,
     type ExegeticalPaper,
     type ExegeticalStep,
     type ExegeticalStepKind,
@@ -18,9 +19,11 @@ import {
     useUpdateStepCorpusAllocation,
 } from '@/hooks/exegesis/useStepCorpusAllocations';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { useCorpusQuestionReview } from '@/hooks/exegesis/useCorpusQuestionReview';
 import { PinnedSourcesPicker } from './PinnedSourcesPicker';
 import { nombreCortoDeFuente } from './nombreCortoDeFuente';
 import { PasosFueraDelPlan } from './PasosFueraDelPlan';
+import { CorpusQuestionReviewCard } from '../setup/CorpusQuestionReviewCard';
 
 interface CorpusUsagePlanSubStepProps {
     paper: ExegeticalPaper;
@@ -51,6 +54,10 @@ interface CorpusUsagePlanSubStepProps {
 export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
     const { t } = useTranslation('exegesis');
     const propose = useProposeStepCorpusAllocations();
+    // La misma revisión que muestra la tarjeta «¿Qué responde cada pregunta?»
+    // (misma caché): lo que la tarjeta dice es lo que el plan usa (B1–B2).
+    const revision = useCorpusQuestionReview(paper);
+    const revisando = revision.isLoading;
     const updateAllocation = useUpdateStepCorpusAllocation();
     const { seedSteps } = useExegesisPapers();
 
@@ -102,7 +109,7 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
 
     const handlePropose = async () => {
         try {
-            const result = await propose.mutateAsync({ paperId: paper.id });
+            const result = await propose.mutateAsync({ paperId: paper.id, evidence: evidenceFromReview(revision.review) });
             toast.success(
                 t('paperSetup.subSteps.corpus-plan.toastPropose', {
                     count: result.nonEmptyAllocationCount,
@@ -180,9 +187,14 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
 
             {hasCorpus && hasSteps && (
                 <>
+                    {/* Lo que falta en el corpus se dice antes de proponer el
+                        plan: el plan reparte las fuentes que hay (TP #8, A4). */}
+                    <CorpusQuestionReviewCard paper={paper} />
+
                     {!hasProposal && (
                         <EmptyProposalState
                             isLoading={propose.isPending}
+                            waiting={revisando}
                             onPropose={handlePropose}
                         />
                     )}
@@ -190,6 +202,7 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
                     {hasProposal && stale && (
                         <StaleBanner
                             isLoading={propose.isPending}
+                            waiting={revisando}
                             onRegenerate={handlePropose}
                         />
                     )}
@@ -207,7 +220,8 @@ export function CorpusUsagePlanSubStep({ paper }: CorpusUsagePlanSubStepProps) {
                                     variant="ghost"
                                     size="sm"
                                     onClick={handlePropose}
-                                    disabled={propose.isPending}
+                                    disabled={propose.isPending || revisando}
+                                    title={revisando ? t('paperSetup.subSteps.corpus-plan.waitingReview') : undefined}
                                     className="text-xs gap-1.5"
                                 >
                                     {propose.isPending
@@ -423,6 +437,12 @@ function PlanRow({
                         {note}
                     </p>
                 )}
+                {/* La nota habla de otra lista (TP #8, B3, #24). */}
+                {note && entry?.sourcesEditedAfterNote && (
+                    <p className="text-[11px] text-warning-subtle-foreground leading-snug" data-testid="nota-editada">
+                        {t('paperSetup.subSteps.corpus-plan.noteEdited')}
+                    </p>
+                )}
             </td>
         </tr>
     );
@@ -458,9 +478,12 @@ function SeedingState() {
 
 function EmptyProposalState({
     isLoading,
+    waiting = false,
     onPropose,
 }: {
     isLoading: boolean;
+    /** La revisión del corpus por pregunta todavía carga: el plan la usa (B1–B2). */
+    waiting?: boolean;
     onPropose: () => void;
 }) {
     const { t } = useTranslation('exegesis');
@@ -480,7 +503,8 @@ function EmptyProposalState({
             <Button
                 type="button"
                 onClick={onPropose}
-                disabled={isLoading}
+                disabled={isLoading || waiting}
+                title={waiting ? t('paperSetup.subSteps.corpus-plan.waitingReview') : undefined}
                 className="w-full sm:w-auto gap-2"
             >
                 {isLoading
@@ -496,9 +520,12 @@ function EmptyProposalState({
 
 function StaleBanner({
     isLoading,
+    waiting = false,
     onRegenerate,
 }: {
     isLoading: boolean;
+    /** La revisión del corpus por pregunta todavía carga: el plan la usa (B1–B2). */
+    waiting?: boolean;
     onRegenerate: () => void;
 }) {
     const { t } = useTranslation('exegesis');
@@ -519,7 +546,8 @@ function StaleBanner({
                     size="sm"
                     variant="outline"
                     onClick={onRegenerate}
-                    disabled={isLoading}
+                    disabled={isLoading || waiting}
+                    title={waiting ? t('paperSetup.subSteps.corpus-plan.waitingReview') : undefined}
                     className="text-[11px] gap-1 shrink-0"
                 >
                     {isLoading

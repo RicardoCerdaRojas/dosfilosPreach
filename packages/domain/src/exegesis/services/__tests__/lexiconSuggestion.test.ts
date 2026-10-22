@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { suggestGrammarSelection, suggestLexiconSelection } from '../lexiconSuggestion';
+import { lemmaKey } from '../lemmaPages';
 
 /**
  * Jonás 4:5-11 con el léxico de Ortiz: el fundador no sabía qué hojas elegir.
@@ -69,5 +70,52 @@ describe('suggestGrammarSelection', () => {
         expect(r.picked.map(p => p.sheet)).toEqual([210, 300]);
         expect(r.picked[0]!.reasons).toHaveLength(2);
         expect(r.leftOut).toEqual(['Hiphil']);
+    });
+});
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A2). Tuggy, Santiago 4:1-10: μέλος tiene su
+ * entrada en 584–585 aunque la hoja con más apariciones sea la 585; la
+ * consigna nombra μέλεσιν (P1) y φονεύετε (P2).
+ */
+describe('suggestLexiconSelection · consigna primero y entrada completa', () => {
+    const G = (lemma: string, occurrences: number) => ({ lemma, term: lemma, occurrences, firstVerse: '4:1' });
+    const lemas = [G('ἡδονή', 2), G('πόλεμος', 1), G('μέλος', 1), G('φονεύω', 1)];
+    const hojas: Record<string, Array<{ sheet: number; count: number }>> = {
+        'ἡδονή': [{ sheet: 416, count: 3 }], 'πόλεμος': [{ sheet: 743, count: 4 }],
+        'μέλος': [{ sheet: 585, count: 2 }], 'φονεύω': [{ sheet: 938, count: 1 }],
+    };
+    const entradas: Record<string, { startSheet: number; endSheet: number }> = { 'μέλος': { startSheet: 584, endSheet: 585 } };
+    const sugerir = (extra: Record<string, unknown> = {}) => suggestLexiconSelection({
+        lemmas: lemas,
+        sheetsOf: l => hojas[l] ?? [],
+        bibleCount: () => 100,
+        commonFrom: 500,
+        sheetChars: () => 3_000,
+        budgetChars: Number.POSITIVE_INFINITY,
+        entryOf: l => entradas[l],
+        questionLemmas: new Map([[lemmaKey('μέλος'), 1], [lemmaKey('φονεύω'), 2]]),
+        ...extra,
+    });
+
+    it('los lemas de la consigna van primero, en el orden de las preguntas', () => {
+        expect(sugerir().picked.map(p => p.lemmas[0])).toEqual(['μέλος', 'φονεύω', 'ἡδονή', 'πόλεμος']);
+    });
+
+    it('toma la entrada desde su comienzo, no la hoja con más apariciones', () => {
+        const melos = sugerir().picked.find(p => p.lemmas.includes('μέλος'))!;
+        expect(melos).toMatchObject({ sheet: 584, endSheet: 585 });
+        expect(melos.reasons[0]).toEqual({ kind: 'question', number: 1 });
+    });
+
+    it('sin entrada marcada, la hoja más probable, como antes', () => {
+        expect(sugerir().picked.find(p => p.lemmas.includes('φονεύω'))).toMatchObject({ sheet: 938 });
+        expect(sugerir().picked.find(p => p.lemmas.includes('φονεύω'))!.endSheet).toBeUndefined();
+    });
+
+    it('el presupuesto cuenta todas las hojas de la entrada', () => {
+        const r = sugerir({ budgetChars: 3_000 * 2 });
+        expect(r.picked.map(p => p.lemmas[0])).toEqual(['μέλος']);
+        expect(r.leftOut).toEqual(['φονεύω', 'ἡδονή', 'πόλεμος']);
     });
 });

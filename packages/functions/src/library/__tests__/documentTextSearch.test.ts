@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findQuoteInPageText, lemmaKey as lemmaKeyDelDominio } from '@dosfilos/domain';
-import { foldForSearch, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp } from '../documentTextSearch';
+import { conElIndiceDePasajes, foldForSearch, griegoPlegado, lemmaEntriesIn, lemmaKey, lemmaOccurrencesIn, lemmaSheetsIn, occurrencesIn, snippetAround, soloConsonantes, referenceOccurrencesIn, referenceRegExp, referenceVersesFromRefs, recortarPorRelevancia, hojasDevueltas } from '../documentTextSearch';
 
 /**
  * Los dos buscadores tienen que plegar IGUAL.
@@ -207,5 +207,112 @@ describe('lemmaSheetsIn', () => {
     it('respeta el tope por lema', () => {
         const r = lemmaSheetsIn(chunks, [lemmaKey('קִיקָיוֹן')], 1);
         expect(r[lemmaKey('קִיקָיוֹן')]).toHaveLength(1);
+    });
+});
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A1): la búsqueda por referencia sólo leía la
+ * forma «Libro c:v» del texto. El índice `refs` del fragmento encuentra lo que
+ * esa forma pierde.
+ */
+describe('referenceVersesFromRefs · el índice de pasajes del fragmento', () => {
+    const santiago4 = (c: number, v: number) => c === 4 && v >= 1 && v <= 10;
+
+    it('devuelve los versículos del pasaje que nombra `refs`', () => {
+        // Wallace, p. 533: «Jas 4:5, 6» — la regex sólo da 4:5; `refs` trae los dos.
+        expect(referenceVersesFromRefs(['JAS.4', 'JAS.4.5', 'JAS.4.6', 'ROM.9.15'], 'JAS', santiago4)).toEqual([5, 6]);
+    });
+
+    it('ignora otros libros, otros capítulos y claves de capítulo sin versículo', () => {
+        expect(referenceVersesFromRefs(['JAS.3.6', 'JAS.4', 'JON.4.2', 'JAS.4.11'], 'JAS', santiago4)).toEqual([]);
+    });
+
+    it('sin libro o sin `refs` no inventa nada', () => {
+        expect(referenceVersesFromRefs(['JAS.4.2'], '', santiago4)).toEqual([]);
+        expect(referenceVersesFromRefs(undefined, 'JAS', santiago4)).toEqual([]);
+    });
+
+    it('suma lo de `refs` a lo de la regex; si sólo `refs` lo nombra, la hoja cuenta', () => {
+        expect(conElIndiceDePasajes({ at: [12], verses: [5] }, [5, 6])).toEqual({ at: [12], verses: [5, 6] });
+        expect(conElIndiceDePasajes({ at: [], verses: [] }, [3])).toEqual({ at: [0], verses: [3] });
+        expect(conElIndiceDePasajes({ at: [7], verses: [2] }, [])).toEqual({ at: [7], verses: [2] });
+    });
+});
+
+
+/**
+ * TP #8 (2026-10-21, fase 8a, A2). El texto es el de Tuggy en producción ese
+ * día (fragmentos 3531–3535 y la entrada αἰτέω de la h. 37).
+ */
+describe('lemmaEntriesIn · dónde empieza y termina la entrada de un lema', () => {
+    const tuggy = [
+        { chunkIndex: 3531, sheet: 584, text: '**Μελίτη, ης, ἡ.** *Malta*: Hch. 28:1.' },
+        { chunkIndex: 3532, sheet: 584, text: 'C) Forma conjugada sin inf. *Esperar, demorar*: Hch. 22:16.' },
+        { chunkIndex: 3533, sheet: 584, text: '**μέλος, ους, τό.** *Miembro, parte del cuerpo*. A.T. הֶגֶה Ez. 2:10.' },
+        { chunkIndex: 3534, sheet: 585, text: 'N.T., Mt. 5:29–30; Ro. 6:13; 1 Co. 12:12; Stg. 3:5–6; Stg. 4:1.' },
+        { chunkIndex: 3535, sheet: 585, text: '**Μελχί, ὁ.** Nombre prop. indecl., en la genealogía de Jesús.' },
+    ];
+
+    it('μέλος empieza en la 584, donde está la definición, y llega a la 585', () => {
+        expect(lemmaEntriesIn(tuggy, [griegoPlegado('μέλος')])).toEqual({ [griegoPlegado('μέλος')]: { startSheet: 584, endSheet: 585 } });
+    });
+
+    it('una entrada que termina en su hoja no se estira', () => {
+        const fragmentos = [
+            { chunkIndex: 1, sheet: 37, text: '154\n\n**αἰτέω.** (impera. αἴτει, med. αἰτοῦ). *Pedir, suplicar*.' },
+            { chunkIndex: 2, sheet: 37, text: '155\n\n**αἰσχύνη, ης, ἡ.** *Vergüenza*.' },
+        ];
+        expect(lemmaEntriesIn(fragmentos, [griegoPlegado('αἰτέω')])[griegoPlegado('αἰτέω')]).toEqual({ startSheet: 37, endSheet: 37 });
+    });
+
+    it('reconoce un título markdown como comienzo de entrada (diccionarios)', () => {
+        const kittel = [
+            { chunkIndex: 10, sheet: 31, text: '## αἰτέω [pedir], ἀπαιτέω\n\nEl uso general no apoya una distinción…' },
+            { chunkIndex: 11, sheet: 33, text: 'sigue la entrada' },
+            { chunkIndex: 12, sheet: 34, text: '## αἴτημα\n\n«Solicitud»' },
+        ];
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('αἰτέω')])[griegoPlegado('αἰτέω')]).toEqual({ startSheet: 31, endSheet: 34 });
+    });
+
+    it('una mención en negrita a mitad de renglón no abre entrada', () => {
+        const texto = [{ chunkIndex: 1, sheet: 9, text: 'Véase también **μέλος** en la p. 584.' }];
+        expect(lemmaEntriesIn(texto, [griegoPlegado('μέλος')])).toEqual({});
+    });
+
+    it('la entrada se corta en el tope de hojas', () => {
+        const largo = [
+            { chunkIndex: 1, sheet: 100, text: '**λόγος, ου, ὁ.** *Palabra*.' },
+            { chunkIndex: 2, sheet: 130, text: '**λοιδορέω.** *Injuriar*.' },
+        ];
+        expect(lemmaEntriesIn(largo, [griegoPlegado('λόγος')], 8)[griegoPlegado('λόγος')]).toEqual({ startSheet: 100, endSheet: 107 });
+    });
+});
+
+/** Revisión de 8a: el modo referencia recortaba las 80 primeras hojas por número. */
+describe('recortarPorRelevancia', () => {
+    it('se queda con lo que más nombra, aunque caiga al final del libro, y lo devuelve en orden de hoja', () => {
+        const hojas = [
+            ...Array.from({ length: 5 }, (_, i) => ({ sheet: i + 1, count: 1, verses: [1] })),
+            { sheet: 938, count: 1, verses: [2, 3] },
+            { sheet: 700, count: 9, verses: [1] },
+        ];
+        expect(recortarPorRelevancia(hojas, 2).map(h => h.sheet)).toEqual([700, 938]);
+    });
+
+    it('sin versículos, por apariciones', () => {
+        expect(recortarPorRelevancia([{ sheet: 1, count: 1 }, { sheet: 2, count: 5 }], 1).map(h => h.sheet)).toEqual([2]);
+    });
+});
+
+describe('hojasDevueltas', () => {
+    const muchas = [
+        ...Array.from({ length: 85 }, (_, i) => ({ sheet: i + 1, count: 1, verses: [1] })),
+        { sheet: 938, count: 1, verses: [2, 3] },
+    ];
+    it('en modo referencia, la hoja del final que nombra más versículos entra', () => {
+        expect(hojasDevueltas('referencia', muchas).map(h => h.sheet)).toContain(938);
+    });
+    it('en modo texto, por número de hoja como siempre', () => {
+        expect(hojasDevueltas('texto', muchas).map(h => h.sheet)).not.toContain(938);
     });
 });

@@ -93,6 +93,41 @@ interface RetrieveRequest {
     query: string;
     sources: SourceScope[];
     pool?: number;
+    /**
+     * Claves de canon del paso (`JAS.4.3`). Los fragmentos cuyo `refs` nombra
+     * alguna van primero (TP #8, fase 8a, A1).
+     */
+    verseKeys?: string[];
+}
+
+/** Tope de claves que se aceptan: un paso son uno o pocos versículos. */
+const MAX_VERSE_KEYS = 20;
+
+/** Las claves válidas del pedido: `LIBRO.c.v`, sin repetir y con tope. */
+export function claveDeVersiculosDelPedido(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return [];
+    const ok = raw.filter((k): k is string => typeof k === 'string' && /^[A-Z0-9]{2,4}\.\d{1,3}\.\d{1,3}$/.test(k));
+    return [...new Set(ok)].slice(0, MAX_VERSE_KEYS);
+}
+
+/** Tope de fragmentos que se traen por su índice de pasajes en el camino vectorial. */
+const MAX_POR_PASAJE = 20;
+
+/** ¿El índice de pasajes del fragmento nombra alguno de los versículos del paso? */
+export function nombraElVersiculo(refs: unknown, verseKeys: ReadonlySet<string>): boolean {
+    if (verseKeys.size === 0 || !Array.isArray(refs)) return false;
+    return refs.some(r => typeof r === 'string' && verseKeys.has(r));
+}
+
+/**
+ * El orden final de los fragmentos de una fuente: primero los que NOMBRAN el
+ * versículo del paso, después el resto; dentro de cada grupo, por cercanía.
+ *
+ * TP #8 (2026-10-21): en una gramática la hoja que trata el versículo no se
+ * «parece» a él —lo menciona en una línea— y el coseno solo la dejaba atrás.
+ */
+export function ordenarPorPasajeYCercania<T extends { score: number; nombra: boolean }>(rows: T[]): T[] {
+    return [...rows].sort((a, b) => Number(b.nombra) - Number(a.nombra) || b.score - a.score);
 }
 
 function withinRanges(sheet: unknown, ranges: SheetRange[]): boolean {
@@ -202,6 +237,7 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
             Math.max(1, Number.isFinite(data.pool) ? Number(data.pool) : DEFAULT_POOL),
         );
 
+        const verseKeys = new Set(claveDeVersiculosDelPedido(data.verseKeys));
         const db = getFirestore();
         const vector = await embedQuery(query, apiKey);
         const queryVector = FieldValue.vector(vector);
@@ -235,11 +271,11 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                     if (indices) {
                         const refs = indices.map(i => db.collection(CHUNK_COLLECTION).doc(`${resourceId}_chunk_${i}`));
                         const docs = await db.getAll(...refs, {
-                            fieldMask: ['chunkIndex', 'text', 'metadata', 'userId', 'stores', 'embedding'],
+                            fieldMask: ['chunkIndex', 'text', 'metadata', 'userId', 'stores', 'embedding', 'refs'],
                         });
                         const kept = rankCuratedChunks({
                             rows: docs.filter(doc => doc.exists).map(doc => doc.data()!),
-                            resourceId, uid, ranges, vector, pool,
+                            resourceId, uid, ranges, vector, pool, verseKeys,
                         });
                         return { resourceId, pool: docs.length, kept, failed: false };
                     }
@@ -256,7 +292,28 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                         })
                         .get();
 
-                    const kept = snapshot.docs
+                    // El vecino más cercano trae los `pool` de mayor coseno y
+                    // ordenar después no rescata nada: la hoja que nombra el
+                    // versículo con coseno bajo ya quedó afuera (revisión de
+                    // 8a). Se traen aparte, por su índice de pasajes.
+                    const porPasaje = verseKeys.size > 0
+                        ? await db.collection(CHUNK_COLLECTION)
+                            .where('resourceId', '==', resourceId)
+                            .where('userId', '==', uid)
+                            .where('refs', 'array-contains-any', [...verseKeys].slice(0, 30))
+                            .select('chunkIndex', 'text', 'metadata', 'userId', 'stores', 'embedding', 'refs')
+                            .limit(MAX_POR_PASAJE)
+                            .get()
+                            .then(snap => rankCuratedChunks({
+                                rows: snap.docs.map(doc => doc.data()), resourceId, uid, ranges, vector, pool, verseKeys,
+                            }))
+                            .catch(err => {
+                                console.warn('[CuratedCorpus] sin fragmentos por pasaje', { resourceId, error: (err as Error).message });
+                                return [] as RankedCuratedChunk[];
+                            })
+                        : [];
+                    const vistos = new Set(porPasaje.map(c => c.chunkIndex));
+                    const cercanos = ordenarPorPasajeYCercania(snapshot.docs
                         .map(doc => doc.data())
                         // Acá manda la curaduría: lo que el usuario no admitió
                         // no entra, por cerca que haya quedado.
@@ -271,7 +328,9 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                             // invierte para que quien reciba esto ordene por
                             // "más grande es mejor", como el resto del sistema.
                             score: Math.max(0, Math.min(1, 1 - (typeof d._distance === 'number' ? d._distance : 1))),
-                        }));
+                            nombra: nombraElVersiculo(d.refs, verseKeys),
+                        }))).map(conMarcaDeVersiculo).filter(c => !vistos.has(c.chunkIndex));
+                    const kept = [...porPasaje, ...cercanos];
 
                     return { resourceId, pool: snapshot.size, kept, failed: false };
                 } catch (err) {
@@ -317,6 +376,7 @@ export interface CuratedChunkRow {
     stores?: unknown;
     metadata?: { page?: unknown; section?: unknown };
     embedding?: { toArray?: () => number[] } | number[];
+    refs?: unknown;
 }
 
 export interface RankedCuratedChunk {
@@ -326,6 +386,18 @@ export interface RankedCuratedChunk {
     sheet: number | null;
     section: string | null;
     score: number;
+    /**
+     * Su índice de pasajes nombra el versículo del paso. Viaja para que la
+     * selección del prompt lo respete: el orden de aquí se perdía porque
+     * `selectForPrompt` volvía a ordenar sólo por coseno (revisión de 8a).
+     * Ausente = no lo nombra.
+     */
+    namesVerse?: true;
+}
+
+/** Sin la marca interna; con `namesVerse` sólo cuando nombra el versículo. */
+function conMarcaDeVersiculo<T extends { nombra: boolean }>({ nombra, ...chunk }: T): Omit<T, 'nombra'> & { namesVerse?: true } {
+    return nombra ? { ...chunk, namesVerse: true as const } : chunk;
 }
 
 /**
@@ -347,8 +419,11 @@ export function rankCuratedChunks(input: {
     ranges: SheetRange[];
     vector: number[];
     pool: number;
+    /** Claves de canon del paso: lo que las nombra va primero (`ordenarPorPasajeYCercania`). */
+    verseKeys?: ReadonlySet<string>;
 }): RankedCuratedChunk[] {
-    return input.rows
+    const claves = input.verseKeys ?? new Set<string>();
+    const ordenadas = ordenarPorPasajeYCercania(input.rows
         .filter(row => isReadable(row as FirebaseFirestore.DocumentData, input.uid))
         // La receta sigue mandando: el índice de hojas puede mapear un
         // fragmento de más en el borde de un tramo.
@@ -360,9 +435,9 @@ export function rankCuratedChunks(input: {
             sheet: typeof row.metadata?.page === 'number' ? row.metadata.page : null,
             section: typeof row.metadata?.section === 'string' ? row.metadata.section : null,
             score: Math.max(0, Math.min(1, cosine(embeddingOf(row.embedding), input.vector))),
-        }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, input.pool);
+            nombra: nombraElVersiculo(row.refs, claves),
+        })));
+    return ordenadas.slice(0, input.pool).map(conMarcaDeVersiculo);
 }
 
 function embeddingOf(value: CuratedChunkRow['embedding']): number[] {

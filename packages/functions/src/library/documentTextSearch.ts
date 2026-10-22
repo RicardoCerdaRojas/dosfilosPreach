@@ -86,6 +86,12 @@ interface SearchRequest {
         chapterEnd: number;
         verseStart: number | null;
         verseEnd: number | null;
+        /**
+         * El libro en el canon (`JAS`). Con él también cuenta el índice de
+         * pasajes de cada fragmento (`refs`, que escribe el indexador), y no
+         * sólo la forma «Libro c:v» del texto (TP #8, fase 8a, A1).
+         */
+        bookId?: string;
     };
 }
 
@@ -253,6 +259,52 @@ export function lemmaSheetsIn(
     return out;
 }
 
+/** Cuántas hojas puede abarcar, como máximo, una entrada de léxico o de diccionario. */
+export const MAX_ENTRY_SHEETS = 8;
+
+/** Una línea que abre una entrada: el lema en negrita, o un título markdown. */
+const LINEA_DE_ENTRADA = /^[ \t]*(?:\*\*([^*\n]{1,120})\*\*|#{1,6}[ \t]+([^\n]{1,120}))/gm;
+const PRIMERA_PALABRA_ORIGINAL = /[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F\u00B5]+/;
+
+/**
+ * Las entradas de un léxico o diccionario: dónde empieza la de cada lema y
+ * hasta qué hoja llega.
+ *
+ * TP #8 (2026-10-21, fase 8a, A2): la hoja «con más apariciones» de un lema no
+ * es su entrada. Tuggy nombra μέλος con la lista de citas en la h. 585, y la
+ * definición («**μέλος, ους, τό.** *Miembro, parte del cuerpo*») está en la
+ * 584. Una entrada empieza en una línea que abre con el lema en negrita, o en
+ * un título, y termina donde empieza la siguiente.
+ *
+ * `chunks` en el orden del libro (por `chunkIndex`). Si el lema abre más de
+ * una línea, gana la primera. La entrada se corta en `maxSheets` hojas.
+ */
+export function lemmaEntriesIn(
+    chunks: ReadonlyArray<{ chunkIndex: number; text: string; sheet: number }>,
+    claves: ReadonlyArray<string>,
+    maxSheets: number = MAX_ENTRY_SHEETS,
+): Record<string, { startSheet: number; endSheet: number }> {
+    const buscadas = new Set(claves.filter(Boolean));
+    const ordenados = [...chunks].sort((a, b) => a.chunkIndex - b.chunkIndex);
+    const cabezas: Array<{ clave: string; sheet: number }> = [];
+    for (const chunk of ordenados) {
+        LINEA_DE_ENTRADA.lastIndex = 0;
+        for (const m of chunk.text.normalize('NFC').matchAll(LINEA_DE_ENTRADA)) {
+            const palabra = (m[1] ?? m[2] ?? '').match(PRIMERA_PALABRA_ORIGINAL)?.[0] ?? '';
+            const clave = /[\u05D0-\u05EA]/.test(palabra) ? soloConsonantes(palabra) : griegoPlegado(palabra);
+            if (clave) cabezas.push({ clave, sheet: chunk.sheet });
+        }
+    }
+    const out: Record<string, { startSheet: number; endSheet: number }> = {};
+    cabezas.forEach((cabeza, i) => {
+        if (!buscadas.has(cabeza.clave) || out[cabeza.clave]) return;
+        const siguiente = cabezas.slice(i + 1).find(c => c.clave !== cabeza.clave);
+        const fin = siguiente ? Math.max(cabeza.sheet, siguiente.sheet) : cabeza.sheet;
+        out[cabeza.clave] = { startSheet: cabeza.sheet, endSheet: Math.min(fin, cabeza.sheet + maxSheets - 1) };
+    });
+    return out;
+}
+
 /** Un texto suelto, listo para meterse dentro de una expresión regular. */
 function escapeRegExp(input: string): string {
     return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -273,6 +325,35 @@ export function referenceRegExp(names: ReadonlyArray<string>): RegExp {
     // se pierde. Con la más larga primero eso no puede pasar.
     const grafias = [...names].sort((a, b) => b.length - a.length).map(escapeRegExp).join('|');
     return new RegExp(`(?:${grafias})\\.?\\s*(\\d{1,3})\\s*[:.]\\s*(\\d{1,3})`, 'gi');
+}
+
+/**
+ * Qué versículos del pasaje nombra el índice de pasajes de un fragmento.
+ *
+ * `refs` lo escribe el indexador (`refsDeFragmento`) con claves `LIBRO.c` y
+ * `LIBRO.c.v`. Encuentra lo que la expresión regular pierde: las listas
+ * («Jas 4:5, 6» da 4:5 y 4:6), «v. 3» dentro de la sección de un capítulo y
+ * las notas de un comentario rotuladas por su encabezado. TP #8 (2026-10-21):
+ * las tres hojas de Wallace que nombran Stg 4 tenían `refs`, y la propuesta
+ * automática no las miraba.
+ */
+export function referenceVersesFromRefs(
+    refs: unknown,
+    bookId: string,
+    enElPasaje: (chapter: number, verse: number) => boolean,
+): number[] {
+    if (!Array.isArray(refs) || !bookId) return [];
+    const prefijo = `${bookId}.`;
+    const verses = new Set<number>();
+    for (const clave of refs) {
+        if (typeof clave !== 'string' || !clave.startsWith(prefijo)) continue;
+        const [, c, v] = clave.split('.');
+        const chapter = Number(c);
+        const verse = Number(v);
+        if (!Number.isInteger(chapter) || !Number.isInteger(verse)) continue;
+        if (enElPasaje(chapter, verse)) verses.add(verse);
+    }
+    return [...verses].sort((a, b) => a - b);
 }
 
 /**
@@ -300,6 +381,20 @@ export function referenceOccurrencesIn(
     return { at, verses: [...verses].sort((a, b) => a - b) };
 }
 
+/**
+ * Lo que halló la expresión regular, sumando lo que nombra `refs`. Si sólo
+ * `refs` nombra el pasaje, la hoja cuenta igual, con el renglón de contexto
+ * del comienzo del fragmento.
+ */
+export function conElIndiceDePasajes(
+    porTexto: { at: number[]; verses: number[] },
+    porRefs: number[],
+): { at: number[]; verses: number[] } {
+    if (porRefs.length === 0) return porTexto;
+    const verses = [...new Set([...porTexto.verses, ...porRefs])].sort((a, b) => a - b);
+    return { at: porTexto.at.length > 0 ? porTexto.at : [0], verses };
+}
+
 export function occurrencesIn(text: string, foldedTerm: string): number[] {
     if (!foldedTerm || !text) return [];
     const haystack = foldForSearch(text);
@@ -318,6 +413,30 @@ export function snippetAround(text: string, at: number): string {
     const to = Math.min(text.length, at + SNIPPET_AFTER);
     const body = text.slice(from, to).replace(/\s+/g, ' ').trim();
     return `${from > 0 ? '…' : ''}${body}${to < text.length ? '…' : ''}`;
+}
+
+/** Qué hojas devuelve cada modo cuando hay más de `MAX_SHEETS`. */
+export function hojasDevueltas<T extends { sheet: number; count: number; verses?: ReadonlyArray<number> }>(
+    modo: 'texto' | 'lema' | 'referencia' | string,
+    porHoja: ReadonlyArray<T>,
+): T[] {
+    return modo === 'lema' || modo === 'referencia'
+        ? recortarPorRelevancia(porHoja, MAX_SHEETS)
+        : porHoja.slice(0, MAX_SHEETS);
+}
+
+/**
+ * Las `max` hojas que más nombran lo buscado, devueltas en orden de hoja:
+ * primero las que nombran más versículos, después las de más apariciones.
+ */
+export function recortarPorRelevancia<T extends { sheet: number; count: number; verses?: ReadonlyArray<number> }>(
+    hojas: ReadonlyArray<T>,
+    max: number,
+): T[] {
+    return [...hojas]
+        .sort((a, b) => ((b.verses?.length ?? 0) - (a.verses?.length ?? 0)) || (b.count - a.count) || (a.sheet - b.sheet))
+        .slice(0, max)
+        .sort((a, b) => a.sheet - b.sheet);
 }
 
 export { foldForSearch };
@@ -356,7 +475,7 @@ export const searchDocumentText = onCall<SearchRequest>(
             const snapshot = await getFirestore()
                 .collection(CHUNK_COLLECTION)
                 .where('resourceId', '==', resourceId)
-                .select('text', 'metadata', 'userId', 'stores')
+                .select('text', 'metadata', 'userId', 'stores', 'chunkIndex')
                 .get();
             const readable = snapshot.docs.map(d => d.data()).filter(data => isReadable(data, uid));
             if (!snapshot.empty && readable.length === 0) {
@@ -366,13 +485,23 @@ export const searchDocumentText = onCall<SearchRequest>(
                 const text = typeof data.text === 'string' ? data.text : '';
                 const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : null;
                 const section = typeof data.metadata?.section === 'string' ? data.metadata.section : null;
-                return text && sheet !== null ? [{ text, sheet, section }] : [];
+                const chunkIndex = typeof data.chunkIndex === 'number' ? data.chunkIndex : 0;
+                return text && sheet !== null ? [{ text, sheet, section, chunkIndex }] : [];
             });
-            const porClave = lemmaSheetsIn(chunks, claves.filter(c => c.length >= MIN_TERM_LENGTH), SHEETS_PER_TERM);
+            const validas = claves.filter(c => c.length >= MIN_TERM_LENGTH);
+            const porClave = lemmaSheetsIn(chunks, validas, SHEETS_PER_TERM);
+            // Dónde empieza y termina la ENTRADA de cada lema (A2): la hoja con más
+            // apariciones puede ser la lista de citas, no la definición.
+            const entradas = lemmaEntriesIn(chunks, validas);
             const byTerm: Record<string, unknown> = {};
-            terms.forEach((t, i) => { byTerm[t] = porClave[claves[i]!] ?? []; });
-            console.log(`[DocumentTextSearch] ${resourceId} lemas: ${terms.length} términos, ${readable.length} chunks, una lectura`);
-            return { byTerm, scannedChunks: readable.length };
+            const entries: Record<string, { startSheet: number; endSheet: number }> = {};
+            terms.forEach((t, i) => {
+                byTerm[t] = porClave[claves[i]!] ?? [];
+                const entrada = entradas[claves[i]!];
+                if (entrada) entries[t] = entrada;
+            });
+            console.log(`[DocumentTextSearch] ${resourceId} lemas: ${terms.length} términos, ${Object.keys(entries).length} entradas, ${readable.length} chunks, una lectura`);
+            return { byTerm, entries, scannedChunks: readable.length };
         }
 
         // En modo referencia la aguja es el pasaje, no un término escrito.
@@ -384,6 +513,7 @@ export const searchDocumentText = onCall<SearchRequest>(
             throw new HttpsError('invalid-argument', 'reference.names is required in mode "referencia"');
         }
         const referencia = modo === 'referencia' ? referenceRegExp(names) : null;
+        const libroDelPedido = typeof ref?.bookId === 'string' && /^[A-Z0-9]{2,4}$/.test(ref.bookId) ? ref.bookId : '';
         const enElPasaje = (chapter: number, verse: number): boolean => {
             const r = ref!;
             if (chapter < r.chapterStart || chapter > r.chapterEnd) return false;
@@ -405,7 +535,7 @@ export const searchDocumentText = onCall<SearchRequest>(
         const snapshot = await db
             .collection(CHUNK_COLLECTION)
             .where('resourceId', '==', resourceId)
-            .select('text', 'metadata', 'userId', 'stores')
+            .select('text', 'metadata', 'userId', 'stores', 'refs')
             .get();
 
         if (snapshot.empty) return { hits: [], truncated: false, scannedChunks: 0 };
@@ -424,7 +554,10 @@ export const searchDocumentText = onCall<SearchRequest>(
             const sheet = typeof data.metadata?.page === 'number' ? data.metadata.page : null;
             if (!text || sheet === null) continue;
             const encontrado = modo === 'referencia'
-                ? referenceOccurrencesIn(text, referencia!, enElPasaje)
+                ? conElIndiceDePasajes(
+                    referenceOccurrencesIn(text, referencia!, enElPasaje),
+                    referenceVersesFromRefs(data.refs, libroDelPedido, enElPasaje),
+                )
                 : { at: modo === 'lema' ? lemmaOccurrencesIn(text, aguja) : occurrencesIn(text, aguja), verses: [] };
             const at = encontrado.at;
             if (at.length === 0) continue;
@@ -452,9 +585,10 @@ export const searchDocumentText = onCall<SearchRequest>(
         // En modo lema se recorta por APARICIONES y no por número de hoja: la
         // entrada de un verbo común (אמר, λέγω) puede caer después de la hoja
         // 80 y quedaba afuera antes de ordenarse por cantidad.
-        const hits = modo === 'lema'
-            ? [...all].sort((a, b) => (b.count - a.count) || (a.sheet - b.sheet)).slice(0, MAX_SHEETS).sort((a, b) => a.sheet - b.sheet)
-            : all.slice(0, MAX_SHEETS);
+        // En modo referencia, igual por lo que nombran: con `refs` un léxico
+        // nombra el pasaje en más de 80 hojas, y φονεύω (Φ, al final del libro)
+        // quedaba afuera por número de hoja (revisión de 8a).
+        const hits = hojasDevueltas(modo, all);
         const etiqueta = modo === 'referencia' ? `referencia ${names[0]} ${ref!.chapterStart}` : `«${term}»`;
         console.log(`[DocumentTextSearch] ${resourceId} ${etiqueta} (${modo}): ${readable.length} chunks → ${all.length} hojas`);
         return { hits, truncated: all.length > hits.length, scannedChunks: readable.length };

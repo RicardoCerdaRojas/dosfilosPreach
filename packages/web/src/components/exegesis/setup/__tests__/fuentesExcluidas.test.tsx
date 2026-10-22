@@ -86,6 +86,46 @@ describe('la tarjeta de fuentes excluidas', () => {
         expect(guardar).toHaveBeenLastCalledWith({ paperId: 'tp6', excludedSources: [] });
     });
 
+    it('TP #8: propone comentarios y gramática; el léxico y el texto base, no; y sugiere la otra gramática', () => {
+        const conFuentes = (id: string, dia: number, cited: string[], title: string, fuentes: Array<[string, string]>) => ({
+            ...resumen(id, dia, cited, title),
+            sources: fuentes.map(([citationKey, sourceType]) => ({ citationKey, sourceType, corpusId: citationKey, sourceLibraryResourceId: null, displayLabel: citationKey })),
+        }) as unknown as ExegesisPaperSummary;
+        resumenes = [
+            conFuentes('tp5', 1, ['Wallace', 'Adamson'], 'TP #5', [['Wallace', 'grammar-syntax'], ['Adamson', 'commentary-critical']]),
+            conFuentes('tp6a', 3, ['McCartney', 'NA28', 'Robertson', 'Tuggy'], 'TP #7', [
+                ['McCartney', 'commentary-expository'], ['NA28', 'critical-apparatus'], ['Robertson', 'grammar-syntax'], ['Tuggy', 'lexicon-technical'],
+            ]),
+            resumen('tp6', 6, [], 'TP #8'),
+        ];
+        render(<ExcludedSourcesCard paper={trabajo(undefined)} />);
+        expect(screen.getByLabelText(/McCartney/)).toBeChecked();
+        expect(screen.getByLabelText(/Robertson/).closest('label')).toHaveTextContent('excluded.alternateWith {"others":"Wallace"}');
+        expect(screen.queryByLabelText(/Tuggy/)).toBeNull();
+        expect(screen.getByText(/excluded\.freeByType/)).toHaveTextContent('NA28, Tuggy');
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.excluded.accept'));
+        expect(guardar).toHaveBeenCalledWith({
+            paperId: 'tp6',
+            excludedSources: [
+                { key: 'McCartney', previousPaperTitle: 'TP #7' },
+                { key: 'Robertson', previousPaperTitle: 'TP #7' },
+            ],
+        });
+    });
+
+    it('si la semana pasada sólo citó léxicos y texto base, dice por qué no propone nada (revisión de 8a)', () => {
+        resumenes = [
+            { ...resumen('tp7', 3, ['NA28', 'Tuggy'], 'TP #7'), sources: [
+                { citationKey: 'NA28', sourceType: 'critical-apparatus', corpusId: 'n', sourceLibraryResourceId: null, displayLabel: 'NA28' },
+                { citationKey: 'Tuggy', sourceType: 'lexicon-technical', corpusId: 't', sourceLibraryResourceId: null, displayLabel: 'Tuggy' },
+            ] } as unknown as ExegesisPaperSummary,
+            resumen('tp6', 6, [], 'TP #8'),
+        ];
+        render(<ExcludedSourcesCard paper={trabajo(undefined)} />);
+        expect(screen.queryByText(/excluded\.proposal/)).not.toBeInTheDocument();
+        expect(screen.getByText(/excluded\.freeByType/)).toHaveTextContent('NA28, Tuggy');
+    });
+
     it('sin entrega anterior no propone nada', () => {
         resumenes = [resumen('tp6', 6, [], 'TP #6')];
         render(<ExcludedSourcesCard paper={trabajo(undefined)} />);
