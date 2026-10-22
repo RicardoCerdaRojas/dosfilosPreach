@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCitations } from '../citationParser';
+import { maskRanges, parseCitations } from '../citationParser';
 
 describe('parseCitations', () => {
     it('lee la forma canónica con título entre comillas', () => {
@@ -211,5 +211,47 @@ describe('parseCitations — un paréntesis con dos fuentes', () => {
         const [a, b] = parseCitations('Uno (Mayor, 129). Otro (Adamson, 166).');
         expect(a).not.toHaveProperty('otherSources');
         expect(b).not.toHaveProperty('otherSources');
+    });
+});
+
+/** TP #8 (8b, D2): la cita al comienzo de la oración y las letras fuera del plano básico. */
+describe('parseCitations — evidencia hacia adelante y offsets UTF-16', () => {
+    it('«Mayor (p. 314) lo discute…»: lo que respalda viene después', () => {
+        const [c] = parseCitations('Introducción. Mayor (p. 314) lo discute con detalle y rechaza la lectura causal. Otra cosa.');
+        expect(c!.evidence).toBe('lo discute con detalle y rechaza la lectura causal.');
+    });
+
+    it('con texto antes, sigue mirando hacia atrás', () => {
+        const [c] = parseCitations('La lectura causal es la mejor (Mayor, 314). Otra cosa.');
+        expect(c!.evidence).toContain('La lectura causal es la mejor');
+    });
+
+    it('una letra fuera del plano básico antes de la cita no corre los offsets', () => {
+        const md = 'El testigo 𝔓⁴⁶ lee «πρὸς φθόνον» (Metzger, 683), y Mayor coincide (Mayor, 139).';
+        const [metzger, mayor] = parseCitations(md);
+        expect(metzger!.evidence).toBe('πρὸς φθόνον');
+        expect(mayor!.evidence).toContain('Mayor coincide');
+        expect(mayor!.evidence).not.toContain('683');
+    });
+});
+
+describe('maskRanges — en unidades UTF-16', () => {
+    it('tapa exactamente el tramo pedido aunque haya una letra fuera del plano básico antes', () => {
+        const texto = '𝔓⁴⁶ lee (X, 1) y';
+        const desde = texto.indexOf('(');
+        const hasta = texto.indexOf(')') + 1;
+        const tapado = maskRanges(texto, [{ offset: desde, end: hasta }]);
+        expect(tapado.length).toBe(texto.length);
+        expect(tapado.slice(0, desde)).toBe(texto.slice(0, desde));
+        expect(tapado.slice(desde, hasta).trim()).toBe('');
+        expect(tapado.slice(hasta)).toBe(' y');
+    });
+});
+
+describe('parseCitations — la evidencia no cruza la cita anterior', () => {
+    it('la segunda cita de la oración no carga con la primera', () => {
+        const [, b] = parseCitations('Mayor lee la activa como pedir para sí (Mayor, 133), y Adamson la niega (Adamson, 167).');
+        expect(b!.evidence).toBe('y Adamson la niega');
+        expect(b!.evidence).not.toContain('pedir para sí');
     });
 });
