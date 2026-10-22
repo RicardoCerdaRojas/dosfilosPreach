@@ -20,6 +20,7 @@ REGLAS DURAS:
 - Cierra el último párrafo con la tesis del verso + la decisión de traducción comprometida.
 - Si el análisis declara confianza baja en algún hallazgo, calibra el lenguaje hedge ("posiblemente", "es plausible que…").
 - NO inventes citas: solo usa los sourceKey que aparecen en el análisis. Si necesitas citar algo y no hay sourceKey disponible, omítelo.
+- Lo que dice la fuente y lo que concluye el análisis van en ORACIONES DISTINTAS. Cuando el briefing trae «own inference (NO citation…)», redáctala en una oración propia y SIN la cita: la cita va sólo en la oración de lo que dice la fuente. Una oración que mezcla la fuente con la conclusión le atribuye al autor lo que no escribió.
 
 FORMATO DE SALIDA:
 - Markdown plano. Solo párrafos separados por línea en blanco.
@@ -37,6 +38,7 @@ HARD RULES:
 - Close the final paragraph with the verse's thesis + the committed translation decision.
 - If the analysis declares low confidence on a finding, calibrate hedge language ("possibly", "it is plausible that…").
 - DO NOT invent citations: use only the sourceKey values that appear in the analysis. If you'd cite something and no sourceKey is available, omit it.
+- What the source says and what the analysis concludes go in DIFFERENT SENTENCES. When the briefing carries "own inference (NO citation…)", write it in its own sentence WITHOUT the citation: the citation goes only on the sentence of what the source says. A sentence that mixes the source with the conclusion attributes to the author what they did not write.
 
 OUTPUT FORMAT:
 - Plain markdown. Just paragraphs separated by blank lines.

@@ -1816,6 +1816,7 @@
       "study": "Vista de estudio"
     },
     "study": {
+      "ownInference": "Lo que concluye el análisis (sin cita):",
       "answersTitle": "Respuestas a las preguntas",
       "answersHint": "Lo que el encuadre pregunta en este versículo: la respuesta, las lecturas con quién las defiende, el criterio que decide y la decisión.",
       "answerQuestion": "Pregunta {{number}}",

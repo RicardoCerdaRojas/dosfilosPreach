@@ -259,11 +259,17 @@ export function canonicalVerseAnalysisSchema(
                     },
                     loadingSources: {
                         type: 'array',
-                        description: 'Fuentes citadas para el argumento de carga específica (típicamente comentaristas).',
+                        description: 'Fuentes citadas para el argumento de carga específica (típicamente comentaristas). Con fuentes, "verseSpecificLoading" dice SÓLO lo que ellas dicen.',
                         items: SOURCE_CITATION_SCHEMA(),
                     },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['term', 'lemma', 'gloss', 'generalSemanticRange', 'verseSpecificLoading', 'loadingSources'],
+                required: ['term', 'lemma', 'gloss', 'generalSemanticRange', 'verseSpecificLoading', 'loadingSources', 'ownInference'],
             },
         },
         argumentativeRole: {
@@ -284,10 +290,16 @@ export function canonicalVerseAnalysisSchema(
                         type: 'string',
                         description: 'Aspecto explicado (ej. "dinámica patrón-cliente", "convenciones del testamento como género literario").',
                     },
-                    relevance: { type: 'string', description: 'Cómo este aspecto importa para el significado del verso. 1-2 oraciones.' },
+                    relevance: { type: 'string', description: 'Cómo este aspecto importa para el significado del verso, según las fuentes citadas. 1-2 oraciones.' },
                     sources: { type: 'array', items: SOURCE_CITATION_SCHEMA() },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['aspect', 'relevance', 'sources'],
+                required: ['aspect', 'relevance', 'sources', 'ownInference'],
             },
         },
         oldTestamentLinks: {
@@ -305,11 +317,17 @@ export function canonicalVerseAnalysisSchema(
                     },
                     interpretiveBearing: {
                         type: 'string',
-                        description: 'Qué aporta interpretativamente la conexión. 1-2 oraciones.',
+                        description: 'Qué aporta interpretativamente la conexión, según las fuentes citadas. 1-2 oraciones.',
                     },
                     sources: { type: 'array', items: SOURCE_CITATION_SCHEMA() },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['type', 'sourcePassage', 'interpretiveBearing', 'sources'],
+                required: ['type', 'sourcePassage', 'interpretiveBearing', 'sources', 'ownInference'],
             },
         },
         commentatorEngagement: {
@@ -329,7 +347,13 @@ export function canonicalVerseAnalysisSchema(
                     role: { type: 'string', enum: ['anchor', 'contrast', 'technical'] },
                     position: {
                         type: 'string',
-                        description: 'Qué argumenta este comentarista sobre este verso. 1-3 oraciones, parafraseado.',
+                        description: 'Qué argumenta ESTE comentarista sobre este verso, y nada más. 1-3 oraciones, parafraseado. Tu evaluación de su postura va en "ownInference".',
+                    },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
                     },
                     verbatimQuote: {
                         type: 'string',
@@ -339,7 +363,7 @@ export function canonicalVerseAnalysisSchema(
                             'NO incluyas esta entrada.',
                     },
                 },
-                required: ['sourceKey', 'page', 'role', 'position', 'verbatimQuote'],
+                required: ['sourceKey', 'page', 'role', 'position', 'verbatimQuote', 'ownInference'],
             },
         },
         translationCruxes: {
@@ -504,7 +528,7 @@ export function canonicalVerseAnalysisSchema(
                         description:
                             'Frase verbatim de uno de los campos prosaicos del análisis. Composer fuzzy-matchea para colocar el marcador.',
                     },
-                    text: { type: 'string', description: 'Cuerpo de la nota al pie. 1-3 oraciones.' },
+                    text: { type: 'string', description: 'Cuerpo de la nota al pie: lo que dicen sus fuentes. 1-3 oraciones.' },
                     sources: {
                         type: 'array',
                         description:
@@ -512,8 +536,14 @@ export function canonicalVerseAnalysisSchema(
                             'Si la nota es análisis propio, arreglo vacío: colgarla de un autor le atribuye lo que no escribió.',
                         items: SOURCE_CITATION_SCHEMA(),
                     },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['anchorPhrase', 'text', 'sources'],
+                required: ['anchorPhrase', 'text', 'sources', 'ownInference'],
             },
         },
         ...(options.withQuestions ? { questionAnswers: QUESTION_ANSWERS_SCHEMA() } : {}),

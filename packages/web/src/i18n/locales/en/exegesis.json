@@ -1816,6 +1816,7 @@
       "study": "Study view"
     },
     "study": {
+      "ownInference": "What the analysis concludes (no citation):",
       "answersTitle": "Answers to the questions",
       "answersHint": "What the brief asks in this verse: the answer, the readings with who defends them, the deciding criterion and the decision.",
       "answerQuestion": "Question {{number}}",

@@ -25,3 +25,19 @@ describe('serializeAnalysis — respuestas a las preguntas', () => {
         expect(s).toContain('decision: la media marca el interés propio');
     });
 });
+
+/** TP #8 (8b, C3): la conclusión propia llega aparte y sin cita. */
+describe('serializeAnalysis — inferencia propia', () => {
+    it('va en su propia línea, marcada sin cita', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            commentatorEngagement: [{
+                sourceKey: 'Mayor', page: 133, pageKind: 'printed' as const, role: 'contrast' as const,
+                position: 'Mayor lee la activa como pedir para sí.', verbatimQuote: '', ownInference: 'El contraste es de motivo.',
+            }],
+        };
+        const s = serializeAnalysis(a, 'es');
+        expect(s).toContain('Mayor (p. 133): Mayor lee la activa como pedir para sí.');
+        expect(s).toContain('own inference (NO citation, separate sentence): El contraste es de motivo.');
+    });
+});

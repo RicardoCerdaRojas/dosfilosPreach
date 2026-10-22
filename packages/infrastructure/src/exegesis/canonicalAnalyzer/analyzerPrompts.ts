@@ -100,6 +100,9 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             // TP #7 (Santiago 3:15): tres alarmas eran análisis propio colgado
             // de Varner y Robertson en las notas al pie.
             `- A source listed in "sources" vouches for what that sentence or note says. List a work only when ITS provided text says it. When a note or claim is your own analysis, leave "sources" empty: hanging your analysis on an author attributes to them what they did not write.`,
+            // TP #8 (8b, C3): más de la mitad de las alarmas eran afirmaciones
+            // mixtas, la fuente y una conclusión propia bajo la misma cita.
+            `- Keep what the source says apart from what you conclude. In every entry that carries a source, the cited field says ONLY what that source says; your own conclusion goes in "ownInference", without a citation. "Mayor reads the active as asking for oneself (p. 133)" is the source; "so the contrast is about motive" is yours.`,
             // TP #7 (#24): una nota decía «La asignación de Robertson como
             // fuente técnica no autoriza a reconstruir una sección ausente…».
             `- The output is the student's paper. Never write about the corpus, the excerpts, the usage plan, source roles or what the provided material lacks. If the material does not support a point, omit it or mark it tentative in confidenceFlags.`,
@@ -151,6 +154,9 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `- Cada fragmento viene encabezado por su ancla («--- p. 83 ---», «--- hoja 87 ---» o «--- § 2.3 ---»). Ese número va en "page". Cuando el ancla es «§ …» (el libro no tiene páginas impresas), pon "page" en 0 y copia la sección, sin «§», en "locator".`,
         `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), pon el confidenceFlag relevante en "tentative" — NO fabriques citas.`,
         `- Una fuente listada en "sources" responde por lo que dice esa oración o esa nota. Lista una obra sólo cuando SU texto provisto lo dice. Cuando la nota o la afirmación es análisis tuyo, deja "sources" vacío: colgar tu análisis de un autor es atribuirle lo que no escribió.`,
+        // TP #8 (8b, C3): más de la mitad de las alarmas eran afirmaciones
+        // mixtas, la fuente y una conclusión propia bajo la misma cita.
+        `- Separa lo que dice la fuente de lo que concluyes tú. En cada entrada con fuente, el campo citado dice SÓLO lo que esa fuente dice; tu conclusión va en "ownInference", sin cita. «Mayor lee la activa como pedir para sí (p. 133)» es la fuente; «por eso el contraste es de motivo» es tuyo.`,
         `- Lo que escribes es el trabajo del estudiante. Nunca hables del corpus, de los fragmentos, del plan de uso, de los roles de las fuentes ni de lo que falta en el material provisto. Si el material no sostiene un punto, omítelo o márcalo tentative en confidenceFlags.`,
         methodBlock,
         corpusGapsBlock,

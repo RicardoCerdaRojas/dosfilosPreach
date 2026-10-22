@@ -174,3 +174,20 @@ describe('un versículo que responde dos preguntas', () => {
         expect(systemInstruction).not.toMatch(/EXCEPCIÓN a la regla/);
     });
 });
+
+/** TP #8 (8b, C3): la fuente y la conclusión propia, en oraciones distintas. */
+describe('la conclusión propia, aparte y sin cita', () => {
+    it('la regla dura lo pide y el briefing la trae marcada', () => {
+        const input = promptInput();
+        const conInferencia = {
+            ...input,
+            verseAnalysis: {
+                ...input.verseAnalysis,
+                commentatorEngagement: [{ ...input.verseAnalysis.commentatorEngagement[0]!, ownInference: 'La restauración es del alma entera.' }],
+            },
+        } as ComposeVerseInput;
+        const { systemInstruction, userMessage } = buildVerseProsePrompt(conInferencia);
+        expect(systemInstruction).toContain('van en ORACIONES DISTINTAS');
+        expect(userMessage).toContain('own inference (NO citation, separate sentence): La restauración es del alma entera.');
+    });
+});

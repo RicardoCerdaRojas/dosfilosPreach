@@ -86,3 +86,17 @@ describe('revisión adversarial de E3 — la sección en la prosa y en el verifi
         expect(c!.evidencePage).toBeNull();
     });
 });
+
+/** TP #8 (8b, C3): la prosa de respaldo pone la conclusión propia después de la cita, sin cita. */
+describe('renderVerseAnalysisProse — inferencia propia', () => {
+    it('va después de la postura citada', async () => {
+        const { renderVerseAnalysisProse } = await import('../renderVerseAnalysisProse');
+        const { buildEmptyCanonicalVerseAnalysis } = await import('../../entities/CanonicalVerseAnalysis');
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            commentatorEngagement: [{ sourceKey: 'Mayor', page: 133, pageKind: 'printed', role: 'contrast', position: 'lee la activa como pedir para sí', ownInference: 'el contraste es de motivo' }],
+        };
+        const prosa = renderVerseAnalysisProse(a as never, 'es');
+        expect(prosa).toMatch(/Mayor \(p\. 133\) lee la activa como pedir para sí\.\s+El contraste es de motivo\./);
+    });
+});

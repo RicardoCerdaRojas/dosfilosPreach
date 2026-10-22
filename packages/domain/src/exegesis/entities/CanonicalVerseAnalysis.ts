@@ -414,6 +414,15 @@ export interface LexicalAnalysis {
      */
     verseSpecificLoading: string;
     /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
+    /**
      * Sources cited specifically for the verse-specific loading
      * argument (often distinct from the lexicon citations above —
      * commentators or specialized articles that discuss this verse).
@@ -441,6 +450,15 @@ export interface HistoricalContextPoint {
      * Sources cited inline.
      */
     relevance: string;
+    /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
     /** Sources backing the historical claim. */
     sources: ReadonlyArray<SourceCitation>;
 }
@@ -475,6 +493,15 @@ export interface OldTestamentLink {
      * What the connection contributes interpretively. 1-2 sentences.
      */
     interpretiveBearing: string;
+    /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
     /**
      * Sources supporting the identification — typically Beale &
      * Carson's *Commentary on the NT Use of the OT*, Hays, or
@@ -531,6 +558,15 @@ export interface CommentatorPosition {
      * paraphrased in the analysis's voice.
      */
     position: string;
+    /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
     /**
      * Verbatim quote when the commentator's exact wording captures
      * something paraphrase would lose. Wrapped in quotes by the
@@ -693,6 +729,15 @@ export interface FootnoteExtension {
     anchorPhrase: string;
     /** The footnote text body. 1-3 sentences. */
     text: string;
+    /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
     /** Sources cited within the footnote. */
     sources: ReadonlyArray<SourceCitation>;
 }

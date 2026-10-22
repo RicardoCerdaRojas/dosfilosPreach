@@ -135,3 +135,17 @@ describe('collectAnalysisClaims — respuestas a las preguntas', () => {
         expect(collectAnalysisClaims(a)).toEqual([]);
     });
 });
+
+/** TP #8 (8b, C3): la cita responde sólo por lo que dice la fuente. */
+describe('collectAnalysisClaims — la inferencia propia no se verifica contra la fuente', () => {
+    it('la afirmación es la postura, no la conclusión del análisis', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            commentatorEngagement: [{
+                sourceKey: 'Mayor', page: 133, role: 'contrast' as const,
+                position: 'Mayor lee la activa como pedir para sí.', ownInference: 'El contraste es de motivo.',
+            }],
+        };
+        expect(collectAnalysisClaims(a)[0]!.claim).toBe('Mayor lee la activa como pedir para sí.');
+    });
+});

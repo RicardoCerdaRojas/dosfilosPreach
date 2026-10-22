@@ -104,3 +104,24 @@ describe('el método para responder, de serie', () => {
             .toContain('Find a criterion that DISTINGUISHES between the readings');
     });
 });
+
+/**
+ * TP #8 (8b, C3): más de la mitad de las alarmas eran afirmaciones mixtas,
+ * la fuente y una conclusión propia bajo la misma cita.
+ */
+describe('la fuente aparte de la inferencia propia', () => {
+    it('las cinco entradas con fuente piden ownInference', () => {
+        const sch = canonicalVerseAnalysisSchema(voiceFor('JAS')) as unknown as {
+            properties: Record<string, { items: { properties: Record<string, unknown>; required: string[] } }>;
+        };
+        for (const campo of ['lexicalAnalyses', 'historicalContext', 'oldTestamentLinks', 'commentatorEngagement', 'footnoteExtensions']) {
+            expect(sch.properties[campo]!.items.properties, campo).toHaveProperty('ownInference');
+            expect(sch.properties[campo]!.items.required, campo).toContain('ownInference');
+        }
+    });
+
+    it('la disciplina de citación lo pide, en los dos idiomas', () => {
+        expect(buildAnalyzerPrompt(entrada()).systemInstruction).toContain('tu conclusión va en "ownInference", sin cita');
+        expect(buildAnalyzerPrompt(entrada({ language: 'en' })).systemInstruction).toContain('your own conclusion goes in "ownInference", without a citation');
+    });
+});

@@ -284,6 +284,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                         {t('canonical.study.lexis.loading')}
                                     </p>
                                     <p className="text-xs text-foreground/85 leading-relaxed">{la.verseSpecificLoading}</p>
+                                    <OwnInference value={la.ownInference} />
                                     {la.loadingSources.length > 0 && (
                                         <SourceList onOpenCitation={onOpenCitation} citations={la.loadingSources} marks={marks} pathFor={j => `lexicalAnalyses[${idx}].loadingSources[${j}]`} />
                                     )}
@@ -343,6 +344,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                             <li key={idx} className="rounded-md border border-border bg-card p-3">
                                 <p className="text-xs font-semibold text-foreground">{h.aspect}</p>
                                 <p className="text-xs text-foreground/85 leading-relaxed mt-1">{h.relevance}</p>
+                                <OwnInference value={h.ownInference} />
                                 {h.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={h.sources} marks={marks} pathFor={j => `historicalContext[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
@@ -370,6 +372,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                     )}
                                 </div>
                                 <p className="text-xs text-foreground/85 leading-relaxed mt-1">{l.interpretiveBearing}</p>
+                                <OwnInference value={l.ownInference} />
                                 {l.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={l.sources} marks={marks} pathFor={j => `oldTestamentLinks[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
@@ -405,6 +408,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                     />
                                 </div>
                                 <p className="text-xs text-foreground/85 leading-relaxed">{c.position}</p>
+                                <OwnInference value={c.ownInference} />
                                 {c.verbatimQuote && (
                                     <p className="text-[11px] italic text-foreground/70 border-l-2 border-border pl-2 mt-1">
                                         "{c.verbatimQuote}"
@@ -551,6 +555,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                             <li key={idx} className="text-xs space-y-1">
                                 <p className="text-foreground italic">"{fn.anchorPhrase}"</p>
                                 <p className="text-foreground/85 pl-3 border-l border-border">{fn.text}</p>
+                                <OwnInference value={fn.ownInference} />
                                 {fn.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={fn.sources} marks={marks} pathFor={j => `footnoteExtensions[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
@@ -627,6 +632,20 @@ function TranslationCell({ label, value, emphasized = false }: { label: string; 
                 {value || <em className="text-muted-foreground">—</em>}
             </p>
         </div>
+    );
+}
+
+/**
+ * Lo que concluye el análisis, aparte de lo que dice la fuente (TP #8, 8b,
+ * C3). Va sin cita a propósito: la cita de arriba responde sólo por la fuente.
+ */
+function OwnInference({ value }: { value?: string }) {
+    const { t } = useTranslation('exegesis');
+    if (!value?.trim()) return null;
+    return (
+        <p className="text-xs leading-relaxed text-muted-foreground" data-testid="inferencia-propia">
+            <span className="font-semibold">{t('canonical.study.ownInference')}</span> {value}
+        </p>
     );
 }
 

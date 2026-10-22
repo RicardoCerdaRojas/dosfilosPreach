@@ -128,6 +128,12 @@ export function serializeAnalysis(
         : (text: string) => text;
     const ref = formatPassageReference(analysis.reference, language);
     const lines: string[] = [];
+    // La conclusión propia va aparte y SIN fuente (C3): la prosa la redacta en
+    // otra oración, sin la cita de la fuente que la precede.
+    const propia = (indent: string, entry: { ownInference?: string }) => {
+        const texto = entry.ownInference?.trim();
+        if (texto) lines.push(`${indent}own inference (NO citation, separate sentence): ${prose(texto)}`);
+    };
     lines.push(`== Verse ${ref} ==`);
     lines.push(`Texto base: ${analysis.originalText}`);
     lines.push(`Initial translation: ${analysis.initialTranslation}`);
@@ -171,6 +177,7 @@ export function serializeAnalysis(
             lines.push(`- ${la.term} (${la.lemma}, "${la.gloss}"):`);
             lines.push(`  general range = [${generalRange}]${generalSrcs ? ` (sources: ${generalSrcs})` : ''}`);
             lines.push(`  verse loading: ${prose(la.verseSpecificLoading)}${loadingSrcs ? ` (sources: ${loadingSrcs})` : ''}`);
+            propia('  ', la);
         }
     }
 
@@ -193,6 +200,7 @@ export function serializeAnalysis(
         for (const h of analysis.historicalContext) {
             const srcs = h.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- ${h.aspect}: ${prose(h.relevance)}${srcs ? ` (sources: ${srcs})` : ''}`);
+            propia('  ', h);
         }
     }
 
@@ -204,6 +212,7 @@ export function serializeAnalysis(
             const formula = l.citationFormula ? ` (formula: ${l.citationFormula})` : '';
             const srcs = l.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- [${l.type}] ${l.sourcePassage}${formula}: ${prose(l.interpretiveBearing)}${srcs ? ` (sources: ${srcs})` : ''}`);
+            propia('  ', l);
         }
     }
 
@@ -214,6 +223,7 @@ export function serializeAnalysis(
         for (const c of analysis.commentatorEngagement) {
             const verbatim = c.verbatimQuote ? ` [verbatim: "${c.verbatimQuote}"]` : '';
             lines.push(`- [${c.role}] ${c.sourceKey} (${cite(c)}): ${prose(c.position)}${verbatim}`);
+            propia('  ', c);
         }
     }
 
@@ -272,6 +282,7 @@ export function serializeAnalysis(
             const srcs = fn.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- anchor: "${fn.anchorPhrase}"`);
             lines.push(`  text: ${prose(fn.text)}${srcs ? ` (sources: ${srcs})` : ''}`);
+            propia('  ', fn);
         }
     }
 
