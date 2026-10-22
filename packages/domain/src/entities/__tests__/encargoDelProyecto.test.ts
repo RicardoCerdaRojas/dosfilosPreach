@@ -23,4 +23,8 @@ describe('el encargo del proyecto', () => {
         expect(cleanProjectCharge({ course: '  ', rubricTemplateId: undefined, styleGuideId: 'g1', exegeticalStrategy: 'dialectical' }))
             .toEqual({ course: null, styleGuideId: 'g1', exegeticalStrategy: 'dialectical' });
     });
+
+    it('un perfil viejo sin plantilla de rúbrica no impone «la del sistema»', () => {
+        expect(chargeFromWorkProfile({ ...perfil, rubricTemplateId: null } as never)).not.toHaveProperty('rubricTemplateId');
+    });
 });

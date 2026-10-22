@@ -35,3 +35,17 @@ describe('projectSourcesMissingIn y matchesProjectFilter (ADR-046)', () => {
         expect([suelto, deCurso, colabora].map(p => matchesProjectFilter(p, 'curso'))).toEqual([false, true, true]);
     });
 });
+
+describe('conversationSourceScope (revisión de la etapa 1)', () => {
+    it('la conversación de un estudio busca en el proyecto Y en el estudio', async () => {
+        const { conversationSourceScope } = await import('../paperProjects');
+        expect(conversationSourceScope(['berkhof', 'grudem'], [
+            { sourceLibraryResourceId: 'mayor', corpusId: 'mayor' }, { corpusId: 'wallace' }, { sourceLibraryResourceId: 'berkhof' },
+        ])).toEqual(['berkhof', 'grudem', 'mayor', 'wallace']);
+    });
+    it('sin fuentes del proyecto no se acota; sin estudio, solo las del proyecto', async () => {
+        const { conversationSourceScope } = await import('../paperProjects');
+        expect(conversationSourceScope([], [{ corpusId: 'mayor' }])).toBeUndefined();
+        expect(conversationSourceScope(['berkhof'], null)).toEqual(['berkhof']);
+    });
+});

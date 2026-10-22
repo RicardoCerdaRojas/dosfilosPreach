@@ -9,6 +9,7 @@ import {
     type PaperRubric,
     DEFAULT_STRATEGY_FOR_NEW_PAPER,
 } from '@dosfilos/domain';
+import { normalizeCover } from './UpdatePaperCoverUseCase';
 
 /**
  * Re-export so older callers (web hooks) that imported the sentinel
@@ -75,7 +76,7 @@ export class CreateExegeticalPaperUseCase {
          */
         private biblioteca?: { findById(id: string): Promise<{ id: string } | null> },
         /** Para comprobar que el proyecto de origen es del dueño. */
-        private proyectos?: { getProject(id: string): Promise<{ id: string; userId: string; deletedAt?: Date } | null> },
+        private proyectos?: { getProject(id: string): Promise<{ id: string; userId: string; deletedAt?: Date; archivedAt?: Date } | null> },
     ) { }
 
     /**
@@ -87,7 +88,7 @@ export class CreateExegeticalPaperUseCase {
         if (!input.projectId) return null;
         if (!this.proyectos) return input.projectId;
         const p = await this.proyectos.getProject(input.projectId).catch(() => null);
-        if (!p || p.userId !== input.ownerId || p.deletedAt) {
+        if (!p || p.userId !== input.ownerId || p.deletedAt || p.archivedAt) {
             console.warn('[CreateExegeticalPaper] proyecto no disponible; el estudio nace suelto', { projectId: input.projectId });
             return null;
         }
@@ -104,6 +105,7 @@ export class CreateExegeticalPaperUseCase {
             throw new Error('CreateExegeticalPaperUseCase: passage required');
         }
 
+        const cover = normalizeCover(input.cover ?? null);
         const created = await this.paperRepository.createPaper({
             ownerId: input.ownerId,
             passage: input.passage,
@@ -116,7 +118,10 @@ export class CreateExegeticalPaperUseCase {
             seriesId: input.seriesId ?? null,
             pericopeId: input.pericopeId ?? null,
             projectId: await this.ownProject(input),
-            ...(input.cover ? { cover: input.cover } : {}),
+            // La misma limpieza que `UpdatePaperCoverUseCase`: sin campos
+            // vacíos (Firestore rechaza `undefined`, y una portada sin fecha
+            // hacía fallar la creación entera), con recorte y tope.
+            ...(cover ? { cover } : {}),
         });
         // Primero la rúbrica y después las fuentes: si agregar una fuente
         // falla, el trabajo ya tiene la rúbrica que le toca (revisión de la

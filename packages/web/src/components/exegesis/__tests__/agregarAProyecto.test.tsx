@@ -61,4 +61,26 @@ describe('AddToProjectDialog', () => {
         fireEvent.click(screen.getByLabelText(/paperProjects\.unlink/));
         await waitFor(() => expect(setProject).toHaveBeenLastCalledWith({ paperId: 'tp8', change: { kind: 'unlink', projectId: 'serie' } }));
     });
+
+    it('un origen archivado se muestra como origen, no como «suelto» (revisión de la etapa 1)', () => {
+        proyectos = [{ id: 'teo2', title: 'Teología II', userId: 'u', archivedAt: new Date(), sourceIds: ['wallace'] }];
+        montar(estudio({ projectId: 'teo2' }));
+        expect(screen.getByText('Teología II')).toBeInTheDocument();
+        expect(screen.queryByText('paperProjects.noOrigin')).toBeNull();
+        expect(screen.queryByText('paperProjects.asOrigin')).toBeNull();
+        // Y no ofrece agregar fuentes de un proyecto archivado.
+        expect(screen.queryByText(/paperProjects\.missingSources/)).toBeNull();
+    });
+
+    it('un libro del proyecto que ya no está en la biblioteca no se ofrece', () => {
+        proyectos = [{ id: 'teo2', title: 'Teología II', userId: 'u', sourceIds: ['borrado'] }];
+        montar(estudio({ projectId: 'teo2' }));
+        expect(screen.queryByText(/paperProjects\.missingSources/)).toBeNull();
+    });
+
+    it('uno con el que colabora puede pasar a ser el origen', async () => {
+        montar(estudio({ linkedProjectIds: ['serie'] }));
+        fireEvent.click(screen.getByText('paperProjects.makeOrigin'));
+        await waitFor(() => expect(setProject).toHaveBeenCalledWith({ paperId: 'tp8', change: { kind: 'origin', projectId: 'serie' } }));
+    });
 });

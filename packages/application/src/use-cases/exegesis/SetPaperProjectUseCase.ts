@@ -43,7 +43,9 @@ export class SetPaperProjectUseCase {
         const paper = await this.paperRepository.getPaper(ownerId, paperId);
         if (!paper) throw new Error(`Paper ${paperId} not found`);
 
-        if (change.projectId) await this.requireProject(ownerId, change.projectId);
+        // Quitar o desvincular no pide que el proyecto siga disponible: un
+        // proyecto archivado tiene que poder soltarse.
+        if (change.projectId && change.kind !== 'unlink') await this.requireProject(ownerId, change.projectId);
 
         if (change.kind === 'origin') {
             if (paper.projectId === change.projectId) return paper;
@@ -62,8 +64,10 @@ export class SetPaperProjectUseCase {
     }
 
     private async requireProject(ownerId: string, projectId: string): Promise<void> {
-        const project = await this.projectRepository.getProject(projectId);
-        if (!project || project.userId !== ownerId || project.deletedAt) {
+        // Un proyecto ajeno o inexistente no vuelve `null`: las reglas niegan
+        // la lectura. Las dos cosas son «no disponible».
+        const project = await this.projectRepository.getProject(projectId).catch(() => null);
+        if (!project || project.userId !== ownerId || project.deletedAt || project.archivedAt) {
             throw new Error(`Proyecto ${projectId} no disponible`);
         }
     }

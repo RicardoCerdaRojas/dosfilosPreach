@@ -106,7 +106,9 @@ export function chargeFromWorkProfile(profile: {
     return {
         workProfileId: profile.id,
         course: profile.course?.trim() || null,
-        rubricTemplateId: profile.rubricTemplateId,
+        // En un perfil, `null` es el de antes del 2026-10-07 sin plantilla, no
+        // una elección: se omite y queda la plantilla por defecto.
+        ...(profile.rubricTemplateId ? { rubricTemplateId: profile.rubricTemplateId } : {}),
         briefTemplateId: profile.briefTemplateId,
         styleGuideId: profile.styleGuideId,
         exegeticalStrategy: profile.exegeticalStrategy,

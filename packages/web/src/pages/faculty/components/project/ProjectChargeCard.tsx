@@ -64,8 +64,15 @@ export function ProjectChargeCard({ project, onSave, saving }: ProjectChargeCard
                 </label>
                 <label className="block space-y-1">
                     <span className="text-xs text-muted-foreground">{t('charge.rubric')}</span>
-                    <select className={campo} value={draft.rubricTemplateId ?? ''} onChange={e => set({ rubricTemplateId: e.target.value || null })}>
-                        <option value="">{t('charge.rubricSystem')}</option>
+                    {/* Tres estados: sin elegir (la plantilla por defecto del
+                        usuario), la del sistema (`null`) o una plantilla. */}
+                    <select
+                        className={campo}
+                        value={draft.rubricTemplateId === null ? '__system' : draft.rubricTemplateId ?? ''}
+                        onChange={e => set({ rubricTemplateId: e.target.value === '__system' ? null : e.target.value || undefined })}
+                    >
+                        <option value="">{t('charge.rubricDefault')}</option>
+                        <option value="__system">{t('charge.rubricSystem')}</option>
                         {rubrics.map(r => <option key={r.id} value={r.id}>{r.displayName}</option>)}
                     </select>
                 </label>
@@ -85,7 +92,14 @@ export function ProjectChargeCard({ project, onSave, saving }: ProjectChargeCard
                 </label>
                 <label className="block space-y-1">
                     <span className="text-xs text-muted-foreground">{t('charge.strategy')}</span>
-                    <select className={campo} value={draft.exegeticalStrategy ?? 'dialectical'} onChange={e => set({ exegeticalStrategy: e.target.value === 'free' ? 'free' : 'dialectical' })}>
+                    {/* Sin preferencia, el estudio conserva la del perfil o la
+                        dialéctica: el select no muestra una que no se guarda. */}
+                    <select
+                        className={campo}
+                        value={draft.exegeticalStrategy ?? ''}
+                        onChange={e => set({ exegeticalStrategy: e.target.value === 'free' ? 'free' : e.target.value === 'dialectical' ? 'dialectical' : undefined })}
+                    >
+                        <option value="">{t('charge.noPreference')}</option>
                         <option value="dialectical">{t('charge.dialectical')}</option>
                         <option value="free">{t('charge.free')}</option>
                     </select>

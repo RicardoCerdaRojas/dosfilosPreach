@@ -75,4 +75,40 @@ describe('crear un estudio desde un proyecto', () => {
         await waitFor(() => expect(createPaper).toHaveBeenCalled());
         expect(createPaper.mock.calls[0]![0]).toMatchObject({ projectId: 'teo2', styleGuideId: 'guia-tms', rubricTemplateId: 'rub-tms' });
     });
+
+    it('elegir un perfil a mano reemplaza también la guía del proyecto (revisión de la etapa 1)', async () => {
+        perfiles = [{ id: 'perfil', displayName: 'Griego NT', rubricTemplateId: 'rub-griego', briefTemplateId: null, styleGuideId: 'guia-griego', exegeticalStrategy: 'dialectical', isDefault: false }];
+        render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+        fireEvent.change(screen.getByLabelText('paperSetup.workProfile.pickLabel'), { target: { value: 'perfil' } });
+        crear();
+        await waitFor(() => expect(createPaper).toHaveBeenCalled());
+        expect(createPaper.mock.calls[0]![0]).toMatchObject({ styleGuideId: 'guia-griego', rubricTemplateId: 'rub-griego' });
+    });
+
+    it('dejar el proyecto deshace su encargo: ni su rúbrica ni su portada', async () => {
+        render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+        fireEvent.change(screen.getByLabelText('create.project.label'), { target: { value: '' } });
+        crear();
+        await waitFor(() => expect(createPaper).toHaveBeenCalled());
+        const input = createPaper.mock.calls[0]![0];
+        expect(input).not.toHaveProperty('projectId');
+        expect(input).not.toHaveProperty('cover');
+        expect(input.rubricTemplateId).toBeUndefined();
+        expect(input.styleGuideId).toBeNull();
+    });
+
+    it('«la rúbrica del sistema» del encargo se respeta (no cae en la plantilla por defecto)', async () => {
+        proyectos = [{ ...curso, charge: { ...curso.charge, rubricTemplateId: null } }];
+        render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+        crear();
+        await waitFor(() => expect(createPaper).toHaveBeenCalled());
+        expect(createPaper.mock.calls[0]![0].rubricTemplateId).toBeNull();
+    });
+
+    it('un proyecto de la URL que no está activo no se manda', async () => {
+        render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=archivado']}><ExegesisCreatePage /></MemoryRouter>);
+        crear();
+        await waitFor(() => expect(createPaper).toHaveBeenCalled());
+        expect(createPaper.mock.calls[0]![0]).not.toHaveProperty('projectId');
+    });
 });

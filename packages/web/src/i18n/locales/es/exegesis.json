@@ -2,7 +2,10 @@
   "paperProjects": {
     "menuItem": "Agregar a un proyecto",
     "title": "Proyectos de este estudio",
-    "subtitle": "El proyecto de origen define el encargo del estudio (rúbrica, guía, bibliografía). Con los demás colabora: lo muestran y lo usan, sin cambiarle las reglas.",
+    "subtitle": "El proyecto de origen es el curso, la investigación o el estudio exegético al que pertenece el estudio; los estudios que se crean desde él nacen con su encargo. Con los demás colabora: lo muestran y lo usan, sin cambiarle las reglas.",
+    "filterLabel": "Filtrar por proyecto",
+    "archived": "archivado",
+    "makeOrigin": "Hacer origen",
     "origin": "Proyecto de origen",
     "noOrigin": "Ninguno: es un estudio suelto.",
     "removeOrigin": "Quitar el proyecto de origen",
@@ -22,6 +25,7 @@
     "filterNone": "Sin proyecto",
     "toast": {
       "failed": "No se pudo cambiar el proyecto del estudio.",
+      "sourcesPartial": "Se agregaron {{added}} de {{total}} fuentes. Revisa las demás en el corpus.",
       "sourcesAdded_one": "Se agregó 1 fuente.",
       "sourcesAdded_other": "Se agregaron {{count}} fuentes."
     }

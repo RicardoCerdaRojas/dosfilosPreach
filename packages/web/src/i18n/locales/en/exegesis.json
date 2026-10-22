@@ -2,7 +2,10 @@
   "paperProjects": {
     "menuItem": "Add to a project",
     "title": "Projects of this study",
-    "subtitle": "The origin project defines the study's brief (rubric, style guide, bibliography). With the others it collaborates: they show it and use it, without changing its rules.",
+    "subtitle": "The origin project is the course, research or exegetical study the study belongs to; studies created from it start with its brief. With the others it collaborates: they show it and use it, without changing its rules.",
+    "filterLabel": "Filter by project",
+    "archived": "archived",
+    "makeOrigin": "Make origin",
     "origin": "Origin project",
     "noOrigin": "None: it is a standalone study.",
     "removeOrigin": "Remove the origin project",
@@ -22,6 +25,7 @@
     "filterNone": "No project",
     "toast": {
       "failed": "The study's project could not be changed.",
+      "sourcesPartial": "{{added}} of {{total}} sources were added. Check the rest in the corpus.",
       "sourcesAdded_one": "1 source was added.",
       "sourcesAdded_other": "{{count}} sources were added."
     }

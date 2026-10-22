@@ -426,7 +426,7 @@ function PapersToolbar({
         <div className="mb-4 space-y-3">
             {projects.length > 0 && (
                 <select
-                    aria-label={t('paperProjects.title')}
+                    aria-label={t('paperProjects.filterLabel')}
                     value={projectFilter}
                     onChange={(e) => onProjectFilterChange(e.target.value)}
                     className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
@@ -710,7 +710,7 @@ function PaperCard({ paper, language, t, seriesLink, projectChip }: PaperCardPro
 
 // ── List Row (compact alt view) ─────────────────────────────────────────
 
-function PaperListRow({ paper, language, t, seriesLink }: PaperCardProps) {
+function PaperListRow({ paper, language, t, seriesLink, projectChip }: PaperCardProps) {
     const navigate = useNavigate();
     const open = () => navigate(`/dashboard/exegesis/${paper.id}`);
     const isArchived = paper.phase === 'archived' || paper.archivedAt !== null;
@@ -745,6 +745,11 @@ function PaperListRow({ paper, language, t, seriesLink }: PaperCardProps) {
                     {seriesLink && (
                         <div className="text-[11px] text-info-subtle-foreground truncate mt-0.5">
                             Serie: {seriesLink.title}
+                        </div>
+                    )}
+                    {projectChip && (
+                        <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                            {projectChip.title}{projectChip.linked ? ` · ${t('paperProjects.chipLinked')}` : ''}
                         </div>
                     )}
                 </div>

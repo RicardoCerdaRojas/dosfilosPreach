@@ -92,4 +92,20 @@ describe('un trabajo de una serie nace con las fuentes por defecto de la serie',
         await uc.execute({ ...base, projectId: 'ajeno' } as never);
         expect(repo.createPaper.mock.calls[1]![0]).toMatchObject({ projectId: null });
     });
+
+    it('una portada sin fecha no hace fallar la creación: se guarda sin campos vacíos (revisión de la etapa 1)', async () => {
+        const repo = { createPaper: vi.fn(async (d: Record<string, unknown>) => ({ id: 'p1', sources: [], ...d })), setRubric: vi.fn(async () => ({ id: 'p1' })), getPaper: vi.fn(), addSource: vi.fn() };
+        const uc = new CreateExegeticalPaperUseCase(repo as never);
+        await uc.execute({ ...base, cover: { institution: '  TMS ', date: undefined, author: '' } } as never);
+        const cover = repo.createPaper.mock.calls[0]![0].cover as Record<string, unknown>;
+        expect(cover).toEqual({ institution: 'TMS' });
+        expect(Object.values(cover)).not.toContain(undefined);
+    });
+
+    it('un proyecto archivado no es origen: el estudio nace suelto', async () => {
+        const repo = { createPaper: vi.fn(async (d: Record<string, unknown>) => ({ id: 'p1', sources: [], ...d })), setRubric: vi.fn(async () => ({ id: 'p1' })), getPaper: vi.fn(), addSource: vi.fn() };
+        const proyectos = { getProject: vi.fn(async () => ({ id: 'viejo', userId: 'u', archivedAt: new Date() })) };
+        await new CreateExegeticalPaperUseCase(repo as never, undefined, undefined, proyectos).execute({ ...base, projectId: 'viejo' } as never);
+        expect(repo.createPaper.mock.calls[0]![0]).toMatchObject({ projectId: null });
+    });
 });

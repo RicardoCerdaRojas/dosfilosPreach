@@ -28,4 +28,15 @@ describe('ProjectChargeCard', () => {
         fireEvent.click(screen.getByText('charge.clear'));
         expect(onSave).toHaveBeenCalledWith(null);
     });
+
+    it('la rúbrica tiene tres estados y la estrategia puede quedar sin preferencia (revisión de la etapa 1)', () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(<ProjectChargeCard project={{ id: 'p', userId: 'u', title: 'T', color: 'amber' } as never} onSave={onSave} saving={false} />);
+        fireEvent.change(screen.getByLabelText('charge.rubric'), { target: { value: '__system' } });
+        fireEvent.change(screen.getByLabelText('charge.styleGuide'), { target: { value: 'g1' } });
+        fireEvent.click(screen.getByText('charge.save'));
+        const guardado = onSave.mock.calls[0]![0];
+        expect(guardado.rubricTemplateId).toBeNull();
+        expect(guardado.exegeticalStrategy).toBeUndefined();
+    });
 });

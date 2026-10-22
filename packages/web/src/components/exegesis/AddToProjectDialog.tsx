@@ -28,15 +28,25 @@ export function AddToProjectDialog({ open, onOpenChange, paper }: AddToProjectDi
     const { projects } = useFacultyProjects();
     const setProject = useSetPaperProject();
     const attach = useAttachLibrarySource();
-    const { resources } = useLibrary();
+    const { resources, isLoading: cargandoBiblioteca } = useLibrary();
     const [elegido, setElegido] = useState('');
     const [agregando, setAgregando] = useState(false);
 
-    const activos = useMemo(() => (projects ?? []).filter(p => !p.archivedAt && !p.deletedAt), [projects]);
-    const origen = activos.find(p => p.id === paper.projectId) ?? null;
-    const vinculados = activos.filter(p => (paper.linkedProjectIds ?? []).includes(p.id));
+    // El origen y los vínculos se buscan entre TODOS los proyectos: uno
+    // archivado al cerrar el semestre sigue siendo el origen, y tratarlo como
+    // «suelto» invitaba a pisarlo. Solo lo que se puede agregar es activo.
+    const todos = projects ?? [];
+    const activos = useMemo(() => todos.filter(p => !p.archivedAt && !p.deletedAt), [todos]);
+    const origen = todos.find(p => p.id === paper.projectId) ?? null;
+    const vinculados = todos.filter(p => (paper.linkedProjectIds ?? []).includes(p.id));
     const disponibles = activos.filter(p => p.id !== paper.projectId && !(paper.linkedProjectIds ?? []).includes(p.id));
-    const faltantes = origen ? projectSourcesMissingIn(origen.sourceIds, paper.sources) : [];
+    const inactivo = (p: { archivedAt?: Date; deletedAt?: Date }) => !!(p.archivedAt || p.deletedAt);
+    // Solo libros que siguen en la biblioteca: un id borrado no se puede
+    // agregar y la oferta quedaba para siempre.
+    const enBiblioteca = new Set(resources.map(r => r.id));
+    const faltantes = origen && !inactivo(origen)
+        ? projectSourcesMissingIn(origen.sourceIds, paper.sources).filter(id => enBiblioteca.has(id))
+        : [];
 
     const cambiar = async (change: Parameters<typeof setProject.mutateAsync>[0]['change']) => {
         try {
@@ -68,7 +78,8 @@ export function AddToProjectDialog({ open, onOpenChange, paper }: AddToProjectDi
             }
         }
         setAgregando(false);
-        toast.success(t('paperProjects.toast.sourcesAdded', { count: n }));
+        if (n === faltantes.length) toast.success(t('paperProjects.toast.sourcesAdded', { count: n }));
+        else toast.warning(t('paperProjects.toast.sourcesPartial', { added: n, total: faltantes.length }));
     };
 
     const pendiente = setProject.isPending || agregando;
@@ -88,7 +99,9 @@ export function AddToProjectDialog({ open, onOpenChange, paper }: AddToProjectDi
                     <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('paperProjects.origin')}</p>
                     {origen ? (
                         <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
-                            <span className="flex-1 text-sm text-foreground">{origen.title}</span>
+                            <span className="flex-1 text-sm text-foreground">
+                                {origen.title}{inactivo(origen) && <span className="text-muted-foreground"> · {t('paperProjects.archived')}</span>}
+                            </span>
                             <Button size="sm" variant="ghost" onClick={() => cambiar({ kind: 'origin', projectId: null })} disabled={pendiente} aria-label={t('paperProjects.removeOrigin')}>
                                 <X className="h-3.5 w-3.5" />
                             </Button>
@@ -99,7 +112,7 @@ export function AddToProjectDialog({ open, onOpenChange, paper }: AddToProjectDi
                     {origen && faltantes.length > 0 && (
                         <div className="rounded-md border border-border bg-muted/40 px-3 py-2 space-y-1.5">
                             <p className="text-xs text-foreground">{t('paperProjects.missingSources', { count: faltantes.length })}</p>
-                            <Button size="sm" variant="outline" onClick={agregarFuentes} disabled={pendiente}>
+                            <Button size="sm" variant="outline" onClick={agregarFuentes} disabled={pendiente || cargandoBiblioteca}>
                                 {agregando && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                                 {t('paperProjects.addSources')}
                             </Button>
@@ -115,7 +128,15 @@ export function AddToProjectDialog({ open, onOpenChange, paper }: AddToProjectDi
                         <ul className="space-y-1.5">
                             {vinculados.map(p => (
                                 <li key={p.id} className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
-                                    <span className="flex-1 text-sm text-foreground">{p.title}</span>
+                                    <span className="flex-1 text-sm text-foreground">
+                                        {p.title}{inactivo(p) && <span className="text-muted-foreground"> · {t('paperProjects.archived')}</span>}
+                                    </span>
+                                    {/* Uno con el que colabora puede pasar a ser el origen. */}
+                                    {!origen && !inactivo(p) && (
+                                        <Button size="sm" variant="ghost" onClick={() => cambiar({ kind: 'origin', projectId: p.id })} disabled={pendiente}>
+                                            {t('paperProjects.makeOrigin')}
+                                        </Button>
+                                    )}
                                     <Button size="sm" variant="ghost" onClick={() => cambiar({ kind: 'unlink', projectId: p.id })} disabled={pendiente} aria-label={t('paperProjects.unlink', { title: p.title })}>
                                         <X className="h-3.5 w-3.5" />
                                     </Button>

@@ -62,6 +62,15 @@ describe('«Nuevo proyecto» sin tipo elegido (regresión de #800)', () => {
         expect(typeof createProject.mock.calls[0]![0].type).toBe('string');
     });
 
+    it('una clave del prototipo («toString») tampoco es un tipo', async () => {
+        render(<ProjectEditDialog initialType={'toString' as never} onClose={vi.fn()} />);
+        fireEvent.change(screen.getByRole('textbox', { name: /nombre/i }), { target: { value: 'X' } });
+        guardar();
+        await waitFor(() => expect(createProject).toHaveBeenCalled());
+        expect(createProject.mock.calls[0]![0].type).toBe('general');
+    });
+});
+
 describe('los tipos que se ofrecen al crear (ADR-046)', () => {
     it('Curso, Investigación, Exegético, Consejería y General; ya no Sermón ni Serie', () => {
         render(<ProjectEditDialog onClose={vi.fn()} />);
@@ -76,5 +85,4 @@ describe('los tipos que se ofrecen al crear (ADR-046)', () => {
         guardar();
         await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ type: 'general' })));
     });
-});
 });

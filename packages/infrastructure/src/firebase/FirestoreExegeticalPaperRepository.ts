@@ -230,13 +230,17 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         change: { projectId?: string | null; link?: string; unlink?: string },
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
-        const data: DocumentData = { updatedAt: new Date() };
+        // Sin `updatedAt`: asociar un estudio a un proyecto no lo edita, y esa
+        // fecha ordena la lista y se muestra como «última edición».
+        const data: DocumentData = {};
         if (change.projectId !== undefined) data.projectId = change.projectId;
-        // arrayUnion y arrayRemove no van juntos sobre el mismo campo en una
-        // escritura: se hacen por separado (precedente: `Extraction.projectIds`).
+        // Una sola escritura: origen + quitar de los vínculos tocan campos
+        // distintos. Solo `link` y `unlink` juntos irían sobre el mismo campo,
+        // y el caso de uso nunca los manda juntos.
+        if (change.link && change.unlink) throw new Error('setProjectLinks: link y unlink van en escrituras distintas');
         if (change.link) data.linkedProjectIds = arrayUnion(change.link);
-        await updateDoc(this.docRef(paperId), data);
-        if (change.unlink) await updateDoc(this.docRef(paperId), { linkedProjectIds: arrayRemove(change.unlink) });
+        if (change.unlink) data.linkedProjectIds = arrayRemove(change.unlink);
+        if (Object.keys(data).length > 0) await updateDoc(this.docRef(paperId), data);
         const fresh = await this.getPaper(ownerId, paperId);
         if (!fresh) throw new Error(`Paper ${paperId} not found after update`);
         return fresh;
@@ -249,11 +253,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         ]);
         const tocados = new Set<string>();
         for (const d of deOrigen.docs) {
-            await updateDoc(d.ref, { projectId: null, updatedAt: new Date() });
+            await updateDoc(d.ref, { projectId: null });
             tocados.add(d.id);
         }
         for (const d of vinculados.docs) {
-            await updateDoc(d.ref, { linkedProjectIds: arrayRemove(projectId), updatedAt: new Date() });
+            await updateDoc(d.ref, { linkedProjectIds: arrayRemove(projectId) });
             tocados.add(d.id);
         }
         return tocados.size;

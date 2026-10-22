@@ -19,7 +19,7 @@ const COLOR_OPTIONS: { value: ProjectColor; label: string; bg: string; ring: str
 interface ProjectEditDialogProps {
     /** If provided, we are editing an existing project. Otherwise creating. */
     project?: AIProject;
-    /** When creating, pre-selects this type instead of the default 'sermon'. */
+    /** When creating, pre-selects this type instead of the default 'general'. */
     initialType?: ProjectType;
     onClose: () => void;
 }
@@ -31,7 +31,7 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
     // muestra: guardar sin elegir no le cambia nada.
     // `initialType` solo vale si es un tipo conocido: un llamador que pasa el
     // evento del clic dejaba el estado con un objeto, y guardar fallaba.
-    const tipoValido = (t: unknown): t is ProjectType => typeof t === 'string' && t in PROJECT_TYPES;
+    const tipoValido = (t: unknown): t is ProjectType => typeof t === 'string' && Object.prototype.hasOwnProperty.call(PROJECT_TYPES, t);
     const tipoInicial = (): ProjectType => (project ? project.type ?? 'general' : tipoValido(initialType) ? initialType : 'general');
     const [type, setType] = useState<ProjectType>(tipoInicial);
     const [contextNote, setContextNote] = useState(project?.contextNote || '');

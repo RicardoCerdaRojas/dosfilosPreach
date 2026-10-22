@@ -112,6 +112,9 @@ export function ExegesisCreatePage() {
         // que llegue tarde no la pisa.
         perfilAplicado.current = true;
         setWorkProfileId(profile?.id ?? null);
+        // Elegir un perfil a mano reemplaza la guía del proyecto: si no, el
+        // trabajo mezclaba la rúbrica de uno con la guía del otro.
+        setStyleGuideDelProyecto(null);
         if (!profile) return;
         // Un perfil guardado antes del 2026-10-07 no creaba plantilla y quedó
         // con `null`, que al crear significa «sin plantilla: la del sistema»
@@ -132,19 +135,36 @@ export function ExegesisCreatePage() {
      * El encargo del proyecto: rellena igual que un perfil y tampoco decide.
      * Gana sobre el perfil por defecto, porque el estudio nace del curso.
      */
+    const encargoEnUso = useRef(false);
     const aplicarEncargo = useCallback((proyecto: AIProject | null) => {
         setProjectId(proyecto?.id ?? null);
         setStyleGuideDelProyecto(null);
-        if (!proyecto || !hasProjectCharge(proyecto)) return;
+        if (!proyecto || !hasProjectCharge(proyecto)) {
+            // Dejar un proyecto cuyo encargo se aplicó deshace ese encargo:
+            // si no, el estudio nacía suelto con la rúbrica y la portada del
+            // curso anterior, y la portada ni siquiera se ve en esta página.
+            if (encargoEnUso.current) {
+                encargoEnUso.current = false;
+                setRubricTemplateId(undefined);
+                setBriefDelPerfilId(null);
+                setCoverFromProfile(null);
+                setExegeticalStrategy('dialectical');
+                if (defaultProfile) aplicarPerfil(defaultProfile);
+            }
+            return;
+        }
         const c = proyecto.charge!;
+        encargoEnUso.current = true;
         perfilAplicado.current = true;
         setWorkProfileId(null);
-        setRubricTemplateId(c.rubricTemplateId ?? undefined);
+        // `null` en el encargo es «la rúbrica del sistema» y se respeta; solo
+        // la ausencia deja la plantilla por defecto del usuario.
+        setRubricTemplateId(c.rubricTemplateId === undefined ? undefined : c.rubricTemplateId);
         setBriefDelPerfilId(c.briefTemplateId ?? null);
         if (c.exegeticalStrategy) setExegeticalStrategy(c.exegeticalStrategy);
         setCoverFromProfile(c.cover ?? null);
         setStyleGuideDelProyecto(c.styleGuideId ?? null);
-    }, []);
+    }, [defaultProfile, aplicarPerfil]);
 
     // Si se llegó desde un proyecto con encargo, se aplica en cuanto cargan
     // los proyectos (una vez).
@@ -196,7 +216,9 @@ export function ExegesisCreatePage() {
                 styleGuideId: styleGuideDelProyecto ?? perfilElegido?.styleGuideId ?? null,
                 assignmentBrief: assignmentBrief.trim() || null,
                 rubricTemplateId,
-                ...(projectId ? { projectId } : {}),
+                // El proyecto elegido de verdad: uno de la URL que no está entre
+                // los activos (archivado, ajeno) no se manda.
+                ...(proyectoElegido ? { projectId: proyectoElegido.id } : {}),
                 ...(cover ? { cover } : {}),
             });
             toast.success(t('create.toast.created'));

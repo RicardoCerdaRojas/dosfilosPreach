@@ -50,3 +50,23 @@ export function matchesProjectFilter(paper: ConProyectos, filter: string): boole
     const suyos = projectsOfPaper(paper);
     return filter === 'none' ? suyos.length === 0 : suyos.includes(filter);
 }
+
+/**
+ * Qué libros busca una conversación con los tutores que pertenece a un
+ * proyecto (ADR-046). Si la conversación es de un estudio, son los del
+ * proyecto MÁS los del estudio: acotar solo a los del proyecto dejaba al
+ * tutor sin los comentarios que el estudio usa (revisión de la etapa 1).
+ * Sin fuentes del proyecto no se acota (toda la biblioteca, como siempre).
+ */
+export function conversationSourceScope(
+    projectSourceIds: ReadonlyArray<string> | null | undefined,
+    studySources: ReadonlyArray<{ sourceLibraryResourceId?: string | null; corpusId?: string | null }> | null | undefined,
+): string[] | undefined {
+    if (!projectSourceIds || projectSourceIds.length === 0) return undefined;
+    const ids = new Set(projectSourceIds.filter(Boolean));
+    for (const s of studySources ?? []) {
+        const id = s.sourceLibraryResourceId || s.corpusId;
+        if (id) ids.add(id);
+    }
+    return [...ids];
+}

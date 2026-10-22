@@ -162,7 +162,8 @@ const STUDY_ROADMAP: RoadmapPhase[] = [
         title: 'Define el tema',
         description: 'Escribe la pregunta o tópico que quieres investigar. Acota el alcance.',
         icon: NotebookPen,
-        isComplete: (ctx) => !!ctx.project.contextNote,
+        // El botón de esta fase escribe una nota: también la completa.
+        isComplete: (ctx) => !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
         cta: { label: 'Definir el tema', kind: 'output' },
     },
     {
@@ -205,7 +206,8 @@ const SERIES_ROADMAP: RoadmapPhase[] = [
         title: 'Marco de la serie',
         description: 'Define el libro o tema, número de mensajes, audiencia y arco general.',
         icon: NotebookPen,
-        isComplete: (ctx) => !!ctx.project.contextNote,
+        // El botón de esta fase escribe una nota: también la completa.
+        isComplete: (ctx) => !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
         cta: { label: 'Escribir marco', kind: 'output' },
     },
     {
@@ -287,7 +289,8 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
         title: 'Pasaje y propósito',
         description: 'El pasaje que vas a estudiar y para qué: una serie, una clase, tu archivo.',
         icon: NotebookPen,
-        isComplete: (ctx) => !!ctx.project.contextNote,
+        // El botón de esta fase escribe una nota: también la completa.
+        isComplete: (ctx) => !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
         cta: { label: 'Escribir el propósito', kind: 'output' },
     },
     {
@@ -322,7 +325,8 @@ const GENERAL_ROADMAP: RoadmapPhase[] = [
         title: 'Contexto',
         description: 'Describe en qué consiste este proyecto.',
         icon: NotebookPen,
-        isComplete: (ctx) => !!ctx.project.contextNote,
+        // El botón de esta fase escribe una nota: también la completa.
+        isComplete: (ctx) => !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
         cta: { label: 'Editar contexto', kind: 'output' },
     },
     {
@@ -396,7 +400,8 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
 };
 
 export function getProjectTypeMeta(type?: ProjectType): ProjectTypeMeta {
-    return PROJECT_TYPES[type ?? 'general'] ?? PROJECT_TYPES.general;
+    const clave = type ?? 'general';
+    return Object.prototype.hasOwnProperty.call(PROJECT_TYPES, clave) ? PROJECT_TYPES[clave] : PROJECT_TYPES.general;
 }
 
 /**

@@ -61,4 +61,18 @@ describe('SetPaperProjectUseCase', () => {
         }
         expect(repo.setProjectLinks).not.toHaveBeenCalled();
     });
+
+    it('un proyecto que las reglas no dejan leer (ajeno) es «no disponible», no un error de Firebase', async () => {
+        const { uc } = montar({});
+        (uc as unknown as { projectRepository: { getProject: unknown } }).projectRepository.getProject = vi.fn().mockRejectedValue(new Error('permission-denied'));
+        await expect(uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'link', projectId: 'ajeno' } })).rejects.toThrow(/no disponible/);
+    });
+
+    it('se puede dejar de colaborar con un proyecto archivado, pero no hacerlo origen', async () => {
+        const archivado = { id: 'viejo', userId: 'u1', archivedAt: new Date() };
+        const a = montar({ linkedProjectIds: ['viejo'] }, { viejo: archivado });
+        await a.uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'unlink', projectId: 'viejo' } });
+        expect(a.repo.setProjectLinks).toHaveBeenCalledWith('u1', 'p1', { unlink: 'viejo' });
+        await expect(a.uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'origin', projectId: 'viejo' } })).rejects.toThrow(/no disponible/);
+    });
 });
