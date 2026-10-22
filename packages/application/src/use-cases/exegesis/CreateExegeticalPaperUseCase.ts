@@ -97,6 +97,7 @@ export class CreateExegeticalPaperUseCase {
             sources: [],
             seriesId: input.seriesId ?? null,
             pericopeId: input.pericopeId ?? null,
+            projectId: input.projectId ?? null,
         });
         // Primero la rúbrica y después las fuentes: si agregar una fuente
         // falla, el trabajo ya tiene la rúbrica que le toca (revisión de la

@@ -80,6 +80,7 @@ export * from './services/bookSearchForCitation';
 export * from './services/citationDiagnosis';
 export * from './services/citationReview';
 export * from './services/proseReview';
+export * from './services/paperProjects';
 export * from './services/citationCorrection';
 export * from './services/paperLength';
 export * from './services/citationStyle';

@@ -136,6 +136,24 @@ export interface IExegeticalPaperRepository {
 
     // ── Sources ───────────────────────────────────────────────────────────
 
+    /**
+     * El proyecto de origen y los vínculos del estudio (ADR-046). Cada campo
+     * es opcional: `projectId` reemplaza el origen (null lo quita); `link` y
+     * `unlink` agregan o quitan un proyecto vinculado. El caso de uso decide
+     * las reglas (el origen nunca queda también como vínculo).
+     */
+    setProjectLinks(
+        ownerId: string,
+        paperId: string,
+        change: { projectId?: string | null; link?: string; unlink?: string },
+    ): Promise<ExegeticalPaper>;
+
+    /**
+     * Quita un proyecto de todos los estudios del dueño: como origen y como
+     * vínculo. Para cuando el proyecto se borra. Devuelve cuántos tocó.
+     */
+    detachProject(ownerId: string, projectId: string): Promise<number>;
+
     addSource(
         ownerId: string,
         paperId: string,

@@ -82,6 +82,8 @@ export interface CreateExegeticalPaperInput {
      */
     seriesId?: string | null;
     pericopeId?: string | null;
+    /** Proyecto de origen (ADR-046). El estudio hereda su encargo. */
+    projectId?: string | null;
 }
 
 // ── UpdatePaperBrief ────────────────────────────────────────────────────

@@ -239,6 +239,21 @@ export interface ExegeticalPaper {
      */
     seriesId?: string | null;
     pericopeId?: string | null;
+
+    /**
+     * El proyecto de origen (ADR-046): un curso, una investigación o un
+     * estudio exegético de un pasaje largo. Define el encargo del estudio
+     * (rúbrica, guía, bibliografía que hereda). Opcional: un estudio suelto
+     * no tiene. Es un `AIProject` («Proyectos» en el menú), no el corpus del
+     * propio trabajo, que en este módulo se llama `ProjectSource`.
+     */
+    projectId?: string | null;
+    /**
+     * Otros proyectos con los que el estudio colabora: lo muestran, lo usan
+     * en sus productos, sus conversaciones lo consultan, pero NO le cambian
+     * las reglas. Nunca incluye a `projectId`.
+     */
+    linkedProjectIds?: string[];
 }
 
 export type ExegeticalPaperPhase =

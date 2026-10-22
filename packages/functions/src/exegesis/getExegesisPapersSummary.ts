@@ -40,6 +40,9 @@ interface PaperSummary {
     acceptedStepCount: number;
     sourceCount: number;
     seriesId: string | null;
+    /** Proyecto de origen y proyectos vinculados (ADR-046). */
+    projectId: string | null;
+    linkedProjectIds: string[];
     sources: SourceIdentity[];
     /**
      * Las claves de cita que este trabajo efectivamente CITÓ.
@@ -86,6 +89,18 @@ export function portadaDelResumen(cover: unknown): Record<string, string> | null
  * una segunda copia que se desincroniza en cuanto el análisis gane un campo.
  * Lo que NO cambia es el nombre del campo, que es contrato de citación.
  */
+/**
+ * El proyecto de origen y los vinculados (ADR-046). El origen nunca se repite
+ * como vínculo, aunque el documento lo traiga así.
+ */
+export function proyectosDelResumen(d: { projectId?: unknown; linkedProjectIds?: unknown }): { projectId: string | null; linkedProjectIds: string[] } {
+    const projectId = typeof d.projectId === 'string' && d.projectId ? d.projectId : null;
+    const linked = Array.isArray(d.linkedProjectIds)
+        ? [...new Set(d.linkedProjectIds.filter((x: unknown): x is string => typeof x === 'string' && !!x))]
+        : [];
+    return { projectId, linkedProjectIds: linked.filter(id => id !== projectId) };
+}
+
 export function clavesCitadas(steps: any[]): string[] {
     const out = new Set<string>();
     const recorre = (node: any): void => {
@@ -175,6 +190,7 @@ export const getExegesisPapersSummary = onCall(
                 acceptedStepCount: steps.filter((s: any) => s?.accepted !== null).length,
                 sourceCount: sources.length,
                 seriesId: typeof d.seriesId === 'string' ? d.seriesId : null,
+                ...proyectosDelResumen(d),
                 sources: sources.map(identidadDeFuente),
                 citedSourceKeys: clavesCitadas(steps),
                 cover: portadaDelResumen(d.cover),

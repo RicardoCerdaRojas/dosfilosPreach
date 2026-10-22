@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clavesCitadas, portadaDelResumen } from '../getExegesisPapersSummary';
+import { clavesCitadas, portadaDelResumen, proyectosDelResumen } from '../getExegesisPapersSummary';
 
 describe('clavesCitadas — la memoria de fuentes entre entregas', () => {
     const paso = (accepted: unknown) => ({ accepted });
@@ -60,5 +60,15 @@ describe('portadaDelResumen', () => {
     it('sin portada, o vacía, null', () => {
         expect(portadaDelResumen(undefined)).toBeNull();
         expect(portadaDelResumen({ author: '  ' })).toBeNull();
+    });
+});
+
+describe('proyectosDelResumen (ADR-046)', () => {
+    it('el origen y los vinculados, sin repetir el origen ni basura', () => {
+        expect(proyectosDelResumen({ projectId: 'curso', linkedProjectIds: ['serie', 'curso', 'serie', 3, ''] }))
+            .toEqual({ projectId: 'curso', linkedProjectIds: ['serie'] });
+    });
+    it('un trabajo anterior al campo es un estudio suelto', () => {
+        expect(proyectosDelResumen({})).toEqual({ projectId: null, linkedProjectIds: [] });
     });
 });

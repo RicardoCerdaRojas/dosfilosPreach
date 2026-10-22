@@ -9,6 +9,8 @@ import {
     query,
     where,
     runTransaction,
+    arrayUnion,
+    arrayRemove,
     type DocumentData,
     } from 'firebase/firestore';
 import { getFunctions,
@@ -131,6 +133,9 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
                 acceptedStepCount: p.acceptedStepCount ?? 0,
                 sourceCount: p.sourceCount ?? 0,
                 seriesId: typeof p.seriesId === 'string' ? p.seriesId : null,
+                // Un callable viejo no los manda: el estudio se ve suelto.
+                projectId: typeof p.projectId === 'string' ? p.projectId : null,
+                linkedProjectIds: Array.isArray(p.linkedProjectIds) ? p.linkedProjectIds : [],
                 // Un callable viejo no manda `sources`; se degrada a lista
                 // vacía, que deja la herencia sin proponer nada en vez de
                 // romper la pantalla.
@@ -195,6 +200,8 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             archivedAt: null,
             seriesId: draft.seriesId ?? null,
             pericopeId: draft.pericopeId ?? null,
+            projectId: draft.projectId ?? null,
+            linkedProjectIds: [],
         };
         await setDoc(ref, serialize(paper));
         return paper;
@@ -214,6 +221,41 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         const fresh = await this.getPaper(ownerId, paperId);
         if (!fresh) throw new Error(`Paper ${paperId} not found after update`);
         return fresh;
+    }
+
+    async setProjectLinks(
+        ownerId: string,
+        paperId: string,
+        change: { projectId?: string | null; link?: string; unlink?: string },
+    ): Promise<ExegeticalPaper> {
+        await this.requireOwned(ownerId, paperId);
+        const data: DocumentData = { updatedAt: new Date() };
+        if (change.projectId !== undefined) data.projectId = change.projectId;
+        // arrayUnion y arrayRemove no van juntos sobre el mismo campo en una
+        // escritura: se hacen por separado (precedente: `Extraction.projectIds`).
+        if (change.link) data.linkedProjectIds = arrayUnion(change.link);
+        await updateDoc(this.docRef(paperId), data);
+        if (change.unlink) await updateDoc(this.docRef(paperId), { linkedProjectIds: arrayRemove(change.unlink) });
+        const fresh = await this.getPaper(ownerId, paperId);
+        if (!fresh) throw new Error(`Paper ${paperId} not found after update`);
+        return fresh;
+    }
+
+    async detachProject(ownerId: string, projectId: string): Promise<number> {
+        const [deOrigen, vinculados] = await Promise.all([
+            getDocs(query(this.collectionRef(), where('ownerId', '==', ownerId), where('projectId', '==', projectId))),
+            getDocs(query(this.collectionRef(), where('ownerId', '==', ownerId), where('linkedProjectIds', 'array-contains', projectId))),
+        ]);
+        const tocados = new Set<string>();
+        for (const d of deOrigen.docs) {
+            await updateDoc(d.ref, { projectId: null, updatedAt: new Date() });
+            tocados.add(d.id);
+        }
+        for (const d of vinculados.docs) {
+            await updateDoc(d.ref, { linkedProjectIds: arrayRemove(projectId), updatedAt: new Date() });
+            tocados.add(d.id);
+        }
+        return tocados.size;
     }
 
     async setPhase(ownerId: string, paperId: string, phase: ExegeticalPaperPhase): Promise<ExegeticalPaper> {
@@ -908,6 +950,8 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     }
     if (paper.seriesId !== undefined) data.seriesId = paper.seriesId;
     if (paper.pericopeId !== undefined) data.pericopeId = paper.pericopeId;
+    if (paper.projectId !== undefined) data.projectId = paper.projectId;
+    if (paper.linkedProjectIds !== undefined) data.linkedProjectIds = paper.linkedProjectIds;
     return data;
 }
 
@@ -957,6 +1001,10 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         archivedAt: data.archivedAt?.toDate?.() ?? data.archivedAt ?? null,
         seriesId: typeof data.seriesId === 'string' ? data.seriesId : null,
         pericopeId: typeof data.pericopeId === 'string' ? data.pericopeId : null,
+        projectId: typeof data.projectId === 'string' ? data.projectId : null,
+        linkedProjectIds: Array.isArray(data.linkedProjectIds)
+            ? data.linkedProjectIds.filter((x: unknown): x is string => typeof x === 'string')
+            : [],
     };
 }
 
