@@ -76,6 +76,8 @@ export class CreateExegeticalPaperUseCase {
         private biblioteca?: { findById(id: string): Promise<{ id: string } | null> },
     ) { }
 
+    private readonly existencia = new Map<string, { en: number; pregunta: Promise<boolean> }>();
+
     async execute(input: CreateExegeticalPaperInput): Promise<ExegeticalPaper> {
         if (!input.ownerId) {
             throw new Error('CreateExegeticalPaperUseCase: ownerId required');
@@ -84,7 +86,7 @@ export class CreateExegeticalPaperUseCase {
             throw new Error('CreateExegeticalPaperUseCase: passage required');
         }
 
-        const nacido = await this.paperRepository.createPaper({
+        const created = await this.paperRepository.createPaper({
             ownerId: input.ownerId,
             passage: input.passage,
             displayLanguage: input.displayLanguage,
@@ -96,7 +98,14 @@ export class CreateExegeticalPaperUseCase {
             seriesId: input.seriesId ?? null,
             pericopeId: input.pericopeId ?? null,
         });
-        const created = await this.addInitialSources(input, nacido);
+        // Primero la rúbrica y después las fuentes: si agregar una fuente
+        // falla, el trabajo ya tiene la rúbrica que le toca (revisión de la
+        // etapa 0; un trabajo de serie con la académica es Jonás 4:5-11).
+        const conRubrica = await this.applyRubric(input, created);
+        return this.addInitialSources(input, conRubrica);
+    }
+
+    private async applyRubric(input: CreateExegeticalPaperInput, created: ExegeticalPaper): Promise<ExegeticalPaper> {
 
         // Strategy-only preset short-circuits template resolution.
         // The repo seeded `buildDefaultRubric()` (TMS rigorous); we
@@ -145,7 +154,11 @@ export class CreateExegeticalPaperUseCase {
         return created;
     }
 
-    /** Agrega las fuentes iniciales y devuelve el trabajo con ellas. */
+    /**
+     * Agrega las fuentes iniciales y devuelve el trabajo con ellas. Mejor
+     * esfuerzo: una fuente que no se pudo agregar se registra y se sigue; el
+     * trabajo ya existe y su rúbrica ya está puesta.
+     */
     private async addInitialSources(input: CreateExegeticalPaperInput, paper: ExegeticalPaper): Promise<ExegeticalPaper> {
         const pedidas = input.initialSources ?? [];
         if (pedidas.length === 0) return paper;
@@ -155,30 +168,56 @@ export class CreateExegeticalPaperUseCase {
             const recurso = s.sourceLibraryResourceId ?? s.corpusId;
             if (vistas.has(recurso)) continue;
             vistas.add(recurso);
-            if (this.biblioteca && s.sourceLibraryResourceId) {
-                const existe = await this.biblioteca.findById(s.sourceLibraryResourceId).catch(() => null);
-                if (!existe) continue;
+            if (s.sourceLibraryResourceId && !(await this.existe(s.sourceLibraryResourceId))) continue;
+            try {
+                await this.paperRepository.addSource(input.ownerId, paper.id, {
+                    corpusId: s.corpusId,
+                    sourceType: s.sourceType,
+                    chosenRole: s.chosenRole ?? null,
+                    displayLabel: s.displayLabel,
+                    // Como `AddProjectSourceUseCase`: sin clave, la tarjeta de la fuente
+                    // la propone desde el autor del libro.
+                    citationKey: s.citationKey ?? null,
+                    order: orden++,
+                    // Siempre documento entero, como la herencia: un modo «fragmentos»
+                    // sin fragmentos dejaría una fuente que no aporta nada y no avisa.
+                    mode: 'full-document',
+                    // Sin fragmentos: se extraen contra el pasaje de este trabajo.
+                    excerpts: [],
+                    excerptSelectionMode: null,
+                    excerptRecipe: null,
+                    sourceLibraryResourceId: s.sourceLibraryResourceId ?? null,
+                    extractedAt: null,
+                    extractionFingerprint: null,
+                });
+            } catch (err) {
+                console.warn('[CreateExegeticalPaper] no se pudo agregar una fuente de la serie', { recurso, error: (err as Error).message });
             }
-            await this.paperRepository.addSource(input.ownerId, paper.id, {
-                corpusId: s.corpusId,
-                sourceType: s.sourceType,
-                chosenRole: s.chosenRole ?? null,
-                displayLabel: s.displayLabel,
-                // Como `AddProjectSourceUseCase`: sin clave, la tarjeta de la fuente
-                // la propone desde el autor del libro.
-                citationKey: s.citationKey ?? null,
-                order: orden++,
-                mode: s.mode ?? 'full-document',
-                // Sin fragmentos: se extraen contra el pasaje de este trabajo.
-                excerpts: [],
-                excerptSelectionMode: null,
-                excerptRecipe: null,
-                sourceLibraryResourceId: s.sourceLibraryResourceId ?? null,
-                extractedAt: null,
-                extractionFingerprint: null,
-            });
         }
-        return (await this.paperRepository.getPaper(input.ownerId, paper.id)) ?? paper;
+        return (await this.paperRepository.getPaper(input.ownerId, paper.id).catch(() => null)) ?? paper;
+    }
+
+    /**
+     * Si el libro sigue en la biblioteca. Se recuerda un minuto por recurso:
+     * una serie crea sus trabajos a la vez y cada uno preguntaría por los
+     * mismos libros (cada lectura trae el recurso entero, hasta 800 KB). Un
+     * error al leer NO es «se borró»: la fuente se agrega igual.
+     */
+    private existe(resourceId: string): Promise<boolean> {
+        if (!this.biblioteca) return Promise.resolve(true);
+        const ahora = Date.now();
+        const guardado = this.existencia.get(resourceId);
+        // La misma promesa para los que preguntan a la vez: nadie lee un
+        // «sí» provisional antes de que llegue la respuesta.
+        if (guardado && ahora - guardado.en < 60_000) return guardado.pregunta;
+        const pregunta = this.biblioteca.findById(resourceId)
+            .then(r => !!r)
+            .catch(err => {
+                console.warn('[CreateExegeticalPaper] no se pudo comprobar el libro; se agrega igual', { resourceId, error: (err as Error).message });
+                return true;
+            });
+        this.existencia.set(resourceId, { en: ahora, pregunta });
+        return pregunta;
     }
 
     private async resolveTemplateRubric(

@@ -40,7 +40,7 @@ export function useFacultyProjects() {
     });
 
     const updateProject = useMutation({
-        mutationFn: async ({ projectId, ...updates }: { projectId: string; title?: string; color?: ProjectColor; contextNote?: string }) => {
+        mutationFn: async ({ projectId, ...updates }: { projectId: string; title?: string; color?: ProjectColor; type?: ProjectType; contextNote?: string }) => {
             return facultyService.updateProject.execute(projectId, updates);
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['faculty', 'projects', user?.uid] }),

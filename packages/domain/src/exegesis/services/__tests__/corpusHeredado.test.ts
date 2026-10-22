@@ -205,3 +205,34 @@ describe('proponerCorpusHeredado', () => {
         expect(p).toBeNull();
     });
 });
+
+/**
+ * Revisión de la etapa 0: el trabajo nace con las fuentes por defecto de la
+ * serie, sin clave ni páginas. La herencia no debe darlas por «ya presentes»:
+ * las completa con lo que el hermano ya curó.
+ */
+describe('proponerCorpusHeredado — fuentes de la serie sin curar', () => {
+    const delaSerie = (recurso: string, extras: Record<string, unknown> = {}) => ({
+        id: `f-${recurso}`, sourceLibraryResourceId: recurso, corpusId: `corpus-${recurso}`, sourceType: 'commentary-critical',
+        chosenRole: null, displayLabel: `Libro ${recurso}`, citationKey: null, excerpts: [], excerptRecipe: null, extractedAt: null, ...extras,
+    } as unknown as ProjectSource);
+    const curada = (recurso: string) => ({ ...delaSerie(recurso), id: `h-${recurso}`, chosenRole: 'anchor', citationKey: `Key${recurso}` } as unknown as ProjectSource);
+
+    it('una fuente sin curar se completa con la clave y el rol del hermano', () => {
+        const p = proponerCorpusHeredado(trabajo('t2', 's', [delaSerie('a')]), [trabajo('t1', 's', [curada('a')])]);
+        expect(p!.fuentes).toEqual([expect.objectContaining({ sourceLibraryResourceId: 'a', citationKey: 'Keya', chosenRole: 'anchor', reemplazaFuenteId: 'f-a' })]);
+        expect(p!.yaPresentes).toBe(0);
+    });
+
+    it('una fuente que alguien ya tocó (con clave o con páginas) cuenta como presente', () => {
+        const conClave = proponerCorpusHeredado(trabajo('t2', 's', [delaSerie('a', { citationKey: 'Mía' })]), [trabajo('t1', 's', [curada('a')])]);
+        expect(conClave).toBeNull();
+        const conPaginas = proponerCorpusHeredado(trabajo('t2', 's', [delaSerie('a', { excerptRecipe: { sheetRanges: [{ start: 1, end: 2 }] } })]), [trabajo('t1', 's', [curada('a')])]);
+        expect(conPaginas).toBeNull();
+    });
+
+    it('si el hermano tampoco la curó, no hay nada que mejorar', () => {
+        const p = proponerCorpusHeredado(trabajo('t2', 's', [delaSerie('a')]), [trabajo('t1', 's', [{ ...delaSerie('a'), id: 'h-a' } as never])]);
+        expect(p).toBeNull();
+    });
+});

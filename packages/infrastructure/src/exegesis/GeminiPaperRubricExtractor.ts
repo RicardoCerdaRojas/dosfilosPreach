@@ -498,7 +498,11 @@ function parseCourseBibliography(raw: unknown): CourseBibliographyEntry[] {
                 title,
                 ...(author ? { author } : {}),
                 ...(series ? { series } : {}),
-                requirement: e.requirement === 'recommended' ? 'recommended' as const : 'required' as const,
+                // El esquema pide «required» | «recommended»; se aceptan también
+                // las formas en español y «optional», que el modelo a veces usa.
+                requirement: /^(recommended|recomendad[ao]|optional|opcional)$/i.test(String(e.requirement ?? '').trim())
+                    ? 'recommended' as const
+                    : 'required' as const,
                 ...(note ? { note } : {}),
             };
         })

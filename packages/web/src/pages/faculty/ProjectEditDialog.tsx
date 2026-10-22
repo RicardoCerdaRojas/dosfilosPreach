@@ -27,12 +27,17 @@ interface ProjectEditDialogProps {
 export function ProjectEditDialog({ project, initialType, onClose }: ProjectEditDialogProps) {
     const [title, setTitle] = useState(project?.title || '');
     const [color, setColor] = useState<ProjectColor>(project?.color || 'amber');
-    const [type, setType] = useState<ProjectType>(project?.type || initialType || 'sermon');
+    // Un proyecto existente sin tipo arranca en «General», que es lo que hoy
+    // muestra: guardar sin elegir no le cambia nada.
+    const tipoInicial = (): ProjectType => (project ? project.type ?? 'general' : initialType ?? 'sermon');
+    const [type, setType] = useState<ProjectType>(tipoInicial);
     const [contextNote, setContextNote] = useState(project?.contextNote || '');
 
     const { createProject, updateProject, generateContext } = useFacultyProjects();
 
     const isEditing = !!project;
+    /** Creado antes de que el tipo se guardara: se le puede elegir uno, una vez. */
+    const sinTipo = isEditing && !project.type;
     const isLoading = createProject.isPending || updateProject.isPending;
     const isGenerating = generateContext.isPending;
 
@@ -40,7 +45,7 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
     useEffect(() => {
         setTitle(project?.title || '');
         setColor(project?.color || 'amber');
-        setType(project?.type || initialType || 'sermon');
+        setType(tipoInicial());
         setContextNote(project?.contextNote || '');
     }, [project, initialType]);
 
@@ -51,10 +56,13 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
         setError(null);
         try {
             if (isEditing) {
-                // El tipo solo se elige al crear: editar no lo manda. Antes viajaba
-                // el valor del estado y un proyecto sin tipo pasaba a «Sermón»
-                // sin que nadie lo pidiera (etapa 0).
-                await updateProject.mutateAsync({ projectId: project.id, title, color, contextNote: contextNote || undefined });
+                // El tipo se elige al crear. Editar solo lo manda si el proyecto
+                // no tenía (los creados antes de la etapa 0 quedaron sin tipo):
+                // antes viajaba siempre y uno sin tipo pasaba a «Sermón» solo.
+                await updateProject.mutateAsync({
+                    projectId: project.id, title, color, contextNote: contextNote || undefined,
+                    ...(sinTipo ? { type } : {}),
+                });
             } else {
                 await createProject.mutateAsync({ title, color, type, contextNote: contextNote || undefined });
             }
@@ -82,8 +90,9 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
                     {isEditing ? 'Editar proyecto' : 'Nuevo proyecto'}
                 </h2>
 
-                {/* Type — only on create (changing type later breaks roadmap continuity) */}
-                {!isEditing && (
+                {/* Type — on create, or once for a project saved without one (changing
+                    a type later breaks roadmap continuity) */}
+                {(!isEditing || sinTipo) && (
                     <div className="mb-5">
                         <span className="text-sm font-medium text-muted-foreground mb-2 block">
                             Tipo de proyecto

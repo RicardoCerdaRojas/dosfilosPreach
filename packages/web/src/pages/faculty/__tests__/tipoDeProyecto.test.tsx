@@ -30,8 +30,23 @@ describe('el tipo del proyecto', () => {
         await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ title: 'Serie 2 Pedro', type: 'series' })));
     });
 
-    it('al editar un proyecto sin tipo, no se le pone «Sermón»', async () => {
+    it('al editar un proyecto sin tipo no se le pone «Sermón»: queda «General» si no se elige otro', async () => {
         render(<ProjectEditDialog project={{ id: 'p1', userId: 'u', title: 'Teología II', color: 'amber' } as never} onClose={vi.fn()} />);
+        guardar();
+        await waitFor(() => expect(updateProject).toHaveBeenCalled());
+        expect(updateProject.mock.calls[0]![0]).toMatchObject({ type: 'general' });
+    });
+
+    it('a un proyecto sin tipo se le puede elegir uno al editarlo (revisión de la etapa 0)', async () => {
+        render(<ProjectEditDialog project={{ id: 'p1', userId: 'u', title: 'Teología II', color: 'amber' } as never} onClose={vi.fn()} />);
+        fireEvent.click(screen.getByText('Estudio').closest('button')!);
+        guardar();
+        await waitFor(() => expect(updateProject).toHaveBeenCalledWith(expect.objectContaining({ type: 'study' })));
+    });
+
+    it('a un proyecto con tipo no se le ofrece cambiarlo ni se manda', async () => {
+        render(<ProjectEditDialog project={{ id: 'p1', userId: 'u', title: 'Serie', color: 'amber', type: 'series' } as never} onClose={vi.fn()} />);
+        expect(screen.queryByText('Tipo de proyecto')).toBeNull();
         guardar();
         await waitFor(() => expect(updateProject).toHaveBeenCalled());
         expect(updateProject.mock.calls[0]![0]).not.toHaveProperty('type');

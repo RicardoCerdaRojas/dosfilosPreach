@@ -18,16 +18,23 @@ const defaults = {
     ],
 };
 
-function montar() {
+function montar(opts: { falla?: string; lecturaFalla?: boolean } = {}) {
     const agregadas: Array<Record<string, unknown>> = [];
     const repo = {
         createPaper: vi.fn(async () => ({ id: 'p1', sources: [] })),
-        addSource: vi.fn(async (_o: string, _p: string, s: Record<string, unknown>) => { agregadas.push(s); return { id: `s${agregadas.length}`, ...s }; }),
+        addSource: vi.fn(async (_o: string, _p: string, s: Record<string, unknown>) => {
+            if (s.sourceLibraryResourceId === opts.falla) throw new Error('transacción caída');
+            agregadas.push(s); return { id: `s${agregadas.length}`, ...s };
+        }),
         getPaper: vi.fn(async () => ({ id: 'p1', sources: agregadas })),
-        setRubric: vi.fn(async () => ({ id: 'p1', sources: agregadas })),
+        // Devuelve el trabajo SIN fuentes: las trae la relectura final.
+        setRubric: vi.fn(async () => ({ id: 'p1', sources: [] })),
     };
-    const biblioteca = { findById: vi.fn(async (id: string) => (id === 'r-borrado' ? null : { id })) };
-    return { uc: new CreateExegeticalPaperUseCase(repo as never, undefined, biblioteca), repo, agregadas };
+    const biblioteca = { findById: vi.fn(async (id: string) => {
+        if (opts.lecturaFalla) throw new Error('sin red');
+        return id === 'r-borrado' ? null : { id };
+    }) };
+    return { uc: new CreateExegeticalPaperUseCase(repo as never, undefined, biblioteca), repo, agregadas, biblioteca };
 }
 const base = { ownerId: 'u', passage: { bookId: 'MAT', chapterStart: 10, chapterEnd: 10, verseStart: 1, verseEnd: 15 }, displayLanguage: 'es' as const, seriesId: 's-mateo', pericopeId: 'p1' };
 
@@ -46,5 +53,33 @@ describe('un trabajo de una serie nace con las fuentes por defecto de la serie',
         await uc.execute(base as never);
         expect(repo.addSource).not.toHaveBeenCalled();
         expect(repo.getPaper).not.toHaveBeenCalled();
+    });
+
+    it('la rúbrica se pone antes que las fuentes, y una fuente que falla no tumba la creación', async () => {
+        const { uc, repo, agregadas } = montar({ falla: 'r-carson' });
+        const paper = await uc.execute({ ...base, ...paperDefaultsFromSeries(defaults as never) } as never);
+        expect(repo.setRubric.mock.invocationCallOrder[0]!).toBeLessThan(repo.addSource.mock.invocationCallOrder[0]!);
+        expect(agregadas.map(s => s.sourceLibraryResourceId)).toEqual(['r-bdag']);
+        expect(paper.sources).toHaveLength(1);
+    });
+
+    it('un error al leer la biblioteca no es «se borró»: la fuente se agrega', async () => {
+        const { uc, agregadas } = montar({ lecturaFalla: true });
+        await uc.execute({ ...base, ...paperDefaultsFromSeries(defaults as never) } as never);
+        expect(agregadas.map(s => s.sourceLibraryResourceId)).toEqual(['r-carson', 'r-bdag', 'r-borrado']);
+    });
+
+    it('los trabajos de una serie creados a la vez preguntan una sola vez por cada libro', async () => {
+        const { uc, biblioteca } = montar();
+        const entrada = { ...base, ...paperDefaultsFromSeries(defaults as never) } as never;
+        await Promise.all([uc.execute(entrada), uc.execute(entrada), uc.execute(entrada)]);
+        expect(biblioteca.findById).toHaveBeenCalledTimes(3);
+    });
+
+    it('el modo es siempre documento entero', async () => {
+        const { uc, agregadas } = montar();
+        const conFragmentos = { ...defaults, sourceRefs: [{ ...defaults.sourceRefs[0]!, mode: 'extracted-excerpts' }] };
+        await uc.execute({ ...base, ...paperDefaultsFromSeries(conFragmentos as never) } as never);
+        expect(agregadas[0]).toMatchObject({ mode: 'full-document' });
     });
 });

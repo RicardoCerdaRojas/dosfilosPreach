@@ -38,4 +38,12 @@ describe('GeminiPaperRubricExtractor', () => {
         expect(rubric.courseBibliography).toEqual([]);
         expect(rubric.formatting).toBeNull();
     });
+
+    it('«recomendada» y «optional» cuentan como recomendadas', async () => {
+        runLlmPromptWithUsage.mockResolvedValue({ text: JSON.stringify({ ...respuesta, courseBibliography: [
+            { title: 'A', requirement: 'Recomendada' }, { title: 'B', requirement: 'optional' }, { title: 'C', requirement: 'obligatoria' },
+        ] }), tokensUsed: 1 });
+        const { rubric } = await new GeminiPaperRubricExtractor().extract({ rawText: 'x', source: 'text', sourceCorpusId: null, language: 'es' } as never);
+        expect(rubric.courseBibliography!.map(e => e.requirement)).toEqual(['recommended', 'recommended', 'required']);
+    });
 });
