@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findQuoteInPageText } from '../findQuoteInPageText';
+import { findQuoteInPageText, findQuotePartAtPageEdge } from '../findQuoteInPageText';
 
 describe('findQuoteInPageText', () => {
     it('devuelve el rango exacto de la frase en el texto original', () => {
@@ -91,5 +91,32 @@ describe('«µ» de micro (léxico de Tuggy, 2026-10-20)', () => {
         const r = findQuoteInPageText('μετακινέω', pagina);
         expect(r).not.toBeNull();
         expect(pagina.slice(r!.start, r!.end)).toBe('µετακινέω');
+    });
+});
+
+/** TP #8 (8b, D6): una frase partida entre dos hojas se resalta en las dos. */
+describe('findQuotePartAtPageEdge', () => {
+    const cita = 'the active may include the force of the middle voice, as in 1 John 5:15 where both are combined';
+
+    it('el comienzo de la cita al final de la hoja', () => {
+        const hoja = `Lorem ipsum dolor sit amet. ${'x '.repeat(50)}Mayor observes that the active may include the force of the middle voice, as in`;
+        const m = findQuotePartAtPageEdge(cita, hoja);
+        expect(m?.part).toBe('start');
+        expect(hoja.slice(m!.start, m!.end)).toBe('the active may include the force of the middle voice, as in');
+    });
+
+    it('el final de la cita al comienzo de la hoja siguiente', () => {
+        const hoja = `IV 3] NOTES\nthe middle voice, in 1 John 5:15 where both are combined. ${'y '.repeat(80)}`;
+        const m = findQuotePartAtPageEdge('the active may include the force of the middle voice, in 1 John 5:15 where both are combined', hoja);
+        expect(m?.part).toBe('end');
+    });
+
+    it('un tramo corto o lejos del borde no es la cita', () => {
+        expect(findQuotePartAtPageEdge(cita, 'the active may include')).toBeNull();
+        const lejos = `the active may include the force of the middle voice, as in ${'z '.repeat(400)}`;
+        expect(findQuotePartAtPageEdge(cita, lejos)).toBeNull();
+        // El final de la cita en medio de la hoja, lejos del comienzo, tampoco.
+        const finalLejos = `${'w '.repeat(400)}the middle voice, as in 1 John 5:15 where both are combined. ${'w '.repeat(50)}`;
+        expect(findQuotePartAtPageEdge(cita, finalLejos)).toBeNull();
     });
 });
