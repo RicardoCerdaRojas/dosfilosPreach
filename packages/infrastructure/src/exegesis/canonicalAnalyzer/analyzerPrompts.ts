@@ -50,6 +50,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const baseTextBlock = formatOriginalLanguageText(input.originalLanguageText, lang);
     const pericopeBlock = formatPericopeBlock(input.pericopeContext, lang);
     const planNoteBlock = formatPlanNote(input.planNote, lang);
+    const questionsBlock = formatSectionQuestions(input.sectionQuestions, lang);
     // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
     // es parte de lo que el analizador lee, no de lo que tiene que producir.
     // Cuál de los dos bloques lo decide la FORMA del dato, no el libro: el
@@ -71,6 +72,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             morphologyBlock,
             pericopeBlock,
             briefBlock,
+            questionsBlock,
             planNoteBlock,
             ``,
             `## Methodological foundation`,
@@ -122,6 +124,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         morphologyBlock,
         pericopeBlock,
         briefBlock,
+        questionsBlock,
         planNoteBlock,
         ``,
         `## Fundamento metodológico`,
@@ -286,6 +289,42 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
 }
 
 // ── Formatters ──────────────────────────────────────────────────────────
+
+/**
+ * Las preguntas de este versículo como TAREA, cada una con la regla de su
+ * tipo (TP #8, fase 8b, C1). Antes el analizador sólo veía el encuadre entero
+ * y no tenía dónde poner la respuesta; ahora la pone en `questionAnswers`.
+ */
+export function formatSectionQuestions(
+    questions: AnalyzeVerseInput['sectionQuestions'],
+    lang: 'es' | 'en',
+): string {
+    if (!questions || questions.length === 0) return '';
+    const es = lang !== 'en';
+    const regla: Record<string, string> = es ? {
+        identify: 'Pregunta de IDENTIFICAR: abre con el estado de la cuestión. Cataloga en "options" TODAS las propuestas que trae el corpus, con quién defiende cada una; si nadie la resuelve, dilo así («desconocido», como lo dice la fuente).',
+        lexical: 'Pregunta LÉXICA: la entrada del léxico (la glosa con su página) y el sentido en ESTE versículo, sin confundir la glosa con la categoría.',
+        syntax: 'Pregunta de SINTAXIS: la clasificación de la gramática del corpus para la construcción, con su página, y la relación con lo que la rodea.',
+        textual: 'Pregunta de CRÍTICA TEXTUAL: las lecturas del aparato, su testimonio y lo que dice el comentario textual.',
+    } : {
+        identify: 'IDENTIFY question: open with the state of the question. List in "options" EVERY proposal the corpus carries, with who defends each; if none settles it, say so ("unknown", as the source says).',
+        lexical: 'LEXICAL question: the lexicon entry (the gloss with its page) and the sense in THIS verse, without confusing the gloss with the category.',
+        syntax: "SYNTAX question: the corpus grammar's classification of the construction, with its page, and its relation to its surroundings.",
+        textual: 'TEXT-CRITICAL question: the apparatus readings, their witnesses and what the textual commentary says.',
+    };
+    const lineas = questions.flatMap(q => [
+        `${q.number}. ${q.text.trim()}`,
+        ...q.kinds.map(k => `   - ${regla[k]}`),
+    ]);
+    return [
+        ``,
+        es ? `## Lo que este versículo tiene que responder` : `## What this verse must answer`,
+        es
+            ? 'Estas preguntas del encuadre son la TAREA del análisis. Responde cada una en "questionAnswers": la respuesta en una oración, las lecturas posibles con su defensor, el criterio que las distingue y la decisión. El resto del análisis sirve a estas respuestas.'
+            : 'These brief questions are the analysis TASK. Answer each in "questionAnswers": the answer in one sentence, the possible readings with their defender, the criterion that distinguishes them and the decision. The rest of the analysis serves these answers.',
+        ...lineas,
+    ].join('\n');
+}
 
 function formatAssignmentBrief(brief: string | null, lang: 'es' | 'en'): string {
     if (!brief || !brief.trim()) return '';

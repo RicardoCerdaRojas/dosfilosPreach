@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSyntaxQuestion, parseBriefQuestions, questionsForVerse, unansweredQuestions } from '../briefQuestions';
+import { isSyntaxQuestion, parseBriefQuestions, questionKinds, questionsForVerse, unansweredQuestions } from '../briefQuestions';
 
 /**
  * El encuadre real del trabajo de Santiago 2:1–13.
@@ -139,4 +139,24 @@ describe('isSyntaxQuestion — las cuatro del TP #7 y las que no', () => {
         '¿Qué variantes textuales hay en 3:15?',
         '¿Qué significa σοφία en Santiago?',
     ])('no de sintaxis: %s', q => expect(isSyntaxQuestion(q)).toBe(false));
+});
+
+/** TP #8 (Santiago 4:1-10, fase 8b, C1): el tipo de respuesta que pide cada pregunta. */
+describe('questionKinds', () => {
+    it('las cuatro preguntas del TP #8', () => {
+        expect(questionKinds('¿Qué significa el sustantivo μέλεσιν (Stg. 4:1)?')).toEqual(['lexical']);
+        expect(questionKinds('¿Qué denota φονεύετε (Stg. 4:2)?')).toEqual(['lexical']);
+        expect(questionKinds('¿Qué significa αἰτεῖτε καὶ οὐ λαμβάνετε (Stg. 4:3)? ¿Qué relación (sintáctica) tiene con el versículo anterior?'))
+            .toEqual(['lexical', 'syntax']);
+        expect(questionKinds('¿Qué pasaje está citando Jacobo (Stg. 4:5)?')).toEqual(['identify']);
+    });
+
+    it('crítica textual y puntuación', () => {
+        expect(questionKinds('En 3:6, ¿cómo se puntúa la frase?')).toEqual(['textual']);
+        expect(questionKinds('¿Qué variante es preferible en 4:2?')).toEqual(['textual']);
+    });
+
+    it('una pregunta sin tipo reconocible no inventa uno', () => {
+        expect(questionKinds('Comenta el versículo.')).toEqual([]);
+    });
 });

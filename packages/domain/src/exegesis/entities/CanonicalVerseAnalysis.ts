@@ -245,6 +245,17 @@ export interface CanonicalVerseAnalysis {
     footnoteExtensions: ReadonlyArray<FootnoteExtension>;
 
     /**
+     * La respuesta a cada pregunta del encuadre que toca este versículo (TP #8,
+     * fase 8b, C1). Antes el análisis no tenía dónde poner la respuesta ni el
+     * criterio que decide entre lecturas: el criterio quedaba disperso en
+     * `commentatorEngagement` y la prosa lo perdía o lo cambiaba (en 4:3 volvió
+     * a decidir por κακῶς, que vale para las dos lecturas).
+     *
+     * Ausente en los análisis anteriores y vacío en un versículo sin preguntas.
+     */
+    questionAnswers?: ReadonlyArray<QuestionAnswer>;
+
+    /**
      * When this analysis was first generated. Set by
      * `GenerateStepUseCase`.
      */
@@ -706,6 +717,49 @@ export interface SourceCitation {
     locator?: string;
 }
 
+/**
+ * La respuesta a una pregunta del encuadre (C1).
+ *
+ * El orden es el que pide el profesor: la respuesta en una oración, las
+ * lecturas posibles con quién defiende cada una, el criterio que las
+ * distingue y la decisión. Una pregunta de tipo `identify` exige el catálogo
+ * de opciones aunque ninguna fuente decida («totally unknown», Adamson 170).
+ */
+export interface QuestionAnswer {
+    /** El número de la pregunta en el encuadre. */
+    questionNumber: number;
+    /** La respuesta en una oración. */
+    directAnswer: string;
+    options: ReadonlyArray<AnswerOption>;
+    decisiveCriterion: DecisiveCriterion;
+    /** La decisión, con la razón propia. Sin citas: es del análisis. */
+    decision: string;
+}
+
+/** Una lectura posible y quién la defiende. */
+export interface AnswerOption {
+    /** La lectura, en una frase. */
+    reading: string;
+    /** El argumento más fuerte a su favor, como lo da su defensor. */
+    argument: string;
+    /** Quién la defiende, con página. Vacío si nadie del corpus la defiende. */
+    defenders: ReadonlyArray<SourceCitation>;
+}
+
+/**
+ * Lo que decide entre las lecturas. No basta con que favorezca a una: tiene
+ * que DISCRIMINAR (patrón del profesor: «un criterio que vale para las dos
+ * lecturas no decide nada»).
+ */
+export interface DecisiveCriterion {
+    /** El criterio: de preferencia estructural o de la misma carta. */
+    text: string;
+    /** Por qué favorece una lectura y no la otra. */
+    whyThisOverThat: string;
+    /** Quién da el criterio, si lo da una fuente. Vacío si es del análisis. */
+    sources: ReadonlyArray<SourceCitation>;
+}
+
 // ── Empty-state factory ─────────────────────────────────────────────────
 
 /**
@@ -743,6 +797,7 @@ export function buildEmptyCanonicalVerseAnalysis(reference: PassageReference): C
         theologicalHooks: [],
         confidenceFlags: [],
         footnoteExtensions: [],
+        questionAnswers: [],
         createdAt: now,
         updatedAt: now,
     };

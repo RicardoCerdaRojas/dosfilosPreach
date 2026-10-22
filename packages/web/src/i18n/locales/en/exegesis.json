@@ -1816,6 +1816,12 @@
       "study": "Study view"
     },
     "study": {
+      "answersTitle": "Answers to the questions",
+      "answersHint": "What the brief asks in this verse: the answer, the readings with who defends them, the deciding criterion and the decision.",
+      "answerQuestion": "Question {{number}}",
+      "answerNoDefender": "No source in the corpus defends it.",
+      "answerCriterion": "Decisive criterion",
+      "answerDecision": "Decision:",
       "headerLabel": "Text and translation",
       "initialTranslation": "Initial translation",
       "finalTranslation": "Final translation",
@@ -2006,7 +2012,9 @@
         "lexical-loading": "sense in this verse",
         "footnote": "note",
         "ot-link": "OT link",
-        "historical": "historical context"
+        "historical": "historical context",
+        "answer-option": "reading for a question",
+        "answer-criterion": "decisive criterion"
       }
     },
     "review": {

@@ -1816,6 +1816,12 @@
       "study": "Vista de estudio"
     },
     "study": {
+      "answersTitle": "Respuestas a las preguntas",
+      "answersHint": "Lo que el encuadre pregunta en este versículo: la respuesta, las lecturas con quién las defiende, el criterio que decide y la decisión.",
+      "answerQuestion": "Pregunta {{number}}",
+      "answerNoDefender": "Ninguna fuente del corpus la defiende.",
+      "answerCriterion": "Criterio decisivo",
+      "answerDecision": "Decisión:",
       "headerLabel": "Texto y traducción",
       "initialTranslation": "Traducción inicial",
       "finalTranslation": "Traducción final",
@@ -2006,7 +2012,9 @@
         "lexical-loading": "sentido en el versículo",
         "footnote": "nota",
         "ot-link": "vínculo con el AT",
-        "historical": "contexto histórico"
+        "historical": "contexto histórico",
+        "answer-option": "lectura de una pregunta",
+        "answer-criterion": "criterio decisivo"
       }
     },
     "review": {

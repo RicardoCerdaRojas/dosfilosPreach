@@ -8,6 +8,7 @@ import {
     Highlighter,
     Library,
     ListTree,
+    MessageCircleQuestion,
     NotebookText,
     Quote,
     ScrollText,
@@ -184,6 +185,47 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                     />
                 </div>
             </header>
+
+            {/* Respuestas a las preguntas del encuadre (TP #8, 8b, C1): lo que
+                el trabajo tiene que entregar, primero. */}
+            {(analysis.questionAnswers?.length ?? 0) > 0 && (
+                <Section
+                    icon={<MessageCircleQuestion className="h-4 w-4" aria-hidden />}
+                    title={t('canonical.study.answersTitle')}
+                    hint={t('canonical.study.answersHint')}
+                    count={analysis.questionAnswers!.length}
+                >
+                    <ul className="space-y-3">
+                        {analysis.questionAnswers!.map((q, i) => (
+                            <li key={i} className="text-xs space-y-1.5" data-testid="respuesta-a-pregunta">
+                                <p className="font-semibold text-foreground">
+                                    {t('canonical.study.answerQuestion', { number: q.questionNumber })}
+                                </p>
+                                <p className="text-foreground">{q.directAnswer}</p>
+                                {q.options.length > 0 && (
+                                    <ul className="space-y-1 pl-3 border-l border-border">
+                                        {q.options.map((o, j) => (
+                                            <li key={j} className="space-y-0.5">
+                                                <p className="text-foreground/90"><span className="font-medium">{o.reading}</span> — {o.argument}</p>
+                                                {o.defenders.length > 0
+                                                    ? <SourceList onOpenCitation={onOpenCitation} citations={o.defenders} marks={marks} pathFor={k => `questionAnswers[${i}].options[${j}].defenders[${k}]`} />
+                                                    : <p className="text-[11px] text-muted-foreground italic">{t('canonical.study.answerNoDefender')}</p>}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                <div className="rounded-md bg-muted/40 px-2 py-1.5 space-y-0.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('canonical.study.answerCriterion')}</p>
+                                    <p className="text-foreground">{q.decisiveCriterion.text}</p>
+                                    <p className="text-foreground/85">{q.decisiveCriterion.whyThisOverThat}</p>
+                                    {q.decisiveCriterion.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={q.decisiveCriterion.sources} marks={marks} pathFor={k => `questionAnswers[${i}].decisiveCriterion.sources[${k}]`} />}
+                                </div>
+                                <p className="text-foreground"><span className="font-semibold">{t('canonical.study.answerDecision')}</span> {q.decision}</p>
+                            </li>
+                        ))}
+                    </ul>
+                </Section>
+            )}
 
             {/* Argumentative role */}
             <Section

@@ -27,6 +27,12 @@ const analisis = (): CanonicalVerseAnalysis => ({
     ] }],
     oldTestamentLinks: [{ reference: 'Ez 34', interpretiveBearing: 'pastor', sources: [{ sourceKey: 'Ross', page: 564, pageKind: 'printed' }] }],
     historicalContext: [{ fact: 'pastoreo', relevance: 'contexto', sources: [{ sourceKey: 'Craigie', page: 208, pageKind: 'printed' }] }],
+    // TP #8 (8b, C1): la respuesta a una pregunta del encuadre.
+    questionAnswers: [{
+        questionNumber: 1, directAnswer: 'restaura la vida', decision: 'restaurar',
+        options: [{ reading: 'restaurar', argument: 'Polel', defenders: [{ sourceKey: 'Ross', page: 562, pageKind: 'printed' }] }],
+        decisiveCriterion: { text: 'el paralelo', whyThisOverThat: 'sólo vale para una', sources: [{ sourceKey: 'Craigie', page: 207, pageKind: 'printed' }] },
+    }],
 } as unknown as CanonicalVerseAnalysis);
 
 describe('parseCitationPath', () => {
@@ -34,6 +40,13 @@ describe('parseCitationPath', () => {
         for (const claim of collectAnalysisClaims(analisis())) {
             expect(parseCitationPath(claim.path), claim.path).not.toBeNull();
         }
+    });
+
+    it('corrige la página del defensor de una lectura y la del criterio decisivo (C1)', () => {
+        const a = editCitationAt(analisis(), 'questionAnswers[0].options[0].defenders[0]', { kind: 'page', page: 563, pageKind: 'printed' });
+        expect(a.questionAnswers![0]!.options[0]!.defenders[0]!.page).toBe(563);
+        const b = editCitationAt(analisis(), 'questionAnswers[0].decisiveCriterion.sources[0]', { kind: 'remove' });
+        expect(b.questionAnswers![0]!.decisiveCriterion.sources).toEqual([]);
     });
 
     it('rechaza rutas inventadas o hacia campos ajenos', () => {

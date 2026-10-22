@@ -240,6 +240,26 @@ export function serializeAnalysis(
         }
     }
 
+    // ── Answers to the brief questions (C1) ───────────────────────
+    // Primero lo que la prosa tiene que conservar: el criterio que decide y
+    // la decisión. En el TP #8 la prosa de 4:3 volvió a decidir por κακῶς,
+    // que vale para las dos lecturas, y perdió la concesión de Mayor 133.
+    const respuestas = analysis.questionAnswers ?? [];
+    if (respuestas.length > 0) {
+        lines.push('');
+        lines.push('Answers to the brief questions (KEEP the decisive criterion and the decision):');
+        for (const q of respuestas) {
+            lines.push(`- Question ${q.questionNumber}: ${prose(q.directAnswer)}`);
+            for (const o of q.options) {
+                const quien = o.defenders.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
+                lines.push(`  · reading: ${prose(o.reading)} — ${prose(o.argument)}${quien ? ` (defended by: ${quien})` : ' (no defender in the corpus)'}`);
+            }
+            const fuentes = q.decisiveCriterion.sources.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
+            lines.push(`  · decisive criterion: ${prose(q.decisiveCriterion.text)} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}${fuentes ? ` (sources: ${fuentes})` : ''}`);
+            lines.push(`  · decision: ${prose(q.decision)}`);
+        }
+    }
+
     // ── Verse thesis ───────────────────────────────────────────────
     lines.push('');
     lines.push(`Verse thesis: ${prose(analysis.verseThesis)}`);

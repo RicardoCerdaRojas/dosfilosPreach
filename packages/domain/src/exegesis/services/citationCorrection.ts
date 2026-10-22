@@ -51,6 +51,10 @@ const PATH_FIELDS = new Set([
     'footnoteExtensions',
     'oldTestamentLinks',
     'historicalContext',
+    'questionAnswers',
+    'options',
+    'defenders',
+    'decisiveCriterion',
 ]);
 
 interface PathStep {

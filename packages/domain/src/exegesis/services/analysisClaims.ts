@@ -14,7 +14,11 @@ export type AnalysisClaimSite =
     | 'lexical-loading'
     | 'footnote'
     | 'ot-link'
-    | 'historical';
+    | 'historical'
+    // La respuesta a una pregunta del encuadre (TP #8, 8b, C1): quién
+    // defiende cada lectura, y quién da el criterio que decide.
+    | 'answer-option'
+    | 'answer-criterion';
 
 /**
  * Una afirmación del análisis junto con la cita que la respalda.
@@ -90,6 +94,14 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
         o.sources.forEach((s, j) => push('ot-link', `oldTestamentLinks[${i}].sources[${j}]`, s, o.interpretiveBearing)));
     analysis.historicalContext.forEach((h, i) =>
         h.sources.forEach((s, j) => push('historical', `historicalContext[${i}].sources[${j}]`, s, h.relevance)));
+    (analysis.questionAnswers ?? []).forEach((q, i) => {
+        q.options.forEach((o, j) =>
+            o.defenders.forEach((s, k) =>
+                push('answer-option', `questionAnswers[${i}].options[${j}].defenders[${k}]`, s, `${o.reading}: ${o.argument}`)));
+        (q.decisiveCriterion?.sources ?? []).forEach((s, k) =>
+            push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.sources[${k}]`, s,
+                `${q.decisiveCriterion.text} ${q.decisiveCriterion.whyThisOverThat}`));
+    });
     return out;
 }
 
@@ -182,6 +194,7 @@ function nombra(texto: string, clave: string): boolean {
 
 const SITIOS: ReadonlyArray<AnalysisClaimSite> = [
     'commentator', 'crux', 'lexical-range', 'lexical-loading', 'footnote', 'ot-link', 'historical',
+    'answer-option', 'answer-criterion',
 ];
 const SUFIJO_DE_SITIO = new RegExp(`\\s·\\s(${SITIOS.join('|')})$`);
 

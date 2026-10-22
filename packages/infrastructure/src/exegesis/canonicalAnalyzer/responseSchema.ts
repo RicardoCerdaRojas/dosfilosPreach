@@ -39,7 +39,15 @@ import type { TestamentVoice } from '../testamentVoice';
  * esquema que contradice a su propio prompt es una regresión esperando el día
  * en que la balanza se incline para el otro lado.
  */
-export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
+export function canonicalVerseAnalysisSchema(
+    voice: TestamentVoice,
+    /**
+     * El versículo responde preguntas del encuadre: `questionAnswers` pasa a
+     * ser obligatorio (TP #8, fase 8b, C1). Sin preguntas el campo ni aparece:
+     * pedirlo vacío en cada versículo de un paper largo es ruido en el prompt.
+     */
+    options: { withQuestions?: boolean } = {},
+) {
     return {
     type: 'object',
     description:
@@ -508,6 +516,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                 required: ['anchorPhrase', 'text', 'sources'],
             },
         },
+        ...(options.withQuestions ? { questionAnswers: QUESTION_ANSWERS_SCHEMA() } : {}),
     },
     required: [
         'originalText',
@@ -525,7 +534,64 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
         'theologicalHooks',
         'confidenceFlags',
         'footnoteExtensions',
+        ...(options.withQuestions ? ['questionAnswers'] : []),
         ],
+    };
+}
+
+/**
+ * La respuesta a cada pregunta del encuadre (C1). El orden de los campos es
+ * el del profesor: respuesta, lecturas con su defensor, criterio que las
+ * distingue, decisión.
+ */
+function QUESTION_ANSWERS_SCHEMA() {
+    return {
+        type: 'array',
+        description:
+            'Una entrada por cada pregunta del encuadre que este versículo responde (ver «Lo que este versículo tiene que responder»). ' +
+            'Es la respuesta del trabajo: la prosa la redacta desde aquí.',
+        items: {
+            type: 'object',
+            properties: {
+                questionNumber: { type: 'integer', description: 'El número de la pregunta en el encuadre.' },
+                directAnswer: { type: 'string', description: 'La respuesta en UNA oración. En una pregunta de identificar, el estado de la cuestión en una oración.' },
+                options: {
+                    type: 'array',
+                    description:
+                        'Las lecturas posibles, cada una con su argumento más fuerte y quién la defiende. Al menos dos cuando la cuestión está disputada. ' +
+                        'En una pregunta de identificar, el catálogo completo de propuestas que trae el corpus, aunque ninguna convenza.',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            reading: { type: 'string', description: 'La lectura, en una frase.' },
+                            argument: { type: 'string', description: 'El argumento más fuerte a su favor, como lo da su defensor.' },
+                            defenders: {
+                                type: 'array',
+                                description: 'Quién la defiende, con la página donde lo dice. Vacío si nadie del corpus la defiende: NUNCA inventes un defensor.',
+                                items: SOURCE_CITATION_SCHEMA(),
+                            },
+                        },
+                        required: ['reading', 'argument', 'defenders'],
+                    },
+                },
+                decisiveCriterion: {
+                    type: 'object',
+                    description: 'El criterio que DISTINGUE entre las lecturas. Un criterio que vale para las dos no decide nada.',
+                    properties: {
+                        text: { type: 'string', description: 'El criterio, de preferencia estructural o de la misma carta.' },
+                        whyThisOverThat: { type: 'string', description: 'Por qué favorece una lectura y NO la otra.' },
+                        sources: {
+                            type: 'array',
+                            description: 'Quién da el criterio, con su página. Vacío si el criterio es del análisis.',
+                            items: SOURCE_CITATION_SCHEMA(),
+                        },
+                    },
+                    required: ['text', 'whyThisOverThat', 'sources'],
+                },
+                decision: { type: 'string', description: 'La decisión, con la razón propia. Sin citas.' },
+            },
+            required: ['questionNumber', 'directAnswer', 'options', 'decisiveCriterion', 'decision'],
+        },
     } as const;
 }
 

@@ -107,3 +107,31 @@ describe('analysisClaimsToCitations', () => {
         expect(cites.map(c => c.offset)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
     });
 });
+
+/** TP #8 (8b, C1): quién defiende cada lectura y quién da el criterio se verifican. */
+describe('collectAnalysisClaims — respuestas a las preguntas', () => {
+    it('cada defensor y cada fuente del criterio son una afirmación verificable', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            questionAnswers: [{
+                questionNumber: 3, directAnswer: 'x', decision: 'y',
+                options: [
+                    { reading: 'media = para sí', argument: 'la voz', defenders: [{ sourceKey: 'Mayor', page: 133, pageKind: 'printed' as const }] },
+                    { reading: 'sin diferencia', argument: '1 Jn 5:15', defenders: [] },
+                ],
+                decisiveCriterion: { text: 'la concesión', whyThisOverThat: 'sólo una la explica', sources: [{ sourceKey: 'Mayor', page: 133, pageKind: 'printed' as const }] },
+            }],
+        };
+        const claims = collectAnalysisClaims(a).map(c => [c.site, c.path, c.claim]);
+        expect(claims).toEqual([
+            ['answer-option', 'questionAnswers[0].options[0].defenders[0]', 'media = para sí: la voz'],
+            ['answer-criterion', 'questionAnswers[0].decisiveCriterion.sources[0]', 'la concesión sólo una la explica'],
+        ]);
+    });
+
+    it('un análisis anterior sin respuestas no rompe nada', () => {
+        const a = buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 });
+        delete (a as { questionAnswers?: unknown }).questionAnswers;
+        expect(collectAnalysisClaims(a)).toEqual([]);
+    });
+});

@@ -3,6 +3,7 @@ import type { GreekVerseTokens } from '../../greek-analyzer/morphGntToken';
 import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
 import type { StepEmphasis } from '../entities/StepSourcePlan';
+import type { BriefQuestionKind } from '../services/briefQuestions';
 import type {
     ExegesisPriorStep,
     ExegesisSourceContext,
@@ -101,6 +102,14 @@ export interface AnalyzeVerseInput {
      * one.
      */
     assignmentBrief: string | null;
+
+    /**
+     * Las preguntas del encuadre que este versículo responde, con el tipo de
+     * respuesta que pide cada una (TP #8, fase 8b, C1). Antes el analizador
+     * sólo veía el encuadre entero y no tenía dónde poner la respuesta.
+     * Vacío o ausente en un versículo sin preguntas.
+     */
+    sectionQuestions?: ReadonlyArray<{ number: number; text: string; kinds: ReadonlyArray<BriefQuestionKind> }>;
 
     /**
      * Per-step emphasis the student saved (or accepted from the

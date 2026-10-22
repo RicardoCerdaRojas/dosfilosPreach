@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, stepVerseKeys } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -176,6 +176,9 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // mentioned in the prompt», y ningún prompt la leía.
                 planNote: planNoteForPrompt(paper.stepPlan.perStep[step.id], paper.displayLanguage),
                 verseMorphology,
+                // Las preguntas de este versículo como TAREA, con su tipo (C1).
+                sectionQuestions: questionsOfStep(step, parseBriefQuestions(paper.assignmentBrief, paper.passage))
+                    .map(q => ({ number: q.number, text: q.text, kinds: questionKinds(q.text) })),
             };
 
             reservation.markLlmContacted();
@@ -694,6 +697,15 @@ function sanitizeSourceReferences(
             ...fe,
             sources: cleanCitations(fe.sources),
         })),
+        // La respuesta queda aunque un defensor no sea del corpus: la lectura
+        // sigue siendo una opción, sólo sin ese defensor (C1).
+        ...(analysis.questionAnswers ? {
+            questionAnswers: analysis.questionAnswers.map(q => ({
+                ...q,
+                options: q.options.map(o => ({ ...o, defenders: cleanCitations(o.defenders) })),
+                decisiveCriterion: { ...q.decisiveCriterion, sources: cleanCitations(q.decisiveCriterion.sources) },
+            })),
+        } : {}),
     };
 }
 
