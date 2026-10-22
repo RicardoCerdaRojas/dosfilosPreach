@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronRight } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import type { RoadmapCtaKind } from '@/pages/projects/projectRoadmaps';
 import { cn } from '@/lib/utils';
 
 /** Shape exposed by `computeRoadmapState` — one phase entry. */
@@ -14,7 +15,7 @@ export interface RoadmapPhaseEntry {
         icon: React.ComponentType<{ className?: string }>;
         cta: {
             label: string;
-            kind: 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources';
+            kind: RoadmapCtaKind;
         };
     };
 }

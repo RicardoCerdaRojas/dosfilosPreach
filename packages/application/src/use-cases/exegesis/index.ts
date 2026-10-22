@@ -123,6 +123,11 @@ export {
     type PlaceIdeaInSectionOutput,
 } from './PlaceIdeaInSectionUseCase';
 export {
+    SetPaperProjectUseCase,
+    type SetPaperProjectInput,
+    type PaperProjectChange,
+} from './SetPaperProjectUseCase';
+export {
     ReviewVerseProseUseCase,
     type ReviewVerseProseInput,
     type ReviewVerseProseOutput,

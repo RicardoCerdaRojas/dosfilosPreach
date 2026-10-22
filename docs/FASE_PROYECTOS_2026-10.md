@@ -69,6 +69,33 @@ Lo motivó una tarea que en los TP de Santiago se hizo fuera del sistema: invest
 - **El encargo del curso vive en el proyecto:** sílabo, rúbrica, guía de estilo, criterios del profesor y portada. Es lo que hoy guarda el perfil de trabajo, que queda como plantilla para crear proyectos (ver decisiones abiertas).
 - **Medida:** pasar «Teología II – Cristología» a Curso y crear desde él un estudio que herede la guía y la rúbrica.
 
+**Revisión adversarial de la etapa 1 (2026-10-22, dos revisores, 19 hallazgos):**
+- **Corregidos los graves:**
+  - Crear un estudio fallaba con una portada heredada sin fecha. La portada pasó a la creación sin la limpieza de `normalizeCover`.
+  - La conversación de un estudio con proyecto buscaba solo en las fuentes del proyecto y no en las del estudio. Ahora usa la unión de las dos (`conversationSourceScope`).
+- **Corregidos los medios y bajos:**
+  - En la creación del estudio:
+    - el perfil elegido a mano reemplaza también la guía del proyecto;
+    - dejar el proyecto deshace su encargo;
+    - «La rúbrica del sistema» del encargo se respeta;
+    - la estrategia admite «Sin preferencia»;
+    - un proyecto archivado o ajeno de la URL no se usa como origen.
+  - En «Agregar a un proyecto»:
+    - un origen archivado se ve como origen;
+    - no se ofrecen libros borrados de la biblioteca;
+    - el aviso dice cuántas fuentes se agregaron si fallan algunas;
+    - un proyecto con el que colabora puede pasar a ser el origen.
+  - Asociar un estudio no cambia su fecha de edición, y quitar un vínculo es una sola escritura.
+  - El primer paso de los recorridos se completa también con la nota que escribe su botón.
+  - La vista de lista muestra el proyecto y el filtro tiene su propio nombre.
+  - Las tarjetas del estado vacío salen de `PROJECT_TYPES`.
+  - Una clave del prototipo no pasa por un tipo de proyecto.
+- **Queda para después, a propósito:**
+  - «Agregar a un proyecto» desde la tarjeta de la lista: la tarjeta entera es un botón y hay que reestructurarla.
+  - Agrupar la lista por proyecto.
+  - Pasar a i18n los textos de los recorridos de proyecto, que ya estaban fijos en español antes de esta etapa.
+  - Que asociar un origen a un estudio ya creado aplique el encargo del proyecto; hoy solo lo hereda quien nace desde el proyecto.
+
 ### Etapa 2 · El estado del arte
 - **Bibliografía del proyecto.** Cada fuente tiene:
   - si es obligatoria, recomendada o candidata;

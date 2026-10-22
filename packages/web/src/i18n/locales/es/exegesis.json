@@ -1,4 +1,35 @@
 {
+  "paperProjects": {
+    "menuItem": "Agregar a un proyecto",
+    "title": "Proyectos de este estudio",
+    "subtitle": "El proyecto de origen es el curso, la investigación o el estudio exegético al que pertenece el estudio; los estudios que se crean desde él nacen con su encargo. Con los demás colabora: lo muestran y lo usan, sin cambiarle las reglas.",
+    "filterLabel": "Filtrar por proyecto",
+    "archived": "archivado",
+    "makeOrigin": "Hacer origen",
+    "origin": "Proyecto de origen",
+    "noOrigin": "Ninguno: es un estudio suelto.",
+    "removeOrigin": "Quitar el proyecto de origen",
+    "missingSources_one": "El proyecto tiene 1 fuente que este estudio no tiene.",
+    "missingSources_other": "El proyecto tiene {{count}} fuentes que este estudio no tiene.",
+    "addSources": "Agregarlas al corpus",
+    "linked": "Colabora con",
+    "noLinked": "Ningún otro proyecto.",
+    "unlink": "Dejar de colaborar con {{title}}",
+    "add": "Agregar a otro proyecto",
+    "pick": "Elegir proyecto…",
+    "asOrigin": "Como proyecto de origen",
+    "asLinked": "Colabora con este proyecto",
+    "hint": "Las fuentes que el estudio ya tiene no se tocan.",
+    "chipLinked": "colabora",
+    "filterAll": "Todos los proyectos",
+    "filterNone": "Sin proyecto",
+    "toast": {
+      "failed": "No se pudo cambiar el proyecto del estudio.",
+      "sourcesPartial": "Se agregaron {{added}} de {{total}} fuentes. Revisa las demás en el corpus.",
+      "sourcesAdded_one": "Se agregó 1 fuente.",
+      "sourcesAdded_other": "Se agregaron {{count}} fuentes."
+    }
+  },
   "directory": {
     "badge": "Trabajo de investigación exegética asistida",
     "heroTitle": "Investigación exegética",
@@ -338,6 +369,12 @@
     }
   },
   "create": {
+    "project": {
+      "label": "Proyecto",
+      "none": "Ninguno: estudio suelto",
+      "hint": "El estudio nace dentro del proyecto. Puedes asociarlo después.",
+      "chargeApplied": "Se aplicó el encargo del proyecto: rúbrica, encuadre, guía y portada. Revísalos antes de crear."
+    },
     "title": "Nuevo trabajo exegético",
     "subtitle": "Configura el pasaje y dale contexto al agente. Después definimos rúbrica, fuentes y plan estructural.",
     "backToList": "Volver al listado",

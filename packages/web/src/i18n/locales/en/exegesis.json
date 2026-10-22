@@ -1,4 +1,35 @@
 {
+  "paperProjects": {
+    "menuItem": "Add to a project",
+    "title": "Projects of this study",
+    "subtitle": "The origin project is the course, research or exegetical study the study belongs to; studies created from it start with its brief. With the others it collaborates: they show it and use it, without changing its rules.",
+    "filterLabel": "Filter by project",
+    "archived": "archived",
+    "makeOrigin": "Make origin",
+    "origin": "Origin project",
+    "noOrigin": "None: it is a standalone study.",
+    "removeOrigin": "Remove the origin project",
+    "missingSources_one": "The project has 1 source this study does not have.",
+    "missingSources_other": "The project has {{count}} sources this study does not have.",
+    "addSources": "Add them to the corpus",
+    "linked": "Collaborates with",
+    "noLinked": "No other project.",
+    "unlink": "Stop collaborating with {{title}}",
+    "add": "Add to another project",
+    "pick": "Pick a project…",
+    "asOrigin": "As origin project",
+    "asLinked": "Collaborates with this project",
+    "hint": "Sources the study already has are left untouched.",
+    "chipLinked": "linked",
+    "filterAll": "All projects",
+    "filterNone": "No project",
+    "toast": {
+      "failed": "The study's project could not be changed.",
+      "sourcesPartial": "{{added}} of {{total}} sources were added. Check the rest in the corpus.",
+      "sourcesAdded_one": "1 source was added.",
+      "sourcesAdded_other": "{{count}} sources were added."
+    }
+  },
   "directory": {
     "badge": "Assisted exegetical research papers",
     "heroTitle": "Exegetical Research",
@@ -338,6 +369,12 @@
     }
   },
   "create": {
+    "project": {
+      "label": "Project",
+      "none": "None: standalone study",
+      "hint": "The study is created inside the project. You can link it later.",
+      "chargeApplied": "The project's brief was applied: rubric, framing, style guide and cover. Review them before creating."
+    },
     "title": "New exegetical paper",
     "subtitle": "Set the passage and frame the work for the agent. We'll define rubric, sources, and structural plan next.",
     "backToList": "Back to list",

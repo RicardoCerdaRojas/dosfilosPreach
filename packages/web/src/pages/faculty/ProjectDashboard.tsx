@@ -13,10 +13,13 @@ import { useProjectWorkspace } from '@/hooks/faculty/useProjectWorkspace';
 import { useSermons } from '@/hooks/use-sermons';
 import { useGreekSessions } from '@/hooks/useGreekSessions';
 import { useHebrewSessions } from '@/hooks/useHebrewSessions';
-import { computeRoadmapState, getProjectTypeMeta } from '@/pages/projects/projectRoadmaps';
+import { computeRoadmapState, getProjectTypeMeta, type RoadmapCtaKind } from '@/pages/projects/projectRoadmaps';
+import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
 import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
+import { ProjectChargeCard } from './components/project/ProjectChargeCard';
+import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
 import { ProjectSourcePickerModal } from './components/project/ProjectSourcePickerModal';
@@ -24,6 +27,7 @@ import { ProjectOutputEditorDialog } from './components/project/ProjectOutputEdi
 import { ProjectLinkSessionDialog } from './components/project/ProjectLinkSessionDialog';
 import { useProjectAttachedSources } from './hooks/useProjectAttachedSources';
 import { useLinkProjectSession } from './hooks/useLinkProjectSession';
+import { useProjectSlices } from './hooks/useProjectSlices';
 
 /**
  * Project workspace page. Pure composer — orchestrates the project header,
@@ -42,11 +46,12 @@ export function ProjectDashboard() {
     const { isAdmin } = useAuthorization();
 
     // ── Data sources ────────────────────────────────────────────────────────
-    const { projects } = useFacultyProjects();
+    const { projects, updateProject } = useFacultyProjects();
     const { sessions } = useFacultySessions();
     const { sermons } = useSermons();
     const { sessions: greekSessions } = useGreekSessions();
     const { sessions: hebrewSessions } = useHebrewSessions();
+    const { papers } = useExegesisPapers();
     const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput, updateSources } =
         useProjectWorkspace(projectId);
 
@@ -55,41 +60,11 @@ export function ProjectDashboard() {
         [projects, projectId]
     );
 
-    // ── Filtered + sorted slices for this project ──────────────────────────
-    const projectSessions = useMemo(
-        () => (sessions ?? []).filter(s => s.projectId === projectId),
-        [sessions, projectId]
-    );
-    const projectSermons = useMemo(
-        () => (sermons ?? [])
-            .filter(s => s.projectId === projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [sermons, projectId]
-    );
-    const projectGreekSessions = useMemo(
-        () => (greekSessions ?? [])
-            .filter(s => s.projectId === projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [greekSessions, projectId]
-    );
-    const linkableGreekSessions = useMemo(
-        () => (greekSessions ?? [])
-            .filter(s => s.projectId !== projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [greekSessions, projectId]
-    );
-    const projectHebrewSessions = useMemo(
-        () => (hebrewSessions ?? [])
-            .filter(s => s.projectId === projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [hebrewSessions, projectId]
-    );
-    const linkableHebrewSessions = useMemo(
-        () => (hebrewSessions ?? [])
-            .filter(s => s.projectId !== projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [hebrewSessions, projectId]
-    );
+    // ── Lo que pertenece a este proyecto ───────────────────────────────────
+    const {
+        projectSessions, projectSermons, projectGreekSessions, linkableGreekSessions,
+        projectHebrewSessions, linkableHebrewSessions, projectStudies,
+    } = useProjectSlices(projectId, { sessions, sermons, greekSessions, hebrewSessions, papers });
 
     // ── Hooks: attached sources + link sessions ────────────────────────────
     const { sources: attachedSources, reprocessing, reprocessSource } = useProjectAttachedSources({
@@ -108,45 +83,6 @@ export function ProjectDashboard() {
     >(null);
     const [outputToDelete, setOutputToDelete] = useState<ProjectOutput | null>(null);
 
-    // ── Project not found ─────────────────────────────────────────────────
-    if (!project) {
-        return (
-            <div className="flex-1 flex items-center justify-center p-8">
-                <div className="text-center">
-                    <div className="text-muted-foreground mb-4">{t('notFound.title')}</div>
-                    <Button variant="outline" onClick={() => navigate('/dashboard/projects')}>
-                        {t('notFound.back')}
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-
-    // ── Roadmap computation ────────────────────────────────────────────────
-    const typeMeta = getProjectTypeMeta(project.type);
-    const roadmap = computeRoadmapState(typeMeta, {
-        project,
-        sourceCount: attachedSources.length,
-        greekCount: projectGreekSessions.length,
-        hebrewCount: projectHebrewSessions.length,
-        sessionCount: projectSessions.length,
-        outputs: outputs ?? [],
-        sermons: projectSermons,
-        sessions: projectSessions,
-    }) as unknown as RoadmapState;
-
-    const handleRoadmapCta = (kind: 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources') => {
-        switch (kind) {
-            case 'newSession': return navigate(`/dashboard/faculty?projectId=${projectId}`);
-            case 'greek': return navigate(`/dashboard/greek-tutor?projectId=${projectId}`);
-            case 'hebrew': return navigate(`/dashboard/hebrew-tutor?projectId=${projectId}`);
-            case 'sermon': return navigate(`/dashboard/faculty?projectId=${projectId}`);
-            case 'output': return setOutputEditor({ mode: 'create' });
-            case 'sources': return setSourcePickerOpen(true);
-        }
-    };
-
-    // ── Material list (unified outputs + project sermons) ──────────────────
     const materialItems = useMemo<MaterialItem[]>(() => {
         const fromOutputs: MaterialItem[] = (outputs ?? []).map(o => ({
             source: 'output',
@@ -167,6 +103,49 @@ export function ProjectDashboard() {
             (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
         );
     }, [outputs, projectSermons]);
+
+    // ── Project not found ─────────────────────────────────────────────────
+    if (!project) {
+        return (
+            <div className="flex-1 flex items-center justify-center p-8">
+                <div className="text-center">
+                    <div className="text-muted-foreground mb-4">{t('notFound.title')}</div>
+                    <Button variant="outline" onClick={() => navigate('/dashboard/projects')}>
+                        {t('notFound.back')}
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Roadmap computation ────────────────────────────────────────────────
+    const typeMeta = getProjectTypeMeta(project.type);
+    const roadmap = computeRoadmapState(typeMeta, {
+        project,
+        studyCount: projectStudies.length,
+        deliveredCount: projectStudies.filter(p => p.phase === 'assembled').length,
+        sourceCount: attachedSources.length,
+        greekCount: projectGreekSessions.length,
+        hebrewCount: projectHebrewSessions.length,
+        sessionCount: projectSessions.length,
+        outputs: outputs ?? [],
+        sermons: projectSermons,
+        sessions: projectSessions,
+    }) as unknown as RoadmapState;
+
+    const handleRoadmapCta = (kind: RoadmapCtaKind) => {
+        switch (kind) {
+            case 'study': return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
+            case 'charge': return document.getElementById('project-charge-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            case 'newSession': return navigate(`/dashboard/faculty?projectId=${projectId}`);
+            case 'greek': return navigate(`/dashboard/greek-tutor?projectId=${projectId}`);
+            case 'hebrew': return navigate(`/dashboard/hebrew-tutor?projectId=${projectId}`);
+            case 'sermon': return navigate(`/dashboard/faculty?projectId=${projectId}`);
+            case 'output': return setOutputEditor({ mode: 'create' });
+            case 'sources': return setSourcePickerOpen(true);
+        }
+    };
+
 
     // ── Output mutation handlers ───────────────────────────────────────────
     const handleCreateOutput = async (input: { kind: ProjectOutputKind; title: string; content: string }) => {
@@ -226,6 +205,30 @@ export function ProjectDashboard() {
                     roadmap={roadmap}
                     typeLabel={typeMeta.label}
                     onPhaseCta={handleRoadmapCta}
+                />
+
+                {/* El encargo (ADR-046): no aplica a los proyectos de
+                    predicación ni de consejería. */}
+                {!['sermon', 'series', 'counseling'].includes(project.type ?? 'general') && (
+                    <ProjectChargeCard
+                        project={project}
+                        saving={updateProject.isPending}
+                        onSave={async (charge) => {
+                            try {
+                                await updateProject.mutateAsync({ projectId: project.id, charge });
+                                toast.success(t('charge.saved'));
+                            } catch (err) {
+                                console.error('[projects] save charge failed:', err);
+                                toast.error(t('charge.saveFailed'));
+                            }
+                        }}
+                    />
+                )}
+
+                <ProjectStudiesSection
+                    projectId={project.id}
+                    studies={projectStudies}
+                    onNewStudy={() => navigate(`/dashboard/exegesis/new?projectId=${project.id}`)}
                 />
 
                 <ProjectResourceGrid

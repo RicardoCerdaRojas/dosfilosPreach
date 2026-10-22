@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sheet';
 import { useTranslation } from '@/i18n';
 import { useFacultySessions } from '@/hooks/faculty/useFacultySessions';
+import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { useFacultyAgents } from '@/hooks/faculty/useFacultyAgents';
 import { useFacultyChat } from '@/hooks/faculty/useFacultyChat';
 import { FacultyChatMessages } from '@/components/faculty/FacultyChatMessages';
@@ -64,6 +65,7 @@ export function PaperFacultyDrawer({ open, onOpenChange, paper }: PaperFacultyDr
     const passageDisplay = formatPassageReference(paper.passage, activeLanguage);
 
     const { sessions, createSession } = useFacultySessions();
+    const { assignToProject } = useFacultyProjects();
     const { data: agents = [] } = useFacultyAgents();
 
     // Same pure builder the orchestrator runs server-side, so the
@@ -107,6 +109,12 @@ export function PaperFacultyDrawer({ open, onOpenChange, paper }: PaperFacultyDr
         if (!open || resolvedSessionId || creatingSession) return;
         if (existingSessionForPaper) {
             setResolvedSessionId(existingSessionForPaper.id);
+            // Una conversación de antes de que el estudio tuviera proyecto se
+            // suma al proyecto de origen al abrirla (ADR-046). Si ya está en
+            // otro proyecto, se respeta.
+            if (paper.projectId && !existingSessionForPaper.projectId) {
+                assignToProject.mutate({ sessionId: existingSessionForPaper.id, projectId: paper.projectId });
+            }
             return;
         }
         const targetAgentId = agents.find(a => a.isActive)?.id || agents[0]?.id;
@@ -115,6 +123,9 @@ export function PaperFacultyDrawer({ open, onOpenChange, paper }: PaperFacultyDr
         createSession.mutateAsync({
             agentId: targetAgentId,
             context: { paperId: paper.id },
+            // La conversación del estudio queda también en su proyecto de
+            // origen: antes nacía sin proyecto y nunca aparecía en él.
+            ...(paper.projectId ? { projectId: paper.projectId } : {}),
         })
             .then(session => setResolvedSessionId(session.id))
             .catch(err => {
@@ -130,7 +141,9 @@ export function PaperFacultyDrawer({ open, onOpenChange, paper }: PaperFacultyDr
         existingSessionForPaper,
         agents,
         paper.id,
+        paper.projectId,
         createSession,
+        assignToProject,
         onOpenChange,
         t,
     ]);

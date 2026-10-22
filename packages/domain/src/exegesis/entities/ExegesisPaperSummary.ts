@@ -45,6 +45,10 @@ export interface ExegesisPaperSummary {
      * herencia de corpus para encontrar a los hermanos de un plan.
      */
     seriesId: string | null;
+    /** Proyecto de origen (ADR-046). `null` si es un estudio suelto o si el callable es viejo. */
+    projectId?: string | null;
+    /** Proyectos con los que colabora (ADR-046). Vacío si no hay o si el callable es viejo. */
+    linkedProjectIds?: string[];
     /**
      * La IDENTIDAD de cada fuente, sin sus fragmentos.
      *

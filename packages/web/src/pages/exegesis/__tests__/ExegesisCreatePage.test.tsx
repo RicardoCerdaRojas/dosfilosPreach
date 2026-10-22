@@ -27,6 +27,7 @@ vi.mock('@/i18n', () => ({
 vi.mock('@/hooks/exegesis/useWorkProfiles', () => ({
     useWorkProfiles: () => ({ profiles: perfiles, defaultProfile: perfiles[0] ?? null }),
 }));
+vi.mock('@/hooks/faculty/useFacultyProjects', () => ({ useFacultyProjects: () => ({ projects: [] }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => ({
         createPaper: { isPending: false, mutateAsync: vi.fn() },

@@ -1,4 +1,5 @@
 import {
+    conversationSourceScope,
     IAIChatRepository,
     IAIAgentRepository,
     IAIGeneratorService,
@@ -271,8 +272,14 @@ export class OrchestratedMessageUseCase {
                     : `[Contexto del proyecto "${project.title}": ${project.contextNote}]\n\n${messageContent}`;
             }
             if (project?.sourceIds && project.sourceIds.length > 0) {
-                projectSourceIds = project.sourceIds;
-                console.log(`[Orchestrator] Project "${project.title}" scopes RAG to ${projectSourceIds.length} source(s)`);
+                // La conversación de un estudio busca también en sus fuentes
+                // (ADR-046): acotada solo al proyecto, el tutor no veía los
+                // comentarios que el estudio usa.
+                const estudio = session.context?.paperId && this.paperRepository
+                    ? await this.paperRepository.getPaper(userId, session.context.paperId).catch(() => null)
+                    : null;
+                projectSourceIds = conversationSourceScope(project.sourceIds, estudio?.sources);
+                console.log(`[Orchestrator] Project "${project.title}" scopes RAG to ${projectSourceIds?.length ?? 0} source(s)`);
             }
         }
 

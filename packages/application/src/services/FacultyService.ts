@@ -171,7 +171,7 @@ class FacultyService {
         this.getProjects = new GetUserProjectsUseCase(projectRepository);
         this.createProject = new CreateProjectUseCase(projectRepository);
         this.updateProject = new UpdateProjectUseCase(projectRepository);
-        this.deleteProject = new DeleteProjectUseCase(projectRepository, chatRepository, extractionRepository);
+        this.deleteProject = new DeleteProjectUseCase(projectRepository, chatRepository, extractionRepository, paperRepository);
         this.setProjectArchived = new SetProjectArchivedUseCase(projectRepository);
         this.setProjectDeleted = new SetProjectDeletedUseCase(projectRepository);
         this.deleteSession = new DeleteChatSessionUseCase(chatRepository, extractionRepository);

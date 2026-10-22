@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, BookText, Sparkles, Loader2, Lightbulb, Languages, FileCheck2, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,15 @@ import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBrief
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
+    hasProjectCharge,
     nextAssignmentDate,
+    type AIProject,
     type ExegeticalStrategy,
     type PassageReference,
     type SupportedLanguage,
 } from '@dosfilos/domain';
 import { useWorkProfiles } from '@/hooks/exegesis/useWorkProfiles';
+import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import type { WorkProfile } from '@dosfilos/domain';
 import { briefToPrefill } from '@/lib/exegesis/briefToPrefill';
 
@@ -39,7 +42,18 @@ import { briefToPrefill } from '@/lib/exegesis/briefToPrefill';
 export function ExegesisCreatePage() {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('exegesis');
-    const { createPaper, updatePaperCover } = useExegesisPapers();
+    const { createPaper } = useExegesisPapers();
+    // El proyecto de origen (ADR-046). Solo viene puesto si se llegó desde el
+    // proyecto (`?projectId=`): no se sugiere el último usado, porque un
+    // estudio asociado por error a otro curso confunde más de lo que ahorra
+    // (decisión del fundador, 2026-10-22). Se puede asociar después.
+    const [searchParams] = useSearchParams();
+    const { projects } = useFacultyProjects();
+    const proyectosActivos = (projects ?? []).filter(p => !p.archivedAt && !p.deletedAt);
+    const [projectId, setProjectId] = useState<string | null>(() => searchParams.get('projectId'));
+    const proyectoElegido = proyectosActivos.find(p => p.id === projectId) ?? null;
+    /** La guía del encargo del proyecto, cuando el estudio nace de uno. */
+    const [styleGuideDelProyecto, setStyleGuideDelProyecto] = useState<string | null>(null);
     const { rubrics, defaultRubric } = useUserRubrics();
     const { briefs, defaultBrief } = useUserAssignmentBriefs();
     // El encuadre del perfil elegido, si trae uno: el perfil lo apuntaba y
@@ -98,6 +112,9 @@ export function ExegesisCreatePage() {
         // que llegue tarde no la pisa.
         perfilAplicado.current = true;
         setWorkProfileId(profile?.id ?? null);
+        // Elegir un perfil a mano reemplaza la guía del proyecto: si no, el
+        // trabajo mezclaba la rúbrica de uno con la guía del otro.
+        setStyleGuideDelProyecto(null);
         if (!profile) return;
         // Un perfil guardado antes del 2026-10-07 no creaba plantilla y quedó
         // con `null`, que al crear significa «sin plantilla: la del sistema»
@@ -114,8 +131,53 @@ export function ExegesisCreatePage() {
     /** La portada del perfil, que se escribe en el trabajo recién creado. */
     const [coverFromProfile, setCoverFromProfile] = useState<WorkProfile['cover']>(null);
 
+    /**
+     * El encargo del proyecto: rellena igual que un perfil y tampoco decide.
+     * Gana sobre el perfil por defecto, porque el estudio nace del curso.
+     */
+    const encargoEnUso = useRef(false);
+    const aplicarEncargo = useCallback((proyecto: AIProject | null) => {
+        setProjectId(proyecto?.id ?? null);
+        setStyleGuideDelProyecto(null);
+        if (!proyecto || !hasProjectCharge(proyecto)) {
+            // Dejar un proyecto cuyo encargo se aplicó deshace ese encargo:
+            // si no, el estudio nacía suelto con la rúbrica y la portada del
+            // curso anterior, y la portada ni siquiera se ve en esta página.
+            if (encargoEnUso.current) {
+                encargoEnUso.current = false;
+                setRubricTemplateId(undefined);
+                setBriefDelPerfilId(null);
+                setCoverFromProfile(null);
+                setExegeticalStrategy('dialectical');
+                if (defaultProfile) aplicarPerfil(defaultProfile);
+            }
+            return;
+        }
+        const c = proyecto.charge!;
+        encargoEnUso.current = true;
+        perfilAplicado.current = true;
+        setWorkProfileId(null);
+        // `null` en el encargo es «la rúbrica del sistema» y se respeta; solo
+        // la ausencia deja la plantilla por defecto del usuario.
+        setRubricTemplateId(c.rubricTemplateId === undefined ? undefined : c.rubricTemplateId);
+        setBriefDelPerfilId(c.briefTemplateId ?? null);
+        if (c.exegeticalStrategy) setExegeticalStrategy(c.exegeticalStrategy);
+        setCoverFromProfile(c.cover ?? null);
+        setStyleGuideDelProyecto(c.styleGuideId ?? null);
+    }, [defaultProfile, aplicarPerfil]);
+
+    // Si se llegó desde un proyecto con encargo, se aplica en cuanto cargan
+    // los proyectos (una vez).
+    const encargoAplicado = useRef(false);
+    useEffect(() => {
+        if (encargoAplicado.current || !proyectoElegido) return;
+        encargoAplicado.current = true;
+        aplicarEncargo(proyectoElegido);
+    }, [proyectoElegido, aplicarEncargo]);
+
     // El perfil por defecto se aplica al entrar, y sólo mientras el
-    // estudiante no haya tocado nada.
+    // estudiante no haya tocado nada. Si se llegó desde un proyecto, su
+    // encargo se aplica después y gana igual, aunque el perfil cargue antes.
     useEffect(() => {
         if (perfilAplicado.current || !defaultProfile) return;
         aplicarPerfil(defaultProfile);
@@ -138,24 +200,27 @@ export function ExegesisCreatePage() {
     const handleCreate = async () => {
         if (!passage) return;
         try {
+            // La portada del perfil o del proyecto nace con el trabajo: es el
+            // dato que menos cambia entre trabajos del mismo curso y el que
+            // más molesta retipear. Va en la misma creación; antes era una
+            // segunda llamada que, si fallaba, dejaba el trabajo sin portada.
+            // La fecha, del mes en curso: el perfil guarda la de la entrega
+            // con que se creó, y el TP #7 salió «SEPTIEMBRE 2026» en octubre.
+            const cover = coverFromProfile
+                ? { ...coverFromProfile, date: nextAssignmentDate(coverFromProfile.date, new Date()) }
+                : null;
             const paper = await createPaper.mutateAsync({
                 passage,
                 displayLanguage,
                 exegeticalStrategy,
-                styleGuideId: perfilElegido?.styleGuideId ?? null,
+                styleGuideId: styleGuideDelProyecto ?? perfilElegido?.styleGuideId ?? null,
                 assignmentBrief: assignmentBrief.trim() || null,
                 rubricTemplateId,
+                // El proyecto elegido de verdad: uno de la URL que no está entre
+                // los activos (archivado, ajeno) no se manda.
+                ...(proyectoElegido ? { projectId: proyectoElegido.id } : {}),
+                ...(cover ? { cover } : {}),
             });
-            // La portada del perfil se escribe sobre el trabajo nuevo: es el
-            // dato que menos cambia entre trabajos del mismo curso y el que
-            // más molesta retipear.
-            if (coverFromProfile) {
-                // La fecha, del mes en curso: el perfil guarda la de la
-                // entrega con que se creó, y el TP #7 salió «SEPTIEMBRE 2026»
-                // en octubre (el #4 del TP #6, por el camino del perfil).
-                const cover = { ...coverFromProfile, date: nextAssignmentDate(coverFromProfile.date, new Date()) };
-                await updatePaperCover.mutateAsync({ paperId: paper.id, cover });
-            }
             toast.success(t('create.toast.created'));
             navigate(`/dashboard/exegesis/${paper.id}/setup`);
         } catch (err) {
@@ -256,6 +321,26 @@ export function ExegesisCreatePage() {
                         {t('create.strategy.hint')}
                     </p>
                 </Step>
+
+                {proyectosActivos.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card p-3 space-y-1">
+                        <label htmlFor="origin-project" className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+                            {t('create.project.label')}
+                        </label>
+                        <select
+                            id="origin-project"
+                            value={projectId ?? ''}
+                            onChange={e => aplicarEncargo(proyectosActivos.find(p => p.id === e.target.value) ?? null)}
+                            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        >
+                            <option value="">{t('create.project.none')}</option>
+                            {proyectosActivos.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                        </select>
+                        <p className="text-[11px] text-muted-foreground">
+                            {proyectoElegido && hasProjectCharge(proyectoElegido) ? t('create.project.chargeApplied') : t('create.project.hint')}
+                        </p>
+                    </div>
+                )}
 
                 {profiles.length > 0 && (
                     <div className="rounded-xl border border-border bg-card p-3 space-y-1">

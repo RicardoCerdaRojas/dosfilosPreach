@@ -18,11 +18,11 @@ const perfil = {
 const valorDelSelector: Array<string | null | undefined> = [];
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'es' } }) }));
 vi.mock('@/hooks/exegesis/useWorkProfiles', () => ({ useWorkProfiles: () => ({ profiles: [perfil], defaultProfile: perfil }) }));
-const updatePaperCover = vi.fn();
+const createPaper = vi.fn().mockResolvedValue({ id: 'nuevo' });
+vi.mock('@/hooks/faculty/useFacultyProjects', () => ({ useFacultyProjects: () => ({ projects: [] }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => ({
-        createPaper: { isPending: false, mutateAsync: vi.fn().mockResolvedValue({ id: 'nuevo' }) },
-        updatePaperCover: { mutateAsync: updatePaperCover },
+        createPaper: { isPending: false, mutateAsync: createPaper },
     }),
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -55,8 +55,9 @@ describe('la portada del perfil lleva el mes en curso', () => {
         render(<MemoryRouter><ExegesisCreatePage /></MemoryRouter>);
         fireEvent.click(screen.getAllByText('pasaje')[0]!);
         fireEvent.click(screen.getByRole('button', { name: 'create.submit' }));
-        await waitFor(() => expect(updatePaperCover).toHaveBeenCalled());
-        expect(updatePaperCover.mock.calls[0]![0].cover.date).toBe('OCTUBRE 2026');
+        // La portada va en la misma creación (etapa 1): antes era una segunda llamada.
+        await waitFor(() => expect(createPaper).toHaveBeenCalled());
+        expect(createPaper.mock.calls[0]![0].cover.date).toBe('OCTUBRE 2026');
         vi.useRealTimers();
     });
 });

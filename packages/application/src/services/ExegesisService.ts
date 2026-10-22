@@ -1,5 +1,6 @@
 import {
     FirestoreExegeticalPaperRepository,
+    FirestoreAIProjectRepository,
     FirestoreUserRubricRepository,
     FirestoreWorkProfileRepository,
     FirestoreTermGlossaryRepository,
@@ -121,6 +122,7 @@ import {
     ComposeVerseAcademicProseUseCase,
     PlaceIdeaInSectionUseCase,
     ReviewVerseProseUseCase,
+    SetPaperProjectUseCase,
     ComposeSermonFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,
     GenerateStepUseCase,
@@ -274,6 +276,8 @@ class ExegesisService {
     // free until the analysis changes.
     public composeVerseAcademicProse: ComposeVerseAcademicProseUseCase;
     public placeIdeaInSection: PlaceIdeaInSectionUseCase;
+    /** El proyecto de origen y los vínculos de un estudio (ADR-046). */
+    public setPaperProject: SetPaperProjectUseCase;
     public reviewVerseProse: ReviewVerseProseUseCase;
 
     // Ministry composers (Phase 6) — sermon / devotional / study
@@ -360,7 +364,9 @@ class ExegesisService {
         // Papers
         // La biblioteca, para no agregar una fuente por defecto de la serie
         // cuyo libro ya se borró.
-        this.createPaper = new CreateExegeticalPaperUseCase(paperRepository, userRubricRepository, libraryRepository);
+        const aiProjectRepository = new FirestoreAIProjectRepository();
+        this.setPaperProject = new SetPaperProjectUseCase(paperRepository, aiProjectRepository);
+        this.createPaper = new CreateExegeticalPaperUseCase(paperRepository, userRubricRepository, libraryRepository, aiProjectRepository);
         this.listPapers = new ListExegeticalPapersUseCase(paperRepository);
         this.listPaperSummaries = new ListExegesisPaperSummariesUseCase(paperRepository);
         this.getPaper = new GetExegeticalPaperUseCase(paperRepository);

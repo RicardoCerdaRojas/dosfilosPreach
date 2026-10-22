@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MessageSquareQuote, Mic2, GraduationCap, BookOpen } from 'lucide-react';
+import { ArrowRight, MessageSquareQuote } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { ProjectType } from '@dosfilos/domain';
+import { PROJECT_TYPES } from '@/pages/projects/projectRoadmaps';
 
 interface FeaturedCard {
     type: ProjectType;
@@ -17,26 +18,12 @@ interface FeaturedCard {
  * Each card maps to an existing ProjectType (which carries its own
  * roadmap); the dialog opens with that type pre-selected.
  */
-const FEATURED_CARDS: FeaturedCard[] = [
-    {
-        type: 'sermon',
-        icon: Mic2,
-        label: 'Sermón',
-        description: 'Un mensaje individual: pasaje, exégesis, bosquejo y redacción.',
-    },
-    {
-        type: 'series',
-        icon: GraduationCap,
-        label: 'Serie o curso',
-        description: 'Secuencia sobre un libro o tema — predicación expositiva, clases o módulos.',
-    },
-    {
-        type: 'study',
-        icon: BookOpen,
-        label: 'Estudio',
-        description: 'Investigación temática o exegética para un paper, tesis o archivo personal.',
-    },
-];
+// De `PROJECT_TYPES`: dos copias de las etiquetas ya se habían separado
+// (revisión de la etapa 1). Para predicar una serie está el Planificador.
+const FEATURED_CARDS: FeaturedCard[] = (['course', 'study', 'exegetical'] as const).map(type => {
+    const { label, description, icon } = PROJECT_TYPES[type];
+    return { type, label, description, icon };
+});
 
 interface ProjectsEmptyStateProps {
     /**

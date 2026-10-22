@@ -1,4 +1,33 @@
 {
+  "studies": {
+    "title": "Estudios",
+    "new": "Nuevo estudio",
+    "empty": "Todavía no hay estudios. Cada tarea, pasaje o tema que trabajes en este proyecto es un estudio.",
+    "linked": "colabora"
+  },
+  "charge": {
+    "title": "Encargo",
+    "empty": "Con qué rúbrica, encuadre, guía y estrategia nacen los estudios de este proyecto. Cópialo de un perfil de trabajo o elígelo a mano.",
+    "inherited": "Cada estudio nuevo de este proyecto nace con este encargo. Lo puedes revisar antes de crearlo.",
+    "fromProfile": "Copiar de un perfil de trabajo",
+    "pickProfile": "Elegir perfil…",
+    "course": "Curso",
+    "rubric": "Rúbrica",
+    "rubricDefault": "La plantilla por defecto",
+    "rubricSystem": "La del sistema",
+    "noPreference": "Sin preferencia",
+    "brief": "Encuadre",
+    "styleGuide": "Guía de estilo",
+    "strategy": "Estrategia",
+    "dialectical": "Dialéctica (ancla, contraste, técnica)",
+    "free": "Libre",
+    "none": "Ninguno",
+    "coverFromProfile": "La portada del perfil también se hereda.",
+    "save": "Guardar encargo",
+    "clear": "Quitar encargo",
+    "saved": "Encargo guardado.",
+    "saveFailed": "No se pudo guardar el encargo."
+  },
     "breadcrumb": {
         "back": "Proyectos"
     },
