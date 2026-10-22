@@ -51,7 +51,10 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
         setError(null);
         try {
             if (isEditing) {
-                await updateProject.mutateAsync({ projectId: project.id, title, color, type, contextNote: contextNote || undefined });
+                // El tipo solo se elige al crear: editar no lo manda. Antes viajaba
+                // el valor del estado y un proyecto sin tipo pasaba a «Sermón»
+                // sin que nadie lo pidiera (etapa 0).
+                await updateProject.mutateAsync({ projectId: project.id, title, color, contextNote: contextNote || undefined });
             } else {
                 await createProject.mutateAsync({ title, color, type, contextNote: contextNote || undefined });
             }
