@@ -4,6 +4,7 @@ import type {
     ComposeVerseOutput,
     ComposerSourceMetadata,
     ExegeticalPaper,
+    ExegeticalStepVersion,
     FormatterSourceMetadata,
     GlossaryTerm,
     IBibliographyReader,
@@ -20,6 +21,7 @@ import type {
     IPageNumberingReader,
 } from '@dosfilos/domain';
 import {
+    mapVerdictsByPath,
     canonicalizeQuestionHeadings,
     documentSections,
     parseBriefQuestions,
@@ -210,6 +212,11 @@ export class ComposeVerseAcademicProseUseCase {
                     : {}),
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
+                // Lo que el verificador no pudo respaldar del análisis (E1).
+                ...(() => {
+                    const alertas = citationAlertsOf(target);
+                    return alertas.length > 0 ? { citationAlerts: alertas } : {};
+                })(),
             };
             reservation.markLlmContacted();
             const raw = await this.composer.composeVerse(composerInput);
@@ -422,4 +429,23 @@ function deriveCitationKey(displayLabel: string): string {
     const trimmed = (displayLabel ?? '').trim();
     if (!trimmed) return 'Source';
     return trimmed.split(/[\s,;:.\-—]+/)[0] || 'Source';
+}
+
+/**
+ * Las citas del análisis con alarma que nadie revisó a mano: lo que la prosa
+ * no debe repetir tal cual (TP #8, fase 8b, E1). Las de la prosa no entran:
+ * se rehacen al recomponer.
+ */
+export function citationAlertsOf(version: Pick<ExegeticalStepVersion, 'citationVerdicts' | 'citationReviews' | 'canonicalAnalysis'>): Array<{ citation: string; status: string; foundAt?: string | null }> {
+    if (!version.canonicalAnalysis) return [];
+    const ALARMAS = new Set(['not-found', 'fuzzy-low', 'page-mismatch', 'page-unverifiable']);
+    const revisadas = new Set((version.citationReviews ?? []).map(r => r.path));
+    return [...mapVerdictsByPath(version.canonicalAnalysis, version.citationVerdicts ?? []).entries()]
+        .filter(([path, v]) => ALARMAS.has(v.status) && !revisadas.has(path))
+        .slice(0, 20)
+        .map(([, v]) => ({
+            citation: v.raw,
+            status: v.status,
+            ...(v.status === 'page-mismatch' && v.matchedPageLabel ? { foundAt: v.matchedPageLabel } : {}),
+        }));
 }

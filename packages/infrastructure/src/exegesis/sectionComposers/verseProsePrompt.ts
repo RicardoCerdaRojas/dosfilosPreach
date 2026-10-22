@@ -124,8 +124,10 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
 
     const sourceTable = input.sources.length > 0
         ? [
-            lang === 'en' ? 'AVAILABLE SOURCES (cite by sourceKey):' : 'FUENTES DISPONIBLES (cita por sourceKey):',
-            ...input.sources.map(s => `- ${s.citationKey}: ${describeSource(s)}`),
+            lang === 'en' ? 'AVAILABLE SOURCES (cite each one by its key, exactly):' : 'FUENTES DISPONIBLES (cita cada una por su clave, tal cual):',
+            // La clave explícita (TP #8, 8b, E1, #39): la prosa citó «(Nestle y
+            // Aland, 692)» con el autor de la ficha en vez de «NA28».
+            ...input.sources.map(s => `- ${lang === 'en' ? 'cite as' : 'cita como'} «${s.citationKey}» — ${describeSource(s)}`),
             lang === 'en'
                 ? 'Publisher, city and year are given here ONLY when someone copied them from the book. If a datum is missing above, do not write it and do not guess it.'
                 : 'La editorial, la ciudad y el año están arriba SOLO cuando alguien los copió del libro. Si un dato no aparece, no lo escribas ni lo deduzcas.',
@@ -133,6 +135,18 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         : (lang === 'en'
             ? 'No external sources configured for this paper.'
             : 'Sin fuentes externas configuradas para este paper.');
+
+    // Lo que el verificador no pudo respaldar del análisis (TP #8, 8b, E1):
+    // el compositor no sabía cuáles fallaron y las repetía.
+    const alertas = input.citationAlerts ?? [];
+    const alertsBlock = alertas.length > 0
+        ? [
+            lang === 'en'
+                ? 'ANALYSIS CITATIONS THE VERIFIER COULD NOT SUPPORT (do not repeat them as they are: use the page where it was found, or leave the claim without that citation):'
+                : 'CITAS DEL ANÁLISIS QUE EL VERIFICADOR NO PUDO RESPALDAR (no las repitas tal cual: usa la página donde se halló, o deja la afirmación sin esa cita):',
+            ...alertas.map(a => `- ${a.citation} — ${a.status}${a.foundAt ? ` (${lang === 'en' ? 'found at' : 'hallada en'} ${a.foundAt})` : ''}`),
+        ].join('\n')
+        : '';
 
     const briefBlock = input.assignmentBrief?.trim()
         ? [
@@ -176,6 +190,7 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         '',
         briefBlock,
         sourceTable,
+        alertsBlock,
         '',
         lang === 'en' ? 'CANONICAL ANALYSIS (the only authoritative content source):' : 'ANÁLISIS CANÓNICO (única fuente autoritativa):',
         serializeAnalysis(input.verseAnalysis, lang, { pageLabel: input.pageLabel }),

@@ -73,7 +73,7 @@ describe('registro de fuentes', () => {
     it('sin datos de portada se escribe lo que hay, y se prohíbe deducir el resto', () => {
         const sinDatos = { ...promptInput(), sources: [{ citationKey: 'Ortiz', author: 'Ortiz', title: 'Lexicón' }] };
         const { userMessage } = buildVerseProsePrompt(sinDatos as never);
-        expect(userMessage).toContain('Ortiz: Ortiz, "Lexicón"');
+        expect(userMessage).toContain('cita como «Ortiz» — Ortiz, "Lexicón"');
         expect(userMessage).not.toMatch(/\(\s*\)/);
         expect(userMessage).toMatch(/no lo escribas ni lo deduzcas/);
     });
@@ -189,5 +189,24 @@ describe('la conclusión propia, aparte y sin cita', () => {
         const { systemInstruction, userMessage } = buildVerseProsePrompt(conInferencia);
         expect(systemInstruction).toContain('van en ORACIONES DISTINTAS');
         expect(userMessage).toContain('own inference (NO citation, separate sentence): La restauración es del alma entera.');
+    });
+});
+
+/** TP #8 (8b, E1): la clave explícita y las citas que el verificador no respaldó. */
+describe('la prosa sabe cómo citar y qué no repetir', () => {
+    it('cada fuente con su clave tal cual', () => {
+        const input = { ...promptInput(), sources: [{ citationKey: 'NA28', displayLabel: 'Novum Testamentum Graece', author: 'Nestle y Aland' }] } as never;
+        expect(buildVerseProsePrompt(input).userMessage).toContain('- cita como «NA28» — ');
+    });
+
+    it('las citas del análisis con alarma, con la página hallada', () => {
+        const input = { ...promptInput(), citationAlerts: [{ citation: 'Adamson, p. 171', status: 'page-mismatch', foundAt: 'p. 170' }] } as ComposeVerseInput;
+        const { userMessage } = buildVerseProsePrompt(input);
+        expect(userMessage).toContain('CITAS DEL ANÁLISIS QUE EL VERIFICADOR NO PUDO RESPALDAR');
+        expect(userMessage).toContain('- Adamson, p. 171 — page-mismatch (hallada en p. 170)');
+    });
+
+    it('sin alarmas, el bloque no aparece', () => {
+        expect(buildVerseProsePrompt(promptInput()).userMessage).not.toContain('NO PUDO RESPALDAR');
     });
 });

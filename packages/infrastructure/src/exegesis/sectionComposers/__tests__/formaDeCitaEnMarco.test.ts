@@ -49,7 +49,7 @@ describe.each(Object.entries(construir))('%s — cómo se marca una cita', (_n, 
 
     it('la forma parentética de la entrega también llega', () => {
         const s = build('parenthetical').systemInstruction;
-        expect(s).toContain('(Apellido, p. N)');
+        expect(s).toContain('(Clave, p. N)');
         expect(s).not.toContain('(Apellido, "Título", p. N)');
     });
 

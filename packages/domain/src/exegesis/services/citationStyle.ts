@@ -30,7 +30,7 @@ export function buildCitationFormBlock(
         return f === 'parenthetical'
             ? [
                 '## Citation form (hard rule)',
-                'Cite as (Author, p. N) — surname and page only. NEVER put the title inside the parentheses: this paper carries a bibliography at the end and that is where titles live.',
+                'Cite as (Key, p. N) — the source key EXACTLY as the source list gives it (usually the surname; «NA28», never «Nestle and Aland») and the page. NEVER put the title inside the parentheses: this paper carries a bibliography at the end and that is where titles live.',
                 'The number is ALWAYS labelled. “(Mayor, 77)” is wrong: write “(Mayor, p. 77)”. A bare number does not say whether it is a page, a verse or a year.',
                 'Which label it takes is set by the briefing, and it is copied verbatim: if it says “sheet 87”, write “(Wallace, sheet 87)” and NEVER “(Wallace, p. 87)” — it means that book\u2019s printed page is unknown.',
                 'One single form across the whole section. Two citation forms in one paper is an error the grader sees.',
@@ -46,7 +46,7 @@ export function buildCitationFormBlock(
     return f === 'parenthetical'
         ? [
             '## Forma de cita (regla dura)',
-            'Cita como (Apellido, p. N) — sólo apellido y página. NUNCA metas el título dentro del paréntesis: este trabajo lleva bibliografía al final y ahí es donde va el título.',
+            'Cita como (Clave, p. N) — la clave de la fuente TAL CUAL la da la lista de fuentes (casi siempre el apellido; «NA28», nunca «Nestle y Aland») y la página. NUNCA metas el título dentro del paréntesis: este trabajo lleva bibliografía al final y ahí es donde va el título.',
             'El número SIEMPRE va rotulado. «(Mayor, 77)» está mal escrito: se escribe «(Mayor, p. 77)». Un número suelto no dice si es página, versículo o año.',
             'Qué rótulo lleva lo dice el briefing, y se copia tal cual: si dice «hoja 87» se escribe «(Wallace, hoja 87)» y NUNCA «(Wallace, p. 87)» —significa que la página impresa de ese libro se desconoce—.',
             'Una sola forma en toda la sección. Dos formas de cita en un mismo trabajo es un error que el corrector ve.',

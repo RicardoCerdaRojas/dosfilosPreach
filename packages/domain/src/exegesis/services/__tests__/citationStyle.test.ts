@@ -12,9 +12,9 @@ describe('buildCitationFormBlock', () => {
 
     it('la entrega parentética manda el título a la bibliografía', () => {
         const es = buildCitationFormBlock('parenthetical', 'es');
-        expect(es).toContain('(Apellido, p. N)');
+        expect(es).toContain('(Clave, p. N)');
         expect(es).toContain('NUNCA');
-        expect(buildCitationFormBlock('parenthetical', 'en')).toContain('(Author, p. N)');
+        expect(buildCitationFormBlock('parenthetical', 'en')).toContain('(Key, p. N)');
     });
 
     it('sin formato declarado, la maquetación de la casa: nota al pie', () => {
@@ -45,5 +45,13 @@ describe('buildCitationFormBlock', () => {
         for (const forma of ['footnote', 'parenthetical'] as const) {
             expect(buildCitationFormBlock(forma, 'es')).toContain('Una sola forma');
         }
+    });
+});
+
+/** TP #8 (8b, E1, #39): la prosa citó «(Nestle y Aland, 692)» con el autor de la ficha. */
+describe('buildCitationFormBlock — la clave, no el autor', () => {
+    it('pide la clave tal cual la da la lista de fuentes', () => {
+        expect(buildCitationFormBlock('parenthetical', 'es')).toContain('«NA28», nunca «Nestle y Aland»');
+        expect(buildCitationFormBlock('parenthetical', 'en')).toContain('«NA28», never «Nestle and Aland»');
     });
 });
