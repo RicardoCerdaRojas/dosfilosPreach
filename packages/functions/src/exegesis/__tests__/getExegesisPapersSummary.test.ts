@@ -66,9 +66,13 @@ describe('portadaDelResumen', () => {
 describe('proyectosDelResumen (ADR-046)', () => {
     it('el origen y los vinculados, sin repetir el origen ni basura', () => {
         expect(proyectosDelResumen({ projectId: 'curso', linkedProjectIds: ['serie', 'curso', 'serie', 3, ''] }))
-            .toEqual({ projectId: 'curso', linkedProjectIds: ['serie'] });
+            .toEqual({ projectId: 'curso', linkedProjectIds: ['serie'], projectWorkTypeId: null });
     });
     it('un trabajo anterior al campo es un estudio suelto', () => {
-        expect(proyectosDelResumen({})).toEqual({ projectId: null, linkedProjectIds: [] });
+        expect(proyectosDelResumen({})).toEqual({ projectId: null, linkedProjectIds: [], projectWorkTypeId: null });
+    });
+    it('el tipo de trabajo viaja solo si hay proyecto de origen (etapa 1b)', () => {
+        expect(proyectosDelResumen({ projectId: 'curso', projectWorkTypeId: 'tp' }).projectWorkTypeId).toBe('tp');
+        expect(proyectosDelResumen({ projectId: null, projectWorkTypeId: 'tp' }).projectWorkTypeId).toBeNull();
     });
 });

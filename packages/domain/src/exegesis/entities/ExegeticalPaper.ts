@@ -254,6 +254,12 @@ export interface ExegeticalPaper {
      * las reglas. Nunca incluye a `projectId`.
      */
     linkedProjectIds?: string[];
+    /**
+     * Qué tipo de trabajo del proyecto de origen es (etapa 1b): «TP
+     * semanal», «Paper final». `null` si no tiene origen o no se eligió.
+     * Cambiar el origen lo borra: el id solo vale dentro de ese proyecto.
+     */
+    projectWorkTypeId?: string | null;
 }
 
 export type ExegeticalPaperPhase =

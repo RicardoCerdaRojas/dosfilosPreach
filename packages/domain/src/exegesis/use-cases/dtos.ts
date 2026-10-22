@@ -84,6 +84,8 @@ export interface CreateExegeticalPaperInput {
     pericopeId?: string | null;
     /** Proyecto de origen (ADR-046). El estudio hereda su encargo. */
     projectId?: string | null;
+    /** El tipo de trabajo del proyecto con que nace. Se ignora si el proyecto no lo tiene. */
+    projectWorkTypeId?: string | null;
     /**
      * La portada con la que nace. Antes se escribía en una segunda llamada
      * después de crear, y si fallaba el trabajo quedaba sin la portada del

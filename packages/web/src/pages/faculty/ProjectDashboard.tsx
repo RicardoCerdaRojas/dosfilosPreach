@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ProjectOutput, ProjectOutputKind } from '@dosfilos/domain';
+import { ProjectOutput, ProjectOutputKind, projectWorkTypes, type ProjectCourseInfo, type ProjectWorkType } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -18,7 +18,8 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
 import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
-import { ProjectChargeCard } from './components/project/ProjectChargeCard';
+import { ProjectCourseCard } from './components/project/ProjectCourseCard';
+import { ProjectWorkTypesCard } from './components/project/ProjectWorkTypesCard';
 import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
@@ -133,6 +134,17 @@ export function ProjectDashboard() {
         sessions: projectSessions,
     }) as unknown as RoadmapState;
 
+    /** Guarda los datos del curso o los tipos de trabajo, con aviso. */
+    const guardar = async (cambio: { courseInfo?: ProjectCourseInfo | null; workTypes?: ProjectWorkType[] }) => {
+        try {
+            await updateProject.mutateAsync({ projectId: project.id, ...cambio });
+            toast.success(t('workTypes.saved'));
+        } catch (err) {
+            console.error('[projects] save course data / work types failed:', err);
+            toast.error(t('workTypes.saveFailed'));
+        }
+    };
+
     const handleRoadmapCta = (kind: RoadmapCtaKind) => {
         switch (kind) {
             case 'study': return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
@@ -207,27 +219,28 @@ export function ProjectDashboard() {
                     onPhaseCta={handleRoadmapCta}
                 />
 
-                {/* El encargo (ADR-046): no aplica a los proyectos de
-                    predicación ni de consejería. */}
+                {/* Los datos del curso y sus tipos de trabajo (ADR-046, etapa
+                    1b): no aplican a los proyectos de predicación ni de
+                    consejería. */}
                 {!['sermon', 'series', 'counseling'].includes(project.type ?? 'general') && (
-                    <ProjectChargeCard
-                        project={project}
-                        saving={updateProject.isPending}
-                        onSave={async (charge) => {
-                            try {
-                                await updateProject.mutateAsync({ projectId: project.id, charge });
-                                toast.success(t('charge.saved'));
-                            } catch (err) {
-                                console.error('[projects] save charge failed:', err);
-                                toast.error(t('charge.saveFailed'));
-                            }
-                        }}
-                    />
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                        <ProjectCourseCard
+                            project={project}
+                            saving={updateProject.isPending}
+                            onSave={courseInfo => guardar({ courseInfo })}
+                        />
+                        <ProjectWorkTypesCard
+                            project={project}
+                            saving={updateProject.isPending}
+                            onSave={workTypes => guardar({ workTypes })}
+                        />
+                    </div>
                 )}
 
                 <ProjectStudiesSection
                     projectId={project.id}
                     studies={projectStudies}
+                    workTypes={projectWorkTypes(project)}
                     onNewStudy={() => navigate(`/dashboard/exegesis/new?projectId=${project.id}`)}
                 />
 

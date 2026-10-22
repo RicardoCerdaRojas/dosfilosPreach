@@ -14,7 +14,7 @@ import {
     FileCode,
     type LucideIcon,
 } from 'lucide-react';
-import { hasProjectCharge, type AIProject, type ProjectType, type ProjectOutput, type SermonEntity, type AIChatSession } from '@dosfilos/domain';
+import { projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput, type SermonEntity, type AIChatSession } from '@dosfilos/domain';
 
 /**
  * Roadmap definitions per project type. Each phase represents one step in the
@@ -246,15 +246,16 @@ const SERIES_ROADMAP: RoadmapPhase[] = [
     },
 ];
 
-/** Curso (ADR-046): un encargo, un estado del arte y las tareas como estudios. */
+/** Curso (ADR-046): sus tipos de trabajo, un estado del arte y las tareas como estudios. */
 const COURSE_ROADMAP: RoadmapPhase[] = [
     {
         id: 'charge',
         title: 'Encargo',
-        description: 'La rúbrica, el encuadre, la guía de estilo y la portada con que nacen las tareas del curso.',
+        description: 'Los tipos de trabajo del curso (TP semanal, ensayo, paper final), cada uno con su rúbrica, su encuadre y su guía.',
         icon: ClipboardList,
-        isComplete: (ctx) => hasProjectCharge(ctx.project),
-        cta: { label: 'Definir el encargo', kind: 'charge' },
+        // El nombre del curso solo no es un encargo: hace falta saber qué se pide.
+        isComplete: (ctx) => projectWorkTypes(ctx.project).length > 0,
+        cta: { label: 'Definir los tipos de trabajo', kind: 'charge' },
     },
     {
         id: 'state-of-art',
@@ -267,7 +268,7 @@ const COURSE_ROADMAP: RoadmapPhase[] = [
     {
         id: 'studies',
         title: 'Estudios',
-        description: 'Cada tarea del curso (un TP, un ensayo) es un estudio que nace con el encargo.',
+        description: 'Cada tarea del curso (un TP, un ensayo) es un estudio que nace como uno de sus tipos de trabajo.',
         icon: ScrollText,
         isComplete: (ctx) => ctx.studyCount > 0,
         cta: { label: 'Nuevo estudio', kind: 'study' },
@@ -379,7 +380,7 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
     course: {
         type: 'course',
         label: 'Curso',
-        description: 'Las tareas de un curso (TP, ensayos, investigación final) con un encargo y una bibliografía comunes.',
+        description: 'Las tareas de un curso (TP, ensayos, investigación final), cada una con su rúbrica, sobre una bibliografía común.',
         icon: GraduationCap,
         roadmap: COURSE_ROADMAP,
     },

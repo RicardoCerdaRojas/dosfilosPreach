@@ -19,6 +19,16 @@ describe('ProjectStudiesSection', () => {
         expect(screen.getAllByText('studies.linked')).toHaveLength(1);
     });
 
+    it('cada estudio de origen lleva su tipo de trabajo; uno vinculado o con un tipo borrado, no (etapa 1b)', () => {
+        render(<MemoryRouter><ProjectStudiesSection projectId="teo2" onNewStudy={vi.fn()} workTypes={[{ id: 'tp', label: 'TP Semanal' }, { id: 'pf', label: 'Paper final' }]} studies={[
+            estudio('tp8', { title: 'TP #8', projectWorkTypeId: 'tp' }),
+            estudio('viejo', { title: 'Viejo', projectWorkTypeId: 'borrado' }),
+            estudio('serie', { title: 'Santiago 4', projectId: 'otro', linkedProjectIds: ['teo2'], projectWorkTypeId: 'pf' }),
+        ] as never} /></MemoryRouter>);
+        expect(screen.getByText('TP Semanal')).toBeInTheDocument();
+        expect(screen.queryByText('Paper final')).toBeNull();
+    });
+
     it('«Nuevo estudio» y el vacío', () => {
         const onNewStudy = vi.fn();
         render(<MemoryRouter><ProjectStudiesSection projectId="teo2" onNewStudy={onNewStudy} studies={[]} /></MemoryRouter>);

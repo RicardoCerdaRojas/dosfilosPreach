@@ -9,9 +9,10 @@ import { useEffect } from 'react';
  * fundador, 2026-10-22): solo viene puesto si se llegó desde el proyecto.
  */
 const createPaper = vi.fn().mockResolvedValue({ id: 'nuevo' });
+const tp = { id: 'tp', label: 'TP Semanal', rubricTemplateId: 'rub-tms', briefTemplateId: null, styleGuideId: 'guia-tms', exegeticalStrategy: 'free', cover: { institution: 'TMS', date: 'SEPTIEMBRE 2026' } };
 const curso = {
     id: 'teo2', title: 'Teología II – Cristología', userId: 'u1',
-    charge: { rubricTemplateId: 'rub-tms', briefTemplateId: null, styleGuideId: 'guia-tms', exegeticalStrategy: 'free', cover: { institution: 'TMS', date: 'SEPTIEMBRE 2026' }, course: 'Teología II' },
+    courseInfo: { course: 'Teología II' }, workTypes: [tp],
 };
 let perfiles: unknown[] = [];
 
@@ -21,7 +22,8 @@ vi.mock('@/hooks/faculty/useFacultyProjects', () => ({ useFacultyProjects: () =>
 vi.mock('@/hooks/exegesis/useWorkProfiles', () => ({ useWorkProfiles: () => ({ profiles: perfiles, defaultProfile: perfiles[0] ?? null }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ createPaper: { isPending: false, mutateAsync: createPaper } }) }));
 vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => ({ rubrics: [], defaultRubric: null }) }));
-vi.mock('@/hooks/exegesis/useUserAssignmentBriefs', () => ({ useUserAssignmentBriefs: () => ({ briefs: [], defaultBrief: null }) }));
+let encuadres: unknown[] = [];
+vi.mock('@/hooks/exegesis/useUserAssignmentBriefs', () => ({ useUserAssignmentBriefs: () => ({ briefs: encuadres, defaultBrief: null }) }));
 vi.mock('@/components/exegesis/PassagePicker', () => ({
     PassagePicker: ({ onChange }: { onChange: (r: unknown, e: unknown) => void }) => {
         useEffect(() => onChange({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 1, verseEnd: 10 }, null), []);
@@ -33,7 +35,7 @@ vi.mock('@/components/exegesis/setup/AssignmentBriefPicker', () => ({ Assignment
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const { ExegesisCreatePage } = await import('../ExegesisCreatePage');
 
-beforeEach(() => { cleanup(); vi.clearAllMocks(); perfiles = []; proyectos = [curso, { id: 'otro', title: 'Otro', userId: 'u1' }]; });
+beforeEach(() => { cleanup(); vi.clearAllMocks(); perfiles = []; encuadres = []; proyectos = [curso, { id: 'otro', title: 'Otro', userId: 'u1' }]; });
 const crear = () => fireEvent.click(screen.getByText('create.submit'));
 
 describe('crear un estudio desde un proyecto', () => {
@@ -98,7 +100,7 @@ describe('crear un estudio desde un proyecto', () => {
     });
 
     it('«la rúbrica del sistema» del encargo se respeta (no cae en la plantilla por defecto)', async () => {
-        proyectos = [{ ...curso, charge: { ...curso.charge, rubricTemplateId: null } }];
+        proyectos = [{ ...curso, workTypes: [{ ...tp, rubricTemplateId: null }] }];
         render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
         crear();
         await waitFor(() => expect(createPaper).toHaveBeenCalled());
@@ -110,5 +112,87 @@ describe('crear un estudio desde un proyecto', () => {
         crear();
         await waitFor(() => expect(createPaper).toHaveBeenCalled());
         expect(createPaper.mock.calls[0]![0]).not.toHaveProperty('projectId');
+    });
+
+    describe('un curso con varios tipos de trabajo (etapa 1b)', () => {
+        const paperFinal = { id: 'pf', label: 'Paper final', rubricTemplateId: 'rub-paper', styleGuideId: null };
+        const conDos = { ...curso, courseInfo: { course: 'NT785', styleGuideId: 'guia-curso' }, workTypes: [tp, paperFinal] };
+
+        it('con dos tipos se pregunta: sin elegir, solo los datos del curso', async () => {
+            proyectos = [conDos];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            expect((screen.getByLabelText('create.project.workType') as HTMLSelectElement).value).toBe('');
+            expect(screen.getByText('create.project.pickWorkType')).toBeInTheDocument();
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            const input = createPaper.mock.calls[0]![0];
+            expect(input).toMatchObject({ projectId: 'teo2', projectWorkTypeId: null, styleGuideId: 'guia-curso' });
+            expect(input.rubricTemplateId).toBeUndefined();
+        });
+
+        it('pasar del TP al paper final no deja nada del TP: ni su encuadre, ni su portada, ni su estrategia', async () => {
+            proyectos = [conDos];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'tp' } });
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'pf' } });
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            const input = createPaper.mock.calls[0]![0];
+            // El paper final no trae guía: usa la del curso, no la del TP.
+            expect(input).toMatchObject({ projectWorkTypeId: 'pf', rubricTemplateId: 'rub-paper', styleGuideId: 'guia-curso', exegeticalStrategy: 'dialectical' });
+            expect(input).not.toHaveProperty('cover');
+        });
+
+        it('con un solo tipo se elige solo', async () => {
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            expect((screen.getByLabelText('create.project.workType') as HTMLSelectElement).value).toBe('tp');
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).toMatchObject({ projectWorkTypeId: 'tp' });
+        });
+
+        it('pasar del TP al paper final vacía la consigna del TP (revisión de la etapa 1b)', async () => {
+            encuadres = [{ id: 'b-tp', displayName: 'TP', body: 'CONSIGNA DEL TP' }];
+            proyectos = [{ ...conDos, workTypes: [{ ...tp, briefTemplateId: 'b-tp' }, paperFinal] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'tp' } });
+            await waitFor(() => expect(screen.getByDisplayValue('CONSIGNA DEL TP')).toBeInTheDocument());
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'pf' } });
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0].assignmentBrief).toBeNull();
+        });
+
+        it('un curso con solo el nombre no desplaza al perfil por defecto (revisión de la etapa 1b)', async () => {
+            perfiles = [{ id: 'perfil', displayName: 'TP', rubricTemplateId: 'rub-p', briefTemplateId: null, styleGuideId: 'g-p', exegeticalStrategy: 'free', isDefault: true }];
+            proyectos = [{ id: 'teo2', title: 'NT785', userId: 'u1', courseInfo: { course: 'NT785' }, workTypes: [] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            expect(screen.queryByText('create.project.chargeApplied')).toBeNull();
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).toMatchObject({ projectId: 'teo2', rubricTemplateId: 'rub-p', styleGuideId: 'g-p', exegeticalStrategy: 'free' });
+        });
+
+        it('un tipo vacío elegido después de uno lleno no trae el perfil por defecto (revisión de la etapa 1b)', async () => {
+            perfiles = [{ id: 'perfil', displayName: 'Otro', rubricTemplateId: 'rub-p', briefTemplateId: null, styleGuideId: 'g-p', exegeticalStrategy: 'free', isDefault: true, cover: { institution: 'X' } }];
+            proyectos = [{ ...curso, workTypes: [tp, { id: 'ens', label: 'Ensayo' }] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'tp' } });
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'ens' } });
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            const input = createPaper.mock.calls[0]![0];
+            expect(input).toMatchObject({ projectWorkTypeId: 'ens', styleGuideId: null, exegeticalStrategy: 'dialectical' });
+            expect(input.rubricTemplateId).toBeUndefined();
+            expect(input).not.toHaveProperty('cover');
+        });
+
+        it('el encargo guardado en la etapa 1 sigue funcionando', async () => {
+            proyectos = [{ id: 'teo2', title: 'Teología II', userId: 'u1', charge: { course: 'Teología II', rubricTemplateId: 'rub-tms', styleGuideId: 'guia-tms' } }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).toMatchObject({ projectId: 'teo2', rubricTemplateId: 'rub-tms', styleGuideId: 'guia-tms' });
+        });
     });
 });

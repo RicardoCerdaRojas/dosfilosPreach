@@ -35,6 +35,32 @@ beforeEach(() => {
 });
 
 describe('AddToProjectDialog', () => {
+    it('con origen que tiene tipos de trabajo, se elige cuál es (etapa 1b)', async () => {
+        proyectos = [{ id: 'teo2', title: 'Teología II', userId: 'u', workTypes: [{ id: 'tp', label: 'TP Semanal' }, { id: 'pf', label: 'Paper final' }] }];
+        montar(estudio({ projectId: 'teo2' }));
+        fireEvent.change(screen.getByLabelText('paperProjects.workType'), { target: { value: 'pf' } });
+        await waitFor(() => expect(setProject).toHaveBeenCalledWith({ paperId: 'tp8', change: { kind: 'workType', workTypeId: 'pf' } }));
+    });
+
+    it('un tipo quitado del proyecto se ve como tal y se puede cambiar a «sin tipo»', async () => {
+        proyectos = [{ id: 'teo2', title: 'Teología II', userId: 'u', workTypes: [{ id: 'tp', label: 'TP Semanal' }] }];
+        montar(estudio({ projectId: 'teo2', projectWorkTypeId: 'borrado' }));
+        const select = screen.getByLabelText('paperProjects.workType') as HTMLSelectElement;
+        expect(select.value).toBe('borrado');
+        expect(screen.getByText('paperProjects.removedWorkType')).toBeInTheDocument();
+        fireEvent.change(select, { target: { value: '' } });
+        await waitFor(() => expect(setProject).toHaveBeenCalledWith({ paperId: 'tp8', change: { kind: 'workType', workTypeId: null } }));
+    });
+
+    it('sin tipos en el origen, o con el origen archivado, no se pregunta', () => {
+        proyectos = [{ id: 'teo2', title: 'Teología II', userId: 'u', archivedAt: new Date(), workTypes: [{ id: 'tp', label: 'TP' }] }];
+        montar(estudio({ projectId: 'teo2' }));
+        expect(screen.queryByLabelText('paperProjects.workType')).toBeNull();
+        cleanup();
+        montar(estudio({ projectId: 'serie' }));
+        expect(screen.queryByLabelText('paperProjects.workType')).toBeNull();
+    });
+
     it('un estudio suelto se asocia como origen', async () => {
         montar(estudio());
         fireEvent.change(screen.getByLabelText('paperProjects.add'), { target: { value: 'teo2' } });

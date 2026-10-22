@@ -49,6 +49,8 @@ export interface ExegesisPaperSummary {
     projectId?: string | null;
     /** Proyectos con los que colabora (ADR-046). Vacío si no hay o si el callable es viejo. */
     linkedProjectIds?: string[];
+    /** El tipo de trabajo dentro del proyecto de origen (etapa 1b). */
+    projectWorkTypeId?: string | null;
     /**
      * La IDENTIDAD de cada fuente, sin sus fragmentos.
      *

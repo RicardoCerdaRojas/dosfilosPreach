@@ -43,6 +43,8 @@ interface PaperSummary {
     /** Proyecto de origen y proyectos vinculados (ADR-046). */
     projectId: string | null;
     linkedProjectIds: string[];
+    /** El tipo de trabajo dentro del proyecto de origen (etapa 1b). */
+    projectWorkTypeId: string | null;
     sources: SourceIdentity[];
     /**
      * Las claves de cita que este trabajo efectivamente CITÓ.
@@ -78,6 +80,22 @@ export function portadaDelResumen(cover: unknown): Record<string, string> | null
 }
 
 /**
+ * El proyecto de origen y los vinculados (ADR-046). El origen nunca se repite
+ * como vínculo, aunque el documento lo traiga así.
+ */
+export function proyectosDelResumen(d: { projectId?: unknown; linkedProjectIds?: unknown; projectWorkTypeId?: unknown }): {
+    projectId: string | null; linkedProjectIds: string[]; projectWorkTypeId: string | null;
+} {
+    const projectId = typeof d.projectId === 'string' && d.projectId ? d.projectId : null;
+    const linked = Array.isArray(d.linkedProjectIds)
+        ? [...new Set(d.linkedProjectIds.filter((x: unknown): x is string => typeof x === 'string' && !!x))]
+        : [];
+    // Sin origen, el tipo no significa nada.
+    const projectWorkTypeId = projectId && typeof d.projectWorkTypeId === 'string' && d.projectWorkTypeId ? d.projectWorkTypeId : null;
+    return { projectId, linkedProjectIds: linked.filter(id => id !== projectId), projectWorkTypeId };
+}
+
+/**
  * Las claves de cita que los pasos ACEPTADOS afirman haber usado.
  *
  * Sólo los aceptados: lo que se descartó al regenerar no dejó cita en el
@@ -89,18 +107,6 @@ export function portadaDelResumen(cover: unknown): Record<string, string> | null
  * una segunda copia que se desincroniza en cuanto el análisis gane un campo.
  * Lo que NO cambia es el nombre del campo, que es contrato de citación.
  */
-/**
- * El proyecto de origen y los vinculados (ADR-046). El origen nunca se repite
- * como vínculo, aunque el documento lo traiga así.
- */
-export function proyectosDelResumen(d: { projectId?: unknown; linkedProjectIds?: unknown }): { projectId: string | null; linkedProjectIds: string[] } {
-    const projectId = typeof d.projectId === 'string' && d.projectId ? d.projectId : null;
-    const linked = Array.isArray(d.linkedProjectIds)
-        ? [...new Set(d.linkedProjectIds.filter((x: unknown): x is string => typeof x === 'string' && !!x))]
-        : [];
-    return { projectId, linkedProjectIds: linked.filter(id => id !== projectId) };
-}
-
 export function clavesCitadas(steps: any[]): string[] {
     const out = new Set<string>();
     const recorre = (node: any): void => {

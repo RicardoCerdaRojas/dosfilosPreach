@@ -75,4 +75,34 @@ describe('SetPaperProjectUseCase', () => {
         expect(a.repo.setProjectLinks).toHaveBeenCalledWith('u1', 'p1', { unlink: 'viejo' });
         await expect(a.uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'origin', projectId: 'viejo' } })).rejects.toThrow(/no disponible/);
     });
+
+    describe('el tipo de trabajo (etapa 1b)', () => {
+        const conTipos = { id: 'curso', userId: 'u1', workTypes: [{ id: 'tp', label: 'TP' }, { id: 'pf', label: 'Paper final' }] };
+
+        it('se elige entre los del proyecto de origen', async () => {
+            const { uc, repo } = montar({ projectId: 'curso' }, { curso: conTipos });
+            await uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'workType', workTypeId: 'pf' } });
+            expect(repo.setProjectLinks).toHaveBeenCalledWith('u1', 'p1', { workTypeId: 'pf' });
+        });
+
+        it('uno que el origen no tiene se rechaza', async () => {
+            const { uc, repo } = montar({ projectId: 'curso' }, { curso: conTipos });
+            await expect(uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'workType', workTypeId: 'otro' } })).rejects.toThrow(/no existe/);
+            expect(repo.setProjectLinks).not.toHaveBeenCalled();
+        });
+
+        it('sin proyecto de origen no hay tipo que poner', async () => {
+            const { uc } = montar({}, { curso: conTipos });
+            await expect(uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'workType', workTypeId: 'tp' } })).rejects.toThrow(/origen/);
+        });
+
+        it('quitarlo no lee el proyecto, y repetir el mismo no escribe', async () => {
+            const a = montar({ projectId: 'curso', projectWorkTypeId: 'tp' }, {});
+            await a.uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'workType', workTypeId: null } });
+            expect(a.repo.setProjectLinks).toHaveBeenCalledWith('u1', 'p1', { workTypeId: null });
+            const b = montar({ projectId: 'curso', projectWorkTypeId: 'tp' }, { curso: conTipos });
+            await b.uc.execute({ ownerId: 'u1', paperId: 'p1', change: { kind: 'workType', workTypeId: 'tp' } });
+            expect(b.repo.setProjectLinks).not.toHaveBeenCalled();
+        });
+    });
 });
