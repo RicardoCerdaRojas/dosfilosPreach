@@ -164,3 +164,18 @@ describe('realignCitationMarks', () => {
         expect(r.reviews).toEqual([]);
     });
 });
+
+/** TP #8 (8b, C5): la oración «copiada» que no estaba en la fuente queda a la vista hasta corregirla. */
+describe('la cita textual no hallada', () => {
+    it('corregir la oración quita el aviso', () => {
+        const a = analisis();
+        const conAviso = {
+            ...a,
+            commentatorEngagement: [{ ...a.commentatorEngagement[1]!, verbatimQuote: '', unverifiedQuote: 'una oración que no está' }],
+        } as CanonicalVerseAnalysis;
+        const b = editCitationAt(conAviso, 'commentatorEngagement[0]', { kind: 'quote', quote: 'la oración real' });
+        expect(b.commentatorEngagement[0]).not.toHaveProperty('unverifiedQuote');
+        expect(b.commentatorEngagement[0]!.verbatimQuote).toBe('la oración real');
+        expect(collectAnalysisClaims(conAviso)[0]!.unverifiedQuote).toBe('una oración que no está');
+    });
+});

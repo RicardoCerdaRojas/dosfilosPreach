@@ -44,6 +44,8 @@ export interface AnalysisClaim {
     claim: string;
     /** Oración de la fuente que el analizador dijo haber copiado. `null` si no la dio. */
     verbatimQuote: string | null;
+    /** La oración «copiada» que no estaba en la fuente y se retiró (C5). */
+    unverifiedQuote?: string;
 }
 
 /**
@@ -62,6 +64,7 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
         c: { sourceKey?: string; page?: number; pageEnd?: number; via?: string; pageKind?: CitationPageKind; locator?: string },
         claim: string,
         verbatimQuote?: string | null,
+        unverifiedQuote?: string,
     ) => {
         if (!c?.sourceKey || typeof c.page !== 'number' || !Number.isFinite(c.page)) return;
         const quote = typeof verbatimQuote === 'string' ? verbatimQuote.trim() : '';
@@ -76,14 +79,15 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
             locator: c.locator,
             claim: (claim ?? '').trim(),
             verbatimQuote: quote.length > 0 ? quote : null,
+            ...(unverifiedQuote?.trim() ? { unverifiedQuote: unverifiedQuote.trim() } : {}),
         });
     };
 
     analysis.commentatorEngagement.forEach((c, i) =>
-        push('commentator', `commentatorEngagement[${i}]`, c, c.position, c.verbatimQuote));
+        push('commentator', `commentatorEngagement[${i}]`, c, c.position, c.verbatimQuote, c.unverifiedQuote));
     analysis.translationCruxes.forEach((crux, i) =>
         crux.commentatorPositions.forEach((p, j) =>
-            push('crux', `translationCruxes[${i}].commentatorPositions[${j}]`, p, p.summary, p.verbatimQuote)));
+            push('crux', `translationCruxes[${i}].commentatorPositions[${j}]`, p, p.summary, p.verbatimQuote, p.unverifiedQuote)));
     analysis.lexicalAnalyses.forEach((l, i) => {
         // Análisis anteriores pueden traer el rango sin glosas: el sitio se
         // recorre igual, con la afirmación que haya.

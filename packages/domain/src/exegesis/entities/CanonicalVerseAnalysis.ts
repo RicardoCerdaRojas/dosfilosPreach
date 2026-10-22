@@ -585,6 +585,13 @@ export interface CommentatorPosition {
      * lo reporta; el autor de `via` no se leyó (C3).
      */
     via?: string;
+    /**
+     * La oración que el analizador dijo haber copiado y que NO está en el
+     * texto de la fuente (TP #8, fase 8b, C5). `verbatimQuote` queda vacío
+     * para que no llegue a la prosa; esto queda para que la revisión de citas
+     * lo muestre. Antes se borraba con un `console.warn` y nadie se enteraba.
+     */
+    unverifiedQuote?: string;
 }
 
 /**
@@ -628,6 +635,8 @@ export interface TranslationCrux {
         /** Rango y segunda mano, como en `SourceCitation` (C3). */
         pageEnd?: number;
         via?: string;
+        /** Oración «copiada» que no está en la fuente (C5). */
+        unverifiedQuote?: string;
         /** La sección citada en un libro sin páginas impresas (`pageKind: 'section'`). */
         locator?: string;
         /** 1-2 sentence summary of the position. */

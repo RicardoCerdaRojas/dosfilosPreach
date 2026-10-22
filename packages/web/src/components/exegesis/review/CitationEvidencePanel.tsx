@@ -95,6 +95,15 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 </blockquote>
             </div>
 
+            {/* La oración «copiada» que no estaba en la fuente (TP #8, 8b, C5). */}
+            {claim?.unverifiedQuote && (
+                <div className="rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 space-y-1" data-testid="cita-textual-no-hallada">
+                    <p className="text-xs font-medium text-warning-subtle-foreground">{t('canonical.review.panel.unverifiedQuoteTitle')}</p>
+                    <blockquote className="text-xs italic text-warning-subtle-foreground/90">«{claim.unverifiedQuote}»</blockquote>
+                    <p className="text-[11px] text-warning-subtle-foreground/90">{t('canonical.review.panel.unverifiedQuoteBody')}</p>
+                </div>
+            )}
+
             {verdict.note && (
                 <div className="space-y-1">
                     <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('canonical.review.panel.verdict')}</p>

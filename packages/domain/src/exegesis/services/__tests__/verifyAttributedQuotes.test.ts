@@ -71,6 +71,8 @@ describe('verifyAttributedQuotes', () => {
         const positions = out.analysis.translationCruxes[0].commentatorPositions;
         expect(positions).toHaveLength(1);
         expect(positions[0].verbatimQuote).toBe('');
+        // TP #8 (8b, C5): ya no se borra en silencio; queda para la revisión de citas.
+        expect(positions[0].unverifiedQuote).toBe('el siervo carece por completo de autonomía y de voluntad propia');
         expect(positions[0].summary).toContain('carece de toda autonomía');
         expect(out.dropped).toEqual([
             { sourceKey: 'Kittel', page: 149, surface: 'crux', quote: 'el siervo carece por completo de autonomía y de voluntad propia' },

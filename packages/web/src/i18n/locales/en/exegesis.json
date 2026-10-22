@@ -2038,6 +2038,8 @@
         "reviewed": "Reviewed by hand"
       },
       "panel": {
+        "unverifiedQuoteTitle": "The analysis quoted this sentence verbatim, but it is not in the source text:",
+        "unverifiedQuoteBody": "It was removed from the prose. The attribution remains: check the page and write the real sentence with «Record the quote», or remove the citation.",
         "empty": "Pick a citation in the analysis, or in the list below, to see its evidence.",
         "cited": "Cited page",
         "found": "Support found at",

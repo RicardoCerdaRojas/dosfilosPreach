@@ -73,3 +73,22 @@ describe('Revisión — la página citada y la del verificador', () => {
         expect(screen.queryByTestId('abrir-pagina-hallada')).toBeNull();
     });
 });
+
+/** TP #8 (8b, C5): la oración «copiada» que no estaba en la fuente ya no se borra en silencio. */
+describe('Revisión — la cita textual no hallada', () => {
+    it('muestra la oración retirada y qué hacer', () => {
+        render(
+            <MemoryRouter>
+                <CitationEvidencePanel path="commentatorEngagement[0]" verdict={veredicto('203', null)}
+                    claim={{ site: 'commentator', path: 'commentatorEngagement[0]', sourceKey: 'McCartney', page: 203, claim: 'x', verbatimQuote: null, unverifiedQuote: 'una oración inventada' }}
+                    review={null} isReviewing={false} onReview={vi.fn()} noteFromView={null} viewed={null} />
+            </MemoryRouter>,
+        );
+        expect(screen.getByTestId('cita-textual-no-hallada')).toHaveTextContent('«una oración inventada»');
+    });
+
+    it('sin oración retirada, nada', () => {
+        panel(veredicto('203', null));
+        expect(screen.queryByTestId('cita-textual-no-hallada')).toBeNull();
+    });
+});

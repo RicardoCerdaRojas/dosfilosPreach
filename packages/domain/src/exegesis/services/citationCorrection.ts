@@ -119,13 +119,15 @@ export function editCitationAt(
         if (edit.kind === 'remove') return REMOVE;
         if (edit.kind === 'page') return { ...leaf, page: edit.page, pageKind: edit.pageKind };
         const quote = edit.quote.trim();
+        // Corregir la oración resuelve la que no se halló (C5): el aviso se va.
+        const { unverifiedQuote: _sinVerificar, ...sinAviso } = leaf;
         // Firestore no guarda `undefined`; una oración vacía se borra
         // quitando el campo, que es como lo dejan los análisis sin cita.
         if (!quote) {
-            const { verbatimQuote: _drop, ...rest } = leaf;
+            const { verbatimQuote: _drop, ...rest } = sinAviso;
             return rest;
         }
-        return { ...leaf, verbatimQuote: quote };
+        return { ...sinAviso, verbatimQuote: quote };
     };
 
     return updateIn(analysis as unknown as Leaf, steps, apply) as unknown as CanonicalVerseAnalysis;
