@@ -1,4 +1,10 @@
 {
+  "studies": {
+    "title": "Studies",
+    "new": "New study",
+    "empty": "No studies yet. Each assignment, passage or topic you work on in this project is a study.",
+    "linked": "linked"
+  },
   "charge": {
     "title": "Brief",
     "empty": "Which rubric, framing, style guide and strategy this project's studies start with. Copy it from a work profile or pick it by hand.",

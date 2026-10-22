@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ProjectOutput, ProjectOutputKind, projectsOfPaper } from '@dosfilos/domain';
+import { ProjectOutput, ProjectOutputKind } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
 import { ProjectChargeCard } from './components/project/ProjectChargeCard';
+import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
 import { ProjectSourcePickerModal } from './components/project/ProjectSourcePickerModal';
@@ -26,6 +27,7 @@ import { ProjectOutputEditorDialog } from './components/project/ProjectOutputEdi
 import { ProjectLinkSessionDialog } from './components/project/ProjectLinkSessionDialog';
 import { useProjectAttachedSources } from './hooks/useProjectAttachedSources';
 import { useLinkProjectSession } from './hooks/useLinkProjectSession';
+import { useProjectSlices } from './hooks/useProjectSlices';
 
 /**
  * Project workspace page. Pure composer — orchestrates the project header,
@@ -49,6 +51,7 @@ export function ProjectDashboard() {
     const { sermons } = useSermons();
     const { sessions: greekSessions } = useGreekSessions();
     const { sessions: hebrewSessions } = useHebrewSessions();
+    const { papers } = useExegesisPapers();
     const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput, updateSources } =
         useProjectWorkspace(projectId);
 
@@ -57,41 +60,11 @@ export function ProjectDashboard() {
         [projects, projectId]
     );
 
-    // ── Filtered + sorted slices for this project ──────────────────────────
-    const projectSessions = useMemo(
-        () => (sessions ?? []).filter(s => s.projectId === projectId),
-        [sessions, projectId]
-    );
-    const projectSermons = useMemo(
-        () => (sermons ?? [])
-            .filter(s => s.projectId === projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [sermons, projectId]
-    );
-    const projectGreekSessions = useMemo(
-        () => (greekSessions ?? [])
-            .filter(s => s.projectId === projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [greekSessions, projectId]
-    );
-    const linkableGreekSessions = useMemo(
-        () => (greekSessions ?? [])
-            .filter(s => s.projectId !== projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [greekSessions, projectId]
-    );
-    const projectHebrewSessions = useMemo(
-        () => (hebrewSessions ?? [])
-            .filter(s => s.projectId === projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [hebrewSessions, projectId]
-    );
-    const linkableHebrewSessions = useMemo(
-        () => (hebrewSessions ?? [])
-            .filter(s => s.projectId !== projectId)
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-        [hebrewSessions, projectId]
-    );
+    // ── Lo que pertenece a este proyecto ───────────────────────────────────
+    const {
+        projectSessions, projectSermons, projectGreekSessions, linkableGreekSessions,
+        projectHebrewSessions, linkableHebrewSessions, projectStudies,
+    } = useProjectSlices(projectId, { sessions, sermons, greekSessions, hebrewSessions, papers });
 
     // ── Hooks: attached sources + link sessions ────────────────────────────
     const { sources: attachedSources, reprocessing, reprocessSource } = useProjectAttachedSources({
@@ -110,14 +83,6 @@ export function ProjectDashboard() {
     >(null);
     const [outputToDelete, setOutputToDelete] = useState<ProjectOutput | null>(null);
 
-    // ── Estudios del proyecto (ADR-046): de origen y vinculados ───────────
-    const { papers } = useExegesisPapers();
-    const projectStudies = useMemo(
-        () => (papers ?? []).filter(p => !p.archivedAt && projectId && projectsOfPaper(p).includes(projectId)),
-        [papers, projectId]
-    );
-
-    // ── Material list (unified outputs + project sermons) ──────────────────
     const materialItems = useMemo<MaterialItem[]>(() => {
         const fromOutputs: MaterialItem[] = (outputs ?? []).map(o => ({
             source: 'output',
@@ -259,6 +224,12 @@ export function ProjectDashboard() {
                         }}
                     />
                 )}
+
+                <ProjectStudiesSection
+                    projectId={project.id}
+                    studies={projectStudies}
+                    onNewStudy={() => navigate(`/dashboard/exegesis/new?projectId=${project.id}`)}
+                />
 
                 <ProjectResourceGrid
                     projectId={projectId!}
