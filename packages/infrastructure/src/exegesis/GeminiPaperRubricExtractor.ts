@@ -356,6 +356,11 @@ function parseExtractorJson(rawJson: string): RawExtractionResult {
                 max: typeof parsed.expectedLength.max === 'number' ? parsed.expectedLength.max : null,
             }
             : null,
+        // Lo que el sílabo dice de maquetación y la bibliografía que nombra.
+        // El prompt los pide y `mapToDomain` los lee, pero no se copiaban
+        // aquí: llegaban siempre vacíos (etapa 0).
+        formatting: parsed.formatting,
+        courseBibliography: parsed.courseBibliography,
         sourceRequirements: Array.isArray(parsed.sourceRequirements) ? parsed.sourceRequirements : [],
         structuralExpectations: Array.isArray(parsed.structuralExpectations) ? parsed.structuralExpectations : [],
         qualityCriteria: Array.isArray(parsed.qualityCriteria) ? parsed.qualityCriteria : [],
