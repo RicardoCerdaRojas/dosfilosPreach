@@ -44,6 +44,8 @@ describe('VerbatimFirstCitationVerifier', () => {
         });
         expect(llm.verify).not.toHaveBeenCalled();
         expect(out.citations[0]).toMatchObject({ status: 'verified', matchedPage: '559', matchedPageLabel: 'p. 559', similarityScore: 1 });
+        // TP #8 (8b, D3): la oración citada es el tramo de apoyo, para resaltarlo.
+        expect(out.citations[0]!.supportingSpan).toEqual({ text: '"Shepherd" is an active participle used substantively', pageLabel: 'p. 559' });
     });
 
     it('si la oración está en otra página que la citada, es «página no coincide»', async () => {

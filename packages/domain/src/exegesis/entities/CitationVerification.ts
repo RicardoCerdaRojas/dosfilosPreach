@@ -185,6 +185,19 @@ export interface VerifiedCitation extends ParsedCitation {
      * hizo falta buscar.
      */
     bookSearch?: 'cited-page' | 'book' | 'not-in-book';
+    /**
+     * Lo que la oración le atribuye a la fuente, como lo leyó el juez (TP #8,
+     * fase 8b, D3). Se descartaba: con esto la revisión muestra, lado a lado,
+     * lo que la oración le atribuye y lo que la fuente dice.
+     */
+    takenFromSource?: string;
+    /**
+     * El tramo de la fuente que respalda la cita, copiado del fragmento, con
+     * su rótulo de página (D3). Sirve para resaltarlo en el visor aunque la
+     * cita sea una paráfrasis, y para «Diagnosticar»: si cubre sólo una parte
+     * de la oración, la afirmación es mixta.
+     */
+    supportingSpan?: { text: string; pageLabel: string | null };
 }
 
 /**

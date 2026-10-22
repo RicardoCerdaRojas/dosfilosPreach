@@ -92,3 +92,19 @@ describe('Revisión — la cita textual no hallada', () => {
         expect(screen.queryByTestId('cita-textual-no-hallada')).toBeNull();
     });
 });
+
+/** TP #8 (8b, D3): lo que la oración le atribuye y lo que la fuente dice, lado a lado. */
+describe('Revisión — lo atribuido y lo que dice la fuente', () => {
+    it('muestra los dos cuando el juez los dio', () => {
+        panel({ ...veredicto('203', 'p. 202'), takenFromSource: 'McCartney prefiere la lectura epexegética', supportingSpan: { text: 'The epexegetical view best fits', pageLabel: 'p. 202' } } as never);
+        const caja = screen.getByTestId('atribuido-y-fuente');
+        expect(caja).toHaveTextContent('McCartney prefiere la lectura epexegética');
+        expect(caja).toHaveTextContent('«The epexegetical view best fits»');
+        expect(caja).toHaveTextContent('canonical.review.panel.sourceSaysAt {"page":"p. 202"}');
+    });
+
+    it('sin ellos, nada', () => {
+        panel(veredicto('203', null));
+        expect(screen.queryByTestId('atribuido-y-fuente')).toBeNull();
+    });
+});

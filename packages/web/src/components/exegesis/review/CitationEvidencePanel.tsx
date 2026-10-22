@@ -95,6 +95,29 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 </blockquote>
             </div>
 
+            {/* Lo que la oración le atribuye a la fuente y lo que la fuente dice,
+                lado a lado (TP #8, 8b, D3). */}
+            {(verdict.takenFromSource || verdict.supportingSpan) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="atribuido-y-fuente">
+                    {verdict.takenFromSource && (
+                        <div className="rounded-md border border-border px-2.5 py-2 space-y-0.5">
+                            <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('canonical.review.panel.takenFromSource')}</p>
+                            <p className="text-xs text-foreground/90 leading-snug">{verdict.takenFromSource}</p>
+                        </div>
+                    )}
+                    {verdict.supportingSpan && (
+                        <div className="rounded-md border border-border px-2.5 py-2 space-y-0.5">
+                            <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+                                {verdict.supportingSpan.pageLabel
+                                    ? t('canonical.review.panel.sourceSaysAt', { page: verdict.supportingSpan.pageLabel })
+                                    : t('canonical.review.panel.sourceSays')}
+                            </p>
+                            <p className="text-xs italic text-foreground/90 leading-snug">«{verdict.supportingSpan.text}»</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* La oración «copiada» que no estaba en la fuente (TP #8, 8b, C5). */}
             {claim?.unverifiedQuote && (
                 <div className="rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 space-y-1" data-testid="cita-textual-no-hallada">

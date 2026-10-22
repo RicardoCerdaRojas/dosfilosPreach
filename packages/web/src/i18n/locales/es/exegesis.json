@@ -2038,6 +2038,9 @@
         "reviewed": "Revisada a mano"
       },
       "panel": {
+        "takenFromSource": "La oración le atribuye",
+        "sourceSays": "La fuente dice",
+        "sourceSaysAt": "La fuente dice ({{page}})",
         "unverifiedQuoteTitle": "El análisis citó textualmente esta oración, pero no está en el texto de la fuente:",
         "unverifiedQuoteBody": "Se retiró de la prosa. La atribución quedó: revisa la página y escribe la oración real con «Registrar cita textual», o quita la cita.",
         "empty": "Elige una cita en el análisis, o en la lista de abajo, para ver su evidencia.",

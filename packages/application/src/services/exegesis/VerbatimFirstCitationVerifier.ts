@@ -80,6 +80,8 @@ function verifyByVerbatim(
         similarityScore: match.score,
         matchedPage,
         matchedPageLabel: match.pageHint,
+        // La oración citada es el tramo de apoyo (D3).
+        supportingSpan: { text: citation.evidence.trim().slice(0, 400), pageLabel: match.pageHint },
         note: mismatch
             ? (language === 'en'
                 ? `The quoted sentence is in the source, but at ${match.pageHint}, not p. ${citation.pages}.`

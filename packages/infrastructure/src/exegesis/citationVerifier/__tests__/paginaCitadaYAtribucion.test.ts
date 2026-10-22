@@ -147,3 +147,36 @@ describe('una fuente cuya copia perdió el griego', () => {
         expect(userMessage).not.toContain('PERDIÓ');
     });
 });
+
+/** TP #8 (8b, D3): el veredicto lleva lo atribuido y el tramo de apoyo con su página. */
+describe('el veredicto guarda lo que el juez halló', () => {
+    it('takenFromSource y supportingSpan', async () => {
+        modeloDice({ bestPageHint: 'p. 140', citedPageSupports: true, takenFromSource: 'un hombre ideal', supportingQuote: 'only an ideal man would never sin' });
+        const v = await verificar();
+        expect(v.takenFromSource).toBe('un hombre ideal');
+        expect(v.supportingSpan).toEqual({ text: 'only an ideal man would never sin', pageLabel: 'p. 140' });
+    });
+
+    it('una cita no encontrada no trae tramo de apoyo', async () => {
+        modeloDice({ status: 'not-found', bestPageHint: '', citedPageSupports: false, supportingQuote: 'algo' });
+        expect((await verificar()).supportingSpan).toBeUndefined();
+    });
+});
+
+/** TP #8 (8b, D3): lo que el juez halló ya no se descarta. */
+describe('parseLlmResponse — lo atribuido y el tramo de apoyo', () => {
+    it('guarda takenFromSource y el tramo, recortado', () => {
+        const r = parseLlmResponse(JSON.stringify({
+            takenFromSource: ' Mayor lee la activa como pedir para sí ', status: 'verified', confidence: 0.9,
+            bestPageHint: 'p. 133', supportingQuote: 'x'.repeat(600), citedPageSupports: true, reasoning: 'ok',
+        }));
+        expect(r.takenFromSource).toBe('Mayor lee la activa como pedir para sí');
+        expect(r.supportingQuote).toHaveLength(400);
+    });
+
+    it('sin esos campos, vacíos', () => {
+        const r = parseLlmResponse(JSON.stringify({ status: 'not-found', confidence: 0.1, bestPageHint: '', citedPageSupports: false, reasoning: 'no' }));
+        expect(r.takenFromSource).toBe('');
+        expect(r.supportingQuote).toBe('');
+    });
+});

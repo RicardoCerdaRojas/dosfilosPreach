@@ -276,6 +276,13 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                     ? (chunks.find(c => { const p = printedPageOfHint(c.pageHint); return p !== null && pagesOverlap(parsed.pages!, p); })?.pageHint ?? null)
                     : (parsedResp.bestPageHint.trim() || null),
                 note,
+                ...(parsedResp.takenFromSource ? { takenFromSource: parsedResp.takenFromSource } : {}),
+                ...(parsedResp.supportingQuote && status !== 'not-found' ? {
+                    supportingSpan: {
+                        text: parsedResp.supportingQuote,
+                        pageLabel: parsedResp.bestPageHint.trim() || null,
+                    },
+                } : {}),
             };
         } catch (err) {
             console.warn('[GeminiLlmCitationVerifier] verify failed for citation, falling back to manual-pending:', err);
@@ -399,6 +406,10 @@ export interface ParsedLlmResponse {
     status: CitationStatus;
     confidence: number | null;
     bestPageHint: string;
+    /** Lo que la oración le atribuye a la fuente (D3). Vacío si no lo dio. */
+    takenFromSource: string;
+    /** El tramo del fragmento que la respalda (D3). Vacío si nada. */
+    supportingQuote: string;
     /** Un fragmento de la página CITADA respalda la afirmación por sí solo. */
     citedPageSupports: boolean;
     reasoning: string;
@@ -465,6 +476,9 @@ export function citedPageSettlesIt(
  * `status` que el esquema no contempla— y el motivo viaja en la nota, para que
  * la fila diga por qué está donde está.
  */
+/** Lo que se guarda del tramo de apoyo: alcanza para resaltarlo y no infla el veredicto. */
+const MAX_SUPPORTING_QUOTE = 400;
+
 export function parseLlmResponse(rawJson: string, finishReason: string | null = null): ParsedLlmResponse {
     let parsed: any;
     try {
@@ -482,6 +496,8 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
             status: 'manual-pending',
             confidence: null,
             bestPageHint: '',
+            takenFromSource: '',
+            supportingQuote: '',
             citedPageSupports: false,
             // `finishReason` viene del servidor justamente para no tener que
             // adivinar aquí: cuando dice MAX_TOKENS el corte es un hecho, y el
@@ -511,7 +527,12 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
             ? ''
             : `El modelo no declaró un veredicto reconocible (${String(declarado)}). No es un problema de la cita.`;
     const citedPageSupports = parsed?.citedPageSupports === true;
-    return { status, confidence, bestPageHint, citedPageSupports, reasoning };
+    const texto = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+    return {
+        status, confidence, bestPageHint, citedPageSupports, reasoning,
+        takenFromSource: texto(parsed?.takenFromSource),
+        supportingQuote: texto(parsed?.supportingQuote).slice(0, MAX_SUPPORTING_QUOTE),
+    };
 }
 
 function extractPageFromHint(hint: string): string | null {
