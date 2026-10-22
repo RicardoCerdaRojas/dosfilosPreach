@@ -94,6 +94,8 @@ interface CanonicalAnalysisStudyViewProps {
 function CitationChip({
     sourceKey,
     page,
+    pageEnd,
+    via,
     pageKind,
     locator,
     verbatimQuote,
@@ -103,6 +105,9 @@ function CitationChip({
 }: {
     sourceKey: string;
     page: number;
+    /** Rango y segunda mano (TP #8, 8b, C3). */
+    pageEnd?: number;
+    via?: string;
     pageKind?: CitationPageKind;
     locator?: string;
     verbatimQuote?: string | null;
@@ -113,7 +118,8 @@ function CitationChip({
     const { t } = useTranslation('exegesis');
     // Con su tipo: decía «p.» también sobre una hoja del PDF, y ahora puede
     // ser una sección («§ 2.3») en un libro sin páginas impresas.
-    const ubicacion = citedLocation({ sourceKey, page, pageKind, locator }, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`));
+    const ubicacion = citedLocation({ sourceKey, page, pageEnd, pageKind, locator }, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))
+        + (via?.trim() ? ` · ${t('canonical.study.via', { authors: via.trim() })}` : '');
     const label = `${sourceKey} ${ubicacion}`;
     if (marks && path) {
         const verdict = marks.verdicts.get(path) ?? null;
@@ -399,6 +405,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                     <CitationChip
                                         sourceKey={c.sourceKey}
                                         page={c.page}
+                                        pageEnd={c.pageEnd}
+                                        via={c.via}
                                         pageKind={c.pageKind}
                                         locator={c.locator}
                                         verbatimQuote={c.verbatimQuote}
@@ -460,6 +468,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                                     <CitationChip
                                                         sourceKey={p.sourceKey}
                                                         page={p.page}
+                                                        pageEnd={p.pageEnd}
+                                                        via={p.via}
                                                         pageKind={p.pageKind}
                                                         locator={p.locator}
                                                         verbatimQuote={p.verbatimQuote}
@@ -794,7 +804,8 @@ function SourceList({
     // El mismo rótulo que el chip (`citedLocation`): estas citas decían «p.»
     // sobre una hoja y «p. 0 (2.3)» sobre una sección.
     const rotulo = (c: SourceCitation) =>
-        `${c.sourceKey} ${citedLocation(c, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}`;
+        `${c.sourceKey} ${citedLocation(c, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}`
+        + (c.via?.trim() ? ` · ${t('canonical.study.via', { authors: c.via.trim() })}` : '');
     return (
         <p className="text-[10.5px] text-muted-foreground italic mt-1">
             {citations.map((c, i) => (
@@ -804,6 +815,8 @@ function SourceList({
                         <CitationChip
                             sourceKey={c.sourceKey}
                             page={c.page}
+                            pageEnd={c.pageEnd}
+                            via={c.via}
                             pageKind={c.pageKind}
                             locator={c.locator}
                             path={pathFor(i)}

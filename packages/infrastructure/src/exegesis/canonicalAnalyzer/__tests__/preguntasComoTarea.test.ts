@@ -125,3 +125,18 @@ describe('la fuente aparte de la inferencia propia', () => {
         expect(buildAnalyzerPrompt(entrada({ language: 'en' })).systemInstruction).toContain('your own conclusion goes in "ownInference", without a citation');
     });
 });
+
+describe('rango y segunda mano en el esquema y el prompt (C3)', () => {
+    it('toda cita admite pageEnd y via', () => {
+        const sch = canonicalVerseAnalysisSchema(voiceFor('JAS')) as unknown as {
+            properties: Record<string, { items: { properties: Record<string, { items?: { properties: Record<string, unknown> } }> } }>;
+        };
+        expect(sch.properties.commentatorEngagement!.items.properties).toHaveProperty('pageEnd');
+        expect(sch.properties.commentatorEngagement!.items.properties).toHaveProperty('via');
+        expect(sch.properties.footnoteExtensions!.items.properties.sources!.items!.properties).toHaveProperty('via');
+    });
+
+    it('la disciplina de citación lo explica', () => {
+        expect(buildAnalyzerPrompt(entrada()).systemInstruction).toContain('el otro autor va en "via": nunca lo cites como si lo hubieras leído');
+    });
+});

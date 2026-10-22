@@ -109,8 +109,10 @@ export function serializeAnalysis(
         ?? ((_key: string, value: number, kind: CitationPageKind) =>
             kind === 'printed' ? `p. ${value}` : `hoja ${value}`);
     /** Rotula una cita usando el tipo que quedó registrado al analizarla. */
-    const cite = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind; locator?: string }) =>
-        citedLocation(c, page);
+    // La segunda mano viaja marcada (C3): la prosa escribe «X (p. N) atribuye a
+    // Y…» y nunca cita a Y como si se hubiera leído.
+    const cite = (c: { sourceKey: string; page: number; pageEnd?: number; pageKind?: CitationPageKind; locator?: string; via?: string }) =>
+        `${citedLocation(c, page)}${c.via?.trim() ? ` [second-hand: this source reports ${c.via.trim()}; write «${c.sourceKey} attributes to ${c.via.trim()}…», never cite ${c.via.trim()} directly]` : ''}`;
     // Las menciones sueltas dentro de la prosa —«Adamson (p. 59) lo conecta
     // con…»— no llevan tipo propio, pero el tipo es homogéneo por fuente: el
     // ancla que vio el modelo fue la misma para todos los fragmentos de un

@@ -637,3 +637,36 @@ describe('AnalyzeVerseCanonicallyUseCase — preguntas del encuadre', () => {
         expect(q.options[0]!.defenders[0]).toHaveProperty('pageKind');
     });
 });
+
+/** TP #8 (8b, C3): rango y segunda mano con forma limpia. */
+describe('AnalyzeVerseCanonicallyUseCase — rango y segunda mano', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('pageEnd sólo si pasa la página inicial; via sólo si dice algo', async () => {
+        const paper = makePaper([makeSource('Tuggy', 'res-a')]);
+        const base = analysisCiting(['Tuggy']);
+        const analysis = {
+            ...base,
+            lexicalAnalyses: [{
+                ...base.lexicalAnalyses[0]!,
+                generalSemanticRange: {
+                    glosses: ['siervo'],
+                    sources: [
+                        { sourceKey: 'Tuggy', page: 149, pageEnd: 150, via: '' },
+                        { sourceKey: 'Tuggy', page: 149, pageEnd: 0, via: 'BDAG' },
+                        { sourceKey: 'Tuggy', page: 149, pageEnd: 400 },
+                    ],
+                },
+            }],
+        };
+        const { useCase, appended } = buildUseCase({ paper, analysis, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const [uno, dos, tres] = appended[0]!.lexicalAnalyses[0]!.generalSemanticRange.sources;
+        expect(uno).toMatchObject({ page: 149, pageEnd: 150 });
+        expect(uno).not.toHaveProperty('via');
+        expect(dos).not.toHaveProperty('pageEnd');
+        expect(dos!.via).toBe('BDAG');
+        // Un rango de 251 páginas no es una cita.
+        expect(tres).not.toHaveProperty('pageEnd');
+    });
+});

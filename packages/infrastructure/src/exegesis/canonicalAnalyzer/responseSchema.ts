@@ -344,6 +344,7 @@ export function canonicalVerseAnalysisSchema(
                     },
                     page: { type: 'integer', description: 'Página donde se articula la posición. Si el ancla del fragmento es «§ …» (libro sin páginas impresas), usa 0 y copia la sección (sin «§») en locator.' },
                     locator: { type: 'string', description: 'La sección o el lema citado cuando el libro no tiene páginas (ancla «§ …»). Vacío si no aplica.' },
+                    ...CITATION_RANGE_AND_VIA(),
                     role: { type: 'string', enum: ['anchor', 'contrast', 'technical'] },
                     position: {
                         type: 'string',
@@ -402,6 +403,7 @@ export function canonicalVerseAnalysisSchema(
                                 sourceKey: { type: 'string' },
                                 page: { type: 'integer', description: 'Si el ancla es «§ …», 0 y la sección en locator.' },
                                 locator: { type: 'string' },
+                                ...CITATION_RANGE_AND_VIA(),
                                 summary: { type: 'string', description: 'Resumen de 1-2 oraciones de la posición.' },
                                 supports: {
                                     type: 'integer',
@@ -626,6 +628,26 @@ function QUESTION_ANSWERS_SCHEMA() {
 }
 
 /**
+ * Rango y segunda mano de una cita (TP #8, 8b, C3): «Adamson 170–171» se
+ * citaba con una sola página y salía falsa alarma; «Adamson atribuye a
+ * Mayor» se citaba como si Mayor se hubiera leído.
+ */
+function CITATION_RANGE_AND_VIA() {
+    return {
+        pageEnd: {
+            type: 'integer',
+            description: 'Última página cuando lo citado corre por más de una (170–171). 0 si es una sola página.',
+        },
+        via: {
+            type: 'string',
+            description:
+                'Segunda mano: el autor al que ESTA fuente atribuye la idea («Adamson atribuye a Mayor y Ropes…» → "Mayor, Ropes"). ' +
+                'La cita sigue siendo de esta fuente. Vacío si la idea es de la propia fuente.',
+        },
+    } as const;
+}
+
+/**
  * `SourceCitation` schema. Inlined as a function-call producing fresh
  * objects because Gemini's responseSchema doesn't support `$ref` —
  * each occurrence needs its own concrete object.
@@ -646,6 +668,7 @@ function SOURCE_CITATION_SCHEMA() {
                 type: 'string',
                 description: 'Disambiguador opcional cuando sourceKey no basta (ej. "vol. 2", "§142", "ad loc."). Vacío si no aplica.',
             },
+            ...CITATION_RANGE_AND_VIA(),
         },
         required: ['sourceKey', 'page'],
     } as const;

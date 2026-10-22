@@ -41,3 +41,18 @@ describe('serializeAnalysis — inferencia propia', () => {
         expect(s).toContain('own inference (NO citation, separate sentence): El contraste es de motivo.');
     });
 });
+
+/** TP #8 (8b, C3): el rango se rotula entero y la segunda mano llega marcada. */
+describe('serializeAnalysis — rango y segunda mano', () => {
+    it('«p. 170–171» y «atribuye a», nunca citar al autor reportado', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 5, verseEnd: 5 }),
+            commentatorEngagement: [{
+                sourceKey: 'Adamson', page: 170, pageEnd: 171, pageKind: 'printed' as const, role: 'contrast' as const,
+                position: 'Mayor, Knowling y Ropes leen «el espíritu» como sujeto.', verbatimQuote: '', via: 'Mayor, Knowling, Ropes',
+            }],
+        };
+        const s = serializeAnalysis(a, 'es');
+        expect(s).toContain('Adamson (p. 170–171 [second-hand: this source reports Mayor, Knowling, Ropes; write «Adamson attributes to Mayor, Knowling, Ropes…», never cite Mayor, Knowling, Ropes directly])');
+    });
+});

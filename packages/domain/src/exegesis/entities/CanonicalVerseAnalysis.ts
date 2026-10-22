@@ -574,6 +574,17 @@ export interface CommentatorPosition {
      * Empty/absent when paraphrase suffices.
      */
     verbatimQuote?: string;
+    /**
+     * Última página cuando la cita es un rango («170–171»). Ausente en una
+     * página sola (TP #8, fase 8b, C3).
+     */
+    pageEnd?: number;
+    /**
+     * Segunda mano: el autor al que ESTA fuente atribuye la idea («Adamson
+     * (170) atribuye a Mayor, Knowling y Ropes…»). La cita es de la fuente que
+     * lo reporta; el autor de `via` no se leyó (C3).
+     */
+    via?: string;
 }
 
 /**
@@ -614,6 +625,9 @@ export interface TranslationCrux {
         page: number;
         /** Si `page` es la página impresa o la hoja del archivo. Ausente = hoja. */
         pageKind?: CitationPageKind;
+        /** Rango y segunda mano, como en `SourceCitation` (C3). */
+        pageEnd?: number;
+        via?: string;
         /** La sección citada en un libro sin páginas impresas (`pageKind: 'section'`). */
         locator?: string;
         /** 1-2 sentence summary of the position. */
@@ -760,6 +774,17 @@ export interface SourceCitation {
      * needed.
      */
     locator?: string;
+    /**
+     * Última página cuando la cita es un rango («170–171»). Ausente en una
+     * página sola (TP #8, fase 8b, C3).
+     */
+    pageEnd?: number;
+    /**
+     * Segunda mano: el autor al que ESTA fuente atribuye la idea («Adamson
+     * (170) atribuye a Mayor, Knowling y Ropes…»). La cita es de la fuente que
+     * lo reporta; el autor de `via` no se leyó (C3).
+     */
+    via?: string;
 }
 
 /**
@@ -855,9 +880,15 @@ export function buildEmptyCanonicalVerseAnalysis(reference: PassageReference): C
  * las afirmaciones no difieran.
  */
 export function citedLocation(
-    c: { sourceKey: string; page: number; pageKind?: CitationPageKind; locator?: string },
+    c: { sourceKey: string; page: number; pageEnd?: number; pageKind?: CitationPageKind; locator?: string },
     pageLabel: (sourceKey: string, page: number, kind: CitationPageKind) => string,
 ): string {
     if (c.pageKind === 'section' && c.locator?.trim()) return `§ ${c.locator.trim().replace(/^§\s*/, '')}`;
-    return pageLabel(c.sourceKey, c.page, c.pageKind === 'section' ? 'sheet' : (c.pageKind ?? 'sheet'));
+    const kind = c.pageKind === 'section' ? 'sheet' : (c.pageKind ?? 'sheet');
+    const desde = pageLabel(c.sourceKey, c.page, kind);
+    // Un rango (C3) se rotula «p. 170–171»: el final con el mismo rótulo que
+    // el comienzo, sin repetir «p.».
+    if (typeof c.pageEnd !== 'number' || !(c.pageEnd > c.page)) return desde;
+    const hasta = pageLabel(c.sourceKey, c.pageEnd, kind).split(' ').pop() ?? String(c.pageEnd);
+    return `${desde}–${hasta}`;
 }

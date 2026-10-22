@@ -149,3 +149,32 @@ describe('collectAnalysisClaims — la inferencia propia no se verifica contra l
         expect(collectAnalysisClaims(a)[0]!.claim).toBe('Mayor lee la activa como pedir para sí.');
     });
 });
+
+/** TP #8 (8b, C3): «Adamson 170–171» y la segunda mano. */
+describe('rango y segunda mano', () => {
+    const conRango = () => ({
+        ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 5, verseEnd: 5 }),
+        commentatorEngagement: [{
+            sourceKey: 'Adamson', page: 170, pageEnd: 171, pageKind: 'printed' as const, role: 'contrast' as const,
+            position: 'cataloga las propuestas', via: 'Mayor, Ropes',
+        }],
+    });
+
+    it('la afirmación lleva el rango y a quién atribuye la fuente', () => {
+        const [c] = collectAnalysisClaims(conRango());
+        expect(c).toMatchObject({ page: 170, pageEnd: 171, via: 'Mayor, Ropes' });
+    });
+
+    it('el verificador recibe el rango entero en la unidad de la evidencia', () => {
+        const [cit] = analysisClaimsToCitations(collectAnalysisClaims(conRango()), c => String(c.page));
+        expect(cit!.pages).toBe('170–171');
+        expect(cit!.raw).toBe('Adamson, p. 170–171');
+        expect(cit!.evidencePage).toBe('170');
+    });
+
+    it('un «rango» que no pasa la página inicial es una página sola', () => {
+        const a = conRango();
+        a.commentatorEngagement[0]!.pageEnd = 170;
+        expect(collectAnalysisClaims(a)[0]).not.toHaveProperty('pageEnd');
+    });
+});

@@ -638,6 +638,9 @@ function stripAnchorSeparators(text: string): string {
     return text.replace(/^---.*---$/gm, ' ');
 }
 
+/** Un rango más largo que esto no es una cita: es el modelo poniendo cualquier número. */
+const MAX_RANGO_DE_PAGINAS = 10;
+
 function sanitizeSourceReferences(
     analysis: CanonicalVerseAnalysis,
     validKeys: Set<string>,
@@ -659,8 +662,19 @@ function sanitizeSourceReferences(
         c.page <= 0
         && anchoredKeys.has(c.sourceKey)
         && !(c.pageKind === 'section' && c.locator?.trim());
+    // Rango y segunda mano con forma limpia (C3): «pageEnd» sólo si de verdad
+    // pasa la página inicial, «via» sólo si dice algo. El esquema estricto los
+    // devuelve en 0 y vacío cuando no aplican.
+    const limpiarRangoYVia = <T extends { page: number; pageEnd?: number; via?: string }>(c: T): T => {
+        const { pageEnd, via, ...resto } = c;
+        return {
+            ...resto,
+            ...(typeof pageEnd === 'number' && pageEnd > c.page && pageEnd - c.page <= MAX_RANGO_DE_PAGINAS ? { pageEnd } : {}),
+            ...(typeof via === 'string' && via.trim() ? { via: via.trim() } : {}),
+        } as T;
+    };
     const cleanCitations = (citations: ReadonlyArray<SourceCitation>): SourceCitation[] =>
-        citations.filter(c => validKeys.has(c.sourceKey) && !missingPage(c));
+        citations.filter(c => validKeys.has(c.sourceKey) && !missingPage(c)).map(limpiarRangoYVia);
 
     return {
         ...analysis,
@@ -684,14 +698,14 @@ function sanitizeSourceReferences(
         // a configured source — those would render as unverifiable
         // citations downstream.
         commentatorEngagement: analysis.commentatorEngagement.filter(ce =>
-            validKeys.has(ce.sourceKey) && !missingPage(ce)),
+            validKeys.has(ce.sourceKey) && !missingPage(ce)).map(limpiarRangoYVia),
         // Translation cruxes can keep entries even if some commentator
         // positions reference invalid keys (we just drop those
         // positions). The crux itself remains usable.
         translationCruxes: analysis.translationCruxes.map(tc => ({
             ...tc,
             commentatorPositions: tc.commentatorPositions.filter(cp =>
-                validKeys.has(cp.sourceKey) && !missingPage(cp)),
+                validKeys.has(cp.sourceKey) && !missingPage(cp)).map(limpiarRangoYVia),
         })),
         footnoteExtensions: analysis.footnoteExtensions.map(fe => ({
             ...fe,

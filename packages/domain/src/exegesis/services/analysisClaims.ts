@@ -34,6 +34,10 @@ export interface AnalysisClaim {
     path: string;
     sourceKey: string;
     page: number;
+    /** Última página de un rango (C3). */
+    pageEnd?: number;
+    /** Segunda mano: el autor al que la fuente atribuye la idea (C3). */
+    via?: string;
     pageKind?: CitationPageKind;
     locator?: string;
     /** La afirmación tal como la escribió el analizador, en el idioma del trabajo. */
@@ -55,7 +59,7 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
     const push = (
         site: AnalysisClaimSite,
         path: string,
-        c: { sourceKey?: string; page?: number; pageKind?: CitationPageKind; locator?: string },
+        c: { sourceKey?: string; page?: number; pageEnd?: number; via?: string; pageKind?: CitationPageKind; locator?: string },
         claim: string,
         verbatimQuote?: string | null,
     ) => {
@@ -66,6 +70,8 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
             path,
             sourceKey: c.sourceKey,
             page: c.page,
+            ...(typeof c.pageEnd === 'number' && c.pageEnd > c.page ? { pageEnd: c.pageEnd } : {}),
+            ...(c.via?.trim() ? { via: c.via.trim() } : {}),
             pageKind: c.pageKind,
             locator: c.locator,
             claim: (claim ?? '').trim(),
@@ -122,7 +128,11 @@ export function analysisClaimsToCitations(
     pageFor: (claim: AnalysisClaim) => string | null,
 ): ParsedCitation[] {
     return claims.map((claim, index) => {
-        const pages = pageFor(claim);
+        // Un rango se rotula entero, «170–171», en la misma unidad que su
+        // comienzo; si el final no se puede traducir, queda la página sola.
+        const desde = pageFor(claim);
+        const hasta = claim.pageEnd !== undefined ? pageFor({ ...claim, page: claim.pageEnd }) : null;
+        const pages = desde && hasta && hasta !== desde ? `${desde}–${hasta}` : desde;
         const otras = otherSourcesOf(claim, claims);
         // Por sección no hay hoja: «hoja 0» llevaba al verificador a priorizar
         // los fragmentos rotulados con 0 o 1 en vez de la sección citada.
@@ -140,7 +150,9 @@ export function analysisClaimsToCitations(
             // La hoja sirve para ELEGIR la evidencia aunque no sirva para
             // cotejar la página: los fragmentos de esta misma fuente están
             // rotulados con ella.
-            evidencePage: seccion ? null : pages ?? String(claim.page),
+            // La primera página del rango: el cotejo contra la unión de sus
+            // páginas es del verificador (D1).
+            evidencePage: seccion ? null : desde ?? String(claim.page),
             offset: index,
             evidence: claim.verbatimQuote ?? claim.claim,
             evidenceIsQuoted: claim.verbatimQuote !== null,
