@@ -1,5 +1,8 @@
 import {
     BookOpen,
+    ClipboardList,
+    Library,
+    ScrollText,
     Mic2,
     HeartHandshake,
     GraduationCap,
@@ -11,7 +14,7 @@ import {
     FileCode,
     type LucideIcon,
 } from 'lucide-react';
-import type { AIProject, ProjectType, ProjectOutput, SermonEntity, AIChatSession } from '@dosfilos/domain';
+import { hasProjectCharge, type AIProject, type ProjectType, type ProjectOutput, type SermonEntity, type AIChatSession } from '@dosfilos/domain';
 
 /**
  * Roadmap definitions per project type. Each phase represents one step in the
@@ -24,8 +27,15 @@ import type { AIProject, ProjectType, ProjectOutput, SermonEntity, AIChatSession
  * project data — no separate state to maintain.
  */
 
+/** Qué hace el botón de una fase. Un solo lugar: antes estaba copiado en tres. */
+export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge';
+
 export interface RoadmapContext {
     project: AIProject;
+    /** Estudios del proyecto: de origen y vinculados (ADR-046). */
+    studyCount: number;
+    /** Estudios del proyecto ya ensamblados (listos para entregar). */
+    deliveredCount: number;
     sourceCount: number;
     greekCount: number;
     hebrewCount: number;
@@ -45,7 +55,7 @@ export interface RoadmapPhase {
     /** Primary CTA — surfaced when this is the active step. */
     cta: {
         label: string;
-        kind: 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources';
+        kind: RoadmapCtaKind;
     };
 }
 
@@ -164,12 +174,12 @@ const STUDY_ROADMAP: RoadmapPhase[] = [
         cta: { label: 'Adjuntar fuentes', kind: 'sources' },
     },
     {
-        id: 'languages',
-        title: 'Lenguas originales',
-        description: 'Si el tema lo requiere, profundiza en el griego o hebreo.',
-        icon: Languages,
-        isComplete: (ctx) => ctx.greekCount > 0 || ctx.hebrewCount > 0,
-        cta: { label: 'Estudiar griego', kind: 'greek' },
+        id: 'studies',
+        title: 'Estudios',
+        description: 'Un estudio por cada pasaje, tema o término que responde a la pregunta.',
+        icon: ScrollText,
+        isComplete: (ctx) => ctx.studyCount > 0,
+        cta: { label: 'Nuevo estudio', kind: 'study' },
     },
     {
         id: 'synthesis',
@@ -234,6 +244,78 @@ const SERIES_ROADMAP: RoadmapPhase[] = [
     },
 ];
 
+/** Curso (ADR-046): un encargo, un estado del arte y las tareas como estudios. */
+const COURSE_ROADMAP: RoadmapPhase[] = [
+    {
+        id: 'charge',
+        title: 'Encargo',
+        description: 'La rúbrica, el encuadre, la guía de estilo y la portada con que nacen las tareas del curso.',
+        icon: ClipboardList,
+        isComplete: (ctx) => hasProjectCharge(ctx.project),
+        cta: { label: 'Definir el encargo', kind: 'charge' },
+    },
+    {
+        id: 'state-of-art',
+        title: 'Estado del arte',
+        description: 'La bibliografía del curso: los libros y artículos que sirven para todas las tareas.',
+        icon: Library,
+        isComplete: (ctx) => ctx.sourceCount > 0,
+        cta: { label: 'Adjuntar fuentes', kind: 'sources' },
+    },
+    {
+        id: 'studies',
+        title: 'Estudios',
+        description: 'Cada tarea del curso (un TP, un ensayo) es un estudio que nace con el encargo.',
+        icon: ScrollText,
+        isComplete: (ctx) => ctx.studyCount > 0,
+        cta: { label: 'Nuevo estudio', kind: 'study' },
+    },
+    {
+        id: 'deliveries',
+        title: 'Entregas',
+        description: 'Los estudios ensamblados y listos para entregar.',
+        icon: FileEdit,
+        isComplete: (ctx) => ctx.deliveredCount > 0,
+        cta: { label: 'Nuevo estudio', kind: 'study' },
+    },
+];
+
+/** Exegético (ADR-046): un pasaje largo, estudiado por perícopas. */
+const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
+    {
+        id: 'passage',
+        title: 'Pasaje y propósito',
+        description: 'El pasaje que vas a estudiar y para qué: una serie, una clase, tu archivo.',
+        icon: NotebookPen,
+        isComplete: (ctx) => !!ctx.project.contextNote,
+        cta: { label: 'Escribir el propósito', kind: 'output' },
+    },
+    {
+        id: 'sources',
+        title: 'Fuentes',
+        description: 'Los comentarios, léxicos y gramáticas que sirven para todo el pasaje.',
+        icon: Library,
+        isComplete: (ctx) => ctx.sourceCount > 0,
+        cta: { label: 'Adjuntar fuentes', kind: 'sources' },
+    },
+    {
+        id: 'pericopes',
+        title: 'Estudios por perícopa',
+        description: 'Un estudio por cada perícopa del pasaje.',
+        icon: ScrollText,
+        isComplete: (ctx) => ctx.studyCount >= 2,
+        cta: { label: 'Nuevo estudio', kind: 'study' },
+    },
+    {
+        id: 'synthesis',
+        title: 'Síntesis',
+        description: 'Lo que el pasaje dice como un todo: conversa con los tutores o escribe la síntesis.',
+        icon: MessageSquareQuote,
+        isComplete: (ctx) => ctx.sessionCount > 0 || ctx.outputs.length > 0,
+        cta: { label: 'Iniciar conversación', kind: 'newSession' },
+    },
+];
+
 const GENERAL_ROADMAP: RoadmapPhase[] = [
     {
         id: 'context',
@@ -285,10 +367,24 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
     },
     study: {
         type: 'study',
-        label: 'Estudio',
-        description: 'Investigación temática o exegética para tu archivo personal.',
+        label: 'Investigación',
+        description: 'Una pregunta que se responde con varios estudios: pasajes, temas o términos.',
         icon: BookOpen,
         roadmap: STUDY_ROADMAP,
+    },
+    course: {
+        type: 'course',
+        label: 'Curso',
+        description: 'Las tareas de un curso (TP, ensayos, investigación final) con un encargo y una bibliografía comunes.',
+        icon: GraduationCap,
+        roadmap: COURSE_ROADMAP,
+    },
+    exegetical: {
+        type: 'exegetical',
+        label: 'Exegético',
+        description: 'Un pasaje largo estudiado por perícopas, para predicarlo, enseñarlo o archivarlo.',
+        icon: ScrollText,
+        roadmap: EXEGETICAL_ROADMAP,
     },
     general: {
         type: 'general',
@@ -300,7 +396,7 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
 };
 
 export function getProjectTypeMeta(type?: ProjectType): ProjectTypeMeta {
-    return PROJECT_TYPES[type ?? 'general'];
+    return PROJECT_TYPES[type ?? 'general'] ?? PROJECT_TYPES.general;
 }
 
 /**

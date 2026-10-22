@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ProjectOutput, ProjectOutputKind } from '@dosfilos/domain';
+import { ProjectOutput, ProjectOutputKind, projectsOfPaper } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -13,7 +13,8 @@ import { useProjectWorkspace } from '@/hooks/faculty/useProjectWorkspace';
 import { useSermons } from '@/hooks/use-sermons';
 import { useGreekSessions } from '@/hooks/useGreekSessions';
 import { useHebrewSessions } from '@/hooks/useHebrewSessions';
-import { computeRoadmapState, getProjectTypeMeta } from '@/pages/projects/projectRoadmaps';
+import { computeRoadmapState, getProjectTypeMeta, type RoadmapCtaKind } from '@/pages/projects/projectRoadmaps';
+import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
 import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
@@ -109,43 +110,12 @@ export function ProjectDashboard() {
     >(null);
     const [outputToDelete, setOutputToDelete] = useState<ProjectOutput | null>(null);
 
-    // ── Project not found ─────────────────────────────────────────────────
-    if (!project) {
-        return (
-            <div className="flex-1 flex items-center justify-center p-8">
-                <div className="text-center">
-                    <div className="text-muted-foreground mb-4">{t('notFound.title')}</div>
-                    <Button variant="outline" onClick={() => navigate('/dashboard/projects')}>
-                        {t('notFound.back')}
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-
-    // ── Roadmap computation ────────────────────────────────────────────────
-    const typeMeta = getProjectTypeMeta(project.type);
-    const roadmap = computeRoadmapState(typeMeta, {
-        project,
-        sourceCount: attachedSources.length,
-        greekCount: projectGreekSessions.length,
-        hebrewCount: projectHebrewSessions.length,
-        sessionCount: projectSessions.length,
-        outputs: outputs ?? [],
-        sermons: projectSermons,
-        sessions: projectSessions,
-    }) as unknown as RoadmapState;
-
-    const handleRoadmapCta = (kind: 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources') => {
-        switch (kind) {
-            case 'newSession': return navigate(`/dashboard/faculty?projectId=${projectId}`);
-            case 'greek': return navigate(`/dashboard/greek-tutor?projectId=${projectId}`);
-            case 'hebrew': return navigate(`/dashboard/hebrew-tutor?projectId=${projectId}`);
-            case 'sermon': return navigate(`/dashboard/faculty?projectId=${projectId}`);
-            case 'output': return setOutputEditor({ mode: 'create' });
-            case 'sources': return setSourcePickerOpen(true);
-        }
-    };
+    // ── Estudios del proyecto (ADR-046): de origen y vinculados ───────────
+    const { papers } = useExegesisPapers();
+    const projectStudies = useMemo(
+        () => (papers ?? []).filter(p => !p.archivedAt && projectId && projectsOfPaper(p).includes(projectId)),
+        [papers, projectId]
+    );
 
     // ── Material list (unified outputs + project sermons) ──────────────────
     const materialItems = useMemo<MaterialItem[]>(() => {
@@ -168,6 +138,49 @@ export function ProjectDashboard() {
             (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
         );
     }, [outputs, projectSermons]);
+
+    // ── Project not found ─────────────────────────────────────────────────
+    if (!project) {
+        return (
+            <div className="flex-1 flex items-center justify-center p-8">
+                <div className="text-center">
+                    <div className="text-muted-foreground mb-4">{t('notFound.title')}</div>
+                    <Button variant="outline" onClick={() => navigate('/dashboard/projects')}>
+                        {t('notFound.back')}
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Roadmap computation ────────────────────────────────────────────────
+    const typeMeta = getProjectTypeMeta(project.type);
+    const roadmap = computeRoadmapState(typeMeta, {
+        project,
+        studyCount: projectStudies.length,
+        deliveredCount: projectStudies.filter(p => p.phase === 'assembled').length,
+        sourceCount: attachedSources.length,
+        greekCount: projectGreekSessions.length,
+        hebrewCount: projectHebrewSessions.length,
+        sessionCount: projectSessions.length,
+        outputs: outputs ?? [],
+        sermons: projectSermons,
+        sessions: projectSessions,
+    }) as unknown as RoadmapState;
+
+    const handleRoadmapCta = (kind: RoadmapCtaKind) => {
+        switch (kind) {
+            case 'study': return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
+            case 'charge': return document.getElementById('project-charge-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            case 'newSession': return navigate(`/dashboard/faculty?projectId=${projectId}`);
+            case 'greek': return navigate(`/dashboard/greek-tutor?projectId=${projectId}`);
+            case 'hebrew': return navigate(`/dashboard/hebrew-tutor?projectId=${projectId}`);
+            case 'sermon': return navigate(`/dashboard/faculty?projectId=${projectId}`);
+            case 'output': return setOutputEditor({ mode: 'create' });
+            case 'sources': return setSourcePickerOpen(true);
+        }
+    };
+
 
     // ── Output mutation handlers ───────────────────────────────────────────
     const handleCreateOutput = async (input: { kind: ProjectOutputKind; title: string; content: string }) => {

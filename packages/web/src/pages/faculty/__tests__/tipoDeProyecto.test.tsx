@@ -24,10 +24,10 @@ const guardar = () => fireEvent.click(screen.getByRole('button', { name: /crear|
 describe('el tipo del proyecto', () => {
     it('al crear, viaja el tipo elegido', async () => {
         render(<ProjectEditDialog onClose={vi.fn()} />);
-        fireEvent.click(screen.getByText('Serie').closest('button')!);
-        fireEvent.change(screen.getByRole('textbox', { name: /nombre/i }), { target: { value: 'Serie 2 Pedro' } });
+        fireEvent.click(screen.getByText('Curso').closest('button')!);
+        fireEvent.change(screen.getByRole('textbox', { name: /nombre/i }), { target: { value: 'Teología II' } });
         guardar();
-        await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ title: 'Serie 2 Pedro', type: 'series' })));
+        await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ title: 'Teología II', type: 'course' })));
     });
 
     it('al editar un proyecto sin tipo no se le pone «Sermón»: queda «General» si no se elige otro', async () => {
@@ -39,7 +39,7 @@ describe('el tipo del proyecto', () => {
 
     it('a un proyecto sin tipo se le puede elegir uno al editarlo (revisión de la etapa 0)', async () => {
         render(<ProjectEditDialog project={{ id: 'p1', userId: 'u', title: 'Teología II', color: 'amber' } as never} onClose={vi.fn()} />);
-        fireEvent.click(screen.getByText('Estudio').closest('button')!);
+        fireEvent.click(screen.getByText('Investigación').closest('button')!);
         guardar();
         await waitFor(() => expect(updateProject).toHaveBeenCalledWith(expect.objectContaining({ type: 'study' })));
     });
@@ -61,4 +61,20 @@ describe('«Nuevo proyecto» sin tipo elegido (regresión de #800)', () => {
         await waitFor(() => expect(createProject).toHaveBeenCalled());
         expect(typeof createProject.mock.calls[0]![0].type).toBe('string');
     });
+
+describe('los tipos que se ofrecen al crear (ADR-046)', () => {
+    it('Curso, Investigación, Exegético, Consejería y General; ya no Sermón ni Serie', () => {
+        render(<ProjectEditDialog onClose={vi.fn()} />);
+        for (const tipo of ['Curso', 'Investigación', 'Exegético', 'Consejería', 'General']) expect(screen.getByText(tipo)).toBeInTheDocument();
+        expect(screen.queryByText('Sermón')).toBeNull();
+        expect(screen.queryByText('Serie')).toBeNull();
+    });
+
+    it('sin elegir, el proyecto nace General', async () => {
+        render(<ProjectEditDialog onClose={vi.fn()} />);
+        fireEvent.change(screen.getByRole('textbox', { name: /nombre/i }), { target: { value: 'Algo' } });
+        guardar();
+        await waitFor(() => expect(createProject).toHaveBeenCalledWith(expect.objectContaining({ type: 'general' })));
+    });
+});
 });

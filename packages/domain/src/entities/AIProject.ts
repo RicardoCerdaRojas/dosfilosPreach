@@ -8,7 +8,15 @@ export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'sl
  * suggestions for tutors, sources, and outputs. `general` is the catch-all
  * for free-form projects without a prescribed flow.
  */
-export type ProjectType = 'sermon' | 'series' | 'counseling' | 'study' | 'general';
+export type ProjectType = 'sermon' | 'series' | 'counseling' | 'study' | 'general' | 'course' | 'exegetical';
+
+/**
+ * Los tipos que se ofrecen al crear un proyecto (ADR-046, decisión del
+ * fundador 2026-10-22). «Sermón» y «Serie» ya no: esos casos van al
+ * planificador; los proyectos que ya los tienen los conservan. `study` se
+ * muestra como «Investigación».
+ */
+export const CREATABLE_PROJECT_TYPES: ReadonlyArray<ProjectType> = ['course', 'study', 'exegetical', 'counseling', 'general'];
 
 export interface AIProject {
     id: string;

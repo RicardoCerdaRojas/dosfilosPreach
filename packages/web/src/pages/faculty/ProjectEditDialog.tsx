@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AIProject, ProjectColor, ProjectType } from '@dosfilos/domain';
+import { AIProject, CREATABLE_PROJECT_TYPES, ProjectColor, ProjectType } from '@dosfilos/domain';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { PROJECT_TYPES } from '@/pages/projects/projectRoadmaps';
@@ -32,7 +32,7 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
     // `initialType` solo vale si es un tipo conocido: un llamador que pasa el
     // evento del clic dejaba el estado con un objeto, y guardar fallaba.
     const tipoValido = (t: unknown): t is ProjectType => typeof t === 'string' && t in PROJECT_TYPES;
-    const tipoInicial = (): ProjectType => (project ? project.type ?? 'general' : tipoValido(initialType) ? initialType : 'sermon');
+    const tipoInicial = (): ProjectType => (project ? project.type ?? 'general' : tipoValido(initialType) ? initialType : 'general');
     const [type, setType] = useState<ProjectType>(tipoInicial);
     const [contextNote, setContextNote] = useState(project?.contextNote || '');
 
@@ -101,7 +101,7 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
                             Tipo de proyecto
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {(Object.values(PROJECT_TYPES) as Array<typeof PROJECT_TYPES[keyof typeof PROJECT_TYPES]>).map((meta) => {
+                            {CREATABLE_PROJECT_TYPES.map(tipo => PROJECT_TYPES[tipo]).map((meta) => {
                                 const Icon = meta.icon;
                                 const selected = type === meta.type;
                                 return (
@@ -139,7 +139,7 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
                         type="text"
                         value={title}
                         onChange={e => setTitle(e.target.value)}
-                        placeholder="Ej: Serie: El Sermón del Monte"
+                        placeholder="Ej: Teología II – Cristología"
                         className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-muted-foreground/60"
                         maxLength={60}
                         autoFocus
