@@ -670,3 +670,14 @@ describe('AnalyzeVerseCanonicallyUseCase — rango y segunda mano', () => {
         expect(tres).not.toHaveProperty('pageEnd');
     });
 });
+
+/** TP #8 (8b, E2): las reglas de la copia de la guía llegan al analizador. */
+describe('AnalyzeVerseCanonicallyUseCase — reglas del curso', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+    it('pasa las additionalRules de la copia de la guía', async () => {
+        const paper = { ...makePaper([makeSource('Tuggy', 'res-a')]), styleGuideSnapshot: { manifest: { additionalRules: [' Tercera persona. ', ''] } } } as never;
+        const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse.mock.calls[0][0].styleRules).toEqual(['Tercera persona.']);
+    });
+});

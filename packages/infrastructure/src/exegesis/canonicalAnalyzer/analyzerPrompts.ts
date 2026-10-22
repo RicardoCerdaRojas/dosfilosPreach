@@ -8,6 +8,7 @@ import {
 } from '@dosfilos/domain';
 import { PRIOR_ANALYSES_BUDGET_CHARS, allocateSourceBudgets, avisarFijadoRecortado, fitPromptToCap } from '../../llm/promptBudget';
 import { voiceFor } from '../testamentVoice';
+import { buildStyleRulesBlock } from '../styleRulesBlock';
 
 /**
  * Prompt construction for the canonical verse analyzer.
@@ -52,6 +53,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const planNoteBlock = formatPlanNote(input.planNote, lang);
     const questionsBlock = formatSectionQuestions(input.sectionQuestions, lang);
     const methodBlock = formatAnswerMethod(input.sectionQuestions, lang);
+    const styleRulesBlock = buildStyleRulesBlock(input.styleRules, lang);
     // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
     // es parte de lo que el analizador lee, no de lo que tiene que producir.
     // Cuál de los dos bloques lo decide la FORMA del dato, no el libro: el
@@ -112,6 +114,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             ``,
             `## Style guide constraints`,
             styleGuideBlock,
+            styleRulesBlock,
             ``,
             `## Output format`,
             `Output MUST be a JSON object conforming exactly to the schema you have been given via responseSchema. Every required field must be present. Optional fields can be empty strings or empty arrays when not applicable.`,
@@ -165,6 +168,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         ``,
         `## Restricciones de la guía de estilo`,
         styleGuideBlock,
+        styleRulesBlock,
         ``,
         `## Formato de salida`,
         `La salida DEBE ser un objeto JSON que se conforma exactamente al schema que recibiste vía responseSchema. Todos los campos requeridos deben estar presentes. Los campos opcionales pueden ser strings vacíos o arrays vacíos cuando no apliquen.`,

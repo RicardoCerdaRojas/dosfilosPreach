@@ -112,6 +112,13 @@ export interface AnalyzeVerseInput {
     sectionQuestions?: ReadonlyArray<{ number: number; text: string; kinds: ReadonlyArray<BriefQuestionKind> }>;
 
     /**
+     * Las reglas propias de la guía de estilo del curso (`additionalRules`):
+     * «tercera persona», «categoría ≠ traducción»… (TP #8, fase 8b, E2). Sólo
+     * las usaba el compositor del trabajo completo.
+     */
+    styleRules?: ReadonlyArray<string>;
+
+    /**
      * Per-step emphasis the student saved (or accepted from the
      * rubric default). Drives source-budget weights and primes the
      * analyzer toward types the rubric/strategy considers central

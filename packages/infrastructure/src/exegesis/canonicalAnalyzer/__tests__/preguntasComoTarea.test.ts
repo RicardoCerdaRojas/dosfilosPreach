@@ -171,3 +171,15 @@ describe('la gramática del corpus, no «Wallace» fijo', () => {
         expect(sch).not.toContain('Wallace');
     });
 });
+
+/** TP #8 (8b, E2): las reglas propias del curso llegan al analizador. */
+describe('las reglas de la guía de estilo', () => {
+    it('van en la instrucción, en su bloque', () => {
+        const { systemInstruction } = buildAnalyzerPrompt(entrada({ styleRules: ['Tercera persona en todo el trabajo.', 'Una categoría gramatical no es una traducción.'] }));
+        expect(systemInstruction).toContain('## Reglas del curso (de la guía de estilo, obligatorias)');
+        expect(systemInstruction).toContain('- Tercera persona en todo el trabajo.');
+    });
+    it('sin reglas, no hay bloque', () => {
+        expect(buildAnalyzerPrompt(entrada()).systemInstruction).not.toContain('Reglas del curso');
+    });
+});

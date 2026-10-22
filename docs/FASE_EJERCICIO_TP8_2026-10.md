@@ -432,6 +432,22 @@ La clasificación es determinista. El modelo solo redacta la oración propuesta 
 - `StyleGuideManifest.additionalRules` se renderiza en el analizador (`analyzerPrompts.ts:152-153`) y en el compositor del versículo (`verseProsePrompt.ts:110-116`).
 - La lista de criterios del profesor (memoria `project_criterios_profesor_tp`) va precargada en la plantilla «TP Semanal Griego NT».
 
+**Hecho (E1, E2):**
+- **La prosa recibe lo que debe conservar.** Recibe las respuestas con su criterio decisivo (C1), las citas del análisis que el verificador no respaldó y la clave de cita explícita de cada fuente.
+- **La forma de cita pide la clave, no el autor** (#39).
+- **`additionalRules` llega a los dos pasos.** Las reglas propias de la guía (la copia que se llevó el trabajo) llegan al analizador y a la prosa del versículo.
+
+**Pendiente con OK del fundador (dato en producción):** precargar en la guía de la plantilla «TP Semanal Griego NT», pestaña «Reglas adicionales», estas reglas, una por línea:
+1. Cada oración de cierre afirma una sola cosa; dos afirmaciones van en dos oraciones.
+2. La categoría gramatical tiene que coincidir con la traducción: si es genitivo descriptivo, la traducción no puede ser atributiva. Decir qué sustantivo califica a cuál.
+3. Refutar una lectura rival con una razón del contexto, no repitiendo la definición de la categoría.
+4. Si se anuncia un respaldo, decir qué aporta cada dato.
+5. Un criterio decisivo tiene que distinguir entre las lecturas: si se cumple con las dos, no decide.
+6. Toda afirmación muestra su relevancia para la pregunta, o se quita.
+7. No usar la clasificación de un elemento para decidir otro sin mostrar la relación entre los dos.
+8. Responder a cómo clasifica la gramática del curso la construcción, con su página.
+9. Títulos entre « »; rangos de páginas y versículos con raya corta (–); concordancia, tildes y acentos griegos.
+
 ### E3. El revisor de prosa, antes del Word
 Una tarjeta «**Revisión antes de entregar**», por versículo. Hace dos clases de controles.
 

@@ -8,6 +8,7 @@ import {
     type ComposeVerseInput,
     type ComposerSourceMetadata,
 } from '@dosfilos/domain';
+import { buildStyleRulesBlock } from '../styleRulesBlock';
 
 const ES_INSTRUCTION = `Eres un redactor académico de exégesis bíblica nivel TMS/Turabian. Recibes el análisis canónico estructurado de UN versículo y produces 1-3 párrafos de prosa académica continua sobre ese versículo SOLAMENTE.
 
@@ -109,7 +110,9 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     // gana la de sistema (se pidieron 300 y salieron 52).
     const target = input.targetWords && input.targetWords > 0 ? Math.round(input.targetWords) : null;
 
-    const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, glossaryBlock,
+    // Las reglas propias del curso, de la guía de estilo (E2).
+    const styleRulesBlock = buildStyleRulesBlock(input.styleGuideManifest?.additionalRules, lang);
+    const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, styleRulesBlock, glossaryBlock,
         buildCitationFormBlock(input.citationForm ?? null, lang),
         buildWordBudgetBlock(target ?? input.wordBudget ?? null, lang),
         buildAcademicRegisterBlock(lang, { answersQuestions: (input.sectionQuestions ?? []).length > 0 }),

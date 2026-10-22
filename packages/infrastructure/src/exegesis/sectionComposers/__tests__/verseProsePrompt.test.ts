@@ -210,3 +210,11 @@ describe('la prosa sabe cómo citar y qué no repetir', () => {
         expect(buildVerseProsePrompt(promptInput()).userMessage).not.toContain('NO PUDO RESPALDAR');
     });
 });
+
+/** TP #8 (8b, E2): las reglas propias del curso llegan a la prosa del versículo. */
+describe('la prosa recibe las reglas del curso', () => {
+    it('desde el manifiesto de la guía', () => {
+        const input = { ...promptInput(), styleGuideManifest: { additionalRules: ['Rangos con raya corta (1:19–27).'] } } as never;
+        expect(buildVerseProsePrompt(input).systemInstruction).toContain('- Rangos con raya corta (1:19–27).');
+    });
+});

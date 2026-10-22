@@ -179,6 +179,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // Las preguntas de este versículo como TAREA, con su tipo (C1).
                 sectionQuestions: questionsOfStep(step, parseBriefQuestions(paper.assignmentBrief, paper.passage))
                     .map(q => ({ number: q.number, text: q.text, kinds: questionKinds(q.text) })),
+                // Las reglas propias del curso, también al analizar (E2).
+                styleRules: await this.loadStyleRules(input.ownerId, paper),
             };
 
             reservation.markLlmContacted();
@@ -430,6 +432,22 @@ export class AnalyzeVerseCanonicallyUseCase {
         } catch (err) {
             console.warn('[AnalyzeVerseCanonicallyUseCase] original-language load failed:', err);
             return vacio;
+        }
+    }
+
+    /**
+     * Las reglas propias de la guía del trabajo: las de la copia que se llevó
+     * al adjuntarla, o las de la guía viva en los trabajos anteriores a esa
+     * copia (como `ComposeVerseAcademicProseUseCase.loadStyleManifest`).
+     */
+    private async loadStyleRules(ownerId: string, paper: ExegeticalPaper): Promise<string[]> {
+        try {
+            const manifest = paper.styleGuideSnapshot?.manifest
+                ?? (paper.styleGuideId ? (await this.styleGuideRepository.getGuide(ownerId, paper.styleGuideId))?.manifest : null);
+            return (manifest?.additionalRules ?? []).map(r => r.trim()).filter(Boolean);
+        } catch (err) {
+            console.warn('[AnalyzeVerseCanonically] sin reglas de la guía', (err as Error).message);
+            return [];
         }
     }
 
