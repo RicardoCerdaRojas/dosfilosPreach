@@ -82,4 +82,14 @@ describe('un trabajo de una serie nace con las fuentes por defecto de la serie',
         await uc.execute({ ...base, ...paperDefaultsFromSeries(conFragmentos as never) } as never);
         expect(agregadas[0]).toMatchObject({ mode: 'full-document' });
     });
+
+    it('el proyecto de origen se guarda solo si es del dueño, y la portada nace con el trabajo (ADR-046)', async () => {
+        const repo = { createPaper: vi.fn(async (d: Record<string, unknown>) => ({ id: 'p1', sources: [], ...d })), setRubric: vi.fn(async () => ({ id: 'p1' })), getPaper: vi.fn(), addSource: vi.fn() };
+        const proyectos = { getProject: vi.fn(async (id: string) => ({ propio: { id: 'propio', userId: 'u' }, ajeno: { id: 'ajeno', userId: 'otro' } } as Record<string, { id: string; userId: string }>)[id] ?? null) };
+        const uc = new CreateExegeticalPaperUseCase(repo as never, undefined, undefined, proyectos);
+        await uc.execute({ ...base, projectId: 'propio', cover: { institution: 'TMS' } } as never);
+        expect(repo.createPaper.mock.calls[0]![0]).toMatchObject({ projectId: 'propio', cover: { institution: 'TMS' } });
+        await uc.execute({ ...base, projectId: 'ajeno' } as never);
+        expect(repo.createPaper.mock.calls[1]![0]).toMatchObject({ projectId: null });
+    });
 });

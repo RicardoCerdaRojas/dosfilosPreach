@@ -1,3 +1,5 @@
+import type { PaperCover } from '../exegesis/entities/ExegeticalPaper';
+
 export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'slate' | 'orange' | 'teal';
 
 /**
@@ -44,6 +46,64 @@ export interface AIProject {
      * language sessions linked via `projectId` keep their links intact.
      */
     deletedAt?: Date;
+    /**
+     * El encargo del proyecto (ADR-046): lo que hoy guarda un perfil de
+     * trabajo, pero viviendo en el curso. Cada estudio que nace del
+     * proyecto lo hereda como valores iniciales que el estudiante revisa.
+     */
+    charge?: ProjectCharge | null;
+}
+
+/**
+ * El encargo de un proyecto académico: con qué rúbrica, encuadre, guía,
+ * estrategia y portada nacen sus estudios. Mismos campos que el perfil de
+ * trabajo, que sigue siendo la plantilla de la que se copia.
+ */
+export interface ProjectCharge {
+    /** El perfil del que se copió, para mostrarlo. No se sigue en vivo. */
+    workProfileId?: string | null;
+    course?: string | null;
+    rubricTemplateId?: string | null;
+    briefTemplateId?: string | null;
+    styleGuideId?: string | null;
+    exegeticalStrategy?: 'free' | 'dialectical';
+    cover?: PaperCover | null;
+}
+
+/**
+ * El encargo listo para guardar: sin campos `undefined` (Firestore los rechaza
+ * también anidados) y sin texto vacío.
+ */
+export function cleanProjectCharge(charge: ProjectCharge): ProjectCharge {
+    const out: ProjectCharge = {};
+    for (const [k, v] of Object.entries(charge) as Array<[keyof ProjectCharge, unknown]>) {
+        if (v === undefined) continue;
+        if (typeof v === 'string' && !v.trim()) { (out as Record<string, unknown>)[k] = null; continue; }
+        (out as Record<string, unknown>)[k] = typeof v === 'string' ? v.trim() : v;
+    }
+    return out;
+}
+
+/** Si el proyecto ya tiene un encargo con algo que heredar. */
+export function hasProjectCharge(project: Pick<AIProject, 'charge'> | null | undefined): boolean {
+    const c = project?.charge;
+    return !!c && !!(c.rubricTemplateId || c.briefTemplateId || c.styleGuideId || c.cover || c.course?.trim());
+}
+
+/** El encargo que sale de un perfil de trabajo: se copia, no se enlaza. */
+export function chargeFromWorkProfile(profile: {
+    id: string; course?: string; rubricTemplateId: string | null; briefTemplateId: string | null;
+    styleGuideId: string | null; exegeticalStrategy: 'free' | 'dialectical'; cover?: PaperCover | null;
+}): ProjectCharge {
+    return {
+        workProfileId: profile.id,
+        course: profile.course?.trim() || null,
+        rubricTemplateId: profile.rubricTemplateId,
+        briefTemplateId: profile.briefTemplateId,
+        styleGuideId: profile.styleGuideId,
+        exegeticalStrategy: profile.exegeticalStrategy,
+        cover: profile.cover ?? null,
+    };
 }
 
 /**

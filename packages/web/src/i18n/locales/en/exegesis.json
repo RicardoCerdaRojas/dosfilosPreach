@@ -338,6 +338,12 @@
     }
   },
   "create": {
+    "project": {
+      "label": "Project",
+      "none": "None: standalone study",
+      "hint": "The study is created inside the project. You can link it later.",
+      "chargeApplied": "The project's brief was applied: rubric, framing, style guide and cover. Review them before creating."
+    },
     "title": "New exegetical paper",
     "subtitle": "Set the passage and frame the work for the agent. We'll define rubric, sources, and structural plan next.",
     "backToList": "Back to list",

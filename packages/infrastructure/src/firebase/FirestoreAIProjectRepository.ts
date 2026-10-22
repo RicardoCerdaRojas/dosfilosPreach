@@ -78,7 +78,7 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
 
     async updateProject(
         projectId: string,
-        updates: Partial<Pick<AIProject, 'title' | 'color' | 'type' | 'icon' | 'contextNote' | 'sourceIds'>>
+        updates: Partial<Pick<AIProject, 'title' | 'color' | 'type' | 'icon' | 'contextNote' | 'sourceIds' | 'charge'>>
     ): Promise<AIProject> {
         const ref = this.docRef(projectId);
         // Firestore does not accept undefined values — strip them before the update

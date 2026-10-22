@@ -364,8 +364,9 @@ class ExegesisService {
         // Papers
         // La biblioteca, para no agregar una fuente por defecto de la serie
         // cuyo libro ya se borró.
-        this.setPaperProject = new SetPaperProjectUseCase(paperRepository, new FirestoreAIProjectRepository());
-        this.createPaper = new CreateExegeticalPaperUseCase(paperRepository, userRubricRepository, libraryRepository);
+        const aiProjectRepository = new FirestoreAIProjectRepository();
+        this.setPaperProject = new SetPaperProjectUseCase(paperRepository, aiProjectRepository);
+        this.createPaper = new CreateExegeticalPaperUseCase(paperRepository, userRubricRepository, libraryRepository, aiProjectRepository);
         this.listPapers = new ListExegeticalPapersUseCase(paperRepository);
         this.listPaperSummaries = new ListExegesisPaperSummariesUseCase(paperRepository);
         this.getPaper = new GetExegeticalPaperUseCase(paperRepository);

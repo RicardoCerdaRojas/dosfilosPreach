@@ -338,6 +338,12 @@
     }
   },
   "create": {
+    "project": {
+      "label": "Proyecto",
+      "none": "Ninguno: estudio suelto",
+      "hint": "El estudio nace dentro del proyecto. Puedes asociarlo después.",
+      "chargeApplied": "Se aplicó el encargo del proyecto: rúbrica, encuadre, guía y portada. Revísalos antes de crear."
+    },
     "title": "Nuevo trabajo exegético",
     "subtitle": "Configura el pasaje y dale contexto al agente. Después definimos rúbrica, fuentes y plan estructural.",
     "backToList": "Volver al listado",

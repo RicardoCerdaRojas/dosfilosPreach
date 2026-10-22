@@ -202,6 +202,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             pericopeId: draft.pericopeId ?? null,
             projectId: draft.projectId ?? null,
             linkedProjectIds: [],
+            ...(draft.cover ? { cover: draft.cover } : {}),
         };
         await setDoc(ref, serialize(paper));
         return paper;

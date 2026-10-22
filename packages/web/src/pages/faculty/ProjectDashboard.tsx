@@ -17,6 +17,7 @@ import { computeRoadmapState, getProjectTypeMeta } from '@/pages/projects/projec
 
 import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
+import { ProjectChargeCard } from './components/project/ProjectChargeCard';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
 import { ProjectSourcePickerModal } from './components/project/ProjectSourcePickerModal';
@@ -42,7 +43,7 @@ export function ProjectDashboard() {
     const { isAdmin } = useAuthorization();
 
     // ── Data sources ────────────────────────────────────────────────────────
-    const { projects } = useFacultyProjects();
+    const { projects, updateProject } = useFacultyProjects();
     const { sessions } = useFacultySessions();
     const { sermons } = useSermons();
     const { sessions: greekSessions } = useGreekSessions();
@@ -227,6 +228,24 @@ export function ProjectDashboard() {
                     typeLabel={typeMeta.label}
                     onPhaseCta={handleRoadmapCta}
                 />
+
+                {/* El encargo (ADR-046): no aplica a los proyectos de
+                    predicación ni de consejería. */}
+                {!['sermon', 'series', 'counseling'].includes(project.type ?? 'general') && (
+                    <ProjectChargeCard
+                        project={project}
+                        saving={updateProject.isPending}
+                        onSave={async (charge) => {
+                            try {
+                                await updateProject.mutateAsync({ projectId: project.id, charge });
+                                toast.success(t('charge.saved'));
+                            } catch (err) {
+                                console.error('[projects] save charge failed:', err);
+                                toast.error(t('charge.saveFailed'));
+                            }
+                        }}
+                    />
+                )}
 
                 <ProjectResourceGrid
                     projectId={projectId!}

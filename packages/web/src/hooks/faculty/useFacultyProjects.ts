@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facultyService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
 import { ProjectColor, DEFAULT_LANGUAGE } from '@dosfilos/domain';
-import type { AIChatSession, AIProject, ProjectType, SupportedLanguage } from '@dosfilos/domain';
+import type { AIChatSession, AIProject, ProjectCharge, ProjectType, SupportedLanguage } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import {
     removeFromCachedLists,
@@ -40,7 +40,7 @@ export function useFacultyProjects() {
     });
 
     const updateProject = useMutation({
-        mutationFn: async ({ projectId, ...updates }: { projectId: string; title?: string; color?: ProjectColor; type?: ProjectType; contextNote?: string }) => {
+        mutationFn: async ({ projectId, ...updates }: { projectId: string; title?: string; color?: ProjectColor; type?: ProjectType; contextNote?: string; charge?: ProjectCharge | null }) => {
             return facultyService.updateProject.execute(projectId, updates);
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['faculty', 'projects', user?.uid] }),

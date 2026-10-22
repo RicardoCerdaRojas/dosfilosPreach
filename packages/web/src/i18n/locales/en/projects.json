@@ -1,4 +1,25 @@
 {
+  "charge": {
+    "title": "Brief",
+    "empty": "Which rubric, framing, style guide and strategy this project's studies start with. Copy it from a work profile or pick it by hand.",
+    "inherited": "Every new study in this project starts with this brief. You can review it before creating it.",
+    "fromProfile": "Copy from a work profile",
+    "pickProfile": "Pick a profile…",
+    "course": "Course",
+    "rubric": "Rubric",
+    "rubricSystem": "System default",
+    "brief": "Framing",
+    "styleGuide": "Style guide",
+    "strategy": "Strategy",
+    "dialectical": "Dialectical (anchor, contrast, technical)",
+    "free": "Free",
+    "none": "None",
+    "coverFromProfile": "The profile's cover is inherited too.",
+    "save": "Save brief",
+    "clear": "Remove brief",
+    "saved": "Brief saved.",
+    "saveFailed": "The brief could not be saved."
+  },
     "breadcrumb": {
         "back": "Projects"
     },
