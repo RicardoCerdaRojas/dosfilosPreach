@@ -57,11 +57,12 @@ Lo motivó una tarea que en los TP de Santiago se hizo fuera del sistema: invest
 - La herencia completa las fuentes sin curar, en vez de duplicarlas.
 
 ### Etapa 1 · El proyecto contiene estudios
-- **Tipos nuevos:** Curso, Investigación y Exegético, cada uno con su recorrido (ver la tabla del ADR-046). Se revisan los tipos actuales (ver decisiones abiertas).
-- **`ExegeticalPaper.projectId`** (opcional):
+- **Tipos al crear:** Curso, Investigación, Exegético, Consejería y General, cada uno con su recorrido (ver la tabla del ADR-046). «Sermón» y «Serie» ya no se ofrecen; «Estudio» pasa a Investigación.
+- **`ExegeticalPaper.projectId`** (el proyecto de origen, opcional) y **`linkedProjectIds[]`** (los proyectos vinculados):
   - «Nuevo estudio» desde el proyecto, que hereda lo que el proyecto define;
   - al crear un trabajo suelto, la pregunta «¿en qué proyecto?», con el último usado como sugerencia y «ninguno» siempre disponible.
-- **La página del proyecto** muestra sus estudios con su fase. La lista de **Exégesis** se puede filtrar y agrupar por proyecto.
+- **Asociar después:** «Agregar a un proyecto», como origen o como vínculo, desde el estudio y desde la lista. Si se elige origen, se ofrecen las fuentes de la bibliografía del proyecto que faltan, sin pisar las que hay.
+- **La página del proyecto** muestra sus estudios (los de origen y los vinculados, rotulados) con su fase. La lista de **Exégesis** se puede filtrar y agrupar por proyecto.
 - **Conversaciones:**
   - las de Tutores, griego y hebreo siguen agrupándose por proyecto;
   - una conversación se puede ligar además a un estudio del proyecto (el contexto de la conversación ya trae `paperId`).
@@ -103,15 +104,14 @@ Lo motivó una tarea que en los TP de Santiago se hizo fuera del sistema: invest
 - **Nota metodológica exportable:** qué se consultó, con qué criterio y qué se descartó.
 - **Búsqueda fuera de la biblioteca:** Open Library, Google Books, Crossref (DOI), siempre verificada contra el catálogo y nunca solo por el modelo (decisión de la v1.7).
 
-## Decisiones que siguen abiertas
+## Decisiones del fundador (2026-10-22)
 
-1. **Los tipos actuales.** «Sermón» y «Serie» se superponen con el planificador; «Estudio» se parece a Investigación. **Propuesta:**
-   - Curso, Investigación, Exegético, Consejería y General;
-   - «Estudio» pasa a Investigación;
-   - «Serie» y «Sermón» dejan de ofrecerse al crear, porque esos casos van al planificador; los proyectos que ya los tengan los conservan.
-2. **El perfil de trabajo.** **Propuesta:** sigue como plantilla para crear proyectos de tipo Curso, y la configuración vive en el proyecto.
-3. **El cobro.** ¿Por estudio, por proyecto o por producto? Es una decisión de negocio aparte. Hoy se cobra por operación.
-4. **Los «Material previo».** ¿Se dejan, se archivan o se reparten? **Propuesta:** dejarlos y no crear más.
+1. **Tipos al crear:** Curso, Investigación, Exegético, Consejería y General. «Sermón» y «Serie» dejan de ofrecerse, porque esos casos van al planificador; los proyectos que ya los tienen los conservan. «Estudio» pasa a Investigación.
+2. **El perfil de trabajo** queda como plantilla para crear cursos. La configuración vive en el proyecto.
+3. **El cobro sigue siendo por estudio:** es la unidad donde más se usa el asistente.
+4. **Los «Material previo»** se dejan y no se crean más.
+5. **Un estudio suelto se puede asociar después** a un proyecto.
+6. **Un estudio puede colaborar con más de un proyecto:** tiene un proyecto de origen, que define su encargo, y varios vínculos.
 
 ## Cómo se entrega
 

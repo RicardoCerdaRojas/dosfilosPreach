@@ -54,7 +54,24 @@ Esa investigación no es de un trabajo. Es **de un curso, de una investigación 
 | **Investigación** | Pregunta y alcance | De las preguntas: pasajes, temas, términos |
 | **Exegético** | Pasaje largo y propósito | De la división del pasaje en perícopas |
 
-Los tipos actuales (Sermón, Serie, Consejería, Estudio, General) se revisan en el plan.
+**Los tipos que se ofrecen al crear** son Curso, Investigación, Exegético, Consejería y General (decisión del fundador, 2026-10-22):
+- «Sermón» y «Serie» dejan de ofrecerse, porque esos casos van al planificador; los proyectos que ya los tienen los conservan;
+- «Estudio» pasa a llamarse Investigación.
+
+### Un estudio: un proyecto de origen y varios vínculos
+
+- **El proyecto de origen** (uno, opcional) define el encargo del estudio: rúbrica, guía, criterios del profesor y la bibliografía que hereda.
+- **Los proyectos vinculados** (varios) muestran el estudio en su lista, lo pueden usar en sus productos y sus conversaciones lo pueden consultar. No le cambian las reglas.
+
+Ejemplo: el estudio de Santiago 4:1-10 nace en el curso como TP, y se vincula a la serie sobre Santiago y a una investigación sobre la oración.
+
+Ya hay un antecedente en el código: una extracción de «Mis Recursos» ya pertenece a varios proyectos (`Extraction.projectIds[]`).
+
+**Un estudio suelto se puede asociar después** a un proyecto, como origen o como vínculo. Al asociarlo se le **ofrecen** las fuentes de la bibliografía del proyecto que todavía no tiene; nunca se pisa lo que ya tiene.
+
+### El perfil de trabajo
+
+Queda como **plantilla para crear proyectos de tipo Curso**. La configuración del curso vive en el proyecto, no en el perfil (decisión del fundador, 2026-10-22).
 
 ### Qué agrupa un proyecto
 
@@ -97,6 +114,8 @@ Este ADR fija el principio y la dirección. El diseño de cada producto queda pa
 | **Una entidad «Curso»**, o convertir el perfil de trabajo en curso | «Curso» encierra el producto en el seminarista y deja fuera la investigación y el proyecto exegético. Además, el perfil de trabajo es una plantilla (se aplica una vez y no recuerda nada), no un contenedor de trabajos. |
 | **El planificador como fase «Plan» del proyecto** | Recorta el módulo de predicación (calendario, series, camino del sermón) a un paso de otro módulo. La relación correcta es un vínculo. |
 | **Proyecto obligatorio para todo estudio** | El propio ADR-003 lo anotaba como riesgo de «ceremonia» para quien solo quiere predicar. Un cajón automático («Material previo») muestra que lo forzado no se usa. |
+| **Copiar el estudio a cada proyecto que lo usa** | Las copias terminan distintas: una se corrige y la otra no. El vínculo comparte un solo estudio. |
+| **Un estudio en varios proyectos con el mismo peso** | ¿Qué rúbrica y qué bibliografía mandan? Dos encargos pueden contradecirse. Por eso hay un solo proyecto de origen y varios vínculos. |
 | **Fusionar `ExegeticalPaper` con `AIProject`** | El trabajo es documental, con historial de versiones y disciplina de citas (`ExegeticalPaper.ts`, «confirmado con el usuario»). Se liga con un `projectId`; no se fusiona. |
 
 ## Consecuencias
@@ -117,14 +136,14 @@ Este ADR fija el principio y la dirección. El diseño de cada producto queda pa
 
 ### Neutrales
 
-- El ADR-003 proponía cobrar por proyecto. Queda abierto si se cobra por estudio, por proyecto o por producto: es una decisión de negocio aparte.
-- Los tipos actuales de proyecto (Sermón, Serie) se superponen con el planificador. Se revisan en el plan.
+- **El cobro sigue siendo por estudio** (decisión del fundador, 2026-10-22): es la unidad donde más se usa el asistente. El proyecto no se cobra aparte. Esto deja de lado la propuesta del ADR-003 de cobrar por proyecto.
+- **Los siete «Material previo»** se dejan como están y no se crean más.
 
 ## Impacto
 
 - **Código afectado:**
   - `AIProject` (tipos y recorridos) y su página;
-  - `ExegeticalPaper` (`projectId`; más adelante, estudios sin pasaje);
+  - `ExegeticalPaper` (`projectId` de origen, `linkedProjectIds[]`; más adelante, estudios sin pasaje);
   - la lista de Exégesis (por proyecto);
   - la fase de fuentes (bibliografía del proyecto, herencia hacia cada estudio);
   - `SermonSeries` (vínculo con el proyecto);
