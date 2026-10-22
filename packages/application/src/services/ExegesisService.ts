@@ -358,7 +358,9 @@ class ExegesisService {
         };
 
         // Papers
-        this.createPaper = new CreateExegeticalPaperUseCase(paperRepository, userRubricRepository);
+        // La biblioteca, para no agregar una fuente por defecto de la serie
+        // cuyo libro ya se borró.
+        this.createPaper = new CreateExegeticalPaperUseCase(paperRepository, userRubricRepository, libraryRepository);
         this.listPapers = new ListExegeticalPapersUseCase(paperRepository);
         this.listPaperSummaries = new ListExegesisPaperSummariesUseCase(paperRepository);
         this.getPaper = new GetExegeticalPaperUseCase(paperRepository);

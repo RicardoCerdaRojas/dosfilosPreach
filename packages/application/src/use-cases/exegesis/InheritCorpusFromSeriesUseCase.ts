@@ -117,7 +117,16 @@ export class InheritCorpusFromSeriesUseCase {
         // dentro de una transacción, de modo que en paralelo se pelearían por
         // el mismo documento.
         for (const f of aTraer) {
-            const creada = await this.paperRepository.addSource(ownerId, paperId, {
+            // Una fuente que llegó de la serie sin curar se completa con lo del
+            // hermano; agregarla de nuevo dejaría el libro dos veces.
+            const creada = f.reemplazaFuenteId
+                ? await this.paperRepository.updateSource(ownerId, paperId, f.reemplazaFuenteId, {
+                    sourceType: f.sourceType,
+                    chosenRole: f.chosenRole,
+                    displayLabel: f.displayLabel,
+                    citationKey: f.citationKey,
+                })
+                : await this.paperRepository.addSource(ownerId, paperId, {
                 // El corpus del origen, no uno nuevo: el texto ya está ingerido
                 // y volver a subirlo cobraría cuota por el mismo libro.
                 corpusId: f.corpusId,

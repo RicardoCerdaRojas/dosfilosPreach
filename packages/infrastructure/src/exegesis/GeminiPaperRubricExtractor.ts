@@ -356,6 +356,11 @@ function parseExtractorJson(rawJson: string): RawExtractionResult {
                 max: typeof parsed.expectedLength.max === 'number' ? parsed.expectedLength.max : null,
             }
             : null,
+        // Lo que el sílabo dice de maquetación y la bibliografía que nombra.
+        // El prompt los pide y `mapToDomain` los lee, pero no se copiaban
+        // aquí: llegaban siempre vacíos (etapa 0).
+        formatting: parsed.formatting,
+        courseBibliography: parsed.courseBibliography,
         sourceRequirements: Array.isArray(parsed.sourceRequirements) ? parsed.sourceRequirements : [],
         structuralExpectations: Array.isArray(parsed.structuralExpectations) ? parsed.structuralExpectations : [],
         qualityCriteria: Array.isArray(parsed.qualityCriteria) ? parsed.qualityCriteria : [],
@@ -493,7 +498,11 @@ function parseCourseBibliography(raw: unknown): CourseBibliographyEntry[] {
                 title,
                 ...(author ? { author } : {}),
                 ...(series ? { series } : {}),
-                requirement: e.requirement === 'recommended' ? 'recommended' as const : 'required' as const,
+                // El esquema pide «required» | «recommended»; se aceptan también
+                // las formas en español y «optional», que el modelo a veces usa.
+                requirement: /^(recommended|recomendad[ao]|optional|opcional)$/i.test(String(e.requirement ?? '').trim())
+                    ? 'recommended' as const
+                    : 'required' as const,
                 ...(note ? { note } : {}),
             };
         })

@@ -193,3 +193,18 @@ describe('InheritCorpusFromSeriesUseCase — hojas fijadas del hermano', () => {
         expect(repo.addSource.mock.calls[0][2].excerptRecipe).toBeNull();
     });
 });
+
+/** Revisión de la etapa 0: la fuente que llegó de la serie sin curar se completa, no se duplica. */
+describe('InheritCorpusFromSeriesUseCase — completa la fuente de la serie', () => {
+    it('actualiza la fuente existente con la clave y el rol del hermano, sin agregar otra', async () => {
+        const deLaSerie = { id: 'f-serie', corpusId: 'corpus-viejo', sourceType: 'commentary-critical', chosenRole: null, displayLabel: 'Sasson, Jonah', citationKey: null, excerpts: [], excerptRecipe: null, extractedAt: null, sourceLibraryResourceId: 'lib-sasson' };
+        const actual = { id: 'p3', seriesId: 'serie-jonas', sources: [deLaSerie] };
+        const repo = { ...makeRepo(actual, [actual, JONAS_2]), updateSource: vi.fn().mockImplementation(async (_o, _p, id, patch) => ({ ...deLaSerie, ...patch, id })) };
+        const uc = new InheritCorpusFromSeriesUseCase(repo as never, makeBiblioteca() as never);
+
+        const r = await uc.aplicar({ ownerId: 'owner-1', paperId: 'p3', soloEstos: ['lib-sasson'] });
+        expect(repo.updateSource).toHaveBeenCalledWith('owner-1', 'p3', 'f-serie', expect.objectContaining({ citationKey: 'Sasson1990', chosenRole: 'anchor' }));
+        expect(repo.addSource).not.toHaveBeenCalled();
+        expect(r.creadas.map(c => c.id)).toEqual(['f-serie']);
+    });
+});

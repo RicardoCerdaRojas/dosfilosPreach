@@ -38,7 +38,13 @@ export interface TrabajoConFuentes {
     id: string;
     /** Opcional porque el trabajo entero lo declara así: los sueltos no lo traen. */
     seriesId?: string | null;
-    sources: ReadonlyArray<ResumenDeFuente>;
+    sources: ReadonlyArray<ResumenDeFuente & {
+        /** Lo que trae la fuente entera (no el resumen): para ver si alguien la tocó. */
+        id?: string;
+        extractedAt?: unknown;
+        excerptRecipe?: unknown;
+        excerpts?: ReadonlyArray<unknown>;
+    }>;
 }
 
 /** Una fuente que se puede traer, ya sin nada atado al pasaje anterior. */
@@ -57,6 +63,12 @@ export interface FuenteHeredable {
     citationKey: string | null;
     /** De qué trabajo viene, para poder decirlo en pantalla. */
     deTrabajoId: string;
+    /**
+     * La fuente de ESTE trabajo que la herencia completa en vez de agregar:
+     * llegó de la configuración de la serie sin clave, sin páginas y sin
+     * extraer, y el hermano ya tiene ese libro curado (etapa 0).
+     */
+    reemplazaFuenteId?: string;
 }
 
 export interface PropuestaDeHerencia {
@@ -130,11 +142,17 @@ export function proponerCorpusHeredado(
     const heredables = (p: typeof hermanos[number]) => (p.sources ?? []).filter(sirve).length;
     const mejor = hermanos.reduce((a, b) => (heredables(b) > heredables(a) ? b : a));
 
-    const yaTengo = new Set(
-        (actual.sources ?? [])
-            .map(recursoDe)
-            .filter((x): x is string => !!x),
-    );
+    const propias = new Map<string, TrabajoConFuentes['sources'][number]>();
+    for (const s of actual.sources ?? []) {
+        const r = recursoDe(s);
+        if (r && !propias.has(r)) propias.set(r, s);
+    }
+    // Llegó de la configuración de la serie y nadie la tocó: sin clave, sin
+    // receta, sin extraer. Contarla como «ya presente» dejaba al trabajo sin
+    // la clave, el rol y las hojas que el hermano ya curó (revisión de la
+    // etapa 0).
+    const sinCurar = (s: TrabajoConFuentes['sources'][number]) =>
+        !!s.id && !s.citationKey && !s.excerptRecipe && !s.extractedAt && !(s.excerpts?.length);
 
     let yaPresentes = 0;
     const fuentes: FuenteHeredable[] = [];
@@ -145,7 +163,10 @@ export function proponerCorpusHeredado(
         // volver a adjuntar.
         if (!sirve(s)) continue;
         const recurso = recursoDe(s)!;
-        if (yaTengo.has(recurso)) { yaPresentes++; continue; }
+        const propia = propias.get(recurso);
+        const mejora = !!propia && sinCurar(propia)
+            && (!!s.citationKey || (s.chosenRole ?? null) !== (propia.chosenRole ?? null) || s.sourceType !== propia.sourceType);
+        if (propia && !mejora) { yaPresentes++; continue; }
         // Un mismo libro adjuntado dos veces al trabajo de origen se trae una.
         if (vistas.has(recurso)) continue;
         vistas.add(recurso);
@@ -158,6 +179,7 @@ export function proponerCorpusHeredado(
             displayLabel: s.displayLabel,
             citationKey: s.citationKey ?? null,
             deTrabajoId: mejor.id,
+            ...(mejora && propia?.id ? { reemplazaFuenteId: propia.id } : {}),
         });
     }
 

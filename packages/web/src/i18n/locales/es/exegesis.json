@@ -1358,6 +1358,8 @@
         "courseBib": {
           "title": "Bibliografía del curso",
           "coverage": "{{inCorpus}} de {{required}} obras obligatorias ya están en el corpus",
+          "onlyRecommended_one": "El sílabo recomienda 1 obra; ninguna es obligatoria.",
+          "onlyRecommended_other": "El sílabo recomienda {{count}} obras; ninguna es obligatoria.",
           "missingFromLibrary": "{{count}} no están en tu biblioteca",
           "recommended": "recomendada",
           "inCorpus": "en el corpus de este trabajo",

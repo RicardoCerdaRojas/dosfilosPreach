@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facultyService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
 import { ProjectColor, DEFAULT_LANGUAGE } from '@dosfilos/domain';
-import type { AIChatSession, AIProject, SupportedLanguage } from '@dosfilos/domain';
+import type { AIChatSession, AIProject, ProjectType, SupportedLanguage } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import {
     removeFromCachedLists,
@@ -30,15 +30,17 @@ export function useFacultyProjects() {
     });
 
     const createProject = useMutation({
-        mutationFn: async ({ title, color, contextNote }: { title: string; color: ProjectColor; contextNote?: string }) => {
+        // El tipo decide el recorrido del proyecto. Se elegía en el diálogo y se
+        // perdía aquí: todos los proyectos quedaban «General» (etapa 0).
+        mutationFn: async ({ title, color, type, contextNote }: { title: string; color: ProjectColor; type?: ProjectType; contextNote?: string }) => {
             if (!user?.uid) throw new Error('User not authenticated');
-            return facultyService.createProject.execute({ userId: user.uid, title, color, contextNote });
+            return facultyService.createProject.execute({ userId: user.uid, title, color, type, contextNote });
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['faculty', 'projects', user?.uid] }),
     });
 
     const updateProject = useMutation({
-        mutationFn: async ({ projectId, ...updates }: { projectId: string; title?: string; color?: ProjectColor; contextNote?: string }) => {
+        mutationFn: async ({ projectId, ...updates }: { projectId: string; title?: string; color?: ProjectColor; type?: ProjectType; contextNote?: string }) => {
             return facultyService.updateProject.execute(projectId, updates);
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['faculty', 'projects', user?.uid] }),

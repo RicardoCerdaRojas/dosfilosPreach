@@ -1358,6 +1358,8 @@
         "courseBib": {
           "title": "Course bibliography",
           "coverage": "{{inCorpus}} of {{required}} required works are already in the corpus",
+          "onlyRecommended_one": "The syllabus recommends 1 work; none is required.",
+          "onlyRecommended_other": "The syllabus recommends {{count}} works; none is required.",
           "missingFromLibrary": "{{count}} are not in your library",
           "recommended": "recommended",
           "inCorpus": "in this paper's corpus",

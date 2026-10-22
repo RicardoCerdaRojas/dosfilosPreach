@@ -47,11 +47,15 @@ export function CourseBibliographyCard({ paper, onAddResource }: Props) {
                 <BookMarked className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-foreground">{t('paperSetup.subSteps.corpus.courseBib.title')}</h3>
-                    <p className={cn('text-xs mt-0.5', completo ? 'text-success' : 'text-muted-foreground')}>
-                        {t('paperSetup.subSteps.corpus.courseBib.coverage', {
-                            inCorpus: coverage.requiredInCorpus,
-                            required: coverage.required,
-                        })}
+                    {/* Un sílabo que solo recomienda no tiene «0 de 0 obligatorias»
+                        en verde: lo dice (revisión de la etapa 0). */}
+                    <p className={cn('text-xs mt-0.5', completo && coverage.required > 0 ? 'text-success-subtle-foreground' : 'text-muted-foreground')}>
+                        {coverage.required === 0
+                            ? t('paperSetup.subSteps.corpus.courseBib.onlyRecommended', { count: entries.length })
+                            : t('paperSetup.subSteps.corpus.courseBib.coverage', {
+                                inCorpus: coverage.requiredInCorpus,
+                                required: coverage.required,
+                            })}
                         {coverage.missing > 0 && ` · ${t('paperSetup.subSteps.corpus.courseBib.missingFromLibrary', { count: coverage.missing })}`}
                     </p>
                 </div>

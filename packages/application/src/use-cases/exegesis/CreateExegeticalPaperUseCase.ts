@@ -39,8 +39,11 @@ export { STRATEGY_ONLY_RUBRIC_PRESET_ID };
  *   3. No default (or no rubricRepository wired) → repo's createPaper
  *      seeds the system default rubric.
  *
- * `initialSources` is accepted but currently ignored — sources are
- * collected later through the dedicated setup flow.
+ * `initialSources` (las fuentes por defecto de la serie) se agregan al nacer,
+ * sin fragmentos: llegan listas para extraer contra ESTE pasaje, igual que
+ * las que se heredan de un trabajo hermano. Antes se aceptaban y se
+ * descartaban, y la configuración exegética de la serie no llegaba a ningún
+ * trabajo (etapa 0).
  */
 
 /**
@@ -63,7 +66,17 @@ export class CreateExegeticalPaperUseCase {
         // rubric seeded by the repo). Wiring it on adds the
         // "auto-apply user default" behavior.
         private userRubricRepository?: IUserRubricRepository,
+        /**
+         * Para no agregar un libro que ya se borró de la biblioteca (la serie
+         * guarda la referencia y el libro puede no estar). Uno por uno y no la
+         * biblioteca entera: cada recurso pesa hasta 800 KB y una serie crea
+         * varios trabajos a la vez; además así se encuentran los libros
+         * compartidos de la plataforma. Sin él, se agregan todas.
+         */
+        private biblioteca?: { findById(id: string): Promise<{ id: string } | null> },
     ) { }
+
+    private readonly existencia = new Map<string, { en: number; pregunta: Promise<boolean> }>();
 
     async execute(input: CreateExegeticalPaperInput): Promise<ExegeticalPaper> {
         if (!input.ownerId) {
@@ -85,6 +98,14 @@ export class CreateExegeticalPaperUseCase {
             seriesId: input.seriesId ?? null,
             pericopeId: input.pericopeId ?? null,
         });
+        // Primero la rúbrica y después las fuentes: si agregar una fuente
+        // falla, el trabajo ya tiene la rúbrica que le toca (revisión de la
+        // etapa 0; un trabajo de serie con la académica es Jonás 4:5-11).
+        const conRubrica = await this.applyRubric(input, created);
+        return this.addInitialSources(input, conRubrica);
+    }
+
+    private async applyRubric(input: CreateExegeticalPaperInput, created: ExegeticalPaper): Promise<ExegeticalPaper> {
 
         // Strategy-only preset short-circuits template resolution.
         // The repo seeded `buildDefaultRubric()` (TMS rigorous); we
@@ -131,6 +152,72 @@ export class CreateExegeticalPaperUseCase {
         }
 
         return created;
+    }
+
+    /**
+     * Agrega las fuentes iniciales y devuelve el trabajo con ellas. Mejor
+     * esfuerzo: una fuente que no se pudo agregar se registra y se sigue; el
+     * trabajo ya existe y su rúbrica ya está puesta.
+     */
+    private async addInitialSources(input: CreateExegeticalPaperInput, paper: ExegeticalPaper): Promise<ExegeticalPaper> {
+        const pedidas = input.initialSources ?? [];
+        if (pedidas.length === 0) return paper;
+        const vistas = new Set<string>();
+        let orden = 0;
+        for (const s of pedidas) {
+            const recurso = s.sourceLibraryResourceId ?? s.corpusId;
+            if (vistas.has(recurso)) continue;
+            vistas.add(recurso);
+            if (s.sourceLibraryResourceId && !(await this.existe(s.sourceLibraryResourceId))) continue;
+            try {
+                await this.paperRepository.addSource(input.ownerId, paper.id, {
+                    corpusId: s.corpusId,
+                    sourceType: s.sourceType,
+                    chosenRole: s.chosenRole ?? null,
+                    displayLabel: s.displayLabel,
+                    // Como `AddProjectSourceUseCase`: sin clave, la tarjeta de la fuente
+                    // la propone desde el autor del libro.
+                    citationKey: s.citationKey ?? null,
+                    order: orden++,
+                    // Siempre documento entero, como la herencia: un modo «fragmentos»
+                    // sin fragmentos dejaría una fuente que no aporta nada y no avisa.
+                    mode: 'full-document',
+                    // Sin fragmentos: se extraen contra el pasaje de este trabajo.
+                    excerpts: [],
+                    excerptSelectionMode: null,
+                    excerptRecipe: null,
+                    sourceLibraryResourceId: s.sourceLibraryResourceId ?? null,
+                    extractedAt: null,
+                    extractionFingerprint: null,
+                });
+            } catch (err) {
+                console.warn('[CreateExegeticalPaper] no se pudo agregar una fuente de la serie', { recurso, error: (err as Error).message });
+            }
+        }
+        return (await this.paperRepository.getPaper(input.ownerId, paper.id).catch(() => null)) ?? paper;
+    }
+
+    /**
+     * Si el libro sigue en la biblioteca. Se recuerda un minuto por recurso:
+     * una serie crea sus trabajos a la vez y cada uno preguntaría por los
+     * mismos libros (cada lectura trae el recurso entero, hasta 800 KB). Un
+     * error al leer NO es «se borró»: la fuente se agrega igual.
+     */
+    private existe(resourceId: string): Promise<boolean> {
+        if (!this.biblioteca) return Promise.resolve(true);
+        const ahora = Date.now();
+        const guardado = this.existencia.get(resourceId);
+        // La misma promesa para los que preguntan a la vez: nadie lee un
+        // «sí» provisional antes de que llegue la respuesta.
+        if (guardado && ahora - guardado.en < 60_000) return guardado.pregunta;
+        const pregunta = this.biblioteca.findById(resourceId)
+            .then(r => !!r)
+            .catch(err => {
+                console.warn('[CreateExegeticalPaper] no se pudo comprobar el libro; se agrega igual', { resourceId, error: (err as Error).message });
+                return true;
+            });
+        this.existencia.set(resourceId, { en: ahora, pregunta });
+        return pregunta;
     }
 
     private async resolveTemplateRubric(
