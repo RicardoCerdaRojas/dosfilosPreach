@@ -2020,6 +2020,31 @@
       }
     },
     "review": {
+      "diagnosis": {
+        "cta": "Diagnosticar esta cita",
+        "none": "No hay una causa que se pueda afirmar con lo que el verificador guardó. Vuelve a verificar el paso para que busque en el libro.",
+        "title": "Diagnóstico",
+        "manual": "Esta cita es de la prosa: corrígela en el texto y vuelve a verificar.",
+        "cause": {
+          "other-page": "Está en otra página del libro",
+          "mixed-claim": "Afirmación mixta",
+          "other-source": "La dice otra fuente del corpus",
+          "second-hand": "Cita de segunda mano",
+          "nobody-says-it": "Ninguna fuente lo dice"
+        },
+        "explain": {
+          "other-page": "El verificador la halló en {{foundAt}} al leer la página citada, sus vecinas o el libro entero.",
+          "mixed-claim": "La fuente dice «{{sourceSays}}»; la oración agrega una conclusión que la fuente no dice. Esa parte va en otra oración, sin la cita.",
+          "other-source": "No está en esta fuente; lo dice {{otherSource}}.",
+          "second-hand": "La fuente reporta lo que dice {{reportedAuthor}}. Se cita a quien lo reporta, no a {{reportedAuthor}} como si se hubiera leído.",
+          "nobody-says-it": "Se buscó en la página citada, sus vecinas, el libro entero y las demás fuentes del corpus, sin hallarla."
+        },
+        "remedy": {
+          "correctPage": "Corregir a {{page}}",
+          "remove": "Quitar la cita",
+          "useNote": "Usar esta nota en la revisión"
+        }
+      },
       "title": "Revisión de citas · {{step}}",
       "verifiedAt": "Última verificación: {{date}}",
       "notVerified": "Este paso todavía no se verificó. Verifica las citas para ver la evidencia de cada una.",

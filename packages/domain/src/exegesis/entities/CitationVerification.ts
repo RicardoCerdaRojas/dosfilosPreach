@@ -198,6 +198,11 @@ export interface VerifiedCitation extends ParsedCitation {
      * de la oración, la afirmación es mixta.
      */
     supportingSpan?: { text: string; pageLabel: string | null };
+    /**
+     * No está en la fuente citada pero sí en OTRA del corpus (D4, causa 3):
+     * «eso lo dice Mayor, no Adamson». Lo halla la búsqueda antes de alarmar.
+     */
+    foundInOtherSource?: { sourceKey: string; pageLabel: string | null };
 }
 
 /**

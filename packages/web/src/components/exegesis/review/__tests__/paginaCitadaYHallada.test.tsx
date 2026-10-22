@@ -108,3 +108,36 @@ describe('Revisión — lo atribuido y lo que dice la fuente', () => {
         expect(screen.queryByTestId('atribuido-y-fuente')).toBeNull();
     });
 });
+
+/** TP #8 (8b, D4): «Diagnosticar esta cita» dice la causa y aplica el remedio. */
+describe('Revisión — Diagnosticar esta cita', () => {
+    const conCorreccion = (v: VerifiedCitation, onCorrect = vi.fn()) => render(
+        <MemoryRouter>
+            <CitationEvidencePanel path="commentatorEngagement[0]" verdict={v}
+                claim={{ site: 'commentator', path: 'commentatorEngagement[0]', sourceKey: 'McCartney', page: 203, claim: 'x', verbatimQuote: null }}
+                review={null} isReviewing={false} onReview={vi.fn()} noteFromView={null} viewed={null}
+                onCorrect={onCorrect} knownAuthors={['McCartney', 'Mayor']} />
+        </MemoryRouter>,
+    );
+
+    it('otra página: corrige a la hallada con un clic', () => {
+        const onCorrect = vi.fn();
+        conCorreccion({ ...veredicto('203', 'p. 202'), bookSearch: 'book' } as never, onCorrect);
+        fireEvent.click(screen.getByTestId('diagnosticar-cita'));
+        expect(screen.getByTestId('diagnostico')).toHaveTextContent('canonical.review.diagnosis.cause.other-page');
+        fireEvent.click(screen.getByText('canonical.review.diagnosis.remedy.correctPage {"page":"p. 202"}'));
+        expect(onCorrect).toHaveBeenCalledWith('commentatorEngagement[0]', { kind: 'page', page: 202, pageKind: 'printed' });
+    });
+
+    it('una causa que se anota deja la nota escrita en la revisión', () => {
+        conCorreccion({ ...veredicto('203', null), status: 'fuzzy-low', supportingSpan: { text: 'Mayor holds the epexegetical view', pageLabel: 'p. 203' } } as never);
+        fireEvent.click(screen.getByTestId('diagnosticar-cita'));
+        fireEvent.click(screen.getByText('canonical.review.diagnosis.remedy.useNote'));
+        expect((screen.getByLabelText(/reviewLabel/) as HTMLTextAreaElement).value).toContain('Segunda mano: McCartney atribuye la idea a Mayor');
+    });
+
+    it('una cita verificada no ofrece diagnóstico', () => {
+        conCorreccion({ ...veredicto('203', null), status: 'verified' } as never);
+        expect(screen.queryByTestId('diagnosticar-cita')).toBeNull();
+    });
+});

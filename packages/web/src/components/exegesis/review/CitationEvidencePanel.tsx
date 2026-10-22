@@ -6,6 +6,7 @@ import { parsePageRange, type AnalysisClaim, type CitationEdit, type CitationRev
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { CitationCorrectionActions } from './CitationCorrectionActions';
+import { CitationDiagnosis } from './CitationDiagnosis';
 import { CitationStatusBadge } from './CitationStatusBadge';
 import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
 
@@ -36,6 +37,8 @@ interface Props {
     onCorrect?: (path: string, edit: CitationEdit) => void;
     /** Adónde ir a arreglar la numeración del libro, si se conoce. */
     calibrationPath?: string | null;
+    /** Las claves de cita del corpus, para reconocer la segunda mano (D4). */
+    knownAuthors?: ReadonlyArray<string>;
 }
 
 /**
@@ -46,7 +49,7 @@ interface Props {
  * la página y la cita está bien» de «quería que dejara de bloquear», y la
  * diferencia es todo lo que este panel existe para registrar.
  */
-export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, onOpenFound, noteFromView, viewed, isCorrecting = false, onCorrect, calibrationPath }: Props) {
+export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, onOpenFound, noteFromView, viewed, isCorrecting = false, onCorrect, calibrationPath, knownAuthors = [] }: Props) {
     const { t } = useTranslation('exegesis');
     const [note, setNote] = useState(review?.note ?? '');
     useEffect(() => { setNote(review?.note ?? ''); }, [path, review?.note]);
@@ -174,6 +177,15 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 </div>
             )}
 
+            {canReview && (
+                <CitationDiagnosis
+                    verdict={verdict}
+                    knownAuthors={knownAuthors}
+                    isCorrecting={isCorrecting}
+                    {...(claim && onCorrect ? { onCorrect: (edit: CitationEdit) => onCorrect(path, edit) } : {})}
+                    onUseNote={n => setNote(actual => (actual.trim() ? `${actual.trimEnd()}\n${n}` : n))}
+                />
+            )}
             {claim && onCorrect && (
                 <CitationCorrectionActions
                     claim={claim}

@@ -2020,6 +2020,31 @@
       }
     },
     "review": {
+      "diagnosis": {
+        "cta": "Diagnose this citation",
+        "none": "No cause can be stated from what the verifier stored. Verify the step again so it searches the book.",
+        "title": "Diagnosis",
+        "manual": "This citation is in the prose: fix it in the text and verify again.",
+        "cause": {
+          "other-page": "It is on another page of the book",
+          "mixed-claim": "Mixed claim",
+          "other-source": "Another corpus source says it",
+          "second-hand": "Second-hand citation",
+          "nobody-says-it": "No source says it"
+        },
+        "explain": {
+          "other-page": "The verifier found it on {{foundAt}} when reading the cited page, its neighbours or the whole book.",
+          "mixed-claim": "The source says “{{sourceSays}}”; the sentence adds a conclusion the source does not state. That part goes in another sentence, without the citation.",
+          "other-source": "It is not in this source; {{otherSource}} says it.",
+          "second-hand": "The source reports what {{reportedAuthor}} says. Cite the one who reports it, not {{reportedAuthor}} as if read.",
+          "nobody-says-it": "The cited page, its neighbours, the whole book and the other corpus sources were searched without finding it."
+        },
+        "remedy": {
+          "correctPage": "Correct to {{page}}",
+          "remove": "Remove the citation",
+          "useNote": "Use this note in the review"
+        }
+      },
       "title": "Citation review · {{step}}",
       "verifiedAt": "Last verified: {{date}}",
       "notVerified": "This step hasn't been verified yet. Verify the citations to see each one's evidence.",

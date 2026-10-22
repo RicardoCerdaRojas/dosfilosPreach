@@ -80,12 +80,50 @@ export class BookSearchBeforeAlarmVerifier implements ICitationVerifier {
                     }
                 }
             }
+            // No está en su libro: ¿lo dice otra fuente del corpus? (D4, causa 3:
+            // «eso lo dice Mayor, no Adamson»).
+            const otra = terminos.length > 0 ? await this.enOtraFuente(v, source, terminos, input, lang) : null;
+            if (otra) {
+                return {
+                    ...v,
+                    bookSearch: 'not-in-book',
+                    foundInOtherSource: otra,
+                    note: notaEnOtraFuente(lang, v.author, otra, v.note),
+                };
+            }
         } catch (err) {
             // Buscar es una mejora: si falla, queda el veredicto de la primera pasada.
             console.warn('[BookSearchBeforeAlarm] no se pudo buscar en el libro', { raw: v.raw, error: (err as Error).message });
             return v;
         }
         return { ...v, bookSearch: 'not-in-book', note: notaSinHallazgo(lang, v.note) };
+    }
+
+    /**
+     * Busca la afirmación en las OTRAS fuentes del corpus y juzga la que más
+     * coincide (sólo una: es la causa 3 de «Diagnosticar», no un segundo
+     * verificador). `null` si ninguna la sostiene.
+     */
+    private async enOtraFuente(
+        v: VerifiedCitation,
+        citada: VerifierSource,
+        terminos: ReadonlyArray<string>,
+        input: CitationVerifierInput,
+        lang: 'es' | 'en',
+    ): Promise<{ sourceKey: string; pageLabel: string | null } | null> {
+        const otras = input.sources.filter(s => s.corpusId !== citada.corpusId && s.citationKey?.trim()).slice(0, MAX_OTRAS_FUENTES);
+        let mejor: { fuente: VerifierSource; hojas: number[]; terminos: number } | null = null;
+        for (const fuente of otras) {
+            const hits = await Promise.all(terminos.map(t =>
+                this.book!.sheetsWithTerm(fuente.corpusId, t).catch(() => [] as ReadonlyArray<{ sheet: number; count: number }>)));
+            const hojas = candidateSheets(hits, new Set());
+            const reunidos = hits.filter(h => h.some(x => hojas.includes(x.sheet))).length;
+            if (hojas.length > 0 && (!mejor || reunidos > mejor.terminos)) mejor = { fuente, hojas, terminos: reunidos };
+        }
+        if (!mejor) return null;
+        const r = await this.rejuzgar({ ...v, author: mejor.fuente.citationKey!, pages: null, evidencePage: null }, mejor.fuente, mejor.hojas, lang);
+        if (!r || (r.status !== 'verified' && r.status !== 'page-mismatch')) return null;
+        return { sourceKey: mejor.fuente.citationKey!, pageLabel: r.matchedPageLabel ?? null };
     }
 
     private async rejuzgar(
@@ -117,6 +155,17 @@ function notaDeHallazgo(lang: 'es' | 'en', etiqueta: string | null, previa: stri
     const base = lang === 'en'
         ? `Not on the cited page: found ${etiqueta ? `on ${etiqueta}` : 'elsewhere in the book'} after searching the whole book.`
         : `No está en la página citada: se halló ${etiqueta ? `en ${etiqueta}` : 'en otra parte del libro'} al buscar en el libro entero.`;
+    return previa?.trim() ? `${base} ${previa.trim()}` : base;
+}
+
+/** Otras fuentes del corpus en que se busca, como mucho. */
+const MAX_OTRAS_FUENTES = 6;
+
+function notaEnOtraFuente(lang: 'es' | 'en', autor: string, otra: { sourceKey: string; pageLabel: string | null }, previa: string | null): string {
+    const donde = otra.pageLabel ? ` (${otra.pageLabel})` : '';
+    const base = lang === 'en'
+        ? `Not in ${autor} (cited page, neighbours and whole book searched); ${otra.sourceKey}${donde} says it.`
+        : `No está en ${autor} (se buscó en la página citada, sus vecinas y el libro entero); lo dice ${otra.sourceKey}${donde}.`;
     return previa?.trim() ? `${base} ${previa.trim()}` : base;
 }
 

@@ -58,6 +58,8 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
     openCitation: CitationTarget | null;
     setOpenCitation: (c: CitationTarget | null) => void;
 }) {
+    // Las claves del corpus, para reconocer la segunda mano al diagnosticar (D4).
+    const claves = paper.sources.map(s => s.citationKey?.trim()).filter((k): k is string => !!k);
     const { t } = useTranslation('exegesis');
     const r = useStepReview(paper, step);
     const title = step.verseRef ? formatPassageReference(step.verseRef, lang) : t(`detail.steps.kind.${step.kind}`);
@@ -214,6 +216,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                     <aside className="space-y-4 lg:sticky lg:top-6">
                         <CitationEvidencePanel
                             path={r.selectedPath}
+                            knownAuthors={claves}
                             verdict={selectedVerdict}
                             review={selectedReview}
                             isReviewing={r.isReviewing}
@@ -245,6 +248,7 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
                 aside={viewed => (
                     <CitationEvidencePanel
                         path={r.selectedPath}
+                        knownAuthors={claves}
                         verdict={selectedVerdict}
                         review={selectedReview}
                         claim={selectedClaim}

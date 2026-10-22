@@ -76,6 +76,7 @@ export * from './services/analysisClaims';
 export * from './services/verbatimMatch';
 export * from './services/evidenceForCitation';
 export * from './services/bookSearchForCitation';
+export * from './services/citationDiagnosis';
 export * from './services/citationReview';
 export * from './services/citationCorrection';
 export * from './services/paperLength';

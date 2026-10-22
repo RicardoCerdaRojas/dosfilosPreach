@@ -94,6 +94,19 @@ describe('BookSearchBeforeAlarmVerifier', () => {
         expect(citations[0]).toMatchObject({ status: 'verified', bookSearch: 'cited-page' });
     });
 
+    it('no está en su libro pero sí en otra fuente del corpus (D4, causa 3)', async () => {
+        const j = juez([alarma({ author: 'Kittel', raw: 'Kittel, p. 32', matchedCorpusId: 'r-kittel' })]);
+        const kittel = { ...FUENTE, corpusId: 'r-kittel', citationKey: 'Kittel', displayLabel: 'Kittel' };
+        const b = {
+            sheetsWithTerm: vi.fn(async (r: string) => (r === 'r-mayor' ? [{ sheet: 411, count: 2 }] : [])),
+            readSheets: vi.fn(async (r: string, sheets: ReadonlyArray<number>) =>
+                r === 'r-mayor' ? sheets.map(sheet => ({ sheet, text: 'the active may include the force of the middle', section: null as string | null })) : []),
+        } satisfies IBookSearch;
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify({ ...entrada(), sources: [kittel, FUENTE] });
+        expect(citations[0]).toMatchObject({ status: 'not-found', bookSearch: 'not-in-book', foundInOtherSource: { sourceKey: 'Mayor', pageLabel: 'p. 133' } });
+        expect(citations[0]!.note).toContain('lo dice Mayor (p. 133)');
+    });
+
     it('una cita verificada en la primera pasada no se toca', async () => {
         const j = juez([alarma({ status: 'verified' })]);
         const b = libro({});
