@@ -28,6 +28,47 @@ export function mapVerdictsByPath(
     return out;
 }
 
+const ALARMAS: ReadonlySet<CitationStatus> = new Set<CitationStatus>(['not-found', 'fuzzy-low', 'page-mismatch', 'page-unverifiable']);
+
+/** Un veredicto que pide mirar la cita: el verificador no la respaldó. */
+export function isCitationAlarm(status: CitationStatus): boolean {
+    return ALARMAS.has(status);
+}
+
+/**
+ * La ruta de una cita de la prosa (TP #8, fase 8b, D5). No vive en el
+ * análisis, así que se identifica por su posición en el texto: es estable
+ * mientras la prosa no cambie, y al cambiar la prosa sus veredictos se
+ * descartan (`setStepVersionMarkdown`).
+ */
+export const PROSE_PATH_PREFIX = 'prosa@';
+
+export function prosePathOf(v: Pick<VerifiedCitation, 'offset'>): string {
+    return `${PROSE_PATH_PREFIX}${v.offset}`;
+}
+
+export function isProsePath(path: string | null | undefined): boolean {
+    return !!path && path.startsWith(PROSE_PATH_PREFIX);
+}
+
+/**
+ * TODOS los veredictos del paso por ruta: los del análisis por su ruta en el
+ * análisis, y los de la prosa (y los de un paso sin análisis, como el
+ * ensamble) por su posición (D5). Antes la página de revisión descartaba los
+ * de la prosa y el ensamble los guardaba en un diálogo que se vaciaba al
+ * recargar.
+ */
+export function mapAllVerdictsByPath(
+    analysis: CanonicalVerseAnalysis | null,
+    verdicts: ReadonlyArray<VerifiedCitation>,
+): Map<string, VerifiedCitation> {
+    const out = analysis ? mapVerdictsByPath(analysis, verdicts) : new Map<string, VerifiedCitation>();
+    for (const v of verdicts) {
+        if (v.origin === 'prose' || !analysis) out.set(prosePathOf(v), v);
+    }
+    return out;
+}
+
 /**
  * Citas que impiden aceptar el paso: las que el verificador no pudo respaldar
  * y nadie revisó a mano.

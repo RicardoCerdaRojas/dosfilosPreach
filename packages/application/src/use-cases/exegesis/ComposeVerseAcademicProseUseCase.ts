@@ -4,6 +4,7 @@ import type {
     ComposeVerseOutput,
     ComposerSourceMetadata,
     ExegeticalPaper,
+    ExegeticalStepVersion,
     FormatterSourceMetadata,
     GlossaryTerm,
     IBibliographyReader,
@@ -18,8 +19,13 @@ import type {
     StyleGuideManifest,
     StyleGuideSnapshot,
     IPageNumberingReader,
+    CitationPageKind,
 } from '@dosfilos/domain';
 import {
+    citedLocation,
+    collectAnalysisClaims,
+    isCitationAlarm,
+    mapVerdictsByPath,
     canonicalizeQuestionHeadings,
     documentSections,
     parseBriefQuestions,
@@ -185,6 +191,7 @@ export class ComposeVerseAcademicProseUseCase {
                     propias.length,
                 );
 
+            const composerPageLabel = await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse');
             const composerInput: ComposeVerseInput = {
                 verseAnalysis: target.canonicalAnalysis,
                 paperPassage: paper.passage,
@@ -193,7 +200,7 @@ export class ComposeVerseAcademicProseUseCase {
                 styleGuideContent,
                 styleGuideManifest: manifest,
                 sources: await buildComposerSources(paper, this.bibliography),
-                pageLabel: await buildPageLabeler(this.pageNumbering, paper, 'ComposeVerseAcademicProse'),
+                pageLabel: composerPageLabel,
                 ...(glossary.length > 0 ? { glossary } : {}),
                 ...(voiceSamples.length > 0 ? { voiceSamples } : {}),
                 // La pregunta del encuadre que le toca a ESTE versículo.
@@ -210,6 +217,11 @@ export class ComposeVerseAcademicProseUseCase {
                     : {}),
                 ...(input.guidance?.trim() ? { guidance: input.guidance.trim() } : {}),
                 ...(input.targetWords && input.targetWords > 0 ? { targetWords: input.targetWords } : {}),
+                // Lo que el verificador no pudo respaldar del análisis (E1).
+                ...(() => {
+                    const alertas = citationAlertsOf(target, composerPageLabel);
+                    return alertas.length > 0 ? { citationAlerts: alertas } : {};
+                })(),
             };
             reservation.markLlmContacted();
             const raw = await this.composer.composeVerse(composerInput);
@@ -422,4 +434,31 @@ function deriveCitationKey(displayLabel: string): string {
     const trimmed = (displayLabel ?? '').trim();
     if (!trimmed) return 'Source';
     return trimmed.split(/[\s,;:.\-—]+/)[0] || 'Source';
+}
+
+/**
+ * Las citas del análisis con alarma que nadie revisó a mano: lo que la prosa
+ * no debe repetir tal cual (TP #8, fase 8b, E1). Las de la prosa no entran:
+ * se rehacen al recomponer.
+ */
+export function citationAlertsOf(
+    version: Pick<ExegeticalStepVersion, 'citationVerdicts' | 'citationReviews' | 'canonicalAnalysis'>,
+    /** El mismo rótulo que el análisis serializado: si no, «p. 87» y «hoja 87» no se reconocen. */
+    pageLabel?: ComposeVerseInput['pageLabel'],
+): Array<{ citation: string; status: string; foundAt?: string | null }> {
+    if (!version.canonicalAnalysis) return [];
+    const revisadas = new Set((version.citationReviews ?? []).map(r => r.path));
+    const claims = new Map(collectAnalysisClaims(version.canonicalAnalysis).map(c => [c.path, c]));
+    const rotulo = pageLabel ?? ((_k: string, p: number, kind: CitationPageKind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`));
+    return [...mapVerdictsByPath(version.canonicalAnalysis, version.citationVerdicts ?? []).entries()]
+        .filter(([path, v]) => isCitationAlarm(v.status) && !revisadas.has(path))
+        .slice(0, 20)
+        .map(([path, v]) => ({
+            citation: (() => {
+                const c = claims.get(path);
+                return c ? `${c.sourceKey} (${citedLocation(c, rotulo)})` : v.raw;
+            })(),
+            status: v.status,
+            ...(v.status === 'page-mismatch' && v.matchedPageLabel ? { foundAt: v.matchedPageLabel } : {}),
+        }));
 }

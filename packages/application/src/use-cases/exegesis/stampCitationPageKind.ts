@@ -73,6 +73,13 @@ export function stampCitationPageKind(
             ...item,
             sources: item.sources.map(stamp),
         })),
+        ...(analysis.questionAnswers ? {
+            questionAnswers: analysis.questionAnswers.map(q => ({
+                ...q,
+                options: q.options.map(o => ({ ...o, defenders: o.defenders.map(stamp) })),
+                decisiveCriterion: { ...q.decisiveCriterion, sources: q.decisiveCriterion.sources.map(stamp) },
+            })),
+        } : {}),
     };
 }
 

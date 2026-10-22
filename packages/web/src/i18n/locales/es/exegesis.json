@@ -1776,7 +1776,40 @@
       "recomposeFromAnalyses": "Recomponer desde análisis",
       "composeRetry": "Reintentar composición"
     },
+    "proseReview": {
+      "title": "Revisión antes de entregar",
+      "subtitle": "Avisa lo que suele corregirse en un trabajo académico. No bloquea el Word: lo decides tú.",
+      "count_one": "{{count}} aviso",
+      "count_other": "{{count}} avisos",
+      "clean": "Sin avisos",
+      "fixed": {
+        "missing-criterion": "Pregunta {{question}}: la prosa no usa el criterio decisivo del análisis: «{{criterion}}».",
+        "missing-grammar": "El análisis cita la gramática del curso ({{key}}, {{page}}) y la prosa no.",
+        "unverified-citation": "La cita {{excerpt}} no se pudo verificar y nadie la revisó.",
+        "repeated-alert": "La prosa repite la cita {{excerpt}}, que no se pudo verificar en el análisis.",
+        "double-closing": "Este cierre parece afirmar dos cosas: divídelo en dos oraciones.",
+        "hyphen-range": "Rango con guion: va con raya corta (–).",
+        "greek-grave": "Acento griego: el agudo final pasa a grave delante de otra palabra.",
+        "punctuation": "Puntuación: coma doble o espacio antes de la coma.",
+        "lowercase-start": "El párrafo empieza en minúscula.",
+        "repetition": "Repetición: «{{excerpt}}» aparece {{count}} veces."
+      },
+      "reviewer": {
+        "criterion": "Criterio {{number}}",
+        "clean": "El revisor no encontró fallas en los criterios del curso.",
+        "stale": "La prosa cambió después de la última revisión con los criterios: vuelve a revisarla."
+      },
+      "action": {
+        "review": "Revisar con los criterios del curso",
+        "reviewAgain": "Volver a revisar",
+        "recompose": "Recomponer con estas observaciones"
+      },
+      "toast": {
+        "failed": "No se pudo revisar la prosa. Intenta de nuevo."
+      }
+    },
     "verseProse": {
+      "nextStepHint": "Sin la prosa, este versículo no entra al documento.",
       "button": {
         "compose": "Componer prosa académica",
         "recompose": "Recomponer prosa",
@@ -1816,6 +1849,14 @@
       "study": "Vista de estudio"
     },
     "study": {
+      "via": "atribuye a {{authors}}",
+      "ownInference": "Lo que concluye el análisis (sin cita):",
+      "answersTitle": "Respuestas a las preguntas",
+      "answersHint": "Lo que el encuadre pregunta en este versículo: la respuesta, las lecturas con quién las defiende, el criterio que decide y la decisión.",
+      "answerQuestion": "Pregunta {{number}}",
+      "answerNoDefender": "Ninguna fuente del corpus la defiende.",
+      "answerCriterion": "Criterio decisivo",
+      "answerDecision": "Decisión:",
       "headerLabel": "Texto y traducción",
       "initialTranslation": "Traducción inicial",
       "finalTranslation": "Traducción final",
@@ -1873,7 +1914,7 @@
       "subtitle": "Generamos prosa académica TMS desde los análisis canónicos aceptados de cada verso. La guía de estilo configurada se aplica obligatoriamente.",
       "idleBody": "Los análisis canónicos de cada verso se transforman en un paper académico continuo: introducción + análisis verso por verso + conclusión + bibliografía. Las citas se aplican según la guía de estilo configurada.",
       "cta": "Componer paper",
-      "cost": "Cada composición consume una llamada de Gemini Pro 2.5 con contexto extenso. Revisa el resultado y pulsa «Guardar al paper» para conservarlo: sin eso se pierde al cerrar.",
+      "cost": "Cada composición es una llamada larga del asistente. Revisa el resultado y pulsa «Guardar al paper» para conservarlo: sin eso se pierde al cerrar.",
       "composingTitle": "Componiendo paper académico…",
       "composingBody": "Esto puede tardar entre 30 y 120 segundos según la cantidad de versos y la densidad del análisis.",
       "errorTitle": "No se pudo componer el paper",
@@ -1910,7 +1951,8 @@
       "savedToResourcesToast": "Guardado en Mis Recursos.",
       "saveToResourcesFailed": "No se pudo guardar en Mis Recursos. Intenta de nuevo.",
       "savedExists": "Hay una composición guardada en este paper.",
-      "savedHint": "Si los análisis de los versos cambiaron desde la última vez, reompone para que la salida refleje el estado actual.",
+      "savedHint": "Si los análisis de los versos cambiaron desde la última vez, recompón para que la salida refleje el estado actual.",
+      "rewriteWarning": "Al guardarlo, el paper compuesto reemplaza el documento ensamblado: se pierden las ediciones hechas a mano en el documento. La prosa de cada versículo no cambia.",
       "anchoring": {
         "headline_one": "{{count}} de {{total}} citas no podrán señalar una página del ejemplar impreso.",
         "headline_other": "{{count}} de {{total}} citas no podrán señalar una página del ejemplar impreso.",
@@ -2006,10 +2048,40 @@
         "lexical-loading": "sentido en el versículo",
         "footnote": "nota",
         "ot-link": "vínculo con el AT",
-        "historical": "contexto histórico"
+        "historical": "contexto histórico",
+        "answer-option": "lectura de una pregunta",
+        "answer-criterion": "criterio decisivo"
       }
     },
     "review": {
+      "inProse": "en la prosa",
+      "unverifiedQuoteBadge": "frase no hallada",
+      "proseOnly": "Este paso no tiene análisis estructurado: sus citas están en la lista de la derecha.",
+      "diagnosis": {
+        "cta": "Diagnosticar esta cita",
+        "none": "No hay una causa que se pueda afirmar con lo que el verificador guardó. Vuelve a verificar el paso para que busque en el libro.",
+        "title": "Diagnóstico",
+        "manual": "Esta cita es de la prosa: corrígela en el texto y vuelve a verificar.",
+        "cause": {
+          "other-page": "Está en otra página del libro",
+          "mixed-claim": "Afirmación mixta",
+          "other-source": "La dice otra fuente del corpus",
+          "second-hand": "Cita de segunda mano",
+          "nobody-says-it": "Ninguna fuente lo dice"
+        },
+        "explain": {
+          "other-page": "El verificador la halló en {{foundAt}} al leer la página citada, sus vecinas o el libro entero.",
+          "mixed-claim": "La fuente dice «{{sourceSays}}»; la oración agrega una conclusión que la fuente no dice. Esa parte va en otra oración, sin la cita.",
+          "other-source": "No está en esta fuente; lo dice {{otherSource}}.",
+          "second-hand": "La fuente reporta lo que dice {{reportedAuthor}}. Se cita a quien lo reporta, no a {{reportedAuthor}} como si se hubiera leído.",
+          "nobody-says-it": "Se buscó en la página citada, sus vecinas, el libro entero y las demás fuentes del corpus, sin hallarla."
+        },
+        "remedy": {
+          "correctPage": "Corregir a {{page}}",
+          "remove": "Quitar la cita",
+          "useNote": "Usar esta nota en la revisión"
+        }
+      },
       "title": "Revisión de citas · {{step}}",
       "verifiedAt": "Última verificación: {{date}}",
       "notVerified": "Este paso todavía no se verificó. Verifica las citas para ver la evidencia de cada una.",
@@ -2028,6 +2100,11 @@
         "reviewed": "Revisada a mano"
       },
       "panel": {
+        "takenFromSource": "La oración le atribuye",
+        "sourceSays": "La fuente dice",
+        "sourceSaysAt": "La fuente dice ({{page}})",
+        "unverifiedQuoteTitle": "El análisis citó textualmente esta oración, pero no está en el texto de la fuente:",
+        "unverifiedQuoteBody": "Se retiró de la prosa. La atribución quedó: revisa la página y escribe la oración real con «Registrar cita textual», o quita la cita.",
         "empty": "Elige una cita en el análisis, o en la lista de abajo, para ver su evidencia.",
         "cited": "Página citada",
         "found": "Apoyo hallado en",
@@ -2094,6 +2171,8 @@
         "transliterated": "Este libro translitera. Escribe el original en alfabeto latino —«la raíz hāyâ»— siguiendo la convención de su colección, así que la discusión puede ser correcta; lo que no hay es la forma en caracteres. No hay nada que re-extraer: si la afirmación depende de la grafía, apóyala en una fuente que traiga el original."
       },
       "reviewedCount": "{{count}} revisadas a mano",
+      "proseNotBlocking_one": "1 de la prosa: avisa, no impide aceptar",
+      "proseNotBlocking_other": "{{count}} de la prosa: avisan, no impiden aceptar",
       "allReviewed": "Todas las observaciones quedaron revisadas."
     },
     "recompose": {
@@ -2202,6 +2281,7 @@
       "composeStudyGuideFromAnalyses": "Componer guía de estudio",
       "verifyStepCitations": "Verificar citas (paso)",
       "placeIdeaInSection": "Agregar una idea (sección)",
+      "reviewVerseProse": "Revisión antes de entregar (versículo)",
       "runCoherencePass": "Revisión de coherencia",
       "extractRubricFromText": "Extraer rúbrica (texto)",
       "extractRubricFromDocument": "Extraer rúbrica (documento)",
@@ -2337,6 +2417,7 @@
       },
       "assembly": {
         "manifestTitle": "Esto entra al documento · {{count}} palabras",
+        "proseCount": "{{done}} de {{total}} versículos con prosa",
         "words": "{{count}} pal.",
         "pendingMark": "falta componer",
         "pendingHint_one": "1 sección elegida todavía no tiene prosa: no va a entrar al documento hasta que la compongas.",

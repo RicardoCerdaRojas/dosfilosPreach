@@ -27,7 +27,7 @@ export interface CitationCorrection {
     path: string;
     kind: CitationEdit['kind'];
     /** Cómo estaba antes: página y unidad, o la oración que había. */
-    before: { page: number; pageKind?: CitationPageKind; verbatimQuote?: string | null };
+    before: { page: number; pageEnd?: number; pageKind?: CitationPageKind; verbatimQuote?: string | null };
     after: { page?: number; pageKind?: CitationPageKind; verbatimQuote?: string | null };
     correctedAt: Date;
 }
@@ -51,6 +51,10 @@ const PATH_FIELDS = new Set([
     'footnoteExtensions',
     'oldTestamentLinks',
     'historicalContext',
+    'questionAnswers',
+    'options',
+    'defenders',
+    'decisiveCriterion',
 ]);
 
 interface PathStep {
@@ -113,15 +117,22 @@ export function editCitationAt(
 
     const apply = (leaf: Leaf): Leaf | typeof REMOVE => {
         if (edit.kind === 'remove') return REMOVE;
-        if (edit.kind === 'page') return { ...leaf, page: edit.page, pageKind: edit.pageKind };
+        if (edit.kind === 'page') {
+            // Corregir la página corrige la cita entera: el final del rango
+            // viejo no sirve con otro comienzo (448–449 → «170–449»).
+            const { pageEnd: _fin, ...sinRango } = leaf;
+            return { ...sinRango, page: edit.page, pageKind: edit.pageKind };
+        }
         const quote = edit.quote.trim();
+        // Corregir la oración resuelve la que no se halló (C5): el aviso se va.
+        const { unverifiedQuote: _sinVerificar, ...sinAviso } = leaf;
         // Firestore no guarda `undefined`; una oración vacía se borra
         // quitando el campo, que es como lo dejan los análisis sin cita.
         if (!quote) {
-            const { verbatimQuote: _drop, ...rest } = leaf;
+            const { verbatimQuote: _drop, ...rest } = sinAviso;
             return rest;
         }
-        return { ...leaf, verbatimQuote: quote };
+        return { ...sinAviso, verbatimQuote: quote };
     };
 
     return updateIn(analysis as unknown as Leaf, steps, apply) as unknown as CanonicalVerseAnalysis;

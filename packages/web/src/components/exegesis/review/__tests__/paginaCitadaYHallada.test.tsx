@@ -73,3 +73,71 @@ describe('Revisión — la página citada y la del verificador', () => {
         expect(screen.queryByTestId('abrir-pagina-hallada')).toBeNull();
     });
 });
+
+/** TP #8 (8b, C5): la oración «copiada» que no estaba en la fuente ya no se borra en silencio. */
+describe('Revisión — la cita textual no hallada', () => {
+    it('muestra la oración retirada y qué hacer', () => {
+        render(
+            <MemoryRouter>
+                <CitationEvidencePanel path="commentatorEngagement[0]" verdict={veredicto('203', null)}
+                    claim={{ site: 'commentator', path: 'commentatorEngagement[0]', sourceKey: 'McCartney', page: 203, claim: 'x', verbatimQuote: null, unverifiedQuote: 'una oración inventada' }}
+                    review={null} isReviewing={false} onReview={vi.fn()} noteFromView={null} viewed={null} />
+            </MemoryRouter>,
+        );
+        expect(screen.getByTestId('cita-textual-no-hallada')).toHaveTextContent('«una oración inventada»');
+    });
+
+    it('sin oración retirada, nada', () => {
+        panel(veredicto('203', null));
+        expect(screen.queryByTestId('cita-textual-no-hallada')).toBeNull();
+    });
+});
+
+/** TP #8 (8b, D3): lo que la oración le atribuye y lo que la fuente dice, lado a lado. */
+describe('Revisión — lo atribuido y lo que dice la fuente', () => {
+    it('muestra los dos cuando el juez los dio', () => {
+        panel({ ...veredicto('203', 'p. 202'), takenFromSource: 'McCartney prefiere la lectura epexegética', supportingSpan: { text: 'The epexegetical view best fits', pageLabel: 'p. 202' } } as never);
+        const caja = screen.getByTestId('atribuido-y-fuente');
+        expect(caja).toHaveTextContent('McCartney prefiere la lectura epexegética');
+        expect(caja).toHaveTextContent('«The epexegetical view best fits»');
+        expect(caja).toHaveTextContent('canonical.review.panel.sourceSaysAt {"page":"p. 202"}');
+    });
+
+    it('sin ellos, nada', () => {
+        panel(veredicto('203', null));
+        expect(screen.queryByTestId('atribuido-y-fuente')).toBeNull();
+    });
+});
+
+/** TP #8 (8b, D4): «Diagnosticar esta cita» dice la causa y aplica el remedio. */
+describe('Revisión — Diagnosticar esta cita', () => {
+    const conCorreccion = (v: VerifiedCitation, onCorrect = vi.fn()) => render(
+        <MemoryRouter>
+            <CitationEvidencePanel path="commentatorEngagement[0]" verdict={v}
+                claim={{ site: 'commentator', path: 'commentatorEngagement[0]', sourceKey: 'McCartney', page: 203, claim: 'x', verbatimQuote: null }}
+                review={null} isReviewing={false} onReview={vi.fn()} noteFromView={null} viewed={null}
+                onCorrect={onCorrect} knownAuthors={['McCartney', 'Mayor']} />
+        </MemoryRouter>,
+    );
+
+    it('otra página: corrige a la hallada con un clic', () => {
+        const onCorrect = vi.fn();
+        conCorreccion({ ...veredicto('203', 'p. 202'), bookSearch: 'book' } as never, onCorrect);
+        fireEvent.click(screen.getByTestId('diagnosticar-cita'));
+        expect(screen.getByTestId('diagnostico')).toHaveTextContent('canonical.review.diagnosis.cause.other-page');
+        fireEvent.click(screen.getByText('canonical.review.diagnosis.remedy.correctPage {"page":"p. 202"}'));
+        expect(onCorrect).toHaveBeenCalledWith('commentatorEngagement[0]', { kind: 'page', page: 202, pageKind: 'printed' });
+    });
+
+    it('una causa que se anota deja la nota escrita en la revisión', () => {
+        conCorreccion({ ...veredicto('203', null), status: 'fuzzy-low', supportingSpan: { text: 'Mayor holds the epexegetical view', pageLabel: 'p. 203' } } as never);
+        fireEvent.click(screen.getByTestId('diagnosticar-cita'));
+        fireEvent.click(screen.getByText('canonical.review.diagnosis.remedy.useNote'));
+        expect((screen.getByLabelText(/reviewLabel/) as HTMLTextAreaElement).value).toContain('Segunda mano: McCartney atribuye la idea a Mayor');
+    });
+
+    it('una cita verificada no ofrece diagnóstico', () => {
+        conCorreccion({ ...veredicto('203', null), status: 'verified' } as never);
+        expect(screen.queryByTestId('diagnosticar-cita')).toBeNull();
+    });
+});

@@ -73,7 +73,7 @@ describe('registro de fuentes', () => {
     it('sin datos de portada se escribe lo que hay, y se prohíbe deducir el resto', () => {
         const sinDatos = { ...promptInput(), sources: [{ citationKey: 'Ortiz', author: 'Ortiz', title: 'Lexicón' }] };
         const { userMessage } = buildVerseProsePrompt(sinDatos as never);
-        expect(userMessage).toContain('Ortiz: Ortiz, "Lexicón"');
+        expect(userMessage).toContain('cita como «Ortiz» — Ortiz, "Lexicón"');
         expect(userMessage).not.toMatch(/\(\s*\)/);
         expect(userMessage).toMatch(/no lo escribas ni lo deduzcas/);
     });
@@ -172,5 +172,51 @@ describe('un versículo que responde dos preguntas', () => {
     it('con una sola pregunta, sigue sin encabezados', () => {
         const { systemInstruction } = buildVerseProsePrompt({ ...promptInput(), sectionQuestions: [preguntas[0]!] });
         expect(systemInstruction).not.toMatch(/EXCEPCIÓN a la regla/);
+    });
+});
+
+/** TP #8 (8b, C3): la fuente y la conclusión propia, en oraciones distintas. */
+describe('la conclusión propia, aparte y sin cita', () => {
+    it('la regla dura lo pide y el briefing la trae marcada', () => {
+        const input = promptInput();
+        const conInferencia = {
+            ...input,
+            verseAnalysis: {
+                ...input.verseAnalysis,
+                commentatorEngagement: [{ ...input.verseAnalysis.commentatorEngagement[0]!, ownInference: 'La restauración es del alma entera.' }],
+            },
+        } as ComposeVerseInput;
+        const { systemInstruction, userMessage } = buildVerseProsePrompt(conInferencia);
+        expect(systemInstruction).toContain('van en ORACIONES DISTINTAS');
+        expect(userMessage).toContain('own inference (NO citation, separate sentence): La restauración es del alma entera.');
+    });
+});
+
+/** TP #8 (8b, E1): la clave explícita y las citas que el verificador no respaldó. */
+describe('la prosa sabe cómo citar y qué no repetir', () => {
+    it('cada fuente con su clave tal cual', () => {
+        const input = { ...promptInput(), sources: [{ citationKey: 'NA28', displayLabel: 'Novum Testamentum Graece', author: 'Nestle y Aland' }] } as never;
+        expect(buildVerseProsePrompt(input).userMessage).toContain('- cita como «NA28» — ');
+    });
+
+    it('las citas del análisis con alarma, con la página hallada', () => {
+        const input = { ...promptInput(), citationAlerts: [{ citation: 'Adamson, p. 171', status: 'page-mismatch', foundAt: 'p. 170' }] } as ComposeVerseInput;
+        const { userMessage } = buildVerseProsePrompt(input);
+        expect(userMessage).toContain('CITAS DEL ANÁLISIS QUE EL VERIFICADOR NO PUDO RESPALDAR');
+        expect(userMessage).toContain('- Adamson, p. 171 — hallada en p. 170: cita esa página');
+        const baja = buildVerseProsePrompt({ ...promptInput(), citationAlerts: [{ citation: 'Mayor (p. 134)', status: 'fuzzy-low' }] } as ComposeVerseInput).userMessage;
+        expect(baja).toContain('- Mayor (p. 134) — la fuente sostiene solo una parte');
+    });
+
+    it('sin alarmas, el bloque no aparece', () => {
+        expect(buildVerseProsePrompt(promptInput()).userMessage).not.toContain('NO PUDO RESPALDAR');
+    });
+});
+
+/** TP #8 (8b, E2): las reglas propias del curso llegan a la prosa del versículo. */
+describe('la prosa recibe las reglas del curso', () => {
+    it('desde el manifiesto de la guía', () => {
+        const input = { ...promptInput(), styleGuideManifest: { additionalRules: ['Rangos con raya corta (1:19–27).'] } } as never;
+        expect(buildVerseProsePrompt(input).systemInstruction).toContain('- Rangos con raya corta (1:19–27).');
     });
 });

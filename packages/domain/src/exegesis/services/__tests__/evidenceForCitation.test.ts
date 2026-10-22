@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsePageRange, prioritizeChunksForCitedPage, pagesOverlap } from '../evidenceForCitation';
+import { inheritFromAnalysisCitations, parsePageRange, prioritizeChunksForCitedPage, pagesOverlap } from '../evidenceForCitation';
 
 /**
  * El caso medido en Sal 23:1: Craigie admitido en las hojas 205–210 (pp. 203–208),
@@ -50,8 +50,16 @@ describe('parsePageRange', () => {
         expect(parsePageRange('559-61')).toEqual({ start: 559, end: 561 });
         expect(parsePageRange('563–64')).toEqual({ start: 563, end: 564 });
     });
-    it('una lista toma su primer tramo', () => {
+    it('una lista con saltos toma su primer tramo', () => {
         expect(parsePageRange('203, 206')).toEqual({ start: 203, end: 203 });
+    });
+    it('una lista de páginas contiguas es un tramo (TP #8, D1)', () => {
+        expect(parsePageRange('170, 171')).toEqual({ start: 170, end: 171 });
+    });
+    it('el cotejo mira cada tramo de la lista, sin rellenar los saltos', () => {
+        expect(pagesOverlap('203, 206', '206')).toBe(true);
+        expect(pagesOverlap('203, 206', '204')).toBe(false);
+        expect(pagesOverlap('170–171', '171')).toBe(true);
     });
     it('nada numérico es null', () => {
         expect(parsePageRange(null)).toBeNull();
@@ -92,5 +100,31 @@ describe('prioritizeChunksForCitedPage — la página citada antes que sus vecin
             '204',
         ).map(x => x.text);
         expect(orden).toEqual(['tautologous', 'a', 'b', 'c', 'lejos']);
+    });
+});
+
+/** TP #8 (8b, D1): la prosa hereda lo que el análisis resolvió. */
+describe('inheritFromAnalysisCitations', () => {
+    const analisis = [{ author: 'Wallace', pages: '662', evidence: 'the infinitive of cause', evidenceIsQuoted: true, otherSources: ['Mayor'] }];
+
+    it('misma fuente y página: hereda las otras fuentes, NO la oración (revisión de 8b)', () => {
+        // Con la oración heredada, el juez no veía lo que la prosa afirma y la
+        // frase del análisis salía verde sin juicio: Wallace 662, atribución falsa.
+        const [c] = inheritFromAnalysisCitations([{ author: 'Wallace', pages: '662', evidence: 'un infinitivo causal', evidenceIsQuoted: false }], analisis);
+        expect(c).toMatchObject({ evidence: 'un infinitivo causal', evidenceIsQuoted: false, otherSources: ['Mayor'] });
+    });
+
+    it('una oración propia de la prosa no se pisa', () => {
+        const [c] = inheritFromAnalysisCitations([{ author: 'Wallace', pages: '662', evidence: '«otra cita»', evidenceIsQuoted: true }], analisis);
+        expect(c!.evidence).toBe('«otra cita»');
+    });
+
+    it('otra página u otra fuente: nada que heredar', () => {
+        const [a, b] = inheritFromAnalysisCitations([
+            { author: 'Wallace', pages: '663', evidence: 'x', evidenceIsQuoted: false },
+            { author: 'Mayor', pages: '662', evidence: 'y', evidenceIsQuoted: false },
+        ], analisis);
+        expect(a!.evidence).toBe('x');
+        expect(b!.evidence).toBe('y');
     });
 });

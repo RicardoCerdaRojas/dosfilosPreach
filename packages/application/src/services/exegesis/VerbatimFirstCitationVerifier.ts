@@ -30,23 +30,25 @@ export class VerbatimFirstCitationVerifier implements ICitationVerifier {
         const resolved = new Map<number, VerifiedCitation>();
         const pending: ParsedCitation[] = [];
 
-        input.citations.forEach((citation, index) => {
+        input.citations.forEach(citation => {
             const verdict = citation.evidenceIsQuoted
                 ? verifyByVerbatim(citation, byKey.get(normalize(citation.author)) ?? null, language)
                 : null;
-            if (verdict) resolved.set(index, verdict);
+            if (verdict) resolved.set(citation.offset, verdict);
             else pending.push(citation);
         });
 
         const judged = pending.length > 0
             ? (await this.inner.verify({ ...input, citations: pending })).citations
             : [];
-        // El de adentro conserva el `offset`, que es el índice en la lista
-        // original: con él cada veredicto vuelve a su lugar.
+        // Cada veredicto vuelve a su cita por `offset`, que el de adentro
+        // conserva. Por posición en la lista no: re-verificar UNA cita de un
+        // análisis (`CorrectCitationUseCase`) le pasa su offset original, que
+        // no es 0, y el veredicto se perdía (revisión de 8b).
         for (const v of judged) resolved.set(v.offset, v);
 
         return {
-            citations: input.citations.map((_, index) => resolved.get(index)).filter((v): v is VerifiedCitation => !!v),
+            citations: input.citations.map(c => resolved.get(c.offset)).filter((v): v is VerifiedCitation => !!v),
         };
     }
 }
@@ -63,6 +65,10 @@ function verifyByVerbatim(
     if (!source) return null;
     const match = findVerbatim(citation.evidence, source.chunks);
     if (!match) return null;
+    // Hallada en el texto completo, sin página: la oración existe pero la
+    // página citada no se comprobó. Decide el juez, y antes de alarmar se lee
+    // la página citada (D1). Antes salía «verificada» con cualquier página.
+    if (match.pageHint === null && citation.pages !== null) return null;
 
     const matchedPage = pageNumberOf(match.pageHint);
     const mismatch = citation.pages !== null && matchedPage !== null && !pagesOverlap(citation.pages, matchedPage);
@@ -74,6 +80,8 @@ function verifyByVerbatim(
         similarityScore: match.score,
         matchedPage,
         matchedPageLabel: match.pageHint,
+        // La oración citada es el tramo de apoyo (D3).
+        supportingSpan: { text: citation.evidence.trim().slice(0, 400), pageLabel: match.pageHint },
         note: mismatch
             ? (language === 'en'
                 ? `The quoted sentence is in the source, but at ${match.pageHint}, not p. ${citation.pages}.`

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pdfjsLib } from '@/lib/pdfWorker';
 import { Loader2, FileWarning } from 'lucide-react';
-import { findQuoteInPageText } from '@dosfilos/domain';
+import { findQuoteInPageText, findQuotePartAtPageEdge } from '@dosfilos/domain';
+import { selectionInside } from './selectionInside';
 import './pdfTextLayer.css';
 
 /**
@@ -309,7 +310,9 @@ export function PdfPageViewer({
                 };
 
                 if (wantsQuote) {
-                    const match = findQuoteInPageText(highlightQuote!, pageText);
+                    // Entera en la hoja, o la parte que cae en su borde cuando la
+                    // frase cruza el corte de página (TP #8, 8b, D6).
+                    const match = findQuoteInPageText(highlightQuote!, pageText) ?? findQuotePartAtPageEdge(highlightQuote!, pageText);
                     const boxes = match ? bandsFor(match.start, match.end) : [];
                     setHighlights(boxes);
                     onHighlightResolved?.(boxes.length > 0);
@@ -390,8 +393,8 @@ export function PdfPageViewer({
             textLayerRef.current?.classList.remove('selecting');
             const sel = window.getSelection();
             const el = textLayerRef.current;
-            if (!sel || sel.isCollapsed || !el || !sel.anchorNode || !el.contains(sel.anchorNode)) return;
-            const text = sel.toString().replace(/\s+/g, ' ').trim();
+            if (!selectionInside(sel, el)) return;
+            const text = sel!.toString().replace(/\s+/g, ' ').trim();
             if (text) onTextSelected(text);
         };
         document.addEventListener('mouseup', alSoltar);
@@ -408,11 +411,11 @@ export function PdfPageViewer({
         if (!onTextSelected) return;
         const sel = window.getSelection();
         const el = textLayerRef.current;
-        if (!sel || sel.isCollapsed || !el || !sel.anchorNode || !el.contains(sel.anchorNode)) {
+        if (!selectionInside(sel, el)) {
             onTextSelected(null);
             return;
         }
-        const text = sel.toString().replace(/\s+/g, ' ').trim();
+        const text = sel!.toString().replace(/\s+/g, ' ').trim();
         onTextSelected(text || null);
     };
 

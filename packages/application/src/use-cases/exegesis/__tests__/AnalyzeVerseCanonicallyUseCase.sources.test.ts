@@ -599,3 +599,85 @@ describe('AnalyzeVerseCanonicallyUseCase — un fragmento viejo sin hoja no se r
         expect(enviada.pinnedChars ?? 0).toBe(0);
     });
 });
+
+/** TP #8 (8b, C1): las preguntas del versículo llegan como tarea, y sus citas se sanean. */
+describe('AnalyzeVerseCanonicallyUseCase — preguntas del encuadre', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    const conPreguntas = (paper: ExegeticalPaper): ExegeticalPaper => ({
+        ...paper,
+        assignmentBrief: '1. ¿Qué significa δοῦλος (Stg. 1:1)?\n2. ¿Qué relación sintáctica tiene con 1:2 (Stg. 1:2)?',
+    });
+
+    it('pasa al analizador las preguntas de ESTE versículo con su tipo', async () => {
+        const paper = conPreguntas(makePaper([makeSource('Tuggy', 'res-a')]));
+        const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse.mock.calls[0][0].sectionQuestions).toEqual([
+            { number: 1, text: '¿Qué significa δοῦλος (Stg. 1:1)?', kinds: ['lexical'] },
+        ]);
+    });
+
+    it('un defensor que no es del corpus se quita y la lectura queda', async () => {
+        const paper = conPreguntas(makePaper([makeSource('Tuggy', 'res-a')]));
+        const analysis = {
+            ...analysisCiting(['Tuggy']),
+            questionAnswers: [{
+                questionNumber: 1, directAnswer: 'siervo', decision: 'siervo',
+                options: [{ reading: 'siervo', argument: 'x', defenders: [{ sourceKey: 'Tuggy', page: 149 }, { sourceKey: 'Inventado', page: 3 }] }],
+                decisiveCriterion: { text: 'c', whyThisOverThat: 'w', sources: [{ sourceKey: 'Inventado', page: 3 }] },
+            }],
+        };
+        const { useCase, appended } = buildUseCase({ paper, analysis, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const q = appended[0]!.questionAnswers![0]!;
+        expect(q.options[0]!.defenders.map(d => d.sourceKey)).toEqual(['Tuggy']);
+        expect(q.decisiveCriterion.sources).toEqual([]);
+        // Y queda sellada la unidad de página, como el resto de las citas.
+        expect(q.options[0]!.defenders[0]).toHaveProperty('pageKind');
+    });
+});
+
+/** TP #8 (8b, C3): rango y segunda mano con forma limpia. */
+describe('AnalyzeVerseCanonicallyUseCase — rango y segunda mano', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('pageEnd sólo si pasa la página inicial; via sólo si dice algo', async () => {
+        const paper = makePaper([makeSource('Tuggy', 'res-a')]);
+        const base = analysisCiting(['Tuggy']);
+        const analysis = {
+            ...base,
+            lexicalAnalyses: [{
+                ...base.lexicalAnalyses[0]!,
+                generalSemanticRange: {
+                    glosses: ['siervo'],
+                    sources: [
+                        { sourceKey: 'Tuggy', page: 149, pageEnd: 150, via: '' },
+                        { sourceKey: 'Tuggy', page: 149, pageEnd: 0, via: 'BDAG' },
+                        { sourceKey: 'Tuggy', page: 149, pageEnd: 400 },
+                    ],
+                },
+            }],
+        };
+        const { useCase, appended } = buildUseCase({ paper, analysis, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const [uno, dos, tres] = appended[0]!.lexicalAnalyses[0]!.generalSemanticRange.sources;
+        expect(uno).toMatchObject({ page: 149, pageEnd: 150 });
+        expect(uno).not.toHaveProperty('via');
+        expect(dos).not.toHaveProperty('pageEnd');
+        expect(dos!.via).toBe('BDAG');
+        // Un rango de 251 páginas no es una cita.
+        expect(tres).not.toHaveProperty('pageEnd');
+    });
+});
+
+/** TP #8 (8b, E2): las reglas de la copia de la guía llegan al analizador. */
+describe('AnalyzeVerseCanonicallyUseCase — reglas del curso', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+    it('pasa las additionalRules de la copia de la guía', async () => {
+        const paper = { ...makePaper([makeSource('Tuggy', 'res-a')]), styleGuideSnapshot: { manifest: { additionalRules: [' Tercera persona. ', ''] } } } as never;
+        const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse.mock.calls[0][0].styleRules).toEqual(['Tercera persona.']);
+    });
+});

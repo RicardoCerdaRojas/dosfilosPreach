@@ -121,6 +121,9 @@ export const PROXY_FEATURES = [
     'exegesis.composeVerse',
     // «Agregar una idea a esta sección»: una o dos oraciones y dónde van.
     'exegesis.placeIdea',
+    // «Revisión antes de entregar»: la prosa de un versículo contra los
+    // criterios del curso. Solo avisa (TP #8, 8b, E3).
+    'exegesis.reviewProse',
     'exegesis.composeIntroduction',
     'exegesis.composeConclusion',
     'exegesis.composeSermon',

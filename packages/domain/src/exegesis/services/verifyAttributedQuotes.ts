@@ -95,7 +95,7 @@ export function verifyAttributedQuotes(
             surface: 'commentator',
             quote: c.verbatimQuote ?? '',
         });
-        return { ...c, verbatimQuote: '' };
+        return { ...c, verbatimQuote: '', unverifiedQuote: (c.verbatimQuote ?? '').trim() };
     });
 
     const translationCruxes = analysis.translationCruxes.map(crux => ({
@@ -108,7 +108,7 @@ export function verifyAttributedQuotes(
                 surface: 'crux',
                 quote: p.verbatimQuote ?? '',
             });
-            return { ...p, verbatimQuote: '' };
+            return { ...p, verbatimQuote: '', unverifiedQuote: (p.verbatimQuote ?? '').trim() };
         }),
     }));
 

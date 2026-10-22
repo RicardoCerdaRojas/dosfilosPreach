@@ -87,6 +87,12 @@ export function renderVerseAnalysisProse(
         if (!t) return '';
         return /[.!?»"]$/.test(t) ? t : `${t}.`;
     };
+    // La conclusión propia, en su propia oración y sin cita (C3).
+    // Abre oración: con mayúscula aunque el analizador la escribiera en minúscula.
+    const propia = (entry: { ownInference?: string }): string => {
+        const texto = entry.ownInference?.trim();
+        return texto ? ` ${sentence(texto.charAt(0).toUpperCase() + texto.slice(1))}` : '';
+    };
 
     const paragraphs: string[] = [];
     const ref = formatPassageReference(analysis.reference, language);
@@ -117,6 +123,28 @@ export function renderVerseAnalysisProse(
         opening.push(sentence(analysis.argumentativeRole));
     }
     if (opening.length > 0) paragraphs.push(opening.join('. ').replace(/\.\./g, '.'));
+
+    // ── Las respuestas a las preguntas del encuadre (revisión de 8b) ──
+    // Este texto reemplaza la prosa compuesta cuando falta algo del
+    // análisis: sin las respuestas, el respaldo perdía justo lo que el
+    // trabajo tenía que contestar.
+    for (const qa of analysis.questionAnswers ?? []) {
+        const partes: string[] = [];
+        if (qa.directAnswer?.trim()) {
+            partes.push(sentence(`${L(`Pregunta ${qa.questionNumber}`, `Question ${qa.questionNumber}`)}: ${qa.directAnswer.trim()}`));
+        }
+        const lecturas = (qa.options ?? [])
+            .filter(o => o.reading?.trim())
+            .map(o => `«${o.reading.trim()}»${o.argument?.trim() ? `, ${o.argument.trim()}` : ''}${cite(o.defenders ?? [])}`);
+        if (lecturas.length > 0) partes.push(sentence(`${L('Las lecturas propuestas son', 'The proposed readings are')}: ${lecturas.join('; ')}`));
+        const criterio = qa.decisiveCriterion;
+        if (criterio?.text?.trim()) {
+            partes.push(sentence(`${L('El criterio que decide es', 'The deciding criterion is')} ${criterio.text.trim()}${cite(criterio.sources ?? [])}`));
+            if (criterio.whyThisOverThat?.trim()) partes.push(sentence(criterio.whyThisOverThat));
+        }
+        if (qa.decision?.trim()) partes.push(sentence(`${L('Por eso', 'Therefore')}, ${qa.decision.trim()}`));
+        if (partes.length > 0) paragraphs.push(partes.join(' '));
+    }
 
     // ── Crítica textual ────────────────────────────────────────────
     const textual: string[] = [];
@@ -173,13 +201,14 @@ export function renderVerseAnalysisProse(
             `Carga en este verso: ${sentence(lex.verseSpecificLoading)}${cite(lex.loadingSources)}`,
             `Loading in this verse: ${sentence(lex.verseSpecificLoading)}${cite(lex.loadingSources)}`,
         ));
+        if (lex.ownInference?.trim()) parts.push(propia(lex).trim());
         paragraphs.push(`${parts.join('. ').replace(/\.\./g, '.')}.`.replace(/\.\.$/, '.'));
     }
 
     // ── Contexto histórico-cultural ────────────────────────────────
     const historical = analysis.historicalContext.map(h => L(
-        `Sobre ${h.aspect}: ${sentence(h.relevance)}${cite(h.sources)}`,
-        `On ${h.aspect}: ${sentence(h.relevance)}${cite(h.sources)}`,
+        `Sobre ${h.aspect}: ${sentence(h.relevance)}${cite(h.sources)}${propia(h)}`,
+        `On ${h.aspect}: ${sentence(h.relevance)}${cite(h.sources)}${propia(h)}`,
     ));
     if (historical.length > 0) paragraphs.push(historical.join(' '));
 
@@ -193,8 +222,8 @@ export function renderVerseAnalysisProse(
             ? L(` con la fórmula «${l.citationFormula.trim()}»`, ` with the formula «${l.citationFormula.trim()}»`)
             : '';
         return L(
-            `El verso presenta una ${otLabel(l.type)} ${l.sourcePassage}${formula}. ${sentence(l.interpretiveBearing)}${cite(l.sources)}`,
-            `The verse presents a ${otLabel(l.type)} ${l.sourcePassage}${formula}. ${sentence(l.interpretiveBearing)}${cite(l.sources)}`,
+            `El verso presenta una ${otLabel(l.type)} ${l.sourcePassage}${formula}. ${sentence(l.interpretiveBearing)}${cite(l.sources)}${propia(l)}`,
+            `The verse presents a ${otLabel(l.type)} ${l.sourcePassage}${formula}. ${sentence(l.interpretiveBearing)}${cite(l.sources)}${propia(l)}`,
         );
     });
     if (otLinks.length > 0) paragraphs.push(otLinks.join(' '));
@@ -204,7 +233,7 @@ export function renderVerseAnalysisProse(
         const quote = c.verbatimQuote?.trim()
             ? L(` Escribe: «${c.verbatimQuote.trim()}»`, ` He writes: «${c.verbatimQuote.trim()}»`)
             : '';
-        return `${c.sourceKey} (${cited(c)}) ${sentence(c.position)}${quote}`;
+        return `${c.sourceKey} (${cited(c)}) ${sentence(c.position)}${quote}${propia(c)}`;
     });
     if (commentators.length > 0) paragraphs.push(commentators.join(' '));
 
@@ -238,8 +267,8 @@ export function renderVerseAnalysisProse(
 
     // ── Extensiones que irían a nota al pie ────────────────────────
     const footnotes = analysis.footnoteExtensions.map(fn => L(
-        `Sobre «${fn.anchorPhrase}»: ${sentence(fn.text)}${cite(fn.sources)}`,
-        `On «${fn.anchorPhrase}»: ${sentence(fn.text)}${cite(fn.sources)}`,
+        `Sobre «${fn.anchorPhrase}»: ${sentence(fn.text)}${cite(fn.sources)}${propia(fn)}`,
+        `On «${fn.anchorPhrase}»: ${sentence(fn.text)}${cite(fn.sources)}${propia(fn)}`,
     ));
     if (footnotes.length > 0) paragraphs.push(footnotes.join(' '));
 

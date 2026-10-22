@@ -33,6 +33,12 @@ export const LLM_CITATION_VERIFIER_SCHEMA = {
             type: SchemaType.STRING,
             description: 'The pageHint of the chunk that supported the claim (verbatim from the input). Empty string when no chunk supported the claim or no pageHint was provided.',
         },
+        // TP #8 (8b, D3): el tramo de la fuente que respalda, para resaltarlo
+        // en el visor y para «Diagnosticar».
+        supportingQuote: {
+            type: SchemaType.STRING,
+            description: 'The exact sentence(s) from the chunk that support takenFromSource, copied verbatim (max ~300 characters). Empty string when nothing supports it.',
+        },
         citedPageSupports: {
             type: SchemaType.BOOLEAN,
             description: 'True when a chunk whose pageHint is one of the CITED pages supports the claim on its own, even if another chunk supports it better. False when no cited page was given or no chunk of a cited page supports it.',
@@ -42,8 +48,8 @@ export const LLM_CITATION_VERIFIER_SCHEMA = {
             description: 'One sentence in the requested language explaining the verdict about takenFromSource.',
         },
     },
-    required: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'citedPageSupports', 'reasoning'],
+    required: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'supportingQuote', 'citedPageSupports', 'reasoning'],
     // Gemini ordena las propiedades alfabéticamente si no se le dice; el
     // orden importa: se escribe lo tomado antes de decidir.
-    propertyOrdering: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'citedPageSupports', 'reasoning'],
+    propertyOrdering: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'supportingQuote', 'citedPageSupports', 'reasoning'],
 } as const;

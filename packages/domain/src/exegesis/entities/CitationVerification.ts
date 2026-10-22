@@ -176,6 +176,33 @@ export interface VerifiedCitation extends ParsedCitation {
      * citation came back yellow vs red.
      */
     note: string | null;
+    /**
+     * Qué se leyó antes de este veredicto, cuando la primera pasada alarmó
+     * (TP #8, fase 8b, D1): `cited-page`, se halló al leer la página citada y
+     * sus vecinas enteras; `book`, en otra parte del libro (el veredicto pasa
+     * a «página no coincide» con la página hallada); `not-in-book`, se buscó
+     * en la página, sus vecinas y el libro entero sin hallarla. Ausente si no
+     * hizo falta buscar.
+     */
+    bookSearch?: 'cited-page' | 'book' | 'not-in-book';
+    /**
+     * Lo que la oración le atribuye a la fuente, como lo leyó el juez (TP #8,
+     * fase 8b, D3). Se descartaba: con esto la revisión muestra, lado a lado,
+     * lo que la oración le atribuye y lo que la fuente dice.
+     */
+    takenFromSource?: string;
+    /**
+     * El tramo de la fuente que respalda la cita, copiado del fragmento, con
+     * su rótulo de página (D3). Sirve para resaltarlo en el visor aunque la
+     * cita sea una paráfrasis, y para «Diagnosticar»: si cubre sólo una parte
+     * de la oración, la afirmación es mixta.
+     */
+    supportingSpan?: { text: string; pageLabel: string | null };
+    /**
+     * No está en la fuente citada pero sí en OTRA del corpus (D4, causa 3):
+     * «eso lo dice Mayor, no Adamson». Lo halla la búsqueda antes de alarmar.
+     */
+    foundInOtherSource?: { sourceKey: string; pageLabel: string | null };
 }
 
 /**

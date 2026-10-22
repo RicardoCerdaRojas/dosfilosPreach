@@ -8,6 +8,7 @@ import {
     type ComposeVerseInput,
     type ComposerSourceMetadata,
 } from '@dosfilos/domain';
+import { buildStyleRulesBlock } from '../styleRulesBlock';
 
 const ES_INSTRUCTION = `Eres un redactor académico de exégesis bíblica nivel TMS/Turabian. Recibes el análisis canónico estructurado de UN versículo y produces 1-3 párrafos de prosa académica continua sobre ese versículo SOLAMENTE.
 
@@ -20,6 +21,7 @@ REGLAS DURAS:
 - Cierra el último párrafo con la tesis del verso + la decisión de traducción comprometida.
 - Si el análisis declara confianza baja en algún hallazgo, calibra el lenguaje hedge ("posiblemente", "es plausible que…").
 - NO inventes citas: solo usa los sourceKey que aparecen en el análisis. Si necesitas citar algo y no hay sourceKey disponible, omítelo.
+- Lo que dice la fuente y lo que concluye el análisis van en ORACIONES DISTINTAS. Cuando el briefing trae «own inference (NO citation…)», redáctala en una oración propia y SIN la cita: la cita va sólo en la oración de lo que dice la fuente. Una oración que mezcla la fuente con la conclusión le atribuye al autor lo que no escribió.
 
 FORMATO DE SALIDA:
 - Markdown plano. Solo párrafos separados por línea en blanco.
@@ -37,6 +39,7 @@ HARD RULES:
 - Close the final paragraph with the verse's thesis + the committed translation decision.
 - If the analysis declares low confidence on a finding, calibrate hedge language ("possibly", "it is plausible that…").
 - DO NOT invent citations: use only the sourceKey values that appear in the analysis. If you'd cite something and no sourceKey is available, omit it.
+- What the source says and what the analysis concludes go in DIFFERENT SENTENCES. When the briefing carries "own inference (NO citation…)", write it in its own sentence WITHOUT the citation: the citation goes only on the sentence of what the source says. A sentence that mixes the source with the conclusion attributes to the author what they did not write.
 
 OUTPUT FORMAT:
 - Plain markdown. Just paragraphs separated by blank lines.
@@ -107,7 +110,9 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
     // gana la de sistema (se pidieron 300 y salieron 52).
     const target = input.targetWords && input.targetWords > 0 ? Math.round(input.targetWords) : null;
 
-    const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, glossaryBlock,
+    // Las reglas propias del curso, de la guía de estilo (E2).
+    const styleRulesBlock = buildStyleRulesBlock(input.styleGuideManifest?.additionalRules, lang);
+    const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, styleRulesBlock, glossaryBlock,
         buildCitationFormBlock(input.citationForm ?? null, lang),
         buildWordBudgetBlock(target ?? input.wordBudget ?? null, lang),
         buildAcademicRegisterBlock(lang, { answersQuestions: (input.sectionQuestions ?? []).length > 0 }),
@@ -122,8 +127,10 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
 
     const sourceTable = input.sources.length > 0
         ? [
-            lang === 'en' ? 'AVAILABLE SOURCES (cite by sourceKey):' : 'FUENTES DISPONIBLES (cita por sourceKey):',
-            ...input.sources.map(s => `- ${s.citationKey}: ${describeSource(s)}`),
+            lang === 'en' ? 'AVAILABLE SOURCES (cite each one by its key, exactly):' : 'FUENTES DISPONIBLES (cita cada una por su clave, tal cual):',
+            // La clave explícita (TP #8, 8b, E1, #39): la prosa citó «(Nestle y
+            // Aland, 692)» con el autor de la ficha en vez de «NA28».
+            ...input.sources.map(s => `- ${lang === 'en' ? 'cite as' : 'cita como'} «${s.citationKey}» — ${describeSource(s)}`),
             lang === 'en'
                 ? 'Publisher, city and year are given here ONLY when someone copied them from the book. If a datum is missing above, do not write it and do not guess it.'
                 : 'La editorial, la ciudad y el año están arriba SOLO cuando alguien los copió del libro. Si un dato no aparece, no lo escribas ni lo deduzcas.',
@@ -131,6 +138,18 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         : (lang === 'en'
             ? 'No external sources configured for this paper.'
             : 'Sin fuentes externas configuradas para este paper.');
+
+    // Lo que el verificador no pudo respaldar del análisis (TP #8, 8b, E1):
+    // el compositor no sabía cuáles fallaron y las repetía.
+    const alertas = input.citationAlerts ?? [];
+    const alertsBlock = alertas.length > 0
+        ? [
+            lang === 'en'
+                ? 'ANALYSIS CITATIONS THE VERIFIER COULD NOT SUPPORT (do not repeat them as they are; do what each line says):'
+                : 'CITAS DEL ANÁLISIS QUE EL VERIFICADOR NO PUDO RESPALDAR (no las repitas tal cual; haz lo que dice cada línea):',
+            ...alertas.map(a => `- ${a.citation} — ${instruccionDeAlerta(a, lang)}`),
+        ].join('\n')
+        : '';
 
     const briefBlock = input.assignmentBrief?.trim()
         ? [
@@ -174,6 +193,7 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         '',
         briefBlock,
         sourceTable,
+        alertsBlock,
         '',
         lang === 'en' ? 'CANONICAL ANALYSIS (the only authoritative content source):' : 'ANÁLISIS CANÓNICO (única fuente autoritativa):',
         serializeAnalysis(input.verseAnalysis, lang, { pageLabel: input.pageLabel }),
@@ -217,4 +237,19 @@ function describeSource(s: ComposerSourceMetadata): string {
     const imprint = [s.city, s.publisher, s.year ? String(s.year) : ''].filter(Boolean);
     if (imprint.length > 0) parts.push(`(${imprint.join(': ')})`);
     return parts.join(', ');
+}
+
+/** Qué hacer con cada alarma, según su clase (revisión de 8b). */
+function instruccionDeAlerta(a: { status: string; foundAt?: string | null }, lang: 'es' | 'en'): string {
+    const en = lang === 'en';
+    if (a.status === 'page-mismatch' && a.foundAt) return en ? `found at ${a.foundAt}: cite that page` : `hallada en ${a.foundAt}: cita esa página`;
+    if (a.status === 'fuzzy-low') {
+        return en
+            ? 'the source supports only part of it: cite only what the source says; your conclusion goes in another sentence, without the citation'
+            : 'la fuente sostiene solo una parte: cita solo lo que dice la fuente; tu conclusión va en otra oración, sin la cita';
+    }
+    if (a.status === 'page-unverifiable') {
+        return en ? 'the page could not be checked: do not repeat that page number' : 'no se pudo comprobar la página: no repitas ese número de página';
+    }
+    return en ? 'the source does not say it: leave the claim without that citation, or remove it' : 'la fuente no lo dice: deja la afirmación sin esa cita, o quítala';
 }

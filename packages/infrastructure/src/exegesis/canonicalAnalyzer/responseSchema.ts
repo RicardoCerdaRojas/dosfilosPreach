@@ -39,7 +39,17 @@ import type { TestamentVoice } from '../testamentVoice';
  * esquema que contradice a su propio prompt es una regresión esperando el día
  * en que la balanza se incline para el otro lado.
  */
-export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
+export function canonicalVerseAnalysisSchema(
+    voice: TestamentVoice,
+    /**
+     * El versículo responde preguntas del encuadre: `questionAnswers` pasa a
+     * ser obligatorio (TP #8, fase 8b, C1). Sin preguntas el campo ni aparece:
+     * pedirlo vacío en cada versículo de un paper largo es ruido en el prompt.
+     */
+    options: { withQuestions?: boolean; grammarLabel?: string } = {},
+) {
+    // C4: la gramática del corpus, no «Wallace» fijo (también lo decía en el hebreo).
+    const gramatica = options.grammarLabel?.trim() || voice.grammarsEs.replace(/^[^:]*:\s*/, '');
     return {
     type: 'object',
     description:
@@ -153,7 +163,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                     description:
                         'Construcciones sintácticas clave: participios y su función, cláusulas relativas, ' +
                         'frases preposicionales con matiz por preposición + caso, construcciones de genitivo ' +
-                        'según las categorías de Wallace. Cada una con morfología + función + significancia interpretativa.',
+                        `según las categorías de ${gramatica}. Cada una con morfología + función + significancia interpretativa.`,
                     items: {
                         type: 'object',
                         properties: {
@@ -171,7 +181,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                             syntacticFunction: {
                                 type: 'string',
                                 description:
-                                    'Función sintáctica anclada en categorías de Wallace. ' +
+                                    `Función sintáctica anclada en categorías de ${gramatica}. ` +
                                     'Ej.: "circunstancial temporal" / "esfera locativa" / "genitivo descriptivo".',
                             },
                             interpretiveSignificance: {
@@ -251,11 +261,17 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                     },
                     loadingSources: {
                         type: 'array',
-                        description: 'Fuentes citadas para el argumento de carga específica (típicamente comentaristas).',
+                        description: 'Fuentes citadas para el argumento de carga específica (típicamente comentaristas). Con fuentes, "verseSpecificLoading" dice SÓLO lo que ellas dicen.',
                         items: SOURCE_CITATION_SCHEMA(),
                     },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['term', 'lemma', 'gloss', 'generalSemanticRange', 'verseSpecificLoading', 'loadingSources'],
+                required: ['term', 'lemma', 'gloss', 'generalSemanticRange', 'verseSpecificLoading', 'loadingSources', 'ownInference'],
             },
         },
         argumentativeRole: {
@@ -276,10 +292,16 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                         type: 'string',
                         description: 'Aspecto explicado (ej. "dinámica patrón-cliente", "convenciones del testamento como género literario").',
                     },
-                    relevance: { type: 'string', description: 'Cómo este aspecto importa para el significado del verso. 1-2 oraciones.' },
+                    relevance: { type: 'string', description: 'Cómo este aspecto importa para el significado del verso, según las fuentes citadas. 1-2 oraciones.' },
                     sources: { type: 'array', items: SOURCE_CITATION_SCHEMA() },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['aspect', 'relevance', 'sources'],
+                required: ['aspect', 'relevance', 'sources', 'ownInference'],
             },
         },
         oldTestamentLinks: {
@@ -297,11 +319,17 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                     },
                     interpretiveBearing: {
                         type: 'string',
-                        description: 'Qué aporta interpretativamente la conexión. 1-2 oraciones.',
+                        description: 'Qué aporta interpretativamente la conexión, según las fuentes citadas. 1-2 oraciones.',
                     },
                     sources: { type: 'array', items: SOURCE_CITATION_SCHEMA() },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['type', 'sourcePassage', 'interpretiveBearing', 'sources'],
+                required: ['type', 'sourcePassage', 'interpretiveBearing', 'sources', 'ownInference'],
             },
         },
         commentatorEngagement: {
@@ -318,10 +346,17 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                     },
                     page: { type: 'integer', description: 'Página donde se articula la posición. Si el ancla del fragmento es «§ …» (libro sin páginas impresas), usa 0 y copia la sección (sin «§») en locator.' },
                     locator: { type: 'string', description: 'La sección o el lema citado cuando el libro no tiene páginas (ancla «§ …»). Vacío si no aplica.' },
+                    ...CITATION_RANGE_AND_VIA(),
                     role: { type: 'string', enum: ['anchor', 'contrast', 'technical'] },
                     position: {
                         type: 'string',
-                        description: 'Qué argumenta este comentarista sobre este verso. 1-3 oraciones, parafraseado.',
+                        description: 'Qué argumenta ESTE comentarista sobre este verso, y nada más. 1-3 oraciones, parafraseado. Tu evaluación de su postura va en "ownInference".',
+                    },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
                     },
                     verbatimQuote: {
                         type: 'string',
@@ -331,7 +366,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                             'NO incluyas esta entrada.',
                     },
                 },
-                required: ['sourceKey', 'page', 'role', 'position', 'verbatimQuote'],
+                required: ['sourceKey', 'page', 'role', 'position', 'verbatimQuote', 'ownInference'],
             },
         },
         translationCruxes: {
@@ -370,6 +405,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                                 sourceKey: { type: 'string' },
                                 page: { type: 'integer', description: 'Si el ancla es «§ …», 0 y la sección en locator.' },
                                 locator: { type: 'string' },
+                                ...CITATION_RANGE_AND_VIA(),
                                 summary: { type: 'string', description: 'Resumen de 1-2 oraciones de la posición.' },
                                 supports: {
                                     type: 'integer',
@@ -496,7 +532,7 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                         description:
                             'Frase verbatim de uno de los campos prosaicos del análisis. Composer fuzzy-matchea para colocar el marcador.',
                     },
-                    text: { type: 'string', description: 'Cuerpo de la nota al pie. 1-3 oraciones.' },
+                    text: { type: 'string', description: 'Cuerpo de la nota al pie: lo que dicen sus fuentes. 1-3 oraciones.' },
                     sources: {
                         type: 'array',
                         description:
@@ -504,10 +540,17 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
                             'Si la nota es análisis propio, arreglo vacío: colgarla de un autor le atribuye lo que no escribió.',
                         items: SOURCE_CITATION_SCHEMA(),
                     },
+                    ownInference: {
+                        type: 'string',
+                        description:
+                            'Lo que CONCLUYES tú a partir de lo anterior, SIN fuente. Va aparte para que la cita responda sólo por lo que la fuente dice. ' +
+                            'Vacío si no agregas nada propio.',
+                    },
                 },
-                required: ['anchorPhrase', 'text', 'sources'],
+                required: ['anchorPhrase', 'text', 'sources', 'ownInference'],
             },
         },
+        ...(options.withQuestions ? { questionAnswers: QUESTION_ANSWERS_SCHEMA() } : {}),
     },
     required: [
         'originalText',
@@ -525,7 +568,84 @@ export function canonicalVerseAnalysisSchema(voice: TestamentVoice) {
         'theologicalHooks',
         'confidenceFlags',
         'footnoteExtensions',
+        ...(options.withQuestions ? ['questionAnswers'] : []),
         ],
+    };
+}
+
+/**
+ * La respuesta a cada pregunta del encuadre (C1). El orden de los campos es
+ * el del profesor: respuesta, lecturas con su defensor, criterio que las
+ * distingue, decisión.
+ */
+function QUESTION_ANSWERS_SCHEMA() {
+    return {
+        type: 'array',
+        description:
+            'Una entrada por cada pregunta del encuadre que este versículo responde (ver «Lo que este versículo tiene que responder»). ' +
+            'Es la respuesta del trabajo: la prosa la redacta desde aquí.',
+        items: {
+            type: 'object',
+            properties: {
+                questionNumber: { type: 'integer', description: 'El número de la pregunta en el encuadre.' },
+                directAnswer: { type: 'string', description: 'La respuesta en UNA oración. En una pregunta de identificar, el estado de la cuestión en una oración.' },
+                options: {
+                    type: 'array',
+                    description:
+                        'Las lecturas posibles, cada una con su argumento más fuerte y quién la defiende. Al menos dos cuando la cuestión está disputada. ' +
+                        'En una pregunta de identificar, el catálogo completo de propuestas que trae el corpus, aunque ninguna convenza.',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            reading: { type: 'string', description: 'La lectura, en una frase.' },
+                            argument: { type: 'string', description: 'El argumento más fuerte a su favor, como lo da su defensor.' },
+                            defenders: {
+                                type: 'array',
+                                description: 'Quién la defiende, con la página donde lo dice. Vacío si nadie del corpus la defiende: NUNCA inventes un defensor.',
+                                items: SOURCE_CITATION_SCHEMA(),
+                            },
+                        },
+                        required: ['reading', 'argument', 'defenders'],
+                    },
+                },
+                decisiveCriterion: {
+                    type: 'object',
+                    description: 'El criterio que DISTINGUE entre las lecturas. Un criterio que vale para las dos no decide nada.',
+                    properties: {
+                        text: { type: 'string', description: 'El criterio, de preferencia estructural o de la misma carta.' },
+                        whyThisOverThat: { type: 'string', description: 'Por qué favorece una lectura y NO la otra.' },
+                        sources: {
+                            type: 'array',
+                            description: 'Quién da el criterio, con su página. Vacío si el criterio es del análisis.',
+                            items: SOURCE_CITATION_SCHEMA(),
+                        },
+                    },
+                    required: ['text', 'whyThisOverThat', 'sources'],
+                },
+                decision: { type: 'string', description: 'La decisión, con la razón propia. Sin citas.' },
+            },
+            required: ['questionNumber', 'directAnswer', 'options', 'decisiveCriterion', 'decision'],
+        },
+    } as const;
+}
+
+/**
+ * Rango y segunda mano de una cita (TP #8, 8b, C3): «Adamson 170–171» se
+ * citaba con una sola página y salía falsa alarma; «Adamson atribuye a
+ * Mayor» se citaba como si Mayor se hubiera leído.
+ */
+function CITATION_RANGE_AND_VIA() {
+    return {
+        pageEnd: {
+            type: 'integer',
+            description: 'Última página cuando lo citado corre por más de una (170–171). 0 si es una sola página.',
+        },
+        via: {
+            type: 'string',
+            description:
+                'Segunda mano: el autor al que ESTA fuente atribuye la idea («Adamson atribuye a Mayor y Ropes…» → "Mayor, Ropes"). ' +
+                'La cita sigue siendo de esta fuente. Vacío si la idea es de la propia fuente.',
+        },
     } as const;
 }
 
@@ -550,6 +670,7 @@ function SOURCE_CITATION_SCHEMA() {
                 type: 'string',
                 description: 'Disambiguador opcional cuando sourceKey no basta (ej. "vol. 2", "§142", "ad loc."). Vacío si no aplica.',
             },
+            ...CITATION_RANGE_AND_VIA(),
         },
         required: ['sourceKey', 'page'],
     } as const;

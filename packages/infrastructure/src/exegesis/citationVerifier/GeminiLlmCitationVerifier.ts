@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, classifyOriginalLanguageAbsence, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, isOnCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
+import { citationAnchorFor, classifyOriginalLanguageAbsence, inheritFromAnalysisCitations, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, isOnCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -97,7 +97,10 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         const lookup = new SourceMatcher(input.sources);
         // Las citas ya reconocidas (el análisis canónico) mandan; el parser
         // es para la prosa, y sobre un markdown vacío devolvía cero citas.
-        const parsed = input.citations ? [...input.citations] : parseCitations(input.markdown);
+        const parsed = input.citations
+            ? [...input.citations]
+            // La prosa hereda lo que el análisis del paso ya resolvió (D1).
+            : inheritFromAnalysisCitations(parseCitations(input.markdown), input.inheritFrom ?? []);
 
         // Idioma explícito cuando el llamador lo sabe. Adivinarlo desde la
         // evidencia falla justo cuando la evidencia es una oración textual
@@ -105,7 +108,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         const language = input.language ?? detectLanguage(parsed);
 
         const verdicts = await Promise.all(
-            parsed.map(p => this.verifyOne(p, lookup, language, input.userId ?? null)),
+            parsed.map(p => this.verifyOne(p, lookup, language, input.userId ?? null, input.maxCharsPerChunk)),
         );
 
         return { citations: verdicts };
@@ -116,6 +119,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         lookup: SourceMatcher,
         language: 'es' | 'en',
         userId: string | null,
+        maxCharsPerChunk?: number,
     ): Promise<VerifiedCitation> {
         const matched = lookup.match(parsed.author, parsed.title);
         if (!matched) {
@@ -168,6 +172,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         const chunks = this.prepareChunks(
             [...matched.chunks, ...retrievedChunks],
             parsed.evidencePage ?? parsed.pages,
+            maxCharsPerChunk,
         );
         if (chunks.length === 0) {
             // «No pude comprobar» no es «no existe».
@@ -273,6 +278,13 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                     ? (chunks.find(c => { const p = printedPageOfHint(c.pageHint); return p !== null && pagesOverlap(parsed.pages!, p); })?.pageHint ?? null)
                     : (parsedResp.bestPageHint.trim() || null),
                 note,
+                ...(parsedResp.takenFromSource ? { takenFromSource: parsedResp.takenFromSource } : {}),
+                ...(parsedResp.supportingQuote && status !== 'not-found' ? {
+                    supportingSpan: {
+                        text: parsedResp.supportingQuote,
+                        pageLabel: parsedResp.bestPageHint.trim() || null,
+                    },
+                } : {}),
             };
         } catch (err) {
             console.warn('[GeminiLlmCitationVerifier] verify failed for citation, falling back to manual-pending:', err);
@@ -290,10 +302,10 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         }
     }
 
-    private prepareChunks(chunks: ReadonlyArray<VerifierSourceChunk>, citedPages: string | null): VerifierSourceChunk[] {
+    private prepareChunks(chunks: ReadonlyArray<VerifierSourceChunk>, citedPages: string | null, maxCharsPerChunk?: number): VerifierSourceChunk[] {
         return selectEvidenceChunks(chunks, citedPages, {
             maxChunks: this.maxChunksPerCitation,
-            maxCharsPerChunk: this.maxCharsPerChunk,
+            maxCharsPerChunk: maxCharsPerChunk ?? this.maxCharsPerChunk,
         });
     }
 
@@ -396,6 +408,10 @@ export interface ParsedLlmResponse {
     status: CitationStatus;
     confidence: number | null;
     bestPageHint: string;
+    /** Lo que la oración le atribuye a la fuente (D3). Vacío si no lo dio. */
+    takenFromSource: string;
+    /** El tramo del fragmento que la respalda (D3). Vacío si nada. */
+    supportingQuote: string;
     /** Un fragmento de la página CITADA respalda la afirmación por sí solo. */
     citedPageSupports: boolean;
     reasoning: string;
@@ -462,6 +478,9 @@ export function citedPageSettlesIt(
  * `status` que el esquema no contempla— y el motivo viaja en la nota, para que
  * la fila diga por qué está donde está.
  */
+/** Lo que se guarda del tramo de apoyo: alcanza para resaltarlo y no infla el veredicto. */
+const MAX_SUPPORTING_QUOTE = 400;
+
 export function parseLlmResponse(rawJson: string, finishReason: string | null = null): ParsedLlmResponse {
     let parsed: any;
     try {
@@ -479,6 +498,8 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
             status: 'manual-pending',
             confidence: null,
             bestPageHint: '',
+            takenFromSource: '',
+            supportingQuote: '',
             citedPageSupports: false,
             // `finishReason` viene del servidor justamente para no tener que
             // adivinar aquí: cuando dice MAX_TOKENS el corte es un hecho, y el
@@ -508,7 +529,13 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
             ? ''
             : `El modelo no declaró un veredicto reconocible (${String(declarado)}). No es un problema de la cita.`;
     const citedPageSupports = parsed?.citedPageSupports === true;
-    return { status, confidence, bestPageHint, citedPageSupports, reasoning };
+    const texto = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+    return {
+        status, confidence, bestPageHint, citedPageSupports, reasoning,
+        // Con tope, como la nota: hasta 300 veredictos viven en el documento del trabajo.
+        takenFromSource: texto(parsed?.takenFromSource).slice(0, MAX_SUPPORTING_QUOTE),
+        supportingQuote: texto(parsed?.supportingQuote).slice(0, MAX_SUPPORTING_QUOTE),
+    };
 }
 
 function extractPageFromHint(hint: string): string | null {

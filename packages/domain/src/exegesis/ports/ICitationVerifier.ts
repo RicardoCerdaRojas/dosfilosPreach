@@ -59,6 +59,18 @@ export interface CitationVerifierInput {
      * una oración textual en el idioma de la fuente.
      */
     language?: 'es' | 'en';
+    /**
+     * Las citas del análisis del mismo paso, para que las de la prosa hereden
+     * lo ya resuelto: la oración textual y las otras fuentes (TP #8, 8b, D1).
+     * Sólo con `markdown`, en el camino de la prosa.
+     */
+    inheritFrom?: ReadonlyArray<ParsedCitation>;
+    /**
+     * Tope de caracteres por fragmento. Sin él, el del adaptador (4.000). Al
+     * releer la página citada se pasa uno mayor: una hoja densa perdía su
+     * parte de abajo (revisión de 8b).
+     */
+    maxCharsPerChunk?: number;
     /** All citable sources attached to the paper. */
     sources: ReadonlyArray<VerifierSource>;
     /**
@@ -87,4 +99,20 @@ export interface CitationVerifierOutput {
  */
 export interface ICitationVerifier {
     verify(input: CitationVerifierInput): Promise<CitationVerifierOutput>;
+}
+
+/**
+ * Leer el libro de una fuente para ubicar una cita antes de alarmar (TP #8,
+ * fase 8b, D1). Lo implementa infraestructura con las callables de búsqueda y
+ * de fragmentos; el verificador no sabe de Firestore.
+ */
+export interface IBookSearch {
+    /** Las hojas donde aparece el término (búsqueda de texto plegado, el libro entero). */
+    sheetsWithTerm(resourceId: string, term: string): Promise<{
+        hits: ReadonlyArray<{ sheet: number; count: number }>;
+        /** El servidor cortó la lista: lo que no vino puede estar en el libro. */
+        truncated: boolean;
+    }>;
+    /** El texto entero de unas hojas, una entrada por hoja. */
+    readSheets(resourceId: string, sheets: ReadonlyArray<number>): Promise<ReadonlyArray<{ sheet: number; text: string; section: string | null }>>;
 }

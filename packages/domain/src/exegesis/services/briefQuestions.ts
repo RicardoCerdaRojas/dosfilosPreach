@@ -157,3 +157,31 @@ const SINTAXIS = /sintax|sint[áa]ctic|genitiv|dativ|acusativ|nominativ|vocativ|
 export function isSyntaxQuestion(text: string): boolean {
     return SINTAXIS.test(text);
 }
+
+/**
+ * Qué clase de respuesta pide una pregunta del encuadre (TP #8, fase 8b, C1).
+ * Una pregunta puede pedir varias: «¿Qué significa αἰτεῖτε καὶ οὐ λαμβάνετε?
+ * ¿Qué relación (sintáctica) tiene con el versículo anterior?» es léxica y de
+ * sintaxis.
+ *
+ * - `identify`: qué pasaje, quién, cuál. En el TP #8, «¿Qué pasaje está
+ *   citando Jacobo (Stg. 4:5)?»: la respuesta abre con el estado de la
+ *   cuestión (las propuestas y quién defiende cada una), no con una sola.
+ * - `lexical`: qué significa o denota una palabra.
+ * - `syntax`: qué relación o función (`isSyntaxQuestion`).
+ * - `textual`: una variante, una conjetura o la puntuación.
+ */
+export type BriefQuestionKind = 'identify' | 'lexical' | 'syntax' | 'textual';
+
+const IDENTIFICAR = /qu[ée] (pasaje|texto|cita|autor|libro)|de d[óo]nde (viene|proviene|sale)|a qui[ée]n|¿\s*qui[ée]n(es)?\b|cu[áa]l es (el|la) (fuente|origen|pasaje|referente)|what (passage|text)|which (passage|text)|^\s*(\d+[.)]\s*)?who\b/i;
+const LEXICA = /significa|significado|denota|qu[ée] sentido|quiere decir|\bmean(s|ing)?\b|denote/i;
+const TEXTUAL = /variante|cr[íi]tica textual|manuscrit|conjetura|aparato|lectura (original|alternativa|variante)|punt[úu][aá]|puntuaci|\btextual\b|variant|conjecture|punctuat/i;
+
+export function questionKinds(text: string): BriefQuestionKind[] {
+    const out: BriefQuestionKind[] = [];
+    if (IDENTIFICAR.test(text)) out.push('identify');
+    if (LEXICA.test(text)) out.push('lexical');
+    if (isSyntaxQuestion(text)) out.push('syntax');
+    if (TEXTUAL.test(text)) out.push('textual');
+    return out;
+}

@@ -6,6 +6,7 @@ import { parsePageRange, type AnalysisClaim, type CitationEdit, type CitationRev
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { CitationCorrectionActions } from './CitationCorrectionActions';
+import { CitationDiagnosis } from './CitationDiagnosis';
 import { CitationStatusBadge } from './CitationStatusBadge';
 import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
 
@@ -36,6 +37,8 @@ interface Props {
     onCorrect?: (path: string, edit: CitationEdit) => void;
     /** Adónde ir a arreglar la numeración del libro, si se conoce. */
     calibrationPath?: string | null;
+    /** Las claves de cita del corpus, para reconocer la segunda mano (D4). */
+    knownAuthors?: ReadonlyArray<string>;
 }
 
 /**
@@ -46,7 +49,7 @@ interface Props {
  * la página y la cita está bien» de «quería que dejara de bloquear», y la
  * diferencia es todo lo que este panel existe para registrar.
  */
-export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, onOpenFound, noteFromView, viewed, isCorrecting = false, onCorrect, calibrationPath }: Props) {
+export function CitationEvidencePanel({ path, verdict, claim, review, isReviewing, onReview, onOpenSource, onOpenFound, noteFromView, viewed, isCorrecting = false, onCorrect, calibrationPath, knownAuthors = [] }: Props) {
     const { t } = useTranslation('exegesis');
     const [note, setNote] = useState(review?.note ?? '');
     useEffect(() => { setNote(review?.note ?? ''); }, [path, review?.note]);
@@ -95,6 +98,38 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 </blockquote>
             </div>
 
+            {/* Lo que la oración le atribuye a la fuente y lo que la fuente dice,
+                lado a lado (TP #8, 8b, D3). */}
+            {(verdict.takenFromSource || verdict.supportingSpan) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="atribuido-y-fuente">
+                    {verdict.takenFromSource && (
+                        <div className="rounded-md border border-border px-2.5 py-2 space-y-0.5">
+                            <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('canonical.review.panel.takenFromSource')}</p>
+                            <p className="text-xs text-foreground/90 leading-snug">{verdict.takenFromSource}</p>
+                        </div>
+                    )}
+                    {verdict.supportingSpan && (
+                        <div className="rounded-md border border-border px-2.5 py-2 space-y-0.5">
+                            <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
+                                {verdict.supportingSpan.pageLabel
+                                    ? t('canonical.review.panel.sourceSaysAt', { page: verdict.supportingSpan.pageLabel })
+                                    : t('canonical.review.panel.sourceSays')}
+                            </p>
+                            <p className="text-xs italic text-foreground/90 leading-snug">«{verdict.supportingSpan.text}»</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* La oración «copiada» que no estaba en la fuente (TP #8, 8b, C5). */}
+            {claim?.unverifiedQuote && (
+                <div className="rounded-md border border-warning/30 bg-warning-subtle/40 px-3 py-2 space-y-1" data-testid="cita-textual-no-hallada">
+                    <p className="text-xs font-medium text-warning-subtle-foreground">{t('canonical.review.panel.unverifiedQuoteTitle')}</p>
+                    <blockquote className="text-xs italic text-warning-subtle-foreground/90">«{claim.unverifiedQuote}»</blockquote>
+                    <p className="text-[11px] text-warning-subtle-foreground/90">{t('canonical.review.panel.unverifiedQuoteBody')}</p>
+                </div>
+            )}
+
             {verdict.note && (
                 <div className="space-y-1">
                     <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('canonical.review.panel.verdict')}</p>
@@ -142,6 +177,15 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
                 </div>
             )}
 
+            {canReview && (
+                <CitationDiagnosis
+                    verdict={verdict}
+                    knownAuthors={knownAuthors}
+                    isCorrecting={isCorrecting}
+                    {...(claim && onCorrect ? { onCorrect: (edit: CitationEdit) => onCorrect(path, edit) } : {})}
+                    onUseNote={n => setNote(actual => (actual.trim() ? `${actual.trimEnd()}\n${n}` : n))}
+                />
+            )}
             {claim && onCorrect && (
                 <CitationCorrectionActions
                     claim={claim}

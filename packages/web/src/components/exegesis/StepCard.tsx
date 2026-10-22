@@ -36,8 +36,9 @@ import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { AgregarIdeaDialog } from '@/components/exegesis/AgregarIdeaDialog';
+import { ProseReviewCard } from '@/components/exegesis/ProseReviewCard';
 import { Link, useNavigate } from 'react-router-dom';
-import { applyPageLabelStyle, assemblyContents, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
+import { applyPageLabelStyle, assemblyContents, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, pertenceAlDocumento, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
 import type { PaperFormatting } from '@dosfilos/domain';
 import { AssemblyManifest } from '@/components/exegesis/AssemblyManifest';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
@@ -144,7 +145,16 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // Citation verifier dialog state. Last results live here so the
     // user can re-open the dialog without re-running the verifier.
     const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
-    const [verifiedCitations, setVerifiedCitations] = useState<VerifiedCitation[]>([]);
+    // Los guardados, para que el diálogo no se vacíe al recargar (D5).
+    const [verifiedCitations, setVerifiedCitations] = useState<VerifiedCitation[]>(() => [...(step.current?.citationVerdicts ?? [])]);
+    // Otra versión (regenerada o recompuesta) trae sus propios veredictos: el
+    // estado inicial no se recalculaba y el diálogo mostraba los de la vieja
+    // (revisión de 8b).
+    const versionActualId = step.current?.id;
+    useEffect(() => {
+        setVerifiedCitations([...(step.current?.citationVerdicts ?? [])]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [versionActualId]);
     // Out-of-credits dialog. Triggered when any exegesis mutation
     // throws `InsufficientExegesisCreditsError` (Fase 2 reserve fails).
     const [outOfCreditsOpen, setOutOfCreditsOpen] = useState(false);
@@ -233,6 +243,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             ? stepTextForEditing(step, assembledMarkdown)
             : step.accepted?.markdown ?? step.current?.markdown ?? '';
 
+    // La versión cuya prosa se ve: sus veredictos son los de esa prosa.
+    const versionALaVista = isReview ? step.current ?? step.accepted : step.accepted ?? step.current;
     const showActions = isReview;
     const showAccepted = isAccepted;
 
@@ -636,11 +648,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 { key: 'regenerate', label: t('detail.steps.action.regenerate'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: versionEnVuelo, pending: anyPipelinePending },
                 { key: 'edit', label: t('detail.steps.action.editManual'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: versionEnVuelo },
 
-                // Con análisis, las citas se revisan en su página: el diálogo
-                // sólo mostraba, y aceptar seguía bloqueado (TP #7, #29).
-                step.current?.canonicalAnalysis
-                    ? { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath }
-                    : { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo || !step.current, pending: verifyStepCitations.isPending },
+                // Las citas se revisan en su página, con o sin análisis: el
+                // diálogo sólo mostraba y se vaciaba al recargar (TP #7, #29;
+                // TP #8, 8b, D5).
+                { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath },
             ];
         }
         if (showAccepted && !editing) {
@@ -650,20 +661,22 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     ? [{ key: 'idea', label: t('detail.steps.addIdea.action'), icon: <MessageSquarePlus className={ic} />, onClick: () => setIdeaOpen(true), disabled: anyPipelinePending }]
                     : []),
                 { key: 'redo', label: t('detail.steps.action.redo'), icon: <Undo2 className={ic} />, onClick: () => reopenStep.mutate({ paperId, stepId: step.id }), disabled: reopenStep.isPending || anyPipelinePending },
-                canonicalAnalysis
-                    ? { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath }
-                    : { key: 'verify', label: t('canonical.verify.button.label'), icon: <ShieldCheck className={ic} />, onClick: handleVerifyCitations, disabled: versionEnVuelo, pending: verifyStepCitations.isPending },
+                { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath },
             ];
             if (isVerse && canonicalAnalysis) {
-                acciones.push(
-                    {
+                // Componer la primera vez es el botón principal (E4); aquí
+                // queda sólo recomponer.
+                if (previewMarkdown.trim().length > 0) {
+                    acciones.push({
                         key: 'prose',
-                        label: previewMarkdown.trim().length > 0 ? t('canonical.verseProse.button.recompose') : t('canonical.verseProse.button.compose'),
+                        label: t('canonical.verseProse.button.recompose'),
                         icon: <Wand2 className={ic} />,
-                        onClick: () => (previewMarkdown.trim().length > 0 ? setRecomposeOpen(true) : handleComposeVerseProse()),
+                        onClick: () => setRecomposeOpen(true),
                         disabled: anyPipelinePending,
                         pending: composeVerseAcademicProse.isPending,
-                    },
+                    });
+                }
+                acciones.push(
                     { key: 'regen', label: t('canonical.actions.regenAnalysis'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: anyPipelinePending, pending: analyzeVerseCanonically.isPending },
                 );
             }
@@ -949,6 +962,20 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         </Button>
                     </div>
                 )}
+                {/* Lo mismo con la prosa: un versículo aceptado y sin prosa
+                    no entra al documento, y al recargar la tarjeta está
+                    cerrada (TP #8, #36; 8b, E4). */}
+                {showAccepted && !isExpanded && isVerse && canonicalAnalysis && !previewMarkdown.trim() && pertenceAlDocumento(step) && (
+                    <Button
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); void handleComposeVerseProse(); }}
+                        disabled={anyPipelinePending}
+                        className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
+                    >
+                        {composeVerseAcademicProse.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5 mr-1.5" />}
+                        {t('canonical.verseProse.button.compose')}
+                    </Button>
+                )}
             </header>
 
             {/* Body + footer — hidden when a collapsible step is
@@ -1031,6 +1058,23 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             // straight to study view so the user sees the
                             // structured payload that came back.
                             canonicalAnalysis && <CanonicalAnalysisStudyView analysis={canonicalAnalysis} onOpenCitation={openCitation} />
+                        )}
+                        {/* «Revisión antes de entregar» (TP #8, 8b, E3): avisa, no bloquea. */}
+                        {isVerse && canonicalAnalysis && previewMarkdown.trim() && viewMode === 'prose' && (isReview || showAccepted) && (
+                            <ProseReviewCard
+                                paperId={paperId}
+                                stepId={step.id}
+                                prose={prosaEntregada}
+                                analysis={canonicalAnalysis}
+                                verdicts={versionALaVista?.citationVerdicts ?? []}
+                                reviews={versionALaVista?.citationReviews ?? []}
+                                sources={paperDeLasCitas?.sources ?? []}
+                                language={language === 'en' ? 'en' : 'es'}
+                                onRecompose={(guidance) => handleComposeVerseProse(guidance)}
+                                recomposing={composeVerseAcademicProse.isPending}
+                                disabled={anyPipelinePending}
+                                onQuotaError={handleQuotaError}
+                            />
                         )}
                     </div>
                 )}
@@ -1140,6 +1184,30 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
 
             {showAccepted && !editing && (
                 <footer className="px-5 py-2.5 border-t border-slate-100 dark:border-zinc-800 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    {/* Aceptado el análisis, lo que sigue es la prosa: sin ella el
+                        versículo no entra al documento. Era un ícono gris de 28 px
+                        y el autor no sabía que faltaba (TP #8, #36; 8b, E4). */}
+                    {isVerse && canonicalAnalysis && !previewMarkdown.trim() && (
+                        <div className="basis-full flex flex-wrap items-center gap-2 pb-1">
+                            {/* Principal solo si el versículo va al documento: fuera
+                                de él, componer es opcional y cuesta (revisión de 8b). */}
+                            <Button
+                                size="sm"
+                                variant={pertenceAlDocumento(step) ? 'default' : 'outline'}
+                                onClick={() => handleComposeVerseProse()}
+                                disabled={anyPipelinePending}
+                                className={pertenceAlDocumento(step) ? 'bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground' : undefined}
+                            >
+                                {composeVerseAcademicProse.isPending
+                                    ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                    : <Wand2 className="h-3.5 w-3.5 mr-1.5" />}
+                                {t('canonical.verseProse.button.compose')}
+                            </Button>
+                            {pertenceAlDocumento(step) && (
+                                <span className="text-[11px] text-muted-foreground">{t('canonical.verseProse.nextStepHint')}</span>
+                            )}
+                        </div>
+                    )}
                     <button
                         type="button"
                         onClick={startEdit}
@@ -1217,20 +1285,20 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     )}
                     {isVerse && canonicalAnalysis && (
                         <>
+                            {previewMarkdown.trim().length > 0 && (
                             <button
                                 type="button"
-                                onClick={() => (previewMarkdown.trim().length > 0 ? setRecomposeOpen(true) : handleComposeVerseProse())}
+                                onClick={() => setRecomposeOpen(true)}
                                 disabled={anyPipelinePending}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-50"
                                 title={t('canonical.verseProse.button.tooltip')}
                             >
                                 {composeVerseAcademicProse.isPending
                                     ? <Loader2 className="h-3 w-3 animate-spin" />
                                     : <Wand2 className="h-3 w-3" />}
-                                {previewMarkdown.trim().length > 0
-                                    ? t('canonical.verseProse.button.recompose')
-                                    : t('canonical.verseProse.button.compose')}
+                                {t('canonical.verseProse.button.recompose')}
                             </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => setRegenerateOpen(true)}

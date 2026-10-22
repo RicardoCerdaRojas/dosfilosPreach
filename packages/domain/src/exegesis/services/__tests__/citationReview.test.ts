@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { buildEmptyCanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { CanonicalVerseAnalysis } from '../../entities/CanonicalVerseAnalysis';
 import type { VerifiedCitation } from '../../entities/CitationVerification';
-import { isUnreviewedCitationsError, mapVerdictsByPath, pendingCitationCounts, reviewedCitationCount, UnreviewedCitationsError, unreviewedBlockingCitations } from '../citationReview';
+import { isProsePath, isUnreviewedCitationsError, mapAllVerdictsByPath, mapVerdictsByPath, pendingCitationCounts, reviewedCitationCount, UnreviewedCitationsError, unreviewedBlockingCitations } from '../citationReview';
 
 const analisis = (): CanonicalVerseAnalysis => ({
     ...buildEmptyCanonicalVerseAnalysis({ bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 3, verseEnd: 3 }),
@@ -142,5 +142,29 @@ describe('reviewedCitationCount — el trabajo hecho no desaparece', () => {
 
     it('sin revisiones, cero', () => {
         expect(reviewedCitationCount(new Map([['a', v('not-found')]]), new Set())).toBe(0);
+    });
+});
+
+/** TP #8 (8b, D5): un solo lugar para revisar las citas, también las de la prosa. */
+describe('mapAllVerdictsByPath', () => {
+    const veredicto = (offset: number, origin?: 'prose' | 'analysis') => ({
+        raw: 'x', author: 'Mayor', title: '', pages: '1', offset, evidence: 'e', evidenceIsQuoted: false,
+        status: 'not-found' as const, matchedCorpusId: null, matchedSourceLabel: null, similarityScore: null, matchedPage: null, note: null,
+        ...(origin ? { origin } : {}),
+    });
+
+    it('los de la prosa entran con su posición, sin pisar los del análisis', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            commentatorEngagement: [{ sourceKey: 'Mayor', page: 133, role: 'contrast' as const, position: 'p' }],
+        };
+        const m = mapAllVerdictsByPath(a, [veredicto(0, 'analysis'), veredicto(0, 'prose'), veredicto(57, 'prose')]);
+        expect([...m.keys()]).toEqual(['commentatorEngagement[0]', 'prosa@0', 'prosa@57']);
+        expect(isProsePath('prosa@57')).toBe(true);
+        expect(isProsePath('commentatorEngagement[0]')).toBe(false);
+    });
+
+    it('un paso sin análisis (el ensamble): todos por posición', () => {
+        expect([...mapAllVerdictsByPath(null, [veredicto(3), veredicto(90)]).keys()]).toEqual(['prosa@3', 'prosa@90']);
     });
 });

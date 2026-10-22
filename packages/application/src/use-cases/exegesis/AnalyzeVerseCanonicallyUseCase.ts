@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, stepVerseKeys } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -35,6 +35,7 @@ import {
 import { loadSourceNumberings } from './sourceNumberings';
 import { stampCitationPageKind } from './stampCitationPageKind';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
+import { loadCourseStyleRules } from '../../services/exegesis/courseStyleRules';
 
 /**
  * Generates a `CanonicalVerseAnalysis` for one verse step — the
@@ -176,6 +177,11 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // mentioned in the prompt», y ningún prompt la leía.
                 planNote: planNoteForPrompt(paper.stepPlan.perStep[step.id], paper.displayLanguage),
                 verseMorphology,
+                // Las preguntas de este versículo como TAREA, con su tipo (C1).
+                sectionQuestions: questionsOfStep(step, parseBriefQuestions(paper.assignmentBrief, paper.passage))
+                    .map(q => ({ number: q.number, text: q.text, kinds: questionKinds(q.text) })),
+                // Las reglas propias del curso, también al analizar (E2).
+                styleRules: await loadCourseStyleRules(this.styleGuideRepository, input.ownerId, paper, 'AnalyzeVerseCanonically'),
             };
 
             reservation.markLlmContacted();
@@ -430,6 +436,11 @@ export class AnalyzeVerseCanonicallyUseCase {
         }
     }
 
+    /**
+     * Las reglas propias de la guía del trabajo: las de la copia que se llevó
+     * al adjuntarla, o las de la guía viva en los trabajos anteriores a esa
+     * copia (como `ComposeVerseAcademicProseUseCase.loadStyleManifest`).
+     */
     private async loadStyleGuideContent(ownerId: string, styleGuideId: string | null): Promise<string> {
         if (!styleGuideId) return '';
         const guide = await this.styleGuideRepository.getGuide(ownerId, styleGuideId);
@@ -635,6 +646,9 @@ function stripAnchorSeparators(text: string): string {
     return text.replace(/^---.*---$/gm, ' ');
 }
 
+/** Un rango más largo que esto no es una cita: es el modelo poniendo cualquier número. */
+const MAX_RANGO_DE_PAGINAS = 10;
+
 function sanitizeSourceReferences(
     analysis: CanonicalVerseAnalysis,
     validKeys: Set<string>,
@@ -656,8 +670,19 @@ function sanitizeSourceReferences(
         c.page <= 0
         && anchoredKeys.has(c.sourceKey)
         && !(c.pageKind === 'section' && c.locator?.trim());
+    // Rango y segunda mano con forma limpia (C3): «pageEnd» sólo si de verdad
+    // pasa la página inicial, «via» sólo si dice algo. El esquema estricto los
+    // devuelve en 0 y vacío cuando no aplican.
+    const limpiarRangoYVia = <T extends { page: number; pageEnd?: number; via?: string }>(c: T): T => {
+        const { pageEnd, via, ...resto } = c;
+        return {
+            ...resto,
+            ...(typeof pageEnd === 'number' && pageEnd > c.page && pageEnd - c.page <= MAX_RANGO_DE_PAGINAS ? { pageEnd } : {}),
+            ...(typeof via === 'string' && via.trim() ? { via: via.trim() } : {}),
+        } as T;
+    };
     const cleanCitations = (citations: ReadonlyArray<SourceCitation>): SourceCitation[] =>
-        citations.filter(c => validKeys.has(c.sourceKey) && !missingPage(c));
+        citations.filter(c => validKeys.has(c.sourceKey) && !missingPage(c)).map(limpiarRangoYVia);
 
     return {
         ...analysis,
@@ -681,19 +706,28 @@ function sanitizeSourceReferences(
         // a configured source — those would render as unverifiable
         // citations downstream.
         commentatorEngagement: analysis.commentatorEngagement.filter(ce =>
-            validKeys.has(ce.sourceKey) && !missingPage(ce)),
+            validKeys.has(ce.sourceKey) && !missingPage(ce)).map(limpiarRangoYVia),
         // Translation cruxes can keep entries even if some commentator
         // positions reference invalid keys (we just drop those
         // positions). The crux itself remains usable.
         translationCruxes: analysis.translationCruxes.map(tc => ({
             ...tc,
             commentatorPositions: tc.commentatorPositions.filter(cp =>
-                validKeys.has(cp.sourceKey) && !missingPage(cp)),
+                validKeys.has(cp.sourceKey) && !missingPage(cp)).map(limpiarRangoYVia),
         })),
         footnoteExtensions: analysis.footnoteExtensions.map(fe => ({
             ...fe,
             sources: cleanCitations(fe.sources),
         })),
+        // La respuesta queda aunque un defensor no sea del corpus: la lectura
+        // sigue siendo una opción, sólo sin ese defensor (C1).
+        ...(analysis.questionAnswers ? {
+            questionAnswers: analysis.questionAnswers.map(q => ({
+                ...q,
+                options: q.options.map(o => ({ ...o, defenders: cleanCitations(o.defenders) })),
+                decisiveCriterion: { ...q.decisiveCriterion, sources: cleanCitations(q.decisiveCriterion.sources) },
+            })),
+        } : {}),
     };
 }
 

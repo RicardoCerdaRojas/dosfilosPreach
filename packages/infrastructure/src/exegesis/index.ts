@@ -12,6 +12,7 @@ export { readBibliographyFromCover, type CoverBibliographyResult } from './Cover
 export { RetrieveChunksExcerptExtractor } from './RetrieveChunksExcerptExtractor';
 export { StructuralExcerptExtractor } from './StructuralExcerptExtractor';
 export { CallableDocumentChunkReader } from './CallableDocumentChunkReader';
+export { CallableBookSearch } from './CallableBookSearch';
 export { CallableCuratedCorpusRetriever } from './CallableCuratedCorpusRetriever';
 export { CallableCuratedCorpusReader } from './CallableCuratedCorpusReader';
 // Con qué hojas arranca el carrito: índice del comentario primero, coincidencia
@@ -41,6 +42,7 @@ export { GeminiConclusionComposer } from './sectionComposers/GeminiConclusionCom
 export { GeminiIntroductionComposer } from './sectionComposers/GeminiIntroductionComposer';
 export { GeminiVerseAcademicComposer } from './sectionComposers/GeminiVerseAcademicComposer';
 export { GeminiIdeaPlacer } from './sectionComposers/GeminiIdeaPlacer';
+export { GeminiProseReviewer } from './proseReviewer/GeminiProseReviewer';
 export { GeminiSermonComposer } from './ministryComposers/GeminiSermonComposer';
 export { GeminiDevotionalComposer } from './ministryComposers/GeminiDevotionalComposer';
 export { GeminiStudyGuideComposer } from './ministryComposers/GeminiStudyGuideComposer';

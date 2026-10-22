@@ -19,6 +19,7 @@ import {
     GeminiIntroductionComposer,
     GeminiVerseAcademicComposer,
     GeminiIdeaPlacer,
+    GeminiProseReviewer,
     GeminiExegesisOrchestrator,
     GeminiSermonComposer,
     GeminiStudyGuideComposer,
@@ -33,6 +34,7 @@ import {
     RetrieveChunksExcerptExtractor,
     StructuralExcerptExtractor,
     CallableDocumentChunkReader,
+    CallableBookSearch,
     CallableCuratedCorpusRetriever,
     CallableCuratedCorpusReader,
     fetchDocumentText,
@@ -56,6 +58,7 @@ import { readResourceFullText } from './resourceFullText';
 import { sameAuthor } from '../use-cases/exegesis/VerifySermonCitationsUseCase';
 import { LibraryService } from './LibraryService';
 import { VerbatimFirstCitationVerifier } from './exegesis/VerbatimFirstCitationVerifier';
+import { BookSearchBeforeAlarmVerifier } from './exegesis/BookSearchBeforeAlarmVerifier';
 
 import {
     CreateExegeticalPaperUseCase,
@@ -117,6 +120,7 @@ import {
     SetStepInclusionUseCase,
     ComposeVerseAcademicProseUseCase,
     PlaceIdeaInSectionUseCase,
+    ReviewVerseProseUseCase,
     ComposeSermonFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,
     GenerateStepUseCase,
@@ -270,6 +274,7 @@ class ExegesisService {
     // free until the analysis changes.
     public composeVerseAcademicProse: ComposeVerseAcademicProseUseCase;
     public placeIdeaInSection: PlaceIdeaInSectionUseCase;
+    public reviewVerseProse: ReviewVerseProseUseCase;
 
     // Ministry composers (Phase 6) — sermon / devotional / study
     // guide composed from the same `CanonicalVerseAnalysis` artifact.
@@ -528,11 +533,16 @@ class ExegesisService {
         // Las citas con oración textual se cotejan buscando la oración en
         // las hojas de la fuente, sin modelo; solo lo que no aparece —o no
         // trae oración— pasa al juicio del modelo.
-        const citationVerifier = new VerbatimFirstCitationVerifier(new GeminiLlmCitationVerifier({
-            modelName: exegesisModelId,
-            relevantChunkRetriever,
-            retrievalTopK: 5,
-        }));
+        // Y antes de alarmar, lee la página citada, sus vecinas y el libro
+        // entero (TP #8, 8b, D1): Adamson 171 → 170 salía «no encontrada».
+        const citationVerifier = new BookSearchBeforeAlarmVerifier(
+            new VerbatimFirstCitationVerifier(new GeminiLlmCitationVerifier({
+                modelName: exegesisModelId,
+                relevantChunkRetriever,
+                retrievalTopK: 5,
+            })),
+            new CallableBookSearch(new CallableDocumentChunkReader()),
+        );
         this.verifyStepCitations = new VerifyStepCitationsUseCase(
             paperRepository,
             contentReader,
@@ -680,6 +690,14 @@ class ExegesisService {
         this.placeIdeaInSection = new PlaceIdeaInSectionUseCase(
             paperRepository,
             new GeminiIdeaPlacer(exegesisModelId),
+        );
+
+        // «Revisión antes de entregar»: la prosa de un versículo contra los
+        // criterios del curso. Solo avisa (TP #8, 8b, E3).
+        this.reviewVerseProse = new ReviewVerseProseUseCase(
+            paperRepository,
+            styleGuideRepository,
+            new GeminiProseReviewer(exegesisModelId),
         );
 
         // Ministry composers (sermon / devotional / study guide).

@@ -107,3 +107,75 @@ describe('analysisClaimsToCitations', () => {
         expect(cites.map(c => c.offset)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
     });
 });
+
+/** TP #8 (8b, C1): quién defiende cada lectura y quién da el criterio se verifican. */
+describe('collectAnalysisClaims — respuestas a las preguntas', () => {
+    it('cada defensor y cada fuente del criterio son una afirmación verificable', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            questionAnswers: [{
+                questionNumber: 3, directAnswer: 'x', decision: 'y',
+                options: [
+                    { reading: 'media = para sí', argument: 'la voz', defenders: [{ sourceKey: 'Mayor', page: 133, pageKind: 'printed' as const }] },
+                    { reading: 'sin diferencia', argument: '1 Jn 5:15', defenders: [] },
+                ],
+                decisiveCriterion: { text: 'la concesión', whyThisOverThat: 'sólo una la explica', sources: [{ sourceKey: 'Mayor', page: 133, pageKind: 'printed' as const }] },
+            }],
+        };
+        const claims = collectAnalysisClaims(a).map(c => [c.site, c.path, c.claim]);
+        expect(claims).toEqual([
+            ['answer-option', 'questionAnswers[0].options[0].defenders[0]', 'media = para sí: la voz'],
+            // Solo el criterio: el «por qué» es del análisis (revisión de 8b).
+            ['answer-criterion', 'questionAnswers[0].decisiveCriterion.sources[0]', 'la concesión'],
+        ]);
+    });
+
+    it('un análisis anterior sin respuestas no rompe nada', () => {
+        const a = buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 });
+        delete (a as { questionAnswers?: unknown }).questionAnswers;
+        expect(collectAnalysisClaims(a)).toEqual([]);
+    });
+});
+
+/** TP #8 (8b, C3): la cita responde sólo por lo que dice la fuente. */
+describe('collectAnalysisClaims — la inferencia propia no se verifica contra la fuente', () => {
+    it('la afirmación es la postura, no la conclusión del análisis', () => {
+        const a = {
+            ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 3, verseEnd: 3 }),
+            commentatorEngagement: [{
+                sourceKey: 'Mayor', page: 133, role: 'contrast' as const,
+                position: 'Mayor lee la activa como pedir para sí.', ownInference: 'El contraste es de motivo.',
+            }],
+        };
+        expect(collectAnalysisClaims(a)[0]!.claim).toBe('Mayor lee la activa como pedir para sí.');
+    });
+});
+
+/** TP #8 (8b, C3): «Adamson 170–171» y la segunda mano. */
+describe('rango y segunda mano', () => {
+    const conRango = () => ({
+        ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 5, verseEnd: 5 }),
+        commentatorEngagement: [{
+            sourceKey: 'Adamson', page: 170, pageEnd: 171, pageKind: 'printed' as const, role: 'contrast' as const,
+            position: 'cataloga las propuestas', via: 'Mayor, Ropes',
+        }],
+    });
+
+    it('la afirmación lleva el rango y a quién atribuye la fuente', () => {
+        const [c] = collectAnalysisClaims(conRango());
+        expect(c).toMatchObject({ page: 170, pageEnd: 171, via: 'Mayor, Ropes' });
+    });
+
+    it('el verificador recibe el rango entero en la unidad de la evidencia', () => {
+        const [cit] = analysisClaimsToCitations(collectAnalysisClaims(conRango()), c => String(c.page));
+        expect(cit!.pages).toBe('170–171');
+        expect(cit!.raw).toBe('Adamson, p. 170–171');
+        expect(cit!.evidencePage).toBe('170');
+    });
+
+    it('un «rango» que no pasa la página inicial es una página sola', () => {
+        const a = conRango();
+        a.commentatorEngagement[0]!.pageEnd = 170;
+        expect(collectAnalysisClaims(a)[0]).not.toHaveProperty('pageEnd');
+    });
+});

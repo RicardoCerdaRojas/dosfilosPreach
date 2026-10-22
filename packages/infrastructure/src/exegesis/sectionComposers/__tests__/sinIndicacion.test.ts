@@ -44,7 +44,7 @@ describe('componer sin indicación del autor', () => {
 
     it('la forma de cita de la entrega llega igual', () => {
         const parentetica = buildVerseProsePrompt(entrada({ citationForm: 'parenthetical' })).systemInstruction;
-        expect(parentetica).toContain('(Apellido, p. N)');
+        expect(parentetica).toContain('(Clave, p. N)');
         const nota = buildVerseProsePrompt(entrada({ citationForm: 'footnote' })).systemInstruction;
         expect(nota).toContain('(Apellido, "Título", p. N)');
     });
@@ -64,7 +64,7 @@ describe('componer sin indicación del autor', () => {
             sectionQuestions: [{ number: 4, text: '¿Qué función cumple ἐλεγχόμενοι?' }],
         }));
         expect(systemInstruction).toContain('250');
-        expect(systemInstruction).toContain('(Apellido, p. N)');
+        expect(systemInstruction).toContain('(Clave, p. N)');
         expect(systemInstruction).toContain('ἐλεγχόμενοι');
         // Sin indicación no se inventa un bloque de correcciones vacío.
         expect(userMessage).not.toContain('QUÉ CORREGIR EN ESTA PASADA');

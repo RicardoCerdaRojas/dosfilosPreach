@@ -8,6 +8,7 @@ import {
 } from '@dosfilos/domain';
 import { PRIOR_ANALYSES_BUDGET_CHARS, allocateSourceBudgets, avisarFijadoRecortado, fitPromptToCap } from '../../llm/promptBudget';
 import { voiceFor } from '../testamentVoice';
+import { buildStyleRulesBlock } from '../styleRulesBlock';
 
 /**
  * Prompt construction for the canonical verse analyzer.
@@ -50,6 +51,9 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const baseTextBlock = formatOriginalLanguageText(input.originalLanguageText, lang);
     const pericopeBlock = formatPericopeBlock(input.pericopeContext, lang);
     const planNoteBlock = formatPlanNote(input.planNote, lang);
+    const questionsBlock = formatSectionQuestions(input.sectionQuestions, lang);
+    const methodBlock = formatAnswerMethod(input.sectionQuestions, lang);
+    const styleRulesBlock = buildStyleRulesBlock(input.styleRules, lang);
     // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
     // es parte de lo que el analizador lee, no de lo que tiene que producir.
     // Cuál de los dos bloques lo decide la FORMA del dato, no el libro: el
@@ -71,6 +75,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             morphologyBlock,
             pericopeBlock,
             briefBlock,
+            questionsBlock,
             planNoteBlock,
             ``,
             `## Methodological foundation`,
@@ -97,13 +102,19 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             // TP #7 (Santiago 3:15): tres alarmas eran análisis propio colgado
             // de Varner y Robertson en las notas al pie.
             `- A source listed in "sources" vouches for what that sentence or note says. List a work only when ITS provided text says it. When a note or claim is your own analysis, leave "sources" empty: hanging your analysis on an author attributes to them what they did not write.`,
+            // TP #8 (8b, C3): más de la mitad de las alarmas eran afirmaciones
+            // mixtas, la fuente y una conclusión propia bajo la misma cita.
+            `- When the cited material runs over more than one page, put the last one in "pageEnd" (170–171). When the source reports what ANOTHER author says ("Mayor, Knowling and Ropes take…"), the citation is to the reporting source and the other author goes in "via": never cite them as if you had read them.`,
+            `- Keep what the source says apart from what you conclude. In every entry that carries a source, the cited field says ONLY what that source says; your own conclusion goes in "ownInference", without a citation. "Mayor reads the active as asking for oneself (p. 133)" is the source; "so the contrast is about motive" is yours.`,
             // TP #7 (#24): una nota decía «La asignación de Robertson como
             // fuente técnica no autoriza a reconstruir una sección ausente…».
             `- The output is the student's paper. Never write about the corpus, the excerpts, the usage plan, source roles or what the provided material lacks. If the material does not support a point, omit it or mark it tentative in confidenceFlags.`,
+            methodBlock,
             corpusGapsBlock,
             ``,
             `## Style guide constraints`,
             styleGuideBlock,
+            styleRulesBlock,
             ``,
             `## Output format`,
             `Output MUST be a JSON object conforming exactly to the schema you have been given via responseSchema. Every required field must be present. Optional fields can be empty strings or empty arrays when not applicable.`,
@@ -122,6 +133,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         morphologyBlock,
         pericopeBlock,
         briefBlock,
+        questionsBlock,
         planNoteBlock,
         ``,
         `## Fundamento metodológico`,
@@ -146,11 +158,17 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `- Cada fragmento viene encabezado por su ancla («--- p. 83 ---», «--- hoja 87 ---» o «--- § 2.3 ---»). Ese número va en "page". Cuando el ancla es «§ …» (el libro no tiene páginas impresas), pon "page" en 0 y copia la sección, sin «§», en "locator".`,
         `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), pon el confidenceFlag relevante en "tentative" — NO fabriques citas.`,
         `- Una fuente listada en "sources" responde por lo que dice esa oración o esa nota. Lista una obra sólo cuando SU texto provisto lo dice. Cuando la nota o la afirmación es análisis tuyo, deja "sources" vacío: colgar tu análisis de un autor es atribuirle lo que no escribió.`,
+        // TP #8 (8b, C3): más de la mitad de las alarmas eran afirmaciones
+        // mixtas, la fuente y una conclusión propia bajo la misma cita.
+        `- Cuando lo citado corre por más de una página, pon la última en "pageEnd" (170–171). Cuando la fuente reporta lo que dice OTRO autor («Mayor, Knowling y Ropes entienden…»), la cita es de la fuente que lo reporta y el otro autor va en "via": nunca lo cites como si lo hubieras leído.`,
+        `- Separa lo que dice la fuente de lo que concluyes tú. En cada entrada con fuente, el campo citado dice SÓLO lo que esa fuente dice; tu conclusión va en "ownInference", sin cita. «Mayor lee la activa como pedir para sí (p. 133)» es la fuente; «por eso el contraste es de motivo» es tuyo.`,
         `- Lo que escribes es el trabajo del estudiante. Nunca hables del corpus, de los fragmentos, del plan de uso, de los roles de las fuentes ni de lo que falta en el material provisto. Si el material no sostiene un punto, omítelo o márcalo tentative en confidenceFlags.`,
+        methodBlock,
         corpusGapsBlock,
         ``,
         `## Restricciones de la guía de estilo`,
         styleGuideBlock,
+        styleRulesBlock,
         ``,
         `## Formato de salida`,
         `La salida DEBE ser un objeto JSON que se conforma exactamente al schema que recibiste vía responseSchema. Todos los campos requeridos deben estar presentes. Los campos opcionales pueden ser strings vacíos o arrays vacíos cuando no apliquen.`,
@@ -174,9 +192,29 @@ function buildUserMessage(input: AnalyzeVerseInput): string {
     );
 }
 
+/**
+ * La gramática con cuyas categorías se clasifica la sintaxis (TP #8, fase 8b,
+ * C4). Estaba fija en «Wallace», también en el hebreo, y el TP #7 usó
+ * Robertson. Es la gramática del CORPUS (el estudiante la alterna por
+ * semana); sin gramática en el corpus, la de referencia del testamento.
+ */
+export function courseGrammarLabel(
+    sources: ReadonlyArray<{ sourceType?: string; citationKey: string | null }>,
+    grammarsDefault: string,
+): { label: string; inCorpus: boolean } {
+    const claves = [...new Set(sources
+        .filter(s => s.sourceType === 'grammar-syntax' && s.citationKey?.trim())
+        .map(s => s.citationKey!.trim()))];
+    if (claves.length > 0) return { label: claves.join(', '), inCorpus: true };
+    // «Gramática/sintaxis griega: Wallace, BDF, Robertson» → «Wallace, BDF, Robertson».
+    return { label: grammarsDefault.replace(/^[^:]*:\s*/, ''), inCorpus: false };
+}
+
 function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): string {
     const lang = input.language;
     const voice = voiceFor(input.verseRef.bookId);
+    const gramaticaEs = courseGrammarLabel(input.sources, voice.grammarsEs);
+    const gramaticaEn = courseGrammarLabel(input.sources, voice.grammarsEn);
     const verse = formatPassageReference(input.verseRef, lang);
     const priorAnalysesBlock = formatPriorAnalyses(input.priorAcceptedAnalyses, lang);
     const emphasisBlock = formatStepEmphasis(input.stepEmphasis, lang);
@@ -196,7 +234,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
             ``,
             `**syntacticAnalysis.mainVerb** — Identify the main verb of the sentence containing this verse. Set to null when the verse is part of a longer sentence whose main verb lives elsewhere (participial chains, μέν…δέ pairs, periodic sentences); when null, populate "mainVerbNote" to explain.`,
             ``,
-            `**syntacticAnalysis.keyConstructions** — Each participle, relative clause, prepositional phrase, genitive construction. Each entry: text + morphology (in natural language: "${voice.morphologyEn}") + syntactic function (Wallace's categories) + interpretive significance.`,
+            `**syntacticAnalysis.keyConstructions** — Each participle, relative clause, prepositional phrase, genitive construction. Each entry: text + morphology (in natural language: "${voice.morphologyEn}") + syntactic function (${gramaticaEn.label}'s categories) + interpretive significance.${gramaticaEn.inCorpus ? ` When the corpus grammar (${gramaticaEn.label}) classifies a construction, classify it with THAT category and its page, and answer according to that classification: do not swap it for a category from another grammar.` : ''}`,
             ``,
             `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι and others when their argumentative function is notable. Use Levinsohn / Runge categories.`,
             ``,
@@ -245,7 +283,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
         ``,
         `**syntacticAnalysis.mainVerb** — Identifica el verbo principal de la oración que contiene este verso. Pon null cuando el verso es parte de una oración cuyo verbo principal vive en otro lado (cadenas participiales, pares μέν…δέ, oraciones periódicas); cuando es null, puebla "mainVerbNote" para explicar.`,
         ``,
-        `**syntacticAnalysis.keyConstructions** — Cada participio, cláusula relativa, frase preposicional, construcción de genitivo. Cada entrada: text + morphology (en lenguaje natural: "${voice.morphologyEs}") + syntacticFunction (categorías de Wallace) + interpretiveSignificance.`,
+        `**syntacticAnalysis.keyConstructions** — Cada participio, cláusula relativa, frase preposicional, construcción de genitivo. Cada entrada: text + morphology (en lenguaje natural: "${voice.morphologyEs}") + syntacticFunction (categorías de ${gramaticaEs.label}) + interpretiveSignificance.${gramaticaEs.inCorpus ? ` Cuando la gramática del corpus (${gramaticaEs.label}) clasifica una construcción, clasifícala con ESA categoría y su página, y responde según esa clasificación: no la cambies por la categoría de otra gramática.` : ''}`,
         ``,
         `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι y otras cuando su función argumentativa es notable. Usa categorías de Levinsohn / Runge.`,
         ``,
@@ -286,6 +324,70 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
 }
 
 // ── Formatters ──────────────────────────────────────────────────────────
+
+/**
+ * Las preguntas de este versículo como TAREA, cada una con la regla de su
+ * tipo (TP #8, fase 8b, C1). Antes el analizador sólo veía el encuadre entero
+ * y no tenía dónde poner la respuesta; ahora la pone en `questionAnswers`.
+ */
+export function formatSectionQuestions(
+    questions: AnalyzeVerseInput['sectionQuestions'],
+    lang: 'es' | 'en',
+): string {
+    if (!questions || questions.length === 0) return '';
+    const es = lang !== 'en';
+    const regla: Record<string, string> = es ? {
+        identify: 'Pregunta de IDENTIFICAR: abre con el estado de la cuestión. Cataloga en "options" TODAS las propuestas que trae el corpus, con quién defiende cada una; si nadie la resuelve, dilo así («desconocido», como lo dice la fuente).',
+        lexical: 'Pregunta LÉXICA: la entrada del léxico (la glosa con su página) y el sentido en ESTE versículo, sin confundir la glosa con la categoría.',
+        syntax: 'Pregunta de SINTAXIS: la clasificación de la gramática del corpus para la construcción, con su página, y la relación con lo que la rodea.',
+        textual: 'Pregunta de CRÍTICA TEXTUAL: las lecturas del aparato, su testimonio y lo que dice el comentario textual.',
+    } : {
+        identify: 'IDENTIFY question: open with the state of the question. List in "options" EVERY proposal the corpus carries, with who defends each; if none settles it, say so ("unknown", as the source says).',
+        lexical: 'LEXICAL question: the lexicon entry (the gloss with its page) and the sense in THIS verse, without confusing the gloss with the category.',
+        syntax: "SYNTAX question: the corpus grammar's classification of the construction, with its page, and its relation to its surroundings.",
+        textual: 'TEXT-CRITICAL question: the apparatus readings, their witnesses and what the textual commentary says.',
+    };
+    const lineas = questions.flatMap(q => [
+        `${q.number}. ${q.text.trim()}`,
+        ...q.kinds.map(k => `   - ${regla[k]}`),
+    ]);
+    return [
+        ``,
+        es ? `## Lo que este versículo tiene que responder` : `## What this verse must answer`,
+        es
+            ? 'Estas preguntas del encuadre son la TAREA del análisis. Responde cada una en "questionAnswers": la respuesta en una oración, las lecturas posibles con su defensor, el criterio que las distingue y la decisión. El resto del análisis sirve a estas respuestas.'
+            : 'These brief questions are the analysis TASK. Answer each in "questionAnswers": the answer in one sentence, the possible readings with their defender, the criterion that distinguishes them and the decision. The rest of the analysis serves these answers.',
+        ...lineas,
+    ].join('\n');
+}
+
+/**
+ * El método, de serie, para todo versículo con pregunta (TP #8, fase 8b, C2).
+ * Es la indicación que en el TP #8 hubo que escribir a mano en «Regenerar»;
+ * con ella el motor encontró 6 de 10 datos esperados, sin ella menos. Son
+ * los patrones que penaliza el profesor (`project_criterios_profesor_tp`).
+ */
+export function formatAnswerMethod(
+    questions: AnalyzeVerseInput['sectionQuestions'],
+    lang: 'es' | 'en',
+): string {
+    if (!questions || questions.length === 0) return '';
+    return (lang === 'en' ? [
+        `- How to answer the questions (the method):`,
+        `  1. Find a criterion that DISTINGUISHES between the readings, preferably from the same letter or the structure of the passage. A criterion that fits both readings decides nothing.`,
+        `  2. Give the reason each author gives AGAINST the rival reading, not only for their own.`,
+        `  3. Present the CONCESSIONS an author makes against their own thesis: they are often the decisive argument.`,
+        `  4. Never use the classification of one element to decide another without showing the relation between them.`,
+        `  5. A grammatical category is not a translation: classify, then translate, and say which of the two each source gives.`,
+    ] : [
+        `- Cómo responder las preguntas (el método):`,
+        `  1. Busca un criterio que DISTINGA entre las lecturas, de preferencia de la misma carta o de la estructura del pasaje. Un criterio que vale para las dos lecturas no decide nada.`,
+        `  2. Da la razón que cada autor da CONTRA la lectura rival, no sólo a favor de la suya.`,
+        `  3. Presenta las CONCESIONES que un autor hace contra su propia tesis: suelen ser el argumento decisivo.`,
+        `  4. Nunca uses la clasificación de un elemento para decidir otro sin mostrar la relación entre los dos.`,
+        `  5. Una categoría gramatical no es una traducción: clasifica, después traduce, y di cuál de las dos cosas da cada fuente.`,
+    ]).join('\n');
+}
 
 function formatAssignmentBrief(brief: string | null, lang: 'es' | 'en'): string {
     if (!brief || !brief.trim()) return '';

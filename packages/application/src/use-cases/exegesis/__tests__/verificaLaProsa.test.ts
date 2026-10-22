@@ -98,3 +98,22 @@ describe('verificar un versículo con análisis y prosa', () => {
         expect(summary.proseCitations).toBeUndefined();
     });
 });
+
+/** TP #8 (8b, D1): la prosa se juzga en el idioma del trabajo y heredando lo del análisis. */
+describe('la prosa hereda lo que el análisis resolvió', () => {
+    it('el verificador recibe el idioma y las citas del análisis', async () => {
+        const llamadas: Array<Record<string, unknown>> = [];
+        const espia: ICitationVerifier = {
+            verify: async (input) => {
+                llamadas.push(input as never);
+                return verificador.verify(input);
+            },
+        };
+        const repo = { getPaper: async () => trabajo('Es pasiva divina (Ropes, p. 204).'), setStepVersionVerifications: async () => undefined };
+        await new VerifyStepCitationsUseCase(repo as never, { readResourceContent: async () => null } as never, espia)
+            .execute({ ownerId: 'u1', paperId: 'p1', stepId: 's1' });
+        const deLaProsa = llamadas.find(l => !l.citations)!;
+        expect(deLaProsa.language).toBe('es');
+        expect((deLaProsa.inheritFrom as Array<{ author: string }>).map(c => c.author)).toEqual(['Ropes']);
+    });
+});

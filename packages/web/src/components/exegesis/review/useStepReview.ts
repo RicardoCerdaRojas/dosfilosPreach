@@ -7,7 +7,9 @@ import {
     reviewedCitationCount,
     sourcesWithoutOriginalLanguage,
     isUnreviewedCitationsError,
-    mapVerdictsByPath,
+    mapAllVerdictsByPath,
+    isProsePath,
+    isCitationAlarm,
     unreviewedBlockingCitations,
     versionUnderReview,
     type AnalysisClaim,
@@ -15,7 +17,6 @@ import {
     type CitationStatus,
     type ExegeticalPaper,
     type ExegeticalStep,
-    type VerifiedCitation,
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
@@ -41,7 +42,8 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
     const analysis = version?.canonicalAnalysis ?? null;
 
     const verdicts = useMemo(
-        () => (analysis ? mapVerdictsByPath(analysis, version?.citationVerdicts ?? []) : new Map<string, VerifiedCitation>()),
+        // Los de la prosa también (D5): antes se descartaban.
+        () => mapAllVerdictsByPath(analysis, version?.citationVerdicts ?? []),
         [analysis, version?.citationVerdicts],
     );
     const claims = useMemo(
@@ -90,6 +92,13 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
      */
     const counts = useMemo(() => pendingCitationCounts(verdicts, new Set(reviews.keys())), [verdicts, reviews]);
     const reviewedCount = useMemo(() => reviewedCitationCount(verdicts, new Set(reviews.keys())), [verdicts, reviews]);
+    // Las alarmas de la prosa entran en los contadores pero no bloquean
+    // aceptar: se dice, para que «2 no encontradas» con «Aceptar» activo no
+    // parezca un error (revisión de 8b).
+    const proseAlarmCount = useMemo(
+        () => [...verdicts.entries()].filter(([path, v]) => isProsePath(path) && isCitationAlarm(v.status) && !reviews.has(path)).length,
+        [verdicts, reviews],
+    );
 
     /**
      * Citas visibles en la lista lateral, en el orden del análisis.
@@ -175,6 +184,7 @@ export function useStepReview(paper: ExegeticalPaper, step: ExegeticalStep) {
         reviews,
         blocking,
         counts,
+        proseAlarmCount,
         reviewedCount,
         unreadableOriginal,
         listed,

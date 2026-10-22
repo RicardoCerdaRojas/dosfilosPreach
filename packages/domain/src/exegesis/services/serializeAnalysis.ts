@@ -109,8 +109,10 @@ export function serializeAnalysis(
         ?? ((_key: string, value: number, kind: CitationPageKind) =>
             kind === 'printed' ? `p. ${value}` : `hoja ${value}`);
     /** Rotula una cita usando el tipo que quedó registrado al analizarla. */
-    const cite = (c: { sourceKey: string; page: number; pageKind?: CitationPageKind; locator?: string }) =>
-        citedLocation(c, page);
+    // La segunda mano viaja marcada (C3): la prosa escribe «X (p. N) atribuye a
+    // Y…» y nunca cita a Y como si se hubiera leído.
+    const cite = (c: { sourceKey: string; page: number; pageEnd?: number; pageKind?: CitationPageKind; locator?: string; via?: string }) =>
+        `${citedLocation(c, page)}${c.via?.trim() ? ` [second-hand: this source reports ${c.via.trim()}; write «${c.sourceKey} attributes to ${c.via.trim()}…», never cite ${c.via.trim()} directly]` : ''}`;
     // Las menciones sueltas dentro de la prosa —«Adamson (p. 59) lo conecta
     // con…»— no llevan tipo propio, pero el tipo es homogéneo por fuente: el
     // ancla que vio el modelo fue la misma para todos los fragmentos de un
@@ -128,6 +130,12 @@ export function serializeAnalysis(
         : (text: string) => text;
     const ref = formatPassageReference(analysis.reference, language);
     const lines: string[] = [];
+    // La conclusión propia va aparte y SIN fuente (C3): la prosa la redacta en
+    // otra oración, sin la cita de la fuente que la precede.
+    const propia = (indent: string, entry: { ownInference?: string }) => {
+        const texto = entry.ownInference?.trim();
+        if (texto) lines.push(`${indent}own inference (NO citation, separate sentence): ${prose(texto)}`);
+    };
     lines.push(`== Verse ${ref} ==`);
     lines.push(`Texto base: ${analysis.originalText}`);
     lines.push(`Initial translation: ${analysis.initialTranslation}`);
@@ -171,6 +179,7 @@ export function serializeAnalysis(
             lines.push(`- ${la.term} (${la.lemma}, "${la.gloss}"):`);
             lines.push(`  general range = [${generalRange}]${generalSrcs ? ` (sources: ${generalSrcs})` : ''}`);
             lines.push(`  verse loading: ${prose(la.verseSpecificLoading)}${loadingSrcs ? ` (sources: ${loadingSrcs})` : ''}`);
+            propia('  ', la);
         }
     }
 
@@ -193,6 +202,7 @@ export function serializeAnalysis(
         for (const h of analysis.historicalContext) {
             const srcs = h.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- ${h.aspect}: ${prose(h.relevance)}${srcs ? ` (sources: ${srcs})` : ''}`);
+            propia('  ', h);
         }
     }
 
@@ -204,6 +214,7 @@ export function serializeAnalysis(
             const formula = l.citationFormula ? ` (formula: ${l.citationFormula})` : '';
             const srcs = l.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- [${l.type}] ${l.sourcePassage}${formula}: ${prose(l.interpretiveBearing)}${srcs ? ` (sources: ${srcs})` : ''}`);
+            propia('  ', l);
         }
     }
 
@@ -214,6 +225,7 @@ export function serializeAnalysis(
         for (const c of analysis.commentatorEngagement) {
             const verbatim = c.verbatimQuote ? ` [verbatim: "${c.verbatimQuote}"]` : '';
             lines.push(`- [${c.role}] ${c.sourceKey} (${cite(c)}): ${prose(c.position)}${verbatim}`);
+            propia('  ', c);
         }
     }
 
@@ -240,6 +252,26 @@ export function serializeAnalysis(
         }
     }
 
+    // ── Answers to the brief questions (C1) ───────────────────────
+    // Primero lo que la prosa tiene que conservar: el criterio que decide y
+    // la decisión. En el TP #8 la prosa de 4:3 volvió a decidir por κακῶς,
+    // que vale para las dos lecturas, y perdió la concesión de Mayor 133.
+    const respuestas = analysis.questionAnswers ?? [];
+    if (respuestas.length > 0) {
+        lines.push('');
+        lines.push('Answers to the brief questions (KEEP the decisive criterion and the decision):');
+        for (const q of respuestas) {
+            lines.push(`- Question ${q.questionNumber}: ${prose(q.directAnswer)}`);
+            for (const o of q.options) {
+                const quien = o.defenders.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
+                lines.push(`  · reading: ${prose(o.reading)} — ${prose(o.argument)}${quien ? ` (defended by: ${quien})` : ' (no defender in the corpus)'}`);
+            }
+            const fuentes = q.decisiveCriterion.sources.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
+            lines.push(`  · decisive criterion: ${prose(q.decisiveCriterion.text)} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}${fuentes ? ` (sources: ${fuentes})` : ''}`);
+            lines.push(`  · decision: ${prose(q.decision)}`);
+        }
+    }
+
     // ── Verse thesis ───────────────────────────────────────────────
     lines.push('');
     lines.push(`Verse thesis: ${prose(analysis.verseThesis)}`);
@@ -252,6 +284,7 @@ export function serializeAnalysis(
             const srcs = fn.sources.map(s => `${s.sourceKey} ${cite(s)}`).join('; ');
             lines.push(`- anchor: "${fn.anchorPhrase}"`);
             lines.push(`  text: ${prose(fn.text)}${srcs ? ` (sources: ${srcs})` : ''}`);
+            propia('  ', fn);
         }
     }
 

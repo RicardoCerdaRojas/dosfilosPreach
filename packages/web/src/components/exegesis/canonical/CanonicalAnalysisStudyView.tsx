@@ -8,6 +8,7 @@ import {
     Highlighter,
     Library,
     ListTree,
+    MessageCircleQuestion,
     NotebookText,
     Quote,
     ScrollText,
@@ -93,6 +94,8 @@ interface CanonicalAnalysisStudyViewProps {
 function CitationChip({
     sourceKey,
     page,
+    pageEnd,
+    via,
     pageKind,
     locator,
     verbatimQuote,
@@ -102,6 +105,9 @@ function CitationChip({
 }: {
     sourceKey: string;
     page: number;
+    /** Rango y segunda mano (TP #8, 8b, C3). */
+    pageEnd?: number;
+    via?: string;
     pageKind?: CitationPageKind;
     locator?: string;
     verbatimQuote?: string | null;
@@ -112,7 +118,8 @@ function CitationChip({
     const { t } = useTranslation('exegesis');
     // Con su tipo: decía «p.» también sobre una hoja del PDF, y ahora puede
     // ser una sección («§ 2.3») en un libro sin páginas impresas.
-    const ubicacion = citedLocation({ sourceKey, page, pageKind, locator }, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`));
+    const ubicacion = citedLocation({ sourceKey, page, pageEnd, pageKind, locator }, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))
+        + (via?.trim() ? ` · ${t('canonical.study.via', { authors: via.trim() })}` : '');
     const label = `${sourceKey} ${ubicacion}`;
     if (marks && path) {
         const verdict = marks.verdicts.get(path) ?? null;
@@ -185,6 +192,47 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                 </div>
             </header>
 
+            {/* Respuestas a las preguntas del encuadre (TP #8, 8b, C1): lo que
+                el trabajo tiene que entregar, primero. */}
+            {(analysis.questionAnswers?.length ?? 0) > 0 && (
+                <Section
+                    icon={<MessageCircleQuestion className="h-4 w-4" aria-hidden />}
+                    title={t('canonical.study.answersTitle')}
+                    hint={t('canonical.study.answersHint')}
+                    count={analysis.questionAnswers!.length}
+                >
+                    <ul className="space-y-3">
+                        {analysis.questionAnswers!.map((q, i) => (
+                            <li key={i} className="text-xs space-y-1.5" data-testid="respuesta-a-pregunta">
+                                <p className="font-semibold text-foreground">
+                                    {t('canonical.study.answerQuestion', { number: q.questionNumber })}
+                                </p>
+                                <p className="text-foreground">{q.directAnswer}</p>
+                                {q.options.length > 0 && (
+                                    <ul className="space-y-1 pl-3 border-l border-border">
+                                        {q.options.map((o, j) => (
+                                            <li key={j} className="space-y-0.5">
+                                                <p className="text-foreground/90"><span className="font-medium">{o.reading}</span> — {o.argument}</p>
+                                                {o.defenders.length > 0
+                                                    ? <SourceList onOpenCitation={onOpenCitation} citations={o.defenders} marks={marks} pathFor={k => `questionAnswers[${i}].options[${j}].defenders[${k}]`} />
+                                                    : <p className="text-[11px] text-muted-foreground italic">{t('canonical.study.answerNoDefender')}</p>}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                <div className="rounded-md bg-muted/40 px-2 py-1.5 space-y-0.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('canonical.study.answerCriterion')}</p>
+                                    <p className="text-foreground">{q.decisiveCriterion.text}</p>
+                                    <p className="text-foreground/85">{q.decisiveCriterion.whyThisOverThat}</p>
+                                    {q.decisiveCriterion.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={q.decisiveCriterion.sources} marks={marks} pathFor={k => `questionAnswers[${i}].decisiveCriterion.sources[${k}]`} />}
+                                </div>
+                                <p className="text-foreground"><span className="font-semibold">{t('canonical.study.answerDecision')}</span> {q.decision}</p>
+                            </li>
+                        ))}
+                    </ul>
+                </Section>
+            )}
+
             {/* Argumentative role */}
             <Section
                 icon={<Sparkles className="h-4 w-4" aria-hidden />}
@@ -242,6 +290,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                         {t('canonical.study.lexis.loading')}
                                     </p>
                                     <p className="text-xs text-foreground/85 leading-relaxed">{la.verseSpecificLoading}</p>
+                                    <OwnInference value={la.ownInference} />
                                     {la.loadingSources.length > 0 && (
                                         <SourceList onOpenCitation={onOpenCitation} citations={la.loadingSources} marks={marks} pathFor={j => `lexicalAnalyses[${idx}].loadingSources[${j}]`} />
                                     )}
@@ -301,6 +350,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                             <li key={idx} className="rounded-md border border-border bg-card p-3">
                                 <p className="text-xs font-semibold text-foreground">{h.aspect}</p>
                                 <p className="text-xs text-foreground/85 leading-relaxed mt-1">{h.relevance}</p>
+                                <OwnInference value={h.ownInference} />
                                 {h.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={h.sources} marks={marks} pathFor={j => `historicalContext[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
@@ -328,6 +378,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                     )}
                                 </div>
                                 <p className="text-xs text-foreground/85 leading-relaxed mt-1">{l.interpretiveBearing}</p>
+                                <OwnInference value={l.ownInference} />
                                 {l.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={l.sources} marks={marks} pathFor={j => `oldTestamentLinks[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
@@ -354,6 +405,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                     <CitationChip
                                         sourceKey={c.sourceKey}
                                         page={c.page}
+                                        pageEnd={c.pageEnd}
+                                        via={c.via}
                                         pageKind={c.pageKind}
                                         locator={c.locator}
                                         verbatimQuote={c.verbatimQuote}
@@ -363,6 +416,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                     />
                                 </div>
                                 <p className="text-xs text-foreground/85 leading-relaxed">{c.position}</p>
+                                <OwnInference value={c.ownInference} />
                                 {c.verbatimQuote && (
                                     <p className="text-[11px] italic text-foreground/70 border-l-2 border-border pl-2 mt-1">
                                         "{c.verbatimQuote}"
@@ -414,6 +468,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                                     <CitationChip
                                                         sourceKey={p.sourceKey}
                                                         page={p.page}
+                                                        pageEnd={p.pageEnd}
+                                                        via={p.via}
                                                         pageKind={p.pageKind}
                                                         locator={p.locator}
                                                         verbatimQuote={p.verbatimQuote}
@@ -509,6 +565,7 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                             <li key={idx} className="text-xs space-y-1">
                                 <p className="text-foreground italic">"{fn.anchorPhrase}"</p>
                                 <p className="text-foreground/85 pl-3 border-l border-border">{fn.text}</p>
+                                <OwnInference value={fn.ownInference} />
                                 {fn.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={fn.sources} marks={marks} pathFor={j => `footnoteExtensions[${idx}].sources[${j}]`} />}
                             </li>
                         ))}
@@ -585,6 +642,20 @@ function TranslationCell({ label, value, emphasized = false }: { label: string; 
                 {value || <em className="text-muted-foreground">—</em>}
             </p>
         </div>
+    );
+}
+
+/**
+ * Lo que concluye el análisis, aparte de lo que dice la fuente (TP #8, 8b,
+ * C3). Va sin cita a propósito: la cita de arriba responde sólo por la fuente.
+ */
+function OwnInference({ value }: { value?: string }) {
+    const { t } = useTranslation('exegesis');
+    if (!value?.trim()) return null;
+    return (
+        <p className="text-xs leading-relaxed text-muted-foreground" data-testid="inferencia-propia">
+            <span className="font-semibold">{t('canonical.study.ownInference')}</span> {value}
+        </p>
     );
 }
 
@@ -733,7 +804,8 @@ function SourceList({
     // El mismo rótulo que el chip (`citedLocation`): estas citas decían «p.»
     // sobre una hoja y «p. 0 (2.3)» sobre una sección.
     const rotulo = (c: SourceCitation) =>
-        `${c.sourceKey} ${citedLocation(c, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}`;
+        `${c.sourceKey} ${citedLocation(c, (_k, p, kind) => (kind === 'printed' ? `p. ${p}` : `hoja ${p}`))}`
+        + (c.via?.trim() ? ` · ${t('canonical.study.via', { authors: c.via.trim() })}` : '');
     return (
         <p className="text-[10.5px] text-muted-foreground italic mt-1">
             {citations.map((c, i) => (
@@ -743,6 +815,8 @@ function SourceList({
                         <CitationChip
                             sourceKey={c.sourceKey}
                             page={c.page}
+                            pageEnd={c.pageEnd}
+                            via={c.via}
                             pageKind={c.pageKind}
                             locator={c.locator}
                             path={pathFor(i)}

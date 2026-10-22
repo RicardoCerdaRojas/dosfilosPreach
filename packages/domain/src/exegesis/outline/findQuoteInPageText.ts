@@ -57,6 +57,42 @@ export function findQuoteInPageText(quote: string, pageText: string, opciones: O
     return { start, end };
 }
 
+/**
+ * La parte de una cita que cae en ESTA hoja cuando la frase cruza el corte
+ * de página (TP #8, fase 8b, D6): el comienzo al final de la hoja, o el final
+ * al comienzo de la siguiente. Antes el visor decía «no se localizó» aunque
+ * la frase estuviera partida entre las dos hojas.
+ *
+ * Exige un tramo largo (la mitad de la cita o 40 caracteres, lo que sea
+ * mayor, normalizados) y que caiga en el borde de la hoja (los últimos o los
+ * primeros 300 caracteres: deja lugar al folio o al título corrido). Un tramo
+ * corto en cualquier parte de la hoja no es la cita.
+ */
+export function findQuotePartAtPageEdge(quote: string, pageText: string): (QuoteMatch & { part: 'start' | 'end' }) | null {
+    if (!quote.trim() || !pageText) return null;
+    const needle = normalizeForSearch(quote, false).text;
+    const haystack = normalizeForSearch(pageText, false);
+    const h = haystack.text;
+    const minimo = Math.max(40, Math.ceil(needle.length / 2));
+    if (needle.length <= minimo) return null;
+    const BORDE = 300;
+    // El comienzo de la cita, al final de la hoja.
+    for (let largo = needle.length - 1; largo >= minimo; largo--) {
+        const at = h.lastIndexOf(needle.slice(0, largo));
+        if (at !== -1 && at + largo >= h.length - BORDE) {
+            return { start: haystack.sourceIndex[at]!, end: haystack.sourceIndex[at + largo - 1]! + 1, part: 'start' };
+        }
+    }
+    // El final de la cita, al comienzo de la hoja.
+    for (let largo = needle.length - 1; largo >= minimo; largo--) {
+        const at = h.indexOf(needle.slice(needle.length - largo));
+        if (at !== -1 && at <= BORDE) {
+            return { start: haystack.sourceIndex[at]!, end: haystack.sourceIndex[at + largo - 1]! + 1, part: 'end' };
+        }
+    }
+    return null;
+}
+
 interface NormalizedText {
     text: string;
     /** Por cada carácter de `text`, su posición en la cadena original. */

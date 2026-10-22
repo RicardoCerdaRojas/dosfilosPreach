@@ -77,6 +77,12 @@ export interface ComposeVerseInput {
      * no da para tanto, el compositor escribe lo que hay y no inventa.
      */
     targetWords?: number;
+    /**
+     * Las citas del análisis que el verificador no pudo respaldar y nadie
+     * revisó (TP #8, fase 8b, E1): el compositor no sabía cuáles fallaron y
+     * las repetía en la prosa. Con su veredicto y, si se halló, la página.
+     */
+    citationAlerts?: ReadonlyArray<{ citation: string; status: string; foundAt?: string | null }>;
 
     /**
      * Palabras que el autor no usa, y por cuáles cambiarlas.

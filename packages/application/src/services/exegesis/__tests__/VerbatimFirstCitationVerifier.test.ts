@@ -44,6 +44,8 @@ describe('VerbatimFirstCitationVerifier', () => {
         });
         expect(llm.verify).not.toHaveBeenCalled();
         expect(out.citations[0]).toMatchObject({ status: 'verified', matchedPage: '559', matchedPageLabel: 'p. 559', similarityScore: 1 });
+        // TP #8 (8b, D3): la oración citada es el tramo de apoyo, para resaltarlo.
+        expect(out.citations[0]!.supportingSpan).toEqual({ text: '"Shepherd" is an active participle used substantively', pageLabel: 'p. 559' });
     });
 
     it('si la oración está en otra página que la citada, es «página no coincide»', async () => {
@@ -93,5 +95,33 @@ describe('VerbatimFirstCitationVerifier', () => {
         const input = { markdown: 'prosa (Ross, p. 1)', sources: [ROSS] };
         await new VerbatimFirstCitationVerifier(llm).verify(input);
         expect(llm.verify).toHaveBeenCalledWith(input);
+    });
+});
+
+/** Revisión de 8b: los veredictos vuelven a su cita por offset, y una coincidencia sin página no da «verificada». */
+describe('VerbatimFirstCitationVerifier — offset y página', () => {
+    const fuente = { corpusId: 'r', citationKey: 'Mayor', fullAuthor: 'Mayor', displayLabel: 'Mayor', chunks: [{ text: 'the active may include the force of the middle voice', pageHint: null }] };
+    const cita = (offset: number) => ({
+        raw: 'Mayor, p. 133', author: 'Mayor', title: '', pages: '133', offset,
+        evidence: 'nada que coincida textualmente aquí', evidenceIsQuoted: true,
+    });
+
+    it('re-verificar UNA cita con su offset original devuelve su veredicto', async () => {
+        const inner = { verify: async ({ citations }: { citations?: ReadonlyArray<{ offset: number }> }) => ({
+            citations: (citations ?? []).map(c => ({ ...c, status: 'not-found' })) as never,
+        }) };
+        const { citations } = await new VerbatimFirstCitationVerifier(inner as never).verify({ markdown: '', citations: [cita(12)], sources: [fuente] });
+        expect(citations).toHaveLength(1);
+        expect(citations[0]!.offset).toBe(12);
+    });
+
+    it('hallada en el texto completo sin página, con página citada: decide el juez', async () => {
+        const inner = { verify: vi.fn(async ({ citations }: { citations?: ReadonlyArray<{ offset: number }> }) => ({
+            citations: (citations ?? []).map(c => ({ ...c, status: 'page-unverifiable' })) as never,
+        })) };
+        const c = { ...cita(0), evidence: 'the active may include the force of the middle voice' };
+        const { citations } = await new VerbatimFirstCitationVerifier(inner as never).verify({ markdown: '', citations: [c], sources: [fuente] });
+        expect(inner.verify).toHaveBeenCalled();
+        expect(citations[0]!.status).toBe('page-unverifiable');
     });
 });

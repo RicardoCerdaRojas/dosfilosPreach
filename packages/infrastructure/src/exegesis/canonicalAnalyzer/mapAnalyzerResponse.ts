@@ -49,7 +49,41 @@ export function mapToCanonicalVerseAnalysis(
         theologicalHooks: requireField('theologicalHooks') as CanonicalVerseAnalysis['theologicalHooks'],
         confidenceFlags: requireField('confidenceFlags') as CanonicalVerseAnalysis['confidenceFlags'],
         footnoteExtensions: requireField('footnoteExtensions') as CanonicalVerseAnalysis['footnoteExtensions'],
+        ...((input.sectionQuestions?.length ?? 0) > 0
+            ? { questionAnswers: normalizeQuestionAnswers(p.questionAnswers, input) }
+            : {}),
         createdAt: now,
         updatedAt: now,
     };
+}
+
+/**
+ * Las respuestas, con forma garantizada: arreglos donde el modelo dejó otra
+ * cosa y sólo las preguntas que se le hicieron (C1). Una respuesta a una
+ * pregunta que no es de este versículo se descarta.
+ */
+function normalizeQuestionAnswers(raw: unknown, input: AnalyzeVerseInput): NonNullable<CanonicalVerseAnalysis['questionAnswers']> {
+    if (!Array.isArray(raw)) return [];
+    const numeros = new Set((input.sectionQuestions ?? []).map(q => q.number));
+    const texto = (v: unknown) => (typeof v === 'string' ? v : '');
+    const citas = (v: unknown) => (Array.isArray(v) ? v.filter(c => c && typeof c === 'object' && typeof (c as { sourceKey?: unknown }).sourceKey === 'string') : []) as never[];
+    return raw
+        .filter((q): q is Record<string, unknown> => !!q && typeof q === 'object')
+        .filter(q => typeof q.questionNumber === 'number' && numeros.has(q.questionNumber))
+        .map(q => {
+            const criterio = (q.decisiveCriterion && typeof q.decisiveCriterion === 'object' ? q.decisiveCriterion : {}) as Record<string, unknown>;
+            return {
+                questionNumber: q.questionNumber as number,
+                directAnswer: texto(q.directAnswer),
+                options: (Array.isArray(q.options) ? q.options : [])
+                    .filter((o): o is Record<string, unknown> => !!o && typeof o === 'object')
+                    .map(o => ({ reading: texto(o.reading), argument: texto(o.argument), defenders: citas(o.defenders) })),
+                decisiveCriterion: {
+                    text: texto(criterio.text),
+                    whyThisOverThat: texto(criterio.whyThisOverThat),
+                    sources: citas(criterio.sources),
+                },
+                decision: texto(q.decision),
+            };
+        });
 }

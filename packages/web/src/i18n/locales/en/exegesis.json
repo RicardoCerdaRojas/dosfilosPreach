@@ -1776,7 +1776,40 @@
       "recomposeFromAnalyses": "Recompose from analyses",
       "composeRetry": "Retry composition"
     },
+    "proseReview": {
+      "title": "Review before delivery",
+      "subtitle": "Flags what usually gets corrected in an academic paper. It does not block the Word export: you decide.",
+      "count_one": "{{count}} warning",
+      "count_other": "{{count}} warnings",
+      "clean": "No warnings",
+      "fixed": {
+        "missing-criterion": "Question {{question}}: the prose does not use the analysis's decisive criterion: \"{{criterion}}\".",
+        "missing-grammar": "The analysis cites the course grammar ({{key}}, {{page}}) and the prose does not.",
+        "unverified-citation": "The citation {{excerpt}} could not be verified and nobody reviewed it.",
+        "repeated-alert": "The prose repeats the citation {{excerpt}}, which could not be verified in the analysis.",
+        "double-closing": "This closing sentence seems to state two things: split it in two.",
+        "hyphen-range": "Range with a hyphen: use an en dash (–).",
+        "greek-grave": "Greek accent: a final acute becomes grave before another word.",
+        "punctuation": "Punctuation: double comma or space before a comma.",
+        "lowercase-start": "The paragraph starts in lowercase.",
+        "repetition": "Repetition: \"{{excerpt}}\" appears {{count}} times."
+      },
+      "reviewer": {
+        "criterion": "Criterion {{number}}",
+        "clean": "The reviewer found no failures against the course criteria.",
+        "stale": "The prose changed after the last criteria review: review it again."
+      },
+      "action": {
+        "review": "Review with the course criteria",
+        "reviewAgain": "Review again",
+        "recompose": "Recompose with these notes"
+      },
+      "toast": {
+        "failed": "The prose could not be reviewed. Try again."
+      }
+    },
     "verseProse": {
+      "nextStepHint": "Without prose, this verse does not enter the document.",
       "button": {
         "compose": "Compose academic prose",
         "recompose": "Recompose prose",
@@ -1816,6 +1849,14 @@
       "study": "Study view"
     },
     "study": {
+      "via": "attributes to {{authors}}",
+      "ownInference": "What the analysis concludes (no citation):",
+      "answersTitle": "Answers to the questions",
+      "answersHint": "What the brief asks in this verse: the answer, the readings with who defends them, the deciding criterion and the decision.",
+      "answerQuestion": "Question {{number}}",
+      "answerNoDefender": "No source in the corpus defends it.",
+      "answerCriterion": "Decisive criterion",
+      "answerDecision": "Decision:",
       "headerLabel": "Text and translation",
       "initialTranslation": "Initial translation",
       "finalTranslation": "Final translation",
@@ -1873,7 +1914,7 @@
       "subtitle": "We generate TMS-style academic prose from the accepted canonical analyses of each verse. The configured style guide is mandatorily applied.",
       "idleBody": "The canonical analyses of each verse are turned into a continuous academic paper: introduction + verse-by-verse body + conclusion + bibliography. Citations follow the configured style guide.",
       "cta": "Compose paper",
-      "cost": "Each composition uses one Gemini Pro 2.5 call with extended context. Review the result and press \"Save to paper\" to keep it: otherwise it is lost on close.",
+      "cost": "Each composition is a long call to the assistant. Review the result and press \"Save to paper\" to keep it: otherwise it is lost when you close.",
       "composingTitle": "Composing academic paper…",
       "composingBody": "This may take 30 to 120 seconds depending on verse count and analysis density.",
       "errorTitle": "Could not compose the paper",
@@ -1911,6 +1952,7 @@
       "saveToResourcesFailed": "Could not save to My Resources. Please try again.",
       "savedExists": "A saved composition exists for this paper.",
       "savedHint": "If the verse analyses changed since last time, recompose so the output reflects the current state.",
+      "rewriteWarning": "Once saved, the composed paper replaces the assembled document: manual edits made to the document are lost. Each verse's prose is not changed.",
       "anchoring": {
         "headline_one": "{{count}} of {{total}} citations will not point to a page of the printed copy.",
         "headline_other": "{{count}} of {{total}} citations will not point to a page of the printed copy.",
@@ -2006,10 +2048,40 @@
         "lexical-loading": "sense in this verse",
         "footnote": "note",
         "ot-link": "OT link",
-        "historical": "historical context"
+        "historical": "historical context",
+        "answer-option": "reading for a question",
+        "answer-criterion": "decisive criterion"
       }
     },
     "review": {
+      "inProse": "in the prose",
+      "unverifiedQuoteBadge": "quote not found",
+      "proseOnly": "This step has no structured analysis: its citations are in the list on the right.",
+      "diagnosis": {
+        "cta": "Diagnose this citation",
+        "none": "No cause can be stated from what the verifier stored. Verify the step again so it searches the book.",
+        "title": "Diagnosis",
+        "manual": "This citation is in the prose: fix it in the text and verify again.",
+        "cause": {
+          "other-page": "It is on another page of the book",
+          "mixed-claim": "Mixed claim",
+          "other-source": "Another corpus source says it",
+          "second-hand": "Second-hand citation",
+          "nobody-says-it": "No source says it"
+        },
+        "explain": {
+          "other-page": "The verifier found it on {{foundAt}} when reading the cited page, its neighbours or the whole book.",
+          "mixed-claim": "The source says “{{sourceSays}}”; the sentence adds a conclusion the source does not state. That part goes in another sentence, without the citation.",
+          "other-source": "It is not in this source; {{otherSource}} says it.",
+          "second-hand": "The source reports what {{reportedAuthor}} says. Cite the one who reports it, not {{reportedAuthor}} as if read.",
+          "nobody-says-it": "The cited page, its neighbours, the whole book and the other corpus sources were searched without finding it."
+        },
+        "remedy": {
+          "correctPage": "Correct to {{page}}",
+          "remove": "Remove the citation",
+          "useNote": "Use this note in the review"
+        }
+      },
       "title": "Citation review · {{step}}",
       "verifiedAt": "Last verified: {{date}}",
       "notVerified": "This step hasn't been verified yet. Verify the citations to see each one's evidence.",
@@ -2028,6 +2100,11 @@
         "reviewed": "Reviewed by hand"
       },
       "panel": {
+        "takenFromSource": "The sentence attributes to it",
+        "sourceSays": "The source says",
+        "sourceSaysAt": "The source says ({{page}})",
+        "unverifiedQuoteTitle": "The analysis quoted this sentence verbatim, but it is not in the source text:",
+        "unverifiedQuoteBody": "It was removed from the prose. The attribution remains: check the page and write the real sentence with «Record the quote», or remove the citation.",
         "empty": "Pick a citation in the analysis, or in the list below, to see its evidence.",
         "cited": "Cited page",
         "found": "Support found at",
@@ -2094,6 +2171,8 @@
         "transliterated": "This book transliterates. It writes the original in Latin script — “the root hāyâ” — following its series’ convention, so the discussion may well be right; what is missing is the form in its own script. There is nothing to re-extract: if the claim depends on the spelling, rest it on a source that carries the original."
       },
       "reviewedCount": "{{count}} reviewed by hand",
+      "proseNotBlocking_one": "1 in the prose: it warns, it does not block accepting",
+      "proseNotBlocking_other": "{{count}} in the prose: they warn, they do not block accepting",
       "allReviewed": "Every observation has been reviewed."
     },
     "recompose": {
@@ -2202,6 +2281,7 @@
       "composeStudyGuideFromAnalyses": "Compose study guide",
       "verifyStepCitations": "Verify citations (step)",
       "placeIdeaInSection": "Add an idea (section)",
+      "reviewVerseProse": "Review before delivery (verse)",
       "runCoherencePass": "Coherence review",
       "extractRubricFromText": "Extract rubric (text)",
       "extractRubricFromDocument": "Extract rubric (document)",
@@ -2337,6 +2417,7 @@
       },
       "assembly": {
         "manifestTitle": "This goes into the document · {{count}} words",
+        "proseCount": "{{done}} of {{total}} verses with prose",
         "words": "{{count}} w.",
         "pendingMark": "not composed",
         "pendingHint_one": "1 selected section has no prose yet: it will not enter the document until you compose it.",

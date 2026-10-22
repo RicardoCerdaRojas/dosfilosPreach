@@ -14,7 +14,11 @@ export type AnalysisClaimSite =
     | 'lexical-loading'
     | 'footnote'
     | 'ot-link'
-    | 'historical';
+    | 'historical'
+    // La respuesta a una pregunta del encuadre (TP #8, 8b, C1): quién
+    // defiende cada lectura, y quién da el criterio que decide.
+    | 'answer-option'
+    | 'answer-criterion';
 
 /**
  * Una afirmación del análisis junto con la cita que la respalda.
@@ -30,12 +34,18 @@ export interface AnalysisClaim {
     path: string;
     sourceKey: string;
     page: number;
+    /** Última página de un rango (C3). */
+    pageEnd?: number;
+    /** Segunda mano: el autor al que la fuente atribuye la idea (C3). */
+    via?: string;
     pageKind?: CitationPageKind;
     locator?: string;
     /** La afirmación tal como la escribió el analizador, en el idioma del trabajo. */
     claim: string;
     /** Oración de la fuente que el analizador dijo haber copiado. `null` si no la dio. */
     verbatimQuote: string | null;
+    /** La oración «copiada» que no estaba en la fuente y se retiró (C5). */
+    unverifiedQuote?: string;
 }
 
 /**
@@ -51,9 +61,10 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
     const push = (
         site: AnalysisClaimSite,
         path: string,
-        c: { sourceKey?: string; page?: number; pageKind?: CitationPageKind; locator?: string },
+        c: { sourceKey?: string; page?: number; pageEnd?: number; via?: string; pageKind?: CitationPageKind; locator?: string },
         claim: string,
         verbatimQuote?: string | null,
+        unverifiedQuote?: string,
     ) => {
         if (!c?.sourceKey || typeof c.page !== 'number' || !Number.isFinite(c.page)) return;
         const quote = typeof verbatimQuote === 'string' ? verbatimQuote.trim() : '';
@@ -62,18 +73,21 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
             path,
             sourceKey: c.sourceKey,
             page: c.page,
+            ...(typeof c.pageEnd === 'number' && c.pageEnd > c.page ? { pageEnd: c.pageEnd } : {}),
+            ...(c.via?.trim() ? { via: c.via.trim() } : {}),
             pageKind: c.pageKind,
             locator: c.locator,
             claim: (claim ?? '').trim(),
             verbatimQuote: quote.length > 0 ? quote : null,
+            ...(unverifiedQuote?.trim() ? { unverifiedQuote: unverifiedQuote.trim() } : {}),
         });
     };
 
     analysis.commentatorEngagement.forEach((c, i) =>
-        push('commentator', `commentatorEngagement[${i}]`, c, c.position, c.verbatimQuote));
+        push('commentator', `commentatorEngagement[${i}]`, c, c.position, c.verbatimQuote, c.unverifiedQuote));
     analysis.translationCruxes.forEach((crux, i) =>
         crux.commentatorPositions.forEach((p, j) =>
-            push('crux', `translationCruxes[${i}].commentatorPositions[${j}]`, p, p.summary, p.verbatimQuote)));
+            push('crux', `translationCruxes[${i}].commentatorPositions[${j}]`, p, p.summary, p.verbatimQuote, p.unverifiedQuote)));
     analysis.lexicalAnalyses.forEach((l, i) => {
         // Análisis anteriores pueden traer el rango sin glosas: el sitio se
         // recorre igual, con la afirmación que haya.
@@ -90,6 +104,15 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
         o.sources.forEach((s, j) => push('ot-link', `oldTestamentLinks[${i}].sources[${j}]`, s, o.interpretiveBearing)));
     analysis.historicalContext.forEach((h, i) =>
         h.sources.forEach((s, j) => push('historical', `historicalContext[${i}].sources[${j}]`, s, h.relevance)));
+    (analysis.questionAnswers ?? []).forEach((q, i) => {
+        q.options.forEach((o, j) =>
+            o.defenders.forEach((s, k) =>
+                push('answer-option', `questionAnswers[${i}].options[${j}].defenders[${k}]`, s, `${o.reading}: ${o.argument}`)));
+        (q.decisiveCriterion?.sources ?? []).forEach((s, k) =>
+            // Solo el criterio: el «por qué» es razonamiento del análisis, y
+            // juntarlo bajo la cita rehacía la afirmación mixta (revisión de 8b).
+            push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.sources[${k}]`, s, q.decisiveCriterion.text));
+    });
     return out;
 }
 
@@ -110,7 +133,11 @@ export function analysisClaimsToCitations(
     pageFor: (claim: AnalysisClaim) => string | null,
 ): ParsedCitation[] {
     return claims.map((claim, index) => {
-        const pages = pageFor(claim);
+        // Un rango se rotula entero, «170–171», en la misma unidad que su
+        // comienzo; si el final no se puede traducir, queda la página sola.
+        const desde = pageFor(claim);
+        const hasta = claim.pageEnd !== undefined ? pageFor({ ...claim, page: claim.pageEnd }) : null;
+        const pages = desde && hasta && hasta !== desde ? `${desde}–${hasta}` : desde;
         const otras = otherSourcesOf(claim, claims);
         // Por sección no hay hoja: «hoja 0» llevaba al verificador a priorizar
         // los fragmentos rotulados con 0 o 1 en vez de la sección citada.
@@ -128,7 +155,9 @@ export function analysisClaimsToCitations(
             // La hoja sirve para ELEGIR la evidencia aunque no sirva para
             // cotejar la página: los fragmentos de esta misma fuente están
             // rotulados con ella.
-            evidencePage: seccion ? null : pages ?? String(claim.page),
+            // La primera página del rango: el cotejo contra la unión de sus
+            // páginas es del verificador (D1).
+            evidencePage: seccion ? null : desde ?? String(claim.page),
             offset: index,
             evidence: claim.verbatimQuote ?? claim.claim,
             evidenceIsQuoted: claim.verbatimQuote !== null,
@@ -152,7 +181,7 @@ export function otherSourcesOf(claim: AnalysisClaim, all: ReadonlyArray<Analysis
         const k = normaliza(c.sourceKey);
         if (k === propia || out.has(k)) continue;
         const hermana = entradaDe(c.path) === entrada && c.claim === claim.claim;
-        if (hermana || nombra(claim.claim, c.sourceKey)) out.set(k, c.sourceKey);
+        if (hermana || namesCitationKey(claim.claim, c.sourceKey)) out.set(k, c.sourceKey);
     }
     return [...out.values()];
 }
@@ -173,7 +202,7 @@ function normaliza(s: string): string {
  * Sin distinguirlas, cualquier afirmación con esa palabra pasaba por síntesis
  * y el verificador la juzgaba más laxo.
  */
-function nombra(texto: string, clave: string): boolean {
+export function namesCitationKey(texto: string, clave: string): boolean {
     const sinAcentos = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     const k = sinAcentos(clave).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     if (k.length < 3) return false;
@@ -182,6 +211,7 @@ function nombra(texto: string, clave: string): boolean {
 
 const SITIOS: ReadonlyArray<AnalysisClaimSite> = [
     'commentator', 'crux', 'lexical-range', 'lexical-loading', 'footnote', 'ot-link', 'historical',
+    'answer-option', 'answer-criterion',
 ];
 const SUFIJO_DE_SITIO = new RegExp(`\\s·\\s(${SITIOS.join('|')})$`);
 

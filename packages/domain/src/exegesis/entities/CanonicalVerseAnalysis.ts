@@ -245,6 +245,17 @@ export interface CanonicalVerseAnalysis {
     footnoteExtensions: ReadonlyArray<FootnoteExtension>;
 
     /**
+     * La respuesta a cada pregunta del encuadre que toca este versículo (TP #8,
+     * fase 8b, C1). Antes el análisis no tenía dónde poner la respuesta ni el
+     * criterio que decide entre lecturas: el criterio quedaba disperso en
+     * `commentatorEngagement` y la prosa lo perdía o lo cambiaba (en 4:3 volvió
+     * a decidir por κακῶς, que vale para las dos lecturas).
+     *
+     * Ausente en los análisis anteriores y vacío en un versículo sin preguntas.
+     */
+    questionAnswers?: ReadonlyArray<QuestionAnswer>;
+
+    /**
      * When this analysis was first generated. Set by
      * `GenerateStepUseCase`.
      */
@@ -403,6 +414,15 @@ export interface LexicalAnalysis {
      */
     verseSpecificLoading: string;
     /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
+    /**
      * Sources cited specifically for the verse-specific loading
      * argument (often distinct from the lexicon citations above —
      * commentators or specialized articles that discuss this verse).
@@ -430,6 +450,15 @@ export interface HistoricalContextPoint {
      * Sources cited inline.
      */
     relevance: string;
+    /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
     /** Sources backing the historical claim. */
     sources: ReadonlyArray<SourceCitation>;
 }
@@ -464,6 +493,15 @@ export interface OldTestamentLink {
      * What the connection contributes interpretively. 1-2 sentences.
      */
     interpretiveBearing: string;
+    /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
     /**
      * Sources supporting the identification — typically Beale &
      * Carson's *Commentary on the NT Use of the OT*, Hays, or
@@ -521,12 +559,39 @@ export interface CommentatorPosition {
      */
     position: string;
     /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
+    /**
      * Verbatim quote when the commentator's exact wording captures
      * something paraphrase would lose. Wrapped in quotes by the
      * composer; must be present in the cited source at that page.
      * Empty/absent when paraphrase suffices.
      */
     verbatimQuote?: string;
+    /**
+     * Última página cuando la cita es un rango («170–171»). Ausente en una
+     * página sola (TP #8, fase 8b, C3).
+     */
+    pageEnd?: number;
+    /**
+     * Segunda mano: el autor al que ESTA fuente atribuye la idea («Adamson
+     * (170) atribuye a Mayor, Knowling y Ropes…»). La cita es de la fuente que
+     * lo reporta; el autor de `via` no se leyó (C3).
+     */
+    via?: string;
+    /**
+     * La oración que el analizador dijo haber copiado y que NO está en el
+     * texto de la fuente (TP #8, fase 8b, C5). `verbatimQuote` queda vacío
+     * para que no llegue a la prosa; esto queda para que la revisión de citas
+     * lo muestre. Antes se borraba con un `console.warn` y nadie se enteraba.
+     */
+    unverifiedQuote?: string;
 }
 
 /**
@@ -567,6 +632,11 @@ export interface TranslationCrux {
         page: number;
         /** Si `page` es la página impresa o la hoja del archivo. Ausente = hoja. */
         pageKind?: CitationPageKind;
+        /** Rango y segunda mano, como en `SourceCitation` (C3). */
+        pageEnd?: number;
+        via?: string;
+        /** Oración «copiada» que no está en la fuente (C5). */
+        unverifiedQuote?: string;
         /** La sección citada en un libro sin páginas impresas (`pageKind: 'section'`). */
         locator?: string;
         /** 1-2 sentence summary of the position. */
@@ -682,6 +752,15 @@ export interface FootnoteExtension {
     anchorPhrase: string;
     /** The footnote text body. 1-3 sentences. */
     text: string;
+    /**
+     * Lo que CONCLUYE el análisis a partir de lo anterior, sin cita (TP #8,
+     * fase 8b, C3). El campo de arriba responde sólo por lo que dice la
+     * fuente. Más de la mitad de las alarmas del TP #8 eran afirmaciones
+     * mixtas: la fuente y una conclusión propia bajo la misma cita, y el
+     * verificador no encontraba la conclusión en la página. Vacío o ausente
+     * cuando no hay inferencia propia (y en los análisis anteriores).
+     */
+    ownInference?: string;
     /** Sources cited within the footnote. */
     sources: ReadonlyArray<SourceCitation>;
 }
@@ -704,6 +783,60 @@ export interface SourceCitation {
      * needed.
      */
     locator?: string;
+    /**
+     * Última página cuando la cita es un rango («170–171»). Ausente en una
+     * página sola (TP #8, fase 8b, C3).
+     */
+    pageEnd?: number;
+    /**
+     * Segunda mano: el autor al que ESTA fuente atribuye la idea («Adamson
+     * (170) atribuye a Mayor, Knowling y Ropes…»). La cita es de la fuente que
+     * lo reporta; el autor de `via` no se leyó (C3).
+     */
+    via?: string;
+}
+
+/**
+ * La respuesta a una pregunta del encuadre (C1).
+ *
+ * El orden es el que pide el profesor: la respuesta en una oración, las
+ * lecturas posibles con quién defiende cada una, el criterio que las
+ * distingue y la decisión. Una pregunta de tipo `identify` exige el catálogo
+ * de opciones aunque ninguna fuente decida («totally unknown», Adamson 170).
+ */
+export interface QuestionAnswer {
+    /** El número de la pregunta en el encuadre. */
+    questionNumber: number;
+    /** La respuesta en una oración. */
+    directAnswer: string;
+    options: ReadonlyArray<AnswerOption>;
+    decisiveCriterion: DecisiveCriterion;
+    /** La decisión, con la razón propia. Sin citas: es del análisis. */
+    decision: string;
+}
+
+/** Una lectura posible y quién la defiende. */
+export interface AnswerOption {
+    /** La lectura, en una frase. */
+    reading: string;
+    /** El argumento más fuerte a su favor, como lo da su defensor. */
+    argument: string;
+    /** Quién la defiende, con página. Vacío si nadie del corpus la defiende. */
+    defenders: ReadonlyArray<SourceCitation>;
+}
+
+/**
+ * Lo que decide entre las lecturas. No basta con que favorezca a una: tiene
+ * que DISCRIMINAR (patrón del profesor: «un criterio que vale para las dos
+ * lecturas no decide nada»).
+ */
+export interface DecisiveCriterion {
+    /** El criterio: de preferencia estructural o de la misma carta. */
+    text: string;
+    /** Por qué favorece una lectura y no la otra. */
+    whyThisOverThat: string;
+    /** Quién da el criterio, si lo da una fuente. Vacío si es del análisis. */
+    sources: ReadonlyArray<SourceCitation>;
 }
 
 // ── Empty-state factory ─────────────────────────────────────────────────
@@ -743,6 +876,7 @@ export function buildEmptyCanonicalVerseAnalysis(reference: PassageReference): C
         theologicalHooks: [],
         confidenceFlags: [],
         footnoteExtensions: [],
+        questionAnswers: [],
         createdAt: now,
         updatedAt: now,
     };
@@ -755,9 +889,20 @@ export function buildEmptyCanonicalVerseAnalysis(reference: PassageReference): C
  * las afirmaciones no difieran.
  */
 export function citedLocation(
-    c: { sourceKey: string; page: number; pageKind?: CitationPageKind; locator?: string },
+    c: { sourceKey: string; page: number; pageEnd?: number; pageKind?: CitationPageKind; locator?: string },
     pageLabel: (sourceKey: string, page: number, kind: CitationPageKind) => string,
 ): string {
     if (c.pageKind === 'section' && c.locator?.trim()) return `§ ${c.locator.trim().replace(/^§\s*/, '')}`;
-    return pageLabel(c.sourceKey, c.page, c.pageKind === 'section' ? 'sheet' : (c.pageKind ?? 'sheet'));
+    const kind = c.pageKind === 'section' ? 'sheet' : (c.pageKind ?? 'sheet');
+    const desde = pageLabel(c.sourceKey, c.page, kind);
+    // Un rango (C3) se rotula «p. 170–171»: el final con el mismo rótulo que
+    // el comienzo, sin repetir «p.».
+    if (typeof c.pageEnd !== 'number' || !(c.pageEnd > c.page)) return desde;
+    const etiquetaFinal = pageLabel(c.sourceKey, c.pageEnd, kind);
+    // Si el rango cruza el cambio de numeración («hoja 314» … «p. 40»), dos
+    // unidades en una cita confunden: queda solo el comienzo (revisión de 8b).
+    const prefijo = (s: string) => s.replace(/[\d\s–-]+$/u, '');
+    if (prefijo(etiquetaFinal) !== prefijo(desde)) return desde;
+    const hasta = etiquetaFinal.split(' ').pop() ?? String(c.pageEnd);
+    return `${desde}–${hasta}`;
 }

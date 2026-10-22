@@ -37,7 +37,7 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions, versionUnderReview } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions, versionUnderReview } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -804,6 +804,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
                 ...(previa.citationVerdicts
                     ? { citationVerdicts: previa.citationVerdicts.filter(v => v.origin !== 'prose') }
                     : {}),
+                // Y sus revisiones a mano: van por posición en el texto
+                // (`prosa@N`) y se pegarían a otra cita (revisión de 8b).
+                ...(previa.citationReviews
+                    ? { citationReviews: previa.citationReviews.filter(r => !isProsePath(r.path)) }
+                    : {}),
                 ...(previa.verifications ? { verifications: sinConteosDeProsa(previa.verifications) } : {}),
             };
             const versions = [...step.versions];
@@ -1471,7 +1476,7 @@ export function buildManualEditVersion(
             // Los veredictos de la PROSA eran de otro texto: el que se acaba
             // de editar. Los del análisis siguen valiendo.
             citationVerdicts: (parent?.citationVerdicts ?? []).filter(v => v.origin !== 'prose'),
-            citationReviews: parent?.citationReviews ?? [],
+            citationReviews: (parent?.citationReviews ?? []).filter(r => !isProsePath(r.path)),
             citationCorrections: parent?.citationCorrections ?? [],
         } : {}),
     };
