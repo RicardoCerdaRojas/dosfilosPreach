@@ -51,6 +51,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const pericopeBlock = formatPericopeBlock(input.pericopeContext, lang);
     const planNoteBlock = formatPlanNote(input.planNote, lang);
     const questionsBlock = formatSectionQuestions(input.sectionQuestions, lang);
+    const methodBlock = formatAnswerMethod(input.sectionQuestions, lang);
     // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
     // es parte de lo que el analizador lee, no de lo que tiene que producir.
     // Cuál de los dos bloques lo decide la FORMA del dato, no el libro: el
@@ -102,6 +103,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             // TP #7 (#24): una nota decía «La asignación de Robertson como
             // fuente técnica no autoriza a reconstruir una sección ausente…».
             `- The output is the student's paper. Never write about the corpus, the excerpts, the usage plan, source roles or what the provided material lacks. If the material does not support a point, omit it or mark it tentative in confidenceFlags.`,
+            methodBlock,
             corpusGapsBlock,
             ``,
             `## Style guide constraints`,
@@ -150,6 +152,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `- Para ideas que provengan de tu conocimiento general (no del corpus configurado), pon el confidenceFlag relevante en "tentative" — NO fabriques citas.`,
         `- Una fuente listada en "sources" responde por lo que dice esa oración o esa nota. Lista una obra sólo cuando SU texto provisto lo dice. Cuando la nota o la afirmación es análisis tuyo, deja "sources" vacío: colgar tu análisis de un autor es atribuirle lo que no escribió.`,
         `- Lo que escribes es el trabajo del estudiante. Nunca hables del corpus, de los fragmentos, del plan de uso, de los roles de las fuentes ni de lo que falta en el material provisto. Si el material no sostiene un punto, omítelo o márcalo tentative en confidenceFlags.`,
+        methodBlock,
         corpusGapsBlock,
         ``,
         `## Restricciones de la guía de estilo`,
@@ -324,6 +327,34 @@ export function formatSectionQuestions(
             : 'These brief questions are the analysis TASK. Answer each in "questionAnswers": the answer in one sentence, the possible readings with their defender, the criterion that distinguishes them and the decision. The rest of the analysis serves these answers.',
         ...lineas,
     ].join('\n');
+}
+
+/**
+ * El método, de serie, para todo versículo con pregunta (TP #8, fase 8b, C2).
+ * Es la indicación que en el TP #8 hubo que escribir a mano en «Regenerar»;
+ * con ella el motor encontró 6 de 10 datos esperados, sin ella menos. Son
+ * los patrones que penaliza el profesor (`project_criterios_profesor_tp`).
+ */
+export function formatAnswerMethod(
+    questions: AnalyzeVerseInput['sectionQuestions'],
+    lang: 'es' | 'en',
+): string {
+    if (!questions || questions.length === 0) return '';
+    return (lang === 'en' ? [
+        `- How to answer the questions (the method):`,
+        `  1. Find a criterion that DISTINGUISHES between the readings, preferably from the same letter or the structure of the passage. A criterion that fits both readings decides nothing.`,
+        `  2. Give the reason each author gives AGAINST the rival reading, not only for their own.`,
+        `  3. Present the CONCESSIONS an author makes against their own thesis: they are often the decisive argument.`,
+        `  4. Never use the classification of one element to decide another without showing the relation between them.`,
+        `  5. A grammatical category is not a translation: classify, then translate, and say which of the two each source gives.`,
+    ] : [
+        `- Cómo responder las preguntas (el método):`,
+        `  1. Busca un criterio que DISTINGA entre las lecturas, de preferencia de la misma carta o de la estructura del pasaje. Un criterio que vale para las dos lecturas no decide nada.`,
+        `  2. Da la razón que cada autor da CONTRA la lectura rival, no sólo a favor de la suya.`,
+        `  3. Presenta las CONCESIONES que un autor hace contra su propia tesis: suelen ser el argumento decisivo.`,
+        `  4. Nunca uses la clasificación de un elemento para decidir otro sin mostrar la relación entre los dos.`,
+        `  5. Una categoría gramatical no es una traducción: clasifica, después traduce, y di cuál de las dos cosas da cada fuente.`,
+    ]).join('\n');
 }
 
 function formatAssignmentBrief(brief: string | null, lang: 'es' | 'en'): string {

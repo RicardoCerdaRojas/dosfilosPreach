@@ -84,3 +84,23 @@ describe('mapToCanonicalVerseAnalysis — questionAnswers', () => {
         expect(mapToCanonicalVerseAnalysis(base, entrada())).not.toHaveProperty('questionAnswers');
     });
 });
+
+/** TP #8 (8b, C2): el método que hubo que escribir a mano, de serie. */
+describe('el método para responder, de serie', () => {
+    it('con preguntas, la disciplina de citación trae los cinco puntos del método', () => {
+        const { systemInstruction } = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas }));
+        const disciplina = systemInstruction.slice(systemInstruction.indexOf('## Disciplina de citación'));
+        expect(disciplina).toContain('Busca un criterio que DISTINGA entre las lecturas');
+        expect(disciplina).toContain('las CONCESIONES que un autor hace contra su propia tesis');
+        expect(disciplina).toContain('Nunca uses la clasificación de un elemento para decidir otro');
+    });
+
+    it('sin preguntas, no', () => {
+        expect(buildAnalyzerPrompt(entrada()).systemInstruction).not.toContain('Cómo responder las preguntas');
+    });
+
+    it('también en inglés', () => {
+        expect(buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas, language: 'en' })).systemInstruction)
+            .toContain('Find a criterion that DISTINGUISHES between the readings');
+    });
+});
