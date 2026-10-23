@@ -89,26 +89,11 @@ export function useProjectWorkspace(projectId: string | undefined) {
         },
     });
 
-    /**
-     * Updates the project's attached-sources set. Repository call only updates the
-     * fields provided — passing [] detaches all.
-     */
-    const updateSources = useMutation({
-        mutationFn: async (sourceIds: string[]) => {
-            if (!projectId) throw new Error('No project');
-            return facultyService.updateProject.execute(projectId, { sourceIds });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['faculty', 'projects', user?.uid] });
-        },
-    });
-
     return {
         outputs: outputsQuery.data ?? [],
         isLoadingOutputs: outputsQuery.isLoading,
         createOutput,
         updateOutput,
         deleteOutput,
-        updateSources,
     };
 }

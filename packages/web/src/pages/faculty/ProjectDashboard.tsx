@@ -28,6 +28,7 @@ import { ProjectLinkSessionDialog } from './components/project/ProjectLinkSessio
 import { useProjectAttachedSources } from './hooks/useProjectAttachedSources';
 import { useLinkProjectSession } from './hooks/useLinkProjectSession';
 import { useProjectSlices } from './hooks/useProjectSlices';
+import { useSaveProjectSources } from './hooks/useSaveProjectSources';
 
 /**
  * Project workspace page. Pure composer — orchestrates the project header,
@@ -52,7 +53,7 @@ export function ProjectDashboard() {
     const { sessions: greekSessions } = useGreekSessions();
     const { sessions: hebrewSessions } = useHebrewSessions();
     const { papers } = useExegesisPapers();
-    const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput, updateSources } =
+    const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput } =
         useProjectWorkspace(projectId);
 
     const project = useMemo(
@@ -71,6 +72,7 @@ export function ProjectDashboard() {
         userId: user?.uid,
         sourceIds: project?.sourceIds,
     });
+    const fuentesDelProyecto = useSaveProjectSources(project);
     const greekLinker = useLinkProjectSession({ projectId, domain: 'greek' });
     const hebrewLinker = useLinkProjectSession({ projectId, domain: 'hebrew' });
 
@@ -154,6 +156,7 @@ export function ProjectDashboard() {
             case 'sermon': return navigate(`/dashboard/faculty?projectId=${projectId}`);
             case 'output': return setOutputEditor({ mode: 'create' });
             case 'sources': return setSourcePickerOpen(true);
+            case 'stateOfArt': return navigate(`/dashboard/projects/${projectId}/estado-del-arte`);
         }
     };
 
@@ -192,7 +195,7 @@ export function ProjectDashboard() {
 
     const handleSaveSources = async (ids: string[]) => {
         try {
-            await updateSources.mutateAsync(ids);
+            await fuentesDelProyecto.save(ids);
             toast.success(t('sourcePicker.toastSuccess', { count: ids.length }));
             setSourcePickerOpen(false);
         } catch (err) {
@@ -292,7 +295,7 @@ export function ProjectDashboard() {
                     onOpenChange={setSourcePickerOpen}
                     currentSourceIds={project.sourceIds ?? []}
                     onSave={handleSaveSources}
-                    saving={updateSources.isPending}
+                    saving={fuentesDelProyecto.saving}
                 />
             )}
 

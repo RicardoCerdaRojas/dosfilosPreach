@@ -105,6 +105,7 @@ const FacultyChatPage = lazy(() => import('@/pages/faculty/chat').then(m => ({ d
 const FacultyLibraryPage = lazy(() => import('@/pages/faculty/library').then(m => ({ default: m.FacultyLibraryPage })));
 const ProjectLibraryPage = lazy(() => import('@/pages/faculty/ProjectLibraryPage').then(m => ({ default: m.ProjectLibraryPage })));
 const ProjectDashboard = lazy(() => import('@/pages/faculty/ProjectDashboard').then(m => ({ default: m.ProjectDashboard })));
+const ProjectStateOfArtPage = lazy(() => import('@/pages/projects/ProjectStateOfArtPage').then(m => ({ default: m.ProjectStateOfArtPage })));
 const ExegesisPage = lazy(() => import('@/pages/exegesis/ExegesisPage').then(m => ({ default: m.ExegesisPage })));
 const ExegesisCreatePage = lazy(() => import('@/pages/exegesis/ExegesisCreatePage').then(m => ({ default: m.ExegesisCreatePage })));
 const ExegesisPaperPage = lazy(() => import('@/pages/exegesis/ExegesisPaperPage').then(m => ({ default: m.ExegesisPaperPage })));
@@ -331,6 +332,7 @@ function App() {
             <Route path="projects">
               <Route index element={<ProjectsListPage />} />
               <Route path=":projectId" element={<ProjectDashboard />} />
+              <Route path=":projectId/estado-del-arte" element={<ProjectStateOfArtPage />} />
             </Route>
 
             {/* Legacy redirect: old project URL → new */}

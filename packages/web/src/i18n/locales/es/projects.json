@@ -6,6 +6,136 @@
     "linked": "colabora"
   },
   "unsaved": "Cambios sin guardar.",
+  "stateOfArt": {
+    "title": "Estado del arte",
+    "subtitle": "La bibliografía del proyecto, preparada una vez para todos sus estudios: qué se exige, qué obras hay, cómo se evalúa cada una y con cuáles se trabaja. Sigue el método de Eco, Vyhmeister y Fee.",
+    "step": {
+      "requirements": "Requisitos",
+      "candidates": "Candidatas",
+      "approved": "Aprobada",
+      "toAcquire": "Por conseguir",
+      "discarded": "Descartadas"
+    },
+    "stepHint": {
+      "candidates": "Las obras que podrían servir, de todos los orígenes. La misma obra en varios orígenes es una sola ficha y sube en la lista. Evalúa cada una y apruébala o descártala con su razón.",
+      "approved": "La bibliografía con la que nace cada estudio del proyecto. Se puede ampliar o recortar después.",
+      "toAcquire": "Lo que no está en tu biblioteca. Cuando consigas el libro, súbelo y lígalo con «Ya lo tengo».",
+      "discarded": "Lo descartado, con su razón. Así puedes explicar ante el profesor por qué no se usó."
+    },
+    "empty": {
+      "candidates": "Todavía no hay candidatas. Pulsa «Buscar candidatas» para reunir las del sílabo, el catálogo, tu biblioteca y los estudios del proyecto, o agrega una obra a mano.",
+      "approved": "Todavía no hay obras aprobadas.",
+      "toAcquire": "No falta conseguir ninguna obra.",
+      "discarded": "No hay obras descartadas."
+    },
+    "gather": "Buscar candidatas",
+    "addManual": "Agregar a mano",
+    "save": "Guardar el estado del arte",
+    "saved": "Estado del arte guardado.",
+    "saveFailed": "No se pudo guardar el estado del arte.",
+    "syncHint": "Las obras aprobadas que están en tu biblioteca son también las fuentes del proyecto para las conversaciones.",
+    "untitled": "Sin título",
+    "unclassified": "Sin clasificar",
+    "unknown": "No se sabe",
+    "yes": "Sí",
+    "no": "No",
+    "read": "Leída",
+    "approve": "Aprobar",
+    "discard": "Descartar",
+    "discardReason": "¿Por qué se descarta?",
+    "confirmDiscard": "Descartar",
+    "discardedBecause": "Descartada: {{reason}}",
+    "backToCandidate": "Volver a candidata",
+    "markRead": "Marcar leída",
+    "markUnread": "Marcar no leída",
+    "gotIt": "Ya lo tengo",
+    "linkResource": "El libro en tu biblioteca",
+    "pickResource": "Elegir libro…",
+    "evaluate": "Evaluar",
+    "close": "Cerrar",
+    "remove": "Quitar {{title}}",
+    "weight": {
+      "required": "Obligatoria",
+      "recommended": "Recomendada",
+      "complementary": "Complementaria"
+    },
+    "availability": {
+      "in-library": "En la biblioteca",
+      "to-acquire": "Por conseguir"
+    },
+    "origin": {
+      "syllabus": "Sílabo",
+      "catalog": "Catálogo",
+      "library": "Biblioteca",
+      "studies": "Estudios del proyecto",
+      "manual": "A mano",
+      "legacy": "Fuentes del proyecto"
+    },
+    "field": {
+      "title": "Título",
+      "author": "Autor",
+      "sourceType": "Clasificación",
+      "weight": "Peso",
+      "editionYear": "Año de la edición",
+      "serves": "Para qué sirve (preguntas, tareas, temas)",
+      "pages": "Páginas o capítulos",
+      "position": "Qué posición sostiene",
+      "workTypes": "Tipos de trabajo a los que sirve",
+      "reason": "Razón de la decisión"
+    },
+    "evaluation": "Evaluación",
+    "annotation": "Anotación",
+    "q": {
+      "coversBook": "¿Comenta el libro bíblico del proyecto?",
+      "printedPages": "¿La edición tiene páginas impresas?",
+      "hasNotes": "¿Trae notas y bibliografía?",
+      "primary": "¿Es fuente primaria?",
+      "level": "Nivel",
+      "tradition": "Tradición",
+      "language": "Idioma"
+    },
+    "level": {
+      "technical": "Técnico",
+      "semi-technical": "Semitécnico",
+      "expository": "Expositivo",
+      "popular": "Popular"
+    },
+    "tradition": {
+      "evangelical": "Evangélica",
+      "evangelical-critical": "Evangélica crítica",
+      "conservative-moderate": "Conservadora o moderada",
+      "liberal-critical": "Liberal crítica",
+      "catholic": "Católica",
+      "jewish": "Judía",
+      "other": "Otra"
+    },
+    "criteria": {
+      "requirementsCourse": "Lo que exige el curso",
+      "requirementsCourseHint": "Del sílabo o del profesor: obras obligatorias, tipos y criterios. Si no hay bibliografía, escríbelos tú.",
+      "requirementsResearch": "Pregunta y alcance",
+      "requirementsResearchHint": "Qué quieres responder y hasta dónde llega la investigación.",
+      "prohibitions": "Lo que no se acepta",
+      "prohibitionsHint": "Por ejemplo: obras devocionales, sitios web o ediciones sin páginas.",
+      "inclusion": "Criterios de inclusión",
+      "inclusionHint": "Por qué una obra entra a la bibliografía aprobada.",
+      "exclusion": "Criterios de exclusión",
+      "exclusionHint": "Por qué una obra queda fuera, aunque se haya considerado.",
+      "noRepeat": "No repetir fuentes entre entregas",
+      "noRepeatHint": "Una regla de este curso, no del método: activa el aviso de fuentes ya usadas en otro estudio del proyecto.",
+      "minimums": "Mínimos de las rúbricas",
+      "noMinimums": "Las rúbricas de los tipos de trabajo no piden mínimos.",
+      "minimumsHint": "Vienen de las rúbricas de los tipos de trabajo; se cambian allí.",
+      "books": "Libros bíblicos del proyecto",
+      "noBooks": "Todavía ninguno: salen de los estudios del proyecto.",
+      "booksHint": "Sirven para buscar comentarios y para saber si cada uno cubre el libro."
+    },
+    "warning": {
+      "missingType": "Las rúbricas piden {{minimum}} de «{{type}}» y no hay ninguna aprobada.",
+      "singleTradition": "Toda la bibliografía rotulada es de una sola tradición ({{tradition}}). Conviene oír otras lecturas.",
+      "requiredToAcquire": "«{{title}}» es obligatoria y está por conseguir.",
+      "commentaryOtherBook": "«{{title}}» es un comentario que no comenta los libros del proyecto."
+    }
+  },
   "course": {
     "titleCourse": "Datos del curso",
     "titleProject": "Datos del proyecto",

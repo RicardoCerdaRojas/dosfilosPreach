@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+    applyLibrarySelection,
+    evaluationFromLibrary,
     bibliographyAvailability,
     bibliographyEntryError,
     bibliographyWarnings,
@@ -124,5 +126,29 @@ describe('la bibliografía del proyecto', () => {
             ficha({ id: 'marcado', decision: 'approved', sourceType: 'commentary-critical', resourceId: 'sinFicha', evaluation: { coversBook: false } }),
         ], 'JAS', id => recursos[id] as never);
         expect(heredadas.map(e => e.id)).toEqual(['lex', 'stgo']);
+    });
+});
+
+describe('el selector de fuentes y la evaluación desde la biblioteca', () => {
+    it('marcar aprueba (y crea la ficha si falta); desmarcar vuelve a candidata', () => {
+        const ahora = new Date('2026-10-23T12:00:00Z');
+        const out = applyLibrarySelection([
+            ficha({ id: 'a', resourceId: 'r1', decision: 'approved' }),
+            ficha({ id: 'b', resourceId: 'r2', decision: 'candidate' }),
+            ficha({ id: 'c', resourceId: null, decision: 'approved' }),
+        ], ['r2', 'r3'], id => (id === 'r3' ? { title: 'BDAG', exegeticalType: 'lexicon-technical' } : null), () => 'nueva', ahora);
+        expect(out.map(e => [e.id, e.decision])).toEqual([['a', 'candidate'], ['b', 'approved'], ['c', 'approved'], ['nueva', 'approved']]);
+        expect(out[3]).toMatchObject({ resourceId: 'r3', title: 'BDAG', sourceType: 'lexicon-technical', origins: ['library'] });
+        expect(out[1]!.decidedAt).toBe(ahora.toISOString());
+    });
+
+    it('precompleta cobertura y páginas impresas sin pisar lo respondido', () => {
+        const stgo = { coversBibleBooks: ['JAS'], pageNumbering: { origin: 'detected' } } as never;
+        const rom = { coversBibleBooks: ['ROM'] } as never;
+        expect(evaluationFromLibrary({ sourceType: 'commentary-critical' }, stgo, ['JAS'])).toEqual({ coversBook: true, printedPages: true });
+        expect(evaluationFromLibrary({ sourceType: 'commentary-critical' }, rom, ['JAS'])).toEqual({ coversBook: false });
+        expect(evaluationFromLibrary({ sourceType: 'commentary-critical', evaluation: { coversBook: false, printedPages: false } }, stgo, ['JAS'])).toEqual({ coversBook: false, printedPages: false });
+        // Una gramática no «comenta» un libro: no se pregunta por cobertura.
+        expect(evaluationFromLibrary({ sourceType: 'grammar-syntax' }, { coversBibleBooks: ['ROM'] } as never, ['JAS'])).toEqual({});
     });
 });

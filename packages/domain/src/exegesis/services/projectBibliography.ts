@@ -138,6 +138,11 @@ const MAX_TEXTO = 1000;
 
 const PESO: Record<BibliographyWeight, number> = { required: 3, recommended: 2, complementary: 1 };
 
+/** Un id nuevo para una ficha; único dentro del proyecto basta. */
+export function newBibliographyEntryId(): string {
+    return `bib_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
 /** Si la obra está en la biblioteca o hay que conseguirla. */
 export function bibliographyAvailability(entry: Pick<ProjectBibliographyEntry, 'resourceId'>): 'in-library' | 'to-acquire' {
     return entry.resourceId ? 'in-library' : 'to-acquire';
@@ -366,4 +371,58 @@ export function inheritableBibliography(
         if (e.evaluation?.coversBook === false) return false;
         return commentaryBookCoverage(resourceOf(e.resourceId), bookId) !== 'other-books';
     });
+}
+
+/**
+ * El selector de fuentes del proyecto (marcar libros de la biblioteca),
+ * aplicado a la bibliografía: lo marcado queda aprobado —si no tenía ficha,
+ * nace una—, y lo que se desmarcó vuelve a candidata, con su evaluación.
+ * Así el selector y el estado del arte no se contradicen.
+ */
+export function applyLibrarySelection(
+    entries: ReadonlyArray<ProjectBibliographyEntry>,
+    selectedIds: ReadonlyArray<string>,
+    lookup: (resourceId: string) => { title: string; author?: string | null; exegeticalType?: SourceType | null } | null | undefined,
+    newId: () => string,
+    now: Date,
+): ProjectBibliographyEntry[] {
+    const marcados = new Set(selectedIds);
+    const cuando = now.toISOString();
+    const out = entries.map(e => {
+        if (!e.resourceId) return e;
+        if (marcados.has(e.resourceId) && e.decision !== 'approved') return { ...e, decision: 'approved' as const, decidedAt: cuando };
+        if (!marcados.has(e.resourceId) && e.decision === 'approved') return { ...e, decision: 'candidate' as const, decidedAt: cuando };
+        return e;
+    });
+    for (const id of marcados) {
+        if (out.some(e => e.resourceId === id)) continue;
+        const r = lookup(id);
+        out.push({
+            id: newId(), title: r?.title ?? '', author: r?.author ?? null, resourceId: id,
+            sourceType: r?.exegeticalType ?? null, weight: 'recommended', decision: 'approved',
+            origins: ['library'], decidedAt: cuando,
+        });
+    }
+    return out;
+}
+
+/**
+ * Lo que la biblioteca ya sabe de la obra, para precompletar la evaluación:
+ * si comenta los libros del proyecto y si tiene páginas impresas. Solo lo
+ * que no se respondió: lo que el estudiante contestó no se pisa.
+ */
+export function evaluationFromLibrary(
+    entry: Pick<ProjectBibliographyEntry, 'evaluation' | 'sourceType'>,
+    resource: (Pick<LibraryResource, 'coversBibleBooks' | 'scope'> & { pageNumbering?: unknown }) | null | undefined,
+    bibleBooks: ReadonlyArray<BibleBookId>,
+): BibliographyEvaluation {
+    const ev = { ...(entry.evaluation ?? {}) };
+    if (!resource) return ev;
+    if ((ev.coversBook === undefined || ev.coversBook === null) && entry.sourceType && isCommentaryType(entry.sourceType) && bibleBooks.length > 0) {
+        const cobertura = bibleBooks.map(b => commentaryBookCoverage(resource, b));
+        if (cobertura.includes('covers') && (resource.coversBibleBooks?.length || resource.scope)) ev.coversBook = true;
+        else if (cobertura.every(c => c === 'other-books')) ev.coversBook = false;
+    }
+    if ((ev.printedPages === undefined || ev.printedPages === null) && resource.pageNumbering) ev.printedPages = true;
+    return ev;
 }
