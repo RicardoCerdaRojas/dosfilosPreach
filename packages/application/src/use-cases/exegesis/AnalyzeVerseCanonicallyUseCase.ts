@@ -275,6 +275,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                     tokensUsed: result.tokensUsed,
                     verifications: { ...EMPTY_VERIFICATION_SUMMARY },
                     canonicalAnalysis: verified.analysis,
+                    // El método con que se pidió (etapa 2, capa 3).
+                    ...(analyzerInput.method ? { analysisMethod: analyzerInput.method } : {}),
                 },
             );
         } catch (err) {

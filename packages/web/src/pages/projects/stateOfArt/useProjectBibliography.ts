@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+    bibliographyEntryError,
     bibliographyWarnings,
     catalogCandidates,
     cleanProjectBibliography,
@@ -20,6 +21,7 @@ import {
 import { useLibrary } from '@/hooks/library';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { useTranslation } from '@/i18n';
 
 
 /**
@@ -29,6 +31,9 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
  * proyecto: una ficha a medio evaluar no se escribe sola.
  */
 export function useProjectBibliography(project: AIProject | undefined) {
+    const { t, i18n } = useTranslation('projects');
+    const { t: tx } = useTranslation('exegesis');
+    const lang = i18n.language?.startsWith('en') ? 'en' : 'es';
     const { resources } = useLibrary();
     const { rubrics } = useUserRubrics();
     const { papers } = useExegesisPapers();
@@ -42,7 +47,19 @@ export function useProjectBibliography(project: AIProject | undefined) {
     const guardadas = useMemo(() => projectBibliography(project, lookup), [project, lookup]);
     const clave = JSON.stringify(guardadas);
     const [draft, setDraft] = useState<ProjectBibliographyEntry[]>(guardadas);
-    useEffect(() => setDraft(JSON.parse(clave) as ProjectBibliographyEntry[]), [clave]);
+    // Lo guardado reemplaza al borrador solo si el borrador no tiene cambios
+    // propios: un refetch (o la biblioteca que llega y pone títulos) en medio
+    // de una edición no puede pisarla.
+    const claveAnterior = useRef(clave);
+    const draftRef = useRef(draft);
+    draftRef.current = draft;
+    useEffect(() => {
+        const limpia = (x: ProjectBibliographyEntry[]) => JSON.stringify(cleanProjectBibliography(x));
+        const sinCambios = limpia(draftRef.current) === limpia(JSON.parse(claveAnterior.current) as ProjectBibliographyEntry[]);
+        const yaIgual = limpia(draftRef.current) === limpia(JSON.parse(clave) as ProjectBibliographyEntry[]);
+        if (sinCambios || yaIgual) setDraft(JSON.parse(clave) as ProjectBibliographyEntry[]);
+        claveAnterior.current = clave;
+    }, [clave]);
 
     const criteriosGuardados = project?.bibliographyCriteria ?? {};
     const claveCriterios = JSON.stringify(criteriosGuardados);
@@ -61,12 +78,12 @@ export function useProjectBibliography(project: AIProject | undefined) {
         const biblioteca = resources.map(r => ({ id: r.id, title: r.title, author: r.author ?? null, coversBibleBooks: r.coversBibleBooks, scope: r.scope, exegeticalType: r.exegeticalType }));
         const candidatas = [
             ...syllabusCandidates(syllabusOfProject(workTypes, rubrics), biblioteca),
-            ...studiesCandidates(studies),
+            ...studiesCandidates(studies, tipos => t('stateOfArt.conflictNote', { types: tipos.map(([x, n]) => `${tx(`sourceTypes.${x}.label`)} (${n})`).join(', ') })),
             ...libraryCandidates(bibleBooks, biblioteca),
-            ...catalogCandidates(bibleBooks, biblioteca, 'es'),
+            ...catalogCandidates(bibleBooks, biblioteca, lang),
         ];
         setDraft(d => mergeBibliographyCandidates(d, candidatas, newBibliographyEntryId));
-    }, [resources, workTypes, rubrics, studies, bibleBooks]);
+    }, [resources, workTypes, rubrics, studies, bibleBooks, t, tx, lang]);
 
     /** Los mínimos por tipo que piden las rúbricas de los tipos de trabajo. */
     const requirements = useMemo(() => {
@@ -85,11 +102,16 @@ export function useProjectBibliography(project: AIProject | undefined) {
     const add = useCallback((entry: ProjectBibliographyEntry) => setDraft(d => [...d, entry]), []);
     const remove = useCallback((id: string) => setDraft(d => d.filter(e => e.id !== id)), []);
 
-    const dirty = JSON.stringify(cleanProjectBibliography(draft)) !== JSON.stringify(cleanProjectBibliography(guardadas))
-        || JSON.stringify(criteria) !== claveCriterios;
+    /** Lo que impide guardar: una ficha sin título ni libro, o descartada sin razón. */
+    const errors = useMemo(() => new Map(draft.map(e => [e.id, bibliographyEntryError(e)] as const).filter(([, err]) => err)), [draft]);
+
+    // Sobre el borrador tal cual, no sobre su versión limpia: una ficha que
+    // la limpieza descartaría (sin título) también es un cambio, y tiene que
+    // verse para que no se pierda al guardar (revisión de la etapa 2).
+    const dirty = JSON.stringify(draft) !== clave || JSON.stringify(criteria) !== claveCriterios;
 
     return {
-        entries: draft, criteria, setCriteria, update, add, remove, gatherCandidates,
+        entries: draft, errors, criteria, setCriteria, update, add, remove, gatherCandidates,
         warnings, requirements, bibleBooks, workTypes, resourceOf: (id: string) => porId.get(id) ?? null, dirty,
         /**
          * Los libros de la biblioteca para ligar una obra por conseguir: solo

@@ -58,4 +58,33 @@ describe('el método del trabajo en el prompt del análisis', () => {
         expect(prompt({ studentReading: '   ' })).toBe(prompt());
         expect(prompt({ studentReading: 'My reading', language: 'en' })).toContain('"My reading"');
     });
+
+    describe('revisión adversarial de la etapa 2', () => {
+        it('la traducción final y la tesis no llevan citas; los vínculos con el AT pueden citar literatura', () => {
+            const p = prompt({ method: 'exegetical' });
+            expect(p).toContain('`finalTranslation` y `verseThesis` no llevan citas');
+            expect(p).toContain('`oldTestamentLinks` puede citar literatura');
+            expect(p).not.toMatch(/OBSERVACIÓN \([^)]*oldTestamentLinks/);
+        });
+
+        it('sin herramientas con material, la observación sale del texto base, sin citas', () => {
+            const soloComentario = fuentes.filter(f => f.sourceType === 'commentary-critical');
+            expect(prompt({ method: 'exegetical', sources: soloComentario as never })).toContain('ninguna herramienta trae material para este versículo');
+        });
+
+        it('la plantilla de estilo no se ofrece como literatura', () => {
+            const conPlantilla = [...fuentes, { corpusId: 'x', sourceType: 'style-template-paper', displayLabel: 'Ejemplo', citationKey: 'Ejemplo', textContent: 'x', priority: 'secondary' }];
+            expect(prompt({ method: 'exegetical', sources: conPlantilla as never })).toMatch(/Literatura: `Mayor`\./);
+        });
+
+        it('una asignada de literatura se cumple en el diálogo', () => {
+            expect(prompt({ method: 'exegetical' })).toContain('Una fuente ASIGNADA de literatura se cumple en el diálogo');
+        });
+
+        it('«Mi lectura» se presenta como la del trabajo, nunca como «el estudiante»', () => {
+            const p = prompt({ studentReading: 'Mi lectura' });
+            expect(p).toContain('La lectura propia de este trabajo');
+            expect(p).toContain('nunca escribas «el estudiante»');
+        });
+    });
 });

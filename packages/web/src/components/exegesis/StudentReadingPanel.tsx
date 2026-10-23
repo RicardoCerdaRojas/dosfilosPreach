@@ -42,11 +42,13 @@ export function StudentReadingPanel({ paperId, stepId, initial, method }: Studen
     });
     const sinCambios = texto.trim() === guardada;
     const id = `student-reading-${stepId}`;
+    // Abierta al entrar si ya hay una lectura; después la abre y cierra quien estudia.
+    const [abierta] = useState(!!guardada);
 
     return (
-        <details className="mb-3 rounded-lg border border-border bg-muted/30 px-3 py-2" open={!!guardada || undefined}>
-            <summary className="cursor-pointer text-sm font-medium text-foreground inline-flex items-center gap-1.5">
-                <PenLine className="h-3.5 w-3.5 text-muted-foreground" />{t('studentReading.title')}
+        <details className="mb-3 rounded-lg border border-border bg-card px-3 py-2" open={abierta || undefined}>
+            <summary className="cursor-pointer text-sm font-medium text-foreground">
+                <span className="inline-flex items-center gap-1.5 align-middle"><PenLine className="h-3.5 w-3.5 text-muted-foreground" />{t('studentReading.title')}</span>
             </summary>
             <div className="mt-2 space-y-2">
                 <label htmlFor={id} className="block text-xs text-muted-foreground">
@@ -58,6 +60,9 @@ export function StudentReadingPanel({ paperId, stepId, initial, method }: Studen
                     value={texto}
                     maxLength={2000}
                     onChange={e => setTexto(e.target.value)}
+                    // Se guarda también al salir del campo: si no, quien escribe y
+                    // pulsa «Analizar» genera sin su lectura.
+                    onBlur={() => { if (!sinCambios && !guardar.isPending) guardar.mutate(); }}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
                 <div className="flex items-center gap-2">

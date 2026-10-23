@@ -132,10 +132,12 @@ function buildUseCase(opts: {
     fullText?: string;
 }) {
     const appended: CanonicalVerseAnalysis[] = [];
+    const versiones: Array<Record<string, unknown>> = [];
     const paperRepository = {
         getPaper: vi.fn().mockResolvedValue(opts.paper),
         setStepState: vi.fn().mockResolvedValue(undefined),
         appendStepVersion: vi.fn(async (_o, _p, _s, version) => {
+            versiones.push(version);
             appended.push(version.canonicalAnalysis);
             return opts.paper;
         }),
@@ -175,7 +177,7 @@ function buildUseCase(opts: {
         originalLanguageProvider as never,
         corpusRetriever as never,
     );
-    return { useCase, analyzer, appended, retriever: corpusRetriever };
+    return { useCase, analyzer, appended, versiones, retriever: corpusRetriever };
 }
 
 describe('AnalyzeVerseCanonicallyUseCase — sources that contributed no text', () => {
@@ -691,8 +693,11 @@ describe('AnalyzeVerseCanonicallyUseCase — reglas del curso', () => {
         const a = buildUseCase({ paper, analysis: analysisCiting(['Kittel']), retrievedFor: ['res-b'] });
         await a.useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
         expect(a.analyzer.analyzeVerse.mock.calls[0][0]).toMatchObject({ method: 'mixed', studentReading: 'Mi lectura' });
+        // La versión queda con el método con que se generó.
+        expect(a.versiones[0]).toMatchObject({ analysisMethod: 'mixed' });
         const b = buildUseCase({ paper: base, analysis: analysisCiting(['Kittel']), retrievedFor: ['res-b'] });
         await b.useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
         expect(b.analyzer.analyzeVerse.mock.calls[0][0]).toMatchObject({ method: null, studentReading: null });
+        expect(b.versiones[0]).not.toHaveProperty('analysisMethod');
     });
 });

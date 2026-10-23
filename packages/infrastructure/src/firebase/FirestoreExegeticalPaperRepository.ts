@@ -676,6 +676,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         if (version.canonicalAnalysis) {
             fullVersion.canonicalAnalysis = version.canonicalAnalysis;
         }
+        if (version.analysisMethod) fullVersion.analysisMethod = version.analysisMethod;
 
         await this.mutateStep(ownerId, paperId, stepId, (step) => {
             // El historial se acota acá o el documento crece sin techo: el

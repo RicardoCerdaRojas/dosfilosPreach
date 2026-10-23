@@ -58,6 +58,9 @@ describe('candidatas del estado del arte', () => {
         const nicnt = c.find(x => x.resourceId === 'nicnt')!;
         expect(nicnt).toMatchObject({ weight: 'recommended', sourceType: 'commentary-critical', title: 'NICNT James' });
         expect(nicnt.note).toContain('commentary-expository (1)');
+        // La pantalla escribe la nota en su idioma.
+        const enIngles = studiesCandidates([{ sources: [fuente('nicnt', 'commentary-critical')] }, { sources: [fuente('nicnt', 'commentary-expository')] }], ts => `classified as ${ts.length} types`);
+        expect(enIngles[0]!.note).toBe('classified as 2 types');
         expect(c.find(x => x.resourceId === 'na28')).toMatchObject({ weight: 'complementary', note: null });
     });
 

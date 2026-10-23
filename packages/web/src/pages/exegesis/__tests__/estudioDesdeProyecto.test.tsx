@@ -222,6 +222,15 @@ describe('crear un estudio desde un proyecto', () => {
             ]);
         });
 
+        it('un proyecto de antes (solo sourceIds) hereda con el nombre y el tipo del libro, sin comentarios de otro libro (revisión)', async () => {
+            proyectos = [{ ...curso, sourceIds: ['ropes', 'romanos', 'bdag'] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0].initialSources.map((x: { displayLabel: string; sourceType: string }) => [x.displayLabel, x.sourceType]))
+                .toEqual([['ICC James', 'commentary-critical'], ['BDAG', 'lexicon-technical']]);
+        });
+
         it('una desmarcada no se hereda, y sin proyecto no se hereda nada', async () => {
             proyectos = [{ ...curso, bibliography: bibliografia }];
             render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);

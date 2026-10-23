@@ -90,15 +90,29 @@ describe('ProjectStateOfArtPage', () => {
         expect(screen.queryByText(/James \(Pillar\)/)).toBeNull();
     });
 
+    it('una ficha a mano sin título no deja guardar y dice por qué (revisión)', () => {
+        montar();
+        fireEvent.change(screen.getAllByLabelText('stateOfArt.field.title')[0]!, { target: { value: 'Obra' } });
+        fireEvent.click(screen.getByText('stateOfArt.addManual'));
+        const obra = ficha(/^Obra$/);
+        fireEvent.click(within(obra).getByText('stateOfArt.evaluate'));
+        fireEvent.change(within(obra).getByLabelText('stateOfArt.field.title'), { target: { value: '  ' } });
+        expect(screen.getByText('stateOfArt.save').closest('button')).toBeDisabled();
+        expect(screen.getByText('stateOfArt.error.title')).toBeInTheDocument();
+    });
+
     it('los criterios se guardan, y avisa lo que piden las rúbricas sin obra aprobada', async () => {
         montar();
         expect(screen.getByText(/stateOfArt.warning.missingType/)).toBeInTheDocument();
         fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
         fireEvent.change(screen.getByLabelText(/stateOfArt.criteria.inclusion/), { target: { value: 'Comentarios críticos posteriores a 1980' } });
-        fireEvent.click(screen.getByLabelText(/stateOfArt.criteria.noRepeat/));
+        // En un curso, «no repetir» rige sin decidir: la casilla lo muestra (revisión de la etapa 2).
+        const noRepetir = screen.getByLabelText(/stateOfArt.criteria.noRepeat/) as HTMLInputElement;
+        expect(noRepetir.checked).toBe(true);
+        fireEvent.click(noRepetir);
         expect(screen.getByText('unsaved')).toBeInTheDocument();
         fireEvent.click(screen.getByText('stateOfArt.save'));
         await waitFor(() => expect(updateProject).toHaveBeenCalled());
-        expect(guardado().bibliographyCriteria).toMatchObject({ inclusion: 'Comentarios críticos posteriores a 1980', noRepeatSources: true });
+        expect(guardado().bibliographyCriteria).toMatchObject({ inclusion: 'Comentarios críticos posteriores a 1980', noRepeatSources: false });
     });
 });

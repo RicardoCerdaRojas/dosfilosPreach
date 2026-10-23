@@ -134,7 +134,9 @@ export function libraryCandidates(
  */
 export function studiesCandidates(
     studies: ReadonlyArray<{ sources: ReadonlyArray<ResumenDeFuente> }>,
-    sourceTypeLabel: (t: SourceType) => string = t => t,
+    /** La nota cuando los estudios no coincidieron; la pantalla la escribe en su idioma. */
+    conflictNote: (types: ReadonlyArray<readonly [SourceType, number]>) => string =
+        tipos => `Clasificado distinto en los estudios: ${tipos.map(([t, n]) => `${t} (${n})`).join(', ')}.`,
 ): BibliographyCandidate[] {
     const porLibro = new Map<string, { title: string; estudios: number; tipos: Map<SourceType, number> }>();
     for (const s of studies) {
@@ -151,9 +153,7 @@ export function studiesCandidates(
     }
     return [...porLibro].map(([resourceId, x]) => {
         const tipos = [...x.tipos].sort((a, b) => b[1] - a[1]);
-        const note = tipos.length > 1
-            ? `Clasificado distinto en los estudios: ${tipos.map(([t, n]) => `${sourceTypeLabel(t)} (${n})`).join(', ')}.`
-            : null;
+        const note = tipos.length > 1 ? conflictNote(tipos) : null;
         return {
             title: x.title,
             resourceId,

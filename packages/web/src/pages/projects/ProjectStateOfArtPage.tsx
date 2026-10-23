@@ -23,7 +23,7 @@ const PASOS: Paso[] = ['requirements', 'candidates', 'approved', 'toAcquire', 'd
 export function ProjectStateOfArtPage() {
     const { t, i18n } = useTranslation('projects');
     const { projectId } = useParams<{ projectId: string }>();
-    const { projects, updateProject } = useFacultyProjects();
+    const { projects, isLoadingProjects: isLoading, updateProject } = useFacultyProjects();
     const project = projects?.find(p => p.id === projectId);
     const bib = useProjectBibliography(project);
     const [paso, setPaso] = useState<Paso>('candidates');
@@ -42,7 +42,9 @@ export function ProjectStateOfArtPage() {
     }, [bib.entries]);
 
     if (!project) {
-        return <div className="flex-1 p-8 text-center text-muted-foreground">{t('notFound.title')}</div>;
+        return isLoading
+            ? <div className="flex-1 p-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            : <div className="flex-1 p-8 text-center text-muted-foreground">{t('notFound.title')}</div>;
     }
 
     const guardar = async () => {
@@ -85,7 +87,9 @@ export function ProjectStateOfArtPage() {
                     {PASOS.map((p, i) => (
                         <button
                             key={p}
+                            id={`state-of-art-tab-${p}`}
                             role="tab"
+                            aria-controls="state-of-art-panel"
                             aria-selected={paso === p}
                             onClick={() => setPaso(p)}
                             className={`-mb-px border-b-2 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${paso === p ? 'border-primary text-foreground font-medium' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
@@ -97,6 +101,8 @@ export function ProjectStateOfArtPage() {
                 </nav>
 
                 <BibliographyWarningsList warnings={bib.warnings} entries={bib.entries} />
+
+                <div id="state-of-art-panel" role="tabpanel" aria-labelledby={`state-of-art-tab-${paso}`}>
 
                 {paso === 'requirements' ? (
                     <BibliographyCriteriaPanel
@@ -140,18 +146,22 @@ export function ProjectStateOfArtPage() {
                                         library={bib.library}
                                         onChange={patch => bib.update(e.id, patch)}
                                         onRemove={() => bib.remove(e.id)}
+                                        error={bib.errors.get(e.id) ?? null}
                                     />
                                 ))}
                             </ul>
                         )}
                     </section>
                 )}
+                </div>
 
                 <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-border bg-background py-3">
-                    <Button onClick={guardar} disabled={guardando || !bib.dirty}>
+                    <Button onClick={guardar} disabled={guardando || !bib.dirty || bib.errors.size > 0}>
                         {guardando && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}{t('stateOfArt.save')}
                     </Button>
-                    {bib.dirty && !guardando && <p className="text-xs text-warning-subtle-foreground">{t('unsaved')}</p>}
+                    {bib.errors.size > 0
+                        ? <p className="text-xs text-warning-subtle-foreground">{t('stateOfArt.fixErrors', { count: bib.errors.size })}</p>
+                        : bib.dirty && !guardando && <p className="text-xs text-warning-subtle-foreground">{t('unsaved')}</p>}
                     <p className="text-xs text-muted-foreground">{t('stateOfArt.syncHint')}</p>
                 </div>
             </div>

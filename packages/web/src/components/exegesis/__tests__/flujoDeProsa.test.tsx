@@ -15,7 +15,7 @@ vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => new Proxy({}, { get: (_t, k: string) => mutacion(k) }),
 }));
 vi.mock('@/hooks/exegesis/useReopenStep', () => ({ useReopenStep: () => mutacion('reopen') }));
-vi.mock('../StudentReadingPanel', () => ({ StudentReadingPanel: () => null, ObservationCitationNotice: () => null }));
+vi.mock('../StudentReadingPanel', () => ({ StudentReadingPanel: () => null, ObservationCitationNotice: ({ method }: { method?: string | null }) => <span>{`aviso:${String(method)}`}</span> }));
 let papelDelPaso: Record<string, unknown> = { sources: [] };
 vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({ useExegesisPaper: () => ({ paper: papelDelPaso }) }));
 vi.mock('@/hooks/exegesis/useReviewVerseProse', () => ({ useReviewVerseProse: () => ({ mutateAsync: vi.fn(), isPending: false, data: undefined }) }));
@@ -97,5 +97,19 @@ describe('etapa 2, capa 3: el camino viejo no conoce el método', () => {
         render(<StepCard step={pendiente} paperId="p" language="es" />);
         expect(screen.queryByText('detail.steps.action.generateLegacyVerse')).toBeNull();
         expect(screen.getByText('canonical.actions.analyze')).toBeInTheDocument();
+    });
+
+    it('el aviso de la observación mira el método con que se generó la versión, no el actual', () => {
+        papelDelPaso = { sources: [], exegeticalMethod: 'mixed' };
+        const viejo = paso('');
+        const { unmount } = render(<StepCard step={viejo} paperId="p" language="es" />);
+        fireEvent.click(screen.getByRole('button', { name: /detail\.steps\.action\.expand/ }));
+        expect(screen.queryByText('aviso:mixed')).toBeNull();
+        unmount();
+        const nuevo = paso('');
+        (nuevo.accepted as unknown as Record<string, unknown>).analysisMethod = 'mixed';
+        render(<StepCard step={nuevo} paperId="p" language="es" />);
+        fireEvent.click(screen.getByRole('button', { name: /detail\.steps\.action\.expand/ }));
+        expect(screen.getByText('aviso:mixed')).toBeInTheDocument();
     });
 });

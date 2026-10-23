@@ -109,3 +109,10 @@ describe('la memoria de entregas por proyecto (etapa 2)', () => {
         expect(summariesForDeliveryMemory(todos, { projectId: null })).toHaveLength(4);
     });
 });
+
+describe('la memoria cuenta también los trabajos que colaboran con el proyecto', () => {
+    it('uno de otro proyecto vinculado a éste entra', () => {
+        const r = (id: string, projectId: string | null, linkedProjectIds: string[] = []) => ({ id, projectId, linkedProjectIds } as unknown as ExegesisPaperSummary);
+        expect(summariesForDeliveryMemory([r('a', 'otro', ['nt785']), r('b', 'otro')], { projectId: 'nt785' }).map(s => s.id)).toEqual(['a']);
+    });
+});

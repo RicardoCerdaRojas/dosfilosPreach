@@ -146,6 +146,14 @@ export interface ExegeticalStepVersion {
      */
     regenerationHint: string | null;
 
+    /**
+     * Con qué método del trabajo se generó este análisis (etapa 2, capa 3).
+     * Ausente en lo generado antes del método o sin él. El aviso de la
+     * observación mira esto y no el método actual: cambiar el método no
+     * reprocha a los análisis ya hechos.
+     */
+    analysisMethod?: import('./ExegeticalPaper').ExegeticalMethod | null;
+
     /** When this version was produced (or saved, for edits). */
     createdAt: Date;
 

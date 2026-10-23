@@ -156,7 +156,7 @@ export function bibliographyAvailability(entry: Pick<ProjectBibliographyEntry, '
  */
 export function projectBibliography(
     project: { bibliography?: ProjectBibliographyEntry[] | null; sourceIds?: string[] | null } | null | undefined,
-    lookup?: (resourceId: string) => { title: string; author?: string | null } | null | undefined,
+    lookup?: (resourceId: string) => { title: string; author?: string | null; exegeticalType?: SourceType | null } | null | undefined,
 ): ProjectBibliographyEntry[] {
     if (!project) return [];
     if (Array.isArray(project.bibliography)) return project.bibliography.filter(e => !!e?.id);
@@ -167,6 +167,9 @@ export function projectBibliography(
             title: r?.title ?? '',
             author: r?.author ?? null,
             resourceId: id,
+            // La clasificación del libro: sin ella, la herencia no sabía que
+            // un comentario de Romanos no sirve a un estudio de Santiago.
+            sourceType: r?.exegeticalType ?? null,
             weight: 'recommended',
             decision: 'approved',
             origins: ['legacy'],
@@ -225,8 +228,12 @@ export function sameWork(
     if (ta.length === 0 || tb.length === 0) return false;
     const comunes = ta.filter(t => tb.includes(t)).length;
     if (comunes / Math.min(ta.length, tb.length) < 0.7) return false;
-    // Con un solo título corto («James») el autor es lo único que distingue.
-    if (!a.author?.trim() || !b.author?.trim()) return Math.min(ta.length, tb.length) >= 2;
+    // Sin autor en alguno de los dos, el título tiene que ser el mismo: una
+    // serie con nombre largo («Comentario Bíblico Mundo Hispano: Santiago» y
+    // «…: Romanos») comparte casi todas sus palabras y son obras distintas.
+    if (!a.author?.trim() || !b.author?.trim()) {
+        return Math.min(ta.length, tb.length) >= 2 && ta.length === tb.length && ta.every(t => tb.includes(t));
+    }
     const aa = palabras(a.author, 3);
     return palabras(b.author, 3).some(t => aa.includes(t));
 }
@@ -251,11 +258,13 @@ export function mergeBibliographyCandidates(
     const out = existing.map(e => ({ ...e, origins: [...e.origins] }));
     for (const c of candidates) {
         if (!c.title.trim() && !c.resourceId) continue;
-        const igual = out.find(e => sameWork(e, c));
+        // Primero el mismo libro de la biblioteca; si no, la misma obra.
+        const igual = (c.resourceId ? out.find(e => e.resourceId === c.resourceId) : undefined) ?? out.find(e => sameWork(e, c));
         if (igual) {
             if (!igual.origins.includes(c.origin)) igual.origins.push(c.origin);
             if (PESO[c.weight] > PESO[igual.weight]) igual.weight = c.weight;
-            if (!igual.resourceId && c.resourceId) igual.resourceId = c.resourceId;
+            // Nunca un libro que ya tiene otra ficha: serían dos fichas del mismo libro.
+            if (!igual.resourceId && c.resourceId && !out.some(e => e.resourceId === c.resourceId)) igual.resourceId = c.resourceId;
             if (!igual.sourceType && c.sourceType) igual.sourceType = c.sourceType;
             if (!igual.author && c.author) igual.author = c.author;
             if (!igual.title.trim() && c.title.trim()) igual.title = c.title.trim();
@@ -314,6 +323,14 @@ export function cleanBibliographyCriteria(criteria: ProjectBibliographyCriteria)
     return limpio(criteria);
 }
 
+/** La clasificación de la ficha, o la del libro en la biblioteca si no la tiene. */
+function tipoDe(
+    e: ProjectBibliographyEntry,
+    resourceOf: (id: string) => { exegeticalType?: SourceType | null } | null | undefined,
+): SourceType | null {
+    return e.sourceType ?? (e.resourceId ? resourceOf(e.resourceId)?.exegeticalType ?? null : null);
+}
+
 /** Un aviso sobre la bibliografía. Informan; no bloquean. */
 export type BibliographyWarning =
     | { kind: 'missing-type'; sourceType: SourceType; minimum: number }
@@ -331,7 +348,7 @@ export type BibliographyWarning =
 export function bibliographyWarnings(
     entries: ReadonlyArray<ProjectBibliographyEntry>,
     requirements: ReadonlyArray<{ sourceType: SourceType; minimum: number }>,
-    resourceOf: (id: string) => Pick<LibraryResource, 'coversBibleBooks' | 'scope'> | null | undefined,
+    resourceOf: (id: string) => (Pick<LibraryResource, 'coversBibleBooks' | 'scope'> & { exegeticalType?: SourceType | null }) | null | undefined,
     bibleBooks: ReadonlyArray<BibleBookId>,
 ): BibliographyWarning[] {
     const aprobadas = entries.filter(e => e.decision === 'approved');
@@ -339,14 +356,15 @@ export function bibliographyWarnings(
     const minimos = new Map<SourceType, number>();
     for (const r of requirements) if (r.minimum > 0) minimos.set(r.sourceType, Math.max(minimos.get(r.sourceType) ?? 0, r.minimum));
     for (const [sourceType, minimum] of minimos) {
-        if (!aprobadas.some(e => e.sourceType === sourceType)) out.push({ kind: 'missing-type', sourceType, minimum });
+        if (!aprobadas.some(e => tipoDe(e, resourceOf) === sourceType)) out.push({ kind: 'missing-type', sourceType, minimum });
     }
     const tradiciones = new Set(aprobadas.map(e => e.evaluation?.tradition).filter((t): t is BibliographyTradition => !!t));
     const rotuladas = aprobadas.filter(e => e.evaluation?.tradition).length;
     if (tradiciones.size === 1 && rotuladas >= 3) out.push({ kind: 'single-tradition', tradition: [...tradiciones][0]! });
     for (const e of aprobadas) {
         if (e.weight === 'required' && !e.resourceId) out.push({ kind: 'required-to-acquire', entryId: e.id });
-        if (e.sourceType && isCommentaryType(e.sourceType) && bibleBooks.length > 0) {
+        const tipo = tipoDe(e, resourceOf);
+        if (tipo && isCommentaryType(tipo) && bibleBooks.length > 0) {
             const otro = e.evaluation?.coversBook === false
                 || (e.resourceId && bibleBooks.every(b => commentaryBookCoverage(resourceOf(e.resourceId!), b) === 'other-books'));
             if (otro) out.push({ kind: 'commentary-other-book', entryId: e.id });
@@ -363,11 +381,12 @@ export function bibliographyWarnings(
 export function inheritableBibliography(
     entries: ReadonlyArray<ProjectBibliographyEntry>,
     bookId: BibleBookId,
-    resourceOf: (id: string) => Pick<LibraryResource, 'coversBibleBooks' | 'scope'> | null | undefined,
+    resourceOf: (id: string) => (Pick<LibraryResource, 'coversBibleBooks' | 'scope'> & { exegeticalType?: SourceType | null }) | null | undefined,
 ): ProjectBibliographyEntry[] {
     return entries.filter(e => {
         if (e.decision !== 'approved' || !e.resourceId) return false;
-        if (!e.sourceType || !isCommentaryType(e.sourceType)) return true;
+        const tipo = tipoDe(e, resourceOf);
+        if (!tipo || !isCommentaryType(tipo)) return true;
         if (e.evaluation?.coversBook === false) return false;
         return commentaryBookCoverage(resourceOf(e.resourceId), bookId) !== 'other-books';
     });
@@ -397,6 +416,12 @@ export function applyLibrarySelection(
     for (const id of marcados) {
         if (out.some(e => e.resourceId === id)) continue;
         const r = lookup(id);
+        // Una obra por conseguir que es este libro se liga, en vez de duplicarse.
+        const porConseguir = r ? out.findIndex(e => !e.resourceId && e.decision !== 'discarded' && sameWork(e, { title: r.title, author: r.author ?? null, resourceId: null })) : -1;
+        if (porConseguir >= 0) {
+            out[porConseguir] = { ...out[porConseguir]!, resourceId: id, decision: 'approved', decidedAt: cuando };
+            continue;
+        }
         out.push({
             id: newId(), title: r?.title ?? '', author: r?.author ?? null, resourceId: id,
             sourceType: r?.exegeticalType ?? null, weight: 'recommended', decision: 'approved',
@@ -450,12 +475,14 @@ export function noRepeatApplies(
 export function initialSourcesFromBibliography(
     entries: ReadonlyArray<ProjectBibliographyEntry>,
     typeOf: (resourceId: string) => SourceType | null | undefined,
+    titleOf: (resourceId: string) => string | null | undefined = () => null,
 ): import('../use-cases/dtos').AddProjectSourceInput[] {
     return entries.filter(e => e.resourceId).map(e => ({
         corpusId: e.resourceId!,
         sourceLibraryResourceId: e.resourceId!,
         sourceType: e.sourceType ?? typeOf(e.resourceId!) ?? 'other',
-        displayLabel: e.title,
+        // Una ficha de las fuentes de antes no trae título: el del libro.
+        displayLabel: e.title.trim() || titleOf(e.resourceId!)?.trim() || e.resourceId!,
         mode: 'full-document' as const,
     }));
 }

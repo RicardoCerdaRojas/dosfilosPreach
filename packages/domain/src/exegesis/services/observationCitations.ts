@@ -7,10 +7,11 @@ import { isObservationTool, separatesObservation } from './exegeticalStrategy';
  * Las piezas del análisis que son OBSERVACIÓN (etapa 2, capa 3): lo que en
  * los métodos exegético y mixto se arma solo con las herramientas, antes del
  * diálogo con los comentarios (Fee 13.1). La traducción inicial también es
- * observación, pero es texto sin citas.
+ * observación, pero es texto sin citas. Los vínculos con el AT no: la
+ * intertextualidad se apoya en literatura (Beale y Carson, Hays).
  */
 export const OBSERVATION_FIELDS = [
-    'textualCriticism', 'syntacticAnalysis', 'lexicalAnalyses', 'historicalContext', 'oldTestamentLinks',
+    'textualCriticism', 'syntacticAnalysis', 'lexicalAnalyses', 'historicalContext',
 ] as const satisfies ReadonlyArray<keyof CanonicalVerseAnalysis>;
 
 export type ObservationField = typeof OBSERVATION_FIELDS[number];

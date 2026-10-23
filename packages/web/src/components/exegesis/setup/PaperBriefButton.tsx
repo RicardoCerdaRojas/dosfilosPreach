@@ -167,7 +167,7 @@ export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
                                     <span className="inline-flex items-center gap-1">
                                         <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]"
                                             onClick={() => setBorrador(buildPreachingBrief(
-                                                buildSourcesAndFormatBlock(paper, previousDelivery(memoria.summaries, paper.id)),
+                                                buildSourcesAndFormatBlock(paper, memoria.noRepeat ? previousDelivery(memoria.summaries, paper.id) : null),
                                                 genero,
                                             ))}>
                                             {t('paperSetup.brief.gaps.usePreachingTemplate')}

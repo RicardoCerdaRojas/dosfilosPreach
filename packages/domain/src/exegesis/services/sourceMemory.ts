@@ -130,5 +130,6 @@ export function summariesForDeliveryMemory(
     paper: { projectId?: string | null },
 ): ExegesisPaperSummary[] {
     if (!paper.projectId) return [...summaries];
-    return summaries.filter(s => !s.projectId || s.projectId === paper.projectId);
+    // Un trabajo de otro proyecto que colabora con éste también cuenta.
+    return summaries.filter(s => !s.projectId || s.projectId === paper.projectId || (s.linkedProjectIds ?? []).includes(paper.projectId!));
 }

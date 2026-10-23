@@ -213,6 +213,40 @@ Antes del PR: pruebas, una mutación por cada prueba nueva y la revisión advers
 - Cada una queda con **una sola** clasificación.
 - El TP #10 nace con ellas ofrecidas.
 
+## Revisión adversarial (2026-10-23, dos revisores)
+
+**Verificado sin cambios:**
+- **Sin método, el prompt del análisis es idéntico** byte por byte.
+- **Ningún camino que reconstruye el plan del paso pierde «Mi lectura».**
+- **No quedan `undefined` hacia Firestore.**
+
+**Corregido:**
+- **Grave.** Un proyecto de antes, que solo tiene `sourceIds`, heredaba sus fuentes sin nombre y con comentarios de otros libros. Ahora las fichas de antes toman el título y la clasificación del libro, y la cobertura se mira con la clasificación del libro cuando la ficha no la tiene.
+- **La casilla «No repetir»** mostraba apagada una regla que en un curso rige por defecto. Destildarla la apagaba sin querer.
+- **Un libro podía quedar en dos fichas:**
+  - al marcarlo en el selector, cuando ya era una obra por conseguir;
+  - al buscar candidatas.
+  Ahora se liga a la ficha que había, y un libro con ficha no se asigna a otra.
+- **Dos obras de una misma serie sin autor** («Comentario Bíblico Mundo Hispano: Santiago» y «…: Romanos») se fundían en una. Sin autor, ahora se exige el mismo título.
+- **«Hay cambios» se calculaba sobre la versión limpia del borrador.** Una ficha sin título no contaba como cambio y se perdía al guardar. Ahora se valida antes de guardar y la ficha dice qué le falta.
+- **Un refetch o la llegada de la biblioteca** ya no pisan una edición en curso.
+- **La nota de clasificación distinta** viene en el idioma de la pantalla, y el catálogo usa ese idioma.
+- **La memoria de entregas** cuenta también los trabajos de otro proyecto que colaboran con éste. Sin la regla de no repetir, el encuadre ya no menciona lo citado en la entrega anterior, y la tarjeta de exclusiones no aparece.
+- **El contrato del método:**
+  - la traducción final y la tesis no llevan citas;
+  - los vínculos con el AT pueden citar literatura;
+  - sin herramientas con material, la observación sale del texto base;
+  - una fuente asignada de literatura se cumple en el diálogo;
+  - la plantilla de estilo no figura como literatura.
+- **«Mi lectura»** se presenta como «la lectura de este trabajo», nunca como «el estudiante», para que no se cuele en la prosa. Se guarda también al salir del campo.
+- **El aviso de la observación** mira el método con que se generó cada versión (`analysisMethod`), no el actual. Cambiar el método no reprocha lo ya analizado.
+- **Detalles de pantalla:** el panel de pestañas, la carga antes de «no encontrado» y el triángulo de «Mi lectura».
+
+**Queda para después, a propósito:**
+- **Una carrera ya existente:** guardar «Mi lectura» mientras corre «Proponer plan» puede perderse, porque los dos reescriben el plan entero.
+- **El prompt del sistema no cuenta para el tope:** se corta en 40.000 caracteres. Medido: 27.090 con la guía y el encuadre más grandes, más 3.374 del método y una lectura de 2.000.
+- **El método de un perfil solo se guarda con «Guardar perfil»;** no hay editor de perfiles. Para el TP #10, se elige «Mixto» en el tipo de trabajo «TP Semanal» de NT785.
+
 ## Decisiones del fundador (2026-10-23)
 
 1. **Las tres capas** (investigación de fuentes, corpus del estudio y momento de uso) se separan, y la investigación de fuentes vale para todo tipo de proyecto, no solo para cursos.

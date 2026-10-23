@@ -39,7 +39,7 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
                 {texto('exclusion', t('stateOfArt.criteria.exclusion'), t('stateOfArt.criteria.exclusionHint'))}
             </div>
             <label className="flex items-start gap-2 text-sm text-foreground">
-                <input type="checkbox" className="mt-1" checked={!!criteria.noRepeatSources} onChange={e => onChange({ noRepeatSources: e.target.checked })} />
+                <input type="checkbox" className="mt-1" checked={criteria.noRepeatSources ?? isCourse} onChange={e => onChange({ noRepeatSources: e.target.checked })} />
                 <span>
                     {t('stateOfArt.criteria.noRepeat')}
                     <span className="block text-xs text-muted-foreground">{t('stateOfArt.criteria.noRepeatHint')}</span>

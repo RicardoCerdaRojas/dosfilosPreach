@@ -8,6 +8,10 @@
   "unsaved": "Cambios sin guardar.",
   "stateOfArt": {
     "title": "Estado del arte",
+    "conflictNote": "Clasificado distinto en los estudios: {{types}}.",
+    "fixErrors_one": "Corrige 1 ficha antes de guardar.",
+    "fixErrors_other": "Corrige {{count}} fichas antes de guardar.",
+    "error": {"title": "Falta el título de la obra.", "reason": "Falta la razón del descarte."},
     "subtitle": "La bibliografía del proyecto, preparada una vez para todos sus estudios: qué se exige, qué obras hay, cómo se evalúa cada una y con cuáles se trabaja. Sigue el método de Eco, Vyhmeister y Fee.",
     "step": {
       "requirements": "Requisitos",
@@ -121,7 +125,7 @@
       "exclusion": "Criterios de exclusión",
       "exclusionHint": "Por qué una obra queda fuera, aunque se haya considerado.",
       "noRepeat": "No repetir fuentes entre entregas",
-      "noRepeatHint": "Una regla de este curso, no del método: activa el aviso de fuentes ya usadas en otro estudio del proyecto.",
+      "noRepeatHint": "Una regla de este curso, no del método: activa el aviso de fuentes ya citadas en la entrega anterior (del proyecto o suelta).",
       "minimums": "Mínimos de las rúbricas",
       "noMinimums": "Las rúbricas de los tipos de trabajo no piden mínimos.",
       "minimumsHint": "Vienen de las rúbricas de los tipos de trabajo; se cambian allí.",

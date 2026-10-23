@@ -30,14 +30,23 @@ export function ProjectBibliographyOffer({ project, bookId, onChange }: ProjectB
     const [desmarcadas, setDesmarcadas] = useState<ReadonlySet<string>>(new Set());
     const porId = useMemo(() => new Map(resources.map(r => [r.id, r])), [resources]);
     const heredables = useMemo(
-        () => (project && bookId ? inheritableBibliography(projectBibliography(project), bookId, id => porId.get(id)) : []),
+        () => {
+            if (!project || !bookId) return [];
+            // Con el libro de la biblioteca: un proyecto de antes solo tiene
+            // `sourceIds`, y sin esto sus fuentes llegaban sin nombre ni tipo.
+            const lookup = (id: string) => {
+                const r = porId.get(id);
+                return r ? { title: r.title, author: r.author ?? null, exegeticalType: r.exegeticalType ?? null } : null;
+            };
+            return inheritableBibliography(projectBibliography(project, lookup), bookId, id => porId.get(id));
+        },
         [project, bookId, porId],
     );
     const elegidas = useMemo(() => heredables.filter(e => !desmarcadas.has(e.id)), [heredables, desmarcadas]);
     // Se avisa solo cuando cambia QUÉ se hereda: la lista de la biblioteca
     // puede llegar como un arreglo nuevo en cada render, y avisar por eso
     // hacía un ciclo de renders.
-    const fuentes = initialSourcesFromBibliography(elegidas, id => porId.get(id)?.exegeticalType ?? null);
+    const fuentes = initialSourcesFromBibliography(elegidas, id => porId.get(id)?.exegeticalType ?? null, id => porId.get(id)?.title);
     const clave = JSON.stringify(fuentes);
     const ultimo = useRef<string | null>(null);
     useEffect(() => {
@@ -65,7 +74,9 @@ export function ProjectBibliographyOffer({ project, bookId, onChange }: ProjectB
                             <input type="checkbox" className="mt-1" checked={!desmarcadas.has(e.id)} onChange={() => alternar(e.id)} />
                             <span className="min-w-0">
                                 <span className="block truncate">{e.title || porId.get(e.resourceId!)?.title}</span>
-                                {e.sourceType && <span className="block text-[11px] text-muted-foreground">{t(`sourceTypes.${e.sourceType}.label`)}</span>}
+                                {(e.sourceType ?? porId.get(e.resourceId!)?.exegeticalType) && (
+                                    <span className="block text-[11px] text-muted-foreground">{t(`sourceTypes.${e.sourceType ?? porId.get(e.resourceId!)?.exegeticalType}.label`)}</span>
+                                )}
                             </span>
                         </label>
                     </li>

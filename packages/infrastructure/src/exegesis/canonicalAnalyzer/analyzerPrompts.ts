@@ -661,7 +661,8 @@ export function formatMethodContract(
 ): string {
     if (!separatesObservation(method)) return '';
     const claves = (herramienta: boolean) => [...new Set(sources
-        .filter(s => s.citationKey && isObservationTool(s.sourceType) === herramienta)
+        // La plantilla de estilo no se cita: no va en ninguna lista.
+        .filter(s => s.citationKey && s.sourceType !== 'style-template-paper' && isObservationTool(s.sourceType) === herramienta)
         .map(s => `\`${s.citationKey}\``))];
     const herramientas = claves(true);
     const literatura = claves(false);
@@ -670,17 +671,19 @@ export function formatMethodContract(
     if (lang === 'en') {
         return [
             `## Work method: ${method === 'mixed' ? 'mixed (per question)' : 'exegetical'} — first the observation, then the dialogue`,
-            `- OBSERVATION fields (\`textualCriticism\`, \`syntacticAnalysis\`, \`lexicalAnalyses\`, \`historicalContext\`, \`oldTestamentLinks\`, \`initialTranslation\`) are built ONLY with the tools: ${herramientas.join(', ') || ninguna}. Do not cite commentaries, monographs or articles there.`,
-            `- DIALOGUE fields (\`commentatorEngagement\`, \`translationCruxes\`, \`finalTranslation\`, \`verseThesis\`) start from that observation: say which commentator confirms it and which disputes it, with the citation. Literature: ${literatura.join(', ') || ninguna}.`,
-            `- When a commentary corrects the observation, say so in \`commentatorEngagement\` and in \`confidenceFlags\`; do not change the observation silently.`,
+            `- OBSERVATION fields (\`textualCriticism\`, \`syntacticAnalysis\`, \`lexicalAnalyses\`, \`historicalContext\`, \`initialTranslation\`) are built ONLY with the tools: ${herramientas.length ? `${herramientas.join(', ')}. Do not cite commentaries, monographs or articles there.` : 'no tool brings material for this verse, so build the observation from the base text and the morphology, without citations.'}`,
+            `- DIALOGUE fields start from that observation. In \`commentatorEngagement\` and in the positions of \`translationCruxes\`, say which commentator confirms it and which disputes it, with the citation. Literature: ${literatura.join(', ') || ninguna}. \`finalTranslation\` and \`verseThesis\` carry no citations: they state the decision. \`oldTestamentLinks\` may cite literature on intertextuality.`,
+            `- When a commentary corrects the observation, say so in \`commentatorEngagement\`; do not change the observation silently.`,
+            `- A PINNED literature source is fulfilled in the dialogue (\`commentatorEngagement\`${porPregunta ? ', \`questionAnswers[*].options[*].defenders\`' : ''}), even if its role is "technical".`,
             ...(porPregunta ? [`- In each \`questionAnswers\` entry: \`directAnswer\` comes from the observation (grammar, lexis, syntax) with the tools; the readings (\`options\`) and their \`defenders\` come from the commentaries; the decisive criterion rests on the observation; the decision is the student's paper's.`] : []),
         ].join('\n');
     }
     return [
         `## Método del trabajo: ${method === 'mixed' ? 'mixto (por pregunta)' : 'exegético'} — primero la observación, después el diálogo`,
-        `- Las piezas de OBSERVACIÓN (\`textualCriticism\`, \`syntacticAnalysis\`, \`lexicalAnalyses\`, \`historicalContext\`, \`oldTestamentLinks\`, \`initialTranslation\`) se arman SOLO con las herramientas: ${herramientas.join(', ') || ninguna}. No cites ahí comentarios, monografías ni artículos.`,
-        `- Las piezas de DIÁLOGO (\`commentatorEngagement\`, \`translationCruxes\`, \`finalTranslation\`, \`verseThesis\`) parten de esa observación: di qué comentarista la confirma y cuál la discute, con su cita. Literatura: ${literatura.join(', ') || ninguna}.`,
-        `- Si un comentario corrige la observación, dilo en \`commentatorEngagement\` y en \`confidenceFlags\`; no cambies la observación en silencio.`,
+        `- Las piezas de OBSERVACIÓN (\`textualCriticism\`, \`syntacticAnalysis\`, \`lexicalAnalyses\`, \`historicalContext\`, \`initialTranslation\`) se arman SOLO con las herramientas: ${herramientas.length ? `${herramientas.join(', ')}. No cites ahí comentarios, monografías ni artículos.` : 'ninguna herramienta trae material para este versículo, así que arma la observación desde el texto base y la morfología, sin citas.'}`,
+        `- Las piezas de DIÁLOGO parten de esa observación. En \`commentatorEngagement\` y en las posiciones de \`translationCruxes\`, di qué comentarista la confirma y cuál la discute, con su cita. Literatura: ${literatura.join(', ') || ninguna}. \`finalTranslation\` y \`verseThesis\` no llevan citas: enuncian la decisión. \`oldTestamentLinks\` puede citar literatura sobre intertextualidad.`,
+        `- Si un comentario corrige la observación, dilo en \`commentatorEngagement\`; no cambies la observación en silencio.`,
+        `- Una fuente ASIGNADA de literatura se cumple en el diálogo (\`commentatorEngagement\`${porPregunta ? ', \`questionAnswers[*].options[*].defenders\`' : ''}), aunque su rol sea «técnica».`,
         ...(porPregunta ? [`- En cada entrada de \`questionAnswers\`: \`directAnswer\` sale de la observación (gramática, léxico, sintaxis) con las herramientas; las lecturas (\`options\`) y sus defensores (\`defenders\`) vienen de los comentarios; el criterio decisivo se apoya en la observación; la decisión es la del trabajo.`] : []),
     ].join('\n');
 }
@@ -691,11 +694,11 @@ export function formatStudentReading(reading: string | null | undefined, lang: '
     if (!texto) return '';
     return lang === 'en'
         ? [
-            `**The student's own reading** (written before consulting commentaries): "${texto}"`,
-            `In the dialogue, say explicitly which commentators confirm it and which dispute it, with the citation. Never cite it as a source nor attribute it to an author; if the text does not support it, say so respectfully in \`confidenceFlags\`.`,
+            `**This paper's own reading** (written before consulting commentaries): "${texto}"`,
+            `In \`commentatorEngagement\`, say explicitly which commentators confirm it and which dispute it, with the citation. Present it as the paper's own reading ("this reading", "the reading proposed here"); never write "the student". Never cite it as a source nor attribute it to an author.`,
         ].join('\n')
         : [
-            `**La lectura propia del estudiante** (escrita antes de consultar comentarios): «${texto}»`,
-            `En el diálogo, di explícitamente qué comentaristas la confirman y cuáles la discuten, con su cita. Nunca la cites como fuente ni se la atribuyas a un autor; si el texto no la sostiene, dilo con respeto en \`confidenceFlags\`.`,
+            `**La lectura propia de este trabajo** (escrita antes de consultar comentarios): «${texto}»`,
+            `En \`commentatorEngagement\`, di explícitamente qué comentaristas la confirman y cuáles la discuten, con su cita. Preséntala como la lectura del propio trabajo («esta lectura», «la lectura que aquí se propone»); nunca escribas «el estudiante». Nunca la cites como fuente ni se la atribuyas a un autor.`,
         ].join('\n');
 }

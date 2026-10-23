@@ -18,6 +18,8 @@ interface BibliographyEntryCardProps {
     library: ReadonlyArray<{ id: string; title: string }>;
     onChange: (patch: Partial<ProjectBibliographyEntry>) => void;
     onRemove: () => void;
+    /** Lo que impide guardar esta ficha. */
+    error?: 'title' | 'reason' | null;
 }
 
 /**
@@ -25,7 +27,7 @@ interface BibliographyEntryCardProps {
  * que se puede hacer según su paso (aprobar, descartar con razón, volver a
  * candidata, ligar el libro cuando se consigue, marcarla leída).
  */
-export function BibliographyEntryCard({ entry, suggested, workTypes, library, onChange, onRemove }: BibliographyEntryCardProps) {
+export function BibliographyEntryCard({ entry, suggested, workTypes, library, onChange, onRemove, error = null }: BibliographyEntryCardProps) {
     const { t } = useTranslation('projects');
     const { t: tx } = useTranslation('exegesis');
     const [abierta, setAbierta] = useState(false);
@@ -58,6 +60,7 @@ export function BibliographyEntryCard({ entry, suggested, workTypes, library, on
                     </div>
                     {entry.decision === 'discarded' && entry.reason && <p className="text-xs text-muted-foreground">{t('stateOfArt.discardedBecause', { reason: entry.reason })}</p>}
                     {entry.annotation?.serves && entry.decision !== 'discarded' && <p className="text-xs text-muted-foreground">{entry.annotation.serves}</p>}
+                    {error && <p className="text-xs text-destructive" role="alert">{t(`stateOfArt.error.${error}`)}</p>}
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                     {entry.decision !== 'approved' && (

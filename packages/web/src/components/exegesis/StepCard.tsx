@@ -1009,7 +1009,13 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     />
                 )}
                 {isVerse && canonicalAnalysis && paperDeLasCitas && (
-                    <ObservationCitationNotice analysis={canonicalAnalysis} sources={paperDeLasCitas.sources} method={metodoDelTrabajo} />
+                    // El método con que se GENERÓ la versión que se muestra, no el
+                    // actual: cambiar el método no reprocha lo ya analizado.
+                    <ObservationCitationNotice
+                        analysis={canonicalAnalysis}
+                        sources={paperDeLasCitas.sources}
+                        method={(step.state === 'awaiting-review' ? step.current ?? step.accepted : step.accepted ?? step.current)?.analysisMethod}
+                    />
                 )}
                 {isGenerating && (
                     <div className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">

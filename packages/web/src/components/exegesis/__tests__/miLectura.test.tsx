@@ -25,6 +25,14 @@ describe('StudentReadingPanel', () => {
         await waitFor(() => expect(execute).toHaveBeenCalledWith({ ownerId: 'u1', paperId: 'tp9', stepId: 'v11', studentReading: 'μή + presente' }));
     });
 
+    it('salir del campo con cambios guarda, para no generar sin la lectura', async () => {
+        conQuery(<StudentReadingPanel paperId="tp9" stepId="v11" initial={null} method={null} />);
+        const campo = screen.getByLabelText('studentReading.hint');
+        fireEvent.change(campo, { target: { value: 'aoristo ingresivo' } });
+        fireEvent.blur(campo);
+        await waitFor(() => expect(execute).toHaveBeenCalledWith({ ownerId: 'u1', paperId: 'tp9', stepId: 'v11', studentReading: 'aoristo ingresivo' }));
+    });
+
     it('sin método, la ayuda es la general', () => {
         conQuery(<StudentReadingPanel paperId="p" stepId="s" initial="ya escrita" method={null} />);
         expect(screen.getByText('studentReading.hint')).toBeInTheDocument();
