@@ -22,9 +22,15 @@ export function BibliographyEntryList({ entries, filter, grouped, emptyText, bib
     const { t } = useTranslation('projects');
     const { t: tx } = useTranslation('exegesis');
     const tipo = (e: ProjectBibliographyEntry) => bibliographyEntryType(e, bib.resourceOf);
-    const visibles = filter === null ? entries : entries.filter(e => (filter === 'unclassified' ? !tipo(e) : tipo(e) === filter));
+    const visibles = !filter ? entries : entries.filter(e => {
+        switch (filter.kind) {
+            case 'type': return tipo(e) === filter.type;
+            case 'unclassified': return !tipo(e);
+            case 'ids': return filter.ids.includes(e.id);
+        }
+    });
     if (visibles.length === 0) {
-        return <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{filter ? t('stateOfArt.coverage.emptyFiltered') : emptyText}</p>;
+        return <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{filter ? t(filter.kind === 'ids' ? 'stateOfArt.coverage.emptyFilteredIds' : 'stateOfArt.coverage.emptyFiltered') : emptyText}</p>;
     }
     const grupos = new Map<SourceType | 'unclassified', ProjectBibliographyEntry[]>();
     for (const e of visibles) {

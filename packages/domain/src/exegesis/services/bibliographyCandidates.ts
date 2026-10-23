@@ -1,4 +1,4 @@
-import type { BibleBookId } from '../../bible/canon/BibleCanon';
+import { getBookById, type BibleBookId } from '../../bible/canon/BibleCanon';
 import type { LibraryResource } from '../../entities/LibraryResource';
 import type { ResumenDeFuente } from '../entities/ExegesisPaperSummary';
 import type { PassageReference } from '../../bible/canon/passage-reference';
@@ -194,4 +194,50 @@ export function extractedBibliographyCandidates(
         weight: origin.kind === 'syllabus' ? c.weight : 'complementary',
         ...(origin.kind === 'citation' ? { citedBy: origin.citedBy } : {}),
     }));
+}
+
+const ROMANOS: Record<string, number> = { i: 1, v: 5, x: 10, l: 50 };
+function capitulo(token: string): number | null {
+    if (/^\d+$/.test(token)) return Number(token);
+    const t = token.toLowerCase();
+    if (!/^[ivxl]+$/.test(t)) return null;
+    let n = 0;
+    for (let i = 0; i < t.length; i++) {
+        const v = ROMANOS[t[i]!]!, sig = ROMANOS[t[i + 1] ?? ''] ?? 0;
+        n += v < sig ? -v : v;
+    }
+    return n;
+}
+
+/**
+ * Si el título de una obra NOMBRA un capítulo de los estudios del proyecto
+ * («A Reconsideration of James IV. 5», «Santiago 4:1-10»). Es un indicio, no
+ * un juicio de relevancia: por eso se rotula «menciona Santiago 4». Devuelve
+ * los capítulos nombrados.
+ */
+export function chaptersMentioned(
+    title: string,
+    bookId: BibleBookId,
+    chapters: ReadonlyArray<number>,
+): number[] {
+    const libro = getBookById(bookId);
+    if (!libro) return [];
+    const nombres = [...new Set([libro.nameEs, libro.nameEn, ...libro.aliases])]
+        .map(n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase())
+        .filter(n => n.length >= 3)
+        .sort((a, b) => b.length - a.length)
+        .map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const original = title.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const t = original.toLowerCase();
+    const re = new RegExp(`\\b(?:${nombres.join('|')})\\.?\\s+([ivxl]+|\\d{1,3})\\b`, 'g');
+    const out = new Set<number>();
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(t))) {
+        // «James I. Packer», «James V. Brownson»: una letra con punto y un
+        // nombre después es la inicial de una persona, no un capítulo.
+        if (/^[ivx]$/.test(m[1]!) && /^\.\s*\p{Lu}/u.test(original.slice(m.index + m[0].length))) continue;
+        const c = capitulo(m[1]!);
+        if (c && chapters.includes(c)) out.add(c);
+    }
+    return [...out].sort((a, b) => a - b);
 }

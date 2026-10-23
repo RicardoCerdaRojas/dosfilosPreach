@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+    chaptersMentioned,
     extractedBibliographyCandidates,
     catalogCandidates,
     libraryCandidates,
@@ -104,5 +105,19 @@ describe('de dónde vino la lista (etapa 2b)', () => {
         const ya = [{ id: 'a', title: 'Does Scripture Speak in Vain?', author: 'Sophie Laws', weight: 'recommended' as const, decision: 'approved' as const, origins: ['manual' as const] }];
         const [f] = mergeBibliographyCandidates(ya, extractedBibliographyCandidates(leido, [], { kind: 'import' }), () => 'n');
         expect(f).toMatchObject({ decision: 'approved', pageCount: 6, identifiers: { doi: '10.1017/x' }, origins: ['manual', 'import'] });
+    });
+});
+
+describe('obras que nombran los pasajes de los estudios', () => {
+    it('números romanos, arábigos, en inglés y en español; solo los capítulos de los estudios', () => {
+        expect(chaptersMentioned('Does Scripture Speak in Vain? A Reconsideration of James IV. 5', 'JAS', [4])).toEqual([4]);
+        expect(chaptersMentioned('La sabiduría en Santiago 3:13-18', 'JAS', [3, 4])).toEqual([3]);
+        expect(chaptersMentioned('The Meaning of Wisdom in James: Examination of a Hypothesis', 'JAS', [3, 4])).toEqual([]);
+        expect(chaptersMentioned('James 5 and prayer', 'JAS', [4])).toEqual([]);
+        expect(chaptersMentioned('James the Just and Christian Origins', 'JAS', [1])).toEqual([]);
+        // La inicial de un nombre no es un capítulo (revisión de la 2b).
+        expect(chaptersMentioned('Essays in Honor of James I. Packer', 'JAS', [1])).toEqual([]);
+        expect(chaptersMentioned('Festschrift James V. Brownson', 'JAS', [5])).toEqual([]);
+        expect(chaptersMentioned('Santiago I. 5 y la oración', 'JAS', [1])).toEqual([1]);
     });
 });

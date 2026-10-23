@@ -191,7 +191,15 @@ export interface ProjectRequirement {
     done?: boolean;
     /** A qué tipos de trabajo aplica; vacío o ausente, a todos. */
     workTypeIds?: string[] | null;
+    /**
+     * Las cifras que la fuente no fijaba y se SUPUSIERON (p. ej. «antiguas y
+     * actuales» sin años). Van aparte del texto, que es el de la fuente, para
+     * que la pantalla las declare en su idioma y se puedan corregir.
+     */
+    assumed?: RequirementAssumption[] | null;
 }
+
+export type RequirementAssumption = 'before' | 'after' | 'recentMinimum' | 'minimum';
 
 /** Una búsqueda o importación registrada: el comienzo de la reproducibilidad. */
 export interface BibliographySearchLogEntry {
@@ -665,7 +673,8 @@ export function classificationHistory(
 
 /** El resultado de medir un requisito. */
 export interface RequirementMeasure {
-    status: 'met' | 'unmet' | 'manual';
+    /** `incomplete`: al requisito le falta la cifra que lo hace medible; no se da por cumplido. */
+    status: 'met' | 'unmet' | 'manual' | 'incomplete';
     /** Lo que hay y lo que se pide, en la unidad del requisito. */
     value: number;
     target: number;
@@ -689,32 +698,43 @@ export function measureRequirement(
     const minimo = Math.max(0, req.minimum ?? 0);
     const r = (value: number, target: number, unmeasurable: string[] = []): RequirementMeasure =>
         ({ status: value >= target ? 'met' : 'unmet', value, target, unmeasurable });
+    // Sin la cifra, «0 de 0» saldría cumplido: un requisito sin medida no se da por bueno.
+    const incompleto = (value: number): RequirementMeasure => ({ status: 'incomplete', value, target: 0, unmeasurable: [] });
     switch (req.kind) {
         case 'minimum-type':
+            if (minimo <= 0) return incompleto(delTipo(req.sourceType).length);
             return r(delTipo(req.sourceType).length, minimo);
         case 'quantity': {
             const xs = delTipo(req.sourceType);
+            if (minimo <= 0) return incompleto(xs.length);
             if (req.unit !== 'pages') return r(xs.length, minimo);
-            // Una página cuenta cuando la obra está leída y reseñada: así lo pide el curso.
-            const reseñada = (e: ProjectBibliographyEntry) => !!e.read && !!(e.annotation?.review?.mainIdea?.trim());
+            // Una página cuenta cuando la obra está reseñada (así lo pide el
+            // curso): escribir la idea principal es haberla leído.
+            const reseñada = (e: ProjectBibliographyEntry) => !!(e.annotation?.review?.mainIdea?.trim());
             const sinDato = xs.filter(e => !e.pageCount || !reseñada(e)).map(e => e.id);
             return r(xs.filter(e => reseñada(e)).reduce((n, e) => n + (e.pageCount ?? 0), 0), minimo, sinDato);
         }
         case 'date-range': {
+            if (!req.before && !req.after) return incompleto(0);
             const sinAño = aprobadas.filter(e => !año(e)).map(e => e.id);
-            const antiguas = req.before ? aprobadas.filter(e => (año(e) ?? Infinity) < req.before!).length : 1;
+            // Cada corte pide lo suyo; un corte que no está no pide nada (ni suma).
+            const antiguasPedidas = req.before ? 1 : 0;
+            const pedidas = req.after ? Math.max(0, req.recentMinimum ?? 1) : 0;
+            const antiguas = req.before ? aprobadas.filter(e => (año(e) ?? Infinity) < req.before!).length : 0;
             const actuales = req.after ? aprobadas.filter(e => (año(e) ?? -Infinity) >= req.after!).length : 0;
-            const pedidas = Math.max(0, req.recentMinimum ?? 1);
-            const cumple = antiguas >= 1 && actuales >= pedidas;
-            return { status: cumple ? 'met' : 'unmet', value: Math.min(antiguas, 1) + Math.min(actuales, pedidas), target: 1 + pedidas, unmeasurable: sinAño };
+            const cumple = antiguas >= antiguasPedidas && actuales >= pedidas;
+            return { status: cumple ? 'met' : 'unmet', value: Math.min(antiguas, antiguasPedidas) + Math.min(actuales, pedidas), target: antiguasPedidas + pedidas, unmeasurable: sinAño };
         }
         case 'perspectives': {
             const enfoques = new Set(aprobadas.map(e => e.evaluation?.approach).filter((x): x is BibliographyApproach => !!x && x !== 'other'));
             const sinEnfoque = aprobadas.filter(e => !e.evaluation?.approach).map(e => e.id);
-            return r(enfoques.size, Math.max(1, minimo), sinEnfoque);
+            // Sin cifra no se mide: la importación la completa (y la declara supuesta).
+            if (minimo <= 0) return incompleto(enfoques.size);
+            return r(enfoques.size, minimo, sinEnfoque);
         }
         case 'variety': {
             const pedidos = req.types ?? [];
+            if (pedidos.length === 0) return incompleto(0);
             const presentes = pedidos.filter(t => aprobadas.some(e => tipoDe(e, resourceOf) === t)).length;
             return r(presentes, pedidos.length);
         }
@@ -734,26 +754,53 @@ export type RequirementLevel = 'seminary' | 'research' | 'publishable';
  * piden de forma cualitativa: fuentes primarias, comentarios críticos,
  * artículos recientes, posturas opuestas (Fee 4.1) y obras de varias épocas.
  */
-export function requirementTemplate(level: RequirementLevel, newId: () => string, now: Date): ProjectRequirement[] {
+export type RequirementTemplateKey = 'criticalText' | 'criticalCommentaries' | 'articles' | 'lexicon' | 'grammar' | 'perspectives' | 'dateRange' | 'monographs';
+
+const TEXTO_PLANTILLA: Record<RequirementTemplateKey, (v: Record<string, number>) => string> = {
+    criticalText: () => 'El texto en lengua original, en edición crítica.',
+    criticalCommentaries: () => 'Comentarios críticos sobre el libro.',
+    articles: () => 'Artículos académicos de revista.',
+    lexicon: () => 'Un léxico técnico.',
+    grammar: () => 'Una gramática de referencia.',
+    perspectives: () => 'Puntos de vista opuestos: al menos tantos enfoques distintos (Fee 4.1).',
+    dateRange: v => `Fuentes antiguas y actuales: una anterior a ${v.before} y ${v.recent} desde ${v.after}.`,
+    monographs: () => 'Monografías sobre el tema.',
+};
+
+export function requirementTemplate(
+    level: RequirementLevel,
+    newId: () => string,
+    now: Date,
+    /** El texto en el idioma de la pantalla; por omisión, en español. */
+    textOf: (key: RequirementTemplateKey, values: Record<string, number>) => string = (k, v) => TEXTO_PLANTILLA[k](v),
+): ProjectRequirement[] {
     const escala = { seminary: 1, research: 2, publishable: 3 }[level];
     const año = now.getFullYear();
-    const base: Array<Omit<ProjectRequirement, 'id' | 'origin'>> = [
-        { kind: 'minimum-type', sourceType: 'biblical-text-edition', minimum: 1, text: 'El texto en lengua original, en edición crítica.' },
-        { kind: 'minimum-type', sourceType: 'commentary-critical', minimum: 2 * escala, text: 'Comentarios críticos sobre el libro.' },
-        { kind: 'quantity', sourceType: 'journal-article', unit: 'works', minimum: 2 * escala, text: 'Artículos académicos de revista.' },
-        { kind: 'minimum-type', sourceType: 'lexicon-technical', minimum: 1, text: 'Un léxico técnico.' },
-        { kind: 'minimum-type', sourceType: 'grammar-syntax', minimum: 1, text: 'Una gramática de referencia.' },
-        { kind: 'perspectives', minimum: level === 'seminary' ? 2 : 3, text: 'Puntos de vista opuestos: al menos tantos enfoques distintos (Fee 4.1).' },
-        { kind: 'date-range', before: 1950, after: año - 15, recentMinimum: escala, text: `Fuentes antiguas y actuales: una anterior a 1950 y ${escala} desde ${año - 15}.` },
+    const base: Array<[RequirementTemplateKey, Omit<ProjectRequirement, 'id' | 'origin' | 'text'>]> = [
+        ['criticalText', { kind: 'minimum-type', sourceType: 'biblical-text-edition', minimum: 1 }],
+        ['criticalCommentaries', { kind: 'minimum-type', sourceType: 'commentary-critical', minimum: 2 * escala }],
+        ['articles', { kind: 'quantity', sourceType: 'journal-article', unit: 'works', minimum: 2 * escala }],
+        ['lexicon', { kind: 'minimum-type', sourceType: 'lexicon-technical', minimum: 1 }],
+        ['grammar', { kind: 'minimum-type', sourceType: 'grammar-syntax', minimum: 1 }],
+        ['perspectives', { kind: 'perspectives', minimum: level === 'seminary' ? 2 : 3 }],
+        ['dateRange', { kind: 'date-range', before: 1950, after: año - 15, recentMinimum: escala }],
     ];
-    if (level !== 'seminary') base.push({ kind: 'minimum-type', sourceType: 'theological-monograph', minimum: escala, text: 'Monografías sobre el tema.' });
-    return base.map(r => ({ ...r, id: newId(), origin: 'level' as const }));
+    if (level !== 'seminary') base.push(['monographs', { kind: 'minimum-type', sourceType: 'theological-monograph', minimum: escala }]);
+    return base.map(([k, r]) => ({
+        ...r, id: newId(), origin: 'level' as const,
+        text: textOf(k, { minimum: r.minimum ?? 0, before: r.before ?? 0, after: r.after ?? 0, recent: r.recentMinimum ?? 0 }),
+    }));
 }
 
 /** Los requisitos y el registro, listos para guardar: sin `undefined`, ids únicos. */
 export function cleanRequirementItems(items: ReadonlyArray<ProjectRequirement>): ProjectRequirement[] {
     const vistos = new Set<string>();
-    return items.filter(r => r.id && r.text?.trim() && !vistos.has(r.id) && (vistos.add(r.id), true)).map(r => limpio(r));
+    const SUPUESTOS: ReadonlyArray<RequirementAssumption> = ['before', 'after', 'recentMinimum', 'minimum'];
+    return items.filter(r => r.id && r.text?.trim() && !vistos.has(r.id) && (vistos.add(r.id), true)).map(r => {
+        const { assumed: crudo, ...resto } = r;
+        const assumed = (crudo ?? []).filter(a => SUPUESTOS.includes(a));
+        return limpio(assumed.length ? { ...resto, assumed } : resto);
+    });
 }
 
 export function cleanSearchLog(log: ReadonlyArray<BibliographySearchLogEntry>): BibliographySearchLogEntry[] {
@@ -762,34 +809,40 @@ export function cleanSearchLog(log: ReadonlyArray<BibliographySearchLogEntry>): 
 
 /**
  * Los requisitos que leyó el lector, listos para el proyecto. Lo que el
- * sílabo no fija se completa con un valor DECLARADO, y el texto lo dice:
- * «antiguas y actuales» sin años toma 1950 y los últimos quince años.
- * Un requisito igual a otro que ya está (mismo tipo y texto) no se repite.
+ * sílabo no fija se completa con un valor DECLARADO en `assumed` (el texto
+ * queda como lo dice el sílabo): «antiguas y actuales» sin años toma 1950 y
+ * los últimos quince años; «opuestos» sin cifra, dos enfoques. Solo se
+ * declara lo que se supuso. Un requisito igual a otro que ya está (misma
+ * clase, tipo y texto) no se repite.
  */
 export function requirementsFromExtraction(
     items: ReadonlyArray<Omit<ProjectRequirement, 'id' | 'origin'>>,
     existing: ReadonlyArray<ProjectRequirement>,
     newId: () => string,
     now: Date,
-    assumedNote: (what: string) => string = q => ` (supuesto: ${q})`,
 ): ProjectRequirement[] {
     const año = now.getFullYear();
+    const clave = (r: { kind: RequirementKind; sourceType?: SourceType | null; text: string }) => `${r.kind}|${r.sourceType ?? ''}|${r.text.trim().toLowerCase()}`;
     const out: ProjectRequirement[] = [];
     for (const it of items) {
-        const clave = `${it.kind}|${it.sourceType ?? ''}|${it.text.trim().toLowerCase()}`;
-        if ([...existing, ...out].some(r => `${r.kind}|${r.sourceType ?? ''}|${r.text.trim().toLowerCase()}` === clave)) continue;
-        const r: ProjectRequirement = { ...it, id: newId(), origin: 'syllabus' };
-        if (r.kind === 'date-range' && (!r.before || !r.after)) {
-            r.before = r.before ?? 1950;
-            r.after = r.after ?? año - 15;
-            r.recentMinimum = r.recentMinimum ?? 1;
-            r.text = r.text + assumedNote(`antes de ${r.before} y desde ${r.after}`);
+        if ([...existing, ...out].some(r => clave(r) === clave(it))) continue;
+        const r: ProjectRequirement = { ...it, text: it.text.trim(), id: newId(), origin: 'syllabus' };
+        const supuesto: RequirementAssumption[] = [];
+        if (r.kind === 'date-range') {
+            if (!r.before) { r.before = 1950; supuesto.push('before'); }
+            if (!r.after) { r.after = año - 15; supuesto.push('after'); }
+            if (!r.recentMinimum) { r.recentMinimum = 1; supuesto.push('recentMinimum'); }
         }
-        if (r.kind === 'perspectives' && !r.minimum) {
-            r.minimum = 2;
-            r.text = r.text + assumedNote('2 enfoques');
-        }
+        if (r.kind === 'perspectives' && !r.minimum) { r.minimum = 2; supuesto.push('minimum'); }
+        if (supuesto.length) r.assumed = supuesto;
         out.push(r);
     }
     return out;
+}
+
+/** Si una regla del sílabo es la de no repetir fuentes (enciende el criterio del curso). */
+export function isNoRepeatRule(text: string): boolean {
+    // «Se puede repetir una fuente» no es la regla: es su contrario.
+    if (/(se\s+)?puede[n]?\s+(re)?(usar|repetir)|se\s+permite\s+repetir|may\s+(be\s+)?(repeat|reuse)|can\s+(be\s+)?(repeat|reuse)|allowed\s+to\s+(repeat|reuse)/i.test(text)) return false;
+    return /repet|consecutiv|misma\s+fuente|repeat|same\s+source|reuse/i.test(text);
 }
