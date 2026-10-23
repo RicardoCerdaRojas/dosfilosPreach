@@ -73,11 +73,13 @@ Cada paso de la guía dice:
 
 Bases y cuándo aparecen:
 
+**IxTheo por pasaje:** el enlace usa su búsqueda por pasaje (`type=BibleRangeSearch`, leído en la configuración de tuefind), con el nombre en inglés y dos puntos, como la documenta la guía de DTS: para Heb 12:18-29 trajo 1586 registros, contra 19 por palabras. **Libros ambiguos** («Santiago», «Ruth», «Juan») se buscan con su género («epístola de Santiago», «Book of Ruth»): medido en Dialnet, «Santiago» solo trae Santiago de Compostela. **Investigación** es el tipo `study`.
+
 | Hueco | Bases |
 |---|---|
 | Artículos de revista (o requisito en páginas de artículos) | IxTheo (abierta; busca por pasaje bíblico), ATLA/NTA (por la biblioteca del usuario), Google Académico |
 | Obras en español | Dialnet, BNE, Google Libros |
-| Obras antiguas (requisito de épocas) | Internet Archive y HathiTrust: lo anterior a 1929 suele ser de dominio público y gratis |
+| Obras antiguas (requisito de épocas) | Internet Archive y HathiTrust: lo publicado hace más de 95 años suele ser de dominio público y gratis |
 | Comentarios y monografías | El catálogo curado (B), WorldCat (dónde hay un ejemplar), Google Libros |
 | Enfoques opuestos | Una consulta por enfoque, y el catálogo marcado por tradición |
 | Tesis (investigación, publicable) | Repositorios de tesis (ProQuest por la biblioteca, TDX, Dialnet tesis) |
@@ -89,9 +91,13 @@ Siempre aparece IxTheo con el pasaje: es la base abierta de la disciplina.
 - **Ya existe** (leído): `domain/src/exegesis/recommendations`, con unos 114 títulos con nivel, idiomas e ISBN, que alimenta el origen «Catálogo» de las candidatas. En profundidad solo cubre Hebreos, Romanos y Génesis.
 - **Se amplía con Santiago, Jonás, Rut, 2 Pedro y Nehemías.** Nehemías es el próximo proyecto exegético del fundador, para una serie expositiva. La base son las guías que un académico reconoce: Carson (*NT Commentary Survey*), Glynn (*Commentary and Reference Survey*) y Longman (*OT Commentary Survey*).
 - **Cada obra se verifica una vez, al escribirla,** con un script contra Open Library, Crossref y la BNE (abiertas y sin clave). Lo que no se verifica no entra. La evidencia queda en la ficha (base y registro), y una prueba exige que toda obra de estos libros la tenga. El ISBN se toma del registro, nunca de memoria.
-- **Tradición y enfoque en cada obra,** para que la lista no sea de una sola escuela y para que cuente en el requisito de enfoques opuestos. Pasan a la ficha de la candidata como evaluación propuesta.
-- **Edición en español marcada** cuando existe y se verificó.
+- **Enfoque en cada obra, no tradición.** El enfoque (histórico-crítico, retórico, análisis del discurso…) es un dato de método y equilibra la lista; la prueba exige al menos tres por libro. **La tradición no se rotula:** clasificar autores por escuela es un juicio que toca al estudiante, y rotular solo a los confesionales hacía saltar el aviso de «una sola tradición» sin razón (revisión).
+- **El enfoque es una sugerencia, no la evaluación del estudiante.** Se ve en la ficha como lo que propone la biblioteca y cuenta para «enfoques opuestos» solo cuando el estudiante lo confirma.
+- **Una regla por serie:** NICOT, NICNT, BECNT, PNTC, NAC y ZEC son expositivos (la convención del catálogo); WBC, Hermeneia, ICC, NIGTC, Anchor y OTL, críticos. Una prueba la exige.
+- **Edición en español marcada** cuando existe y se verificó: Brown, *Nehemías* (Andamio); Davids, *Epístola de Santiago* (traducción del NIGTC, crítico); Keller, *Profeta pródigo*; Moo, *2 Pedro y Judas* (Vida); Fernández, *Esdras y Nehemías* (CSIC, 1950). Medido: Open Library y la BNE casi no tienen la literatura evangélica latinoamericana (Kistemaker, Kidner y Hubbard en español: 0).
 - **Lo que no cubre, dicho en la pantalla:** el catálogo cubre comentarios, monografías y algunos artículos clave. No cubre todo el campo: para eso está la guía.
+- **Resultado:** 66 obras verificadas en los cinco libros; 2 quedaron fuera por no verificarse (Linafelt y Beal, Berit Olam; Martin, WBC 48). La verificación destapó tres ISBN errados del catálogo anterior (Holmes, Wenham y Schreiner en Hebreos), corregidos con su registro, y un cruce con la biblioteca que ligaba obras por la primera palabra de la serie («The», «Two») o con el WBC de otro autor: ahora la sigla exige mayúsculas y el mismo apellido.
+- **Pendiente:** las obras de grupo y las invariantes (léxicos, gramáticas, BHS) todavía no tienen `verified`; la prueba lo exige solo a las obras propias de los cinco libros.
 
 ### Cómo se entrega (versión 1)
 

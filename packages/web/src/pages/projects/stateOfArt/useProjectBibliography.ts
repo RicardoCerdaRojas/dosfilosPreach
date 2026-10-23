@@ -130,6 +130,18 @@ export function useProjectBibliography(project: AIProject | undefined) {
     // que el proyecto se vuelva a leer, no deben pisarse (revisión de la 2b).
     const [log, setLog] = useState(logGuardado);
     const logRef = useRef(logGuardado);
+    /**
+     * Las escrituras del registro van en fila: cada una parte del registro
+     * que dejó la anterior y termina antes de que empiece la siguiente. Sin
+     * fila, una importación que terminaba después de una anotación escribía
+     * su arreglo sin ella (segunda revisión de la 2c).
+     */
+    const filaRef = useRef<Promise<unknown>>(Promise.resolve());
+    const enFila = useCallback(<T,>(f: () => Promise<T>): Promise<T> => {
+        const p = filaRef.current.then(f, f);
+        filaRef.current = p.catch(() => undefined);
+        return p;
+    }, []);
     useEffect(() => { logRef.current = logGuardado; setLog(logGuardado); }, [logGuardado]);
 
     /** Guarda todo: fichas, criterios y registro. Devuelve si se pudo. */
@@ -155,7 +167,7 @@ export function useProjectBibliography(project: AIProject | undefined) {
      * la 2b). En pantalla, lo importado se suma al borrador con los mismos ids.
      * Devuelve los ids de las fichas que tocó, para mostrarlas.
      */
-    const applyImport = useCallback(async (plan: ImportPlan): Promise<ImportOutcome> => {
+    const applyImport = useCallback((plan: ImportPlan): Promise<ImportOutcome> => enFila(async () => {
         const biblioteca = resources.map(r => ({ id: r.id, title: r.title, author: r.author ?? null, coversBibleBooks: r.coversBibleBooks, scope: r.scope, exegeticalType: r.exegeticalType }));
         const candidatas = extractedBibliographyCandidates(plan.entries, biblioteca, plan.origin);
         const base = JSON.parse(clave) as ProjectBibliographyEntry[];
@@ -202,7 +214,7 @@ export function useProjectBibliography(project: AIProject | undefined) {
         // Se muestran donde están: candidatas, o aprobadas si ya se habían decidido.
         const step = tocadas.some(e => e.decision === 'candidate') || tocadas.length === 0 ? 'candidates' : tocadas.some(e => e.decision === 'approved') ? 'approved' : 'discarded';
         return { added, ids: tocadas.map(e => e.id), step };
-    }, [resources, persist, clave, claveCriterios]);
+    }), [resources, persist, clave, claveCriterios, enFila]);
 
     /**
      * La revisión de una importación vive aquí, no en el panel: cambiar de
@@ -211,8 +223,22 @@ export function useProjectBibliography(project: AIProject | undefined) {
      */
     const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
 
+    /**
+     * Anota una búsqueda hecha en una base que el sistema no consulta
+     * (IxTheo, ATLA…): base, consulta y resultado, para que se pueda explicar
+     * y repetir (etapa 2c). Se guarda solo el registro, en el acto.
+     */
+    const addSearchNote = useCallback((note: { database: string; label: string; query: string; found: number; added: number }) => enFila(async () => {
+        if (!project) return;
+        const registro = [...logRef.current, { id: newBibliographyEntryId(), at: new Date().toISOString(), kind: 'database' as const, ...note }];
+        await updateProject.mutateAsync({ projectId: project.id, bibliographySearchLog: registro });
+        logRef.current = registro;
+        setLog(registro);
+    }), [project, updateProject, enFila]);
+
     const setRequirementItems = useCallback((items: ProjectRequirement[]) => setCriteria(c => ({ ...c, requirementItems: items })), []);
 
+    const passages = useMemo(() => studies.map(s => s.passage), [studies]);
     /** Los capítulos de los estudios del proyecto, por libro, para «menciona Santiago 4». */
     const capitulos = useMemo(() => {
         const m = new Map<BibleBookId, Set<number>>();
@@ -284,7 +310,9 @@ export function useProjectBibliography(project: AIProject | undefined) {
     return {
         entries: draft, errors, criteria, setCriteria, applyImport, save, saving: updateProject.isPending, update, add, remove, gatherCandidates,
         warnings, requirements, coverage, requirementMeasures, setRequirementItems, searchLog: log, mentions,
-        pendingImport, setPendingImport,
+        pendingImport, setPendingImport, addSearchNote,
+        /** Los pasajes de los estudios, para la guía de búsqueda. */
+        passages,
         historyOf, bibleBooks, workTypes, resourceOf: (id: string) => porId.get(id) ?? null, dirty,
         /**
          * Los libros de la biblioteca para ligar una obra por conseguir: solo

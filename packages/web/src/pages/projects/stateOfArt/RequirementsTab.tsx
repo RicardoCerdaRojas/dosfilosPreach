@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { History } from 'lucide-react';
-import type { AIProject, SourceType } from '@dosfilos/domain';
+import { searchGuide, type AIProject, type BibliographyApproach, type SourceType } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { BibliographyCriteriaPanel } from './BibliographyCriteriaPanel';
 import { BibliographyImportPanel } from './BibliographyImportPanel';
 import { RequirementsEditor } from './RequirementsEditor';
+import { SearchGuidePanel } from './SearchGuidePanel';
 import type { CoverageFilter } from './BibliographyCoverageTable';
 import type { useProjectBibliography } from './useProjectBibliography';
 
@@ -35,6 +36,16 @@ export function RequirementsTab({ project, bib, bibleBookNames, library, onShow 
         }
         return s;
     }, [bib.coverage.rows, bib.requirementMeasures]);
+    // La guía de búsqueda: qué buscar y dónde, según lo que falta (etapa 2c).
+    const guia = useMemo(() => searchGuide({
+        passages: bib.passages,
+        bibleBooks: bib.bibleBooks,
+        unmetTypes,
+        unmetRequirements: bib.requirementMeasures.filter(m => m.measure.status === 'unmet' || m.measure.status === 'incomplete').map(m => m.requirement),
+        presentApproaches: new Set(bib.entries.filter(e => e.decision === 'approved').map(e => e.evaluation?.approach).filter((x): x is BibliographyApproach => !!x)),
+        projectType: project.type ?? null,
+        language: i18n.language?.startsWith('en') ? 'en' : 'es',
+    }), [bib.passages, bib.bibleBooks, unmetTypes, bib.requirementMeasures, bib.entries, project.type, i18n.language]);
 
     return (
         <div className="space-y-5">
@@ -50,6 +61,7 @@ export function RequirementsTab({ project, bib, bibleBookNames, library, onShow 
                 onChange={bib.setRequirementItems}
                 onShowUnmeasurable={(ids, label) => onShow({ kind: 'ids', ids, label }, 'approved')}
             />
+            <SearchGuidePanel steps={guia} onNote={bib.addSearchNote} />
             <BibliographyCriteriaPanel
                 isCourse={project.type === 'course'}
                 criteria={bib.criteria}
@@ -69,6 +81,7 @@ export function RequirementsTab({ project, bib, bibleBookNames, library, onShow 
                                 <span className="tabular-nums text-muted-foreground">{new Date(l.at).toLocaleDateString(i18n.language)}</span>
                                 <span className="text-foreground">{t(`stateOfArt.log.kind.${l.kind}`)}: {l.label}</span>
                                 <span className="text-muted-foreground">{t('stateOfArt.log.result', { found: l.found, added: l.added })}</span>
+                                {l.query && <code className="basis-full break-words text-[11px] text-muted-foreground">{l.query}</code>}
                             </li>
                         ))}
                     </ul>
