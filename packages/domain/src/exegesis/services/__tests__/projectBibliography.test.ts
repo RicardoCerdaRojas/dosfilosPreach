@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+    bibliographyCoverage,
+    classificationHistory,
     initialSourcesFromBibliography,
     noRepeatApplies,
     applyLibrarySelection,
@@ -225,5 +227,49 @@ describe('revisión adversarial de la etapa 2', () => {
     it('los avisos usan la clasificación del libro cuando la ficha no la tiene', () => {
         const w = bibliographyWarnings([ficha({ decision: 'approved', resourceId: 'lex', sourceType: null })], [{ sourceType: 'lexicon-technical', minimum: 1 }], () => ({ exegeticalType: 'lexicon-technical' }) as never, []);
         expect(w).toEqual([]);
+    });
+});
+
+describe('la cobertura contra las rúbricas (prueba del fundador, NT785)', () => {
+    const req = [
+        { sourceType: 'commentary-critical' as const, minimum: 2, workType: 'TP Semanal' },
+        { sourceType: 'commentary-critical' as const, minimum: 1, workType: 'Investigación' },
+        { sourceType: 'journal-article' as const, minimum: 1, workType: 'Investigación' },
+    ];
+    const fichas = [
+        ficha({ id: 'mayor', decision: 'approved', sourceType: 'commentary-critical', resourceId: 'm' }),
+        ficha({ id: 'nicnt', decision: 'approved', sourceType: null, resourceId: 'n' }),
+        ficha({ id: 'davids', decision: 'candidate', sourceType: 'commentary-critical', resourceId: null }),
+        ficha({ id: 'ropes', decision: 'candidate', sourceType: null, resourceId: 'r' }),
+        ficha({ id: 'fuera', decision: 'discarded', sourceType: 'commentary-critical', reason: 'x' }),
+    ];
+
+    it('una fila por tipo con el mayor mínimo, quién lo pide, aprobadas y candidatas; lo sin cubrir primero', () => {
+        const c = bibliographyCoverage(fichas, req, () => null);
+        expect(c.rows[0]).toMatchObject({ sourceType: 'commentary-critical', minimum: 2, approved: 1, candidates: 1, candidatesInLibrary: 0 });
+        expect(c.rows[0]!.requiredBy).toEqual([{ workType: 'TP Semanal', minimum: 2 }, { workType: 'Investigación', minimum: 1 }]);
+        expect(c.rows[1]).toMatchObject({ sourceType: 'journal-article', approved: 0, candidates: 0 });
+        expect(c).toMatchObject({ unclassifiedApproved: 1, unclassifiedCandidates: 1 });
+    });
+
+    it('la clasificación del libro cuenta si la ficha no tiene; con dos críticos se cubre', () => {
+        const c = bibliographyCoverage(fichas, req, id => (id === 'n' ? { exegeticalType: 'commentary-critical' } : null));
+        expect(c.rows.find(r => r.sourceType === 'commentary-critical')!.approved).toBe(2);
+        expect(c.rows[0]!.sourceType).toBe('journal-article');
+    });
+
+    it('el aviso de tipo faltante compara contra el mínimo, no contra «hay uno»', () => {
+        const w = bibliographyWarnings(fichas, [{ sourceType: 'commentary-critical', minimum: 2 }], () => null, []);
+        expect(w).toContainEqual({ kind: 'missing-type', sourceType: 'commentary-critical', minimum: 2 });
+    });
+
+    it('la clasificación que usaste en tus trabajos, por trabajo y de más a menos', () => {
+        const papers = [
+            { sources: [{ sourceLibraryResourceId: 'n', sourceType: 'commentary-expository' as const }, { sourceLibraryResourceId: 'n', sourceType: 'commentary-expository' as const }] },
+            { sources: [{ sourceLibraryResourceId: 'n', sourceType: 'commentary-expository' as const }] },
+            { sources: [{ corpusId: 'n', sourceType: 'commentary-critical' as const }] },
+            { sources: [{ sourceLibraryResourceId: 'otro', sourceType: 'grammar-syntax' as const }] },
+        ];
+        expect(classificationHistory(papers, 'n')).toEqual([['commentary-expository', 2], ['commentary-critical', 1]]);
     });
 });

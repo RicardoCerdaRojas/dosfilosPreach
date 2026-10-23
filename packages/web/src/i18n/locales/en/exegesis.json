@@ -2373,6 +2373,7 @@
       "extractRubricFromText": "Extract rubric (text)",
       "extractRubricFromDocument": "Extract rubric (document)",
       "extractStyleGuideManifest": "Extract style-guide manifest",
+      "extractProjectBibliography": "Read the course bibliography",
       "classifySourceType": "Classify source type",
       "generateStep": "Generate step (legacy)"
     }

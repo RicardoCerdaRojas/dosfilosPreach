@@ -8,7 +8,7 @@ interface BibliographyCriteriaPanelProps {
     criteria: ProjectBibliographyCriteria;
     onChange: (patch: Partial<ProjectBibliographyCriteria>) => void;
     /** Los mínimos por tipo que piden las rúbricas de los tipos de trabajo. */
-    requirements: ReadonlyArray<{ sourceType: SourceType; minimum: number }>;
+    requirements: ReadonlyArray<{ sourceType: SourceType; minimum: number; workType?: string }>;
     bibleBooks: ReadonlyArray<string>;
 }
 
@@ -28,7 +28,13 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
             <textarea className={campo} rows={3} value={criteria[clave] ?? ''} onChange={e => onChange({ [clave]: e.target.value })} />
         </label>
     );
-    const minimos = [...new Map(requirements.filter(r => r.minimum > 0).map(r => [r.sourceType, r.minimum])).entries()];
+    // Por tipo de trabajo: lo que pide el TP no es lo que pide la investigación.
+    const porTipoDeTrabajo = new Map<string, Array<{ sourceType: SourceType; minimum: number }>>();
+    for (const r of requirements) {
+        if (r.minimum <= 0) continue;
+        const clave = r.workType ?? '';
+        porTipoDeTrabajo.set(clave, [...(porTipoDeTrabajo.get(clave) ?? []), r]);
+    }
 
     return (
         <div className="space-y-4">
@@ -48,9 +54,14 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
             <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-lg border border-border p-3 space-y-1">
                     <p className="text-sm font-medium text-foreground">{t('stateOfArt.criteria.minimums')}</p>
-                    {minimos.length === 0
+                    {porTipoDeTrabajo.size === 0
                         ? <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.noMinimums')}</p>
-                        : <ul className="text-xs text-foreground space-y-0.5">{minimos.map(([tipo, n]) => <li key={tipo}>{tx(`sourceTypes.${tipo}.label`)} · ≥ {n}</li>)}</ul>}
+                        : [...porTipoDeTrabajo].map(([trabajo, mins]) => (
+                            <div key={trabajo} className="space-y-0.5">
+                                {trabajo && <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{trabajo}</p>}
+                                <ul className="text-xs text-foreground space-y-0.5">{mins.map(m => <li key={m.sourceType}>{tx(`sourceTypes.${m.sourceType}.label`)} · ≥ {m.minimum}</li>)}</ul>
+                            </div>
+                        ))}
                     <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.minimumsHint')}</p>
                 </div>
                 <div className="rounded-lg border border-border p-3 space-y-1">

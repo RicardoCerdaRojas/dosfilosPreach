@@ -146,6 +146,8 @@ export const PROXY_FEATURES = [
     // (`CreateUserRubricFromText`). No cobra, así que no pide reserva.
     'exegesis.createUserRubric',
     'exegesis.extractStyleManifest',
+    // Leer la bibliografía de un sílabo o una lista para el estado del arte.
+    'exegesis.extractBibliography',
     // Leer la ficha bibliográfica de la página de créditos del propio libro.
     // Llamada corta, una por libro y a pedido: el usuario pulsa «leer del
     // libro» en la ficha. Lo que el modelo devuelve se filtra en el cliente

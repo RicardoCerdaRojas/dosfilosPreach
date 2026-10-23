@@ -356,7 +356,9 @@ export function bibliographyWarnings(
     const minimos = new Map<SourceType, number>();
     for (const r of requirements) if (r.minimum > 0) minimos.set(r.sourceType, Math.max(minimos.get(r.sourceType) ?? 0, r.minimum));
     for (const [sourceType, minimum] of minimos) {
-        if (!aprobadas.some(e => tipoDe(e, resourceOf) === sourceType)) out.push({ kind: 'missing-type', sourceType, minimum });
+        // Contra el mínimo, no contra «hay al menos una»: «crítico ≥ 2» con un
+        // solo crítico aprobado no estaba cubierto (prueba del fundador, NT785).
+        if (aprobadas.filter(e => tipoDe(e, resourceOf) === sourceType).length < minimum) out.push({ kind: 'missing-type', sourceType, minimum });
     }
     const tradiciones = new Set(aprobadas.map(e => e.evaluation?.tradition).filter((t): t is BibliographyTradition => !!t));
     const rotuladas = aprobadas.filter(e => e.evaluation?.tradition).length;
@@ -485,4 +487,90 @@ export function initialSourcesFromBibliography(
         displayLabel: e.title.trim() || titleOf(e.resourceId!)?.trim() || e.resourceId!,
         mode: 'full-document' as const,
     }));
+}
+
+/** Una fila de la cobertura: lo que piden las rúbricas de un tipo de fuente y lo que hay. */
+export interface BibliographyCoverageRow {
+    sourceType: SourceType;
+    /** El mayor mínimo entre las rúbricas que lo piden. */
+    minimum: number;
+    /** Qué tipos de trabajo lo piden, con su mínimo. */
+    requiredBy: ReadonlyArray<{ workType: string; minimum: number }>;
+    approved: number;
+    /** Candidatas de ese tipo (sin decidir); de ellas, las que ya están en la biblioteca. */
+    candidates: number;
+    candidatesInLibrary: number;
+}
+
+export interface BibliographyCoverage {
+    rows: BibliographyCoverageRow[];
+    /** Aprobadas sin clasificar: no cuentan para ningún tipo hasta que se clasifiquen. */
+    unclassifiedApproved: number;
+    unclassifiedCandidates: number;
+}
+
+/**
+ * La cobertura de la bibliografía contra las rúbricas de los tipos de
+ * trabajo (prueba del fundador en NT785): una fila por tipo que alguna pide,
+ * con qué tipo de trabajo lo pide, cuántas obras hay aprobadas y cuántas
+ * candidatas lo podrían cubrir. Las filas sin cubrir van primero.
+ */
+export function bibliographyCoverage(
+    entries: ReadonlyArray<ProjectBibliographyEntry>,
+    requirements: ReadonlyArray<{ sourceType: SourceType; minimum: number; workType: string }>,
+    resourceOf: (id: string) => { exegeticalType?: SourceType | null } | null | undefined,
+): BibliographyCoverage {
+    const porTipo = new Map<SourceType, { minimum: number; requiredBy: Array<{ workType: string; minimum: number }> }>();
+    for (const r of requirements) {
+        if (r.minimum <= 0) continue;
+        const x = porTipo.get(r.sourceType) ?? { minimum: 0, requiredBy: [] };
+        x.minimum = Math.max(x.minimum, r.minimum);
+        if (!x.requiredBy.some(w => w.workType === r.workType)) x.requiredBy.push({ workType: r.workType, minimum: r.minimum });
+        porTipo.set(r.sourceType, x);
+    }
+    const vivas = entries.filter(e => e.decision !== 'discarded');
+    const rows: BibliographyCoverageRow[] = [...porTipo].map(([sourceType, x]) => {
+        const delTipo = vivas.filter(e => tipoDe(e, resourceOf) === sourceType);
+        const candidatas = delTipo.filter(e => e.decision === 'candidate');
+        return {
+            sourceType, minimum: x.minimum, requiredBy: x.requiredBy,
+            approved: delTipo.filter(e => e.decision === 'approved').length,
+            candidates: candidatas.length,
+            candidatesInLibrary: candidatas.filter(e => e.resourceId).length,
+        };
+    });
+    rows.sort((a, b) => Number(a.approved >= a.minimum) - Number(b.approved >= b.minimum));
+    return {
+        rows,
+        unclassifiedApproved: vivas.filter(e => e.decision === 'approved' && !tipoDe(e, resourceOf)).length,
+        unclassifiedCandidates: vivas.filter(e => e.decision === 'candidate' && !tipoDe(e, resourceOf)).length,
+    };
+}
+
+/** La clasificación efectiva de una ficha: la suya, o la del libro en la biblioteca. */
+export function bibliographyEntryType(
+    entry: ProjectBibliographyEntry,
+    resourceOf: (id: string) => { exegeticalType?: SourceType | null } | null | undefined,
+): SourceType | null {
+    return tipoDe(entry, resourceOf);
+}
+
+/**
+ * Cómo clasificaste un libro en tus trabajos, de más a menos usada. Sirve
+ * para proponer la clasificación de una ficha que no la tiene: en los TP
+ * de Santiago el tipo lo ponía cada trabajo, y la biblioteca quedó sin él.
+ */
+export function classificationHistory(
+    papers: ReadonlyArray<{ sources?: ReadonlyArray<{ sourceLibraryResourceId?: string | null; corpusId?: string | null; sourceType: SourceType }> | null }>,
+    resourceId: string,
+): Array<readonly [SourceType, number]> {
+    const cuenta = new Map<SourceType, number>();
+    for (const p of papers) {
+        const tipos = new Set<SourceType>();
+        for (const f of p.sources ?? []) {
+            if ((f.sourceLibraryResourceId ?? f.corpusId) === resourceId && f.sourceType !== 'other' && f.sourceType !== 'style-template-paper') tipos.add(f.sourceType);
+        }
+        for (const t of tipos) cuenta.set(t, (cuenta.get(t) ?? 0) + 1);
+    }
+    return [...cuenta].sort((a, b) => b[1] - a[1]);
 }

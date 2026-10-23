@@ -19,6 +19,7 @@ export { UpdateRubricUseCase } from './UpdateRubricUseCase';
 export { ResetRubricUseCase } from './ResetRubricUseCase';
 export { ExtractRubricFromTextUseCase } from './ExtractRubricFromTextUseCase';
 export { ExtractRubricFromDocumentUseCase } from './ExtractRubricFromDocumentUseCase';
+export { ExtractProjectBibliographyUseCase, MAX_BIBLIOGRAPHY_TEXT_CHARS } from './ExtractProjectBibliographyUseCase';
 export { ExtractRubricFromImageUseCase } from './ExtractRubricFromImageUseCase';
 export { ExtractRubricPreviewFromImageUseCase } from './ExtractRubricPreviewFromImageUseCase';
 export { ExtractStyleGuideManifestUseCase } from './ExtractStyleGuideManifestUseCase';

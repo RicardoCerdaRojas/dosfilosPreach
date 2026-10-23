@@ -51,6 +51,7 @@ export type ExegesisOperationKey =
     | 'extractRubricFromImage'
     | 'extractRubricPreviewFromImage'
     | 'extractStyleGuideManifest'
+    | 'extractProjectBibliography'
     | 'classifySourceType'
     // `generateSermonFromPaper` cerraba esta unión. Se retiró con el
     // transformador paper→sermón: el paper ahora alimenta el estudio de
@@ -192,6 +193,14 @@ export const EXEGESIS_OPERATION_CATALOG: Readonly<Record<ExegesisOperationKey, E
         estimatedCostUsd: 0.03,
         requiresPreConfirm: false,
         displayKeyI18n: 'studies.operations.extractStyleGuideManifest',
+    },
+    // Leer la bibliografía de un sílabo o una lista (estado del arte). Una
+    // llamada de extracción, como la rúbrica desde un documento.
+    extractProjectBibliography: {
+        key: 'extractProjectBibliography',
+        estimatedCostUsd: 0.03,
+        requiresPreConfirm: false,
+        displayKeyI18n: 'studies.operations.extractProjectBibliography',
     },
     classifySourceType: {
         key: 'classifySourceType',

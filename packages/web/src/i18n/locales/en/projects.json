@@ -8,6 +8,12 @@
   "unsaved": "Unsaved changes.",
   "stateOfArt": {
     "title": "State of the art",
+    "import": {"title": "Import the course bibliography", "hint": "Paste the list (or a single work), upload the syllabus as PDF or a photo, or paste a clipping with Ctrl+V. You can do it several times: what is read is merged with what you have.", "textLabel": "Bibliography list", "placeholder": "Davids, Peter H. The Epistle of James… Grand Rapids: Eerdmans, 1982.", "upload": "Upload PDF or image", "read": "Read bibliography", "readingPdf": "Reading the PDF…", "cost": "Each reading is deducted from your plan.", "done": "{{read}} works read; {{added}} are new in the list.", "failed": "The bibliography could not be read.", "noCredits": "You have no study balance left to read the bibliography.", "imageTooBig": "The image is too large (5 MB max).", "unsupported": "Upload a PDF or an image (PNG, JPG or WEBP).", "scannedPdf": "The PDF has no text (it looks scanned): upload a photo of the bibliography page.", "pdfFailed": "The PDF could not be opened.", "pastedImage": "Pasted image", "removeImage": "Remove the image", "goTo": "Import bibliography…", "pdfTruncated": "The PDF has more than 40 pages: the first 40 are read. If the bibliography comes later, upload a photo of those pages.", "textTruncated": "Only the first {{max}} characters will be read.", "truncated": "The list is too long to read at once: import it in parts."},
+    "leaveUnsaved": "You have unsaved changes in the state of the art. Leave anyway?",
+    "classifyAs": "Classify as:",
+    "usedInPapers_one": "in 1 paper",
+    "usedInPapers_other": "in {{count}} papers",
+    "coverage": {"title": "Rubric coverage", "clear": "Show all", "hint": "What the work types' rubrics require. Press a type to see its candidates.", "covered": "Covered", "missing": "Missing", "approved": "{{approved}} of {{minimum}} approved", "candidates_one": "1 candidate ({{inLibrary}} in your library)", "candidates_other": "{{count}} candidates ({{inLibrary}} in your library)", "unclassified": "Unclassified", "unclassifiedHint": "They count for no type until you classify them.", "unclassifiedCount": "{{approved}} approved · {{candidates}} candidates", "emptyFiltered": "No works of this type in this step. If one is missing, add it by hand as a work to acquire."},
     "conflictNote": "Classified differently in the studies: {{types}}.",
     "fixErrors_one": "Fix 1 entry before saving.",
     "fixErrors_other": "Fix {{count}} entries before saving.",

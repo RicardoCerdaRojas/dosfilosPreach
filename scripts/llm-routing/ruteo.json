@@ -229,6 +229,10 @@
       "provider": "gemini",
       "model": "gemini-3.8-flash"
     },
+    "exegesis.extractBibliography": {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash"
+    },
     "exegesis.createUserRubric": {
       "provider": "gemini",
       "model": "gemini-3.8-flash"
