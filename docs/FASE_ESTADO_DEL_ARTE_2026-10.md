@@ -149,52 +149,49 @@ Es una página propia del proyecto. El tablero ya está grande, así que el paso
 - **La «estrategia» (libre o dialéctica)** no llega al análisis: solo cambia avisos en pantalla y un bloque de los redactores de la introducción y la conclusión.
 - **Las preguntas del TP ya producen lo que pide el método mixto:** respuesta directa, lecturas con sus defensores, criterio decisivo y decisión (`QuestionAnswer`). Pero se producen en la misma llamada que lee los comentarios.
 
-**El cambio.** Cada tipo de trabajo, cada perfil y cada estudio llevan un **método**:
+**El cambio** (decisión del fundador, 2026-10-23): **el análisis sigue siendo una sola llamada por versículo, con cualquier método.** Lo que cambia según el método es el contrato del análisis. Dos fases duplicarían el costo, y el prompt actual costó mucho afinarlo. Sin método, el análisis sale **exactamente como hoy**.
 
-| Método | Cómo se analiza cada versículo |
-|---|---|
-| **Investigación** | Como hoy: una llamada con todas las fuentes. La literatura está desde el principio. |
-| **Exegético** | **Dos fases.** **Observación:** solo las herramientas. **Diálogo con la literatura:** los comentarios, sobre la observación ya revisada. |
-| **Mixto** (los TP) | Las mismas dos fases, organizadas por pregunta. La observación responde la pregunta con la gramática; el diálogo agrega las lecturas con sus defensores, el criterio decisivo y la decisión. |
+El análisis ya viene en piezas que siguen el orden de Fee:
+- **Observación:** `textualCriticism`, `syntacticAnalysis`, `lexicalAnalyses`, `historicalContext`, `oldTestamentLinks` e `initialTranslation`.
+- **Diálogo:** `commentatorEngagement`, `translationCruxes`, `finalTranslation` y `verseThesis`, y, en los TP, las lecturas de `questionAnswers` con sus defensores, el criterio decisivo y la decisión.
 
-**Qué entra en cada fase.** Lo decide la clasificación de la obra, la misma que se fija una vez en la bibliografía del proyecto (capa 1):
-- **Observación:**
+| Método | Qué agrega al prompt | Control fijo, después de la llamada |
+|---|---|---|
+| **Investigación** | Nada: el contrato de hoy. | El de hoy. |
+| **Exegético** | La observación se arma **solo con las herramientas**. El diálogo parte de esa observación y dice qué confirma o corrige cada comentarista. | Se marca cada cita a un comentario que aparezca en una pieza de la observación. |
+| **Mixto** (los TP) | Lo mismo, por pregunta: primero la respuesta gramatical con las herramientas; después, las lecturas con sus defensores, el criterio y la decisión. | Lo mismo. |
+
+**Cómo se clasifica cada obra.** Lo decide la clasificación que recibe una vez en la bibliografía del proyecto (capa 1):
+- **Herramientas:**
   - el texto crítico, el aparato y el comentario textual;
-  - los léxicos y diccionarios teológicos, y las gramáticas;
-  - las fuentes antiguas;
-  - las obras de contexto histórico. Fee pide revisar el contexto histórico al comienzo **M**.
-- **Diálogo:** los comentarios críticos y expositivos, las monografías y los artículos.
+  - los léxicos, los diccionarios teológicos y las gramáticas;
+  - las fuentes antiguas y el contexto histórico. Fee revisa el contexto histórico al comienzo **M**.
+- **Literatura:** los comentarios, las monografías y los artículos.
 
-**El paso del medio es del estudiante.** Esto es lo que hace honesto el método:
-1. Se genera la observación.
-2. El estudiante la revisa: la corrige, la acepta y, si quiere, escribe **«Mi lectura»** (un campo nuevo por versículo o por pregunta).
-3. Recién entonces se pide el diálogo, que recibe la observación aceptada y «Mi lectura». Tiene que decir qué comentarista confirma esa lectura y cuál la discute. Si un comentario la corrige, lo dice y la rotula; no la cambia en silencio.
+**«Mi lectura»**, opcional:
+- un campo por versículo, que se escribe **antes** de generar;
+- entra en la misma llamada, y el diálogo tiene que decir si los comentaristas la confirman o la discuten;
+- no cuesta nada extra.
+
+**Lo que se pierde frente a dos fases.** En una sola llamada, el asistente ve los comentarios mientras escribe la observación. Se compensa de dos maneras:
+- el orden de Fee se cumple en el **estudiante**: su lectura va primero, si la escribe;
+- el control fijo muestra si la observación se apoyó en un comentario.
 
 **Cómo se arma por dentro:**
-- **Datos:** el `method` vive junto a `exegeticalStrategy` y se copia al crear el estudio:
-  - en `ProjectWorkType`, `WorkProfile` y `ExegeticalPaper`;
-  - lo resuelve un solo lugar, en `services/exegeticalStrategy.ts`;
-  - sin método se comporta como hoy, así que los trabajos viejos y el TP #9 no cambian.
-- **Fuentes por fase:**
-  - un filtro en `loadSourceContexts` y en `retrieveCurated`;
-  - el mismo filtro rige la lista de claves válidas, para no borrar citas;
-  - el aviso de «fuente asignada» y el agregado forzado del planificador se aplican por fase.
-- **La salida sigue siendo un solo análisis por versión:**
-  - el diálogo devuelve el análisis completo, que parte de la observación aceptada;
-  - la verificación de citas cubre las dos fases;
-  - así, la prosa, la revisión y el ensamblado no cambian.
-- **Prompts:** cada fase tiene su contrato de fuentes. El de la observación prohíbe citar comentarios; el del diálogo exige partir de la observación.
-- **Cobro y ruteo:**
-  - dos operaciones nuevas en los dos catálogos (web y servidor, con su prueba de paridad);
-  - rutas `exegesis.analyzeVerseObservation` y `exegesis.analyzeVerseDialogue`;
-  - escribirlas en `config/llmRouting` de producción lo hace el fundador.
-  - El precio se **mide** antes de fijarlo. La observación lleva menos texto, así que se supone más barata que el análisis de hoy (US$ 0,10).
-- **El botón viejo** («generar en texto», `GenerateStepUseCase`) no conoce las fases. Con un método de dos fases se oculta, para no repetir el problema de la «estrategia», que solo respetan algunos caminos.
-- **Pantalla:** la tarjeta del versículo muestra las dos fases. Entre ellas van «Mi lectura» y el botón «Pasar al diálogo con la literatura».
-- **Medida:** en el TP #10, con método mixto:
-  - ninguna cita a comentarios en la observación;
-  - cada respuesta del diálogo nombra las lecturas con sus defensores y se refiere a la observación aceptada;
-  - el costo por versículo, medido y comparado con el de hoy.
+- **Datos:** el `method` vive junto a `exegeticalStrategy` en `ProjectWorkType`, `WorkProfile` y `ExegeticalPaper`, y se copia al crear el estudio. Lo resuelve un solo lugar. Sin método, todo queda como hoy.
+- **«Mi lectura»:** va en `StepSourcePlan.perStep[stepId].studentReading`, junto a la nota del plan, y entra al prompt como la nota.
+- **Prompt:** se agrega un solo bloque por método al contrato de fuentes. El resto del prompt no se toca.
+- **Control:**
+  - una función pura de domain revisa las claves citadas en cada pieza de la observación;
+  - sus avisos se guardan con el análisis;
+  - la tarjeta los muestra, igual que los demás avisos.
+- **Sin rutas nuevas ni cambios en el cobro.**
+- **Medida:** en el TP #10, con método mixto, contar:
+  - las citas a comentarios en la observación, que deberían ser 0 o quedar marcadas;
+  - las respuestas que nombran lecturas con sus defensores;
+  - las veces que el diálogo se refiere a «Mi lectura», cuando está escrita.
+
+  Además, comparar el costo por versículo con el de hoy, que debería ser el mismo.
 
 ## Cómo se entrega
 
@@ -205,8 +202,8 @@ Es una página propia del proyecto. El tablero ya está grande, así que el paso
 4. La página «Estado del arte»: requisitos, candidatas, evaluación, por conseguir y aprobada.
 5. La herencia en la creación del estudio, y «no repetir» y la memoria de entregas por proyecto.
 6. El método en los datos y la pantalla: tipo de trabajo, perfil y estudio, con un solo lugar que lo resuelve.
-7. El análisis en dos fases: el filtro de fuentes por fase, los dos contratos de prompt, la verificación de las dos fases, y el cobro y el ruteo.
-8. La tarjeta del versículo: la observación, «Mi lectura», «Pasar al diálogo» y el diálogo.
+7. El contrato de cada método en el prompt, «Mi lectura» en el prompt y el control fijo de citas en la observación.
+8. «Mi lectura» y los avisos del control en la tarjeta del versículo.
 9. Lo que encuentre la revisión adversarial.
 
 Antes del PR: pruebas, una mutación por cada prueba nueva y la revisión adversarial.
@@ -220,7 +217,7 @@ Antes del PR: pruebas, una mutación por cada prueba nueva y la revisión advers
 
 1. **Las tres capas** (investigación de fuentes, corpus del estudio y momento de uso) se separan, y la investigación de fuentes vale para todo tipo de proyecto, no solo para cursos.
 2. **Los TP usan el método mixto.**
-3. **La capa 3 va dentro de la etapa 2**, en commits propios.
+3. **La capa 3 va dentro de la etapa 2**, en commits propios. **Una sola llamada por versículo**, con cualquier método: el método cambia el contrato, no la cantidad de llamadas. «Mi lectura» es opcional.
 4. **«No repetir fuentes»** es una regla de un curso, que se activa en el proyecto.
 5. **La tradición teológica** solo avisa; no filtra.
 
