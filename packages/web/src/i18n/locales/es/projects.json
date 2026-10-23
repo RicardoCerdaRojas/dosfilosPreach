@@ -5,6 +5,7 @@
     "empty": "Todavía no hay estudios. Cada tarea, pasaje o tema que trabajes en este proyecto es un estudio.",
     "linked": "colabora"
   },
+  "unsaved": "Cambios sin guardar.",
   "course": {
     "titleCourse": "Datos del curso",
     "titleProject": "Datos del proyecto",

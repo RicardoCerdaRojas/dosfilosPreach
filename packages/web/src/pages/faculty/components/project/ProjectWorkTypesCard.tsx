@@ -159,7 +159,9 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
                     {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                     {t('workTypes.save')}
                 </Button>
-                {sinNombre && <p className="text-[11px] text-warning-subtle-foreground">{t('workTypes.labelRequired')}</p>}
+                {sinNombre
+                    ? <p className="text-[11px] text-warning-subtle-foreground">{t('workTypes.labelRequired')}</p>
+                    : !sinCambios && !saving && <p className="text-[11px] text-warning-subtle-foreground">{t('unsaved')}</p>}
             </div>
         </section>
     );

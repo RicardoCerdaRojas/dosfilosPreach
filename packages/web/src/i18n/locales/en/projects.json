@@ -5,6 +5,7 @@
     "empty": "No studies yet. Each assignment, passage or topic you work on in this project is a study.",
     "linked": "linked"
   },
+  "unsaved": "Unsaved changes.",
   "course": {
     "titleCourse": "Course details",
     "titleProject": "Project details",
