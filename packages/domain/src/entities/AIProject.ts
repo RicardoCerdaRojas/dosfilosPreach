@@ -95,6 +95,8 @@ export interface ProjectCharge {
     briefTemplateId?: string | null;
     styleGuideId?: string | null;
     exegeticalStrategy?: 'free' | 'dialectical';
+    /** El método del trabajo (capa 3). */
+    exegeticalMethod?: import('../exegesis/entities/ExegeticalPaper').ExegeticalMethod | null;
     cover?: PaperCover | null;
 }
 
@@ -209,6 +211,7 @@ export function newWorkTypeId(): string {
 export function workTypeFromProfile(profile: {
     id: string; displayName: string; rubricTemplateId: string | null; briefTemplateId: string | null;
     styleGuideId: string | null; exegeticalStrategy: 'free' | 'dialectical'; cover?: PaperCover | null;
+    exegeticalMethod?: import('../exegesis/entities/ExegeticalPaper').ExegeticalMethod | null;
 }, id: string): ProjectWorkType {
     return {
         id,
@@ -220,6 +223,7 @@ export function workTypeFromProfile(profile: {
         briefTemplateId: profile.briefTemplateId,
         styleGuideId: profile.styleGuideId,
         exegeticalStrategy: profile.exegeticalStrategy,
+        ...(profile.exegeticalMethod ? { exegeticalMethod: profile.exegeticalMethod } : {}),
         cover: profile.cover ?? null,
     };
 }

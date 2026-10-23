@@ -33,6 +33,24 @@
     "noWorkType": "Sin tipo",
     "removedWorkType": "Un tipo que ya no está en el proyecto"
   },
+  "method": {
+    "label": "Método",
+    "none": "Como siempre",
+    "noneHint": "El análisis de siempre: lee herramientas y comentarios juntos.",
+    "saveFailed": "No se pudo cambiar el método.",
+    "mixed": {
+      "label": "Mixto (TP)",
+      "hint": "Por pregunta: primero la respuesta gramatical con las herramientas; después, las lecturas con quién las defiende, el criterio decisivo y la decisión."
+    },
+    "exegetical": {
+      "label": "Exegético",
+      "hint": "Primero la observación del texto con las herramientas (texto crítico, léxicos, gramáticas); después, el diálogo con los comentarios (Fee)."
+    },
+    "research": {
+      "label": "Investigación",
+      "hint": "La literatura desde el principio, para entender y citar las posturas mientras se argumenta."
+    }
+  },
   "directory": {
     "badge": "Trabajo de investigación exegética asistida",
     "heroTitle": "Investigación exegética",

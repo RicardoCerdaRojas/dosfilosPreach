@@ -33,6 +33,24 @@
     "noWorkType": "No type",
     "removedWorkType": "A type no longer in the project"
   },
+  "method": {
+    "label": "Method",
+    "none": "As always",
+    "noneHint": "The usual analysis: it reads tools and commentaries together.",
+    "saveFailed": "The method could not be changed.",
+    "mixed": {
+      "label": "Mixed (weekly paper)",
+      "hint": "Per question: first the grammatical answer with the tools; then the readings with who defends them, the decisive criterion and the decision."
+    },
+    "exegetical": {
+      "label": "Exegetical",
+      "hint": "First the observation of the text with the tools (critical text, lexicons, grammars); then the dialogue with the commentaries (Fee)."
+    },
+    "research": {
+      "label": "Research",
+      "hint": "The literature from the start, to understand and cite the positions while arguing."
+    }
+  },
   "directory": {
     "badge": "Assisted exegetical research papers",
     "heroTitle": "Exegetical Research",

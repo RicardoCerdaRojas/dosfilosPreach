@@ -237,4 +237,27 @@ describe('crear un estudio desde un proyecto', () => {
             expect(createPaper.mock.calls[0]![0]).not.toHaveProperty('initialSources');
         });
     });
+
+    describe('el método del tipo de trabajo (etapa 2, capa 3)', () => {
+        it('el tipo trae su método; pasar a uno sin método vuelve al análisis de siempre', async () => {
+            proyectos = [{ ...curso, workTypes: [{ ...tp, exegeticalMethod: 'mixed' }, { id: 'pf', label: 'Paper final', rubricTemplateId: 'rub-paper' }] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'tp' } });
+            expect((screen.getByLabelText('method.label') as HTMLSelectElement).value).toBe('mixed');
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'pf' } });
+            expect((screen.getByLabelText('method.label') as HTMLSelectElement).value).toBe('');
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).not.toHaveProperty('exegeticalMethod');
+        });
+
+        it('se puede elegir a mano y viaja en la creación', async () => {
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('method.label'), { target: { value: 'exegetical' } });
+            expect(screen.getByText('method.exegetical.hint')).toBeInTheDocument();
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).toMatchObject({ exegeticalMethod: 'exegetical' });
+        });
+    });
 });

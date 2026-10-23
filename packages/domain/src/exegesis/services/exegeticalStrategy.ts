@@ -1,4 +1,5 @@
-import type { ExegeticalStrategy } from '../entities/ExegeticalPaper';
+import type { ExegeticalMethod, ExegeticalStrategy } from '../entities/ExegeticalPaper';
+import type { SourceType } from '../entities/SourceType';
 
 /**
  * QUÉ SIGNIFICA CADA MODO METODOLÓGICO, en un solo lugar.
@@ -46,4 +47,33 @@ export function resolveExegeticalStrategy(stored: unknown): ExegeticalStrategy {
  */
 export function usesRoleCoverage(strategy: ExegeticalStrategy | undefined): boolean {
     return resolveExegeticalStrategy(strategy) === 'dialectical';
+}
+
+/**
+ * El método de un trabajo (capa 3), normalizado. `null` es «el análisis de
+ * siempre»: los trabajos viejos y los creados sin método no cambian.
+ */
+export function resolveExegeticalMethod(stored: unknown): ExegeticalMethod | null {
+    return stored === 'research' || stored === 'exegetical' || stored === 'mixed' ? stored : null;
+}
+
+/** Si el método separa la observación (herramientas) del diálogo (literatura). */
+export function separatesObservation(method: ExegeticalMethod | null | undefined): boolean {
+    return method === 'exegetical' || method === 'mixed';
+}
+
+/**
+ * Las HERRAMIENTAS de la observación: el texto y su aparato, los léxicos y
+ * diccionarios, las gramáticas, las fuentes antiguas y el contexto
+ * histórico (Fee revisa el contexto histórico al comienzo). Lo demás
+ * (comentarios, monografías, artículos) es la LITERATURA del diálogo.
+ */
+const HERRAMIENTAS: ReadonlySet<SourceType> = new Set<SourceType>([
+    'biblical-text-edition', 'critical-apparatus', 'textual-commentary',
+    'lexicon-technical', 'theological-dictionary', 'grammar-syntax',
+    'primary-source-ancient', 'historical-background',
+]);
+
+export function isObservationTool(type: SourceType | null | undefined): boolean {
+    return !!type && HERRAMIENTAS.has(type);
 }

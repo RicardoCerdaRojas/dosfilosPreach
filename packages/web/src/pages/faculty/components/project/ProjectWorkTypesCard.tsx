@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ClipboardList, Loader2, Plus, X } from 'lucide-react';
 import { newWorkTypeId, projectCourseInfo, projectWorkTypes, workTypeFromProfile, type AIProject, type ProjectWorkType } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
+import { MethodPicker } from '@/components/exegesis/MethodPicker';
 import { useTranslation } from '@/i18n';
 import { useWorkProfiles } from '@/hooks/exegesis/useWorkProfiles';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
@@ -127,6 +128,9 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
                                                 <option value="free">{t('workTypes.free')}</option>
                                             </select>
                                         </label>
+                                        <div className="sm:col-span-2">
+                                            <MethodPicker id={`method-${x.id}`} value={x.exegeticalMethod} onChange={m => cambiar(x.id, { exegeticalMethod: m })} />
+                                        </div>
                                         {x.cover && <p className="text-[11px] text-muted-foreground sm:col-span-2">{t('workTypes.coverFromProfile')}</p>}
                                     </div>
                                 )}

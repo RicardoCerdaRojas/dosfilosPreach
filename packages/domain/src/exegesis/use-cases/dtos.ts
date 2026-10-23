@@ -73,6 +73,8 @@ export interface CreateExegeticalPaperInput {
      * want to skip the role scaffolding.
      */
     exegeticalStrategy?: 'free' | 'dialectical';
+    /** El método del trabajo (capa 3). Ausente: el análisis de siempre. */
+    exegeticalMethod?: import('../entities/ExegeticalPaper').ExegeticalMethod | null;
     /**
      * Denormalized back-reference when this paper is being auto-created
      * by a SermonSeries pericope. Stored on the paper so downstream use

@@ -12,6 +12,7 @@ import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBrief
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
 import { ProjectOriginPicker } from '@/components/exegesis/ProjectOriginPicker';
 import { ProjectBibliographyOffer } from '@/components/exegesis/ProjectBibliographyOffer';
+import { MethodPicker } from '@/components/exegesis/MethodPicker';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
     defaultWorkTypeId,
@@ -20,6 +21,7 @@ import {
     resolveProjectCharge,
     type AddProjectSourceInput,
     type AIProject,
+    type ExegeticalMethod,
     type ExegeticalStrategy,
     type PassageReference,
     type SupportedLanguage,
@@ -104,6 +106,9 @@ export function ExegesisCreatePage() {
     // differentiator we want users to land on; opting out is a
     // deliberate, named choice (`free`) — not the absence of one.
     const [exegeticalStrategy, setExegeticalStrategy] = useState<ExegeticalStrategy>('dialectical');
+    // El método (capa 3): cuándo entran los comentarios. Sin elegir, el
+    // análisis de siempre. Lo traen el perfil y el tipo de trabajo.
+    const [exegeticalMethod, setExegeticalMethod] = useState<ExegeticalMethod | null>(null);
 
     // Perfil de trabajo: cómo quedó configurado un trabajo anterior del
     // mismo curso. Rellena los campos y NO decide: el estudiante ve los
@@ -135,6 +140,7 @@ export function ExegesisCreatePage() {
         setRubricTemplateId(profile.rubricTemplateId ?? undefined);
         setBriefDelPerfilId(profile.briefTemplateId);
         setExegeticalStrategy(profile.exegeticalStrategy);
+        setExegeticalMethod(profile.exegeticalMethod ?? null);
         setCoverFromProfile(profile.cover ?? null);
     }, []);
 
@@ -162,6 +168,7 @@ export function ExegesisCreatePage() {
                 setBriefDelPerfilId(null);
                 setCoverFromProfile(null);
                 setExegeticalStrategy('dialectical');
+                setExegeticalMethod(null);
                 if (defaultProfile) aplicarPerfil(defaultProfile);
             }
             return;
@@ -176,6 +183,7 @@ export function ExegesisCreatePage() {
         setRubricTemplateId(c.rubricTemplateId === undefined ? undefined : c.rubricTemplateId);
         setBriefDelPerfilId(c.briefTemplateId ?? null);
         setExegeticalStrategy(c.exegeticalStrategy ?? 'dialectical');
+        setExegeticalMethod(c.exegeticalMethod ?? null);
         setCoverFromProfile(c.cover ?? null);
         setStyleGuideDelProyecto(c.styleGuideId ?? null);
     }, [defaultProfile, aplicarPerfil]);
@@ -231,6 +239,7 @@ export function ExegesisCreatePage() {
                 passage,
                 displayLanguage,
                 exegeticalStrategy,
+                ...(exegeticalMethod ? { exegeticalMethod } : {}),
                 styleGuideId: styleGuideDelProyecto ?? perfilElegido?.styleGuideId ?? null,
                 assignmentBrief: assignmentBrief.trim() || null,
                 rubricTemplateId,
@@ -339,6 +348,9 @@ export function ExegesisCreatePage() {
                     <p className="text-[11px] text-muted-foreground italic mt-2">
                         {t('create.strategy.hint')}
                     </p>
+                    <div className="mt-4 border-t border-border pt-3">
+                        <MethodPicker value={exegeticalMethod} onChange={setExegeticalMethod} />
+                    </div>
                 </Step>
 
                 {proyectosActivos.length > 0 && (

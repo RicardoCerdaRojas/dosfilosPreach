@@ -47,6 +47,15 @@ describe('ProjectWorkTypesCard', () => {
         expect(ensayo.exegeticalStrategy).toBeUndefined();
     });
 
+    it('cada tipo guarda su método (capa 3)', () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(<ProjectWorkTypesCard project={{ ...curso, workTypes: [{ id: 'a', label: 'TP' }] } as never} onSave={onSave} saving={false} />);
+        fireEvent.click(screen.getByText('workTypes.edit'));
+        fireEvent.change(screen.getByLabelText('method.label'), { target: { value: 'mixed' } });
+        fireEvent.click(screen.getByText('workTypes.save'));
+        expect(onSave).toHaveBeenCalledWith([{ id: 'a', label: 'TP', exegeticalMethod: 'mixed' }]);
+    });
+
     it('sin nombre no se guarda', () => {
         const onSave = vi.fn();
         render(<ProjectWorkTypesCard project={curso as never} onSave={onSave} saving={false} />);

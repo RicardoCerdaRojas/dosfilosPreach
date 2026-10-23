@@ -118,6 +118,7 @@ export class CreateExegeticalPaperUseCase {
             passage: input.passage,
             displayLanguage: input.displayLanguage,
             exegeticalStrategy: input.exegeticalStrategy ?? DEFAULT_STRATEGY_FOR_NEW_PAPER,
+            exegeticalMethod: input.exegeticalMethod ?? null,
             title: input.title,
             assignmentBrief: normalizeBrief(input.assignmentBrief),
             styleGuideId: input.styleGuideId,
