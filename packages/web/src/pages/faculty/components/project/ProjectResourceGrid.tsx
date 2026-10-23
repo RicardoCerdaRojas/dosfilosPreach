@@ -21,6 +21,8 @@ interface ProjectResourceGridProps {
     reprocessing: Record<string, boolean>;
     onReprocessSource: (source: AttachedSource) => void;
     onOpenSourcePicker: () => void;
+    /** Abre el estado del arte, en los proyectos que lo tienen. */
+    onOpenStateOfArt?: () => void;
 
     // Conversations
     projectSessions: SessionLike[];
@@ -53,6 +55,7 @@ export function ProjectResourceGrid({
     reprocessing,
     onReprocessSource,
     onOpenSourcePicker,
+    onOpenStateOfArt,
     projectSessions,
     projectGreekSessions,
     hasLinkableGreekSessions,
@@ -78,6 +81,7 @@ export function ProjectResourceGrid({
                         : t('resources.sources.ctaAttach'),
                     onClick: onOpenSourcePicker,
                 }}
+                secondaryCta={onOpenStateOfArt ? { label: t('resources.sources.stateOfArt'), onClick: onOpenStateOfArt } : undefined}
             >
                 {attachedSources.map((s) => {
                     const isIndexed = s.indexingStatus === 'ready';

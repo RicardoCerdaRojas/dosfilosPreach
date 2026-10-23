@@ -64,10 +64,16 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                     const isActive = idx === roadmap.activeIndex;
                     const isComplete = p.complete;
                     return (
-                        <li
-                            key={p.phase.id}
+                        <li key={p.phase.id} className="flex-1 min-w-[160px] flex">
+                        {/* Cada fase se puede abrir, también las cumplidas: si no, la
+                            página del estado del arte quedaba sin entrada una vez
+                            cumplida (prueba del fundador, NT785). */}
+                        <button
+                            type="button"
+                            onClick={() => onPhaseCta(p.phase.cta.kind)}
+                            title={p.phase.cta.label}
                             className={cn(
-                                'flex-1 min-w-[160px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border transition-colors',
+                                'w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
                                 isComplete
                                     ? 'bg-success-subtle border-success/30'
                                     : isActive
@@ -101,6 +107,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                                     {p.phase.title}
                                 </div>
                             </div>
+                        </button>
                         </li>
                     );
                 })}

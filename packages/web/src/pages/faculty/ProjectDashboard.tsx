@@ -242,6 +242,7 @@ export function ProjectDashboard() {
                     reprocessing={reprocessing}
                     onReprocessSource={reprocessSource}
                     onOpenSourcePicker={() => setSourcePickerOpen(true)}
+                    onOpenStateOfArt={typeMeta.roadmap.some(f => f.cta.kind === 'stateOfArt') ? () => handleRoadmapCta('stateOfArt') : undefined}
                     projectSessions={projectSessions}
                     projectGreekSessions={projectGreekSessions}
                     hasLinkableGreekSessions={linkableGreekSessions.length > 0}

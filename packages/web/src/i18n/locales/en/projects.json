@@ -213,7 +213,8 @@
             "byProcess": "· To process",
             "process": "Process",
             "processing": "Processing…",
-            "processTitle": "Process source"
+            "processTitle": "Process source",
+            "stateOfArt": "State of the art"
         },
         "conversations": {
             "label": "Conversations",

@@ -213,7 +213,8 @@
             "byProcess": "· Por procesar",
             "process": "Procesar",
             "processing": "Procesando…",
-            "processTitle": "Procesar fuente"
+            "processTitle": "Procesar fuente",
+            "stateOfArt": "Estado del arte"
         },
         "conversations": {
             "label": "Conversaciones",
