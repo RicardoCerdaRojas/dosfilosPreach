@@ -206,11 +206,15 @@ export interface BibliographySearchLogEntry {
     id: string;
     /** ISO. */
     at: string;
-    kind: 'syllabus' | 'bibliography' | 'file' | 'catalog' | 'library' | 'studies';
+    /** `database`: una búsqueda que el usuario hizo en una base (IxTheo, ATLA…) y anotó (etapa 2c). */
+    kind: 'syllabus' | 'bibliography' | 'file' | 'catalog' | 'library' | 'studies' | 'database';
     /** De dónde: el nombre del archivo, la base o la consulta. */
     label: string;
     found: number;
     added: number;
+    /** `database`: en qué base y con qué consulta, para poder repetirla. */
+    database?: string | null;
+    query?: string | null;
 }
 
 /** Tope de fichas: el proyecto vive en un solo documento. */
@@ -804,7 +808,13 @@ export function cleanRequirementItems(items: ReadonlyArray<ProjectRequirement>):
 }
 
 export function cleanSearchLog(log: ReadonlyArray<BibliographySearchLogEntry>): BibliographySearchLogEntry[] {
-    return log.filter(l => l.id && l.at).slice(-200).map(l => limpio(l));
+    // Una búsqueda anotada la escribe el usuario: números enteros no negativos y textos acotados.
+    const n = (x: unknown) => (Number.isFinite(Number(x)) ? Math.max(0, Math.floor(Number(x))) : 0);
+    return log.filter(l => l.id && l.at).slice(-200).map(l => limpio({
+        ...l, label: String(l.label ?? '').slice(0, 300), found: n(l.found), added: n(l.added),
+        ...(l.query != null ? { query: String(l.query).slice(0, 1000) } : {}),
+        ...(l.database != null ? { database: String(l.database).slice(0, 60) } : {}),
+    }));
 }
 
 /**

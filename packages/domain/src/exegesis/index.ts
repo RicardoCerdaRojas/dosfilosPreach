@@ -57,6 +57,7 @@ export * from './ports/IStyleGuideManifestExtractor';
 // the user knows what to acquire/read for the paper they're building.
 export * from './recommendations';
 export * from './services/projectBibliography';
+export * from './services/searchGuide';
 export * from './services/bibliographyCandidates';
 export * from './services/observationCitations';
 export * from './services/bibliographyFileFormats';

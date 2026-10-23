@@ -36,8 +36,10 @@ const PENTATEUCH: GroupRecommendations = {
                 title: 'Story as Torah: Reading Old Testament Narrative Ethically',
                 series: null,
                 publisher: 'Baker Academic',
-                year: 2000,
-                isbn: '9780801027809',
+                // Corregido 2026-10-23 con Open Library: el ISBN no era válido; la
+                // edición de Baker Academic es de 2004 (la de T&T Clark, de 2000).
+                year: 2004,
+                isbn: '9780801027833',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Hermenéutica para leer las narrativas del Pentateuco con sensibilidad ética y literaria.',

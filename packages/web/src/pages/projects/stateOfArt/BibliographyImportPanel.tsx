@@ -146,6 +146,7 @@ export function BibliographyImportPanel({ context, pending, onPending, onConfirm
             <p className="text-xs text-muted-foreground">{t('stateOfArt.import.hint')}</p>
 
             <div
+                id="bib-import-zone"
                 role="group"
                 aria-label={t('stateOfArt.import.dropZone')}
                 tabIndex={0}

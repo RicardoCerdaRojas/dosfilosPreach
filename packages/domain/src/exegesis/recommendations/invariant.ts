@@ -290,7 +290,9 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             series: null,
             publisher: 'Baker Academic',
             year: 2007,
-            isbn: '9780801031083',
+            // Corregido 2026-10-23: 9780801031083 es «The Apostolic Fathers in English»
+            // (leído en Open Library); el de esta edición es 9780801034688.
+            isbn: '9780801034688',
             tier: 'recommended',
             languages: ['en'],
             testament: 'NT',

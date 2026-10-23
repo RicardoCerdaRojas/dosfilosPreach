@@ -4,6 +4,11 @@ import { INVARIANT_RECOMMENDATIONS } from './invariant';
 import { HEBREWS_RECOMMENDATIONS } from './nt/hebrews';
 import { ROMANS_RECOMMENDATIONS } from './nt/romans';
 import { GENESIS_RECOMMENDATIONS } from './ot/genesis';
+import { NEHEMIAH_RECOMMENDATIONS } from './ot/nehemiah';
+import { RUTH_RECOMMENDATIONS } from './ot/ruth';
+import { JONAH_RECOMMENDATIONS } from './ot/jonah';
+import { JAMES_RECOMMENDATIONS } from './nt/james';
+import { SECOND_PETER_RECOMMENDATIONS } from './nt/2peter';
 import { GROUP_CATALOG } from './groups/catalog';
 import { BOOK_TO_GROUPS } from './groups/types';
 import type { BookRecommendations, SourceRecommendation } from './types';
@@ -36,7 +41,16 @@ const RECOMMENDATIONS_BY_BOOK: Partial<Record<BibleBookId, BookRecommendations>>
     HEB: HEBREWS_RECOMMENDATIONS,
     ROM: ROMANS_RECOMMENDATIONS,
     GEN: GENESIS_RECOMMENDATIONS,
+    // Etapa 2c: curados y verificados contra un registro (VERIFIED_BOOKS).
+    NEH: NEHEMIAH_RECOMMENDATIONS,
+    RUT: RUTH_RECOMMENDATIONS,
+    JON: JONAH_RECOMMENDATIONS,
+    JAS: JAMES_RECOMMENDATIONS,
+    '2PE': SECOND_PETER_RECOMMENDATIONS,
 };
+
+/** Los libros cuyo catálogo propio está verificado obra por obra (lo exige la prueba del catálogo). */
+export const VERIFIED_BOOKS: ReadonlyArray<BibleBookId> = ['NEH', 'RUT', 'JON', 'JAS', '2PE'];
 
 /**
  * Returns recommendations for `(bookId × sourceType)`, sorted with the

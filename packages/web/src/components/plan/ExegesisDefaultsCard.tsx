@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { exegesisService, libraryService, seriesService } from '@dosfilos/application';
 import {
     findBooksByAlias,
+    findLibraryResourceForRecommendation,
     getSourceRecommendations,
     type BibleBookId,
     type LibraryResource,
@@ -596,8 +597,10 @@ function RecommendationsForSeries({
      */
     const findMatch = (rec: SourceRecommendation): LibraryResource | null => {
         if (!libraryResources) return null;
-        const recTitle = rec.title.toLowerCase();
-        return libraryResources.find((r) => r.title.toLowerCase().includes(recTitle.slice(0, 20))) ?? null;
+        // El emparejador del dominio compara título y autor: los primeros 20
+        // caracteres solos confundían «James» de McCartney con cualquier
+        // libro con «James» en el título (revisión de la 2c).
+        return findLibraryResourceForRecommendation(rec, libraryResources.map(r => ({ ...r, author: r.author ?? null })));
     };
 
     const alreadyAdded = new Set(existingRefs.map((r) => r.libraryResourceId));

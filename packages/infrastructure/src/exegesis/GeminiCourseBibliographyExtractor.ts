@@ -8,6 +8,7 @@ import {
 } from '@dosfilos/domain';
 import { withGeminiRetry } from './geminiRetry';
 import { runLlmPromptWithUsage } from '../llm/callableLlm';
+import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 
 /**
  * Lee la bibliografía de un sílabo, una lista o una foto (estado del arte,
@@ -34,7 +35,10 @@ export class GeminiCourseBibliographyExtractor implements ICourseBibliographyExt
                 // Un sílabo de NT785 trae ~90 obras: ~60 tokens cada una.
                 maxOutputTokens: 16384,
                 ...(input.image ? { inlineImage: { mimeType: input.image.mimeType, base64: input.image.base64 } } : {}),
-            }),
+                // 16k de salida no caben en los 70 s del SDK: sin este tope el
+                // navegador cortaba con «deadline-exceeded» mientras el servidor
+                // seguía leyendo (prueba del fundador con el sílabo de NT785).
+            }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS }),
             { contextLabel: 'GeminiCourseBibliographyExtractor' },
         );
         return { ...parseBibliographyJson(raw), ...(typeof tokensUsed === 'number' ? { tokensUsed } : {}) };
