@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+    extractedBibliographyCandidates,
     catalogCandidates,
     libraryCandidates,
     projectBibleBooks,
@@ -71,5 +72,24 @@ describe('candidatas del estado del arte', () => {
             ...studiesCandidates([{ sources: [{ sourceLibraryResourceId: 'ropes', corpusId: 'ropes', sourceType: 'commentary-critical', displayLabel: 'ICC James', citationKey: null }] }]),
         ], () => `f${++n}`);
         expect(fichas.find(f => f.resourceId === 'ropes')!.origins).toEqual(['library', 'studies']);
+    });
+});
+
+describe('lo leído de un sílabo como candidatas (NT785)', () => {
+    it('obligatoria o recomendada según el sílabo, emparejada con la biblioteca, con la clasificación del libro primero', () => {
+        const c = extractedBibliographyCandidates([
+            { title: 'Greek Grammar Beyond the Basics', author: 'Wallace, Daniel B.', requirement: 'recommended', sourceType: 'commentary-critical', year: 1996 },
+            { title: 'Comentario de la epístola de Santiago', author: 'Moo, Douglas J.', series: 'Biblioteca teológica Vida 2', publisher: 'Vida', year: 2009, requirement: 'required', sourceType: 'commentary-expository', note: 'Lectura semanal' },
+        ], biblioteca as never);
+        expect(c[0]).toMatchObject({ resourceId: 'wallace', sourceType: 'grammar-syntax', weight: 'recommended', origin: 'syllabus', year: 1996 });
+        expect(c[1]).toMatchObject({ resourceId: null, sourceType: 'commentary-expository', weight: 'required', publisher: 'Vida', note: 'Lectura semanal' });
+    });
+
+    it('importar dos veces la misma lista no duplica fichas', () => {
+        const leido = [{ title: 'Comentario de la epístola de Santiago', author: 'Moo, Douglas J.', requirement: 'required' as const }];
+        let n = 0;
+        const una = mergeBibliographyCandidates([], extractedBibliographyCandidates(leido, []), () => `f${++n}`);
+        const dos = mergeBibliographyCandidates(una, extractedBibliographyCandidates(leido, []), () => `f${++n}`);
+        expect(dos).toHaveLength(1);
     });
 });

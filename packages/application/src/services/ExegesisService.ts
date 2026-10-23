@@ -25,6 +25,7 @@ import {
     GeminiSermonComposer,
     GeminiStudyGuideComposer,
     GeminiPaperRubricExtractor,
+    GeminiCourseBibliographyExtractor,
     GeminiStyleGuideManifestExtractor,
     DeterministicStyleFormatter,
     FuzzyCitationVerifier,
@@ -80,6 +81,7 @@ import {
     ResetRubricUseCase,
     ExtractRubricFromTextUseCase,
     ExtractRubricFromDocumentUseCase,
+    ExtractProjectBibliographyUseCase,
     ExtractRubricFromImageUseCase,
     ExtractRubricPreviewFromImageUseCase,
     ExtractStyleGuideManifestUseCase,
@@ -180,6 +182,7 @@ class ExegesisService {
     public resetRubric: ResetRubricUseCase;
     public extractRubricFromText: ExtractRubricFromTextUseCase;
     public extractRubricFromDocument: ExtractRubricFromDocumentUseCase;
+    public extractProjectBibliography: ExtractProjectBibliographyUseCase;
     public extractRubricFromImage: ExtractRubricFromImageUseCase;
     public extractRubricPreviewFromImage: ExtractRubricPreviewFromImageUseCase;
     public extractStyleGuideManifest: ExtractStyleGuideManifestUseCase;
@@ -388,6 +391,7 @@ class ExegesisService {
         this.updateRubric = new UpdateRubricUseCase(paperRepository);
         this.resetRubric = new ResetRubricUseCase(paperRepository);
         this.extractRubricFromText = new ExtractRubricFromTextUseCase(paperRepository, rubricExtractor);
+        this.extractProjectBibliography = new ExtractProjectBibliographyUseCase(new GeminiCourseBibliographyExtractor(exegesisModelId));
         this.extractRubricFromDocument = new ExtractRubricFromDocumentUseCase(
             paperRepository,
             contentReader,

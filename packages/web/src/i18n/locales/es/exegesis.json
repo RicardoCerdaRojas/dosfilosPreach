@@ -2373,6 +2373,7 @@
       "extractRubricFromText": "Extraer rúbrica (texto)",
       "extractRubricFromDocument": "Extraer rúbrica (documento)",
       "extractStyleGuideManifest": "Extraer manifest de guía de estilo",
+      "extractProjectBibliography": "Leer la bibliografía del curso",
       "classifySourceType": "Clasificar tipo de fuente",
       "generateStep": "Generar paso (legacy)"
     }

@@ -8,6 +8,7 @@ import { useTranslation } from '@/i18n';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { useProjectBibliography } from './stateOfArt/useProjectBibliography';
 import { BibliographyEntryList } from './stateOfArt/BibliographyEntryList';
+import { BibliographyImportPanel } from './stateOfArt/BibliographyImportPanel';
 import { BibliographyCoverageTable, type CoverageFilter } from './stateOfArt/BibliographyCoverageTable';
 import { BibliographyCriteriaPanel, BibliographyWarningsList } from './stateOfArt/BibliographyCriteriaPanel';
 import { campo } from './stateOfArt/BibliographyEntryEditor';
@@ -125,6 +126,13 @@ export function ProjectStateOfArtPage() {
                 <div id="state-of-art-panel" role="tabpanel" aria-labelledby={`state-of-art-tab-${paso}`}>
 
                 {paso === 'requirements' ? (
+                    <div className="space-y-4">
+                    <BibliographyImportPanel
+                        onImported={res => {
+                            const { read, added } = bib.importExtracted(res);
+                            toast.success(t('stateOfArt.import.done', { read, added }));
+                        }}
+                    />
                     <BibliographyCriteriaPanel
                         isCourse={project.type === 'course'}
                         criteria={bib.criteria}
@@ -132,6 +140,7 @@ export function ProjectStateOfArtPage() {
                         requirements={bib.requirements}
                         bibleBooks={libros}
                     />
+                    </div>
                 ) : (
                     <section className="space-y-3">
                         <p className="text-xs text-muted-foreground">{t(`stateOfArt.stepHint.${paso}`)}</p>
@@ -148,6 +157,9 @@ export function ProjectStateOfArtPage() {
                                     <span className="text-xs text-muted-foreground">{t('stateOfArt.field.author')}</span>
                                     <input className={campo} value={manual.author} onChange={e => setManual(m => ({ ...m, author: e.target.value }))} />
                                 </label>
+                                <Button size="sm" variant="ghost" onClick={() => setPaso('requirements')}>
+                                    {t('stateOfArt.import.goTo')}
+                                </Button>
                                 <Button size="sm" variant="outline" onClick={agregarManual} disabled={!manual.title.trim()}>
                                     <Plus className="mr-1.5 h-3.5 w-3.5" />{t('stateOfArt.addManual')}
                                 </Button>

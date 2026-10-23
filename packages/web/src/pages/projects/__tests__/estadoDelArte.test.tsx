@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 /**
  * Etapa 2 (ADR-046): la página del estado del arte. Candidatas de varios
@@ -25,12 +26,17 @@ vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => 
     { id: 'tp7', projectId: null, linkedProjectIds: [], passage: { bookId: 'JAS' }, sources: [{ sourceLibraryResourceId: 'nicnt', corpusId: 'nicnt', sourceType: 'commentary-expository', displayLabel: 'NICNT', citationKey: null }] },
 ] }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+const leerBibliografia = vi.fn();
+vi.mock('@dosfilos/application', () => ({ exegesisService: { extractProjectBibliography: { execute: leerBibliografia } }, MAX_BIBLIOGRAPHY_TEXT_CHARS: 60_000 }));
+vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'u' } }) }));
 const { ProjectStateOfArtPage } = await import('../ProjectStateOfArtPage');
 
 const montar = () => render(
-    <MemoryRouter initialEntries={['/dashboard/projects/nt785/estado-del-arte']}>
-        <Routes><Route path="/dashboard/projects/:projectId/estado-del-arte" element={<ProjectStateOfArtPage />} /></Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/dashboard/projects/nt785/estado-del-arte']}>
+            <Routes><Route path="/dashboard/projects/:projectId/estado-del-arte" element={<ProjectStateOfArtPage />} /></Routes>
+        </MemoryRouter>
+    </QueryClientProvider>,
 );
 const guardado = () => updateProject.mock.calls.at(-1)![0] as { bibliography: Array<Record<string, unknown>>; bibliographyCriteria: Record<string, unknown> };
 const ficha = (titulo: RegExp) => screen.getByText(titulo).closest('li')! as HTMLElement;
@@ -151,5 +157,36 @@ describe('ProjectStateOfArtPage', () => {
             expect(confirmar).toHaveBeenCalledWith('stateOfArt.leaveUnsaved');
             confirmar.mockRestore();
         });
+    });
+
+    it('importar la bibliografía del sílabo suma candidatas sin duplicar y agrega lo que prohíbe a los criterios', async () => {
+        leerBibliografia.mockResolvedValue({
+            entries: [
+                { title: 'Greek Grammar Beyond the Basics', author: 'Wallace, Daniel B.', requirement: 'recommended', sourceType: 'grammar-syntax' },
+                { title: 'Comentario de la epístola de Santiago', author: 'Moo, Douglas J.', requirement: 'required', sourceType: 'commentary-expository' },
+            ],
+            requirements: 'Mínimo 100 páginas de artículos académicos.',
+            prohibitions: 'No usar la misma fuente dos semanas consecutivas.',
+        });
+        montar();
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'bibliografía del sílabo' } });
+        fireEvent.click(screen.getByText('stateOfArt.import.read'));
+        await waitFor(() => expect((screen.getByLabelText(/stateOfArt.criteria.prohibitions/) as HTMLTextAreaElement).value).toContain('dos semanas consecutivas'));
+        expect((screen.getByLabelText(/stateOfArt.criteria.requirementsCourse/) as HTMLTextAreaElement).value).toContain('100 páginas');
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.candidates/ }));
+        expect(within(ficha(/Greek Grammar Beyond the Basics/)).getByText('stateOfArt.origin.syllabus')).toBeInTheDocument();
+        expect(within(ficha(/Comentario de la epístola de Santiago/)).getByText('stateOfArt.weight.required')).toBeInTheDocument();
+        // Importar otra vez la misma lista no duplica.
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'bibliografía del sílabo' } });
+        fireEvent.click(screen.getByText('stateOfArt.import.read'));
+        await waitFor(() => expect(leerBibliografia).toHaveBeenCalledTimes(2));
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.candidates/ }));
+        expect(screen.getAllByText(/Comentario de la epístola de Santiago/)).toHaveLength(1);
+        // Y lo que prohíbe no se repite en los criterios.
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        const prohibe = (screen.getByLabelText(/stateOfArt.criteria.prohibitions/) as HTMLTextAreaElement).value;
+        expect(prohibe.split('dos semanas consecutivas').length - 1).toBe(1);
     });
 });

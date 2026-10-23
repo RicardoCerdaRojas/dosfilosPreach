@@ -5,6 +5,7 @@ import {
     classificationHistory,
     bibliographyWarnings,
     catalogCandidates,
+    extractedBibliographyCandidates,
     cleanProjectBibliography,
     libraryCandidates,
     mergeBibliographyCandidates,
@@ -17,6 +18,7 @@ import {
     syllabusCandidates,
     syllabusOfProject,
     type AIProject,
+    type ExtractedCourseBibliography,
     type ProjectBibliographyCriteria,
     type ProjectBibliographyEntry,
 } from '@dosfilos/domain';
@@ -87,6 +89,26 @@ export function useProjectBibliography(project: AIProject | undefined) {
         setDraft(d => mergeBibliographyCandidates(d, candidatas, newBibliographyEntryId));
     }, [resources, workTypes, rubrics, studies, bibleBooks, t, tx, lang]);
 
+    /**
+     * Junta lo leído de un sílabo o una lista con las fichas que hay: la
+     * misma obra no se duplica y lo decidido no se pisa, así que se puede
+     * importar varias veces. Lo que el sílabo exige o prohíbe se agrega a
+     * los criterios si no estaba. Devuelve cuántas obras leyó y cuántas eran nuevas.
+     */
+    const importExtracted = useCallback((res: ExtractedCourseBibliography): { read: number; added: number } => {
+        const biblioteca = resources.map(r => ({ id: r.id, title: r.title, author: r.author ?? null, coversBibleBooks: r.coversBibleBooks, scope: r.scope, exegeticalType: r.exegeticalType }));
+        const antes = draftRef.current.length;
+        const despues = mergeBibliographyCandidates(draftRef.current, extractedBibliographyCandidates(res.entries, biblioteca), newBibliographyEntryId);
+        setDraft(despues);
+        const sumar = (actual: string | null | undefined, nuevo: string | null) => {
+            if (!nuevo?.trim()) return actual ?? null;
+            if ((actual ?? '').includes(nuevo.trim())) return actual ?? null;
+            return actual?.trim() ? `${actual.trim()}\n${nuevo.trim()}` : nuevo.trim();
+        };
+        setCriteria(c => ({ ...c, requirements: sumar(c.requirements, res.requirements), prohibitions: sumar(c.prohibitions, res.prohibitions) }));
+        return { read: res.entries.length, added: despues.length - antes };
+    }, [resources]);
+
     /** Los mínimos por tipo que piden las rúbricas, con el tipo de trabajo que los pide. */
     const requirementsByWorkType = useMemo(() => workTypes.flatMap(w => {
         const rubrica = rubrics.find(r => r.id === w.rubricTemplateId);
@@ -130,7 +152,7 @@ export function useProjectBibliography(project: AIProject | undefined) {
     const dirty = JSON.stringify(draft) !== clave || JSON.stringify(criteria) !== claveCriterios;
 
     return {
-        entries: draft, errors, criteria, setCriteria, update, add, remove, gatherCandidates,
+        entries: draft, errors, criteria, setCriteria, importExtracted, update, add, remove, gatherCandidates,
         warnings, requirements, coverage, historyOf, bibleBooks, workTypes, resourceOf: (id: string) => porId.get(id) ?? null, dirty,
         /**
          * Los libros de la biblioteca para ligar una obra por conseguir: solo

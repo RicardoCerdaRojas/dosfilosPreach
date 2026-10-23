@@ -42,6 +42,7 @@ export * from './ports/IExcerptExtractor';
 export * from './ports/IExegesisOrchestrator';
 export * from './ports/IExpositoryAssistant';
 export * from './ports/IPaperRubricExtractor';
+export * from './ports/ICourseBibliographyExtractor';
 export * from './ports/IPericopeDetector';
 export * from './ports/IResourceContentReader';
 export * from './ports/IResourceRanker';

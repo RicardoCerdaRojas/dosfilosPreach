@@ -1,6 +1,7 @@
 export { GeminiExegesisOrchestrator } from './GeminiExegesisOrchestrator';
 export { GeminiExpositoryAssistant } from './GeminiExpositoryAssistant';
 export { GeminiPaperRubricExtractor } from './GeminiPaperRubricExtractor';
+export { GeminiCourseBibliographyExtractor } from './GeminiCourseBibliographyExtractor';
 export { GeminiPericopeDetector } from './GeminiPericopeDetector';
 export { GeminiStyleGuideManifestExtractor } from './GeminiStyleGuideManifestExtractor';
 export {

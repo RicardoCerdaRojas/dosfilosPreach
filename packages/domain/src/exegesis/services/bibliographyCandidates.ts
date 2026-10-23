@@ -7,6 +7,7 @@ import { getSourceRecommendations } from '../recommendations';
 import { findLibraryResourceForRecommendation } from '../recommendations/libraryMatch';
 import { matchCourseBibliography, type CourseBibliographyEntry } from './courseBibliography';
 import type { BibliographyCandidate, ProjectBibliographyCriteria } from './projectBibliography';
+import type { ExtractedBibliographyEntry } from '../ports/ICourseBibliographyExtractor';
 
 /**
  * De dónde salen las candidatas del estado del arte (etapa 2, paso 2).
@@ -163,4 +164,26 @@ export function studiesCandidates(
             note,
         } satisfies BibliographyCandidate;
     });
+}
+
+/**
+ * Lo que leyó el lector de bibliografías, como candidatas del sílabo,
+ * emparejadas con la biblioteca. Se puede leer varias veces: la fusión con
+ * las fichas que ya hay junta la misma obra y no pisa lo decidido.
+ */
+export function extractedBibliographyCandidates(
+    entries: ReadonlyArray<ExtractedBibliographyEntry>,
+    library: ReadonlyArray<RecursoDeBiblioteca>,
+): BibliographyCandidate[] {
+    const comoSilabo = entries.map(e => ({
+        title: e.title, author: e.author ?? undefined, series: e.series ?? undefined,
+        requirement: e.requirement, note: e.note ?? undefined,
+    }));
+    return syllabusCandidates(comoSilabo, library).map((c, i) => ({
+        ...c,
+        year: entries[i]!.year ?? null,
+        publisher: entries[i]!.publisher ?? null,
+        // La del libro en la biblioteca manda; si no, la que propone el lector.
+        sourceType: (c.resourceId ? library.find(r => r.id === c.resourceId)?.exegeticalType : null) ?? entries[i]!.sourceType ?? null,
+    }));
 }
