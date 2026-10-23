@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { previousDeliveries, previousDelivery, repeatedFromPreviousDelivery } from '../sourceMemory';
+import { previousDeliveries, previousDelivery, repeatedFromPreviousDelivery, summariesForDeliveryMemory } from '../sourceMemory';
 import type { ExegesisPaperSummary } from '../../entities/ExegesisPaperSummary';
 
 /**
@@ -94,5 +94,18 @@ describe('previousDeliveries', () => {
     it('el tipo de cada clave CITADA sale de las fuentes de esa entrega', () => {
         const [tp7Entregado] = previousDeliveries([tp6, tp7, tp8], 'tp8', 1);
         expect(tp7Entregado!.citedSourceTypes).toEqual({ Tuggy: ['lexicon-technical'] });
+    });
+});
+
+describe('la memoria de entregas por proyecto (etapa 2)', () => {
+    const r = (id: string, projectId: string | null) => ({ id, projectId } as unknown as ExegesisPaperSummary);
+    const todos = [r('tp8', null), r('otroCurso', 'teo2'), r('tp9', 'nt785'), r('tp10', 'nt785')];
+
+    it('un trabajo de un proyecto mira su proyecto y los sueltos, nunca otro proyecto', () => {
+        expect(summariesForDeliveryMemory(todos, { projectId: 'nt785' }).map(s => s.id)).toEqual(['tp8', 'tp9', 'tp10']);
+    });
+
+    it('un trabajo suelto mira todo, como antes', () => {
+        expect(summariesForDeliveryMemory(todos, { projectId: null })).toHaveLength(4);
     });
 });

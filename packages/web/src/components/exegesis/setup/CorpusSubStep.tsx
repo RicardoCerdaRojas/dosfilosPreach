@@ -104,7 +104,7 @@ import { FileDropzone } from '@/components/ui/file-dropzone';
 import { SourceCitationKey } from './SourceCitationKey';
 import { ExcludedSourcesCard } from './ExcludedSourcesCard';
 import { heroRoleCounts, unirConY } from './heroRoleCounts';
-import { usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
+import { useDeliveryMemory, usePaperExclusions } from '@/hooks/exegesis/usePaperExclusions';
 import { ExcludedBadge } from './ExcludedBadge';
 import { useExcludedSourceConfirm } from './useExcludedSourceConfirm';
 import { SourceSinPaginas } from './SourceSinPaginas';
@@ -931,7 +931,7 @@ function ComparisonChip({
 function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectSource }) {
     const navigate = useNavigate();
     const { t } = useTranslation('exegesis');
-    const { updateSource, removeSource, papers } = useExegesisPapers();
+    const { updateSource, removeSource } = useExegesisPapers();
     const extractExcerpts = useExtractExcerpts();
     /**
      * Si esta fuente ya se citó en la entrega anterior del autor.
@@ -943,9 +943,12 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
      * Se muestra el HECHO y no un veredicto: cuántas semanas hay que esperar
      * lo dice el sílabo de cada curso, no este código.
      */
-    const entregaPrevia = useMemo(() => previousDelivery(papers, paper.id), [papers, paper.id]);
+    // La entrega anterior, dentro del proyecto (etapa 2). Sin la regla de no
+    // repetir, que es de un curso, no se avisa.
+    const memoria = useDeliveryMemory(paper);
+    const entregaPrevia = useMemo(() => previousDelivery(memoria.summaries, paper.id), [memoria.summaries, paper.id]);
     // Ver `warnsRepeatedSource` (A7, TP #8 #15).
-    const yaCitadaAntes = warnsRepeatedSource(source, paper.excludedSources, entregaPrevia);
+    const yaCitadaAntes = memoria.noRepeat && warnsRepeatedSource(source, paper.excludedSources, entregaPrevia);
     const library = useLibrary();
     const isCitable = CITABLE_SOURCE_TYPES.has(source.sourceType);
     const isExtracted = usesExtractedExcerpts(source);

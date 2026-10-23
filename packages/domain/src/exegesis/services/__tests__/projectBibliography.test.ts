@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+    initialSourcesFromBibliography,
+    noRepeatApplies,
     applyLibrarySelection,
     evaluationFromLibrary,
     bibliographyAvailability,
@@ -150,5 +152,27 @@ describe('el selector de fuentes y la evaluación desde la biblioteca', () => {
         expect(evaluationFromLibrary({ sourceType: 'commentary-critical', evaluation: { coversBook: false, printedPages: false } }, stgo, ['JAS'])).toEqual({ coversBook: false, printedPages: false });
         // Una gramática no «comenta» un libro: no se pregunta por cobertura.
         expect(evaluationFromLibrary({ sourceType: 'grammar-syntax' }, { coversBibleBooks: ['ROM'] } as never, ['JAS'])).toEqual({});
+    });
+});
+
+describe('lo que el estudio hereda del proyecto', () => {
+    it('como fuentes iniciales, con la clasificación del proyecto o la del libro', () => {
+        const out = initialSourcesFromBibliography([
+            ficha({ id: 'a', resourceId: 'ropes', title: 'ICC James', sourceType: 'commentary-critical' }),
+            ficha({ id: 'b', resourceId: 'bdag', title: 'BDAG', sourceType: null }),
+            ficha({ id: 'c', resourceId: null, title: 'Por conseguir' }),
+        ], id => (id === 'bdag' ? 'lexicon-technical' : null));
+        expect(out).toEqual([
+            { corpusId: 'ropes', sourceLibraryResourceId: 'ropes', sourceType: 'commentary-critical', displayLabel: 'ICC James', mode: 'full-document' },
+            { corpusId: 'bdag', sourceLibraryResourceId: 'bdag', sourceType: 'lexicon-technical', displayLabel: 'BDAG', mode: 'full-document' },
+        ]);
+    });
+
+    it('«no repetir» es regla del curso: sin proyecto rige; en un proyecto, lo dicen sus criterios', () => {
+        expect(noRepeatApplies(null)).toBe(true);
+        expect(noRepeatApplies({ type: 'course' })).toBe(true);
+        expect(noRepeatApplies({ type: 'study' })).toBe(false);
+        expect(noRepeatApplies({ type: 'course', bibliographyCriteria: { noRepeatSources: false } })).toBe(false);
+        expect(noRepeatApplies({ type: 'study', bibliographyCriteria: { noRepeatSources: true } })).toBe(true);
     });
 });

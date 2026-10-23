@@ -381,6 +381,10 @@
       "noWorkType": "None: only the course details",
       "pickWorkType": "Pick which work type this is: each brings its own rubric, framing and style guide."
     },
+    "projectSources": {
+      "title": "State-of-the-art sources · {{count}}",
+      "hint": "They come from the project's approved bibliography, with its classification. Uncheck what this study does not need; the pages of each book are chosen later, in the corpus."
+    },
     "title": "New exegetical paper",
     "subtitle": "Set the passage and frame the work for the agent. We'll define rubric, sources, and structural plan next.",
     "backToList": "Back to list",

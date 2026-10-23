@@ -25,6 +25,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
+import { useDeliveryMemory } from '@/hooks/exegesis/usePaperExclusions';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { AssignmentBriefPicker } from './AssignmentBriefPicker';
 import { evaluarEdicionDelEncuadre } from './edicionDelEncuadre';
@@ -56,7 +57,9 @@ const GENEROS: ReadonlyArray<LiteraryGenre> = [
 
 export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
     const { t } = useTranslation('exegesis');
-    const { updatePaperBrief, papers } = useExegesisPapers();
+    const { updatePaperBrief } = useExegesisPapers();
+    // La entrega anterior se busca dentro del proyecto (etapa 2).
+    const memoria = useDeliveryMemory(paper);
     const [abierto, setAbierto] = useState(false);
     const [borrador, setBorrador] = useState<string | null>(null);
     // Lo que la edición recién guardada mueve dentro o fuera del documento.
@@ -164,7 +167,7 @@ export function PaperBriefButton({ paper }: PaperBriefButtonProps) {
                                     <span className="inline-flex items-center gap-1">
                                         <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]"
                                             onClick={() => setBorrador(buildPreachingBrief(
-                                                buildSourcesAndFormatBlock(paper, previousDelivery(papers, paper.id)),
+                                                buildSourcesAndFormatBlock(paper, previousDelivery(memoria.summaries, paper.id)),
                                                 genero,
                                             ))}>
                                             {t('paperSetup.brief.gaps.usePreachingTemplate')}

@@ -381,6 +381,10 @@
       "noWorkType": "Ninguno: solo los datos del curso",
       "pickWorkType": "Elige qué tipo de trabajo es: cada uno trae su rúbrica, su encuadre y su guía."
     },
+    "projectSources": {
+      "title": "Fuentes del estado del arte · {{count}}",
+      "hint": "Vienen de la bibliografía aprobada del proyecto, con su clasificación. Desmarca las que este estudio no necesita; las hojas de cada libro se eligen después, en el corpus."
+    },
     "title": "Nuevo trabajo exegético",
     "subtitle": "Configura el pasaje y dale contexto al agente. Después definimos rúbrica, fuentes y plan estructural.",
     "backToList": "Volver al listado",

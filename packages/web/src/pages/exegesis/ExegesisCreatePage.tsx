@@ -11,12 +11,14 @@ import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBriefs';
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
 import { ProjectOriginPicker } from '@/components/exegesis/ProjectOriginPicker';
+import { ProjectBibliographyOffer } from '@/components/exegesis/ProjectBibliographyOffer';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
     defaultWorkTypeId,
     nextAssignmentDate,
     projectWorkTypes,
     resolveProjectCharge,
+    type AddProjectSourceInput,
     type AIProject,
     type ExegeticalStrategy,
     type PassageReference,
@@ -58,6 +60,8 @@ export function ExegesisCreatePage() {
     /** Qué tipo de trabajo del proyecto es (etapa 1b): TP semanal, paper final. */
     const [workTypeId, setWorkTypeId] = useState<string | null>(null);
     const tiposDelProyecto = projectWorkTypes(proyectoElegido);
+    /** Lo que hereda del estado del arte del proyecto (etapa 2). */
+    const [fuentesDelProyecto, setFuentesDelProyecto] = useState<AddProjectSourceInput[]>([]);
     /** La guía del encargo del proyecto, cuando el estudio nace de uno. */
     const [styleGuideDelProyecto, setStyleGuideDelProyecto] = useState<string | null>(null);
     const { rubrics, defaultRubric } = useUserRubrics();
@@ -233,6 +237,7 @@ export function ExegesisCreatePage() {
                 // El proyecto elegido de verdad: uno de la URL que no está entre
                 // los activos (archivado, ajeno) no se manda.
                 ...(proyectoElegido ? { projectId: proyectoElegido.id, projectWorkTypeId: workTypeId } : {}),
+                ...(proyectoElegido && fuentesDelProyecto.length > 0 ? { initialSources: fuentesDelProyecto } : {}),
                 ...(cover ? { cover } : {}),
             });
             toast.success(t('create.toast.created'));
@@ -347,6 +352,7 @@ export function ExegesisCreatePage() {
                         onWorkType={tipo => aplicarEncargo(proyectoElegido, tipo)}
                     />
                 )}
+                <ProjectBibliographyOffer project={proyectoElegido} bookId={passage?.bookId ?? null} onChange={setFuentesDelProyecto} />
 
                 {profiles.length > 0 && (
                     <div className="rounded-xl border border-border bg-card p-3 space-y-1">

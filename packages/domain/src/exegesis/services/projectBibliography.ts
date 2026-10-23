@@ -426,3 +426,36 @@ export function evaluationFromLibrary(
     if ((ev.printedPages === undefined || ev.printedPages === null) && resource.pageNumbering) ev.printedPages = true;
     return ev;
 }
+
+/**
+ * Si «no repetir fuentes entre entregas» rige para un trabajo. Es una regla
+ * de un curso, no de método (decisión del fundador, 2026-10-23):
+ *   - sin proyecto, rige como hasta ahora;
+ *   - en un proyecto, lo dicen sus criterios; sin decidir, rige en un curso
+ *     y no en los demás tipos.
+ */
+export function noRepeatApplies(
+    project: { type?: string | null; bibliographyCriteria?: ProjectBibliographyCriteria | null } | null | undefined,
+): boolean {
+    if (!project) return true;
+    return project.bibliographyCriteria?.noRepeatSources ?? project.type === 'course';
+}
+
+/**
+ * Las fichas heredadas, como fuentes iniciales del estudio: documento
+ * entero y sin fragmentos (se extraen después contra el pasaje del
+ * estudio), con la clasificación del proyecto. Una ficha sin clasificar
+ * toma el tipo que tiene el libro en la biblioteca.
+ */
+export function initialSourcesFromBibliography(
+    entries: ReadonlyArray<ProjectBibliographyEntry>,
+    typeOf: (resourceId: string) => SourceType | null | undefined,
+): import('../use-cases/dtos').AddProjectSourceInput[] {
+    return entries.filter(e => e.resourceId).map(e => ({
+        corpusId: e.resourceId!,
+        sourceLibraryResourceId: e.resourceId!,
+        sourceType: e.sourceType ?? typeOf(e.resourceId!) ?? 'other',
+        displayLabel: e.title,
+        mode: 'full-document' as const,
+    }));
+}
