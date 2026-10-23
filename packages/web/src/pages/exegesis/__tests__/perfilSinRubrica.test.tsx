@@ -19,6 +19,7 @@ const valorDelSelector: Array<string | null | undefined> = [];
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'es' } }) }));
 vi.mock('@/hooks/exegesis/useWorkProfiles', () => ({ useWorkProfiles: () => ({ profiles: [perfil], defaultProfile: perfil }) }));
 const createPaper = vi.fn().mockResolvedValue({ id: 'nuevo' });
+vi.mock('@/hooks/library', () => ({ useLibrary: () => ({ resources: [] }) }));
 vi.mock('@/hooks/faculty/useFacultyProjects', () => ({ useFacultyProjects: () => ({ projects: [] }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => ({

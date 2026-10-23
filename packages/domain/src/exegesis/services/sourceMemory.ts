@@ -114,3 +114,22 @@ export function repeatedFromPreviousDelivery(
     }
     return out;
 }
+
+/**
+ * Entre qué trabajos se busca la entrega anterior (etapa 2). Para un trabajo
+ * en un proyecto: los del mismo proyecto de origen y los sueltos, nunca los
+ * de OTRO proyecto, porque un TP de otro curso no es «la entrega anterior»
+ * de éste. Un trabajo suelto mira todo, como antes.
+ *
+ * Los sueltos cuentan porque un trabajo hecho antes de los proyectos puede
+ * ser del mismo curso: el TP #9 nació en NT785 y los TP #5 a #8 están
+ * sueltos; sin ellos el TP #9 perdía el aviso de lo citado en el TP #8.
+ */
+export function summariesForDeliveryMemory(
+    summaries: ReadonlyArray<ExegesisPaperSummary>,
+    paper: { projectId?: string | null },
+): ExegesisPaperSummary[] {
+    if (!paper.projectId) return [...summaries];
+    // Un trabajo de otro proyecto que colabora con éste también cuenta.
+    return summaries.filter(s => !s.projectId || s.projectId === paper.projectId || (s.linkedProjectIds ?? []).includes(paper.projectId!));
+}

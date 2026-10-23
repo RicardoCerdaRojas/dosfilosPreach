@@ -83,6 +83,7 @@ export class SaveWorkProfileFromPaperUseCase {
             briefTemplateId,
             styleGuideId: paper.styleGuideId ?? null,
             exegeticalStrategy: paper.exegeticalStrategy === 'free' ? 'free' : 'dialectical',
+            exegeticalMethod: paper.exegeticalMethod ?? null,
             cover: coverDelCurso(paper.cover),
             isDefault: input.makeDefault ?? false,
         });
@@ -102,6 +103,7 @@ export interface WorkProfileDefaults {
     briefTemplateId: string | null;
     styleGuideId: string | null;
     exegeticalStrategy: 'free' | 'dialectical';
+    exegeticalMethod: ExegeticalPaper['exegeticalMethod'];
     cover: ExegeticalPaper['cover'];
 }
 
@@ -111,6 +113,7 @@ export function defaultsOfProfile(profile: WorkProfile): WorkProfileDefaults {
         briefTemplateId: profile.briefTemplateId,
         styleGuideId: profile.styleGuideId,
         exegeticalStrategy: profile.exegeticalStrategy,
+        exegeticalMethod: profile.exegeticalMethod ?? null,
         cover: profile.cover ?? null,
     };
 }

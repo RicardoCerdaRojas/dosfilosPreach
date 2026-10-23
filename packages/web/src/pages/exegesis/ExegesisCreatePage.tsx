@@ -11,13 +11,17 @@ import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBriefs';
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
 import { ProjectOriginPicker } from '@/components/exegesis/ProjectOriginPicker';
+import { ProjectBibliographyOffer } from '@/components/exegesis/ProjectBibliographyOffer';
+import { MethodPicker } from '@/components/exegesis/MethodPicker';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
     defaultWorkTypeId,
     nextAssignmentDate,
     projectWorkTypes,
     resolveProjectCharge,
+    type AddProjectSourceInput,
     type AIProject,
+    type ExegeticalMethod,
     type ExegeticalStrategy,
     type PassageReference,
     type SupportedLanguage,
@@ -58,6 +62,8 @@ export function ExegesisCreatePage() {
     /** Qué tipo de trabajo del proyecto es (etapa 1b): TP semanal, paper final. */
     const [workTypeId, setWorkTypeId] = useState<string | null>(null);
     const tiposDelProyecto = projectWorkTypes(proyectoElegido);
+    /** Lo que hereda del estado del arte del proyecto (etapa 2). */
+    const [fuentesDelProyecto, setFuentesDelProyecto] = useState<AddProjectSourceInput[]>([]);
     /** La guía del encargo del proyecto, cuando el estudio nace de uno. */
     const [styleGuideDelProyecto, setStyleGuideDelProyecto] = useState<string | null>(null);
     const { rubrics, defaultRubric } = useUserRubrics();
@@ -100,6 +106,9 @@ export function ExegesisCreatePage() {
     // differentiator we want users to land on; opting out is a
     // deliberate, named choice (`free`) — not the absence of one.
     const [exegeticalStrategy, setExegeticalStrategy] = useState<ExegeticalStrategy>('dialectical');
+    // El método (capa 3): cuándo entran los comentarios. Sin elegir, el
+    // análisis de siempre. Lo traen el perfil y el tipo de trabajo.
+    const [exegeticalMethod, setExegeticalMethod] = useState<ExegeticalMethod | null>(null);
 
     // Perfil de trabajo: cómo quedó configurado un trabajo anterior del
     // mismo curso. Rellena los campos y NO decide: el estudiante ve los
@@ -131,6 +140,7 @@ export function ExegesisCreatePage() {
         setRubricTemplateId(profile.rubricTemplateId ?? undefined);
         setBriefDelPerfilId(profile.briefTemplateId);
         setExegeticalStrategy(profile.exegeticalStrategy);
+        setExegeticalMethod(profile.exegeticalMethod ?? null);
         setCoverFromProfile(profile.cover ?? null);
     }, []);
 
@@ -158,6 +168,7 @@ export function ExegesisCreatePage() {
                 setBriefDelPerfilId(null);
                 setCoverFromProfile(null);
                 setExegeticalStrategy('dialectical');
+                setExegeticalMethod(null);
                 if (defaultProfile) aplicarPerfil(defaultProfile);
             }
             return;
@@ -172,6 +183,7 @@ export function ExegesisCreatePage() {
         setRubricTemplateId(c.rubricTemplateId === undefined ? undefined : c.rubricTemplateId);
         setBriefDelPerfilId(c.briefTemplateId ?? null);
         setExegeticalStrategy(c.exegeticalStrategy ?? 'dialectical');
+        setExegeticalMethod(c.exegeticalMethod ?? null);
         setCoverFromProfile(c.cover ?? null);
         setStyleGuideDelProyecto(c.styleGuideId ?? null);
     }, [defaultProfile, aplicarPerfil]);
@@ -227,12 +239,14 @@ export function ExegesisCreatePage() {
                 passage,
                 displayLanguage,
                 exegeticalStrategy,
+                ...(exegeticalMethod ? { exegeticalMethod } : {}),
                 styleGuideId: styleGuideDelProyecto ?? perfilElegido?.styleGuideId ?? null,
                 assignmentBrief: assignmentBrief.trim() || null,
                 rubricTemplateId,
                 // El proyecto elegido de verdad: uno de la URL que no está entre
                 // los activos (archivado, ajeno) no se manda.
                 ...(proyectoElegido ? { projectId: proyectoElegido.id, projectWorkTypeId: workTypeId } : {}),
+                ...(proyectoElegido && fuentesDelProyecto.length > 0 ? { initialSources: fuentesDelProyecto } : {}),
                 ...(cover ? { cover } : {}),
             });
             toast.success(t('create.toast.created'));
@@ -334,6 +348,9 @@ export function ExegesisCreatePage() {
                     <p className="text-[11px] text-muted-foreground italic mt-2">
                         {t('create.strategy.hint')}
                     </p>
+                    <div className="mt-4 border-t border-border pt-3">
+                        <MethodPicker value={exegeticalMethod} onChange={setExegeticalMethod} />
+                    </div>
                 </Step>
 
                 {proyectosActivos.length > 0 && (
@@ -347,6 +364,7 @@ export function ExegesisCreatePage() {
                         onWorkType={tipo => aplicarEncargo(proyectoElegido, tipo)}
                     />
                 )}
+                <ProjectBibliographyOffer project={proyectoElegido} bookId={passage?.bookId ?? null} onChange={setFuentesDelProyecto} />
 
                 {profiles.length > 0 && (
                     <div className="rounded-xl border border-border bg-card p-3 space-y-1">

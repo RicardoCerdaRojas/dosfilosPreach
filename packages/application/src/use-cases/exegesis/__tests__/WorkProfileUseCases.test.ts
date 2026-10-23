@@ -11,6 +11,7 @@ const paper = {
     id: 'p1',
     styleGuideId: 'guia-tms',
     exegeticalStrategy: 'dialectical',
+    exegeticalMethod: 'mixed',
     cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda', place: 'Chiguayante, Concepción' },
 };
 
@@ -41,6 +42,8 @@ describe('SaveWorkProfileFromPaperUseCase', () => {
         expect(profileRepository.createProfile.mock.calls[0]![0]).toMatchObject({
             styleGuideId: 'guia-tms',
             exegeticalStrategy: 'dialectical',
+            // El método del trabajo (capa 3) viaja al perfil.
+            exegeticalMethod: 'mixed',
             cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda' },
         });
     });
@@ -117,6 +120,7 @@ describe('defaultsOfProfile', () => {
             briefTemplateId: null,
             styleGuideId: 'g1',
             exegeticalStrategy: 'free',
+            exegeticalMethod: null,
             cover: null,
         });
     });

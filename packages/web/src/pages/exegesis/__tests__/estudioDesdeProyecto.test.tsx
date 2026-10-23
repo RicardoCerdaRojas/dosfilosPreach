@@ -33,6 +33,11 @@ vi.mock('@/components/exegesis/PassagePicker', () => ({
 vi.mock('@/components/exegesis/setup/RubricTemplatePicker', () => ({ RubricTemplatePicker: () => <div>rúbrica</div> }));
 vi.mock('@/components/exegesis/setup/AssignmentBriefPicker', () => ({ AssignmentBriefPicker: () => <div>consigna</div> }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/hooks/library', () => ({ useLibrary: () => ({ resources: [
+    { id: 'ropes', title: 'ICC James', exegeticalType: 'commentary-critical', coversBibleBooks: ['JAS'] },
+    { id: 'romanos', title: 'Romans', exegeticalType: 'commentary-critical', coversBibleBooks: ['ROM'] },
+    { id: 'bdag', title: 'BDAG', exegeticalType: 'lexicon-technical', coversBibleBooks: [] },
+] }) }));
 const { ExegesisCreatePage } = await import('../ExegesisCreatePage');
 
 beforeEach(() => { cleanup(); vi.clearAllMocks(); perfiles = []; encuadres = []; proyectos = [curso, { id: 'otro', title: 'Otro', userId: 'u1' }]; });
@@ -193,6 +198,75 @@ describe('crear un estudio desde un proyecto', () => {
             crear();
             await waitFor(() => expect(createPaper).toHaveBeenCalled());
             expect(createPaper.mock.calls[0]![0]).toMatchObject({ projectId: 'teo2', rubricTemplateId: 'rub-tms', styleGuideId: 'guia-tms' });
+        });
+    });
+
+    describe('hereda el estado del arte del proyecto (etapa 2)', () => {
+        const bibliografia = [
+            { id: 'a', title: 'ICC James', resourceId: 'ropes', sourceType: 'commentary-critical', weight: 'recommended', decision: 'approved', origins: ['studies'] },
+            { id: 'b', title: 'Romans', resourceId: 'romanos', sourceType: 'commentary-critical', weight: 'recommended', decision: 'approved', origins: ['library'] },
+            { id: 'c', title: 'BDAG', resourceId: 'bdag', sourceType: null, weight: 'required', decision: 'approved', origins: ['syllabus'] },
+            { id: 'd', title: 'Pillar', resourceId: null, weight: 'recommended', decision: 'approved', origins: ['manual'] },
+            { id: 'e', title: 'Candidata', resourceId: 'x', weight: 'recommended', decision: 'candidate', origins: ['catalog'] },
+        ];
+
+        it('las aprobadas en la biblioteca nacen en el corpus; un comentario de otro libro no se ofrece', async () => {
+            proyectos = [{ ...curso, bibliography: bibliografia }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            expect(screen.queryByText('Romans')).toBeNull();
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0].initialSources).toEqual([
+                { corpusId: 'ropes', sourceLibraryResourceId: 'ropes', sourceType: 'commentary-critical', displayLabel: 'ICC James', mode: 'full-document' },
+                { corpusId: 'bdag', sourceLibraryResourceId: 'bdag', sourceType: 'lexicon-technical', displayLabel: 'BDAG', mode: 'full-document' },
+            ]);
+        });
+
+        it('un proyecto de antes (solo sourceIds) hereda con el nombre y el tipo del libro, sin comentarios de otro libro (revisión)', async () => {
+            proyectos = [{ ...curso, sourceIds: ['ropes', 'romanos', 'bdag'] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0].initialSources.map((x: { displayLabel: string; sourceType: string }) => [x.displayLabel, x.sourceType]))
+                .toEqual([['ICC James', 'commentary-critical'], ['BDAG', 'lexicon-technical']]);
+        });
+
+        it('una desmarcada no se hereda, y sin proyecto no se hereda nada', async () => {
+            proyectos = [{ ...curso, bibliography: bibliografia }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.click(screen.getByLabelText(/ICC James/));
+            fireEvent.change(screen.getByLabelText('create.project.label'), { target: { value: 'teo2' } });
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0].initialSources.map((x: { corpusId: string }) => x.corpusId)).toEqual(['bdag']);
+            cleanup(); createPaper.mockClear();
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new']}><ExegesisCreatePage /></MemoryRouter>);
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).not.toHaveProperty('initialSources');
+        });
+    });
+
+    describe('el método del tipo de trabajo (etapa 2, capa 3)', () => {
+        it('el tipo trae su método; pasar a uno sin método vuelve al análisis de siempre', async () => {
+            proyectos = [{ ...curso, workTypes: [{ ...tp, exegeticalMethod: 'mixed' }, { id: 'pf', label: 'Paper final', rubricTemplateId: 'rub-paper' }] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'tp' } });
+            expect((screen.getByLabelText('method.label') as HTMLSelectElement).value).toBe('mixed');
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'pf' } });
+            expect((screen.getByLabelText('method.label') as HTMLSelectElement).value).toBe('');
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).not.toHaveProperty('exegeticalMethod');
+        });
+
+        it('se puede elegir a mano y viaja en la creación', async () => {
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('method.label'), { target: { value: 'exegetical' } });
+            expect(screen.getByText('method.exegetical.hint')).toBeInTheDocument();
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).toMatchObject({ exegeticalMethod: 'exegetical' });
         });
     });
 });

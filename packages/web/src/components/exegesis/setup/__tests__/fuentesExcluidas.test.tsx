@@ -9,6 +9,7 @@ import type { ExegesisPaperSummary, ExegeticalPaper } from '@dosfilos/domain';
  */
 const guardar = vi.fn();
 let resumenes: ExegesisPaperSummary[] = [];
+vi.mock('@/hooks/faculty/useFacultyProjects', () => ({ useFacultyProjects: () => ({ projects: [] }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => ({
         papers: resumenes,

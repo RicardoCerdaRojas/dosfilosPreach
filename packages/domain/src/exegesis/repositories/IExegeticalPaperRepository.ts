@@ -99,7 +99,7 @@ export interface IExegeticalPaperRepository {
     updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'styleGuideSnapshot' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'styleGuideSnapshot' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod'>>
     ): Promise<ExegeticalPaper>;
 
     /** Transitions phase. Implementations validate legal transitions. */

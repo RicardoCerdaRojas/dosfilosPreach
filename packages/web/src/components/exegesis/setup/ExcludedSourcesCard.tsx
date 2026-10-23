@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
-import { useProposedExclusions } from '@/hooks/exegesis/usePaperExclusions';
+import { useDeliveryMemory, useProposedExclusions } from '@/hooks/exegesis/usePaperExclusions';
 
 /**
  * Las fuentes que este trabajo no puede usar, como dato y no como frase del
@@ -24,6 +24,7 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     // Por tipo (A7, TP #8): comentarios y gramáticas; los léxicos y el texto
     // base se pueden repetir y ya no se proponen.
     const { proposal: propuestaPorTipo, previous } = useProposedExclusions(paper);
+    const { noRepeat } = useDeliveryMemory(paper);
     const [nueva, setNueva] = useState('');
     // Claves de la propuesta que el estudiante desmarcó: lo citado la vez
     // pasada incluye léxicos y gramáticas que el sílabo suele permitir.
@@ -83,6 +84,10 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     };
 
     const ocupado = updatePaperExcludedSources.isPending;
+
+    // «No repetir» es regla de un curso (etapa 2): sin ella, la tarjeta solo
+    // aparece si el trabajo ya tiene exclusiones confirmadas.
+    if (!noRepeat && !(paper.excludedSources?.length)) return null;
 
     return (
         <section className="rounded-xl border border-border bg-card p-4 space-y-3" aria-labelledby="excluded-sources-title">

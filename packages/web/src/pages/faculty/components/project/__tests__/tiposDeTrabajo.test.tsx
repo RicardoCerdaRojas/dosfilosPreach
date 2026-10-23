@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within, waitFor } from '@testing-library/react';
 
 /**
  * ADR-046, etapa 1b: un curso tiene datos comunes y varios tipos de trabajo,
@@ -15,6 +15,7 @@ vi.mock('@/hooks/exegesis/useUserAssignmentBriefs', () => ({ useUserAssignmentBr
 vi.mock('@/hooks/exegesis/useUserStyleGuides', () => ({ useUserStyleGuides: () => ({ guides: [{ id: 'g1', displayName: 'Guía TMS' }] }) }));
 const { ProjectWorkTypesCard } = await import('../ProjectWorkTypesCard');
 const { ProjectCourseCard } = await import('../ProjectCourseCard');
+const { ProjectSetupCards } = await import('../ProjectSetupCards');
 
 const curso = { id: 'p', userId: 'u', title: 'NT785', color: 'amber', type: 'course' };
 beforeEach(cleanup);
@@ -44,6 +45,15 @@ describe('ProjectWorkTypesCard', () => {
         const [ensayo] = onSave.mock.calls[0]![0];
         expect(ensayo).toMatchObject({ label: 'Ensayo', rubricTemplateId: null });
         expect(ensayo.exegeticalStrategy).toBeUndefined();
+    });
+
+    it('cada tipo guarda su método (capa 3)', () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(<ProjectWorkTypesCard project={{ ...curso, workTypes: [{ id: 'a', label: 'TP' }] } as never} onSave={onSave} saving={false} />);
+        fireEvent.click(screen.getByText('workTypes.edit'));
+        fireEvent.change(screen.getByLabelText('method.label'), { target: { value: 'mixed' } });
+        fireEvent.click(screen.getByText('workTypes.save'));
+        expect(onSave).toHaveBeenCalledWith([{ id: 'a', label: 'TP', exegeticalMethod: 'mixed' }]);
     });
 
     it('sin nombre no se guarda', () => {
@@ -93,5 +103,29 @@ describe('ProjectCourseCard', () => {
         render(<ProjectCourseCard project={{ ...curso, type: 'study' } as never} onSave={vi.fn()} saving={false} />);
         expect(screen.queryByLabelText('course.course')).toBeNull();
         expect(screen.getByText('course.titleProject')).toBeInTheDocument();
+    });
+});
+
+describe('ProjectSetupCards', () => {
+    it('solo la tarjeta que guarda muestra que guarda (las dos usan la misma mutación)', async () => {
+        let terminar!: () => void;
+        const onSave = vi.fn(() => new Promise<void>(r => { terminar = r; }));
+        render(<ProjectSetupCards project={{ ...curso, workTypes: [{ id: 'a', label: 'TP' }] } as never} onSave={onSave} />);
+        fireEvent.change(screen.getByLabelText('course.course'), { target: { value: 'NT785' } });
+        fireEvent.click(screen.getByText('course.save'));
+        expect(onSave).toHaveBeenCalledWith({ courseInfo: { course: 'NT785' } });
+        expect(screen.getByText('course.save').closest('button')!.querySelector('.animate-spin')).not.toBeNull();
+        expect(screen.getByText('workTypes.save').closest('button')!.querySelector('.animate-spin')).toBeNull();
+        terminar();
+        await waitFor(() => expect(screen.getByText('course.save').closest('button')!.querySelector('.animate-spin')).toBeNull());
+    });
+
+    it('cada tarjeta avisa si tiene cambios sin guardar', () => {
+        render(<ProjectSetupCards project={{ ...curso, workTypes: [{ id: 'a', label: 'TP' }] } as never} onSave={vi.fn()} />);
+        expect(screen.queryByText('unsaved')).toBeNull();
+        fireEvent.change(screen.getByLabelText('course.course'), { target: { value: 'NT785' } });
+        expect(screen.getAllByText('unsaved')).toHaveLength(1);
+        fireEvent.click(screen.getByText('workTypes.addEmpty'));
+        expect(screen.getAllByText('unsaved')).toHaveLength(2);
     });
 });

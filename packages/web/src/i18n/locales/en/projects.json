@@ -5,6 +5,141 @@
     "empty": "No studies yet. Each assignment, passage or topic you work on in this project is a study.",
     "linked": "linked"
   },
+  "unsaved": "Unsaved changes.",
+  "stateOfArt": {
+    "title": "State of the art",
+    "conflictNote": "Classified differently in the studies: {{types}}.",
+    "fixErrors_one": "Fix 1 entry before saving.",
+    "fixErrors_other": "Fix {{count}} entries before saving.",
+    "error": {"title": "The work's title is missing.", "reason": "The reason for discarding is missing."},
+    "subtitle": "The project's bibliography, prepared once for all its studies: what is required, which works exist, how each is evaluated and which ones are used. It follows the method of Eco, Vyhmeister and Fee.",
+    "step": {
+      "requirements": "Requirements",
+      "candidates": "Candidates",
+      "approved": "Approved",
+      "toAcquire": "To acquire",
+      "discarded": "Discarded"
+    },
+    "stepHint": {
+      "candidates": "Works that could help, from every origin. The same work from several origins is a single entry and ranks higher. Evaluate each one and approve it or discard it with a reason.",
+      "approved": "The bibliography every study in the project starts with. You can add or remove works later.",
+      "toAcquire": "What is not in your library. When you get the book, upload it and link it with «I have it».",
+      "discarded": "What was discarded, with the reason, so you can explain to the professor why it was not used."
+    },
+    "empty": {
+      "candidates": "No candidates yet. Press «Find candidates» to gather them from the syllabus, the catalog, your library and the project's studies, or add a work by hand.",
+      "approved": "No approved works yet.",
+      "toAcquire": "Nothing left to acquire.",
+      "discarded": "No discarded works."
+    },
+    "gather": "Find candidates",
+    "addManual": "Add by hand",
+    "save": "Save state of the art",
+    "saved": "State of the art saved.",
+    "saveFailed": "The state of the art could not be saved.",
+    "syncHint": "Approved works that are in your library are also the project's sources for conversations.",
+    "untitled": "Untitled",
+    "unclassified": "Unclassified",
+    "unknown": "Unknown",
+    "yes": "Yes",
+    "no": "No",
+    "read": "Read",
+    "approve": "Approve",
+    "discard": "Discard",
+    "discardReason": "Why is it discarded?",
+    "confirmDiscard": "Discard",
+    "discardedBecause": "Discarded: {{reason}}",
+    "backToCandidate": "Back to candidate",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "gotIt": "I have it",
+    "linkResource": "The book in your library",
+    "pickResource": "Pick a book…",
+    "evaluate": "Evaluate",
+    "close": "Close",
+    "remove": "Remove {{title}}",
+    "weight": {
+      "required": "Required",
+      "recommended": "Recommended",
+      "complementary": "Complementary"
+    },
+    "availability": {
+      "in-library": "In the library",
+      "to-acquire": "To acquire"
+    },
+    "origin": {
+      "syllabus": "Syllabus",
+      "catalog": "Catalog",
+      "library": "Library",
+      "studies": "Project studies",
+      "manual": "By hand",
+      "legacy": "Project sources"
+    },
+    "field": {
+      "title": "Title",
+      "author": "Author",
+      "sourceType": "Classification",
+      "weight": "Weight",
+      "editionYear": "Edition year",
+      "serves": "What it serves (questions, assignments, topics)",
+      "pages": "Pages or chapters",
+      "position": "Position it holds",
+      "workTypes": "Work types it serves",
+      "reason": "Reason for the decision"
+    },
+    "evaluation": "Evaluation",
+    "annotation": "Annotation",
+    "q": {
+      "coversBook": "Does it comment on the project's biblical book?",
+      "printedPages": "Does the edition have printed pages?",
+      "hasNotes": "Does it have notes and bibliography?",
+      "primary": "Is it a primary source?",
+      "level": "Level",
+      "tradition": "Tradition",
+      "language": "Language"
+    },
+    "level": {
+      "technical": "Technical",
+      "semi-technical": "Semi-technical",
+      "expository": "Expository",
+      "popular": "Popular"
+    },
+    "tradition": {
+      "evangelical": "Evangelical",
+      "evangelical-critical": "Evangelical critical",
+      "conservative-moderate": "Conservative or moderate",
+      "liberal-critical": "Liberal critical",
+      "catholic": "Catholic",
+      "jewish": "Jewish",
+      "other": "Other"
+    },
+    "criteria": {
+      "requirementsCourse": "What the course requires",
+      "requirementsCourseHint": "From the syllabus or the professor: required works, types and criteria. If there is no bibliography, write them yourself.",
+      "requirementsResearch": "Question and scope",
+      "requirementsResearchHint": "What you want to answer and how far the research goes.",
+      "prohibitions": "What is not accepted",
+      "prohibitionsHint": "For example: devotional works, websites or editions without pages.",
+      "inclusion": "Inclusion criteria",
+      "inclusionHint": "Why a work enters the approved bibliography.",
+      "exclusion": "Exclusion criteria",
+      "exclusionHint": "Why a work stays out, even if it was considered.",
+      "noRepeat": "Do not repeat sources across assignments",
+      "noRepeatHint": "A rule of this course, not of the method: it turns on the warning for sources cited in the previous delivery (from the project or standalone).",
+      "minimums": "Rubric minimums",
+      "noMinimums": "The work types' rubrics set no minimums.",
+      "minimumsHint": "They come from the work types' rubrics; change them there.",
+      "books": "Biblical books of the project",
+      "noBooks": "None yet: they come from the project's studies.",
+      "booksHint": "Used to find commentaries and to know whether each one covers the book."
+    },
+    "warning": {
+      "missingType": "The rubrics require {{minimum}} «{{type}}» and none is approved.",
+      "singleTradition": "All the labeled bibliography is from a single tradition ({{tradition}}). Hearing other readings is advisable.",
+      "requiredToAcquire": "«{{title}}» is required and still to acquire.",
+      "commentaryOtherBook": "«{{title}}» is a commentary that does not cover the project's books."
+    }
+  },
   "course": {
     "titleCourse": "Course details",
     "titleProject": "Project details",

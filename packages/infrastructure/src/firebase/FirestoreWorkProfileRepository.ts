@@ -12,10 +12,11 @@ import {
     type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type {
-    IWorkProfileRepository,
-    WorkProfile,
-    WorkProfileDraft,
+import {
+    resolveExegeticalMethod,
+    type IWorkProfileRepository,
+    type WorkProfile,
+    type WorkProfileDraft,
 } from '@dosfilos/domain';
 
 /**
@@ -128,6 +129,8 @@ function serialize(profile: WorkProfile): DocumentData {
     const { id: _id, ...rest } = profile;
     return {
         ...rest,
+        // Firestore rechaza `undefined`: un perfil sin método guarda `null`.
+        exegeticalMethod: profile.exegeticalMethod ?? null,
         ...(profile.course ? { course: profile.course } : {}),
         ...(profile.cover ? { cover: profile.cover } : {}),
     };
@@ -143,6 +146,7 @@ function deserialize(id: string, data: DocumentData): WorkProfile {
         briefTemplateId: data.briefTemplateId ?? null,
         styleGuideId: data.styleGuideId ?? null,
         exegeticalStrategy: data.exegeticalStrategy === 'free' ? 'free' : 'dialectical',
+        exegeticalMethod: resolveExegeticalMethod(data.exegeticalMethod),
         cover: data.cover ?? null,
         isDefault: !!data.isDefault,
         createdAt: toDate(data.createdAt),

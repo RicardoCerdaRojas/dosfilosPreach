@@ -3,6 +3,8 @@ import {
     type HebrewVerseMorphology,
     buildVerseMorphologyBlock,
     formatPassageReference,
+    isObservationTool,
+    separatesObservation,
     type AnalyzeVerseInput,
     type CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
@@ -53,6 +55,10 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const planNoteBlock = formatPlanNote(input.planNote, lang);
     const questionsBlock = formatSectionQuestions(input.sectionQuestions, lang);
     const methodBlock = formatAnswerMethod(input.sectionQuestions, lang);
+    // Etapa 2, capa 3: sin método, los dos bloques quedan vacíos y el prompt
+    // es el de siempre.
+    const workMethodBlock = formatMethodContract(input.method, input.sources, !!input.sectionQuestions?.length, lang);
+    const studentReadingBlock = formatStudentReading(input.studentReading, lang);
     const styleRulesBlock = buildStyleRulesBlock(input.styleRules, lang);
     // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
     // es parte de lo que el analizador lee, no de lo que tiene que producir.
@@ -77,6 +83,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             briefBlock,
             questionsBlock,
             planNoteBlock,
+            studentReadingBlock,
             ``,
             `## Methodological foundation`,
             `Apply the historical-grammatical-literal method documented in the platform's METODOLOGIA.md. Anchor your analysis in canonical authorities:`,
@@ -110,6 +117,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             // fuente técnica no autoriza a reconstruir una sección ausente…».
             `- The output is the student's paper. Never write about the corpus, the excerpts, the usage plan, source roles or what the provided material lacks. If the material does not support a point, omit it or mark it tentative in confidenceFlags.`,
             methodBlock,
+            workMethodBlock,
             corpusGapsBlock,
             ``,
             `## Style guide constraints`,
@@ -135,6 +143,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         briefBlock,
         questionsBlock,
         planNoteBlock,
+        studentReadingBlock,
         ``,
         `## Fundamento metodológico`,
         `Aplica el método histórico-gramatical-literal documentado en METODOLOGIA.md de la plataforma. Ancla tu análisis en autoridades canónicas:`,
@@ -164,6 +173,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `- Separa lo que dice la fuente de lo que concluyes tú. En cada entrada con fuente, el campo citado dice SÓLO lo que esa fuente dice; tu conclusión va en "ownInference", sin cita. «Mayor lee la activa como pedir para sí (p. 133)» es la fuente; «por eso el contraste es de motivo» es tuyo.`,
         `- Lo que escribes es el trabajo del estudiante. Nunca hables del corpus, de los fragmentos, del plan de uso, de los roles de las fuentes ni de lo que falta en el material provisto. Si el material no sostiene un punto, omítelo o márcalo tentative en confidenceFlags.`,
         methodBlock,
+        workMethodBlock,
         corpusGapsBlock,
         ``,
         `## Restricciones de la guía de estilo`,
@@ -631,4 +641,64 @@ function esMorfologiaHebrea(
 ): m is HebrewVerseMorphology {
     if (!m || !('tokens' in m) || m.tokens.length === 0) return false;
     return 'oshbMorphCode' in m.tokens[0]!;
+}
+
+
+/**
+ * El contrato del método del trabajo (etapa 2, capa 3). Una sola llamada:
+ * el método no agrega llamadas, ordena el análisis. Con `research` o sin
+ * método, vacío: el prompt de siempre.
+ *
+ * La observación se arma con las herramientas (Fee 13.1; Stuart, paso 11):
+ * el texto y su aparato, léxicos, diccionarios, gramáticas, fuentes
+ * antiguas y contexto. El diálogo con los comentarios parte de ella.
+ */
+export function formatMethodContract(
+    method: AnalyzeVerseInput['method'],
+    sources: ReadonlyArray<Pick<AnalyzeVerseInput['sources'][number], 'citationKey' | 'sourceType'>>,
+    hasQuestions: boolean,
+    lang: 'es' | 'en',
+): string {
+    if (!separatesObservation(method)) return '';
+    const claves = (herramienta: boolean) => [...new Set(sources
+        // La plantilla de estilo no se cita: no va en ninguna lista.
+        .filter(s => s.citationKey && s.sourceType !== 'style-template-paper' && isObservationTool(s.sourceType) === herramienta)
+        .map(s => `\`${s.citationKey}\``))];
+    const herramientas = claves(true);
+    const literatura = claves(false);
+    const ninguna = lang === 'en' ? '(none configured)' : '(ninguna configurada)';
+    const porPregunta = method === 'mixed' && hasQuestions;
+    if (lang === 'en') {
+        return [
+            `## Work method: ${method === 'mixed' ? 'mixed (per question)' : 'exegetical'} — first the observation, then the dialogue`,
+            `- OBSERVATION fields (\`textualCriticism\`, \`syntacticAnalysis\`, \`lexicalAnalyses\`, \`historicalContext\`, \`initialTranslation\`) are built ONLY with the tools: ${herramientas.length ? `${herramientas.join(', ')}. Do not cite commentaries, monographs or articles there.` : 'no tool brings material for this verse, so build the observation from the base text and the morphology, without citations.'}`,
+            `- DIALOGUE fields start from that observation. In \`commentatorEngagement\` and in the positions of \`translationCruxes\`, say which commentator confirms it and which disputes it, with the citation. Literature: ${literatura.join(', ') || ninguna}. \`finalTranslation\` and \`verseThesis\` carry no citations: they state the decision. \`oldTestamentLinks\` may cite literature on intertextuality.`,
+            `- When a commentary corrects the observation, say so in \`commentatorEngagement\`; do not change the observation silently.`,
+            `- A PINNED literature source is fulfilled in the dialogue (\`commentatorEngagement\`${porPregunta ? ', \`questionAnswers[*].options[*].defenders\`' : ''}), even if its role is "technical".`,
+            ...(porPregunta ? [`- In each \`questionAnswers\` entry: \`directAnswer\` comes from the observation (grammar, lexis, syntax) with the tools; the readings (\`options\`) and their \`defenders\` come from the commentaries; the decisive criterion rests on the observation; the decision is the student's paper's.`] : []),
+        ].join('\n');
+    }
+    return [
+        `## Método del trabajo: ${method === 'mixed' ? 'mixto (por pregunta)' : 'exegético'} — primero la observación, después el diálogo`,
+        `- Las piezas de OBSERVACIÓN (\`textualCriticism\`, \`syntacticAnalysis\`, \`lexicalAnalyses\`, \`historicalContext\`, \`initialTranslation\`) se arman SOLO con las herramientas: ${herramientas.length ? `${herramientas.join(', ')}. No cites ahí comentarios, monografías ni artículos.` : 'ninguna herramienta trae material para este versículo, así que arma la observación desde el texto base y la morfología, sin citas.'}`,
+        `- Las piezas de DIÁLOGO parten de esa observación. En \`commentatorEngagement\` y en las posiciones de \`translationCruxes\`, di qué comentarista la confirma y cuál la discute, con su cita. Literatura: ${literatura.join(', ') || ninguna}. \`finalTranslation\` y \`verseThesis\` no llevan citas: enuncian la decisión. \`oldTestamentLinks\` puede citar literatura sobre intertextualidad.`,
+        `- Si un comentario corrige la observación, dilo en \`commentatorEngagement\`; no cambies la observación en silencio.`,
+        `- Una fuente ASIGNADA de literatura se cumple en el diálogo (\`commentatorEngagement\`${porPregunta ? ', \`questionAnswers[*].options[*].defenders\`' : ''}), aunque su rol sea «técnica».`,
+        ...(porPregunta ? [`- En cada entrada de \`questionAnswers\`: \`directAnswer\` sale de la observación (gramática, léxico, sintaxis) con las herramientas; las lecturas (\`options\`) y sus defensores (\`defenders\`) vienen de los comentarios; el criterio decisivo se apoya en la observación; la decisión es la del trabajo.`] : []),
+    ].join('\n');
+}
+
+/** «Mi lectura»: la observación propia del estudiante, antes de los comentarios. */
+export function formatStudentReading(reading: string | null | undefined, lang: 'es' | 'en'): string {
+    const texto = (reading ?? '').trim();
+    if (!texto) return '';
+    return lang === 'en'
+        ? [
+            `**This paper's own reading** (written before consulting commentaries): "${texto}"`,
+            `In \`commentatorEngagement\`, say explicitly which commentators confirm it and which dispute it, with the citation. Present it as the paper's own reading ("this reading", "the reading proposed here"); never write "the student". Never cite it as a source nor attribute it to an author.`,
+        ].join('\n')
+        : [
+            `**La lectura propia de este trabajo** (escrita antes de consultar comentarios): «${texto}»`,
+            `En \`commentatorEngagement\`, di explícitamente qué comentaristas la confirman y cuáles la discuten, con su cita. Preséntala como la lectura del propio trabajo («esta lectura», «la lectura que aquí se propone»); nunca escribas «el estudiante». Nunca la cites como fuente ni se la atribuyas a un autor.`,
+        ].join('\n');
 }

@@ -1,4 +1,5 @@
 import type { PaperCover } from '../exegesis/entities/ExegeticalPaper';
+import type { ProjectBibliographyCriteria, ProjectBibliographyEntry } from '../exegesis/services/projectBibliography';
 
 export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'slate' | 'orange' | 'teal';
 
@@ -66,6 +67,14 @@ export interface AIProject {
      */
     workTypes?: ProjectWorkType[];
     /**
+     * La bibliografía del proyecto: el estado del arte (etapa 2). Las fichas
+     * aprobadas que están en la biblioteca se copian a `sourceIds`, que
+     * siguen acotando las conversaciones. Ausente: se lee de `sourceIds`.
+     */
+    bibliography?: ProjectBibliographyEntry[];
+    /** Los criterios de la bibliografía: requisitos, inclusión, exclusión. */
+    bibliographyCriteria?: ProjectBibliographyCriteria | null;
+    /**
      * @deprecated Etapa 1: un solo encargo por proyecto. Ya no se escribe;
      * se lee como datos del curso y un tipo de trabajo, para no perder uno
      * guardado antes de la etapa 1b (en producción no había ninguno).
@@ -86,6 +95,8 @@ export interface ProjectCharge {
     briefTemplateId?: string | null;
     styleGuideId?: string | null;
     exegeticalStrategy?: 'free' | 'dialectical';
+    /** El método del trabajo (capa 3). */
+    exegeticalMethod?: import('../exegesis/entities/ExegeticalPaper').ExegeticalMethod | null;
     cover?: PaperCover | null;
 }
 
@@ -200,6 +211,7 @@ export function newWorkTypeId(): string {
 export function workTypeFromProfile(profile: {
     id: string; displayName: string; rubricTemplateId: string | null; briefTemplateId: string | null;
     styleGuideId: string | null; exegeticalStrategy: 'free' | 'dialectical'; cover?: PaperCover | null;
+    exegeticalMethod?: import('../exegesis/entities/ExegeticalPaper').ExegeticalMethod | null;
 }, id: string): ProjectWorkType {
     return {
         id,
@@ -211,6 +223,7 @@ export function workTypeFromProfile(profile: {
         briefTemplateId: profile.briefTemplateId,
         styleGuideId: profile.styleGuideId,
         exegeticalStrategy: profile.exegeticalStrategy,
+        ...(profile.exegeticalMethod ? { exegeticalMethod: profile.exegeticalMethod } : {}),
         cover: profile.cover ?? null,
     };
 }

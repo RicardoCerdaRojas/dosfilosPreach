@@ -12,6 +12,7 @@ import { PaperBriefButton } from '@/components/exegesis/setup/PaperBriefButton';
 import { PaperCoverButton } from '@/components/exegesis/setup/PaperCoverButton';
 import { PaperRubricButton } from '@/components/exegesis/setup/PaperRubricButton';
 import { SaveWorkProfileButton } from '@/components/exegesis/setup/SaveWorkProfileButton';
+import { PaperMethodSelect } from '@/components/exegesis/setup/PaperMethodSelect';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
 
@@ -147,6 +148,7 @@ export function ExegesisPaperSetupPage() {
                     <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
                     <PaperRubricButton key={`rubric-${paper.id}`} paper={paper} />
                     <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
+                    <PaperMethodSelect key={`method-${paper.id}`} paper={paper} />
                     <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
                 </div>
             </header>

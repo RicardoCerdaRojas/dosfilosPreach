@@ -15,6 +15,7 @@ const previa = {
     passage: { bookId: 'JAS', chapterStart: 3, chapterEnd: 3, verseStart: 1, verseEnd: 12 },
 };
 const actual = { id: 'tp7', title: null, createdAt: new Date('2026-10-14'), citedSourceKeys: [], passage: previa.passage };
+vi.mock('@/hooks/faculty/useFacultyProjects', () => ({ useFacultyProjects: () => ({ projects: [] }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => ({ papers: [previa, actual], updatePaperExcludedSources: { mutateAsync, isPending: false } }),
 }));

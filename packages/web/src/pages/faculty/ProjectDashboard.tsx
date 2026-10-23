@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ProjectOutput, ProjectOutputKind, projectWorkTypes, type ProjectCourseInfo, type ProjectWorkType } from '@dosfilos/domain';
+import { ProjectOutput, ProjectOutputKind, projectWorkTypes } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -18,8 +18,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
 import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
-import { ProjectCourseCard } from './components/project/ProjectCourseCard';
-import { ProjectWorkTypesCard } from './components/project/ProjectWorkTypesCard';
+import { ProjectSetupCards, type ProjectSetupChange } from './components/project/ProjectSetupCards';
 import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
@@ -29,6 +28,7 @@ import { ProjectLinkSessionDialog } from './components/project/ProjectLinkSessio
 import { useProjectAttachedSources } from './hooks/useProjectAttachedSources';
 import { useLinkProjectSession } from './hooks/useLinkProjectSession';
 import { useProjectSlices } from './hooks/useProjectSlices';
+import { useSaveProjectSources } from './hooks/useSaveProjectSources';
 
 /**
  * Project workspace page. Pure composer — orchestrates the project header,
@@ -53,7 +53,7 @@ export function ProjectDashboard() {
     const { sessions: greekSessions } = useGreekSessions();
     const { sessions: hebrewSessions } = useHebrewSessions();
     const { papers } = useExegesisPapers();
-    const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput, updateSources } =
+    const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput } =
         useProjectWorkspace(projectId);
 
     const project = useMemo(
@@ -72,6 +72,7 @@ export function ProjectDashboard() {
         userId: user?.uid,
         sourceIds: project?.sourceIds,
     });
+    const fuentesDelProyecto = useSaveProjectSources(project);
     const greekLinker = useLinkProjectSession({ projectId, domain: 'greek' });
     const hebrewLinker = useLinkProjectSession({ projectId, domain: 'hebrew' });
 
@@ -135,7 +136,7 @@ export function ProjectDashboard() {
     }) as unknown as RoadmapState;
 
     /** Guarda los datos del curso o los tipos de trabajo, con aviso. */
-    const guardar = async (cambio: { courseInfo?: ProjectCourseInfo | null; workTypes?: ProjectWorkType[] }) => {
+    const guardar = async (cambio: ProjectSetupChange) => {
         try {
             await updateProject.mutateAsync({ projectId: project.id, ...cambio });
             toast.success(t('workTypes.saved'));
@@ -155,6 +156,7 @@ export function ProjectDashboard() {
             case 'sermon': return navigate(`/dashboard/faculty?projectId=${projectId}`);
             case 'output': return setOutputEditor({ mode: 'create' });
             case 'sources': return setSourcePickerOpen(true);
+            case 'stateOfArt': return navigate(`/dashboard/projects/${projectId}/estado-del-arte`);
         }
     };
 
@@ -193,7 +195,7 @@ export function ProjectDashboard() {
 
     const handleSaveSources = async (ids: string[]) => {
         try {
-            await updateSources.mutateAsync(ids);
+            await fuentesDelProyecto.save(ids);
             toast.success(t('sourcePicker.toastSuccess', { count: ids.length }));
             setSourcePickerOpen(false);
         } catch (err) {
@@ -223,18 +225,7 @@ export function ProjectDashboard() {
                     1b): no aplican a los proyectos de predicación ni de
                     consejería. */}
                 {!['sermon', 'series', 'counseling'].includes(project.type ?? 'general') && (
-                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-                        <ProjectCourseCard
-                            project={project}
-                            saving={updateProject.isPending}
-                            onSave={courseInfo => guardar({ courseInfo })}
-                        />
-                        <ProjectWorkTypesCard
-                            project={project}
-                            saving={updateProject.isPending}
-                            onSave={workTypes => guardar({ workTypes })}
-                        />
-                    </div>
+                    <ProjectSetupCards project={project} onSave={guardar} />
                 )}
 
                 <ProjectStudiesSection
@@ -304,7 +295,7 @@ export function ProjectDashboard() {
                     onOpenChange={setSourcePickerOpen}
                     currentSourceIds={project.sourceIds ?? []}
                     onSave={handleSaveSources}
-                    saving={updateSources.isPending}
+                    saving={fuentesDelProyecto.saving}
                 />
             )}
 

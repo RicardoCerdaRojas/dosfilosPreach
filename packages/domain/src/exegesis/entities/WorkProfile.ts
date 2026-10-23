@@ -41,6 +41,9 @@ export interface WorkProfile {
     /** Método con el que se arma el corpus. */
     exegeticalStrategy: 'free' | 'dialectical';
 
+    /** El método del trabajo (capa 3). Ausente: el análisis de siempre. */
+    exegeticalMethod?: import('./ExegeticalPaper').ExegeticalMethod | null;
+
     /**
      * Portada: seminario, autor, lugar. Se guarda por valor porque no
      * tiene plantilla propia y no cambia entre trabajos del mismo curso.

@@ -55,6 +55,9 @@ export * from './ports/IStyleGuideManifestExtractor';
 // by (BibleBookId × SourceType). Surfaced under each rubric gap so
 // the user knows what to acquire/read for the paper they're building.
 export * from './recommendations';
+export * from './services/projectBibliography';
+export * from './services/bibliographyCandidates';
+export * from './services/observationCitations';
 
 // Expository assistant pipeline (v1.5) — 5-pass methodology for
 // dividing a biblical book into preachable units while preserving

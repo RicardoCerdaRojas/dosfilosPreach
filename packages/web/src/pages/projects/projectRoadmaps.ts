@@ -28,7 +28,7 @@ import { projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput,
  */
 
 /** Qué hace el botón de una fase. Un solo lugar: antes estaba copiado en tres. */
-export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge';
+export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge' | 'stateOfArt';
 
 export interface RoadmapContext {
     project: AIProject;
@@ -172,7 +172,7 @@ const STUDY_ROADMAP: RoadmapPhase[] = [
         description: 'Adjunta los libros, artículos y comentarios que vas a consultar.',
         icon: BookOpen,
         isComplete: (ctx) => ctx.sourceCount > 0,
-        cta: { label: 'Adjuntar fuentes', kind: 'sources' },
+        cta: { label: 'Preparar el estado del arte', kind: 'stateOfArt' },
     },
     {
         id: 'studies',
@@ -263,7 +263,7 @@ const COURSE_ROADMAP: RoadmapPhase[] = [
         description: 'La bibliografía del curso: los libros y artículos que sirven para todas las tareas.',
         icon: Library,
         isComplete: (ctx) => ctx.sourceCount > 0,
-        cta: { label: 'Adjuntar fuentes', kind: 'sources' },
+        cta: { label: 'Preparar el estado del arte', kind: 'stateOfArt' },
     },
     {
         id: 'studies',
@@ -300,7 +300,7 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
         description: 'Los comentarios, léxicos y gramáticas que sirven para todo el pasaje.',
         icon: Library,
         isComplete: (ctx) => ctx.sourceCount > 0,
-        cta: { label: 'Adjuntar fuentes', kind: 'sources' },
+        cta: { label: 'Preparar el estado del arte', kind: 'stateOfArt' },
     },
     {
         id: 'pericopes',

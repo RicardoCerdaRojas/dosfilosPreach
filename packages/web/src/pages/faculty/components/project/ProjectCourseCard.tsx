@@ -54,10 +54,15 @@ export function ProjectCourseCard({ project, onSave, saving }: ProjectCourseCard
                 </label>
             </div>
 
-            <Button size="sm" onClick={() => onSave(draft)} disabled={saving || sinCambios}>
-                {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                {t('course.save')}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" onClick={() => onSave(draft)} disabled={saving || sinCambios}>
+                    {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                    {t('course.save')}
+                </Button>
+                {/* Son dos tarjetas con su propio botón: sin este aviso, se
+                    guardaba una y la otra quedaba escrita sin guardar. */}
+                {!sinCambios && !saving && <p className="text-[11px] text-warning-subtle-foreground">{t('unsaved')}</p>}
+            </div>
         </section>
     );
 }

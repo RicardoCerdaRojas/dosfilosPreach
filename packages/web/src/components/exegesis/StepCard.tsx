@@ -32,13 +32,14 @@ import { insertarEnCursor } from '@/components/exegesis/citation/citarDesdeVisor
 import { destinoDeCita, type CitaEnlazada } from '@/components/exegesis/citation/destinosDelVisor';
 import { ProsaConCitas } from '@/components/exegesis/citation/ProsaConCitas';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
+import { ObservationCitationNotice, StudentReadingPanel } from './StudentReadingPanel';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { AgregarIdeaDialog } from '@/components/exegesis/AgregarIdeaDialog';
 import { ProseReviewCard } from '@/components/exegesis/ProseReviewCard';
 import { Link, useNavigate } from 'react-router-dom';
-import { applyPageLabelStyle, assemblyContents, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, pertenceAlDocumento, questionsForVerse, verseWordBudget } from '@dosfilos/domain';
+import { applyPageLabelStyle, assemblyContents, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, pertenceAlDocumento, questionsForVerse, resolveExegeticalMethod, separatesObservation, verseWordBudget } from '@dosfilos/domain';
 import type { PaperFormatting } from '@dosfilos/domain';
 import { AssemblyManifest } from '@/components/exegesis/AssemblyManifest';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
@@ -451,6 +452,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // pulsar: abren el visor en su página (fase F). El trabajo ya está en
     // caché por la página que monta esta tarjeta.
     const { paper: paperDeLasCitas } = useExegesisPaper(paperId);
+    /** El método del trabajo (etapa 2, capa 3). */
+    const metodoDelTrabajo = resolveExegeticalMethod(paperDeLasCitas?.exegeticalMethod);
     // Atado al TEXTO de las claves, no a la identidad del trabajo: marcar una
     // casilla del documento cambia el trabajo entero y no debe volver a
     // dibujar la prosa (ver abajo).
@@ -799,6 +802,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     {analyzeVerseCanonically.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <NotebookPen className="h-3.5 w-3.5 mr-1.5" />}
                                     {t('canonical.actions.analyze')}
                                 </Button>
+                                {/* El camino viejo no conoce el método: con uno que separa
+                                    la observación se oculta, para no repetir el problema de
+                                    la estrategia, que solo respetaban algunos caminos. */}
+                                {!separatesObservation(metodoDelTrabajo) && (
                                 <Button
                                     size="sm"
                                     variant="outline"
@@ -809,6 +816,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     {generateStep.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5 mr-1.5" />}
                                     {t('detail.steps.action.generateLegacyVerse')}
                                 </Button>
+                                )}
                             </>
                         )}
                         {isConclusion && (
@@ -877,6 +885,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     {analyzeVerseCanonically.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <NotebookPen className="h-3.5 w-3.5 mr-1.5" />}
                                     {t('canonical.actions.analyzeRetry')}
                                 </Button>
+                                {/* El camino viejo no conoce el método: con uno que separa
+                                    la observación se oculta, para no repetir el problema de
+                                    la estrategia, que solo respetaban algunos caminos. */}
+                                {!separatesObservation(metodoDelTrabajo) && (
                                 <Button
                                     size="sm"
                                     variant="outline"
@@ -887,6 +899,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     {generateStep.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5 mr-1.5" />}
                                     {t('detail.steps.action.generateLegacyVerse')}
                                 </Button>
+                                )}
                             </>
                         )}
                         {isConclusion && (
@@ -987,6 +1000,23 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             {/* Body — state-aware */}
             <div className="px-5 py-4">
                 {contents && <AssemblyManifest contents={contents} paperId={paperId} preguntas={preguntas} />}
+                {isVerse && paperDeLasCitas && (
+                    <StudentReadingPanel
+                        paperId={paperId}
+                        stepId={step.id}
+                        initial={paperDeLasCitas.stepPlan?.perStep?.[step.id]?.studentReading}
+                        method={metodoDelTrabajo}
+                    />
+                )}
+                {isVerse && canonicalAnalysis && paperDeLasCitas && (
+                    // El método con que se GENERÓ la versión que se muestra, no el
+                    // actual: cambiar el método no reprocha lo ya analizado.
+                    <ObservationCitationNotice
+                        analysis={canonicalAnalysis}
+                        sources={paperDeLasCitas.sources}
+                        method={(step.state === 'awaiting-review' ? step.current ?? step.accepted : step.accepted ?? step.current)?.analysisMethod}
+                    />
+                )}
                 {isGenerating && (
                     <div className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <Loader2 className="h-4 w-4 animate-spin" />

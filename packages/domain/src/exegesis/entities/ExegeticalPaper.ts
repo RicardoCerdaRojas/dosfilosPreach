@@ -63,6 +63,8 @@ export interface ExegeticalPaper {
      * roles. New papers always pick a value at creation.
      */
     exegeticalStrategy?: ExegeticalStrategy;
+    /** El método (capa 3). Ausente: el análisis de siempre. */
+    exegeticalMethod?: ExegeticalMethod | null;
 
     /** Optional human title; defaults to the formatted passage. */
     title?: string;
@@ -274,6 +276,24 @@ export type ExegeticalPaperPhase =
  * implies in the UI.
  */
 export type ExegeticalStrategy = 'free' | 'dialectical';
+
+/**
+ * El MÉTODO del trabajo (etapa 2, capa 3): cuándo entran los comentarios
+ * en el análisis. Distinto de la estrategia, que dice cómo se ARMA el
+ * corpus. Una sola llamada por versículo con cualquier método: el método
+ * cambia el contrato del análisis, no la cantidad de llamadas.
+ *
+ *   - `research`: la literatura desde el principio (Booth, cap. 5;
+ *     Vyhmeister, cap. 7). Es lo que hace hoy el análisis.
+ *   - `exegetical`: primero la observación con las herramientas; después,
+ *     el diálogo con los comentarios (Fee 13.1; Stuart, paso 11).
+ *   - `mixed`: lo mismo por pregunta, como piden los TP: la respuesta
+ *     gramatical, luego las lecturas con sus defensores, el criterio y la
+ *     decisión.
+ *
+ * Ausente o `null`: el análisis sale exactamente como antes.
+ */
+export type ExegeticalMethod = 'research' | 'exegetical' | 'mixed';
 
 /**
  * Shape used by `CreatePaper` use cases — id and timestamps are assigned

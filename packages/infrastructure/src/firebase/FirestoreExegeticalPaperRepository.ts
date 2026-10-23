@@ -39,7 +39,8 @@ import type {
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy, stepPlanWithoutSource, trimStepVersions, versionUnderReview } from '@dosfilos/domain';
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy,
+    resolveExegeticalMethod, stepPlanWithoutSource, trimStepVersions, versionUnderReview } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -183,6 +184,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // choice). Pre-strategy docs that get re-saved through
             // this path will inherit the field naturally.
             exegeticalStrategy: draft.exegeticalStrategy ?? DEFAULT_STRATEGY_FOR_NEW_PAPER,
+            exegeticalMethod: draft.exegeticalMethod ?? null,
             title: draft.title,
             assignmentBrief: draft.assignmentBrief ?? null,
             styleGuideId: draft.styleGuideId,
@@ -213,7 +215,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod'>>
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Strip undefined — Firestore rejects undefined values; null is fine.
@@ -674,6 +676,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         if (version.canonicalAnalysis) {
             fullVersion.canonicalAnalysis = version.canonicalAnalysis;
         }
+        if (version.analysisMethod) fullVersion.analysisMethod = version.analysisMethod;
 
         await this.mutateStep(ownerId, paperId, stepId, (step) => {
             // El historial se acota acá o el documento crece sin techo: el
@@ -958,6 +961,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     };
     if (paper.title !== undefined) data.title = paper.title;
     if (paper.exegeticalStrategy !== undefined) data.exegeticalStrategy = paper.exegeticalStrategy;
+    if (paper.exegeticalMethod !== undefined) data.exegeticalMethod = paper.exegeticalMethod;
     if (paper.structuralExpectations !== undefined) {
         data.structuralExpectations = paper.structuralExpectations;
     }
@@ -981,6 +985,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         // bug-banner about missing dialectical roles on existing work.
         // New papers always carry an explicit value.
         exegeticalStrategy: resolveExegeticalStrategy(data.exegeticalStrategy),
+        exegeticalMethod: resolveExegeticalMethod(data.exegeticalMethod),
         title: data.title,
         assignmentBrief: data.assignmentBrief ?? null,
         cover: data.cover ?? null,

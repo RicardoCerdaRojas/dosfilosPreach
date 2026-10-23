@@ -33,6 +33,44 @@
     "noWorkType": "Sin tipo",
     "removedWorkType": "Un tipo que ya no está en el proyecto"
   },
+  "method": {
+    "label": "Método",
+    "none": "Como siempre",
+    "noneHint": "El análisis de siempre: lee herramientas y comentarios juntos.",
+    "saveFailed": "No se pudo cambiar el método.",
+    "mixed": {
+      "label": "Mixto (TP)",
+      "hint": "Por pregunta: primero la respuesta gramatical con las herramientas; después, las lecturas con quién las defiende, el criterio decisivo y la decisión."
+    },
+    "exegetical": {
+      "label": "Exegético",
+      "hint": "Primero la observación del texto con las herramientas (texto crítico, léxicos, gramáticas); después, el diálogo con los comentarios (Fee)."
+    },
+    "research": {
+      "label": "Investigación",
+      "hint": "La literatura desde el principio, para entender y citar las posturas mientras se argumenta."
+    }
+  },
+  "studentReading": {
+    "title": "Mi lectura (opcional)",
+    "hint": "Tu propia lectura del versículo antes de generar: qué ves en la gramática, el léxico o la sintaxis. El análisis dirá qué comentaristas la confirman y cuáles la discuten.",
+    "hintMethod": "Primero tu exégesis, después los comentarios (Fee). Escribe aquí lo que ves con las herramientas antes de generar: el análisis partirá de ella y dirá qué comentaristas la confirman y cuáles la discuten.",
+    "save": "Guardar mi lectura",
+    "unsaved": "Sin guardar",
+    "saveFailed": "No se pudo guardar tu lectura."
+  },
+  "observationCheck": {
+    "title": "La observación cita un comentario",
+    "item": "{{source}} en {{field}}",
+    "hint": "Con este método, la observación debería apoyarse solo en las herramientas. Revisa si esa cita va mejor en el diálogo con los comentarios.",
+    "field": {
+      "textualCriticism": "la crítica textual",
+      "syntacticAnalysis": "la sintaxis",
+      "lexicalAnalyses": "el léxico",
+      "historicalContext": "el contexto histórico",
+      "oldTestamentLinks": "los vínculos con el AT"
+    }
+  },
   "directory": {
     "badge": "Trabajo de investigación exegética asistida",
     "heroTitle": "Investigación exegética",
@@ -380,6 +418,10 @@
       "workType": "Tipo de trabajo",
       "noWorkType": "Ninguno: solo los datos del curso",
       "pickWorkType": "Elige qué tipo de trabajo es: cada uno trae su rúbrica, su encuadre y su guía."
+    },
+    "projectSources": {
+      "title": "Fuentes del estado del arte · {{count}}",
+      "hint": "Vienen de la bibliografía aprobada del proyecto, con su clasificación. Desmarca las que este estudio no necesita; las hojas de cada libro se eligen después, en el corpus."
     },
     "title": "Nuevo trabajo exegético",
     "subtitle": "Configura el pasaje y dale contexto al agente. Después definimos rúbrica, fuentes y plan estructural.",

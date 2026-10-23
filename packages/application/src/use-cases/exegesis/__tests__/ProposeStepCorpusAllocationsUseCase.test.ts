@@ -56,6 +56,15 @@ describe('el plan de uso respeta el encuadre', () => {
         expect(plan.perStep.v6.pinnedSourceRoles).toEqual({ na28: 'technical' });
     });
 
+    it('etapa 2: proponer el plan no borra «Mi lectura» del estudiante', async () => {
+        const { useCase, paperRepository } = build(
+            { stepPlan: { perStep: { v6: { stepId: 'v6', kind: 'verse', pinnedSources: [], suppressedSources: [], note: null, studentReading: 'mi lectura de 3:6' } }, defaults: {}, updatedAt: new Date() } },
+            { v6: { pinnedSources: ['na28'], rationale: 'aparato' } },
+        );
+        await useCase.execute({ ownerId: 'o', paperId: 'p' });
+        expect(paperRepository.setStepPlan.mock.calls[0]![2].perStep.v6.studentReading).toBe('mi lectura de 3:6');
+    });
+
     it('el rol que el planificador propone gana sobre el anterior', async () => {
         const { useCase, paperRepository } = build(
             { stepPlan: { perStep: { v6: { stepId: 'v6', kind: 'verse', pinnedSources: ['na28'], pinnedSourceRoles: { na28: 'technical' }, suppressedSources: [], note: null } }, defaults: {}, updatedAt: new Date() } },
