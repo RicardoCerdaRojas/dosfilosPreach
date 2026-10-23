@@ -109,6 +109,11 @@ export interface StepSourcePlanEntry {
      */
     note: string | null;
     /**
+     * «Mi lectura» (etapa 2, capa 3): la observación propia del estudiante
+     * para este paso, escrita antes de generar. Opcional; entra al prompt.
+     */
+    studentReading?: string | null;
+    /**
      * El estudiante cambió las fuentes de este paso DESPUÉS de que el
      * planificador escribió la nota (TP #8, 8a, B3, #24). La nota nombra roles
      * de una lista que ya no es la del paso: la interfaz lo dice y el análisis

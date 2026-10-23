@@ -680,4 +680,19 @@ describe('AnalyzeVerseCanonicallyUseCase — reglas del curso', () => {
         await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
         expect(analyzer.analyzeVerse.mock.calls[0][0].styleRules).toEqual(['Tercera persona.']);
     });
+
+    it('etapa 2, capa 3: el método del trabajo y «Mi lectura» llegan al analizador; sin ellos, nada', async () => {
+        const base = makePaper([makeSource('Kittel', 'res-b')]);
+        const paper = {
+            ...base,
+            exegeticalMethod: 'mixed' as const,
+            stepPlan: { ...base.stepPlan, perStep: { 'step-1': { stepId: 'step-1', kind: 'verse', emphasis: {}, pinnedSources: [], suppressedSources: [], note: null, studentReading: '  Mi lectura  ' } } },
+        } as unknown as ExegeticalPaper;
+        const a = buildUseCase({ paper, analysis: analysisCiting(['Kittel']), retrievedFor: ['res-b'] });
+        await a.useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(a.analyzer.analyzeVerse.mock.calls[0][0]).toMatchObject({ method: 'mixed', studentReading: 'Mi lectura' });
+        const b = buildUseCase({ paper: base, analysis: analysisCiting(['Kittel']), retrievedFor: ['res-b'] });
+        await b.useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(b.analyzer.analyzeVerse.mock.calls[0][0]).toMatchObject({ method: null, studentReading: null });
+    });
 });

@@ -1,4 +1,5 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys } from '@dosfilos/domain';
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
+} from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
     CanonicalVerseAnalysis,
@@ -176,6 +177,10 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // guardaba desde siempre con el comentario «the note is
                 // mentioned in the prompt», y ningún prompt la leía.
                 planNote: planNoteForPrompt(paper.stepPlan.perStep[step.id], paper.displayLanguage),
+                // Etapa 2, capa 3: el método y «Mi lectura». Sin método, el
+                // prompt de siempre.
+                method: resolveExegeticalMethod(paper.exegeticalMethod),
+                studentReading: paper.stepPlan.perStep[step.id]?.studentReading?.trim() || null,
                 verseMorphology,
                 // Las preguntas de este versículo como TAREA, con su tipo (C1).
                 sectionQuestions: questionsOfStep(step, parseBriefQuestions(paper.assignmentBrief, paper.passage))

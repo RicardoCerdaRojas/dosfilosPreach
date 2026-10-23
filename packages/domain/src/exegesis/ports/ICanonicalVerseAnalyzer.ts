@@ -159,6 +159,21 @@ export interface AnalyzeVerseInput {
     planNote?: string | null;
 
     /**
+     * El método del trabajo (etapa 2, capa 3). Con `exegetical` o `mixed` el
+     * prompt agrega el contrato: la observación solo con las herramientas, y
+     * el diálogo con los comentarios a partir de ella. Ausente: el prompt de
+     * siempre, sin un carácter distinto.
+     */
+    method?: import('../entities/ExegeticalPaper').ExegeticalMethod | null;
+
+    /**
+     * «Mi lectura»: la observación propia del estudiante, escrita ANTES de
+     * generar. Opcional. El diálogo tiene que decir qué comentaristas la
+     * confirman y cuáles la discuten.
+     */
+    studentReading?: string | null;
+
+    /**
      * La morfología tabulada del versículo, cuando la fuente la trae.
      *
      * Las dos lenguas: MorphGNT para el griego, morphhb con códigos OSHB para
