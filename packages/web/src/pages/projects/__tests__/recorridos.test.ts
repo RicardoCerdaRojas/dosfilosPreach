@@ -13,10 +13,12 @@ describe('recorridos por tipo', () => {
         const meta = getProjectTypeMeta('course');
         expect(meta.roadmap.map(f => f.id)).toEqual(['charge', 'state-of-art', 'studies', 'deliveries']);
         expect(computeRoadmapState(meta, ctx()).activeIndex).toBe(0);
-        const conEncargo = ctx({ project: { id: 'p', charge: { styleGuideId: 'g' } }, sourceCount: 3 });
+        // El nombre del curso solo no completa el encargo (etapa 1b).
+        expect(computeRoadmapState(meta, ctx({ project: { id: 'p', courseInfo: { course: 'NT785' } } })).activeIndex).toBe(0);
+        const conEncargo = ctx({ project: { id: 'p', workTypes: [{ id: 'tp', label: 'TP' }] }, sourceCount: 3 });
         const r = computeRoadmapState(meta, conEncargo);
         expect(r.phases[r.activeIndex]!.phase.cta.kind).toBe('study');
-        expect(computeRoadmapState(meta, ctx({ project: { id: 'p', charge: { styleGuideId: 'g' } }, sourceCount: 3, studyCount: 2, deliveredCount: 1 })).allComplete).toBe(true);
+        expect(computeRoadmapState(meta, ctx({ project: { id: 'p', workTypes: [{ id: 'tp', label: 'TP' }] }, sourceCount: 3, studyCount: 2, deliveredCount: 1 })).allComplete).toBe(true);
     });
 
     it('Investigación cuenta sus estudios (ya no pide griego)', () => {

@@ -108,4 +108,19 @@ describe('un trabajo de una serie nace con las fuentes por defecto de la serie',
         await new CreateExegeticalPaperUseCase(repo as never, undefined, undefined, proyectos).execute({ ...base, projectId: 'viejo' } as never);
         expect(repo.createPaper.mock.calls[0]![0]).toMatchObject({ projectId: null });
     });
+
+    it('nace como el tipo de trabajo elegido, si el proyecto lo tiene (etapa 1b)', async () => {
+        const repo = { createPaper: vi.fn(async (d: Record<string, unknown>) => ({ id: 'p1', sources: [], ...d })), setRubric: vi.fn(async () => ({ id: 'p1' })), getPaper: vi.fn(), addSource: vi.fn() };
+        const curso = { id: 'curso', userId: 'u', workTypes: [{ id: 'tp', label: 'TP Semanal' }] };
+        const proyectos = { getProject: vi.fn(async (id: string) => (id === 'curso' ? curso : { id, userId: 'otro', workTypes: [{ id: 'tp', label: 'TP' }] })) };
+        const uc = new CreateExegeticalPaperUseCase(repo as never, undefined, undefined, proyectos);
+        await uc.execute({ ...base, projectId: 'curso', projectWorkTypeId: 'tp' } as never);
+        expect(repo.createPaper.mock.calls[0]![0]).toMatchObject({ projectId: 'curso', projectWorkTypeId: 'tp' });
+        // Un tipo borrado mientras se creaba: el estudio queda en el curso, sin tipo.
+        await uc.execute({ ...base, projectId: 'curso', projectWorkTypeId: 'borrado' } as never);
+        expect(repo.createPaper.mock.calls[1]![0]).toMatchObject({ projectId: 'curso', projectWorkTypeId: null });
+        // Un proyecto ajeno no deja colar su tipo.
+        await uc.execute({ ...base, projectId: 'ajeno', projectWorkTypeId: 'tp' } as never);
+        expect(repo.createPaper.mock.calls[2]![0]).toMatchObject({ projectId: null, projectWorkTypeId: null });
+    });
 });

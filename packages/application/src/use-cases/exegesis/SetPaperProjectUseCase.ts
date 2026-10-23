@@ -1,5 +1,7 @@
 import {
     paperRoleInProject,
+    projectWorkTypes,
+    type AIProject,
     type ExegeticalPaper,
     type IAIProjectRepository,
     type IExegeticalPaperRepository,
@@ -10,11 +12,13 @@ import {
  *
  * - `origin`: el proyecto de origen, que define su encargo. `null` lo quita.
  * - `link` / `unlink`: un proyecto con el que colabora sin cambiarle reglas.
+ * - `workType`: qué tipo de trabajo del origen es (etapa 1b). `null` lo quita.
  */
 export type PaperProjectChange =
     | { kind: 'origin'; projectId: string | null }
     | { kind: 'link'; projectId: string }
-    | { kind: 'unlink'; projectId: string };
+    | { kind: 'unlink'; projectId: string }
+    | { kind: 'workType'; workTypeId: string | null };
 
 export interface SetPaperProjectInput {
     ownerId: string;
@@ -43,6 +47,19 @@ export class SetPaperProjectUseCase {
         const paper = await this.paperRepository.getPaper(ownerId, paperId);
         if (!paper) throw new Error(`Paper ${paperId} not found`);
 
+        if (change.kind === 'workType') {
+            if (!paper.projectId) throw new Error('SetPaperProject: el estudio no tiene proyecto de origen');
+            if ((paper.projectWorkTypeId ?? null) === change.workTypeId) return paper;
+            // Quitar el tipo no pide nada; poner uno, que el origen lo tenga.
+            if (change.workTypeId) {
+                const origen = await this.requireProject(ownerId, paper.projectId);
+                if (!projectWorkTypes(origen).some(t => t.id === change.workTypeId)) {
+                    throw new Error(`Tipo de trabajo ${change.workTypeId} no existe en el proyecto`);
+                }
+            }
+            return this.paperRepository.setProjectLinks(ownerId, paperId, { workTypeId: change.workTypeId });
+        }
+
         // Quitar o desvincular no pide que el proyecto siga disponible: un
         // proyecto archivado tiene que poder soltarse.
         if (change.projectId && change.kind !== 'unlink') await this.requireProject(ownerId, change.projectId);
@@ -63,12 +80,13 @@ export class SetPaperProjectUseCase {
         return this.paperRepository.setProjectLinks(ownerId, paperId, { unlink: change.projectId });
     }
 
-    private async requireProject(ownerId: string, projectId: string): Promise<void> {
+    private async requireProject(ownerId: string, projectId: string): Promise<AIProject> {
         // Un proyecto ajeno o inexistente no vuelve `null`: las reglas niegan
         // la lectura. Las dos cosas son «no disponible».
         const project = await this.projectRepository.getProject(projectId).catch(() => null);
         if (!project || project.userId !== ownerId || project.deletedAt || project.archivedAt) {
             throw new Error(`Proyecto ${projectId} no disponible`);
         }
+        return project;
     }
 }

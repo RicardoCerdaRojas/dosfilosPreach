@@ -69,13 +69,19 @@ Ya hay un antecedente en el código: una extracción de «Mis Recursos» ya pert
 
 **Un estudio suelto se puede asociar después** a un proyecto, como origen o como vínculo. Al asociarlo se le **ofrecen** las fuentes de la bibliografía del proyecto que todavía no tiene; nunca se pisa lo que ya tiene.
 
-### El perfil de trabajo
+### El perfil de trabajo y los tipos de trabajo
 
-Queda como **plantilla para crear proyectos de tipo Curso**. La configuración del curso vive en el proyecto, no en el perfil (decisión del fundador, 2026-10-22).
+El perfil de trabajo queda como **plantilla**. La configuración vive en el proyecto, no en el perfil (decisión del fundador, 2026-10-22).
+
+Un curso pide varias clases de tareas sobre la misma bibliografía: TP semanales, un ensayo, un paper final. Por eso el proyecto tiene dos niveles (etapa 1b):
+- **los datos del curso**: el nombre y una guía de estilo opcional;
+- **los tipos de trabajo**: cada uno con su rúbrica, encuadre, guía, estrategia y portada, copiados de un perfil.
+
+Cada estudio nace como uno de esos tipos y lo recuerda. La guía de estilo puede estar en los dos niveles; la del tipo gana.
 
 ### Qué agrupa un proyecto
 
-- **sus estudios**, que se crean desde el proyecto y heredan su encargo y su bibliografía;
+- **sus estudios**, que se crean desde el proyecto como uno de sus tipos de trabajo, y heredan ese encargo y la bibliografía;
 - **las conversaciones con Tutores** y las sesiones de griego y hebreo, como hoy. Una conversación puede ligarse además a un estudio del proyecto;
 - **las extracciones** de «Mis Recursos» y el material producido;
 - **el estado del arte**: la bibliografía del proyecto, con el estado y la razón de cada fuente;

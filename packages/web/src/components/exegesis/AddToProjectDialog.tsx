@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FolderKanban, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectSourcesMissingIn, type ExegeticalPaper } from '@dosfilos/domain';
+import { projectSourcesMissingIn, projectWorkTypes, type ExegeticalPaper } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
@@ -44,6 +44,8 @@ export function AddToProjectDialog({ open, onOpenChange, paper }: AddToProjectDi
     // Solo libros que siguen en la biblioteca: un id borrado no se puede
     // agregar y la oferta quedaba para siempre.
     const enBiblioteca = new Set(resources.map(r => r.id));
+    const tiposDelOrigen = origen && !inactivo(origen) ? projectWorkTypes(origen) : [];
+    const tipoBorrado = !!paper.projectWorkTypeId && !tiposDelOrigen.some(x => x.id === paper.projectWorkTypeId);
     const faltantes = origen && !inactivo(origen)
         ? projectSourcesMissingIn(origen.sourceIds, paper.sources).filter(id => enBiblioteca.has(id))
         : [];
@@ -108,6 +110,25 @@ export function AddToProjectDialog({ open, onOpenChange, paper }: AddToProjectDi
                         </div>
                     ) : (
                         <p className="text-xs text-muted-foreground">{t('paperProjects.noOrigin')}</p>
+                    )}
+                    {/* Qué tipo de trabajo del origen es (etapa 1b). Solo rotula:
+                        no le cambia la rúbrica a un estudio ya creado. */}
+                    {tiposDelOrigen.length > 0 && (
+                        <label className="block space-y-1">
+                            <span className="text-xs text-muted-foreground">{t('paperProjects.workType')}</span>
+                            <select
+                                value={paper.projectWorkTypeId ?? ''}
+                                onChange={e => cambiar({ kind: 'workType', workTypeId: e.target.value || null })}
+                                disabled={pendiente}
+                                className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                            >
+                                <option value="">{t('paperProjects.noWorkType')}</option>
+                                {/* Un tipo que se quitó del proyecto se ve como tal: si no, el
+                                    select mostraba «Sin tipo» y elegirlo no cambiaba nada. */}
+                                {tipoBorrado && <option value={paper.projectWorkTypeId!}>{t('paperProjects.removedWorkType')}</option>}
+                                {tiposDelOrigen.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}
+                            </select>
+                        </label>
                     )}
                     {origen && faltantes.length > 0 && (
                         <div className="rounded-md border border-border bg-muted/40 px-3 py-2 space-y-1.5">

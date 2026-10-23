@@ -10,10 +10,13 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBriefs';
 import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBriefPicker';
+import { ProjectOriginPicker } from '@/components/exegesis/ProjectOriginPicker';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
-    hasProjectCharge,
+    defaultWorkTypeId,
     nextAssignmentDate,
+    projectWorkTypes,
+    resolveProjectCharge,
     type AIProject,
     type ExegeticalStrategy,
     type PassageReference,
@@ -52,6 +55,9 @@ export function ExegesisCreatePage() {
     const proyectosActivos = (projects ?? []).filter(p => !p.archivedAt && !p.deletedAt);
     const [projectId, setProjectId] = useState<string | null>(() => searchParams.get('projectId'));
     const proyectoElegido = proyectosActivos.find(p => p.id === projectId) ?? null;
+    /** Qué tipo de trabajo del proyecto es (etapa 1b): TP semanal, paper final. */
+    const [workTypeId, setWorkTypeId] = useState<string | null>(null);
+    const tiposDelProyecto = projectWorkTypes(proyectoElegido);
     /** La guía del encargo del proyecto, cuando el estudio nace de uno. */
     const [styleGuideDelProyecto, setStyleGuideDelProyecto] = useState<string | null>(null);
     const { rubrics, defaultRubric } = useUserRubrics();
@@ -132,14 +138,17 @@ export function ExegesisCreatePage() {
     const [coverFromProfile, setCoverFromProfile] = useState<WorkProfile['cover']>(null);
 
     /**
-     * El encargo del proyecto: rellena igual que un perfil y tampoco decide.
-     * Gana sobre el perfil por defecto, porque el estudio nace del curso.
+     * Lo que hereda del proyecto: los datos del curso más los del tipo de
+     * trabajo elegido. Rellena igual que un perfil y tampoco decide. Gana
+     * sobre el perfil por defecto, porque el estudio nace del curso.
      */
     const encargoEnUso = useRef(false);
-    const aplicarEncargo = useCallback((proyecto: AIProject | null) => {
+    const aplicarEncargo = useCallback((proyecto: AIProject | null, tipo: string | null) => {
         setProjectId(proyecto?.id ?? null);
+        setWorkTypeId(proyecto ? tipo : null);
         setStyleGuideDelProyecto(null);
-        if (!proyecto || !hasProjectCharge(proyecto)) {
+        const c = proyecto ? resolveProjectCharge(proyecto, tipo) : null;
+        if (!c) {
             // Dejar un proyecto cuyo encargo se aplicó deshace ese encargo:
             // si no, el estudio nacía suelto con la rúbrica y la portada del
             // curso anterior, y la portada ni siquiera se ve en esta página.
@@ -153,18 +162,20 @@ export function ExegesisCreatePage() {
             }
             return;
         }
-        const c = proyecto.charge!;
         encargoEnUso.current = true;
         perfilAplicado.current = true;
         setWorkProfileId(null);
-        // `null` en el encargo es «la rúbrica del sistema» y se respeta; solo
-        // la ausencia deja la plantilla por defecto del usuario.
+        // Cada campo se pone entero, también vacío: pasar del TP al paper
+        // final no puede dejar el encuadre o la portada del TP.
+        // `null` en la rúbrica es «la del sistema» y se respeta; solo la
+        // ausencia deja la plantilla por defecto del usuario.
         setRubricTemplateId(c.rubricTemplateId === undefined ? undefined : c.rubricTemplateId);
         setBriefDelPerfilId(c.briefTemplateId ?? null);
-        if (c.exegeticalStrategy) setExegeticalStrategy(c.exegeticalStrategy);
+        setExegeticalStrategy(c.exegeticalStrategy ?? 'dialectical');
         setCoverFromProfile(c.cover ?? null);
         setStyleGuideDelProyecto(c.styleGuideId ?? null);
     }, [defaultProfile, aplicarPerfil]);
+    const encargoAplicadoAhora = !!proyectoElegido && !!resolveProjectCharge(proyectoElegido, workTypeId);
 
     // Si se llegó desde un proyecto con encargo, se aplica en cuanto cargan
     // los proyectos (una vez).
@@ -172,7 +183,7 @@ export function ExegesisCreatePage() {
     useEffect(() => {
         if (encargoAplicado.current || !proyectoElegido) return;
         encargoAplicado.current = true;
-        aplicarEncargo(proyectoElegido);
+        aplicarEncargo(proyectoElegido, defaultWorkTypeId(proyectoElegido));
     }, [proyectoElegido, aplicarEncargo]);
 
     // El perfil por defecto se aplica al entrar, y sólo mientras el
@@ -189,7 +200,10 @@ export function ExegesisCreatePage() {
     useEffect(() => {
         if (briefUserTyped) return;
         const elegido = briefToPrefill(briefs, briefDelPerfilId, defaultBrief);
-        if (!elegido) return;
+        // Sin encuadre que heredar se vacía: pasar del TP al paper final no
+        // puede dejar la consigna del TP (revisión de la etapa 1b). Lo que el
+        // estudiante escribió no se toca: lo protege `briefUserTyped`.
+        if (!elegido) { setAssignmentBrief(''); return; }
         setAssignmentBrief(elegido.body.slice(0, briefMaxChars));
     }, [briefs, briefDelPerfilId, defaultBrief, briefUserTyped]);
 
@@ -218,7 +232,7 @@ export function ExegesisCreatePage() {
                 rubricTemplateId,
                 // El proyecto elegido de verdad: uno de la URL que no está entre
                 // los activos (archivado, ajeno) no se manda.
-                ...(proyectoElegido ? { projectId: proyectoElegido.id } : {}),
+                ...(proyectoElegido ? { projectId: proyectoElegido.id, projectWorkTypeId: workTypeId } : {}),
                 ...(cover ? { cover } : {}),
             });
             toast.success(t('create.toast.created'));
@@ -323,23 +337,15 @@ export function ExegesisCreatePage() {
                 </Step>
 
                 {proyectosActivos.length > 0 && (
-                    <div className="rounded-xl border border-border bg-card p-3 space-y-1">
-                        <label htmlFor="origin-project" className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
-                            {t('create.project.label')}
-                        </label>
-                        <select
-                            id="origin-project"
-                            value={projectId ?? ''}
-                            onChange={e => aplicarEncargo(proyectosActivos.find(p => p.id === e.target.value) ?? null)}
-                            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                        >
-                            <option value="">{t('create.project.none')}</option>
-                            {proyectosActivos.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                        </select>
-                        <p className="text-[11px] text-muted-foreground">
-                            {proyectoElegido && hasProjectCharge(proyectoElegido) ? t('create.project.chargeApplied') : t('create.project.hint')}
-                        </p>
-                    </div>
+                    <ProjectOriginPicker
+                        projects={proyectosActivos}
+                        projectId={projectId}
+                        workTypes={tiposDelProyecto}
+                        workTypeId={workTypeId}
+                        inherits={encargoAplicadoAhora}
+                        onProject={p => aplicarEncargo(p, defaultWorkTypeId(p))}
+                        onWorkType={tipo => aplicarEncargo(proyectoElegido, tipo)}
+                    />
                 )}
 
                 {profiles.length > 0 && (

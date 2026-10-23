@@ -28,7 +28,10 @@
       "sourcesPartial": "Se agregaron {{added}} de {{total}} fuentes. Revisa las demás en el corpus.",
       "sourcesAdded_one": "Se agregó 1 fuente.",
       "sourcesAdded_other": "Se agregaron {{count}} fuentes."
-    }
+    },
+    "workType": "Tipo de trabajo en el proyecto",
+    "noWorkType": "Sin tipo",
+    "removedWorkType": "Un tipo que ya no está en el proyecto"
   },
   "directory": {
     "badge": "Trabajo de investigación exegética asistida",
@@ -373,7 +376,10 @@
       "label": "Proyecto",
       "none": "Ninguno: estudio suelto",
       "hint": "El estudio nace dentro del proyecto. Puedes asociarlo después.",
-      "chargeApplied": "Se aplicó el encargo del proyecto: rúbrica, encuadre, guía y portada. Revísalos antes de crear."
+      "chargeApplied": "Se aplicó lo que define el proyecto: rúbrica, encuadre, guía y portada. Revísalos antes de crear.",
+      "workType": "Tipo de trabajo",
+      "noWorkType": "Ninguno: solo los datos del curso",
+      "pickWorkType": "Elige qué tipo de trabajo es: cada uno trae su rúbrica, su encuadre y su guía."
     },
     "title": "Nuevo trabajo exegético",
     "subtitle": "Configura el pasaje y dale contexto al agente. Después definimos rúbrica, fuentes y plan estructural.",

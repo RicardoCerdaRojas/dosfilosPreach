@@ -141,11 +141,14 @@ export interface IExegeticalPaperRepository {
      * es opcional: `projectId` reemplaza el origen (null lo quita); `link` y
      * `unlink` agregan o quitan un proyecto vinculado. El caso de uso decide
      * las reglas (el origen nunca queda también como vínculo).
+     *
+     * El tipo de trabajo (`projectWorkTypeId`) solo vale dentro del origen:
+     * cambiar `projectId` lo borra, salvo que `workTypeId` traiga el nuevo.
      */
     setProjectLinks(
         ownerId: string,
         paperId: string,
-        change: { projectId?: string | null; link?: string; unlink?: string },
+        change: { projectId?: string | null; link?: string; unlink?: string; workTypeId?: string | null },
     ): Promise<ExegeticalPaper>;
 
     /**

@@ -136,6 +136,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
                 // Un callable viejo no los manda: el estudio se ve suelto.
                 projectId: typeof p.projectId === 'string' ? p.projectId : null,
                 linkedProjectIds: Array.isArray(p.linkedProjectIds) ? p.linkedProjectIds : [],
+                projectWorkTypeId: typeof p.projectWorkTypeId === 'string' ? p.projectWorkTypeId : null,
                 // Un callable viejo no manda `sources`; se degrada a lista
                 // vacía, que deja la herencia sin proponer nada en vez de
                 // romper la pantalla.
@@ -202,6 +203,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             pericopeId: draft.pericopeId ?? null,
             projectId: draft.projectId ?? null,
             linkedProjectIds: [],
+            projectWorkTypeId: draft.projectId ? draft.projectWorkTypeId ?? null : null,
             ...(draft.cover ? { cover: draft.cover } : {}),
         };
         await setDoc(ref, serialize(paper));
@@ -227,13 +229,19 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async setProjectLinks(
         ownerId: string,
         paperId: string,
-        change: { projectId?: string | null; link?: string; unlink?: string },
+        change: { projectId?: string | null; link?: string; unlink?: string; workTypeId?: string | null },
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Sin `updatedAt`: asociar un estudio a un proyecto no lo edita, y esa
         // fecha ordena la lista y se muestra como «última edición».
         const data: DocumentData = {};
-        if (change.projectId !== undefined) data.projectId = change.projectId;
+        // El tipo de trabajo solo vale dentro del proyecto de origen: cambiar
+        // el origen lo borra, salvo que la misma escritura traiga el nuevo.
+        if (change.projectId !== undefined) {
+            data.projectId = change.projectId;
+            data.projectWorkTypeId = null;
+        }
+        if (change.workTypeId !== undefined) data.projectWorkTypeId = change.workTypeId;
         // Una sola escritura: origen + quitar de los vínculos tocan campos
         // distintos. Solo `link` y `unlink` juntos irían sobre el mismo campo,
         // y el caso de uso nunca los manda juntos.
@@ -253,7 +261,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         ]);
         const tocados = new Set<string>();
         for (const d of deOrigen.docs) {
-            await updateDoc(d.ref, { projectId: null });
+            await updateDoc(d.ref, { projectId: null, projectWorkTypeId: null });
             tocados.add(d.id);
         }
         for (const d of vinculados.docs) {
@@ -957,6 +965,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     if (paper.pericopeId !== undefined) data.pericopeId = paper.pericopeId;
     if (paper.projectId !== undefined) data.projectId = paper.projectId;
     if (paper.linkedProjectIds !== undefined) data.linkedProjectIds = paper.linkedProjectIds;
+    if (paper.projectWorkTypeId !== undefined) data.projectWorkTypeId = paper.projectWorkTypeId;
     return data;
 }
 
@@ -1010,6 +1019,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         linkedProjectIds: Array.isArray(data.linkedProjectIds)
             ? data.linkedProjectIds.filter((x: unknown): x is string => typeof x === 'string')
             : [],
+        projectWorkTypeId: typeof data.projectWorkTypeId === 'string' ? data.projectWorkTypeId : null,
     };
 }
 

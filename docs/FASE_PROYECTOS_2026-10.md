@@ -66,7 +66,7 @@ Lo motivó una tarea que en los TP de Santiago se hizo fuera del sistema: invest
 - **Conversaciones:**
   - las de Tutores, griego y hebreo siguen agrupándose por proyecto;
   - una conversación se puede ligar además a un estudio del proyecto (el contexto de la conversación ya trae `paperId`).
-- **El encargo del curso vive en el proyecto:** sílabo, rúbrica, guía de estilo, criterios del profesor y portada. Es lo que hoy guarda el perfil de trabajo, que queda como plantilla para crear proyectos (ver decisiones abiertas).
+- **El encargo del curso vive en el proyecto:** sílabo, rúbrica, guía de estilo, criterios del profesor y portada. Es lo que hoy guarda el perfil de trabajo, que queda como plantilla. La etapa 1b lo separa en datos del curso y tipos de trabajo.
 - **Medida:** pasar «Teología II – Cristología» a Curso y crear desde él un estudio que herede la guía y la rúbrica.
 
 **Revisión adversarial de la etapa 1 (2026-10-22, dos revisores, 19 hallazgos):**
@@ -95,6 +95,41 @@ Lo motivó una tarea que en los TP de Santiago se hizo fuera del sistema: invest
   - Agrupar la lista por proyecto.
   - Pasar a i18n los textos de los recorridos de proyecto, que ya estaban fijos en español antes de esta etapa.
   - Que asociar un origen a un estudio ya creado aplique el encargo del proyecto; hoy solo lo hereda quien nace desde el proyecto.
+
+### Etapa 1b · Datos del curso y tipos de trabajo
+
+**Por qué.** Al probar la etapa 1, el fundador creó el curso «NT785 - Exégesis de Santiago» y copió el perfil «TP Semanal» en el encargo. Ahí vio el problema: un encargo por proyecto obliga a un solo perfil. Un curso pide TP semanales, un ensayo y un paper final, cada uno con su rúbrica, y todos comparten la misma bibliografía. En lenguaje académico, el encargo es lo que se pide en *una* tarea, no en el curso entero.
+
+**Qué cambia:**
+- **El proyecto tiene dos niveles:**
+  - **Datos del curso** (`courseInfo`): el nombre del curso y una guía de estilo opcional. En un proyecto que no es curso, solo la guía.
+  - **Tipos de trabajo** (`workTypes[]`): por ejemplo «TP Semanal» o «Paper final». Cada uno tiene su nombre, rúbrica (con sus tres estados), encuadre, guía, estrategia y portada. Se copia de un perfil de trabajo o se arma a mano.
+- **El perfil de trabajo** es la plantilla de un tipo de trabajo, no de un curso.
+- **La guía de estilo** se puede poner en los dos niveles; la del tipo gana sobre la del curso (decisión del fundador, 2026-10-22).
+- **«Nuevo estudio» desde el proyecto** pregunta qué tipo de trabajo es:
+  - con un solo tipo, se elige solo;
+  - sin elegir, el estudio hereda solo los datos del curso;
+  - pasar de un tipo a otro reemplaza todos sus campos, también los vacíos.
+- **El estudio guarda su tipo** (`ExegeticalPaper.projectWorkTypeId`):
+  - la página del proyecto lo rotula;
+  - «Agregar a un proyecto» deja elegirlo para un estudio ya creado. Solo lo rotula: no le cambia la rúbrica;
+  - cambiar o quitar el proyecto de origen borra el tipo, porque el id solo vale dentro de ese proyecto.
+- **El recorrido del Curso** da por cumplido el encargo cuando hay al menos un tipo de trabajo. El nombre del curso solo no basta.
+- **Compatibilidad:** el `charge` de la etapa 1 ya no se escribe. Se lee como datos del curso y un tipo («encargo»). Medido el 2026-10-22: ningún proyecto de producción lo tenía guardado.
+
+**Revisión adversarial de la etapa 1b (2026-10-22, 10 hallazgos):**
+- **Corregidos:**
+  - Pasar de un tipo con encuadre a uno sin encuadre dejaba la consigna del primero.
+  - Un curso con solo el nombre, o sin tipo elegido, desplazaba al perfil por defecto sin heredar nada. Ahora el nombre solo no cuenta como herencia.
+  - Un tipo vacío elegido después de uno lleno traía el perfil por defecto. Ahora un tipo elegido siempre hereda, aunque esté vacío.
+  - La estrategia «Sin preferencia» pasa a llamarse «Por defecto (dialéctica)», que es lo que hace.
+  - El rótulo del tipo en la lista no llegaba a contraste AA.
+  - Un estudio cuyo tipo se quitó del proyecto se ve como tal y se puede dejar sin tipo.
+  - En un tipo, la guía vacía dice «La del curso» solo si el curso tiene guía.
+  - El selector de proyecto y tipo pasó a su propio componente, para no seguir engordando la página de creación.
+- **Queda para después:**
+  - Copiar un perfil a un tipo no llena el nombre del curso, si está vacío.
+  - El nombre «Encargo» del tipo que sale de un encargo viejo está fijo en español. En producción no hay ninguno.
 
 ### Etapa 2 · El estado del arte
 - **Bibliografía del proyecto.** Cada fuente tiene:
@@ -139,6 +174,7 @@ Lo motivó una tarea que en los TP de Santiago se hizo fuera del sistema: invest
 4. **Los «Material previo»** se dejan y no se crean más.
 5. **Un estudio suelto se puede asociar después** a un proyecto.
 6. **Un estudio puede colaborar con más de un proyecto:** tiene un proyecto de origen, que define su encargo, y varios vínculos.
+7. **Un curso tiene varios tipos de trabajo** (TP semanal, ensayo, paper final), cada uno con su perfil, sobre una bibliografía común. Los nombres son «Datos del curso» y «Tipos de trabajo». La guía de estilo puede ser del curso o del tipo de trabajo, y la del tipo gana (etapa 1b).
 
 ## Cómo se entrega
 
