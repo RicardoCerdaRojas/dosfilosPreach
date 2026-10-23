@@ -5,6 +5,7 @@ import {
     type BibliographyEvaluation,
     type ProjectBibliographyEntry,
     type ProjectWorkType,
+    type SourceType,
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
@@ -20,6 +21,10 @@ interface BibliographyEntryCardProps {
     onRemove: () => void;
     /** Lo que impide guardar esta ficha. */
     error?: 'title' | 'reason' | null;
+    /** La clasificación efectiva: la de la ficha o la del libro. */
+    effectiveType?: SourceType | null;
+    /** Cómo se clasificó este libro en trabajos anteriores, si la ficha no tiene. */
+    history?: ReadonlyArray<readonly [SourceType, number]>;
 }
 
 /**
@@ -27,7 +32,7 @@ interface BibliographyEntryCardProps {
  * que se puede hacer según su paso (aprobar, descartar con razón, volver a
  * candidata, ligar el libro cuando se consigue, marcarla leída).
  */
-export function BibliographyEntryCard({ entry, suggested, workTypes, library, onChange, onRemove, error = null }: BibliographyEntryCardProps) {
+export function BibliographyEntryCard({ entry, suggested, workTypes, library, onChange, onRemove, error = null, effectiveType = entry.sourceType ?? null, history = [] }: BibliographyEntryCardProps) {
     const { t } = useTranslation('projects');
     const { t: tx } = useTranslation('exegesis');
     const [abierta, setAbierta] = useState(false);
@@ -46,7 +51,7 @@ export function BibliographyEntryCard({ entry, suggested, workTypes, library, on
                 <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-sm font-medium text-foreground">{entry.title || t('stateOfArt.untitled')}</p>
                     <p className="text-[11px] text-muted-foreground">
-                        {[entry.author, entry.sourceType ? tx(`sourceTypes.${entry.sourceType}.label`) : t('stateOfArt.unclassified')].filter(Boolean).join(' · ')}
+                        {[entry.author, effectiveType ? tx(`sourceTypes.${effectiveType}.label`) : t('stateOfArt.unclassified')].filter(Boolean).join(' · ')}
                     </p>
                     <div className="flex flex-wrap gap-1">
                         <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-foreground">{t(`stateOfArt.weight.${entry.weight}`)}</span>
@@ -61,6 +66,18 @@ export function BibliographyEntryCard({ entry, suggested, workTypes, library, on
                     {entry.decision === 'discarded' && entry.reason && <p className="text-xs text-muted-foreground">{t('stateOfArt.discardedBecause', { reason: entry.reason })}</p>}
                     {entry.annotation?.serves && entry.decision !== 'discarded' && <p className="text-xs text-muted-foreground">{entry.annotation.serves}</p>}
                     {error && <p className="text-xs text-destructive" role="alert">{t(`stateOfArt.error.${error}`)}</p>}
+                    {/* Sin clasificar: la clasificación que se le dio en los trabajos,
+                        a un clic (en los TP el tipo lo ponía cada trabajo). */}
+                    {!effectiveType && history.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            <span className="text-[11px] text-muted-foreground">{t('stateOfArt.classifyAs')}</span>
+                            {history.map(([tipo, n]) => (
+                                <Button key={tipo} size="sm" variant="outline" className="h-6 px-2 text-[11px]" onClick={() => onChange({ sourceType: tipo })}>
+                                    {tx(`sourceTypes.${tipo}.label`)} · {t('stateOfArt.usedInPapers', { count: n })}
+                                </Button>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                     {entry.decision !== 'approved' && (

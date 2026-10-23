@@ -8,6 +8,11 @@
   "unsaved": "Cambios sin guardar.",
   "stateOfArt": {
     "title": "Estado del arte",
+    "leaveUnsaved": "Tienes cambios sin guardar en el estado del arte. ¿Salir igual?",
+    "classifyAs": "Clasificar como:",
+    "usedInPapers_one": "en 1 trabajo",
+    "usedInPapers_other": "en {{count}} trabajos",
+    "coverage": {"title": "Cobertura de las rúbricas", "clear": "Ver todas", "hint": "Lo que piden las rúbricas de los tipos de trabajo. Pulsa un tipo para ver sus candidatas.", "covered": "Cubierto", "missing": "Falta", "approved": "{{approved}} de {{minimum}} aprobadas", "candidates_one": "1 candidata ({{inLibrary}} en tu biblioteca)", "candidates_other": "{{count}} candidatas ({{inLibrary}} en tu biblioteca)", "unclassified": "Sin clasificar", "unclassifiedHint": "No cuentan para ningún tipo hasta que las clasifiques.", "unclassifiedCount": "{{approved}} aprobadas · {{candidates}} candidatas", "emptyFiltered": "No hay obras de este tipo en este paso. Si falta, agrégala a mano como obra por conseguir."},
     "conflictNote": "Clasificado distinto en los estudios: {{types}}.",
     "fixErrors_one": "Corrige 1 ficha antes de guardar.",
     "fixErrors_other": "Corrige {{count}} fichas antes de guardar.",

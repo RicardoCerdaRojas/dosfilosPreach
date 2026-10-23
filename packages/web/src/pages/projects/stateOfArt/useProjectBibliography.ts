@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+    bibliographyCoverage,
     bibliographyEntryError,
+    classificationHistory,
     bibliographyWarnings,
     catalogCandidates,
     cleanProjectBibliography,
@@ -85,11 +87,28 @@ export function useProjectBibliography(project: AIProject | undefined) {
         setDraft(d => mergeBibliographyCandidates(d, candidatas, newBibliographyEntryId));
     }, [resources, workTypes, rubrics, studies, bibleBooks, t, tx, lang]);
 
-    /** Los mínimos por tipo que piden las rúbricas de los tipos de trabajo. */
-    const requirements = useMemo(() => {
-        const ids = new Set(workTypes.map(t => t.rubricTemplateId).filter(Boolean));
-        return rubrics.filter(r => ids.has(r.id)).flatMap(r => r.rubric.sourceRequirements ?? []);
-    }, [workTypes, rubrics]);
+    /** Los mínimos por tipo que piden las rúbricas, con el tipo de trabajo que los pide. */
+    const requirementsByWorkType = useMemo(() => workTypes.flatMap(w => {
+        const rubrica = rubrics.find(r => r.id === w.rubricTemplateId);
+        return (rubrica?.rubric.sourceRequirements ?? []).map(q => ({ sourceType: q.sourceType, minimum: q.minimum, workType: w.label }));
+    }), [workTypes, rubrics]);
+    const requirements = requirementsByWorkType;
+    const coverage = useMemo(
+        () => bibliographyCoverage(draft, requirementsByWorkType, id => porId.get(id)),
+        [draft, requirementsByWorkType, porId],
+    );
+    /**
+     * Cómo clasificaste un libro en TODOS tus trabajos, para proponerlo. Se
+     * calcula una vez por libro sin clasificar, no en cada tarjeta.
+     */
+    const sinClasificar = useMemo(
+        () => [...new Set(draft.filter(e => e.resourceId && !e.sourceType && !porId.get(e.resourceId)?.exegeticalType).map(e => e.resourceId!))].sort().join('|'),
+        [draft, porId],
+    );
+    const historias = useMemo(() => new Map(
+        (sinClasificar ? sinClasificar.split('|') : []).map(id => [id, classificationHistory(papers ?? [], id)] as const),
+    ), [sinClasificar, papers]);
+    const historyOf = useCallback((resourceId: string) => historias.get(resourceId) ?? [], [historias]);
 
     const warnings = useMemo(
         () => bibliographyWarnings(draft, requirements, id => porId.get(id), bibleBooks),
@@ -112,7 +131,7 @@ export function useProjectBibliography(project: AIProject | undefined) {
 
     return {
         entries: draft, errors, criteria, setCriteria, update, add, remove, gatherCandidates,
-        warnings, requirements, bibleBooks, workTypes, resourceOf: (id: string) => porId.get(id) ?? null, dirty,
+        warnings, requirements, coverage, historyOf, bibleBooks, workTypes, resourceOf: (id: string) => porId.get(id) ?? null, dirty,
         /**
          * Los libros de la biblioteca para ligar una obra por conseguir: solo
          * los que no tienen ya su ficha, o quedarían dos fichas del mismo libro.

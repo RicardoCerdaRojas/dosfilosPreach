@@ -8,6 +8,11 @@
   "unsaved": "Unsaved changes.",
   "stateOfArt": {
     "title": "State of the art",
+    "leaveUnsaved": "You have unsaved changes in the state of the art. Leave anyway?",
+    "classifyAs": "Classify as:",
+    "usedInPapers_one": "in 1 paper",
+    "usedInPapers_other": "in {{count}} papers",
+    "coverage": {"title": "Rubric coverage", "clear": "Show all", "hint": "What the work types' rubrics require. Press a type to see its candidates.", "covered": "Covered", "missing": "Missing", "approved": "{{approved}} of {{minimum}} approved", "candidates_one": "1 candidate ({{inLibrary}} in your library)", "candidates_other": "{{count}} candidates ({{inLibrary}} in your library)", "unclassified": "Unclassified", "unclassifiedHint": "They count for no type until you classify them.", "unclassifiedCount": "{{approved}} approved · {{candidates}} candidates", "emptyFiltered": "No works of this type in this step. If one is missing, add it by hand as a work to acquire."},
     "conflictNote": "Classified differently in the studies: {{types}}.",
     "fixErrors_one": "Fix 1 entry before saving.",
     "fixErrors_other": "Fix {{count}} entries before saving.",

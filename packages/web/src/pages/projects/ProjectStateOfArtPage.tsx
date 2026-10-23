@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, Library, Loader2, Plus, Search } from 'lucide-react';
-import { candidateRank, evaluationFromLibrary, getBookById, newBibliographyEntryId, type ProjectBibliographyEntry } from '@dosfilos/domain';
+import { candidateRank, getBookById, newBibliographyEntryId, type ProjectBibliographyEntry } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { useProjectBibliography } from './stateOfArt/useProjectBibliography';
-import { BibliographyEntryCard } from './stateOfArt/BibliographyEntryCard';
+import { BibliographyEntryList } from './stateOfArt/BibliographyEntryList';
+import { BibliographyCoverageTable, type CoverageFilter } from './stateOfArt/BibliographyCoverageTable';
 import { BibliographyCriteriaPanel, BibliographyWarningsList } from './stateOfArt/BibliographyCriteriaPanel';
 import { campo } from './stateOfArt/BibliographyEntryEditor';
 
@@ -29,6 +30,16 @@ export function ProjectStateOfArtPage() {
     const [paso, setPaso] = useState<Paso>('candidates');
     const [manual, setManual] = useState({ title: '', author: '' });
     const [guardando, setGuardando] = useState(false);
+    /** El tipo de fuente elegido en la cobertura, para ver sus candidatas. */
+    const [filtro, setFiltro] = useState<CoverageFilter>(null);
+    // Salir con cambios sin guardar pide confirmación: en la prueba del
+    // fundador las 32 fichas estuvieron solo en pantalla.
+    useEffect(() => {
+        if (!bib.dirty) return;
+        const aviso = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', aviso);
+        return () => window.removeEventListener('beforeunload', aviso);
+    }, [bib.dirty]);
     const en = i18n.language?.startsWith('en');
 
     const grupos = useMemo(() => {
@@ -74,7 +85,10 @@ export function ProjectStateOfArtPage() {
         <div className="flex-1 overflow-y-auto bg-background text-foreground antialiased">
             <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-5 lg:py-6 space-y-5">
                 <header className="space-y-1">
-                    <Link to={`/dashboard/projects/${project.id}`} className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground">
+                    <Link
+                        to={`/dashboard/projects/${project.id}`}
+                        onClick={e => { if (bib.dirty && !window.confirm(t('stateOfArt.leaveUnsaved'))) e.preventDefault(); }}
+                        className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="h-3.5 w-3.5" />{project.title}
                     </Link>
                     <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
@@ -100,7 +114,13 @@ export function ProjectStateOfArtPage() {
                     ))}
                 </nav>
 
-                <BibliographyWarningsList warnings={bib.warnings} entries={bib.entries} />
+                <BibliographyCoverageTable
+                    coverage={bib.coverage}
+                    filter={filtro}
+                    onFilter={f => { setFiltro(f); if (f && (paso === 'requirements' || paso === 'discarded')) setPaso('candidates'); }}
+                />
+                {/* El tipo que falta ya está en la cobertura; aquí, el resto de los avisos. */}
+                <BibliographyWarningsList warnings={bib.warnings.filter(w => w.kind !== 'missing-type')} entries={bib.entries} />
 
                 <div id="state-of-art-panel" role="tabpanel" aria-labelledby={`state-of-art-tab-${paso}`}>
 
@@ -133,24 +153,13 @@ export function ProjectStateOfArtPage() {
                                 </Button>
                             </div>
                         )}
-                        {lista.length === 0 ? (
-                            <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">{t(`stateOfArt.empty.${paso}`)}</p>
-                        ) : (
-                            <ul className="space-y-2">
-                                {lista.map(e => (
-                                    <BibliographyEntryCard
-                                        key={e.id}
-                                        entry={e}
-                                        suggested={evaluationFromLibrary(e, e.resourceId ? bib.resourceOf(e.resourceId) as never : null, bib.bibleBooks)}
-                                        workTypes={bib.workTypes}
-                                        library={bib.library}
-                                        onChange={patch => bib.update(e.id, patch)}
-                                        onRemove={() => bib.remove(e.id)}
-                                        error={bib.errors.get(e.id) ?? null}
-                                    />
-                                ))}
-                            </ul>
-                        )}
+                        <BibliographyEntryList
+                            entries={lista}
+                            filter={filtro}
+                            grouped={paso === 'candidates' || paso === 'approved'}
+                            emptyText={t(`stateOfArt.empty.${paso}`)}
+                            bib={bib}
+                        />
                     </section>
                 )}
                 </div>

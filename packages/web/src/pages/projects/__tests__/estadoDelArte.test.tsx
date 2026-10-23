@@ -17,10 +17,12 @@ vi.mock('@/hooks/library', () => ({ useLibrary: () => ({ resources: [
     { id: 'pillar', title: 'The Letter of James', author: 'Douglas J. Moo', exegeticalType: 'commentary-expository', coversBibleBooks: ['ROM'] },
 ] }) }));
 vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => ({ rubrics: [
-    { id: 'r-tp', rubric: { sourceRequirements: [{ sourceType: 'lexicon-technical', minimum: 1 }], courseBibliography: [{ title: 'Greek Grammar Beyond the Basics', author: 'Wallace', requirement: 'required' }] } },
+    { id: 'r-tp', rubric: { sourceRequirements: [{ sourceType: 'lexicon-technical', minimum: 1 }, { sourceType: 'grammar-syntax', minimum: 1 }], courseBibliography: [{ title: 'Greek Grammar Beyond the Basics', author: 'Wallace', requirement: 'required' }] } },
 ] }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ papers: [
     { id: 'tp8', projectId: 'nt785', linkedProjectIds: [], passage: { bookId: 'JAS' }, sources: [{ sourceLibraryResourceId: 'ropes', corpusId: 'ropes', sourceType: 'commentary-critical', displayLabel: 'ICC James', citationKey: null }] },
+    { id: 'tp6', projectId: null, linkedProjectIds: [], passage: { bookId: 'JAS' }, sources: [{ sourceLibraryResourceId: 'nicnt', corpusId: 'nicnt', sourceType: 'commentary-expository', displayLabel: 'NICNT', citationKey: null }] },
+    { id: 'tp7', projectId: null, linkedProjectIds: [], passage: { bookId: 'JAS' }, sources: [{ sourceLibraryResourceId: 'nicnt', corpusId: 'nicnt', sourceType: 'commentary-expository', displayLabel: 'NICNT', citationKey: null }] },
 ] }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const { ProjectStateOfArtPage } = await import('../ProjectStateOfArtPage');
@@ -103,7 +105,9 @@ describe('ProjectStateOfArtPage', () => {
 
     it('los criterios se guardan, y avisa lo que piden las rúbricas sin obra aprobada', async () => {
         montar();
-        expect(screen.getByText(/stateOfArt.warning.missingType/)).toBeInTheDocument();
+        // Lo que piden las rúbricas está en la cobertura, no en los avisos.
+        expect(screen.getByText('stateOfArt.coverage.title')).toBeInTheDocument();
+        expect(screen.queryByText(/stateOfArt.warning.missingType/)).toBeNull();
         fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
         fireEvent.change(screen.getByLabelText(/stateOfArt.criteria.inclusion/), { target: { value: 'Comentarios críticos posteriores a 1980' } });
         // En un curso, «no repetir» rige sin decidir: la casilla lo muestra (revisión de la etapa 2).
@@ -114,5 +118,38 @@ describe('ProjectStateOfArtPage', () => {
         fireEvent.click(screen.getByText('stateOfArt.save'));
         await waitFor(() => expect(updateProject).toHaveBeenCalled());
         expect(guardado().bibliographyCriteria).toMatchObject({ inclusion: 'Comentarios críticos posteriores a 1980', noRepeatSources: false });
+    });
+
+    describe('la cobertura conecta lo que falta con las candidatas (prueba del fundador)', () => {
+        it('pulsar un tipo de la cobertura muestra solo sus candidatas', () => {
+            montar();
+            fireEvent.click(screen.getByText('stateOfArt.gather'));
+            const cobertura = screen.getByRole('region', { name: 'stateOfArt.coverage.title' });
+            fireEvent.click(within(cobertura).getByText('sourceTypes.grammar-syntax.label').closest('button')!);
+            expect(screen.getByText(/Greek Grammar Beyond the Basics/)).toBeInTheDocument();
+            expect(screen.queryByText(/Epistle of St. James|ICC James/)).toBeNull();
+            fireEvent.click(within(cobertura).getByText('stateOfArt.coverage.clear'));
+            expect(screen.getByText(/ICC James|Epistle of St. James/)).toBeInTheDocument();
+        });
+
+        it('una aprobada sin clasificar propone la clasificación de tus trabajos y se aplica con un clic', () => {
+            proyecto = { ...proyecto, bibliography: [{ id: 'n', title: 'NICNT', resourceId: 'nicnt', sourceType: null, weight: 'recommended', decision: 'approved', origins: ['library'] }] };
+            montar();
+            fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.approved/ }));
+            const nicnt = ficha(/^NICNT$/);
+            fireEvent.click(within(nicnt).getByText(/sourceTypes.commentary-expository.label/));
+            expect(within(ficha(/^NICNT$/)).getAllByText(/sourceTypes.commentary-expository.label/).length).toBeGreaterThan(0);
+            expect(screen.getByText('unsaved')).toBeInTheDocument();
+        });
+
+        it('salir con cambios sin guardar pide confirmación', () => {
+            montar();
+            fireEvent.change(screen.getAllByLabelText('stateOfArt.field.title')[0]!, { target: { value: 'Obra nueva' } });
+            fireEvent.click(screen.getByText('stateOfArt.addManual'));
+            const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(false);
+            fireEvent.click(screen.getByText('NT785'));
+            expect(confirmar).toHaveBeenCalledWith('stateOfArt.leaveUnsaved');
+            confirmar.mockRestore();
+        });
     });
 });
