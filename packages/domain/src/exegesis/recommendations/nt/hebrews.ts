@@ -89,7 +89,8 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 series: 'Biblical Theology for Christian Proclamation',
                 publisher: 'Holman',
                 year: 2015,
-                isbn: '9781433685938',
+                // Corregido 2026-10-23 con Open Library: el ISBN no era válido.
+                isbn: '9780805496130',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Énfasis en teología bíblica y predicación reformada.',

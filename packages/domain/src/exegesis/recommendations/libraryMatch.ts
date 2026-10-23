@@ -56,13 +56,22 @@ export function matchRecommendationToResource(
     // in a normalized version of the resource's title.
     if (recommendation.series) {
         const acronym = extractSeriesAcronym(recommendation.series);
-        if (acronym && acronym.length >= 3) {
+        // Solo una sigla de verdad (WBC, NICNT, BHQ): la primera palabra de
+        // «The Gospel according to…» o «Two Horizons…» ligaba la obra a
+        // cualquier libro con «the» o «two» en el título (revisión de la 2c).
+        const esSigla = /^[A-Z]{3,6}$/.test(acronym);
+        if (acronym && (esSigla || acronym.length >= 4)) {
             const normalizedTitle = normalizeForMatch(resource.title);
             const normalizedAcronym = normalizeForMatch(acronym);
             // Use word boundary so "WBC" matches "WBC 47A" / "Hebrews WBC"
             // but doesn't match "AWBC" or random substrings.
             if (containsAsToken(normalizedTitle, normalizedAcronym)) {
-                return true;
+                // La sigla es de la serie, no del volumen: el WBC de Lane no es
+                // el de Williamson. Con autor en el recurso, tiene que coincidir.
+                // Una palabra que no es sigla («Anchor», «Interpretation») solo
+                // vale con el mismo apellido.
+                const mismoAutor = !!resource.author && !!recommendation.author && sharesAuthorSurname(recommendation.author, resource.author);
+                if (mismoAutor || (esSigla && (!resource.author || !recommendation.author))) return true;
             }
         }
     }
@@ -89,10 +98,11 @@ export function matchRecommendationToResource(
                 // probably different works. Skip.
                 return false;
             }
-            // No author on the resource side → accept the title-only
-            // match. User uploaded with no author and the title alone
-            // is distinctive enough to clear 70% threshold.
-            return true;
+            // Sin autor en el recurso, solo el título decide: 70 % de
+            // palabras en común ligaba «The Significance of Parallels…
+            // Early Christian Literature» (Gilmour) con «The Two Ways in
+            // Early Christian Literature». Sin autor se exige casi todo.
+            return ratio >= 0.9;
         }
     }
 

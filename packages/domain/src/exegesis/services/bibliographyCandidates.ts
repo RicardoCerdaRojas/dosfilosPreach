@@ -6,7 +6,7 @@ import { SOURCE_TYPE_CATALOG, type SourceType } from '../entities/SourceType';
 import { getSourceRecommendations } from '../recommendations';
 import { findLibraryResourceForRecommendation } from '../recommendations/libraryMatch';
 import { matchCourseBibliography, type CourseBibliographyEntry } from './courseBibliography';
-import type { BibliographyCandidate, ProjectBibliographyCriteria } from './projectBibliography';
+import { sameWork, type BibliographyCandidate, type BibliographyEvaluation, type ProjectBibliographyCriteria, type ProjectBibliographyEntry } from './projectBibliography';
 import type { ExtractedBibliographyEntry } from '../ports/ICourseBibliographyExtractor';
 
 /**
@@ -98,6 +98,8 @@ export function catalogCandidates(
                     weight: rec.tier === 'essential' ? 'recommended' : 'complementary',
                     origin: 'catalog',
                     note: rec.rationale ?? null,
+                    // Lo verificado del catálogo: el ISBN o el DOI del registro.
+                    ...(rec.isbn || rec.verified?.ref.startsWith('doi:') ? { identifiers: { isbn: rec.isbn ?? null, doi: rec.verified?.ref.startsWith('doi:') ? rec.verified.ref.slice(4) : null } } : {}),
                 });
             }
         }
@@ -240,4 +242,24 @@ export function chaptersMentioned(
         if (c && chapters.includes(c)) out.add(c);
     }
     return [...out].sort((a, b) => a - b);
+}
+
+/**
+ * Lo que el catálogo curado propone para evaluar una ficha (etapa 2c): el
+ * enfoque de la obra. Es una SUGERENCIA, como lo que sabe la biblioteca: se
+ * ve en la ficha y cuenta solo cuando el estudiante la confirma.
+ */
+export function catalogEvaluationFor(
+    entry: Pick<ProjectBibliographyEntry, 'title' | 'author' | 'sourceType'>,
+    bibleBooks: ReadonlyArray<BibleBookId>,
+): Partial<BibliographyEvaluation> {
+    if (!entry.author) return {};
+    const tipos = entry.sourceType ? [entry.sourceType] : (Object.keys(SOURCE_TYPE_CATALOG) as SourceType[]);
+    for (const book of bibleBooks) {
+        for (const t of tipos) {
+            const rec = getSourceRecommendations(book, t, 'es').find(r => r.approach && sameWork({ title: r.title, author: r.author, resourceId: null }, { title: entry.title, author: entry.author ?? null, resourceId: null }));
+            if (rec?.approach) return { approach: rec.approach };
+        }
+    }
+    return {};
 }

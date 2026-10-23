@@ -1,4 +1,4 @@
-import { bibliographyEntryType, evaluationFromLibrary, type BibleBookId, type ProjectBibliographyEntry, type ProjectWorkType, type SourceType } from '@dosfilos/domain';
+import { bibliographyEntryType, catalogEvaluationFor, evaluationFromLibrary, type BibleBookId, type ProjectBibliographyEntry, type ProjectWorkType, type SourceType } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { BibliographyEntryCard } from './BibliographyEntryCard';
 import type { CoverageFilter } from './BibliographyCoverageTable';
@@ -43,7 +43,11 @@ export function BibliographyEntryList({ entries, filter, grouped, emptyText, bib
         <BibliographyEntryCard
             key={e.id}
             entry={e}
-            suggested={evaluationFromLibrary({ ...e, sourceType: tipo(e) }, e.resourceId ? bib.resourceOf(e.resourceId) as never : null, bib.bibleBooks as BibleBookId[])}
+            // Lo que proponen la biblioteca y el catálogo curado (el enfoque): se ve como sugerencia y cuenta cuando se confirma.
+            suggested={{
+                ...(e.origins.includes('catalog') ? catalogEvaluationFor({ ...e, sourceType: tipo(e) }, bib.bibleBooks as BibleBookId[]) : {}),
+                ...evaluationFromLibrary({ ...e, sourceType: tipo(e) }, e.resourceId ? bib.resourceOf(e.resourceId) as never : null, bib.bibleBooks as BibleBookId[]),
+            }}
             effectiveType={tipo(e)}
             history={!tipo(e) && e.resourceId ? bib.historyOf(e.resourceId) : []}
             workTypes={bib.workTypes as ProjectWorkType[]}

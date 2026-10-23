@@ -1,5 +1,6 @@
 import type { BibleBookId } from '../../bible/canon/BibleCanon';
 import type { SourceType } from '../entities/SourceType';
+import type { BibliographyApproach } from '../services/projectBibliography';
 
 /**
  * Curated bibliographic recommendation surfaced under a paper's rubric
@@ -75,6 +76,20 @@ export interface SourceRecommendation {
      * relevant per testament.
      */
     testament?: 'NT' | 'OT' | 'whole-bible';
+    /**
+     * El enfoque de la obra (etapa 2c): propuesta del curador para equilibrar
+     * la lista. Se muestra como evaluación SUGERIDA; cuenta para «enfoques
+     * opuestos» solo cuando el estudiante la confirma. La tradición no se
+     * rotula: clasificar autores por escuela es un juicio que toca al estudiante.
+     */
+    approach?: BibliographyApproach;
+    /**
+     * La evidencia de que la obra existe tal como está escrita: el registro
+     * con que coincidió en título, autor y año (scripts/catalog/
+     * verificar-catalogo.ts). El ISBN sale de ese registro, nunca de memoria.
+     * Obligatoria en los libros de VERIFIED_BOOKS (prueba del catálogo).
+     */
+    verified?: { source: 'openlibrary' | 'crossref' | 'bne'; ref: string; checkedAt: string };
 }
 
 /**

@@ -16,6 +16,7 @@ vi.mock('@/hooks/library', () => ({ useLibrary: () => ({ resources: [
     { id: 'ropes', title: 'A Critical and Exegetical Commentary on the Epistle of St. James', author: 'James Hardy Ropes', exegeticalType: 'commentary-critical', coversBibleBooks: ['JAS'] },
     { id: 'wallace', title: 'Greek Grammar Beyond the Basics', author: 'Daniel B. Wallace', exegeticalType: 'grammar-syntax', coversBibleBooks: [] },
     { id: 'pillar', title: 'The Letter of James', author: 'Douglas J. Moo', exegeticalType: 'commentary-expository', coversBibleBooks: ['ROM'] },
+    { id: 'otro', title: 'A Theology of Paul the Apostle', author: 'James D. G. Dunn', exegeticalType: 'theological-monograph', coversBibleBooks: ['ROM'] },
 ] }) }));
 vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => ({ rubrics: [
     { id: 'r-tp', rubric: { sourceRequirements: [{ sourceType: 'lexicon-technical', minimum: 1 }, { sourceType: 'grammar-syntax', minimum: 1 }], courseBibliography: [{ title: 'Greek Grammar Beyond the Basics', author: 'Wallace', requirement: 'required' }] } },
@@ -70,13 +71,13 @@ describe('ProjectStateOfArtPage', () => {
         expect(within(wallace).getByText('stateOfArt.origin.syllabus')).toBeInTheDocument();
         expect(within(wallace).getByText('stateOfArt.origin.library')).toBeInTheDocument();
         expect(screen.getAllByText(/Greek Grammar Beyond the Basics/)).toHaveLength(1);
-        expect(within(ficha(/ICC James|Epistle of St. James/)).getByText('stateOfArt.origin.studies')).toBeInTheDocument();
+        expect(within(ficha(/ICC James|Critical and Exegetical Commentary on the Epistle of St\. James/)).getByText('stateOfArt.origin.studies')).toBeInTheDocument();
     });
 
     it('aprobar y guardar deja la evaluación de la biblioteca y sourceIds viaja por la bibliografía', async () => {
         montar();
         fireEvent.click(screen.getByText('stateOfArt.gather'));
-        fireEvent.click(within(ficha(/ICC James|Epistle of St. James/)).getByText('stateOfArt.approve'));
+        fireEvent.click(within(ficha(/ICC James|Critical and Exegetical Commentary on the Epistle of St\. James/)).getByText('stateOfArt.approve'));
         fireEvent.click(screen.getByText('stateOfArt.save'));
         await waitFor(() => expect(updateProject).toHaveBeenCalled());
         const icc = guardado().bibliography.find(e => e.resourceId === 'ropes')!;
@@ -109,7 +110,9 @@ describe('ProjectStateOfArtPage', () => {
         // Un libro que ya tiene su ficha no se ofrece: serían dos fichas del mismo libro.
         fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.toAcquire/ }));
         expect(within(within(moo).getByLabelText('stateOfArt.linkResource')).queryByText(/Critical and Exegetical/)).toBeNull();
-        fireEvent.change(within(moo).getByLabelText('stateOfArt.linkResource'), { target: { value: 'pillar' } });
+        // Moo (Pillar) ya tiene su ficha por el catálogo curado (etapa 2c): tampoco se ofrece.
+        expect(within(within(moo).getByLabelText('stateOfArt.linkResource')).queryByText('The Letter of James')).toBeNull();
+        fireEvent.change(within(moo).getByLabelText('stateOfArt.linkResource'), { target: { value: 'otro' } });
         expect(screen.queryByText(/James \(Pillar\)/)).toBeNull();
     });
 
@@ -148,9 +151,9 @@ describe('ProjectStateOfArtPage', () => {
             const cobertura = screen.getByRole('region', { name: 'stateOfArt.coverage.title' });
             fireEvent.click(within(cobertura).getByText('sourceTypes.grammar-syntax.label').closest('button')!);
             expect(screen.getByText(/Greek Grammar Beyond the Basics/)).toBeInTheDocument();
-            expect(screen.queryByText(/Epistle of St. James|ICC James/)).toBeNull();
+            expect(screen.queryByText(/Critical and Exegetical Commentary on the Epistle of St\. James|ICC James/)).toBeNull();
             fireEvent.click(within(cobertura).getByText('stateOfArt.coverage.clear'));
-            expect(screen.getByText(/ICC James|Epistle of St. James/)).toBeInTheDocument();
+            expect(screen.getByText(/ICC James|Critical and Exegetical Commentary on the Epistle of St\. James/)).toBeInTheDocument();
         });
 
         it('una aprobada sin clasificar propone la clasificación de tus trabajos y se aplica con un clic', () => {
