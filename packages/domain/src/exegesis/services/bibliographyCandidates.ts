@@ -174,6 +174,8 @@ export function studiesCandidates(
 export function extractedBibliographyCandidates(
     entries: ReadonlyArray<ExtractedBibliographyEntry>,
     library: ReadonlyArray<RecursoDeBiblioteca>,
+    /** De dónde vino la lista: el sílabo, la bibliografía de una obra, o un archivo RIS o BibTeX. */
+    origin: { kind: 'syllabus' | 'import' } | { kind: 'citation'; citedBy: string } = { kind: 'syllabus' },
 ): BibliographyCandidate[] {
     const comoSilabo = entries.map(e => ({
         title: e.title, author: e.author ?? undefined, series: e.series ?? undefined,
@@ -185,5 +187,11 @@ export function extractedBibliographyCandidates(
         publisher: entries[i]!.publisher ?? null,
         // La del libro en la biblioteca manda; si no, la que propone el lector.
         sourceType: (c.resourceId ? library.find(r => r.id === c.resourceId)?.exegeticalType : null) ?? entries[i]!.sourceType ?? null,
+        pageCount: entries[i]!.pageCount ?? null,
+        identifiers: entries[i]!.doi || entries[i]!.isbn ? { doi: entries[i]!.doi ?? null, isbn: entries[i]!.isbn ?? null } : null,
+        origin: origin.kind,
+        // Solo lo que el ENCARGO exige es obligatorio: en la bibliografía de un libro nada lo es.
+        weight: origin.kind === 'syllabus' ? c.weight : 'complementary',
+        ...(origin.kind === 'citation' ? { citedBy: origin.citedBy } : {}),
     }));
 }

@@ -1,5 +1,5 @@
 import type { PaperCover } from '../exegesis/entities/ExegeticalPaper';
-import type { ProjectBibliographyCriteria, ProjectBibliographyEntry } from '../exegesis/services/projectBibliography';
+import type { BibliographySearchLogEntry, ProjectBibliographyCriteria, ProjectBibliographyEntry } from '../exegesis/services/projectBibliography';
 
 export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'slate' | 'orange' | 'teal';
 
@@ -74,6 +74,8 @@ export interface AIProject {
     bibliography?: ProjectBibliographyEntry[];
     /** Los criterios de la bibliografía: requisitos, inclusión, exclusión. */
     bibliographyCriteria?: ProjectBibliographyCriteria | null;
+    /** Las búsquedas e importaciones hechas, con fecha y resultado (etapa 2b). */
+    bibliographySearchLog?: BibliographySearchLogEntry[];
     /**
      * @deprecated Etapa 1: un solo encargo por proyecto. Ya no se escribe;
      * se lee como datos del curso y un tipo de trabajo, para no perder uno

@@ -93,3 +93,16 @@ describe('lo leído de un sílabo como candidatas (NT785)', () => {
         expect(dos).toHaveLength(1);
     });
 });
+
+describe('de dónde vino la lista (etapa 2b)', () => {
+    const leido = [{ title: 'Does Scripture Speak in Vain?', author: 'Laws, Sophie', requirement: 'required' as const, pageCount: 6, doi: '10.1017/x' }];
+    it('la bibliografía de una obra: origen «citada por», nada obligatorio, con páginas y DOI', () => {
+        const [c] = extractedBibliographyCandidates(leido, [], { kind: 'citation', citedBy: 'Moo, Comentario de Santiago' });
+        expect(c).toMatchObject({ origin: 'citation', citedBy: 'Moo, Comentario de Santiago', weight: 'complementary', pageCount: 6, identifiers: { doi: '10.1017/x', isbn: null } });
+    });
+    it('un RIS: origen importación; la ficha que ya estaba gana sus páginas y su DOI sin perder lo decidido', () => {
+        const ya = [{ id: 'a', title: 'Does Scripture Speak in Vain?', author: 'Sophie Laws', weight: 'recommended' as const, decision: 'approved' as const, origins: ['manual' as const] }];
+        const [f] = mergeBibliographyCandidates(ya, extractedBibliographyCandidates(leido, [], { kind: 'import' }), () => 'n');
+        expect(f).toMatchObject({ decision: 'approved', pageCount: 6, identifiers: { doi: '10.1017/x' }, origins: ['manual', 'import'] });
+    });
+});

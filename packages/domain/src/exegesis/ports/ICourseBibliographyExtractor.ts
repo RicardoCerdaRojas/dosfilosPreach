@@ -1,4 +1,5 @@
 import type { SourceType } from '../entities/SourceType';
+import type { ProjectRequirement } from '../services/projectBibliography';
 
 /**
  * Lee una bibliografía de un sílabo, una lista pegada o una foto (etapa 2,
@@ -29,9 +30,20 @@ export interface ExtractedBibliographyEntry {
     sourceType?: SourceType | null;
     /** Lo que el sílabo dice de ella: «lectura semanal», «capítulos 1–3». */
     note?: string | null;
+    /** Páginas, DOI e ISBN cuando el documento los da (RIS, BibTeX, una referencia completa). */
+    pageCount?: number | null;
+    doi?: string | null;
+    isbn?: string | null;
 }
 
 export interface ExtractedCourseBibliography {
+    /**
+     * Qué documento era: un ENCARGO (sílabo, consigna: trae requisitos) o una
+     * BIBLIOGRAFÍA (la de un artículo, un libro o una lista: solo obras).
+     */
+    documentKind?: 'assignment' | 'bibliography';
+    /** Los requisitos medibles que trae un encargo (etapa 2b). */
+    requirementItems?: Array<Omit<ProjectRequirement, 'id' | 'origin'>>;
     entries: ExtractedBibliographyEntry[];
     /** Lo que el sílabo exige sobre las fuentes, en texto («mínimo 100 páginas de artículos»). */
     requirements: string | null;
