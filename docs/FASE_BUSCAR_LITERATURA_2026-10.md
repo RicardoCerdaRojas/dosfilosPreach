@@ -1,6 +1,6 @@
 # Fase · Buscar en la literatura (estado del arte, etapa 2c)
 
-> Estado: **plan, sin construir** (2026-10-23). Sigue a la etapa 2b (PR #807). Es el paso 3 del camino de la etapa 2b («De la lista al plan de investigación», en `FASE_ESTADO_DEL_ARTE_2026-10.md`).
+> Estado: **versión 1 decidida y en construcción** (2026-10-23): guía de búsqueda y catálogo curado, sin integraciones. Las integraciones quedan para una versión 2 (más abajo). Sigue a la etapa 2b (PR #807). Es el paso 3 del camino de la etapa 2b («De la lista al plan de investigación», en `FASE_ESTADO_DEL_ARTE_2026-10.md`).
 >
 > Rótulos: **medido** (lo corrí y vi el resultado), **leído** (lo vi en código, documentación o producción), **supuesto** (no lo comprobé).
 
@@ -46,7 +46,66 @@ Lo probé con preguntas reales de NT785: Santiago 4:5 y las obras del sílabo.
 - **El puntaje de la base no sirve para verificar** (medido). Hay que comparar los campos: título, autor y año.
 - **Las bases centrales de la disciplina (IxTheo, ATLA, NTA) no se pueden consultar desde el servidor.** El sistema no debe aparentar que las cubre. Debe preparar la búsqueda, abrirla allí y traer el resultado por RIS.
 
-## Diseño
+## Versión 1 · Decidida con el fundador (2026-10-23)
+
+El fundador propuso no lidiar todavía con integraciones y darle al usuario **una guía de qué buscar y dónde**, más **una lista de títulos realmente reconocidos**. La crítica confirma la idea con tres ajustes: la guía tiene que ser específica de cada proyecto, la lista no la genera el asistente, y la búsqueda se tiene que registrar. Así resiste:
+
+- **Es como trabaja un investigador.** Busca en las bases de su disciplina (IxTheo, ATLA, NTA, Dialnet) con una estrategia, anota lo que buscó y trae el resultado. Las integraciones resolvían el acceso (claves, topes, muros contra bots), no el método.
+- **No aparenta cobertura.** Medido: las bases centrales no se pueden consultar desde el servidor.
+- **No inventa:** la guía sale de reglas fijas y la lista de un catálogo verificado.
+
+### A · La guía de búsqueda (reglas fijas, sin el asistente, sin costo)
+
+Se arma con lo que el proyecto ya sabe:
+
+- los pasajes de los estudios y los libros del proyecto;
+- los requisitos que no se cumplen y los tipos de fuente que faltan en la cobertura;
+- el tipo de proyecto;
+- el idioma del usuario.
+
+Cada paso de la guía dice:
+
+- **qué buscar:** la consulta lista para copiar, con las formas del pasaje en inglés, español y la abreviatura (James 4:5, Jas 4:5, Santiago 4:5, Stg 4:5) y el libro en los dos idiomas;
+- **dónde:** la base, con un enlace que abre la búsqueda cuando la base lo permite (un enlace no es una integración);
+- **para qué:** el requisito o el hueco que cubre;
+- **cómo traer el resultado:** exportar RIS o BibTeX y soltarlo en «Importar», que ya existe;
+- **anotar la búsqueda:** base, consulta, cuántas encontró y cuántas sumó. Va al registro de búsquedas, para que se pueda explicar y repetir. Importar el RIS de esa base completa la anotación.
+
+Bases y cuándo aparecen:
+
+| Hueco | Bases |
+|---|---|
+| Artículos de revista (o requisito en páginas de artículos) | IxTheo (abierta; busca por pasaje bíblico), ATLA/NTA (por la biblioteca del usuario), Google Académico |
+| Obras en español | Dialnet, BNE, Google Libros |
+| Obras antiguas (requisito de épocas) | Internet Archive y HathiTrust: lo anterior a 1929 suele ser de dominio público y gratis |
+| Comentarios y monografías | El catálogo curado (B), WorldCat (dónde hay un ejemplar), Google Libros |
+| Enfoques opuestos | Una consulta por enfoque, y el catálogo marcado por tradición |
+| Tesis (investigación, publicable) | Repositorios de tesis (ProQuest por la biblioteca, TDX, Dialnet tesis) |
+
+Siempre aparece IxTheo con el pasaje: es la base abierta de la disciplina.
+
+### B · Títulos reconocidos: el catálogo curado, verificado al escribirlo
+
+- **Ya existe** (leído): `domain/src/exegesis/recommendations`, con unos 114 títulos con nivel, idiomas e ISBN, que alimenta el origen «Catálogo» de las candidatas. En profundidad solo cubre Hebreos, Romanos y Génesis.
+- **Se amplía con Santiago, Jonás, Rut, 2 Pedro y Nehemías.** Nehemías es el próximo proyecto exegético del fundador, para una serie expositiva. La base son las guías que un académico reconoce: Carson (*NT Commentary Survey*), Glynn (*Commentary and Reference Survey*) y Longman (*OT Commentary Survey*).
+- **Cada obra se verifica una vez, al escribirla,** con un script contra Open Library, Crossref y la BNE (abiertas y sin clave). Lo que no se verifica no entra. La evidencia queda en la ficha (base y registro), y una prueba exige que toda obra de estos libros la tenga. El ISBN se toma del registro, nunca de memoria.
+- **Tradición y enfoque en cada obra,** para que la lista no sea de una sola escuela y para que cuente en el requisito de enfoques opuestos. Pasan a la ficha de la candidata como evaluación propuesta.
+- **Edición en español marcada** cuando existe y se verificó.
+- **Lo que no cubre, dicho en la pantalla:** el catálogo cubre comentarios, monografías y algunos artículos clave. No cubre todo el campo: para eso está la guía.
+
+### Cómo se entrega (versión 1)
+
+Es un PR apilado sobre el #807, con un commit por unidad:
+
+1. Este plan.
+2. El catálogo: tradición, enfoque y evidencia en el tipo; el script de verificación; los cinco libros; la prueba de evidencia; y la tradición y el enfoque que pasan a la candidata.
+3. La guía: las reglas en domain, el panel en el paso Requisitos, «anotar búsqueda» en el registro, y sus pruebas.
+
+Solo hosting: no cambia functions.
+
+## Versión 2 (después) · Integraciones con las bases
+
+Lo que sigue fue el primer diseño. Queda para cuando la versión 1 muestre dónde duele la falta de integración.
 
 ### 1 · La estrategia de búsqueda (el asistente propone consultas, no obras)
 
@@ -199,14 +258,13 @@ Se despliegan functions y hosting, más la ruta nueva en `config/llmRouting`.
 | Mapa de posiciones por pregunta | Alto | Alto | Paso 6 |
 | Dialnet por OAI-PMH | Medio (español) | Alto (es un recolector, no una búsqueda) | Más adelante, si M2 muestra el hueco |
 
-## Decisiones del fundador
+## Decisiones del fundador (2026-10-23)
 
-1. **Claves:**
-   - **Recomiendo** crear la de **OpenAlex** ahora (gratis, US$ 1 por día). Hace falta para el rastreo de citas, y las consultas por DOI son gratis.
-   - **Google Books** es opcional, para la cobertura en español (sin medir).
-   - Las crea el fundador. Van a Secret Manager y nunca se muestran.
-2. **Sugerencias de obras por el asistente (punto 4):** ¿entran, si M1 y M3 lo permiten, o la fase queda solo con consultas?
-3. **Cobro:** la estrategia y las sugerencias, ¿como la lectura del sílabo (alrededor de US$ 0,03), o incluidas?
+1. **Versión 1 sin integraciones:** guía de qué buscar y dónde, más títulos reconocidos.
+2. **La lista sale del catálogo curado y verificado,** no del asistente al momento.
+3. **Libros primero:** Santiago, Jonás, Rut, 2 Pedro y **Nehemías** (el próximo proyecto, para una serie expositiva).
+4. **La guía va con reglas fijas:** sin costo y sin el asistente.
+5. **Las claves de OpenAlex y Google Books** quedan para la versión 2.
 
 ## Fuentes de lo leído
 
