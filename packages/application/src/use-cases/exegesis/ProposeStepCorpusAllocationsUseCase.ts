@@ -166,6 +166,8 @@ export class ProposeStepCorpusAllocationsUseCase {
                 ...(Object.keys(sanitizedRoles).length > 0 ? { pinnedSourceRoles: sanitizedRoles } : {}),
                 suppressedSources: existing?.suppressedSources ?? [],
                 note: allocation.rationale.trim() || sinAvisoDeEvidencia(existing?.note ?? null),
+                // «Mi lectura» es del estudiante: proponer el plan no la borra.
+                ...(existing?.studentReading ? { studentReading: existing.studentReading } : {}),
             };
         }
 

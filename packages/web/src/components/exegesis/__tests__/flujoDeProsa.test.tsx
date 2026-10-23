@@ -15,7 +15,9 @@ vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => new Proxy({}, { get: (_t, k: string) => mutacion(k) }),
 }));
 vi.mock('@/hooks/exegesis/useReopenStep', () => ({ useReopenStep: () => mutacion('reopen') }));
-vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({ useExegesisPaper: () => ({ paper: { sources: [] } }) }));
+vi.mock('../StudentReadingPanel', () => ({ StudentReadingPanel: () => null, ObservationCitationNotice: () => null }));
+let papelDelPaso: Record<string, unknown> = { sources: [] };
+vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({ useExegesisPaper: () => ({ paper: papelDelPaso }) }));
 vi.mock('@/hooks/exegesis/useReviewVerseProse', () => ({ useReviewVerseProse: () => ({ mutateAsync: vi.fn(), isPending: false, data: undefined }) }));
 vi.mock('@/components/exegesis/citation/SourceViewerProvider', () => ({
     useRegisterCitationSink: () => undefined,
@@ -51,6 +53,7 @@ const COMPONER = 'canonical.verseProse.button.compose';
 beforeEach(() => {
     cleanup();
     mutaciones.clear();
+    papelDelPaso = { sources: [] };
 });
 
 describe('después de aceptar, componer la prosa es lo principal', () => {
@@ -78,5 +81,21 @@ describe('después de aceptar, componer la prosa es lo principal', () => {
     it('con prosa ya compuesta, no: queda recomponer', () => {
         render(<StepCard step={paso('La prosa del versículo.')} paperId="p" language="es" />);
         expect(screen.queryAllByRole('button', { name: new RegExp(COMPONER) }).filter(b => b.tagName === 'BUTTON')).toEqual([]);
+    });
+});
+
+describe('etapa 2, capa 3: el camino viejo no conoce el método', () => {
+    const pendiente = { ...paso(''), state: 'pending', current: null, accepted: null, versions: [] } as unknown as ExegeticalStep;
+
+    it('sin método se ofrece como siempre', () => {
+        render(<StepCard step={pendiente} paperId="p" language="es" />);
+        expect(screen.getByText('detail.steps.action.generateLegacyVerse')).toBeInTheDocument();
+    });
+
+    it('con un método que separa la observación se oculta', () => {
+        papelDelPaso = { sources: [], exegeticalMethod: 'mixed' };
+        render(<StepCard step={pendiente} paperId="p" language="es" />);
+        expect(screen.queryByText('detail.steps.action.generateLegacyVerse')).toBeNull();
+        expect(screen.getByText('canonical.actions.analyze')).toBeInTheDocument();
     });
 });

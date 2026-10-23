@@ -51,6 +51,26 @@
       "hint": "The literature from the start, to understand and cite the positions while arguing."
     }
   },
+  "studentReading": {
+    "title": "My reading (optional)",
+    "hint": "Your own reading of the verse before generating: what you see in the grammar, the lexis or the syntax. The analysis will say which commentators confirm it and which dispute it.",
+    "hintMethod": "First your exegesis, then the commentaries (Fee). Write here what you see with the tools before generating: the analysis will start from it and say which commentators confirm it and which dispute it.",
+    "save": "Save my reading",
+    "unsaved": "Unsaved",
+    "saveFailed": "Your reading could not be saved."
+  },
+  "observationCheck": {
+    "title": "The observation cites a commentary",
+    "item": "{{source}} in {{field}}",
+    "hint": "With this method, the observation should rest only on the tools. Check whether that citation belongs in the dialogue with the commentaries.",
+    "field": {
+      "textualCriticism": "textual criticism",
+      "syntacticAnalysis": "syntax",
+      "lexicalAnalyses": "lexis",
+      "historicalContext": "historical context",
+      "oldTestamentLinks": "OT links"
+    }
+  },
   "directory": {
     "badge": "Assisted exegetical research papers",
     "heroTitle": "Exegetical Research",

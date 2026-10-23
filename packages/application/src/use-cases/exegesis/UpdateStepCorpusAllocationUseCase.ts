@@ -138,6 +138,9 @@ export class UpdateStepCorpusAllocationUseCase {
             suppressedSources: existing?.suppressedSources ?? [],
             note: input.note === undefined ? (existing?.note ?? null) : input.note,
             ...(sourcesEditedAfterNote ? { sourcesEditedAfterNote: true } : {}),
+            // «Mi lectura» es del estudiante, no del corpus: editar las fuentes
+            // del paso no la borra (etapa 2, capa 3).
+            ...(existing?.studentReading ? { studentReading: existing.studentReading } : {}),
         };
 
         const nextPlan: StepSourcePlan = {

@@ -51,6 +51,26 @@
       "hint": "La literatura desde el principio, para entender y citar las posturas mientras se argumenta."
     }
   },
+  "studentReading": {
+    "title": "Mi lectura (opcional)",
+    "hint": "Tu propia lectura del versículo antes de generar: qué ves en la gramática, el léxico o la sintaxis. El análisis dirá qué comentaristas la confirman y cuáles la discuten.",
+    "hintMethod": "Primero tu exégesis, después los comentarios (Fee). Escribe aquí lo que ves con las herramientas antes de generar: el análisis partirá de ella y dirá qué comentaristas la confirman y cuáles la discuten.",
+    "save": "Guardar mi lectura",
+    "unsaved": "Sin guardar",
+    "saveFailed": "No se pudo guardar tu lectura."
+  },
+  "observationCheck": {
+    "title": "La observación cita un comentario",
+    "item": "{{source}} en {{field}}",
+    "hint": "Con este método, la observación debería apoyarse solo en las herramientas. Revisa si esa cita va mejor en el diálogo con los comentarios.",
+    "field": {
+      "textualCriticism": "la crítica textual",
+      "syntacticAnalysis": "la sintaxis",
+      "lexicalAnalyses": "el léxico",
+      "historicalContext": "el contexto histórico",
+      "oldTestamentLinks": "los vínculos con el AT"
+    }
+  },
   "directory": {
     "badge": "Trabajo de investigación exegética asistida",
     "heroTitle": "Investigación exegética",
