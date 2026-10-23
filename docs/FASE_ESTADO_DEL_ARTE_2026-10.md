@@ -255,6 +255,133 @@ Antes del PR: pruebas, una mutación por cada prueba nueva y la revisión advers
 4. **«No repetir fuentes»** es una regla de un curso, que se activa en el proyecto.
 5. **La tradición teológica** solo avisa; no filtra.
 
+## Etapa 2b · De la lista al plan de investigación (2026-10-23)
+
+### Por qué
+
+La prueba en NT785 mostró que la etapa 2 era, en buena parte, un **capturador**. Importar el sílabo copiaba el texto, las obras entraban sin verse y nada quedaba guardado. Al pedirle al diseño la crítica de un académico de nivel doctoral (decisión del fundador: máximo rigor al diseñar), aparecieron siete huecos de fondo:
+
+1. **No se usan las bases de la disciplina.** Crossref, Open Library y Google Books son generales. La investigación bíblica se hace en ATLA, *New Testament Abstracts* e IxTheo; muchas revistas de teología no tienen DOI, y la erudición alemana y francesa casi no aparece en esas bases.
+2. **El estado del arte es una lista y no un mapa de posiciones.** Una tesis lo organiza por debates (qué posturas hay sobre Santiago 4:5 y quién sostiene cada una), no por tipo de fuente.
+3. **La búsqueda no se puede reproducir:** no queda registro de qué se consultó, cuándo ni con qué resultado.
+4. **Las categorías son confesionales.** Los rótulos de tradición de Glynn no bastan: hacen falta categorías de método o enfoque.
+5. **Verificar que una obra existe no verifica lo que el asistente dice de ella.**
+6. **Se lee por recuperación de fragmentos**, y la interacción con la literatura es opcional.
+7. **Solo inglés y español.**
+
+También quedó claro que el sílabo **no es una lista de libros**: es el encargo del profesor. Trae tres cosas distintas:
+- **criterios con los que se va a evaluar la bibliografía.** La rúbrica de NT785 da 35 % a «Evidencia de investigación»: fuentes académicas, puntos de vista opuestos, fuentes antiguas y actuales, variedad;
+- **cantidades y reglas:** 100 páginas de artículos reseñados, y no repetir una fuente en semanas consecutivas;
+- **una jerarquía:** Davids y Moo obligatorios, y el resto como repertorio aprobado por el profesor.
+
+### El camino completo
+
+En orden; los dos primeros van en esta tanda:
+1. **Requisitos estructurados y medibles**, para cualquier tipo de proyecto.
+2. **Importar cualquier bibliografía**, con revisión del plan, más RIS y BibTeX, y un registro de búsquedas.
+3. **Buscar en la literatura:** el asistente más bases reales (Crossref, Open Library, Google Books, IxTheo, OpenAlex). **Nada entra sin verificar.** Antes de darlo por bueno, se mide cuántas referencias inventa.
+4. **Buscar desde la pregunta** dentro de la biblioteca.
+5. **El rastreo de citas**, hacia atrás y hacia adelante (OpenAlex), con un indicador de saturación.
+6. **El mapa de posiciones por pregunta** (estado de la cuestión), adelantado desde la etapa 5.
+
+### 1 · Requisitos estructurados y medibles
+
+**Modelo:** `ProjectRequirement` en `bibliographyCriteria.requirements[]`, junto al texto libre que ya existe. Cada requisito tiene:
+- **`kind`** (qué mide):
+  - `minimum-type`: un mínimo de obras por tipo;
+  - `quantity`: N páginas o N obras de un tipo;
+  - `date-range`: antiguas y actuales;
+  - `perspectives`: N enfoques distintos;
+  - `variety`: tipos presentes;
+  - `rule`: no repetir;
+  - `other`: se marca a mano.
+- **`text`**: cómo lo dice la fuente.
+- **`origin`**: sílabo, nivel, rúbrica o a mano.
+- **sus parámetros** y **`workTypeIds`**: a qué tipos de trabajo aplica. Por ejemplo, de las 100 páginas de artículos solo la mitad cuenta para el trabajo de investigación.
+
+**Qué mide cada uno, siempre sobre las fichas aprobadas:**
+
+| Tipo | Medida | Datos que necesita |
+|---|---|---|
+| `minimum-type` | Obras del tipo frente al mínimo | Clasificación (ya existe) |
+| `quantity` (páginas) | Suma de `pageCount` de las fichas del tipo **leídas y con reseña** | `pageCount` (lo traen RIS y Crossref, o se escribe a mano) y la reseña |
+| `date-range` | Al menos una obra anterior al año de corte y N posteriores al año reciente | Año de la edición |
+| `perspectives` | Enfoques distintos frente al mínimo | Un campo nuevo, `evaluation.approach` |
+| `variety` | Los tipos pedidos, presentes | Clasificación |
+| `rule` | Activa `noRepeatSources` | — |
+| `other` | Casilla «cumplido» | — |
+
+**Lo que falta se dice, no se supone.** «12 sin año», «8 sin páginas» o «5 sin enfoque» aparecen en la fila, y abren esas fichas.
+
+**Sin sílabo, plantillas por nivel:** seminario, investigación o publicable, tomando `RubricRigorLevel`. Las cifras son un **punto de partida declarado**, no una norma: ningún manual fija un número (Vyhmeister: «tantos como sean necesarios»). Se proponen, se ajustan, y su origen queda como «nivel».
+
+**Enfoque** (`approach`), neutral y junto a la tradición:
+- histórico-gramatical;
+- histórico-crítico;
+- socio-retórico;
+- análisis del discurso o lingüístico;
+- literario o narrativo;
+- canónico o teológico;
+- otro.
+
+**Reseña** (`annotation.review`): la ficha de lectura de Eco, con la forma que pide el curso de NT785: idea principal, contribución y nota de 1 a 10. Las páginas de una obra cuentan cuando tiene reseña.
+
+### 2 · Importar cualquier bibliografía, con revisión
+
+**Entrada:** una sola zona.
+- Arrastrar o subir un PDF o una imagen; **al soltar, se lee**.
+- Un recuadro visible para pegar un recorte.
+- Escribir o pegar una lista.
+- Subir un **RIS o BibTeX**, que se lee con reglas fijas, sin el asistente y gratis. Así entra lo exportado de ATLA, NTA o Zotero.
+- El costo se ve antes de leer.
+
+**El lector devuelve:**
+- **`documentKind`**: encargo (sílabo o consigna) o bibliografía (la de un artículo, un libro o una lista). Los requisitos solo se extraen de un encargo.
+- **Los requisitos estructurados**, con el esquema de arriba.
+- **Las obras**, con DOI, ISBN y páginas cuando el documento los trae.
+
+**Origen de cada ficha:**
+- `syllabus` para el encargo;
+- `citation` con `citedBy` para la bibliografía de una obra (es rastreo de citas manual);
+- `import` para RIS y BibTeX.
+
+**La revisión de lo leído es el plan, no una lista.** Nada se guarda antes de confirmar.
+1. **Lo que pide el curso:** cada requisito, con lo que tu bibliografía ya cumple.
+2. **Lo que manda leer:** las obligatorias, si las tienes y en qué edición.
+3. **El repertorio, ordenado:**
+   - lo que ya tienes;
+   - lo que nombra los pasajes de tus estudios («James IV. 5» → el TP de 4:1-10);
+   - lo que llena un requisito que falta;
+   - el resto.
+
+   De ese orden sale **la prioridad de qué conseguir**.
+
+Cada obra viene marcada y se puede desmarcar. Al confirmar se guarda, y se abre Candidatas filtrada por ese origen.
+
+**Registro de búsquedas** (`bibliographySearchLog[]`): cada importación, búsqueda o cosecha queda con su fecha, de qué fuente vino (archivo, base, consulta), cuántas obras trajo y cuántas eran nuevas. Es el comienzo de la reproducibilidad; con la búsqueda en la literatura (3) se agregan la base y los términos.
+
+### Crítica de este diseño (antes de construirlo)
+
+- **Las cifras de las plantillas son arbitrarias.** Se presentan como punto de partida, con su origen visible y editables. No se presentan como norma.
+- **Casi ninguna obra trae páginas o año.** Las mediciones de cantidad y de épocas empiezan incompletas. Por eso cada fila dice cuántas fichas no se pueden medir y lleva a ellas. RIS y Crossref llenan esos datos solos.
+- **El enfoque lo pone el estudiante.** Un enfoque que proponga el asistente quedaría marcado como sugerencia, igual que las razones, hasta revisarlo.
+- **La relevancia por pasaje es un indicio**, no un juicio: se detecta solo cuando el título nombra el capítulo («James IV. 5»). Así se rotula, como «menciona Santiago 4».
+- **La misma obra en dos idiomas** (Davids en Fundación Hurtado y en Eerdmans) queda en dos fichas. Ligar ediciones queda para después; hoy se anota en la ficha.
+- **RIS y BibTeX no resuelven por sí solos los huecos 1 y 7**: dependen de que el usuario tenga acceso a ATLA o NTA. Es la puerta, no la solución completa.
+- **Esta tanda no toca los huecos 2, 5 y 6** (mapa de posiciones, razones sin leer, lectura por recuperación). Quedan nombrados en el camino, con su lugar.
+
+### Medida
+
+En NT785:
+1. Importar el sílabo.
+2. Comparar con lo que se leyó a mano del documento (2026-10-23):
+   - Davids y Moo obligatorias;
+   - unas 22 obras en español y unas 68 en inglés;
+   - los artículos de *NTS*;
+   - las prohibiciones;
+   - los requisitos «100 páginas de artículos», «antiguas y actuales», «puntos de vista opuestos» y «variedad».
+3. Contar lo que el lector acertó, omitió e inventó.
+
 ## Queda para después (etapa 5)
 
 - El rastreo de citas dentro de los libros: qué obras citan tus fuentes.
