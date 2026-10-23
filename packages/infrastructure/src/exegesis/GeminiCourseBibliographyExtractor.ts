@@ -57,8 +57,13 @@ export function buildBibliographyPrompt(input: Pick<ExtractCourseBibliographyInp
             'Answer ONLY a JSON object, with no code fences or commentary.',
         ].join('\n');
     const esquema = `{
+  "documentKind": "assignment"|"bibliography",
   "entries": [{ "title": string, "author": string|null, "series": string|null, "year": number|null, "publisher": string|null,
-                "requirement": "required"|"recommended", "sourceType": one of [${TIPOS.join(', ')}] | null, "note": string|null }],
+                "requirement": "required"|"recommended", "sourceType": one of [${TIPOS.join(', ')}] | null, "note": string|null,
+                "pageCount": number|null, "doi": string|null, "isbn": string|null }],
+  "requirementItems": [{ "kind": "minimum-type"|"quantity"|"date-range"|"perspectives"|"variety"|"rule"|"other",
+                "text": string, "sourceType": tipo|null, "minimum": number|null, "unit": "works"|"pages"|null,
+                "before": number|null, "after": number|null, "types": [tipo]|null }],
   "requirements": string|null,
   "prohibitions": string|null
 }`;
@@ -73,6 +78,15 @@ export function buildBibliographyPrompt(input: Pick<ExtractCourseBibliographyInp
             '- "note": lo que el documento dice de la obra («lectura semanal según el calendario»), si dice algo.',
             '- "requirements": lo que el documento EXIGE sobre las fuentes (mínimos, tipos, páginas de artículos, guía de estilo), en frases cortas. null si nada.',
             '- "prohibitions": lo que PROHÍBE o restringe sobre las fuentes (no repetir, no usar cierto tipo). null si nada.',
+            '- "documentKind": "assignment" si es un encargo (sílabo, consigna, rúbrica: dice qué se pide); "bibliography" si es solo una lista de obras (la bibliografía de un artículo o un libro).',
+            '- "requirementItems": SOLO en un encargo. Cada exigencia sobre las fuentes, una por entrada, con "text" copiado del documento:',
+            '  · «mínimo de 100 páginas de artículos» → "quantity", sourceType "journal-article", minimum 100, unit "pages";',
+            '  · «al menos tres comentarios críticos» → "minimum-type", sourceType "commentary-critical", minimum 3;',
+            '  · «fuentes antiguas y actuales» → "date-range"; "before" y "after" SOLO si el documento da años, si no null;',
+            '  · «puntos de vista opuestos» → "perspectives"; "minimum" solo si da un número;',
+            '  · «variedad de recursos (comentarios, artículos)» → "variety", con "types";',
+            '  · «no usar la misma fuente dos semanas consecutivas» → "rule";',
+            '  · lo que no encaja → "other". Lo que el documento no dice va en null: nunca inventes cifras.',
         ].join('\n')
         : [
             'Rules:',
@@ -84,6 +98,8 @@ export function buildBibliographyPrompt(input: Pick<ExtractCourseBibliographyInp
             '- "note": what the document says about the work, if anything.',
             '- "requirements": what the document REQUIRES about sources, in short sentences. null if nothing.',
             '- "prohibitions": what it FORBIDS or restricts about sources. null if nothing.',
+            '- "documentKind": "assignment" for a syllabus, brief or rubric; "bibliography" for a plain list of works.',
+            '- "requirementItems": ONLY for an assignment. One per requirement about sources, "text" copied from the document; kinds: quantity (N pages or works of a type), minimum-type, date-range (years only if given), perspectives, variety (with types), rule, other. Never invent numbers: null when not given.',
         ].join('\n');
     const texto = input.text?.trim()
         ? `${es ? 'Documento' : 'Document'}:\n"""\n${input.text.trim()}\n"""`
@@ -122,5 +138,26 @@ export function parseBibliographyJson(raw: string): Omit<ExtractedCourseBibliogr
             };
         })
         .filter((e: ExtractedBibliographyEntry | null): e is ExtractedBibliographyEntry => !!e);
-    return { entries, requirements: texto(data?.requirements), prohibitions: texto(data?.prohibitions) };
+    const tiposValidos = (xs: unknown) => (Array.isArray(xs) ? xs.filter((t): t is SourceType => typeof t === 'string' && tipos.has(t)) : null);
+    const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.round(v) : null);
+    const KINDS = new Set(['minimum-type', 'quantity', 'date-range', 'perspectives', 'variety', 'rule', 'other']);
+    const documentKind = data?.documentKind === 'bibliography' ? 'bibliography' : 'assignment';
+    // Una bibliografía no trae requisitos: si el lector los inventó, no entran.
+    const requirementItems = documentKind === 'bibliography' ? [] : (Array.isArray(data?.requirementItems) ? data.requirementItems : [])
+        .filter((r: any) => KINDS.has(r?.kind) && texto(r?.text))
+        .map((r: any) => ({
+            kind: r.kind,
+            text: texto(r.text)!,
+            sourceType: typeof r.sourceType === 'string' && tipos.has(r.sourceType) ? r.sourceType as SourceType : null,
+            minimum: num(r.minimum),
+            unit: r.unit === 'pages' ? 'pages' as const : r.unit === 'works' ? 'works' as const : null,
+            before: num(r.before),
+            after: num(r.after),
+            types: tiposValidos(r.types),
+        }));
+    const fichas = entries.map((e, i) => {
+        const raw = (Array.isArray(data?.entries) ? data.entries.filter((x: any) => texto(x?.title)) : [])[i] ?? {};
+        return { ...e, pageCount: num(raw.pageCount), doi: texto(raw.doi), isbn: texto(raw.isbn) };
+    });
+    return { documentKind, requirementItems, entries: fichas, requirements: texto(data?.requirements), prohibitions: texto(data?.prohibitions) };
 }

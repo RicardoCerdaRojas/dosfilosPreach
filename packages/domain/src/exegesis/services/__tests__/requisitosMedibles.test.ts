@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanBibliographyCriteria, measureRequirement, requirementTemplate, type ProjectBibliographyEntry, type ProjectRequirement } from '../projectBibliography';
+import { cleanBibliographyCriteria, measureRequirement, requirementsFromExtraction, requirementTemplate, type ProjectBibliographyEntry, type ProjectRequirement } from '../projectBibliography';
 
 /**
  * Etapa 2b: los requisitos del curso (o del nivel, sin sílabo) se miden
@@ -70,4 +70,22 @@ describe('plantillas por nivel, sin sílabo', () => {
 it('los requisitos se guardan sin undefined anidado', () => {
     const c = cleanBibliographyCriteria({ requirementItems: [req({ id: 'a', sourceType: undefined, minimum: 3 }), req({ id: 'a' }), req({ id: 'b', text: '  ' })] });
     expect(c.requirementItems).toEqual([{ id: 'a', kind: 'other', text: 'x', origin: 'syllabus', minimum: 3 }]);
+});
+
+describe('requisitos leídos de un sílabo', () => {
+    it('lo que el sílabo no fija se completa y se declara; lo que ya estaba no se repite', () => {
+        let n = 0;
+        const ya = [req({ id: 'x', kind: 'rule', text: 'No se permite utilizar la misma fuente dos semanas consecutivas' })];
+        const out = requirementsFromExtraction([
+            { kind: 'date-range', text: 'Fuentes antiguas y actuales', before: null, after: null },
+            { kind: 'perspectives', text: 'Puntos de vista opuestos', minimum: null },
+            { kind: 'rule', text: 'No se permite utilizar la misma fuente dos semanas consecutivas' },
+            { kind: 'quantity', text: 'Mínimo de 100 páginas', sourceType: 'journal-article', minimum: 100, unit: 'pages' },
+        ], ya, () => `n${++n}`, new Date('2026-10-23'));
+        expect(out.map(r => r.kind)).toEqual(['date-range', 'perspectives', 'quantity']);
+        expect(out[0]).toMatchObject({ before: 1950, after: 2011, recentMinimum: 1, origin: 'syllabus' });
+        expect(out[0]!.text).toContain('(supuesto: antes de 1950 y desde 2011)');
+        expect(out[1]).toMatchObject({ minimum: 2 });
+        expect(out[2]!.text).toBe('Mínimo de 100 páginas');
+    });
 });

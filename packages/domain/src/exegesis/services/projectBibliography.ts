@@ -759,3 +759,37 @@ export function cleanRequirementItems(items: ReadonlyArray<ProjectRequirement>):
 export function cleanSearchLog(log: ReadonlyArray<BibliographySearchLogEntry>): BibliographySearchLogEntry[] {
     return log.filter(l => l.id && l.at).slice(-200).map(l => limpio(l));
 }
+
+/**
+ * Los requisitos que leyó el lector, listos para el proyecto. Lo que el
+ * sílabo no fija se completa con un valor DECLARADO, y el texto lo dice:
+ * «antiguas y actuales» sin años toma 1950 y los últimos quince años.
+ * Un requisito igual a otro que ya está (mismo tipo y texto) no se repite.
+ */
+export function requirementsFromExtraction(
+    items: ReadonlyArray<Omit<ProjectRequirement, 'id' | 'origin'>>,
+    existing: ReadonlyArray<ProjectRequirement>,
+    newId: () => string,
+    now: Date,
+    assumedNote: (what: string) => string = q => ` (supuesto: ${q})`,
+): ProjectRequirement[] {
+    const año = now.getFullYear();
+    const out: ProjectRequirement[] = [];
+    for (const it of items) {
+        const clave = `${it.kind}|${it.sourceType ?? ''}|${it.text.trim().toLowerCase()}`;
+        if ([...existing, ...out].some(r => `${r.kind}|${r.sourceType ?? ''}|${r.text.trim().toLowerCase()}` === clave)) continue;
+        const r: ProjectRequirement = { ...it, id: newId(), origin: 'syllabus' };
+        if (r.kind === 'date-range' && (!r.before || !r.after)) {
+            r.before = r.before ?? 1950;
+            r.after = r.after ?? año - 15;
+            r.recentMinimum = r.recentMinimum ?? 1;
+            r.text = r.text + assumedNote(`antes de ${r.before} y desde ${r.after}`);
+        }
+        if (r.kind === 'perspectives' && !r.minimum) {
+            r.minimum = 2;
+            r.text = r.text + assumedNote('2 enfoques');
+        }
+        out.push(r);
+    }
+    return out;
+}
