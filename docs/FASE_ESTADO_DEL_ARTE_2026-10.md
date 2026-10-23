@@ -4,7 +4,15 @@
 
 ## Qué es
 
-La bibliografía del curso se prepara **una vez** y le sirve a todas sus tareas. En los TP de Santiago se armó fuera del sistema: se investigó qué libros convenía usar según los criterios del profesor. Esta etapa la trae dentro del proyecto, con un método que un profesor reconoce.
+Hay **tres capas**, y la metodología las separa (decisión del fundador, 2026-10-23):
+
+| Capa | Dónde vive | Qué es |
+|---|---|---|
+| **1. Investigación de fuentes** | En el **proyecto**, de cualquier tipo: curso, investigación o exegético | Reunir, evaluar y aprobar la bibliografía. Es el primer paso **siempre**, y abarca comentarios, artículos y herramientas. |
+| **2. El corpus del estudio** | En cada **estudio** | De lo aprobado, qué obras y qué páginas sirven para *este* pasaje o *esta* pregunta. |
+| **3. El momento de uso** | En el **tipo de trabajo**, como su **método** | Cuándo entran los comentarios dentro del proceso del estudio. |
+
+Armar la bibliografía no es leerla: Fee también la arma al comienzo (1.2) y lee los comentarios después (13.1). La bibliografía se prepara **una vez** y le sirve a todos los estudios del proyecto. En los TP de Santiago se armó fuera del sistema: se investigó qué libros convenía usar según los criterios del profesor. Esta etapa la trae dentro del proyecto, con un método que un profesor reconoce.
 
 **Cinco pasos:**
 1. requisitos;
@@ -21,7 +29,7 @@ Cada paso sigue a un manual reconocido. Rótulos: **V** = verificado en el texto
 
 | Paso | Qué hace | Respaldo |
 |---|---|---|
-| **1. Requisitos** | Qué exige el curso: mínimos por tipo de fuente, obras obligatorias, prohibiciones y criterios del profesor. Salen del sílabo o se escriben a mano si no hay bibliografía. | Turabian, *A Manual for Writers*, 9.ª ed. (2018), cap. 2 **V** · Kibbe, *From Topic to Thesis* (2016), cap. 1 **V** · Vyhmeister, *Manual de investigación teológica* (Vida, 2009), caps. 11–12 **V** |
+| **1. Requisitos** | Salen del encargo, según el tipo de proyecto. En un **curso**: mínimos por tipo de fuente, obras obligatorias, prohibiciones y criterios del profesor, tomados del sílabo o escritos a mano. En una **investigación**: la pregunta, el alcance y los criterios. En un **proyecto exegético**: el pasaje y su propósito. | Turabian, *A Manual for Writers*, 9.ª ed. (2018), cap. 2 **V** · Kibbe, *From Topic to Thesis* (2016), cap. 1 **V** · Vyhmeister, *Manual de investigación teológica* (Vida, 2009), caps. 11–12 **V** |
 | **2. Candidatas** | Se reúnen de varias bibliografías y se cruzan. Lo que aparece en varias sube de rango. | Booth et al., *The Craft of Research*, 4.ª ed., cap. 5 **V** · Turabian 3.2 **V** · Fee, *New Testament Exegesis*, 3.ª ed. (2002), cap. IV, paso 13 **V** · Eco, *Cómo se hace una tesis*, III.2.2: copiar las bibliografías de varias obras de consulta y cruzarlas; las que «citan todos» dan una «primera jerarquía» **V** |
 | **3. Evaluación** | Una lista fija de preguntas por obra: autor, editorial y su orientación, fecha de la edición (no de la impresión), nivel académico o popular, si trae notas y bibliografía, si es fuente primaria o secundaria. A eso se agregan dos preguntas propias: si cubre el libro bíblico y si la edición tiene páginas impresas. | Vyhmeister, cap. 15, sus 14 preguntas **V** · Turabian 3.3 **V** · CRAAP (Blakeslee, 2004) **V** |
 | **3b. Tradición y nivel** | Cada comentario se rotula por nivel (técnico, semitécnico, expositivo) y por tradición. La tradición sirve para **equilibrar**, no para filtrar: escuchar al menos tres interpretaciones distintas. | Glynn, *Commentary and Reference Survey* (2007) **V** · Carson, *NT Commentary Survey*, 7.ª ed. (2013) **V** · Longman, *OT Commentary Survey*, 5.ª ed. (2013) **V** · Fee 4.1 **V** · Vyhmeister, cap. 1 **V** |
@@ -31,8 +39,15 @@ Cada paso sigue a un manual reconocido. Rótulos: **V** = verificado en el texto
 | **Fichada** | La ficha bibliográfica (lo que hay que buscar) es distinta de la ficha de lectura (lo que ya se leyó). | Eco III.2.2 y IV.2.3 **V** |
 | **Herencia a cada estudio** | El fichero de un trabajo sirve para los siguientes. | Eco **V**. Cómo heredar es una decisión de producto. |
 
-**Tres advertencias de la metodología que el diseño respeta:**
-- **Tu propia exégesis va antes que los comentarios** (Fee 13.1; Stuart, paso 11; Vyhmeister, cap. 1; Kibbe, cap. 1 **V**). La bibliografía se *arma* temprano, pero los comentarios del pasaje se *leen* después. El estudio hereda las herramientas desde el principio. Cuándo entran los comentarios es la decisión 1.
+**Cuándo entran los comentarios, según el método del tipo de trabajo (capa 3):**
+
+| Método | Orden | Respaldo |
+|---|---|---|
+| **Exegético** | Primero la observación propia del texto con las herramientas: traducción, gramática, sintaxis y léxico. Después, el diálogo con los comentarios para contrastar y afinar. | Fee 13.1 **V** · Stuart, paso 11 **V** · Vyhmeister, cap. 1 **V** · Gorman, ampliación y ajuste al final **M** |
+| **Investigación** | La literatura va **antes**, para el estado de la cuestión y para delimitar la pregunta, y **durante**, para citar posturas mientras se argumenta. | Booth, cap. 5 **V** · Vyhmeister, cap. 7 **V** · Kibbe, cap. 1 **V** |
+| **Mixto** (los TP) | Primero el análisis gramatical propio de cada pregunta. Después, los comentarios, para mapear las lecturas y quién las defiende. Al final, el criterio decisivo y la decisión. | Lo que pide el profesor de NT785: lecturas con sus defensores y un criterio que distinga entre ellas (TP #5 a #8). Confirmado por el fundador. |
+
+**Otras dos advertencias de la metodología que el diseño respeta:**
 - **En un trabajo exegético no va una sección aparte de «lo que dice la literatura»**. Lo que dicen las fuentes se integra a lo largo del texto (Fee **V**). El «ensayo bibliográfico» como capítulo es propio de una tesis o de una investigación (Vyhmeister, cap. 7). Por eso, lo que produce el estado del arte depende del tipo de proyecto.
 - **Ningún manual fija un número mínimo de fuentes.** Vyhmeister dice «tantos como sean necesarios» **V**. El mínimo lo pone cada curso, en la rúbrica de cada tipo de trabajo.
 
@@ -123,7 +138,63 @@ Es una página propia del proyecto. El tablero ya está grande, así que el paso
   - traen la clasificación del proyecto;
   - un comentario que no cubre el libro del estudio no se ofrece.
 - Se reusa lo que ya existe: `initialSources` en la creación y el patrón de `corpusHeredado`. Las hojas de cada libro se eligen después, en el corpus, como siempre (8a).
-- **La memoria de entregas y «no repetir fuentes» se cuentan dentro del proyecto.** El TP #9 se compara con los TP del curso, no con todo tu historial.
+- **La memoria de entregas** se cuenta dentro del proyecto: el TP #9 se compara con los TP del curso, no con todo tu historial.
+- **«No repetir fuentes» pasa a ser una regla opcional del proyecto.** Es una regla particular de un curso, no de método (decisión del fundador). Se activa en los criterios del proyecto, y en NT785 queda activada. Fuera de un proyecto que la active, no se aplica.
+
+### Capa 3 · El método del tipo de trabajo
+
+**Lo que hay hoy** (leído en el código, 2026-10-23):
+- **Una llamada por versículo** (`AnalyzeVerseCanonicallyUseCase`) que recibe todas las fuentes del trabajo, herramientas y comentarios juntos. Las asignadas en el plan van primero y llevan el aviso «saltarse una fuente asignada es una falla crítica».
+- **No hay ningún lugar para la lectura propia del estudiante antes de generar.** Su única entrada es la pista al regenerar.
+- **La «estrategia» (libre o dialéctica)** no llega al análisis: solo cambia avisos en pantalla y un bloque de los redactores de la introducción y la conclusión.
+- **Las preguntas del TP ya producen lo que pide el método mixto:** respuesta directa, lecturas con sus defensores, criterio decisivo y decisión (`QuestionAnswer`). Pero se producen en la misma llamada que lee los comentarios.
+
+**El cambio.** Cada tipo de trabajo, cada perfil y cada estudio llevan un **método**:
+
+| Método | Cómo se analiza cada versículo |
+|---|---|
+| **Investigación** | Como hoy: una llamada con todas las fuentes. La literatura está desde el principio. |
+| **Exegético** | **Dos fases.** **Observación:** solo las herramientas. **Diálogo con la literatura:** los comentarios, sobre la observación ya revisada. |
+| **Mixto** (los TP) | Las mismas dos fases, organizadas por pregunta. La observación responde la pregunta con la gramática; el diálogo agrega las lecturas con sus defensores, el criterio decisivo y la decisión. |
+
+**Qué entra en cada fase.** Lo decide la clasificación de la obra, la misma que se fija una vez en la bibliografía del proyecto (capa 1):
+- **Observación:**
+  - el texto crítico, el aparato y el comentario textual;
+  - los léxicos y diccionarios teológicos, y las gramáticas;
+  - las fuentes antiguas;
+  - las obras de contexto histórico. Fee pide revisar el contexto histórico al comienzo **M**.
+- **Diálogo:** los comentarios críticos y expositivos, las monografías y los artículos.
+
+**El paso del medio es del estudiante.** Esto es lo que hace honesto el método:
+1. Se genera la observación.
+2. El estudiante la revisa: la corrige, la acepta y, si quiere, escribe **«Mi lectura»** (un campo nuevo por versículo o por pregunta).
+3. Recién entonces se pide el diálogo, que recibe la observación aceptada y «Mi lectura». Tiene que decir qué comentarista confirma esa lectura y cuál la discute. Si un comentario la corrige, lo dice y la rotula; no la cambia en silencio.
+
+**Cómo se arma por dentro:**
+- **Datos:** el `method` vive junto a `exegeticalStrategy` y se copia al crear el estudio:
+  - en `ProjectWorkType`, `WorkProfile` y `ExegeticalPaper`;
+  - lo resuelve un solo lugar, en `services/exegeticalStrategy.ts`;
+  - sin método se comporta como hoy, así que los trabajos viejos y el TP #9 no cambian.
+- **Fuentes por fase:**
+  - un filtro en `loadSourceContexts` y en `retrieveCurated`;
+  - el mismo filtro rige la lista de claves válidas, para no borrar citas;
+  - el aviso de «fuente asignada» y el agregado forzado del planificador se aplican por fase.
+- **La salida sigue siendo un solo análisis por versión:**
+  - el diálogo devuelve el análisis completo, que parte de la observación aceptada;
+  - la verificación de citas cubre las dos fases;
+  - así, la prosa, la revisión y el ensamblado no cambian.
+- **Prompts:** cada fase tiene su contrato de fuentes. El de la observación prohíbe citar comentarios; el del diálogo exige partir de la observación.
+- **Cobro y ruteo:**
+  - dos operaciones nuevas en los dos catálogos (web y servidor, con su prueba de paridad);
+  - rutas `exegesis.analyzeVerseObservation` y `exegesis.analyzeVerseDialogue`;
+  - escribirlas en `config/llmRouting` de producción lo hace el fundador.
+  - El precio se **mide** antes de fijarlo. La observación lleva menos texto, así que se supone más barata que el análisis de hoy (US$ 0,10).
+- **El botón viejo** («generar en texto», `GenerateStepUseCase`) no conoce las fases. Con un método de dos fases se oculta, para no repetir el problema de la «estrategia», que solo respetan algunos caminos.
+- **Pantalla:** la tarjeta del versículo muestra las dos fases. Entre ellas van «Mi lectura» y el botón «Pasar al diálogo con la literatura».
+- **Medida:** en el TP #10, con método mixto:
+  - ninguna cita a comentarios en la observación;
+  - cada respuesta del diálogo nombra las lecturas con sus defensores y se refiere a la observación aceptada;
+  - el costo por versículo, medido y comparado con el de hoy.
 
 ## Cómo se entrega
 
@@ -133,7 +204,10 @@ Es una página propia del proyecto. El tablero ya está grande, así que el paso
 3. Las candidatas de los cinco orígenes.
 4. La página «Estado del arte»: requisitos, candidatas, evaluación, por conseguir y aprobada.
 5. La herencia en la creación del estudio, y «no repetir» y la memoria de entregas por proyecto.
-6. Lo que encuentre la revisión adversarial.
+6. El método en los datos y la pantalla: tipo de trabajo, perfil y estudio, con un solo lugar que lo resuelve.
+7. El análisis en dos fases: el filtro de fuentes por fase, los dos contratos de prompt, la verificación de las dos fases, y el cobro y el ruteo.
+8. La tarjeta del versículo: la observación, «Mi lectura», «Pasar al diálogo» y el diálogo.
+9. Lo que encuentre la revisión adversarial.
 
 Antes del PR: pruebas, una mutación por cada prueba nueva y la revisión adversarial.
 
@@ -142,19 +216,16 @@ Antes del PR: pruebas, una mutación por cada prueba nueva y la revisión advers
 - Cada una queda con **una sola** clasificación.
 - El TP #10 nace con ellas ofrecidas.
 
-## Decisiones para el fundador
+## Decisiones del fundador (2026-10-23)
 
-1. **¿Cuándo entran los comentarios del pasaje?** Fee pide hacer la propia exégesis antes de leer comentarios.
-   - **(a)** Se ofrecen al crear, junto con las herramientas, como hoy. El sistema los necesita para redactar.
-   - **(b)** Al crear solo entran las herramientas (texto crítico, aparato, léxicos, gramáticas), y los comentarios se ofrecen en el paso del corpus.
-   - **Recomendado: (a)**, con una nota de método en el corpus. Hoy los pasos del trabajo usan los comentarios desde el principio, y (b) cambia ese flujo.
-2. **«No repetir fuentes» por proyecto.** Ningún manual lo pide: es una regla de tu profesor.
-   - Propuesta: se cuenta dentro del proyecto y se mantiene como hoy, con el aviso y la confirmación del estudiante.
-   - ¿Es así, o el profesor lo pide entre todos tus cursos?
-3. **La tradición teológica:** propongo solo **avisar** cuando toda la bibliografía cae en una sola tradición, sin filtrar nada. ¿De acuerdo?
-4. **Lo que queda para después:**
-   - el rastreo de citas dentro de los libros: qué obras citan tus fuentes;
-   - la búsqueda fuera de la biblioteca (Open Library, Crossref);
-   - el «mapa de posiciones por pregunta» de una investigación.
+1. **Las tres capas** (investigación de fuentes, corpus del estudio y momento de uso) se separan, y la investigación de fuentes vale para todo tipo de proyecto, no solo para cursos.
+2. **Los TP usan el método mixto.**
+3. **La capa 3 va dentro de la etapa 2**, en commits propios.
+4. **«No repetir fuentes»** es una regla de un curso, que se activa en el proyecto.
+5. **La tradición teológica** solo avisa; no filtra.
 
-   Las tres van a la etapa 5.
+## Queda para después (etapa 5)
+
+- El rastreo de citas dentro de los libros: qué obras citan tus fuentes.
+- La búsqueda fuera de la biblioteca: Open Library, Crossref.
+- El «mapa de posiciones por pregunta» de una investigación.
