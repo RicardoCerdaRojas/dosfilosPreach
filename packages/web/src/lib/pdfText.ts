@@ -1,5 +1,3 @@
-import { pdfjsLib } from './pdfWorker';
-
 /** Los mismos recursos que el visor de páginas: sin ellos el griego sale en cajas. */
 const PDFJS_ASSETS = {
     wasmUrl: '/pdfjs/wasm/',
@@ -15,6 +13,8 @@ const PDFJS_ASSETS = {
  * vuelve vacío y la pantalla pide una imagen.
  */
 export async function pdfToText(file: File, maxPages = 40): Promise<{ text: string; pages: number; truncated: boolean }> {
+    // pdf.js se carga recién al soltar un PDF: la página no lo necesita para abrir.
+    const { pdfjsLib } = await import('./pdfWorker');
     const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), ...PDFJS_ASSETS }).promise;
     try {
         const paginas: string[] = [];

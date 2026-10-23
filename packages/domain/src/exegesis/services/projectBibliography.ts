@@ -28,7 +28,21 @@ export type BibliographyWeight = 'required' | 'recommended' | 'complementary';
 export type BibliographyDecision = 'candidate' | 'approved' | 'discarded';
 
 /** De dónde salió la candidata. Una ficha puede tener varios orígenes. */
-export type BibliographyOrigin = 'syllabus' | 'catalog' | 'library' | 'studies' | 'manual' | 'legacy';
+export type BibliographyOrigin = 'syllabus' | 'catalog' | 'library' | 'studies' | 'manual' | 'legacy' | 'import' | 'citation';
+
+/**
+ * Enfoque o método de la obra (etapa 2b): categorías académicas neutrales,
+ * junto a la tradición confesional. «Puntos de vista opuestos» (rúbrica de
+ * NT785) se mide con esto, no con la tradición.
+ */
+export type BibliographyApproach =
+    | 'historical-grammatical'
+    | 'historical-critical'
+    | 'socio-rhetorical'
+    | 'discourse-linguistic'
+    | 'literary-narrative'
+    | 'canonical-theological'
+    | 'other';
 
 /** Nivel de la obra, como lo rotulan las guías de comentarios (Glynn, Longman). */
 export type BibliographyLevel = 'technical' | 'semi-technical' | 'expository' | 'popular';
@@ -61,6 +75,7 @@ export interface BibliographyEvaluation {
     editionYear?: number | null;
     level?: BibliographyLevel | null;
     tradition?: BibliographyTradition | null;
+    approach?: BibliographyApproach | null;
     language?: string | null;
     /** Si trae notas y bibliografía: el aparato de una obra académica. */
     hasNotes?: boolean | null;
@@ -79,6 +94,12 @@ export interface BibliographyAnnotation {
     pages?: string | null;
     /** Qué posición sostiene. */
     position?: string | null;
+    /**
+     * La reseña: la ficha de lectura de Eco, con la forma que pide NT785
+     * (idea principal, contribución, nota de 1 a 10). Las páginas de una obra
+     * cuentan para un requisito de cantidad cuando está leída y reseñada.
+     */
+    review?: { mainIdea?: string | null; contribution?: string | null; rating?: number | null } | null;
 }
 
 export interface ProjectBibliographyEntry {
@@ -92,6 +113,12 @@ export interface ProjectBibliographyEntry {
     edition?: string | null;
     /** El libro en la biblioteca, propia o compartida. Sin él, está por conseguir. */
     resourceId?: string | null;
+    /** Páginas de la obra (un artículo: 210–215 son 6). Para los requisitos de cantidad. */
+    pageCount?: number | null;
+    /** Identificadores para encontrarla y verificarla. */
+    identifiers?: { doi?: string | null; isbn?: string | null } | null;
+    /** Con `origin: 'citation'`: la obra en cuya bibliografía apareció. */
+    citedBy?: string | null;
     /**
      * La clasificación de la obra, UNA vez para todo el proyecto. En los TP
      * de Santiago el mismo NICNT quedó como crítico en unos y expositivo en
@@ -130,6 +157,60 @@ export interface ProjectBibliographyCriteria {
     noRepeatSources?: boolean;
     /** Los libros bíblicos del proyecto, para buscar candidatas y evaluar cobertura. */
     bibleBooks?: BibleBookId[];
+    /** Los requisitos medibles (etapa 2b), del sílabo, del nivel o escritos a mano. */
+    requirementItems?: ProjectRequirement[];
+}
+
+/** Qué mide un requisito. */
+export type RequirementKind = 'minimum-type' | 'quantity' | 'date-range' | 'perspectives' | 'variety' | 'rule' | 'other';
+
+/**
+ * Un requisito medible del estado del arte. Viene del sílabo, de la plantilla
+ * del nivel (un punto de partida declarado: ningún manual fija cifras), o se
+ * escribe a mano. Se mide siempre sobre las fichas APROBADAS.
+ */
+export interface ProjectRequirement {
+    id: string;
+    kind: RequirementKind;
+    /** Cómo lo dice la fuente: «un mínimo de 100 páginas de artículos académicos». */
+    text: string;
+    origin: 'syllabus' | 'level' | 'manual';
+    /** `minimum-type` y `quantity`: de qué tipo. */
+    sourceType?: SourceType | null;
+    /** `minimum-type`, `quantity`, `perspectives`: cuánto. */
+    minimum?: number | null;
+    /** `quantity`: obras o páginas. */
+    unit?: 'works' | 'pages' | null;
+    /** `date-range`: al menos una anterior a `before` y `recentMinimum` desde `after`. */
+    before?: number | null;
+    after?: number | null;
+    recentMinimum?: number | null;
+    /** `variety`: los tipos que tienen que estar. */
+    types?: SourceType[] | null;
+    /** `other`: lo marca quien estudia. */
+    done?: boolean;
+    /** A qué tipos de trabajo aplica; vacío o ausente, a todos. */
+    workTypeIds?: string[] | null;
+    /**
+     * Las cifras que la fuente no fijaba y se SUPUSIERON (p. ej. «antiguas y
+     * actuales» sin años). Van aparte del texto, que es el de la fuente, para
+     * que la pantalla las declare en su idioma y se puedan corregir.
+     */
+    assumed?: RequirementAssumption[] | null;
+}
+
+export type RequirementAssumption = 'before' | 'after' | 'recentMinimum' | 'minimum';
+
+/** Una búsqueda o importación registrada: el comienzo de la reproducibilidad. */
+export interface BibliographySearchLogEntry {
+    id: string;
+    /** ISO. */
+    at: string;
+    kind: 'syllabus' | 'bibliography' | 'file' | 'catalog' | 'library' | 'studies';
+    /** De dónde: el nombre del archivo, la base o la consulta. */
+    label: string;
+    found: number;
+    added: number;
 }
 
 /** Tope de fichas: el proyecto vive en un solo documento. */
@@ -206,6 +287,10 @@ export interface BibliographyCandidate {
     origin: BibliographyOrigin;
     /** Lo que el origen dice de ella: la nota del sílabo, la razón del catálogo. */
     note?: string | null;
+    pageCount?: number | null;
+    identifiers?: { doi?: string | null; isbn?: string | null } | null;
+    /** Con `origin: 'citation'`: en qué obra apareció. */
+    citedBy?: string | null;
 }
 
 /**
@@ -268,6 +353,13 @@ export function mergeBibliographyCandidates(
             if (!igual.sourceType && c.sourceType) igual.sourceType = c.sourceType;
             if (!igual.author && c.author) igual.author = c.author;
             if (!igual.title.trim() && c.title.trim()) igual.title = c.title.trim();
+            // Los datos que trae un RIS o un sílabo completan lo que faltaba.
+            if (!igual.pageCount && c.pageCount) igual.pageCount = c.pageCount;
+            if (!igual.year && c.year) igual.year = c.year;
+            if (!igual.publisher && c.publisher) igual.publisher = c.publisher;
+            if (c.identifiers?.doi || c.identifiers?.isbn) {
+                igual.identifiers = { doi: igual.identifiers?.doi ?? c.identifiers.doi ?? null, isbn: igual.identifiers?.isbn ?? c.identifiers.isbn ?? null };
+            }
             continue;
         }
         if (out.length >= MAX_BIBLIOGRAPHY_ENTRIES) break;
@@ -283,6 +375,9 @@ export function mergeBibliographyCandidates(
             weight: c.weight,
             decision: 'candidate',
             origins: [c.origin],
+            ...(c.pageCount ? { pageCount: c.pageCount } : {}),
+            ...(c.identifiers?.doi || c.identifiers?.isbn ? { identifiers: { doi: c.identifiers.doi ?? null, isbn: c.identifiers.isbn ?? null } } : {}),
+            ...(c.citedBy ? { citedBy: c.citedBy } : {}),
             ...(c.note?.trim() ? { annotation: { serves: c.note.trim().slice(0, MAX_TEXTO) } } : {}),
         });
     }
@@ -320,7 +415,8 @@ export function cleanProjectBibliography(entries: ReadonlyArray<ProjectBibliogra
 }
 
 export function cleanBibliographyCriteria(criteria: ProjectBibliographyCriteria): ProjectBibliographyCriteria {
-    return limpio(criteria);
+    const { requirementItems, ...resto } = criteria;
+    return { ...limpio(resto), ...(requirementItems ? { requirementItems: cleanRequirementItems(requirementItems) } : {}) };
 }
 
 /** La clasificación de la ficha, o la del libro en la biblioteca si no la tiene. */
@@ -573,4 +669,180 @@ export function classificationHistory(
         for (const t of tipos) cuenta.set(t, (cuenta.get(t) ?? 0) + 1);
     }
     return [...cuenta].sort((a, b) => b[1] - a[1]);
+}
+
+/** El resultado de medir un requisito. */
+export interface RequirementMeasure {
+    /** `incomplete`: al requisito le falta la cifra que lo hace medible; no se da por cumplido. */
+    status: 'met' | 'unmet' | 'manual' | 'incomplete';
+    /** Lo que hay y lo que se pide, en la unidad del requisito. */
+    value: number;
+    target: number;
+    /** Fichas que no se pueden medir por falta de un dato (año, páginas, enfoque, reseña). */
+    unmeasurable: string[];
+}
+
+/**
+ * Mide un requisito sobre las fichas aprobadas. Lo que no se puede medir se
+ * dice (`unmeasurable`): una obra sin año no cuenta ni como antigua ni como
+ * actual, y la pantalla lo muestra en vez de suponerlo.
+ */
+export function measureRequirement(
+    req: ProjectRequirement,
+    entries: ReadonlyArray<ProjectBibliographyEntry>,
+    resourceOf: (id: string) => { exegeticalType?: SourceType | null } | null | undefined,
+): RequirementMeasure {
+    const aprobadas = entries.filter(e => e.decision === 'approved');
+    const delTipo = (t: SourceType | null | undefined) => aprobadas.filter(e => !t || tipoDe(e, resourceOf) === t);
+    const año = (e: ProjectBibliographyEntry) => e.evaluation?.editionYear ?? e.year ?? null;
+    const minimo = Math.max(0, req.minimum ?? 0);
+    const r = (value: number, target: number, unmeasurable: string[] = []): RequirementMeasure =>
+        ({ status: value >= target ? 'met' : 'unmet', value, target, unmeasurable });
+    // Sin la cifra, «0 de 0» saldría cumplido: un requisito sin medida no se da por bueno.
+    const incompleto = (value: number): RequirementMeasure => ({ status: 'incomplete', value, target: 0, unmeasurable: [] });
+    switch (req.kind) {
+        case 'minimum-type':
+            if (minimo <= 0) return incompleto(delTipo(req.sourceType).length);
+            return r(delTipo(req.sourceType).length, minimo);
+        case 'quantity': {
+            const xs = delTipo(req.sourceType);
+            if (minimo <= 0) return incompleto(xs.length);
+            if (req.unit !== 'pages') return r(xs.length, minimo);
+            // Una página cuenta cuando la obra está reseñada (así lo pide el
+            // curso): escribir la idea principal es haberla leído.
+            const reseñada = (e: ProjectBibliographyEntry) => !!(e.annotation?.review?.mainIdea?.trim());
+            const sinDato = xs.filter(e => !e.pageCount || !reseñada(e)).map(e => e.id);
+            return r(xs.filter(e => reseñada(e)).reduce((n, e) => n + (e.pageCount ?? 0), 0), minimo, sinDato);
+        }
+        case 'date-range': {
+            if (!req.before && !req.after) return incompleto(0);
+            const sinAño = aprobadas.filter(e => !año(e)).map(e => e.id);
+            // Cada corte pide lo suyo; un corte que no está no pide nada (ni suma).
+            const antiguasPedidas = req.before ? 1 : 0;
+            const pedidas = req.after ? Math.max(0, req.recentMinimum ?? 1) : 0;
+            const antiguas = req.before ? aprobadas.filter(e => (año(e) ?? Infinity) < req.before!).length : 0;
+            const actuales = req.after ? aprobadas.filter(e => (año(e) ?? -Infinity) >= req.after!).length : 0;
+            const cumple = antiguas >= antiguasPedidas && actuales >= pedidas;
+            return { status: cumple ? 'met' : 'unmet', value: Math.min(antiguas, antiguasPedidas) + Math.min(actuales, pedidas), target: antiguasPedidas + pedidas, unmeasurable: sinAño };
+        }
+        case 'perspectives': {
+            const enfoques = new Set(aprobadas.map(e => e.evaluation?.approach).filter((x): x is BibliographyApproach => !!x && x !== 'other'));
+            const sinEnfoque = aprobadas.filter(e => !e.evaluation?.approach).map(e => e.id);
+            // Sin cifra no se mide: la importación la completa (y la declara supuesta).
+            if (minimo <= 0) return incompleto(enfoques.size);
+            return r(enfoques.size, minimo, sinEnfoque);
+        }
+        case 'variety': {
+            const pedidos = req.types ?? [];
+            if (pedidos.length === 0) return incompleto(0);
+            const presentes = pedidos.filter(t => aprobadas.some(e => tipoDe(e, resourceOf) === t)).length;
+            return r(presentes, pedidos.length);
+        }
+        case 'rule':
+        case 'other':
+            return { status: req.done ? 'met' : 'manual', value: req.done ? 1 : 0, target: 1, unmeasurable: [] };
+    }
+}
+
+/** El nivel de un proyecto sin sílabo: de qué plantilla parte. */
+export type RequirementLevel = 'seminary' | 'research' | 'publishable';
+
+/**
+ * Requisitos de partida para un proyecto sin sílabo (una investigación). Son
+ * un PUNTO DE PARTIDA declarado, no una norma: ningún manual fija cifras
+ * (Vyhmeister: «tantos como sean necesarios»). Recogen lo que los manuales
+ * piden de forma cualitativa: fuentes primarias, comentarios críticos,
+ * artículos recientes, posturas opuestas (Fee 4.1) y obras de varias épocas.
+ */
+export type RequirementTemplateKey = 'criticalText' | 'criticalCommentaries' | 'articles' | 'lexicon' | 'grammar' | 'perspectives' | 'dateRange' | 'monographs';
+
+const TEXTO_PLANTILLA: Record<RequirementTemplateKey, (v: Record<string, number>) => string> = {
+    criticalText: () => 'El texto en lengua original, en edición crítica.',
+    criticalCommentaries: () => 'Comentarios críticos sobre el libro.',
+    articles: () => 'Artículos académicos de revista.',
+    lexicon: () => 'Un léxico técnico.',
+    grammar: () => 'Una gramática de referencia.',
+    perspectives: () => 'Puntos de vista opuestos: al menos tantos enfoques distintos (Fee 4.1).',
+    dateRange: v => `Fuentes antiguas y actuales: una anterior a ${v.before} y ${v.recent} desde ${v.after}.`,
+    monographs: () => 'Monografías sobre el tema.',
+};
+
+export function requirementTemplate(
+    level: RequirementLevel,
+    newId: () => string,
+    now: Date,
+    /** El texto en el idioma de la pantalla; por omisión, en español. */
+    textOf: (key: RequirementTemplateKey, values: Record<string, number>) => string = (k, v) => TEXTO_PLANTILLA[k](v),
+): ProjectRequirement[] {
+    const escala = { seminary: 1, research: 2, publishable: 3 }[level];
+    const año = now.getFullYear();
+    const base: Array<[RequirementTemplateKey, Omit<ProjectRequirement, 'id' | 'origin' | 'text'>]> = [
+        ['criticalText', { kind: 'minimum-type', sourceType: 'biblical-text-edition', minimum: 1 }],
+        ['criticalCommentaries', { kind: 'minimum-type', sourceType: 'commentary-critical', minimum: 2 * escala }],
+        ['articles', { kind: 'quantity', sourceType: 'journal-article', unit: 'works', minimum: 2 * escala }],
+        ['lexicon', { kind: 'minimum-type', sourceType: 'lexicon-technical', minimum: 1 }],
+        ['grammar', { kind: 'minimum-type', sourceType: 'grammar-syntax', minimum: 1 }],
+        ['perspectives', { kind: 'perspectives', minimum: level === 'seminary' ? 2 : 3 }],
+        ['dateRange', { kind: 'date-range', before: 1950, after: año - 15, recentMinimum: escala }],
+    ];
+    if (level !== 'seminary') base.push(['monographs', { kind: 'minimum-type', sourceType: 'theological-monograph', minimum: escala }]);
+    return base.map(([k, r]) => ({
+        ...r, id: newId(), origin: 'level' as const,
+        text: textOf(k, { minimum: r.minimum ?? 0, before: r.before ?? 0, after: r.after ?? 0, recent: r.recentMinimum ?? 0 }),
+    }));
+}
+
+/** Los requisitos y el registro, listos para guardar: sin `undefined`, ids únicos. */
+export function cleanRequirementItems(items: ReadonlyArray<ProjectRequirement>): ProjectRequirement[] {
+    const vistos = new Set<string>();
+    const SUPUESTOS: ReadonlyArray<RequirementAssumption> = ['before', 'after', 'recentMinimum', 'minimum'];
+    return items.filter(r => r.id && r.text?.trim() && !vistos.has(r.id) && (vistos.add(r.id), true)).map(r => {
+        const { assumed: crudo, ...resto } = r;
+        const assumed = (crudo ?? []).filter(a => SUPUESTOS.includes(a));
+        return limpio(assumed.length ? { ...resto, assumed } : resto);
+    });
+}
+
+export function cleanSearchLog(log: ReadonlyArray<BibliographySearchLogEntry>): BibliographySearchLogEntry[] {
+    return log.filter(l => l.id && l.at).slice(-200).map(l => limpio(l));
+}
+
+/**
+ * Los requisitos que leyó el lector, listos para el proyecto. Lo que el
+ * sílabo no fija se completa con un valor DECLARADO en `assumed` (el texto
+ * queda como lo dice el sílabo): «antiguas y actuales» sin años toma 1950 y
+ * los últimos quince años; «opuestos» sin cifra, dos enfoques. Solo se
+ * declara lo que se supuso. Un requisito igual a otro que ya está (misma
+ * clase, tipo y texto) no se repite.
+ */
+export function requirementsFromExtraction(
+    items: ReadonlyArray<Omit<ProjectRequirement, 'id' | 'origin'>>,
+    existing: ReadonlyArray<ProjectRequirement>,
+    newId: () => string,
+    now: Date,
+): ProjectRequirement[] {
+    const año = now.getFullYear();
+    const clave = (r: { kind: RequirementKind; sourceType?: SourceType | null; text: string }) => `${r.kind}|${r.sourceType ?? ''}|${r.text.trim().toLowerCase()}`;
+    const out: ProjectRequirement[] = [];
+    for (const it of items) {
+        if ([...existing, ...out].some(r => clave(r) === clave(it))) continue;
+        const r: ProjectRequirement = { ...it, text: it.text.trim(), id: newId(), origin: 'syllabus' };
+        const supuesto: RequirementAssumption[] = [];
+        if (r.kind === 'date-range') {
+            if (!r.before) { r.before = 1950; supuesto.push('before'); }
+            if (!r.after) { r.after = año - 15; supuesto.push('after'); }
+            if (!r.recentMinimum) { r.recentMinimum = 1; supuesto.push('recentMinimum'); }
+        }
+        if (r.kind === 'perspectives' && !r.minimum) { r.minimum = 2; supuesto.push('minimum'); }
+        if (supuesto.length) r.assumed = supuesto;
+        out.push(r);
+    }
+    return out;
+}
+
+/** Si una regla del sílabo es la de no repetir fuentes (enciende el criterio del curso). */
+export function isNoRepeatRule(text: string): boolean {
+    // «Se puede repetir una fuente» no es la regla: es su contrario.
+    if (/(se\s+)?puede[n]?\s+(re)?(usar|repetir)|se\s+permite\s+repetir|may\s+(be\s+)?(repeat|reuse)|can\s+(be\s+)?(repeat|reuse)|allowed\s+to\s+(repeat|reuse)/i.test(text)) return false;
+    return /repet|consecutiv|misma\s+fuente|repeat|same\s+source|reuse/i.test(text);
 }

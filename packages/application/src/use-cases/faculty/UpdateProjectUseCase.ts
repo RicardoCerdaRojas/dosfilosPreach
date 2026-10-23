@@ -1,7 +1,7 @@
 import {
     IAIProjectRepository, AIProject, ProjectColor, ProjectType,
-    cleanBibliographyCriteria, cleanProjectBibliography, cleanProjectCourseInfo, cleanProjectWorkTypes, sourceIdsFromBibliography,
-    type ProjectBibliographyCriteria, type ProjectBibliographyEntry, type ProjectCourseInfo, type ProjectWorkType,
+    cleanBibliographyCriteria, cleanProjectBibliography, cleanSearchLog, cleanProjectCourseInfo, cleanProjectWorkTypes, sourceIdsFromBibliography,
+    type BibliographySearchLogEntry, type ProjectBibliographyCriteria, type ProjectBibliographyEntry, type ProjectCourseInfo, type ProjectWorkType,
 } from '@dosfilos/domain';
 
 export interface UpdateProjectDTO {
@@ -24,6 +24,8 @@ export interface UpdateProjectDTO {
     bibliography?: ProjectBibliographyEntry[];
     /** Los criterios de la bibliografía. `null` los quita. */
     bibliographyCriteria?: ProjectBibliographyCriteria | null;
+    /** El registro de búsquedas, entero (se reescribe). */
+    bibliographySearchLog?: BibliographySearchLogEntry[];
 }
 
 export class UpdateProjectUseCase {
@@ -42,6 +44,7 @@ export class UpdateProjectUseCase {
             ...(dto.bibliographyCriteria !== undefined && {
                 bibliographyCriteria: dto.bibliographyCriteria === null ? null : cleanBibliographyCriteria(dto.bibliographyCriteria),
             }),
+            ...(dto.bibliographySearchLog !== undefined && { bibliographySearchLog: cleanSearchLog(dto.bibliographySearchLog) }),
             ...this.fuentes(dto),
         });
     }

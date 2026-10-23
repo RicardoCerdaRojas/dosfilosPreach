@@ -39,3 +39,37 @@ describe('el lector de bibliografías', () => {
         try { parseBibliographyJson('no es json'); } catch (e) { expect((e as { code?: string }).code).toBeUndefined(); }
     });
 });
+
+describe('requisitos estructurados del encargo (etapa 2b)', () => {
+    it('el prompt pide los requisitos solo en un encargo y prohíbe inventar cifras', () => {
+        const { prompt } = buildBibliographyPrompt({ text: 'x', language: 'es' });
+        expect(prompt).toContain('"requirementItems": SOLO en un encargo');
+        expect(prompt).toContain('nunca inventes cifras');
+        expect(prompt).toContain('«mínimo de 100 páginas de artículos» → "quantity"');
+    });
+
+    it('del sílabo de NT785: cantidad, épocas sin años, perspectivas y regla; con páginas y DOI en las obras', () => {
+        const r = parseBibliographyJson(JSON.stringify({
+            documentKind: 'assignment',
+            entries: [{ title: 'Does Scripture Speak in Vain?', requirement: 'recommended', pageCount: 6, doi: '10.1017/x' }],
+            requirementItems: [
+                { kind: 'quantity', text: 'Un mínimo de 100 páginas de artículos académicos', sourceType: 'journal-article', minimum: 100, unit: 'pages' },
+                { kind: 'date-range', text: 'Fuentes antiguas y actuales', before: null, after: null },
+                { kind: 'perspectives', text: 'Inclusión de puntos de vista opuestos' },
+                { kind: 'rule', text: 'No se permite utilizar la misma fuente dos semanas consecutivas' },
+                { kind: 'inventado', text: 'x' },
+                { kind: 'other', text: '  ' },
+            ],
+        }));
+        expect(r.documentKind).toBe('assignment');
+        expect(r.requirementItems!.map(x => x.kind)).toEqual(['quantity', 'date-range', 'perspectives', 'rule']);
+        expect(r.requirementItems![0]).toMatchObject({ minimum: 100, unit: 'pages', sourceType: 'journal-article' });
+        expect(r.requirementItems![1]).toMatchObject({ before: null, after: null });
+        expect(r.entries[0]).toMatchObject({ pageCount: 6, doi: '10.1017/x' });
+    });
+
+    it('una bibliografía (la de un libro) no trae requisitos aunque el lector los invente', () => {
+        const r = parseBibliographyJson(JSON.stringify({ documentKind: 'bibliography', entries: [], requirementItems: [{ kind: 'rule', text: 'x' }] }));
+        expect(r.requirementItems).toEqual([]);
+    });
+});

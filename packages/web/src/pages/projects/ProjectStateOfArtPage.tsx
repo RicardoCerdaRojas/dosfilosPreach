@@ -8,9 +8,9 @@ import { useTranslation } from '@/i18n';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { useProjectBibliography } from './stateOfArt/useProjectBibliography';
 import { BibliographyEntryList } from './stateOfArt/BibliographyEntryList';
-import { BibliographyImportPanel } from './stateOfArt/BibliographyImportPanel';
+import { RequirementsTab } from './stateOfArt/RequirementsTab';
 import { BibliographyCoverageTable, type CoverageFilter } from './stateOfArt/BibliographyCoverageTable';
-import { BibliographyCriteriaPanel, BibliographyWarningsList } from './stateOfArt/BibliographyCriteriaPanel';
+import { BibliographyWarningsList } from './stateOfArt/BibliographyCriteriaPanel';
 import { campo } from './stateOfArt/BibliographyEntryEditor';
 
 type Paso = 'requirements' | 'candidates' | 'approved' | 'toAcquire' | 'discarded';
@@ -25,7 +25,7 @@ const PASOS: Paso[] = ['requirements', 'candidates', 'approved', 'toAcquire', 'd
 export function ProjectStateOfArtPage() {
     const { t, i18n } = useTranslation('projects');
     const { projectId } = useParams<{ projectId: string }>();
-    const { projects, isLoadingProjects: isLoading, updateProject } = useFacultyProjects();
+    const { projects, isLoadingProjects: isLoading } = useFacultyProjects();
     const project = projects?.find(p => p.id === projectId);
     const bib = useProjectBibliography(project);
     const [paso, setPaso] = useState<Paso>('candidates');
@@ -62,7 +62,7 @@ export function ProjectStateOfArtPage() {
     const guardar = async () => {
         setGuardando(true);
         try {
-            await updateProject.mutateAsync({ projectId: project.id, bibliography: bib.entries, bibliographyCriteria: bib.criteria });
+            await bib.save();
             toast.success(t('stateOfArt.saved'));
         } catch (err) {
             console.error('[projects] save bibliography failed:', err);
@@ -118,7 +118,13 @@ export function ProjectStateOfArtPage() {
                 <BibliographyCoverageTable
                     coverage={bib.coverage}
                     filter={filtro}
-                    onFilter={f => { setFiltro(f); if (f && (paso === 'requirements' || paso === 'discarded')) setPaso('candidates'); }}
+                    requirements={bib.requirementMeasures}
+                    onFilter={f => {
+                        setFiltro(f);
+                        // Lo que no se pudo medir son fichas aprobadas; lo demás, candidatas.
+                        if (f?.kind === 'ids') setPaso('approved');
+                        else if (f && (paso === 'requirements' || paso === 'discarded')) setPaso('candidates');
+                    }}
                 />
                 {/* El tipo que falta ya está en la cobertura; aquí, el resto de los avisos. */}
                 <BibliographyWarningsList warnings={bib.warnings.filter(w => w.kind !== 'missing-type')} entries={bib.entries} />
@@ -126,21 +132,13 @@ export function ProjectStateOfArtPage() {
                 <div id="state-of-art-panel" role="tabpanel" aria-labelledby={`state-of-art-tab-${paso}`}>
 
                 {paso === 'requirements' ? (
-                    <div className="space-y-4">
-                    <BibliographyImportPanel
-                        onImported={res => {
-                            const { read, added } = bib.importExtracted(res);
-                            toast.success(t('stateOfArt.import.done', { read, added }));
-                        }}
+                    <RequirementsTab
+                        project={project}
+                        bib={bib}
+                        bibleBookNames={libros}
+                        library={bib.libraryAll}
+                        onShow={(f, step) => { setFiltro(f); setPaso(step); }}
                     />
-                    <BibliographyCriteriaPanel
-                        isCourse={project.type === 'course'}
-                        criteria={bib.criteria}
-                        onChange={patch => bib.setCriteria(c => ({ ...c, ...patch }))}
-                        requirements={bib.requirements}
-                        bibleBooks={libros}
-                    />
-                    </div>
                 ) : (
                     <section className="space-y-3">
                         <p className="text-xs text-muted-foreground">{t(`stateOfArt.stepHint.${paso}`)}</p>

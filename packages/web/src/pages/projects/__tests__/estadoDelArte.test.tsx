@@ -30,6 +30,10 @@ const leerBibliografia = vi.fn();
 vi.mock('@dosfilos/application', () => ({ exegesisService: { extractProjectBibliography: { execute: leerBibliografia } }, MAX_BIBLIOGRAPHY_TEXT_CHARS: 60_000 }));
 vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'u' } }) }));
 const { ProjectStateOfArtPage } = await import('../ProjectStateOfArtPage');
+const { cleanBibliographyCriteria, cleanProjectBibliography, cleanSearchLog } = await import('@dosfilos/domain');
+/** Firestore devuelve los mapas con otro orden de claves: la página tiene que reconciliarse igual. */
+const alfabetico = (v: unknown): unknown => Array.isArray(v) ? v.map(alfabetico)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map(k => [k, alfabetico((v as Record<string, unknown>)[k])])) : v;
 
 const montar = () => render(
     <QueryClientProvider client={new QueryClient()}>
@@ -43,6 +47,17 @@ const ficha = (titulo: RegExp) => screen.getByText(titulo).closest('li')! as HTM
 
 beforeEach(() => {
     cleanup(); vi.clearAllMocks();
+    // Guardar escribe en el proyecto, como Firestore + el refetch: la página se reconcilia con lo guardado.
+    // Limpia como UpdateProjectUseCase y reordena como Firestore (segunda revisión de la 2b).
+    updateProject.mockImplementation(async (args: { bibliography: never; bibliographyCriteria: never; bibliographySearchLog?: never }) => {
+        proyecto = {
+            ...proyecto,
+            bibliography: alfabetico(cleanProjectBibliography(args.bibliography)),
+            bibliographyCriteria: alfabetico(cleanBibliographyCriteria(args.bibliographyCriteria)),
+            ...(args.bibliographySearchLog ? { bibliographySearchLog: alfabetico(cleanSearchLog(args.bibliographySearchLog)) } : {}),
+        };
+        return {};
+    });
     proyecto = { id: 'nt785', userId: 'u', title: 'NT785', color: 'amber', type: 'course', workTypes: [{ id: 'tp', label: 'TP Semanal', rubricTemplateId: 'r-tp' }] };
 });
 
@@ -159,34 +174,212 @@ describe('ProjectStateOfArtPage', () => {
         });
     });
 
-    it('importar la bibliografía del sílabo suma candidatas sin duplicar y agrega lo que prohíbe a los criterios', async () => {
+    it('importar el sílabo: revisar, confirmar, guardar de una vez y ver lo que entró; repetirlo no duplica', async () => {
         leerBibliografia.mockResolvedValue({
+            documentKind: 'assignment',
             entries: [
                 { title: 'Greek Grammar Beyond the Basics', author: 'Wallace, Daniel B.', requirement: 'recommended', sourceType: 'grammar-syntax' },
                 { title: 'Comentario de la epístola de Santiago', author: 'Moo, Douglas J.', requirement: 'required', sourceType: 'commentary-expository' },
             ],
+            requirementItems: [
+                { kind: 'quantity', text: 'Mínimo 100 páginas de artículos académicos', sourceType: 'journal-article', minimum: 100, unit: 'pages' },
+                { kind: 'rule', text: 'No usar la misma fuente dos semanas consecutivas' },
+                { kind: 'date-range', text: 'Fuentes antiguas y actuales' },
+            ],
             requirements: 'Mínimo 100 páginas de artículos académicos.',
             prohibitions: 'No usar la misma fuente dos semanas consecutivas.',
         });
+        // Una candidata de otro origen: el filtro de «lo recién importado» no la muestra.
+        proyecto = { ...proyecto, bibliography: [{ id: 'otra', title: 'Obra de otro origen', weight: 'recommended', decision: 'candidate', origins: ['manual'] }] };
+        montar();
+        const importar = async () => {
+            fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+            fireEvent.click(screen.getByText('stateOfArt.import.writeList'));
+            fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'bibliografía del sílabo' } });
+            fireEvent.click(screen.getByText('stateOfArt.import.read'));
+            fireEvent.click(await screen.findByText(/^stateOfArt.review.confirm/));
+        };
+        await importar();
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+        const g = updateProject.mock.calls[0]![0] as { bibliography: Array<Record<string, unknown>>; bibliographyCriteria: { requirementItems: Array<Record<string, unknown>>; prohibitions: string; noRepeatSources: boolean }; bibliographySearchLog: Array<Record<string, unknown>> };
+        expect(g.bibliography.find(e => /Santiago/.test(String(e.title)))).toMatchObject({ weight: 'required', origins: ['syllabus'] });
+        expect(g.bibliographyCriteria.requirementItems.map(r => r.kind)).toEqual(['quantity', 'rule', 'date-range']);
+        // Lo supuesto va aparte: el texto queda como lo dice el sílabo.
+        expect(g.bibliographyCriteria.requirementItems[2]).toMatchObject({ text: 'Fuentes antiguas y actuales', before: 1950, assumed: ['before', 'after', 'recentMinimum'] });
+        expect(g.bibliographyCriteria.requirementItems.every(r => r.origin === 'syllabus')).toBe(true);
+        expect(g.bibliographyCriteria).toMatchObject({ prohibitions: 'No usar la misma fuente dos semanas consecutivas.', noRepeatSources: true });
+        expect(g.bibliographySearchLog).toEqual([expect.objectContaining({ kind: 'syllabus', found: 2, added: 2 })]);
+        // Lleva a Candidatas, mostrando solo lo que entró del sílabo.
+        await waitFor(() => expect(screen.getByRole('tab', { name: /stateOfArt.step.candidates/ })).toHaveAttribute('aria-selected', 'true'));
+        expect(within(ficha(/Comentario de la epístola de Santiago/)).getByText('stateOfArt.weight.required')).toBeInTheDocument();
+        expect(screen.getByText(/stateOfArt.coverage.showing/)).toBeInTheDocument();
+        expect(screen.queryByText('Obra de otro origen')).toBeNull();
+        // Lo importado quedó guardado con los mismos ids: no queda nada «sin guardar».
+        expect(screen.queryByText('unsaved')).toBeNull();
+
+        // Otra vez la misma lista: ni fichas, ni requisitos, ni prohibiciones repetidas; el registro suma.
+        await importar();
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));
+        const h = updateProject.mock.calls[1]![0] as typeof g;
+        expect(h.bibliography.filter(e => /Santiago/.test(String(e.title)))).toHaveLength(1);
+        expect(h.bibliographyCriteria.requirementItems).toHaveLength(3);
+        expect(h.bibliographyCriteria.prohibitions.split('dos semanas consecutivas').length - 1).toBe(1);
+        expect(h.bibliographySearchLog).toHaveLength(2);
+        expect(h.bibliographySearchLog[1]).toMatchObject({ found: 2, added: 0 });
+    });
+
+    it('si guardar la importación falla, nada cambia en pantalla y la revisión queda para reintentar', async () => {
+        leerBibliografia.mockResolvedValue({ documentKind: 'bibliography', entries: [{ title: 'Obra importada única', author: 'X', requirement: 'recommended' }], requirementItems: [], requirements: null, prohibitions: null });
+        updateProject.mockRejectedValueOnce(new Error('sin red'));
         montar();
         fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        fireEvent.click(screen.getByText('stateOfArt.import.writeList'));
+        fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'una bibliografía' } });
+        fireEvent.click(screen.getByText('stateOfArt.import.read'));
+        fireEvent.click(await screen.findByText(/^stateOfArt.review.confirm/));
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+        expect(await screen.findByText(/^stateOfArt.review.confirm/)).toBeInTheDocument();
+        expect(screen.queryByText('unsaved')).toBeNull();
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.candidates/ }));
+        expect(screen.queryByText('Obra importada única')).toBeNull();
+    });
+
+    it('los requisitos del nivel se proponen sin repetirse y lo que no se pudo medir lleva a esas fichas', async () => {
+        proyecto = { ...proyecto, bibliography: [
+            { id: 'a1', title: 'Artículo sin año', sourceType: 'journal-article', weight: 'recommended', decision: 'approved', origins: ['manual'] },
+            { id: 'a2', title: 'Artículo con año', year: 2019, sourceType: 'journal-article', weight: 'recommended', decision: 'approved', origins: ['manual'] },
+        ] };
+        montar();
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        expect(screen.getByText('stateOfArt.requirement.empty')).toBeInTheDocument();
+        fireEvent.change(screen.getByLabelText('stateOfArt.requirement.level'), { target: { value: 'seminary' } });
+        fireEvent.click(screen.getByText('stateOfArt.requirement.propose'));
+        const editor = screen.getByRole('region', { name: 'stateOfArt.requirement.title' });
+        const cuantos = within(editor).getAllByRole('listitem').length;
+        expect(cuantos).toBeGreaterThan(2);
+        fireEvent.click(screen.getByText('stateOfArt.requirement.propose'));
+        expect(within(editor).getAllByRole('listitem')).toHaveLength(cuantos);
+        // El de épocas no puede medir una ficha sin año: lo dice y lleva a ella.
+        fireEvent.click(within(editor).getByText(/stateOfArt.requirement.unmeasurable.date-range/));
+        await waitFor(() => expect(screen.getByRole('tab', { name: /stateOfArt.step.approved/ })).toHaveAttribute('aria-selected', 'true'));
+        expect(screen.getByText(/Artículo sin año/)).toBeInTheDocument();
+        expect(screen.queryByText(/Artículo con año/)).toBeNull();
+        expect(screen.getByText(/stateOfArt.coverage.showing/)).toBeInTheDocument();
+    });
+
+    it('los mínimos por tipo de los requisitos del proyecto entran en la cobertura', () => {
+        proyecto = { ...proyecto, workTypes: [], bibliographyCriteria: { requirementItems: [{ id: 'q', kind: 'minimum-type', sourceType: 'commentary-critical', minimum: 3, text: 'Tres comentarios críticos', origin: 'manual' }] } };
+        montar();
+        const cobertura = screen.getByRole('region', { name: 'stateOfArt.coverage.title' });
+        const fila = within(cobertura).getByText('sourceTypes.commentary-critical.label').closest('button')!;
+        expect(within(fila).getByText(/stateOfArt.requirement.coverageLabel ≥ 3/)).toBeInTheDocument();
+    });
+
+    it('un requisito sin su cifra no se agrega, y uno guardado sin cifra se ve incompleto, no cumplido', () => {
+        proyecto = { ...proyecto, bibliographyCriteria: { requirementItems: [{ id: 'v', kind: 'variety', text: 'Variedad de recursos', origin: 'syllabus' }] } };
+        montar();
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        const editor = screen.getByRole('region', { name: 'stateOfArt.requirement.title' });
+        expect(within(editor).getAllByLabelText('stateOfArt.requirement.incomplete').length).toBeGreaterThan(0);
+        expect(within(editor).queryByLabelText('stateOfArt.coverage.covered')).toBeNull();
+        fireEvent.change(within(editor).getByLabelText('stateOfArt.requirement.kindLabel'), { target: { value: 'minimum-type' } });
+        fireEvent.change(within(editor).getByLabelText('stateOfArt.requirement.textLabel'), { target: { value: 'Comentarios' } });
+        expect(within(editor).getByText('stateOfArt.requirement.add').closest('button')).toBeDisabled();
+        expect(within(editor).getByText('stateOfArt.requirement.needs.minimum-type')).toBeInTheDocument();
+    });
+
+    it('corregir una cifra supuesta la deja de declarar como supuesto', async () => {
+        proyecto = { ...proyecto, bibliographyCriteria: { requirementItems: [{ id: 'd', kind: 'date-range', text: 'Antiguas y actuales', before: 1950, after: 2011, recentMinimum: 1, assumed: ['before'], origin: 'syllabus' }] } };
+        montar();
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        expect(screen.getByText(/stateOfArt.requirement.assumedNote/)).toBeInTheDocument();
+        fireEvent.change(screen.getByLabelText('stateOfArt.requirement.field.before · Antiguas y actuales'), { target: { value: '1900' } });
+        expect(screen.queryByText(/stateOfArt.requirement.assumedNote/)).toBeNull();
+        // Sin supuestos queda `assumed: null` en pantalla y sin la clave en lo guardado: igual se reconcilia.
+        fireEvent.click(screen.getByText('stateOfArt.save'));
+        await waitFor(() => expect(updateProject).toHaveBeenCalled());
+        await waitFor(() => expect(screen.queryByText('unsaved')).toBeNull());
+    });
+
+    it('importar guarda lo guardado más lo importado: lo pendiente espera su «Guardar» y no se pierde', async () => {
+        proyecto = { ...proyecto, type: 'research', bibliography: [{ id: 'e1', title: 'Obra guardada', weight: 'recommended', decision: 'candidate', origins: ['manual'] }], bibliographyCriteria: { inclusion: 'Lo guardado', noRepeatSources: false } };
+        leerBibliografia.mockResolvedValue({
+            documentKind: 'assignment',
+            entries: [{ title: 'Obra importada', author: 'Autor', requirement: 'recommended' }],
+            requirementItems: [{ kind: 'rule', text: 'No usar la misma fuente dos semanas consecutivas' }, { kind: 'rule', text: 'No usar fuentes de internet' }],
+            requirements: null, prohibitions: null,
+        });
+        montar();
+        // Cambios sin guardar: una ficha sin título (error) y un criterio a medio escribir.
+        fireEvent.click(within(ficha(/Obra guardada/)).getByText('stateOfArt.evaluate'));
+        fireEvent.change(within(ficha(/Obra guardada/)).getByLabelText('stateOfArt.field.title'), { target: { value: '' } });
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        fireEvent.change(screen.getByLabelText(/stateOfArt.criteria.inclusion/), { target: { value: 'A medio escribir' } });
+        fireEvent.click(screen.getByText('stateOfArt.import.writeList'));
         fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'bibliografía del sílabo' } });
         fireEvent.click(screen.getByText('stateOfArt.import.read'));
-        await waitFor(() => expect((screen.getByLabelText(/stateOfArt.criteria.prohibitions/) as HTMLTextAreaElement).value).toContain('dos semanas consecutivas'));
-        expect((screen.getByLabelText(/stateOfArt.criteria.requirementsCourse/) as HTMLTextAreaElement).value).toContain('100 páginas');
-        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.candidates/ }));
-        expect(within(ficha(/Greek Grammar Beyond the Basics/)).getByText('stateOfArt.origin.syllabus')).toBeInTheDocument();
-        expect(within(ficha(/Comentario de la epístola de Santiago/)).getByText('stateOfArt.weight.required')).toBeInTheDocument();
-        // Importar otra vez la misma lista no duplica.
+        fireEvent.click(await screen.findByText(/^stateOfArt.review.confirm/));
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+        const g = guardado();
+        expect(g.bibliography.map(e => e.title)).toEqual(['Obra guardada', 'Obra importada']);
+        expect(g.bibliographyCriteria).toMatchObject({ inclusion: 'Lo guardado', noRepeatSources: false });
+        // En pantalla sigue lo pendiente, más lo importado, y se puede guardar después.
         fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
-        fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'bibliografía del sílabo' } });
+        expect((screen.getByLabelText(/stateOfArt.criteria.inclusion/) as HTMLTextAreaElement).value).toBe('A medio escribir');
+        expect(screen.getByText('stateOfArt.save').closest('button')).toBeDisabled();
+        expect(screen.getByText(/stateOfArt.fixErrors/)).toBeInTheDocument();
+    });
+
+    it('importar una obra que en pantalla se renombró no le da a la nueva el id de la renombrada', async () => {
+        proyecto = { ...proyecto, bibliography: [{ id: 's', title: 'Obra guardada X', weight: 'recommended', decision: 'candidate', origins: ['manual'] }] };
+        leerBibliografia.mockResolvedValue({ documentKind: 'bibliography', entries: [{ title: 'Obra guardada X', requirement: 'recommended' }], requirementItems: [], requirements: null, prohibitions: null });
+        montar();
+        fireEvent.click(within(ficha(/Obra guardada X/)).getByText('stateOfArt.evaluate'));
+        fireEvent.change(within(ficha(/Obra guardada X/)).getByLabelText('stateOfArt.field.title'), { target: { value: 'Otra obra distinta' } });
+        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+        fireEvent.click(screen.getByText('stateOfArt.import.writeList'));
+        fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'una bibliografía' } });
         fireEvent.click(screen.getByText('stateOfArt.import.read'));
-        await waitFor(() => expect(leerBibliografia).toHaveBeenCalledTimes(2));
-        fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.candidates/ }));
-        expect(screen.getAllByText(/Comentario de la epístola de Santiago/)).toHaveLength(1);
-        // Y lo que prohíbe no se repite en los criterios.
+        fireEvent.click(await screen.findByText(/^stateOfArt.review.confirm/));
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+        // Guardar lo de pantalla conserva las dos: la renombrada y la importada.
+        fireEvent.click(screen.getByText('stateOfArt.save'));
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));
+        expect(guardado().bibliography.map(e => e.title).sort()).toEqual(['Obra guardada X', 'Otra obra distinta']);
+        expect(new Set(guardado().bibliography.map(e => e.id)).size).toBe(2);
+    });
+
+    it('la regla de no repetir del sílabo enciende el criterio en un proyecto que no es curso; otra regla no', async () => {
+        proyecto = { ...proyecto, type: 'research' };
+        leerBibliografia.mockResolvedValue({ documentKind: 'assignment', entries: [], requirementItems: [{ kind: 'rule', text: 'No usar fuentes de internet' }], requirements: null, prohibitions: null });
+        montar();
+        const importar = async () => {
+            fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
+            fireEvent.click(screen.getByText('stateOfArt.import.writeList'));
+            fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'bibliografía del sílabo' } });
+            fireEvent.click(screen.getByText('stateOfArt.import.read'));
+            fireEvent.click(await screen.findByText(/^stateOfArt.review.confirm/));
+        };
+        await importar();
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+        expect(guardado().bibliographyCriteria.noRepeatSources).toBeUndefined();
+        leerBibliografia.mockResolvedValue({ documentKind: 'assignment', entries: [], requirementItems: [{ kind: 'rule', text: 'No repetir la misma fuente en semanas consecutivas' }], requirements: null, prohibitions: null });
+        await importar();
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));
+        expect(guardado().bibliographyCriteria.noRepeatSources).toBe(true);
+    });
+
+    it('un requisito escrito a mano se agrega, se marca cumplido y se guarda', async () => {
+        montar();
         fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
-        const prohibe = (screen.getByLabelText(/stateOfArt.criteria.prohibitions/) as HTMLTextAreaElement).value;
-        expect(prohibe.split('dos semanas consecutivas').length - 1).toBe(1);
+        const editor = screen.getByRole('region', { name: 'stateOfArt.requirement.title' });
+        fireEvent.change(within(editor).getByLabelText('stateOfArt.requirement.textLabel'), { target: { value: 'Consultar al menos una obra en alemán' } });
+        fireEvent.click(within(editor).getByText('stateOfArt.requirement.add'));
+        fireEvent.click(within(editor).getByLabelText('stateOfArt.requirement.done'));
+        fireEvent.click(screen.getByText('stateOfArt.save'));
+        await waitFor(() => expect(updateProject).toHaveBeenCalled());
+        expect(guardado().bibliographyCriteria).toMatchObject({ requirementItems: [expect.objectContaining({ kind: 'other', text: 'Consultar al menos una obra en alemán', origin: 'manual', done: true })] });
+        // Guardado y releído (limpio, en otro orden): la página vuelve a «limpio».
+        await waitFor(() => expect(screen.queryByText('unsaved')).toBeNull());
     });
 });

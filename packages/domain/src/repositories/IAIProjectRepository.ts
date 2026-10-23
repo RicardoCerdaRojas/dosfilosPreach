@@ -7,7 +7,7 @@ export interface IAIProjectRepository {
     createProject(project: Omit<AIProject, 'id' | 'createdAt' | 'updatedAt'>): Promise<AIProject>;
     updateProject(
         projectId: string,
-        updates: Partial<Pick<AIProject, 'title' | 'color' | 'type' | 'icon' | 'contextNote' | 'sourceIds' | 'courseInfo' | 'workTypes' | 'bibliography' | 'bibliographyCriteria'>>
+        updates: Partial<Pick<AIProject, 'title' | 'color' | 'type' | 'icon' | 'contextNote' | 'sourceIds' | 'courseInfo' | 'workTypes' | 'bibliography' | 'bibliographyCriteria' | 'bibliographySearchLog'>>
     ): Promise<AIProject>;
     /**
      * Toggle archive state. Pass `true` to archive (sets `archivedAt = now`)

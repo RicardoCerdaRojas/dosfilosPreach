@@ -1,5 +1,6 @@
 import {
     SOURCE_TYPE_CATALOG,
+    type BibliographyApproach,
     type BibliographyEvaluation,
     type BibliographyLevel,
     type BibliographyTradition,
@@ -18,6 +19,7 @@ interface BibliographyEntryEditorProps {
 }
 
 const NIVELES: BibliographyLevel[] = ['technical', 'semi-technical', 'expository', 'popular'];
+const ENFOQUES: BibliographyApproach[] = ['historical-grammatical', 'historical-critical', 'socio-rhetorical', 'discourse-linguistic', 'literary-narrative', 'canonical-theological', 'other'];
 const TRADICIONES: BibliographyTradition[] = ['evangelical', 'evangelical-critical', 'conservative-moderate', 'liberal-critical', 'catholic', 'jewish', 'other'];
 const TIPOS = (Object.keys(SOURCE_TYPE_CATALOG) as SourceType[]).filter(t => t !== 'style-template-paper');
 
@@ -101,6 +103,13 @@ export function BibliographyEntryEditor({ entry, suggested, workTypes, onChange 
                 </select>
             </label>
             <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">{t('stateOfArt.q.approach')}</span>
+                <select className={campo} value={ev.approach ?? ''} onChange={e => evaluar({ approach: (e.target.value || null) as BibliographyApproach | null })}>
+                    <option value="">{t('stateOfArt.unknown')}</option>
+                    {ENFOQUES.map(x => <option key={x} value={x}>{t(`stateOfArt.approach.${x}`)}</option>)}
+                </select>
+            </label>
+            <label className="block space-y-1">
                 <span className="text-xs text-muted-foreground">{t('stateOfArt.q.tradition')}</span>
                 <select className={campo} value={ev.tradition ?? ''} onChange={e => evaluar({ tradition: (e.target.value || null) as BibliographyTradition | null })}>
                     <option value="">{t('stateOfArt.unknown')}</option>
@@ -110,6 +119,19 @@ export function BibliographyEntryEditor({ entry, suggested, workTypes, onChange 
             <label className="block space-y-1">
                 <span className="text-xs text-muted-foreground">{t('stateOfArt.q.language')}</span>
                 <input className={campo} value={ev.language ?? ''} onChange={e => evaluar({ language: e.target.value })} />
+            </label>
+
+            <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">{t('stateOfArt.field.pageCount')}</span>
+                <input className={campo} inputMode="numeric" value={entry.pageCount ?? ''} onChange={e => onChange({ pageCount: /^\d+$/.test(e.target.value) ? Number(e.target.value) : null })} />
+            </label>
+            <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">DOI</span>
+                <input className={campo} value={entry.identifiers?.doi ?? ''} onChange={e => onChange({ identifiers: { ...(entry.identifiers ?? {}), doi: e.target.value || null } })} />
+            </label>
+            <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">ISBN</span>
+                <input className={campo} value={entry.identifiers?.isbn ?? ''} onChange={e => onChange({ identifiers: { ...(entry.identifiers ?? {}), isbn: e.target.value || null } })} />
             </label>
 
             <p className="sm:col-span-2 lg:col-span-3 pt-1 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('stateOfArt.annotation')}</p>
@@ -145,6 +167,26 @@ export function BibliographyEntryEditor({ entry, suggested, workTypes, onChange 
                     </div>
                 </fieldset>
             )}
+            {/* La reseña: la ficha de lectura (Eco IV.2.3), con la forma que pide
+                el curso. Las páginas de la obra cuentan cuando está leída y reseñada. */}
+            <p className="sm:col-span-2 lg:col-span-3 pt-1 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('stateOfArt.review.reading')}</p>
+            <label className="block space-y-1 sm:col-span-2 lg:col-span-3">
+                <span className="text-xs text-muted-foreground">{t('stateOfArt.field.mainIdea')}</span>
+                <textarea className={campo} rows={2} value={an.review?.mainIdea ?? ''} onChange={e => anotar({ review: { ...(an.review ?? {}), mainIdea: e.target.value } })} />
+            </label>
+            <label className="block space-y-1 sm:col-span-2">
+                <span className="text-xs text-muted-foreground">{t('stateOfArt.field.contribution')}</span>
+                <textarea className={campo} rows={2} value={an.review?.contribution ?? ''} onChange={e => anotar({ review: { ...(an.review ?? {}), contribution: e.target.value } })} />
+            </label>
+            <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">{t('stateOfArt.field.rating')}</span>
+                <input
+                    className={campo}
+                    inputMode="numeric"
+                    value={an.review?.rating ?? ''}
+                    onChange={e => { const n = Number(e.target.value); anotar({ review: { ...(an.review ?? {}), rating: Number.isInteger(n) && n >= 1 && n <= 10 ? n : null } }); }}
+                />
+            </label>
             <label className="block space-y-1 sm:col-span-2 lg:col-span-3">
                 <span className="text-xs text-muted-foreground">{t('stateOfArt.field.reason')}</span>
                 <textarea className={campo} rows={2} value={entry.reason ?? ''} onChange={e => onChange({ reason: e.target.value })} />
