@@ -75,6 +75,8 @@ export class FirebaseSeriesRepository implements ISeriesRepository {
             type: series.type || 'manual',
             metadata: metadata,
             resourceIds: series.resourceIds || [],
+            // null = serie suelta; mismo significado que la clave ausente.
+            projectId: series.projectId ?? null,
         };
     }
 
@@ -141,6 +143,9 @@ export class FirebaseSeriesRepository implements ISeriesRepository {
             });
         }
 
+        // El spread copia la clave aunque venga undefined; Firestore la rechaza.
+        if (out.projectSourceExclusions === undefined) delete out.projectSourceExclusions;
+
         return out;
     }
 
@@ -163,6 +168,11 @@ export class FirebaseSeriesRepository implements ISeriesRepository {
             type: data.type || 'manual',
             metadata: metadata,
             resourceIds: data.resourceIds || [],
+            // Documento viejo sin la clave → serie suelta (undefined).
+            projectId: data.projectId ?? undefined,
+            // Las fechas reales: create() ya no inventa createdAt al leer.
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : undefined,
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : undefined,
         });
     }
 

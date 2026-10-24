@@ -104,6 +104,12 @@ export interface SeriesMetadata {
      * the user's active rubric / no style guide / empty corpus).
      */
     exegesisDefaults?: SeriesExegesisDefaults;
+    /**
+     * resourceIds de obras de la bibliografía del proyecto que el pastor
+     * desmarcó al crear la serie. Los estudios nuevos de una serie ligada
+     * heredan la bibliografía del proyecto menos estas (ADR-046 etapa 3).
+     */
+    projectSourceExclusions?: string[];
 }
 
 /**
@@ -183,6 +189,11 @@ export interface SermonSeries {
     resourceIds: string[];
     createdAt: Date;
     updatedAt: Date;
+    /**
+     * Proyecto de la serie (ADR-046 etapa 3). Ausente o null = serie suelta.
+     * Única fuente de verdad del vínculo: AIProject no guarda seriesIds.
+     */
+    projectId?: string | null;
 }
 
 export class SermonSeriesEntity implements SermonSeries {
@@ -200,7 +211,9 @@ export class SermonSeriesEntity implements SermonSeries {
         public endDate?: Date,
         public metadata?: SeriesMetadata,
         public createdAt: Date = new Date(),
-        public updatedAt: Date = new Date()
+        public updatedAt: Date = new Date(),
+        // Último a propósito: así ningún llamador posicional corre argumentos.
+        public projectId?: string | null
     ) {
         this.validate();
     }
@@ -215,7 +228,11 @@ export class SermonSeriesEntity implements SermonSeries {
     }
 
     static create(
-        data: Omit<SermonSeries, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+        data: Omit<SermonSeries, 'id' | 'createdAt' | 'updatedAt'> & {
+            id?: string;
+            createdAt?: Date;
+            updatedAt?: Date;
+        }
     ): SermonSeriesEntity {
         return new SermonSeriesEntity(
             data.id ?? crypto.randomUUID(),
@@ -230,8 +247,11 @@ export class SermonSeriesEntity implements SermonSeries {
             data.coverUrl,
             data.endDate,
             data.metadata,
-            new Date(),
-            new Date()
+            // Al leer de Firestore llegan las fechas reales; sin ellas, cada
+            // lectura reescribía createdAt y reordenaba la lista de planes.
+            data.createdAt ?? new Date(),
+            data.updatedAt ?? new Date(),
+            data.projectId
         );
     }
 
@@ -250,7 +270,9 @@ export class SermonSeriesEntity implements SermonSeries {
             data.endDate ?? this.endDate,
             data.metadata ?? this.metadata,
             this.createdAt,
-            new Date()
+            new Date(),
+            // Sin ??: {projectId: null} desliga y {} conserva el vínculo.
+            'projectId' in data ? data.projectId : this.projectId
         );
     }
 
