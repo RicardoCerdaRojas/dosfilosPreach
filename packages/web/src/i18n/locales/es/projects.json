@@ -148,7 +148,10 @@
       "minimumsHint": "Vienen de las rúbricas de los tipos de trabajo; se cambian allí.",
       "books": "Libros bíblicos del proyecto",
       "noBooks": "Todavía ninguno: salen de los estudios del proyecto.",
-      "booksHint": "Sirven para buscar comentarios y para saber si cada uno cubre el libro."
+      "booksHint": "Sirven para buscar comentarios, armar la guía de búsqueda y saber si cada comentario cubre el libro. Si el proyecto todavía no tiene estudios, elígelos aquí.",
+      "addBook": "Agregar un libro",
+      "removeBook": "Quitar {{book}}",
+      "fromStudies": "Tomados de los estudios del proyecto. Elige otros si el proyecto abarca más."
     },
     "warning": {
       "missingType": "Las rúbricas piden {{minimum}} de «{{type}}» y no hay ninguna aprobada.",

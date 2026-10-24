@@ -1,5 +1,5 @@
-import type { BibliographyWarning, ProjectBibliographyCriteria, ProjectBibliographyEntry, SourceType } from '@dosfilos/domain';
-import { AlertTriangle } from 'lucide-react';
+import { BIBLE_CANON, getBookById, type BibleBookId, type BibliographyWarning, type ProjectBibliographyCriteria, type ProjectBibliographyEntry, type SourceType } from '@dosfilos/domain';
+import { AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { campo } from './BibliographyEntryEditor';
 
@@ -9,7 +9,8 @@ interface BibliographyCriteriaPanelProps {
     onChange: (patch: Partial<ProjectBibliographyCriteria>) => void;
     /** Los mínimos por tipo que piden las rúbricas de los tipos de trabajo. */
     requirements: ReadonlyArray<{ sourceType: SourceType; minimum: number; workType?: string }>;
-    bibleBooks: ReadonlyArray<string>;
+    /** Los libros de los estudios: valen mientras el proyecto no elija los suyos. */
+    studyBooks: ReadonlyArray<BibleBookId>;
 }
 
 /**
@@ -18,8 +19,17 @@ interface BibliographyCriteriaPanelProps {
  * cap. 1). Los criterios de inclusión y exclusión son los que Vyhmeister
  * (cap. 7) pide explicar en una bibliografía selectiva.
  */
-export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requirements, bibleBooks }: BibliographyCriteriaPanelProps) {
-    const { t } = useTranslation('projects');
+export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requirements, studyBooks }: BibliographyCriteriaPanelProps) {
+    const { t, i18n } = useTranslation('projects');
+    const en = i18n.language?.startsWith('en');
+    const nombre = (b: BibleBookId) => (en ? getBookById(b)?.nameEn : getBookById(b)?.nameEs) ?? b;
+    // Los libros del proyecto: los elegidos, o los de los estudios mientras no
+    // se elija ninguno. Un proyecto sin estudios (una serie que empieza, una
+    // investigación) los elige aquí: sin ellos no hay guía ni catálogo.
+    const elegidos = criteria.bibleBooks ?? [];
+    const libros = elegidos.length ? elegidos : studyBooks;
+    const desdeEstudios = elegidos.length === 0 && studyBooks.length > 0;
+    const fijar = (xs: BibleBookId[]) => onChange({ bibleBooks: xs });
     const { t: tx } = useTranslation('exegesis');
     const texto = (clave: 'requirements' | 'prohibitions' | 'inclusion' | 'exclusion', etiqueta: string, ayuda: string) => (
         <label className="block space-y-1">
@@ -66,7 +76,38 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
                 </div>
                 <div className="rounded-lg border border-border p-3 space-y-1">
                     <p className="text-sm font-medium text-foreground">{t('stateOfArt.criteria.books')}</p>
-                    <p className="text-xs text-foreground">{bibleBooks.length > 0 ? bibleBooks.join(', ') : t('stateOfArt.criteria.noBooks')}</p>
+                    {libros.length === 0 ? (
+                        <p className="text-xs text-foreground">{t('stateOfArt.criteria.noBooks')}</p>
+                    ) : (
+                        <ul className="flex flex-wrap gap-1.5" aria-label={t('stateOfArt.criteria.books')}>
+                            {libros.map(b => (
+                                <li key={b} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-foreground">
+                                    {nombre(b)}
+                                    {!desdeEstudios && (
+                                        <button type="button" onClick={() => fijar(elegidos.filter(x => x !== b))} aria-label={t('stateOfArt.criteria.removeBook', { book: nombre(b) })} className="rounded-full p-0.5 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {desdeEstudios && <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.fromStudies')}</p>}
+                    <label className="block space-y-1 pt-1">
+                        <span className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.addBook')}</span>
+                        <select
+                            className={campo}
+                            value=""
+                            onChange={e => {
+                                const b = e.target.value as BibleBookId;
+                                // Al elegir el primero, los de los estudios se conservan.
+                                if (b && !libros.includes(b)) fijar([...libros, b]);
+                            }}
+                        >
+                            <option value="">—</option>
+                            {BIBLE_CANON.filter(b => !libros.includes(b.id)).map(b => <option key={b.id} value={b.id}>{en ? b.nameEn : b.nameEs}</option>)}
+                        </select>
+                    </label>
                     <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.booksHint')}</p>
                 </div>
             </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, Library, Loader2, Plus, Search } from 'lucide-react';
-import { candidateRank, getBookById, newBibliographyEntryId, type ProjectBibliographyEntry } from '@dosfilos/domain';
+import { candidateRank, newBibliographyEntryId, type ProjectBibliographyEntry } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
@@ -23,7 +23,7 @@ const PASOS: Paso[] = ['requirements', 'candidates', 'approved', 'toAcquire', 'd
  * Plan y respaldo metodológico: `docs/FASE_ESTADO_DEL_ARTE_2026-10.md`.
  */
 export function ProjectStateOfArtPage() {
-    const { t, i18n } = useTranslation('projects');
+    const { t } = useTranslation('projects');
     const { projectId } = useParams<{ projectId: string }>();
     const { projects, isLoadingProjects: isLoading } = useFacultyProjects();
     const project = projects?.find(p => p.id === projectId);
@@ -41,7 +41,6 @@ export function ProjectStateOfArtPage() {
         window.addEventListener('beforeunload', aviso);
         return () => window.removeEventListener('beforeunload', aviso);
     }, [bib.dirty]);
-    const en = i18n.language?.startsWith('en');
 
     const grupos = useMemo(() => {
         const ordenar = (xs: ProjectBibliographyEntry[]) => [...xs].sort((a, b) => candidateRank(b) - candidateRank(a));
@@ -80,7 +79,6 @@ export function ProjectStateOfArtPage() {
     };
 
     const lista = paso === 'requirements' ? [] : grupos[paso];
-    const libros = bib.bibleBooks.map(b => (en ? getBookById(b)?.nameEn : getBookById(b)?.nameEs) ?? b);
 
     return (
         <div className="flex-1 overflow-y-auto bg-background text-foreground antialiased">
@@ -135,7 +133,6 @@ export function ProjectStateOfArtPage() {
                     <RequirementsTab
                         project={project}
                         bib={bib}
-                        bibleBookNames={libros}
                         library={bib.libraryAll}
                         onShow={(f, step) => { setFiltro(f); setPaso(step); }}
                     />

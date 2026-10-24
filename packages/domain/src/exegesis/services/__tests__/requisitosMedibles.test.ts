@@ -136,3 +136,8 @@ describe('requisitos leídos de un sílabo', () => {
         expect(isNoRepeatRule('Sources may be reused across weeks')).toBe(false);
     });
 });
+
+it('los libros del proyecto se guardan solo si son del canon y sin repetir', () => {
+    expect(cleanBibliographyCriteria({ bibleBooks: ['NEH', 'NEH', 'XYZ' as never, 'EZR'] }).bibleBooks).toEqual(['NEH', 'EZR']);
+    expect('bibleBooks' in cleanBibliographyCriteria({ inclusion: 'x' })).toBe(false);
+});

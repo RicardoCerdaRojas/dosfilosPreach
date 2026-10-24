@@ -1,4 +1,4 @@
-import type { BibleBookId } from '../../bible/canon/BibleCanon';
+import { getBookById, type BibleBookId } from '../../bible/canon/BibleCanon';
 import type { LibraryResource } from '../../entities/LibraryResource';
 import type { SourceType } from '../entities/SourceType';
 import { commentaryBookCoverage, isCommentaryType } from './commentaryCoverage';
@@ -419,8 +419,15 @@ export function cleanProjectBibliography(entries: ReadonlyArray<ProjectBibliogra
 }
 
 export function cleanBibliographyCriteria(criteria: ProjectBibliographyCriteria): ProjectBibliographyCriteria {
-    const { requirementItems, ...resto } = criteria;
-    return { ...limpio(resto), ...(requirementItems ? { requirementItems: cleanRequirementItems(requirementItems) } : {}) };
+    const { requirementItems, bibleBooks, ...resto } = criteria;
+    // Los libros del proyecto se eligen a mano (un proyecto sin estudios no
+    // tiene de dónde sacarlos): solo libros del canon y sin repetir.
+    const libros = bibleBooks ? [...new Set(bibleBooks.filter(b => !!getBookById(b)))] : undefined;
+    return {
+        ...limpio(resto),
+        ...(libros ? { bibleBooks: libros } : {}),
+        ...(requirementItems ? { requirementItems: cleanRequirementItems(requirementItems) } : {}),
+    };
 }
 
 /** La clasificación de la ficha, o la del libro en la biblioteca si no la tiene. */
