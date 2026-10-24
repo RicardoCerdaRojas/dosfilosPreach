@@ -264,6 +264,19 @@ Se despliegan functions y hosting, más la ruta nueva en `config/llmRouting`.
 | Mapa de posiciones por pregunta | Alto | Alto | Paso 6 |
 | Dialnet por OAI-PMH | Medio (español) | Alto (es un recolector, no una búsqueda) | Más adelante, si M2 muestra el hueco |
 
+## Decisión 2026-10-24 · Importar trae solo obras
+
+Prueba del fundador con el sílabo de NT785: la revisión mostraba «Lo que pide el curso» (100 páginas de artículos, puntos de vista opuestos…) junto a las obras, y se prestaba a malentendidos. Un sílabo mezcla cuatro cosas de naturaleza distinta, y el lector las aplanaba como restricciones de la bibliografía, sin decir a qué trabajo aplicaba cada una:
+
+1. **Tareas con su entregable**: «leer 100 páginas de artículos y escribir un resumen de una página de cada uno» es una tarea de lectura dirigida, no una cuota de la bibliografía.
+2. **Criterios de las fuentes de un trabajo**: «académicas, opuestas, antiguas y actuales, variadas» son del trabajo de investigación, no del proyecto entero.
+3. **Reglas entre trabajos**: «no repetir la fuente en dos semanas consecutivas» (entre TP); «solo la mitad de esa lectura sirve para la investigación».
+4. **Normas del curso que no son de fuentes**: lectura superficial, audiolibros, atrasos, guía de estilo.
+
+**Decidido:** el paso de importar se dedica a recuperar bibliografía. El lector extrae solo las obras que el documento enumera, con lo que la lista dice de cada una (obligatoria o recomendada, la nota del ítem) y si el documento es un sílabo o una bibliografía (solo para rotular el origen). Los requisitos se escriben o se proponen por nivel en su editor, y la cobertura de las rúbricas por tipo de trabajo sigue igual.
+
+**Para después (etapa propia, «el encargo del curso»):** leer el sílabo como encargo, clasificar cada frase en las cuatro clases de arriba, asignarla al tipo de trabajo que corresponde (y proponer el que falte, como la lectura dirigida), y medir cada cosa sobre lo suyo: la tarea por sus entregables, los criterios sobre las fuentes de ese trabajo, las reglas entre trabajos. Las normas del curso van a los datos del curso.
+
 ## Decisiones del fundador (2026-10-23)
 
 1. **Versión 1 sin integraciones:** guía de qué buscar y dónde, más títulos reconocidos.

@@ -39,13 +39,14 @@ interface BibliographyImportReviewProps {
 }
 
 /**
- * La revisión de una importación (etapa 2b): no una lista, el PLAN.
- *   1. Lo que pide el curso (si era un encargo): sus requisitos.
- *   2. Lo que manda leer: las obligatorias.
- *   3. El repertorio ordenado por prioridad de conseguir: lo que llena un
+ * La revisión de una importación (etapa 2b): no una lista, el PLAN de qué
+ * conseguir. Solo obras (decisión del fundador, 2026-10-24): los requisitos
+ * de un sílabo son de otra naturaleza y se escriben en su editor.
+ *   1. Lo que manda leer: las obligatorias.
+ *   2. El repertorio ordenado por prioridad de conseguir: lo que llena un
  *      requisito que falta, lo que nombra los pasajes de tus estudios, lo
  *      que ya tienes, el resto.
- *   4. Lo que ya está en tu lista, al final y desmarcado: marcarlo solo
+ *   3. Lo que ya está en tu lista, al final y desmarcado: marcarlo solo
  *      completa esa ficha (origen, peso, páginas), no agrega otra.
  * Lo demás viene marcado y se puede desmarcar. Nada se guarda hasta confirmar.
  */
@@ -53,8 +54,6 @@ export function BibliographyImportReview({ result, label, local, context, onCanc
     const { t } = useTranslation('projects');
     const { t: tx } = useTranslation('exegesis');
     const encargo = result.documentKind !== 'bibliography';
-    const [reqFuera, setReqFuera] = useState<ReadonlySet<number>>(new Set());
-    const [textos, setTextos] = useState({ requirements: true, prohibitions: true });
     const [citadaPor, setCitadaPor] = useState('');
     const [guardando, setGuardando] = useState(false);
 
@@ -78,14 +77,9 @@ export function BibliographyImportReview({ result, label, local, context, onCanc
         set(s => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; });
 
     const elegidas = filas.filter(f => !fuera.has(f.i));
-    const requisitos = encargo ? (result.requirementItems ?? []).filter((_, i) => !reqFuera.has(i)) : [];
     const nuevas = elegidas.filter(f => !f.yaEsta).length;
     const completan = elegidas.length - nuevas;
-    const conTextos = {
-        requirements: encargo && textos.requirements ? result.requirements : null,
-        prohibitions: encargo && textos.prohibitions ? result.prohibitions : null,
-    };
-    const hayAlgo = elegidas.length > 0 || requisitos.length > 0 || !!conTextos.requirements?.trim() || !!conTextos.prohibitions?.trim();
+    const hayAlgo = elegidas.length > 0;
     const cuenta = (pred: (f: typeof filas[number]) => boolean) => filas.filter(pred).length;
 
     const confirmar = async () => {
@@ -96,9 +90,6 @@ export function BibliographyImportReview({ result, label, local, context, onCanc
                 : citadaPor.trim() ? { kind: 'citation', citedBy: citadaPor.trim() } : { kind: 'import' };
             await onConfirm({
                 entries: elegidas.map(f => f.e),
-                requirementItems: requisitos,
-                requirementsText: conTextos.requirements,
-                prohibitionsText: conTextos.prohibitions,
                 origin: origen,
                 logKind: encargo ? 'syllabus' : local ? 'file' : 'bibliography',
                 label,
@@ -135,33 +126,6 @@ export function BibliographyImportReview({ result, label, local, context, onCanc
                     </p>
                 )}
             </header>
-
-            {encargo && (result.requirementItems?.length ?? 0) > 0 && (
-                <fieldset className="space-y-1">
-                    <legend className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('stateOfArt.review.requirements')}</legend>
-                    {result.requirementItems!.map((r, i) => (
-                        <label key={i} className="flex items-start gap-2 text-sm text-foreground">
-                            <input type="checkbox" className="mt-1" checked={!reqFuera.has(i)} onChange={() => alternar(setReqFuera, i)} />
-                            <span>{r.text}<span className="block text-[11px] text-muted-foreground">{t(`stateOfArt.requirement.kind.${r.kind}`)}</span></span>
-                        </label>
-                    ))}
-                </fieldset>
-            )}
-
-            {encargo && (result.requirements?.trim() || result.prohibitions?.trim()) && (
-                <fieldset className="space-y-1">
-                    <legend className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{t('stateOfArt.review.courseTexts')}</legend>
-                    {(['requirements', 'prohibitions'] as const).filter(k => result[k]?.trim()).map(k => (
-                        <label key={k} className="flex items-start gap-2 text-sm text-foreground">
-                            <input type="checkbox" className="mt-1" checked={textos[k]} onChange={() => setTextos(x => ({ ...x, [k]: !x[k] }))} />
-                            <span>
-                                <span className="block text-[11px] text-muted-foreground">{t(`stateOfArt.review.${k}Text`)}</span>
-                                <span className="block whitespace-pre-line">{result[k]}</span>
-                            </span>
-                        </label>
-                    ))}
-                </fieldset>
-            )}
 
             {!encargo && (
                 <label className="block space-y-1">
@@ -212,7 +176,6 @@ export function BibliographyImportReview({ result, label, local, context, onCanc
                     {[
                         t('stateOfArt.review.willAddWorks', { count: nuevas }),
                         completan > 0 ? t('stateOfArt.review.willUpdate', { count: completan }) : null,
-                        encargo ? t('stateOfArt.review.willAddRequirements', { count: requisitos.length }) : null,
                     ].filter(Boolean).join(' · ')}
                 </span>
                 <span className="text-[11px] text-muted-foreground">{t('stateOfArt.review.saveHint')}</span>

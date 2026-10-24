@@ -204,13 +204,10 @@ describe('ProjectStateOfArtPage', () => {
         };
         await importar();
         await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
-        const g = updateProject.mock.calls[0]![0] as { bibliography: Array<Record<string, unknown>>; bibliographyCriteria: { requirementItems: Array<Record<string, unknown>>; prohibitions: string; noRepeatSources: boolean }; bibliographySearchLog: Array<Record<string, unknown>> };
+        const g = updateProject.mock.calls[0]![0] as { bibliography: Array<Record<string, unknown>>; bibliographyCriteria: Record<string, unknown>; bibliographySearchLog: Array<Record<string, unknown>> };
         expect(g.bibliography.find(e => /Santiago/.test(String(e.title)))).toMatchObject({ weight: 'required', origins: ['syllabus'] });
-        expect(g.bibliographyCriteria.requirementItems.map(r => r.kind)).toEqual(['quantity', 'rule', 'date-range']);
-        // Lo supuesto va aparte: el texto queda como lo dice el sílabo.
-        expect(g.bibliographyCriteria.requirementItems[2]).toMatchObject({ text: 'Fuentes antiguas y actuales', before: 1950, assumed: ['before', 'after', 'recentMinimum'] });
-        expect(g.bibliographyCriteria.requirementItems.every(r => r.origin === 'syllabus')).toBe(true);
-        expect(g.bibliographyCriteria).toMatchObject({ prohibitions: 'No usar la misma fuente dos semanas consecutivas.', noRepeatSources: true });
+        // Solo obras (decisión del fundador, 2026-10-24): los requisitos y prohibiciones que trajera la lectura no tocan los criterios.
+        expect(g.bibliographyCriteria).toEqual({});
         expect(g.bibliographySearchLog).toEqual([expect.objectContaining({ kind: 'syllabus', found: 2, added: 2 })]);
         // Lleva a Candidatas, mostrando solo lo que entró del sílabo.
         await waitFor(() => expect(screen.getByRole('tab', { name: /stateOfArt.step.candidates/ })).toHaveAttribute('aria-selected', 'true'));
@@ -220,13 +217,15 @@ describe('ProjectStateOfArtPage', () => {
         // Lo importado quedó guardado con los mismos ids: no queda nada «sin guardar».
         expect(screen.queryByText('unsaved')).toBeNull();
 
-        // Otra vez la misma lista: ni fichas, ni requisitos, ni prohibiciones repetidas; el registro suma.
+        // Otra vez la misma lista: las dos ya están, entran desmarcadas y no hay nada nuevo que agregar.
         await importar();
+        expect(screen.getByText(/^stateOfArt.review.confirm/).closest('button')).toBeDisabled();
+        // Marcar una solo completa su ficha: no la duplica, y el registro suma la importación.
+        fireEvent.click(screen.getByLabelText(/^Comentario de la epístola de Santiago/));
+        fireEvent.click(screen.getByText(/^stateOfArt.review.confirm/));
         await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));
         const h = updateProject.mock.calls[1]![0] as typeof g;
         expect(h.bibliography.filter(e => /Santiago/.test(String(e.title)))).toHaveLength(1);
-        expect(h.bibliographyCriteria.requirementItems).toHaveLength(3);
-        expect(h.bibliographyCriteria.prohibitions.split('dos semanas consecutivas').length - 1).toBe(1);
         expect(h.bibliographySearchLog).toHaveLength(2);
         expect(h.bibliographySearchLog[1]).toMatchObject({ found: 2, added: 0 });
     });
@@ -350,26 +349,6 @@ describe('ProjectStateOfArtPage', () => {
         await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));
         expect(guardado().bibliography.map(e => e.title).sort()).toEqual(['Obra guardada X', 'Otra obra distinta']);
         expect(new Set(guardado().bibliography.map(e => e.id)).size).toBe(2);
-    });
-
-    it('la regla de no repetir del sílabo enciende el criterio en un proyecto que no es curso; otra regla no', async () => {
-        proyecto = { ...proyecto, type: 'research' };
-        leerBibliografia.mockResolvedValue({ documentKind: 'assignment', entries: [], requirementItems: [{ kind: 'rule', text: 'No usar fuentes de internet' }], requirements: null, prohibitions: null });
-        montar();
-        const importar = async () => {
-            fireEvent.click(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }));
-            fireEvent.click(screen.getByText('stateOfArt.import.writeList'));
-            fireEvent.change(screen.getByLabelText('stateOfArt.import.textLabel'), { target: { value: 'bibliografía del sílabo' } });
-            fireEvent.click(screen.getByText('stateOfArt.import.read'));
-            fireEvent.click(await screen.findByText(/^stateOfArt.review.confirm/));
-        };
-        await importar();
-        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
-        expect(guardado().bibliographyCriteria.noRepeatSources).toBeUndefined();
-        leerBibliografia.mockResolvedValue({ documentKind: 'assignment', entries: [], requirementItems: [{ kind: 'rule', text: 'No repetir la misma fuente en semanas consecutivas' }], requirements: null, prohibitions: null });
-        await importar();
-        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2));
-        expect(guardado().bibliographyCriteria.noRepeatSources).toBe(true);
     });
 
     it('un requisito escrito a mano se agrega, se marca cumplido y se guarda', async () => {

@@ -8,8 +8,11 @@ describe('el lector de bibliografías', () => {
         expect(system).toContain('no recomiendes obras');
         expect(prompt).toContain('«———.» o «---.» repite el autor');
         expect(prompt).toContain('lectura obligatoria');
-        expect(prompt).toContain('"prohibitions"');
         expect(prompt).toContain('journal-article');
+        // Solo obras (decisión del fundador, 2026-10-24): ni requisitos ni prohibiciones.
+        expect(prompt).toContain('Extrae SOLO las obras que el documento enumera');
+        expect(prompt).not.toContain('"requirementItems"');
+        expect(prompt).not.toContain('"prohibitions"');
         expect(prompt).not.toContain('style-template-paper');
         expect(buildBibliographyPrompt({ text: '', image: { mimeType: 'image/png', base64: 'x' }, language: 'es' }).prompt).toContain('El documento es la imagen adjunta.');
     });
@@ -29,7 +32,8 @@ describe('el lector de bibliografías', () => {
         expect(r.entries).toHaveLength(2);
         expect(r.entries[0]).toMatchObject({ author: 'Davids, Peter H.', requirement: 'required', sourceType: 'commentary-critical', year: 2015 });
         expect(r.entries[1]).toMatchObject({ requirement: 'recommended', sourceType: null });
-        expect(r.prohibitions).toContain('dos semanas consecutivas');
+        // Aunque el lector los devuelva, los requisitos y prohibiciones no entran.
+        expect(r).toMatchObject({ requirements: null, prohibitions: null, requirementItems: [] });
     });
 
     it('un JSON roto es un error claro', () => {
@@ -40,36 +44,15 @@ describe('el lector de bibliografías', () => {
     });
 });
 
-describe('requisitos estructurados del encargo (etapa 2b)', () => {
-    it('el prompt pide los requisitos solo en un encargo y prohíbe inventar cifras', () => {
-        const { prompt } = buildBibliographyPrompt({ text: 'x', language: 'es' });
-        expect(prompt).toContain('"requirementItems": SOLO en un encargo');
-        expect(prompt).toContain('nunca inventes cifras');
-        expect(prompt).toContain('«mínimo de 100 páginas de artículos» → "quantity"');
-    });
-
-    it('del sílabo de NT785: cantidad, épocas sin años, perspectivas y regla; con páginas y DOI en las obras', () => {
+describe('solo las obras (decisión del fundador, 2026-10-24)', () => {
+    it('del sílabo de NT785 entran las obras con páginas y DOI y el tipo de documento; los requisitos que vengan se ignoran', () => {
         const r = parseBibliographyJson(JSON.stringify({
             documentKind: 'assignment',
             entries: [{ title: 'Does Scripture Speak in Vain?', requirement: 'recommended', pageCount: 6, doi: '10.1017/x' }],
-            requirementItems: [
-                { kind: 'quantity', text: 'Un mínimo de 100 páginas de artículos académicos', sourceType: 'journal-article', minimum: 100, unit: 'pages' },
-                { kind: 'date-range', text: 'Fuentes antiguas y actuales', before: null, after: null },
-                { kind: 'perspectives', text: 'Inclusión de puntos de vista opuestos' },
-                { kind: 'rule', text: 'No se permite utilizar la misma fuente dos semanas consecutivas' },
-                { kind: 'inventado', text: 'x' },
-                { kind: 'other', text: '  ' },
-            ],
+            requirementItems: [{ kind: 'quantity', text: 'Un mínimo de 100 páginas de artículos académicos', sourceType: 'journal-article', minimum: 100, unit: 'pages' }],
         }));
         expect(r.documentKind).toBe('assignment');
-        expect(r.requirementItems!.map(x => x.kind)).toEqual(['quantity', 'date-range', 'perspectives', 'rule']);
-        expect(r.requirementItems![0]).toMatchObject({ minimum: 100, unit: 'pages', sourceType: 'journal-article' });
-        expect(r.requirementItems![1]).toMatchObject({ before: null, after: null });
-        expect(r.entries[0]).toMatchObject({ pageCount: 6, doi: '10.1017/x' });
-    });
-
-    it('una bibliografía (la de un libro) no trae requisitos aunque el lector los invente', () => {
-        const r = parseBibliographyJson(JSON.stringify({ documentKind: 'bibliography', entries: [], requirementItems: [{ kind: 'rule', text: 'x' }] }));
         expect(r.requirementItems).toEqual([]);
+        expect(r.entries[0]).toMatchObject({ pageCount: 6, doi: '10.1017/x' });
     });
 });
