@@ -127,6 +127,13 @@ export function BibliographyImportReview({ result, label, local, context, onCanc
                         gap: cuenta(f => f.llena),
                     })}
                 </p>
+                {/* El documento era tan largo que la respuesta se cortó: se
+                    rescató lo que entró entero y se dice desde dónde seguir. */}
+                {result.truncated && (
+                    <p role="status" className="rounded-md border border-warning-subtle-foreground/40 bg-warning-subtle px-2 py-1.5 text-xs text-warning-subtle-foreground">
+                        {t('stateOfArt.review.truncated', { count: filas.length, after: result.truncatedAfter ?? '—' })}
+                    </p>
+                )}
             </header>
 
             {encargo && (result.requirementItems?.length ?? 0) > 0 && (

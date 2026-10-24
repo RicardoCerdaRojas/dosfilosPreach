@@ -50,4 +50,11 @@ export interface ExtractedCourseBibliography {
     /** Lo que prohíbe («no usar la misma fuente dos semanas seguidas»). */
     prohibitions: string | null;
     tokensUsed?: number;
+    /**
+     * La respuesta se cortó (documento muy largo) y se rescataron las obras
+     * completas hasta el corte: `truncatedAfter` es la última que entró, para
+     * importar el resto desde ahí.
+     */
+    truncated?: boolean;
+    truncatedAfter?: string | null;
 }
