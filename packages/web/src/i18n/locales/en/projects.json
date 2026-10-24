@@ -148,7 +148,10 @@
       "minimumsHint": "They come from the work types' rubrics; change them there.",
       "books": "Biblical books of the project",
       "noBooks": "None yet: they come from the project's studies.",
-      "booksHint": "Used to find commentaries and to know whether each one covers the book."
+      "booksHint": "They are used to find commentaries, build the search guide and tell whether each commentary covers the book. If the project has no studies yet, choose them here.",
+      "addBook": "Add a book",
+      "removeBook": "Remove {{book}}",
+      "fromStudies": "Taken from the project's studies. Choose others if the project covers more."
     },
     "warning": {
       "missingType": "The rubrics require {{minimum}} «{{type}}» and none is approved.",

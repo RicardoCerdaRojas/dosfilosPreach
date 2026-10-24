@@ -12,7 +12,6 @@ import type { useProjectBibliography } from './useProjectBibliography';
 interface RequirementsTabProps {
     project: AIProject;
     bib: ReturnType<typeof useProjectBibliography>;
-    bibleBookNames: string[];
     library: ReadonlyArray<{ id: string; title: string; author?: string | null; exegeticalType?: SourceType | null }>;
     /** Muestra fichas en su paso: lo recién importado, o lo que no se pudo medir. */
     onShow: (filter: CoverageFilter, step: 'candidates' | 'approved' | 'discarded') => void;
@@ -23,7 +22,7 @@ interface RequirementsTabProps {
  * sílabo o cualquier bibliografía, se proponen por nivel cuando no hay
  * sílabo, se miden, y cada búsqueda queda en el registro.
  */
-export function RequirementsTab({ project, bib, bibleBookNames, library, onShow }: RequirementsTabProps) {
+export function RequirementsTab({ project, bib, library, onShow }: RequirementsTabProps) {
     const { t, i18n } = useTranslation('projects');
     // Lo que algún requisito pide y todavía no se cumple: orienta qué conseguir primero.
     const unmetTypes = useMemo(() => {
@@ -67,7 +66,7 @@ export function RequirementsTab({ project, bib, bibleBookNames, library, onShow 
                 criteria={bib.criteria}
                 onChange={patch => bib.setCriteria(c => ({ ...c, ...patch }))}
                 requirements={bib.requirements}
-                bibleBooks={bibleBookNames}
+                studyBooks={[...new Set(bib.passages.map(p => p.bookId))]}
             />
             {bib.searchLog.length > 0 && (
                 <section className="space-y-1" aria-labelledby="search-log-title">
