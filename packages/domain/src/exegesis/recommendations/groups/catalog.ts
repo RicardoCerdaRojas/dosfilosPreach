@@ -30,6 +30,7 @@ const PENTATEUCH: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Lectura narrativa-canónica del Pentateuco como una unidad. Marco interpretativo influyente.',
+                verified: { source: 'openlibrary', ref: '/works/OL2725062W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Wenham, Gordon J.',
@@ -43,6 +44,7 @@ const PENTATEUCH: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Hermenéutica para leer las narrativas del Pentateuco con sensibilidad ética y literaria.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780801027833', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Alexander, T. Desmond',
@@ -54,6 +56,7 @@ const PENTATEUCH: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Introducción evangélica al Pentateuco con énfasis en teología bíblica.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780801039980', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -73,6 +76,7 @@ const HISTORICAL_BOOKS: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'de'],
                 rationale: 'Hipótesis seminal de la "Historia Deuteronomística". Diálogo crítico imprescindible para Josué-2 Reyes.',
+                verified: { source: 'openlibrary', ref: '/works/OL8242049W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'McConville, J. Gordon',
@@ -80,10 +84,12 @@ const HISTORICAL_BOOKS: GroupRecommendations = {
                 series: 'Library of Hebrew Bible/OT Studies',
                 publisher: 'T&T Clark',
                 year: 2006,
-                isbn: '9780567045287',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780567045287) era de otra obra o no existe en Open Library.
+                isbn: '9780567001122',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura teológico-política del corpus histórico AT. Útil para predicación sobre realeza, profecía y Estado.',
+                verified: { source: 'openlibrary', ref: '/works/OL3053299W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Provan, Iain; Long, V. Philips; Longman, Tremper III',
@@ -95,6 +101,7 @@ const HISTORICAL_BOOKS: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Reconstrucción evangélica responsable de la historia de Israel. Diálogo con el minimalismo crítico.',
+                verified: { source: 'openlibrary', ref: '/works/OL20314440W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -110,10 +117,12 @@ const WISDOM: GroupRecommendations = {
                 series: null,
                 publisher: 'Eerdmans',
                 year: 2002,
-                isbn: '9780802839565',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780802839565) era de otra obra o no existe en Open Library.
+                isbn: '9780802839657',
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Tratado integral del corpus sapiencial (Job, Proverbios, Eclesiastés, Cantares + Sabiduría/Sirá).',
+                verified: { source: 'openlibrary', ref: '/works/OL470830W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Crenshaw, James L.',
@@ -125,6 +134,7 @@ const WISDOM: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Introducción estándar a la literatura sapiencial AT. Análisis de género, contexto, teología.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780664234591', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Goldingay, John',
@@ -148,6 +158,7 @@ const WISDOM: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Introducción evangélica con énfasis teológico cristiano. Bridge a aplicación predicada.',
+                verified: { source: 'openlibrary', ref: '/works/OL15676662W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -167,6 +178,7 @@ const MAJOR_PROPHETS: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'es'],
                 rationale: 'Clásico contemporáneo sobre conciencia profética. Ed. española por Paidós.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780060936990', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Brueggemann, Walter',
@@ -178,6 +190,7 @@ const MAJOR_PROPHETS: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'es'],
                 rationale: 'Hermenéutica profética para predicación contemporánea. Ed. española por Sal Terrae.',
+                verified: { source: 'crossref', ref: 'doi:10.2307/j.ctt22nmcmx', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Childs, Brevard S.',
@@ -185,10 +198,12 @@ const MAJOR_PROPHETS: GroupRecommendations = {
                 series: null,
                 publisher: 'Fortress',
                 year: 1992,
-                isbn: '9780800606329',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780800606329) era de otra obra o no existe en Open Library.
+                isbn: '9780334001140',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura canónica de los profetas mayores en la teología bíblica integral.',
+                verified: { source: 'openlibrary', ref: '/works/OL3466873W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -209,6 +224,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario técnico sobre Miqueas-Malaquías (segunda mitad de Los Doce).',
+                verified: { source: 'openlibrary', ref: '/works/OL4301422W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Stuart, Douglas',
@@ -221,6 +237,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario técnico sobre Oseas-Jonás (primera mitad de Los Doce).',
+                verified: { source: 'openlibrary', ref: '/works/OL4473115W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'McComiskey, Thomas Edward (ed.)',
@@ -232,6 +249,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '3 vols. (1 vol. en ed. compacta). Comentario evangélico exegético-expositivo de Los Doce.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780801036316', checkedAt: '2026-10-24' },
             },
         ],
         'commentary-expository': [
@@ -246,6 +264,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Comentario expositivo accesible para predicación.',
+                verified: { source: 'openlibrary', ref: '/works/OL1885222W', checkedAt: '2026-10-24' },
             },
         ],
         'theological-monograph': [
@@ -259,6 +278,7 @@ const MINOR_PROPHETS: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Introducción al corpus profético. Útil tanto para mayores como para menores.',
+                verified: { source: 'openlibrary', ref: '/works/OL3521043W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'House, Paul R.',
@@ -266,10 +286,12 @@ const MINOR_PROPHETS: GroupRecommendations = {
                 series: 'JSOTSup 97',
                 publisher: 'Sheffield Academic',
                 year: 1990,
-                isbn: '9781850752370',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9781850752370) era de otra obra o no existe en Open Library.
+                isbn: '9781850752509',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Argumento literario por leer Los Doce como unidad redaccional. Influyente para predicación expositiva del corpus.',
+                verified: { source: 'openlibrary', ref: '/works/OL1829553W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -285,10 +307,12 @@ const GOSPELS: GroupRecommendations = {
                 series: 'Christian Origins and the Question of God 2',
                 publisher: 'Fortress',
                 year: 1996,
-                isbn: '9780800626822',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780800626822) era de otra obra o no existe en Open Library.
+                isbn: '9780281047178',
                 tier: 'essential',
                 languages: ['en', 'es'],
                 rationale: 'Cristología histórica monumental. Marco para comprender los anuncios del Reino.',
+                verified: { source: 'openlibrary', ref: '/works/OL8640699W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Bauckham, Richard',
@@ -300,6 +324,7 @@ const GOSPELS: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Argumento por la transmisión testimonial de los evangelios. Clave para el debate sobre fiabilidad.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802874313', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Sanders, E. P.',
@@ -311,6 +336,7 @@ const GOSPELS: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura del Jesús histórico desde el judaísmo del Segundo Templo.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780800620615', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Hengel, Martin',
@@ -319,10 +345,12 @@ const GOSPELS: GroupRecommendations = {
                 series: null,
                 publisher: 'Wipf & Stock',
                 year: 2003,
-                isbn: '9781592442836',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9781592442836) era de otra obra o no existe en Open Library.
+                isbn: '9781592441884',
                 tier: 'recommended',
                 languages: ['en', 'de'],
                 rationale: 'Estudios sobre Marcos como ejemplo del género evangelio. Aplicable a estudios sinópticos.',
+                verified: { source: 'openlibrary', ref: '/works/OL2272030W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -338,10 +366,12 @@ const SYNOPTIC_GOSPELS: GroupRecommendations = {
                 series: null,
                 publisher: 'SCM Press',
                 year: 1989,
-                isbn: '9780334022428',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780334022428) era de otra obra o no existe en Open Library.
+                isbn: '9780334023425',
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Manual estándar sobre la cuestión sinóptica, fuentes, redacción y método.',
+                verified: { source: 'openlibrary', ref: '/works/OL2933071W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Stein, Robert H.',
@@ -349,10 +379,12 @@ const SYNOPTIC_GOSPELS: GroupRecommendations = {
                 series: null,
                 publisher: 'Baker Academic',
                 year: 2001,
-                isbn: '9780801022807',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780801022807) era de otra obra o no existe en Open Library.
+                isbn: '9780801022586',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Introducción evangélica a la crítica sinóptica. Más accesible que Sanders/Davies.',
+                verified: { source: 'openlibrary', ref: '/works/OL3291110W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -372,6 +404,7 @@ const JOHANNINE_LITERATURE: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'es'],
                 rationale: 'Reconstrucción del entorno joánico que produjo Evangelio + Cartas + Apocalipsis. Ed. española por Sígueme.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780809121748', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Bauckham, Richard',
@@ -383,6 +416,7 @@ const JOHANNINE_LITERATURE: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Síntesis de la teología joánica del Evangelio en diálogo con el resto del corpus.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780801096129', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -402,6 +436,7 @@ const PAULINE_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Detonante de la "Nueva Perspectiva sobre Pablo". Imprescindible para cualquier carta paulina.',
+                verified: { source: 'crossref', ref: 'doi:10.1111/j.1748-0922.1978.tb00009.x', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Wright, N. T.',
@@ -413,6 +448,7 @@ const PAULINE_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '2 vols. Síntesis monumental de la teología paulina narrativa-pactual.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780800626839', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Schnelle, Udo',
@@ -424,6 +460,7 @@ const PAULINE_EPISTLES: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en', 'de'],
                 rationale: 'Biografía teológica completa de Pablo. Excelente cronología y contexto.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780801027963', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Westerholm, Stephen',
@@ -435,6 +472,7 @@ const PAULINE_EPISTLES: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Mapa equilibrado del debate sobre Pablo, justificación y judaísmo del Segundo Templo.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802848093', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Hawthorne, Gerald F.; Martin, Ralph P.; Reid, Daniel G. (eds.)',
@@ -446,6 +484,7 @@ const PAULINE_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Diccionario académico transversal a las paulinas. Entradas firmadas por especialistas.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780830817788', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -465,6 +504,7 @@ const PASTORAL_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario técnico estándar para 1-2 Timoteo y Tito.',
+                verified: { source: 'openlibrary', ref: '/works/OL2957621W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Marshall, I. Howard; Towner, Philip H.',
@@ -476,6 +516,7 @@ const PASTORAL_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario crítico-académico de máximo rigor sobre el griego.',
+                verified: { source: 'openlibrary', ref: '/works/OL16322775W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Knight, George W. III',
@@ -487,6 +528,7 @@ const PASTORAL_EPISTLES: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Comentario evangélico sobre el texto griego. Cuidadoso con sintaxis y léxico.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802823953', checkedAt: '2026-10-24' },
             },
         ],
         'commentary-expository': [
@@ -500,6 +542,7 @@ const PASTORAL_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario expositivo de referencia para predicación pastoral.',
+                verified: { source: 'openlibrary', ref: '/works/OL3452413W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Köstenberger, Andreas J.',
@@ -507,10 +550,12 @@ const PASTORAL_EPISTLES: GroupRecommendations = {
                 series: 'Biblical Theology for Christian Proclamation',
                 publisher: 'Holman',
                 year: 2017,
-                isbn: '9781535900201',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9781535900201) era de otra obra o no existe en Open Library.
+                isbn: '9781433648410',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Énfasis en teología bíblica y predicación reformada-evangélica.',
+                verified: { source: 'openlibrary', ref: '/works/OL25393106W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -531,6 +576,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario técnico estándar. Lectura crítica + reconstrucción de la opositión a Judas/2 Pedro.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780849902499', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Davids, Peter H.',
@@ -543,6 +589,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario sobre el texto griego de Santiago. Análisis morfosintáctico verso a verso.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802823885', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Yarbrough, Robert W.',
@@ -555,6 +602,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario evangélico de referencia para las cartas joánicas.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780801026874', checkedAt: '2026-10-24' },
             },
         ],
         'theological-monograph': [
@@ -568,6 +616,7 @@ const GENERAL_EPISTLES: GroupRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Argumento por leer Santiago, 1-2 Pedro, 1-3 Juan, Judas como una colección canónica intencional.',
+                verified: { source: 'openlibrary', ref: '/works/OL25192441W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Painter, John',
@@ -576,10 +625,12 @@ const GENERAL_EPISTLES: GroupRecommendations = {
                 series: 'Sacra Pagina 18',
                 publisher: 'Liturgical Press',
                 year: 2002,
-                isbn: '9780814659717',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780814659717) era de otra obra o no existe en Open Library.
+                isbn: '9780814658123',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Comentario católico-académico con énfasis teológico-literario sobre las cartas joánicas.',
+                verified: { source: 'openlibrary', ref: '/works/OL2678920W', checkedAt: '2026-10-24' },
             },
         ],
     },
@@ -599,6 +650,7 @@ const APOCALYPTIC: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Manual estándar sobre el género apocalíptico judío. Esencial para Daniel y Apocalipsis.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802872791', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Rowland, Christopher',
@@ -606,10 +658,12 @@ const APOCALYPTIC: GroupRecommendations = {
                 series: null,
                 publisher: 'Wipf & Stock',
                 year: 2002,
-                isbn: '9781592440498',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9781592440498) era de otra obra o no existe en Open Library.
+                isbn: '9781592440122',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Análisis transversal del género apocalíptico judío-cristiano.',
+                verified: { source: 'openlibrary', ref: '/works/OL3618874W', checkedAt: '2026-10-24' },
             },
         ],
         'commentary-critical': [
@@ -624,6 +678,7 @@ const APOCALYPTIC: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'es'],
                 rationale: 'Comentario sobre el texto griego de Apocalipsis. Énfasis en uso del AT. Hay traducción al español por CLIE.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802821744', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Aune, David E.',
@@ -636,6 +691,7 @@ const APOCALYPTIC: GroupRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '3 vols. Comentario técnico exhaustivo sobre Apocalipsis con énfasis greco-romano.',
+                verified: { source: 'openlibrary', ref: '/works/OL8638327W', checkedAt: '2026-10-24' },
             },
         ],
     },

@@ -26,6 +26,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '2 vols. Estándar técnico evangélico para Génesis. Atención detallada al hebreo y al género literario.',
+                verified: { source: 'openlibrary', ref: '/works/OL8638313W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Westermann, Claus',
@@ -37,6 +38,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'de'],
                 rationale: '3 vols. Comentario crítico-académico monumental con análisis tradicio-histórico exhaustivo.',
+                verified: { source: 'openlibrary', ref: '/works/OL1373025W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Speiser, E. A.',
@@ -48,6 +50,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Clásico de la serie Anchor. Énfasis en paralelos antiguos del cercano oriente.',
+                verified: { source: 'openlibrary', ref: '/works/OL17701731W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'von Rad, Gerhard',
@@ -59,6 +62,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'de', 'es'],
                 rationale: 'Comentario teológico clásico (escuela de Form Criticism). Ed. española por Sígueme.',
+                verified: { source: 'openlibrary', ref: '/works/OL272159W', checkedAt: '2026-10-24' },
             },
         ],
         'commentary-expository': [
@@ -72,6 +76,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '2 vols. Estándar evangélico contemporáneo. Equilibra rigor y aplicación pastoral.',
+                verified: { source: 'openlibrary', ref: '/works/OL3491518W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Mathews, Kenneth A.',
@@ -83,6 +88,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en', 'es'],
                 rationale: '2 vols. Comentario expositivo evangélico de gran utilidad para predicación. Hay traducción parcial al español por Mundo Hispano.',
+                verified: { source: 'openlibrary', ref: '/works/OL25362244W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Walton, John H.',
@@ -94,6 +100,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Énfasis en cosmovisión antigua del cercano oriente y aplicación contemporánea. Particularmente fuerte en Génesis 1-11.',
+                verified: { source: 'openlibrary', ref: '/works/OL2651618W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Waltke, Bruce K.; Fredricks, Cathi J.',
@@ -105,6 +112,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Comentario expositivo desde tradición reformada. Fuerte en teología bíblica y conexión NT.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780310224587', checkedAt: '2026-10-24' },
             },
         ],
         'theological-monograph': [
@@ -118,6 +126,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura cosmológica funcional vs. material. Marco interpretativo crítico para Génesis 1.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780830837045', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Sailhamer, John H.',
@@ -125,10 +134,12 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 series: null,
                 publisher: 'Dawson Media',
                 year: 1996,
-                isbn: '9781576830673',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9781576830673) era de otra obra o no existe en Open Library.
+                isbn: '9780880708685',
                 tier: 'standard',
                 languages: ['en'],
                 rationale: 'Propuesta literaria-canónica para Génesis 1-11. Útil para diálogo con la cuestión histórico-científica.',
+                verified: { source: 'openlibrary', ref: '/works/OL2725056W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Brueggemann, Walter',
@@ -140,6 +151,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura teológico-pastoral influyente, énfasis en pacto y promesa. Útil para predicación bíblica-teológica.',
+                verified: { source: 'openlibrary', ref: '/works/OL26149W', checkedAt: '2026-10-24' },
             },
         ],
         'historical-background': [
@@ -149,10 +161,12 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 series: null,
                 publisher: 'Baker Academic',
                 year: 2018,
-                isbn: '9780801049309',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780801049309) era de otra obra o no existe en Open Library.
+                isbn: '9781540960214',
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Marco general del trasfondo del cercano oriente antiguo aplicado al AT — particularmente fuerte para Génesis 1-11.',
+                verified: { source: 'openlibrary', ref: '/works/OL2651601W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Hallo, William W.; Younger, K. Lawson (eds.)',
@@ -160,10 +174,12 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 series: 'COS',
                 publisher: 'Brill',
                 year: 1997,
-                isbn: '9789004135666',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9789004135666) era de otra obra o no existe en Open Library.
+                isbn: '9789004106185',
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '3 vols. Antología fundamental de textos del cercano oriente antiguo (Enuma Elish, Atrahasis, Gilgamesh). Esencial para Génesis 1-11.',
+                verified: { source: 'openlibrary', ref: '/works/OL18916998W', checkedAt: '2026-10-24' },
             },
         ],
         'primary-source-ancient': [
@@ -177,6 +193,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Antología clásica complementaria a COS. Mitos de creación, leyes de Hammurabi, anales reales.',
+                verified: { source: 'openlibrary', ref: '/works/OL3447850W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Charlesworth, James H. (ed.)',
@@ -188,6 +205,7 @@ export const GENESIS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Jubileos, 1 Enoc, Vida de Adán y Eva — tradiciones de recepción de Génesis en el judaísmo del Segundo Templo.',
+                verified: { source: 'openlibrary', ref: '/works/OL1803729W', checkedAt: '2026-10-24' },
             },
         ],
     },
