@@ -148,6 +148,18 @@
     "expository": {
         "back": "Volver al planificador",
         "title": "Asistente expositivo",
+        "project": {
+            "banner": "Serie del proyecto «{{title}}»",
+            "hint": "Cada perícopa nacerá como un estudio de este proyecto, con las obras que marques abajo.",
+            "back": "Volver al proyecto",
+            "bookOutside": "Este libro no está entre los libros del proyecto; los comentarios se filtran por el libro que analizaste.",
+            "chooseBook": "Elige el libro de la serie",
+            "unavailable": "El proyecto no está disponible (archivado o en la papelera). La serie se creará suelta.",
+            "libraryLoading": "Cargando tu biblioteca…",
+            "overlapTitle": "Ya tienes estudios del proyecto en estas perícopas",
+            "overlapHint": "La serie creará estudios nuevos; los tuyos siguen en el proyecto.",
+            "createdInProject": "Serie creada en el proyecto «{{title}}»."
+        },
         "subtitle": "Análisis en 5 fases (panorama → macro → micro → predicable → fidelidad) que distingue la división exegética de la división predicable.",
         "pass": "Fase",
         "collapse": "Contraer sección",
@@ -172,7 +184,7 @@
             "twoTierLabel": "División en 2 niveles (recomendado para libros largos)",
             "twoTierHint": "Útil cuando vas a predicar un libro grande como Génesis, Hechos, Isaías, Jeremías o Salmos. Primero divide el libro en 2 a 5 grandes secciones temáticas, y luego cada sección en perícopas. Resultado: una estructura más clara para series largas.",
             "strictLabel": "Modo estricto (cuando ya tienes exégesis hecha)",
-            "strictHint": "Activa esto cuando ya tienes papers exegéticos terminados para cada unidad. El asistente se pausa después de detectar las unidades para que confirmes una a una que tienes su exégesis lista. Solo entonces genera las propuestas de sermón con tono autoritativo en lugar de tentativo.",
+            "strictHint": "Activa esto cuando ya tienes estudios exegéticos terminados para cada unidad. El asistente se pausa después de detectar las unidades para que confirmes una a una que tienes su exégesis lista. Solo entonces genera las propuestas de sermón con tono autoritativo en lugar de tentativo.",
             "translationNote": "El análisis se hace sobre el texto bíblico original: griego (SBLGNT) para el Nuevo Testamento, hebreo (WLC) para el Antiguo. Si no podemos cargar el original, usamos una traducción (RVR1960 o ASV) y te avisamos.",
             "start": "Iniciar análisis",
             "running": "Ejecutando pipeline...",
@@ -238,7 +250,7 @@
                         { "label": "Hipótesis exegética", "desc": "qué hace el autor en el texto." },
                         { "label": "Línea homilética", "desc": "cómo recibe el oyente la verdad." }
                     ],
-                    "outro": "Mantenerlas separadas evita que el sermón salte a aplicación sin explicar el texto. Son hipótesis iniciales — la validación final es tu trabajo con el paper exegético detallado."
+                    "outro": "Mantenerlas separadas evita que el sermón salte a aplicación sin explicar el texto. Son hipótesis iniciales — la validación final es tu trabajo con el estudio exegético detallado."
                 },
                 "original": {
                     "title": "Sobre el texto original cuando se puede",
@@ -299,11 +311,11 @@
             "micro": {
                 "function": "Función",
                 "signals": "Marcadores",
-                "hasPaper": "Tiene paper aceptado"
+                "hasPaper": "Tiene estudio aceptado"
             },
             "preachable": {
-                "preliminaryBanner": "Estas son hipótesis homiléticas iniciales basadas en una lectura panorámica del texto. Refínalas tras tu estudio exegético detallado (botón \"Crear paper desde unidad\" en el detalle de la serie). Los campos son editables: ajusta título, hipótesis, línea homilética y objetivo a tu criterio antes de crear la serie.",
-                "strictBanner": "Modo estricto: cada unidad fue confirmada con paper exegético aceptado. Las proposiciones reflejan exégesis validada y se redactan en voz autoritativa.",
+                "preliminaryBanner": "Estas son hipótesis homiléticas iniciales basadas en una lectura panorámica del texto. Refínalas tras tu estudio exegético detallado (botón \"Crear estudio\" en el detalle de la serie). Los campos son editables: ajusta título, hipótesis, línea homilética y objetivo a tu criterio antes de crear la serie.",
+                "strictBanner": "Modo estricto: cada unidad fue confirmada con estudio exegético aceptado. Las proposiciones reflejan exégesis validada y se redactan en voz autoritativa.",
                 "preliminaryChip": "Pendiente de validación exegética",
                 "editTitle": "Editar título de la unidad",
                 "exegeticalProp": "Hipótesis exegética inicial",
@@ -391,7 +403,7 @@
             "macroFailed": "No se pudo generar la macroestructura. Intenta de nuevo.",
             "microFailed": "No se pudo generar la microestructura. Intenta de nuevo.",
             "superMacroFailed": "No se pudieron generar los super-macros. Intenta de nuevo.",
-            "strictAwaitingPapers": "Fase 3 lista. Confirma por unidad que tienes paper exegético aceptado, luego presiona \"Continuar Fase 4\".",
+            "strictAwaitingPapers": "Fase 3 lista. Confirma por unidad que tienes estudio exegético aceptado, luego presiona \"Continuar Fase 4\".",
             "strictAllUnitsRequired": "Confirma TODAS las unidades antes de continuar a la Fase 4 estricta.",
             "preachableFailed": "No se pudieron generar las unidades predicables. Intenta de nuevo.",
             "fidelityFailed": "No se pudo completar la evaluación de fidelidad. Intenta de nuevo.",
@@ -407,9 +419,9 @@
             "draftRestored": "Continuamos donde quedaste. (Borrador restaurado).",
             "titleRequired": "Ponle un título a la serie antes de crear.",
             "seriesCreated": "Serie creada. Te llevamos al detalle.",
-            "seriesCreatedWithPapers_one": "Serie creada con 1 paper listo para estudiar.",
-            "seriesCreatedWithPapers_other": "Serie creada con {{count}} papers listos para estudiar.",
-            "seriesCreatedWithPapersAndDrafts": "Serie creada con {{paperCount}} papers y {{draftCount}} borradores de sermón listos para desarrollar.",
+            "seriesCreatedWithPapers_one": "Serie creada con 1 estudio listo para trabajar.",
+            "seriesCreatedWithPapers_other": "Serie creada con {{count}} estudios listos para trabajar.",
+            "seriesCreatedWithPapersAndDrafts": "Serie creada con {{paperCount}} estudios y {{draftCount}} borradores de sermón listos para desarrollar.",
             "createFailed": "No se pudo crear la serie."
         },
         "create": {
@@ -442,7 +454,7 @@
                 "title": "Microestructura",
                 "subtitle": "Identifica unidades exegéticas dentro de cada macro-sección, con criterios específicos por género.",
                 "strictCtaTitle": "Confirmar exégesis por unidad",
-                "strictCtaBody": "{{confirmed}} de {{total}} unidades confirmadas con paper aceptado. Cuando estén todas, la Fase 4 puede correr en modo estricto.",
+                "strictCtaBody": "{{confirmed}} de {{total}} unidades confirmadas con estudio aceptado. Cuando estén todas, la Fase 4 puede correr en modo estricto.",
                 "strictContinue": "Continuar Fase 4",
                 "strictBlocked": "Confirma todas las unidades antes de continuar."
             },
@@ -462,16 +474,16 @@
         "subtitle": "Divide un libro en unidades sintácticas predicables y genera la serie expositiva.",
         "panel": {
             "title": "Perícopas detectadas",
-            "subtitle": "Cada perícopa puede convertirse en un paper exegético detallado. El paper queda enlazado a la perícopa para mantener trazabilidad.",
-            "createPaper": "Crear paper",
-            "openPaper": "Abrir paper",
+            "subtitle": "Cada perícopa puede convertirse en un estudio exegético detallado. El estudio queda enlazado a la perícopa para mantener trazabilidad.",
+            "createPaper": "Crear estudio",
+            "openPaper": "Abrir estudio",
             "openSermon": "Abrir borrador",
-            "paperBadge": "Paper iniciado",
+            "paperBadge": "Estudio iniciado",
             "remove": "Quitar perícopa",
             "askFaculty": "Consultar a la Facultad con esta perícopa cargada",
             "toast": {
-                "paperCreated": "Paper exegético creado",
-                "paperFailed": "No se pudo crear el paper",
+                "paperCreated": "Estudio exegético creado",
+                "paperFailed": "No se pudo crear el estudio",
                 "bookUnresolved": "No se pudo resolver el libro de la perícopa"
             }
         },
@@ -518,9 +530,9 @@
             "overloaded": "Nuestro motor de análisis está saturado. Intenta en un minuto.",
             "titleRequired": "Ponle un título a la serie antes de crear.",
             "seriesCreated": "Serie creada. Te llevamos al detalle.",
-            "seriesCreatedWithPapers_one": "Serie creada con 1 paper listo para estudiar.",
-            "seriesCreatedWithPapers_other": "Serie creada con {{count}} papers listos para estudiar.",
-            "seriesCreatedWithPapersAndDrafts": "Serie creada con {{paperCount}} papers y {{draftCount}} borradores de sermón listos para desarrollar.",
+            "seriesCreatedWithPapers_one": "Serie creada con 1 estudio listo para trabajar.",
+            "seriesCreatedWithPapers_other": "Serie creada con {{count}} estudios listos para trabajar.",
+            "seriesCreatedWithPapersAndDrafts": "Serie creada con {{paperCount}} estudios y {{draftCount}} borradores de sermón listos para desarrollar.",
             "createFailed": "No se pudo crear la serie."
         }
     },
@@ -540,6 +552,22 @@
             "linkFailed": "No se pudo vincular el sermón"
         },
         "backToSeries": "Volver a la serie",
+        "project": {
+            "chip": "Proyecto: {{title}}",
+            "unavailable": "Proyecto no disponible",
+            "link": "Ligar a un proyecto",
+            "linkTitle": "Ligar la serie a un proyecto",
+            "pickProject": "Proyecto",
+            "movePapers_one": "Llevar también su estudio al proyecto",
+            "movePapers_other": "Llevar también sus {{count}} estudios al proyecto",
+            "addSources": "Agregarles las obras del proyecto que les faltan",
+            "confirm": "Ligar",
+            "unlink": "Desligar",
+            "linked": "Serie ligada: {{moved}} estudios llevados, {{linked}} vinculados, {{sources}} obras agregadas.",
+            "unlinked": "La serie quedó suelta.",
+            "failed": "No se pudo cambiar el proyecto de la serie. Intenta de nuevo.",
+            "sourcesFromProject": "Los estudios nuevos toman la bibliografía del proyecto."
+        },
         "header": {
             "back": "Volver a Planes",
             "edit": "Editar plan",
@@ -567,23 +595,23 @@
             "clearDate": "Quitar fecha",
             "cancel": "Cancelar",
             "apply": "Aplicar",
-            "paperReady": "Paper listo",
+            "paperReady": "Estudio listo",
             "draftReady": "Borrador iniciado",
-            "createPaper": "Crear paper",
-            "openPaper": "Abrir paper",
+            "createPaper": "Crear estudio",
+            "openPaper": "Abrir estudio",
             "openDraft": "Abrir borrador",
             "startDraft": "Iniciar sermón",
-            "startStudyFromPaper": "Llevar al estudio",
+            "startStudyFromPaper": "Comenzar el sermón",
             "startDraftWarning": {
-                "title": "Ya tienes un paper exegético en progreso",
-                "description": "Esta perícopa tiene un paper exegético sin terminar. Si inicias el sermón ahora, el wizard se abrirá vacío y NO usará el trabajo del paper como base. Te recomendamos completar el paper primero — al ensamblarlo podrás generar el sermón desde él automáticamente.",
-                "continuePaper": "Continuar con el paper",
+                "title": "Ya tienes un estudio exegético en progreso",
+                "description": "Esta perícopa tiene un estudio exegético sin terminar. Si inicias el sermón ahora, el wizard se abrirá vacío y NO usará el trabajo del estudio como base. Te recomendamos completar el estudio primero — al ensamblarlo podrás generar el sermón desde él automáticamente.",
+                "continuePaper": "Continuar con el estudio",
                 "startAnyway": "Iniciar sermón vacío",
-                "tooltip": "Tienes un paper en progreso — recomendado completarlo antes de iniciar el sermón"
+                "tooltip": "Tienes un estudio en progreso — recomendado completarlo antes de iniciar el sermón"
             },
             "toast": {
-                "studyStarted": "Tu estudio está abierto, con el material del paper a la vista.",
-                "studyStartFailed": "No se pudo abrir el estudio. Intenta de nuevo."
+                "studyStarted": "Tu sermón está abierto, con el material del estudio a la vista.",
+                "studyStartFailed": "No se pudo abrir el sermón. Intenta de nuevo."
             },
             "moreActions": "Más acciones",
             "actionsLabel": "Acciones",
@@ -614,15 +642,15 @@
                 "complete": "Publicado"
             },
             "stepper": {
-                "paper": "Paper",
+                "paper": "Estudio",
                 "draft": "Borrador",
                 "preached": "Publicado"
             },
             "nextStep": {
-                "createPaper": "Próximo: crear el paper exegético.",
-                "startPaper": "Próximo: abrir el paper y trabajar en la exégesis.",
+                "createPaper": "Próximo: crear el estudio exegético.",
+                "startPaper": "Próximo: abrir el estudio y trabajar en la exégesis.",
                 "refinePaperStartDraft": "Próximo: continuar la exégesis y empezar el borrador del sermón.",
-                "startDraftPaperDone": "Próximo: empezar el borrador del sermón (paper listo).",
+                "startDraftPaperDone": "Próximo: empezar el borrador del sermón (estudio listo).",
                 "continueDraft": "Próximo: continuar editando el borrador.",
                 "startDraft": "Próximo: iniciar el borrador del sermón.",
                 "markPreached": "Próximo: publicarlo, o marcarlo como terminado si lo predicaste sin publicar.",
@@ -640,7 +668,7 @@
         },
         "exegesisDefaults": {
             "title": "Configuración exegética de la serie",
-            "subtitle": "Rúbrica, guía de estilo y corpus base que heredan los papers creados desde cada perícopa. Cada paper puede modificarse después.",
+            "subtitle": "Rúbrica, guía de estilo y corpus base que heredan los estudios creados desde cada perícopa. Cada estudio puede modificarse después.",
             "edit": "Editar",
             "rubricLabel": "Rúbrica",
             "styleLabel": "Guía de estilo",
@@ -655,13 +683,13 @@
             "unknownStyle": "Guía seleccionada",
             "loadFailed": "No se pudo cargar tu biblioteca de rúbricas y guías.",
             "modalTitle": "Configuración exegética de la serie",
-            "scopeNotice": "Esto define el punto de partida de los papers NUEVOS de esta serie. Las fuentes de un trabajo ya creado se editan desde el paper, en su pestaña Corpus.",
+            "scopeNotice": "Esto define el punto de partida de los estudios NUEVOS de esta serie. Las fuentes de un trabajo ya creado se editan desde el estudio, en su pestaña Corpus.",
             "back": "Volver a la serie",
             "loading": "Cargando la configuración…",
-            "modalDescription": "Estas elecciones se aplican como punto de partida a cada paper nuevo de perícopa. No modifican los papers ya creados.",
+            "modalDescription": "Estas elecciones se aplican como punto de partida a cada estudio nuevo de perícopa. No modifican los estudios ya creados.",
             "rubricHelp": "La rúbrica define los requisitos formales del estudio exegético (introducción, cita de fuentes, conclusión).",
             "styleHelp": "La guía de estilo define formato, abreviaturas y convenciones de citación.",
-            "sourcesHelp": "Fuentes que se agregarán automáticamente al corpus de cada paper. Puedes quitar las que no quieras heredar.",
+            "sourcesHelp": "Fuentes que se agregarán automáticamente al corpus de cada estudio. Puedes quitar las que no quieras heredar.",
             "sourcesEmpty": "Aún no has elegido fuentes base para esta serie.",
             "addSourceSoon": "Recomendaciones y selector de biblioteca: próximamente (Fase 2a)",
             "loadingLibrary": "Cargando tu biblioteca...",
@@ -699,7 +727,7 @@
             "removeSource": "Quitar fuente",
             "autoRubricOption": "Tu rúbrica por defecto (auto)",
             "systemRubricOption": "Estudio para predicación (sistema)",
-            "noStyleOption": "Sin guía (decidir por paper)",
+            "noStyleOption": "Sin guía (decidir por estudio)",
             "cancel": "Cancelar",
             "save": "Guardar configuración",
             "savedToast": "Configuración exegética guardada. Las nuevas perícopas la heredarán.",
