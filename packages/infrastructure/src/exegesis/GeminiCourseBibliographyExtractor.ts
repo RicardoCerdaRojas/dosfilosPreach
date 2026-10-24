@@ -32,8 +32,11 @@ export class GeminiCourseBibliographyExtractor implements ICourseBibliographyExt
                 responseMimeType: 'application/json',
                 temperature: 0.1,
                 topP: 0.9,
-                // Un sílabo de NT785 trae ~90 obras: ~60 tokens cada una.
-                maxOutputTokens: 16384,
+                // El razonamiento del modelo se descuenta del mismo tope: medido en
+                // producción (NT785, gemini-3.8-flash), ~9 200 tokens de respuesta
+                // más ~6 000 de razonamiento por lectura, y con 16 384 se cortaba.
+                // Se paga lo generado, no el tope: 65 536 es el techo del proxy.
+                maxOutputTokens: 65536,
                 ...(input.image ? { inlineImage: { mimeType: input.image.mimeType, base64: input.image.base64 } } : {}),
                 // 16k de salida no caben en los 70 s del SDK: sin este tope el
                 // navegador cortaba con «deadline-exceeded» mientras el servidor
@@ -60,17 +63,23 @@ export function buildBibliographyPrompt(input: Pick<ExtractCourseBibliographyInp
             'Copy what the document says: do not recommend works, do not fill in data that is not there, do not translate titles.',
             'Answer ONLY a JSON object, with no code fences or commentary.',
         ].join('\n');
+    // Las obras van AL FINAL: si la respuesta se corta en un documento muy
+    // largo, lo del encargo (requisitos, prohibiciones) ya llegó entero y se
+    // rescatan las obras completas hasta el corte.
     const esquema = `{
   "documentKind": "assignment"|"bibliography",
-  "entries": [{ "title": string, "author": string|null, "series": string|null, "year": number|null, "publisher": string|null,
-                "requirement": "required"|"recommended", "sourceType": one of [${TIPOS.join(', ')}] | null, "note": string|null,
-                "pageCount": number|null, "doi": string|null, "isbn": string|null }],
   "requirementItems": [{ "kind": "minimum-type"|"quantity"|"date-range"|"perspectives"|"variety"|"rule"|"other",
                 "text": string, "sourceType": tipo|null, "minimum": number|null, "unit": "works"|"pages"|null,
                 "before": number|null, "after": number|null, "types": [tipo]|null }],
   "requirements": string|null,
-  "prohibitions": string|null
+  "prohibitions": string|null,
+  "entries": [{ "title": string, "author": string|null, "series": string|null, "year": number|null, "publisher": string|null,
+                "requirement": "required"|"recommended", "sourceType": one of [${TIPOS.join(', ')}] | null, "note": string|null,
+                "pageCount": number|null, "doi": string|null, "isbn": string|null }]
 }`;
+    const forma = es
+        ? 'Forma: JSON compacto, sin sangrías ni saltos de línea, en el orden del esquema (las obras al final). Omite las claves cuyo valor sería null.'
+        : 'Format: compact JSON, no indentation or line breaks, in the schema order (works last). Omit keys whose value would be null.';
     const reglas = es
         ? [
             'Reglas:',
@@ -108,20 +117,26 @@ export function buildBibliographyPrompt(input: Pick<ExtractCourseBibliographyInp
     const texto = input.text?.trim()
         ? `${es ? 'Documento' : 'Document'}:\n"""\n${input.text.trim()}\n"""`
         : (es ? 'El documento es la imagen adjunta.' : 'The document is the attached image.');
-    return { system, prompt: [`${es ? 'Esquema' : 'Schema'}:\n${esquema}`, reglas, texto].join('\n\n') };
+    return { system, prompt: [`${es ? 'Esquema' : 'Schema'}:\n${esquema}`, forma, reglas, texto].join('\n\n') };
 }
 
 /** El JSON del lector, defensivo: lo que no es del esquema se descarta. */
 export function parseBibliographyJson(raw: string): Omit<ExtractedCourseBibliography, 'tokensUsed'> {
     const limpio = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
     let data: any;
+    let rescate: { truncated: true; truncatedAfter: string | null } | null = null;
     try {
         data = JSON.parse(limpio);
     } catch (err) {
-        // Una respuesta cortada (lista muy larga) se distingue de una rota:
-        // la pantalla pide importar por partes.
+        // Una respuesta cortada (lista muy larga) se distingue de una rota.
+        // Si se cortó, se rescatan las obras completas hasta el corte; si no
+        // queda ninguna, la pantalla pide importar por partes.
         const cortada = limpio.startsWith('{') && !limpio.endsWith('}');
-        throw Object.assign(new Error(`Bibliography extractor produced invalid JSON: ${(err as Error).message}`), cortada ? { code: 'truncated' } : {});
+        const rescatado = cortada ? rescatarCortado(limpio) : null;
+        if (!rescatado) throw Object.assign(new Error(`Bibliography extractor produced invalid JSON: ${(err as Error).message}`), cortada ? { code: 'truncated' } : {});
+        data = rescatado;
+        const ultima = Array.isArray(data.entries) ? data.entries[data.entries.length - 1] : null;
+        rescate = { truncated: true, truncatedAfter: typeof ultima?.title === 'string' ? ultima.title : null };
     }
     const texto = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
     const tipos = new Set<string>(TIPOS);
@@ -163,5 +178,40 @@ export function parseBibliographyJson(raw: string): Omit<ExtractedCourseBibliogr
         const raw = (Array.isArray(data?.entries) ? data.entries.filter((x: any) => texto(x?.title)) : [])[i] ?? {};
         return { ...e, pageCount: num(raw.pageCount), doi: texto(raw.doi), isbn: texto(raw.isbn) };
     });
-    return { documentKind, requirementItems, entries: fichas, requirements: texto(data?.requirements), prohibitions: texto(data?.prohibitions) };
+    return { documentKind, requirementItems, entries: fichas, requirements: texto(data?.requirements), prohibitions: texto(data?.prohibitions), ...(rescate ?? {}) };
+}
+
+/**
+ * Lo que se puede salvar de un JSON cortado: todo lo anterior a `entries`
+ * (los requisitos del encargo) y las obras COMPLETAS hasta el corte. La
+ * obra a medio escribir se descarta. null si no hay al menos una obra
+ * completa o lo rescatado no es un JSON válido.
+ */
+export function rescatarCortado(limpio: string): any | null {
+    const clave = limpio.search(/"entries"\s*:\s*\[/);
+    if (clave < 0) return null;
+    const inicio = limpio.indexOf('[', clave);
+    let profundidad = 0, enTexto = false, escape = false, ultimoCierre = -1;
+    for (let i = inicio + 1; i < limpio.length; i++) {
+        const c = limpio[i];
+        if (enTexto) {
+            if (escape) escape = false;
+            else if (c === '\\') escape = true;
+            else if (c === '"') enTexto = false;
+            continue;
+        }
+        if (c === '"') enTexto = true;
+        else if (c === '{' || c === '[') profundidad++;
+        else if (c === '}' || c === ']') {
+            if (profundidad === 0) return null; // el arreglo cerró: no estaba cortado aquí
+            profundidad--;
+            if (profundidad === 0 && c === '}') ultimoCierre = i;
+        }
+    }
+    if (ultimoCierre < 0) return null;
+    try {
+        return JSON.parse(`${limpio.slice(0, ultimoCierre + 1)}]}`);
+    } catch {
+        return null;
+    }
 }

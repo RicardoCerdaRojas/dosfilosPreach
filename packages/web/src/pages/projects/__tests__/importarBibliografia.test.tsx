@@ -197,6 +197,14 @@ describe('importar una bibliografía', () => {
         await waitFor(() => expect(onDone).toHaveBeenCalledWith(resultado));
     });
 
+    it('una lectura cortada se revisa igual y dice hasta qué obra entró', async () => {
+        execute.mockResolvedValue({ ...silabo, truncated: true, truncatedAfter: 'Commentary on James' });
+        montar();
+        escribirYLeer();
+        expect(await screen.findByRole('status')).toHaveTextContent('stateOfArt.review.truncated');
+        expect(screen.getByText('stateOfArt.review.titleAssignment')).toBeInTheDocument();
+    });
+
     it('cancelar la revisión vuelve a la zona sin guardar nada', async () => {
         execute.mockResolvedValue(silabo);
         const { onConfirm } = montar();
