@@ -39,6 +39,21 @@ describe('catálogo verificado', () => {
         }
     });
 
+    it('todo el catálogo trae su registro, salvo las obras pendientes de verificar a mano (lista cerrada)', () => {
+        // Obras reales que las bases abiertas no tienen con ese año o título
+        // (revisado a mano el 2026-10-24). Una obra nueva sin registro rompe esta prueba.
+        const PENDIENTES = new Set([
+            'Goldingay, John · 2009', 'Joüon, Paul; Muraoka, Takamitsu · 2006', 'Wright, N. T. · 2002',
+            'Dunn, James D. G. · 1988', 'Philo of Alexandria · 1993', 'Caird, G. B. · 1959',
+            'Aland, Barbara; Aland, Kurt; Karavidopoulos, Johannes; Martini, Carlo M.; Metzger, Bruce M. (eds.) · 2017',
+        ]);
+        const sinRegistro = new Set<string>();
+        for (const book of BIBLE_CANON.map(b => b.id)) {
+            for (const t of TIPOS) for (const r of getSourceRecommendations(book, t, 'es')) if (!r.verified) sinRegistro.add(`${r.author} · ${r.year}`);
+        }
+        expect([...sinRegistro].sort()).toEqual([...PENDIENTES].sort());
+    });
+
     it('ningún ISBN del catálogo entero está mal formado (Holmes traía el de otra obra: se corrigió con el registro)', () => {
         const malos: string[] = [];
         for (const book of BIBLE_CANON.map(b => b.id)) {

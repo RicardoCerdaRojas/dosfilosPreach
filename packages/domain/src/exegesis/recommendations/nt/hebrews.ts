@@ -25,6 +25,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '2 vols. Estándar técnico para el griego, sintaxis y aparato textual.',
+                verified: { source: 'openlibrary', ref: '/works/OL5099554W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Attridge, Harold W.',
@@ -36,6 +37,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario crítico-académico de máximo rigor. Énfasis filón-helenístico.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780800660215', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Ellingworth, Paul',
@@ -47,6 +49,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario sobre el texto griego — análisis morfosintáctico verso a verso.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802824202', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Koester, Craig R.',
@@ -58,6 +61,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura retórica del discurso. Útil para análisis estructural.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780300139891', checkedAt: '2026-10-24' },
             },
         ],
         'commentary-expository': [
@@ -71,6 +75,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Volumen de referencia para predicación expositiva. Equilibra exégesis técnica y aplicación.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802824929', checkedAt: '2026-10-24' },
             },
             {
                 author: 'O\'Brien, Peter T.',
@@ -82,6 +87,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Estilo claro, énfasis teológico y pastoral. Excelente para sermón expositivo.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802837295', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Schreiner, Thomas R.',
@@ -94,6 +100,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Énfasis en teología bíblica y predicación reformada.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780805496130', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Bruce, F. F.',
@@ -105,6 +112,7 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en', 'es'],
                 rationale: 'Clásico evangélico. Hay traducción al español por CLIE.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802825148', checkedAt: '2026-10-24' },
             },
         ],
         'theological-monograph': [
@@ -114,10 +122,12 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 series: null,
                 publisher: 'Pontifical Biblical Institute',
                 year: 1989,
-                isbn: '9788876531385',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9788876531385) era de otra obra o no existe en Open Library.
+                isbn: '9788876535710',
                 tier: 'essential',
                 languages: ['en', 'fr'],
                 rationale: 'Análisis estructural-quiástico clásico. Indispensable para entender la arquitectura del discurso.',
+                verified: { source: 'openlibrary', ref: '/works/OL19202701W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'deSilva, David A.',
@@ -125,10 +135,12 @@ export const HEBREWS_RECOMMENDATIONS: BookRecommendations = {
                 series: null,
                 publisher: 'Eerdmans',
                 year: 2000,
-                isbn: '9780802844392',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780802844392) era de otra obra o no existe en Open Library.
+                isbn: '9780802841889',
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura socio-retórica. Marco honor/vergüenza y patrón cliente/patrón.',
+                verified: { source: 'openlibrary', ref: '/works/OL8380300W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Caird, G. B.',

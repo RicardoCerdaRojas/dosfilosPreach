@@ -20,6 +20,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: '2 vols. Comentario crítico técnico de máximo rigor sobre el griego.',
+                verified: { source: 'openlibrary', ref: '/works/OL3934693W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Dunn, James D. G.',
@@ -42,6 +43,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario crítico-académico con énfasis socio-retórico.',
+                verified: { source: 'openlibrary', ref: '/works/OL1945182W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Wright, N. T.',
@@ -66,6 +68,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['en', 'es'],
                 rationale: 'Estándar evangélico contemporáneo. Equilibrio rigor-aplicación. Trad. española de la 1a ed. por CLIE.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802871213', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Schreiner, Thomas R.',
@@ -73,10 +76,12 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 series: 'BECNT (2nd ed.)',
                 publisher: 'Baker Academic',
                 year: 2018,
-                isbn: '9780801097447',
+                // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780801097447) era de otra obra o no existe en Open Library.
+                isbn: '9781540960054',
                 tier: 'essential',
                 languages: ['en'],
                 rationale: 'Comentario evangélico de gran rigor exegético, lectura reformada tradicional.',
+                verified: { source: 'openlibrary', ref: '/works/OL18022176W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Stott, John R. W.',
@@ -88,6 +93,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en', 'es'],
                 rationale: 'Énfasis pastoral y aplicación expositiva. Edición española por Andamio.',
+                verified: { source: 'openlibrary', ref: '/works/OL8640452W', checkedAt: '2026-10-24' },
             },
             {
                 author: 'Witherington, Ben III; Hyatt, Darlene',
@@ -99,6 +105,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en'],
                 rationale: 'Lectura socio-retórica del argumento paulino.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780802845047', checkedAt: '2026-10-24' },
             },
         ],
         'theological-monograph': [
@@ -117,6 +124,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en', 'de'],
                 rationale: 'Lectura luterana radical de la justicia de Dios en Romanos. Diálogo crítico con Bultmann.',
+                verified: { source: 'openlibrary', ref: '/works/OL8378820W', checkedAt: '2026-10-24' },
             },
         ],
         'historical-background': [
@@ -130,6 +138,7 @@ export const ROMANS_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'recommended',
                 languages: ['en', 'de'],
                 rationale: 'Reconstrucción del cristianismo romano del siglo I. Contexto del destinatario de Romanos.',
+                verified: { source: 'openlibrary', ref: '/isbn/9780800627027', checkedAt: '2026-10-24' },
             },
         ],
     },

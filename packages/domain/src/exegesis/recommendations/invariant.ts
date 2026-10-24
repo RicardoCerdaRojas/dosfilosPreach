@@ -39,6 +39,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'NT',
             rationale: 'Estándar absoluto para el griego del NT. Tercera edición (BDAG).',
+            verified: { source: 'openlibrary', ref: '/isbn/9780226039336', checkedAt: '2026-10-24' },
         },
         {
             author: 'Koehler, Ludwig; Baumgartner, Walter; Stamm, Johann J.',
@@ -51,6 +52,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'OT',
             rationale: 'Léxico técnico de referencia para hebreo bíblico y arameo.',
+            verified: { source: 'openlibrary', ref: '/works/OL1453101W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Liddell, Henry George; Scott, Robert; Jones, Henry Stuart',
@@ -63,6 +65,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'NT',
             rationale: 'Para griego clásico — útil cuando el NT usa palabras con trasfondo helenístico.',
+            verified: { source: 'openlibrary', ref: '/isbn/9780198642268', checkedAt: '2026-10-24' },
         },
         {
             author: 'Brown, Francis; Driver, S. R.; Briggs, Charles A.',
@@ -75,6 +78,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'OT',
             rationale: 'Clásico, en dominio público en versiones digitales. Más accesible que HALOT.',
+            verified: { source: 'openlibrary', ref: '/works/OL1331812W', checkedAt: '2026-10-24' },
         },
     ],
 
@@ -91,6 +95,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'NT',
             rationale: '10 vols. Análisis lexicográfico-teológico exhaustivo de cada palabra clave del NT.',
+            verified: { source: 'openlibrary', ref: '/works/OL26456915W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Silva, Moisés (ed.)',
@@ -103,6 +108,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'NT',
             rationale: 'Sucesor moderno del NIDNTT de Brown. Más manejable que TDNT.',
+            verified: { source: 'openlibrary', ref: '/isbn/9780310276197', checkedAt: '2026-10-24' },
         },
         {
             author: 'VanGemeren, Willem A. (ed.)',
@@ -115,6 +121,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'OT',
             rationale: '5 vols. La contraparte AT del NIDNTTE.',
+            verified: { source: 'openlibrary', ref: '/works/OL18920545W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Balz, Horst; Schneider, Gerhard (eds.)',
@@ -122,11 +129,13 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             series: 'EDNT',
             publisher: 'Eerdmans',
             year: 1990,
-            isbn: '9780802824158',
+            // Corregido 2026-10-24 con Open Library: el ISBN anterior (9780802824158) era de otra obra o no existe en Open Library.
+            isbn: '9780802824110',
             tier: 'recommended',
             languages: ['en', 'de'],
             testament: 'NT',
             rationale: 'Más conciso que TDNT, organizado por palabra griega.',
+            verified: { source: 'openlibrary', ref: '/works/OL15160189W', checkedAt: '2026-10-24' },
         },
     ],
 
@@ -143,6 +152,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'es'],
             testament: 'NT',
             rationale: 'Sintaxis exegética estándar para predicadores y estudiantes. Ed. en español por Vida.',
+            verified: { source: 'openlibrary', ref: '/works/OL2949286W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Blass, Friedrich; Debrunner, Albert; Funk, Robert W.',
@@ -155,6 +165,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'NT',
             rationale: 'Gramática técnica clásica del griego del NT.',
+            verified: { source: 'openlibrary', ref: '/works/OL11482536W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Robertson, A. T.',
@@ -167,6 +178,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'NT',
             rationale: 'La gramática griega más extensa en inglés. Dominio público en formato digital.',
+            verified: { source: 'openlibrary', ref: '/works/OL3277278W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Waltke, Bruce K.; O\'Connor, M.',
@@ -179,6 +191,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'OT',
             rationale: 'Sintaxis hebrea bíblica estándar para nivel exegético.',
+            verified: { source: 'openlibrary', ref: '/isbn/9780931464317', checkedAt: '2026-10-24' },
         },
         {
             author: 'Joüon, Paul; Muraoka, Takamitsu',
@@ -207,6 +220,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'es'],
             testament: 'NT',
             rationale: 'Trasfondo verso por verso del NT. Ed. española por Mundo Hispano (\"Comentario del Contexto Cultural\").',
+            verified: { source: 'openlibrary', ref: '/isbn/9780830824786', checkedAt: '2026-10-24' },
         },
         {
             author: 'Walton, John H.; Matthews, Victor H.; Chavalas, Mark W.',
@@ -219,6 +233,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'OT',
             rationale: 'Contraparte AT del Keener. Verso por verso, contexto antiguo cercano-oriental.',
+            verified: { source: 'openlibrary', ref: '/isbn/9780830814190', checkedAt: '2026-10-24' },
         },
         {
             author: 'deSilva, David A.',
@@ -231,6 +246,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'NT',
             rationale: 'Introducción estándar al NT con énfasis en contexto greco-romano y judío.',
+            verified: { source: 'openlibrary', ref: '/isbn/9780830852178', checkedAt: '2026-10-24' },
         },
         {
             author: 'Sanders, E. P.',
@@ -243,6 +259,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'whole-bible',
             rationale: 'Trabajo de referencia sobre judaísmo del Segundo Templo. Útil para AT tardío y NT temprano.',
+            verified: { source: 'openlibrary', ref: '/works/OL2933079W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Freedman, David Noel (ed.)',
@@ -255,6 +272,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'whole-bible',
             rationale: '6 vols. Diccionario académico de referencia, transversal a AT/NT.',
+            verified: { source: 'openlibrary', ref: '/works/OL18333664W', checkedAt: '2026-10-24' },
         },
     ],
 
@@ -271,6 +289,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'es'],
             testament: 'whole-bible',
             rationale: 'Antigüedades + Guerra de los Judíos. Esencial para Hechos, NT y trasfondo del AT post-exílico.',
+            verified: { source: 'openlibrary', ref: '/works/OL1558385W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Philo of Alexandria',
@@ -283,6 +302,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'whole-bible',
             rationale: 'Filón judío-helenístico. Crítico para Hebreos, Juan, Pablo (lógos, alegoría) + alegorías sobre Pentateuco.',
+            verified: { source: 'openlibrary', ref: '/works/OL962057W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Holmes, Michael W. (ed./trans.)',
@@ -297,6 +317,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'NT',
             rationale: 'Padres apostólicos (Didaché, Clemente, Ignacio, Bernabé). Diálogo más cercano al NT.',
+            verified: { source: 'openlibrary', ref: '/isbn/9780801034688', checkedAt: '2026-10-24' },
         },
         {
             author: 'Charlesworth, James H. (ed.)',
@@ -309,6 +330,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'whole-bible',
             rationale: '2 vols. Pseudoepígrafa intertestamentaria — clave para apocalíptica AT (Daniel, Joel) + Judas y Hebreos en el NT.',
+            verified: { source: 'openlibrary', ref: '/isbn/9780385188135', checkedAt: '2026-10-24' },
         },
     ],
 
@@ -320,11 +342,13 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             series: 'NA28',
             publisher: 'Deutsche Bibelgesellschaft',
             year: 2012,
-            isbn: '9783438051592',
+            // Corregido 2026-10-24 con Open Library: el ISBN anterior (9783438051592) era de otra obra o no existe en Open Library.
+            isbn: '9783438051561',
             tier: 'essential',
             languages: ['en', 'de'],
             testament: 'NT',
             rationale: 'Texto crítico estándar del NT griego. Edición Nestle-Aland 28.',
+            verified: { source: 'openlibrary', ref: '/works/OL19263525W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Schenker, Adrian (ed.)',
@@ -332,11 +356,13 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             series: 'BHQ',
             publisher: 'Deutsche Bibelgesellschaft',
             year: 2004,
-            isbn: '9783438052728',
+            // Corregido 2026-10-24 con Open Library: el ISBN anterior (9783438052728) era de otra obra o no existe en Open Library.
+            isbn: '9783438052780',
             tier: 'essential',
             languages: ['en', 'de'],
             testament: 'OT',
             rationale: 'Edición crítica del AT hebreo en curso (sucesor de BHS). Cuando un fascículo cubre el libro.',
+            verified: { source: 'openlibrary', ref: '/works/OL9064503W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Elliger, Karl; Rudolph, Wilhelm (eds.)',
@@ -349,6 +375,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'OT',
             rationale: 'Texto crítico AT estándar mientras BHQ se completa. Aparato más compacto.',
+            verified: { source: 'openlibrary', ref: '/works/OL18279016W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Rahlfs, Alfred; Hanhart, Robert (eds.)',
@@ -361,6 +388,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'whole-bible',
             rationale: 'Edición Rahlfs-Hanhart de la Septuaginta. Esencial para AT en griego y para citas LXX en el NT.',
+            verified: { source: 'openlibrary', ref: '/isbn/9783438051196', checkedAt: '2026-10-24' },
         },
     ],
 
@@ -380,6 +408,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'NT',
             rationale: 'Aparato crítico del NA28. Estándar académico para variantes textuales del NT griego.',
+            verified: { source: 'openlibrary', ref: '/works/OL19263525W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Aland, Barbara; Aland, Kurt; Karavidopoulos, Johannes; Martini, Carlo M.; Metzger, Bruce M. (eds.)',
@@ -404,6 +433,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en'],
             testament: 'NT',
             rationale: 'Comentario verso a verso sobre las decisiones del comité editorial del NA/UBS. Indispensable para discutir variantes.',
+            verified: { source: 'openlibrary', ref: '/isbn/9783438060105', checkedAt: '2026-10-24' },
         },
         {
             author: 'Schenker, Adrian (ed.)',
@@ -416,6 +446,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'OT',
             rationale: 'Aparato crítico del BHQ. Sucesor del BHS con análisis textual moderno cuando el libro está cubierto.',
+            verified: { source: 'openlibrary', ref: '/works/OL9064503W', checkedAt: '2026-10-24' },
         },
         {
             author: 'Elliger, Karl; Rudolph, Wilhelm (eds.)',
@@ -428,6 +459,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             languages: ['en', 'de'],
             testament: 'OT',
             rationale: 'Aparato crítico del BHS — aparato más compacto que BHQ pero cubre todo el AT hebreo.',
+            verified: { source: 'openlibrary', ref: '/works/OL18279016W', checkedAt: '2026-10-24' },
         },
     ],
 };
