@@ -37,6 +37,9 @@ export class GeminiCourseBibliographyExtractor implements ICourseBibliographyExt
                 // más ~6 000 de razonamiento por lectura, y con 16 384 se cortaba.
                 // Se paga lo generado, no el tope: 65 536 es el techo del proxy.
                 maxOutputTokens: 65536,
+                // Copiar datos no pide razonar: ~6 000 tokens por lectura eran
+                // gasto (y espacio de salida perdido).
+                thinking: 'minimal',
                 ...(input.image ? { inlineImage: { mimeType: input.image.mimeType, base64: input.image.base64 } } : {}),
                 // 16k de salida no caben en los 70 s del SDK: sin este tope el
                 // navegador cortaba con «deadline-exceeded» mientras el servidor

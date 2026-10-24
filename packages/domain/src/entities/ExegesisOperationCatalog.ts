@@ -195,10 +195,13 @@ export const EXEGESIS_OPERATION_CATALOG: Readonly<Record<ExegesisOperationKey, E
         displayKeyI18n: 'studies.operations.extractStyleGuideManifest',
     },
     // Leer la bibliografía de un sílabo o una lista (estado del arte). Una
-    // llamada de extracción, como la rúbrica desde un documento.
+    // llamada de extracción, como la rúbrica desde un documento. Medido en
+    // producción (2026-10-23, gemini-3.8-flash): ~US$ 0,064 por sílabo con
+    // razonamiento; sin él ~US$ 0,03-0,04, y el modelo duplica su precio el
+    // 2027-01-01. Decidido con el fundador: US$ 0,08.
     extractProjectBibliography: {
         key: 'extractProjectBibliography',
-        estimatedCostUsd: 0.03,
+        estimatedCostUsd: 0.08,
         requiresPreConfirm: false,
         displayKeyI18n: 'studies.operations.extractProjectBibliography',
     },

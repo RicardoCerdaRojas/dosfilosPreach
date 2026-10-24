@@ -26,6 +26,12 @@ export interface CallableLlmOptions {
     maxOutputTokens?: number;
     model?: string;
     /**
+     * Cuánto razona el modelo (solo gemini-3; el servidor ignora el resto).
+     * Para copiar datos, `minimal`: razonar es gasto y además se descuenta
+     * del tope de salida.
+     */
+    thinking?: 'minimal' | 'low' | 'medium' | 'high';
+    /**
      * Store de `fileSearch` (tutor de griego). Cuando viaja, el servidor usa el
      * SDK con tools en vez del port — y `responseMimeType: application/json` NO
      * aplica: con tools el modelo devuelve texto y el llamador limpia el JSON.
