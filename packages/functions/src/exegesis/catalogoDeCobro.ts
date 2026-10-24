@@ -47,7 +47,8 @@ export const CATALOGO_DE_COBRO: Readonly<Record<string, OperacionCobrada>> = {
     extractRubricFromImage: { costoUsd: 0.02, etiquetas: ['exegesis.extractRubric'], maxLlamadas: UNA },
     extractRubricPreviewFromImage: { costoUsd: 0.02, etiquetas: ['exegesis.extractRubric'], maxLlamadas: UNA },
     extractStyleGuideManifest: { costoUsd: 0.03, etiquetas: ['exegesis.extractStyleManifest'], maxLlamadas: UNA },
-    extractProjectBibliography: { costoUsd: 0.03, etiquetas: ['exegesis.extractBibliography'], maxLlamadas: UNA },
+    // US$ 0,08: medido ~0,064 por sílabo (2026-10-23); el modelo duplica su precio en 2027.
+    extractProjectBibliography: { costoUsd: 0.08, etiquetas: ['exegesis.extractBibliography'], maxLlamadas: UNA },
     // Sin uso todavía (`ClassifySourceTypeUseCase` tiene un TODO): su etiqueta
     // no cobra, así que no se le asigna ninguna.
     classifySourceType: { costoUsd: 0.001, etiquetas: [], maxLlamadas: UNA },

@@ -8,6 +8,7 @@ import { AnthropicLlmClient } from './AnthropicLlmClient';
 import { rutaCompatible, rutaPara } from './ruteoDeModelos';
 import { GeminiLlmClient } from './GeminiLlmClient';
 import { recordLlmUsage } from './llmUsageRecorder';
+import { conRespaldoSinRazonamiento, configDeRazonamiento } from './razonamiento';
 import { LLM_PRICING } from './llmCost';
 import { consumeRateLimitToken } from '../shared/rateLimit';
 import { cobrarLlamadaDeExegesis } from '../exegesis/cobroDeExegesis';
@@ -391,13 +392,15 @@ export const runLlmPrompt = onCall(
             }
             try {
                 const ai = new GoogleGenAI({ apiKey });
-                const result = await ai.models.generateContent({
+                const config = {
+                    ...configDeGeneracion(data, system, { json: true, topPYEsquema: true, seguridad: data.safety === 'standard' }),
+                    ...configDeRazonamiento(data.thinking, model),
+                };
+                const result = await conRespaldoSinRazonamiento(config, c => ai.models.generateContent({
                     model,
                     contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType, data: base64 } }] }],
-                    config: configDeGeneracion(data, system, {
-                        json: true, topPYEsquema: true, seguridad: data.safety === 'standard',
-                    }),
-                });
+                    config: c,
+                }), `${feature} (inlineImage)`);
                 const meta = result.usageMetadata;
                 void recordLlmUsage({
                     model,
@@ -424,13 +427,15 @@ export const runLlmPrompt = onCall(
                 // evalúa antes que la de safety, así que sin esto un llamador que
                 // pida umbrales explícitos JUNTO con `topP` o `responseSchema` los
                 // perdería en silencio.
-                const result = await withGeminiRetry(feature, () => ai.models.generateContent({
+                const config = {
+                    ...configDeGeneracion(data, system, { json: true, topPYEsquema: true, seguridad: data.safety === 'standard' }),
+                    ...configDeRazonamiento(data.thinking, model),
+                };
+                const result = await conRespaldoSinRazonamiento(config, c => withGeminiRetry(feature, () => ai.models.generateContent({
                     model,
                     contents: prompt,
-                    config: configDeGeneracion(data, system, {
-                        json: true, topPYEsquema: true, seguridad: data.safety === 'standard',
-                    }),
-                }));
+                    config: c,
+                })), `${feature} (config)`);
                 const meta = result.usageMetadata;
                 void recordLlmUsage({
                     model,
