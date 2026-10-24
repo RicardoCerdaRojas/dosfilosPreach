@@ -91,7 +91,9 @@ describe('importar una bibliografía', () => {
         expect(within(grupo('already')).getByText('The Letter of James')).toBeInTheDocument();
         expect(within(grupo('already')).getByText('stateOfArt.weight.required')).toBeInTheDocument();
         expect(screen.getByLabelText(/^The Letter of James/)).not.toBeChecked();
-        expect(screen.getByText('Un mínimo de 100 páginas de artículos académicos')).toBeInTheDocument();
+        // Solo obras: los requisitos que trajera la lectura no se muestran (decisión del fundador, 2026-10-24).
+        expect(screen.queryByText('Un mínimo de 100 páginas de artículos académicos')).toBeNull();
+        expect(screen.queryByText('No repetir fuentes en semanas consecutivas.')).toBeNull();
     });
 
     it('confirmar manda solo lo marcado, con los requisitos, como sílabo; y muestra lo que entró', async () => {
@@ -100,18 +102,16 @@ describe('importar una bibliografía', () => {
         escribirYLeer();
         await waitFor(() => expect(screen.getByText('stateOfArt.review.titleAssignment')).toBeInTheDocument());
         fireEvent.click(screen.getByLabelText(/Commentary on James/));
-        fireEvent.click(screen.getByLabelText(/No usar la misma fuente/));
-        // El texto de lo que prohíbe se agrega solo si queda marcado.
-        fireEvent.click(screen.getByLabelText(/No repetir fuentes en semanas consecutivas/));
         fireEvent.click(screen.getByText('stateOfArt.review.confirm'));
         await waitFor(() => expect(onConfirm).toHaveBeenCalled());
-        const plan = onConfirm.mock.calls[0]![0] as { entries: Array<{ title: string }>; requirementItems: Array<{ text: string }>; origin: { kind: string }; logKind: string; requirementsText: string | null; prohibitionsText: string | null; found: number };
+        const plan = onConfirm.mock.calls[0]![0] as Record<string, unknown> & { entries: Array<{ title: string }> };
         expect(plan.entries.map(e => e.title)).toEqual([
             'La epístola de Santiago: Un comentario sobre el texto griego', 'Does Scripture Speak in Vain? A Reconsideration of James IV. 5',
             'Greek Grammar Beyond the Basics', 'La sabiduría en Santiago 3',
         ]);
-        expect(plan.requirementItems.map(r => r.text)).toEqual(['Un mínimo de 100 páginas de artículos académicos']);
-        expect(plan).toMatchObject({ origin: { kind: 'syllabus' }, logKind: 'syllabus', requirementsText: 'Reseñar cada artículo.', prohibitionsText: null, found: 6 });
+        expect(plan).toMatchObject({ origin: { kind: 'syllabus' }, logKind: 'syllabus', found: 6 });
+        expect(Object.keys(plan)).not.toContain('requirementItems');
+        expect(Object.keys(plan)).not.toContain('prohibitionsText');
         await waitFor(() => expect(onDone).toHaveBeenCalledWith(resultado));
     });
 
@@ -119,9 +119,9 @@ describe('importar una bibliografía', () => {
         execute.mockResolvedValue(silabo);
         montar();
         escribirYLeer();
-        await waitFor(() => expect(screen.getByText('stateOfArt.review.willAddWorks:5 · stateOfArt.review.willAddRequirements:2')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('stateOfArt.review.willAddWorks:5')).toBeInTheDocument());
         fireEvent.click(screen.getByLabelText(/^The Letter of James/));
-        expect(screen.getByText('stateOfArt.review.willAddWorks:5 · stateOfArt.review.willUpdate:1 · stateOfArt.review.willAddRequirements:2')).toBeInTheDocument();
+        expect(screen.getByText('stateOfArt.review.willAddWorks:5 · stateOfArt.review.willUpdate:1')).toBeInTheDocument();
     });
 
     it('otra edición del mismo título no es «ya en tu lista»: entra como obra nueva, igual que en la mezcla', async () => {
@@ -192,7 +192,7 @@ describe('importar una bibliografía', () => {
         fireEvent.click(screen.getByText('stateOfArt.review.confirm'));
         await waitFor(() => expect(onConfirm).toHaveBeenCalled());
         const plan = onConfirm.mock.calls[0]![0] as { entries: Array<{ title: string; pageCount?: number }>; requirementItems: unknown[]; origin: unknown; logKind: string; label: string };
-        expect(plan).toMatchObject({ origin: { kind: 'citation', citedBy: 'Moo, Comentario de Santiago' }, logKind: 'file', label: 'atla.ris', requirementItems: [] });
+        expect(plan).toMatchObject({ origin: { kind: 'citation', citedBy: 'Moo, Comentario de Santiago' }, logKind: 'file', label: 'atla.ris' });
         expect(plan.entries[0]).toMatchObject({ title: 'Does Scripture Speak in Vain?', pageCount: 6 });
         await waitFor(() => expect(onDone).toHaveBeenCalledWith(resultado));
     });

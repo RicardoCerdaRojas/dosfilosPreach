@@ -3,8 +3,6 @@ import {
     bibliographyCoverage,
     chaptersMentioned,
     measureRequirement,
-    requirementsFromExtraction,
-    isNoRepeatRule,
     sameWork,
     bibliographyEntryError,
     classificationHistory,
@@ -159,8 +157,8 @@ export function useProjectBibliography(project: AIProject | undefined) {
      * Aplica lo que se confirmó en la revisión de una importación y lo GUARDA
      * en el mismo paso (prueba del fundador: lo leído quedaba solo en
      * pantalla). Las obras se juntan con las fichas (la misma no se duplica,
-     * lo decidido no se pisa), los requisitos se suman sin repetirse, y la
-     * importación queda en el registro de búsquedas.
+     * lo decidido no se pisa) y la importación queda en el registro de
+     * búsquedas. Los criterios y requisitos no se tocan: se escriben en su editor.
      *
      * Se guarda lo GUARDADO más lo importado, no el borrador: una ficha a
      * medio evaluar (o con error) sigue esperando su «Guardar» (revisión de
@@ -173,27 +171,13 @@ export function useProjectBibliography(project: AIProject | undefined) {
         const base = JSON.parse(clave) as ProjectBibliographyEntry[];
         const guardar = mergeBibliographyCandidates(base, candidatas, newBibliographyEntryId);
         const nuevasGuardadas = guardar.filter(e => !base.some(b => b.id === e.id));
-        const sumar = (actual: string | null | undefined, nuevo: string | null | undefined) => {
-            if (!nuevo?.trim()) return actual ?? null;
-            if ((actual ?? '').includes(nuevo.trim())) return actual ?? null;
-            return actual?.trim() ? `${actual.trim()}\n${nuevo.trim()}` : nuevo.trim();
-        };
-        const conImportado = (c: ProjectBibliographyCriteria, nuevos: ProjectRequirement[]): ProjectBibliographyCriteria => ({
-            ...c,
-            requirements: sumar(c.requirements, plan.requirementsText),
-            prohibitions: sumar(c.prohibitions, plan.prohibitionsText),
-            requirementItems: [...(c.requirementItems ?? []), ...nuevos.filter(n => !(c.requirementItems ?? []).some(r => r.id === n.id))],
-            // La regla de no repetir del sílabo enciende el criterio, salvo que se haya apagado a mano.
-            ...(nuevos.some(r => r.kind === 'rule' && isNoRepeatRule(r.text)) && c.noRepeatSources == null ? { noRepeatSources: true } : {}),
-        });
+        // Los criterios no se tocan: importar trae solo obras (decisión del fundador, 2026-10-24).
         const critGuardados = JSON.parse(claveCriterios) as ProjectBibliographyCriteria;
-        // Los mismos requisitos nuevos (mismos ids) para lo guardado y el borrador.
-        const nuevos = requirementsFromExtraction(plan.requirementItems, [...(critGuardados.requirementItems ?? []), ...(criteriaRef.current.requirementItems ?? [])], newBibliographyEntryId, new Date());
         const added = nuevasGuardadas.length;
         const registro = [...logRef.current, { id: newBibliographyEntryId(), at: new Date().toISOString(), kind: plan.logKind, label: plan.label, found: plan.found ?? plan.entries.length, added }];
         // Primero se guarda; si falla, la pantalla queda como estaba y la
         // revisión sigue abierta para reintentar.
-        await persist(guardar, conImportado(critGuardados, nuevos), registro);
+        await persist(guardar, critGuardados, registro);
         // Sobre el borrador de AHORA (pudo cambiar mientras se guardaba). Una
         // obra nueva toma el id que recibió al guardarse, para que no queden
         // dos fichas de la misma obra.
@@ -207,7 +191,6 @@ export function useProjectBibliography(project: AIProject | undefined) {
             return { ...e, id: igual?.id ?? newBibliographyEntryId() };
         });
         setDraft(enPantalla);
-        setCriteria(c => conImportado(c, nuevos));
         logRef.current = registro;
         setLog(registro);
         const tocadas = enPantalla.filter(e => candidatas.some(c => (c.resourceId && e.resourceId === c.resourceId) || sameWork(e, c)));
@@ -324,12 +307,9 @@ export function useProjectBibliography(project: AIProject | undefined) {
     };
 }
 
-/** Lo que se confirmó en la revisión de una importación. */
+/** Lo que se confirmó en la revisión de una importación: solo obras. */
 export interface ImportPlan {
     entries: ExtractedBibliographyEntry[];
-    requirementItems: Array<Omit<ProjectRequirement, 'id' | 'origin'>>;
-    requirementsText?: string | null;
-    prohibitionsText?: string | null;
     origin: { kind: 'syllabus' | 'import' } | { kind: 'citation'; citedBy: string };
     logKind: BibliographySearchLogEntry['kind'];
     /** Cuántas obras se leyeron (no solo las marcadas), para el registro. */
