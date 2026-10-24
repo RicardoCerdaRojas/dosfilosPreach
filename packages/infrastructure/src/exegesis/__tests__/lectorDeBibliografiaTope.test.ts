@@ -13,7 +13,7 @@ const { LONG_GENERATION_TIMEOUT_MS } = await import('../../llm/llmTimeouts');
 describe('el lector de bibliografía espera lo que tarda una lectura larga', () => {
     it('pasa el tope largo al transporte, no el de 70 s del SDK', async () => {
         await new GeminiCourseBibliographyExtractor().extract({ text: 'Bibliografía: Davids, La epístola de Santiago…', image: null, language: 'es' });
-        expect(llamar).toHaveBeenCalledWith(expect.objectContaining({ feature: 'exegesis.extractBibliography', maxOutputTokens: 65536 }), { timeoutMs: LONG_GENERATION_TIMEOUT_MS });
+        expect(llamar).toHaveBeenCalledWith(expect.objectContaining({ feature: 'exegesis.extractBibliography', maxOutputTokens: 65536, thinking: 'minimal' }), { timeoutMs: LONG_GENERATION_TIMEOUT_MS });
     });
 });
 
