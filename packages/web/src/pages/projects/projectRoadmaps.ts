@@ -15,7 +15,7 @@ import {
     Split,
     type LucideIcon,
 } from 'lucide-react';
-import { projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput, type SermonEntity, type AIChatSession } from '@dosfilos/domain';
+import { currentRevisedIdea, framingStatus, projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput, type SermonEntity, type AIChatSession } from '@dosfilos/domain';
 
 /**
  * Roadmap definitions per project type. Each phase represents one step in the
@@ -29,7 +29,7 @@ import { projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput,
  */
 
 /** Qué hace el botón de una fase. Un solo lugar: antes estaba copiado en tres. */
-export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge' | 'stateOfArt' | 'planSeries' | 'openSeries';
+export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge' | 'stateOfArt' | 'planSeries' | 'openSeries' | 'frame';
 
 export interface RoadmapContext {
     project: AIProject;
@@ -300,12 +300,22 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
     {
         id: 'passage',
         title: 'Pasaje y propósito',
-        description: 'El pasaje que vas a estudiar y para qué: una serie, una clase, tu archivo.',
+        description: 'Tu lectura del libro antes de dividirlo: el pasaje, para qué lo estudias, su estructura y su idea central.',
         icon: NotebookPen,
-        // El botón de esta fase escribe una nota: también la completa.
-        isComplete: (ctx) => !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
-        cta: { label: 'Escribir el propósito', kind: 'output' },
+        // Completa con libro e idea central (fase «Encuadre de la serie»). Un
+        // proyecto viejo que la completó con una nota sigue completo.
+        isComplete: (ctx) => framingStatus(ctx.project).status === 'complete'
+            || !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
+        cta: { label: 'Definir el encuadre', kind: 'frame' },
         i18nKey: 'exegetical.passage',
+        // Con un encuadre ya guardado, el botón lo edita.
+        variant: (ctx) => ctx.project.framing
+            ? {
+                description: 'Tu encuadre del libro. Vuelve a él cuando un estudio cambie tu lectura.',
+                cta: { label: 'Editar el encuadre', kind: 'frame' },
+                i18nKey: 'exegetical.passageEdit',
+            }
+            : null,
     },
     {
         id: 'sources',
@@ -351,7 +361,9 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
         title: 'Síntesis',
         description: 'Lo que el pasaje dice como un todo: conversa con los tutores o escribe la síntesis.',
         icon: MessageSquareQuote,
-        isComplete: (ctx) => ctx.sessionCount > 0 || ctx.outputs.length > 0,
+        // También con la idea consolidada y vigente: la síntesis consolida el
+        // registro de la hipótesis (desactualizada no cuenta).
+        isComplete: (ctx) => ctx.sessionCount > 0 || ctx.outputs.length > 0 || currentRevisedIdea(ctx.project.framing) !== null,
         cta: { label: 'Iniciar conversación', kind: 'newSession' },
         i18nKey: 'exegetical.synthesis',
     },

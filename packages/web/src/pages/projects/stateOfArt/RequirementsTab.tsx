@@ -9,6 +9,11 @@ import { SearchGuidePanel } from './SearchGuidePanel';
 import type { CoverageFilter } from './BibliographyCoverageTable';
 import type { useProjectBibliography } from './useProjectBibliography';
 
+/** El panel del proyecto con el diálogo del encuadre abierto. */
+function framingDialogUrl(projectId: string): string {
+    return `/dashboard/projects/${encodeURIComponent(projectId)}?encuadre=1`;
+}
+
 interface RequirementsTabProps {
     project: AIProject;
     bib: ReturnType<typeof useProjectBibliography>;
@@ -67,6 +72,8 @@ export function RequirementsTab({ project, bib, library, onShow }: RequirementsT
                 onChange={patch => bib.setCriteria(c => ({ ...c, ...patch }))}
                 requirements={bib.requirements}
                 studyBooks={[...new Set(bib.passages.map(p => p.bookId))]}
+                // Con encuadre, los libros son suyos: aquí se ven y se cambian allá.
+                framing={bib.booksFromFraming ? { books: project.bibliographyCriteria?.bibleBooks ?? [], href: framingDialogUrl(project.id), canLeave: () => !bib.dirty || window.confirm(t('stateOfArt.leaveUnsaved')) } : undefined}
             />
             {bib.searchLog.length > 0 && (
                 <section className="space-y-1" aria-labelledby="search-log-title">

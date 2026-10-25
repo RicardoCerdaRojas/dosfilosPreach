@@ -154,7 +154,10 @@
       "booksHint": "Sirven para buscar comentarios, armar la guía de búsqueda y saber si cada comentario cubre el libro. Si el proyecto todavía no tiene estudios, elígelos aquí.",
       "addBook": "Agregar un libro",
       "removeBook": "Quitar {{book}}",
-      "fromStudies": "Tomados de los estudios del proyecto. Elige otros si el proyecto abarca más."
+      "fromStudies": "Tomados de los estudios del proyecto. Elige otros si el proyecto abarca más.",
+      "booksFromFraming": "Vienen del encuadre del proyecto.",
+      "changeInFraming": "Cambiar en el encuadre",
+      "noBooksFraming": "El encuadre todavía no tiene libros."
     },
     "warning": {
       "missingType": "Las rúbricas piden {{minimum}} de «{{type}}» y no hay ninguna aprobada.",
@@ -172,7 +175,9 @@
     "course": "Curso",
     "styleGuide": "Guía de estilo",
     "none": "Ninguna",
-    "save": "Guardar datos"
+    "save": "Guardar datos",
+    "options": "Opciones de curso",
+    "hideOptions": "Ocultar opciones de curso"
   },
   "workTypes": {
     "title": "Tipos de trabajo",
@@ -227,8 +232,13 @@
             "exegetical": {
                 "passage": {
                     "title": "Pasaje y propósito",
-                    "description": "El pasaje que vas a estudiar y para qué: una serie, una clase, tu archivo.",
-                    "cta": "Escribir el propósito"
+                    "description": "Tu lectura del libro antes de dividirlo: el pasaje, para qué lo estudias, su estructura y su idea central.",
+                    "cta": "Definir el encuadre"
+                },
+                "passageEdit": {
+                    "title": "Pasaje y propósito",
+                    "description": "Tu encuadre del libro. Vuelve a él cuando un estudio cambie tu lectura.",
+                    "cta": "Editar el encuadre"
                 },
                 "sources": {
                     "title": "Fuentes",
@@ -400,5 +410,229 @@
         "successReextracted": "\"{{title}}\" reextraído — el procesamiento se completará en segundo plano.",
         "successReady": "\"{{title}}\" listo.",
         "error": "Error procesando \"{{title}}\": {{message}}"
+    },
+    "framing": {
+        "card": {
+            "title": "Encuadre",
+            "hint": "Tu lectura del libro antes de dividirlo. Es provisoria: la contrastas con el panorama y con cada estudio.",
+            "empty": "Todavía no hay encuadre. Escribe tu lectura del libro antes de planificar la serie: después el texto la confirmará, la matizará o la corregirá.",
+            "define": "Definir el encuadre",
+            "edit": "Editar",
+            "passage": "Pasaje",
+            "purpose": "Para qué",
+            "centralIdea": "Idea central",
+            "structure": "Movimientos",
+            "rhythm": "Ritmo",
+            "rhythmSundays": "≈{{n}} domingos",
+            "rhythmStart": "desde el {{date}}",
+            "untitledMovement": "Sin título",
+            "missing": "Cuando quieras, puedes sumar: {{fields}}.",
+            "annotate": "Anotar lo que dice un estudio",
+            "annotateNoStudies": "Cuando tengas estudios, anota aquí lo que cada uno dice de tu lectura.",
+            "consolidate": "Consolidar la idea",
+            "consolidateAgain": "Consolidar de nuevo",
+            "log": "Registro de tu lectura",
+            "logPanorama": "Panorama",
+            "logStudy": "Estudio: {{title}}",
+            "logStudyMissing": "un estudio que ya no está en el proyecto",
+            "revision": "Idea revisada",
+            "stale": "Editaste la idea central después de consolidarla. La revisión no llega al sermón hasta que la consolides de nuevo."
+        },
+        "field": {
+            "bibleBooks": "libros",
+            "purpose": "para qué",
+            "chapterTitles": "títulos por capítulo",
+            "repetitions": "repeticiones",
+            "genre": "género",
+            "occasion": "ocasión",
+            "occasionEvidence": "versículos de la ocasión",
+            "structure": "estructura",
+            "centralIdea": "idea central",
+            "centralIdeaEvidence": "versículos de la idea central",
+            "christTrajectory": "trayectoria hacia Cristo",
+            "christTrajectoryEvidence": "versículos de la trayectoria",
+            "audience": "a quiénes",
+            "need": "necesidad",
+            "needEvidence": "texto que muestra que la atiende",
+            "desiredChange": "cambio esperado",
+            "rhythm": "ritmo"
+        },
+        "purpose": {
+            "preach": "Predicar una serie",
+            "teach": "Enseñar una clase",
+            "personal": "Estudio personal"
+        },
+        "frequency": {
+            "weekly": "Semanal",
+            "biweekly": "Cada dos semanas",
+            "monthly": "Mensual",
+            "flexible": "Flexible"
+        },
+        "hypothesisVerdict": {
+            "confirms": "Confirma",
+            "nuances": "Matiza",
+            "contradicts": "Contradice"
+        },
+        "revisionVerdict": {
+            "confirmed": "Confirmada",
+            "nuanced": "Matizada",
+            "corrected": "Corregida"
+        },
+        "genre": {
+            "label": "Género y cómo se lee",
+            "placeholder": "Elige un género",
+            "hint": "Al elegirlo, aparecen preguntas para leer el libro según su género.",
+            "questionsTitle": "Preguntas para leerlo",
+            "names": {
+                "historical-narrative": "Narrativa histórica",
+                "law": "Ley",
+                "poetry": "Poesía",
+                "wisdom": "Sabiduría",
+                "prophecy": "Profecía",
+                "gospel": "Evangelio",
+                "epistle": "Epístola",
+                "apocalyptic": "Apocalíptico"
+            },
+            "questions": {
+                "historical-narrative": {
+                    "conflict": "¿Cuál es el conflicto o la tensión que mueve el relato?",
+                    "turn": "¿Dónde está el giro, el punto en que la situación cambia?",
+                    "resolution": "¿Cómo se resuelve, o qué queda abierto?",
+                    "narrator": "¿Cómo evalúa el narrador lo que pasa: sus comentarios, lo que repite, lo que calla?"
+                },
+                "law": {
+                    "covenant": "¿A qué pacto pertenece esta ley y a quién se dio?",
+                    "character": "¿Qué muestra del carácter de Dios y de lo que espera de su pueblo?",
+                    "fulfillment": "¿Cómo la retoma el Nuevo Testamento a la luz de Cristo?",
+                    "principle": "¿Qué principio permanece al pasar de Israel a la iglesia?"
+                },
+                "poetry": {
+                    "parallelism": "¿Qué paralelismos ordenan los versos?",
+                    "images": "¿Qué imágenes usa y qué evocaban para sus primeros lectores?",
+                    "tone": "¿Qué tono domina: lamento, alabanza, confianza, súplica?",
+                    "shift": "¿Dónde cambia el tono o la voz que habla?"
+                },
+                "wisdom": {
+                    "observation": "¿Qué observa de la vida y cómo lo funda en el temor del Señor?",
+                    "promise": "¿Es una observación general o una promesa? Un proverbio no es una garantía.",
+                    "contrast": "¿Qué contraste plantea: sabio y necio, justo e impío?",
+                    "dialogue": "¿Cómo dialoga con el resto de la sabiduría, como Job o Eclesiastés?"
+                },
+                "prophecy": {
+                    "situation": "¿A qué situación histórica habla el profeta?",
+                    "form": "¿Qué forma tiene el oráculo: juicio, llamado al arrepentimiento, promesa de restauración?",
+                    "covenant": "¿Qué falta al pacto denuncia, o qué promesa del pacto recuerda?",
+                    "fulfillment": "¿Qué se cumplió en la historia de Israel, qué en Cristo y qué espera todavía?"
+                },
+                "gospel": {
+                    "jesus": "¿Qué revela la escena sobre quién es Jesús?",
+                    "response": "¿Cómo responden los personajes: fe, rechazo, incomprensión?",
+                    "placement": "¿Por qué el evangelista la pone aquí, entre lo que viene antes y lo que sigue?",
+                    "parallels": "¿Qué comparte con los relatos paralelos y en qué se distingue?"
+                },
+                "epistle": {
+                    "occasion": "¿Qué situación de la iglesia motivó la carta?",
+                    "argument": "¿Cómo avanza el argumento: qué conectores lo unen (por tanto, porque, pero)?",
+                    "indicative": "¿Qué es lo que Dios hizo y qué es lo que se pide a la iglesia?",
+                    "whole": "¿Cómo encaja cada parte en el argumento de toda la carta?"
+                },
+                "apocalyptic": {
+                    "symbols": "¿Qué símbolos usa y de qué pasajes del Antiguo Testamento vienen?",
+                    "comfort": "¿Qué consuelo o advertencia da a lectores bajo presión?",
+                    "sovereignty": "¿Qué afirma sobre el gobierno de Dios sobre la historia?",
+                    "restraint": "¿Qué detalles no conviene forzar a un calendario?"
+                }
+            }
+        },
+        "dialog": {
+            "title": "Pasaje y propósito",
+            "description": "Tu lectura del libro antes de ver el panorama. Escribe lo que quieras: solo el libro es necesario para guardar.",
+            "sections": {
+                "passage": "El pasaje",
+                "purpose": "Para qué",
+                "reading": "La lectura del libro",
+                "yourReading": "Tu lectura del libro",
+                "pastoral": "El propósito pastoral",
+                "rhythm": "El ritmo"
+            },
+            "books": "Libros del canon",
+            "addBook": "Agregar un libro",
+            "noBooks": "Elige al menos un libro para guardar.",
+            "ezraNehemiah": "En la Biblia hebrea, Esdras y Nehemías son un solo libro. Puedes marcar los dos.",
+            "scope": "Alcance",
+            "scopeWhole": "Libro completo",
+            "scopeRange": "Desde–hasta",
+            "scopeRangeLabel": "Desde–hasta en {{book}}, con la numeración de tu Biblia",
+            "scopePlaceholder": "p. ej. 4:6-23 o 1-6",
+            "scopeOnlyOneBook": "El alcance desde–hasta se elige con un solo libro marcado.",
+            "scopeError": "No se reconoce ese tramo. Escríbelo como 4:6-23 o 1-6.",
+            "readFirst": "Antes de dividirlo, lee el libro entero de una sentada.",
+            "chapterTitles": "Un título de una línea por capítulo de {{book}}",
+            "chapterTitlesHint": "Completa los que quieras.",
+            "chapter": "Título del capítulo {{number}}",
+            "repetitions": "Las repeticiones que observaste",
+            "repetitionsHint": "Palabras, frases o escenas que vuelven. Búscalas tú en el texto.",
+            "yourReadingHint": "Provisoria: la vas a contrastar con el panorama y con cada estudio. Cada campo lleva los versículos que lo sostienen.",
+            "occasion": "Ocasión y primeros destinatarios",
+            "centralIdea": "Idea central del libro",
+            "christTrajectory": "Trayectoria hacia Cristo",
+            "christTrajectoryHint": "Cómo lleva este libro a Cristo en la historia de la redención.",
+            "evidence": "Versículos que lo sostienen",
+            "evidencePlaceholder": "p. ej. 1:1; 6:22; 7:27",
+            "structure": "Estructura: los movimientos del libro",
+            "structureHint": "Cada movimiento con su desde–hasta y un título, por ejemplo 1-6 «el regreso y el templo». Con varios libros, escribe el libro: «Neh 1-7».",
+            "movementRange": "Desde–hasta del movimiento",
+            "movementTitle": "Título del movimiento",
+            "addMovement": "Agregar un movimiento",
+            "removeMovement": "Quitar el movimiento {{number}}",
+            "movementError": "Revisa los movimientos: cada uno necesita un desde–hasta como 1-6 o 4:6-23.",
+            "audience": "A quiénes",
+            "need": "Qué necesidad",
+            "needEvidence": "¿Con qué texto del libro muestras que la atiende?",
+            "needEvidenceHint": "Primero el mundo bíblico: la necesidad tiene que estar en el texto, no solo en la congregación.",
+            "desiredChange": "Qué cambio esperas",
+            "rhythmHint": "El ritmo da las fechas; la división en perícopas la decide el texto.",
+            "sundays": "Domingos aproximados",
+            "startDate": "Fecha de inicio",
+            "frequency": "Frecuencia",
+            "frequencyNone": "Sin elegir",
+            "sundaysError": "Los domingos van en número.",
+            "cancel": "Cancelar",
+            "save": "Guardar el encuadre",
+            "saved": "Encuadre guardado.",
+            "saveFailed": "No se pudo guardar el encuadre."
+        },
+        "notes": {
+            "title": "Para predicar {{book}}",
+            "hint": "Decisiones que el texto no resuelve solo, cada una con sus fuentes.",
+            "highlighted": "toca tu alcance",
+            "sources": "Fuentes: {{list}}"
+        },
+        "annotate": {
+            "title": "Anotar lo que dice un estudio",
+            "description": "Después de cada estudio, ¿qué cambia en tu lectura del libro?",
+            "study": "Estudio",
+            "studyPlaceholder": "Elige un estudio",
+            "verdict": "Lo que hace con tu lectura",
+            "note": "Nota",
+            "notePlaceholder": "Qué viste en el texto que confirma, matiza o contradice tu lectura.",
+            "save": "Anotar",
+            "saved": "Anotado en el registro.",
+            "saveFailed": "No se pudo anotar."
+        },
+        "consolidate": {
+            "title": "Consolidar la idea",
+            "description": "Revisa tu idea central con lo que anotaste. La idea revisada es la única que llega al sermón, y solo para conectarlo con la serie.",
+            "original": "Tu idea original",
+            "noOriginal": "No escribiste una idea central en el encuadre.",
+            "log": "Lo que anotaste",
+            "revised": "Idea revisada",
+            "verdict": "Veredicto",
+            "why": "Por qué",
+            "whyPlaceholder": "Qué te llevó a confirmarla, matizarla o corregirla.",
+            "save": "Consolidar",
+            "saved": "Idea consolidada.",
+            "saveFailed": "No se pudo consolidar la idea."
+        }
     }
 }

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ProjectOutput, ProjectOutputKind, plannerBookForProject, projectWorkTypes } from '@dosfilos/domain';
+import { ProjectOutput, ProjectOutputKind, consolidateIdea, plannerBookForProject, projectWorkTypes, type NewHypothesisEntry } from '@dosfilos/domain';
 import { seriesService } from '@dosfilos/application';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -23,6 +23,10 @@ import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadma
 import { ProjectSetupCards, type ProjectSetupChange } from './components/project/ProjectSetupCards';
 import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
 import { ProjectSeriesSection, planSeriesUrl, seriesWorkUrl } from './components/project/ProjectSeriesSection';
+import { ProjectFramingCard } from './components/project/ProjectFramingCard';
+import { ProjectFramingDialog } from './components/project/ProjectFramingDialog';
+import type { FramingSave } from './components/project/ProjectFramingForm';
+import type { ConsolidateInput } from './components/project/ProjectFramingConsolidateDialog';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
 import { ProjectSourcePickerModal } from './components/project/ProjectSourcePickerModal';
@@ -94,6 +98,19 @@ export function ProjectDashboard() {
         { mode: 'create' } | { mode: 'edit'; output: ProjectOutput } | null
     >(null);
     const [outputToDelete, setOutputToDelete] = useState<ProjectOutput | null>(null);
+    const [framingOpen, setFramingOpen] = useState(false);
+
+    // «Cambiar en el encuadre» (Estado del arte → Requisitos) llega con
+    // `?encuadre=1`: abre el diálogo una vez y limpia la dirección.
+    const [searchParams, setSearchParams] = useSearchParams();
+    const pideEncuadre = searchParams.get('encuadre') === '1';
+    useEffect(() => {
+        if (!pideEncuadre || !projects) return;
+        if (projects.some(p => p.id === projectId && p.type === 'exegetical')) setFramingOpen(true);
+        const resto = new URLSearchParams(searchParams);
+        resto.delete('encuadre');
+        setSearchParams(resto, { replace: true });
+    }, [pideEncuadre, projects, projectId, searchParams, setSearchParams]);
 
     const materialItems = useMemo<MaterialItem[]>(() => {
         const fromOutputs: MaterialItem[] = (outputs ?? []).map(o => ({
@@ -165,8 +182,45 @@ export function ProjectDashboard() {
         }
     };
 
+    /** El encuadre: UNA escritura con sus campos (`framingPatch`) y sus libros. */
+    const guardarEncuadre = async ({ framingPatch, bibleBooks }: FramingSave) => {
+        try {
+            await updateProject.mutateAsync({ projectId: project.id, framingPatch, bibleBooks });
+            toast.success(t('framing.dialog.saved'));
+            setFramingOpen(false);
+        } catch (err) {
+            console.error('[projects] save framing failed:', err);
+            toast.error(t('framing.dialog.saveFailed'));
+            throw err;
+        }
+    };
+
+    /** Una anotación del registro: el caso de uso la agrega al registro GUARDADO. */
+    const anotarEncuadre = async (hypothesisEntry: NewHypothesisEntry) => {
+        try {
+            await updateProject.mutateAsync({ projectId: project.id, hypothesisEntry });
+            toast.success(t('framing.annotate.saved'));
+        } catch (err) {
+            console.error('[projects] save hypothesis entry failed:', err);
+            toast.error(t('framing.annotate.saveFailed'));
+            throw err;
+        }
+    };
+
+    const consolidarEncuadre = async (input: ConsolidateInput) => {
+        try {
+            await updateProject.mutateAsync({ projectId: project.id, framingPatch: consolidateIdea(project.framing, input) });
+            toast.success(t('framing.consolidate.saved'));
+        } catch (err) {
+            console.error('[projects] consolidate idea failed:', err);
+            toast.error(t('framing.consolidate.saveFailed'));
+            throw err;
+        }
+    };
+
     const handleRoadmapCta = (kind: RoadmapCtaKind) => {
         switch (kind) {
+            case 'frame': return setFramingOpen(true);
             case 'study': return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
             case 'charge': return document.getElementById('project-charge-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             case 'newSession': return navigate(`/dashboard/faculty?projectId=${projectId}`);
@@ -269,11 +323,23 @@ export function ProjectDashboard() {
                     />
                 )}
 
+                {/* El encuadre del Exegético: su fase 1 (fase «Encuadre de la serie»). */}
+                {project.type === 'exegetical' && (
+                    <ProjectFramingCard
+                        project={project}
+                        studies={projectStudies}
+                        onEdit={() => setFramingOpen(true)}
+                        onAnnotate={anotarEncuadre}
+                        onConsolidate={consolidarEncuadre}
+                        saving={updateProject.isPending}
+                    />
+                )}
+
                 {/* Los datos del curso y sus tipos de trabajo (ADR-046, etapa
                     1b): no aplican a los proyectos de predicación ni de
-                    consejería. */}
+                    consejería. Un Exegético las pliega mientras no las use. */}
                 {!['sermon', 'series', 'counseling'].includes(project.type ?? 'general') && (
-                    <ProjectSetupCards project={project} onSave={guardar} />
+                    <ProjectSetupCards project={project} onSave={guardar} collapsible={project.type === 'exegetical'} />
                 )}
 
                 {/* Las series de predicación del proyecto (etapa 3 de ADR-046). */}
@@ -371,6 +437,16 @@ export function ProjectDashboard() {
                     onCreate={handleCreateOutput}
                     onUpdate={handleUpdateOutput}
                     saving={createOutput.isPending || updateOutput.isPending}
+                />
+            )}
+
+            {project.type === 'exegetical' && (
+                <ProjectFramingDialog
+                    project={project}
+                    open={framingOpen}
+                    onOpenChange={setFramingOpen}
+                    onSave={guardarEncuadre}
+                    saving={updateProject.isPending}
                 />
             )}
 

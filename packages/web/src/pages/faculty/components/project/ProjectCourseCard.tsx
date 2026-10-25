@@ -4,6 +4,7 @@ import { projectCourseInfo, type AIProject, type ProjectCourseInfo } from '@dosf
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
+import { canonico } from '@/utils/canonico';
 
 interface ProjectCourseCardProps {
     project: AIProject;
@@ -25,7 +26,9 @@ export function ProjectCourseCard({ project, onSave, saving }: ProjectCourseCard
     const clave = JSON.stringify(guardado);
     useEffect(() => setDraft(JSON.parse(clave) as ProjectCourseInfo), [clave]);
 
-    const sinCambios = JSON.stringify(draft) === clave;
+    // Canónico: elegir una guía y volver a «Ninguna» deja `null` donde lo
+    // guardado no tenía la clave, y eso no es un cambio.
+    const sinCambios = canonico(draft) === canonico(guardado);
     const campo = 'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40';
 
     return (
