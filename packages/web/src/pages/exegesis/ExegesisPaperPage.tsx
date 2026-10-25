@@ -69,6 +69,7 @@ import { MinistryCompositionDialog } from '@/components/exegesis/canonical/Minis
 import { CoherencePassDialog } from '@/components/exegesis/CoherencePassDialog';
 import { ExegesisQuotaBadge } from '@/components/exegesis/ExegesisQuotaBadge';
 import { PaperDerivedArtifactsPanel } from '@/components/exegesis/PaperDerivedArtifactsPanel';
+import { ReadingOfTheBookPanel } from './components/ReadingOfTheBookPanel';
 import { TextZoomControl } from '@/components/ui/text-zoom-control';
 import { getTextZoomClass, type TextZoomLevel } from '@/lib/textZoom';
 import { exportPaperToDocx } from '@/lib/exegesis/exportPaperToDocx';
@@ -607,15 +608,21 @@ export function ExegesisPaperPage() {
             {/* Body */}
             <main className={`flex-1 ${containerMaxWidthClass} w-full mx-auto px-6 py-8 ${getTextZoomClass(effectiveZoom)}`}>
                 <div className={`grid ${gridTemplateClass} gap-6`}>
-                    <StepsPanel
-                        paper={paper}
-                        language={activeLanguage}
-                        passageEligible={passageShape.eligible}
-                        passageHint={passageShape.hint(t)}
-                        onStartGeneration={handleStartGeneration}
-                        starting={seedSteps.isPending}
-                        t={t}
-                    />
+                    <div className="min-w-0 space-y-6">
+                        <StepsPanel
+                            paper={paper}
+                            language={activeLanguage}
+                            passageEligible={passageShape.eligible}
+                            passageHint={passageShape.hint(t)}
+                            onStartGeneration={handleStartGeneration}
+                            starting={seedSteps.isPending}
+                            t={t}
+                        />
+                        {/* La lectura del pastor, al FINAL y plegada: primero se
+                            observa el texto sin la hipótesis (U7). No se renderiza
+                            si el estudio no tiene un proyecto con encuadre. */}
+                        <ReadingOfTheBookPanel paper={paper} />
+                    </div>
                     {!effectiveSidebarHidden && (
                         <aside className="space-y-4">
                             <PaperLengthCard paper={paper} language={activeLanguage} />

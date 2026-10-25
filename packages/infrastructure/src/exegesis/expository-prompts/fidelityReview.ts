@@ -119,7 +119,7 @@ export function buildFidelityUserMessage(input: FidelityInput): string {
     const macroBlock = formatMacrosForPrompt(input.macroSections, isSpanish);
     const microBlock = formatMicrosForPrompt(input.exegeticalUnits, isSpanish);
     const preachableBlock = formatPreachablesForPrompt(input.preachableUnits, isSpanish);
-    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage);
+    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage, input.book);
 
     if (isSpanish) {
         return [

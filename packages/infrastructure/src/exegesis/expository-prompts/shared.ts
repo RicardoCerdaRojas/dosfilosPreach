@@ -1,4 +1,4 @@
-import type { AssistantVerseInput } from '@dosfilos/domain';
+import { ARAMAIC_SPANS, BOOKS_WITH_ARAMAIC_SECTIONS, findBooksByAlias, getBookById, type AssistantVerseInput } from '@dosfilos/domain';
 
 /**
  * Pipeline version identifier embedded into every PassResult.passVersion
@@ -58,19 +58,25 @@ export function fingerprintVerses(verses: ReadonlyArray<AssistantVerseInput>): s
  *
  * Returned with leading newlines so it slots cleanly between the
  * book header and the verse-text body in the user message.
+ *
+ * `book` (nombre visible o id): con Esdras o Daniel, el preámbulo hebreo
+ * avisa qué secciones están en arameo. Sin él, el texto es el de siempre.
  */
 export function buildSourcePreamble(
     sourceLanguage: 'greek' | 'hebrew' | 'translation' | undefined,
     displayLanguage: 'es' | 'en',
+    book?: string,
 ): string {
     if (!sourceLanguage) return '';
     const isSpanish = displayLanguage === 'es';
+    // Solo lo usan los dos casos «hebrew»: con traducción el texto ya no es el original.
+    const arameo = aramaicNote(book, displayLanguage);
     if (isSpanish) {
         switch (sourceLanguage) {
             case 'greek':
                 return '\nFuente del texto: griego original (SBLGNT). Cita marcadores sintácticos directamente desde el texto provisto (cadenas participiales, μέν/δέ, asíndeton, conectores como γάρ/οὖν/διό, inclusio).\n';
             case 'hebrew':
-                return '\nFuente del texto: hebreo original (WLC). Cita marcadores sintácticos directamente desde el texto provisto (waw-consecutivo, וַיְהִי, paralelismo, fórmulas tipo כֹּה אָמַר יְהוָה).\n';
+                return `\nFuente del texto: hebreo original (WLC). Cita marcadores sintácticos directamente desde el texto provisto (waw-consecutivo, וַיְהִי, paralelismo, fórmulas tipo כֹּה אָמַר יְהוָה).${arameo}\n`;
             case 'translation':
                 return '\nFuente del texto: traducción al español como surrogate (RVR1960) — el original griego/hebreo no estuvo disponible. Aproxima los marcadores sintácticos del original que se reflejen en la traducción y reconócelo en tus justificaciones cuando la inferencia sea débil.\n';
         }
@@ -79,9 +85,36 @@ export function buildSourcePreamble(
         case 'greek':
             return '\nText source: original Greek (SBLGNT). Cite syntactic markers directly from the provided text (participial chains, μέν/δέ, asyndeton, connectors like γάρ/οὖν/διό, inclusio).\n';
         case 'hebrew':
-            return '\nText source: original Hebrew (WLC). Cite syntactic markers directly from the provided text (waw-consecutive, וַיְהִי, parallelism, formulas like כֹּה אָמַר יְהוָה).\n';
+            return `\nText source: original Hebrew (WLC). Cite syntactic markers directly from the provided text (waw-consecutive, וַיְהִי, parallelism, formulas like כֹּה אָמַר יְהוָה).${arameo}\n`;
         case 'translation':
             return '\nText source: English translation as surrogate (ASV) — the original Greek/Hebrew was not available. Approximate the original syntactic markers that carry over into the translation and acknowledge in your justifications when the inference is weak.\n';
     }
     return '';
+}
+
+
+/**
+ * «Esdras 4:8–6:18 y 7:12–26 están en arameo», con los tramos de
+ * `ARAMAIC_SPANS`. Sin esto, el panorama de Esdras se escribía como si todo
+ * el libro fuera hebreo y nombraba con categorías hebreas la correspondencia
+ * imperial.
+ */
+function aramaicNote(book: string | undefined, displayLanguage: 'es' | 'en'): string {
+    const nombre = book?.trim();
+    if (!nombre) return '';
+    const id = getBookById(nombre as never)?.id ?? (() => {
+        const hallados = findBooksByAlias(nombre);
+        return hallados.length === 1 ? hallados[0]!.id : undefined;
+    })();
+    if (!id || !BOOKS_WITH_ARAMAIC_SECTIONS.has(id)) return '';
+    const y = displayLanguage === 'es' ? ' y ' : ' and ';
+    const tramos = ARAMAIC_SPANS.filter(s => s.bookId === id).map(s =>
+        s.fromChapter === s.toChapter
+            ? `${s.fromChapter}:${s.fromVerse}–${s.toVerse}`
+            : `${s.fromChapter}:${s.fromVerse}–${s.toChapter}:${s.toVerse}`).join(y);
+    // El preámbulo pide «waw-consecutivo»: en arameo no existe, y sin decirlo el
+    // análisis lo buscaba igual. Los marcadores, con la vocalización de los léxicos.
+    return displayLanguage === 'es'
+        ? ` Ojo: ${nombre} ${tramos} está en arameo bíblico, no en hebreo; los marcadores de esas secciones se nombran como arameos. El arameo bíblico no tiene waw-consecutivo: busca marcadores como אֱדַיִן («entonces»), כְּעַן («ahora»), la partícula דִּי y las fórmulas de las cartas (encabezado, saludo, «copia de la carta»).`
+        : ` Note: ${nombre} ${tramos} is in Biblical Aramaic, not Hebrew; name markers from those sections as Aramaic. Biblical Aramaic has no waw-consecutive: look for markers such as אֱדַיִן ("then"), כְּעַן ("now"), the particle דִּי, and the letter formulas (heading, greeting, "copy of the letter").`;
 }

@@ -8,6 +8,7 @@ import { mergeBibliographyCandidates } from '../../services/projectBibliography'
 import { JAMES_RECOMMENDATIONS } from '../nt/james';
 import { SECOND_PETER_RECOMMENDATIONS } from '../nt/2peter';
 import { JONAH_RECOMMENDATIONS } from '../ot/jonah';
+import { EZRA_RECOMMENDATIONS } from '../ot/ezra';
 import { NEHEMIAH_RECOMMENDATIONS } from '../ot/nehemiah';
 import { RUTH_RECOMMENDATIONS } from '../ot/ruth';
 
@@ -17,7 +18,7 @@ import { RUTH_RECOMMENDATIONS } from '../ot/ruth';
  * (scripts/catalog/verificar-catalogo.ts), y ningún ISBN del catálogo es
  * un número mal formado.
  */
-const VERIFICADOS = [JAMES_RECOMMENDATIONS, SECOND_PETER_RECOMMENDATIONS, JONAH_RECOMMENDATIONS, NEHEMIAH_RECOMMENDATIONS, RUTH_RECOMMENDATIONS];
+const VERIFICADOS = [JAMES_RECOMMENDATIONS, SECOND_PETER_RECOMMENDATIONS, JONAH_RECOMMENDATIONS, EZRA_RECOMMENDATIONS, NEHEMIAH_RECOMMENDATIONS, RUTH_RECOMMENDATIONS];
 const obras = (b: typeof VERIFICADOS[number]) => Object.values(b.bySourceType).flat();
 const TIPOS = Object.keys(SOURCE_TYPE_CATALOG) as SourceType[];
 

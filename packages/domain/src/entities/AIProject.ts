@@ -1,5 +1,6 @@
 import type { PaperCover } from '../exegesis/entities/ExegeticalPaper';
 import type { BibliographySearchLogEntry, ProjectBibliographyCriteria, ProjectBibliographyEntry } from '../exegesis/services/projectBibliography';
+import type { ProjectFraming } from '../exegesis/services/projectFraming';
 
 export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'slate' | 'orange' | 'teal';
 
@@ -76,6 +77,13 @@ export interface AIProject {
     bibliographyCriteria?: ProjectBibliographyCriteria | null;
     /** Las búsquedas e importaciones hechas, con fecha y resultado (etapa 2b). */
     bibliographySearchLog?: BibliographySearchLogEntry[];
+    /**
+     * El encuadre: pasaje, lectura del libro, propósito y ritmo
+     * (`docs/FASE_ENCUADRE_SERIE_2026-10.md`). Se escribe por campo con
+     * rutas con punto, así el formulario no pisa el registro ni la revisión.
+     * Los libros NO van aquí: viven en `bibliographyCriteria.bibleBooks`.
+     */
+    framing?: ProjectFraming;
     /**
      * @deprecated Etapa 1: un solo encargo por proyecto. Ya no se escribe;
      * se lee como datos del curso y un tipo de trabajo, para no perder uno

@@ -1,5 +1,6 @@
 import { BIBLE_CANON, getBookById, type BibleBookId, type BibliographyWarning, type ProjectBibliographyCriteria, type ProjectBibliographyEntry, type SourceType } from '@dosfilos/domain';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, Pencil, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '@/i18n';
 import { campo } from './BibliographyEntryEditor';
 
@@ -11,6 +12,72 @@ interface BibliographyCriteriaPanelProps {
     requirements: ReadonlyArray<{ sourceType: SourceType; minimum: number; workType?: string }>;
     /** Los libros de los estudios: valen mientras el proyecto no elija los suyos. */
     studyBooks: ReadonlyArray<BibleBookId>;
+    /**
+     * Con encuadre, los libros se ven en solo lectura: estos (los guardados)
+     * y un enlace a su diálogo. Sin encuadre, se eligen aquí como siempre.
+     */
+    framing?: { books: ReadonlyArray<BibleBookId>; href: string; /** Con cambios sin guardar, pregunta antes de salir. */ canLeave?: () => boolean };
+}
+
+interface BibleBooksPickerProps {
+    books: ReadonlyArray<BibleBookId>;
+    /** Sin él, los libros no se quitan (los de los estudios, o en solo lectura). */
+    onRemove?: (book: BibleBookId) => void;
+    /** Sin él, no hay selector para agregar. */
+    onAdd?: (book: BibleBookId) => void;
+    /** Nombre accesible de la lista. */
+    listLabel: string;
+    /** Rótulo del selector para agregar. */
+    addLabel?: string;
+    /** Texto cuando no hay libros. */
+    emptyText?: string;
+}
+
+/**
+ * Los libros bíblicos como fichas, con un selector del canon para agregar.
+ * Lo comparten los requisitos del estado del arte y el diálogo del encuadre.
+ */
+export function BibleBooksPicker({ books, onRemove, onAdd, listLabel, addLabel, emptyText }: BibleBooksPickerProps) {
+    const { t, i18n } = useTranslation('projects');
+    const en = i18n.language?.startsWith('en');
+    const nombre = (b: BibleBookId) => (en ? getBookById(b)?.nameEn : getBookById(b)?.nameEs) ?? b;
+    return (
+        <div className="space-y-1">
+            {books.length === 0 ? (
+                emptyText ? <p className="text-xs text-foreground">{emptyText}</p> : null
+            ) : (
+                <ul className="flex flex-wrap gap-1.5" aria-label={listLabel}>
+                    {books.map(b => (
+                        <li key={b} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-foreground">
+                            {nombre(b)}
+                            {onRemove && (
+                                // En el teléfono, el botón mide 44 px: una «x» de 16 px no se acierta con el dedo.
+                                <button type="button" onClick={() => onRemove(b)} aria-label={t('stateOfArt.criteria.removeBook', { book: nombre(b) })} className="-my-2 -mr-1.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:my-0 sm:mr-0 sm:min-h-0 sm:min-w-0 sm:p-0.5">
+                                    <X className="h-3 w-3" />
+                                </button>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {onAdd && (
+                <label className="block space-y-1 pt-1">
+                    <span className="block text-xs text-muted-foreground">{addLabel ?? t('stateOfArt.criteria.addBook')}</span>
+                    <select
+                        className={campo}
+                        value=""
+                        onChange={e => {
+                            const b = e.target.value as BibleBookId;
+                            if (b && !books.includes(b)) onAdd(b);
+                        }}
+                    >
+                        <option value="">—</option>
+                        {BIBLE_CANON.filter(b => !books.includes(b.id)).map(b => <option key={b.id} value={b.id}>{en ? b.nameEn : b.nameEs}</option>)}
+                    </select>
+                </label>
+            )}
+        </div>
+    );
 }
 
 /**
@@ -19,10 +86,8 @@ interface BibliographyCriteriaPanelProps {
  * cap. 1). Los criterios de inclusión y exclusión son los que Vyhmeister
  * (cap. 7) pide explicar en una bibliografía selectiva.
  */
-export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requirements, studyBooks }: BibliographyCriteriaPanelProps) {
-    const { t, i18n } = useTranslation('projects');
-    const en = i18n.language?.startsWith('en');
-    const nombre = (b: BibleBookId) => (en ? getBookById(b)?.nameEn : getBookById(b)?.nameEs) ?? b;
+export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requirements, studyBooks, framing }: BibliographyCriteriaPanelProps) {
+    const { t } = useTranslation('projects');
     // Los libros del proyecto: los elegidos, o los de los estudios mientras no
     // se elija ninguno. Un proyecto sin estudios (una serie que empieza, una
     // investigación) los elige aquí: sin ellos no hay guía ni catálogo.
@@ -68,47 +133,41 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
                         ? <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.noMinimums')}</p>
                         : [...porTipoDeTrabajo].map(([trabajo, mins]) => (
                             <div key={trabajo} className="space-y-0.5">
-                                {trabajo && <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{trabajo}</p>}
+                                {trabajo && <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">{trabajo}</p>}
                                 <ul className="text-xs text-foreground space-y-0.5">{mins.map(m => <li key={m.sourceType}>{tx(`sourceTypes.${m.sourceType}.label`)} · ≥ {m.minimum}</li>)}</ul>
                             </div>
                         ))}
-                    <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.minimumsHint')}</p>
+                    <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.minimumsHint')}</p>
                 </div>
                 <div className="rounded-lg border border-border p-3 space-y-1">
                     <p className="text-sm font-medium text-foreground">{t('stateOfArt.criteria.books')}</p>
-                    {libros.length === 0 ? (
-                        <p className="text-xs text-foreground">{t('stateOfArt.criteria.noBooks')}</p>
+                    {framing ? (
+                        <>
+                            <BibleBooksPicker books={framing.books} listLabel={t('stateOfArt.criteria.books')} emptyText={t('stateOfArt.criteria.noBooksFraming')} />
+                            <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.booksFromFraming')}</p>
+                            <Link
+                                to={framing.href}
+                                onClick={e => { if (framing.canLeave && !framing.canLeave()) e.preventDefault(); }}
+                                // `text-primary` chico no alcanza AA: texto normal, subrayado como enlace.
+                                className="inline-flex min-h-11 items-center gap-1 rounded-md text-xs font-medium text-foreground underline underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0"
+                            >
+                                <Pencil className="h-3 w-3" />{t('stateOfArt.criteria.changeInFraming')}
+                            </Link>
+                        </>
                     ) : (
-                        <ul className="flex flex-wrap gap-1.5" aria-label={t('stateOfArt.criteria.books')}>
-                            {libros.map(b => (
-                                <li key={b} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-foreground">
-                                    {nombre(b)}
-                                    {!desdeEstudios && (
-                                        <button type="button" onClick={() => fijar(elegidos.filter(x => x !== b))} aria-label={t('stateOfArt.criteria.removeBook', { book: nombre(b) })} className="rounded-full p-0.5 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                    {desdeEstudios && <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.fromStudies')}</p>}
-                    <label className="block space-y-1 pt-1">
-                        <span className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.addBook')}</span>
-                        <select
-                            className={campo}
-                            value=""
-                            onChange={e => {
-                                const b = e.target.value as BibleBookId;
+                        <>
+                            <BibleBooksPicker
+                                books={libros}
+                                listLabel={t('stateOfArt.criteria.books')}
+                                emptyText={t('stateOfArt.criteria.noBooks')}
+                                onRemove={desdeEstudios ? undefined : b => fijar(elegidos.filter(x => x !== b))}
                                 // Al elegir el primero, los de los estudios se conservan.
-                                if (b && !libros.includes(b)) fijar([...libros, b]);
-                            }}
-                        >
-                            <option value="">—</option>
-                            {BIBLE_CANON.filter(b => !libros.includes(b.id)).map(b => <option key={b.id} value={b.id}>{en ? b.nameEn : b.nameEs}</option>)}
-                        </select>
-                    </label>
-                    <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.booksHint')}</p>
+                                onAdd={b => fijar([...libros, b])}
+                            />
+                            {desdeEstudios && <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.fromStudies')}</p>}
+                            <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.booksHint')}</p>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

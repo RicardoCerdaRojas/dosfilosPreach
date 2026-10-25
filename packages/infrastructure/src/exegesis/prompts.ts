@@ -4,6 +4,8 @@ import {
     type ExegesisPriorStep,
     type ExegesisSourceContext,
     type MissingSourceTypeRequirement,
+    type SeriesPlacement,
+    type SeriesPlacementNeighbor,
     type SourceType,
     type StepEmphasis,
 } from '@dosfilos/domain';
@@ -55,11 +57,13 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
     const lang = input.language;
     // Mismo motivo que en el analizador canónico: un pasaje del AT se exegeta
     // en hebreo, y pedirle "el texto griego" hace que el modelo saque la LXX
-    // de memoria e ignore el texto masorético que se le dio como base.
-    const voice = voiceFor(input.paperPassage.bookId);
+    // de memoria e ignore el texto masorético que se le dio como base. Con el
+    // pasaje, la voz sabe si toca arameo (Esd 4:8–6:18, Dn 2:4–7:28).
+    const voice = voiceFor(input.paperPassage.bookId, input.paperPassage);
     const passage = formatPassageReference(input.paperPassage, lang);
     const styleGuideBlock = formatStyleGuide(input.styleGuideContent, lang);
     const briefBlock = formatAssignmentBrief(input.assignmentBrief, lang);
+    const placementBlock = formatSeriesPlacement(input.seriesPlacement, lang);
     const corpusGapsBlock = formatCorpusGaps(input.missingSourceTypes, lang);
 
     if (lang === 'en') {
@@ -69,6 +73,7 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
             `## Your task`,
             `Produce an integrated translation and exegetical analysis on **${passage}**, working ${stepKindDescription(input.kind, lang)}.`,
             briefBlock,
+            placementBlock,
             ``,
             `## Hermeneutic stance`,
             `Historical-grammatical-literal. Prioritize: authorial sense, ${voice.languageEn} grammar, clause syntax, argumentative flow of the book, immediate literary context, OT intertextuality, biblical theology that emerges from the passage. NO allegorizing. NO doctrinal conclusions not supported by the text.`,
@@ -103,6 +108,7 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
         `## Tu tarea`,
         `Producir traducción y análisis exegético integrado sobre **${passage}**, trabajando ${stepKindDescription(input.kind, lang)}.`,
         briefBlock,
+        placementBlock,
         ``,
         `## Postura hermenéutica`,
         `Histórico-gramatical-literal. Prioriza: sentido autoral, gramática ${voice.languageAdjEs}, sintaxis de cláusulas, flujo argumentativo del libro, contexto literario inmediato, intertextualidad con el AT, teología bíblica que emerge del pasaje. NO alegorices. NO fuerces conclusiones doctrinales que no estén sustentadas por el texto.`,
@@ -143,7 +149,12 @@ function buildUserMessage(input: ExegesisGenerationInput): string {
 
 function renderUserMessage(input: ExegesisGenerationInput, sources: string): string {
     const lang = input.language;
-    const voice = voiceFor(input.paperPassage.bookId);
+    // El paso de un versículo habla de ESE versículo: Esd 4:7 es hebreo
+    // aunque el trabajo sea Esd 4:6-24.
+    const voice = voiceFor(
+        input.paperPassage.bookId,
+        input.kind === 'verse' && input.verseRef ? input.verseRef : input.paperPassage,
+    );
     const priorBlock = formatPriorSteps(input.priorAcceptedSteps, lang);
     const emphasisBlock = formatStepEmphasis(input.stepEmphasis, lang);
     const hint = input.regenerationHint
@@ -318,6 +329,47 @@ function formatAssignmentBrief(brief: string | null, lang: 'es' | 'en'): string 
         `Trata lo siguiente como guía autoritativa a nivel del paper. Cada paso que generes debe mantenerse alineado con este encuadre — la introducción presenta la tesis que se desprende, los versos construyen el argumento hacia ella, y la conclusión sintetiza de vuelta hacia el encuadre.`,
         ``,
         brief.trim(),
+    ].join('\n');
+}
+
+/**
+ * El lugar de la perícopa en su serie, como CONTEXTO LITERARIO. Va aparte
+ * del encargo (que es guía autoritativa) y con la advertencia explícita de
+ * que no fija la tesis: saber que viene después del altar ayuda a leer la
+ * oposición, pero no le dice qué afirma. Sin lugar, cadena vacía: el prompt
+ * queda byte a byte igual. Los pasajes ya vienen en la numeración del lector.
+ */
+function formatSeriesPlacement(placement: SeriesPlacement | null | undefined, lang: 'es' | 'en'): string {
+    if (!placement) return '';
+    const vecina = (n: SeriesPlacementNeighbor | undefined): string | null => {
+        if (!n) return null;
+        if (n.passage && n.title) return lang === 'en' ? `${n.passage} ("${n.title}")` : `${n.passage} («${n.title}»)`;
+        if (n.passage) return n.passage;
+        return lang === 'en' ? `"${n.title}"` : `«${n.title}»`;
+    };
+    const antes = vecina(placement.previous);
+    const despues = vecina(placement.next);
+    if (lang === 'en') {
+        return [
+            ``,
+            `## Place in the book (literary context, not thesis)`,
+            [
+                `Pericope ${placement.position} of ${placement.total} in the series.`,
+                antes ? `Before: ${antes}.` : null,
+                despues ? `After: ${despues}.` : null,
+            ].filter(Boolean).join(' '),
+            `Use it only to situate the passage within the flow of the book. It does not set the thesis or the analysis: those come from this passage.`,
+        ].join('\n');
+    }
+    return [
+        ``,
+        `## Lugar en el libro (contexto literario, no tesis)`,
+        [
+            `Perícopa ${placement.position} de ${placement.total} de la serie.`,
+            antes ? `Antes: ${antes}.` : null,
+            despues ? `Después: ${despues}.` : null,
+        ].filter(Boolean).join(' '),
+        `Úsalo solo para situar el pasaje en el flujo del libro. No fija la tesis ni el análisis: esos salen de este pasaje.`,
     ].join('\n');
 }
 

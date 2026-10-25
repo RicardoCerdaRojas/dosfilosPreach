@@ -102,7 +102,8 @@ const TIPOS_DE_LIBRO: ReadonlySet<SourceType> = new Set(['commentary-critical', 
  */
 const BUSQUEDA_EN: Partial<Record<BibleBookId, string>> = {
     EXO: '"Book of Exodus"', NUM: '"Book of Numbers"', JOS: '"Book of Joshua"', JDG: '"Book of Judges"', RUT: '"Book of Ruth"',
-    EZR: '"Book of Ezra"', EST: '"Book of Esther"', JOB: '"Book of Job"', PRO: '"Book of Proverbs"', SNG: '"Song of Songs"',
+    // Esdras-Nehemías es un solo libro en la Biblia hebrea, y así se titula buena parte de la literatura.
+    EZR: '"Book of Ezra" OR "Ezra-Nehemiah"', NEH: '"Nehemiah" OR "Ezra-Nehemiah"', EST: '"Book of Esther"', JOB: '"Book of Job"', PRO: '"Book of Proverbs"', SNG: '"Song of Songs"',
     DAN: '"Book of Daniel"', JOL: '"Book of Joel"', AMO: '"Book of Amos"', JON: '"Book of Jonah"', MIC: '"Book of Micah"', NAM: '"Book of Nahum"',
     MAT: '"Gospel of Matthew"', MRK: '"Gospel of Mark"', LUK: '"Gospel of Luke"', JHN: '"Gospel of John"', ACT: '"Acts of the Apostles"',
     ROM: '"Epistle to the Romans" OR "Letter to the Romans"', TIT: '"Epistle to Titus" OR "Letter to Titus"',
@@ -179,6 +180,8 @@ export function passageForms(p: PassageReference, language: 'es' | 'en'): string
     return [...new Set(formas)];
 }
 
+/** Con OR, entre paréntesis: «"A" OR "B" commentary» exigiría «commentary» solo a la segunda forma. */
+const agrupado = (q: string) => (q.includes(' OR ') ? `(${q})` : q);
 const unidas = (formas: string[]) => formas.map(f => `"${f}"`).join(' OR ');
 const nombre = (b: BibleBookId, language: 'es' | 'en') => (language === 'es' ? getBookById(b)?.nameEs : getBookById(b)?.nameEn) ?? b;
 
@@ -247,7 +250,7 @@ export function searchGuide(input: SearchGuideInput): GuideStep[] {
             // En EE. UU. es de dominio público lo publicado hace más de 95 años.
             publicDomainBefore: (input.year ?? new Date().getFullYear()) - 95,
             queries: libros.flatMap(b => {
-                const q = `${en(b)} commentary`;
+                const q = `${agrupado(en(b))} commentary`;
                 return [consulta('internet-archive', q, nombre(b, language)), consulta('hathitrust', q, nombre(b, language))];
             }),
         });
@@ -259,7 +262,7 @@ export function searchGuide(input: SearchGuideInput): GuideStep[] {
         pasos.push({
             kind: 'books', reasons: libroQueFalta.map(sourceType => ({ kind: 'type', sourceType })),
             queries: libros.flatMap(b => {
-                const q = `${en(b)} commentary`;
+                const q = `${agrupado(en(b))} commentary`;
                 return [consulta('worldcat', q, nombre(b, language)), consulta('google-books', q, nombre(b, language))];
             }),
         });

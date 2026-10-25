@@ -274,7 +274,7 @@ function genreCriteria(genre: LiteraryGenre, isSpanish: boolean): string {
 export function buildMicroUserMessage(input: MicroInput): string {
     const isSpanish = input.displayLanguage === 'es';
     const macroBlock = formatMacrosForPrompt(input.macroSections, isSpanish);
-    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage);
+    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage, input.book);
 
     if (isSpanish) {
         return [

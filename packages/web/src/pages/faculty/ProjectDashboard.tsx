@@ -23,6 +23,8 @@ import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadma
 import { ProjectSetupCards, type ProjectSetupChange } from './components/project/ProjectSetupCards';
 import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
 import { ProjectSeriesSection, planSeriesUrl, seriesWorkUrl } from './components/project/ProjectSeriesSection';
+import { ProjectFramingCard } from './components/project/ProjectFramingCard';
+import { ProjectFramingDialog } from './components/project/ProjectFramingDialog';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
 import { ProjectSourcePickerModal } from './components/project/ProjectSourcePickerModal';
@@ -32,6 +34,7 @@ import { useProjectAttachedSources } from './hooks/useProjectAttachedSources';
 import { useLinkProjectSession } from './hooks/useLinkProjectSession';
 import { useProjectSlices } from './hooks/useProjectSlices';
 import { useSaveProjectSources } from './hooks/useSaveProjectSources';
+import { useProjectFramingActions } from './hooks/useProjectFramingActions';
 
 /**
  * Project workspace page. Pure composer — orchestrates the project header,
@@ -94,6 +97,9 @@ export function ProjectDashboard() {
         { mode: 'create' } | { mode: 'edit'; output: ProjectOutput } | null
     >(null);
     const [outputToDelete, setOutputToDelete] = useState<ProjectOutput | null>(null);
+    // El encuadre del Exegético: su diálogo (también desde «Cambiar en el encuadre») y sus escrituras.
+    const { framingOpen, setFramingOpen, guardarEncuadre, anotarEncuadre, consolidarEncuadre } =
+        useProjectFramingActions({ projectId, projects, project, updateProject });
 
     const materialItems = useMemo<MaterialItem[]>(() => {
         const fromOutputs: MaterialItem[] = (outputs ?? []).map(o => ({
@@ -167,6 +173,7 @@ export function ProjectDashboard() {
 
     const handleRoadmapCta = (kind: RoadmapCtaKind) => {
         switch (kind) {
+            case 'frame': return setFramingOpen(true);
             case 'study': return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
             case 'charge': return document.getElementById('project-charge-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             case 'newSession': return navigate(`/dashboard/faculty?projectId=${projectId}`);
@@ -269,11 +276,23 @@ export function ProjectDashboard() {
                     />
                 )}
 
+                {/* El encuadre del Exegético: su fase 1 (fase «Encuadre de la serie»). */}
+                {project.type === 'exegetical' && (
+                    <ProjectFramingCard
+                        project={project}
+                        studies={projectStudies}
+                        onEdit={() => setFramingOpen(true)}
+                        onAnnotate={anotarEncuadre}
+                        onConsolidate={consolidarEncuadre}
+                        saving={updateProject.isPending}
+                    />
+                )}
+
                 {/* Los datos del curso y sus tipos de trabajo (ADR-046, etapa
                     1b): no aplican a los proyectos de predicación ni de
-                    consejería. */}
+                    consejería. Un Exegético las pliega mientras no las use. */}
                 {!['sermon', 'series', 'counseling'].includes(project.type ?? 'general') && (
-                    <ProjectSetupCards project={project} onSave={guardar} />
+                    <ProjectSetupCards project={project} onSave={guardar} collapsible={project.type === 'exegetical'} />
                 )}
 
                 {/* Las series de predicación del proyecto (etapa 3 de ADR-046). */}
@@ -371,6 +390,16 @@ export function ProjectDashboard() {
                     onCreate={handleCreateOutput}
                     onUpdate={handleUpdateOutput}
                     saving={createOutput.isPending || updateOutput.isPending}
+                />
+            )}
+
+            {project.type === 'exegetical' && (
+                <ProjectFramingDialog
+                    project={project}
+                    open={framingOpen}
+                    onOpenChange={setFramingOpen}
+                    onSave={guardarEncuadre}
+                    saving={updateProject.isPending}
                 />
             )}
 

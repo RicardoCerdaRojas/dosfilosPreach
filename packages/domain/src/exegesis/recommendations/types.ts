@@ -48,7 +48,8 @@ export interface SourceRecommendation {
      * bien para una obra sobre las cartas pastorales; no para un comentario
      * de Judas y 2 Pedro, que se ofrecía para Santiago como «En tu
      * biblioteca · Agregar al corpus» (TP Santiago 2:14-26). Ausente: la obra
-     * cubre el grupo entero.
+     * cubre el grupo entero. Vale también en el invariante: ahí acota una obra
+     * a menos libros que su testamento (el arameo a Esdras y Daniel).
      */
     covers?: ReadonlyArray<BibleBookId>;
     /**

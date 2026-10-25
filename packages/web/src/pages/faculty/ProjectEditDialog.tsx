@@ -63,7 +63,8 @@ export function ProjectEditDialog({ project, initialType, onClose }: ProjectEdit
                 // no tenía (los creados antes de la etapa 0 quedaron sin tipo):
                 // antes viajaba siempre y uno sin tipo pasaba a «Sermón» solo.
                 await updateProject.mutateAsync({
-                    projectId: project.id, title, color, contextNote: contextNote || undefined,
+                    // Vacía viaja como null: así se borra (antes se descartaba y la nota volvía).
+                    projectId: project.id, title, color, contextNote: contextNote.trim() || null,
                     ...(sinTipo ? { type } : {}),
                 });
             } else {

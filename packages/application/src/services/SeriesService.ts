@@ -15,6 +15,7 @@ import {
     findBooksByAlias,
     getBookById,
     seriesPaperInheritance,
+    seriesPlacementFor,
     type AddProjectSourceInput,
     type BibleBookId,
     type IBibleVersionRepository,
@@ -24,6 +25,7 @@ import {
     type PlannedSermonExpositoryEnrichment,
     type PlannedSermonStatus,
     type SeriesExegesisDefaults,
+    type SeriesFrequency,
     type SyntacticUnit,
 } from '@dosfilos/domain';
 import { DetectPericopesUseCase } from '../use-cases/exegesis/DetectPericopesUseCase';
@@ -384,7 +386,7 @@ export class SeriesService {
                  */
                 expositoryEnrichment?: PlannedSermonExpositoryEnrichment;
             }[];
-            frequency?: 'weekly' | 'biweekly' | 'monthly' | 'flexible';
+            frequency?: SeriesFrequency;
             expositoryAssistant?: {
                 version?: string;
                 status?: 'pending' | 'running' | 'reviewed';
@@ -515,6 +517,9 @@ export class SeriesService {
                     ...(plan.project?.excludedResourceIds?.length
                         ? { projectSourceExclusions: plan.project.excludedResourceIds }
                         : {}),
+                    // El ritmo con que se calcularon las fechas: SeriesForm lo
+                    // lee al recalcularlas. Sin él (llamadores viejos), semanal.
+                    ...(plan.frequency ? { frequency: plan.frequency } : {}),
                 },
                 resourceIds: plan.series.resourceIds || [],
                 sermonIds: [],
@@ -605,6 +610,7 @@ export class SeriesService {
     private async autoCreatePapersForPericopes<T extends {
         id: string;
         title: string;
+        passage?: string;
         syntacticUnit?: SyntacticUnit;
         paperId?: string;
         status?: PlannedSermonStatus;
@@ -627,6 +633,18 @@ export class SeriesService {
             projectId: project?.projectId ?? null,
             projectSources: project?.sources ?? [],
         });
+        // El plan entero, para dar a cada estudio su lugar en la serie.
+        const plan = {
+            metadata: {
+                plannedSermons: plannedSermons.map((p) => ({
+                    id: p.id,
+                    title: p.title,
+                    passage: p.passage ?? '',
+                    ...(p.paperId ? { paperId: p.paperId } : {}),
+                    ...(p.syntacticUnit ? { syntacticUnit: p.syntacticUnit } : {}),
+                })),
+            },
+        };
         const enriched = await Promise.all(
             plannedSermons.map(async (planned) => {
                 if (!planned.syntacticUnit || planned.paperId) return planned;
@@ -644,6 +662,9 @@ export class SeriesService {
                         displayLanguage,
                         title: planned.title,
                         assignmentBrief: planned.syntacticUnit.justification ?? null,
+                        // Su lugar en la serie, como dato aparte: en el encargo
+                        // sesgaba la búsqueda de fuentes y quedaba en español.
+                        seriesPlacement: seriesPlacementFor(plan, planned.id, displayLanguage),
                         ...defaults,
                         // Denormalized back-reference so the sermon-
                         // generation use case can patch this series'

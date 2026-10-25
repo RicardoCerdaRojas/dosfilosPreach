@@ -1,4 +1,4 @@
-import { getBookById } from '@dosfilos/domain';
+import { getBookById, passageHasAramaic, type PassageReference } from '@dosfilos/domain';
 
 /**
  * Las autoridades, el aparato y la morfología cambian con el testamento.
@@ -14,11 +14,11 @@ import { getBookById } from '@dosfilos/domain';
  * no contienen el texto hebreo es una cita imposible de verificar.
  */
 export interface TestamentVoice {
-    language: 'griego' | 'hebreo';
-    languageAdjEs: 'griega' | 'hebrea';
+    language: 'griego' | 'hebreo' | 'hebreo y arameo';
+    languageAdjEs: 'griega' | 'hebrea' | 'hebrea y aramea';
     testamentEs: string;
     testamentEn: string;
-    languageEn: 'Greek' | 'Hebrew';
+    languageEn: 'Greek' | 'Hebrew' | 'Hebrew and Aramaic';
     expertEs: string;
     expertEn: string;
     grammarsEs: string;
@@ -66,12 +66,39 @@ const OT_VOICE: TestamentVoice = {
 };
 
 /**
+ * Esd 4:8–6:18 y 7:12–26, Dn 2:4–7:28, Gn 31:47 y Jer 10:11 están en arameo.
+ * Con la voz hebrea, el analizador de Esd 4:8 se presentaba como experto en
+ * «hebreo bíblico» y solo tenía gramáticas hebreas para un texto que no lo
+ * es. Rosenthal es la gramática de referencia del arameo bíblico y Vogt su
+ * léxico; cada uno va en su renglón, junto a los hebreos, porque el pasaje
+ * puede tener las dos lenguas (Esd 4:6-24). En el renglón en español va
+ * también Ribera Florit, la gramática del arameo bíblico escrita en español
+ * (está en el catálogo); el inglés no la lleva porque su lector no la usaría.
+ */
+const OT_ARAMAIC_VOICE: TestamentVoice = {
+    ...OT_VOICE,
+    language: 'hebreo y arameo', languageAdjEs: 'hebrea y aramea', languageEn: 'Hebrew and Aramaic',
+    expertEs: 'hebreo y arameo bíblicos', expertEn: 'Biblical Hebrew and Aramaic',
+    grammarsEs: 'Gramática/sintaxis hebrea y aramea: Waltke-O\'Connor, Joüon-Muraoka, Gesenius (GKC); Rosenthal (A Grammar of Biblical Aramaic), Ribera Florit (Guía para el estudio del arameo bíblico)',
+    grammarsEn: 'Hebrew and Aramaic grammar/syntax: Waltke-O\'Connor, Joüon-Muraoka, Gesenius (GKC); Rosenthal (A Grammar of Biblical Aramaic)',
+    lexiconsEs: 'Léxico: HALOT, BDB, DCH, TDOT, NIDOTTE; Vogt (A Lexicon of Biblical Aramaic)',
+    lexiconsEn: 'Lexicon: HALOT, BDB, DCH, TDOT, NIDOTTE; Vogt (A Lexicon of Biblical Aramaic)',
+    morphologyEs: 'qatal qal 3ª masculino singular; participio nifal; wayyiqtol hifil; en arameo: perfecto peal, participio haphel, imperfecto hithpeel',
+    morphologyEn: 'qal qatal 3rd masculine singular; niphal participle; hiphil wayyiqtol; in Aramaic: peal perfect, haphel participle, hithpeel imperfect',
+};
+
+/**
  * El AT se analiza en hebreo aunque exista la LXX. La versión griega es un
  * TESTIGO textual del hebreo, no el texto a exegetar: tratarla como base
  * invierte la relación y produce un análisis de la traducción en vez del
  * original.
+ *
+ * Con `passage`, si toca un tramo arameo, la voz dice «hebreo y arameo». Sin
+ * pasaje, o sin arameo, la de siempre: los llamadores que no lo pasan no
+ * cambian.
  */
-export function voiceFor(bookId: string): TestamentVoice {
+export function voiceFor(bookId: string, passage?: PassageReference | null): TestamentVoice {
     const book = getBookById(bookId as never);
-    return book?.testament === 'OT' ? OT_VOICE : NT_VOICE;
+    if (book?.testament !== 'OT') return NT_VOICE;
+    return passage && passageHasAramaic(passage) ? OT_ARAMAIC_VOICE : OT_VOICE;
 }

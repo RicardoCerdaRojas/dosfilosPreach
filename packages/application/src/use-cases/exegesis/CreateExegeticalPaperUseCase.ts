@@ -1,6 +1,7 @@
 import {
     buildPreachingStudyRubric,
     buildStrategyOnlyRubric,
+    cleanSeriesPlacement,
     STRATEGY_ONLY_RUBRIC_PRESET_ID,
     type CreateExegeticalPaperInput,
     type ExegeticalPaper,
@@ -113,6 +114,7 @@ export class CreateExegeticalPaperUseCase {
         }
 
         const cover = normalizeCover(input.cover ?? null);
+        const seriesPlacement = input.seriesId ? cleanSeriesPlacement(input.seriesPlacement) : null;
         const created = await this.paperRepository.createPaper({
             ownerId: input.ownerId,
             passage: input.passage,
@@ -125,6 +127,9 @@ export class CreateExegeticalPaperUseCase {
             sources: [],
             seriesId: input.seriesId ?? null,
             pericopeId: input.pericopeId ?? null,
+            // El lugar en la serie solo tiene sentido con serie; se limpia
+            // aquí porque Firestore rechaza `undefined` anidado.
+            ...(seriesPlacement ? { seriesPlacement } : {}),
             ...(await this.ownProject(input)),
             // La misma limpieza que `UpdatePaperCoverUseCase`: sin campos
             // vacíos (Firestore rechaza `undefined`, y una portada sin fecha

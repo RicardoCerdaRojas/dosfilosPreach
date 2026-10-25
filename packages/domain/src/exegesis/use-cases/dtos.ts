@@ -84,6 +84,11 @@ export interface CreateExegeticalPaperInput {
      */
     seriesId?: string | null;
     pericopeId?: string | null;
+    /**
+     * Su lugar en la serie («3 de 12», vecinas). Va aparte del encargo: no
+     * entra a la búsqueda de fuentes. Solo con `seriesId`.
+     */
+    seriesPlacement?: import('../entities/ExegeticalPaper').SeriesPlacement | null;
     /** Proyecto de origen (ADR-046). El estudio hereda su encargo. */
     projectId?: string | null;
     /** El tipo de trabajo del proyecto con que nace. Se ignora si el proyecto no lo tiene. */

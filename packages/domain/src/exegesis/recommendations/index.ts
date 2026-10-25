@@ -4,6 +4,7 @@ import { INVARIANT_RECOMMENDATIONS } from './invariant';
 import { HEBREWS_RECOMMENDATIONS } from './nt/hebrews';
 import { ROMANS_RECOMMENDATIONS } from './nt/romans';
 import { GENESIS_RECOMMENDATIONS } from './ot/genesis';
+import { EZRA_RECOMMENDATIONS } from './ot/ezra';
 import { NEHEMIAH_RECOMMENDATIONS } from './ot/nehemiah';
 import { RUTH_RECOMMENDATIONS } from './ot/ruth';
 import { JONAH_RECOMMENDATIONS } from './ot/jonah';
@@ -15,6 +16,7 @@ import type { BookRecommendations, SourceRecommendation } from './types';
 
 export type { BookRecommendations, SourceRecommendation } from './types';
 export type { BibleBookGroup } from './groups/types';
+export { getPreachingNotes, type PreachingNote } from './preachingNotes';
 export {
     matchRecommendationToResource,
     findLibraryResourceForRecommendation,
@@ -42,6 +44,7 @@ const RECOMMENDATIONS_BY_BOOK: Partial<Record<BibleBookId, BookRecommendations>>
     ROM: ROMANS_RECOMMENDATIONS,
     GEN: GENESIS_RECOMMENDATIONS,
     // Etapa 2c: curados y verificados contra un registro (VERIFIED_BOOKS).
+    EZR: EZRA_RECOMMENDATIONS,
     NEH: NEHEMIAH_RECOMMENDATIONS,
     RUT: RUTH_RECOMMENDATIONS,
     JON: JONAH_RECOMMENDATIONS,
@@ -50,7 +53,7 @@ const RECOMMENDATIONS_BY_BOOK: Partial<Record<BibleBookId, BookRecommendations>>
 };
 
 /** Los libros cuyo catálogo propio está verificado obra por obra (lo exige la prueba del catálogo). */
-export const VERIFIED_BOOKS: ReadonlyArray<BibleBookId> = ['NEH', 'RUT', 'JON', 'JAS', '2PE'];
+export const VERIFIED_BOOKS: ReadonlyArray<BibleBookId> = ['EZR', 'NEH', 'RUT', 'JON', 'JAS', '2PE'];
 
 /**
  * Returns recommendations for `(bookId × sourceType)`, sorted with the
@@ -84,12 +87,15 @@ export function getSourceRecommendations(
     language: 'es' | 'en' = 'es',
 ): ReadonlyArray<SourceRecommendation> {
     const bookSpecific = RECOMMENDATIONS_BY_BOOK[bookId]?.bySourceType[sourceType] ?? [];
+    const cubre = (rec: SourceRecommendation) => !rec.covers || rec.covers.includes(bookId);
     const groups = BOOK_TO_GROUPS[bookId] ?? [];
     const groupEntries = groups
         .flatMap(g => GROUP_CATALOG[g]?.bySourceType[sourceType] ?? [])
         // Un comentario de otro libro del grupo no sirve para éste.
-        .filter(rec => !rec.covers || rec.covers.includes(bookId));
-    const invariantRaw = INVARIANT_RECOMMENDATIONS[sourceType] ?? [];
+        .filter(cubre);
+    // También en el invariante: una gramática de arameo no le sirve a Génesis,
+    // ni Filón a Esdras, aunque sean del mismo testamento.
+    const invariantRaw = (INVARIANT_RECOMMENDATIONS[sourceType] ?? []).filter(cubre);
 
     // v1.7.1: filter invariants by the paper's testament so OT lexicons
     // don't surface for NT papers and vice-versa. Entries without a

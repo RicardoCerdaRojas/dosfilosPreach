@@ -38,10 +38,10 @@ describe('recorridos por tipo', () => {
         expect(getProjectTypeMeta('inventado' as never)).toBe(PROJECT_TYPES.general);
     });
 
-    it('el primer paso se completa también con la nota que escribe su botón (revisión de la etapa 1)', () => {
+    it('un Exegético viejo que completó el primer paso con una nota sigue completo (retrocompatible)', () => {
         const fase = getProjectTypeMeta('exegetical').roadmap[0]!;
-        expect(fase.cta.kind).toBe('output');
         expect(fase.isComplete(ctx({ outputs: [{ kind: 'note' }] }))).toBe(true);
+        expect(fase.isComplete(ctx({ project: { id: 'p', contextNote: 'Nehemías entero' } }))).toBe(true);
     });
 });
 
@@ -110,5 +110,36 @@ describe('Exegético con «División en perícopas»', () => {
             sermons: [{ id: 'borrador' }, { id: 'copia', sourceSermonId: 'borrador' }],
         });
         expect(computeRoadmapState(serie, completo).allComplete).toBe(true);
+    });
+});
+
+/** Fase «Encuadre de la serie»: la fase 1 del Exegético define el encuadre. */
+describe('Exegético con encuadre', () => {
+    const meta = getProjectTypeMeta('exegetical');
+    const pasaje = meta.roadmap.find(f => f.id === 'passage')!;
+    const sintesis = meta.roadmap.find(f => f.id === 'synthesis')!;
+    const proyecto = (over: Record<string, unknown>) => ({ id: 'p', userId: 'u', title: 'Esdras', color: 'amber', type: 'exegetical', ...over });
+    const fase1 = (project: Record<string, unknown>) => computeRoadmapState(meta, ctx({ project })).phases[0]!;
+
+    it('el botón de la fase 1 abre el encuadre: «Definir» sin encuadre, «Editar» con encuadre', () => {
+        const sin = fase1(proyecto({}));
+        expect(sin.phase.cta.kind).toBe('frame');
+        expect(sin.phase.i18nKey).toBe('exegetical.passage');
+        const con = fase1(proyecto({ framing: { purpose: 'preach' } }));
+        expect(con.phase.cta.kind).toBe('frame');
+        expect(con.phase.i18nKey).toBe('exegetical.passageEdit');
+    });
+
+    it('se completa con un libro y la idea central; solo uno de los dos no basta', () => {
+        expect(pasaje.isComplete(ctx({ project: proyecto({ bibliographyCriteria: { bibleBooks: ['EZR'] }, framing: { centralIdea: 'Dios restaura a su pueblo por su palabra.' } }) }))).toBe(true);
+        expect(pasaje.isComplete(ctx({ project: proyecto({ bibliographyCriteria: { bibleBooks: ['EZR'] }, framing: { purpose: 'preach' } }) }))).toBe(false);
+        expect(pasaje.isComplete(ctx({ project: proyecto({ framing: { centralIdea: 'Dios restaura.' } }) }))).toBe(false);
+    });
+
+    it('la síntesis se completa también con la idea consolidada y vigente, no con una desactualizada', () => {
+        const revision = { centralIdea: 'Dios restaura a su pueblo por su palabra y su templo.', verdict: 'nuanced', why: 'Esd 6', ofIdea: 'Dios restaura.', revisedAt: '2026-10-25T12:00:00.000Z' };
+        expect(sintesis.isComplete(ctx({ project: proyecto({ framing: { centralIdea: 'Dios restaura.', revision } }) }))).toBe(true);
+        expect(sintesis.isComplete(ctx({ project: proyecto({ framing: { centralIdea: 'Otra idea.', revision } }) }))).toBe(false);
+        expect(sintesis.isComplete(ctx({ project: proyecto({}) }))).toBe(false);
     });
 });

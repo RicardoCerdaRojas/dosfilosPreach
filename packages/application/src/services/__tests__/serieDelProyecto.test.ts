@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SermonSeriesEntity, type AddProjectSourceInput } from '@dosfilos/domain';
+import { SermonSeriesEntity, briefForQuery, type AddProjectSourceInput } from '@dosfilos/domain';
 
 /**
  * La serie que nace dentro de un proyecto (ADR-046 etapa 3,
@@ -202,7 +202,9 @@ describe('createSeriesFromPlan sin proyecto (como hoy)', () => {
             passage: { bookId: 'NEH', chapterStart: 1, verseStart: 1, chapterEnd: 1, verseEnd: 11 },
             displayLanguage: 'es',
             title: 'La oración de Nehemías',
+            // La justificación sola: el lugar en la serie va en su propio campo.
             assignmentBrief: 'Neh 1:1',
+            seriesPlacement: { position: 1, total: 3, next: { passage: 'Neh 2:1-10', title: 'El permiso del rey' } },
             styleGuideId: 'guia-1',
             initialSources: [
                 { corpusId: 'res-b', sourceType: 'commentary-expository', displayLabel: 'Williamson (serie)', mode: 'full-document', sourceLibraryResourceId: 'res-b' },
@@ -376,5 +378,67 @@ describe('linkSeriesToProject', () => {
         ex.setPaperProject.mockRejectedValueOnce(new Error('proyecto archivado'));
         const r = await new SeriesService().linkSeriesToProject('u1', 's1', 'neh', { movePapers: true });
         expect(r).toEqual({ moved: 0, linked: 1, unchanged: 1, sourcesAdded: 0, failed: 1 });
+    });
+});
+
+describe('encuadre de la serie (U5)', () => {
+    it('cada estudio del lote nace con su lugar en la serie como dato, y el encargo queda con la justificación sola', async () => {
+        const svc = new SeriesService();
+        await svc.createSeriesFromPlan('u1', plan());
+        expect(argsDeCreatePaper().map(a => a.assignmentBrief)).toEqual(['Neh 1:1', 'Neh 2:1', 'Neh 2:11']);
+        expect(argsDeCreatePaper().map(a => a.seriesPlacement)).toEqual([
+            { position: 1, total: 3, next: { passage: 'Neh 2:1-10', title: 'El permiso del rey' } },
+            {
+                position: 2, total: 3,
+                previous: { passage: 'Neh 1:1-11', title: 'La oración de Nehemías' },
+                next: { passage: 'Neh 2:11-20', title: 'La inspección' },
+            },
+            { position: 3, total: 3, previous: { passage: 'Neh 2:1-10', title: 'El permiso del rey' } },
+        ]);
+    });
+
+    it('la consulta de fuentes (briefForQuery) no ve el lugar en la serie', async () => {
+        const svc = new SeriesService();
+        await svc.createSeriesFromPlan('u1', plan());
+        for (const arg of argsDeCreatePaper()) {
+            const consulta = briefForQuery(arg.assignmentBrief);
+            expect(consulta).not.toMatch(/Perícopa|de la serie|Antes:|Después:/);
+            expect(consulta).not.toContain('El permiso del rey');
+        }
+    });
+
+    it('sin justificación, el encargo queda vacío y el lugar sigue en su campo', async () => {
+        const svc = new SeriesService();
+        const p = plan();
+        p.sermons = p.sermons.map(s => ({ ...s, syntacticUnit: { ...s.syntacticUnit, justification: undefined as unknown as string } }));
+        await svc.createSeriesFromPlan('u1', p);
+        expect(argsDeCreatePaper()[0]!.assignmentBrief).toBeNull();
+        expect(argsDeCreatePaper()[0]!.seriesPlacement).toMatchObject({ position: 1, total: 3 });
+    });
+
+    it('en inglés, la vecina sin pasaje se traduce en inglés', async () => {
+        const svc = new SeriesService();
+        const p = plan({ displayLanguage: 'en' });
+        p.sermons = p.sermons.map(s => ({ ...s, passage: '' }));
+        await svc.createSeriesFromPlan('u1', p);
+        expect(argsDeCreatePaper()[1]!.seriesPlacement!.previous!.passage).toBe('Nehemiah 1:1-11');
+    });
+
+    it('la frecuencia queda guardada en metadata.frequency', async () => {
+        const svc = new SeriesService();
+        const serie = await svc.createSeriesFromPlan('u1', plan({ frequency: 'biweekly', series: { ...plan().series as object, startDate: new Date(2026, 10, 1) } as never }));
+        expect(serie.metadata!.frequency).toBe('biweekly');
+        const guardada = repo.create.mock.calls[0]![0] as SermonSeriesEntity;
+        expect(guardada.metadata!.frequency).toBe('biweekly');
+        // Y las fechas salieron con esa frecuencia: 14 días entre perícopas.
+        const [a, b] = guardada.metadata!.plannedSermons!.map(p => p.scheduledDate!.getTime());
+        expect((b! - a!) / 86_400_000).toBe(14);
+    });
+
+    it('sin frecuencia en el plan no escribe la clave (series viejas: semanal)', async () => {
+        const svc = new SeriesService();
+        await svc.createSeriesFromPlan('u1', plan());
+        const guardada = repo.create.mock.calls[0]![0] as SermonSeriesEntity;
+        expect('frequency' in guardada.metadata!).toBe(false);
     });
 });

@@ -110,7 +110,16 @@ export interface SeriesMetadata {
      * heredan la bibliografía del proyecto menos estas (ADR-046 etapa 3).
      */
     projectSourceExclusions?: string[];
+    /**
+     * El ritmo con que se calcularon las fechas de `plannedSermons`. Lo
+     * escribe `createSeriesFromPlan`; `SeriesForm` lo lee al recalcular.
+     * Ausente (series viejas) cuenta como semanal, como siempre.
+     */
+    frequency?: SeriesFrequency;
 }
+
+/** Cada cuánto se predica la serie. `flexible`: sin fechas calculadas. */
+export type SeriesFrequency = 'weekly' | 'biweekly' | 'monthly' | 'flexible';
 
 /**
  * Per-source seed used to populate a freshly auto-created paper's

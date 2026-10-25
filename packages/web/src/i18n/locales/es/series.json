@@ -444,7 +444,50 @@
                 "flexible": "Flexible (sin fechas)"
             },
             "cta_one": "Crear serie con {{count}} sermón",
-            "cta_other": "Crear serie con {{count}} sermones"
+            "cta_other": "Crear serie con {{count}} sermones",
+            "description": "Descripción de la serie",
+            "descriptionHint": "Si ya revisaste tu idea central en el encuadre, aparece aquí para que la ajustes. Si la dejas vacía, la serie lleva una descripción breve del libro."
+        },
+        "framing": {
+            "contrast": {
+                "title": "Tu lectura y lo que propone el panorama",
+                "intro": "Escribiste tu lectura antes de ver el panorama. Ponlas lado a lado: el panorama es una propuesta para contrastar con el texto, no su última palabra.",
+                "yours": "Tu lectura",
+                "panoramaBook": "Lo que propone el panorama del libro",
+                "panoramaPassage": "Lo que propone el panorama del pasaje",
+                "ideaRow": "La idea",
+                "movementsRow": "Los movimientos",
+                "noIdea": "No escribiste la idea central en el encuadre.",
+                "noMovements": "No anotaste movimientos en el encuadre.",
+                "noPanoramaMovements": "El panorama no propuso movimientos.",
+                "untitled": "(sin título)",
+                "question": "Después de volver al texto, ¿qué hace con tu lectura?",
+                "questionHint": "El panorama no confirma ni corrige tu lectura: vuelve a los versículos donde difieren y decide tú. Si lo anotas, queda en el registro y lo verás al revisar tu idea central. No es obligatorio.",
+                "verdict": {
+                    "confirms": "Confirma",
+                    "nuances": "Matiza",
+                    "contradicts": "Contradice"
+                },
+                "noteLabel": "Nota (opcional)",
+                "notePlaceholder": "¿Qué versículos revisaste por esta diferencia?",
+                "save": "Anotar en el registro",
+                "saved": "Anotado en el registro de tu lectura.",
+                "saveFailed": "No se pudo anotar. Inténtalo de nuevo.",
+                "already": "Ya anotaste: {{verdict}} · {{date}}",
+                "again": "Anotar otra vez"
+            },
+            "units": {
+                "unitCount_one": "{{count}} unidad",
+                "unitCount_other": "{{count}} unidades",
+                "sundayCount_one": "{{count}} domingo",
+                "sundayCount_other": "{{count}} domingos",
+                "summary": "El Pase 4 propone {{units}}; planeaste {{sundays}}.",
+                "principle": "La unidad la fija el texto, no el calendario: revisa la división propuesta y, si la confirmas, ajusta el calendario.",
+                "moreUnits": "Si una frontera no se sostiene en el texto, puedes unir dos unidades con «Combinar» en el Pase 4.",
+                "fewerUnits": "Puedes ajustar el calendario en el encuadre del proyecto.",
+                "reviewDivision": "Revisar la división",
+                "adjustCalendar": "Ajustar el calendario"
+            }
         },
         "passes": {
             "panorama": {

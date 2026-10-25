@@ -1,14 +1,34 @@
 import { AIProject, ProjectOutput } from '../entities/AIProject';
+import type { BibleBookId } from '../bible/canon/BibleCanon';
+import type { HypothesisEntry, ProjectFramingPatch } from '../exegesis/services/projectFraming';
+
+/**
+ * Lo que acepta `updateProject` (lista blanca). Además de los campos enteros:
+ *   - `contextNote: null` borra la nota (`deleteField()`);
+ *   - `framingPatch` escribe `framing.<campo>` por cada clave, ya limpia
+ *     (`cleanFramingPatch`); `null` borra ese campo;
+ *   - `bibleBooks` escribe `bibliographyCriteria.bibleBooks` sin tocar el
+ *     resto de los criterios;
+ *   - `hypothesisAppend` agrega UNA anotación al registro con `arrayUnion`,
+ *     sin leerlo: dos anotaciones casi simultáneas no se pisan. El tope de
+ *     200 lo aplica la lectura (`withCappedHypothesisLog`).
+ * Todo va en un solo `updateDoc`.
+ */
+export type AIProjectUpdate =
+    Partial<Pick<AIProject, 'title' | 'color' | 'type' | 'icon' | 'sourceIds' | 'courseInfo' | 'workTypes' | 'bibliography' | 'bibliographyCriteria' | 'bibliographySearchLog'>>
+    & {
+        contextNote?: string | null;
+        framingPatch?: ProjectFramingPatch;
+        bibleBooks?: BibleBookId[];
+        hypothesisAppend?: HypothesisEntry;
+    };
 
 export interface IAIProjectRepository {
     // ── Projects ─────────────────────────────────────────────────────────
     getUserProjects(userId: string): Promise<AIProject[]>;
     getProject(projectId: string): Promise<AIProject | null>;
     createProject(project: Omit<AIProject, 'id' | 'createdAt' | 'updatedAt'>): Promise<AIProject>;
-    updateProject(
-        projectId: string,
-        updates: Partial<Pick<AIProject, 'title' | 'color' | 'type' | 'icon' | 'contextNote' | 'sourceIds' | 'courseInfo' | 'workTypes' | 'bibliography' | 'bibliographyCriteria' | 'bibliographySearchLog'>>
-    ): Promise<AIProject>;
+    updateProject(projectId: string, updates: AIProjectUpdate): Promise<AIProject>;
     /**
      * Toggle archive state. Pass `true` to archive (sets `archivedAt = now`)
      * or `false` to unarchive (clears the field).

@@ -2832,5 +2832,45 @@
     "hitSheet": "hoja {{sheet}}",
     "hitCount_one": "{{count}} vez",
     "hitCount_other": "{{count}} veces"
+  },
+  "readingPanel": {
+    "title": "Tu lectura del libro",
+    "titlePassage": "Tu lectura del pasaje",
+    "subtitle": "Compárala con lo que encontraste · proyecto «{{project}}»",
+    "whyFolded": "Primero observa el texto sin tu lectura; después ábrela y compara.",
+    "centralIdea": "Tu idea central del libro (provisoria)",
+    "centralIdeaPassage": "Tu idea central del pasaje (provisoria)",
+    "revisedIdea": "Tu idea revisada (vigente)",
+    "noIdea": "Todavía no escribiste la idea central en el encuadre del proyecto.",
+    "structure": "Tus movimientos del libro",
+    "structurePassage": "Tus movimientos del pasaje",
+    "readerNumbering": "Pasajes en la numeración de tu Biblia.",
+    "untitled": "Sin título",
+    "here": "Este estudio está aquí",
+    "touches": "Este estudio toca este movimiento",
+    "noMovement": "Ningún movimiento de tu estructura incluye {{passage}}.",
+    "log": {
+      "title": "Lo que anotaste desde este estudio",
+      "empty": "Todavía no anotaste nada desde este estudio."
+    },
+    "verdict": {
+      "confirms": "Confirma",
+      "nuances": "Matiza",
+      "contradicts": "Contradice"
+    },
+    "form": {
+      "title": "Anotar lo que dice este estudio de tu lectura",
+      "verdictLabel": "Después de estudiar esta perícopa, ¿qué hace con tu lectura?",
+      "noteLabel": "Nota (opcional)",
+      "notePlaceholder": "¿Qué versículo o hallazgo te lleva a eso?",
+      "private": "Esta anotación no se envía al asistente: queda en el registro de tu lectura para que revises tu idea central en el proyecto.",
+      "goToProject": "Ir al proyecto",
+      "save": "Anotar",
+      "saving": "Anotando…"
+    },
+    "toast": {
+      "saved": "Anotado en el registro de tu lectura.",
+      "failed": "No se pudo anotar. Inténtalo de nuevo."
+    }
   }
 }

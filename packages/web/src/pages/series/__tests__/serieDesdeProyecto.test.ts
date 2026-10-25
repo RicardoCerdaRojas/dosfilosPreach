@@ -4,10 +4,16 @@ import {
     activeProjectById,
     buildSeriesPlan,
     excludedFrom,
+    framingPrefill,
+    hasReadingToContrast,
     initialBookFor,
+    isPassageRun,
     pericopesForOverlap,
     projectEntryState,
+    seriesDescriptionFor,
     shouldRestoreDraft,
+    sourceChapterCount,
+    unitsVsSundays,
 } from '../utils/serieDesdeProyecto';
 
 /**
@@ -250,5 +256,114 @@ describe('buildSeriesPlan — el argumento de createSeriesFromPlan', () => {
         expect(plan.series.metadata).toEqual({ expository: { book: 'Nehemías' } });
         const { project: _p, ...resto } = plan;
         expect(resto).toEqual(buildSeriesPlan(base()));
+    });
+});
+
+// ── El encuadre en el planificador (FASE_ENCUADRE_SERIE, U5) ────────────
+
+const esd = (cs: number, ce: number) => ({ bookId: 'EZR' as BibleBookId, chapterStart: cs, chapterEnd: ce, verseStart: null, verseEnd: null });
+const esdras = (framing: Record<string, unknown> | undefined, books: BibleBookId[] = ['EZR']) => ({
+    framing: framing as never,
+    bibliographyCriteria: { bibleBooks: books },
+});
+
+describe('framingPrefill — lo que el encuadre precarga', () => {
+    const completo = {
+        scope: { bookId: 'EZR', passage: esd(7, 10) },
+        centralIdea: '  Dios restaura a su pueblo por su Palabra. ',
+        rhythm: { sundays: 12, startDate: '2026-11-01', frequency: 'biweekly' },
+    };
+
+    it('alcance, fecha y frecuencia; la idea PROVISORIA no va a la descripción ni los domingos a nada', () => {
+        const r = framingPrefill(esdras(completo));
+        expect(r).toEqual({
+            scope: esd(7, 10),
+            startDate: '2026-11-01',
+            frequency: 'biweekly',
+            // Con encuadre y sin idea revisada: el campo aparece vacío.
+            description: '',
+        });
+        expect(JSON.stringify(r)).not.toContain('12');
+        expect(JSON.stringify(r)).not.toContain('Dios restaura');
+    });
+
+    it('sin proyecto o sin encuadre: nada', () => {
+        const nada = { scope: null, startDate: null, frequency: null, description: null };
+        expect(framingPrefill(null)).toEqual(nada);
+        expect(framingPrefill(esdras(undefined))).toEqual(nada);
+    });
+
+    it('el alcance se descarta si el proyecto ya no tiene ese único libro, o si la URL trae otro', () => {
+        expect(framingPrefill(esdras(completo, ['EZR', 'NEH'])).scope).toBeNull();
+        expect(framingPrefill(esdras(completo, ['NEH'])).scope).toBeNull();
+        expect(framingPrefill(esdras(completo), { bookParam: 'NEH' }).scope).toBeNull();
+        expect(framingPrefill(esdras(completo), { bookParam: 'EZR' }).scope).toEqual(esd(7, 10));
+    });
+
+    it('solo la idea revisada y vigente precarga la descripción; desactualizada, el campo queda vacío', () => {
+        const revision = { centralIdea: 'Revisada', verdict: 'nuanced', why: 'x', ofIdea: 'Original', revisedAt: '2026-10-25T00:00:00Z' };
+        expect(framingPrefill(esdras({ centralIdea: 'Original', revision })).description).toBe('Revisada');
+        expect(framingPrefill(esdras({ centralIdea: 'Editada', revision })).description).toBe('');
+    });
+});
+
+describe('hasReadingToContrast', () => {
+    it('con idea central o con movimientos; vacío, no', () => {
+        expect(hasReadingToContrast({ centralIdea: 'x' })).toBe(true);
+        expect(hasReadingToContrast({ structure: [{ passage: esd(1, 6), title: '' }] })).toBe(true);
+        expect(hasReadingToContrast({ centralIdea: '  ', structure: [] })).toBe(false);
+        expect(hasReadingToContrast(null)).toBe(false);
+    });
+});
+
+describe('isPassageRun — para el rótulo «del pasaje»', () => {
+    const v = (chapter: number, verse: number, text = 'texto') => ({ chapter, verse, text });
+    it('libro entero si empieza en 1:1 y llega al último capítulo', () => {
+        expect(isPassageRun([v(1, 1), v(10, 44)], 'EZR', 10)).toBe(false);
+        expect(isPassageRun([v(7, 1), v(10, 44)], 'EZR', 10)).toBe(true);
+        expect(isPassageRun([v(1, 1), v(6, 22)], 'EZR', 10)).toBe(true);
+        expect(isPassageRun([], 'EZR', 10)).toBe(false);
+    });
+
+    it('Malaquías en hebreo termina en 3:24 y es el libro entero, aunque el lector tenga 4 capítulos', () => {
+        const hebreo = [v(1, 1, 'מַשָּׂא דְבַר־יְהוָה'), v(3, 24, 'וְהֵשִׁיב לֵב־אָבוֹת')];
+        expect(isPassageRun(hebreo, 'MAL', 4)).toBe(false);
+        // Malaquías 1-2 en hebreo sí es un pasaje.
+        expect(isPassageRun([v(1, 1, 'מַשָּׂא'), v(2, 17, 'הוֹגַעְתֶּם')], 'MAL', 4)).toBe(true);
+    });
+
+    it('Malaquías en una traducción de respaldo se mide contra los 4 capítulos del lector', () => {
+        expect(isPassageRun([v(1, 1, 'Profecía'), v(3, 18, 'Entonces')], 'MAL', 4)).toBe(true);
+        expect(isPassageRun([v(1, 1, 'Profecía'), v(4, 6, 'Él hará volver')], 'MAL', 4)).toBe(false);
+    });
+});
+
+describe('sourceChapterCount', () => {
+    it('la cuenta del original si el texto es hebreo o griego; si no, la del lector', () => {
+        expect(sourceChapterCount('MAL', [{ text: 'מַשָּׂא' }], 4)).toBe(3);
+        // Joel: 3 capítulos en el lector, 4 en hebreo.
+        expect(sourceChapterCount('JOL', [{ text: 'דְּבַר־יְהוָה' }], 3)).toBe(4);
+        expect(sourceChapterCount('MAL', [{ text: 'Profecía' }], 4)).toBe(4);
+        expect(sourceChapterCount('2PE', [{ text: 'Συμεὼν Πέτρος' }], 3)).toBe(3);
+    });
+});
+
+describe('unitsVsSundays — el aviso tras el Pase 4', () => {
+    it('más unidades que domingos, y menos', () => {
+        expect(unitsVsSundays(14, 10)).toEqual({ direction: 'more-units', units: 14, sundays: 10 });
+        expect(unitsVsSundays(8, 10)).toEqual({ direction: 'fewer-units', units: 8, sundays: 10 });
+    });
+    it('iguales o sin domingos: nada', () => {
+        expect(unitsVsSundays(10, 10)).toBeNull();
+        expect(unitsVsSundays(10, undefined)).toBeNull();
+        expect(unitsVsSundays(10, 0)).toBeNull();
+    });
+});
+
+describe('seriesDescriptionFor', () => {
+    it('la del pastor; vacía o sin precarga, el texto de siempre', () => {
+        expect(seriesDescriptionFor(' Mi idea ', 'fija')).toBe('Mi idea');
+        expect(seriesDescriptionFor('   ', 'fija')).toBe('fija');
+        expect(seriesDescriptionFor(null, 'fija')).toBe('fija');
     });
 });

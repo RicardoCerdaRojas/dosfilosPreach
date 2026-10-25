@@ -44,7 +44,8 @@ export function buildAnalyzerPrompt(input: AnalyzeVerseInput): BuiltAnalyzerProm
 
 function buildSystemInstruction(input: AnalyzeVerseInput): string {
     const lang = input.language;
-    const voice = voiceFor(input.verseRef.bookId);
+    // La voz del versículo analizado: Esd 4:8 es arameo, 4:7 no.
+    const voice = voiceFor(input.verseRef.bookId, input.verseRef);
     const verse = formatPassageReference(input.verseRef, lang);
     const passage = formatPassageReference(input.paperPassage, lang);
     const briefBlock = formatAssignmentBrief(input.assignmentBrief, lang);
@@ -222,7 +223,7 @@ export function courseGrammarLabel(
 
 function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): string {
     const lang = input.language;
-    const voice = voiceFor(input.verseRef.bookId);
+    const voice = voiceFor(input.verseRef.bookId, input.verseRef);
     const gramaticaEs = courseGrammarLabel(input.sources, voice.grammarsEs);
     const gramaticaEn = courseGrammarLabel(input.sources, voice.grammarsEn);
     const verse = formatPassageReference(input.verseRef, lang);

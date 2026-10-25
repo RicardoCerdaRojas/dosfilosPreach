@@ -36,7 +36,8 @@ describe('UpdateProjectUseCase — bibliografía (etapa 2)', () => {
     });
 
     it('sin bibliografía, sourceIds se guarda como antes; los criterios se limpian', async () => {
-        const repo = { updateProject: vi.fn(async (_id: string, u: unknown) => u) };
+        // Con criterios se lee el proyecto: con encuadre, los libros guardados mandan.
+        const repo = { updateProject: vi.fn(async (_id: string, u: unknown) => u), getProject: vi.fn(async () => ({ id: 'p1' })) };
         await new UpdateProjectUseCase(repo as never).execute('p1', { sourceIds: ['a'], bibliographyCriteria: { inclusion: '  ', noRepeatSources: true } });
         expect(repo.updateProject).toHaveBeenLastCalledWith('p1', { sourceIds: ['a'], bibliographyCriteria: { inclusion: null, noRepeatSources: true } });
     });

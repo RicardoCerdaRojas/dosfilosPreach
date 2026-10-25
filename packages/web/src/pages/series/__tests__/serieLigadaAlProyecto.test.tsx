@@ -190,13 +190,36 @@ describe('«Crear estudio» de una perícopa', () => {
             passage: { bookId: 'NEH', chapterStart: 1, verseStart: 1, chapterEnd: 1, verseEnd: 11 },
             displayLanguage: 'es',
             title: 'Neh 1',
+            // La justificación sola; su lugar en la serie va en su campo (FASE_ENCUADRE_SERIE, U5).
             assignmentBrief: 'La oración',
+            seriesPlacement: { position: 1, total: 1 },
             styleGuideId: null,
             initialSources: [
                 { corpusId: 'serieObra', sourceType: 'commentary-expository', displayLabel: 'Obra de la serie', mode: 'full-document', sourceLibraryResourceId: 'serieObra' },
             ],
             seriesId: 's1',
             pericopeId: 'per1',
+        });
+    });
+
+    it('el estudio nace con su lugar en la serie como dato, con la perícopa de antes y la de después; el encargo, sin él', async () => {
+        const otra = (id: string, cs: number) => ({
+            id, title: `Neh ${cs}`, passage: `Nehemías ${cs}:1-10`,
+            syntacticUnit: { ...unidad, chapterStart: cs, chapterEnd: cs, verseEnd: 10, justification: `Corte ${cs}` },
+        });
+        estado.series = serie({}, { plannedSermons: [otra('a', 1), otra('b', 2), otra('c', 3)] });
+        estado.sermonItems = ['a', 'b', 'c'].map((id, i) => ({ id, title: `Neh ${i + 1}`, description: '', passage: `Nehemías ${i + 1}:1-10`, status: 'planned', plannedSermonId: id }));
+        render(<SeriesDetail />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'detail.table.createPaper' })[1]!);
+        await waitFor(() => expect(svc.createPaper).toHaveBeenCalledTimes(1));
+        expect(svc.createPaper.mock.calls[0]![0]).toMatchObject({
+            pericopeId: 'b',
+            assignmentBrief: 'Corte 2',
+            seriesPlacement: {
+                position: 2, total: 3,
+                previous: { passage: 'Nehemías 1:1-10', title: 'Neh 1' },
+                next: { passage: 'Nehemías 3:1-10', title: 'Neh 3' },
+            },
         });
     });
 

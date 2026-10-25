@@ -103,6 +103,8 @@ export function useExpositoryAssistant() {
             if (input.sourceLanguage !== undefined) payload.sourceLanguage = input.sourceLanguage;
             if (input.scopeKey) payload.scopeKey = input.scopeKey;
             if (input.strictMode === true) payload.strictMode = true;
+            // «Refinar» del Pase 5: sin esto la observación se perdía aquí.
+            if (input.regenerationHint?.trim()) payload.regenerationHint = input.regenerationHint;
             return seriesService.expositoryPasses.runPreachableConversion(payload);
         },
     });
@@ -173,6 +175,8 @@ interface PreachableInput extends BaseInput {
     exegeticalUnits: ExegeticalUnit[];
     targetPreachableCount?: number;
     strictMode?: boolean;
+    /** Las observaciones abiertas del Pase 5 que «Refinar» devuelve al Pase 4. */
+    regenerationHint?: string;
 }
 
 interface FidelityInput extends BaseInput {

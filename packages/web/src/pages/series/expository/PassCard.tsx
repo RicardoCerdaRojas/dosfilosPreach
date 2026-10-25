@@ -8,6 +8,7 @@ export function PassCard({
     state,
     children,
     onCollapse,
+    anchorId,
     t,
 }: {
     index: number;
@@ -16,19 +17,23 @@ export function PassCard({
     state: PassState;
     children?: React.ReactNode;
     onCollapse?: () => void;
+    /** Id para llevar ahí la vista y el foco desde otro lugar de la página (p. ej. «Revisar la división»). */
+    anchorId?: string;
     /** `t` con sus parámetros de interpolación: la firma anterior declaraba
      *  un solo argumento y varias llamadas pasan dos, así que mentía. */
     t: (key: string, params?: Record<string, unknown>) => string;
 }) {
     return (
         <section
+            id={anchorId}
+            tabIndex={anchorId ? -1 : undefined}
             // The shared `view-transition-name` is what the browser
             // uses to identify "this card and the chip with the same
             // name are the same logical entity, morph between them".
             // Each pass needs a unique name so multiple morphs can run
             // independently when the pastor toggles several at once.
             style={{ viewTransitionName: `expository-pass-${index}` } as React.CSSProperties}
-            className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5"
+            className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
             <header className="flex items-start gap-3">
                 <PassStateBadge state={state} />

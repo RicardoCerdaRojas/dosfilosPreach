@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, Library, Loader2, Plus, Search } from 'lucide-react';
 import { candidateRank, newBibliographyEntryId, type ProjectBibliographyEntry } from '@dosfilos/domain';
@@ -28,7 +28,9 @@ export function ProjectStateOfArtPage() {
     const { projects, isLoadingProjects: isLoading } = useFacultyProjects();
     const project = projects?.find(p => p.id === projectId);
     const bib = useProjectBibliography(project);
-    const [paso, setPaso] = useState<Paso>('candidates');
+    const location = useLocation();
+    // «Volver a Requisitos» desde el encuadre llega con ?paso=requisitos.
+    const [paso, setPaso] = useState<Paso>(() => new URLSearchParams(location.search).get('paso') === 'requisitos' ? 'requirements' : 'candidates');
     const [manual, setManual] = useState({ title: '', author: '' });
     const [guardando, setGuardando] = useState(false);
     /** El tipo de fuente elegido en la cobertura, para ver sus candidatas. */

@@ -35,19 +35,19 @@ import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useTranslation } from '@/i18n';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
+import { canonico } from '@/utils/canonico';
 
 /**
- * Para comparar lo de pantalla con lo guardado: limpio (como lo deja el caso
- * de uso) y con las claves en orden, porque Firestore no respeta el orden en
- * que se escribieron (segunda revisión de la 2b).
+ * Para comparar lo de pantalla con lo guardado se usa la forma canónica
+ * compartida (`utils/canonico`): claves en orden, porque Firestore no
+ * respeta el orden en que se escribieron (segunda revisión de la 2b), y
+ * `null`, `''` y ausente como iguales (fase «Encuadre de la serie»).
  */
-function canonico(x: unknown): string {
-    const orden = (v: unknown): unknown => Array.isArray(v)
-        ? v.map(orden)
-        : v && typeof v === 'object'
-            ? Object.fromEntries(Object.keys(v).sort().map(k => [k, orden((v as Record<string, unknown>)[k])]))
-            : v;
-    return JSON.stringify(orden(x));
+
+/** Los criterios sin sus libros: con encuadre, los libros no son de esta página. */
+function sinLibros(c: ProjectBibliographyCriteria): ProjectBibliographyCriteria {
+    const { bibleBooks: _libros, ...resto } = c;
+    return resto;
 }
 
 /**
@@ -107,7 +107,18 @@ export function useProjectBibliography(project: AIProject | undefined) {
         () => (project ? (papers ?? []).filter(p => paperRoleInProject(p, project.id)) : []),
         [papers, project],
     );
-    const bibleBooks = useMemo(() => projectBibleBooks(criteria, studies), [criteria, studies]);
+    /**
+     * Con encuadre, los libros son del encuadre: se leen de lo GUARDADO, no
+     * del borrador de esta página, y se cambian en el diálogo del encuadre.
+     * Sin encuadre (Curso, Investigación), como siempre.
+     */
+    const booksFromFraming = !!project?.framing;
+    const librosGuardados = project?.bibliographyCriteria?.bibleBooks;
+    const claveLibros = JSON.stringify(librosGuardados ?? []);
+    const bibleBooks = useMemo(
+        () => projectBibleBooks(booksFromFraming ? { bibleBooks: JSON.parse(claveLibros) as BibleBookId[] } : criteria, studies),
+        [booksFromFraming, claveLibros, criteria, studies],
+    );
     const workTypes = useMemo(() => projectWorkTypes(project), [project]);
 
     /** Paso 2: cruza los cuatro orígenes con las fichas que hay. */
@@ -145,12 +156,16 @@ export function useProjectBibliography(project: AIProject | undefined) {
     /** Guarda todo: fichas, criterios y registro. Devuelve si se pudo. */
     const persist = useCallback(async (entries: ProjectBibliographyEntry[], crit: ProjectBibliographyCriteria, log?: BibliographySearchLogEntry[]) => {
         if (!project) return false;
+        // Con encuadre, los libros que viajan son los guardados, no los del
+        // borrador: esta página no los pisa (el caso de uso también lo protege).
+        const libros = JSON.parse(claveLibros) as BibleBookId[];
+        const criterios = booksFromFraming ? { ...sinLibros(crit), ...(libros.length ? { bibleBooks: libros } : {}) } : crit;
         await updateProject.mutateAsync({
-            projectId: project.id, bibliography: entries, bibliographyCriteria: crit,
+            projectId: project.id, bibliography: entries, bibliographyCriteria: criterios,
             ...(log ? { bibliographySearchLog: log } : {}),
         });
         return true;
-    }, [project, updateProject]);
+    }, [project, updateProject, booksFromFraming, claveLibros]);
     const save = useCallback(() => persist(draftRef.current, criteriaRef.current), [persist]);
 
     /**
@@ -287,8 +302,12 @@ export function useProjectBibliography(project: AIProject | undefined) {
 
     // Sobre el borrador tal cual, no sobre su versión limpia: una ficha que
     // la limpieza descartaría (sin título) también es un cambio, y tiene que
-    // verse para que no se pierda al guardar (revisión de la etapa 2).
-    const dirty = JSON.stringify(draft) !== clave || JSON.stringify(criteria) !== claveCriterios;
+    // verse para que no se pierda al guardar (revisión de la etapa 2). La
+    // forma canónica solo iguala `null`, `''` y ausente, y el orden de claves.
+    // Con encuadre, los libros del borrador no cuentan: no se guardan aquí.
+    const criteriosParaComparar = (c: ProjectBibliographyCriteria) => canonico(booksFromFraming ? sinLibros(c) : c);
+    const dirty = canonico(draft) !== canonico(guardadas)
+        || criteriosParaComparar(criteria) !== criteriosParaComparar(JSON.parse(claveCriterios) as ProjectBibliographyCriteria);
 
     return {
         entries: draft, errors, criteria, setCriteria, applyImport, save, saving: updateProject.isPending, update, add, remove, gatherCandidates,
@@ -296,7 +315,9 @@ export function useProjectBibliography(project: AIProject | undefined) {
         pendingImport, setPendingImport, addSearchNote,
         /** Los pasajes de los estudios, para la guía de búsqueda. */
         passages,
-        historyOf, bibleBooks, workTypes, resourceOf: (id: string) => porId.get(id) ?? null, dirty,
+        historyOf, bibleBooks, workTypes,
+        /** Con encuadre, los libros se ven en solo lectura y se cambian en el encuadre. */
+        booksFromFraming, resourceOf: (id: string) => porId.get(id) ?? null, dirty,
         /**
          * Los libros de la biblioteca para ligar una obra por conseguir: solo
          * los que no tienen ya su ficha, o quedarían dos fichas del mismo libro.

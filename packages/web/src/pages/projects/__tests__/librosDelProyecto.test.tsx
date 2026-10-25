@@ -43,7 +43,7 @@ describe('libros del proyecto', () => {
         fireEvent.change(screen.getByLabelText('stateOfArt.criteria.addBook'), { target: { value: 'NEH' } });
         expect(within(screen.getByRole('list', { name: 'stateOfArt.criteria.books' })).getByText('Nehemías')).toBeInTheDocument();
         // La guía ya busca el libro en IxTheo y en español.
-        expect(screen.getByText('"Nehemiah"')).toBeInTheDocument();
+        expect(screen.getByText('"Nehemiah" OR "Ezra-Nehemiah"')).toBeInTheDocument();
         expect(screen.getAllByText('Nehemías comentario').length).toBeGreaterThan(0);
         fireEvent.click(screen.getByText('stateOfArt.save'));
         await waitFor(() => expect(updateProject).toHaveBeenCalled());

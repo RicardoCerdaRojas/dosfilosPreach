@@ -8,6 +8,15 @@ import { useWorkProfiles } from '@/hooks/exegesis/useWorkProfiles';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBriefs';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
+import { canonico } from '@/utils/canonico';
+
+/**
+ * Para «Cambios sin guardar»: la forma canónica trata `null` como ausente,
+ * pero en la rúbrica de un tipo `null` es «la del sistema» y ausente es «la
+ * por defecto». Se marca antes de comparar.
+ */
+const paraComparar = (tipos: ProjectWorkType[]) =>
+    canonico(tipos.map(x => (x.rubricTemplateId === null ? { ...x, rubricTemplateId: '__system' } : x)));
 
 interface ProjectWorkTypesCardProps {
     project: AIProject;
@@ -42,7 +51,7 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
     };
 
     const sinNombre = draft.some(x => !x.label.trim());
-    const sinCambios = JSON.stringify(draft) === clave;
+    const sinCambios = paraComparar(draft) === paraComparar(guardados);
     const campo = 'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40';
     // Vacía, la guía del tipo es la del curso; si el curso no tiene, ninguna.
     const guiaHeredada = projectCourseInfo(project)?.styleGuideId

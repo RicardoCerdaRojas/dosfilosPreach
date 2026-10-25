@@ -1,8 +1,4 @@
-import {
-    useEffect,
-    useMemo,
-    useState,
-} from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Link,
     useNavigate,
@@ -93,6 +89,8 @@ import { useExpositoryViewPrefs } from './expository/useExpositoryViewPrefs';
 import { buildPassInput, sourceLanguageFromLoaded } from './expository/passInput';
 import { ProjectSeriesBanner, ProjectUnavailableNotice } from './components/ProjectSeriesBanner';
 import { ProjectSeriesSources } from './components/ProjectSeriesSources';
+import { FramingContrastCard } from './components/FramingContrastCard';
+import { UnitsVsSundaysNotice } from './components/UnitsVsSundaysNotice';
 import {
     PROJECT_SOURCES_PENDING,
     type ProjectSeriesSourcesState,
@@ -102,6 +100,8 @@ import {
     projectEntryState,
     shouldRestoreDraft,
 } from './utils/serieDesdeProyecto';
+import { useFramingInPlanner } from './expository/useFramingInPlanner';
+import { useIssueTriage } from './expository/useIssueTriage';
 
 /**
  * v1.5 expository assistant wizard.
@@ -151,7 +151,7 @@ export function ExpositoryAssistantPage() {
     const [searchParams] = useSearchParams();
     const projectIdParam = searchParams.get('projectId');
     const bookParam = searchParams.get('book');
-    const { projects, isLoadingProjects } = useFacultyProjects();
+    const { projects, isLoadingProjects, updateProject } = useFacultyProjects();
     const project = useMemo(() => activeProjectById(projects, projectIdParam), [projects, projectIdParam]);
     const projectState = projectEntryState({ projectIdParam, loading: isLoadingProjects || !user?.uid, project });
     const projectBooks = useMemo(() => project?.bibliographyCriteria?.bibleBooks ?? [], [project]);
@@ -217,9 +217,8 @@ export function ExpositoryAssistantPage() {
     const [fidelityReview, setFidelityReview] = useState<FidelityReview | null>(null);
 
     // Series-creation form state — populated once preachable units land.
+    // Fecha, frecuencia y descripción viven en `encuadre`, que las precarga.
     const [seriesTitle, setSeriesTitle] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [frequency, setFrequency] = useState<'weekly' | 'biweekly' | 'monthly' | 'flexible'>('weekly');
     const [creatingSeries, setCreatingSeries] = useState(false);
 
     // Preferencias de LECTURA — no dicen nada del libro que se divide.
@@ -229,41 +228,13 @@ export function ExpositoryAssistantPage() {
         collapsedPasses, setCollapsedPasses, togglePass,
         methodologyOpen, setMethodologyOpen,
     } = vista;
-    // Pase 5 issue triage. Indices into fidelityReview.issues. The
-    // two sets are mutually exclusive (toggling one removes the
-    // other) — an issue is either acted upon or actively dismissed,
-    // never both. Persists with the draft so triage decisions
-    // survive a tab close.
-    const [addressedIssues, setAddressedIssues] = useState<Set<number>>(new Set());
-    const [ignoredIssues, setIgnoredIssues] = useState<Set<number>>(new Set());
-    const toggleIssueAddressed = (idx: number) => {
-        setAddressedIssues((prev) => {
-            const next = new Set(prev);
-            if (next.has(idx)) next.delete(idx);
-            else next.add(idx);
-            return next;
-        });
-        setIgnoredIssues((prev) => {
-            if (!prev.has(idx)) return prev;
-            const next = new Set(prev);
-            next.delete(idx);
-            return next;
-        });
-    };
-    const toggleIssueIgnored = (idx: number) => {
-        setIgnoredIssues((prev) => {
-            const next = new Set(prev);
-            if (next.has(idx)) next.delete(idx);
-            else next.add(idx);
-            return next;
-        });
-        setAddressedIssues((prev) => {
-            if (!prev.has(idx)) return prev;
-            const next = new Set(prev);
-            next.delete(idx);
-            return next;
-        });
-    };
+    // El encuadre del proyecto: precarga, contraste con el panorama y aviso de domingos.
+    const encuadre = useFramingInPlanner({
+        project, projectState, bookParam, lang, panorama, macroSections, analyzedBookId,
+        updateProject, setCollapsedPasses,
+    });
+    // Pase 5 issue triage (abordado / ignorado), persistido con el borrador.
+    const { addressedIssues, setAddressedIssues, ignoredIssues, setIgnoredIssues, toggleIssueAddressed, toggleIssueIgnored } = useIssueTriage();
 
     const assistant = useExpositoryAssistant();
 
@@ -291,6 +262,14 @@ export function ExpositoryAssistantPage() {
             });
             setBookId(inicial.bookId);
             setBookChoiceRequired(inicial.mustChoose);
+            // El alcance del encuadre, solo sin borrador: un análisis
+            // restaurado manda sobre lo que diga el formulario.
+            if (encuadre.scope) {
+                setScopeMode('passage');
+                setPassageScope(encuadre.scope);
+                setBookId(encuadre.scope.bookId);
+                setBookChoiceRequired(false);
+            }
         }
         if (draft) {
             setBookId(draft.bookId);
@@ -299,6 +278,7 @@ export function ExpositoryAssistantPage() {
                 setTargetCount(draft.targetPreachableCount);
             }
             setVerses(draft.verses);
+            encuadre.restoreAnalyzedPassage(draft.verses, draft.bookId, allBooks.find((b) => b.id === draft.bookId)?.chapterCount ?? 0);
             setBookDisplay(draft.bookDisplay);
             if (draft.panorama) setPanorama(draft.panorama);
             if (draft.macroSections) setMacroSections(draft.macroSections);
@@ -400,6 +380,7 @@ export function ExpositoryAssistantPage() {
         setVerses(loaded.verses);
         setBookDisplay(loaded.book);
         setAnalyzedBookId(bookId);
+        encuadre.setAnalyzedPassage(!isWholeBook);
 
         // Surface the source (original-language vs translation
         // fallback) so the pastor knows what the model is reading.
@@ -949,12 +930,12 @@ export function ExpositoryAssistantPage() {
             }
             const plan = buildSeriesPlan({
                 title: seriesTitle,
-                description: t('expository.create.defaultDescription', {
-                    book: bookDisplay,
-                    count: preachableUnits.length,
-                }) as string,
-                startDate: parseLocalDate(startDate),
-                frequency,
+                // La del pastor (precargada con su idea revisada); vacía, el texto de siempre.
+                description: encuadre.descriptionFor(
+                    t('expository.create.defaultDescription', { book: bookDisplay, count: preachableUnits.length }) as string,
+                ),
+                startDate: parseLocalDate(encuadre.startDate),
+                frequency: encuadre.frequency,
                 bookDisplay,
                 preachableUnits,
                 exegeticalUnits,
@@ -1138,6 +1119,9 @@ export function ExpositoryAssistantPage() {
                     </PassCard>
                 )}
 
+                {/* Tras el Pase 1: la lectura del pastor junto a lo que propone el panorama. */}
+                {encuadre.contrast && <FramingContrastCard key={encuadre.contrast.key} {...encuadre.contrast.props} t={t} />}
+
                 {!collapsedPasses.has(2) && (
                     <PassCard
                         index={2}
@@ -1191,6 +1175,7 @@ export function ExpositoryAssistantPage() {
                 {!collapsedPasses.has(4) && (
                     <PassCard
                         index={4}
+                        anchorId="expository-pass-4"
                         title={t('expository.passes.preachable.title') as string}
                         subtitle={t('expository.passes.preachable.subtitle') as string}
                         state={preachableState}
@@ -1218,6 +1203,10 @@ export function ExpositoryAssistantPage() {
                             />
                         )}
                     </PassCard>
+                )}
+
+                {preachableUnits && preachableUnits.length > 0 && encuadre.unitsNotice(preachableUnits.length) && (
+                    <UnitsVsSundaysNotice {...encuadre.unitsNotice(preachableUnits.length)!} t={t} />
                 )}
 
                 {!collapsedPasses.has(5) && (
@@ -1268,10 +1257,12 @@ export function ExpositoryAssistantPage() {
                     <CreateSeriesCard
                         seriesTitle={seriesTitle}
                         onSeriesTitleChange={setSeriesTitle}
-                        startDate={startDate}
-                        onStartDateChange={setStartDate}
-                        frequency={frequency}
-                        onFrequencyChange={setFrequency}
+                        startDate={encuadre.startDate}
+                        onStartDateChange={encuadre.setStartDate}
+                        frequency={encuadre.frequency}
+                        onFrequencyChange={encuadre.setFrequency}
+                        description={encuadre.description}
+                        onDescriptionChange={encuadre.setDescription}
                         preachableUnits={preachableUnits}
                         creating={creatingSeries}
                         onCreate={handleCreateSeries}

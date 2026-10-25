@@ -1,5 +1,18 @@
+import { getBooksByTestament, type BibleBookId } from '../../bible/canon/BibleCanon';
 import type { SourceType } from '../entities/SourceType';
+import { BOOK_TO_GROUPS } from './groups/types';
 import type { SourceRecommendation } from './types';
+
+/** Filón comenta el Pentateuco y es el diálogo de Hebreos, Juan y Pablo; a Esdras no le sirve. */
+const PENTATEUCO_Y_NT: ReadonlyArray<BibleBookId> = [
+    ...(Object.entries(BOOK_TO_GROUPS) as Array<[BibleBookId, ReadonlyArray<string>]>)
+        .filter(([, grupos]) => grupos.includes('pentateuch'))
+        .map(([b]) => b),
+    ...getBooksByTestament('NT').map(b => b.id),
+];
+
+/** El arameo bíblico largo está en Esdras (4:8–6:18; 7:12-26) y Daniel (2:4–7:28). */
+const ARAMEO: ReadonlyArray<BibleBookId> = ['EZR', 'DAN'];
 
 /**
  * Recommendations that don't depend on the paper's passage — lexicons,
@@ -79,6 +92,20 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             testament: 'OT',
             rationale: 'Clásico, en dominio público en versiones digitales. Más accesible que HALOT.',
             verified: { source: 'openlibrary', ref: '/works/OL1331812W', checkedAt: '2026-10-24' },
+        },
+        {
+            author: 'Vogt, Ernst',
+            title: 'A Lexicon of Biblical Aramaic: Clarified by Ancient Documents',
+            series: 'Subsidia Biblica 42',
+            publisher: 'Gregorian & Biblical Press',
+            year: 2011,
+            isbn: '9788876536557',
+            tier: 'essential',
+            languages: ['en'],
+            testament: 'OT',
+            covers: ARAMEO,
+            rationale: 'Léxico del arameo bíblico con los papiros y las inscripciones de la época.',
+            verified: { source: 'openlibrary', ref: '/isbn/9788876536557', checkedAt: '2026-10-24' },
         },
     ],
 
@@ -205,6 +232,62 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             testament: 'OT',
             rationale: 'Gramática hebrea bíblica de referencia técnica. Edición revisada por Muraoka.',
         },
+        {
+            author: 'Rosenthal, Franz',
+            title: 'A Grammar of Biblical Aramaic',
+            series: 'Porta Linguarum Orientalium NS 5',
+            publisher: 'Harrassowitz',
+            year: 2006,
+            isbn: '9783447052511',
+            tier: 'essential',
+            languages: ['en'],
+            testament: 'OT',
+            covers: ARAMEO,
+            rationale: 'La gramática de referencia del arameo bíblico (7.ª edición ampliada).',
+            verified: { source: 'openlibrary', ref: '/works/OL29252905W', checkedAt: '2026-10-24' },
+        },
+        {
+            author: 'Greenspahn, Frederick E.',
+            title: 'An Introduction to Aramaic',
+            series: 'Resources for Biblical Study 46',
+            publisher: 'Society of Biblical Literature',
+            year: 2003,
+            isbn: '9781589830592',
+            tier: 'recommended',
+            languages: ['en'],
+            testament: 'OT',
+            covers: ARAMEO,
+            rationale: 'Introducción al arameo para quien ya lee hebreo, con los textos de Esdras y Daniel.',
+            verified: { source: 'openlibrary', ref: '/works/OL1873471W', checkedAt: '2026-10-24' },
+        },
+        {
+            author: 'Van Pelt, Miles V.',
+            title: 'Basics of Biblical Aramaic',
+            series: null,
+            publisher: 'Zondervan',
+            year: 2011,
+            isbn: '9780310493914',
+            tier: 'standard',
+            languages: ['en'],
+            testament: 'OT',
+            covers: ARAMEO,
+            rationale: 'Manual de iniciación con todo el arameo bíblico anotado.',
+            verified: { source: 'openlibrary', ref: '/works/OL16484598W', checkedAt: '2026-10-24' },
+        },
+        {
+            author: 'Ribera Florit, Josep',
+            title: 'Guía para el estudio del arameo bíblico',
+            series: null,
+            publisher: 'Sociedad Bíblica',
+            year: 2001,
+            isbn: '9788480830706',
+            tier: 'recommended',
+            languages: ['es'],
+            testament: 'OT',
+            covers: ARAMEO,
+            rationale: 'Gramática del arameo bíblico escrita en español.',
+            verified: { source: 'bne', ref: 'bne:991006988179708606', checkedAt: '2026-10-24' },
+        },
     ],
 
     // ── Historical / cultural background ────────────────────────────────
@@ -257,8 +340,9 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             isbn: '9780334024699',
             tier: 'recommended',
             languages: ['en'],
-            testament: 'whole-bible',
-            rationale: 'Trabajo de referencia sobre judaísmo del Segundo Templo. Útil para AT tardío y NT temprano.',
+            // El periodo (63 a. C.–66 d. C.) es posterior a todo el AT: solo sirve al NT.
+            testament: 'NT',
+            rationale: 'Trabajo de referencia sobre el judaísmo del Segundo Templo en tiempos de Jesús y de la iglesia primitiva.',
             verified: { source: 'openlibrary', ref: '/works/OL2933079W', checkedAt: '2026-10-24' },
         },
         {
@@ -301,6 +385,7 @@ export const INVARIANT_RECOMMENDATIONS: Partial<Record<SourceType, ReadonlyArray
             tier: 'recommended',
             languages: ['en'],
             testament: 'whole-bible',
+            covers: PENTATEUCO_Y_NT,
             rationale: 'Filón judío-helenístico. Crítico para Hebreos, Juan, Pablo (lógos, alegoría) + alegorías sobre Pentateuco.',
             verified: { source: 'openlibrary', ref: '/works/OL962057W', checkedAt: '2026-10-24' },
         },
