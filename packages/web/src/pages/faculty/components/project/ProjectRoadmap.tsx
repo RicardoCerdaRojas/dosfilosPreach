@@ -13,6 +13,8 @@ export interface RoadmapPhaseEntry {
         title: string;
         description: string;
         icon: React.ComponentType<{ className?: string }>;
+        /** Clave bajo `roadmap.phases.`; sin ella, los textos en español de la fase. */
+        i18nKey?: string;
         cta: {
             label: string;
             kind: RoadmapCtaKind;
@@ -46,6 +48,12 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
     const { t } = useTranslation('projects');
     const completedCount = roadmap.phases.filter(p => p.complete).length;
     const activePhase = roadmap.phases[roadmap.activeIndex]?.phase;
+    // Solo el recorrido Exegético pasó a i18n (sus claves están en es y en);
+    // los demás muestran su texto en español.
+    const texto = (phase: RoadmapPhaseEntry['phase'], campo: 'title' | 'description' | 'cta') => {
+        if (phase.i18nKey) return t(`roadmap.phases.${phase.i18nKey}.${campo}`);
+        return campo === 'cta' ? phase.cta.label : phase[campo];
+    };
 
     return (
         <section className="space-y-4">
@@ -71,7 +79,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                         <button
                             type="button"
                             onClick={() => onPhaseCta(p.phase.cta.kind)}
-                            title={p.phase.cta.label}
+                            title={texto(p.phase, 'cta')}
                             className={cn(
                                 'w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
                                 isComplete
@@ -104,7 +112,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                                         isActive ? 'font-medium text-foreground' : 'text-foreground/85'
                                     )}
                                 >
-                                    {p.phase.title}
+                                    {texto(p.phase, 'title')}
                                 </div>
                             </div>
                         </button>
@@ -124,17 +132,17 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                             {t('roadmap.activePhase.label', { number: roadmap.activeIndex + 1 })}
                         </div>
                         <h2 className="font-reading text-[19px] leading-tight text-foreground mb-1">
-                            {activePhase.title}
+                            {texto(activePhase, 'title')}
                         </h2>
                         <p className="text-[13.5px] leading-relaxed text-muted-foreground">
-                            {activePhase.description}
+                            {texto(activePhase, 'description')}
                         </p>
                     </div>
                     <Button
                         onClick={() => onPhaseCta(activePhase.cta.kind)}
                         className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground font-medium gap-1.5 shrink-0"
                     >
-                        {activePhase.cta.label}
+                        {texto(activePhase, 'cta')}
                         <ChevronRight className="h-4 w-4" />
                     </Button>
                 </div>

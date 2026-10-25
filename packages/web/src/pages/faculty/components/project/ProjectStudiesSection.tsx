@@ -9,6 +9,8 @@ interface ProjectStudiesSectionProps {
     studies: ReadonlyArray<ExegesisPaperSummary>;
     /** Los tipos de trabajo del proyecto, para rotular cada estudio. */
     workTypes?: ReadonlyArray<ProjectWorkType>;
+    /** Los estudios que ya se ven en la tarjeta de su serie: aquí no se repiten. */
+    excludeIds?: ReadonlySet<string>;
     onNewStudy: () => void;
 }
 
@@ -17,10 +19,13 @@ interface ProjectStudiesSectionProps {
  * que colaboran con él, rotulados, con su tipo de trabajo y su fase. Cada
  * uno abre su trabajo.
  */
-export function ProjectStudiesSection({ projectId, studies, workTypes = [], onNewStudy }: ProjectStudiesSectionProps) {
+export function ProjectStudiesSection({ projectId, studies: todos, workTypes = [], excludeIds, onNewStudy }: ProjectStudiesSectionProps) {
     const { t, i18n } = useTranslation('projects');
     const { t: tx } = useTranslation('exegesis');
     const lang: SupportedLanguage = i18n.language?.startsWith('en') ? 'en' : 'es';
+    // Con una serie en el proyecto, esta lista pasa a ser «Otros estudios».
+    const conSerie = !!excludeIds && excludeIds.size > 0;
+    const studies = conSerie ? todos.filter(p => !excludeIds.has(p.id)) : todos;
     const ordenados = [...studies].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
     return (
@@ -28,7 +33,7 @@ export function ProjectStudiesSection({ projectId, studies, workTypes = [], onNe
             <header className="flex items-center gap-2">
                 <ScrollText className="h-4 w-4 text-muted-foreground" />
                 <h2 id="project-studies-title" className="text-sm font-semibold text-foreground">
-                    {t('studies.title')} <span className="text-muted-foreground font-normal">· {studies.length}</span>
+                    {t(conSerie ? 'studies.otherTitle' : 'studies.title')} <span className="text-muted-foreground font-normal">· {studies.length}</span>
                 </h2>
                 <Button size="sm" variant="outline" className="ml-auto" onClick={onNewStudy}>
                     <Plus className="mr-1.5 h-3.5 w-3.5" />

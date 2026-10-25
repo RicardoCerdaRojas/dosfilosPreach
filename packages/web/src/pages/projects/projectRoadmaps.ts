@@ -12,6 +12,7 @@ import {
     FileEdit,
     NotebookPen,
     FileCode,
+    Split,
     type LucideIcon,
 } from 'lucide-react';
 import { projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput, type SermonEntity, type AIChatSession } from '@dosfilos/domain';
@@ -28,7 +29,7 @@ import { projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput,
  */
 
 /** Qué hace el botón de una fase. Un solo lugar: antes estaba copiado en tres. */
-export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge' | 'stateOfArt';
+export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge' | 'stateOfArt' | 'planSeries';
 
 export interface RoadmapContext {
     project: AIProject;
@@ -36,6 +37,10 @@ export interface RoadmapContext {
     studyCount: number;
     /** Estudios del proyecto ya ensamblados (listos para entregar). */
     deliveredCount: number;
+    /** Estudios del proyecto que ya salieron de la configuración: los que la serie crea en lote nacen vacíos. */
+    workedStudyCount: number;
+    /** Series de predicación ligadas al proyecto (`series.projectId`). */
+    seriesCount: number;
     sourceCount: number;
     greekCount: number;
     hebrewCount: number;
@@ -51,6 +56,8 @@ export interface RoadmapPhase {
     /** Short description shown when this phase is the current step. */
     description: string;
     icon: LucideIcon;
+    /** Clave bajo `roadmap.phases.` en projects.json; sin ella se muestran los textos de aquí. */
+    i18nKey?: string;
     isComplete: (ctx: RoadmapContext) => boolean;
     /** Primary CTA — surfaced when this is the active step. */
     cta: {
@@ -293,6 +300,7 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
         // El botón de esta fase escribe una nota: también la completa.
         isComplete: (ctx) => !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
         cta: { label: 'Escribir el propósito', kind: 'output' },
+        i18nKey: 'exegetical.passage',
     },
     {
         id: 'sources',
@@ -301,14 +309,28 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
         icon: Library,
         isComplete: (ctx) => ctx.sourceCount > 0,
         cta: { label: 'Preparar el estado del arte', kind: 'stateOfArt' },
+        i18nKey: 'exegetical.sources',
+    },
+    {
+        id: 'division',
+        title: 'División en perícopas',
+        description: 'Divide el libro en perícopas con el planificador. Cada perícopa nace como un estudio de este proyecto, con su bibliografía.',
+        icon: Split,
+        // Con dos estudios también: un proyecto para una clase o el archivo
+        // no predica, y no debe quedar trabado sin serie.
+        isComplete: (ctx) => ctx.seriesCount > 0 || ctx.studyCount >= 2,
+        cta: { label: 'Planificar la serie', kind: 'planSeries' },
+        i18nKey: 'exegetical.division',
     },
     {
         id: 'pericopes',
         title: 'Estudios por perícopa',
-        description: 'Un estudio por cada perícopa del pasaje.',
+        description: 'Un estudio trabajado por cada perícopa del pasaje.',
         icon: ScrollText,
-        isComplete: (ctx) => ctx.studyCount >= 2,
+        // Trabajados: los estudios vacíos que la serie crea en lote no cuentan.
+        isComplete: (ctx) => ctx.workedStudyCount >= 2,
         cta: { label: 'Nuevo estudio', kind: 'study' },
+        i18nKey: 'exegetical.pericopes',
     },
     {
         id: 'synthesis',
@@ -317,6 +339,7 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
         icon: MessageSquareQuote,
         isComplete: (ctx) => ctx.sessionCount > 0 || ctx.outputs.length > 0,
         cta: { label: 'Iniciar conversación', kind: 'newSession' },
+        i18nKey: 'exegetical.synthesis',
     },
 ];
 
