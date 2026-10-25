@@ -108,6 +108,7 @@ export * from './services/lexiconSuggestion';
 export * from './services/corpusQuestionReview';
 export * from './services/seriesPaperDefaults';
 export * from './services/projectSeriesLink';
+export * from './services/projectFraming';
 export * from './services/paperDelivery';
 export * from './services/briefQuestionCandidates';
 export * from './services/courseBibliography';

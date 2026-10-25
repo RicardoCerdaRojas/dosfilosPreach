@@ -6,12 +6,15 @@ import {
     setDoc,
     updateDoc,
     deleteDoc,
+    deleteField,
     query,
     where,
-    orderBy
+    orderBy,
+    type DocumentData,
+    type UpdateData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { AIProject, IAIProjectRepository, ProjectOutput } from '@dosfilos/domain';
+import { AIProject, IAIProjectRepository, ProjectOutput, type AIProjectUpdate } from '@dosfilos/domain';
 
 export class FirestoreAIProjectRepository implements IAIProjectRepository {
     private collectionRef() {
@@ -76,19 +79,39 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
         return newProject;
     }
 
-    async updateProject(
-        projectId: string,
-        updates: Partial<Pick<AIProject, 'title' | 'color' | 'type' | 'icon' | 'contextNote' | 'sourceIds' | 'courseInfo' | 'workTypes' | 'bibliography' | 'bibliographyCriteria' | 'bibliographySearchLog'>>
-    ): Promise<AIProject> {
-        const ref = this.docRef(projectId);
-        // Firestore does not accept undefined values — strip them before the update
-        const clean = Object.fromEntries(
-            Object.entries(updates).filter(([, v]) => v !== undefined)
-        );
-        await updateDoc(ref, { ...clean, updatedAt: new Date() });
+    async updateProject(projectId: string, updates: AIProjectUpdate): Promise<AIProject> {
+        await updateDoc(this.docRef(projectId), this.buildFirestoreUpdates(updates) as UpdateData<DocumentData>);
         const updated = await this.getProject(projectId);
         if (!updated) throw new Error(`Project ${projectId} not found after update`);
         return updated;
+    }
+
+    /**
+     * El payload de `updateProject`, en UN solo `updateDoc`. El encuadre va
+     * por rutas con punto (`framing.centralIdea`): guardar el formulario no
+     * pisa el registro ni la revisión. `null` borra con `deleteField()`.
+     */
+    buildFirestoreUpdates(updates: AIProjectUpdate): Record<string, unknown> {
+        const { framingPatch, bibleBooks, contextNote, ...resto } = updates;
+        // Firestore does not accept undefined values — strip them before the update
+        const out: Record<string, unknown> = Object.fromEntries(
+            Object.entries(resto).filter(([, v]) => v !== undefined)
+        );
+        // Vaciar la nota la borra: antes '' se volvía undefined y se descartaba.
+        if (contextNote !== undefined) out.contextNote = contextNote?.trim() ? contextNote.trim() : deleteField();
+        if (bibleBooks !== undefined) {
+            // Firestore rechaza `bibliographyCriteria` y una ruta suya en el mismo update.
+            if (out.bibliographyCriteria !== undefined) {
+                out.bibliographyCriteria = { ...((out.bibliographyCriteria as object | null) ?? {}), bibleBooks };
+            } else {
+                out['bibliographyCriteria.bibleBooks'] = bibleBooks;
+            }
+        }
+        const campos = Object.entries(framingPatch ?? {}).filter(([k, v]) => v !== undefined && k !== 'updatedAt');
+        for (const [k, v] of campos) out[`framing.${k}`] = v === null ? deleteField() : v;
+        if (campos.length) out['framing.updatedAt'] = new Date().toISOString();
+        out.updatedAt = new Date();
+        return out;
     }
 
     async setProjectArchived(projectId: string, archived: boolean): Promise<AIProject> {
