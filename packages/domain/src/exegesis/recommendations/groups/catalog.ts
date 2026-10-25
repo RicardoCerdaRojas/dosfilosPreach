@@ -75,6 +75,8 @@ const HISTORICAL_BOOKS: GroupRecommendations = {
                 isbn: '9781850752691',
                 tier: 'essential',
                 languages: ['en', 'de'],
+                // Trata Josué–Reyes (Deuteronomio como prólogo); a Rut, Crónicas o Esdras no les sirve.
+                covers: ['JOS', 'JDG', '1SA', '2SA', '1KI', '2KI'],
                 rationale: 'Hipótesis seminal de la "Historia Deuteronomística". Diálogo crítico imprescindible para Josué-2 Reyes.',
                 verified: { source: 'openlibrary', ref: '/works/OL8242049W', checkedAt: '2026-10-24' },
             },

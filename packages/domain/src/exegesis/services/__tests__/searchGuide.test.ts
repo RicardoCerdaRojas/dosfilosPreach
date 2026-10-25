@@ -37,8 +37,19 @@ describe('la guía de búsqueda', () => {
         expect(bookSearchName('JAS', 'es')).toBe('epístola de Santiago');
         expect(bookSearchName('JAS', 'en')).toBe('"Epistle of James" OR "Letter of James"');
         expect(bookSearchName('RUT', 'en')).toBe('"Book of Ruth"');
-        expect(bookSearchName('NEH', 'en')).toBe('"Nehemiah"');
         expect(bookSearchName('NEH', 'es')).toBe('Nehemías');
+    });
+
+    it('Esdras y Nehemías también se buscan como «Ezra-Nehemiah»: en la Biblia hebrea son un solo libro, y así se titula la literatura', () => {
+        expect(bookSearchName('EZR', 'en')).toBe('"Book of Ezra" OR "Ezra-Nehemiah"');
+        expect(bookSearchName('NEH', 'en')).toBe('"Nehemiah" OR "Ezra-Nehemiah"');
+        // Con OR, el término que se agrega va con las dos formas, no solo con la última.
+        const libros = searchGuide(base({ bibleBooks: ['EZR'], unmetTypes: new Set(['commentary-critical']) })).find(x => x.kind === 'books')!;
+        expect(libros.queries[0]!.query).toBe('("Book of Ezra" OR "Ezra-Nehemiah") commentary');
+        const antiguas = searchGuide(base({ bibleBooks: ['NEH'], unmetRequirements: [req({ id: 'ep', kind: 'date-range', before: 1950 })] })).find(x => x.kind === 'older')!;
+        expect(antiguas.queries[0]!.query).toBe('("Nehemiah" OR "Ezra-Nehemiah") commentary');
+        // Un libro sin OR queda igual.
+        expect(searchGuide(base({ bibleBooks: ['RUT'], unmetTypes: new Set(['commentary-critical']) })).find(x => x.kind === 'books')!.queries[0]!.query).toBe('"Book of Ruth" commentary');
     });
 
     it('lo que aparece depende de lo que falta, y cada paso dice por qué (NT785)', () => {
@@ -78,7 +89,7 @@ describe('la guía de búsqueda', () => {
         expect(searchGuide(base({ bibleBooks: ['NEH'], projectType: 'course', language: 'en' })).map(x => x.kind)).toEqual(['passage']);
         const pasos = searchGuide(base({ bibleBooks: ['NEH'], projectType: 'study', language: 'en' }));
         expect(pasos.map(x => x.kind)).toEqual(['passage', 'articles', 'theses']);
-        expect(pasos[0]!.queries).toEqual([expect.objectContaining({ database: 'ixtheo', query: '"Nehemiah"' })]);
+        expect(pasos[0]!.queries).toEqual([expect.objectContaining({ database: 'ixtheo', query: '"Nehemiah" OR "Ezra-Nehemiah"' })]);
         expect(pasos[2]!.queries.map(q => q.database)).toEqual(['oatd', 'proquest']);
     });
 
