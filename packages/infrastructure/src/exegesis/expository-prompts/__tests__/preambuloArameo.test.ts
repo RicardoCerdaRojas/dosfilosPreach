@@ -14,6 +14,15 @@ describe('buildSourcePreamble — el arameo de Esdras y Daniel', () => {
         expect(p.startsWith(HOY_ES.slice(0, -1))).toBe(true);
     });
 
+    it('avisa que el arameo no tiene waw-consecutivo y nombra sus marcadores, en los dos idiomas', () => {
+        const es = buildSourcePreamble('hebrew', 'es', 'Esdras');
+        expect(es).toContain('El arameo bíblico no tiene waw-consecutivo');
+        for (const m of ['אֱדַיִן («entonces»)', 'כְּעַן («ahora»)', 'דִּי', 'fórmulas de las cartas']) expect(es).toContain(m);
+        const en = buildSourcePreamble('hebrew', 'en', 'Daniel');
+        expect(en).toContain('Biblical Aramaic has no waw-consecutive');
+        for (const m of ['אֱדַיִן ("then")', 'כְּעַן ("now")', 'דִּי', 'letter formulas']) expect(en).toContain(m);
+    });
+
     it('Daniel, en inglés y por id', () => {
         expect(buildSourcePreamble('hebrew', 'en', 'Daniel')).toContain('Daniel 2:4–7:28 is in Biblical Aramaic');
         expect(buildSourcePreamble('hebrew', 'es', 'DAN')).toContain('DAN 2:4–7:28');

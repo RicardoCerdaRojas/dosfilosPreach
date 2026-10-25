@@ -30,10 +30,11 @@ export const EZRA_RECOMMENDATIONS: BookRecommendations = {
                 publisher: 'Sheffield Phoenix',
                 year: 2015,
                 isbn: '9781909697751',
-                tier: 'essential',
+                // Recomendado, no esencial: su lectura es muy propia de la autora y no la base común.
+                tier: 'recommended',
                 languages: ['en'],
                 approach: 'historical-critical',
-                rationale: 'Comentario técnico de Esdras leído desde los documentos del imperio persa.',
+                rationale: 'Comentario técnico de Esdras leído desde los documentos del imperio persa. Es una lectura muy propia de la autora: contrástala con Williamson.',
                 verified: { source: 'openlibrary', ref: '/isbn/9781909697751', checkedAt: '2026-10-24' },
             },
         ],
@@ -49,7 +50,8 @@ export const EZRA_RECOMMENDATIONS: BookRecommendations = {
                 tier: 'essential',
                 languages: ['es'],
                 approach: 'historical-grammatical',
-                rationale: 'El comentario de Esdras más completo escrito en español, pensado para la predicación.',
+                // Sin superlativo: «el más completo» no se pudo verificar.
+                rationale: 'Comentario de Esdras escrito en español, pensado para la predicación.',
                 verified: { source: 'bne', ref: 'bne:991047875219708606', checkedAt: '2026-10-24' },
             },
             {

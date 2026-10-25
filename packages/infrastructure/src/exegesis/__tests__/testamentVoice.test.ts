@@ -72,6 +72,12 @@ describe('voiceFor', () => {
             expect(v.morphologyEs).toContain('peal');
         });
 
+        it('en español nombra también la gramática aramea escrita en español (Ribera Florit); en inglés no', () => {
+            const v = voiceFor('EZR', esd(4, 8, 4, 24));
+            expect(v.grammarsEs).toContain('Ribera Florit (Guía para el estudio del arameo bíblico)');
+            expect(v.grammarsEn).not.toContain('Ribera Florit');
+        });
+
         it('Esd 4:6-24 empieza en hebreo pero toca arameo', () => {
             expect(voiceFor('EZR', esd(4, 6, 4, 24)).expertEs).toContain('arameo');
         });

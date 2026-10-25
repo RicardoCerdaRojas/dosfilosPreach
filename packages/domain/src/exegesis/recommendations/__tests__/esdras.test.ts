@@ -56,6 +56,16 @@ describe('Esdras tiene catálogo propio', () => {
         }
     });
 
+    it('las fichas dicen lo que es cada obra: Fried recomendada y propia, Burt sin superlativo, Steinmann y Levering con su lectura', () => {
+        const xs = [...Object.values(EZRA_RECOMMENDATIONS.bySourceType).flat()];
+        const de = (autor: string) => xs.find(r => r.author.startsWith(autor))!;
+        expect(de('Fried').tier).toBe('recommended');
+        expect(de('Fried').rationale).toMatch(/muy propia de la autora/);
+        expect(de('Burt').rationale).toBe('Comentario de Esdras escrito en español, pensado para la predicación.');
+        expect(de('Steinmann').rationale).toMatch(/técnico.*confesional luterana.*No es el contrapunto crítico/);
+        expect(de('Levering').rationale).toMatch(/no una exposición versículo a versículo/);
+    });
+
     it('las de solo Nehemías no salen en Esdras, y las de solo Esdras no salen en Nehemías', () => {
         for (const t of ["The Message of Nehemiah: God's Servant in a Time of Change", 'Nehemías: siervo de Dios en tiempos de cambio', 'Rebuilding Identity: The Nehemiah-Memoir and Its Earliest Readers']) {
             expect(tiene('NEH', r => r.title === t), t).toBe(true);
@@ -108,8 +118,8 @@ describe('`covers` en el invariante y en el grupo: cada obra en los libros que t
 });
 
 describe('notas para predicar Esdras-Nehemías', () => {
-    it('las cinco en Esdras y en Nehemías, ninguna en Génesis', () => {
-        expect(getPreachingNotes('EZR')).toHaveLength(5);
+    it('las nueve en Esdras y en Nehemías, ninguna en Génesis', () => {
+        expect(getPreachingNotes('EZR')).toHaveLength(9);
         expect(getPreachingNotes('NEH').map(n => n.id)).toEqual(getPreachingNotes('EZR').map(n => n.id));
         expect(getPreachingNotes('GEN')).toEqual([]);
     });
@@ -127,5 +137,58 @@ describe('notas para predicar Esdras-Nehemías', () => {
         expect(conPasaje['ezr-9-10-matrimonios']).toEqual({ bookId: 'EZR', chapterStart: 9, verseStart: 1, chapterEnd: 10, verseEnd: 44 });
         // La de Esdras 9–10 nombra el texto que impide leerlo como mandato de divorcio.
         expect(notas.find(n => n.id === 'ezr-9-10-matrimonios')!.sources).toContain('1 Co 7:12-16');
+    });
+
+    // Ronda de arreglos F1: lo que la revisión encontró mal dicho en las notas.
+    const nota = (id: string) => {
+        const n = getPreachingNotes('EZR').find(x => x.id === id);
+        expect(n, id).toBeDefined();
+        return n!;
+    };
+
+    it('Esdras 9–10: recibe a los que se apartan (6:21), Malaquías no se cita solo a favor, y ni Esdras 10 ni Nehemías 13 cierran bien', () => {
+        const n = nota('ezr-9-10-matrimonios');
+        expect(n.sources).toEqual(expect.arrayContaining(['Esd 6:21', '1 Co 7:39', '1 Co 7:12-16', 'Jer 31:31-34', 'Ez 36:26-27']));
+        expect(n.body).toContain('(6:21)');
+        expect(n.body).toContain('"linaje santo" (9:2)');
+        expect(n.body).toMatch(/divorcio desleal \(2:14-16\)/);
+        expect(n.body).toMatch(/Dt 7:1-4; 23:3-6; Lv 18:24-30/);
+        // Ya no afirma tajante que el asunto «no es la etnia».
+        expect(n.body).not.toMatch(/no la etnia/);
+    });
+
+    it('Esdras 4: el paréntesis y el orden de Esdras y Nehemías van en notas separadas, sin decir que el texto no da cronología', () => {
+        const parentesis = nota('ezr-4-orden-tematico');
+        expect(parentesis.body).toMatch(/4:24 retoma el hilo de 4:5/);
+        expect(parentesis.body).not.toMatch(/cronología que el texto no da|Van Hoonacker/);
+        const orden = nota('ezr-neh-orden');
+        expect(orden.body).toMatch(/458 a\. C\..*445 a\. C\./);
+        expect(orden.body).toContain('Van Hoonacker');
+        expect(orden.sources).toEqual(expect.arrayContaining(['Esd 7:7-8', 'Neh 2:1']));
+    });
+
+    it('el arameo: también narra, y 1:1; 6:22; 7:27 se nombran como pasajes en hebreo', () => {
+        const n = nota('ezr-arameo');
+        expect(n.body).toContain('4:24–5:5; 6:13-18');
+        expect(n.body).toContain('1:1; 6:22; 7:27, pasajes en hebreo');
+    });
+
+    it('las listas: la de 10:18-44 son los culpables, no el pueblo que regresa, y no resalta Esdras 9–10', () => {
+        const n = nota('ezr-neh-listas');
+        expect(n.body).toMatch(/10:18-44 es otra cosa: nombra a los culpables/);
+        expect(n.passage).toBeUndefined();
+    });
+
+    it('las notas nuevas: el protagonista es Dios, la restauración queda abierta y Esdras sigue a Crónicas', () => {
+        expect(nota('ezr-7-8-no-manual').sources).toEqual(expect.arrayContaining(['Esd 7:6, 9-10, 28', 'Esd 8:18, 22, 31']));
+        expect(nota('ezr-3-restauracion-incompleta').sources).toEqual(expect.arrayContaining(['Esd 3:12-13', 'Hag 2:3-9', 'Neh 9:36-37', 'Jn 2:19-21']));
+        expect(nota('ezr-1-continuidad').sources).toEqual(expect.arrayContaining(['2 Cr 36:22-23', 'Esd 5:1; 6:14']));
+    });
+
+    it('con el alcance en 9–10 solo toca una nota: la de los matrimonios', () => {
+        const toca = (p: NonNullable<ReturnType<typeof getPreachingNotes>[number]['passage']>) =>
+            p.chapterEnd >= 9 && p.chapterStart <= 10;
+        const tocan = getPreachingNotes('EZR').filter(n => n.passage && toca(n.passage)).map(n => n.id);
+        expect(tocan).toEqual(['ezr-9-10-matrimonios']);
     });
 });

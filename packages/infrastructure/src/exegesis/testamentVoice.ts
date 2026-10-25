@@ -71,13 +71,15 @@ const OT_VOICE: TestamentVoice = {
  * «hebreo bíblico» y solo tenía gramáticas hebreas para un texto que no lo
  * es. Rosenthal es la gramática de referencia del arameo bíblico y Vogt su
  * léxico; cada uno va en su renglón, junto a los hebreos, porque el pasaje
- * puede tener las dos lenguas (Esd 4:6-24).
+ * puede tener las dos lenguas (Esd 4:6-24). En el renglón en español va
+ * también Ribera Florit, la gramática del arameo bíblico escrita en español
+ * (está en el catálogo); el inglés no la lleva porque su lector no la usaría.
  */
 const OT_ARAMAIC_VOICE: TestamentVoice = {
     ...OT_VOICE,
     language: 'hebreo y arameo', languageAdjEs: 'hebrea y aramea', languageEn: 'Hebrew and Aramaic',
     expertEs: 'hebreo y arameo bíblicos', expertEn: 'Biblical Hebrew and Aramaic',
-    grammarsEs: 'Gramática/sintaxis hebrea y aramea: Waltke-O\'Connor, Joüon-Muraoka, Gesenius (GKC); Rosenthal (A Grammar of Biblical Aramaic)',
+    grammarsEs: 'Gramática/sintaxis hebrea y aramea: Waltke-O\'Connor, Joüon-Muraoka, Gesenius (GKC); Rosenthal (A Grammar of Biblical Aramaic), Ribera Florit (Guía para el estudio del arameo bíblico)',
     grammarsEn: 'Hebrew and Aramaic grammar/syntax: Waltke-O\'Connor, Joüon-Muraoka, Gesenius (GKC); Rosenthal (A Grammar of Biblical Aramaic)',
     lexiconsEs: 'Léxico: HALOT, BDB, DCH, TDOT, NIDOTTE; Vogt (A Lexicon of Biblical Aramaic)',
     lexiconsEn: 'Lexicon: HALOT, BDB, DCH, TDOT, NIDOTTE; Vogt (A Lexicon of Biblical Aramaic)',

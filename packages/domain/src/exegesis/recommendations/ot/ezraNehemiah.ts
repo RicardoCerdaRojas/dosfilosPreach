@@ -77,7 +77,7 @@ export const EZRA_NEHEMIAH_CRITICAL: ReadonlyArray<SourceRecommendation> = [
         tier: 'recommended',
         languages: ['en'],
         approach: 'historical-grammatical',
-        rationale: 'Comentario extenso sobre el hebreo y el arameo, desde una lectura confesional.',
+        rationale: 'Comentario técnico y extenso sobre el hebreo y el arameo, de lectura confesional luterana. No es el contrapunto crítico: para eso, Blenkinsopp.',
         verified: { source: 'openlibrary', ref: '/isbn/9780758615961', checkedAt: '2026-10-24' },
     },
     {
@@ -199,7 +199,7 @@ export const EZRA_NEHEMIAH_EXPOSITORY: ReadonlyArray<SourceRecommendation> = [
         tier: 'standard',
         languages: ['en'],
         approach: 'canonical-theological',
-        rationale: 'Lectura teológica en diálogo con la tradición de la iglesia.',
+        rationale: 'Interpretación teológica en diálogo con la tradición de la iglesia (tomista), no una exposición versículo a versículo.',
         verified: { source: 'openlibrary', ref: '/works/OL8441994W', checkedAt: '2026-10-24' },
     },
     {

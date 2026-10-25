@@ -700,7 +700,7 @@ describe('buildSermonDraftPrompt — contexto de la serie (encuadre, U6)', () =>
         }
     });
 
-    it('dice «sermón k de N» con el título, y va pegado al bloque del proyecto', () => {
+    it('dice «sermón k de N» con el título, y va después del paper: el análisis se lee antes que el propósito', () => {
         const prompt = buildSermonDraftPrompt(baseAnalysis, { ...conProyecto, seriesContext: serie });
         expect(prompt).toContain('Este es el sermón 3 de 12 de la serie «Esdras — serie expositiva».');
         // El arco de la serie no reemplaza la perícopa: los vecinos ya llegan por el encargo.
@@ -709,8 +709,8 @@ describe('buildSermonDraftPrompt — contexto de la serie (encuadre, U6)', () =>
         const bloque = prompt.indexOf('CONTEXTO DE LA SERIE');
         const paper = prompt.indexOf('CONTEXTO DE ORIGEN — PAPER EXEGÉTICO');
         expect(proyecto).toBeGreaterThan(-1);
-        expect(bloque).toBeGreaterThan(proyecto);
-        expect(paper).toBeGreaterThan(bloque);
+        expect(paper).toBeGreaterThan(proyecto);
+        expect(bloque).toBeGreaterThan(paper);
     });
 
     it('el propósito pastoral orienta la APLICACIÓN y no cambia la proposición exegética', () => {

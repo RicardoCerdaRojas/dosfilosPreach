@@ -112,7 +112,9 @@ function aramaicNote(book: string | undefined, displayLanguage: 'es' | 'en'): st
         s.fromChapter === s.toChapter
             ? `${s.fromChapter}:${s.fromVerse}–${s.toVerse}`
             : `${s.fromChapter}:${s.fromVerse}–${s.toChapter}:${s.toVerse}`).join(y);
+    // El preámbulo pide «waw-consecutivo»: en arameo no existe, y sin decirlo el
+    // análisis lo buscaba igual. Los marcadores, con la vocalización de los léxicos.
     return displayLanguage === 'es'
-        ? ` Ojo: ${nombre} ${tramos} está en arameo bíblico, no en hebreo; los marcadores de esas secciones se nombran como arameos.`
-        : ` Note: ${nombre} ${tramos} is in Biblical Aramaic, not Hebrew; name markers from those sections as Aramaic.`;
+        ? ` Ojo: ${nombre} ${tramos} está en arameo bíblico, no en hebreo; los marcadores de esas secciones se nombran como arameos. El arameo bíblico no tiene waw-consecutivo: busca marcadores como אֱדַיִן («entonces»), כְּעַן («ahora»), la partícula דִּי y las fórmulas de las cartas (encabezado, saludo, «copia de la carta»).`
+        : ` Note: ${nombre} ${tramos} is in Biblical Aramaic, not Hebrew; name markers from those sections as Aramaic. Biblical Aramaic has no waw-consecutive: look for markers such as אֱדַיִן ("then"), כְּעַן ("now"), the particle דִּי, and the letter formulas (heading, greeting, "copy of the letter").`;
 }

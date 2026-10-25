@@ -795,7 +795,8 @@ ${analysis.exegeticalStudy.canonicalParallels!.map(p => `  • ${p.reference}${p
   const paperContextBlock = buildPaperContextBlock(rules.paperContext);
   const facultyContextBlock = buildFacultyContextBlock(rules.facultyContext);
   const projectContextBlock = buildProjectContextBlock(rules.projectContext);
-  // Va pegado al del proyecto: los dos dicen dónde vive el sermón. '' sin serie.
+  // Va DESPUÉS del paper: el análisis de la perícopa se lee antes que el propósito
+  // pastoral de la serie, para que este oriente la aplicación y no la lectura. '' sin serie.
   const seriesContextBlock = buildSeriesContextBlock(rules.seriesContext);
   const citationContractBlock = buildCitationContractBlock(manifest);
   // Pastoral Fidelity Phase 1: PRIMARY VOICE is the highest-priority
@@ -811,7 +812,7 @@ ${analysis.exegeticalStudy.canonicalParallels!.map(p => `  • ${p.reference}${p
 
   return `
 ${pastoralSeedBlock}${BASE_SYSTEM_PROMPT}${voiceBlock}
-${projectContextBlock}${seriesContextBlock}${paperContextBlock}${facultyContextBlock}${personalizationBlock}${citationContractBlock}
+${projectContextBlock}${paperContextBlock}${seriesContextBlock}${facultyContextBlock}${personalizationBlock}${citationContractBlock}
 FASE 3: REDACCIÓN DEL SERMÓN
 Objetivo: Redactar el contenido completo del sermón basado en el análisis previo.
 ${exegesisContext}
