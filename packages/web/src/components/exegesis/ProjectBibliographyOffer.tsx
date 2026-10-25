@@ -15,6 +15,8 @@ interface ProjectBibliographyOfferProps {
     /** El libro del pasaje: un comentario de otro libro no se ofrece. */
     bookId: BibleBookId | null;
     onChange: (sources: AddProjectSourceInput[]) => void;
+    /** El texto de ayuda; sin él, el del estudio suelto. La serie lo dice para todos sus estudios. */
+    hint?: string;
 }
 
 /**
@@ -23,7 +25,7 @@ interface ProjectBibliographyOfferProps {
  * pueden desmarcar antes de crear. Las hojas de cada libro se eligen
  * después, en el corpus, contra el pasaje de este estudio.
  */
-export function ProjectBibliographyOffer({ project, bookId, onChange }: ProjectBibliographyOfferProps) {
+export function ProjectBibliographyOffer({ project, bookId, onChange, hint }: ProjectBibliographyOfferProps) {
     const { t } = useTranslation('exegesis');
     const { resources } = useLibrary();
     const [desmarcadas, setDesmarcadas] = useState<ReadonlySet<string>>(new Set());
@@ -73,7 +75,7 @@ export function ProjectBibliographyOffer({ project, bookId, onChange }: ProjectB
                     </li>
                 ))}
             </ul>
-            <p className="text-[11px] text-muted-foreground">{t('create.projectSources.hint')}</p>
+            <p className="text-[11px] text-muted-foreground">{hint ?? t('create.projectSources.hint')}</p>
         </fieldset>
     );
 }

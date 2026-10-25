@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AlertTriangle, Info, Loader2 } from 'lucide-react';
 import {
     overlappingProjectStudies,
     projectsOfPaper,
@@ -34,12 +35,26 @@ export function ProjectSeriesSources({ project, bookId, preachableUnits, exegeti
     const { t } = useTranslation('series');
     const { sources: todas, isLoading: libraryLoading } = useProjectSourcesForBook(project, bookId);
     // `null` hasta que la oferta avisa con la biblioteca ya cargada. Lo que
-    // avisa mientras carga es una lista vacía: tomarla haría contar todas las
-    // obras como desmarcadas durante el render en que llega la biblioteca.
+    // avisa mientras carga puede salir distinto (un proyecto de antes no
+    // tiene títulos ni tipos sin la biblioteca): tomarlo haría contar obras
+    // como desmarcadas durante el render en que llega la biblioteca.
     const [elegidas, setElegidas] = useState<AddProjectSourceInput[] | null>(null);
     const cargando = useRef(libraryLoading);
     cargando.current = libraryLoading;
-    const elegir = useCallback((s: AddProjectSourceInput[]) => setElegidas(cargando.current ? null : s), []);
+    // La última lista de la oferta, también la que avisó cargando.
+    const ultimaLista = useRef<AddProjectSourceInput[] | null>(null);
+    const elegir = useCallback((s: AddProjectSourceInput[]) => {
+        ultimaLista.current = s;
+        setElegidas(cargando.current ? null : s);
+    }, []);
+    // La oferta avisa solo cuando cambia su lista. Con fichas modernas (título
+    // y tipo en la ficha) sale igual antes y después de cargar y no vuelve a
+    // avisar: sin esto, «Crear serie» quedaba deshabilitado para siempre. Los
+    // efectos del hijo corren antes, así que si la lista sí cambió, el ref ya
+    // trae la nueva.
+    useEffect(() => {
+        if (!libraryLoading) setElegidas((prev) => prev ?? ultimaLista.current);
+    }, [libraryLoading]);
 
     // Se avisa por contenido, no por identidad: el padre guarda el estado y
     // un arreglo nuevo con lo mismo haría un ciclo de renders.
@@ -70,7 +85,23 @@ export function ProjectSeriesSources({ project, bookId, preachableUnits, exegeti
 
     return (
         <div className="mt-4 space-y-3">
-            <ProjectBibliographyOffer project={project} bookId={bookId} onChange={elegir} />
+            <ProjectBibliographyOffer project={project} bookId={bookId} onChange={elegir} hint={t('expository.project.sourcesHint')} />
+            {!libraryLoading && todas.length === 0 && (
+                // Sin esto, el banner promete «las obras que marques abajo» y
+                // los estudios nacen sin fuentes sin que nada lo diga.
+                <p role="status" className="flex items-start gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1.5 text-xs text-foreground">
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span>
+                        {t('expository.project.noSources')}{' '}
+                        <Link
+                            to={`/dashboard/projects/${project.id}/estado-del-arte`}
+                            className="font-medium underline underline-offset-2 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            {t('expository.project.openStateOfArt')}
+                        </Link>
+                    </span>
+                </p>
+            )}
             {libraryLoading && (
                 <p role="status" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />

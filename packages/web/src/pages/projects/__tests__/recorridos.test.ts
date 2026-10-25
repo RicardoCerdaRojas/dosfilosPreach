@@ -79,6 +79,23 @@ describe('Exegético con «División en perícopas»', () => {
         expect(fase.isComplete(ctx({ studyCount: 14, workedStudyCount: 0, seriesCount: 1 }))).toBe(false);
     });
 
+    it('con la serie creada, el botón de «Estudios por perícopa» lleva a sus estudios, no a uno suelto (revisión F3)', () => {
+        const fase = activa({ seriesCount: 1, studyCount: 13, workedStudyCount: 0 });
+        expect(fase.id).toBe('pericopes');
+        expect(fase.cta.kind).toBe('openSeries');
+        expect(fase.i18nKey).toBe('exegetical.pericopesSeries');
+        // La variante no cambia cuándo se cumple la fase.
+        expect(computeRoadmapState(meta, ctx({ ...conNotaYFuentes, seriesCount: 1, studyCount: 13, workedStudyCount: 2 })).phases[3]!.complete).toBe(true);
+    });
+
+    it('sin serie, «Estudios por perícopa» sigue ofreciendo un estudio nuevo', () => {
+        const r = computeRoadmapState(meta, ctx({ ...conNotaYFuentes, studyCount: 2, workedStudyCount: 1 }));
+        const fase = r.phases[r.activeIndex]!.phase;
+        expect(fase.id).toBe('pericopes');
+        expect(fase.cta.kind).toBe('study');
+        expect(fase.i18nKey).toBe('exegetical.pericopes');
+    });
+
     it('cada fase del recorrido Exegético tiene su clave de textos', () => {
         expect(meta.roadmap.map(f => f.i18nKey)).toEqual([
             'exegetical.passage', 'exegetical.sources', 'exegetical.division', 'exegetical.pericopes', 'exegetical.synthesis',

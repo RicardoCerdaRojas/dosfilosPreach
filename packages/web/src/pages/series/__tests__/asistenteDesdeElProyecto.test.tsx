@@ -183,6 +183,17 @@ describe('crear la serie dentro del proyecto', () => {
         expect(navigate).toHaveBeenCalledWith('/dashboard/plans/s1');
     });
 
+    it('un título de menos de 3 letras se avisa antes de crear los estudios', async () => {
+        guardarBorrador(`${CLAVE}:neh`, { projectId: 'neh' });
+        montar('/dashboard/plans/pericope?projectId=neh&book=NEH');
+        await screen.findByRole('checkbox', { name: /HALOT/ });
+        fireEvent.change(screen.getByLabelText('expository.create.seriesTitle'), { target: { value: 'Ne' } });
+        await waitFor(() => expect(botonCrear()).toBeEnabled());
+        fireEvent.click(botonCrear());
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('expository.toast.titleTooShort'));
+        expect(svc.createSeriesFromPlan).not.toHaveBeenCalled();
+    });
+
     it('mientras la biblioteca carga no se puede crear', async () => {
         guardarBorrador(`${CLAVE}:neh`, { projectId: 'neh' });
         estado.resources = [];
@@ -194,11 +205,68 @@ describe('crear la serie dentro del proyecto', () => {
         expect(svc.createSeriesFromPlan).not.toHaveBeenCalled();
     });
 
+    it('con fichas modernas, la biblioteca que llega después habilita «Crear serie» aunque la lista no cambie', async () => {
+        // Título y tipo vienen en la ficha: la oferta calcula lo mismo
+        // cargando y cargada, y avisa una sola vez (durante la carga).
+        estado.projects = [{
+            id: 'neh', title: 'Nehemías', bibliographyCriteria: { bibleBooks: ['NEH'] },
+            bibliography: [
+                { id: 'b1', title: 'Ezra, Nehemiah', resourceId: 'williamson', sourceType: 'commentary-critical', decision: 'approved', weight: 'recommended', origins: ['library'] },
+                { id: 'b2', title: 'HALOT', resourceId: 'halot', sourceType: 'lexicon-technical', decision: 'approved', weight: 'recommended', origins: ['library'] },
+            ],
+        }];
+        guardarBorrador(`${CLAVE}:neh`, { projectId: 'neh' });
+        estado.resources = [];
+        estado.libraryLoading = true;
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const { rerender } = montar('/dashboard/plans/pericope?projectId=neh&book=NEH', client);
+        await screen.findByText('expository.project.libraryLoading');
+        expect(botonCrear()).toBeDisabled();
+        estado.resources = biblioteca();
+        estado.libraryLoading = false;
+        rerender(
+            <QueryClientProvider client={client}>
+                <MemoryRouter initialEntries={['/dashboard/plans/pericope?projectId=neh&book=NEH']}>
+                    <ExpositoryAssistantPage />
+                </MemoryRouter>
+            </QueryClientProvider>,
+        );
+        await waitFor(() => expect(botonCrear()).toBeEnabled());
+        fireEvent.click(botonCrear());
+        await waitFor(() => expect(svc.createSeriesFromPlan).toHaveBeenCalledTimes(1));
+        const plan = svc.createSeriesFromPlan.mock.calls[0]![1];
+        expect(plan.project.sources.map((s: { corpusId: string }) => s.corpusId)).toEqual(['williamson', 'halot']);
+        expect(plan.project.excludedResourceIds).toEqual([]);
+    });
+
+    it('sin obras heredables lo dice y enlaza al estado del arte', async () => {
+        // Solo un comentario de Romanos: nada se hereda en Nehemías.
+        estado.projects = [{ ...nehemias, sourceIds: ['moo'] }];
+        guardarBorrador(`${CLAVE}:neh`, { projectId: 'neh' });
+        montar('/dashboard/plans/pericope?projectId=neh&book=NEH');
+        expect(await screen.findByText(/expository\.project\.noSources/)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'expository.project.openStateOfArt' })).toHaveAttribute('href', '/dashboard/projects/neh/estado-del-arte');
+        expect(screen.queryByText('create.projectSources.hint')).not.toBeInTheDocument();
+        await waitFor(() => expect(botonCrear()).toBeEnabled());
+    });
+
+    it('con obras heredables no aparece el aviso y la ayuda es la de la serie', async () => {
+        guardarBorrador(`${CLAVE}:neh`, { projectId: 'neh' });
+        montar('/dashboard/plans/pericope?projectId=neh&book=NEH');
+        await screen.findByRole('checkbox', { name: /Ezra, Nehemiah/ });
+        expect(screen.getByText('expository.project.sourcesHint')).toBeInTheDocument();
+        expect(screen.queryByText('create.projectSources.hint')).not.toBeInTheDocument();
+        expect(screen.queryByText(/expository\.project\.noSources/)).not.toBeInTheDocument();
+    });
+
     it('cambiar el selector después de analizar no cambia las obras heredadas', async () => {
         guardarBorrador(`${CLAVE}:neh`, { projectId: 'neh' });
         montar('/dashboard/plans/pericope?projectId=neh&book=NEH');
         await screen.findByRole('checkbox', { name: /Ezra, Nehemiah/ });
+        expect(screen.queryByText('expository.setup.bookChanged')).not.toBeInTheDocument();
         fireEvent.change(screen.getByLabelText('libro'), { target: { value: 'ROM' } });
+        // El aviso del plan (punto 5): la serie sigue siendo de Nehemías.
+        expect(screen.getByText('expository.setup.bookChanged')).toBeInTheDocument();
         // Sigue filtrando por Nehemías, el libro analizado: Romanos no entra.
         expect(screen.getByRole('checkbox', { name: /Ezra, Nehemiah/ })).toBeInTheDocument();
         expect(screen.queryByRole('checkbox', { name: /Romans/ })).not.toBeInTheDocument();

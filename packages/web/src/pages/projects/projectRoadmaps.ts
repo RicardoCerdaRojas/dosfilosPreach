@@ -29,7 +29,7 @@ import { projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput,
  */
 
 /** Qué hace el botón de una fase. Un solo lugar: antes estaba copiado en tres. */
-export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge' | 'stateOfArt' | 'planSeries';
+export type RoadmapCtaKind = 'newSession' | 'greek' | 'hebrew' | 'sermon' | 'output' | 'sources' | 'study' | 'charge' | 'stateOfArt' | 'planSeries' | 'openSeries';
 
 export interface RoadmapContext {
     project: AIProject;
@@ -64,6 +64,11 @@ export interface RoadmapPhase {
         label: string;
         kind: RoadmapCtaKind;
     };
+    /**
+     * La misma fase según el estado del proyecto: cambia su botón (y sus
+     * textos) sin cambiar cuándo se cumple. `computeRoadmapState` la aplica.
+     */
+    variant?: (ctx: RoadmapContext) => Partial<Pick<RoadmapPhase, 'description' | 'cta' | 'i18nKey'>> | null;
 }
 
 export interface ProjectTypeMeta {
@@ -331,6 +336,15 @@ const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
         isComplete: (ctx) => ctx.workedStudyCount >= 2,
         cta: { label: 'Nuevo estudio', kind: 'study' },
         i18nKey: 'exegetical.pericopes',
+        // Con la serie creada, sus estudios ya esperan en la tarjeta: un
+        // estudio nuevo quedaría suelto y duplicaría una perícopa.
+        variant: (ctx) => ctx.seriesCount > 0
+            ? {
+                description: 'La serie ya creó un estudio por perícopa: trabájalos desde su tarjeta, en el orden del plan.',
+                cta: { label: 'Trabajar los estudios de la serie', kind: 'openSeries' },
+                i18nKey: 'exegetical.pericopesSeries',
+            }
+            : null,
     },
     {
         id: 'synthesis',
@@ -434,10 +448,13 @@ export function getProjectTypeMeta(type?: ProjectType): ProjectTypeMeta {
  * phases are complete, returns the last phase as active (a finished project).
  */
 export function computeRoadmapState(meta: ProjectTypeMeta, ctx: RoadmapContext) {
-    const phases = meta.roadmap.map((phase) => ({
-        phase,
-        complete: phase.isComplete(ctx),
-    }));
+    const phases = meta.roadmap.map((phase) => {
+        const cambio = phase.variant?.(ctx);
+        return {
+            phase: cambio ? { ...phase, ...cambio } : phase,
+            complete: phase.isComplete(ctx),
+        };
+    });
     const activeIdx = phases.findIndex((p) => !p.complete);
     return {
         phases,

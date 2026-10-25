@@ -28,6 +28,16 @@ export function planSeriesUrl(projectId: string, book: BibleBookId | null): stri
     return book ? `${base}&book=${encodeURIComponent(book)}` : base;
 }
 
+/**
+ * Dónde sigue el trabajo de una serie: su primer estudio sin empezar, en el
+ * orden del plan; si no queda ninguno (o la perícopa no tiene estudio), el
+ * plan. Lo usa el botón de «Estudios por perícopa» para no crear uno suelto.
+ */
+export function seriesWorkUrl(series: Pick<SerieLike, 'id' | 'metadata'>, phaseOf: (paperId: string) => string | undefined): string {
+    const pendiente = (series.metadata?.plannedSermons ?? []).find(p => !!p.paperId && phaseOf(p.paperId) === 'configuring');
+    return pendiente?.paperId ? `/dashboard/exegesis/${pendiente.paperId}` : `/dashboard/plans/${series.id}`;
+}
+
 interface ProjectSeriesSectionProps {
     project: Pick<AIProject, 'id'>;
     /** Las series del proyecto (`projectSeriesOf`), la más nueva primero. */
@@ -37,6 +47,9 @@ interface ProjectSeriesSectionProps {
     /** Todos los sermones del usuario, para saber si el borrador ya se publicó (o su copia). */
     sermons: ReadonlyArray<SermonLike>;
     onPlanSeries: () => void;
+    /** Mientras la lista de series carga o si falló: sin el vacío ni el botón, que afirmarían que no hay serie. */
+    status?: 'ready' | 'loading' | 'error';
+    onRetry?: () => void;
 }
 
 const CHIP: Record<PericopeSermonState, { key: string; className: string }> = {
@@ -50,7 +63,7 @@ const CHIP: Record<PericopeSermonState, { key: string; className: string }> = {
  * proyecto con su avance y una fila por perícopa, con su estudio y el
  * estado de su sermón. La vista exacta del plan sigue siendo SeriesDetail.
  */
-export function ProjectSeriesSection({ project, series, papers, sermons, onPlanSeries }: ProjectSeriesSectionProps) {
+export function ProjectSeriesSection({ project, series, papers, sermons, onPlanSeries, status = 'ready', onRetry }: ProjectSeriesSectionProps) {
     const { t, i18n } = useTranslation('projects');
     const lang: SupportedLanguage = i18n.language?.startsWith('en') ? 'en' : 'es';
     const tituloId = `project-series-title-${project.id}`;
@@ -76,15 +89,26 @@ export function ProjectSeriesSection({ project, series, papers, sermons, onPlanS
                 <Mic2 className="h-4 w-4 text-muted-foreground" />
                 <h2 id={tituloId} className="text-sm font-semibold text-foreground">
                     {t('seriesSection.title')}
-                    {series.length > 0 && <span className="text-muted-foreground font-normal"> · {series.length}</span>}
+                    {status === 'ready' && series.length > 0 && <span className="text-muted-foreground font-normal"> · {series.length}</span>}
                 </h2>
-                <Button size="sm" variant="outline" className="ml-auto" onClick={onPlanSeries}>
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    {t(series.length ? 'seriesSection.planAnother' : 'seriesSection.plan')}
-                </Button>
+                {status === 'ready' && (
+                    <Button size="sm" variant="outline" className="ml-auto" onClick={onPlanSeries}>
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                        {t(series.length ? 'seriesSection.planAnother' : 'seriesSection.plan')}
+                    </Button>
+                )}
             </header>
 
-            {series.length === 0 ? (
+            {status === 'loading' ? (
+                <p className="text-xs text-muted-foreground" role="status" aria-live="polite">{t('seriesSection.loading')}</p>
+            ) : status === 'error' ? (
+                <div className="flex flex-wrap items-center gap-2" role="alert">
+                    <p className="text-xs text-foreground">{t('seriesSection.loadError')}</p>
+                    {onRetry && (
+                        <Button size="sm" variant="outline" onClick={onRetry}>{t('seriesSection.retry')}</Button>
+                    )}
+                </div>
+            ) : series.length === 0 ? (
                 <p className="text-xs leading-relaxed text-muted-foreground">{t('seriesSection.empty')}</p>
             ) : (
                 <ul className="space-y-3">

@@ -179,6 +179,15 @@ describe('createSeriesFromPlan con proyecto', () => {
         await expect(svc.createSeriesFromPlan('u1', plan({ project: { projectId: 'neh', sources: [] } }))).rejects.toThrow('permiso denegado');
         expect(ex.setPaperProject).toHaveBeenCalledTimes(3);
     });
+
+    it('un título que la serie no acepta falla antes de crear estudios', async () => {
+        const svc = new SeriesService();
+        const corto = plan({ project: { projectId: 'neh', sources: [A] } });
+        (corto.series as { title: string }).title = 'Ne';
+        await expect(svc.createSeriesFromPlan('u1', corto)).rejects.toThrow('al menos 3 caracteres');
+        expect(ex.createPaper).not.toHaveBeenCalled();
+        expect(repo.create).not.toHaveBeenCalled();
+    });
 });
 
 describe('createSeriesFromPlan sin proyecto (como hoy)', () => {
@@ -251,6 +260,34 @@ describe('setSeriesProject', () => {
         expect(r.projectId).toBeNull();
     });
 
+    const conExclusiones = (projectId: string | null) =>
+        SermonSeriesEntity.create({
+            id: 's1', userId: 'u1', title: 'Jonás', description: '', type: 'expository',
+            sermonIds: [], draftIds: [], resourceIds: [], projectId,
+            metadata: { projectSourceExclusions: ['res-x'], exegesisDefaults: { sourceRefs: [] } },
+        });
+
+    it('al cambiar de proyecto borra las obras desmarcadas (escribe [], no las omite) y conserva el resto', async () => {
+        repo.findById.mockResolvedValue(conExclusiones('neh'));
+        const r = await new SeriesService().setSeriesProject('s1', 'otro');
+        expect(r.metadata!.projectSourceExclusions).toEqual([]);
+        expect(r.metadata!.exegesisDefaults).toEqual({ sourceRefs: [] });
+        const guardada = repo.update.mock.calls[0]![0] as SermonSeriesEntity;
+        expect(guardada.metadata!.projectSourceExclusions).toEqual([]);
+    });
+
+    it('al desligar también las borra', async () => {
+        repo.findById.mockResolvedValue(conExclusiones('neh'));
+        const r = await new SeriesService().setSeriesProject('s1', null);
+        expect(r.metadata!.projectSourceExclusions).toEqual([]);
+    });
+
+    it('con el mismo proyecto las conserva', async () => {
+        repo.findById.mockResolvedValue(conExclusiones('neh'));
+        const r = await new SeriesService().setSeriesProject('s1', 'neh');
+        expect(r.metadata!.projectSourceExclusions).toEqual(['res-x']);
+    });
+
     it('sin serie, lanza', async () => {
         repo.findById.mockResolvedValue(null);
         await expect(new SeriesService().setSeriesProject('s1', 'neh')).rejects.toThrow('Serie no encontrada');
@@ -295,6 +332,30 @@ describe('linkSeriesToProject', () => {
         ]);
         expect(ex.addSource.mock.calls.map(c => c[0].paperId)).toEqual(['suelto', 'yaDentro']);
         expect(ex.addSource.mock.calls[0]![0]).toEqual({ ownerId: 'u1', paperId: 'suelto', ...A });
+    });
+
+    it('el estudio vinculado (con otro origen) también recibe las obras que le faltan', async () => {
+        const antes = papers.ajeno;
+        papers.ajeno = { ...(antes as object), sources: [] };
+        try {
+            const r = await new SeriesService().linkSeriesToProject('u1', 's1', 'neh', { movePapers: true, sourcesToAdd: [A] });
+            expect(r).toEqual({ moved: 1, linked: 1, unchanged: 1, sourcesAdded: 3, failed: 0 });
+            expect(ex.addSource.mock.calls.map(c => c[0].paperId)).toEqual(['suelto', 'ajeno', 'yaDentro']);
+            expect(ex.addSource.mock.calls[1]![0]).toEqual({ ownerId: 'u1', paperId: 'ajeno', ...A });
+        } finally {
+            papers.ajeno = antes;
+        }
+    });
+
+    it('al ligar a otro proyecto borra las obras desmarcadas del anterior', async () => {
+        repo.findById.mockResolvedValue(
+            jonas().update({ projectId: 'otro', metadata: { ...jonas().metadata, projectSourceExclusions: ['res-a'] } }),
+        );
+        await new SeriesService().linkSeriesToProject('u1', 's1', 'neh', { movePapers: false });
+        const guardada = repo.update.mock.calls[0]![0] as SermonSeriesEntity;
+        expect(guardada.projectId).toBe('neh');
+        expect(guardada.metadata!.projectSourceExclusions).toEqual([]);
+        expect(guardada.metadata!.plannedSermons).toHaveLength(5);
     });
 
     it('un vínculo previo cuenta como ya dentro', async () => {

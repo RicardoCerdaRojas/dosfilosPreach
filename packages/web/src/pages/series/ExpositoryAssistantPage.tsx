@@ -15,6 +15,7 @@ import {
     toast,
 } from 'sonner';
 import {
+    AlertTriangle,
     ArrowLeft,
     Loader2,
 } from 'lucide-react';
@@ -121,6 +122,16 @@ import {
  * SermonSeries does. D.4 will add localStorage draft persistence
  * so a tab close mid-run is recoverable.
  */
+/** El nombre del libro en el idioma de la pantalla; el id si no se encuentra. */
+function bookName(
+    books: ReadonlyArray<{ id: BibleBookId; nameEs: string; nameEn: string }>,
+    id: BibleBookId,
+    lang: 'es' | 'en',
+): string {
+    const b = books.find((x) => x.id === id);
+    return b ? (lang === 'en' ? b.nameEn : b.nameEs) : id;
+}
+
 export function ExpositoryAssistantPage() {
     const { t, i18n } = useTranslation('series');
     const navigate = useNavigate();
@@ -346,7 +357,10 @@ export function ExpositoryAssistantPage() {
         }
         setScopeError(null);
 
-        // Reset prior run state if the pastor restarts.
+        // Reset prior run state if the pastor restarts. El libro analizado
+        // también: si la nueva carga falla, el aviso de «cambiaste el libro»
+        // no puede seguir hablando de un análisis que ya se borró.
+        setAnalyzedBookId(null);
         setPanorama(null);
         setSuperMacroSections(null);
         setMacroSections(null);
@@ -912,6 +926,12 @@ export function ExpositoryAssistantPage() {
             toast.error(t('expository.toast.titleRequired') as string);
             return;
         }
+        // La serie exige 3 letras (SermonSeriesEntity): avisar aquí evita
+        // crear los estudios y que la serie falle después.
+        if (seriesTitle.trim().length < 3) {
+            toast.error(t('expository.toast.titleTooShort') as string);
+            return;
+        }
         // Sin la biblioteca no se sabe qué heredan los estudios.
         if (project && projectSources.libraryLoading) return;
 
@@ -1065,6 +1085,20 @@ export function ExpositoryAssistantPage() {
                     bookChoiceRequired={bookChoiceRequired}
                     t={t}
                 />
+                {analyzedBookId && bookId !== analyzedBookId && (
+                    // El selector cambió después de analizar: la serie, sus
+                    // obras y el borrador siguen siendo del libro analizado.
+                    <p
+                        role="status"
+                        className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-subtle p-3 text-sm text-warning-subtle-foreground"
+                    >
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        {t('expository.setup.bookChanged', {
+                            analyzed: bookName(allBooks, analyzedBookId, lang),
+                            book: bookName(allBooks, bookId, lang),
+                        })}
+                    </p>
+                )}
 
                 <MethodologyPresentation
                     open={methodologyOpen}

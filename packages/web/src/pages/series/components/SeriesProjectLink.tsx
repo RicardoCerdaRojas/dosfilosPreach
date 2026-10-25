@@ -149,7 +149,16 @@ function LinkProjectDialog({ series, userId, projects, onDone, onClose }: Dialog
                 movePapers: llevar,
                 ...(agregar ? { sourcesToAdd: sources } : {}),
             });
-            toast.success(t(k('linked'), { moved: r.moved, linked: r.linked, sources: r.sourcesAdded }) as string);
+            // Solo las cifras que dicen algo, con su plural: «0 estudios
+            // llevados, 0 vinculados…» se leía como si nada hubiera pasado.
+            const partes = [
+                r.moved > 0 ? (t(k('linkedMoved'), { count: r.moved }) as string) : null,
+                r.linked > 0 ? (t(k('linkedLinked'), { count: r.linked }) as string) : null,
+                r.sourcesAdded > 0 ? (t(k('linkedSources'), { count: r.sourcesAdded }) as string) : null,
+            ].filter((p): p is string => p !== null);
+            toast.success(partes.length === 0
+                ? (t(k('linkedOnly'), { title: proyecto.title }) as string)
+                : (t(k('linked'), { title: proyecto.title, parts: partes.join(', ') }) as string));
             // Un estudio puede haber entrado sin todas sus obras: cuenta en su grupo y en `failed`.
             if (r.failed > 0) toast.warning(t(k('partialFailed'), { count: r.failed }) as string);
             onClose();

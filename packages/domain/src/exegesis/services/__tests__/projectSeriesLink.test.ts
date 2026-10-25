@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     bookIdOfUnit,
     inheritableProjectEntries,
+    isEmptySermonPlaceholder,
     nextScheduledDate,
     overlappingProjectStudies,
     plannerBookForProject,
@@ -178,6 +179,46 @@ describe('los sermones del proyecto', () => {
         ], 'neh', paperOriginOf, seriesProjectOf);
         expect(chains.map(s => s.id)).toEqual(['b']);
     });
+
+    it('el marcador vacío que crea la serie no entra por ella: ni en all ni en chains', () => {
+        // Lo que escribe autoCreateSermonPlaceholders, tal como llega en el resumen.
+        const marcador = { id: 'm', seriesId: 'serieNeh', status: 'draft', content: '', hasContent: false, wizardProgress: { currentStep: 0 }, updatedAt: '2026-10-22T00:00:00Z' };
+        const avanzado = { ...marcador, id: 'avanzado', wizardProgress: { currentStep: 2 } };
+        const conCuerpo = { ...marcador, id: 'cuerpo', hasContent: true };
+        const { all, chains } = projectSermonsOf([marcador, avanzado, conCuerpo], 'neh', paperOriginOf, seriesProjectOf);
+        expect(all.map(s => s.id).sort()).toEqual(['avanzado', 'cuerpo']);
+        expect(chains.map(s => s.id)).not.toContain('m');
+    });
+
+    it('un sermón en el paso 0 con proyecto explícito o estudio de origen se queda', () => {
+        const vacio = { status: 'draft', content: '', hasContent: false, wizardProgress: { currentStep: 0 }, updatedAt: '2026-10-22T00:00:00Z' };
+        const { all } = projectSermonsOf([
+            { ...vacio, id: 'explicito', projectId: 'neh', seriesId: 'serieNeh' },
+            { ...vacio, id: 'delEstudio', sourcePaperId: 'pNeh', seriesId: 'serieNeh' },
+        ], 'neh', paperOriginOf, seriesProjectOf);
+        expect(all.map(s => s.id).sort()).toEqual(['delEstudio', 'explicito']);
+    });
+});
+
+describe('el marcador vacío de la serie', () => {
+    const marcador = { status: 'draft', content: '', hasContent: false, wizardProgress: { currentStep: 0 } };
+
+    it('es borrador del asistente en el paso 0 y sin cuerpo', () => {
+        expect(isEmptySermonPlaceholder(marcador)).toBe(true);
+        // Sin paso guardado cuenta como el paso 0.
+        expect(isEmptySermonPlaceholder({ ...marcador, wizardProgress: {} })).toBe(true);
+    });
+
+    it('cualquier avance lo vuelve sermón', () => {
+        expect(isEmptySermonPlaceholder({ ...marcador, wizardProgress: { currentStep: 1 } })).toBe(false);
+        expect(isEmptySermonPlaceholder({ ...marcador, hasContent: true })).toBe(false);
+        // El sermón completo trae el cuerpo y no `hasContent`.
+        expect(isEmptySermonPlaceholder({ status: 'draft', content: 'Introducción', wizardProgress: { currentStep: 0 } })).toBe(false);
+        expect(isEmptySermonPlaceholder({ ...marcador, status: 'published' })).toBe(false);
+        expect(isEmptySermonPlaceholder({ ...marcador, sourceSermonId: 'd1' })).toBe(false);
+        // Sin asistente no es un marcador: es un sermón escrito a mano.
+        expect(isEmptySermonPlaceholder({ status: 'draft', content: '' })).toBe(false);
+    });
 });
 
 describe('las series del proyecto', () => {
@@ -240,6 +281,21 @@ describe('las filas de la serie en el proyecto', () => {
         // El domingo de hoy sigue siendo la próxima fecha durante el día.
         expect(nextScheduledDate(filas, new Date('2026-11-01T18:00:00'))).toEqual(new Date('2026-11-01T12:00:00'));
         expect(nextScheduledDate(filas, new Date('2026-12-01T00:00:00'))).toBeNull();
+    });
+
+    it('el marcador vacío de la perícopa es «sin sermón» y no suma al avance', () => {
+        const conMarcador = seriesPericopeRows(serie, id => estudios[id], [
+            ...sermones.filter(s => s.id !== 'd2'),
+            { id: 'd2', status: 'draft', content: '', hasContent: false, wizardProgress: { currentStep: 0 }, updatedAt: new Date() },
+        ]);
+        expect(conMarcador.map(f => f.sermonState)).toEqual(['published', 'none', 'none']);
+        // Conserva el id: la fila lo abre para empezar el sermón.
+        expect(conMarcador[1]!.sermonId).toBe('d2');
+        expect(seriesProgress(conMarcador)).toEqual({ total: 3, withStudy: 2, withSermon: 1 });
+        // Con un paso hecho ya es un borrador.
+        expect(seriesPericopeRows(serie, id => estudios[id], [
+            { id: 'd2', status: 'draft', hasContent: false, wizardProgress: { currentStep: 1 }, updatedAt: new Date() },
+        ])[1]!.sermonState).toBe('draft');
     });
 
     it('una serie sin plan no tiene filas', () => {

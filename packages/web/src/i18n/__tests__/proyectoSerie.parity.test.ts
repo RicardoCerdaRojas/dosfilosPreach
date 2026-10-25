@@ -34,11 +34,20 @@ const NUEVAS_PROJECTS = [
     'seriesSection.row.sermonDraft',
     'seriesSection.row.sermonPublished',
     'studies.otherTitle',
+    'seriesSection.loading',
+    'seriesSection.loadError',
+    'seriesSection.retry',
+    'roadmap.loading',
+    'roadmap.loadError',
 ];
 
 const NUEVAS_SERIES = [
     ...['banner', 'hint', 'back', 'bookOutside', 'chooseBook', 'unavailable', 'libraryLoading',
-        'overlapTitle', 'overlapHint', 'createdInProject'].map((k) => `expository.project.${k}`),
+        'overlapTitle', 'overlapHint', 'createdInProject', 'noSources', 'openStateOfArt', 'sourcesHint'].map((k) => `expository.project.${k}`),
+    'expository.setup.bookChanged',
+    'expository.toast.titleTooShort',
+    'detail.project.linkedOnly',
+    ...['linkedMoved', 'linkedLinked', 'linkedSources'].flatMap((k) => [`detail.project.${k}_one`, `detail.project.${k}_other`]),
     ...['chip', 'unavailable', 'link', 'linkTitle', 'pickProject', 'movePapers_one', 'movePapers_other',
         'addSources', 'confirm', 'unlink', 'linked', 'unlinked', 'failed', 'sourcesFromProject']
         .map((k) => `detail.project.${k}`),

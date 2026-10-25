@@ -265,7 +265,12 @@ describe('ligar y desligar', () => {
         expect(opts.sourcesToAdd.map((s: { corpusId: string }) => s.corpusId)).toEqual(['williamson', 'halot']);
         await waitFor(() => expect(estado.reloadData).toHaveBeenCalled());
         expect(estado.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['series'] });
-        expect(estado.toast.success).toHaveBeenCalledWith(expect.stringContaining('"moved":2'));
+        // Solo las cifras que no son cero, cada una con su plural.
+        const aviso = estado.toast.success.mock.calls[0]![0] as string;
+        expect(aviso).toMatch(/^detail\.project\.linked \{"title":"Nehemías"/);
+        expect(aviso).toContain('detail.project.linkedMoved {\\"count\\":2}');
+        expect(aviso).toContain('detail.project.linkedSources {\\"count\\":4}');
+        expect(aviso).not.toContain('linkedLinked');
         expect(estado.toast.warning).not.toHaveBeenCalled();
     });
 
@@ -280,6 +285,23 @@ describe('ligar y desligar', () => {
         expect(agregar).not.toBeChecked();
         fireEvent.click(screen.getByRole('button', { name: 'detail.project.confirm' }));
         await waitFor(() => expect(svc.linkSeriesToProject).toHaveBeenCalledWith('u1', 's1', 'p1', { movePapers: false }));
+        // Sin estudios movidos no se muestran tres ceros: solo que quedó ligada.
+        await waitFor(() => expect(estado.toast.success).toHaveBeenCalledWith('detail.project.linkedOnly {"title":"Nehemías"}'));
+    });
+
+    it('los textos del aviso al ligar tienen plural en es y en', async () => {
+        const i18next = (await import('i18next')).default.createInstance();
+        const es = (await import('@/i18n/locales/es/series.json')).default;
+        const en = (await import('@/i18n/locales/en/series.json')).default;
+        await i18next.init({ lng: 'es', resources: { es: { series: es }, en: { series: en } }, ns: ['series'], defaultNS: 'series', interpolation: { escapeValue: false } });
+        const t = i18next.t.bind(i18next);
+        expect(t('detail.project.linkedMoved', { count: 1 })).toBe('1 estudio llevado');
+        expect(t('detail.project.linkedMoved', { count: 3 })).toBe('3 estudios llevados');
+        expect(t('detail.project.linkedSources', { count: 1 })).toBe('1 obra agregada');
+        expect(t('detail.project.linked', { title: 'Nehemías', parts: '1 estudio llevado' })).toBe('Serie ligada al proyecto «Nehemías»: 1 estudio llevado.');
+        await i18next.changeLanguage('en');
+        expect(t('detail.project.linkedLinked', { count: 1 })).toBe('1 study linked');
+        expect(t('detail.project.linkedLinked', { count: 2 })).toBe('2 studies linked');
     });
 
     it('un estudio que no quedó completo se avisa aparte', async () => {

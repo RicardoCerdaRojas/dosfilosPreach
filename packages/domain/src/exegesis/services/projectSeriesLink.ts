@@ -134,6 +134,31 @@ export function seriesPaperInheritance(input: {
 
 // ── Pertenencia de series y sermones ───────────────────────────────────
 
+/** El sermón, con lo que hace falta para saber si el pastor ya avanzó. */
+export interface SermonProgressLike {
+    status?: string | undefined;
+    sourceSermonId?: string | null | undefined;
+    content?: string | null | undefined;
+    /** Lo trae el resumen de la lista, donde `content` llega vacío. */
+    hasContent?: boolean | null | undefined;
+    wizardProgress?: { currentStep?: number | null | undefined } | null | undefined;
+}
+
+/**
+ * El marcador vacío que la serie crea por cada perícopa sin estudio
+ * (`SeriesService.autoCreateSermonPlaceholders`): borrador del asistente
+ * en el paso 0, sin cuerpo. Nadie lo escribió, así que no cuenta como
+ * sermón. Es el mismo criterio con que la lista de sermones lo oculta y
+ * SeriesDetail lo da por «configurando».
+ */
+export function isEmptySermonPlaceholder(s: SermonProgressLike): boolean {
+    if (!s.wizardProgress || s.sourceSermonId || s.status === 'published') return false;
+    if ((s.wizardProgress.currentStep ?? 0) > 0) return false;
+    // El resumen trae `hasContent`; el sermón completo, el cuerpo.
+    const conCuerpo = s.hasContent === true || (typeof s.content === 'string' && s.content.trim() !== '');
+    return !conCuerpo;
+}
+
 /**
  * El proyecto de un sermón. El explícito gana (un sermón de «Material
  * previo» se queda ahí); si no tiene, el de ORIGEN del estudio del que
@@ -155,8 +180,14 @@ export function resolveSermonProjectId(
  * Los sermones del proyecto. `all` trae cada versión; `chains`, uno por
  * cadena borrador → copia publicada, para que un sermón publicado no se
  * cuente dos veces.
+ *
+ * Un marcador vacío que solo entra por su serie no es del proyecto: si no,
+ * ligar una serie hecha en el planificador llenaba «Material producido» y
+ * daba por hecha la fase de sermones del recorrido sin que el pastor
+ * escribiera nada. El que tiene proyecto explícito o estudio de origen se
+ * queda, como antes de deducir por serie.
  */
-export function projectSermonsOf<S extends {
+export function projectSermonsOf<S extends SermonProgressLike & {
     id: string;
     projectId?: string | null;
     sourcePaperId?: string | null;
@@ -171,7 +202,11 @@ export function projectSermonsOf<S extends {
     seriesProjectOf: (seriesId: string) => string | null | undefined,
 ): { all: S[]; chains: S[] } {
     const all = sermons
-        .filter(s => resolveSermonProjectId(s, paperOriginOf, seriesProjectOf) === projectId)
+        .filter(s => {
+            if (resolveSermonProjectId(s, paperOriginOf, seriesProjectOf) !== projectId) return false;
+            const soloPorSerie = !s.projectId && !(s.sourcePaperId && paperOriginOf(s.sourcePaperId));
+            return !(soloPorSerie && isEmptySermonPlaceholder(s));
+        })
         .sort((a, b) => tiempo(b.updatedAt) - tiempo(a.updatedAt));
     const porCadena = new Map<string, S>();
     // `all` ya va del más reciente al más viejo: el primero de cada cadena
@@ -210,18 +245,24 @@ export interface SeriesPericopeRow<P> {
  * `plannedSermons[].paperId`, porque el resumen del estudio no trae
  * `pericopeId`. «Publicado» quiere decir el borrador publicado o una copia
  * publicada de él: el resumen no trae si el plan lo dio por terminado.
+ *
+ * El marcador vacío de la perícopa (`isEmptySermonPlaceholder`) cuenta
+ * como «sin sermón»; la fila conserva su id para abrirlo y empezar.
  */
 export function seriesPericopeRows<P extends { id: string; title: string; phase: string }>(
     series: SerieLike,
     papersById: (id: string) => P | undefined,
-    sermons: ReadonlyArray<{ id: string; status?: string; sourceSermonId?: string | null; updatedAt: Date | string }>,
+    sermons: ReadonlyArray<SermonProgressLike & { id: string; status?: string; sourceSermonId?: string | null; updatedAt: Date | string }>,
 ): SeriesPericopeRow<P>[] {
     return (series.metadata?.plannedSermons ?? []).map(p => {
         const sermonId = p.draftId || null;
         let sermonState: PericopeSermonState = 'none';
         if (sermonId) {
             const publicado = sermons.some(s => s.status === 'published' && (s.id === sermonId || s.sourceSermonId === sermonId));
-            sermonState = publicado ? 'published' : 'draft';
+            // Un borrador que no está en la lista sigue contando: no se sabe que esté vacío.
+            const borrador = sermons.find(s => s.id === sermonId);
+            const vacio = !!borrador && isEmptySermonPlaceholder(borrador);
+            sermonState = publicado ? 'published' : vacio ? 'none' : 'draft';
         }
         return {
             pericopeId: p.id,

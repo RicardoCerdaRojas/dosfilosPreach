@@ -158,7 +158,10 @@
             "libraryLoading": "Loading your library…",
             "overlapTitle": "You already have project studies on these pericopes",
             "overlapHint": "The series will create new studies; yours stay in the project.",
-            "createdInProject": "Series created in the project «{{title}}»."
+            "createdInProject": "Series created in the project «{{title}}».",
+            "noSources": "The project has no approved works for this book in your library: the studies will start without sources.",
+            "openStateOfArt": "Go to the state of the art",
+            "sourcesHint": "They come from the project's approved bibliography. Uncheck the ones this series' studies don't need: the series will remember it for the studies you create later."
         },
         "subtitle": "5-pass pipeline (panorama → macro → micro → preachable → fidelity) that distinguishes exegetical division from preachable division.",
         "pass": "Pass",
@@ -207,7 +210,8 @@
                 "minVersesError": "The passage must contain at least {{min}} verses to justify the analysis.",
                 "titleAutoSuggest": "Suggested title",
                 "titleAutoSuggestHint": "Editable: adjust it if you prefer another form."
-            }
+            },
+            "bookChanged": "You changed the book: the series will be created from the analysis of {{analyzed}}. Press «Start analysis» to analyze {{book}}."
         },
         "methodology": {
             "dialogTitle": "Expository assistant methodology",
@@ -418,6 +422,7 @@
             "overloaded": "Our analysis engine is overloaded. Try again in a minute.",
             "draftRestored": "Continuing where you left off. (Draft restored).",
             "titleRequired": "Give the series a title before creating.",
+            "titleTooShort": "The series title needs at least 3 letters.",
             "seriesCreated": "Series created. Taking you to the detail view.",
             "seriesCreatedWithPapers_one": "Series created with 1 study ready to work on.",
             "seriesCreatedWithPapers_other": "Series created with {{count}} studies ready to work on.",
@@ -563,12 +568,19 @@
             "addSources": "Add the project's works they are missing",
             "confirm": "Link",
             "unlink": "Unlink",
-            "linked": "Series linked: {{moved}} studies moved, {{linked}} linked, {{sources}} works added.",
+            "linked": "Series linked to the project «{{title}}»: {{parts}}.",
             "unlinked": "The series is now on its own.",
             "partialFailed_one": "{{count}} study wasn't fully updated. To retry, unlink the series and link it again.",
             "partialFailed_other": "{{count}} studies weren't fully updated. To retry, unlink the series and link it again.",
             "failed": "Couldn't change the series' project. Try again.",
-            "sourcesFromProject": "New studies take the project's bibliography."
+            "sourcesFromProject": "New studies take the project's bibliography.",
+            "linkedOnly": "Series linked to the project «{{title}}».",
+            "linkedMoved_one": "{{count}} study moved",
+            "linkedMoved_other": "{{count}} studies moved",
+            "linkedLinked_one": "{{count}} study linked",
+            "linkedLinked_other": "{{count}} studies linked",
+            "linkedSources_one": "{{count}} work added",
+            "linkedSources_other": "{{count}} works added"
         },
         "header": {
             "back": "Back to plans",

@@ -423,6 +423,21 @@ export class SeriesService {
             // `SermonSeriesEntity.create` so the saved series matches.
             const seriesId = crypto.randomUUID();
 
+            // La serie se valida (título de 3+ letras, usuario) ANTES de
+            // crear estudios: si fallara después, quedarían N estudios con
+            // un seriesId que no existe y, con proyecto, inflando su
+            // recorrido; al reintentar se crearía otro juego entero.
+            SermonSeriesEntity.create({
+                id: seriesId,
+                userId,
+                title: plan.series.title!,
+                description: plan.series.description!,
+                type: plan.series.type!,
+                sermonIds: [],
+                draftIds: [],
+                resourceIds: [],
+            });
+
             // Create planned sermons with calculated dates (stored as metadata, NOT actual sermons)
             const plannedSermonsInitial: PlannedSermon[] = plan.sermons.map((sermonData) => {
                 let scheduledDate: Date | undefined;
@@ -655,7 +670,9 @@ export class SeriesService {
 
     /**
      * Liga la serie a un proyecto o la desliga (`null`). Solo toca
-     * `series.projectId`: los estudios y sermones no cambian.
+     * `series.projectId`: los estudios y sermones no cambian. Si el
+     * proyecto cambia, se borran las obras desmarcadas: eran del proyecto
+     * con que nació la serie y no deben filtrar las de otro.
      */
     async setSeriesProject(seriesId: string, projectId: string | null): Promise<SermonSeriesEntity> {
         try {
@@ -663,7 +680,16 @@ export class SeriesService {
             if (!series) {
                 throw new Error('Serie no encontrada');
             }
-            return await this.retry(() => this.seriesRepository.update(series.update({ projectId })));
+            const cambia = (series.projectId ?? null) !== projectId;
+            // Se escribe [] y no se omite: el repositorio guarda con
+            // merge:true y una clave ausente no borra la que ya está.
+            const metadata =
+                cambia && series.metadata?.projectSourceExclusions?.length
+                    ? { ...series.metadata, projectSourceExclusions: [] }
+                    : undefined;
+            return await this.retry(() =>
+                this.seriesRepository.update(series.update({ projectId, ...(metadata ? { metadata } : {}) })),
+            );
         } catch (error: any) {
             throw new Error(error.message || 'Error al cambiar el proyecto de la serie');
         }

@@ -4,7 +4,9 @@
     "new": "New study",
     "empty": "No studies yet. Each assignment, passage or topic you work on in this project is a study.",
     "linked": "linked",
-    "otherTitle": "Other studies"
+    "otherTitle": "Other studies",
+    "otherEmpty": "All of this project's studies are in its series.",
+    "loading": "Loading studies…"
   },
   "unsaved": "Unsaved changes.",
   "stateOfArt": {
@@ -211,6 +213,8 @@
     },
     "roadmap": {
         "label": "Roadmap · {{type}}",
+        "loading": "Loading the roadmap…",
+        "loadError": "The project roadmap could not be loaded.",
         "phaseLabel": "Phase {{number}}",
         "allComplete": {
             "title": "All phases complete",
@@ -241,6 +245,11 @@
                     "description": "A worked study for each pericope of the passage.",
                     "cta": "New study"
                 },
+                "pericopesSeries": {
+                    "title": "Studies by pericope",
+                    "description": "The series already created one study per pericope: work on them from its card, in the plan's order.",
+                    "cta": "Work on the series studies"
+                },
                 "synthesis": {
                     "title": "Synthesis",
                     "description": "What the passage says as a whole: talk with the tutors or write the synthesis.",
@@ -257,6 +266,9 @@
         "progress": "{{studies}} of {{total}} pericopes with a study · {{sermons}} with a sermon",
         "nextDate": "Next preaching: {{date}}",
         "open": "Open the plan",
+        "loading": "Loading series…",
+        "loadError": "We couldn't load this project's series.",
+        "retry": "Try again",
         "row": {
             "noStudy": "No study",
             "openStudy": "Open study",
