@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ProjectOutput, ProjectOutputKind, projectWorkTypes } from '@dosfilos/domain';
+import { useQuery } from '@tanstack/react-query';
+import { ProjectOutput, ProjectOutputKind, plannerBookForProject, projectWorkTypes } from '@dosfilos/domain';
+import { seriesService } from '@dosfilos/application';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -20,6 +22,7 @@ import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
 import { ProjectSetupCards, type ProjectSetupChange } from './components/project/ProjectSetupCards';
 import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
+import { ProjectSeriesSection, planSeriesUrl, seriesWorkUrl } from './components/project/ProjectSeriesSection';
 import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
 import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
 import { ProjectSourcePickerModal } from './components/project/ProjectSourcePickerModal';
@@ -52,7 +55,14 @@ export function ProjectDashboard() {
     const { sermons } = useSermons();
     const { sessions: greekSessions } = useGreekSessions();
     const { sessions: hebrewSessions } = useHebrewSessions();
-    const { papers } = useExegesisPapers();
+    const { papers, isLoading: cargandoEstudios } = useExegesisPapers();
+    // La misma clave que ExegesisPage: comparten caché y la invalidación
+    // ['series'] de useExegesisPapers también la refresca.
+    const { data: series, isLoading: cargandoSeries, isError: seriesFallaron, refetch: reintentarSeries } = useQuery({
+        queryKey: ['series', 'forExegesisPapers', user?.uid],
+        queryFn: async () => (user?.uid ? seriesService.getUserSeries(user.uid) : []),
+        enabled: !!user?.uid,
+    });
     const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput } =
         useProjectWorkspace(projectId);
 
@@ -63,9 +73,9 @@ export function ProjectDashboard() {
 
     // ── Lo que pertenece a este proyecto ───────────────────────────────────
     const {
-        projectSessions, projectSermons, projectGreekSessions, linkableGreekSessions,
-        projectHebrewSessions, linkableHebrewSessions, projectStudies,
-    } = useProjectSlices(projectId, { sessions, sermons, greekSessions, hebrewSessions, papers });
+        projectSessions, projectSermons, projectSermonsAll, projectGreekSessions, linkableGreekSessions,
+        projectHebrewSessions, linkableHebrewSessions, projectStudies, projectSeries, seriesStudyIds,
+    } = useProjectSlices(projectId, { sessions, sermons, greekSessions, hebrewSessions, papers, series });
 
     // ── Hooks: attached sources + link sessions ────────────────────────────
     const { sources: attachedSources, reprocessing, reprocessSource } = useProjectAttachedSources({
@@ -120,18 +130,27 @@ export function ProjectDashboard() {
         );
     }
 
+    // Mientras cargan, «sin series» y «sin estudios» serían falsos: el
+    // recorrido ofrecería planificar otra serie y la lista no separaría los
+    // estudios de la serie. Con datos en caché, un fallo no los borra.
+    const cargandoTrabajo = cargandoEstudios || cargandoSeries;
+    const estadoSeries = cargandoSeries ? 'loading' : seriesFallaron && !series ? 'error' : 'ready';
+
     // ── Roadmap computation ────────────────────────────────────────────────
     const typeMeta = getProjectTypeMeta(project.type);
     const roadmap = computeRoadmapState(typeMeta, {
         project,
         studyCount: projectStudies.length,
         deliveredCount: projectStudies.filter(p => p.phase === 'assembled').length,
+        workedStudyCount: projectStudies.filter(p => p.phase !== 'configuring').length,
+        seriesCount: projectSeries.length,
         sourceCount: attachedSources.length,
         greekCount: projectGreekSessions.length,
         hebrewCount: projectHebrewSessions.length,
         sessionCount: projectSessions.length,
         outputs: outputs ?? [],
-        sermons: projectSermons,
+        // Cada versión: el recorrido de Serie cuenta como antes, sin agrupar.
+        sermons: projectSermonsAll,
         sessions: projectSessions,
     }) as unknown as RoadmapState;
 
@@ -157,6 +176,19 @@ export function ProjectDashboard() {
             case 'output': return setOutputEditor({ mode: 'create' });
             case 'sources': return setSourcePickerOpen(true);
             case 'stateOfArt': return navigate(`/dashboard/projects/${projectId}/estado-del-arte`);
+            case 'planSeries': return navigate(planSeriesUrl(project.id, plannerBookForProject(project, projectStudies)));
+            case 'openSeries': {
+                // La serie más nueva: su primer estudio sin empezar o su plan.
+                const serie = projectSeries[0];
+                if (!serie) return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
+                const faseDe = new Map((papers ?? []).map(p => [p.id, p.phase]));
+                return navigate(seriesWorkUrl(serie, id => faseDe.get(id)));
+            }
+            default: {
+                // Exhaustivo: un botón nuevo sin su caso no compila.
+                const sinCaso: never = kind;
+                return sinCaso;
+            }
         }
     };
 
@@ -215,11 +247,27 @@ export function ProjectDashboard() {
                     TypeIcon={typeMeta.icon}
                 />
 
-                <ProjectRoadmap
-                    roadmap={roadmap}
-                    typeLabel={typeMeta.label}
-                    onPhaseCta={handleRoadmapCta}
-                />
+                {estadoSeries === 'error' ? (
+                    // Sin saber si hay serie, el recorrido ofrecería «Planificar la serie»
+                    // aunque ya exista: se dice que falló y se ofrece reintentar.
+                    <div role="alert" data-testid="project-roadmap-error" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
+                        <p className="text-sm text-foreground">{t('roadmap.loadError')}</p>
+                        <Button size="sm" variant="outline" onClick={() => void reintentarSeries()}>{t('seriesSection.retry')}</Button>
+                    </div>
+                ) : cargandoTrabajo ? (
+                    <div
+                        role="status"
+                        aria-label={t('roadmap.loading')}
+                        data-testid="project-roadmap-loading"
+                        className="h-[132px] rounded-xl border border-border/60 bg-muted/40 animate-pulse"
+                    />
+                ) : (
+                    <ProjectRoadmap
+                        roadmap={roadmap}
+                        typeLabel={typeMeta.label}
+                        onPhaseCta={handleRoadmapCta}
+                    />
+                )}
 
                 {/* Los datos del curso y sus tipos de trabajo (ADR-046, etapa
                     1b): no aplican a los proyectos de predicación ni de
@@ -228,9 +276,24 @@ export function ProjectDashboard() {
                     <ProjectSetupCards project={project} onSave={guardar} />
                 )}
 
+                {/* Las series de predicación del proyecto (etapa 3 de ADR-046). */}
+                {(['exegetical', 'series', 'sermon'].includes(project.type ?? 'general') || projectSeries.length > 0) && (
+                    <ProjectSeriesSection
+                        project={project}
+                        series={projectSeries}
+                        papers={papers ?? []}
+                        sermons={sermons ?? []}
+                        onPlanSeries={() => handleRoadmapCta('planSeries')}
+                        status={estadoSeries}
+                        onRetry={() => { void reintentarSeries(); }}
+                    />
+                )}
+
                 <ProjectStudiesSection
                     projectId={project.id}
                     studies={projectStudies}
+                    excludeIds={seriesStudyIds}
+                    loading={cargandoTrabajo}
                     workTypes={projectWorkTypes(project)}
                     onNewStudy={() => navigate(`/dashboard/exegesis/new?projectId=${project.id}`)}
                 />

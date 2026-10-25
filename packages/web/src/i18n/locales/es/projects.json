@@ -3,7 +3,10 @@
     "title": "Estudios",
     "new": "Nuevo estudio",
     "empty": "Todavía no hay estudios. Cada tarea, pasaje o tema que trabajes en este proyecto es un estudio.",
-    "linked": "colabora"
+    "linked": "colabora",
+    "otherTitle": "Otros estudios",
+    "otherEmpty": "Todos los estudios del proyecto están en sus series.",
+    "loading": "Cargando los estudios…"
   },
   "unsaved": "Cambios sin guardar.",
   "stateOfArt": {
@@ -210,6 +213,8 @@
     },
     "roadmap": {
         "label": "Roadmap · {{type}}",
+        "loading": "Cargando el recorrido…",
+        "loadError": "No se pudo cargar el recorrido del proyecto.",
         "phaseLabel": "Fase {{number}}",
         "allComplete": {
             "title": "Todas las fases completadas",
@@ -217,6 +222,59 @@
         },
         "activePhase": {
             "label": "Próximo paso · Fase {{number}}"
+        },
+        "phases": {
+            "exegetical": {
+                "passage": {
+                    "title": "Pasaje y propósito",
+                    "description": "El pasaje que vas a estudiar y para qué: una serie, una clase, tu archivo.",
+                    "cta": "Escribir el propósito"
+                },
+                "sources": {
+                    "title": "Fuentes",
+                    "description": "Los comentarios, léxicos y gramáticas que sirven para todo el pasaje.",
+                    "cta": "Preparar el estado del arte"
+                },
+                "division": {
+                    "title": "División en perícopas",
+                    "description": "Divide el libro en perícopas con el planificador. Cada perícopa nace como un estudio de este proyecto, con su bibliografía.",
+                    "cta": "Planificar la serie"
+                },
+                "pericopes": {
+                    "title": "Estudios por perícopa",
+                    "description": "Un estudio trabajado por cada perícopa del pasaje.",
+                    "cta": "Nuevo estudio"
+                },
+                "pericopesSeries": {
+                    "title": "Estudios por perícopa",
+                    "description": "La serie ya creó un estudio por perícopa: trabájalos desde su tarjeta, en el orden del plan.",
+                    "cta": "Trabajar los estudios de la serie"
+                },
+                "synthesis": {
+                    "title": "Síntesis",
+                    "description": "Lo que el pasaje dice como un todo: conversa con los tutores o escribe la síntesis.",
+                    "cta": "Iniciar conversación"
+                }
+            }
+        }
+    },
+    "seriesSection": {
+        "title": "Series de predicación",
+        "plan": "Planificar la serie",
+        "planAnother": "Planificar otra serie",
+        "empty": "El planificador divide el libro en perícopas; cada perícopa nace como un estudio de este proyecto con la bibliografía aprobada.",
+        "progress": "{{studies}} de {{total}} perícopas con estudio · {{sermons}} con sermón",
+        "nextDate": "Próxima predicación: {{date}}",
+        "open": "Abrir el plan",
+        "loading": "Cargando las series…",
+        "loadError": "No pudimos cargar las series del proyecto.",
+        "retry": "Reintentar",
+        "row": {
+            "noStudy": "Sin estudio",
+            "openStudy": "Abrir estudio",
+            "noSermon": "Sin sermón",
+            "sermonDraft": "Sermón en borrador",
+            "sermonPublished": "Sermón publicado"
         }
     },
     "resources": {

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Library } from 'lucide-react';
 import {
-    inheritableBibliography,
+    inheritableProjectEntries,
     initialSourcesFromBibliography,
-    projectBibliography,
     type AddProjectSourceInput,
     type AIProject,
     type BibleBookId,
@@ -16,6 +15,8 @@ interface ProjectBibliographyOfferProps {
     /** El libro del pasaje: un comentario de otro libro no se ofrece. */
     bookId: BibleBookId | null;
     onChange: (sources: AddProjectSourceInput[]) => void;
+    /** El texto de ayuda; sin él, el del estudio suelto. La serie lo dice para todos sus estudios. */
+    hint?: string;
 }
 
 /**
@@ -24,22 +25,14 @@ interface ProjectBibliographyOfferProps {
  * pueden desmarcar antes de crear. Las hojas de cada libro se eligen
  * después, en el corpus, contra el pasaje de este estudio.
  */
-export function ProjectBibliographyOffer({ project, bookId, onChange }: ProjectBibliographyOfferProps) {
+export function ProjectBibliographyOffer({ project, bookId, onChange, hint }: ProjectBibliographyOfferProps) {
     const { t } = useTranslation('exegesis');
     const { resources } = useLibrary();
     const [desmarcadas, setDesmarcadas] = useState<ReadonlySet<string>>(new Set());
     const porId = useMemo(() => new Map(resources.map(r => [r.id, r])), [resources]);
+    // La regla vive en el dominio: el planificador de la serie hereda lo mismo.
     const heredables = useMemo(
-        () => {
-            if (!project || !bookId) return [];
-            // Con el libro de la biblioteca: un proyecto de antes solo tiene
-            // `sourceIds`, y sin esto sus fuentes llegaban sin nombre ni tipo.
-            const lookup = (id: string) => {
-                const r = porId.get(id);
-                return r ? { title: r.title, author: r.author ?? null, exegeticalType: r.exegeticalType ?? null } : null;
-            };
-            return inheritableBibliography(projectBibliography(project, lookup), bookId, id => porId.get(id));
-        },
+        () => inheritableProjectEntries(project, bookId, id => porId.get(id)),
         [project, bookId, porId],
     );
     const elegidas = useMemo(() => heredables.filter(e => !desmarcadas.has(e.id)), [heredables, desmarcadas]);
@@ -82,7 +75,7 @@ export function ProjectBibliographyOffer({ project, bookId, onChange }: ProjectB
                     </li>
                 ))}
             </ul>
-            <p className="text-[11px] text-muted-foreground">{t('create.projectSources.hint')}</p>
+            <p className="text-[11px] text-muted-foreground">{hint ?? t('create.projectSources.hint')}</p>
         </fieldset>
     );
 }

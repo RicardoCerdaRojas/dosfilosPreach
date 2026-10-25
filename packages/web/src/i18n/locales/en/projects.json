@@ -3,7 +3,10 @@
     "title": "Studies",
     "new": "New study",
     "empty": "No studies yet. Each assignment, passage or topic you work on in this project is a study.",
-    "linked": "linked"
+    "linked": "linked",
+    "otherTitle": "Other studies",
+    "otherEmpty": "All of this project's studies are in its series.",
+    "loading": "Loading studies…"
   },
   "unsaved": "Unsaved changes.",
   "stateOfArt": {
@@ -210,6 +213,8 @@
     },
     "roadmap": {
         "label": "Roadmap · {{type}}",
+        "loading": "Loading the roadmap…",
+        "loadError": "The project roadmap could not be loaded.",
         "phaseLabel": "Phase {{number}}",
         "allComplete": {
             "title": "All phases complete",
@@ -217,6 +222,59 @@
         },
         "activePhase": {
             "label": "Next step · Phase {{number}}"
+        },
+        "phases": {
+            "exegetical": {
+                "passage": {
+                    "title": "Passage and purpose",
+                    "description": "The passage you are going to study and what for: a series, a class, your archive.",
+                    "cta": "Write the purpose"
+                },
+                "sources": {
+                    "title": "Sources",
+                    "description": "The commentaries, lexicons and grammars that serve the whole passage.",
+                    "cta": "Prepare the state of the art"
+                },
+                "division": {
+                    "title": "Division into pericopes",
+                    "description": "Divide the book into pericopes with the planner. Each pericope is born as a study of this project, with its bibliography.",
+                    "cta": "Plan the series"
+                },
+                "pericopes": {
+                    "title": "Studies by pericope",
+                    "description": "A worked study for each pericope of the passage.",
+                    "cta": "New study"
+                },
+                "pericopesSeries": {
+                    "title": "Studies by pericope",
+                    "description": "The series already created one study per pericope: work on them from its card, in the plan's order.",
+                    "cta": "Work on the series studies"
+                },
+                "synthesis": {
+                    "title": "Synthesis",
+                    "description": "What the passage says as a whole: talk with the tutors or write the synthesis.",
+                    "cta": "Start conversation"
+                }
+            }
+        }
+    },
+    "seriesSection": {
+        "title": "Preaching series",
+        "plan": "Plan the series",
+        "planAnother": "Plan another series",
+        "empty": "The planner divides the book into pericopes; each pericope is born as a study of this project with the approved bibliography.",
+        "progress": "{{studies}} of {{total}} pericopes with a study · {{sermons}} with a sermon",
+        "nextDate": "Next preaching: {{date}}",
+        "open": "Open the plan",
+        "loading": "Loading series…",
+        "loadError": "We couldn't load this project's series.",
+        "retry": "Try again",
+        "row": {
+            "noStudy": "No study",
+            "openStudy": "Open study",
+            "noSermon": "No sermon",
+            "sermonDraft": "Sermon in draft",
+            "sermonPublished": "Sermon published"
         }
     },
     "resources": {

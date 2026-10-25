@@ -41,18 +41,24 @@ import {
 import { AddSermonDialog } from '@/components/plan/AddSermonDialog';
 import { EditSermonDialog } from '@/components/plan/EditSermonDialog';
 import { LinkExistingSermonDialog } from './components/LinkExistingSermonDialog';
+import { SeriesProjectLink } from './components/SeriesProjectLink';
 import { ExegesisDefaultsCard } from '@/components/plan/ExegesisDefaultsCard';
 import { InlineDateEditor } from '@/components/plan/InlineDateEditor';
 import { SeriesTimelineModal } from '@/components/plan/SeriesTimelineModal';
 import { useSeriesData, type SermonItem } from '@/hooks/useSeriesData';
 import { useFirebase } from '@/context/firebase-context';
+import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
+import { useLibrary } from '@/hooks/library';
 import { useTranslation } from '@/i18n';
 import { toast } from 'sonner';
 import { exegesisService, seriesService } from '@dosfilos/application';
 import {
+    bookIdOfUnit,
     findBooksByAlias,
     paperDefaultsFromSeries,
     parsePassageReference,
+    projectSourcesForBook,
+    seriesPaperInheritance,
     type ExegeticalPaperPhase,
     type PlannedSermon,
     type SermonSeriesEntity,
@@ -103,6 +109,20 @@ export function SeriesDetail() {
         () => new Set((series?.metadata?.plannedSermons ?? []).map(p => p.draftId).filter((x): x is string => !!x)),
         [series],
     );
+
+    // El proyecto de la serie (etapa 3 de ADR-046): «Crear estudio» hereda
+    // su bibliografía en el momento de crear, con funciones puras.
+    const { projects, isLoadingProjects } = useFacultyProjects();
+    const linkedProject = series?.projectId
+        ? projects.find(p => p.id === series.projectId && !p.archivedAt && !p.deletedAt) ?? null
+        : null;
+    const { resources, isLoading: libraryLoading } = useLibrary();
+    const resourceById = useMemo(() => new Map(resources.map(r => [r.id, r])), [resources]);
+    const resourceOf = (resourceId: string) => resourceById.get(resourceId);
+    // Mientras no se sabe el proyecto o la biblioteca, una serie ligada no
+    // crea estudios: sin la biblioteca, commentaryBookCoverage deja pasar
+    // comentarios de otros libros.
+    const createPaperBlocked = !!series?.projectId && (isLoadingProjects || (!!linkedProject && libraryLoading));
 
     // Paper phase per pericope. The pipeline stepper needs the actual
     // ExegeticalPaper phase (configuring / in-progress / assembled),
@@ -204,8 +224,21 @@ export function SeriesDetail() {
                 title: planned.title,
                 assignmentBrief: planned.syntacticUnit.justification ?? null,
                 // La guía, la rúbrica y el corpus de la serie: antes este
-                // camino los ignoraba y el trabajo nacía académico.
-                ...paperDefaultsFromSeries(series.metadata?.exegesisDefaults),
+                // camino los ignoraba y el trabajo nacía académico. Con
+                // proyecto, además el origen y su bibliografía para este libro,
+                // sin las obras que el pastor desmarcó.
+                ...(linkedProject
+                    ? seriesPaperInheritance({
+                          exegesisDefaults: series.metadata?.exegesisDefaults,
+                          projectId: linkedProject.id,
+                          projectSources: projectSourcesForBook(
+                              linkedProject,
+                              bookIdOfUnit(planned.syntacticUnit),
+                              resourceOf,
+                              series.metadata?.projectSourceExclusions ?? [],
+                          ),
+                      })
+                    : paperDefaultsFromSeries(series.metadata?.exegesisDefaults)),
                 // Stamp back-reference so sermon generation can patch
                 // this pericope's draftId without scanning all series.
                 seriesId: series.id,
@@ -277,6 +310,9 @@ export function SeriesDetail() {
                             <p className="text-[14px] text-muted-foreground leading-relaxed max-w-3xl pt-0.5">
                                 {series.description}
                             </p>
+                        )}
+                        {user?.uid && (
+                            <SeriesProjectLink series={series} userId={user.uid} onChanged={reloadData} />
                         )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -378,6 +414,7 @@ export function SeriesDetail() {
                                     hasPaper={hasPaper}
                                     hasSyntacticUnit={hasSyntacticUnit}
                                     isCreatingPaper={isCreatingPaper}
+                                    createPaperBlocked={createPaperBlocked}
                                     isGeneratingSermon={isGeneratingSermon}
                                     paperPhase={paperPhase}
                                     seriesId={series.id}
@@ -474,6 +511,8 @@ interface SermonRowProps {
     hasPaper: boolean;
     hasSyntacticUnit: boolean;
     isCreatingPaper: boolean;
+    /** Serie ligada con el proyecto o la biblioteca todavía cargando. */
+    createPaperBlocked: boolean;
     isGeneratingSermon: boolean;
     paperPhase: ExegeticalPaperPhase | undefined;
     seriesId: string;
@@ -499,6 +538,7 @@ function SermonRow({
     hasPaper,
     hasSyntacticUnit,
     isCreatingPaper,
+    createPaperBlocked,
     isGeneratingSermon,
     paperPhase,
     onUpdateDate,
@@ -599,7 +639,7 @@ function SermonRow({
                             size="sm"
                             variant="outline"
                             onClick={onCreatePaper}
-                            disabled={isCreatingPaper}
+                            disabled={isCreatingPaper || createPaperBlocked}
                             className="h-7 text-[11.5px]"
                         >
                             {isCreatingPaper ? (

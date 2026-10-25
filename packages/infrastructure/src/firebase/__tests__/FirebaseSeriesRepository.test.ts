@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Timestamp } from 'firebase/firestore';
+import { SermonSeriesEntity } from '@dosfilos/domain';
 import { FirebaseSeriesRepository } from '../FirebaseSeriesRepository';
 
 // We exercise the private mapper methods directly via cast — they are
@@ -162,5 +163,114 @@ describe('FirebaseSeriesRepository — metadata round-trip', () => {
         // but on the way back to the domain we collapse to undefined to
         // honour the optional `?:` field shape.
         expect(back.plannedSermons[0].syntacticUnit).toBeUndefined();
+    });
+});
+
+// ADR-046 etapa 3: la serie sabe a qué proyecto pertenece y conserva su
+// fecha de creación real al leerse.
+const seriesToFs = (s: SermonSeriesEntity) => (repo as any).seriesToFirestore(s);
+const seriesFromFs = (id: string, data: any): SermonSeriesEntity =>
+    (repo as any).firestoreToSeries(id, data);
+
+const serieBase = {
+    id: 's1',
+    userId: 'u1',
+    title: 'Nehemías',
+    description: 'Serie expositiva',
+    sermonIds: [],
+    draftIds: [],
+    type: 'expository' as const,
+    resourceIds: [],
+};
+
+// Recorre todo el árbol: Firestore rechaza undefined en cualquier nivel.
+// Timestamp y el centinela de serverTimestamp son hojas, no se recorren.
+function rutasUndefined(valor: unknown, ruta = ''): string[] {
+    if (valor === undefined) return [ruta || '(raíz)'];
+    if (valor === null || typeof valor !== 'object' || valor instanceof Timestamp) return [];
+    if (Array.isArray(valor)) return valor.flatMap((v, i) => rutasUndefined(v, `${ruta}[${i}]`));
+    if (Object.getPrototypeOf(valor) !== Object.prototype) return [];
+    return Object.entries(valor).flatMap(([k, v]) => rutasUndefined(v, ruta ? `${ruta}.${k}` : k));
+}
+
+describe('FirebaseSeriesRepository — serie con proyecto', () => {
+    it('una serie sin proyecto escribe projectId null y ninguna clave undefined', () => {
+        const fs = seriesToFs(SermonSeriesEntity.create(serieBase));
+        expect(fs).toHaveProperty('projectId', null);
+        for (const key of Object.keys(fs)) {
+            expect(fs[key], key).not.toBeUndefined();
+        }
+    });
+
+    it('una serie con proyecto escribe su projectId', () => {
+        const fs = seriesToFs(SermonSeriesEntity.create({ ...serieBase, projectId: 'p1' }));
+        expect(fs.projectId).toBe('p1');
+    });
+
+    it('un documento viejo sin la clave projectId se lee como serie suelta (Jonás)', () => {
+        const serie = seriesFromFs('jonas', {
+            userId: 'u1',
+            title: 'Jonás',
+            description: 'Serie vieja',
+            type: 'expository',
+            createdAt: Timestamp.fromDate(new Date('2026-08-01T12:00:00Z')),
+        });
+        expect(serie.projectId).toBeUndefined();
+    });
+
+    it('ida y vuelta conserva el proyecto', () => {
+        const fs = seriesToFs(SermonSeriesEntity.create({ ...serieBase, projectId: 'p1' }));
+        expect(seriesFromFs('s1', fs).projectId).toBe('p1');
+    });
+
+    it('un projectId null guardado vuelve como serie suelta', () => {
+        const fs = seriesToFs(SermonSeriesEntity.create(serieBase));
+        expect(seriesFromFs('s1', fs).projectId).toBeUndefined();
+    });
+
+    it('la fecha de creación guardada vuelve como esa fecha y no como hoy', () => {
+        const creada = new Date('2026-09-01T12:00:00Z');
+        const editada = new Date('2026-09-05T12:00:00Z');
+        const serie = seriesFromFs('s1', {
+            ...serieBase,
+            createdAt: Timestamp.fromDate(creada),
+            updatedAt: Timestamp.fromDate(editada),
+        });
+        expect(serie.createdAt.toISOString()).toBe(creada.toISOString());
+        expect(serie.updatedAt.toISOString()).toBe(editada.toISOString());
+        // Y la vuelta a Firestore escribe la misma fecha de creación.
+        expect((seriesToFs(serie).createdAt as Timestamp).toDate().toISOString()).toBe(
+            creada.toISOString(),
+        );
+    });
+
+    it('las obras desmarcadas del proyecto hacen ida y vuelta', () => {
+        const serie = SermonSeriesEntity.create({
+            ...serieBase,
+            projectId: 'p1',
+            metadata: { projectSourceExclusions: ['r1'] },
+        });
+        const fs = seriesToFs(serie);
+        expect(fs.metadata.projectSourceExclusions).toEqual(['r1']);
+        expect(seriesFromFs('s1', fs).metadata?.projectSourceExclusions).toEqual(['r1']);
+    });
+
+    it('sin obras desmarcadas la clave no viaja como undefined', () => {
+        const fs = toFs({ projectSourceExclusions: undefined, plannedSermons: [] });
+        expect('projectSourceExclusions' in fs).toBe(false);
+    });
+
+    it('ningún undefined en todo el árbol de una serie completa', () => {
+        const serie = SermonSeriesEntity.create({
+            ...serieBase,
+            metadata: {
+                expository: { book: 'Nehemías' },
+                projectSourceExclusions: undefined,
+                plannedSermons: [
+                    { id: 'ps1', week: 1, title: 'Muro', description: 'd', passage: 'Neh 1:1-11' },
+                ],
+            },
+        });
+        expect(rutasUndefined(seriesToFs(serie))).toEqual([]);
     });
 });

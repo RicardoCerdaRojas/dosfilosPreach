@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { BookOpenText, Loader2, Sparkles, BookPlus, Type, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,8 @@ export function CreateSeriesCard({
     preachableUnits,
     creating,
     onCreate,
+    createBlocked = false,
+    children,
     t,
 }: {
     seriesTitle: string;
@@ -27,6 +30,10 @@ export function CreateSeriesCard({
     preachableUnits: ReadonlyArray<PreachableUnit>;
     creating: boolean;
     onCreate: () => void;
+    /** Con proyecto: mientras carga la biblioteca, lo heredable no se sabe. */
+    createBlocked?: boolean;
+    /** Lo del proyecto (obras heredables, solapes), entre el formulario y el botón. */
+    children?: ReactNode;
     t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
     return (
@@ -77,10 +84,12 @@ export function CreateSeriesCard({
                 </div>
             </div>
 
+            {children}
+
             <div className="mt-5 flex justify-end">
                 <Button
                     onClick={onCreate}
-                    disabled={creating || preachableUnits.length === 0}
+                    disabled={creating || createBlocked || preachableUnits.length === 0}
                     className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground disabled:opacity-50"
                 >
                     {creating && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
@@ -124,6 +133,7 @@ export function SetupCard({
     passageScope,
     onPassageScopeChange,
     scopeError,
+    bookChoiceRequired = false,
     t,
 }: {
     bookId: BibleBookId;
@@ -146,6 +156,8 @@ export function SetupCard({
     passageScope: PassageReference | null;
     onPassageScopeChange: (ref: PassageReference | null) => void;
     scopeError: string | null;
+    /** Abierto desde un proyecto sin un libro único: no se arranca hasta elegir uno. */
+    bookChoiceRequired?: boolean;
     t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
     const selectedBook = allBooks.find((b) => b.id === bookId);
@@ -262,6 +274,11 @@ export function SetupCard({
                             />
                         )}
                     </div>
+                    {bookChoiceRequired && (
+                        <p id="expository-choose-book" role="status" className="mt-1.5 text-[12px] font-medium text-warning-subtle-foreground">
+                            {t('expository.project.chooseBook')}
+                        </p>
+                    )}
                     <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                         {t('expository.setup.scope.passageHelper')}
                     </p>
@@ -323,7 +340,8 @@ export function SetupCard({
                 </p>
                 <Button
                     onClick={onStart}
-                    disabled={isRunning}
+                    disabled={isRunning || bookChoiceRequired}
+                    {...(bookChoiceRequired ? { 'aria-describedby': 'expository-choose-book' } : {})}
                     className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 disabled:opacity-50"
                 >
                     {isRunning ? (

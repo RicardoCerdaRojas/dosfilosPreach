@@ -148,6 +148,21 @@
     "expository": {
         "back": "Back to planner",
         "title": "Expository assistant",
+        "project": {
+            "banner": "Series of the project «{{title}}»",
+            "hint": "Each pericope will be born as a study of this project, with the works you check below.",
+            "back": "Back to the project",
+            "bookOutside": "This book is not among the project's books; commentaries are filtered by the book you analyzed.",
+            "chooseBook": "Choose the series' book",
+            "unavailable": "The project is not available (archived or in the trash). The series will be created on its own.",
+            "libraryLoading": "Loading your library…",
+            "overlapTitle": "You already have project studies on these pericopes",
+            "overlapHint": "The series will create new studies; yours stay in the project.",
+            "createdInProject": "Series created in the project «{{title}}».",
+            "noSources": "The project has no approved works for this book in your library: the studies will start without sources.",
+            "openStateOfArt": "Go to the state of the art",
+            "sourcesHint": "They come from the project's approved bibliography. Uncheck the ones this series' studies don't need: the series will remember it for the studies you create later."
+        },
         "subtitle": "5-pass pipeline (panorama → macro → micro → preachable → fidelity) that distinguishes exegetical division from preachable division.",
         "pass": "Pass",
         "collapse": "Collapse section",
@@ -172,7 +187,7 @@
             "twoTierLabel": "Two-tier division (recommended for long books)",
             "twoTierHint": "Useful when preaching a long book like Genesis, Acts, Isaiah, Jeremiah or Psalms. The assistant first splits the book into 2 to 5 major thematic sections, then divides each section into pericopes. Result: a clearer structure for long series.",
             "strictLabel": "Strict mode (when exegesis is already done)",
-            "strictHint": "Turn this on when you already have exegetical papers ready for each unit. The assistant pauses after detecting the units so you can confirm one by one that the exegesis is done. Only then does it generate the sermon proposals in authoritative tone instead of tentative.",
+            "strictHint": "Turn this on when you already have exegetical studies ready for each unit. The assistant pauses after detecting the units so you can confirm one by one that the exegesis is done. Only then does it generate the sermon proposals in authoritative tone instead of tentative.",
             "translationNote": "Analysis runs on the original biblical text: Greek (SBLGNT) for the New Testament, Hebrew (WLC) for the Old. If we can't load the original, we fall back to a translation (RVR1960 or ASV) and let you know.",
             "start": "Start analysis",
             "running": "Running pipeline...",
@@ -195,7 +210,8 @@
                 "minVersesError": "The passage must contain at least {{min}} verses to justify the analysis.",
                 "titleAutoSuggest": "Suggested title",
                 "titleAutoSuggestHint": "Editable: adjust it if you prefer another form."
-            }
+            },
+            "bookChanged": "You changed the book: the series will be created from the analysis of {{analyzed}}. Press «Start analysis» to analyze {{book}}."
         },
         "methodology": {
             "dialogTitle": "Expository assistant methodology",
@@ -238,7 +254,7 @@
                         { "label": "Exegetical hypothesis", "desc": "what the author does in the text." },
                         { "label": "Homiletical line", "desc": "how the listener receives the truth." }
                     ],
-                    "outro": "Keeping them separate prevents the sermon from leaping to application without first explaining the text. They are initial hypotheses — final validation is your work with the detailed exegetical paper."
+                    "outro": "Keeping them separate prevents the sermon from leaping to application without first explaining the text. They are initial hypotheses — final validation is your work with the detailed exegetical study."
                 },
                 "original": {
                     "title": "Original text when available",
@@ -299,11 +315,11 @@
             "micro": {
                 "function": "Function",
                 "signals": "Signals",
-                "hasPaper": "Has accepted paper"
+                "hasPaper": "Has accepted study"
             },
             "preachable": {
-                "preliminaryBanner": "These are initial homiletical hypotheses based on a panoramic reading of the text. Refine them after detailed exegetical study (\"Create paper from unit\" in the series detail). The fields are editable — adjust title, hypothesis, homiletical line and objective at your discretion before creating the series.",
-                "strictBanner": "Strict mode: every unit was confirmed with an accepted exegetical paper. Propositions reflect validated exegesis and are written in authoritative voice.",
+                "preliminaryBanner": "These are initial homiletical hypotheses based on a panoramic reading of the text. Refine them after detailed exegetical study (\"Create study\" in the series detail). The fields are editable — adjust title, hypothesis, homiletical line and objective at your discretion before creating the series.",
+                "strictBanner": "Strict mode: every unit was confirmed with an accepted exegetical study. Propositions reflect validated exegesis and are written in authoritative voice.",
                 "preliminaryChip": "Pending exegetical validation",
                 "editTitle": "Edit unit title",
                 "exegeticalProp": "Initial exegetical hypothesis",
@@ -391,7 +407,7 @@
             "macroFailed": "Couldn't generate the macrostructure. Try again.",
             "microFailed": "Couldn't generate the microstructure. Try again.",
             "superMacroFailed": "Couldn't generate the super-macros. Try again.",
-            "strictAwaitingPapers": "Pass 3 complete. Confirm per unit that you have an accepted exegetical paper, then click \"Continue to Pass 4\".",
+            "strictAwaitingPapers": "Pass 3 complete. Confirm per unit that you have an accepted exegetical study, then click \"Continue to Pass 4\".",
             "strictAllUnitsRequired": "Confirm ALL units before continuing to strict Pass 4.",
             "preachableFailed": "Couldn't generate the preachable units. Try again.",
             "fidelityFailed": "Couldn't complete the fidelity review. Try again.",
@@ -406,10 +422,11 @@
             "overloaded": "Our analysis engine is overloaded. Try again in a minute.",
             "draftRestored": "Continuing where you left off. (Draft restored).",
             "titleRequired": "Give the series a title before creating.",
+            "titleTooShort": "The series title needs at least 3 letters.",
             "seriesCreated": "Series created. Taking you to the detail view.",
-            "seriesCreatedWithPapers_one": "Series created with 1 paper ready to study.",
-            "seriesCreatedWithPapers_other": "Series created with {{count}} papers ready to study.",
-            "seriesCreatedWithPapersAndDrafts": "Series created with {{paperCount}} papers and {{draftCount}} sermon drafts ready to develop.",
+            "seriesCreatedWithPapers_one": "Series created with 1 study ready to work on.",
+            "seriesCreatedWithPapers_other": "Series created with {{count}} studies ready to work on.",
+            "seriesCreatedWithPapersAndDrafts": "Series created with {{paperCount}} studies and {{draftCount}} sermon drafts ready to develop.",
             "createFailed": "Couldn't create the series."
         },
         "create": {
@@ -442,7 +459,7 @@
                 "title": "Microstructure",
                 "subtitle": "Identifies exegetical units within each macro-section, with genre-specific criteria.",
                 "strictCtaTitle": "Confirm per-unit exegesis",
-                "strictCtaBody": "{{confirmed}} of {{total}} units confirmed with an accepted paper. When all are confirmed, Pass 4 can run in strict mode.",
+                "strictCtaBody": "{{confirmed}} of {{total}} units confirmed with an accepted study. When all are confirmed, Pass 4 can run in strict mode.",
                 "strictContinue": "Continue to Pass 4",
                 "strictBlocked": "Confirm every unit before continuing."
             },
@@ -462,16 +479,16 @@
         "subtitle": "Divide a book into preachable syntactic units and generate the expository series.",
         "panel": {
             "title": "Detected pericopes",
-            "subtitle": "Each pericope can become a full exegetical paper. The paper stays linked to the pericope so traceability is preserved.",
-            "createPaper": "Create paper",
-            "openPaper": "Open paper",
+            "subtitle": "Each pericope can become a full exegetical study. The study stays linked to the pericope so traceability is preserved.",
+            "createPaper": "Create study",
+            "openPaper": "Open study",
             "openSermon": "Open draft",
-            "paperBadge": "Paper started",
+            "paperBadge": "Study started",
             "remove": "Remove pericope",
             "askFaculty": "Ask Faculty with this pericope loaded",
             "toast": {
-                "paperCreated": "Exegetical paper created",
-                "paperFailed": "Couldn't create the paper",
+                "paperCreated": "Exegetical study created",
+                "paperFailed": "Couldn't create the study",
                 "bookUnresolved": "Couldn't resolve the pericope's book"
             }
         },
@@ -518,9 +535,9 @@
             "overloaded": "Our analysis engine is overloaded. Try again in a minute.",
             "titleRequired": "Give the series a title before creating.",
             "seriesCreated": "Series created. Taking you to the detail view.",
-            "seriesCreatedWithPapers_one": "Series created with 1 paper ready to study.",
-            "seriesCreatedWithPapers_other": "Series created with {{count}} papers ready to study.",
-            "seriesCreatedWithPapersAndDrafts": "Series created with {{paperCount}} papers and {{draftCount}} sermon drafts ready to develop.",
+            "seriesCreatedWithPapers_one": "Series created with 1 study ready to work on.",
+            "seriesCreatedWithPapers_other": "Series created with {{count}} studies ready to work on.",
+            "seriesCreatedWithPapersAndDrafts": "Series created with {{paperCount}} studies and {{draftCount}} sermon drafts ready to develop.",
             "createFailed": "Couldn't create the series."
         }
     },
@@ -540,6 +557,31 @@
             "linkFailed": "Could not link the sermon"
         },
         "backToSeries": "Back to series",
+        "project": {
+            "chip": "Project: {{title}}",
+            "unavailable": "Project not available",
+            "link": "Link to a project",
+            "linkTitle": "Link the series to a project",
+            "pickProject": "Project",
+            "movePapers_one": "Also move its study to the project",
+            "movePapers_other": "Also move its {{count}} studies to the project",
+            "addSources": "Add the project's works they are missing",
+            "confirm": "Link",
+            "unlink": "Unlink",
+            "linked": "Series linked to the project «{{title}}»: {{parts}}.",
+            "unlinked": "The series is now on its own.",
+            "partialFailed_one": "{{count}} study wasn't fully updated. To retry, unlink the series and link it again.",
+            "partialFailed_other": "{{count}} studies weren't fully updated. To retry, unlink the series and link it again.",
+            "failed": "Couldn't change the series' project. Try again.",
+            "sourcesFromProject": "New studies take the project's bibliography.",
+            "linkedOnly": "Series linked to the project «{{title}}».",
+            "linkedMoved_one": "{{count}} study moved",
+            "linkedMoved_other": "{{count}} studies moved",
+            "linkedLinked_one": "{{count}} study linked",
+            "linkedLinked_other": "{{count}} studies linked",
+            "linkedSources_one": "{{count}} work added",
+            "linkedSources_other": "{{count}} works added"
+        },
         "header": {
             "back": "Back to plans",
             "edit": "Edit plan",
@@ -567,28 +609,28 @@
             "clearDate": "Clear date",
             "cancel": "Cancel",
             "apply": "Apply",
-            "paperReady": "Paper ready",
+            "paperReady": "Study ready",
             "draftReady": "Draft started",
-            "createPaper": "Create paper",
-            "openPaper": "Open paper",
+            "createPaper": "Create study",
+            "openPaper": "Open study",
             "openDraft": "Open draft",
             "startDraft": "Start sermon",
-            "startStudyFromPaper": "Take to study",
+            "startStudyFromPaper": "Start the sermon",
             "startDraftWarning": {
-                "title": "You already have an exegetical paper in progress",
-                "description": "This pericope has an unfinished exegetical paper. If you start the sermon now, the wizard will open empty and will NOT use the paper as its base. We recommend completing the paper first — once assembled you can generate the sermon from it automatically.",
-                "continuePaper": "Continue with the paper",
+                "title": "You already have an exegetical study in progress",
+                "description": "This pericope has an unfinished exegetical study. If you start the sermon now, the wizard will open empty and will NOT use the study as its base. We recommend completing the study first — once assembled you can generate the sermon from it automatically.",
+                "continuePaper": "Continue with the study",
                 "startAnyway": "Start empty sermon",
-                "tooltip": "You have a paper in progress — recommended to complete it before starting the sermon"
+                "tooltip": "You have a study in progress — recommended to complete it before starting the sermon"
             },
             "toast": {
-                "studyStarted": "Your study is open, with the paper material on hand.",
-                "studyStartFailed": "Could not open the study. Try again."
+                "studyStarted": "Your sermon is open, with the study material on hand.",
+                "studyStartFailed": "Could not open the sermon. Try again."
             },
             "moreActions": "More actions",
             "actionsLabel": "Actions",
             "editFull": "Edit details",
-            "paperCorpus": "Paper corpus",
+            "paperCorpus": "Study corpus",
             "linkExisting": {
                 "menu": "Link existing sermon…",
                 "title": "Link a sermon to “{{pericope}}”",
@@ -614,15 +656,15 @@
                 "complete": "Published"
             },
             "stepper": {
-                "paper": "Paper",
+                "paper": "Study",
                 "draft": "Draft",
                 "preached": "Published"
             },
             "nextStep": {
-                "createPaper": "Next: create the exegetical paper.",
-                "startPaper": "Next: open the paper and work on the exegesis.",
+                "createPaper": "Next: create the exegetical study.",
+                "startPaper": "Next: open the study and work on the exegesis.",
                 "refinePaperStartDraft": "Next: continue the exegesis and start the sermon draft.",
-                "startDraftPaperDone": "Next: start the sermon draft (paper is ready).",
+                "startDraftPaperDone": "Next: start the sermon draft (study is ready).",
                 "continueDraft": "Next: continue editing the draft.",
                 "startDraft": "Next: start the sermon draft.",
                 "markPreached": "Next: publish it, or mark it as done if you preached it without publishing.",
@@ -640,7 +682,7 @@
         },
         "exegesisDefaults": {
             "title": "Series exegesis defaults",
-            "subtitle": "Rubric, style guide, and base corpus inherited by papers created from each pericope. Each paper can be modified later.",
+            "subtitle": "Rubric, style guide, and base corpus inherited by studies created from each pericope. Each study can be modified later.",
             "edit": "Edit",
             "rubricLabel": "Rubric",
             "styleLabel": "Style guide",
@@ -655,13 +697,13 @@
             "unknownStyle": "Selected guide",
             "loadFailed": "Couldn't load your rubrics and style guides.",
             "modalTitle": "Series exegesis defaults",
-            "scopeNotice": "This sets the starting point for NEW papers in this series. The sources of a paper that already exists are edited from the paper, in its Corpus tab.",
+            "scopeNotice": "This sets the starting point for NEW studies in this series. The sources of a study that already exists are edited from the study, in its Corpus tab.",
             "back": "Back to the series",
             "loading": "Loading the configuration…",
-            "modalDescription": "These choices seed every new pericope paper. They don't modify already-created papers.",
+            "modalDescription": "These choices seed every new pericope study. They don't modify already-created studies.",
             "rubricHelp": "The rubric defines the formal requirements of the exegetical study (introduction, source citation, conclusion).",
             "styleHelp": "The style guide defines formatting, abbreviations, and citation conventions.",
-            "sourcesHelp": "Sources that will be auto-added to each paper's corpus. Remove any you don't want inherited.",
+            "sourcesHelp": "Sources that will be auto-added to each study's corpus. Remove any you don't want inherited.",
             "sourcesEmpty": "You haven't chosen base sources for this series yet.",
             "addSourceSoon": "Recommendations and library picker: coming soon (Phase 2a)",
             "loadingLibrary": "Loading your library...",
@@ -699,7 +741,7 @@
             "removeSource": "Remove source",
             "autoRubricOption": "Your default rubric (auto)",
             "systemRubricOption": "Study for preaching (system)",
-            "noStyleOption": "No guide (decide per paper)",
+            "noStyleOption": "No guide (decide per study)",
             "cancel": "Cancel",
             "save": "Save configuration",
             "savedToast": "Exegesis defaults saved. New pericopes will inherit them.",

@@ -141,21 +141,23 @@ describe('cuando el navegador no deja escribir', () => {
     it('guardar falla en silencio: el asistente sigue trabajando en memoria', () => {
         // Modo privado o cuota llena. Perder la copia de respaldo no puede
         // costarle al pastor el análisis que tiene en pantalla.
-        const original = Storage.prototype.setItem;
-        Storage.prototype.setItem = () => { throw new Error('QuotaExceeded'); };
+        // Sobre la instancia: en happy-dom parchar Storage.prototype no llega
+        // a localStorage y la prueba pasaba sin lanzar nada.
+        const espia = vi.spyOn(localStorage, 'setItem').mockImplementation(() => { throw new Error('QuotaExceeded'); });
 
         expect(() => saveExpositoryDraft(borradorMinimo())).not.toThrow();
+        expect(espia).toHaveBeenCalled();
 
-        Storage.prototype.setItem = original;
+        espia.mockRestore();
     });
 
     it('borrar tampoco lanza', () => {
-        const original = Storage.prototype.removeItem;
-        Storage.prototype.removeItem = () => { throw new Error('nope'); };
+        const espia = vi.spyOn(localStorage, 'removeItem').mockImplementation(() => { throw new Error('nope'); });
 
         expect(() => clearExpositoryDraft()).not.toThrow();
+        expect(espia).toHaveBeenCalled();
 
-        Storage.prototype.removeItem = original;
+        espia.mockRestore();
     });
 });
 
@@ -172,5 +174,82 @@ describe('el triaje del pase 5 sobrevive al cierre de pestaña', () => {
         const leido = loadExpositoryDraft();
         expect(leido?.addressedIssueIndices).toEqual([0, 2]);
         expect(leido?.ignoredIssueIndices).toEqual([1]);
+    });
+});
+
+describe('un borrador por proyecto (etapa 3 de ADR-046)', () => {
+    // La serie de Nehemías del proyecto y un análisis suelto de 2 Pedro
+    // conviven: cada uno vive en su clave y ninguno pisa al otro.
+    const deNehemias = () => ({ ...borradorMinimo(), bookId: 'NEH' as const, bookDisplay: 'Nehemías', projectId: 'p1' });
+
+    it('con alcance y sin alcance son dos claves distintas', () => {
+        saveExpositoryDraft(borradorMinimo());
+        saveExpositoryDraft(deNehemias(), 'p1');
+
+        expect(localStorage.getItem(CLAVE)).not.toBeNull();
+        expect(localStorage.getItem(`${CLAVE}:p1`)).not.toBeNull();
+        expect(loadExpositoryDraft()?.bookId).toBe('2PE');
+        expect(loadExpositoryDraft('p1')).toMatchObject({ bookId: 'NEH', projectId: 'p1' });
+    });
+
+    it('sin alcance, la clave es la de siempre: null y vacío también', () => {
+        saveExpositoryDraft(borradorMinimo(), null);
+        expect(localStorage.getItem(CLAVE)).not.toBeNull();
+        expect(loadExpositoryDraft('')?.bookId).toBe('2PE');
+        expect(Object.keys(localStorage)).toEqual([CLAVE]);
+    });
+
+    it('la entrada genérica nunca lee el borrador de un proyecto', () => {
+        saveExpositoryDraft(deNehemias(), 'p1');
+        expect(loadExpositoryDraft()).toBeNull();
+        expect(loadExpositoryDraft('p2')).toBeNull();
+    });
+
+    it('borrar el del proyecto no borra el suelto, y al revés', () => {
+        saveExpositoryDraft(borradorMinimo());
+        saveExpositoryDraft(deNehemias(), 'p1');
+
+        clearExpositoryDraft('p1');
+        expect(loadExpositoryDraft('p1')).toBeNull();
+        expect(loadExpositoryDraft()?.bookId).toBe('2PE');
+
+        saveExpositoryDraft(deNehemias(), 'p1');
+        clearExpositoryDraft();
+        expect(loadExpositoryDraft()).toBeNull();
+        expect(loadExpositoryDraft('p1')?.bookId).toBe('NEH');
+    });
+
+    it('las 24 horas valen para los dos, y el vencido del proyecto se borra de su clave', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-08-27T10:00:00Z'));
+        saveExpositoryDraft(borradorMinimo());
+        saveExpositoryDraft(deNehemias(), 'p1');
+
+        vi.setSystemTime(new Date('2026-08-28T09:00:00Z'));
+        expect(loadExpositoryDraft()).not.toBeNull();
+        expect(loadExpositoryDraft('p1')).not.toBeNull();
+
+        vi.setSystemTime(new Date('2026-08-28T11:00:00Z'));
+        expect(loadExpositoryDraft('p1')).toBeNull();
+        expect(localStorage.getItem(`${CLAVE}:p1`)).toBeNull();
+        expect(loadExpositoryDraft()).toBeNull();
+    });
+
+    it('un almacenamiento que lanza no rompe ninguna de las tres con alcance', () => {
+        // Sobre la instancia: en happy-dom los métodos no se toman del prototipo.
+        const espias = [
+            vi.spyOn(localStorage, 'getItem').mockImplementation(() => { throw new Error('SecurityError'); }),
+            vi.spyOn(localStorage, 'setItem').mockImplementation(() => { throw new Error('QuotaExceeded'); }),
+            vi.spyOn(localStorage, 'removeItem').mockImplementation(() => { throw new Error('nope'); }),
+        ];
+        try {
+            expect(() => saveExpositoryDraft(deNehemias(), 'p1')).not.toThrow();
+            expect(loadExpositoryDraft('p1')).toBeNull();
+            expect(() => clearExpositoryDraft('p1')).not.toThrow();
+            // Prueba que de verdad lanzaron, no que no se llamaron.
+            espias.forEach((e) => expect(e).toHaveBeenCalled());
+        } finally {
+            espias.forEach((e) => e.mockRestore());
+        }
     });
 });

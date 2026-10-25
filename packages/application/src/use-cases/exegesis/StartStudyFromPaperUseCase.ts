@@ -1,6 +1,5 @@
 import {
     SermonEntity,
-    SermonSeriesEntity,
     formatPassageReference,
     paperHasStudyMaterial,
     type IExegeticalPaperRepository,
@@ -116,11 +115,24 @@ export class StartStudyFromPaperUseCase {
      * — esos tres los produce el pastor, en ese orden.
      */
     private async linkSermon(args: {
-        paper: { id: string; ownerId: string; title?: string; seriesId?: string | null };
+        paper: {
+            id: string;
+            ownerId: string;
+            title?: string;
+            seriesId?: string | null;
+            projectId?: string | null;
+        };
         passageLabel: string;
         targetSermonId: string | undefined;
         actorUserId: string;
     }): Promise<SermonEntity> {
+        // Solo se sella el proyecto en un sermón que no tiene uno: un
+        // projectId distinto (p. ej. «Material previo») es decisión previa
+        // y no se pisa. Un paper sin proyecto deja el sermón igual que hoy.
+        const projectId = args.paper.projectId || undefined;
+        const sellarProyecto = (s: SermonEntity) =>
+            !s.projectId && projectId ? { projectId } : {};
+
         const wizardProgress = {
             currentStep: 1,
             passage: args.passageLabel,
@@ -141,7 +153,7 @@ export class StartStudyFromPaperUseCase {
             if (existing.userId !== args.actorUserId) {
                 throw new Error('Sermón objetivo no pertenece al actor');
             }
-            const updated = existing.update({ wizardProgress });
+            const updated = existing.update({ wizardProgress, ...sellarProyecto(existing) });
             return this.sermonRepository.update(updated);
         }
 
@@ -170,7 +182,10 @@ export class StartStudyFromPaperUseCase {
                 ...wizardProgress,
                 currentStep: retomable.wizardProgress?.currentStep ?? 1,
             };
-            return this.sermonRepository.update(retomable.update({ wizardProgress: conservandoElPaso }));
+            return this.sermonRepository.update(retomable.update({
+                wizardProgress: conservandoElPaso,
+                ...sellarProyecto(retomable),
+            }));
         }
 
         const sermon = SermonEntity.create({
@@ -183,6 +198,8 @@ export class StartStudyFromPaperUseCase {
             bibleReferences: [args.passageLabel],
             sourcePaperId: args.paper.id,
             seriesId: args.paper.seriesId ?? undefined,
+            // El sermón nace en el proyecto del estudio (ADR-046 etapa 3).
+            ...(projectId ? { projectId } : {}),
             status: 'draft',
             wizardProgress,
         });
@@ -222,18 +239,10 @@ export class StartStudyFromPaperUseCase {
                     ? { ...p, draftId: sermonId, status: 'sermon-in-progress' as const }
                     : p,
             );
-            const next = SermonSeriesEntity.create({
-                id: series.id,
-                userId: series.userId,
-                title: series.title,
-                description: series.description,
-                sermonIds: series.sermonIds,
+            // update() y no create() campo por campo: así la fila no borra
+            // createdAt, projectId ni ningún campo que la serie gane después.
+            const next = series.update({
                 draftIds: [...(series.draftIds ?? []), sermonId],
-                type: series.type,
-                resourceIds: series.resourceIds,
-                startDate: series.startDate,
-                coverUrl: series.coverUrl,
-                endDate: series.endDate,
                 metadata: { ...series.metadata, plannedSermons: updatedPlanned },
             });
             await this.seriesRepository.update(next);

@@ -6,11 +6,16 @@ import {
 import {
     Link,
     useNavigate,
+    useSearchParams,
 } from 'react-router-dom';
+import {
+    useQueryClient,
+} from '@tanstack/react-query';
 import {
     toast,
 } from 'sonner';
 import {
+    AlertTriangle,
     ArrowLeft,
     Loader2,
 } from 'lucide-react';
@@ -30,6 +35,9 @@ import {
     useExpositoryAssistant,
 } from '@/hooks/series/useExpositoryAssistant';
 import {
+    useFacultyProjects,
+} from '@/hooks/faculty/useFacultyProjects';
+import {
     clearExpositoryDraft,
     loadExpositoryDraft,
     saveExpositoryDraft,
@@ -47,12 +55,11 @@ import {
     type ExegeticalUnit,
     type FidelityReview,
     type MacroSection,
+    type AIProject,
     type PassResult,
     type PassageReference,
-    type PlannedSermonExpositoryEnrichment,
     type PreachableUnit,
     type SuperMacroSection,
-    type SyntacticUnit,
 } from '@dosfilos/domain';
 import {
     FidelityResult,
@@ -84,6 +91,17 @@ import {
 } from './expository/passState';
 import { useExpositoryViewPrefs } from './expository/useExpositoryViewPrefs';
 import { buildPassInput, sourceLanguageFromLoaded } from './expository/passInput';
+import { ProjectSeriesBanner, ProjectUnavailableNotice } from './components/ProjectSeriesBanner';
+import { ProjectSeriesSources } from './components/ProjectSeriesSources';
+import {
+    PROJECT_SOURCES_PENDING,
+    type ProjectSeriesSourcesState,
+    activeProjectById,
+    buildSeriesPlan,
+    initialBookFor,
+    projectEntryState,
+    shouldRestoreDraft,
+} from './utils/serieDesdeProyecto';
 
 /**
  * v1.5 expository assistant wizard.
@@ -104,6 +122,16 @@ import { buildPassInput, sourceLanguageFromLoaded } from './expository/passInput
  * SermonSeries does. D.4 will add localStorage draft persistence
  * so a tab close mid-run is recoverable.
  */
+/** El nombre del libro en el idioma de la pantalla; el id si no se encuentra. */
+function bookName(
+    books: ReadonlyArray<{ id: BibleBookId; nameEs: string; nameEn: string }>,
+    id: BibleBookId,
+    lang: 'es' | 'en',
+): string {
+    const b = books.find((x) => x.id === id);
+    return b ? (lang === 'en' ? b.nameEn : b.nameEs) : id;
+}
+
 export function ExpositoryAssistantPage() {
     const { t, i18n } = useTranslation('series');
     const navigate = useNavigate();
@@ -112,6 +140,23 @@ export function ExpositoryAssistantPage() {
 
     const allBooks = useMemo(() => getAllBooks(), []);
     const [bookId, setBookId] = useState<BibleBookId>('2PE');
+    // El libro sobre el que corrieron los pases. La bibliografía heredada y
+    // el borrador lo usan a él, no al selector: analizar Nehemías y después
+    // tocar el selector no puede hacer que la serie herede comentarios de Esdras.
+    const [analyzedBookId, setAnalyzedBookId] = useState<BibleBookId | null>(null);
+
+    // Abierto desde un proyecto (`?projectId=&book=`, etapa 3 de ADR-046).
+    // Sin parámetros, todo sigue como siempre.
+    const queryClient = useQueryClient();
+    const [searchParams] = useSearchParams();
+    const projectIdParam = searchParams.get('projectId');
+    const bookParam = searchParams.get('book');
+    const { projects, isLoadingProjects } = useFacultyProjects();
+    const project = useMemo(() => activeProjectById(projects, projectIdParam), [projects, projectIdParam]);
+    const projectState = projectEntryState({ projectIdParam, loading: isLoadingProjects || !user?.uid, project });
+    const projectBooks = useMemo(() => project?.bibliographyCriteria?.bibleBooks ?? [], [project]);
+    const [bookChoiceRequired, setBookChoiceRequired] = useState(false);
+    const [projectSources, setProjectSources] = useState<ProjectSeriesSourcesState>(PROJECT_SOURCES_PENDING);
     const [targetCount, setTargetCount] = useState<number | ''>('');
 
     // v1.7 scope picker. Default = "whole book" (preserves legacy UX —
@@ -225,12 +270,31 @@ export function ExpositoryAssistantPage() {
     // Hydrate from localStorage on mount. Restoring a draft skips the
     // setup form back to where the pastor was, so they can continue
     // reviewing the analysis without re-running the pipeline.
+    // Con proyecto se espera a saber si sigue activo: su borrador vive en su
+    // propia clave, y un borrador suelto (o de otro libro) no se restaura.
     const [hydrated, setHydrated] = useState(false);
+    // La clave del borrador se fija al hidratar: si el proyecto se archiva a
+    // mitad de camino, el análisis no pasa a pisar el borrador suelto.
+    const [draftScope, setDraftScope] = useState<string | null>(null);
     useEffect(() => {
-        if (hydrated) return;
-        const draft = loadExpositoryDraft();
+        if (hydrated || projectState === 'loading') return;
+        const scope = project?.id ?? null;
+        setDraftScope(scope);
+        const stored = loadExpositoryDraft(scope);
+        const draft = stored && shouldRestoreDraft(stored, { projectId: scope, bookParam }) ? stored : null;
+        if (!draft && (projectIdParam || bookParam)) {
+            const inicial = initialBookFor({
+                bookParam,
+                projectBooks,
+                allBookIds: allBooks.map((b) => b.id),
+                hasProject: Boolean(project),
+            });
+            setBookId(inicial.bookId);
+            setBookChoiceRequired(inicial.mustChoose);
+        }
         if (draft) {
             setBookId(draft.bookId);
+            setAnalyzedBookId(draft.bookId);
             if (draft.targetPreachableCount !== undefined) {
                 setTargetCount(draft.targetPreachableCount);
             }
@@ -246,14 +310,15 @@ export function ExpositoryAssistantPage() {
             toast.success(t('expository.toast.draftRestored') as string);
         }
         setHydrated(true);
-    }, [hydrated, t]);
+    }, [hydrated, t, projectState, project, projectIdParam, bookParam, projectBooks, allBooks]);
 
     // Persist a draft whenever any pass output lands. Keeps the
     // localStorage entry in sync without an explicit "save" button.
     useEffect(() => {
-        if (!verses || !bookDisplay) return;
+        if (!hydrated || !verses || !bookDisplay) return;
         saveExpositoryDraft({
-            bookId,
+            bookId: analyzedBookId ?? bookId,
+            ...(draftScope ? { projectId: draftScope } : {}),
             displayLanguage: lang,
             bookDisplay,
             ...(typeof targetCount === 'number' ? { targetPreachableCount: targetCount } : {}),
@@ -265,8 +330,8 @@ export function ExpositoryAssistantPage() {
             ...(fidelityReview ? { fidelityReview } : {}),
             ...(addressedIssues.size > 0 ? { addressedIssueIndices: Array.from(addressedIssues) } : {}),
             ...(ignoredIssues.size > 0 ? { ignoredIssueIndices: Array.from(ignoredIssues) } : {}),
-        });
-    }, [bookId, lang, bookDisplay, targetCount, verses, panorama, macroSections, exegeticalUnits, preachableUnits, fidelityReview, addressedIssues, ignoredIssues]);
+        }, draftScope);
+    }, [hydrated, draftScope, analyzedBookId, bookId, lang, bookDisplay, targetCount, verses, panorama, macroSections, exegeticalUnits, preachableUnits, fidelityReview, addressedIssues, ignoredIssues]);
 
     // Pre-fill the series-creation form once preachable units are
     // available — saves the pastor a manual title entry in the
@@ -282,6 +347,8 @@ export function ExpositoryAssistantPage() {
     }, [preachableUnits, bookDisplay, seriesTitle, effectiveScope, isWholeBook, lang, t]);
 
     const handleStart = async () => {
+        // Antes de hidratar no se sabe en qué clave guardar el borrador.
+        if (!hydrated) return;
         // Gate the run on a valid scope. Whole-book always passes;
         // passage mode needs a parsed PassageReference.
         if (!effectiveScope) {
@@ -290,7 +357,10 @@ export function ExpositoryAssistantPage() {
         }
         setScopeError(null);
 
-        // Reset prior run state if the pastor restarts.
+        // Reset prior run state if the pastor restarts. El libro analizado
+        // también: si la nueva carga falla, el aviso de «cambiaste el libro»
+        // no puede seguir hablando de un análisis que ya se borró.
+        setAnalyzedBookId(null);
         setPanorama(null);
         setSuperMacroSections(null);
         setMacroSections(null);
@@ -329,6 +399,7 @@ export function ExpositoryAssistantPage() {
 
         setVerses(loaded.verses);
         setBookDisplay(loaded.book);
+        setAnalyzedBookId(bookId);
 
         // Surface the source (original-language vs translation
         // fallback) so the pastor knows what the model is reading.
@@ -855,102 +926,56 @@ export function ExpositoryAssistantPage() {
             toast.error(t('expository.toast.titleRequired') as string);
             return;
         }
-
-        // Build per-sermon syntactic unit + expository enrichment by
-        // looking up the first sourced exegetical unit (preserves the
-        // boundary the pastor saw in Pase 4) and packaging the two
-        // propositions, pastoral objective, special-case treatment,
-        // and macroSection link onto the planned sermon.
-        const sermons = preachableUnits.map((p, idx) => {
-            const sourced = p.sourcedExegeticalUnitIds
-                .map((id) => exegeticalUnits?.find((u) => u.id === id))
-                .filter((u): u is ExegeticalUnit => Boolean(u));
-            const firstSourced = sourced[0];
-            // La unidad sintáctica se arma con las FRONTERAS DE LA PERÍCOPA,
-            // no con las de la primera unidad exegética que la alimentó.
-            //
-            // Antes se copiaba `firstSourced.syntacticUnit` tal cual, y por eso
-            // el registro quedaba viejo apenas el pastor fusionaba, partía o
-            // corría una frontera en el Paso 5: la perícopa decía «Jonás 1:4-16»
-            // y su unidad guardada decía 1:1-3. Medido en la serie de Jonás del
-            // fundador: desincronizado en 4 de 6. Al perderse el vínculo entre
-            // lo que el asistente propuso y lo que él planificó, nada podía
-            // después explicarle por qué el corte iba donde iba.
-            //
-            // La justificación se junta de TODAS las unidades que la perícopa
-            // abarca, no sólo de la primera: si fusionó dos, las dos razones
-            // cuentan, y quedarse con una sería contar media historia.
-            const justificaciones = sourced
-                .map((u) => u.syntacticUnit.justification?.trim())
-                .filter((j): j is string => Boolean(j));
-            const syntactic: SyntacticUnit | undefined = firstSourced
-                ? {
-                    book: firstSourced.syntacticUnit.book,
-                    chapterStart: p.chapterStart,
-                    verseStart: p.verseStart,
-                    chapterEnd: p.chapterEnd,
-                    verseEnd: p.verseEnd,
-                    ...(firstSourced.syntacticUnit.originalLanguage
-                        ? { originalLanguage: firstSourced.syntacticUnit.originalLanguage }
-                        : {}),
-                    ...(justificaciones.length
-                        ? { justification: [...new Set(justificaciones)].join(' ') }
-                        : {}),
-                }
-                : undefined;
-
-            const enrichment: PlannedSermonExpositoryEnrichment = {
-                exegeticalProposition: p.exegeticalProposition,
-                homileticalProposition: p.homileticalProposition,
-                pastoralObjective: p.pastoralObjective,
-                ...(p.caseTreatment ? { caseTreatment: p.caseTreatment } : {}),
-                sourcedExegeticalUnitIds: p.sourcedExegeticalUnitIds,
-                ...(firstSourced ? { macroSectionId: firstSourced.macroSectionId } : {}),
-                ...(p.fidelityNotes ? { fidelityNotes: p.fidelityNotes } : {}),
-            };
-
-            const sermon: PreachableSermonInput = {
-                title: p.title,
-                description: p.exegeticalProposition,
-                passage: p.passage,
-                week: idx + 1,
-                status: 'planned',
-                expositoryEnrichment: enrichment,
-            };
-            if (syntactic) sermon.syntacticUnit = syntactic;
-            return sermon;
-        });
+        // La serie exige 3 letras (SermonSeriesEntity): avisar aquí evita
+        // crear los estudios y que la serie falle después.
+        if (seriesTitle.trim().length < 3) {
+            toast.error(t('expository.toast.titleTooShort') as string);
+            return;
+        }
+        // Sin la biblioteca no se sabe qué heredan los estudios.
+        if (project && projectSources.libraryLoading) return;
 
         setCreatingSeries(true);
         try {
-            const series = await seriesService.createSeriesFromPlan(user.uid, {
-                series: {
-                    title: seriesTitle.trim(),
-                    description: t('expository.create.defaultDescription', {
-                        book: bookDisplay,
-                        count: preachableUnits.length,
-                    }) as string,
-                    type: 'expository',
-                    startDate: parseLocalDate(startDate),
-                    metadata: {
-                        expository: { book: bookDisplay },
-                    },
-                    resourceIds: [],
-                },
-                sermons,
+            // El proyecto pudo archivarse en otra pestaña mientras se
+            // analizaba: se vuelve a leer la lista justo antes de crear.
+            let vigente: AIProject | null = null;
+            if (project) {
+                // La misma clave que useFacultyProjects.
+                const clave = ['faculty', 'projects', user.uid];
+                await queryClient.refetchQueries({ queryKey: clave, exact: true });
+                vigente = activeProjectById(queryClient.getQueryData<AIProject[]>(clave) ?? projects, project.id);
+                if (!vigente) toast.warning(t('expository.project.unavailable') as string);
+            }
+            const plan = buildSeriesPlan({
+                title: seriesTitle,
+                description: t('expository.create.defaultDescription', {
+                    book: bookDisplay,
+                    count: preachableUnits.length,
+                }) as string,
+                startDate: parseLocalDate(startDate),
                 frequency,
-                expositoryAssistant: {
-                    version: panorama ? `expository-v15:${panorama.genre}` : 'expository-v15',
-                    status: 'reviewed',
-                },
-                // Tells createSeriesFromPlan to auto-spawn one ExegeticalPaper
-                // per pericope in the user's display language. Without this
-                // the pastor would land in SeriesDetail with N "Crear paper"
-                // buttons to click manually.
+                bookDisplay,
+                preachableUnits,
+                exegeticalUnits,
+                panorama,
                 displayLanguage: lang,
+                ...(vigente
+                    ? {
+                        project: {
+                            projectId: vigente.id,
+                            sources: projectSources.sources,
+                            excludedResourceIds: projectSources.excludedResourceIds,
+                        },
+                    }
+                    : {}),
             });
+            const series = await seriesService.createSeriesFromPlan(user.uid, plan);
 
-            clearExpositoryDraft();
+            // La lista de planes y el panel del proyecto leen estas cachés.
+            queryClient.invalidateQueries({ queryKey: ['series'] });
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user.uid] });
+            clearExpositoryDraft(draftScope);
             // Count papers + sermon drafts actually created so the toast
             // reflects reality (some may have failed silently; user retries
             // from SeriesDetail).
@@ -966,7 +991,11 @@ export function ExpositoryAssistantPage() {
                     : paperCount > 0
                         ? (t('expository.toast.seriesCreatedWithPapers', { count: paperCount }) as string)
                         : (t('expository.toast.seriesCreated') as string);
-            toast.success(toastMsg);
+            toast.success(
+                vigente
+                    ? (t('expository.project.createdInProject', { title: vigente.title }) as string)
+                    : toastMsg,
+            );
             navigate(`/dashboard/plans/${series.id}`);
         } catch (err: any) {
             console.error('[expository] createSeries failed:', err);
@@ -1013,9 +1042,16 @@ export function ExpositoryAssistantPage() {
             </div>
 
             <main className={`flex-1 max-w-5xl w-full mx-auto px-6 py-8 space-y-6 ${zoomClassName}`}>
+                {project && projectState === 'ok' && (
+                    <ProjectSeriesBanner project={project} bookId={analyzedBookId ?? bookId} projectBooks={projectBooks} />
+                )}
+                {projectState === 'unavailable' && <ProjectUnavailableNotice />}
                 <SetupCard
                     bookId={bookId}
-                    onBookIdChange={setBookId}
+                    onBookIdChange={(id) => {
+                        setBookId(id);
+                        setBookChoiceRequired(false);
+                    }}
                     targetCount={targetCount}
                     onTargetCountChange={setTargetCount}
                     twoTierMode={twoTierMode}
@@ -1040,12 +1076,29 @@ export function ExpositoryAssistantPage() {
                     passageScope={passageScope}
                     onPassageScopeChange={(ref) => {
                         setPassageScope(ref);
+                        // Elegir un pasaje también elige su libro.
+                        if (ref) setBookChoiceRequired(false);
                         setScopeError(null);
                         setSeriesTitle('');
                     }}
                     scopeError={scopeError}
+                    bookChoiceRequired={bookChoiceRequired}
                     t={t}
                 />
+                {analyzedBookId && bookId !== analyzedBookId && (
+                    // El selector cambió después de analizar: la serie, sus
+                    // obras y el borrador siguen siendo del libro analizado.
+                    <p
+                        role="status"
+                        className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-subtle p-3 text-sm text-warning-subtle-foreground"
+                    >
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        {t('expository.setup.bookChanged', {
+                            analyzed: bookName(allBooks, analyzedBookId, lang),
+                            book: bookName(allBooks, bookId, lang),
+                        })}
+                    </p>
+                )}
 
                 <MethodologyPresentation
                     open={methodologyOpen}
@@ -1222,8 +1275,19 @@ export function ExpositoryAssistantPage() {
                         preachableUnits={preachableUnits}
                         creating={creatingSeries}
                         onCreate={handleCreateSeries}
+                        createBlocked={Boolean(project) && projectSources.libraryLoading}
                         t={t}
-                    />
+                    >
+                        {project && (
+                            <ProjectSeriesSources
+                                project={project}
+                                bookId={analyzedBookId ?? bookId}
+                                preachableUnits={preachableUnits}
+                                exegeticalUnits={exegeticalUnits}
+                                onChange={setProjectSources}
+                            />
+                        )}
+                    </CreateSeriesCard>
                 )}
             </main>
         </div>
