@@ -2832,5 +2832,41 @@
     "hitSheet": "sheet {{sheet}}",
     "hitCount_one": "{{count}} time",
     "hitCount_other": "{{count}} times"
+  },
+  "readingPanel": {
+    "title": "Your reading of the book",
+    "subtitle": "Compare it with what you found · project “{{project}}”",
+    "whyFolded": "Folded on purpose: first observe the text without your hypothesis; then open it and compare.",
+    "centralIdea": "Your central idea of the book (provisional)",
+    "revisedIdea": "Your revised idea (current)",
+    "noIdea": "You haven't written the central idea in the project's framing yet.",
+    "structure": "Your movements of the book",
+    "readerNumbering": "Passages in your Bible's numbering.",
+    "untitled": "Untitled",
+    "here": "This study is here",
+    "touches": "This study touches this movement",
+    "noMovement": "No movement in your structure includes {{passage}}.",
+    "log": {
+      "title": "What you noted from this study",
+      "empty": "You haven't noted anything from this study yet."
+    },
+    "verdict": {
+      "confirms": "Confirms",
+      "nuances": "Nuances",
+      "contradicts": "Contradicts"
+    },
+    "form": {
+      "title": "Note what this study says about your reading",
+      "verdictLabel": "What does this study do to your reading?",
+      "noteLabel": "Note",
+      "notePlaceholder": "Which verse or finding leads you there?",
+      "private": "This note is not sent to the assistant: it stays in your reading's log so you can consolidate your idea in the project.",
+      "save": "Add note",
+      "saving": "Saving…"
+    },
+    "toast": {
+      "saved": "Added to your reading's log.",
+      "failed": "Couldn't save the note. Try again."
+    }
   }
 }
