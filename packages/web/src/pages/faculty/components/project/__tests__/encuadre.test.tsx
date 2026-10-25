@@ -21,7 +21,7 @@ const { ProjectFramingCard } = await import('../ProjectFramingCard');
 const { ProjectSetupCards } = await import('../ProjectSetupCards');
 const { ProjectCourseCard } = await import('../ProjectCourseCard');
 const { ProjectWorkTypesCard } = await import('../ProjectWorkTypesCard');
-const { formFromProject, saveFromForm, parseReaderRange, formErrors, chaptersToTitle } = await import('../ProjectFramingForm');
+const { formFromProject, saveFromForm, parseReaderRange, formErrors, chaptersToTitle, movementErrors } = await import('../ProjectFramingForm');
 const { canonico } = await import('@/utils/canonico');
 
 beforeEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -138,12 +138,34 @@ describe('diálogo «Pasaje y propósito»', () => {
         expect(parseReaderRange('Neh 4', 'EZR')).toEqual({ ok: true, passage: { bookId: 'NEH', chapterStart: 3, verseStart: 33, chapterEnd: 4, verseEnd: 17 } });
     });
 
-    it('lo que la limpieza descartaría no se guarda en silencio: el formulario lo dice', () => {
+    it('capítulos enteros que cruzan la numeración se guardan sin pedir versos (Nehemías 4-6, Jonás 1-4)', () => {
         const base = formFromProject({ bibliographyCriteria: { bibleBooks: ['NEH'] } } as never);
-        expect(parseReaderRange('4-6', 'NEH')).toEqual({ ok: false, reason: 'needs-verses' });
-        expect(formErrors({ ...base, scopeMode: 'range', scopeRange: '4-6' })).toEqual(['scopeVerses']);
-        expect(formErrors({ ...base, structure: [{ key: 'a', range: '4-6', title: 'La oposición' }] })).toEqual(['movementVerses']);
-        expect(formErrors({ ...base, structure: [{ key: 'a', range: '4:1-6:19', title: 'La oposición' }] })).toEqual([]);
+        const neh46 = { bookId: 'NEH', chapterStart: 3, verseStart: 33, chapterEnd: 6, verseEnd: 19 };
+        expect(parseReaderRange('4-6', 'NEH')).toEqual({ ok: true, passage: neh46 });
+        expect(parseReaderRange('Jonás 1-4', 'NEH')).toEqual({ ok: true, passage: { bookId: 'JON', chapterStart: 1, verseStart: 1, chapterEnd: 4, verseEnd: 11 } });
+        expect(formErrors({ ...base, scopeMode: 'range', scopeRange: '4-6' })).toEqual([]);
+        expect(formErrors({ ...base, structure: [{ key: 'a', range: '4-6', title: 'La oposición' }] })).toEqual([]);
+        expect(saveFromForm({ ...base, scopeMode: 'range', scopeRange: '4-6' }).framingPatch.scope).toEqual({ bookId: 'NEH', passage: neh46 });
+        // Lo mal escrito sigue deteniendo el guardado.
+        expect(formErrors({ ...base, structure: [{ key: 'a', range: '40-41', title: 'x' }] })).toEqual(['movementRange']);
+    });
+
+    it('solo la fila de movimiento que falla queda marcada inválida', () => {
+        abrirDialogo(esdras({ bibliographyCriteria: { bibleBooks: ['EZR'] } }));
+        fireEvent.click(screen.getByText('framing.dialog.addMovement'));
+        fireEvent.click(screen.getByText('framing.dialog.addMovement'));
+        fireEvent.click(screen.getByText('framing.dialog.addMovement'));
+        const tramo = (n: number) => screen.getByLabelText(`framing.dialog.movementRange:{"number":${n}}`);
+        fireEvent.change(tramo(1), { target: { value: '1-6' } });
+        fireEvent.change(tramo(2), { target: { value: '40-41' } });
+        // La 3 queda vacía: no cuenta.
+        expect(tramo(1)).toHaveAttribute('aria-invalid', 'false');
+        expect(tramo(2)).toHaveAttribute('aria-invalid', 'true');
+        expect(tramo(3)).toHaveAttribute('aria-invalid', 'false');
+        expect(document.getElementById(tramo(2).getAttribute('aria-describedby')!)).toHaveTextContent('framing.dialog.movementError');
+        expect(tramo(1)).not.toHaveAttribute('aria-describedby');
+        expect(movementErrors({ books: ['EZR'], structure: [{ key: 'a', range: '1-6', title: '' }, { key: 'b', range: '', title: 'Sin tramo' }] }))
+            .toEqual([{ index: 1, error: 'movementRange' }]);
     });
 
     it('en «estudio personal» los bloques pastorales se ocultan y se borran; la trayectoria hacia Cristo sigue', async () => {
@@ -222,6 +244,19 @@ describe('diálogo «Pasaje y propósito»', () => {
         guardar();
         await waitFor(() => expect(onSave).toHaveBeenCalled());
         expect(onSave.mock.calls[0]![0].framingPatch.reading).toEqual({ chapterTitles: { NEH: { 1: 'La oración' } } });
+    });
+
+    it('títulos guardados con la forma vieja (sin libro) no se desarman en letras: se descartan', () => {
+        const form = formFromProject({
+            bibliographyCriteria: { bibleBooks: ['EZR'] },
+            framing: { reading: { chapterTitles: { 1: 'El decreto', 2: 'Los que volvieron', EZR: { 3: 'El altar', 4: 7 }, XYZ: { 1: 'x' } } } },
+        } as never);
+        expect(form.chapterTitles).toEqual({ EZR: { 3: 'El altar' } });
+        expect(saveFromForm(form).framingPatch.reading).toEqual({ chapterTitles: { EZR: { 3: 'El altar' } } });
+        // Solo la forma vieja: el diálogo abre y no hay nada que copiar.
+        expect(formFromProject({ bibliographyCriteria: { bibleBooks: ['EZR'] }, framing: { reading: { chapterTitles: { 1: 'El decreto' } } } } as never).chapterTitles).toEqual({});
+        abrirDialogo(esdras({ bibliographyCriteria: { bibleBooks: ['EZR'] }, framing: { reading: { chapterTitles: { 1: 'El decreto' } } } }));
+        expect(screen.getByLabelText('framing.dialog.chapter:{"number":1,"book":"Esdras"}')).toHaveValue('');
     });
 
     it('con más de 30 capítulos se ven los primeros 12 y «Mostrar todos»', () => {

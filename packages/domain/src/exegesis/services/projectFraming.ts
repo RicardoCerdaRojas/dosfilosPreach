@@ -1,6 +1,7 @@
 import { getBookById, type BibleBookId } from '../../bible/canon/BibleCanon';
 import type { PassageReference } from '../../bible/canon/passage-reference';
 import { passageToOriginal, verseToOriginal } from '../../bible/versification/mapVersification';
+import { readerLastVerse } from '../../bible/versification/readerLastVerse';
 import { VERSIFICATION_SPANS } from '../../bible/versification/versificationMap';
 import type { AIProject } from '../../entities/AIProject';
 import type { PlannedSermon } from '../../entities/SermonSeries';
@@ -514,19 +515,23 @@ export type ReaderToOriginalResult = { ok: true; passage: PassageReference } | {
  * `passageToOriginal` los deja intactos, y eso miente justo donde la
  * numeración cruza un capítulo: «Joel 3» del lector es JOL 4:1-21,
  * «Malaquías 4» es MAL 3:19-24 y «Nehemías 4» empieza en NEH 3:33. Ahí el
- * capítulo se expande a sus versos del lector (1..último) antes de
- * convertir. El último verso sale de la tabla de versificación; si un
- * extremo no lo da, se pide escribir los versos (`needs-verses`) en vez de
- * inventar el número.
+ * rango se expande a sus versos del lector — el 1 del primer capítulo y el
+ * último del capítulo final — antes de convertir. El último verso sale de
+ * `readerLastVerse` (RVR1960), que cubre todos los libros donde la
+ * numeración difiere: un rango de capítulos enteros siempre convierte
+ * («Jonás 1-4», «Nehemías 4-6»). `needs-verses` queda solo para lo que la
+ * tabla no conoce (un capítulo que el libro no tiene), en vez de inventar el
+ * número.
  */
 export function readerPassageToOriginal(ref: PassageReference): ReaderToOriginalResult {
     if (ref.verseStart !== null && ref.verseEnd !== null) return { ok: true, passage: passageToOriginal(ref).passage };
     const book = ref.bookId;
     // Sin cruce en los extremos, el capítulo entero es el mismo en las dos Biblias.
     if (!chapterCrosses(book, ref.chapterStart) && !chapterCrosses(book, ref.chapterEnd)) return { ok: true, passage: ref };
+    const ultimo = readerLastVerse(book, ref.chapterEnd);
+    if (ultimo === null) return { ok: false, reason: 'needs-verses' };
     const inicio = verseToOriginal(book, ref.chapterStart, 1);
-    const fin = originalEndOfReaderChapter(book, ref.chapterEnd);
-    if (!fin) return { ok: false, reason: 'needs-verses' };
+    const fin = verseToOriginal(book, ref.chapterEnd, ultimo);
     return {
         ok: true,
         passage: { bookId: book, chapterStart: inicio.chapter, verseStart: inicio.verse, chapterEnd: fin.chapter, verseEnd: fin.verse },
@@ -542,21 +547,6 @@ export function readerPassageToOriginal(ref: PassageReference): ReaderToOriginal
 function chapterCrosses(book: BibleBookId, chapter: number): boolean {
     return VERSIFICATION_SPANS.some(s => s.book === book
         && ((s.chapter === chapter && s.originalChapter !== chapter) || (s.originalChapter === chapter && s.chapter !== chapter)));
-}
-
-/** El último verso del capítulo del lector, en el original; `null` si la tabla no lo dice. */
-function originalEndOfReaderChapter(book: BibleBookId, chapter: number): { chapter: number; verse: number } | null {
-    const propios = VERSIFICATION_SPANS.filter(s => s.book === book && s.chapter === chapter);
-    if (propios.length) {
-        // El tramo que llega más lejos cierra el capítulo: la tabla corre hasta el final cuando hay corrimiento.
-        const ultimo = propios.reduce((a, b) => (b.to > a.to ? b : a));
-        return { chapter: ultimo.originalChapter, verse: ultimo.originalTo };
-    }
-    // Sin tramos propios, el original de este capítulo sigue con versos de otro
-    // capítulo del lector (Malaquías 3:19-24 es 4:1-6 del lector): termina antes.
-    const ajenos = VERSIFICATION_SPANS.filter(s => s.book === book && s.originalChapter === chapter && s.chapter !== chapter);
-    const desde = Math.min(...ajenos.map(s => s.originalFrom));
-    return ajenos.length && desde > 1 ? { chapter, verse: desde - 1 } : null;
 }
 
 // ── Lugar en el libro ──────────────────────────────────────────────────

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BibleBookId } from '../../../bible/canon/BibleCanon';
+import { passageToReader } from '../../../bible/versification/mapVersification';
+import { readerLastVerse } from '../../../bible/versification/readerLastVerse';
 import {
     FRAMING_FIELDS,
     FRAMING_MAX_LOG_ENTRIES,
@@ -176,10 +178,41 @@ describe('numeración: del lector al original (C2)', () => {
         expect(readerPassageToOriginal(lector('PSA', 3, 3))).toEqual({ ok: true, passage: lector('PSA', 3, 3) });
     });
 
-    it('si un extremo no se puede saber, pide los versos en vez de inventar el número', () => {
-        // Neh 4 empieza en el 3:33; del 6 la tabla no da el último verso.
-        expect(readerPassageToOriginal(lector('NEH', 4, 6))).toEqual({ ok: false, reason: 'needs-verses' });
-        expect(readerPassageToOriginal(lector('NEH', 4, 6, 1, 19)).ok).toBe(true);
+    it('un rango de capítulos enteros siempre convierte, aunque el capítulo final no se corra', () => {
+        // Medidos: antes pedían versos y bloqueaban guardar el encuadre entero.
+        const casos: Array<[string, number, number, [number, number, number, number]]> = [
+            ['JON', 1, 4, [1, 1, 4, 11]],   // Jon 1:17 es JON 2:1; Jonás 4 no se corre.
+            ['JON', 2, 4, [2, 2, 4, 11]],   // Jonás 2 del lector empieza en el 2:2.
+            ['NEH', 4, 6, [3, 33, 6, 19]],
+            ['NEH', 3, 6, [3, 1, 6, 19]],
+            ['NEH', 9, 13, [9, 1, 13, 31]], // Neh 9:38 es NEH 10:1.
+            ['1KI', 4, 11, [4, 1, 11, 43]], // 1 Re 4:21-34 es 1KI 5:1-14.
+            ['NEH', 3, 7, [3, 1, 7, 72]],   // Neh 7:73 del lector es 7:72 del original.
+            ['NEH', 4, 9, [3, 33, 10, 1]],  // Neh 9:38 del lector es NEH 10:1: el 9 entero termina ahí.
+            ['JOL', 1, 3, [1, 1, 4, 21]],
+        ];
+        for (const [libro, cs, ce, [ocs, ovs, oce, ove]] of casos) {
+            expect(readerPassageToOriginal(lector(libro, cs, ce)), `${libro} ${cs}-${ce}`)
+                .toEqual({ ok: true, passage: { bookId: libro, chapterStart: ocs, verseStart: ovs, chapterEnd: oce, verseEnd: ove } });
+        }
+    });
+
+    it('ida y vuelta: el original convertido vuelve a ser el rango de capítulos enteros del lector', () => {
+        const casos: Array<[string, number, number]> = [['JON', 1, 4], ['JON', 2, 4], ['NEH', 4, 6], ['NEH', 3, 6], ['NEH', 9, 13], ['1KI', 4, 11], ['NEH', 3, 7], ['NEH', 4, 9], ['JOL', 1, 3], ['MAL', 4, 4]];
+        for (const [libro, cs, ce] of casos) {
+            const r = readerPassageToOriginal(lector(libro, cs, ce));
+            if (!r.ok) throw new Error(`${libro} ${cs}-${ce} debía convertir`);
+            expect(isStorableFramingPassage(r.passage), `${libro} ${cs}-${ce}`).toBe(true);
+            expect(passageToReader(r.passage).passage, `${libro} ${cs}-${ce}`).toEqual({
+                bookId: libro, chapterStart: cs, verseStart: 1, chapterEnd: ce, verseEnd: readerLastVerse(libro as BibleBookId, ce),
+            });
+        }
+    });
+
+    it('pide versos solo si la tabla no conoce el capítulo; con versos convierte igual', () => {
+        // Jonás no tiene capítulo 5 del lector: no se inventa el último verso.
+        expect(readerPassageToOriginal(lector('JON', 1, 5))).toEqual({ ok: false, reason: 'needs-verses' });
+        expect(readerPassageToOriginal(lector('NEH', 4, 6, 1, 19))).toEqual({ ok: true, passage: { bookId: 'NEH', chapterStart: 3, chapterEnd: 6, verseStart: 33, verseEnd: 19 } });
     });
 
     it('el original se valida contra el original: JOL 5 no existe, MAL 3:20-1 se invierte', () => {

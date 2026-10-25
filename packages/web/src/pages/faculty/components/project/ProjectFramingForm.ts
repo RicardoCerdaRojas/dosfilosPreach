@@ -115,7 +115,7 @@ function editableText(p: PassageReference, defaultBook: BibleBookId | null, lang
 
 /**
  * `unrecognized`: no se entiende o no existe en la Biblia del lector.
- * `needs-verses`: cruza un cambio de numeración y no se sabe dónde termina sin versos.
+ * `needs-verses`: cruza un cambio de numeración y la tabla del lector no conoce su capítulo final (hoy, inalcanzable desde el formulario: el parseo ya rechaza capítulos inexistentes).
  * `not-storable`: la limpieza del dominio lo descartaría (no se guarda en silencio).
  */
 export type RangeError = 'unrecognized' | 'needs-verses' | 'not-storable';
@@ -159,7 +159,7 @@ export function formFromProject(project: Pick<AIProject, 'framing' | 'bibliograp
         purpose: f.purpose ?? 'preach',
         scopeMode: alcance ? 'range' : 'whole',
         scopeRange: alcance ? rangeText(passageToReader(alcance.passage).passage) : '',
-        chapterTitles: Object.fromEntries(Object.entries(f.reading?.chapterTitles ?? {}).map(([b, caps]) => [b, { ...caps }])),
+        chapterTitles: storedChapterTitles(f.reading?.chapterTitles),
         repetitions: f.reading?.repetitions ?? '',
         genre: f.genre ?? '',
         genreReading: f.genreReading ?? '',
@@ -179,6 +179,24 @@ export function formFromProject(project: Pick<AIProject, 'framing' | 'bibliograp
         startDate: f.rhythm?.startDate ?? '',
         frequency: f.rhythm?.frequency ?? '',
     };
+}
+
+/**
+ * Los títulos guardados, por libro, sin lo que no tiene esa forma. Un encuadre
+ * viejo los guardaba sin libro (`{ 1: 'El decreto' }`): copiar eso con
+ * `{ ...caps }` desarmaba el texto en letras. Solo pasan los ids de libro
+ * válidos con un objeto de títulos, y de cada uno solo los textos.
+ */
+function storedChapterTitles(stored: unknown): ChapterTitlesByBook {
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+    const out: ChapterTitlesByBook = {};
+    for (const [b, caps] of Object.entries(stored)) {
+        if (!getBookById(b as BibleBookId) || !caps || typeof caps !== 'object' || Array.isArray(caps)) continue;
+        const titulos: Record<number, string> = {};
+        for (const [c, t] of Object.entries(caps as Record<string, unknown>)) if (typeof t === 'string') titulos[Number(c)] = t;
+        out[b as BibleBookId] = titulos;
+    }
+    return out;
 }
 
 /** Si el alcance desde–hasta se puede elegir: solo con un libro. */
@@ -246,15 +264,26 @@ export function formErrors(form: FramingForm): FramingFormError[] {
     if (form.books.length === 0) errores.push('noBooks');
     const alcance = scopePassage(form);
     if (!alcance.ok) errores.push(alcance.reason === 'needs-verses' ? 'scopeVerses' : 'scope');
-    const principal = primaryBook(form.books);
-    for (const m of form.structure) {
-        if (!m.range.trim() && !m.title.trim()) continue;
-        const r = parseReaderRange(m.range, principal);
-        if (!r.ok) errores.push(r.reason === 'needs-verses' ? 'movementVerses' : 'movementRange');
-        else if (!r.passage) errores.push('movementRange');
-    }
+    for (const m of movementErrors(form)) errores.push(m.error);
     if (form.purpose !== 'personal' && form.sundays.trim() && sundaysValue(form.sundays) === null) errores.push('sundays');
     return [...new Set(errores)];
+}
+
+export type MovementError = Extract<FramingFormError, 'movementRange' | 'movementVerses'>;
+
+/**
+ * Las filas de movimientos que impiden guardar, con su índice en
+ * `form.structure`: el diálogo marca solo esas (`aria-invalid`), no todas las
+ * escritas. Una fila vacía no cuenta; una con título y sin tramo, sí.
+ */
+export function movementErrors(form: Pick<FramingForm, 'books' | 'structure'>): Array<{ index: number; error: MovementError }> {
+    const principal = primaryBook(form.books);
+    return form.structure.flatMap((m, index) => {
+        if (!m.range.trim() && !m.title.trim()) return [];
+        const r = parseReaderRange(m.range, principal);
+        if (r.ok && r.passage) return [];
+        return [{ index, error: !r.ok && r.reason === 'needs-verses' ? 'movementVerses' as const : 'movementRange' as const }];
+    });
 }
 
 /** Los domingos escritos, si son un entero de 1 al tope; si no, `null`. */

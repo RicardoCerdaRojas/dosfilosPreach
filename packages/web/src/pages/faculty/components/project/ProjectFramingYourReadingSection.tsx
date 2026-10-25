@@ -3,7 +3,7 @@ import { FRAMING_GENRES, FRAMING_MAX_MOVEMENTS, FRAMING_TITLE_MAX, type FramingG
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { GENRE_QUESTIONS, newMovementRow } from './ProjectFramingForm';
+import { GENRE_QUESTIONS, movementErrors, newMovementRow } from './ProjectFramingForm';
 import { Aviso, ERROR_KEY, EvidenceField, ayuda, campo, etiqueta, legend, type SectionProps } from './ProjectFramingFields';
 
 /**
@@ -15,6 +15,8 @@ import { Aviso, ERROR_KEY, EvidenceField, ayuda, campo, etiqueta, legend, type S
 export function ProjectFramingYourReadingSection({ form, set, errores }: SectionProps) {
     const { t } = useTranslation('projects');
     const errorMovimiento = errores.find(e => e === 'movementRange' || e === 'movementVerses');
+    // Solo la fila que falla se marca inválida, no todas las escritas.
+    const filasConError = new Set(movementErrors(form).map(m => m.index));
     // Las respuestas se ven con el género elegido, o si ya hay algo escrito (no se esconde lo que se guarda).
     const conRespuestas = !!(form.genre || form.genreReading.trim() || form.genreEvidence.trim());
     const fila = (key: string, cambio: { range?: string; title?: string }) =>
@@ -58,7 +60,8 @@ export function ProjectFramingYourReadingSection({ form, set, errores }: Section
                                     className={cn(campo, 'w-28 shrink-0')}
                                     placeholder="1-6"
                                     aria-label={t('framing.dialog.movementRange', { number: i + 1 })}
-                                    aria-invalid={!!errorMovimiento && !!(m.range.trim() || m.title.trim())}
+                                    aria-invalid={filasConError.has(i)}
+                                    aria-describedby={filasConError.has(i) ? 'framing-movement-error' : undefined}
                                     value={m.range}
                                     onChange={e => fila(m.key, { range: e.target.value })}
                                 />
@@ -83,7 +86,7 @@ export function ProjectFramingYourReadingSection({ form, set, errores }: Section
                         ))}
                     </ol>
                 )}
-                {errorMovimiento && <Aviso role="alert">{t(ERROR_KEY[errorMovimiento])}</Aviso>}
+                {errorMovimiento && <Aviso role="alert" id="framing-movement-error">{t(ERROR_KEY[errorMovimiento])}</Aviso>}
                 {form.structure.length < FRAMING_MAX_MOVEMENTS && (
                     <Button type="button" size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={() => set('structure', [...form.structure, newMovementRow()])}>
                         <Plus className="h-3.5 w-3.5" />{t('framing.dialog.addMovement')}
