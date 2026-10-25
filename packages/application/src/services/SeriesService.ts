@@ -14,7 +14,8 @@ import {
     SermonSeriesEntity,
     findBooksByAlias,
     getBookById,
-    paperDefaultsFromSeries,
+    seriesPaperInheritance,
+    type AddProjectSourceInput,
     type BibleBookId,
     type IBibleVersionRepository,
     type IOriginalLanguageBibleProvider,
@@ -397,6 +398,18 @@ export class SeriesService {
              * trigger auto-creation either (no syntacticUnit).
              */
             displayLanguage?: 'es' | 'en';
+            /**
+             * La serie nace dentro de un proyecto (ADR-046 etapa 3). Las
+             * fuentes ya vienen resueltas por libro y sin las obras que el
+             * pastor desmarcó; `excludedResourceIds` solo se guarda para que
+             * los estudios que se creen después también las dejen fuera.
+             * Sin esto, todo queda como antes.
+             */
+            project?: {
+                projectId: string;
+                sources: AddProjectSourceInput[];
+                excludedResourceIds?: string[];
+            };
         }
     ): Promise<SermonSeriesEntity> {
         try {
@@ -455,6 +468,7 @@ export class SeriesService {
                 plannedSermonsInitial,
                 plan.displayLanguage ?? 'es',
                 plan.series.metadata?.exegesisDefaults,
+                plan.project,
             );
 
             // Merge pericope-assistant metadata into expository without
@@ -482,17 +496,45 @@ export class SeriesService {
                 metadata: {
                     ...incomingMetadata,
                     expository,
-                    plannedSermons: plannedSermons
+                    plannedSermons: plannedSermons,
+                    ...(plan.project?.excludedResourceIds?.length
+                        ? { projectSourceExclusions: plan.project.excludedResourceIds }
+                        : {}),
                 },
                 resourceIds: plan.series.resourceIds || [],
                 sermonIds: [],
-                draftIds: []
+                draftIds: [],
+                ...(plan.project ? { projectId: plan.project.projectId } : {}),
             });
 
             // 2. Save Series first to obtain series.id (sermon placeholders
             //    need it as foreign key + the series must exist before any
             //    sermon points to it).
-            const persistedSeries = await this.retry(() => this.seriesRepository.create(series));
+            let persistedSeries: SermonSeriesEntity;
+            try {
+                persistedSeries = await this.retry(() => this.seriesRepository.create(series));
+            } catch (error) {
+                // Sin serie guardada, los estudios recién creados quedarían
+                // en el proyecto sin plan que los agrupe e inflarían su
+                // recorrido: se les quita el origen. Los que ya traían
+                // paperId no se tocan.
+                if (plan.project) {
+                    const previos = new Set(plannedSermonsInitial.map((p) => p.paperId).filter(Boolean));
+                    const nuevos = plannedSermons
+                        .map((p) => p.paperId)
+                        .filter((id): id is string => Boolean(id) && !previos.has(id));
+                    await Promise.allSettled(
+                        nuevos.map((paperId) =>
+                            exegesisService.setPaperProject.execute({
+                                ownerId: userId,
+                                paperId,
+                                change: { kind: 'origin', projectId: null },
+                            }),
+                        ),
+                    );
+                }
+                throw error;
+            }
 
             // 3. Spawn one SermonEntity placeholder (status='draft') per
             //    planned sermon. Closes the "Continuar sermón" loop:
@@ -557,12 +599,19 @@ export class SeriesService {
         plannedSermons: T[],
         displayLanguage: 'es' | 'en',
         exegesisDefaults?: SeriesExegesisDefaults,
+        project?: { projectId: string; sources: AddProjectSourceInput[] },
     ): Promise<T[]> {
         // Series-level defaults seed each auto-created paper so the
         // pastor doesn't reconfigure rubric/style/corpus per pericope.
         // Snapshot semantics: paper inherits and then owns its copy —
         // editing series defaults later doesn't touch existing papers.
-        const defaults = paperDefaultsFromSeries(exegesisDefaults);
+        // Con proyecto, además nace con él de origen y con sus fuentes
+        // (ganan las del proyecto). Sin proyecto da lo mismo que antes.
+        const defaults = seriesPaperInheritance({
+            exegesisDefaults,
+            projectId: project?.projectId ?? null,
+            projectSources: project?.sources ?? [],
+        });
         const enriched = await Promise.all(
             plannedSermons.map(async (planned) => {
                 if (!planned.syntacticUnit || planned.paperId) return planned;
@@ -602,6 +651,97 @@ export class SeriesService {
             }),
         );
         return enriched;
+    }
+
+    /**
+     * Liga la serie a un proyecto o la desliga (`null`). Solo toca
+     * `series.projectId`: los estudios y sermones no cambian.
+     */
+    async setSeriesProject(seriesId: string, projectId: string | null): Promise<SermonSeriesEntity> {
+        try {
+            const series = await this.retry(() => this.seriesRepository.findById(seriesId));
+            if (!series) {
+                throw new Error('Serie no encontrada');
+            }
+            return await this.retry(() => this.seriesRepository.update(series.update({ projectId })));
+        } catch (error: any) {
+            throw new Error(error.message || 'Error al cambiar el proyecto de la serie');
+        }
+    }
+
+    /**
+     * Liga una serie existente (p. ej. la de Jonás) a un proyecto. Con
+     * `movePapers`, sus estudios entran también: el que no tiene proyecto
+     * lo toma de origen y el que tiene otro origen queda vinculado. A los
+     * que quedan en el proyecto se les agregan las obras de `sourcesToAdd`
+     * que les faltan, como documento entero (sin extracción ni cobro).
+     *
+     * Cada estudio es de mejor esfuerzo: un error suma a `failed` y se
+     * sigue con el siguiente. Un estudio que entró pero no recibió todas
+     * sus obras cuenta en su grupo y también en `failed`.
+     */
+    async linkSeriesToProject(
+        userId: string,
+        seriesId: string,
+        projectId: string,
+        opts: { movePapers: boolean; sourcesToAdd?: AddProjectSourceInput[] },
+    ): Promise<{ moved: number; linked: number; unchanged: number; sourcesAdded: number; failed: number }> {
+        const series = await this.setSeriesProject(seriesId, projectId);
+        const result = { moved: 0, linked: 0, unchanged: 0, sourcesAdded: 0, failed: 0 };
+        if (!opts.movePapers) return result;
+
+        const paperIds = [
+            ...new Set(
+                (series.metadata?.plannedSermons ?? [])
+                    .map((p) => p.paperId)
+                    .filter((id): id is string => Boolean(id)),
+            ),
+        ];
+        const sourcesToAdd = opts.sourcesToAdd ?? [];
+        // En secuencia: son pocos estudios y así no se dispara una ráfaga
+        // de transacciones contra el mismo proyecto.
+        for (const paperId of paperIds) {
+            try {
+                const paper = await exegesisService.getPaper.execute(userId, paperId);
+                if (!paper) throw new Error(`Paper ${paperId} not found`);
+                if (paper.projectId === projectId || (paper.linkedProjectIds ?? []).includes(projectId)) {
+                    result.unchanged++;
+                } else if (!paper.projectId) {
+                    await exegesisService.setPaperProject.execute({
+                        ownerId: userId,
+                        paperId,
+                        change: { kind: 'origin', projectId },
+                    });
+                    result.moved++;
+                } else {
+                    await exegesisService.setPaperProject.execute({
+                        ownerId: userId,
+                        paperId,
+                        change: { kind: 'link', projectId },
+                    });
+                    result.linked++;
+                }
+                if (sourcesToAdd.length === 0) continue;
+                // Una obra ya está si coincide por libro de la biblioteca o
+                // por corpus: las de antes no siempre traen el recurso.
+                const presentes = new Set<string>();
+                for (const s of paper.sources ?? []) {
+                    if (s.sourceLibraryResourceId) presentes.add(s.sourceLibraryResourceId);
+                    if (s.corpusId) presentes.add(s.corpusId);
+                }
+                for (const src of sourcesToAdd) {
+                    const clave = src.sourceLibraryResourceId ?? src.corpusId;
+                    if (presentes.has(clave)) continue;
+                    await exegesisService.addSource.execute({ ownerId: userId, paperId, ...src });
+                    presentes.add(clave);
+                    result.sourcesAdded++;
+                }
+            } catch (err) {
+                console.error(`[SeriesService] linkSeriesToProject failed for paper ${paperId}:`, err);
+                result.failed++;
+            }
+        }
+        return result;
     }
 
     /**
