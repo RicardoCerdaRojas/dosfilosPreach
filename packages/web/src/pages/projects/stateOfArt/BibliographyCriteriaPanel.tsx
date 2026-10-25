@@ -51,7 +51,8 @@ export function BibleBooksPicker({ books, onRemove, onAdd, listLabel, addLabel, 
                         <li key={b} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-foreground">
                             {nombre(b)}
                             {onRemove && (
-                                <button type="button" onClick={() => onRemove(b)} aria-label={t('stateOfArt.criteria.removeBook', { book: nombre(b) })} className="rounded-full p-0.5 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                                // En el teléfono, el botón mide 44 px: una «x» de 16 px no se acierta con el dedo.
+                                <button type="button" onClick={() => onRemove(b)} aria-label={t('stateOfArt.criteria.removeBook', { book: nombre(b) })} className="-my-2 -mr-1.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:my-0 sm:mr-0 sm:min-h-0 sm:min-w-0 sm:p-0.5">
                                     <X className="h-3 w-3" />
                                 </button>
                             )}
@@ -61,7 +62,7 @@ export function BibleBooksPicker({ books, onRemove, onAdd, listLabel, addLabel, 
             )}
             {onAdd && (
                 <label className="block space-y-1 pt-1">
-                    <span className="text-[11px] text-muted-foreground">{addLabel ?? t('stateOfArt.criteria.addBook')}</span>
+                    <span className="block text-xs text-muted-foreground">{addLabel ?? t('stateOfArt.criteria.addBook')}</span>
                     <select
                         className={campo}
                         value=""
@@ -132,22 +133,23 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
                         ? <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.noMinimums')}</p>
                         : [...porTipoDeTrabajo].map(([trabajo, mins]) => (
                             <div key={trabajo} className="space-y-0.5">
-                                {trabajo && <p className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">{trabajo}</p>}
+                                {trabajo && <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">{trabajo}</p>}
                                 <ul className="text-xs text-foreground space-y-0.5">{mins.map(m => <li key={m.sourceType}>{tx(`sourceTypes.${m.sourceType}.label`)} · ≥ {m.minimum}</li>)}</ul>
                             </div>
                         ))}
-                    <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.minimumsHint')}</p>
+                    <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.minimumsHint')}</p>
                 </div>
                 <div className="rounded-lg border border-border p-3 space-y-1">
                     <p className="text-sm font-medium text-foreground">{t('stateOfArt.criteria.books')}</p>
                     {framing ? (
                         <>
                             <BibleBooksPicker books={framing.books} listLabel={t('stateOfArt.criteria.books')} emptyText={t('stateOfArt.criteria.noBooksFraming')} />
-                            <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.booksFromFraming')}</p>
+                            <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.booksFromFraming')}</p>
                             <Link
                                 to={framing.href}
                                 onClick={e => { if (framing.canLeave && !framing.canLeave()) e.preventDefault(); }}
-                                className="inline-flex items-center gap-1 rounded-md text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                // `text-primary` chico no alcanza AA: texto normal, subrayado como enlace.
+                                className="inline-flex min-h-11 items-center gap-1 rounded-md text-xs font-medium text-foreground underline underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0"
                             >
                                 <Pencil className="h-3 w-3" />{t('stateOfArt.criteria.changeInFraming')}
                             </Link>
@@ -162,8 +164,8 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
                                 // Al elegir el primero, los de los estudios se conservan.
                                 onAdd={b => fijar([...libros, b])}
                             />
-                            {desdeEstudios && <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.fromStudies')}</p>}
-                            <p className="text-[11px] text-muted-foreground">{t('stateOfArt.criteria.booksHint')}</p>
+                            {desdeEstudios && <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.fromStudies')}</p>}
+                            <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.booksHint')}</p>
                         </>
                     )}
                 </div>

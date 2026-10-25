@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { BibleBookId } from '../../../bible/canon/BibleCanon';
 import {
+    FRAMING_FIELDS,
     FRAMING_MAX_LOG_ENTRIES,
-    appendHypothesisEntry,
     cleanFramingPatch,
     cleanProjectFraming,
     consolidateIdea,
     currentRevisedIdea,
     framingStatus,
     isRevisionStale,
+    isStorableFramingPassage,
+    newHypothesisEntry,
+    originalChapterCount,
     placeInBook,
+    readerPassageToOriginal,
+    withCappedHypothesisLog,
     type ProjectFraming,
 } from '../projectFraming';
 
@@ -32,7 +37,7 @@ describe('cleanProjectFraming — limpieza profunda', () => {
             occasion: '   ',
             audience: undefined,
             ajena: 'no',
-            reading: { chapterTitles: { 1: ' El decreto ', 2: '', 3: undefined }, repetitions: undefined },
+            reading: { chapterTitles: { EZR: { 1: ' El decreto ', 2: '', 3: undefined } }, repetitions: undefined },
             structure: [{ passage: { ...EZR(1, 6), extra: undefined }, title: ' El regreso ', otro: undefined }],
             rhythm: { sundays: 12, startDate: undefined, frequency: 'weekly' },
             scope: { bookId: 'EZR', passage: EZR(1, 6) },
@@ -45,7 +50,7 @@ describe('cleanProjectFraming — limpieza profunda', () => {
         expect(limpio).not.toHaveProperty('ajena');
         expect(limpio).not.toHaveProperty('occasion');
         expect(limpio.centralIdea).toBe('Dios cumple su palabra');
-        expect(limpio.reading).toEqual({ chapterTitles: { 1: 'El decreto' } });
+        expect(limpio.reading).toEqual({ chapterTitles: { EZR: { 1: 'El decreto' } } });
         expect(limpio.structure).toEqual([{ passage: EZR(1, 6), title: 'El regreso' }]);
         expect(limpio.rhythm).toEqual({ sundays: 12, frequency: 'weekly' });
         expect(limpio.hypothesisLog).toEqual([{ id: 'a', at: '2026-10-25T10:00:00.000Z', source: 'panorama', verdict: 'nuances', note: '' }]);
@@ -56,12 +61,12 @@ describe('cleanProjectFraming — limpieza profunda', () => {
         const largo = 'a'.repeat(5000);
         const f = cleanProjectFraming({
             centralIdea: largo,
-            reading: { chapterTitles: { 1: largo } },
+            reading: { chapterTitles: { EZR: { 1: largo } } },
             structure: Array.from({ length: 30 }, () => ({ passage: EZR(1, 2), title: largo })),
             hypothesisLog: Array.from({ length: 250 }, (_, i) => ({ id: `e${i}`, at: '2026-10-25T10:00:00.000Z', source: 'study', verdict: 'confirms', note: 'n' })),
         }, opts);
         expect(f.centralIdea).toHaveLength(2000);
-        expect(f.reading!.chapterTitles![1]).toHaveLength(300);
+        expect(f.reading!.chapterTitles!.EZR![1]).toHaveLength(300);
         expect(f.structure).toHaveLength(20);
         expect(f.structure![0]!.title).toHaveLength(300);
         expect(f.hypothesisLog).toHaveLength(FRAMING_MAX_LOG_ENTRIES);
@@ -70,15 +75,16 @@ describe('cleanProjectFraming — limpieza profunda', () => {
         expect(f.hypothesisLog![0]!.id).toBe('e50');
     });
 
-    it('valida capítulos 1..150, fechas YYYY-MM-DD reales, domingos 1..200 y enums', () => {
+    it('valida capítulos del libro (lector), fechas YYYY-MM-DD reales, domingos 1..200 y enums', () => {
         const f = cleanProjectFraming({
             purpose: 'sermon', genre: 'novela',
-            reading: { chapterTitles: { 0: 'cero', 151: 'fuera', 150: 'ok', x: 'no' } },
+            // Esdras tiene 10 capítulos.
+            reading: { chapterTitles: { EZR: { 0: 'cero', 11: 'fuera', 10: 'ok', x: 'no' } } },
             rhythm: { sundays: 201, startDate: '2026-02-30', frequency: 'diaria' },
         }, opts);
         expect(f).not.toHaveProperty('purpose');
         expect(f).not.toHaveProperty('genre');
-        expect(f.reading).toEqual({ chapterTitles: { 150: 'ok' } });
+        expect(f.reading).toEqual({ chapterTitles: { EZR: { 10: 'ok' } } });
         expect(f).not.toHaveProperty('rhythm');
         expect(cleanProjectFraming({ rhythm: { sundays: '12', startDate: '2026-11-01' } }, opts).rhythm).toEqual({ sundays: 12, startDate: '2026-11-01' });
         expect(cleanProjectFraming({ rhythm: { sundays: 3.5 } }, opts)).not.toHaveProperty('rhythm');
@@ -102,6 +108,86 @@ describe('cleanProjectFraming — limpieza profunda', () => {
         // Pasaje de otro libro o fuera del libro (Esdras tiene 10 capítulos).
         expect(cleanProjectFraming({ scope: { bookId: 'EZR', passage: { ...EZR(1, 6), bookId: 'NEH' } } }, opts)).not.toHaveProperty('scope');
         expect(cleanProjectFraming({ scope: { bookId: 'EZR', passage: EZR(9, 11) } }, opts)).not.toHaveProperty('scope');
+    });
+});
+
+describe('títulos por capítulo, por libro (C1)', () => {
+    const titulos = { EZR: { 1: 'El decreto' }, NEH: { 1: 'La oración de Nehemías', 13: 'Las reformas' } };
+
+    it('cada libro conserva los suyos: con Esdras y Nehemías, el 1 de cada uno es otro capítulo', () => {
+        const f = cleanProjectFraming({ reading: { chapterTitles: titulos } }, { bibleBooks: ['EZR', 'NEH'] });
+        expect(f.reading!.chapterTitles).toEqual(titulos);
+    });
+
+    it('desmarcar un libro se lleva sus títulos; un libro desconocido no entra', () => {
+        const f = cleanProjectFraming({ reading: { chapterTitles: { ...titulos, XYZ: { 1: 'x' } } } }, { bibleBooks: ['NEH'] });
+        expect(f.reading!.chapterTitles).toEqual({ NEH: titulos.NEH });
+    });
+
+    it('cuenta como hecho solo si el libro con títulos es del proyecto', () => {
+        const framing = { reading: { chapterTitles: { NEH: { 1: 't' } } } } as ProjectFraming;
+        expect(framingStatus({ framing, bibliographyCriteria: { bibleBooks: ['NEH'] } }).missing).not.toContain('chapterTitles');
+        expect(framingStatus({ framing, bibliographyCriteria: { bibleBooks: ['EZR'] } }).missing).toContain('chapterTitles');
+    });
+});
+
+describe('el género tiene dónde responderse (A6)', () => {
+    it('genreReading y genreEvidence se limpian, se recortan y van en el orden del formulario', () => {
+        const f = cleanProjectFraming({ genreReading: '  El conflicto es la oposición ', genreEvidence: 'a'.repeat(3000) }, opts);
+        expect(f.genreReading).toBe('El conflicto es la oposición');
+        expect(f.genreEvidence).toHaveLength(2000);
+        expect(cleanFramingPatch({ genreReading: '  ', genreEvidence: '4:1-5' }, opts)).toEqual({ genreReading: null, genreEvidence: '4:1-5' });
+        expect(FRAMING_FIELDS.indexOf('genreReading')).toBe(FRAMING_FIELDS.indexOf('genre') + 1);
+        expect(framingStatus({ framing: {}, bibliographyCriteria: null }).missing).toEqual(expect.arrayContaining(['genreReading', 'genreEvidence']));
+    });
+});
+
+describe('numeración: del lector al original (C2)', () => {
+    const lector = (bookId: string, cs: number, ce: number, vs: number | null = null, ve: number | null = null) =>
+        ({ bookId, chapterStart: cs, chapterEnd: ce, verseStart: vs, verseEnd: ve }) as never;
+
+    it('Joel 3:1-21 del lector es JOL 4:1-21, y se guarda aunque Joel tenga 3 capítulos en el lector', () => {
+        const r = readerPassageToOriginal(lector('JOL', 3, 3, 1, 21));
+        expect(r).toEqual({ ok: true, passage: { bookId: 'JOL', chapterStart: 4, chapterEnd: 4, verseStart: 1, verseEnd: 21 } });
+        expect(originalChapterCount('JOL')).toBe(4);
+        if (!r.ok) throw new Error('debía convertir');
+        expect(isStorableFramingPassage(r.passage)).toBe(true);
+        expect(cleanProjectFraming({ scope: { bookId: 'JOL', passage: r.passage } }, { bibleBooks: ['JOL'] }).scope).toEqual({ bookId: 'JOL', passage: r.passage });
+    });
+
+    it('«Joel 3» entero se expande a sus versos antes de convertir', () => {
+        expect(readerPassageToOriginal(lector('JOL', 3, 3))).toEqual({ ok: true, passage: { bookId: 'JOL', chapterStart: 4, chapterEnd: 4, verseStart: 1, verseEnd: 21 } });
+        // Joel 2 entero termina en el 3:5 del original (2:28-32 del lector).
+        expect(readerPassageToOriginal(lector('JOL', 2, 2))).toEqual({ ok: true, passage: { bookId: 'JOL', chapterStart: 2, chapterEnd: 3, verseStart: 1, verseEnd: 5 } });
+    });
+
+    it('«Malaquías 4» es MAL 3:19-24; «Malaquías 3» termina en el 3:18', () => {
+        expect(readerPassageToOriginal(lector('MAL', 4, 4))).toEqual({ ok: true, passage: { bookId: 'MAL', chapterStart: 3, chapterEnd: 3, verseStart: 19, verseEnd: 24 } });
+        expect(readerPassageToOriginal(lector('MAL', 3, 3))).toEqual({ ok: true, passage: { bookId: 'MAL', chapterStart: 3, chapterEnd: 3, verseStart: 1, verseEnd: 18 } });
+    });
+
+    it('«Nehemías 4» incluye el 4:1-6 del lector (NEH 3:33-38)', () => {
+        expect(readerPassageToOriginal(lector('NEH', 4, 4))).toEqual({ ok: true, passage: { bookId: 'NEH', chapterStart: 3, chapterEnd: 4, verseStart: 33, verseEnd: 17 } });
+        // «Nehemías 1-3» termina en el 3:32: lo que sigue es el 4 del lector.
+        expect(readerPassageToOriginal(lector('NEH', 1, 3))).toEqual({ ok: true, passage: { bookId: 'NEH', chapterStart: 1, chapterEnd: 3, verseStart: 1, verseEnd: 32 } });
+    });
+
+    it('sin cruce, el capítulo queda entero; un salmo con título no se corre', () => {
+        expect(readerPassageToOriginal(lector('EZR', 1, 6))).toEqual({ ok: true, passage: lector('EZR', 1, 6) });
+        expect(readerPassageToOriginal(lector('PSA', 3, 3))).toEqual({ ok: true, passage: lector('PSA', 3, 3) });
+    });
+
+    it('si un extremo no se puede saber, pide los versos en vez de inventar el número', () => {
+        // Neh 4 empieza en el 3:33; del 6 la tabla no da el último verso.
+        expect(readerPassageToOriginal(lector('NEH', 4, 6))).toEqual({ ok: false, reason: 'needs-verses' });
+        expect(readerPassageToOriginal(lector('NEH', 4, 6, 1, 19)).ok).toBe(true);
+    });
+
+    it('el original se valida contra el original: JOL 5 no existe, MAL 3:20-1 se invierte', () => {
+        expect(isStorableFramingPassage(lector('JOL', 5, 5))).toBe(false);
+        expect(isStorableFramingPassage(lector('MAL', 3, 3, 20, 1))).toBe(false);
+        expect(isStorableFramingPassage(lector('JOL', 3, 4, 5, 2))).toBe(true);
+        expect(isStorableFramingPassage(lector('JOL', 1, 1, 1, null))).toBe(false);
     });
 });
 
@@ -190,14 +276,33 @@ describe('revisión de la idea', () => {
     });
 });
 
-describe('appendHypothesisEntry', () => {
-    it('agrega al final del registro guardado, con id y fecha, sin undefined', () => {
-        const guardado: ProjectFraming = { hypothesisLog: [{ id: 'a', at: '2026-10-24T10:00:00.000Z', source: 'panorama', verdict: 'confirms', note: 'ok' }] };
-        const p = appendHypothesisEntry(guardado, { source: 'study', studyId: null, verdict: 'contradicts', note: ' 4:1-5 ' }, new Date('2026-10-25T10:00:00.000Z'));
-        expect(p.hypothesisLog).toHaveLength(2);
-        expect(p.hypothesisLog![1]).toMatchObject({ source: 'study', verdict: 'contradicts', note: '4:1-5', at: '2026-10-25T10:00:00.000Z' });
-        expect(p.hypothesisLog![1]).not.toHaveProperty('studyId');
-        expect(() => rechazaUndefined(p)).not.toThrow();
+describe('registro: una anotación para arrayUnion (C7)', () => {
+    it('limpia, con id y fecha, sin undefined', () => {
+        const e = newHypothesisEntry({ source: 'study', studyId: null, verdict: 'contradicts', note: ' 4:1-5 ' }, new Date('2026-10-25T10:00:00.000Z'));
+        expect(e).toMatchObject({ source: 'study', verdict: 'contradicts', note: '4:1-5', at: '2026-10-25T10:00:00.000Z' });
+        expect(e).not.toHaveProperty('studyId');
+        expect(() => rechazaUndefined(e)).not.toThrow();
+        expect(newHypothesisEntry({ source: 'study', studyId: 's1', verdict: 'confirms', note: '' })!.studyId).toBe('s1');
+    });
+
+    it('dos anotaciones iguales en el mismo instante tienen ids distintos: arrayUnion no las funde', () => {
+        const now = new Date('2026-10-25T10:00:00.000Z');
+        const ids = new Set(Array.from({ length: 50 }, () => newHypothesisEntry({ source: 'panorama', verdict: 'confirms', note: 'x' }, now)!.id));
+        expect(ids.size).toBe(50);
+    });
+
+    it('un veredicto inválido no produce anotación', () => {
+        expect(newHypothesisEntry({ source: 'study', verdict: 'quizá' as never, note: '' })).toBeNull();
+    });
+
+    it('el tope se aplica al leer: quedan las 200 más recientes', () => {
+        const log = Array.from({ length: 230 }, (_, i) => ({ id: `e${i}`, at: '2026-10-25T10:00:00.000Z', source: 'study' as const, verdict: 'confirms' as const, note: '' }));
+        const f = withCappedHypothesisLog({ centralIdea: 'x', hypothesisLog: log });
+        expect(f.hypothesisLog).toHaveLength(FRAMING_MAX_LOG_ENTRIES);
+        expect(f.hypothesisLog![0]!.id).toBe('e30');
+        expect(f.centralIdea).toBe('x');
+        const corto = { hypothesisLog: log.slice(0, 3) };
+        expect(withCappedHypothesisLog(corto)).toBe(corto);
     });
 });
 

@@ -51,7 +51,8 @@ describe('Requisitos con encuadre', () => {
         expect(within(lista).queryByRole('button')).toBeNull();
         expect(screen.queryByLabelText('stateOfArt.criteria.addBook')).toBeNull();
         const enlace = screen.getByRole('link', { name: /stateOfArt.criteria.changeInFraming/ });
-        expect(enlace.getAttribute('href')).toBe('/dashboard/projects/ezr?encuadre=1');
+        // Con «volver»: al guardar el encuadre, el panel ofrece volver a Requisitos.
+        expect(enlace.getAttribute('href')).toBe('/dashboard/projects/ezr?encuadre=1&volver=requisitos');
         fireEvent.click(enlace);
         expect(screen.getByText('panel del proyecto')).toBeInTheDocument();
     });

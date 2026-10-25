@@ -24,10 +24,10 @@ export function PreachingNotesList({ notes, highlighted }: { notes: ReadonlyArra
                             <summary className="flex cursor-pointer list-none items-start gap-1 rounded-sm text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 [&::-webkit-details-marker]:hidden">
                                 <ChevronRight className="mt-px h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
                                 <span>{n.title}
-                                {resaltada && <span className="ml-1.5 whitespace-nowrap text-[10px] font-normal text-warning-subtle-foreground">· {t('framing.notes.highlighted')}</span>}</span>
+                                {resaltada && <span className="ml-1.5 whitespace-nowrap text-xs font-normal text-warning-subtle-foreground">· {t('framing.notes.highlighted')}</span>}</span>
                             </summary>
                             <p className="mt-1.5 text-xs leading-relaxed text-foreground/90">{n.body}</p>
-                            <p className="mt-1 text-[11px] text-muted-foreground">{t('framing.notes.sources', { list: n.sources.join('; ') })}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{t('framing.notes.sources', { list: n.sources.join('; ') })}</p>
                         </details>
                     </li>
                 );

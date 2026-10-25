@@ -21,7 +21,7 @@ interface ProjectFramingConsolidateDialogProps {
 }
 
 /**
- * «Consolidar la idea» (§2 paso 10): la síntesis consolida el registro, no lo
+ * «Revisar tu idea central» (§2 paso 10): la síntesis consolida el registro, no lo
  * inicia. Muestra la idea original y lo anotado; pide la idea revisada, un
  * veredicto y el porqué. Solo esta idea, vigente, llega al sermón.
  */
@@ -53,7 +53,7 @@ export function ProjectFramingConsolidateDialog({ open, onOpenChange, framing, s
 
     return (
         <Dialog open={open} onOpenChange={o => { if (!saving) onOpenChange(o); }}>
-            <DialogContent className="sm:max-w-2xl max-h-[92vh] flex flex-col">
+            <DialogContent className="sm:max-w-2xl max-h-[92dvh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{t('framing.consolidate.title')}</DialogTitle>
                     <DialogDescription>{t('framing.consolidate.description')}</DialogDescription>
@@ -89,8 +89,8 @@ export function ProjectFramingConsolidateDialog({ open, onOpenChange, framing, s
                     </label>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>{t('framing.dialog.cancel')}</Button>
-                    <Button onClick={guardar} disabled={saving || !listo}>
+                    <Button variant="outline" className="min-h-11 sm:min-h-0" onClick={() => onOpenChange(false)} disabled={saving}>{t('framing.dialog.cancel')}</Button>
+                    <Button className="min-h-11 sm:min-h-0" onClick={guardar} disabled={saving || !listo}>
                         {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                         {t('framing.consolidate.save')}
                     </Button>

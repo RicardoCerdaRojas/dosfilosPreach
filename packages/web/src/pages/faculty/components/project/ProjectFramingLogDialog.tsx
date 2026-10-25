@@ -75,8 +75,8 @@ export function ProjectFramingLogDialog({ open, onOpenChange, studies, onSave, s
                     </label>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>{t('framing.dialog.cancel')}</Button>
-                    <Button onClick={guardar} disabled={saving || !listo}>
+                    <Button variant="outline" className="min-h-11 sm:min-h-0" onClick={() => onOpenChange(false)} disabled={saving}>{t('framing.dialog.cancel')}</Button>
+                    <Button className="min-h-11 sm:min-h-0" onClick={guardar} disabled={saving || !listo}>
                         {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                         {t('framing.annotate.save')}
                     </Button>
@@ -103,7 +103,7 @@ export function VerdictPicker<V extends string>({ name, label, options, value, o
                     <label
                         key={v}
                         className={cn(
-                            'inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-foreground transition-colors focus-within:ring-2 focus-within:ring-primary/40',
+                            'inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-foreground transition-colors focus-within:ring-2 focus-within:ring-primary/40 sm:min-h-9',
                             value === v ? 'border-primary/50 bg-info-subtle' : 'border-border hover:border-primary/30',
                         )}
                     >
@@ -127,6 +127,7 @@ export function HypothesisLogList({ entries, studies }: { entries: ReadonlyArray
     const { t, i18n } = useTranslation('projects');
     const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
     const fuente = (e: HypothesisEntry) => {
+        // Lo del panorama lo propuso el asistente, no el texto: se rotula así.
         if (e.source === 'panorama') return t('framing.card.logPanorama');
         const s = studies.find(x => x.id === e.studyId);
         return t('framing.card.logStudy', { title: s ? studyLabel(s, lang) : t('framing.card.logStudyMissing') });
@@ -135,10 +136,10 @@ export function HypothesisLogList({ entries, studies }: { entries: ReadonlyArray
         <ol className="divide-y divide-border/60 rounded-lg border border-border/60" data-testid="framing-log">
             {[...entries].reverse().map(e => (
                 <li key={e.id} className="space-y-0.5 px-3 py-2">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                         <span className="tabular-nums text-muted-foreground">{new Date(e.at).toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                         <span className="text-foreground">{fuente(e)}</span>
-                        <span className={cn('rounded-full border px-2 py-0.5 text-[10px]', CHIP[e.verdict])}>{t(`framing.hypothesisVerdict.${e.verdict}`)}</span>
+                        <span className={cn('rounded-full border px-2 py-0.5 text-xs', CHIP[e.verdict])}>{t(`framing.hypothesisVerdict.${e.verdict}`)}</span>
                     </div>
                     {e.note && <p className="text-xs leading-relaxed text-foreground/90">{e.note}</p>}
                 </li>

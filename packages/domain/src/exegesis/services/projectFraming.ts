@@ -1,6 +1,8 @@
 import { findBooksByAlias, getBookById, type BibleBookId } from '../../bible/canon/BibleCanon';
-import { buildPassageReference, type PassageReference } from '../../bible/canon/passage-reference';
+import type { PassageReference } from '../../bible/canon/passage-reference';
 import { formatPassageForReader } from '../../bible/versification/formatForReader';
+import { passageToOriginal, verseToOriginal } from '../../bible/versification/mapVersification';
+import { VERSIFICATION_SPANS } from '../../bible/versification/versificationMap';
 import type { AIProject } from '../../entities/AIProject';
 import type { PlannedSermon } from '../../entities/SermonSeries';
 
@@ -43,9 +45,17 @@ export interface FramingScope {
     passage: PassageReference;
 }
 
-/** El «survey» del libro (Traina; Jensen): un título por capítulo y lo que se repite. */
+/**
+ * El «survey» del libro (Traina; Jensen): un título por capítulo y lo que se repite.
+ *
+ * Los títulos van POR LIBRO y por capítulo del LECTOR (el pastor titula la
+ * Biblia que tiene abierta): con Esdras y Nehemías, «3» de cada uno es otro
+ * capítulo. Antes era un solo mapa por número y los títulos quedaban en el
+ * libro equivocado al cambiar los libros. No hace falta migrar: la forma
+ * vieja nunca llegó a producción.
+ */
 export interface FramingReading {
-    chapterTitles?: Record<number, string>;
+    chapterTitles?: Partial<Record<BibleBookId, Record<number, string>>>;
     repetitions?: string;
 }
 
@@ -93,6 +103,9 @@ export interface ProjectFraming {
     scope?: FramingScope | null;
     reading?: FramingReading;
     genre?: FramingGenre;
+    /** Las respuestas del pastor a las preguntas de su género, con sus versículos. */
+    genreReading?: string;
+    genreEvidence?: string;
     occasion?: string;
     occasionEvidence?: string;
     structure?: FramingMovement[];
@@ -131,13 +144,13 @@ const MAX_ID = 100;
 const PASTORAL_KEYS = ['audience', 'need', 'needEvidence', 'desiredChange', 'rhythm'] as const satisfies ReadonlyArray<FramingPatchKey>;
 
 const PATCH_KEYS: ReadonlyArray<FramingPatchKey> = [
-    'purpose', 'scope', 'reading', 'genre', 'occasion', 'occasionEvidence', 'structure',
+    'purpose', 'scope', 'reading', 'genre', 'genreReading', 'genreEvidence', 'occasion', 'occasionEvidence', 'structure',
     'centralIdea', 'centralIdeaEvidence', 'christTrajectory', 'christTrajectoryEvidence',
     'audience', 'need', 'needEvidence', 'desiredChange', 'rhythm', 'hypothesisLog', 'revision',
 ];
 
 const TEXT_KEYS = new Set<FramingPatchKey>([
-    'occasion', 'occasionEvidence', 'centralIdea', 'centralIdeaEvidence', 'christTrajectory',
+    'genreReading', 'genreEvidence', 'occasion', 'occasionEvidence', 'centralIdea', 'centralIdeaEvidence', 'christTrajectory',
     'christTrajectoryEvidence', 'audience', 'need', 'needEvidence', 'desiredChange',
 ]);
 
@@ -197,7 +210,7 @@ function cleanFramingField(key: FramingPatchKey, v: unknown, opts: FramingCleanO
         case 'purpose': return oneOf(v, FRAMING_PURPOSES);
         case 'genre': return oneOf(v, FRAMING_GENRES);
         case 'scope': return cleanScope(v, opts.bibleBooks);
-        case 'reading': return cleanReading(v);
+        case 'reading': return cleanReading(v, opts.bibleBooks);
         case 'structure': return cleanStructure(v);
         case 'rhythm': return cleanRhythm(v);
         case 'hypothesisLog': return cleanHypothesisLog(v);
@@ -222,33 +235,71 @@ function cleanScope(v: unknown, bibleBooks: ReadonlyArray<BibleBookId>): Framing
     return { bookId, passage };
 }
 
+/**
+ * Un pasaje en la numeración del ORIGINAL. Los capítulos se validan contra
+ * el original, no contra `chapterCount` (el del lector): Joel tiene 3
+ * capítulos en la RVR y 4 en el Masorético, y «Joel 3:1-21» del lector se
+ * guarda como JOL 4:1-21.
+ */
 function cleanPassage(v: unknown): PassageReference | undefined {
     const r = asRecord(v);
     if (!r || typeof r.bookId !== 'string' || !getBookById(r.bookId as BibleBookId)) return undefined;
-    const res = buildPassageReference({
-        bookId: r.bookId as BibleBookId,
-        chapterStart: r.chapterStart as number,
-        chapterEnd: r.chapterEnd as number,
-        verseStart: (r.verseStart ?? null) as number | null,
-        verseEnd: (r.verseEnd ?? null) as number | null,
-    });
-    return res.ok ? res.ref : undefined;
+    const bookId = r.bookId as BibleBookId;
+    const chapterStart = r.chapterStart as number;
+    const chapterEnd = (r.chapterEnd ?? chapterStart) as number;
+    const verseStart = (r.verseStart ?? null) as number | null;
+    const verseEnd = (r.verseEnd ?? null) as number | null;
+    const entero = (n: unknown, min: number) => Number.isInteger(n) && (n as number) >= min;
+    if (!entero(chapterStart, 1) || !entero(chapterEnd, chapterStart) || chapterEnd > originalChapterCount(bookId)) return undefined;
+    // Los dos versos o ninguno (la forma de `buildPassageReference`), sin invertir dentro de un capítulo.
+    if ((verseStart === null) !== (verseEnd === null)) return undefined;
+    if (verseStart !== null && (!entero(verseStart, 1) || !entero(verseEnd, 1))) return undefined;
+    if (verseStart !== null && chapterStart === chapterEnd && verseEnd! < verseStart) return undefined;
+    return { bookId, chapterStart, chapterEnd, verseStart, verseEnd };
 }
 
-function cleanReading(v: unknown): FramingReading | undefined {
+/** Los capítulos del libro en el original: los del lector, o más si la tabla de versificación lo dice (Joel: 4). */
+export function originalChapterCount(bookId: BibleBookId): number {
+    let max = getBookById(bookId)?.chapterCount ?? 0;
+    for (const s of VERSIFICATION_SPANS) if (s.book === bookId && s.originalChapter > max) max = s.originalChapter;
+    return max;
+}
+
+/** Si un pasaje (numeración del original) sobrevive a la limpieza: el formulario no guarda en silencio lo que se descartaría. */
+export function isStorableFramingPassage(p: PassageReference | null | undefined): boolean {
+    return !!p && !!cleanPassage(p);
+}
+
+/**
+ * Los títulos por libro: solo de los libros del proyecto (desmarcar un libro
+ * se lleva sus títulos) y de capítulos que el libro tiene en la Biblia del
+ * lector, que es la que se titula.
+ */
+function cleanChapterTitles(v: unknown, bibleBooks: ReadonlyArray<BibleBookId>): FramingReading['chapterTitles'] | undefined {
+    const porLibro = asRecord(v);
+    if (!porLibro) return undefined;
+    const out: Partial<Record<BibleBookId, Record<number, string>>> = {};
+    for (const [libro, titulos] of Object.entries(porLibro)) {
+        const book = getBookById(libro as BibleBookId);
+        const caps = asRecord(titulos);
+        if (!book || !caps || !bibleBooks.includes(book.id)) continue;
+        const limpios: Record<number, string> = {};
+        for (const [k, t] of Object.entries(caps)) {
+            const cap = /^\d+$/.test(k) ? Number(k) : NaN;
+            const tt = text(t, FRAMING_TITLE_MAX);
+            if (cap >= 1 && cap <= Math.min(book.chapterCount, MAX_CHAPTER) && tt) limpios[cap] = tt;
+        }
+        if (Object.keys(limpios).length) out[book.id] = limpios;
+    }
+    return Object.keys(out).length ? out : undefined;
+}
+
+function cleanReading(v: unknown, bibleBooks: ReadonlyArray<BibleBookId>): FramingReading | undefined {
     const r = asRecord(v);
     if (!r) return undefined;
     const out: FramingReading = {};
-    const titles = asRecord(r.chapterTitles);
-    if (titles) {
-        const limpios: Record<number, string> = {};
-        for (const [k, t] of Object.entries(titles)) {
-            const cap = /^\d+$/.test(k) ? Number(k) : NaN;
-            const tt = text(t, FRAMING_TITLE_MAX);
-            if (cap >= 1 && cap <= MAX_CHAPTER && tt) limpios[cap] = tt;
-        }
-        if (Object.keys(limpios).length) out.chapterTitles = limpios;
-    }
+    const titles = cleanChapterTitles(r.chapterTitles, bibleBooks);
+    if (titles) out.chapterTitles = titles;
     const rep = text(r.repetitions, FRAMING_TEXT_MAX);
     if (rep) out.repetitions = rep;
     return Object.keys(out).length ? out : undefined;
@@ -326,13 +377,13 @@ function cleanRevision(v: unknown): FramingRevision | undefined {
 
 /** Los campos del formulario, en su orden. Lo que falta se muestra, no bloquea. */
 export type FramingField =
-    | 'bibleBooks' | 'purpose' | 'chapterTitles' | 'repetitions' | 'genre'
+    | 'bibleBooks' | 'purpose' | 'chapterTitles' | 'repetitions' | 'genre' | 'genreReading' | 'genreEvidence'
     | 'occasion' | 'occasionEvidence' | 'structure' | 'centralIdea' | 'centralIdeaEvidence'
     | 'christTrajectory' | 'christTrajectoryEvidence'
     | 'audience' | 'need' | 'needEvidence' | 'desiredChange' | 'rhythm';
 
 export const FRAMING_FIELDS: ReadonlyArray<FramingField> = [
-    'bibleBooks', 'purpose', 'chapterTitles', 'repetitions', 'genre',
+    'bibleBooks', 'purpose', 'chapterTitles', 'repetitions', 'genre', 'genreReading', 'genreEvidence',
     'occasion', 'occasionEvidence', 'structure', 'centralIdea', 'centralIdeaEvidence',
     'christTrajectory', 'christTrajectoryEvidence',
     'audience', 'need', 'needEvidence', 'desiredChange', 'rhythm',
@@ -370,7 +421,8 @@ function fieldFilled(field: FramingField, f: ProjectFraming | null, books: Reado
     switch (field) {
         case 'bibleBooks': return books.length > 0;
         case 'purpose': return !!f?.purpose;
-        case 'chapterTitles': return Object.values(f?.reading?.chapterTitles ?? {}).some(hasText);
+        // Solo cuentan los títulos de los libros del proyecto.
+        case 'chapterTitles': return books.some(b => Object.values(f?.reading?.chapterTitles?.[b] ?? {}).some(hasText));
         case 'repetitions': return hasText(f?.reading?.repetitions);
         case 'genre': return !!f?.genre;
         case 'structure': return (f?.structure?.length ?? 0) > 0;
@@ -401,31 +453,40 @@ export function currentRevisedIdea(framing: Pick<ProjectFraming, 'centralIdea' |
 export type NewHypothesisEntry = Pick<HypothesisEntry, 'source' | 'verdict' | 'note'> & { studyId?: string | null };
 
 /**
- * El cambio que agrega una anotación al registro. Firestore no tiene «append»
- * para un arreglo de objetos sin duplicar por valor, así que se reescribe
- * `framing.hypothesisLog` entero partiendo del GUARDADO: el caso de uso lo
- * lee justo antes. Hay un solo autor por proyecto, así que la carrera entre
- * leer y escribir es aceptable.
+ * Una anotación nueva del registro, limpia y con id único, o `null` si no
+ * vale. El repositorio la agrega con `arrayUnion`, sin leer ni reescribir
+ * el registro: dos anotaciones casi simultáneas (el panel del estudio y el
+ * planificador) no se pisan. `arrayUnion` compara por valor; el id único
+ * evita que dos anotaciones iguales se fundan en una.
  */
-export function appendHypothesisEntry(
-    framing: Pick<ProjectFraming, 'hypothesisLog'> | null | undefined,
-    entry: NewHypothesisEntry,
-    now: Date = new Date(),
-): Pick<ProjectFramingPatch, 'hypothesisLog'> {
-    const nueva = {
-        id: `hl_${now.getTime().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+export function newHypothesisEntry(entry: NewHypothesisEntry, now: Date = new Date()): HypothesisEntry | null {
+    return cleanHypothesisEntry({
+        id: `hl_${now.getTime().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
         at: now.toISOString(),
         source: entry.source,
-        ...(entry.studyId ? { studyId: entry.studyId } : {}),
+        studyId: entry.studyId ?? undefined,
         verdict: entry.verdict,
         note: entry.note,
-    };
-    return { hypothesisLog: cleanHypothesisLog([...(framing?.hypothesisLog ?? []), nueva]) ?? null };
+    }) ?? null;
+}
+
+/**
+ * El encuadre con el registro recortado a las últimas `FRAMING_MAX_LOG_ENTRIES`.
+ * Con `arrayUnion` la escritura no recorta: el tope se aplica al leer (el
+ * repositorio lo llama), y una reescritura entera del registro lo recorta al
+ * limpiar (`cleanHypothesisLog`).
+ */
+export function withCappedHypothesisLog<F extends Pick<ProjectFraming, 'hypothesisLog'>>(framing: F): F {
+    const log = framing.hypothesisLog;
+    if (!Array.isArray(log) || log.length <= FRAMING_MAX_LOG_ENTRIES) return framing;
+    return { ...framing, hypothesisLog: log.slice(-FRAMING_MAX_LOG_ENTRIES) };
 }
 
 /**
  * El cambio que consolida la idea. `ofIdea` es la idea original vigente: si
  * después se edita, `isRevisionStale` la marca y deja de llegar al sermón.
+ * El caso de uso la vuelve a fijar con la idea GUARDADA (la de la pantalla
+ * puede venir de una caché vieja).
  */
 export function consolidateIdea(
     framing: Pick<ProjectFraming, 'centralIdea'> | null | undefined,
@@ -441,6 +502,62 @@ export function consolidateIdea(
             revisedAt: now.toISOString(),
         }) ?? null,
     };
+}
+
+// ── Numeración: del lector al original ─────────────────────────────────
+
+export type ReaderToOriginalResult = { ok: true; passage: PassageReference } | { ok: false; reason: 'needs-verses' };
+
+/**
+ * Un pasaje escrito en la numeración del lector, en la del original.
+ *
+ * Con versos, lo hace `passageToOriginal`. Con capítulos enteros,
+ * `passageToOriginal` los deja intactos, y eso miente justo donde la
+ * numeración cruza un capítulo: «Joel 3» del lector es JOL 4:1-21,
+ * «Malaquías 4» es MAL 3:19-24 y «Nehemías 4» empieza en NEH 3:33. Ahí el
+ * capítulo se expande a sus versos del lector (1..último) antes de
+ * convertir. El último verso sale de la tabla de versificación; si un
+ * extremo no lo da, se pide escribir los versos (`needs-verses`) en vez de
+ * inventar el número.
+ */
+export function readerPassageToOriginal(ref: PassageReference): ReaderToOriginalResult {
+    if (ref.verseStart !== null && ref.verseEnd !== null) return { ok: true, passage: passageToOriginal(ref).passage };
+    const book = ref.bookId;
+    // Sin cruce en los extremos, el capítulo entero es el mismo en las dos Biblias.
+    if (!chapterCrosses(book, ref.chapterStart) && !chapterCrosses(book, ref.chapterEnd)) return { ok: true, passage: ref };
+    const inicio = verseToOriginal(book, ref.chapterStart, 1);
+    const fin = originalEndOfReaderChapter(book, ref.chapterEnd);
+    if (!fin) return { ok: false, reason: 'needs-verses' };
+    return {
+        ok: true,
+        passage: { bookId: book, chapterStart: inicio.chapter, verseStart: inicio.verse, chapterEnd: fin.chapter, verseEnd: fin.verse },
+    };
+}
+
+/**
+ * Si el capítulo del lector no coincide como capítulo con el del original:
+ * algún verso suyo cae en otro capítulo, o el capítulo del original trae
+ * versos de otro capítulo del lector. Los Salmos (título = verso 1) no
+ * cruzan: el capítulo entero es el mismo.
+ */
+function chapterCrosses(book: BibleBookId, chapter: number): boolean {
+    return VERSIFICATION_SPANS.some(s => s.book === book
+        && ((s.chapter === chapter && s.originalChapter !== chapter) || (s.originalChapter === chapter && s.chapter !== chapter)));
+}
+
+/** El último verso del capítulo del lector, en el original; `null` si la tabla no lo dice. */
+function originalEndOfReaderChapter(book: BibleBookId, chapter: number): { chapter: number; verse: number } | null {
+    const propios = VERSIFICATION_SPANS.filter(s => s.book === book && s.chapter === chapter);
+    if (propios.length) {
+        // El tramo que llega más lejos cierra el capítulo: la tabla corre hasta el final cuando hay corrimiento.
+        const ultimo = propios.reduce((a, b) => (b.to > a.to ? b : a));
+        return { chapter: ultimo.originalChapter, verse: ultimo.originalTo };
+    }
+    // Sin tramos propios, el original de este capítulo sigue con versos de otro
+    // capítulo del lector (Malaquías 3:19-24 es 4:1-6 del lector): termina antes.
+    const ajenos = VERSIFICATION_SPANS.filter(s => s.book === book && s.originalChapter === chapter && s.chapter !== chapter);
+    const desde = Math.min(...ajenos.map(s => s.originalFrom));
+    return ajenos.length && desde > 1 ? { chapter, verse: desde - 1 } : null;
 }
 
 // ── Lugar en el libro ──────────────────────────────────────────────────

@@ -29,7 +29,7 @@ describe('UpdateProjectUseCase — encuadre por campo', () => {
                 purpose: 'preach',
                 centralIdea: ' Dios cumple su palabra ',
                 occasion: '',
-                reading: { chapterTitles: { 1: 'El decreto', 2: undefined }, repetitions: undefined },
+                reading: { chapterTitles: { EZR: { 1: 'El decreto', 2: undefined } }, repetitions: undefined },
                 structure: [{ passage: EZR, title: 'El regreso', extra: undefined }],
                 rhythm: { sundays: 12, startDate: undefined },
                 scope: { bookId: 'EZR', passage: EZR },
@@ -40,7 +40,7 @@ describe('UpdateProjectUseCase — encuadre por campo', () => {
             purpose: 'preach',
             centralIdea: 'Dios cumple su palabra',
             occasion: null,
-            reading: { chapterTitles: { 1: 'El decreto' } },
+            reading: { chapterTitles: { EZR: { 1: 'El decreto' } } },
             structure: [{ passage: EZR, title: 'El regreso' }],
             rhythm: { sundays: 12 },
             scope: { bookId: 'EZR', passage: EZR },
@@ -76,12 +76,42 @@ describe('UpdateProjectUseCase — encuadre por campo', () => {
         expect(escrito(repo).framingPatch.scope).toEqual({ bookId: 'EZR', passage: EZR });
     });
 
-    it('una anotación se agrega al registro GUARDADO, no al de la caché', async () => {
+    it('una anotación va sola (arrayUnion en el repositorio): no lee ni reescribe el registro', async () => {
         const repo = repoCon({ framing: { hypothesisLog: [{ id: 'a', at: '2026-10-24T10:00:00.000Z', source: 'panorama', verdict: 'confirms', note: 'ok' }] } });
-        await new UpdateProjectUseCase(repo as never).execute('p1', { hypothesisEntry: { source: 'study', studyId: 's1', verdict: 'nuances', note: 'matiza' } });
-        const log = escrito(repo).framingPatch.hypothesisLog;
-        expect(log.map((e: { id: string }) => e.id)[0]).toBe('a');
-        expect(log[1]).toMatchObject({ source: 'study', studyId: 's1', verdict: 'nuances', note: 'matiza' });
+        await new UpdateProjectUseCase(repo as never).execute('p1', { hypothesisEntry: { source: 'study', studyId: 's1', verdict: 'nuances', note: ' matiza ' } });
+        const u = escrito(repo);
+        expect(u.hypothesisAppend).toMatchObject({ source: 'study', studyId: 's1', verdict: 'nuances', note: 'matiza' });
+        expect(typeof u.hypothesisAppend.id).toBe('string');
+        expect(u).not.toHaveProperty('framingPatch');
+        expect(repo.getProject).not.toHaveBeenCalled();
+    });
+
+    it('dos anotaciones casi simultáneas llegan las dos (ninguna parte de una lectura vieja)', async () => {
+        const repo = repoCon({ framing: {} });
+        const uc = new UpdateProjectUseCase(repo as never);
+        await Promise.all([
+            uc.execute('p1', { hypothesisEntry: { source: 'study', studyId: 's1', verdict: 'confirms', note: 'panel' } }),
+            uc.execute('p1', { hypothesisEntry: { source: 'panorama', verdict: 'nuances', note: 'planificador' } }),
+        ]);
+        const notas = repo.updateProject.mock.calls.map(c => (c[1] as Record<string, any>).hypothesisAppend.note);
+        expect(notas.sort()).toEqual(['panel', 'planificador']);
+    });
+
+    it('revisar la idea guarda en ofIdea la idea GUARDADA, no la de la caché de la página (C8)', async () => {
+        const repo = repoCon({ framing: { centralIdea: 'Dios cumple su palabra.' } });
+        const revision = { centralIdea: 'Dios restaura por su palabra.', verdict: 'nuanced', why: 'y', ofIdea: 'Una idea vieja de la caché', revisedAt: '2026-10-25T10:00:00.000Z' };
+        await new UpdateProjectUseCase(repo as never).execute('p1', { framingPatch: { revision } });
+        expect(escrito(repo).framingPatch.revision.ofIdea).toBe('Dios cumple su palabra.');
+        // Si el mismo cambio trae la idea, vale esa.
+        await new UpdateProjectUseCase(repo as never).execute('p1', { framingPatch: { revision, centralIdea: ' Otra ' } });
+        expect(escrito(repo).framingPatch.revision.ofIdea).toBe('Otra');
+    });
+
+    it('los títulos por capítulo sin libros en el cambio se validan contra los libros GUARDADOS', async () => {
+        const repo = repoCon({ framing: {}, bibliographyCriteria: { bibleBooks: ['NEH'] } });
+        await new UpdateProjectUseCase(repo as never).execute('p1', { framingPatch: { reading: { chapterTitles: { NEH: { 1: 'La oración' }, EZR: { 1: 'x' } } } } });
+        expect(repo.getProject).toHaveBeenCalled();
+        expect(escrito(repo).framingPatch.reading).toEqual({ chapterTitles: { NEH: { 1: 'La oración' } } });
     });
 });
 

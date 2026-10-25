@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { projectCourseInfo, projectWorkTypes, type AIProject, type ProjectCourseInfo, type ProjectWorkType } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
@@ -41,37 +41,30 @@ export function ProjectSetupCards({ project, onSave, collapsible = false }: Proj
             setGuardando(null);
         }
     };
+    const idTarjetas = useId();
     const plegable = collapsible && !hasCourseSetup(project);
-    if (plegable && !desplegadas) {
-        return (
-            <button
-                type="button"
-                onClick={() => setDesplegadas(true)}
-                aria-expanded={false}
-                className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-                <ChevronDown className="h-3.5 w-3.5" />{t('course.options')}
-            </button>
-        );
-    }
     const tarjetas = (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <div id={idTarjetas} className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
             <ProjectCourseCard project={project} saving={guardando === 'course'} onSave={courseInfo => guardar('course', { courseInfo })} />
             <ProjectWorkTypesCard project={project} saving={guardando === 'workTypes'} onSave={workTypes => guardar('workTypes', { workTypes })} />
         </div>
     );
     if (!plegable) return tarjetas;
+    // Un solo botón que se mantiene en su lugar: el foco no se pierde al
+    // desplegar, y `aria-expanded`/`aria-controls` dicen qué abre.
+    const Icono = desplegadas ? ChevronUp : ChevronDown;
     return (
         <div className="space-y-2">
             <button
                 type="button"
-                onClick={() => setDesplegadas(false)}
-                aria-expanded
-                className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={() => setDesplegadas(v => !v)}
+                aria-expanded={desplegadas}
+                aria-controls={idTarjetas}
+                className="inline-flex min-h-11 items-center gap-1 rounded-md px-1 py-0.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0"
             >
-                <ChevronUp className="h-3.5 w-3.5" />{t('course.hideOptions')}
+                <Icono className="h-3.5 w-3.5" aria-hidden />{t(desplegadas ? 'course.hideOptions' : 'course.options')}
             </button>
-            {tarjetas}
+            {desplegadas && tarjetas}
         </div>
     );
 }

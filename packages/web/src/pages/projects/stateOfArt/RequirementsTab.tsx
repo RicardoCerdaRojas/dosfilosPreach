@@ -9,9 +9,12 @@ import { SearchGuidePanel } from './SearchGuidePanel';
 import type { CoverageFilter } from './BibliographyCoverageTable';
 import type { useProjectBibliography } from './useProjectBibliography';
 
-/** El panel del proyecto con el diálogo del encuadre abierto. */
+/**
+ * El panel del proyecto con el diálogo del encuadre abierto. `volver` le
+ * dice al panel que, al guardar, ofrezca volver a Requisitos.
+ */
 function framingDialogUrl(projectId: string): string {
-    return `/dashboard/projects/${encodeURIComponent(projectId)}?encuadre=1`;
+    return `/dashboard/projects/${encodeURIComponent(projectId)}?encuadre=1&volver=requisitos`;
 }
 
 interface RequirementsTabProps {

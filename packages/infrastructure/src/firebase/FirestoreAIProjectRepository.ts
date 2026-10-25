@@ -1,4 +1,5 @@
 import {
+    arrayUnion,
     collection,
     doc,
     getDoc,
@@ -14,7 +15,13 @@ import {
     type UpdateData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { AIProject, IAIProjectRepository, ProjectOutput, type AIProjectUpdate } from '@dosfilos/domain';
+import { AIProject, IAIProjectRepository, ProjectOutput, withCappedHypothesisLog, type AIProjectUpdate, type ProjectFraming } from '@dosfilos/domain';
+
+/** El registro del encuadre se agrega sin tope (`arrayUnion`): el tope de 200 se aplica aquí, al leer. */
+function framingLeido(data: DocumentData): { framing?: ProjectFraming } {
+    const f = data.framing as ProjectFraming | undefined;
+    return f && typeof f === 'object' ? { framing: withCappedHypothesisLog(f) } : {};
+}
 
 export class FirestoreAIProjectRepository implements IAIProjectRepository {
     private collectionRef() {
@@ -39,6 +46,7 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
                 return {
                     id: d.id,
                     ...data,
+                    ...framingLeido(data),
                     createdAt: data.createdAt?.toDate() || new Date(),
                     updatedAt: data.updatedAt?.toDate() || new Date(),
                     archivedAt: data.archivedAt?.toDate?.() ?? data.archivedAt ?? undefined,
@@ -55,6 +63,7 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
         return {
             id: snap.id,
             ...data,
+            ...framingLeido(data),
             createdAt: data.createdAt?.toDate() || new Date(),
             updatedAt: data.updatedAt?.toDate() || new Date(),
             archivedAt: data.archivedAt?.toDate?.() ?? data.archivedAt ?? undefined,
@@ -90,9 +99,11 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
      * El payload de `updateProject`, en UN solo `updateDoc`. El encuadre va
      * por rutas con punto (`framing.centralIdea`): guardar el formulario no
      * pisa el registro ni la revisión. `null` borra con `deleteField()`.
+     * Una anotación suelta (`hypothesisAppend`) va con `arrayUnion`: no lee
+     * ni reescribe el registro.
      */
     buildFirestoreUpdates(updates: AIProjectUpdate): Record<string, unknown> {
-        const { framingPatch, bibleBooks, contextNote, ...resto } = updates;
+        const { framingPatch, bibleBooks, contextNote, hypothesisAppend, ...resto } = updates;
         // Firestore does not accept undefined values — strip them before the update
         const out: Record<string, unknown> = Object.fromEntries(
             Object.entries(resto).filter(([, v]) => v !== undefined)
@@ -109,7 +120,13 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
         }
         const campos = Object.entries(framingPatch ?? {}).filter(([k, v]) => v !== undefined && k !== 'updatedAt');
         for (const [k, v] of campos) out[`framing.${k}`] = v === null ? deleteField() : v;
-        if (campos.length) out['framing.updatedAt'] = new Date().toISOString();
+        if (hypothesisAppend) {
+            // Firestore no acepta la misma ruta dos veces: si el cambio ya reescribe
+            // el registro entero, la anotación va al final de ese arreglo.
+            const entero = framingPatch?.hypothesisLog;
+            out['framing.hypothesisLog'] = Array.isArray(entero) ? [...entero, hypothesisAppend] : arrayUnion(hypothesisAppend);
+        }
+        if (campos.length || hypothesisAppend) out['framing.updatedAt'] = new Date().toISOString();
         out.updatedAt = new Date();
         return out;
     }

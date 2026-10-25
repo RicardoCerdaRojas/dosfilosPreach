@@ -8,18 +8,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  */
 const BORRAR = { __borrar: true };
 const escrituras: Array<Record<string, unknown>> = [];
+let leido: Record<string, unknown> = { title: 'P' };
 
 vi.mock('../../config/firebase', () => ({ db: {} }));
 vi.mock('firebase/firestore', () => ({
     collection: () => ({}),
     doc: () => ({}),
     deleteField: () => BORRAR,
+    arrayUnion: (...xs: unknown[]) => ({ __union: xs }),
     updateDoc: async (_ref: unknown, data: Record<string, unknown>) => {
         for (const [k, v] of Object.entries(data)) if (v === undefined) throw new Error(`undefined en ${k}`);
         escrituras.push(data);
     },
-    getDoc: async () => ({ exists: () => true, id: 'p1', data: () => ({ title: 'P' }) }),
-    getDocs: async () => ({ docs: [] }),
+    getDoc: async () => ({ exists: () => true, id: 'p1', data: () => leido }),
+    getDocs: async () => ({ docs: [{ id: 'p1', data: () => leido }] }),
     setDoc: async () => undefined,
     deleteDoc: async () => undefined,
     query: () => ({}),
@@ -30,7 +32,7 @@ vi.mock('firebase/firestore', () => ({
 const { FirestoreAIProjectRepository } = await import('../FirestoreAIProjectRepository');
 const repo = new FirestoreAIProjectRepository();
 
-beforeEach(() => { escrituras.length = 0; });
+beforeEach(() => { escrituras.length = 0; leido = { title: 'P' }; });
 
 describe('FirestoreAIProjectRepository.updateProject — encuadre por campo', () => {
     it('escribe framing.<campo> por cada clave y null con deleteField(), en un solo updateDoc', async () => {
@@ -76,5 +78,36 @@ describe('FirestoreAIProjectRepository.updateProject — nota de contexto', () =
         expect(escrituras[2]!.contextNote).toBe('Iglesia');
         await repo.updateProject('p1', { title: 'T' });
         expect(escrituras[3]).not.toHaveProperty('contextNote');
+    });
+});
+
+describe('FirestoreAIProjectRepository — registro con arrayUnion (C7)', () => {
+    const entrada = { id: 'hl_1', at: '2026-10-25T10:00:00.000Z', source: 'study' as const, studyId: 's1', verdict: 'confirms' as const, note: 'n' };
+
+    it('una anotación va con arrayUnion, sin leer ni reescribir el registro', async () => {
+        await repo.updateProject('p1', { hypothesisAppend: entrada });
+        const d = escrituras[0]!;
+        expect(d['framing.hypothesisLog']).toEqual({ __union: [entrada] });
+        expect(typeof d['framing.updatedAt']).toBe('string');
+    });
+
+    it('si el mismo cambio reescribe el registro, la anotación va al final de ese arreglo (una sola ruta)', async () => {
+        const viejo = { ...entrada, id: 'hl_0' };
+        await repo.updateProject('p1', { framingPatch: { hypothesisLog: [viejo] }, hypothesisAppend: entrada });
+        expect(escrituras[0]!['framing.hypothesisLog']).toEqual([viejo, entrada]);
+    });
+
+    it('al leer, el registro se recorta a las 200 más recientes', async () => {
+        const log = Array.from({ length: 205 }, (_, i) => ({ ...entrada, id: `e${i}` }));
+        leido = { title: 'P', framing: { centralIdea: 'x', hypothesisLog: log } };
+        const p = await repo.getProject('p1');
+        expect(p!.framing!.hypothesisLog).toHaveLength(200);
+        expect(p!.framing!.hypothesisLog![0]!.id).toBe('e5');
+        expect(p!.framing!.centralIdea).toBe('x');
+        const [lista] = await repo.getUserProjects('u');
+        expect(lista!.framing!.hypothesisLog).toHaveLength(200);
+        // Sin encuadre no inventa uno.
+        leido = { title: 'P' };
+        expect(await repo.getProject('p1')).not.toHaveProperty('framing');
     });
 });

@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { AlertTriangle, Compass, NotebookPen, Pencil, Sparkles } from 'lucide-react';
+import { AlertTriangle, CheckCheck, ChevronRight, Compass, NotebookPen, Pencil } from 'lucide-react';
 import {
     currentRevisedIdea,
     formatPassageForReader,
@@ -29,6 +29,9 @@ interface ProjectFramingCardProps {
     saving: boolean;
 }
 
+/** Con más campos que esto, «lo que falta» se pliega: una lista larga desanima más de lo que invita. */
+const MISSING_INLINE_MAX = 5;
+
 /** Una fecha local `YYYY-MM-DD` para leer, sin pasar por UTC (sería el día anterior en América). */
 function fechaLocal(iso: string, lang: string): string {
     const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
@@ -38,8 +41,8 @@ function fechaLocal(iso: string, lang: string): string {
 /**
  * La tarjeta «Encuadre» del proyecto Exegético (§2 pasos 2 y 10): el resumen
  * de la lectura del pastor, lo que falta (invita, no bloquea), el registro de
- * la hipótesis y su consolidación. Lo de aquí no entra a ningún prompt: solo
- * la idea consolidada y vigente llega al sermón.
+ * la hipótesis y «Revisar tu idea central». Lo de aquí no entra a ningún
+ * prompt: solo la idea revisada y vigente llega al sermón.
  */
 export function ProjectFramingCard({ project, studies, onEdit, onAnnotate, onConsolidate, saving }: ProjectFramingCardProps) {
     const { t, i18n } = useTranslation('projects');
@@ -55,6 +58,8 @@ export function ProjectFramingCard({ project, studies, onEdit, onAnnotate, onCon
     const resaltadas = highlightedNoteIds(notas, alcance);
     const registro = f?.hypothesisLog ?? [];
     const desactualizada = isRevisionStale(f);
+    // Revisar la idea central exige tenerla: sin ella no hay qué contrastar.
+    const hayIdea = !!f?.centralIdea?.trim();
     const vigente = currentRevisedIdea(f);
     const nombreLibros = books.map(b => (lang === 'en' ? getBookById(b)?.nameEn : getBookById(b)?.nameEs) ?? b).join(lang === 'en' ? ' and ' : ' y ');
     const pasaje = framingPassageLabel(project, lang);
@@ -68,7 +73,7 @@ export function ProjectFramingCard({ project, studies, onEdit, onAnnotate, onCon
 
     const fila = (etiqueta: string, valor: ReactNode) => (
         <div className="grid gap-0.5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
-            <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{etiqueta}</dt>
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground">{etiqueta}</dt>
             <dd className="text-sm text-foreground">{valor}</dd>
         </div>
     );
@@ -92,7 +97,8 @@ export function ProjectFramingCard({ project, studies, onEdit, onAnnotate, onCon
             ) : (
                 <dl className="space-y-2">
                     {pasaje && fila(t('framing.card.passage'), pasaje)}
-                    {fila(t('framing.card.purpose'), t(`framing.purpose.${f?.purpose ?? 'preach'}`))}
+                    {/* Sin propósito elegido no se afirma «Predicar una serie». */}
+                    {f?.purpose && fila(t('framing.card.purpose'), t(`framing.purpose.${f.purpose}`))}
                     {f?.centralIdea?.trim() && fila(t('framing.card.centralIdea'), <span className="whitespace-pre-line">{f.centralIdea}</span>)}
                     {(f?.structure?.length ?? 0) > 0 && fila(t('framing.card.structure'), (
                         <ol className="space-y-0.5">
@@ -109,9 +115,19 @@ export function ProjectFramingCard({ project, studies, onEdit, onAnnotate, onCon
             )}
 
             {status !== 'missing' && missing.length > 0 && (
-                <p className="text-xs text-muted-foreground" data-testid="framing-missing">
-                    {t('framing.card.missing', { fields: missing.map(m => t(`framing.field.${m}`)).join(', ') })}
-                </p>
+                missing.length > MISSING_INLINE_MAX ? (
+                    <details className="group text-xs text-muted-foreground" data-testid="framing-missing">
+                        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0 [&::-webkit-details-marker]:hidden">
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+                            {t('framing.card.missingMany', { n: missing.length })}
+                        </summary>
+                        <p className="mt-1 pl-4">{missing.map(m => t(`framing.field.${m}`)).join(', ')}</p>
+                    </details>
+                ) : (
+                    <p className="text-xs text-muted-foreground" data-testid="framing-missing">
+                        {t('framing.card.missing', { fields: missing.map(m => t(`framing.field.${m}`)).join(', ') })}
+                    </p>
+                )
             )}
 
             {/* La idea consolidada: la única que llega al sermón, y solo vigente. */}
@@ -120,11 +136,13 @@ export function ProjectFramingCard({ project, studies, onEdit, onAnnotate, onCon
                     <div className="flex flex-wrap items-start gap-2 rounded-lg border border-warning/40 bg-warning-subtle px-3 py-2" role="status" data-testid="framing-stale">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning-subtle-foreground" />
                         <p className="min-w-0 flex-1 text-xs text-warning-subtle-foreground">{t('framing.card.stale')}</p>
-                        <Button size="sm" variant="outline" onClick={() => setConsolidando(true)}>{t('framing.card.consolidateAgain')}</Button>
+                        {hayIdea
+                            ? <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={() => setConsolidando(true)}>{t('framing.card.consolidateAgain')}</Button>
+                            : <p className="basis-full text-xs text-warning-subtle-foreground" data-testid="framing-needs-idea">{t('framing.card.consolidateNeedsIdea')}</p>}
                     </div>
                 ) : vigente && (
                     <div className="rounded-lg border border-success/30 bg-success-subtle px-3 py-2 space-y-0.5" data-testid="framing-revision">
-                        <p className="text-[11px] uppercase tracking-wide text-success-subtle-foreground">
+                        <p className="text-xs uppercase tracking-wide text-success-subtle-foreground">
                             {t('framing.card.revision')} · {t(`framing.revisionVerdict.${f.revision.verdict}`)} · {new Date(f.revision.revisedAt).toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                         <p className="text-sm text-foreground whitespace-pre-line">{vigente}</p>
@@ -142,27 +160,29 @@ export function ProjectFramingCard({ project, studies, onEdit, onAnnotate, onCon
             {status !== 'missing' && (
                 <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                     {studies.length > 0 ? (
-                        <Button size="sm" variant="outline" onClick={() => setAnotando(true)}>
+                        <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={() => setAnotando(true)}>
                             <NotebookPen className="h-3.5 w-3.5" />{t('framing.card.annotate')}
                         </Button>
                     ) : (
                         <p className="text-xs text-muted-foreground">{t('framing.card.annotateNoStudies')}</p>
                     )}
-                    {registro.length > 0 && !desactualizada && (
-                        <Button size="sm" variant="outline" onClick={() => setConsolidando(true)}>
-                            <Sparkles className="h-3.5 w-3.5" />{t('framing.card.consolidate')}
+                    {registro.length > 0 && !desactualizada && (hayIdea ? (
+                        <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={() => setConsolidando(true)}>
+                            <CheckCheck className="h-3.5 w-3.5" />{t('framing.card.consolidate')}
                         </Button>
-                    )}
+                    ) : (
+                        <p className="text-xs text-muted-foreground" data-testid="framing-needs-idea">{t('framing.card.consolidateNeedsIdea')}</p>
+                    ))}
                 </div>
             )}
 
             {notas.length > 0 && (
                 <details className="group rounded-lg border border-border/60 px-3 py-2" data-testid="framing-card-notes">
-                    <summary className="cursor-pointer rounded-sm text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                    <summary className="flex min-h-11 cursor-pointer items-center rounded-sm text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0">
                         {t('framing.notes.title', { book: nombreLibros })}
                     </summary>
                     <div className="mt-2 space-y-2">
-                        <p className="text-[11px] text-muted-foreground">{t('framing.notes.hint')}</p>
+                        <p className="text-xs text-muted-foreground">{t('framing.notes.hint')}</p>
                         <PreachingNotesList notes={notas} highlighted={resaltadas} />
                     </div>
                 </details>

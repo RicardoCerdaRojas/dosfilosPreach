@@ -3,11 +3,13 @@ import {
     formatPassageReference,
     getBookById,
     getPreachingNotes,
+    isStorableFramingPassage,
     parsePassageReference,
-    passageToOriginal,
     passageToReader,
+    readerPassageToOriginal,
     scopeFitsBooks,
     BIBLE_CANON,
+    FRAMING_MAX_SUNDAYS,
     type AIProject,
     type BibleBookId,
     type FramingFrequency,
@@ -17,6 +19,7 @@ import {
     type PreachingNote,
     type ProjectFraming,
 } from '@dosfilos/domain';
+import { igualesCanonicos } from '@/utils/canonico';
 
 /**
  * El formulario del encuadre, sin React: de lo guardado al formulario y del
@@ -29,8 +32,9 @@ import {
 
 /** Las preguntas guía de cada género: claves bajo `framing.genre.questions.<género>.`. */
 export const GENRE_QUESTIONS: Readonly<Record<FramingGenre, ReadonlyArray<string>>> = {
-    // Mathewson, *The Art of Preaching OT Narrative*.
-    'historical-narrative': ['conflict', 'turn', 'resolution', 'narrator'],
+    // Mathewson, *The Art of Preaching OT Narrative*; las tres últimas, para
+    // libros como Esdras-Nehemías (documentos, listas, memorias en primera persona).
+    'historical-narrative': ['conflict', 'turn', 'resolution', 'narrator', 'god', 'protagonist', 'sources'],
     law: ['covenant', 'character', 'fulfillment', 'principle'],
     poetry: ['parallelism', 'images', 'tone', 'shift'],
     wisdom: ['observation', 'promise', 'contrast', 'dialogue'],
@@ -43,7 +47,7 @@ export const GENRE_QUESTIONS: Readonly<Record<FramingGenre, ReadonlyArray<string
 export interface MovementRow {
     /** Solo para React: identifica la fila mientras se edita. */
     key: string;
-    /** Desde–hasta en la numeración del lector: «1-6», «4:6-23» o «Neh 1-7». */
+    /** El tramo en la numeración del lector: «1-6», «4:6-23» o «Neh 1-7». */
     range: string;
     title: string;
 }
@@ -52,11 +56,14 @@ export interface FramingForm {
     books: BibleBookId[];
     purpose: FramingPurpose;
     scopeMode: 'whole' | 'range';
-    /** Desde–hasta dentro del único libro, en la numeración del lector. */
+    /** El tramo dentro del único libro, en la numeración del lector. */
     scopeRange: string;
-    chapterTitles: Record<number, string>;
+    /** Por libro y capítulo del lector; conserva los de libros desmarcados hasta guardar (por si se vuelven a marcar). */
+    chapterTitles: ChapterTitlesByBook;
     repetitions: string;
     genre: FramingGenre | '';
+    genreReading: string;
+    genreEvidence: string;
     occasion: string;
     occasionEvidence: string;
     structure: MovementRow[];
@@ -72,6 +79,8 @@ export interface FramingForm {
     startDate: string;
     frequency: FramingFrequency | '';
 }
+
+export type ChapterTitlesByBook = Partial<Record<BibleBookId, Record<number, string>>>;
 
 let filas = 0;
 export const newMovementRow = (range = '', title = ''): MovementRow => ({ key: `m${++filas}`, range, title });
@@ -104,21 +113,39 @@ function editableText(p: PassageReference, defaultBook: BibleBookId | null, lang
     return p.bookId === defaultBook ? rangeText(lector) : formatPassageReference(lector, lang);
 }
 
-export type RangeResult = { ok: true; passage: PassageReference } | { ok: false } | { ok: true; passage: null };
+/**
+ * `unrecognized`: no se entiende o no existe en la Biblia del lector.
+ * `needs-verses`: cruza un cambio de numeración y no se sabe dónde termina sin versos.
+ * `not-storable`: la limpieza del dominio lo descartaría (no se guarda en silencio).
+ */
+export type RangeError = 'unrecognized' | 'needs-verses' | 'not-storable';
+export type RangeResult = { ok: true; passage: PassageReference } | { ok: false; reason: RangeError } | { ok: true; passage: null };
+
+/** Lo que el pastor escribió, en la numeración del LECTOR (validado contra su Biblia). */
+function parseReaderText(text: string, defaultBook: BibleBookId | null): PassageReference | null | 'invalid' {
+    const limpio = text.trim();
+    if (!limpio) return null;
+    const conLibro = parsePassageReference(limpio);
+    const book = defaultBook ? getBookById(defaultBook) : null;
+    const res = conLibro.ok ? conLibro : book ? parsePassageReference(`${book.nameEs} ${limpio}`) : conLibro;
+    return res.ok ? res.ref : 'invalid';
+}
 
 /**
  * Lo que el pastor escribió (numeración del lector), en la del original.
  * Acepta el tramo solo («4:6-23», usa `defaultBook`) o con libro («Neh 1-7»).
+ * Un capítulo entero que cruza la numeración («Joel 3») se expande a sus
+ * versos antes de convertir (`readerPassageToOriginal`).
  * Vacío: `{ ok: true, passage: null }`.
  */
 export function parseReaderRange(text: string, defaultBook: BibleBookId | null): RangeResult {
-    const limpio = text.trim();
-    if (!limpio) return { ok: true, passage: null };
-    const conLibro = parsePassageReference(limpio);
-    const book = defaultBook ? getBookById(defaultBook) : null;
-    const res = conLibro.ok ? conLibro : book ? parsePassageReference(`${book.nameEs} ${limpio}`) : conLibro;
-    if (!res.ok) return { ok: false };
-    return { ok: true, passage: passageToOriginal(res.ref).passage };
+    const lector = parseReaderText(text, defaultBook);
+    if (lector === null) return { ok: true, passage: null };
+    if (lector === 'invalid') return { ok: false, reason: 'unrecognized' };
+    const original = readerPassageToOriginal(lector);
+    if (!original.ok) return { ok: false, reason: original.reason };
+    if (!isStorableFramingPassage(original.passage)) return { ok: false, reason: 'not-storable' };
+    return { ok: true, passage: original.passage };
 }
 
 /** Del proyecto guardado al formulario. */
@@ -132,9 +159,11 @@ export function formFromProject(project: Pick<AIProject, 'framing' | 'bibliograp
         purpose: f.purpose ?? 'preach',
         scopeMode: alcance ? 'range' : 'whole',
         scopeRange: alcance ? rangeText(passageToReader(alcance.passage).passage) : '',
-        chapterTitles: { ...(f.reading?.chapterTitles ?? {}) },
+        chapterTitles: Object.fromEntries(Object.entries(f.reading?.chapterTitles ?? {}).map(([b, caps]) => [b, { ...caps }])),
         repetitions: f.reading?.repetitions ?? '',
         genre: f.genre ?? '',
+        genreReading: f.genreReading ?? '',
+        genreEvidence: f.genreEvidence ?? '',
         occasion: f.occasion ?? '',
         occasionEvidence: f.occasionEvidence ?? '',
         structure: (f.structure ?? []).map(m => newMovementRow(editableText(m.passage, principal, lang), m.title)),
@@ -159,45 +188,87 @@ export const scopeAllowed = (form: Pick<FramingForm, 'books'>) => new Set(form.b
 function scopePassage(form: FramingForm): RangeResult {
     if (!scopeAllowed(form) || form.scopeMode !== 'range') return { ok: true, passage: null };
     const r = parseReaderRange(form.scopeRange, form.books[0]!);
-    if (r.ok && r.passage && r.passage.bookId !== form.books[0]) return { ok: false };
+    if (r.ok && r.passage && r.passage.bookId !== form.books[0]) return { ok: false, reason: 'unrecognized' };
     return r;
 }
 
+export interface ChaptersOfBook {
+    book: BibleBookId;
+    chapters: number[];
+}
+
 /**
- * Los capítulos que piden título: los del alcance, si hay; si no, los del
- * primer libro. En la numeración del lector, que es la que el pastor tiene
- * abierta.
+ * Los capítulos que piden título, por libro: con un libro y un tramo, los
+ * del tramo; si no, todos los de cada libro marcado (Esdras y Nehemías: 23).
+ * En la numeración del lector, que es la que el pastor tiene abierta.
  */
-export function chaptersToTitle(form: FramingForm): { book: BibleBookId; chapters: number[] } | null {
-    const principal = primaryBook(form.books);
-    if (!principal) return null;
+export function chaptersToTitle(form: FramingForm): ChaptersOfBook[] {
+    const libros = canonicalOrder(form.books);
     const alcance = scopePassage(form);
-    if (alcance.ok && alcance.passage) {
-        const lector = passageToReader(alcance.passage).passage;
-        return { book: principal, chapters: rango(lector.chapterStart, lector.chapterEnd) };
+    if (libros.length === 1 && alcance.ok && alcance.passage) {
+        // El tramo escrito por el pastor ya está en la numeración del lector.
+        const lector = parseReaderText(form.scopeRange, libros[0]!);
+        const p = lector && lector !== 'invalid' ? lector : passageToReader(alcance.passage).passage;
+        return [{ book: libros[0]!, chapters: rango(p.chapterStart, p.chapterEnd) }];
     }
-    return { book: principal, chapters: rango(1, getBookById(principal)?.chapterCount ?? 0) };
+    return libros.map(book => ({ book, chapters: rango(1, getBookById(book)?.chapterCount ?? 0) }));
 }
 
 const rango = (a: number, b: number) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
 
-export type FramingFormError = 'noBooks' | 'scope' | 'movementRange' | 'sundays';
+/** Con más de esto en total, se muestran los primeros `CHAPTERS_PREVIEW` y «Mostrar todos». */
+export const CHAPTERS_COLLAPSE_OVER = 30;
+export const CHAPTERS_PREVIEW = 12;
+
+/** Los títulos escritos para un libro (sin los vacíos). */
+const titulosDe = (form: Pick<FramingForm, 'chapterTitles'>, b: BibleBookId) =>
+    Object.entries(form.chapterTitles[b] ?? {}).filter(([, t]) => t.trim());
+
+/** Los libros desmarcados que tienen títulos escritos: al guardar se pierden, y el diálogo lo avisa. */
+export function droppedTitleBooks(form: Pick<FramingForm, 'books' | 'chapterTitles'>): BibleBookId[] {
+    return canonicalOrder((Object.keys(form.chapterTitles) as BibleBookId[]).filter(b => !form.books.includes(b) && titulosDe(form, b).length > 0));
+}
+
+export type FramingFormError = 'noBooks' | 'scope' | 'scopeVerses' | 'movementRange' | 'movementVerses' | 'sundays';
 
 export interface FramingSave {
     framingPatch: Partial<Record<keyof ProjectFraming, unknown>>;
     bibleBooks: BibleBookId[];
 }
 
-/** Lo que impide guardar. Ningún campo es obligatorio salvo un libro; un tramo mal escrito sí detiene. */
+/**
+ * Lo que impide guardar. Ningún campo es obligatorio salvo un libro; un
+ * tramo mal escrito sí detiene, y también uno que la limpieza descartaría:
+ * nada se pierde en silencio al guardar.
+ */
 export function formErrors(form: FramingForm): FramingFormError[] {
     const errores: FramingFormError[] = [];
     if (form.books.length === 0) errores.push('noBooks');
-    if (!scopePassage(form).ok) errores.push('scope');
+    const alcance = scopePassage(form);
+    if (!alcance.ok) errores.push(alcance.reason === 'needs-verses' ? 'scopeVerses' : 'scope');
     const principal = primaryBook(form.books);
-    if (form.structure.some(m => (m.range.trim() || m.title.trim()) && !parseReaderRange(m.range, principal).ok)) errores.push('movementRange');
-    if (form.structure.some(m => m.title.trim() && !m.range.trim())) errores.push('movementRange');
-    if (form.purpose !== 'personal' && form.sundays.trim() && !/^\d+$/.test(form.sundays.trim())) errores.push('sundays');
+    for (const m of form.structure) {
+        if (!m.range.trim() && !m.title.trim()) continue;
+        const r = parseReaderRange(m.range, principal);
+        if (!r.ok) errores.push(r.reason === 'needs-verses' ? 'movementVerses' : 'movementRange');
+        else if (!r.passage) errores.push('movementRange');
+    }
+    if (form.purpose !== 'personal' && form.sundays.trim() && sundaysValue(form.sundays) === null) errores.push('sundays');
     return [...new Set(errores)];
+}
+
+/** Los domingos escritos, si son un entero de 1 al tope; si no, `null`. */
+function sundaysValue(s: string): number | null {
+    const t = s.trim();
+    if (!/^\d+$/.test(t)) return null;
+    const n = Number(t);
+    return n >= 1 && n <= FRAMING_MAX_SUNDAYS ? n : null;
+}
+
+/** Si el formulario cambió frente al de partida: las claves de React de las filas no cuentan. */
+export function formChanged(initial: FramingForm, current: FramingForm): boolean {
+    const sinClaves = (f: FramingForm) => ({ ...f, structure: f.structure.map(({ range, title }) => ({ range, title })) });
+    return !igualesCanonicos(sinClaves(initial), sinClaves(current));
 }
 
 const texto = (s: string) => s.trim() || null;
@@ -211,11 +282,13 @@ const texto = (s: string) => s.trim() || null;
 export function saveFromForm(form: FramingForm): FramingSave {
     const principal = primaryBook(form.books);
     const alcance = scopePassage(form);
-    const capitulos = new Set(chaptersToTitle(form)?.chapters ?? []);
-    // Solo los títulos de los capítulos que se ven: lo que se guarda es lo que el pastor ve.
-    const titulos = Object.fromEntries(
-        Object.entries(form.chapterTitles).filter(([c, t]) => capitulos.has(Number(c)) && t.trim()).map(([c, t]) => [c, t.trim()]),
-    );
+    // Por libro marcado, todos sus títulos: también los de capítulos fuera del
+    // tramo (cambiar el tramo no borra lo escrito). Solo se descartan los de
+    // libros desmarcados, y el diálogo lo avisa antes.
+    const titulos = Object.fromEntries(form.books.flatMap(b => {
+        const caps = titulosDe(form, b);
+        return caps.length ? [[b, Object.fromEntries(caps.map(([c, t]) => [c, t.trim()]))]] : [];
+    }));
     const reading = Object.keys(titulos).length || form.repetitions.trim()
         ? { ...(Object.keys(titulos).length ? { chapterTitles: titulos } : {}), ...(form.repetitions.trim() ? { repetitions: form.repetitions.trim() } : {}) }
         : null;
@@ -224,7 +297,7 @@ export function saveFromForm(form: FramingForm): FramingSave {
         return r.ok && r.passage ? [{ passage: r.passage, title: m.title.trim() }] : [];
     });
     const personal = form.purpose === 'personal';
-    const n = /^\d+$/.test(form.sundays.trim()) ? Number(form.sundays.trim()) : null;
+    const n = sundaysValue(form.sundays);
     const rhythm = !personal && (n || form.startDate || form.frequency)
         ? { ...(n ? { sundays: n } : {}), ...(form.startDate ? { startDate: form.startDate } : {}), ...(form.frequency ? { frequency: form.frequency } : {}) }
         : null;
@@ -236,6 +309,8 @@ export function saveFromForm(form: FramingForm): FramingSave {
             scope: alcance.ok && alcance.passage ? { bookId: alcance.passage.bookId, passage: alcance.passage } : null,
             reading,
             genre: form.genre || null,
+            genreReading: texto(form.genreReading),
+            genreEvidence: texto(form.genreEvidence),
             occasion: texto(form.occasion),
             occasionEvidence: texto(form.occasionEvidence),
             structure: structure.length ? structure : null,

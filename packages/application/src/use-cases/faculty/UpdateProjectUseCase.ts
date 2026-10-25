@@ -1,7 +1,7 @@
 import {
     IAIProjectRepository, AIProject, ProjectColor, ProjectType,
     cleanBibliographyCriteria, cleanProjectBibliography, cleanSearchLog, cleanProjectCourseInfo, cleanProjectWorkTypes, sourceIdsFromBibliography,
-    appendHypothesisEntry, cleanFramingPatch, scopeFitsBooks,
+    FRAMING_TEXT_MAX, cleanFramingPatch, newHypothesisEntry, scopeFitsBooks,
     type AIProjectUpdate, type BibleBookId, type BibliographySearchLogEntry, type NewHypothesisEntry, type ProjectBibliographyCriteria,
     type ProjectBibliographyEntry, type ProjectCourseInfo, type ProjectFraming, type ProjectFramingPatch, type ProjectWorkType,
 } from '@dosfilos/domain';
@@ -39,7 +39,10 @@ export interface UpdateProjectDTO {
     framingPatch?: Partial<Record<keyof ProjectFraming, unknown | null>>;
     /** Los libros del proyecto, desde el encuadre: única fuente, `bibliographyCriteria.bibleBooks`. */
     bibleBooks?: BibleBookId[];
-    /** Una anotación del registro de la hipótesis; se agrega al registro GUARDADO. */
+    /**
+     * Una anotación del registro de la hipótesis. Se agrega con `arrayUnion`
+     * (sin leer el proyecto): dos anotaciones casi simultáneas no se pisan.
+     */
     hypothesisEntry?: NewHypothesisEntry;
 }
 
@@ -51,6 +54,7 @@ export class UpdateProjectUseCase {
         const libros = dto.bibleBooks !== undefined ? cleanBibliographyCriteria({ bibleBooks: dto.bibleBooks }).bibleBooks ?? [] : undefined;
         const criterios = this.criterios(dto, guardado, libros);
         const framingPatch = this.encuadre(dto, guardado, libros);
+        const hypothesisAppend = dto.hypothesisEntry ? newHypothesisEntry(dto.hypothesisEntry) : null;
         const update: AIProjectUpdate = {
             ...(dto.title !== undefined && { title: dto.title.trim() }),
             ...(dto.color !== undefined && { color: dto.color }),
@@ -66,18 +70,25 @@ export class UpdateProjectUseCase {
             ...(libros !== undefined && criterios === undefined && { bibleBooks: libros }),
             ...(dto.bibliographySearchLog !== undefined && { bibliographySearchLog: cleanSearchLog(dto.bibliographySearchLog) }),
             ...(framingPatch && { framingPatch }),
+            ...(hypothesisAppend && { hypothesisAppend }),
             ...this.fuentes(dto),
         };
         return this.projectRepository.updateProject(projectId, update);
     }
 
-    /** Solo se lee el proyecto cuando lo guardado decide algo de esta escritura. */
+    /**
+     * Solo se lee el proyecto cuando lo guardado decide algo de esta
+     * escritura: los libros (alcance y títulos por libro se validan contra
+     * ellos), el propósito guardado, o la idea que se revisa.
+     */
     private hayQueLeer(dto: UpdateProjectDTO): boolean {
         const p = dto.framingPatch ?? {};
+        const presente = (v: unknown) => v !== undefined && v !== null;
         return dto.bibliographyCriteria !== undefined
-            || dto.hypothesisEntry !== undefined
             || dto.bibleBooks !== undefined
-            || (p.scope !== undefined && p.scope !== null)
+            || presente(p.scope)
+            || presente(p.reading)
+            || presente(p.revision)
             || (p.purpose === undefined && PASTORALES.some(k => p[k] !== undefined));
     }
 
@@ -105,7 +116,12 @@ export class UpdateProjectUseCase {
         // Cambiar los libros invalida un alcance que ya no es de ese único libro.
         const alcance = guardado?.framing?.scope;
         if (libros !== undefined && !('scope' in patch) && alcance && !scopeFitsBooks(alcance, libros)) patch.scope = null;
-        if (dto.hypothesisEntry) Object.assign(patch, appendHypothesisEntry(guardado?.framing, dto.hypothesisEntry));
+        // La revisión guarda la idea que revisó: la GUARDADA (o la que viene en
+        // este mismo cambio), no la de la caché de la página, que puede ser vieja.
+        if (patch.revision) {
+            const idea = 'centralIdea' in patch ? patch.centralIdea : guardado?.framing?.centralIdea;
+            patch.revision = { ...patch.revision, ofIdea: (idea ?? '').trim().slice(0, FRAMING_TEXT_MAX) };
+        }
         return Object.keys(patch).length ? patch : undefined;
     }
 
