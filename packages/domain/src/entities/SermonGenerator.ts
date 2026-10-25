@@ -378,6 +378,36 @@ export interface GenerationRules {
         contextNote: string;
     };
     /**
+     * El lugar del sermón en su serie y lo que el pastor escribió y revisó en
+     * el encuadre del proyecto (`docs/FASE_ENCUADRE_SERIE_2026-10.md`, §1
+     * principios 3 y 4, §2 paso 11). Lo arma `augmentGenerationRules`.
+     *
+     * Lo que NO viaja, a propósito: la hipótesis provisoria (`centralIdea`
+     * sin consolidar: el generador armonizaría la perícopa con ella) y lo que
+     * el asistente escribió en la fila del plan (`homileticalProposition`,
+     * `pastoralObjective`: la gran idea es del predicador y chocaría con la
+     * proposición del análisis). Los vecinos ya llegan por el encargo del
+     * estudio (`paperContext.assignmentBrief`).
+     */
+    seriesContext?: {
+        /** Título de la serie. */
+        title: string;
+        /** 1-based: «sermón k de N». */
+        position: number;
+        /** Filas del plan (sermones), no unidades. */
+        total: number;
+        /** Del encuadre, solo si el propósito no es «estudio personal». Orienta la APLICACIÓN. */
+        pastoral?: {
+            audience?: string;
+            need?: string;
+            /** «¿Con qué texto del libro muestras que la atiende?» */
+            needEvidence?: string;
+            desiredChange?: string;
+        };
+        /** `currentRevisedIdea(framing)`: consolidada y vigente. Ausente si no la hay. */
+        revisedIdea?: string;
+    };
+    /**
      * Pastoral Fidelity seed (Phase 1). When the pastor produced a
      * `PastoralSeed` via the six-step spine, the prompt builder
      * prepends a `PRIMARY VOICE` block + `DEVELOPMENT INSTRUCTIONS`

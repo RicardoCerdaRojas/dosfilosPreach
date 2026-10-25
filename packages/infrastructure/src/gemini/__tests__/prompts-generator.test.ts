@@ -666,3 +666,99 @@ describe('buildSermonDraftPrompt — estilo del manuscrito del usuario (#5 del e
         expect(buildSermonDraftPrompt(baseAnalysis, baseRules)).toContain('EL MANUSCRITO NO ES LA PREDICACIÓN');
     });
 });
+
+describe('buildSermonDraftPrompt — contexto de la serie (encuadre, U6)', () => {
+    const serie: NonNullable<GenerationRules['seriesContext']> = {
+        title: 'Esdras — serie expositiva',
+        position: 3,
+        total: 12,
+        pastoral: {
+            audience: 'Una iglesia que vuelve a empezar',
+            need: 'El desánimo ante lo pequeño',
+            needEvidence: 'Esd 3:12-13',
+            desiredChange: 'Que perseveren en la obra',
+        },
+        revisedIdea: 'Dios cumple su palabra restaurando a su pueblo alrededor de su culto y su Ley.',
+    };
+    const BLOQUE = /\n═══ CONTEXTO DE LA SERIE ═══[\s\S]*?\n════════════════════════════\n\n/;
+    const conProyecto: GenerationRules = {
+        ...baseRules,
+        projectContext: { name: 'Esdras', contextNote: 'Iglesia pequeña' },
+        paperContext: { passage: 'Esdras 3:1-13', assembledMarkdown: '# Paper' },
+    };
+
+    it('sin serie, el prompt no cambia: el bloque es la ÚNICA diferencia', () => {
+        // Comparado además, una vez, contra una copia literal de la salida previa
+        // al cambio (cuatro casos, es y en): idéntica byte a byte.
+        for (const [rules, lang] of [[baseRules, 'es'], [conProyecto, 'es'], [conProyecto, 'en']] as const) {
+            const sin = buildSermonDraftPrompt(baseAnalysis, rules, lang);
+            const con = buildSermonDraftPrompt(baseAnalysis, { ...rules, seriesContext: serie }, lang);
+            expect(sin).not.toContain('CONTEXTO DE LA SERIE');
+            expect(buildSermonDraftPrompt(baseAnalysis, { ...rules, seriesContext: undefined }, lang)).toBe(sin);
+            expect(con).toMatch(BLOQUE);
+            expect(con.replace(BLOQUE, '')).toBe(sin);
+        }
+    });
+
+    it('dice «sermón k de N» con el título, y va pegado al bloque del proyecto', () => {
+        const prompt = buildSermonDraftPrompt(baseAnalysis, { ...conProyecto, seriesContext: serie });
+        expect(prompt).toContain('Este es el sermón 3 de 12 de la serie «Esdras — serie expositiva».');
+        // El arco de la serie no reemplaza la perícopa: los vecinos ya llegan por el encargo.
+        expect(prompt).toContain('pero predica ESTA perícopa: no resumas los otros sermones');
+        const proyecto = prompt.indexOf('CONTEXTO DEL PROYECTO');
+        const bloque = prompt.indexOf('CONTEXTO DE LA SERIE');
+        const paper = prompt.indexOf('CONTEXTO DE ORIGEN — PAPER EXEGÉTICO');
+        expect(proyecto).toBeGreaterThan(-1);
+        expect(bloque).toBeGreaterThan(proyecto);
+        expect(paper).toBeGreaterThan(bloque);
+    });
+
+    it('el propósito pastoral orienta la APLICACIÓN y no cambia la proposición exegética', () => {
+        const prompt = buildSermonDraftPrompt(baseAnalysis, { ...baseRules, seriesContext: serie });
+        expect(prompt).toContain('- A quiénes: Una iglesia que vuelve a empezar');
+        expect(prompt).toContain('- Texto del libro con que el predicador muestra que la atiende: Esd 3:12-13');
+        expect(prompt).toContain('El propósito pastoral orienta la APLICACIÓN');
+        expect(prompt).toContain('NO cambia la proposición exegética');
+    });
+
+    it('la idea revisada va rotulada como del predicador, y si choca gana el análisis', () => {
+        const prompt = buildSermonDraftPrompt(baseAnalysis, { ...baseRules, seriesContext: serie });
+        expect(prompt).toContain('**Idea del libro según el predicador, revisada tras sus estudios:**\nDios cumple su palabra');
+        expect(prompt).toContain('Si choca con el análisis de esta perícopa, gana el análisis');
+    });
+
+    it('sin propósito ni idea revisada: solo el lugar en la serie, sin reglas que no aplican', () => {
+        const prompt = buildSermonDraftPrompt(baseAnalysis, {
+            ...baseRules,
+            seriesContext: { title: 'Romanos', position: 1, total: 4 },
+        });
+        expect(prompt).toContain('Este es el sermón 1 de 4 de la serie «Romanos».');
+        expect(prompt).not.toContain('Propósito pastoral de la serie');
+        expect(prompt).not.toContain('El propósito pastoral orienta');
+        expect(prompt).not.toContain('Idea del libro según el predicador');
+        expect(prompt).not.toContain('gana el análisis');
+        expect(prompt.match(BLOQUE)![0]).not.toContain('\n2. ');
+    });
+
+    it('trunca cada campo a 1 000 caracteres', () => {
+        const largo = 'a'.repeat(5000);
+        const prompt = buildSermonDraftPrompt(baseAnalysis, {
+            ...baseRules,
+            seriesContext: { ...serie, title: 't'.repeat(5000), pastoral: { need: largo }, revisedIdea: 'b'.repeat(5000) },
+        });
+        expect(prompt).toContain(`- Qué necesidad: ${'a'.repeat(1000)}…\n`);
+        expect(prompt).not.toContain('a'.repeat(1001));
+        expect(prompt).not.toContain('b'.repeat(1001));
+        expect(prompt).not.toContain('t'.repeat(1001));
+    });
+
+    it('un lugar imposible no se dibuja', () => {
+        for (const sc of [
+            { title: 'X', position: 0, total: 3 },
+            { title: 'X', position: 4, total: 3 },
+            { title: '  ', position: 1, total: 3 },
+        ]) {
+            expect(buildSermonDraftPrompt(baseAnalysis, { ...baseRules, seriesContext: sc })).not.toContain('CONTEXTO DE LA SERIE');
+        }
+    });
+});

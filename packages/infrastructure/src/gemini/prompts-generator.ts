@@ -369,6 +369,75 @@ serie de predicación de arriba.
 `;
 }
 
+/** Tope por campo del contexto de la serie: el prompt entero comparte 200 000 caracteres con el paper completo (`runLlmPrompt.ts`). */
+export const SERIES_CONTEXT_FIELD_MAX = 1000;
+
+function recorte(v: string | undefined): string {
+  const t = (v ?? '').trim();
+  return t.length > SERIES_CONTEXT_FIELD_MAX ? `${t.slice(0, SERIES_CONTEXT_FIELD_MAX).trimEnd()}…` : t;
+}
+
+/**
+ * El lugar del sermón en su serie y lo que el pastor escribió y revisó en el
+ * encuadre (`docs/FASE_ENCUADRE_SERIE_2026-10.md`, §1 principios 3 y 4).
+ *
+ * Las reglas van escritas en el bloque porque el riesgo es concreto: un
+ * generador armoniza la perícopa con lo que recibe. Por eso el propósito
+ * pastoral se rotula como guía de la APLICACIÓN (Chapell) y la idea revisada
+ * como «del predicador», subordinada al análisis de ESTA perícopa. La
+ * hipótesis provisoria y la proposición del plan no llegan acá: las filtra
+ * `augmentGenerationRules`.
+ *
+ * Sin `seriesContext` devuelve '' y el prompt queda idéntico al de antes.
+ */
+function buildSeriesContextBlock(seriesContext?: GenerationRules['seriesContext']): string {
+  if (!seriesContext) return '';
+  const title = recorte(seriesContext.title);
+  const { position, total } = seriesContext;
+  if (!title || !Number.isInteger(position) || !Number.isInteger(total) || position < 1 || position > total) return '';
+
+  const p = seriesContext.pastoral;
+  const pares: Array<[string, string | undefined]> = [
+    ['A quiénes', p?.audience],
+    ['Qué necesidad', p?.need],
+    ['Texto del libro con que el predicador muestra que la atiende', p?.needEvidence],
+    ['Qué cambio espera', p?.desiredChange],
+  ];
+  const pastoralLines = pares
+    .map(([label, v]) => [label, recorte(v)] as const)
+    .filter(([, v]) => v)
+    .map(([label, v]) => `- ${label}: ${v}`);
+  const revisedIdea = recorte(seriesContext.revisedIdea);
+
+  const reglas = [
+    `Puedes ubicar al oyente en la serie (sermón ${position} de ${total}) y conectar este sermón con el arco de la serie, pero predica ESTA perícopa: no resumas los otros sermones ni adelantes pasajes que no son este.`,
+  ];
+  if (pastoralLines.length) {
+    reglas.push('El propósito pastoral orienta la APLICACIÓN: a quiénes hablas, qué necesidad atiendes y qué cambio buscas. NO cambia la proposición exegética ni lo que el texto dice; la proposición sale del análisis de esta perícopa. Si esta perícopa no toca esa necesidad, no la fuerces: aplica lo que el texto sí dice.');
+  }
+  if (revisedIdea) {
+    reglas.push('La idea revisada es la lectura del libro que hizo el predicador después de sus estudios. Úsala solo para conectar este sermón con el arco de la serie. Si choca con el análisis de esta perícopa, gana el análisis: no ajustes el texto a la idea.');
+  }
+
+  const pastoralBlock = pastoralLines.length
+    ? `\n**Propósito pastoral de la serie (lo escribió el predicador):**\n${pastoralLines.join('\n')}\n`
+    : '';
+  const ideaBlock = revisedIdea
+    ? `\n**Idea del libro según el predicador, revisada tras sus estudios:**\n${revisedIdea}\n`
+    : '';
+
+  return `
+═══ CONTEXTO DE LA SERIE ═══
+Este es el sermón ${position} de ${total} de la serie «${title}».
+${pastoralBlock}${ideaBlock}
+REGLAS PARA USAR ESTE CONTEXTO:
+${reglas.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+
+════════════════════════════
+
+`;
+}
+
 function buildPaperContextBlock(paperContext?: GenerationRules['paperContext']): string {
   if (!paperContext?.assembledMarkdown?.trim()) return '';
   const briefLine = paperContext.assignmentBrief?.trim()
@@ -726,6 +795,8 @@ ${analysis.exegeticalStudy.canonicalParallels!.map(p => `  • ${p.reference}${p
   const paperContextBlock = buildPaperContextBlock(rules.paperContext);
   const facultyContextBlock = buildFacultyContextBlock(rules.facultyContext);
   const projectContextBlock = buildProjectContextBlock(rules.projectContext);
+  // Va pegado al del proyecto: los dos dicen dónde vive el sermón. '' sin serie.
+  const seriesContextBlock = buildSeriesContextBlock(rules.seriesContext);
   const citationContractBlock = buildCitationContractBlock(manifest);
   // Pastoral Fidelity Phase 1: PRIMARY VOICE is the highest-priority
   // context. It precedes every other block (including base system
@@ -740,7 +811,7 @@ ${analysis.exegeticalStudy.canonicalParallels!.map(p => `  • ${p.reference}${p
 
   return `
 ${pastoralSeedBlock}${BASE_SYSTEM_PROMPT}${voiceBlock}
-${projectContextBlock}${paperContextBlock}${facultyContextBlock}${personalizationBlock}${citationContractBlock}
+${projectContextBlock}${seriesContextBlock}${paperContextBlock}${facultyContextBlock}${personalizationBlock}${citationContractBlock}
 FASE 3: REDACCIÓN DEL SERMÓN
 Objetivo: Redactar el contenido completo del sermón basado en el análisis previo.
 ${exegesisContext}
