@@ -70,7 +70,7 @@ export function buildPanoramaUserMessage(input: PanoramaInput): string {
               ? `\n\nNota: el predicador planea alrededor de ${input.targetPreachableCount} sermones para esta serie (suave — informativo, no constriñe el panorama).`
               : `\n\nNote: the preacher targets approximately ${input.targetPreachableCount} sermons for this series (soft — informative, not a constraint on the panorama).`)
         : '';
-    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage);
+    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage, input.book);
 
     if (isSpanish) {
         return [

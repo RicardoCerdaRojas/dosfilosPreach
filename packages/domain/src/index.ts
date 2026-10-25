@@ -154,6 +154,7 @@ export * from './bible/inferLanguageFromBook'; // 🌱 Phase 1.5 — book → or
 export * from './bible/bibleBookTable';
 export * from './bible/parseBibleReferenceParts';
 export * from './bible/searchMatching'; // 🌱 Biblia — búsqueda sin acentos y por términos
+export * from './bible/aramaicSpans'; // 🌱 Encuadre — tramos en arameo del AT
 export * from './bible/referenceSpans'; // 🌱 Púlpito premium C7 — referencias del manuscrito que se pueden tocar
 export * from './bible/versification/versificationMap'; // 🌱 Versificación — correspondencia TM ↔ lector (UBS)
 export * from './bible/versification/mapVersification';

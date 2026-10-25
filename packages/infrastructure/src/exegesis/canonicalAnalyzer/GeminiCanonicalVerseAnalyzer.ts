@@ -73,9 +73,9 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
                 // y el aparato: el mismo esquema para Jonás y para Santiago le
                 // pedía griego con NA28 a un análisis del texto masorético,
                 // contradiciendo al prompt que ya decía lo correcto.
-                responseSchema: canonicalVerseAnalysisSchema(voiceFor(input.verseRef.bookId), {
+                responseSchema: canonicalVerseAnalysisSchema(voiceFor(input.verseRef.bookId, input.verseRef), {
                     withQuestions: (input.sectionQuestions?.length ?? 0) > 0,
-                    grammarLabel: courseGrammarLabel(input.sources, voiceFor(input.verseRef.bookId).grammarsEs).label,
+                    grammarLabel: courseGrammarLabel(input.sources, voiceFor(input.verseRef.bookId, input.verseRef).grammarsEs).label,
                 }),
                 temperature: 0.3,
                 topP: 0.9,

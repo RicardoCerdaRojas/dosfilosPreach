@@ -159,7 +159,7 @@ export function buildMacroUserMessage(input: MacroInput): string {
     const countHint = isSpanish
         ? `Cantidad sugerida (guía suave, escalada al tamaño del libro de ${input.verses.length} versos): aproximadamente ${recommended} macro-secciones. Diverge si los marcadores estructurales canónicos del género lo demandan.`
         : `Suggested count (soft guide, scaled to the ${input.verses.length}-verse book): approximately ${recommended} macro-sections. Diverge if the genre's canonical structural markers demand it.`;
-    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage);
+    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage, input.book);
     const superBlock = formatSuperMacroBlock(input.superMacroSections, isSpanish);
 
     if (isSpanish) {

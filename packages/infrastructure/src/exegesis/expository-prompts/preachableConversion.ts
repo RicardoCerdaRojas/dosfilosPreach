@@ -199,7 +199,7 @@ export function buildPreachableUserMessage(input: PreachableInput): string {
               ? `\n\nGuía suave: el predicador busca aproximadamente ${input.targetPreachableCount} sermones.`
               : `\n\nSoft guide: the preacher targets approximately ${input.targetPreachableCount} sermons.`)
         : '';
-    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage);
+    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage, input.book);
     const refineBlock = formatRefineBlock(input.regenerationHint, isSpanish);
 
     if (isSpanish) {

@@ -1,4 +1,5 @@
 import {
+    BOOKS_WITH_ARAMAIC_SECTIONS,
     findBooksByAlias,
     normalizeAlias,
     type BibleBookId,
@@ -72,16 +73,16 @@ export class CachedExpositoryAssistant implements IExpositoryAssistant {
         const bookId = this.resolveBookId(input.book);
         if (!bookId) return this.wrapped.runPanorama(input);
 
-        const cached = await this.cacheRepo.get(bookId, input.displayLanguage, this.pipelineVersion);
+        const cached = await this.cacheRepo.get(bookId, input.displayLanguage, this.versionFor(bookId));
         if (cached?.panorama) {
             console.log('[CachedExpositoryAssistant] panorama cache HIT', { bookId, lang: input.displayLanguage });
             // Fire-and-forget: don't await, don't fail the response on bookkeeping errors.
-            void this.cacheRepo.recordHit(bookId, input.displayLanguage, this.pipelineVersion, 'panorama');
+            void this.cacheRepo.recordHit(bookId, input.displayLanguage, this.versionFor(bookId), 'panorama');
             return {
                 payload: cached.panorama,
                 modelId: cached.panoramaModelId ?? 'cached',
                 tokensUsed: 0,
-                passVersion: cached.panoramaPassVersion ?? `cached@${this.pipelineVersion}:panorama`,
+                passVersion: cached.panoramaPassVersion ?? `cached@${this.versionFor(bookId)}:panorama`,
             };
         }
 
@@ -89,7 +90,7 @@ export class CachedExpositoryAssistant implements IExpositoryAssistant {
         void this.cacheRepo.upsertPanorama(
             bookId,
             input.displayLanguage,
-            this.pipelineVersion,
+            this.versionFor(bookId),
             result.payload,
             result.modelId,
             result.passVersion,
@@ -103,15 +104,15 @@ export class CachedExpositoryAssistant implements IExpositoryAssistant {
         const bookId = this.resolveBookId(input.book);
         if (!bookId) return this.wrapped.runMacroStructure(input);
 
-        const cached = await this.cacheRepo.get(bookId, input.displayLanguage, this.pipelineVersion);
+        const cached = await this.cacheRepo.get(bookId, input.displayLanguage, this.versionFor(bookId));
         if (cached?.macroSections) {
             console.log('[CachedExpositoryAssistant] macro cache HIT', { bookId, lang: input.displayLanguage });
-            void this.cacheRepo.recordHit(bookId, input.displayLanguage, this.pipelineVersion, 'macro');
+            void this.cacheRepo.recordHit(bookId, input.displayLanguage, this.versionFor(bookId), 'macro');
             return {
                 payload: cached.macroSections,
                 modelId: cached.panoramaModelId ?? 'cached',
                 tokensUsed: 0,
-                passVersion: cached.macroPassVersion ?? `cached@${this.pipelineVersion}:macro`,
+                passVersion: cached.macroPassVersion ?? `cached@${this.versionFor(bookId)}:macro`,
             };
         }
 
@@ -119,7 +120,7 @@ export class CachedExpositoryAssistant implements IExpositoryAssistant {
         void this.cacheRepo.upsertMacro(
             bookId,
             input.displayLanguage,
-            this.pipelineVersion,
+            this.versionFor(bookId),
             result.payload,
             result.passVersion,
         );
@@ -132,15 +133,15 @@ export class CachedExpositoryAssistant implements IExpositoryAssistant {
         const bookId = this.resolveBookId(input.book);
         if (!bookId) return this.wrapped.runMicroStructure(input);
 
-        const cached = await this.cacheRepo.get(bookId, input.displayLanguage, this.pipelineVersion);
+        const cached = await this.cacheRepo.get(bookId, input.displayLanguage, this.versionFor(bookId));
         if (cached?.exegeticalUnits) {
             console.log('[CachedExpositoryAssistant] micro cache HIT', { bookId, lang: input.displayLanguage });
-            void this.cacheRepo.recordHit(bookId, input.displayLanguage, this.pipelineVersion, 'micro');
+            void this.cacheRepo.recordHit(bookId, input.displayLanguage, this.versionFor(bookId), 'micro');
             return {
                 payload: cached.exegeticalUnits,
                 modelId: cached.panoramaModelId ?? 'cached',
                 tokensUsed: 0,
-                passVersion: cached.microPassVersion ?? `cached@${this.pipelineVersion}:micro`,
+                passVersion: cached.microPassVersion ?? `cached@${this.versionFor(bookId)}:micro`,
             };
         }
 
@@ -148,7 +149,7 @@ export class CachedExpositoryAssistant implements IExpositoryAssistant {
         void this.cacheRepo.upsertMicro(
             bookId,
             input.displayLanguage,
-            this.pipelineVersion,
+            this.versionFor(bookId),
             result.payload,
             result.passVersion,
         );
@@ -165,6 +166,16 @@ export class CachedExpositoryAssistant implements IExpositoryAssistant {
 
     async runFidelityReview(input: FidelityInput): Promise<PassResult<FidelityReview>> {
         return this.wrapped.runFidelityReview(input);
+    }
+
+    /**
+     * La versión de caché de un libro. Esdras y Daniel llevan la suya desde
+     * que el prompt avisa de sus secciones en arameo: sin esto, sus panoramas
+     * ya guardados seguían saliendo como si todo el libro fuera hebreo. Subir
+     * la versión de todo el planificador habría tirado la caché de los 66.
+     */
+    private versionFor(bookId: BibleBookId): string {
+        return BOOKS_WITH_ARAMAIC_SECTIONS.has(bookId) ? `${this.pipelineVersion}+arameo` : this.pipelineVersion;
     }
 
     private resolveBookId(bookDisplay: string): BibleBookId | null {

@@ -55,8 +55,9 @@ function buildSystemInstruction(input: ExegesisGenerationInput): string {
     const lang = input.language;
     // Mismo motivo que en el analizador canónico: un pasaje del AT se exegeta
     // en hebreo, y pedirle "el texto griego" hace que el modelo saque la LXX
-    // de memoria e ignore el texto masorético que se le dio como base.
-    const voice = voiceFor(input.paperPassage.bookId);
+    // de memoria e ignore el texto masorético que se le dio como base. Con el
+    // pasaje, la voz sabe si toca arameo (Esd 4:8–6:18, Dn 2:4–7:28).
+    const voice = voiceFor(input.paperPassage.bookId, input.paperPassage);
     const passage = formatPassageReference(input.paperPassage, lang);
     const styleGuideBlock = formatStyleGuide(input.styleGuideContent, lang);
     const briefBlock = formatAssignmentBrief(input.assignmentBrief, lang);
@@ -143,7 +144,12 @@ function buildUserMessage(input: ExegesisGenerationInput): string {
 
 function renderUserMessage(input: ExegesisGenerationInput, sources: string): string {
     const lang = input.language;
-    const voice = voiceFor(input.paperPassage.bookId);
+    // El paso de un versículo habla de ESE versículo: Esd 4:7 es hebreo
+    // aunque el trabajo sea Esd 4:6-24.
+    const voice = voiceFor(
+        input.paperPassage.bookId,
+        input.kind === 'verse' && input.verseRef ? input.verseRef : input.paperPassage,
+    );
     const priorBlock = formatPriorSteps(input.priorAcceptedSteps, lang);
     const emphasisBlock = formatStepEmphasis(input.stepEmphasis, lang);
     const hint = input.regenerationHint

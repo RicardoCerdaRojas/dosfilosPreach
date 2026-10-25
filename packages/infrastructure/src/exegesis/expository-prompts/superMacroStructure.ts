@@ -88,7 +88,7 @@ export function buildSuperMacroSystemInstruction(displayLanguage: 'es' | 'en'): 
 export function buildSuperMacroUserMessage(input: SuperMacroInput): string {
     const isSpanish = input.displayLanguage === 'es';
     const panoramaBlock = formatPanoramaForPrompt(input.panorama, isSpanish);
-    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage);
+    const sourcePreamble = buildSourcePreamble(input.sourceLanguage, input.displayLanguage, input.book);
 
     if (isSpanish) {
         return [

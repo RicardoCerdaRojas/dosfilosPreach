@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countOshbVerbTypes, describeOshbCode, describeOshbSegment } from '../oshbMorphology';
+import { countOshbVerbTypes, describeOshbCode, describeOshbSegment, isAramaicOshbCode } from '../oshbMorphology';
 
 /**
  * Los casos vienen del Salmo 23:1-3 en morphhb, contrastados contra el
@@ -39,9 +39,52 @@ describe('describeOshbCode — las junturas de la palabra', () => {
         expect(describeOshbCode('HNcmsa')).toBe('sustantivo masculino singular absoluto');
         expect(describeOshbCode('HNcmsc')).toBe('sustantivo masculino singular constructo');
     });
+});
 
-    it('el arameo se lee igual: cambia la letra de lengua, no el código', () => {
-        expect(describeOshbCode('AVqp3ms')).toContain('qal perfecto');
+/**
+ * El arameo usa las mismas letras para otros tallos (tabla oficial de OSHB,
+ * «Verb stems (Aramaic)»). Antes se le aplicaba la tabla hebrea y esta prueba
+ * afirmaba «qal perfecto» para `AVqp3ms`: fijaba el defecto.
+ */
+describe('describeOshbCode — el arameo tiene sus propios tallos', () => {
+    it('peal, no qal', () => {
+        expect(describeOshbCode('AVqp3ms')).toBe('peal perfecto 3ª masculino singular (arameo)');
+    });
+
+    it('haphel, no hifil', () => {
+        expect(describeOshbCode('AVhp3ms')).toContain('haphel perfecto');
+        expect(describeOshbCode('AVhp3ms')).not.toContain('hifil');
+    });
+
+    it('pael, no piel', () => {
+        expect(describeOshbCode('AVpp3ms')).toContain('pael perfecto');
+    });
+
+    it('los tallos que el hebreo no tiene también se nombran (hithpeel, shaphel)', () => {
+        expect(describeOshbCode('AVui3ms')).toContain('hithpeel imperfecto');
+        expect(describeOshbCode('AVep3ms')).toContain('shaphel perfecto');
+    });
+
+    it('el hebreo no cambia', () => {
+        expect(describeOshbCode('HVqp3ms')).toBe('qal perfecto 3ª masculino singular');
+        expect(describeOshbCode('HVhp3ms')).toContain('hifil perfecto');
+    });
+
+    it('un adjetivo hebreo con prefijo sigue siendo hebreo', () => {
+        expect(describeOshbCode('HAampa')).toBe('adjetivo');
+        expect(isAramaicOshbCode('HAampa')).toBe(false);
+    });
+
+    it('el sustantivo arameo dice su lengua (Dn 2:4 cambia de lengua dentro del versículo)', () => {
+        expect(describeOshbCode('ANcmsd')).toBe('sustantivo masculino singular determinado (arameo)');
+        expect(describeOshbCode('AC/Np')).toBe('conjunción + sustantivo propio (arameo)');
+    });
+
+    it('formato del paquete npm: `Aampa` es un adjetivo hebreo sin prefijo, no arameo', () => {
+        // El npm de morphhb quita la H del hebreo y deja la A del arameo.
+        expect(isAramaicOshbCode('Aampa')).toBe(false);
+        expect(describeOshbCode('Aampa')).toBe('adjetivo');
+        expect(isAramaicOshbCode('AVqp3ms')).toBe(true);
     });
 });
 
@@ -82,5 +125,20 @@ describe('countOshbVerbTypes — el recuento', () => {
 
     it('un tallo sin verificar no se cuenta con nombre inventado', () => {
         expect(countOshbVerbTypes(['HVzi3ms'])).toEqual({});
+    });
+
+    it('el arameo se cuenta aparte, con su nombre', () => {
+        // Esd 4:8 junto a un verso hebreo: sumar peal con qal mezclaría dos
+        // sistemas verbales.
+        const c = countOshbVerbTypes(['AVqp3mp', 'HVqp3ms', 'AVhp3ms', 'AVqp3ms']);
+        expect(c).toEqual({
+            'perfecto peal arameo': 2,
+            'perfecto qal': 1,
+            'perfecto haphel arameo': 1,
+        });
+    });
+
+    it('una letra fuera de la tabla aramea tampoco se cuenta', () => {
+        expect(countOshbVerbTypes(['AVxp3ms'])).toEqual({});
     });
 });
