@@ -446,7 +446,7 @@
             "cta_one": "Create series with {{count}} sermon",
             "cta_other": "Create series with {{count}} sermons",
             "description": "Series description",
-            "descriptionHint": "It comes from the central idea in your framing. Adjust it to how you want to present the series."
+            "descriptionHint": "If you already revised your central idea in the framing, it appears here for you to adjust. If you leave it empty, the series gets a short description of the book."
         },
         "framing": {
             "contrast": {
@@ -461,28 +461,32 @@
                 "noMovements": "You did not note movements in the framing.",
                 "noPanoramaMovements": "The panorama did not propose movements.",
                 "untitled": "(untitled)",
-                "question": "What changes in your reading?",
-                "questionHint": "What the panorama proposes, against your reading. If you note it, it goes into the log and you will see it when you consolidate the idea. It is optional.",
+                "question": "After going back to the text, what does it do with your reading?",
+                "questionHint": "The panorama neither confirms nor corrects your reading: go back to the verses where they differ and decide for yourself. If you note it, it goes into the log and you will see it when you revise your central idea. It is optional.",
                 "verdict": {
                     "confirms": "Confirms",
                     "nuances": "Nuances",
                     "contradicts": "Contradicts"
                 },
                 "noteLabel": "Note (optional)",
-                "notePlaceholder": "What you saw and in which verses",
+                "notePlaceholder": "Which verses did you review because of this difference?",
                 "save": "Add to the log",
                 "saved": "Added to the log of your reading.",
-                "saveFailed": "Could not save the note. Try again."
+                "saveFailed": "Could not save the note. Try again.",
+                "already": "You already noted: {{verdict}} · {{date}}",
+                "again": "Note again"
             },
             "units": {
                 "unitCount_one": "{{count}} unit",
                 "unitCount_other": "{{count}} units",
                 "sundayCount_one": "{{count}} Sunday",
                 "sundayCount_other": "{{count}} Sundays",
-                "summary": "The text yielded {{units}}; you planned {{sundays}}.",
-                "principle": "The text sets the preaching unit; the calendar adjusts to it.",
-                "moreUnits": "You can group units with “Merge” in Pass 4 or adjust the calendar in the project framing.",
-                "fewerUnits": "You can preach one unit over several Sundays (that option comes in an upcoming version) or adjust the calendar in the project framing."
+                "summary": "Pass 4 proposes {{units}}; you planned {{sundays}}.",
+                "principle": "The text sets the unit, not the calendar: review the proposed division and, if you confirm it, adjust the calendar.",
+                "moreUnits": "If a boundary does not hold up in the text, you can join two units with “Merge” in Pass 4.",
+                "fewerUnits": "You can adjust the calendar in the project framing.",
+                "reviewDivision": "Review the division",
+                "adjustCalendar": "Adjust the calendar"
             }
         },
         "passes": {

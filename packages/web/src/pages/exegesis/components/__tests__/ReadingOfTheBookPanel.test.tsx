@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { render as renderRtl, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +21,9 @@ vi.mock('@/hooks/faculty/useFacultyProjects', () => ({
 }));
 
 const { ReadingOfTheBookPanel, matchMovements, projectWithReading, entriesOfStudy } = await import('../ReadingOfTheBookPanel');
+
+// El formulario enlaza al proyecto: necesita un router.
+const render = (ui: ReactElement) => renderRtl(ui, { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> });
 
 const p = (cs: number, ce: number, vs: number | null = null, ve: number | null = null) =>
     ({ bookId: 'EZR', chapterStart: cs, chapterEnd: ce, verseStart: vs, verseEnd: ve });
@@ -79,6 +84,23 @@ describe('cuándo aparece', () => {
         expect(projectWithReading({ projectId: 'esd', linkedProjectIds: ['otro'] }, all)?.id).toBe('esd');
         expect(projectWithReading({ projectId: 'curso', linkedProjectIds: ['esd', 'otro'] }, all)?.id).toBe('esd');
         expect(projectWithReading({ projectId: 'esd', linkedProjectIds: [] }, [{ ...proyecto, deletedAt: new Date() }] as never[])).toBeNull();
+    });
+});
+
+describe('libro o pasaje', () => {
+    it('sin alcance, «del libro»; con alcance acotado, «del pasaje»', () => {
+        render(<ReadingOfTheBookPanel paper={estudio()} />);
+        abrir();
+        expect(screen.getByText('readingPanel.title')).toBeInTheDocument();
+        expect(screen.getByText('readingPanel.centralIdea')).toBeInTheDocument();
+        expect(screen.getByText('readingPanel.structure')).toBeInTheDocument();
+        cleanup();
+        proyectos = [{ ...proyecto, framing: { ...encuadre, scope: { bookId: 'EZR', passage: p(7, 10) } } }];
+        render(<ReadingOfTheBookPanel paper={estudio()} />);
+        expect(screen.getByText('readingPanel.titlePassage')).toBeInTheDocument();
+        expect(screen.getByText('readingPanel.centralIdeaPassage')).toBeInTheDocument();
+        expect(screen.getByText('readingPanel.structurePassage')).toBeInTheDocument();
+        expect(screen.queryByText('readingPanel.title')).not.toBeInTheDocument();
     });
 });
 
@@ -182,14 +204,36 @@ describe('el registro de este estudio', () => {
         await waitFor(() => expect((screen.getByLabelText('readingPanel.form.noteLabel') as HTMLTextAreaElement).value).toBe(''));
     });
 
-    it('el panel no llama a ningún prompt: no importa servicios ni hooks de generación', () => {
+    it('el panel no llama a ningún prompt: ni él ni su formulario importan servicios ni hooks de generación', () => {
         const aqui = dirname(fileURLToPath(import.meta.url));
-        const fuente = readFileSync(resolve(aqui, '../ReadingOfTheBookPanel.tsx'), 'utf8');
-        const imports = [...fuente.matchAll(/from '([^']+)'/g)].map(m => m[1]);
-        expect(imports.sort()).toEqual([
-            '@/components/ui/button', '@/components/ui/label', '@/components/ui/radio-group', '@/components/ui/textarea',
-            '@/hooks/faculty/useFacultyProjects', '@/i18n', '@dosfilos/domain', 'lucide-react', 'react', 'sonner',
+        const importsDe = (f: string) => [...readFileSync(resolve(aqui, f), 'utf8').matchAll(/from '([^']+)'/g)].map(m => m[1]);
+        expect(importsDe('../ReadingOfTheBookPanel.tsx').sort()).toEqual([
+            './ReadingAnnotateForm', '@/hooks/faculty/useFacultyProjects', '@/i18n', '@dosfilos/domain', 'lucide-react', 'react',
         ]);
+        expect(importsDe('../ReadingAnnotateForm.tsx').sort()).toEqual([
+            '@/components/ui/button', '@/components/ui/label', '@/components/ui/radio-group', '@/components/ui/textarea',
+            '@/hooks/faculty/useFacultyProjects', '@/i18n', '@dosfilos/domain', 'lucide-react', 'react', 'react-router-dom', 'sonner',
+        ]);
+    });
+
+    it('la nota dice dónde se revisa la idea y enlaza al proyecto', () => {
+        render(<ReadingOfTheBookPanel paper={estudio()} />);
+        abrir();
+        expect(screen.getByText(/readingPanel\.form\.private/)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'readingPanel.form.goToProject' })).toHaveAttribute('href', '/dashboard/projects/esd');
+    });
+
+    it('si falla al anotar, lo avisa y conserva lo escrito', async () => {
+        const { toast } = await import('sonner');
+        mutateAsync.mockRejectedValueOnce(new Error('red'));
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        render(<ReadingOfTheBookPanel paper={estudio()} />);
+        abrir();
+        fireEvent.click(screen.getByRole('radio', { name: 'readingPanel.verdict.confirms' }));
+        fireEvent.change(screen.getByLabelText('readingPanel.form.noteLabel'), { target: { value: 'Mi nota' } });
+        fireEvent.click(screen.getByRole('button', { name: 'readingPanel.form.save' }));
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('readingPanel.toast.failed'));
+        expect(screen.getByLabelText('readingPanel.form.noteLabel')).toHaveValue('Mi nota');
     });
 });
 
@@ -206,6 +250,13 @@ describe('textos', () => {
         const val = (o: unknown, k: string) => k.split('.').reduce((x, y) => (x as Record<string, unknown>)[y], o) as string;
         for (const k of aplanar(a)) expect(marcadores(val(b, k))).toEqual(marcadores(val(a, k)));
         for (const v of ['confirms', 'nuances', 'contradicts']) expect(aplanar(a)).toContain(`verdict.${v}`);
+    });
+
+    it('glosario: «tu lectura», nunca «tu hipótesis»; errores con «Inténtalo de nuevo»', () => {
+        const panel = JSON.stringify((es as Record<string, unknown>).readingPanel);
+        expect(panel).not.toMatch(/hipótesis/i);
+        expect((es as { readingPanel: { toast: { failed: string } } }).readingPanel.toast.failed).toMatch(/Inténtalo de nuevo\.$/);
+        expect((es as { readingPanel: { form: { noteLabel: string } } }).readingPanel.form.noteLabel).toBe('Nota (opcional)');
     });
 
     it('no nombra la máquina ni usa voseo', () => {

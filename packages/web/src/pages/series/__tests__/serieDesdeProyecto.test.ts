@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import type { AddProjectSourceInput, BibleBookId, ExegeticalUnit, PreachableUnit } from '@dosfilos/domain';
 import {
     activeProjectById,
-    briefWithPlaceInBook,
     buildSeriesPlan,
     excludedFrom,
     framingPrefill,
@@ -13,6 +12,7 @@ import {
     projectEntryState,
     seriesDescriptionFor,
     shouldRestoreDraft,
+    sourceChapterCount,
     unitsVsSundays,
 } from '../utils/serieDesdeProyecto';
 
@@ -274,15 +274,17 @@ describe('framingPrefill — lo que el encuadre precarga', () => {
         rhythm: { sundays: 12, startDate: '2026-11-01', frequency: 'biweekly' },
     };
 
-    it('alcance, fecha, frecuencia y la idea central para la descripción; los domingos NO', () => {
+    it('alcance, fecha y frecuencia; la idea PROVISORIA no va a la descripción ni los domingos a nada', () => {
         const r = framingPrefill(esdras(completo));
         expect(r).toEqual({
             scope: esd(7, 10),
             startDate: '2026-11-01',
             frequency: 'biweekly',
-            description: 'Dios restaura a su pueblo por su Palabra.',
+            // Con encuadre y sin idea revisada: el campo aparece vacío.
+            description: '',
         });
         expect(JSON.stringify(r)).not.toContain('12');
+        expect(JSON.stringify(r)).not.toContain('Dios restaura');
     });
 
     it('sin proyecto o sin encuadre: nada', () => {
@@ -298,10 +300,10 @@ describe('framingPrefill — lo que el encuadre precarga', () => {
         expect(framingPrefill(esdras(completo), { bookParam: 'EZR' }).scope).toEqual(esd(7, 10));
     });
 
-    it('la idea revisada y vigente gana a la provisoria; desactualizada, no', () => {
+    it('solo la idea revisada y vigente precarga la descripción; desactualizada, el campo queda vacío', () => {
         const revision = { centralIdea: 'Revisada', verdict: 'nuanced', why: 'x', ofIdea: 'Original', revisedAt: '2026-10-25T00:00:00Z' };
         expect(framingPrefill(esdras({ centralIdea: 'Original', revision })).description).toBe('Revisada');
-        expect(framingPrefill(esdras({ centralIdea: 'Editada', revision })).description).toBe('Editada');
+        expect(framingPrefill(esdras({ centralIdea: 'Editada', revision })).description).toBe('');
     });
 });
 
@@ -315,11 +317,34 @@ describe('hasReadingToContrast', () => {
 });
 
 describe('isPassageRun — para el rótulo «del pasaje»', () => {
+    const v = (chapter: number, verse: number, text = 'texto') => ({ chapter, verse, text });
     it('libro entero si empieza en 1:1 y llega al último capítulo', () => {
-        expect(isPassageRun([{ chapter: 1, verse: 1 }, { chapter: 10, verse: 44 }], 10)).toBe(false);
-        expect(isPassageRun([{ chapter: 7, verse: 1 }, { chapter: 10, verse: 44 }], 10)).toBe(true);
-        expect(isPassageRun([{ chapter: 1, verse: 1 }, { chapter: 6, verse: 22 }], 10)).toBe(true);
-        expect(isPassageRun([], 10)).toBe(false);
+        expect(isPassageRun([v(1, 1), v(10, 44)], 'EZR', 10)).toBe(false);
+        expect(isPassageRun([v(7, 1), v(10, 44)], 'EZR', 10)).toBe(true);
+        expect(isPassageRun([v(1, 1), v(6, 22)], 'EZR', 10)).toBe(true);
+        expect(isPassageRun([], 'EZR', 10)).toBe(false);
+    });
+
+    it('Malaquías en hebreo termina en 3:24 y es el libro entero, aunque el lector tenga 4 capítulos', () => {
+        const hebreo = [v(1, 1, 'מַשָּׂא דְבַר־יְהוָה'), v(3, 24, 'וְהֵשִׁיב לֵב־אָבוֹת')];
+        expect(isPassageRun(hebreo, 'MAL', 4)).toBe(false);
+        // Malaquías 1-2 en hebreo sí es un pasaje.
+        expect(isPassageRun([v(1, 1, 'מַשָּׂא'), v(2, 17, 'הוֹגַעְתֶּם')], 'MAL', 4)).toBe(true);
+    });
+
+    it('Malaquías en una traducción de respaldo se mide contra los 4 capítulos del lector', () => {
+        expect(isPassageRun([v(1, 1, 'Profecía'), v(3, 18, 'Entonces')], 'MAL', 4)).toBe(true);
+        expect(isPassageRun([v(1, 1, 'Profecía'), v(4, 6, 'Él hará volver')], 'MAL', 4)).toBe(false);
+    });
+});
+
+describe('sourceChapterCount', () => {
+    it('la cuenta del original si el texto es hebreo o griego; si no, la del lector', () => {
+        expect(sourceChapterCount('MAL', [{ text: 'מַשָּׂא' }], 4)).toBe(3);
+        // Joel: 3 capítulos en el lector, 4 en hebreo.
+        expect(sourceChapterCount('JOL', [{ text: 'דְּבַר־יְהוָה' }], 3)).toBe(4);
+        expect(sourceChapterCount('MAL', [{ text: 'Profecía' }], 4)).toBe(4);
+        expect(sourceChapterCount('2PE', [{ text: 'Συμεὼν Πέτρος' }], 3)).toBe(3);
     });
 });
 
@@ -340,22 +365,5 @@ describe('seriesDescriptionFor', () => {
         expect(seriesDescriptionFor(' Mi idea ', 'fija')).toBe('Mi idea');
         expect(seriesDescriptionFor('   ', 'fija')).toBe('fija');
         expect(seriesDescriptionFor(null, 'fija')).toBe('fija');
-    });
-});
-
-describe('briefWithPlaceInBook — «Crear estudio» desde SeriesDetail', () => {
-    const serie = { metadata: { plannedSermons: [
-        { id: 'a', title: 'El decreto', passage: 'Esdras 1:1-4' },
-        { id: 'b', title: 'Los utensilios', passage: 'Esdras 1:5-11' },
-        { id: 'c', title: 'La lista', passage: 'Esdras 2:1-70' },
-    ] } };
-    it('la justificación y el lugar en el libro', () => {
-        expect(briefWithPlaceInBook('Cambio de escena.', serie, 'b')).toBe(
-            'Cambio de escena.\n\nPerícopa 2 de 3 de la serie. Antes: Esdras 1:1-4 («El decreto»). Después: Esdras 2:1-70 («La lista»).',
-        );
-    });
-    it('sin justificación, solo el lugar; sin serie ni justificación, null', () => {
-        expect(briefWithPlaceInBook(null, serie, 'a')).toBe('Perícopa 1 de 3 de la serie. Después: Esdras 1:5-11 («Los utensilios»).');
-        expect(briefWithPlaceInBook('  ', null, 'a')).toBeNull();
     });
 });

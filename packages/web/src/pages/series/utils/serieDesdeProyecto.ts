@@ -1,8 +1,8 @@
 import {
     bookIdOfUnit,
     currentRevisedIdea,
-    placeInBook,
     scopeFitsBooks,
+    verseToOriginal,
     type AddProjectSourceInput,
     type AIProject,
     type AssistantVerseInput,
@@ -272,7 +272,11 @@ export interface FramingPrefill {
     /** `YYYY-MM-DD`, como el campo de fecha. */
     startDate: string | null;
     frequency: Frequency | null;
-    /** La idea del pastor para la descripción de la serie. */
+    /**
+     * La descripción de la serie: la idea REVISADA y vigente, o `''` si el
+     * proyecto tiene encuadre pero no la revisó todavía. `null`: sin encuadre
+     * (el campo no aparece).
+     */
     description: string | null;
 }
 
@@ -280,10 +284,14 @@ const SIN_PRECARGA: FramingPrefill = { scope: null, startDate: null, frequency: 
 
 /**
  * Lo que el encuadre precarga en el planificador. Los domingos NO: el
- * «≈N sermones» sigue siendo del pastor y el texto fija la unidad
+ * «≈N sermones» sigue siendo del pastor y la división la fija el texto
  * (principio 5). El alcance solo vale si sigue siendo del único libro del
- * proyecto y, si la URL trae libro, de ese libro. La descripción toma la
- * idea revisada y vigente si existe; si no, la idea central.
+ * proyecto y, si la URL trae libro, de ese libro.
+ *
+ * La descripción solo toma la idea REVISADA y vigente: la descripción es un
+ * dato visible de la serie, y la idea provisoria es una hipótesis que todavía
+ * no pasó por el texto. Sin revisar, el campo queda vacío y al crear se usa
+ * el texto de siempre.
  */
 export function framingPrefill(
     project: Pick<AIProject, 'framing' | 'bibliographyCriteria'> | null | undefined,
@@ -298,7 +306,7 @@ export function framingPrefill(
         && (!opts.bookParam || opts.bookParam === f.scope.bookId)
         ? f.scope.passage
         : null;
-    const description = currentRevisedIdea(f) ?? (f.centralIdea?.trim() || null);
+    const description = currentRevisedIdea(f) ?? '';
     return {
         scope,
         startDate: f.rhythm?.startDate ?? null,
@@ -313,15 +321,37 @@ export function hasReadingToContrast(framing: Pick<ProjectFraming, 'centralIdea'
 }
 
 /**
+ * Cuántos capítulos tiene la FUENTE de los versículos, no la Biblia del
+ * lector. Malaquías tiene 3 capítulos en hebreo y 4 en la RVR: un análisis
+ * del libro entero sobre el hebreo termina en 3:24, y medirlo contra 4 lo
+ * hacía pasar por «pasaje». Si el texto viene en hebreo o griego, la cuenta
+ * es la del original; si es una traducción de respaldo, la del lector.
+ */
+export function sourceChapterCount(
+    bookId: BibleBookId,
+    verses: ReadonlyArray<Pick<AssistantVerseInput, 'text'>>,
+    readerChapterCount: number,
+): number {
+    if (readerChapterCount < 1) return readerChapterCount;
+    const original = verses.some((v) => /[\u0590-\u05FF\u0370-\u03FF\u1F00-\u1FFF]/.test(v.text ?? ''));
+    return original ? verseToOriginal(bookId, readerChapterCount, 1).chapter : readerChapterCount;
+}
+
+/**
  * Si el análisis fue de un pasaje y no del libro entero. Para un borrador
  * restaurado, que no guarda el alcance: libro entero si empieza en 1:1 y
- * llega al último capítulo.
+ * llega al último capítulo DE SU FUENTE (`sourceChapterCount`).
  */
-export function isPassageRun(verses: ReadonlyArray<Pick<AssistantVerseInput, 'chapter' | 'verse'>> | null | undefined, chapterCount: number): boolean {
+export function isPassageRun(
+    verses: ReadonlyArray<Pick<AssistantVerseInput, 'chapter' | 'verse' | 'text'>> | null | undefined,
+    bookId: BibleBookId,
+    readerChapterCount: number,
+): boolean {
     if (!verses?.length) return false;
     const first = verses[0]!;
     const last = verses[verses.length - 1]!;
-    return !(first.chapter === 1 && first.verse === 1 && last.chapter >= chapterCount);
+    const total = sourceChapterCount(bookId, verses, readerChapterCount);
+    return !(first.chapter === 1 && first.verse === 1 && last.chapter >= total);
 }
 
 export interface UnitsVsSundays {
@@ -330,7 +360,7 @@ export interface UnitsVsSundays {
     sundays: number;
 }
 
-/** El aviso tras el Pase 4: el texto dio N unidades y el pastor planeó M domingos. Iguales o sin domingos: nada. */
+/** El aviso tras el Pase 4: el Pase 4 propone N unidades y el pastor planeó M domingos. Iguales o sin domingos: nada. */
 export function unitsVsSundays(units: number, sundays: number | null | undefined): UnitsVsSundays | null {
     if (!sundays || sundays < 1 || units < 1 || units === sundays) return null;
     return { direction: units > sundays ? 'more-units' : 'fewer-units', units, sundays };
@@ -339,18 +369,4 @@ export function unitsVsSundays(units: number, sundays: number | null | undefined
 /** La descripción de la serie: la que escribió el pastor o, vacía o sin precarga, el texto de siempre. */
 export function seriesDescriptionFor(edited: string | null | undefined, fallback: string): string {
     return edited?.trim() || fallback;
-}
-
-/**
- * El encargo de un estudio creado a mano desde SeriesDetail: la
- * justificación y su lugar en el libro. Misma regla que
- * `pericopeAssignmentBrief` del servicio, que arma los del lote.
- */
-export function briefWithPlaceInBook(
-    justification: string | null | undefined,
-    series: Parameters<typeof placeInBook>[0],
-    pericopeId: string,
-): string | null {
-    const partes = [justification?.trim(), placeInBook(series, pericopeId)].filter((p): p is string => Boolean(p));
-    return partes.length ? partes.join('\n\n') : null;
 }

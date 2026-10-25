@@ -31,9 +31,10 @@ export function CreateSeriesCard({
     frequency: 'weekly' | 'biweekly' | 'monthly' | 'flexible';
     onFrequencyChange: (v: 'weekly' | 'biweekly' | 'monthly' | 'flexible') => void;
     /**
-     * La descripción que escribe el pastor, precargada con la idea central
-     * de su encuadre. `null`: sin encuadre, la serie lleva el texto de siempre
-     * y el campo no aparece.
+     * La descripción que escribe el pastor, precargada solo con la idea
+     * REVISADA de su encuadre (la provisoria no es dato de la serie). `''`:
+     * con encuadre y sin revisar, el campo aparece vacío. `null`: sin
+     * encuadre, el campo no aparece. Vacía, la serie lleva el texto de siempre.
      */
     description?: string | null;
     onDescriptionChange?: (v: string) => void;

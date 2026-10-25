@@ -45,6 +45,7 @@ import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
     buildDefaultRubric,
+    cleanSeriesPlacement,
     migrateLegacyRole,
 } from '@dosfilos/domain';
 
@@ -203,6 +204,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             archivedAt: null,
             seriesId: draft.seriesId ?? null,
             pericopeId: draft.pericopeId ?? null,
+            ...(draft.seriesPlacement ? { seriesPlacement: draft.seriesPlacement } : {}),
             projectId: draft.projectId ?? null,
             linkedProjectIds: [],
             projectWorkTypeId: draft.projectId ? draft.projectWorkTypeId ?? null : null,
@@ -967,6 +969,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     }
     if (paper.seriesId !== undefined) data.seriesId = paper.seriesId;
     if (paper.pericopeId !== undefined) data.pericopeId = paper.pericopeId;
+    if (paper.seriesPlacement !== undefined) data.seriesPlacement = paper.seriesPlacement;
     if (paper.projectId !== undefined) data.projectId = paper.projectId;
     if (paper.linkedProjectIds !== undefined) data.linkedProjectIds = paper.linkedProjectIds;
     if (paper.projectWorkTypeId !== undefined) data.projectWorkTypeId = paper.projectWorkTypeId;
@@ -1020,12 +1023,19 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         archivedAt: data.archivedAt?.toDate?.() ?? data.archivedAt ?? null,
         seriesId: typeof data.seriesId === 'string' ? data.seriesId : null,
         pericopeId: typeof data.pericopeId === 'string' ? data.pericopeId : null,
+        // Solo si viene y es válido: los estudios anteriores al campo no lo tienen.
+        ...withSeriesPlacement(data.seriesPlacement),
         projectId: typeof data.projectId === 'string' ? data.projectId : null,
         linkedProjectIds: Array.isArray(data.linkedProjectIds)
             ? data.linkedProjectIds.filter((x: unknown): x is string => typeof x === 'string')
             : [],
         projectWorkTypeId: typeof data.projectWorkTypeId === 'string' ? data.projectWorkTypeId : null,
     };
+}
+
+function withSeriesPlacement(raw: unknown): Pick<ExegeticalPaper, 'seriesPlacement'> {
+    const sp = cleanSeriesPlacement(raw);
+    return sp ? { seriesPlacement: sp } : {};
 }
 
 /**
@@ -1549,3 +1559,6 @@ export function buildManualEditVersion(
         } : {}),
     };
 }
+
+/** Para probar el mapeo del documento sin Firestore. */
+export { serialize as serializePaperForTest, deserialize as deserializePaperForTest };

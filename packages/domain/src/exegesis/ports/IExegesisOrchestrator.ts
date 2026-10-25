@@ -3,6 +3,7 @@ import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { ExegeticalStepKind } from '../entities/ExegeticalStep';
 import type { SourceType } from '../entities/SourceType';
 import type { StepEmphasis } from '../entities/StepSourcePlan';
+import type { SeriesPlacement } from '../entities/ExegeticalPaper';
 
 /**
  * Port for the LLM-driven generation step.
@@ -38,6 +39,12 @@ export interface ExegesisGenerationInput {
      * one — the prompt falls back to neutral framing.
      */
     assignmentBrief: string | null;
+    /**
+     * El lugar de la perícopa en su serie, como contexto literario. Aparte
+     * del encargo a propósito: no es guía del trabajo ni entra a la búsqueda
+     * de fuentes. Ausente en un estudio suelto: el prompt no cambia.
+     */
+    seriesPlacement?: SeriesPlacement | null;
     /**
      * Per-step emphasis the student saved (or accepted from the
      * rubric default) — drives source-budget weights and a "priority

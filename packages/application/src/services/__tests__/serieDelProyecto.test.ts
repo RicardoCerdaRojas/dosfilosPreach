@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SermonSeriesEntity, type AddProjectSourceInput } from '@dosfilos/domain';
+import { SermonSeriesEntity, briefForQuery, type AddProjectSourceInput } from '@dosfilos/domain';
 
 /**
  * La serie que nace dentro de un proyecto (ADR-046 etapa 3,
@@ -47,7 +47,7 @@ vi.mock('../ExegesisService', () => ({
 vi.mock('../SermonService', () => ({ sermonService: { createSermon } }));
 vi.mock('../LibraryService', () => ({ LibraryService: class {} }));
 
-import { SeriesService, pericopeAssignmentBrief } from '../SeriesService';
+import { SeriesService } from '../SeriesService';
 
 const fuente = (resourceId: string, label: string, sourceType: AddProjectSourceInput['sourceType'] = 'commentary-expository'): AddProjectSourceInput => ({
     corpusId: resourceId,
@@ -202,8 +202,9 @@ describe('createSeriesFromPlan sin proyecto (como hoy)', () => {
             passage: { bookId: 'NEH', chapterStart: 1, verseStart: 1, chapterEnd: 1, verseEnd: 11 },
             displayLanguage: 'es',
             title: 'La oración de Nehemías',
-            // La justificación y, debajo, su lugar en el libro.
-            assignmentBrief: 'Neh 1:1\n\nPerícopa 1 de 3 de la serie. Después: Neh 2:1-10 («El permiso del rey»).',
+            // La justificación sola: el lugar en la serie va en su propio campo.
+            assignmentBrief: 'Neh 1:1',
+            seriesPlacement: { position: 1, total: 3, next: { passage: 'Neh 2:1-10', title: 'El permiso del rey' } },
             styleGuideId: 'guia-1',
             initialSources: [
                 { corpusId: 'res-b', sourceType: 'commentary-expository', displayLabel: 'Williamson (serie)', mode: 'full-document', sourceLibraryResourceId: 'res-b' },
@@ -381,22 +382,46 @@ describe('linkSeriesToProject', () => {
 });
 
 describe('encuadre de la serie (U5)', () => {
-    it('cada estudio del lote nace con su lugar en el libro en el encargo', async () => {
+    it('cada estudio del lote nace con su lugar en la serie como dato, y el encargo queda con la justificación sola', async () => {
         const svc = new SeriesService();
         await svc.createSeriesFromPlan('u1', plan());
-        expect(argsDeCreatePaper().map(a => a.assignmentBrief)).toEqual([
-            'Neh 1:1\n\nPerícopa 1 de 3 de la serie. Después: Neh 2:1-10 («El permiso del rey»).',
-            'Neh 2:1\n\nPerícopa 2 de 3 de la serie. Antes: Neh 1:1-11 («La oración de Nehemías»). Después: Neh 2:11-20 («La inspección»).',
-            'Neh 2:11\n\nPerícopa 3 de 3 de la serie. Antes: Neh 2:1-10 («El permiso del rey»).',
+        expect(argsDeCreatePaper().map(a => a.assignmentBrief)).toEqual(['Neh 1:1', 'Neh 2:1', 'Neh 2:11']);
+        expect(argsDeCreatePaper().map(a => a.seriesPlacement)).toEqual([
+            { position: 1, total: 3, next: { passage: 'Neh 2:1-10', title: 'El permiso del rey' } },
+            {
+                position: 2, total: 3,
+                previous: { passage: 'Neh 1:1-11', title: 'La oración de Nehemías' },
+                next: { passage: 'Neh 2:11-20', title: 'La inspección' },
+            },
+            { position: 3, total: 3, previous: { passage: 'Neh 2:1-10', title: 'El permiso del rey' } },
         ]);
     });
 
-    it('sin justificación, el encargo es solo el lugar en el libro', async () => {
+    it('la consulta de fuentes (briefForQuery) no ve el lugar en la serie', async () => {
+        const svc = new SeriesService();
+        await svc.createSeriesFromPlan('u1', plan());
+        for (const arg of argsDeCreatePaper()) {
+            const consulta = briefForQuery(arg.assignmentBrief);
+            expect(consulta).not.toMatch(/Perícopa|de la serie|Antes:|Después:/);
+            expect(consulta).not.toContain('El permiso del rey');
+        }
+    });
+
+    it('sin justificación, el encargo queda vacío y el lugar sigue en su campo', async () => {
         const svc = new SeriesService();
         const p = plan();
         p.sermons = p.sermons.map(s => ({ ...s, syntacticUnit: { ...s.syntacticUnit, justification: undefined as unknown as string } }));
         await svc.createSeriesFromPlan('u1', p);
-        expect(argsDeCreatePaper()[0]!.assignmentBrief).toBe('Perícopa 1 de 3 de la serie. Después: Neh 2:1-10 («El permiso del rey»).');
+        expect(argsDeCreatePaper()[0]!.assignmentBrief).toBeNull();
+        expect(argsDeCreatePaper()[0]!.seriesPlacement).toMatchObject({ position: 1, total: 3 });
+    });
+
+    it('en inglés, la vecina sin pasaje se traduce en inglés', async () => {
+        const svc = new SeriesService();
+        const p = plan({ displayLanguage: 'en' });
+        p.sermons = p.sermons.map(s => ({ ...s, passage: '' }));
+        await svc.createSeriesFromPlan('u1', p);
+        expect(argsDeCreatePaper()[1]!.seriesPlacement!.previous!.passage).toBe('Nehemiah 1:1-11');
     });
 
     it('la frecuencia queda guardada en metadata.frequency', async () => {
@@ -415,19 +440,5 @@ describe('encuadre de la serie (U5)', () => {
         await svc.createSeriesFromPlan('u1', plan());
         const guardada = repo.create.mock.calls[0]![0] as SermonSeriesEntity;
         expect('frequency' in guardada.metadata!).toBe(false);
-    });
-});
-
-describe('pericopeAssignmentBrief', () => {
-    const serie = { metadata: { plannedSermons: [
-        { id: 'a', title: 'Uno', passage: 'Esd 1:1-4' },
-        { id: 'b', title: 'Dos', passage: 'Esd 1:5-11' },
-    ] } };
-    it('junta la justificación y el lugar en el libro', () => {
-        expect(pericopeAssignmentBrief(' Frontera. ', serie, 'b')).toBe('Frontera.\n\nPerícopa 2 de 2 de la serie. Antes: Esd 1:1-4 («Uno»).');
-    });
-    it('una perícopa fuera del plan conserva solo la justificación; sin nada, null', () => {
-        expect(pericopeAssignmentBrief('Frontera.', serie, 'zzz')).toBe('Frontera.');
-        expect(pericopeAssignmentBrief(null, null, 'a')).toBeNull();
     });
 });

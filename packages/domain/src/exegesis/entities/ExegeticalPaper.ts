@@ -241,6 +241,15 @@ export interface ExegeticalPaper {
      */
     seriesId?: string | null;
     pericopeId?: string | null;
+    /**
+     * Dónde está la perícopa en la serie que la creó: «3 de 12», con la de
+     * antes y la de después. Es DATO y no texto del encargo a propósito: el
+     * encargo alimenta la búsqueda de fuentes (`briefForQuery`) y el prompt
+     * lo trata como guía autoritativa. Este campo solo se dibuja como
+     * contexto literario (`docs/FASE_ENCUADRE_SERIE_2026-10.md`, §2 paso 9).
+     * Ausente en estudios sueltos y en los anteriores al campo.
+     */
+    seriesPlacement?: SeriesPlacement | null;
 
     /**
      * El proyecto de origen (ADR-046): un curso, una investigación o un
@@ -294,6 +303,21 @@ export type ExegeticalStrategy = 'free' | 'dialectical';
  * Ausente o `null`: el análisis sale exactamente como antes.
  */
 export type ExegeticalMethod = 'research' | 'exegetical' | 'mixed';
+
+/** Una perícopa vecina en la serie. `passage` ya va en la numeración del lector. */
+export interface SeriesPlacementNeighbor {
+    passage: string;
+    title: string;
+}
+
+/** El lugar de la perícopa en su serie, contado en UNIDADES (no en domingos). */
+export interface SeriesPlacement {
+    /** 1-based. */
+    position: number;
+    total: number;
+    previous?: SeriesPlacementNeighbor;
+    next?: SeriesPlacementNeighbor;
+}
 
 /**
  * Shape used by `CreatePaper` use cases — id and timestamps are assigned

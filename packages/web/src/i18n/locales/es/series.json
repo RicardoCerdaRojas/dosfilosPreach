@@ -446,7 +446,7 @@
             "cta_one": "Crear serie con {{count}} sermón",
             "cta_other": "Crear serie con {{count}} sermones",
             "description": "Descripción de la serie",
-            "descriptionHint": "Viene de la idea central de tu encuadre. Ajústala a como quieras presentar la serie."
+            "descriptionHint": "Si ya revisaste tu idea central en el encuadre, aparece aquí para que la ajustes. Si la dejas vacía, la serie lleva una descripción breve del libro."
         },
         "framing": {
             "contrast": {
@@ -461,28 +461,32 @@
                 "noMovements": "No anotaste movimientos en el encuadre.",
                 "noPanoramaMovements": "El panorama no propuso movimientos.",
                 "untitled": "(sin título)",
-                "question": "¿Qué cambia en tu lectura?",
-                "questionHint": "Lo que propone el panorama, frente a tu lectura. Si lo anotas, queda en el registro y lo verás al consolidar la idea. No es obligatorio.",
+                "question": "Después de volver al texto, ¿qué hace con tu lectura?",
+                "questionHint": "El panorama no confirma ni corrige tu lectura: vuelve a los versículos donde difieren y decide tú. Si lo anotas, queda en el registro y lo verás al revisar tu idea central. No es obligatorio.",
                 "verdict": {
                     "confirms": "Confirma",
                     "nuances": "Matiza",
                     "contradicts": "Contradice"
                 },
                 "noteLabel": "Nota (opcional)",
-                "notePlaceholder": "Qué viste y en qué versículos",
+                "notePlaceholder": "¿Qué versículos revisaste por esta diferencia?",
                 "save": "Anotar en el registro",
                 "saved": "Anotado en el registro de tu lectura.",
-                "saveFailed": "No se pudo anotar. Inténtalo de nuevo."
+                "saveFailed": "No se pudo anotar. Inténtalo de nuevo.",
+                "already": "Ya anotaste: {{verdict}} · {{date}}",
+                "again": "Anotar otra vez"
             },
             "units": {
                 "unitCount_one": "{{count}} unidad",
                 "unitCount_other": "{{count}} unidades",
                 "sundayCount_one": "{{count}} domingo",
                 "sundayCount_other": "{{count}} domingos",
-                "summary": "El texto dio {{units}}; planeaste {{sundays}}.",
-                "principle": "El texto fija la unidad de predicación; el calendario se ajusta a ella.",
-                "moreUnits": "Puedes agrupar unidades con «Combinar» en el Pase 4 o ajustar el calendario en el encuadre del proyecto.",
-                "fewerUnits": "Puedes predicar una unidad en varios domingos (esa opción llega en una próxima versión) o ajustar el calendario en el encuadre del proyecto."
+                "summary": "El Pase 4 propone {{units}}; planeaste {{sundays}}.",
+                "principle": "La unidad la fija el texto, no el calendario: revisa la división propuesta y, si la confirmas, ajusta el calendario.",
+                "moreUnits": "Si una frontera no se sostiene en el texto, puedes unir dos unidades con «Combinar» en el Pase 4.",
+                "fewerUnits": "Puedes ajustar el calendario en el encuadre del proyecto.",
+                "reviewDivision": "Revisar la división",
+                "adjustCalendar": "Ajustar el calendario"
             }
         },
         "passes": {

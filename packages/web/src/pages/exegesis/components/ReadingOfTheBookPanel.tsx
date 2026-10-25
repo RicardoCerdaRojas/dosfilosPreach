@@ -1,9 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { BookMarked, ChevronDown, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { BookMarked, ChevronDown } from 'lucide-react';
 import {
-    FRAMING_TEXT_MAX,
-    HYPOTHESIS_VERDICTS,
     currentRevisedIdea,
     formatPassageForReader,
     referenceContains,
@@ -12,16 +9,12 @@ import {
     type ExegeticalPaper,
     type FramingMovement,
     type HypothesisEntry,
-    type HypothesisVerdict,
     type PassageReference,
     type ProjectFraming,
 } from '@dosfilos/domain';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/i18n';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
+import { ReadingAnnotateForm } from './ReadingAnnotateForm';
 
 /**
  * «Tu lectura del libro», al final del estudio de una perícopa
@@ -32,9 +25,9 @@ import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
  * encontró, y anota si este estudio confirma, matiza o contradice su lectura.
  *
  * Va AL FINAL y PLEGADO a propósito: primero se observa el texto sin la
- * hipótesis y después se compara (lectura inductiva: Traina, *Methodical
+ * lectura del pastor y después se compara (lectura inductiva: Traina, *Methodical
  * Bible Study*; Osborne, *The Hermeneutical Spiral*). Abierto arriba, el
- * pastor leería la perícopa desde su hipótesis.
+ * pastor leería la perícopa desde su lectura.
  *
  * Nada de esto va a un prompt: el panel solo lee el proyecto y escribe en su
  * registro (`hypothesisEntry`). No toca los pasos ni su entrada.
@@ -141,6 +134,8 @@ function PanelBody({ paper, project, framing }: { paper: ExegeticalPaper; projec
     const structure = framing.structure ?? [];
     const matches = matchMovements(structure, paper.passage);
     const entries = entriesOfStudy(framing, paper.id);
+    // Con alcance acotado, la lectura es «del pasaje», no «del libro».
+    const of = framing.scope ? 'Passage' : '';
 
     return (
         <section
@@ -157,7 +152,7 @@ function PanelBody({ paper, project, framing }: { paper: ExegeticalPaper; projec
                 >
                     <BookMarked className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                     <span className="min-w-0 flex-1">
-                        <span className="block font-serif text-base font-semibold">{t('readingPanel.title')}</span>
+                        <span className="block font-serif text-base font-semibold">{t(`readingPanel.title${of}`)}</span>
                         <span className="block text-xs text-muted-foreground">
                             {t('readingPanel.subtitle', { project: project.title })}
                         </span>
@@ -176,13 +171,13 @@ function PanelBody({ paper, project, framing }: { paper: ExegeticalPaper; projec
             {open && (
                 <div id={contentId} className="space-y-6 border-t border-border px-6 py-5">
                     <div className="space-y-3">
-                        <IdeaBlock label={t('readingPanel.centralIdea')} text={idea ?? t('readingPanel.noIdea')} muted={!idea} />
+                        <IdeaBlock label={t(`readingPanel.centralIdea${of}`)} text={idea ?? t('readingPanel.noIdea')} muted={!idea} />
                         {revised && <IdeaBlock label={t('readingPanel.revisedIdea')} text={revised} />}
                     </div>
 
                     {structure.length > 0 && (
                         <div>
-                            <h3 className="text-sm font-semibold">{t('readingPanel.structure')}</h3>
+                            <h3 className="text-sm font-semibold">{t(`readingPanel.structure${of}`)}</h3>
                             <p className="mt-0.5 text-xs text-muted-foreground">{t('readingPanel.readerNumbering')}</p>
                             <ol className="mt-2 space-y-1.5">
                                 {structure.map((m, i) => {
@@ -232,7 +227,7 @@ function PanelBody({ paper, project, framing }: { paper: ExegeticalPaper; projec
                         )}
                     </div>
 
-                    <AnnotateForm paperId={paper.id} projectId={project.id} />
+                    <ReadingAnnotateForm paperId={paper.id} projectId={project.id} />
                 </div>
             )}
         </section>
@@ -245,77 +240,6 @@ function IdeaBlock({ label, text, muted = false }: { label: string; text: string
             <h3 className="text-sm font-semibold">{label}</h3>
             <p className={`mt-1 whitespace-pre-line text-sm ${muted ? 'italic text-muted-foreground' : ''}`}>{text}</p>
         </div>
-    );
-}
-
-function AnnotateForm({ paperId, projectId }: { paperId: string; projectId: string }) {
-    const { t } = useTranslation('exegesis');
-    const { updateProject } = useFacultyProjects();
-    const baseId = useId();
-    const [verdict, setVerdict] = useState<HypothesisVerdict | ''>('');
-    const [note, setNote] = useState('');
-
-    const save = async () => {
-        if (!verdict) return;
-        try {
-            // El caso de uso lee el registro GUARDADO y agrega: no se manda el
-            // registro entero desde aquí, que podría venir de una caché vieja.
-            await updateProject.mutateAsync({
-                projectId,
-                hypothesisEntry: { source: 'study', studyId: paperId, verdict, note: note.trim() },
-            });
-            setVerdict('');
-            setNote('');
-            toast.success(t('readingPanel.toast.saved'));
-        } catch (err) {
-            console.error('[exegesis] reading panel annotate failed:', err);
-            toast.error(t('readingPanel.toast.failed'));
-        }
-    };
-
-    return (
-        <form
-            className="space-y-3 rounded-xl border border-border bg-muted/40 p-4"
-            onSubmit={e => {
-                e.preventDefault();
-                void save();
-            }}
-        >
-            <h3 className="text-sm font-semibold">{t('readingPanel.form.title')}</h3>
-            <fieldset>
-                <legend className="text-xs text-muted-foreground">{t('readingPanel.form.verdictLabel')}</legend>
-                <RadioGroup
-                    value={verdict}
-                    onValueChange={v => setVerdict(v as HypothesisVerdict)}
-                    className="mt-2 flex flex-wrap gap-x-5 gap-y-2"
-                >
-                    {HYPOTHESIS_VERDICTS.map(v => (
-                        <div key={v} className="flex min-h-11 items-center gap-2 sm:min-h-0">
-                            <RadioGroupItem value={v} id={`${baseId}-${v}`} />
-                            <Label htmlFor={`${baseId}-${v}`} className="font-normal">
-                                {t(`readingPanel.verdict.${v}`)}
-                            </Label>
-                        </div>
-                    ))}
-                </RadioGroup>
-            </fieldset>
-            <div className="space-y-1.5">
-                <Label htmlFor={`${baseId}-note`}>{t('readingPanel.form.noteLabel')}</Label>
-                <Textarea
-                    id={`${baseId}-note`}
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    placeholder={t('readingPanel.form.notePlaceholder')}
-                    maxLength={FRAMING_TEXT_MAX}
-                    rows={3}
-                />
-            </div>
-            <p className="text-xs text-muted-foreground">{t('readingPanel.form.private')}</p>
-            <Button type="submit" size="sm" disabled={!verdict || updateProject.isPending}>
-                {updateProject.isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
-                {t(updateProject.isPending ? 'readingPanel.form.saving' : 'readingPanel.form.save')}
-            </Button>
-        </form>
     );
 }
 

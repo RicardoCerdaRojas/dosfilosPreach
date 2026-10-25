@@ -1,10 +1,11 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { CheckCircle2, Loader2, Scale } from 'lucide-react';
 import {
     formatPassageForReader,
     HYPOTHESIS_VERDICTS,
     type BibleBookId,
     type BookPanorama,
+    type HypothesisEntry,
     type HypothesisVerdict,
     type MacroSection,
     type NewHypothesisEntry,
@@ -16,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 
 interface FramingContrastCardProps {
-    framing: Pick<ProjectFraming, 'centralIdea' | 'structure'>;
+    framing: Pick<ProjectFraming, 'centralIdea' | 'structure' | 'hypothesisLog'>;
     panorama: Pick<BookPanorama, 'purpose' | 'movements'>;
     /** La macroestructura (Pase 2), cuando ya llegó. Antes, los movimientos del panorama. */
     macroSections: ReadonlyArray<MacroSection> | null;
@@ -38,6 +39,10 @@ interface FramingContrastCardProps {
  * texto»: la lectura del asistente tampoco reemplaza la del pastor
  * (principio 1, la espiral hermenéutica de Osborne). Nada de esto entra a
  * los pases: solo se muestra. Responder es una invitación, no un requisito.
+ *
+ * La página la monta con `key` por corrida del panorama: un panorama nuevo
+ * vuelve a invitar. Si el registro ya tiene una anotación tras el panorama
+ * (de esta corrida o de otra), la muestra en vez de pedirla otra vez.
  */
 export function FramingContrastCard({
     framing, panorama, macroSections, bookId, isPassage, lang, onRecord, t,
@@ -48,6 +53,13 @@ export function FramingContrastCard({
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [failed, setFailed] = useState(false);
+    const [again, setAgain] = useState(false);
+    const previous = latestPanoramaEntry(framing.hypothesisLog);
+    // «Anotar otra vez» desaparece al pulsarlo: el foco pasa a la primera
+    // opción para que el teclado no quede en el vacío.
+    useEffect(() => {
+        if (again) document.getElementById(`${ids}-${HYPOTHESIS_VERDICTS[0]}`)?.focus();
+    }, [again, ids]);
 
     const idea = framing.centralIdea?.trim() ?? '';
     const movements = framing.structure ?? [];
@@ -142,62 +154,78 @@ export function FramingContrastCard({
             </div>
 
             <div className="mt-5 border-t border-border pt-4">
-                {saved
-                    ? (
-                        <p role="status" className="flex items-center gap-2 text-sm text-foreground">
-                            <CheckCircle2 className="h-4 w-4 shrink-0 text-success-subtle-foreground" aria-hidden="true" />
-                            {t('expository.framing.contrast.saved')}
-                        </p>
-                    )
-                    : (
-                        <fieldset className="space-y-3" aria-describedby={`${ids}-hint`}>
-                            <legend className="text-sm font-semibold text-foreground">
-                                {t('expository.framing.contrast.question')}
-                            </legend>
-                            <p id={`${ids}-hint`} className="text-xs text-muted-foreground">
-                                {t('expository.framing.contrast.questionHint')}
+                {saved && (
+                    <p role="status" className="flex items-center gap-2 text-sm text-foreground">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-success-subtle-foreground" aria-hidden="true" />
+                        {t('expository.framing.contrast.saved')}
+                    </p>
+                )}
+                {!saved && previous && !again && (
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0 text-sm text-foreground">
+                            <p className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 shrink-0 text-success-subtle-foreground" aria-hidden="true" />
+                                {t('expository.framing.contrast.already', {
+                                    verdict: t(`expository.framing.contrast.verdict.${previous.verdict}`),
+                                    date: formatDate(previous.at, lang),
+                                })}
                             </p>
-                            <RadioGroup
-                                value={verdict}
-                                onValueChange={(v) => setVerdict(v as HypothesisVerdict)}
-                                className="flex flex-wrap gap-4"
-                            >
-                                {HYPOTHESIS_VERDICTS.map((v) => (
-                                    <div key={v} className="flex items-center gap-2">
-                                        <RadioGroupItem value={v} id={`${ids}-${v}`} />
-                                        <Label htmlFor={`${ids}-${v}`} className="text-sm font-normal">
-                                            {t(`expository.framing.contrast.verdict.${v}`)}
-                                        </Label>
-                                    </div>
-                                ))}
-                            </RadioGroup>
-                            <div className="space-y-1.5">
-                                <Label htmlFor={`${ids}-note`} className="text-xs">
-                                    {t('expository.framing.contrast.noteLabel')}
-                                </Label>
-                                <Textarea
-                                    id={`${ids}-note`}
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                    placeholder={t('expository.framing.contrast.notePlaceholder')}
-                                    rows={2}
-                                    maxLength={2000}
-                                    className="resize-y"
-                                />
-                            </div>
-                            {failed && (
-                                <p role="alert" className="rounded-md border border-warning/30 bg-warning-subtle px-2.5 py-1.5 text-xs text-warning-subtle-foreground">
-                                    {t('expository.framing.contrast.saveFailed')}
-                                </p>
-                            )}
-                            <div className="flex justify-end">
-                                <Button type="button" variant="outline" size="sm" onClick={handleSave} disabled={!verdict || saving}>
-                                    {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
-                                    {t('expository.framing.contrast.save')}
-                                </Button>
-                            </div>
-                        </fieldset>
-                    )}
+                            {previous.note && <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">{previous.note}</p>}
+                        </div>
+                        <Button type="button" variant="outline" size="sm" className="min-h-11 sm:min-h-0" onClick={() => setAgain(true)}>
+                            {t('expository.framing.contrast.again')}
+                        </Button>
+                    </div>
+                )}
+                {!saved && (!previous || again) && (
+                    <fieldset className="space-y-3" aria-describedby={`${ids}-hint`}>
+                        <legend className="text-sm font-semibold text-foreground">
+                            {t('expository.framing.contrast.question')}
+                        </legend>
+                        <p id={`${ids}-hint`} className="text-xs text-muted-foreground">
+                            {t('expository.framing.contrast.questionHint')}
+                        </p>
+                        <RadioGroup
+                            value={verdict}
+                            onValueChange={(v) => setVerdict(v as HypothesisVerdict)}
+                            className="flex flex-wrap gap-4"
+                        >
+                            {HYPOTHESIS_VERDICTS.map((v) => (
+                                <div key={v} className="flex min-h-11 items-center gap-2 sm:min-h-0">
+                                    <RadioGroupItem value={v} id={`${ids}-${v}`} />
+                                    <Label htmlFor={`${ids}-${v}`} className="text-sm font-normal">
+                                        {t(`expository.framing.contrast.verdict.${v}`)}
+                                    </Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`${ids}-note`} className="text-xs">
+                                {t('expository.framing.contrast.noteLabel')}
+                            </Label>
+                            <Textarea
+                                id={`${ids}-note`}
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                placeholder={t('expository.framing.contrast.notePlaceholder')}
+                                rows={2}
+                                maxLength={2000}
+                                className="resize-y"
+                            />
+                        </div>
+                        {failed && (
+                            <p role="alert" className="rounded-md border border-warning/30 bg-warning-subtle px-2.5 py-1.5 text-xs text-warning-subtle-foreground">
+                                {t('expository.framing.contrast.saveFailed')}
+                            </p>
+                        )}
+                        <div className="flex justify-end">
+                            <Button type="button" variant="outline" size="sm" className="min-h-11 sm:min-h-0" onClick={handleSave} disabled={!verdict || saving}>
+                                {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
+                                {t('expository.framing.contrast.save')}
+                            </Button>
+                        </div>
+                    </fieldset>
+                )}
             </div>
         </section>
     );
@@ -216,9 +244,22 @@ function Column({ label, row, proposal = false, children }: {
     return (
         <div className={`rounded-xl border p-3 ${proposal ? 'border-dashed border-border bg-muted/40' : 'border-border bg-background'}`}>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                <span className="md:hidden">{label} · </span>{row}
+                <span className="md:sr-only">{label} · </span>{row}
             </p>
             <div className="mt-1.5">{children}</div>
         </div>
     );
+}
+
+/** La última anotación tras el panorama, de esta corrida o de otra. */
+function latestPanoramaEntry(log: ReadonlyArray<HypothesisEntry> | null | undefined): HypothesisEntry | null {
+    return (log ?? [])
+        .filter((e) => e.source === 'panorama')
+        .reduce<HypothesisEntry | null>((last, e) => (!last || e.at > last.at ? e : last), null);
+}
+
+function formatDate(iso: string, lang: 'es' | 'en'): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'es', { day: 'numeric', month: 'short', year: 'numeric' });
 }

@@ -1,16 +1,25 @@
+import { Link } from 'react-router-dom';
 import { CalendarDays } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { unitsVsSundays } from '../utils/serieDesdeProyecto';
 
 /**
- * Después del Pase 4: «El texto dio N unidades; planeaste M domingos»
- * (`docs/FASE_ENCUADRE_SERIE_2026-10.md`, principio 5). El texto fija la
- * unidad y el calendario la ajusta: los domingos nunca fueron meta del
- * planificador, así que aquí solo se avisa y se nombran las salidas.
- * Iguales, o sin domingos en el encuadre, no aparece.
+ * Después del Pase 4: «El Pase 4 propone N unidades; planeaste M domingos»
+ * (`docs/FASE_ENCUADRE_SERIE_2026-10.md`, principio 5). La unidad la fija el
+ * texto y el calendario se ajusta: los domingos nunca fueron meta del
+ * planificador. Por eso las dos salidas son reales y en ese orden: revisar
+ * la división (vuelve al Pase 4) y, si se confirma, ajustar el calendario en
+ * el encuadre del proyecto. Iguales, o sin domingos en el encuadre, no aparece.
+ *
+ * No promete «una unidad en varios domingos»: esa opción no existe todavía.
  */
-export function UnitsVsSundaysNotice({ units, sundays, t }: {
+export function UnitsVsSundaysNotice({ units, sundays, onReviewDivision, calendarHref, t }: {
     units: number;
     sundays: number | null | undefined;
+    /** Despliega el Pase 4 y lleva el foco ahí. */
+    onReviewDivision: () => void;
+    /** El panel del proyecto con el encuadre abierto. */
+    calendarHref: string;
     t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
     const diff = unitsVsSundays(units, sundays);
@@ -21,17 +30,25 @@ export function UnitsVsSundaysNotice({ units, sundays, t }: {
             className="flex items-start gap-2 rounded-xl border border-info/30 bg-info-subtle p-3 text-sm text-info-subtle-foreground"
         >
             <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-1">
                 <p className="font-medium">
                     {t('expository.framing.units.summary', {
                         units: t('expository.framing.units.unitCount', { count: diff.units }),
                         sundays: t('expository.framing.units.sundayCount', { count: diff.sundays }),
                     })}
                 </p>
+                <p className="text-xs">{t('expository.framing.units.principle')}</p>
                 <p className="text-xs">
                     {t(diff.direction === 'more-units' ? 'expository.framing.units.moreUnits' : 'expository.framing.units.fewerUnits')}
                 </p>
-                <p className="text-xs">{t('expository.framing.units.principle')}</p>
+                <div className="flex flex-wrap gap-2 pt-1.5">
+                    <Button type="button" size="sm" variant="outline" className="min-h-11 text-foreground sm:min-h-0" onClick={onReviewDivision}>
+                        {t('expository.framing.units.reviewDivision')}
+                    </Button>
+                    <Button asChild size="sm" variant="ghost" className="min-h-11 sm:min-h-0">
+                        <Link to={calendarHref}>{t('expository.framing.units.adjustCalendar')}</Link>
+                    </Button>
+                </div>
             </div>
         </div>
     );

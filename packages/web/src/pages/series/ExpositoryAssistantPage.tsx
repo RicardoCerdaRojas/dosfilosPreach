@@ -1,9 +1,4 @@
-import {
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Link,
     useNavigate,
@@ -101,14 +96,12 @@ import {
     type ProjectSeriesSourcesState,
     activeProjectById,
     buildSeriesPlan,
-    framingPrefill,
-    hasReadingToContrast,
     initialBookFor,
-    isPassageRun,
     projectEntryState,
-    seriesDescriptionFor,
     shouldRestoreDraft,
 } from './utils/serieDesdeProyecto';
+import { useFramingInPlanner } from './expository/useFramingInPlanner';
+import { useIssueTriage } from './expository/useIssueTriage';
 
 /**
  * v1.5 expository assistant wizard.
@@ -224,16 +217,9 @@ export function ExpositoryAssistantPage() {
     const [fidelityReview, setFidelityReview] = useState<FidelityReview | null>(null);
 
     // Series-creation form state — populated once preachable units land.
+    // Fecha, frecuencia y descripción viven en `encuadre`, que las precarga.
     const [seriesTitle, setSeriesTitle] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [frequency, setFrequency] = useState<'weekly' | 'biweekly' | 'monthly' | 'flexible'>('weekly');
-    // La descripción que escribe el pastor. `null`: sin idea central en el
-    // encuadre, la serie lleva el texto de siempre.
-    const [seriesDescription, setSeriesDescription] = useState<string | null>(null);
     const [creatingSeries, setCreatingSeries] = useState(false);
-    // Si el último análisis fue de un pasaje: la tarjeta de contraste dice
-    // «del pasaje». Se fija al correr; un borrador restaurado lo deduce.
-    const [analyzedPassage, setAnalyzedPassage] = useState(false);
 
     // Preferencias de LECTURA — no dicen nada del libro que se divide.
     const vista = useExpositoryViewPrefs();
@@ -242,41 +228,13 @@ export function ExpositoryAssistantPage() {
         collapsedPasses, setCollapsedPasses, togglePass,
         methodologyOpen, setMethodologyOpen,
     } = vista;
-    // Pase 5 issue triage. Indices into fidelityReview.issues. The
-    // two sets are mutually exclusive (toggling one removes the
-    // other) — an issue is either acted upon or actively dismissed,
-    // never both. Persists with the draft so triage decisions
-    // survive a tab close.
-    const [addressedIssues, setAddressedIssues] = useState<Set<number>>(new Set());
-    const [ignoredIssues, setIgnoredIssues] = useState<Set<number>>(new Set());
-    const toggleIssueAddressed = (idx: number) => {
-        setAddressedIssues((prev) => {
-            const next = new Set(prev);
-            if (next.has(idx)) next.delete(idx);
-            else next.add(idx);
-            return next;
-        });
-        setIgnoredIssues((prev) => {
-            if (!prev.has(idx)) return prev;
-            const next = new Set(prev);
-            next.delete(idx);
-            return next;
-        });
-    };
-    const toggleIssueIgnored = (idx: number) => {
-        setIgnoredIssues((prev) => {
-            const next = new Set(prev);
-            if (next.has(idx)) next.delete(idx);
-            else next.add(idx);
-            return next;
-        });
-        setAddressedIssues((prev) => {
-            if (!prev.has(idx)) return prev;
-            const next = new Set(prev);
-            next.delete(idx);
-            return next;
-        });
-    };
+    // El encuadre del proyecto: precarga, contraste con el panorama y aviso de domingos.
+    const encuadre = useFramingInPlanner({
+        project, projectState, bookParam, lang, panorama, macroSections, analyzedBookId,
+        updateProject, setCollapsedPasses,
+    });
+    // Pase 5 issue triage (abordado / ignorado), persistido con el borrador.
+    const { addressedIssues, setAddressedIssues, ignoredIssues, setIgnoredIssues, toggleIssueAddressed, toggleIssueIgnored } = useIssueTriage();
 
     const assistant = useExpositoryAssistant();
 
@@ -295,7 +253,6 @@ export function ExpositoryAssistantPage() {
         setDraftScope(scope);
         const stored = loadExpositoryDraft(scope);
         const draft = stored && shouldRestoreDraft(stored, { projectId: scope, bookParam }) ? stored : null;
-        const precarga = framingPrefill(project, { bookParam });
         if (!draft && (projectIdParam || bookParam)) {
             const inicial = initialBookFor({
                 bookParam,
@@ -307,10 +264,10 @@ export function ExpositoryAssistantPage() {
             setBookChoiceRequired(inicial.mustChoose);
             // El alcance del encuadre, solo sin borrador: un análisis
             // restaurado manda sobre lo que diga el formulario.
-            if (precarga.scope) {
+            if (encuadre.scope) {
                 setScopeMode('passage');
-                setPassageScope(precarga.scope);
-                setBookId(precarga.scope.bookId);
+                setPassageScope(encuadre.scope);
+                setBookId(encuadre.scope.bookId);
                 setBookChoiceRequired(false);
             }
         }
@@ -321,7 +278,7 @@ export function ExpositoryAssistantPage() {
                 setTargetCount(draft.targetPreachableCount);
             }
             setVerses(draft.verses);
-            setAnalyzedPassage(isPassageRun(draft.verses, allBooks.find((b) => b.id === draft.bookId)?.chapterCount ?? 0));
+            encuadre.restoreAnalyzedPassage(draft.verses, draft.bookId, allBooks.find((b) => b.id === draft.bookId)?.chapterCount ?? 0);
             setBookDisplay(draft.bookDisplay);
             if (draft.panorama) setPanorama(draft.panorama);
             if (draft.macroSections) setMacroSections(draft.macroSections);
@@ -334,20 +291,6 @@ export function ExpositoryAssistantPage() {
         }
         setHydrated(true);
     }, [hydrated, t, projectState, project, projectIdParam, bookParam, projectBooks, allBooks]);
-
-    // Fecha, frecuencia y descripción del encuadre: no viven en el borrador,
-    // así que se precargan también con uno restaurado, pero UNA sola vez: un
-    // refetch del proyecto (otra pestaña, una anotación del registro) no pisa
-    // lo que el pastor ya editó.
-    const framingPrefilled = useRef(false);
-    useEffect(() => {
-        if (framingPrefilled.current || projectState === 'loading') return;
-        framingPrefilled.current = true;
-        const precarga = framingPrefill(project, { bookParam });
-        if (precarga.startDate) setStartDate(precarga.startDate);
-        if (precarga.frequency) setFrequency(precarga.frequency);
-        if (precarga.description) setSeriesDescription(precarga.description);
-    }, [projectState, project, bookParam]);
 
     // Persist a draft whenever any pass output lands. Keeps the
     // localStorage entry in sync without an explicit "save" button.
@@ -437,7 +380,7 @@ export function ExpositoryAssistantPage() {
         setVerses(loaded.verses);
         setBookDisplay(loaded.book);
         setAnalyzedBookId(bookId);
-        setAnalyzedPassage(!isWholeBook);
+        encuadre.setAnalyzedPassage(!isWholeBook);
 
         // Surface the source (original-language vs translation
         // fallback) so the pastor knows what the model is reading.
@@ -987,17 +930,12 @@ export function ExpositoryAssistantPage() {
             }
             const plan = buildSeriesPlan({
                 title: seriesTitle,
-                // La escribe el pastor (precargada con su idea central); sin
-                // encuadre, o si la vació, el texto de siempre.
-                description: seriesDescriptionFor(
-                    seriesDescription,
-                    t('expository.create.defaultDescription', {
-                        book: bookDisplay,
-                        count: preachableUnits.length,
-                    }) as string,
+                // La del pastor (precargada con su idea revisada); vacía, el texto de siempre.
+                description: encuadre.descriptionFor(
+                    t('expository.create.defaultDescription', { book: bookDisplay, count: preachableUnits.length }) as string,
                 ),
-                startDate: parseLocalDate(startDate),
-                frequency,
+                startDate: parseLocalDate(encuadre.startDate),
+                frequency: encuadre.frequency,
                 bookDisplay,
                 preachableUnits,
                 exegeticalUnits,
@@ -1181,20 +1119,8 @@ export function ExpositoryAssistantPage() {
                     </PassCard>
                 )}
 
-                {/* Tras el Pase 1: la lectura del pastor junto a lo que propone
-                    el panorama. Solo se muestra; nada del encuadre va a los pases. */}
-                {panorama && project?.framing && hasReadingToContrast(project.framing) && (
-                    <FramingContrastCard
-                        framing={project.framing}
-                        panorama={panorama}
-                        macroSections={macroSections}
-                        bookId={analyzedBookId ?? bookId}
-                        isPassage={analyzedPassage}
-                        lang={lang}
-                        onRecord={(hypothesisEntry) => updateProject.mutateAsync({ projectId: project.id, hypothesisEntry })}
-                        t={t}
-                    />
-                )}
+                {/* Tras el Pase 1: la lectura del pastor junto a lo que propone el panorama. */}
+                {encuadre.contrast && <FramingContrastCard key={encuadre.contrast.key} {...encuadre.contrast.props} t={t} />}
 
                 {!collapsedPasses.has(2) && (
                     <PassCard
@@ -1249,6 +1175,7 @@ export function ExpositoryAssistantPage() {
                 {!collapsedPasses.has(4) && (
                     <PassCard
                         index={4}
+                        anchorId="expository-pass-4"
                         title={t('expository.passes.preachable.title') as string}
                         subtitle={t('expository.passes.preachable.subtitle') as string}
                         state={preachableState}
@@ -1278,12 +1205,8 @@ export function ExpositoryAssistantPage() {
                     </PassCard>
                 )}
 
-                {preachableUnits && preachableUnits.length > 0 && (
-                    <UnitsVsSundaysNotice
-                        units={preachableUnits.length}
-                        sundays={project?.framing?.rhythm?.sundays}
-                        t={t}
-                    />
+                {preachableUnits && preachableUnits.length > 0 && encuadre.unitsNotice(preachableUnits.length) && (
+                    <UnitsVsSundaysNotice {...encuadre.unitsNotice(preachableUnits.length)!} t={t} />
                 )}
 
                 {!collapsedPasses.has(5) && (
@@ -1334,12 +1257,12 @@ export function ExpositoryAssistantPage() {
                     <CreateSeriesCard
                         seriesTitle={seriesTitle}
                         onSeriesTitleChange={setSeriesTitle}
-                        startDate={startDate}
-                        onStartDateChange={setStartDate}
-                        frequency={frequency}
-                        onFrequencyChange={setFrequency}
-                        description={seriesDescription}
-                        onDescriptionChange={setSeriesDescription}
+                        startDate={encuadre.startDate}
+                        onStartDateChange={encuadre.setStartDate}
+                        frequency={encuadre.frequency}
+                        onFrequencyChange={encuadre.setFrequency}
+                        description={encuadre.description}
+                        onDescriptionChange={encuadre.setDescription}
                         preachableUnits={preachableUnits}
                         creating={creatingSeries}
                         onCreate={handleCreateSeries}

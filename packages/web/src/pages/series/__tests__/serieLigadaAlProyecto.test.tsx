@@ -190,8 +190,9 @@ describe('«Crear estudio» de una perícopa', () => {
             passage: { bookId: 'NEH', chapterStart: 1, verseStart: 1, chapterEnd: 1, verseEnd: 11 },
             displayLanguage: 'es',
             title: 'Neh 1',
-            // La justificación y su lugar en el libro (FASE_ENCUADRE_SERIE, U5).
-            assignmentBrief: 'La oración\n\nPerícopa 1 de 1 de la serie.',
+            // La justificación sola; su lugar en la serie va en su campo (FASE_ENCUADRE_SERIE, U5).
+            assignmentBrief: 'La oración',
+            seriesPlacement: { position: 1, total: 1 },
             styleGuideId: null,
             initialSources: [
                 { corpusId: 'serieObra', sourceType: 'commentary-expository', displayLabel: 'Obra de la serie', mode: 'full-document', sourceLibraryResourceId: 'serieObra' },
@@ -201,7 +202,7 @@ describe('«Crear estudio» de una perícopa', () => {
         });
     });
 
-    it('el encargo lleva su lugar en el libro, con la perícopa de antes y la de después', async () => {
+    it('el estudio nace con su lugar en la serie como dato, con la perícopa de antes y la de después; el encargo, sin él', async () => {
         const otra = (id: string, cs: number) => ({
             id, title: `Neh ${cs}`, passage: `Nehemías ${cs}:1-10`,
             syntacticUnit: { ...unidad, chapterStart: cs, chapterEnd: cs, verseEnd: 10, justification: `Corte ${cs}` },
@@ -213,7 +214,12 @@ describe('«Crear estudio» de una perícopa', () => {
         await waitFor(() => expect(svc.createPaper).toHaveBeenCalledTimes(1));
         expect(svc.createPaper.mock.calls[0]![0]).toMatchObject({
             pericopeId: 'b',
-            assignmentBrief: 'Corte 2\n\nPerícopa 2 de 3 de la serie. Antes: Nehemías 1:1-10 («Neh 1»). Después: Nehemías 3:1-10 («Neh 3»).',
+            assignmentBrief: 'Corte 2',
+            seriesPlacement: {
+                position: 2, total: 3,
+                previous: { passage: 'Nehemías 1:1-10', title: 'Neh 1' },
+                next: { passage: 'Nehemías 3:1-10', title: 'Neh 3' },
+            },
         });
     });
 

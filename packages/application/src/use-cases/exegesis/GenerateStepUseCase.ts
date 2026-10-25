@@ -150,6 +150,9 @@ export class GenerateStepUseCase {
                 verseRef: step.verseRef,
                 language: paper.displayLanguage,
                 assignmentBrief: briefWithExclusions(paper),
+                // El lugar en la serie va aparte del encargo: contexto
+                // literario, no guía. Sin él, la entrada no cambia.
+                ...(paper.seriesPlacement ? { seriesPlacement: paper.seriesPlacement } : {}),
                 stepEmphasis,
                 styleGuideContent,
                 sources,

@@ -59,12 +59,12 @@ import {
     parsePassageReference,
     projectSourcesForBook,
     seriesPaperInheritance,
+    seriesPlacementFor,
     type ExegeticalPaperPhase,
     type PlannedSermon,
     type SermonSeriesEntity,
     type SyntacticUnit,
 } from '@dosfilos/domain';
-import { briefWithPlaceInBook } from './utils/serieDesdeProyecto';
 import { cn } from '@/lib/utils';
 
 export function SeriesDetail() {
@@ -223,8 +223,10 @@ export function SeriesDetail() {
                 passage,
                 displayLanguage: lang,
                 title: planned.title,
-                // Con su lugar en el libro, igual que los del lote.
-                assignmentBrief: briefWithPlaceInBook(planned.syntacticUnit.justification, series, planned.id),
+                assignmentBrief: planned.syntacticUnit.justification ?? null,
+                // Su lugar en la serie, como dato aparte del encargo, igual
+                // que los del lote: así no entra a la búsqueda de fuentes.
+                seriesPlacement: seriesPlacementFor(series, planned.id, lang),
                 // La guía, la rúbrica y el corpus de la serie: antes este
                 // camino los ignoraba y el trabajo nacía académico. Con
                 // proyecto, además el origen y su bibliografía para este libro,

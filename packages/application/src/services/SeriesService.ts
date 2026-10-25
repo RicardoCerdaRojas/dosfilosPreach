@@ -14,8 +14,8 @@ import {
     SermonSeriesEntity,
     findBooksByAlias,
     getBookById,
-    placeInBook,
     seriesPaperInheritance,
+    seriesPlacementFor,
     type AddProjectSourceInput,
     type BibleBookId,
     type IBibleVersionRepository,
@@ -38,21 +38,6 @@ import {
 import { RunExpositoryPassesUseCase } from '../use-cases/exegesis/expository/RunExpositoryPassesUseCase';
 import { CachedExpositoryAssistant } from './expository/CachedExpositoryAssistant';
 import { LibraryService } from './LibraryService';
-
-/**
- * El encargo del estudio de una perícopa: la justificación de su frontera
- * y, debajo, su lugar en el libro («Perícopa 3 de 12 de la serie. Antes: …;
- * después: …»). Es contexto literario, no agenda pastoral
- * (`docs/FASE_ENCUADRE_SERIE_2026-10.md`, §2 paso 9). Sin nada, `null`.
- */
-export function pericopeAssignmentBrief(
-    justification: string | null | undefined,
-    series: Parameters<typeof placeInBook>[0],
-    pericopeId: string,
-): string | null {
-    const partes = [justification?.trim(), placeInBook(series, pericopeId)].filter((p): p is string => Boolean(p));
-    return partes.length ? partes.join('\n\n') : null;
-}
 
 export class SeriesService {
     private seriesRepository: FirebaseSeriesRepository;
@@ -648,7 +633,7 @@ export class SeriesService {
             projectId: project?.projectId ?? null,
             projectSources: project?.sources ?? [],
         });
-        // El plan entero, para dar a cada estudio su lugar en el libro.
+        // El plan entero, para dar a cada estudio su lugar en la serie.
         const plan = {
             metadata: {
                 plannedSermons: plannedSermons.map((p) => ({
@@ -676,7 +661,10 @@ export class SeriesService {
                         passage,
                         displayLanguage,
                         title: planned.title,
-                        assignmentBrief: pericopeAssignmentBrief(planned.syntacticUnit.justification, plan, planned.id),
+                        assignmentBrief: planned.syntacticUnit.justification ?? null,
+                        // Su lugar en la serie, como dato aparte: en el encargo
+                        // sesgaba la búsqueda de fuentes y quedaba en español.
+                        seriesPlacement: seriesPlacementFor(plan, planned.id, displayLanguage),
                         ...defaults,
                         // Denormalized back-reference so the sermon-
                         // generation use case can patch this series'

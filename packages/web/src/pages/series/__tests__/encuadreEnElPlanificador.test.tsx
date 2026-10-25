@@ -107,9 +107,9 @@ const guardarBorrador = (extra: Record<string, unknown> = {}) => localStorage.se
     ...extra,
 }));
 
-const arbol = () => (
+const arbol = (url = URL_EZR) => (
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={[URL_EZR]}>
+        <MemoryRouter initialEntries={[url]}>
             <ExpositoryAssistantPage />
         </MemoryRouter>
     </QueryClientProvider>
@@ -137,15 +137,26 @@ describe('precarga desde el encuadre', () => {
         expect(screen.getByLabelText('expository.setup.targetCount')).toHaveValue(null);
     });
 
-    it('con borrador restaurado, el alcance no se toca; fecha, frecuencia y descripción sí se precargan', async () => {
+    it('con borrador restaurado, el alcance no se toca; fecha y frecuencia sí se precargan, y la idea PROVISORIA no', async () => {
         guardarBorrador();
         render(arbol());
-        expect(await screen.findByLabelText('expository.create.description')).toHaveValue(encuadre.centralIdea);
+        // Con encuadre y sin idea revisada: el campo aparece, vacío.
+        expect(await screen.findByLabelText('expository.create.description')).toHaveValue('');
         // El análisis restaurado manda: sigue en libro entero.
         expect(screen.queryByLabelText('pasaje')).not.toBeInTheDocument();
         expect(screen.getByLabelText('libro')).toHaveValue('EZR');
         expect(screen.getByLabelText('expository.create.startDate')).toHaveValue('2026-11-01');
         expect(screen.getByLabelText('expository.create.frequency')).toHaveValue('biweekly');
+    });
+
+    it('la idea revisada y vigente sí precarga la descripción', async () => {
+        estado.projects = [esdras({
+            ...encuadre,
+            revision: { centralIdea: 'La Palabra enseñada restaura.', verdict: 'nuanced', why: 'Esd 7:10', ofIdea: encuadre.centralIdea, revisedAt: '2026-10-25T00:00:00Z' },
+        })];
+        guardarBorrador();
+        render(arbol());
+        expect(await screen.findByLabelText('expository.create.description')).toHaveValue('La Palabra enseñada restaura.');
     });
 
     it('una sola vez: un refetch del proyecto no pisa lo que el pastor editó', async () => {
@@ -288,6 +299,62 @@ describe('«Tu lectura y lo que propone el panorama»', () => {
         expect(screen.getByRole('button', { name: 'expository.framing.contrast.save' })).toBeEnabled();
     });
 
+    it('si ya anotó tras el panorama, lo muestra en vez de pedirlo; «Anotar otra vez» abre la pregunta', async () => {
+        estado.projects = [esdras({
+            ...encuadre,
+            hypothesisLog: [
+                { id: 'h1', at: '2026-10-20T10:00:00.000Z', source: 'panorama', verdict: 'confirms', note: '' },
+                { id: 'h2', at: '2026-10-22T10:00:00.000Z', source: 'panorama', verdict: 'nuances', note: 'Esd 7:10 pesa más.' },
+                { id: 'h3', at: '2026-10-23T10:00:00.000Z', source: 'study', studyId: 'p9', verdict: 'contradicts', note: '' },
+            ],
+        })];
+        guardarBorrador({ panorama });
+        render(arbol());
+        const tarjeta = within(await screen.findByRole('region', { name: 'expository.framing.contrast.title' }));
+        // La última del panorama (no la del estudio), con su nota.
+        expect(tarjeta.getByText('expository.framing.contrast.already')).toBeInTheDocument();
+        expect(tarjeta.getByText('Esd 7:10 pesa más.')).toBeInTheDocument();
+        expect(tarjeta.queryByRole('radio')).not.toBeInTheDocument();
+        fireEvent.click(tarjeta.getByRole('button', { name: 'expository.framing.contrast.again' }));
+        const primera = tarjeta.getByRole('radio', { name: 'expository.framing.contrast.verdict.confirms' });
+        expect(primera).toHaveFocus();
+        expect(tarjeta.queryByText('expository.framing.contrast.already')).not.toBeInTheDocument();
+    });
+
+    it('un panorama nuevo vuelve a invitar: la tarjeta se monta de nuevo', async () => {
+        render(arbol());
+        await screen.findByLabelText('pasaje');
+        pases.runPanorama.mockImplementation((_input: unknown, opts: { onSuccess: (r: unknown) => void }) => opts.onSuccess({ payload: { ...panorama }, modelId: 'm' }));
+        const correr = async () => {
+            await act(async () => { fireEvent.click(screen.getByRole('button', { name: /expository\.setup\.start/ })); });
+            return screen.findByRole('button', { name: 'expository.framing.contrast.save' });
+        };
+        await correr();
+        fireEvent.click(screen.getByRole('radio', { name: 'expository.framing.contrast.verdict.nuances' }));
+        fireEvent.click(screen.getByRole('button', { name: 'expository.framing.contrast.save' }));
+        expect(await screen.findByText('expository.framing.contrast.saved')).toBeInTheDocument();
+        // Otra corrida: la confirmación de la anterior no se queda pegada.
+        await correr();
+        expect(screen.queryByText('expository.framing.contrast.saved')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'expository.framing.contrast.save' })).toBeDisabled();
+    });
+
+    it('si lo analizado no es un libro del proyecto, la tarjeta no aparece', async () => {
+        localStorage.setItem(CLAVE, JSON.stringify({
+            schemaVersion: 'v1', savedAt: new Date().toISOString(), projectId: 'ezr',
+            bookId: 'RUT', displayLanguage: 'es', bookDisplay: 'Rut',
+            verses: [{ chapter: 1, verse: 1, text: 'a' }, { chapter: 4, verse: 22, text: 'b' }],
+            panorama,
+        }));
+        estado.projects = [esdras()];
+        // Sin `book` en la dirección: así se restaura el borrador de Rut.
+        render(arbol('/dashboard/plans/pericope?projectId=ezr'));
+        expect(await screen.findByLabelText('libro')).toHaveValue('RUT');
+        // El panorama de Rut sí se restauró (lo muestra el Pase 1); la tarjeta no.
+        expect(screen.getAllByText(panorama.purpose).length).toBeGreaterThan(0);
+        expect(screen.queryByText('expository.framing.contrast.title')).not.toBeInTheDocument();
+    });
+
     it('sin idea central ni movimientos, la tarjeta no aparece', async () => {
         estado.projects = [esdras({ ...encuadre, centralIdea: undefined, structure: undefined })];
         guardarBorrador({ panorama });
@@ -306,11 +373,28 @@ describe('aviso de unidades contra domingos (tras el Pase 4)', () => {
         expect(screen.queryByText('expository.framing.units.fewerUnits')).not.toBeInTheDocument();
     });
 
-    it('menos unidades que domingos: una unidad en varios domingos (sin botón) o ajustar el calendario', async () => {
+    it('menos unidades que domingos: ajustar el calendario, sin prometer una opción que no existe', async () => {
         guardarBorrador({ preachableUnits: [predicable('p1', 1)] });
         render(arbol());
         expect(await screen.findByText('expository.framing.units.fewerUnits')).toBeInTheDocument();
         expect(screen.queryByText('expository.framing.units.moreUnits')).not.toBeInTheDocument();
+    });
+
+    it('dos salidas reales: «Ajustar el calendario» abre el encuadre del proyecto y «Revisar la división» despliega el Pase 4 y le da el foco', async () => {
+        const scroll = vi.fn();
+        Element.prototype.scrollIntoView = scroll;
+        guardarBorrador({ preachableUnits: [1, 2, 3, 4].map((c) => predicable(`p${c}`, c)) });
+        render(arbol());
+        const calendario = await screen.findByRole('link', { name: 'expository.framing.units.adjustCalendar' });
+        expect(calendario).toHaveAttribute('href', '/dashboard/projects/ezr?encuadre=1');
+        // Pliega el Pase 4 y vuelve a él desde el aviso.
+        const pase4 = document.getElementById('expository-pass-4')!;
+        fireEvent.click(within(pase4).getAllByRole('button').find((b) => /collapse|plegar/i.test(b.getAttribute('aria-label') ?? b.textContent ?? ''))!);
+        await waitFor(() => expect(document.getElementById('expository-pass-4')).toBeNull());
+        fireEvent.click(screen.getByRole('button', { name: 'expository.framing.units.reviewDivision' }));
+        await waitFor(() => expect(document.getElementById('expository-pass-4')).not.toBeNull());
+        await waitFor(() => expect(document.getElementById('expository-pass-4')).toHaveFocus());
+        expect(scroll).toHaveBeenCalled();
     });
 
     it('iguales, o sin domingos en el encuadre: no aparece', async () => {
@@ -324,5 +408,36 @@ describe('aviso de unidades contra domingos (tras el Pase 4)', () => {
         render(arbol());
         await screen.findByRole('button', { name: /expository\.create\.cta/ });
         expect(screen.queryByText(/expository\.framing\.units\.summary/)).not.toBeInTheDocument();
+    });
+});
+
+describe('textos del encuadre en el planificador', () => {
+    const aplanar = (o: unknown, pre = ''): string[] =>
+        Object.entries(o as Record<string, unknown>).flatMap(([k, v]) =>
+            v && typeof v === 'object' ? aplanar(v, `${pre}${k}.`) : [`${pre}${k}`]);
+    const val = (o: unknown, k: string) => k.split('.').reduce((x, y) => (x as Record<string, unknown>)[y], o) as string;
+    const marcas = (s: string) => [...s.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).sort();
+
+    it('es y en: mismas claves y mismos marcadores', async () => {
+        const es = (await import('@/i18n/locales/es/series.json')).default as { expository: Record<string, unknown> };
+        const en = (await import('@/i18n/locales/en/series.json')).default as { expository: Record<string, unknown> };
+        for (const rama of ['framing', 'create'] as const) {
+            const a = es.expository[rama];
+            const b = en.expository[rama];
+            expect(aplanar(a).sort()).toEqual(aplanar(b).sort());
+            for (const k of aplanar(a)) expect(marcas(val(b, k))).toEqual(marcas(val(a, k)));
+        }
+    });
+
+    it('glosario: el Pase 4 propone (nunca «el texto dio»), «tu lectura» y sin prometer opciones futuras', async () => {
+        const es = (await import('@/i18n/locales/es/series.json')).default as unknown as { expository: { framing: Record<string, Record<string, string>> } };
+        const en = (await import('@/i18n/locales/en/series.json')).default as unknown as { expository: { framing: Record<string, Record<string, string>> } };
+        const textos = JSON.stringify([es.expository.framing, en.expository.framing]);
+        expect(textos).not.toMatch(/el texto dio|the text yielded|hipótesis|hypothesis|próxima versión|upcoming version|overview/i);
+        expect(es.expository.framing.units!.summary).toBe('El Pase 4 propone {{units}}; planeaste {{sundays}}.');
+        expect(es.expository.framing.contrast!.question).toBe('Después de volver al texto, ¿qué hace con tu lectura?');
+        expect(es.expository.framing.contrast!.noteLabel).toBe('Nota (opcional)');
+        expect(es.expository.framing.contrast!.saveFailed).toMatch(/Inténtalo de nuevo\.$/);
+        expect(textos).not.toMatch(/\b(IA|AI|GPT|Gemini|modelo|model|LLM)\b/);
     });
 });
