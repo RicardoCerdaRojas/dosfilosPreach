@@ -565,6 +565,8 @@
             "unlink": "Unlink",
             "linked": "Series linked: {{moved}} studies moved, {{linked}} linked, {{sources}} works added.",
             "unlinked": "The series is now on its own.",
+            "partialFailed_one": "{{count}} study wasn't fully updated. To retry, unlink the series and link it again.",
+            "partialFailed_other": "{{count}} studies weren't fully updated. To retry, unlink the series and link it again.",
             "failed": "Couldn't change the series' project. Try again.",
             "sourcesFromProject": "New studies take the project's bibliography."
         },

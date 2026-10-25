@@ -565,6 +565,8 @@
             "unlink": "Desligar",
             "linked": "Serie ligada: {{moved}} estudios llevados, {{linked}} vinculados, {{sources}} obras agregadas.",
             "unlinked": "La serie quedó suelta.",
+            "partialFailed_one": "{{count}} estudio no quedó completo. Para reintentar, desliga la serie y vuelve a ligarla.",
+            "partialFailed_other": "{{count}} estudios no quedaron completos. Para reintentar, desliga la serie y vuelve a ligarla.",
             "failed": "No se pudo cambiar el proyecto de la serie. Intenta de nuevo.",
             "sourcesFromProject": "Los estudios nuevos toman la bibliografía del proyecto."
         },
