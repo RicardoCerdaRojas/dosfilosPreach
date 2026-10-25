@@ -89,6 +89,8 @@ export class RunExpositoryPassesUseCase {
             ...(input.sourceLanguage !== undefined ? { sourceLanguage: input.sourceLanguage } : {}),
             ...(input.scopeKey ? { scopeKey: input.scopeKey } : {}),
             ...(input.strictMode === true ? { strictMode: true } : {}),
+            // «Refinar» del Pase 5: sin esto la observación se perdía aquí.
+            ...(input.regenerationHint?.trim() ? { regenerationHint: input.regenerationHint } : {}),
         });
     }
 
@@ -145,6 +147,8 @@ export interface PreachableCallInput extends BaseCallInput {
     targetPreachableCount?: number;
     /** v1.6 strict mode — pastor confirms exegetical papers exist per unit. */
     strictMode?: boolean;
+    /** Las observaciones abiertas del Pase 5 que «Refinar» devuelve al Pase 4. */
+    regenerationHint?: string;
 }
 
 export interface FidelityCallInput extends BaseCallInput {

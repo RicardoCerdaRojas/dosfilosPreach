@@ -1,12 +1,18 @@
 import {
     bookIdOfUnit,
+    currentRevisedIdea,
+    placeInBook,
+    scopeFitsBooks,
     type AddProjectSourceInput,
     type AIProject,
+    type AssistantVerseInput,
     type BibleBookId,
     type BookPanorama,
     type ExegeticalUnit,
+    type PassageReference,
     type PlannedSermonExpositoryEnrichment,
     type PreachableUnit,
+    type ProjectFraming,
     type SyntacticUnit,
 } from '@dosfilos/domain';
 import type { SeriesService } from '@dosfilos/application';
@@ -254,4 +260,97 @@ export function buildSeriesPlan(input: {
             }
             : {}),
     };
+}
+
+// ── El encuadre del proyecto en el planificador ─────────────────────────
+// `docs/FASE_ENCUADRE_SERIE_2026-10.md`, §2 pasos 6–9. Lo del encuadre solo
+// se MUESTRA y precarga el formulario: nada de esto entra a los pases.
+
+export interface FramingPrefill {
+    /** El alcance, en la numeración del original (la del planificador). */
+    scope: PassageReference | null;
+    /** `YYYY-MM-DD`, como el campo de fecha. */
+    startDate: string | null;
+    frequency: Frequency | null;
+    /** La idea del pastor para la descripción de la serie. */
+    description: string | null;
+}
+
+const SIN_PRECARGA: FramingPrefill = { scope: null, startDate: null, frequency: null, description: null };
+
+/**
+ * Lo que el encuadre precarga en el planificador. Los domingos NO: el
+ * «≈N sermones» sigue siendo del pastor y el texto fija la unidad
+ * (principio 5). El alcance solo vale si sigue siendo del único libro del
+ * proyecto y, si la URL trae libro, de ese libro. La descripción toma la
+ * idea revisada y vigente si existe; si no, la idea central.
+ */
+export function framingPrefill(
+    project: Pick<AIProject, 'framing' | 'bibliographyCriteria'> | null | undefined,
+    opts: { bookParam?: string | null } = {},
+): FramingPrefill {
+    const f = project?.framing;
+    if (!f) return SIN_PRECARGA;
+    const books = project?.bibliographyCriteria?.bibleBooks ?? [];
+    const scope = f.scope
+        && scopeFitsBooks(f.scope, books)
+        && f.scope.passage.bookId === f.scope.bookId
+        && (!opts.bookParam || opts.bookParam === f.scope.bookId)
+        ? f.scope.passage
+        : null;
+    const description = currentRevisedIdea(f) ?? (f.centralIdea?.trim() || null);
+    return {
+        scope,
+        startDate: f.rhythm?.startDate ?? null,
+        frequency: f.rhythm?.frequency ?? null,
+        description,
+    };
+}
+
+/** Si el pastor escribió algo que contrastar con el panorama: su idea central o sus movimientos. */
+export function hasReadingToContrast(framing: Pick<ProjectFraming, 'centralIdea' | 'structure'> | null | undefined): boolean {
+    return Boolean(framing?.centralIdea?.trim()) || (framing?.structure?.length ?? 0) > 0;
+}
+
+/**
+ * Si el análisis fue de un pasaje y no del libro entero. Para un borrador
+ * restaurado, que no guarda el alcance: libro entero si empieza en 1:1 y
+ * llega al último capítulo.
+ */
+export function isPassageRun(verses: ReadonlyArray<Pick<AssistantVerseInput, 'chapter' | 'verse'>> | null | undefined, chapterCount: number): boolean {
+    if (!verses?.length) return false;
+    const first = verses[0]!;
+    const last = verses[verses.length - 1]!;
+    return !(first.chapter === 1 && first.verse === 1 && last.chapter >= chapterCount);
+}
+
+export interface UnitsVsSundays {
+    direction: 'more-units' | 'fewer-units';
+    units: number;
+    sundays: number;
+}
+
+/** El aviso tras el Pase 4: el texto dio N unidades y el pastor planeó M domingos. Iguales o sin domingos: nada. */
+export function unitsVsSundays(units: number, sundays: number | null | undefined): UnitsVsSundays | null {
+    if (!sundays || sundays < 1 || units < 1 || units === sundays) return null;
+    return { direction: units > sundays ? 'more-units' : 'fewer-units', units, sundays };
+}
+
+/** La descripción de la serie: la que escribió el pastor o, vacía o sin precarga, el texto de siempre. */
+export function seriesDescriptionFor(edited: string | null | undefined, fallback: string): string {
+    return edited?.trim() || fallback;
+}
+
+/**
+ * El encargo de un estudio creado a mano desde SeriesDetail: la
+ * justificación y su lugar en el libro. Misma regla que
+ * `pericopeAssignmentBrief` del servicio, que arma los del lote.
+ */
+export function briefWithPlaceInBook(
+    justification: string | null | undefined,
+    series: Parameters<typeof placeInBook>[0],
+    pericopeId: string,
+): string | null {
+    const partes = [justification?.trim(), placeInBook(series, pericopeId)].filter((p): p is string => Boolean(p));
+    return partes.length ? partes.join('\n\n') : null;
 }

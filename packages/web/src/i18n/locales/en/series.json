@@ -444,7 +444,46 @@
                 "flexible": "Flexible (no dates)"
             },
             "cta_one": "Create series with {{count}} sermon",
-            "cta_other": "Create series with {{count}} sermons"
+            "cta_other": "Create series with {{count}} sermons",
+            "description": "Series description",
+            "descriptionHint": "It comes from the central idea in your framing. Adjust it to how you want to present the series."
+        },
+        "framing": {
+            "contrast": {
+                "title": "Your reading and what the panorama proposes",
+                "intro": "You wrote your reading before seeing the panorama. Put them side by side: the panorama is a proposal to test against the text, not its final word.",
+                "yours": "Your reading",
+                "panoramaBook": "What the panorama of the book proposes",
+                "panoramaPassage": "What the panorama of the passage proposes",
+                "ideaRow": "The idea",
+                "movementsRow": "The movements",
+                "noIdea": "You did not write the central idea in the framing.",
+                "noMovements": "You did not note movements in the framing.",
+                "noPanoramaMovements": "The panorama did not propose movements.",
+                "untitled": "(untitled)",
+                "question": "What changes in your reading?",
+                "questionHint": "What the panorama proposes, against your reading. If you note it, it goes into the log and you will see it when you consolidate the idea. It is optional.",
+                "verdict": {
+                    "confirms": "Confirms",
+                    "nuances": "Nuances",
+                    "contradicts": "Contradicts"
+                },
+                "noteLabel": "Note (optional)",
+                "notePlaceholder": "What you saw and in which verses",
+                "save": "Add to the log",
+                "saved": "Added to the log of your reading.",
+                "saveFailed": "Could not save the note. Try again."
+            },
+            "units": {
+                "unitCount_one": "{{count}} unit",
+                "unitCount_other": "{{count}} units",
+                "sundayCount_one": "{{count}} Sunday",
+                "sundayCount_other": "{{count}} Sundays",
+                "summary": "The text yielded {{units}}; you planned {{sundays}}.",
+                "principle": "The text sets the preaching unit; the calendar adjusts to it.",
+                "moreUnits": "You can group units with “Merge” in Pass 4 or adjust the calendar in the project framing.",
+                "fewerUnits": "You can preach one unit over several Sundays (that option comes in an upcoming version) or adjust the calendar in the project framing."
+            }
         },
         "passes": {
             "panorama": {

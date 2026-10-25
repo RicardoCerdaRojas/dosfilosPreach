@@ -444,7 +444,46 @@
                 "flexible": "Flexible (sin fechas)"
             },
             "cta_one": "Crear serie con {{count}} sermón",
-            "cta_other": "Crear serie con {{count}} sermones"
+            "cta_other": "Crear serie con {{count}} sermones",
+            "description": "Descripción de la serie",
+            "descriptionHint": "Viene de la idea central de tu encuadre. Ajústala a como quieras presentar la serie."
+        },
+        "framing": {
+            "contrast": {
+                "title": "Tu lectura y lo que propone el panorama",
+                "intro": "Escribiste tu lectura antes de ver el panorama. Ponlas lado a lado: el panorama es una propuesta para contrastar con el texto, no su última palabra.",
+                "yours": "Tu lectura",
+                "panoramaBook": "Lo que propone el panorama del libro",
+                "panoramaPassage": "Lo que propone el panorama del pasaje",
+                "ideaRow": "La idea",
+                "movementsRow": "Los movimientos",
+                "noIdea": "No escribiste la idea central en el encuadre.",
+                "noMovements": "No anotaste movimientos en el encuadre.",
+                "noPanoramaMovements": "El panorama no propuso movimientos.",
+                "untitled": "(sin título)",
+                "question": "¿Qué cambia en tu lectura?",
+                "questionHint": "Lo que propone el panorama, frente a tu lectura. Si lo anotas, queda en el registro y lo verás al consolidar la idea. No es obligatorio.",
+                "verdict": {
+                    "confirms": "Confirma",
+                    "nuances": "Matiza",
+                    "contradicts": "Contradice"
+                },
+                "noteLabel": "Nota (opcional)",
+                "notePlaceholder": "Qué viste y en qué versículos",
+                "save": "Anotar en el registro",
+                "saved": "Anotado en el registro de tu lectura.",
+                "saveFailed": "No se pudo anotar. Inténtalo de nuevo."
+            },
+            "units": {
+                "unitCount_one": "{{count}} unidad",
+                "unitCount_other": "{{count}} unidades",
+                "sundayCount_one": "{{count}} domingo",
+                "sundayCount_other": "{{count}} domingos",
+                "summary": "El texto dio {{units}}; planeaste {{sundays}}.",
+                "principle": "El texto fija la unidad de predicación; el calendario se ajusta a ella.",
+                "moreUnits": "Puedes agrupar unidades con «Combinar» en el Pase 4 o ajustar el calendario en el encuadre del proyecto.",
+                "fewerUnits": "Puedes predicar una unidad en varios domingos (esa opción llega en una próxima versión) o ajustar el calendario en el encuadre del proyecto."
+            }
         },
         "passes": {
             "panorama": {

@@ -2,12 +2,18 @@ import { describe, it, expect } from 'vitest';
 import type { AddProjectSourceInput, BibleBookId, ExegeticalUnit, PreachableUnit } from '@dosfilos/domain';
 import {
     activeProjectById,
+    briefWithPlaceInBook,
     buildSeriesPlan,
     excludedFrom,
+    framingPrefill,
+    hasReadingToContrast,
     initialBookFor,
+    isPassageRun,
     pericopesForOverlap,
     projectEntryState,
+    seriesDescriptionFor,
     shouldRestoreDraft,
+    unitsVsSundays,
 } from '../utils/serieDesdeProyecto';
 
 /**
@@ -250,5 +256,106 @@ describe('buildSeriesPlan — el argumento de createSeriesFromPlan', () => {
         expect(plan.series.metadata).toEqual({ expository: { book: 'Nehemías' } });
         const { project: _p, ...resto } = plan;
         expect(resto).toEqual(buildSeriesPlan(base()));
+    });
+});
+
+// ── El encuadre en el planificador (FASE_ENCUADRE_SERIE, U5) ────────────
+
+const esd = (cs: number, ce: number) => ({ bookId: 'EZR' as BibleBookId, chapterStart: cs, chapterEnd: ce, verseStart: null, verseEnd: null });
+const esdras = (framing: Record<string, unknown> | undefined, books: BibleBookId[] = ['EZR']) => ({
+    framing: framing as never,
+    bibliographyCriteria: { bibleBooks: books },
+});
+
+describe('framingPrefill — lo que el encuadre precarga', () => {
+    const completo = {
+        scope: { bookId: 'EZR', passage: esd(7, 10) },
+        centralIdea: '  Dios restaura a su pueblo por su Palabra. ',
+        rhythm: { sundays: 12, startDate: '2026-11-01', frequency: 'biweekly' },
+    };
+
+    it('alcance, fecha, frecuencia y la idea central para la descripción; los domingos NO', () => {
+        const r = framingPrefill(esdras(completo));
+        expect(r).toEqual({
+            scope: esd(7, 10),
+            startDate: '2026-11-01',
+            frequency: 'biweekly',
+            description: 'Dios restaura a su pueblo por su Palabra.',
+        });
+        expect(JSON.stringify(r)).not.toContain('12');
+    });
+
+    it('sin proyecto o sin encuadre: nada', () => {
+        const nada = { scope: null, startDate: null, frequency: null, description: null };
+        expect(framingPrefill(null)).toEqual(nada);
+        expect(framingPrefill(esdras(undefined))).toEqual(nada);
+    });
+
+    it('el alcance se descarta si el proyecto ya no tiene ese único libro, o si la URL trae otro', () => {
+        expect(framingPrefill(esdras(completo, ['EZR', 'NEH'])).scope).toBeNull();
+        expect(framingPrefill(esdras(completo, ['NEH'])).scope).toBeNull();
+        expect(framingPrefill(esdras(completo), { bookParam: 'NEH' }).scope).toBeNull();
+        expect(framingPrefill(esdras(completo), { bookParam: 'EZR' }).scope).toEqual(esd(7, 10));
+    });
+
+    it('la idea revisada y vigente gana a la provisoria; desactualizada, no', () => {
+        const revision = { centralIdea: 'Revisada', verdict: 'nuanced', why: 'x', ofIdea: 'Original', revisedAt: '2026-10-25T00:00:00Z' };
+        expect(framingPrefill(esdras({ centralIdea: 'Original', revision })).description).toBe('Revisada');
+        expect(framingPrefill(esdras({ centralIdea: 'Editada', revision })).description).toBe('Editada');
+    });
+});
+
+describe('hasReadingToContrast', () => {
+    it('con idea central o con movimientos; vacío, no', () => {
+        expect(hasReadingToContrast({ centralIdea: 'x' })).toBe(true);
+        expect(hasReadingToContrast({ structure: [{ passage: esd(1, 6), title: '' }] })).toBe(true);
+        expect(hasReadingToContrast({ centralIdea: '  ', structure: [] })).toBe(false);
+        expect(hasReadingToContrast(null)).toBe(false);
+    });
+});
+
+describe('isPassageRun — para el rótulo «del pasaje»', () => {
+    it('libro entero si empieza en 1:1 y llega al último capítulo', () => {
+        expect(isPassageRun([{ chapter: 1, verse: 1 }, { chapter: 10, verse: 44 }], 10)).toBe(false);
+        expect(isPassageRun([{ chapter: 7, verse: 1 }, { chapter: 10, verse: 44 }], 10)).toBe(true);
+        expect(isPassageRun([{ chapter: 1, verse: 1 }, { chapter: 6, verse: 22 }], 10)).toBe(true);
+        expect(isPassageRun([], 10)).toBe(false);
+    });
+});
+
+describe('unitsVsSundays — el aviso tras el Pase 4', () => {
+    it('más unidades que domingos, y menos', () => {
+        expect(unitsVsSundays(14, 10)).toEqual({ direction: 'more-units', units: 14, sundays: 10 });
+        expect(unitsVsSundays(8, 10)).toEqual({ direction: 'fewer-units', units: 8, sundays: 10 });
+    });
+    it('iguales o sin domingos: nada', () => {
+        expect(unitsVsSundays(10, 10)).toBeNull();
+        expect(unitsVsSundays(10, undefined)).toBeNull();
+        expect(unitsVsSundays(10, 0)).toBeNull();
+    });
+});
+
+describe('seriesDescriptionFor', () => {
+    it('la del pastor; vacía o sin precarga, el texto de siempre', () => {
+        expect(seriesDescriptionFor(' Mi idea ', 'fija')).toBe('Mi idea');
+        expect(seriesDescriptionFor('   ', 'fija')).toBe('fija');
+        expect(seriesDescriptionFor(null, 'fija')).toBe('fija');
+    });
+});
+
+describe('briefWithPlaceInBook — «Crear estudio» desde SeriesDetail', () => {
+    const serie = { metadata: { plannedSermons: [
+        { id: 'a', title: 'El decreto', passage: 'Esdras 1:1-4' },
+        { id: 'b', title: 'Los utensilios', passage: 'Esdras 1:5-11' },
+        { id: 'c', title: 'La lista', passage: 'Esdras 2:1-70' },
+    ] } };
+    it('la justificación y el lugar en el libro', () => {
+        expect(briefWithPlaceInBook('Cambio de escena.', serie, 'b')).toBe(
+            'Cambio de escena.\n\nPerícopa 2 de 3 de la serie. Antes: Esdras 1:1-4 («El decreto»). Después: Esdras 2:1-70 («La lista»).',
+        );
+    });
+    it('sin justificación, solo el lugar; sin serie ni justificación, null', () => {
+        expect(briefWithPlaceInBook(null, serie, 'a')).toBe('Perícopa 1 de 3 de la serie. Después: Esdras 1:5-11 («Los utensilios»).');
+        expect(briefWithPlaceInBook('  ', null, 'a')).toBeNull();
     });
 });

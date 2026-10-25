@@ -1,6 +1,7 @@
 import {
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from 'react';
 import {
@@ -93,13 +94,19 @@ import { useExpositoryViewPrefs } from './expository/useExpositoryViewPrefs';
 import { buildPassInput, sourceLanguageFromLoaded } from './expository/passInput';
 import { ProjectSeriesBanner, ProjectUnavailableNotice } from './components/ProjectSeriesBanner';
 import { ProjectSeriesSources } from './components/ProjectSeriesSources';
+import { FramingContrastCard } from './components/FramingContrastCard';
+import { UnitsVsSundaysNotice } from './components/UnitsVsSundaysNotice';
 import {
     PROJECT_SOURCES_PENDING,
     type ProjectSeriesSourcesState,
     activeProjectById,
     buildSeriesPlan,
+    framingPrefill,
+    hasReadingToContrast,
     initialBookFor,
+    isPassageRun,
     projectEntryState,
+    seriesDescriptionFor,
     shouldRestoreDraft,
 } from './utils/serieDesdeProyecto';
 
@@ -151,7 +158,7 @@ export function ExpositoryAssistantPage() {
     const [searchParams] = useSearchParams();
     const projectIdParam = searchParams.get('projectId');
     const bookParam = searchParams.get('book');
-    const { projects, isLoadingProjects } = useFacultyProjects();
+    const { projects, isLoadingProjects, updateProject } = useFacultyProjects();
     const project = useMemo(() => activeProjectById(projects, projectIdParam), [projects, projectIdParam]);
     const projectState = projectEntryState({ projectIdParam, loading: isLoadingProjects || !user?.uid, project });
     const projectBooks = useMemo(() => project?.bibliographyCriteria?.bibleBooks ?? [], [project]);
@@ -220,7 +227,13 @@ export function ExpositoryAssistantPage() {
     const [seriesTitle, setSeriesTitle] = useState('');
     const [startDate, setStartDate] = useState('');
     const [frequency, setFrequency] = useState<'weekly' | 'biweekly' | 'monthly' | 'flexible'>('weekly');
+    // La descripción que escribe el pastor. `null`: sin idea central en el
+    // encuadre, la serie lleva el texto de siempre.
+    const [seriesDescription, setSeriesDescription] = useState<string | null>(null);
     const [creatingSeries, setCreatingSeries] = useState(false);
+    // Si el último análisis fue de un pasaje: la tarjeta de contraste dice
+    // «del pasaje». Se fija al correr; un borrador restaurado lo deduce.
+    const [analyzedPassage, setAnalyzedPassage] = useState(false);
 
     // Preferencias de LECTURA — no dicen nada del libro que se divide.
     const vista = useExpositoryViewPrefs();
@@ -282,6 +295,7 @@ export function ExpositoryAssistantPage() {
         setDraftScope(scope);
         const stored = loadExpositoryDraft(scope);
         const draft = stored && shouldRestoreDraft(stored, { projectId: scope, bookParam }) ? stored : null;
+        const precarga = framingPrefill(project, { bookParam });
         if (!draft && (projectIdParam || bookParam)) {
             const inicial = initialBookFor({
                 bookParam,
@@ -291,6 +305,14 @@ export function ExpositoryAssistantPage() {
             });
             setBookId(inicial.bookId);
             setBookChoiceRequired(inicial.mustChoose);
+            // El alcance del encuadre, solo sin borrador: un análisis
+            // restaurado manda sobre lo que diga el formulario.
+            if (precarga.scope) {
+                setScopeMode('passage');
+                setPassageScope(precarga.scope);
+                setBookId(precarga.scope.bookId);
+                setBookChoiceRequired(false);
+            }
         }
         if (draft) {
             setBookId(draft.bookId);
@@ -299,6 +321,7 @@ export function ExpositoryAssistantPage() {
                 setTargetCount(draft.targetPreachableCount);
             }
             setVerses(draft.verses);
+            setAnalyzedPassage(isPassageRun(draft.verses, allBooks.find((b) => b.id === draft.bookId)?.chapterCount ?? 0));
             setBookDisplay(draft.bookDisplay);
             if (draft.panorama) setPanorama(draft.panorama);
             if (draft.macroSections) setMacroSections(draft.macroSections);
@@ -311,6 +334,20 @@ export function ExpositoryAssistantPage() {
         }
         setHydrated(true);
     }, [hydrated, t, projectState, project, projectIdParam, bookParam, projectBooks, allBooks]);
+
+    // Fecha, frecuencia y descripción del encuadre: no viven en el borrador,
+    // así que se precargan también con uno restaurado, pero UNA sola vez: un
+    // refetch del proyecto (otra pestaña, una anotación del registro) no pisa
+    // lo que el pastor ya editó.
+    const framingPrefilled = useRef(false);
+    useEffect(() => {
+        if (framingPrefilled.current || projectState === 'loading') return;
+        framingPrefilled.current = true;
+        const precarga = framingPrefill(project, { bookParam });
+        if (precarga.startDate) setStartDate(precarga.startDate);
+        if (precarga.frequency) setFrequency(precarga.frequency);
+        if (precarga.description) setSeriesDescription(precarga.description);
+    }, [projectState, project, bookParam]);
 
     // Persist a draft whenever any pass output lands. Keeps the
     // localStorage entry in sync without an explicit "save" button.
@@ -400,6 +437,7 @@ export function ExpositoryAssistantPage() {
         setVerses(loaded.verses);
         setBookDisplay(loaded.book);
         setAnalyzedBookId(bookId);
+        setAnalyzedPassage(!isWholeBook);
 
         // Surface the source (original-language vs translation
         // fallback) so the pastor knows what the model is reading.
@@ -949,10 +987,15 @@ export function ExpositoryAssistantPage() {
             }
             const plan = buildSeriesPlan({
                 title: seriesTitle,
-                description: t('expository.create.defaultDescription', {
-                    book: bookDisplay,
-                    count: preachableUnits.length,
-                }) as string,
+                // La escribe el pastor (precargada con su idea central); sin
+                // encuadre, o si la vació, el texto de siempre.
+                description: seriesDescriptionFor(
+                    seriesDescription,
+                    t('expository.create.defaultDescription', {
+                        book: bookDisplay,
+                        count: preachableUnits.length,
+                    }) as string,
+                ),
                 startDate: parseLocalDate(startDate),
                 frequency,
                 bookDisplay,
@@ -1138,6 +1181,21 @@ export function ExpositoryAssistantPage() {
                     </PassCard>
                 )}
 
+                {/* Tras el Pase 1: la lectura del pastor junto a lo que propone
+                    el panorama. Solo se muestra; nada del encuadre va a los pases. */}
+                {panorama && project?.framing && hasReadingToContrast(project.framing) && (
+                    <FramingContrastCard
+                        framing={project.framing}
+                        panorama={panorama}
+                        macroSections={macroSections}
+                        bookId={analyzedBookId ?? bookId}
+                        isPassage={analyzedPassage}
+                        lang={lang}
+                        onRecord={(hypothesisEntry) => updateProject.mutateAsync({ projectId: project.id, hypothesisEntry })}
+                        t={t}
+                    />
+                )}
+
                 {!collapsedPasses.has(2) && (
                     <PassCard
                         index={2}
@@ -1220,6 +1278,14 @@ export function ExpositoryAssistantPage() {
                     </PassCard>
                 )}
 
+                {preachableUnits && preachableUnits.length > 0 && (
+                    <UnitsVsSundaysNotice
+                        units={preachableUnits.length}
+                        sundays={project?.framing?.rhythm?.sundays}
+                        t={t}
+                    />
+                )}
+
                 {!collapsedPasses.has(5) && (
                     <div id="expository-pass-5">
                     <PassCard
@@ -1272,6 +1338,8 @@ export function ExpositoryAssistantPage() {
                         onStartDateChange={setStartDate}
                         frequency={frequency}
                         onFrequencyChange={setFrequency}
+                        description={seriesDescription}
+                        onDescriptionChange={setSeriesDescription}
                         preachableUnits={preachableUnits}
                         creating={creatingSeries}
                         onCreate={handleCreateSeries}

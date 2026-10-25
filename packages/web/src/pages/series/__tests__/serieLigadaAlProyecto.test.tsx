@@ -190,13 +190,30 @@ describe('«Crear estudio» de una perícopa', () => {
             passage: { bookId: 'NEH', chapterStart: 1, verseStart: 1, chapterEnd: 1, verseEnd: 11 },
             displayLanguage: 'es',
             title: 'Neh 1',
-            assignmentBrief: 'La oración',
+            // La justificación y su lugar en el libro (FASE_ENCUADRE_SERIE, U5).
+            assignmentBrief: 'La oración\n\nPerícopa 1 de 1 de la serie.',
             styleGuideId: null,
             initialSources: [
                 { corpusId: 'serieObra', sourceType: 'commentary-expository', displayLabel: 'Obra de la serie', mode: 'full-document', sourceLibraryResourceId: 'serieObra' },
             ],
             seriesId: 's1',
             pericopeId: 'per1',
+        });
+    });
+
+    it('el encargo lleva su lugar en el libro, con la perícopa de antes y la de después', async () => {
+        const otra = (id: string, cs: number) => ({
+            id, title: `Neh ${cs}`, passage: `Nehemías ${cs}:1-10`,
+            syntacticUnit: { ...unidad, chapterStart: cs, chapterEnd: cs, verseEnd: 10, justification: `Corte ${cs}` },
+        });
+        estado.series = serie({}, { plannedSermons: [otra('a', 1), otra('b', 2), otra('c', 3)] });
+        estado.sermonItems = ['a', 'b', 'c'].map((id, i) => ({ id, title: `Neh ${i + 1}`, description: '', passage: `Nehemías ${i + 1}:1-10`, status: 'planned', plannedSermonId: id }));
+        render(<SeriesDetail />);
+        fireEvent.click(screen.getAllByRole('button', { name: 'detail.table.createPaper' })[1]!);
+        await waitFor(() => expect(svc.createPaper).toHaveBeenCalledTimes(1));
+        expect(svc.createPaper.mock.calls[0]![0]).toMatchObject({
+            pericopeId: 'b',
+            assignmentBrief: 'Corte 2\n\nPerícopa 2 de 3 de la serie. Antes: Nehemías 1:1-10 («Neh 1»). Después: Nehemías 3:1-10 («Neh 3»).',
         });
     });
 

@@ -47,7 +47,7 @@ vi.mock('../ExegesisService', () => ({
 vi.mock('../SermonService', () => ({ sermonService: { createSermon } }));
 vi.mock('../LibraryService', () => ({ LibraryService: class {} }));
 
-import { SeriesService } from '../SeriesService';
+import { SeriesService, pericopeAssignmentBrief } from '../SeriesService';
 
 const fuente = (resourceId: string, label: string, sourceType: AddProjectSourceInput['sourceType'] = 'commentary-expository'): AddProjectSourceInput => ({
     corpusId: resourceId,
@@ -202,7 +202,8 @@ describe('createSeriesFromPlan sin proyecto (como hoy)', () => {
             passage: { bookId: 'NEH', chapterStart: 1, verseStart: 1, chapterEnd: 1, verseEnd: 11 },
             displayLanguage: 'es',
             title: 'La oración de Nehemías',
-            assignmentBrief: 'Neh 1:1',
+            // La justificación y, debajo, su lugar en el libro.
+            assignmentBrief: 'Neh 1:1\n\nPerícopa 1 de 3 de la serie. Después: Neh 2:1-10 («El permiso del rey»).',
             styleGuideId: 'guia-1',
             initialSources: [
                 { corpusId: 'res-b', sourceType: 'commentary-expository', displayLabel: 'Williamson (serie)', mode: 'full-document', sourceLibraryResourceId: 'res-b' },
@@ -376,5 +377,57 @@ describe('linkSeriesToProject', () => {
         ex.setPaperProject.mockRejectedValueOnce(new Error('proyecto archivado'));
         const r = await new SeriesService().linkSeriesToProject('u1', 's1', 'neh', { movePapers: true });
         expect(r).toEqual({ moved: 0, linked: 1, unchanged: 1, sourcesAdded: 0, failed: 1 });
+    });
+});
+
+describe('encuadre de la serie (U5)', () => {
+    it('cada estudio del lote nace con su lugar en el libro en el encargo', async () => {
+        const svc = new SeriesService();
+        await svc.createSeriesFromPlan('u1', plan());
+        expect(argsDeCreatePaper().map(a => a.assignmentBrief)).toEqual([
+            'Neh 1:1\n\nPerícopa 1 de 3 de la serie. Después: Neh 2:1-10 («El permiso del rey»).',
+            'Neh 2:1\n\nPerícopa 2 de 3 de la serie. Antes: Neh 1:1-11 («La oración de Nehemías»). Después: Neh 2:11-20 («La inspección»).',
+            'Neh 2:11\n\nPerícopa 3 de 3 de la serie. Antes: Neh 2:1-10 («El permiso del rey»).',
+        ]);
+    });
+
+    it('sin justificación, el encargo es solo el lugar en el libro', async () => {
+        const svc = new SeriesService();
+        const p = plan();
+        p.sermons = p.sermons.map(s => ({ ...s, syntacticUnit: { ...s.syntacticUnit, justification: undefined as unknown as string } }));
+        await svc.createSeriesFromPlan('u1', p);
+        expect(argsDeCreatePaper()[0]!.assignmentBrief).toBe('Perícopa 1 de 3 de la serie. Después: Neh 2:1-10 («El permiso del rey»).');
+    });
+
+    it('la frecuencia queda guardada en metadata.frequency', async () => {
+        const svc = new SeriesService();
+        const serie = await svc.createSeriesFromPlan('u1', plan({ frequency: 'biweekly', series: { ...plan().series as object, startDate: new Date(2026, 10, 1) } as never }));
+        expect(serie.metadata!.frequency).toBe('biweekly');
+        const guardada = repo.create.mock.calls[0]![0] as SermonSeriesEntity;
+        expect(guardada.metadata!.frequency).toBe('biweekly');
+        // Y las fechas salieron con esa frecuencia: 14 días entre perícopas.
+        const [a, b] = guardada.metadata!.plannedSermons!.map(p => p.scheduledDate!.getTime());
+        expect((b! - a!) / 86_400_000).toBe(14);
+    });
+
+    it('sin frecuencia en el plan no escribe la clave (series viejas: semanal)', async () => {
+        const svc = new SeriesService();
+        await svc.createSeriesFromPlan('u1', plan());
+        const guardada = repo.create.mock.calls[0]![0] as SermonSeriesEntity;
+        expect('frequency' in guardada.metadata!).toBe(false);
+    });
+});
+
+describe('pericopeAssignmentBrief', () => {
+    const serie = { metadata: { plannedSermons: [
+        { id: 'a', title: 'Uno', passage: 'Esd 1:1-4' },
+        { id: 'b', title: 'Dos', passage: 'Esd 1:5-11' },
+    ] } };
+    it('junta la justificación y el lugar en el libro', () => {
+        expect(pericopeAssignmentBrief(' Frontera. ', serie, 'b')).toBe('Frontera.\n\nPerícopa 2 de 2 de la serie. Antes: Esd 1:1-4 («Uno»).');
+    });
+    it('una perícopa fuera del plan conserva solo la justificación; sin nada, null', () => {
+        expect(pericopeAssignmentBrief('Frontera.', serie, 'zzz')).toBe('Frontera.');
+        expect(pericopeAssignmentBrief(null, null, 'a')).toBeNull();
     });
 });

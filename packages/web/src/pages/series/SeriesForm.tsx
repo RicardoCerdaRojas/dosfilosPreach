@@ -107,8 +107,9 @@ export function SeriesForm() {
       }
 
       try {
+          // El ritmo usado queda guardado: el próximo recálculo parte de él.
           await seriesService.updateSeries(id, {
-              metadata: { ...originalSeries.metadata, plannedSermons: updatedPlanned },
+              metadata: { ...originalSeries.metadata, plannedSermons: updatedPlanned, frequency },
           } as any);
           toast.success(
               t('form.messages.recalcDone', { count: rebuiltCount }) as string,
@@ -134,6 +135,8 @@ export function SeriesForm() {
       const series = await seriesService.getSeries(id);
       if (series) {
         setOriginalSeries(series);
+        // El ritmo con que se planificó; las series viejas, semanal como siempre.
+        setFrequency(savedFrequency(series));
         reset({
           title: series.title,
           description: series.description,
@@ -234,6 +237,12 @@ export function SeriesForm() {
         );
         if (shiftedMetadata) {
             payload.metadata = shiftedMetadata.metadata;
+        }
+        // Un ritmo cambiado se guarda aunque no se recalculen las fechas.
+        if (originalSeries && frequency !== savedFrequency(originalSeries)) {
+            payload.metadata = { ...((payload.metadata as object | undefined) ?? originalSeries.metadata), frequency };
+        }
+        if (shiftedMetadata) {
             if (shiftedMetadata.shiftedCount > 0) {
                 toast.info(
                     t('form.messages.shiftedSermons', {
@@ -671,6 +680,13 @@ function computeShiftedMetadata(
         healedCount,
         deltaDays,
     };
+}
+
+/** El ritmo guardado de la serie; sin él (series viejas), semanal. */
+function savedFrequency(
+    series: Pick<SermonSeriesEntity, 'metadata'> | null | undefined,
+): 'weekly' | 'biweekly' | 'monthly' | 'flexible' {
+    return series?.metadata?.frequency ?? 'weekly';
 }
 
 /**

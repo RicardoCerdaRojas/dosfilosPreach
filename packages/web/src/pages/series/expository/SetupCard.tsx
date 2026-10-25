@@ -3,6 +3,7 @@ import { BookOpenText, Loader2, Sparkles, BookPlus, Type, GraduationCap } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { type BibleBookId, type PassageReference, type PreachableUnit } from '@dosfilos/domain';
 import { PassagePicker } from '@/components/exegesis/PassagePicker';
 import { BookPicker } from '@/components/exegesis/BookPicker';
@@ -14,6 +15,8 @@ export function CreateSeriesCard({
     onStartDateChange,
     frequency,
     onFrequencyChange,
+    description = null,
+    onDescriptionChange,
     preachableUnits,
     creating,
     onCreate,
@@ -27,6 +30,13 @@ export function CreateSeriesCard({
     onStartDateChange: (v: string) => void;
     frequency: 'weekly' | 'biweekly' | 'monthly' | 'flexible';
     onFrequencyChange: (v: 'weekly' | 'biweekly' | 'monthly' | 'flexible') => void;
+    /**
+     * La descripción que escribe el pastor, precargada con la idea central
+     * de su encuadre. `null`: sin encuadre, la serie lleva el texto de siempre
+     * y el campo no aparece.
+     */
+    description?: string | null;
+    onDescriptionChange?: (v: string) => void;
     preachableUnits: ReadonlyArray<PreachableUnit>;
     creating: boolean;
     onCreate: () => void;
@@ -82,6 +92,22 @@ export function CreateSeriesCard({
                         <option value="flexible">{t('expository.create.freq.flexible')}</option>
                     </select>
                 </div>
+                {description !== null && (
+                    <div className="md:col-span-2">
+                        <Label htmlFor="seriesDescription">{t('expository.create.description')}</Label>
+                        <Textarea
+                            id="seriesDescription"
+                            value={description}
+                            onChange={(e) => onDescriptionChange?.(e.target.value)}
+                            rows={3}
+                            aria-describedby="seriesDescriptionHint"
+                            className="mt-1.5 bg-background"
+                        />
+                        <p id="seriesDescriptionHint" className="mt-1.5 text-[11px] text-muted-foreground">
+                            {t('expository.create.descriptionHint')}
+                        </p>
+                    </div>
+                )}
             </div>
 
             {children}
