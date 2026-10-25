@@ -12,7 +12,6 @@ import {
     isStorableFramingPassage,
     newHypothesisEntry,
     originalChapterCount,
-    placeInBook,
     readerPassageToOriginal,
     withCappedHypothesisLog,
     type ProjectFraming,
@@ -306,73 +305,3 @@ describe('registro: una anotación para arrayUnion (C7)', () => {
     });
 });
 
-describe('placeInBook', () => {
-    const serie = {
-        metadata: {
-            plannedSermons: [
-                { id: 'r1', title: 'El decreto de Ciro', passage: 'Esdras 1:1-11' },
-                { id: 'r2', title: 'El altar y los cimientos', passage: 'Esdras 3:1-13' },
-                { id: 'r3', title: 'La oposición', passage: 'Esdras 4:1-24' },
-            ],
-        },
-    };
-
-    it('la del medio dice su lugar, la anterior y la siguiente', () => {
-        expect(placeInBook(serie, 'r2')).toBe(
-            'Perícopa 2 de 3 de la serie. Antes: Esdras 1:1-11 («El decreto de Ciro»). Después: Esdras 4:1-24 («La oposición»).',
-        );
-    });
-
-    it('en los extremos omite el vecino que no hay', () => {
-        expect(placeInBook(serie, 'r1')).toBe('Perícopa 1 de 3 de la serie. Después: Esdras 3:1-13 («El altar y los cimientos»).');
-        expect(placeInBook(serie, 'r3')).toBe('Perícopa 3 de 3 de la serie. Antes: Esdras 3:1-13 («El altar y los cimientos»).');
-    });
-
-    it('una perícopa que no está en la serie: null', () => {
-        expect(placeInBook(serie, 'otra')).toBeNull();
-        expect(placeInBook(null, 'r1')).toBeNull();
-    });
-
-    it('cuenta unidades, no filas: una unidad en dos domingos (mismo estudio o mismo pasaje) cuenta una vez', () => {
-        const dosDomingos = {
-            metadata: {
-                plannedSermons: [
-                    { id: 'r1', title: 'El decreto', passage: 'Esdras 1:1-11', paperId: 'p1' },
-                    { id: 'r2a', title: 'El altar (1)', passage: 'Esdras 3:1-13', paperId: 'p2' },
-                    { id: 'r2b', title: 'El altar (2)', passage: 'Esdras 3:1-13' },
-                    { id: 'r3', title: 'La oposición', passage: 'Esdras 4:1-24', paperId: 'p3' },
-                ],
-            },
-        };
-        expect(placeInBook(dosDomingos, 'r2b')).toBe(
-            'Perícopa 2 de 3 de la serie. Antes: Esdras 1:1-11 («El decreto»). Después: Esdras 4:1-24 («La oposición»).',
-        );
-        expect(placeInBook(dosDomingos, 'r3')).toMatch(/^Perícopa 3 de 3 de la serie\. Antes: Esdras 3:1-13 \(«El altar \(1\)»\)\.$/);
-    });
-
-    it('dos filas con el mismo estudio son una unidad aunque el rótulo del pasaje difiera', () => {
-        const s = {
-            metadata: {
-                plannedSermons: [
-                    { id: 'a1', title: 'El altar', passage: 'Esdras 3:1-6', paperId: 'p2' },
-                    { id: 'a2', title: 'Los cimientos', passage: 'Esdras 3:7-13', paperId: 'p2' },
-                    { id: 'b', title: 'La oposición', passage: 'Esdras 4:1-24' },
-                ],
-            },
-        };
-        expect(placeInBook(s, 'b')).toBe('Perícopa 2 de 2 de la serie. Antes: Esdras 3:1-6 («El altar»).');
-    });
-
-    it('sin `passage`, traduce el syntacticUnit (numeración del original) a la del lector', () => {
-        // Jonás 2:1 del hebreo es 1:17 en la RVR.
-        const s = {
-            metadata: {
-                plannedSermons: [
-                    { id: 'a', title: 'El pez', passage: '', syntacticUnit: { book: 'Jonás', chapterStart: 2, verseStart: 1, chapterEnd: 2, verseEnd: 11 } },
-                    { id: 'b', title: 'Nínive', passage: 'Jonás 3:1-10' },
-                ],
-            },
-        };
-        expect(placeInBook(s, 'b')).toBe('Perícopa 2 de 2 de la serie. Antes: Jonás 1:17-2:10 («El pez»).');
-    });
-});

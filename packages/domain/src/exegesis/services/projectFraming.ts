@@ -1,6 +1,5 @@
-import { findBooksByAlias, getBookById, type BibleBookId } from '../../bible/canon/BibleCanon';
+import { getBookById, type BibleBookId } from '../../bible/canon/BibleCanon';
 import type { PassageReference } from '../../bible/canon/passage-reference';
-import { formatPassageForReader } from '../../bible/versification/formatForReader';
 import { passageToOriginal, verseToOriginal } from '../../bible/versification/mapVersification';
 import { VERSIFICATION_SPANS } from '../../bible/versification/versificationMap';
 import type { AIProject } from '../../entities/AIProject';
@@ -564,32 +563,6 @@ function originalEndOfReaderChapter(book: BibleBookId, chapter: number): { chapt
 
 type PlannedRow = Pick<PlannedSermon, 'id' | 'title' | 'passage'> & Partial<Pick<PlannedSermon, 'paperId' | 'syntacticUnit'>>;
 
-/**
- * La línea de contexto literario que va en el encargo de cada estudio:
- * «Perícopa 3 de 12 de la serie. Antes: Esdras 3:1-13 («…»). Después: …».
- * No es agenda pastoral: solo dice dónde está la perícopa.
- *
- * Cuenta UNIDADES, no filas: una unidad predicada en varios domingos ocupa
- * varias filas. Dos filas son la misma unidad si comparten estudio
- * (`paperId`) o el mismo pasaje. Los pasajes se muestran en la numeración
- * del lector: `passage` ya viene así del planificador, y el `syntacticUnit`
- * (numeración del original) se traduce.
- */
-export function placeInBook(
-    series: { metadata?: { plannedSermons?: ReadonlyArray<PlannedRow> } | null | undefined } | null | undefined,
-    pericopeId: string,
-): string | null {
-    const units = plannedUnits(series?.metadata?.plannedSermons ?? []);
-    const idx = units.findIndex(u => u.some(r => r.id === pericopeId));
-    if (idx < 0) return null;
-    const partes = [`Perícopa ${idx + 1} de ${units.length} de la serie.`];
-    const antes = idx > 0 ? describeRow(units[idx - 1]![0]!) : null;
-    const despues = idx < units.length - 1 ? describeRow(units[idx + 1]![0]!) : null;
-    if (antes) partes.push(`Antes: ${antes}.`);
-    if (despues) partes.push(`Después: ${despues}.`);
-    return partes.join(' ');
-}
-
 /** Las filas del plan agrupadas en unidades, en el orden del plan. */
 export function plannedUnits<R extends PlannedRow>(rows: ReadonlyArray<R>): R[][] {
     const parent = rows.map((_, i) => i);
@@ -617,25 +590,6 @@ export function plannedUnits<R extends PlannedRow>(rows: ReadonlyArray<R>): R[][
     // El Map conserva el orden de inserción: el de la primera fila de cada unidad.
     return [...grupos.values()];
 }
-
-function describeRow(r: PlannedRow): string | null {
-    const pasaje = r.passage?.trim() || unitForReader(r.syntacticUnit);
-    const titulo = r.title?.trim();
-    if (pasaje && titulo) return `${pasaje} («${titulo}»)`;
-    if (pasaje) return pasaje;
-    return titulo ? `«${titulo}»` : null;
-}
-
-function unitForReader(u: PlannedRow['syntacticUnit']): string | null {
-    if (!u) return null;
-    const book = findBooksByAlias(u.book.toLowerCase().trim())[0];
-    if (!book) return null;
-    return formatPassageForReader({
-        bookId: book.id, chapterStart: u.chapterStart, chapterEnd: u.chapterEnd, verseStart: u.verseStart, verseEnd: u.verseEnd,
-    });
-}
-
-// ── Utilidades ─────────────────────────────────────────────────────────
 
 function asRecord(v: unknown): Record<string, unknown> | null {
     return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;

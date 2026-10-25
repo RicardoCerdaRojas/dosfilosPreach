@@ -20,9 +20,9 @@ vi.mock('@dosfilos/application', () => ({ exegesisService: { extractProjectBibli
 vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'u' } }) }));
 const { ProjectStateOfArtPage } = await import('../ProjectStateOfArtPage');
 
-const montar = () => render(
+const montar = (url = '/dashboard/projects/ezr/estado-del-arte') => render(
     <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter initialEntries={['/dashboard/projects/ezr/estado-del-arte']}>
+        <MemoryRouter initialEntries={[url]}>
             <Routes>
                 <Route path="/dashboard/projects/:projectId/estado-del-arte" element={<ProjectStateOfArtPage />} />
                 <Route path="/dashboard/projects/:projectId" element={<p>panel del proyecto</p>} />
@@ -43,6 +43,14 @@ beforeEach(() => {
 });
 
 describe('Requisitos con encuadre', () => {
+    it('«Volver a Requisitos» (?paso=requisitos) abre directo en Requisitos; sin él, en Candidatas', () => {
+        montar('/dashboard/projects/ezr/estado-del-arte?paso=requisitos');
+        expect(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }).getAttribute('aria-selected')).toBe('true');
+        cleanup();
+        montar();
+        expect(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }).getAttribute('aria-selected')).not.toBe('true');
+    });
+
     it('los libros se ven en solo lectura y el enlace lleva al encuadre del panel', () => {
         montar();
         requisitos();
