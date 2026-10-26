@@ -1,6 +1,6 @@
 # Fase «Escritorio del proyecto»: que el panel enseñe el método en el orden del trabajo
 
-> Documento de fase, borrador 2 (incorpora la crítica adversarial, §8). Leído en el código el 2026-10-26 sobre `origin/main` 848009b5 (#815). Nace del pedido del fundador: «que los usuarios vean el panel como su escritorio de trabajo ordenado, para seguir un flujo coherente que les enseñe la metodología. Si hay deuda técnica, es el momento de documentarla y resolverla».
+> Documento de fase, borrador 3. Incorpora la crítica adversarial (§8), las respuestas del fundador del 2026-10-26 (§7) y el diseño integral de Curso y de los otros tipos (§9). Leído en el código el 2026-10-26 sobre `origin/main` 848009b5 (#815). Nace del pedido del fundador: «que los usuarios vean el panel como su escritorio de trabajo ordenado, para seguir un flujo coherente que les enseñe la metodología. Si hay deuda técnica, es el momento de documentarla y resolverla».
 >
 > Hubo cuatro análisis independientes:
 > 1. arquitectura de la información y flujo;
@@ -226,3 +226,72 @@ Antes de construir: **una maqueta** del escritorio de Esdras en tres momentos (r
   - «2 anotadas en tu lectura», no «2 dicen algo».
 - **Medir antes de cambiar estados**: un script de solo lectura en producción.
 - **La entrada al estado del arte desde la fase 2** se conserva, porque el fundador la pidió para NT785.
+
+## 9. Diseño integral: Curso y los otros tipos (2026-10-26)
+
+El fundador pidió un diseño integral, con Curso incluido, antes de avanzar. El TP #9 es una prueba que se puede rehacer, así que no frena nada. Las piezas compartidas son las mismas en todos los tipos: recorrido con «Ahora», estados que son funciones puras, `PhaseStep`/`StatusChip`, andamiaje plegable, sección Fuentes, mesa con columnas declaradas por tipo, vuelta al proyecto, `useProjectDesk`, herramientas y Material.
+
+### 9.1 Curso
+
+**El hilo que forma no es una idea central.** Es lo que corrige el profesor y cómo cambia el trabajo siguiente. Así nacieron las 17 reglas de la guía «TP Semanal».
+
+| Fase | Por empezar | En curso | Lista (evidencia) |
+|---|---|---|---|
+| **1 · Lo que pide el curso** | sin tipos de trabajo | hay tipos, pero alguno sin rúbrica resuelta | ≥ 1 tipo, cada uno con su rúbrica resuelta («3 tipos · TP Semanal: rúbrica · Mixto · guía de 17 reglas · no repetir activa») |
+| **2 · Fuentes del curso** | sin bibliografía | solo candidatas, o una obligatoria por conseguir | lo mismo que la fase 2 del Exegético, y además **todas las obligatorias conseguidas**; la cobertura se muestra por tipo de trabajo |
+| **3 · Calendario de entregas** | sin calendario | entregas sin tipo o sin fecha | cada entrega con su tipo y su fecha, o la salida explícita «trabajo semana a semana, sin calendario» |
+| **4 · Trabajos** | ningún trabajo ensamblado | k de N ensamblados | todo lo esperado ensamblado; «entregado» se muestra aparte |
+| **5 · Devolución y aprendizaje** | sin devoluciones | ≥ 1 devolución registrada | cada entrega tiene su devolución (o «sin devolución», marcado a propósito) y cada corrección que se repite está decidida: pasada a la guía o descartada |
+
+**«Ahora» en Curso:**
+1. Un trabajo que vence en las próximas 72 h y no está entregado («TP #9 · listo → Revisar antes de entregar», o «Continuar»).
+2. La continuidad: el trabajo en curso tocado más recientemente.
+3. Lo que sigue en el calendario: «Crear TP #10 · Stg 4:13–5:6 · vence vie 31», con el tipo de trabajo y el número ya puestos.
+4. La fase activa.
+
+Lo que falte del método va como nota secundaria («Moo, obligatoria, por conseguir»; «TP #8 sin devolución»). *Decisión del fundador: que el plazo gane sobre la continuidad.*
+
+**Secciones, en orden:**
+1. Recorrido y Ahora.
+2. Lo que pide el curso: un resumen de solo lectura, con los tipos como chips (rúbrica · método · guía) y «Editar» en un diálogo que reemplaza los dos formularios abiertos.
+3. Fuentes, con las obligatorias primero.
+4. **La mesa**, agrupada por tipo de trabajo. Columnas: trabajo (fecha de entrega como subtítulo) · avance (sin empezar / k de n pasos / ensamblado) · fuentes («sin repetir de TP #8» o «repite Moo», sobre `citedSourceKeys`, que ya existe) · entrega (listo → entregado → devuelto). La lectura dirigida va como una fila sin estudio: «64 de 100 páginas reseñadas», de las fichas con `pageCount` y reseña.
+5. **Registro de devoluciones**, la contraparte del registro de la hipótesis: los códigos del profesor (FDA, F/A, SPC…) con su conteo, y la decisión de cada corrección (pasada a la guía / descartada).
+6. Herramientas (griego para Santiago) y Material.
+7. Para un curso sobre un libro, «Tu lectura de Santiago» queda como bloque **opcional**, que no cuenta en el recorrido.
+
+**Datos nuevos que el escritorio honesto de Curso necesita** (todos del cliente, sin functions):
+- `courseSchedule[]` en el proyecto: tipo de trabajo, rótulo («TP #9»), pasaje opcional, fecha de entrega (`YYYY-MM-DD` local) y `paperId` cuando ya existe el trabajo. Lo arma el estudiante a mano; leerlo del sílabo es «el encargo del curso», una fase propia.
+- `ExegeticalPaper.deliveredAt`: lo marca el estudiante con «Marcar como entregado». Es un campo nuevo; `deliveredCount` deja de contar ensamblados.
+- `ExegeticalPaper.feedback`: la devolución del profesor (texto, códigos, nota opcional y fecha). Agregadas, forman el registro del proyecto. Cada código que se repite puede marcarse «pasado a la guía» o «descartado»; editar la guía sigue siendo manual en su editor.
+- `?workTypeId` y el número del trabajo al crearlo desde el escritorio.
+
+**Qué queda fuera de esta fase:**
+- los contadores de revisión (avisos de prosa, citas con alarma) en el resumen, porque cambian el callable `getExegesisPapersSummary`;
+- las reglas entre trabajos que no son «no repetir»;
+- la clase de trabajo por tipo (estudio / lectura dirigida / ensayo).
+
+**NT785:** «Traer los trabajos anteriores». Los TP #1 a #8 están sueltos y se vinculan con su tipo de trabajo, **sin volver a aplicarles el encargo**: un trabajo entregado no cambia de reglas. La memoria de «no repetir» sigue tomando el trabajo anterior por fecha de creación; una fecha de entrega no la reordena sin decisión del fundador.
+
+### 9.2 Investigación
+1 La pregunta (alcance y tesis provisoria) → 2 Fuentes → 3 Plan (subpreguntas, pasajes y términos) → 4 Estudios → 5 Síntesis y documento.
+- La fase 1 reutiliza el encuadre, con la tesis en lugar de la idea central y el mismo registro (confirma / matiza / contradice). Se completa con la tesis revisada.
+- La mesa tiene una fila por subpregunta.
+- Falta un campo para la pregunta: hoy es una nota.
+
+### 9.3 Consejería
+Sin estudios, sin idiomas y sin estado del arte. 1 Situación → 2 Fundamento bíblico → 3 Plan de acción → 4 Sesiones y seguimiento → 5 Cierre.
+- La mesa tiene una fila por sesión: fecha, tareas asignadas, cumplidas y la próxima.
+- «Ahora» es la próxima sesión.
+- Falta una entidad de sesión con fecha: hoy las sesiones son notas.
+- Privacidad: ningún dato del aconsejado se ve en la lista de proyectos.
+
+### 9.4 General y los tipos viejos
+- General no tiene un flujo prescrito, así que no se le inventan fases. Su escritorio lleva «Ahora» (lo último que se tocó), Fuentes, Material y herramientas.
+- Sermón y Serie se marcan `legacy` (deuda 9).
+
+### 9.5 Etapas, revisadas
+- **Etapa 0:** saneamiento (§6), en marcha.
+- **Etapa 1:** el escritorio **Exegético y Curso**, en un PR. Primitivas compartidas, estados de los dos tipos, la mesa por tipo, Ahora, camino de vuelta, y los datos nuevos de Curso: calendario, entregado y devolución, con su registro.
+- **Etapa 2:** Investigación (campo de la pregunta), Consejería (entidad de sesión), General, legacy, i18n de la lista de proyectos y `queryKeys`.
+- **Revisión:** el fundador revisa en local (localhost:5173) antes del PR y del merge. El `.env.local` apunta a producción: lo que se pruebe en local escribe en los proyectos reales.
