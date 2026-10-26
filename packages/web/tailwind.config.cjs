@@ -36,8 +36,15 @@ export default {
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					foreground: 'hsl(var(--destructive-foreground))',
+					// Botón destructivo lleno: AA con texto blanco en claro y en
+					// oscuro; el hover oscurece (index.css, `barraUnica.test.tsx`).
+					solid: 'hsl(var(--destructive-solid))',
+					'solid-hover': 'hsl(var(--destructive-solid-hover))'
 				},
+				// El anillo de foco (`ring-focus`): el tono del texto de la marca,
+				// ≥ 3:1 sobre la tarjeta y el fondo en todos los temas.
+				focus: 'hsl(var(--focus))',
 				// ── Semantic status tokens ──────────────────────────────────────
 				// Theme-agnostic colours for stateful UI (success/warning/info).
 				// Each has a solid + subtle variant. Don't use raw colour literals

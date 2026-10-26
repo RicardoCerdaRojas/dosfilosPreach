@@ -198,7 +198,7 @@ Antes de construir: **una maqueta** del escritorio de Esdras en tres momentos (r
 
 1. **La nota vieja deja de completar la fase 1** en Exegético y queda «en curso», con «Pasa tu nota al encuadre». Cambia lo que ven los proyectos existentes.
 2. **«Adjuntar fuentes» en Exegético**: va al estado del arte. Lo que ya se agregó a mano cuenta como «agregadas a mano» y no retrocede. Curso queda igual hasta que se entregue el TP #9.
-3. **La fase 4 se mide en proporción** (estudiado = ensamblado o anotado) **y la 5 se completa solo con la idea revisada**. La síntesis se abre desde la primera anotación, para que un libro largo no quede meses sin ella.
+3. **La fase 4 se mide en proporción y cuenta SOLO estudios ensamblados** (respuesta del fundador del 2026-10-26: «que sea cuando el estudio está ensamblado, así ayudamos a que no quede trabajo a medias en el sistema»; la anotación no cuenta) **y la 5 se completa solo con la idea revisada**. La síntesis se abre desde la primera anotación, para que un libro largo no quede meses sin ella.
 4. **El andamiaje** («para qué · bien hecho · error común») va abierto en la fase activa y se puede plegar. Retirarlo según la experiencia se decide con uso real (Etapa 3).
 5. **Griego y hebreo/arameo**: salen del cuerpo del escritorio al riel y entran dentro del estudio.
 6. **Vocabulario:**
@@ -212,7 +212,7 @@ Antes de construir: **una maqueta** del escritorio de Esdras en tres momentos (r
 - **`useProjectDesk` con consultas por `projectId` empeoraba la carga.** Los estudios llegan por un callable recortado; la pertenencia es `projectId` o `linkedProjectIds`; los sermones se deducen por estudio y serie. Ahora es un **selector en el cliente** sobre lo que ya está en caché.
 - **La mesa ya existe en un 80 %** (`ProjectSeriesSection`): se extiende, no se crea de cero. Se agrupa por serie. No hay estado «predicado» en los datos, así que no se inventa.
 - **Los estados no tenían datos detrás:**
-  - la fase 4 «trabajado» era «abierto», y ahora cuenta como ensamblado o anotado;
+  - la fase 4 «trabajado» era «abierto»; la crítica propuso «ensamblado o anotado» y el fundador decidió **solo ensamblado** (§7.3);
   - en la fase 3, «cobertura del alcance» era cara, y se reemplaza por la serie, o por una salida explícita para enseñar o estudio personal;
   - en la fase 2, las aprobaciones viejas y las del selector cuentan como «agregadas a mano».
 - **«Ahora»**: la continuidad va antes que el método, y queda definido como una función pura con tabla de pruebas.
