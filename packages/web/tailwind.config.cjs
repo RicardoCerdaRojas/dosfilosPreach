@@ -25,7 +25,10 @@ export default {
 					foreground: 'hsl(var(--primary-foreground))',
 					// Botones llenos: AA con texto blanco en todos los temas (index.css).
 					solid: 'hsl(var(--primary-solid))',
-					'solid-hover': 'hsl(var(--primary-solid-hover))'
+					'solid-hover': 'hsl(var(--primary-solid-hover))',
+					// Texto e íconos en el color de la marca: AA sobre la tarjeta y
+					// los fondos tintados en todos los temas (`text-primary-text`).
+					text: 'hsl(var(--primary-text))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',

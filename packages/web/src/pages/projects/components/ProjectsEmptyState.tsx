@@ -54,7 +54,7 @@ export const ProjectsEmptyState: React.FC<ProjectsEmptyStateProps> = ({ onCreate
                         onClick={() => onCreateProject(type)}
                         className="group flex flex-col p-5 gap-4 border-muted hover:border-primary/60 hover:shadow-md transition-all cursor-pointer"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
                             <Icon className="h-5 w-5" />
                         </div>
                         <div className="space-y-1.5 flex-1">

@@ -19,6 +19,7 @@ import { computeRoadmapState, getProjectTypeMeta, type RoadmapCtaKind } from '@/
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 
 import { ProjectHeader } from './components/project/ProjectHeader';
+import { ProjectDashboardSkeleton } from './components/project/ProjectDashboardSkeleton';
 import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
 import { ProjectSetupCards, type ProjectSetupChange } from './components/project/ProjectSetupCards';
 import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
@@ -53,7 +54,7 @@ export function ProjectDashboard() {
     const { isAdmin } = useAuthorization();
 
     // ── Data sources ────────────────────────────────────────────────────────
-    const { projects, updateProject } = useFacultyProjects();
+    const { projects, isLoadingProjects, updateProject } = useFacultyProjects();
     const { sessions } = useFacultySessions();
     const { sermons } = useSermons();
     const { sessions: greekSessions } = useGreekSessions();
@@ -81,7 +82,9 @@ export function ProjectDashboard() {
     } = useProjectSlices(projectId, { sessions, sermons, greekSessions, hebrewSessions, papers, series });
 
     // ── Hooks: attached sources + link sessions ────────────────────────────
-    const { sources: attachedSources, reprocessing, reprocessSource } = useProjectAttachedSources({
+    const {
+        sources: attachedSources, isLoading: cargandoFuentes, error: fallaronFuentes, reprocessing, reprocessSource,
+    } = useProjectAttachedSources({
         userId: user?.uid,
         sourceIds: project?.sourceIds,
     });
@@ -123,6 +126,8 @@ export function ProjectDashboard() {
     }, [outputs, projectSermons]);
 
     // ── Project not found ─────────────────────────────────────────────────
+    // En una carga en frío la lista todavía no llegó: no es «no encontrado».
+    if (!project && isLoadingProjects) return <ProjectDashboardSkeleton />;
     if (!project) {
         return (
             <div className="flex-1 flex items-center justify-center p-8">
@@ -139,7 +144,13 @@ export function ProjectDashboard() {
     // Mientras cargan, «sin series» y «sin estudios» serían falsos: el
     // recorrido ofrecería planificar otra serie y la lista no separaría los
     // estudios de la serie. Con datos en caché, un fallo no los borra.
-    const cargandoTrabajo = cargandoEstudios || cargandoSeries;
+    // Las fuentes, igual: mientras cargan, la fase 2 saldría como próximo paso.
+    const cargandoTrabajo = cargandoEstudios || cargandoSeries || cargandoFuentes;
+    // Si la lectura de las fuentes falló, el recorrido cuenta las que el
+    // proyecto tiene anotadas en vez de afirmar que no hay ninguna.
+    const cuentaDeFuentes = fallaronFuentes && attachedSources.length === 0
+        ? (project.sourceIds ?? []).length
+        : attachedSources.length;
     const estadoSeries = cargandoSeries ? 'loading' : seriesFallaron && !series ? 'error' : 'ready';
 
     // ── Roadmap computation ────────────────────────────────────────────────
@@ -150,7 +161,7 @@ export function ProjectDashboard() {
         deliveredCount: projectStudies.filter(p => p.phase === 'assembled').length,
         workedStudyCount: projectStudies.filter(p => p.phase !== 'configuring').length,
         seriesCount: projectSeries.length,
-        sourceCount: attachedSources.length,
+        sourceCount: cuentaDeFuentes,
         greekCount: projectGreekSessions.length,
         hebrewCount: projectHebrewSessions.length,
         sessionCount: projectSessions.length,
@@ -207,7 +218,8 @@ export function ProjectDashboard() {
             toast.success(t('outputEditor.toastCreated'));
             setOutputEditor(null);
         } catch (err) {
-            toast.error(`${t('outputEditor.toastCreated')}: ${err instanceof Error ? err.message : String(err)}`);
+            console.error('[projects] create output failed:', err);
+            toast.error(t('outputEditor.toastCreateError'));
         }
     };
 
@@ -217,7 +229,8 @@ export function ProjectDashboard() {
             toast.success(t('outputEditor.toastUpdated'));
             setOutputEditor(null);
         } catch (err) {
-            toast.error(`${t('outputEditor.toastUpdated')}: ${err instanceof Error ? err.message : String(err)}`);
+            console.error('[projects] update output failed:', err);
+            toast.error(t('outputEditor.toastUpdateError'));
         }
     };
 
@@ -227,7 +240,8 @@ export function ProjectDashboard() {
             await deleteOutput.mutateAsync(outputToDelete.id);
             toast.success(t('deleteOutput.toastSuccess'));
         } catch (err) {
-            toast.error(`${t('deleteOutput.toastError')}: ${err instanceof Error ? err.message : String(err)}`);
+            console.error('[projects] delete output failed:', err);
+            toast.error(t('deleteOutput.toastError'));
         }
         setOutputToDelete(null);
     };
@@ -238,7 +252,8 @@ export function ProjectDashboard() {
             toast.success(t('sourcePicker.toastSuccess', { count: ids.length }));
             setSourcePickerOpen(false);
         } catch (err) {
-            toast.error(`${t('sourcePicker.toastError')}: ${err instanceof Error ? err.message : String(err)}`);
+            console.error('[projects] save sources failed:', err);
+            toast.error(t('sourcePicker.toastError'));
         }
     };
 

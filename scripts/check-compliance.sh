@@ -3,7 +3,8 @@
 # Compliance check for the dosfilosPreach codebase.
 #
 # Runs a battery of grep-based checks aligned with `.agent/rules/compliance_gate.md`:
-#   1. No Firebase SDK imports in `.tsx` files (must go through services).
+#   1. No Firebase SDK imports in `.tsx` files, nor in the `.ts` hooks/helpers
+#      outside `src/lib`, `src/config` and `src/context` (must go through services).
 #   2. No `defaultValue:` in i18next calls (fail-loud i18n policy).
 #   3. No raw color literals (`bg-red-500`, `text-slate-900`, etc.) in semantic JSX.
 #   4. File-size soft (>300) and hard (>500) limits for `.tsx` files under `pages/`.
@@ -53,6 +54,26 @@ FIREBASE_ALLOWLIST=(
     "packages/web/src/context/"
 )
 
+# Los `.ts` de web también se revisan (desde la fase «Escritorio del
+# proyecto», 2026-10-26): un hook de `pages/` importaba Firestore directo y el
+# chequeo no lo veía porque solo miraba `.tsx`. Quedan fuera los adaptadores que
+# por diseño hablan con Firebase (`src/lib`, `src/config`) y las pruebas.
+FIREBASE_TS_EXEMPT=(
+    "packages/web/src/lib/"
+    "packages/web/src/config/"
+    "/__tests__/"
+    ".test.ts"
+)
+# Deuda conocida al extender el chequeo: `.ts` de `pages/` que ya importaban
+# Firebase. Se reportan como aviso (no bloquean) para que no se olviden; uno
+# NUEVO en `pages/` bloquea. Al arreglar uno, sacarlo de aquí.
+FIREBASE_TS_LEGACY=(
+    "packages/web/src/pages/sermons/generator/draft/buildSermonCitationManifest.ts"
+    "packages/web/src/pages/hebrew-tutor/lexicon/FirebaseLexiconRepository.ts"
+    "packages/web/src/pages/hebrew-tutor/lexicon/seed-lexicon.ts"
+    "packages/web/src/pages/hebrew-tutor/hints/FirebaseHintRepository.ts"
+)
+
 HARD_FAIL=0
 SOFT_WARN=0
 
@@ -100,39 +121,42 @@ done <<< "$FILES_RAW"
 echo "$(bold "Compliance check") — ${#FILES[@]} file(s) ${MODE_STAGED:+(staged only)}"
 echo
 
-# ── 1. Firebase imports in .tsx ──────────────────────────────────────────────
+# ── 1. Firebase imports in .tsx (y en los .ts de web) ───────────────────────
 # Hard fail when a `pages/` file imports Firebase (the strict architectural
-# boundary). Soft warning for `components/` violations — those are tracked
-# separately as C7.3 follow-up and shouldn't block daily commits while the
-# back-fill is in flight.
-echo "$(bold "1. Firebase imports in .tsx")"
+# boundary) — `.tsx` or `.ts` (los hooks de una página viven en `pages/**/hooks`).
+# Soft warning for `components/` and for the `.ts` outside `pages/` (hooks/,
+# features/, i18n/) — those are tracked separately as C7.3 follow-up and
+# shouldn't block daily commits while the back-fill is in flight.
+echo "$(bold "1. Firebase imports in .tsx / .ts")"
+FIREBASE_PATTERN="from 'firebase/(firestore|functions|auth|storage)'|await import\\(['\"]firebase/"
 FIREBASE_HARD=0
 FIREBASE_SOFT=0
 for file in "${FILES[@]}"; do
-    [[ "$file" == *.tsx ]] || continue
+    [[ "$file" == *.tsx || "$file" == *.ts ]] || continue
     [ -f "$ROOT/$file" ] || continue
     if is_allowlisted "$file" "${FIREBASE_ALLOWLIST[@]}"; then continue; fi
-    if grep -qE "from 'firebase/(firestore|functions|auth|storage)'|await import\(['\"]firebase/" "$ROOT/$file" 2>/dev/null; then
-        if [[ "$file" == packages/web/src/pages/* ]]; then
+    if [[ "$file" == *.ts ]] && is_allowlisted "$file" "${FIREBASE_TS_EXEMPT[@]}"; then continue; fi
+    if grep -qE "$FIREBASE_PATTERN" "$ROOT/$file" 2>/dev/null; then
+        if [[ "$file" == packages/web/src/pages/* ]] && ! is_allowlisted "$file" "${FIREBASE_TS_LEGACY[@]}"; then
             echo "  $(red "✗") $file"
             FIREBASE_HARD=$((FIREBASE_HARD + 1))
         else
             echo "  $(yellow "!") $file"
             FIREBASE_SOFT=$((FIREBASE_SOFT + 1))
         fi
-        grep -nE "from 'firebase/(firestore|functions|auth|storage)'|await import\(['\"]firebase/" "$ROOT/$file" \
+        grep -nE "$FIREBASE_PATTERN" "$ROOT/$file" \
             | sed 's/^/      /'
     fi
 done
 if [ "$FIREBASE_HARD" -eq 0 ] && [ "$FIREBASE_SOFT" -eq 0 ]; then
-    echo "  $(green "✓") No Firebase imports in .tsx files."
+    echo "  $(green "✓") No Firebase imports in .tsx / .ts files."
 else
     [ "$FIREBASE_HARD" -gt 0 ] && {
-        echo "  $(red "✗") $FIREBASE_HARD pages/*.tsx file(s) import Firebase directly. Move to a service in packages/application/."
+        echo "  $(red "✗") $FIREBASE_HARD pages/** file(s) import Firebase directly. Move to a repository in packages/infrastructure/ or a service in packages/application/."
         HARD_FAIL=$((HARD_FAIL + FIREBASE_HARD))
     }
     [ "$FIREBASE_SOFT" -gt 0 ] && {
-        echo "  $(yellow "!") $FIREBASE_SOFT components/*.tsx file(s) import Firebase (C7.3 follow-up)."
+        echo "  $(yellow "!") $FIREBASE_SOFT file(s) outside pages/ (or known pages/ .ts debt) import Firebase (C7.3 follow-up)."
         SOFT_WARN=$((SOFT_WARN + FIREBASE_SOFT))
     }
 fi
@@ -254,8 +278,9 @@ if [ "$MODE_STAGED" -eq 1 ] && [ "$SOFT_WARN" -gt 0 ]; then
         # plain `if grep -q` first and a separate counting pass to keep the
         # arithmetic happy.
         if ! is_allowlisted "$file" "${FIREBASE_ALLOWLIST[@]}" && \
-           grep -qE "from 'firebase/(firestore|functions|auth|storage)'|await import\(['\"]firebase/" "$ROOT/$file" 2>/dev/null; then
-            fb_count=$(grep -cE "from 'firebase/(firestore|functions|auth|storage)'|await import\(['\"]firebase/" "$ROOT/$file")
+           ! { [[ "$file" == *.ts ]] && is_allowlisted "$file" "${FIREBASE_TS_EXEMPT[@]}"; } && \
+           grep -qE "$FIREBASE_PATTERN" "$ROOT/$file" 2>/dev/null; then
+            fb_count=$(grep -cE "$FIREBASE_PATTERN" "$ROOT/$file")
         fi
         if grep -qE "t\([^)]*defaultValue:" "$ROOT/$file" 2>/dev/null; then
             dv_count=$(grep -cE "t\([^)]*defaultValue:" "$ROOT/$file")

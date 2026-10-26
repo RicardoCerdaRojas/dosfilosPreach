@@ -166,7 +166,7 @@ export function RequirementsEditor({ measures, onChange, onShowUnmeasurable }: R
                                 <p className="text-[11px] text-warning-subtle-foreground">{t('stateOfArt.requirement.assumedNote', { what: supuestoDe(r) })}</p>
                             )}
                             {m.unmeasurable.length > 0 && (
-                                <button type="button" className="text-[11px] text-foreground underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded" onClick={() => onShowUnmeasurable(m.unmeasurable, r.text)}>
+                                <button type="button" className="text-[11px] text-foreground underline underline-offset-2 hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded" onClick={() => onShowUnmeasurable(m.unmeasurable, r.text)}>
                                     {t(`stateOfArt.requirement.unmeasurable.${r.kind}`, { count: m.unmeasurable.length })}
                                 </button>
                             )}

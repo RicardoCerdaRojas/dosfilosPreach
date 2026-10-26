@@ -57,7 +57,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
 
     return (
         <section className="space-y-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-medium inline-flex items-center gap-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-primary-text font-medium inline-flex items-center gap-2">
                 <span>{t('roadmap.label', { type: typeLabel })}</span>
                 <span className="text-border normal-case tracking-normal">·</span>
                 <span className="text-muted-foreground normal-case tracking-normal font-mono">
@@ -128,7 +128,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                         <activePhase.icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-primary font-medium mb-1">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-primary-text font-medium mb-1">
                             {t('roadmap.activePhase.label', { number: roadmap.activeIndex + 1 })}
                         </div>
                         <h2 className="font-reading text-[19px] leading-tight text-foreground mb-1">

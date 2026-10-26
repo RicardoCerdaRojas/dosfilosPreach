@@ -102,7 +102,7 @@ export function ProjectResourceGrid({
                                         onClick={() => onReprocessSource(s)}
                                         disabled={isReprocessing}
                                         title={t('resources.sources.processTitle')}
-                                        className="shrink-0 inline-flex items-center gap-1 text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="shrink-0 inline-flex items-center gap-1 text-primary-text hover:underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isReprocessing
                                             ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -135,7 +135,7 @@ export function ProjectResourceGrid({
                     <li key={s.id}>
                         <Link
                             to={`/dashboard/faculty/${s.id}`}
-                            className="block text-[12.5px] py-1 -mx-1 px-1 rounded hover:bg-muted/40 truncate text-foreground hover:text-primary transition-colors"
+                            className="block text-[12.5px] py-1 -mx-1 px-1 rounded hover:bg-muted/40 truncate text-foreground hover:text-primary-text transition-colors"
                         >
                             {s.title || ''}
                         </Link>
@@ -163,7 +163,7 @@ export function ProjectResourceGrid({
                     <li key={s.id}>
                         <Link
                             to={`/dashboard/greek-tutor?sessionId=${s.id}`}
-                            className="block text-[12.5px] py-1 -mx-1 px-1 rounded hover:bg-muted/40 truncate text-foreground hover:text-primary transition-colors"
+                            className="block text-[12.5px] py-1 -mx-1 px-1 rounded hover:bg-muted/40 truncate text-foreground hover:text-primary-text transition-colors"
                         >
                             {s.passage}
                         </Link>
@@ -191,7 +191,7 @@ export function ProjectResourceGrid({
                     <li key={s.id}>
                         <Link
                             to="/dashboard/hebrew-tutor"
-                            className="block text-[12.5px] py-1 -mx-1 px-1 rounded hover:bg-muted/40 truncate text-foreground hover:text-primary transition-colors"
+                            className="block text-[12.5px] py-1 -mx-1 px-1 rounded hover:bg-muted/40 truncate text-foreground hover:text-primary-text transition-colors"
                         >
                             {s.passage}
                         </Link>

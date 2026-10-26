@@ -216,6 +216,9 @@
         "title": "Proyecto no encontrado",
         "back": "Volver a Proyectos"
     },
+    "loading": {
+        "project": "Cargando el proyecto…"
+    },
     "roadmap": {
         "label": "Roadmap · {{type}}",
         "loading": "Cargando el recorrido…",
@@ -354,7 +357,7 @@
             "linking": "Vinculando…"
         },
         "toastSuccess": "Sesión vinculada al proyecto",
-        "toastError": "Error al vincular"
+        "toastError": "No se pudo vincular la sesión. Inténtalo de nuevo."
     },
     "sourcePicker": {
         "title": "Fuentes del proyecto",
@@ -372,7 +375,7 @@
         "saving": "Guardando…",
         "toastSuccess_one": "{{count}} fuente vinculada al proyecto",
         "toastSuccess_other": "{{count}} fuentes vinculadas al proyecto",
-        "toastError": "Error al guardar fuentes"
+        "toastError": "No se pudieron guardar las fuentes. Inténtalo de nuevo."
     },
     "outputEditor": {
         "createTitle": "Nuevo material",
@@ -396,7 +399,9 @@
         "saving": "Guardando…",
         "errorTitleRequired": "El título es obligatorio",
         "toastCreated": "Material guardado",
-        "toastUpdated": "Material actualizado"
+        "toastUpdated": "Material actualizado",
+        "toastCreateError": "No se pudo guardar el material. Revisa tu conexión e inténtalo de nuevo.",
+        "toastUpdateError": "No se pudieron guardar los cambios del material. Revisa tu conexión e inténtalo de nuevo."
     },
     "deleteOutput": {
         "title": "¿Eliminar \"{{title}}\"?",
@@ -404,7 +409,7 @@
         "cancel": "Cancelar",
         "confirm": "Eliminar",
         "toastSuccess": "Material eliminado",
-        "toastError": "Error al eliminar el material"
+        "toastError": "No se pudo eliminar el material. Inténtalo de nuevo."
     },
     "reprocess": {
         "successReextracted": "\"{{title}}\" reextraído — el procesamiento se completará en segundo plano.",

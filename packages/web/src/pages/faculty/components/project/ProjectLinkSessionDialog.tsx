@@ -53,7 +53,7 @@ export function ProjectLinkSessionDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg bg-card p-0 overflow-hidden border-border/60">
                 <DialogHeader className="px-6 pt-6 pb-2">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-primary font-medium mb-2">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-primary-text font-medium mb-2">
                         {t(`linkSession.${domain}.title`)}
                     </div>
                     <DialogTitle className="font-reading text-[24px] leading-tight text-foreground">
@@ -84,7 +84,7 @@ export function ProjectLinkSessionDialog({
                                             disabled={isLinking}
                                             className="w-full text-left py-3 px-2 flex items-center gap-3 hover:bg-muted/40 rounded transition-colors disabled:opacity-50 group"
                                         >
-                                            <BookOpen className="h-4 w-4 text-muted-foreground/70 shrink-0 group-hover:text-primary transition-colors" />
+                                            <BookOpen className="h-4 w-4 text-muted-foreground/70 shrink-0 group-hover:text-primary-text transition-colors" />
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-[14px] font-medium text-foreground truncate">
                                                     {s.passage}
@@ -101,9 +101,9 @@ export function ProjectLinkSessionDialog({
                                                 </div>
                                             </div>
                                             {isLinking ? (
-                                                <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
+                                                <Loader2 className="h-4 w-4 text-primary-text animate-spin shrink-0" />
                                             ) : (
-                                                <Link2 className="h-4 w-4 text-border group-hover:text-primary shrink-0 transition-colors" />
+                                                <Link2 className="h-4 w-4 text-border group-hover:text-primary-text shrink-0 transition-colors" />
                                             )}
                                         </button>
                                     </li>

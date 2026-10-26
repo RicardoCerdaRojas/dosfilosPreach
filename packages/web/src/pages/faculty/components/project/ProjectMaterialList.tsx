@@ -70,7 +70,7 @@ export function ProjectMaterialList({
     return (
         <section className="bg-card border border-border/60 rounded-xl p-5">
             <header className="flex items-center justify-between mb-4">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-primary font-medium inline-flex items-center gap-2">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-primary-text font-medium inline-flex items-center gap-2">
                     <FileText className="h-3.5 w-3.5" />
                     <span>{t('material.sectionLabel')}</span>
                     <span className="text-border normal-case tracking-normal">·</span>
@@ -108,11 +108,11 @@ export function ProjectMaterialList({
                                 'draft';
                             return (
                                 <li key={`sermon-${item.id}`} className="py-3 flex items-start gap-3 group">
-                                    <SermonIcon className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground/70 group-hover:text-primary transition-colors" />
+                                    <SermonIcon className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground/70 group-hover:text-primary-text transition-colors" />
                                     <div className="flex-1 min-w-0">
                                         <button
                                             onClick={() => navigate(`/dashboard/sermons/${item.id}`)}
-                                            className="text-left text-[14px] font-medium truncate block hover:text-primary w-full transition-colors"
+                                            className="text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors"
                                         >
                                             {item.title}
                                         </button>
@@ -146,7 +146,7 @@ export function ProjectMaterialList({
                                 <div className="flex-1 min-w-0">
                                     <button
                                         onClick={() => onEditOutput(o)}
-                                        className="text-left text-[14px] font-medium truncate block hover:text-primary w-full transition-colors"
+                                        className="text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors"
                                     >
                                         {o.title}
                                     </button>

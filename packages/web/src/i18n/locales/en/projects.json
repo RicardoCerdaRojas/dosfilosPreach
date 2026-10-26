@@ -212,6 +212,9 @@
     "breadcrumb": {
         "back": "Projects"
     },
+    "loading": {
+        "project": "Loading the project…"
+    },
     "notFound": {
         "title": "Project not found",
         "back": "Back to projects"
@@ -354,7 +357,7 @@
             "linking": "Linking…"
         },
         "toastSuccess": "Session linked to project",
-        "toastError": "Error linking session"
+        "toastError": "The session could not be linked. Please try again."
     },
     "sourcePicker": {
         "title": "Project sources",
@@ -372,7 +375,7 @@
         "saving": "Saving…",
         "toastSuccess_one": "{{count}} source linked to the project",
         "toastSuccess_other": "{{count}} sources linked to the project",
-        "toastError": "Error saving sources"
+        "toastError": "The sources could not be saved. Please try again."
     },
     "outputEditor": {
         "createTitle": "New material",
@@ -396,7 +399,9 @@
         "saving": "Saving…",
         "errorTitleRequired": "Title is required",
         "toastCreated": "Material saved",
-        "toastUpdated": "Material updated"
+        "toastUpdated": "Material updated",
+        "toastCreateError": "The material could not be saved. Check your connection and try again.",
+        "toastUpdateError": "The changes to the material could not be saved. Check your connection and try again."
     },
     "deleteOutput": {
         "title": "Delete \"{{title}}\"?",
@@ -404,7 +409,7 @@
         "cancel": "Cancel",
         "confirm": "Delete",
         "toastSuccess": "Material deleted",
-        "toastError": "Error deleting material"
+        "toastError": "The material could not be deleted. Please try again."
     },
     "reprocess": {
         "successReextracted": "\"{{title}}\" re-extracted — processing will complete in the background.",

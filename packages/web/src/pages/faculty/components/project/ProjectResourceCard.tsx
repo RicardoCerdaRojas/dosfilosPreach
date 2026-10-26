@@ -38,7 +38,7 @@ export function ProjectResourceCard({
     return (
         <article className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-3 min-h-[180px]">
             <header className="flex items-center justify-between">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-primary font-medium inline-flex items-center gap-1.5">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-primary-text font-medium inline-flex items-center gap-1.5">
                     <Icon className="h-3 w-3" />
                     <span>{label}</span>
                     <span className="text-border normal-case tracking-normal">·</span>
@@ -50,7 +50,7 @@ export function ProjectResourceCard({
                     <button
                         type="button"
                         onClick={secondaryCta.onClick}
-                        className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                        className="text-[11px] text-muted-foreground hover:text-primary-text transition-colors"
                     >
                         {secondaryCta.label}
                     </button>
