@@ -123,6 +123,11 @@ const TABLA: Array<[string, () => ProjectDeskInput, Date, Esperado]> = [
         sinEstudiosCurso(i);
         i.project.courseSchedule = i.project.courseSchedule!.filter(e => e.id !== 'e10').map(e => (e.id === 'e9' ? { ...e, deliveredAt: '2026-10-26T20:00:00.000Z' } : e));
     }, nt785), NOW_CURSO, { kind: 'phase', key: 'desk.now.sources', target: 'stateOfArt' }],
+    ['Cu · fase 1 con la rúbrica del sistema sin confirmar → lo que pide el curso', con(i => {
+        i.project.workTypes = [{ id: 'tp', label: 'TP', rubricTemplateId: null }];
+        sinEstudiosCurso(i);
+        i.project.courseSchedule = i.project.courseSchedule!.filter(e => e.id !== 'e10').map(e => (e.id === 'e9' ? { ...e, deliveredAt: '2026-10-26T20:00:00.000Z' } : e));
+    }, nt785), NOW_CURSO, { kind: 'phase', key: 'desk.now.charge', target: 'phase' }],
     ['Cu · fase 1 activa → lo que pide el curso', con(i => { i.project.workTypes = []; i.project.courseSchedule = []; i.studies = []; }, nt785), NOW_CURSO,
         { kind: 'phase', key: 'desk.now.charge', target: 'phase' }],
     ['Cu · fase 3 activa → el calendario', con(i => {
@@ -143,14 +148,15 @@ const TABLA: Array<[string, () => ProjectDeskInput, Date, Esperado]> = [
     }, nt785), NOW_CURSO, { kind: 'phase', key: 'desk.now.recordFeedback', target: 'recordFeedback', id: 'e1' }],
     ['Cu · fase 5 con un patrón repetido sin decidir → decidirlo', con(i => {
         i.project.bibliography = [ficha('a')];
-        i.project.courseSchedule = [{
-            id: 'e1', workTypeId: 'tp', label: 'TP #1', dueDate: '2026-10-01', paperId: 's1', deliveredAt: '2026-10-01T20:00:00.000Z',
-            feedback: { receivedAt: '2026-10-05T10:00:00.000Z', text: 'x', corrections: [{ id: 'a', patternId: 'cd' }, { id: 'b', patternId: 'cd' }] },
-        }];
-        i.studies = [ensamblado('s1')];
+        // «Cierre doble» en dos entregas distintas: se repite.
+        i.project.courseSchedule = [1, 2].map(n => ({
+            id: `e${n}`, workTypeId: 'tp', label: `TP #${n}`, dueDate: `2026-10-0${n}`, paperId: `s${n}`, deliveredAt: `2026-10-0${n}T20:00:00.000Z`,
+            feedback: { receivedAt: '2026-10-05T10:00:00.000Z', text: 'x', corrections: [{ id: `c${n}`, patternId: 'cd' }] },
+        }));
+        i.studies = [ensamblado('s1'), ensamblado('s2')];
     }, nt785), NOW_CURSO, { kind: 'phase', key: 'desk.now.decidePatterns', target: 'phase', extra: { params: { count: 1 } } }],
     ['Cu · sin calendario: la fase 4 lleva al estudio sin ensamblar', () => ({
-        project: { id: 'c', type: 'course', courseScheduleMode: 'free', workTypes: [{ id: 'tp', label: 'TP', rubricTemplateId: null }], bibliography: [ficha('a')] },
+        project: { id: 'c', type: 'course', courseScheduleMode: 'free', workTypes: [{ id: 'tp', label: 'TP', rubricTemplateId: null, rubricConfirmed: true }], bibliography: [ficha('a')] },
         studies: [ensamblado('a1'), study('a2', { title: 'Ensayo' })],
     }), NOW, { kind: 'phase', key: 'desk.now.work', target: 'study', id: 'a2' }],
 

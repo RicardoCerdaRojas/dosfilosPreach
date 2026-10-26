@@ -3,7 +3,9 @@ import {
     COURSE_FEEDBACK_MAX_CORRECTIONS,
     COURSE_FEEDBACK_TEXT_MAX,
     COURSE_SCHEDULE_MAX_ENTRIES,
+    FEEDBACK_DISCARD_REASON_MAX,
     FEEDBACK_PATTERNS_MAX,
+    isRecurringPattern,
     applyCourseOps,
     cleanCourseSchedule,
     cleanCourseScheduleMode,
@@ -136,18 +138,25 @@ describe('cleanFeedbackPatterns', () => {
         ]);
     });
 
-    it('«guide» sin guía o sin texto vuelve a pendiente; pending no lleva fecha', () => {
+    it('«guide» sin guía o sin texto y «discarded» sin razón vuelven a pendiente; pending no lleva fecha', () => {
         const out = cleanFeedbackPatterns([
             { id: 'a', name: 'A', decision: 'guide', guideId: 'g1', decidedAt: AT },
-            { id: 'b', name: 'B', decision: 'pending', decidedAt: AT, guideId: 'g1', ruleText: 'r' },
-            { id: 'c', name: 'C', decision: 'guide', guideId: 'g1', ruleText: ' Regla ', decidedAt: AT },
-            { id: 'd', name: 'D', decision: 'discarded', decidedAt: AT, guideId: 'g', ruleText: 'r' },
+            { id: 'b', name: 'B', decision: 'pending', decidedAt: AT, guideId: 'g1', ruleText: 'r', discardReason: 'x' },
+            { id: 'c', name: 'C', decision: 'guide', guideId: 'g1', ruleText: ' Regla ', decidedAt: AT, discardReason: 'x' },
+            { id: 'd', name: 'D', decision: 'discarded', decidedAt: AT, guideId: 'g', ruleText: 'r', discardReason: ' No aplica a este curso ' },
+            { id: 'e', name: 'E', decision: 'discarded', decidedAt: AT },
+            { id: 'f', name: 'F', decision: 'discarded', decidedAt: AT, discardReason: '   ' },
+            { id: 'g', name: 'G', decision: 'discarded', decidedAt: AT, discardReason: 'x'.repeat(FEEDBACK_DISCARD_REASON_MAX + 50) },
         ]);
+        rechazaUndefined(out);
         expect(out).toEqual([
             { id: 'a', name: 'A', decision: 'pending' },
             { id: 'b', name: 'B', decision: 'pending' },
             { id: 'c', name: 'C', decision: 'guide', guideId: 'g1', ruleText: 'Regla', decidedAt: AT },
-            { id: 'd', name: 'D', decision: 'discarded', decidedAt: AT },
+            { id: 'd', name: 'D', decision: 'discarded', discardReason: 'No aplica a este curso', decidedAt: AT },
+            { id: 'e', name: 'E', decision: 'pending' },
+            { id: 'f', name: 'F', decision: 'pending' },
+            { id: 'g', name: 'G', decision: 'discarded', discardReason: 'x'.repeat(FEEDBACK_DISCARD_REASON_MAX), decidedAt: AT },
         ]);
     });
 
@@ -267,18 +276,31 @@ describe('patrones', () => {
         expect(upsertPattern(p, { id: 'p2', name: 'Cierre doble' })).toEqual(p);
     });
 
-    it('decidePattern: guide pide guía y texto; pending limpia; discarded con fecha', () => {
+    it('decidePattern: guide pide guía y texto; discarded pide razón; pending limpia', () => {
         expect(decidePattern(base, 'p1', 'guide', { guideId: 'g1' }, AT)).toEqual(base);
         let p = decidePattern(base, 'p1', 'guide', { guideId: 'g1', ruleText: ' No cerrar dos veces. ' }, AT);
         expect(p[0]).toEqual({ id: 'p1', name: 'Cierre doble', decision: 'guide', guideId: 'g1', ruleText: 'No cerrar dos veces.', decidedAt: AT });
-        p = decidePattern(p, 'p1', 'discarded', {}, AT);
-        expect(p[0]).toEqual({ id: 'p1', name: 'Cierre doble', decision: 'discarded', decidedAt: AT });
+        // Descartar sin razón no hace nada: queda la decisión anterior.
+        expect(decidePattern(p, 'p1', 'discarded', {}, AT)).toEqual(p);
+        expect(decidePattern(p, 'p1', 'discarded', { reason: '  ' }, AT)).toEqual(p);
+        p = decidePattern(p, 'p1', 'discarded', { reason: ' El profesor cambió de criterio ' }, AT);
+        expect(p[0]).toEqual({ id: 'p1', name: 'Cierre doble', decision: 'discarded', discardReason: 'El profesor cambió de criterio', decidedAt: AT });
         p = decidePattern(p, 'p1', 'pending');
         expect(p[0]).toEqual({ id: 'p1', name: 'Cierre doble', decision: 'pending' });
-        expect(decidePattern(p, 'nada', 'discarded')).toEqual(p);
-        // «guide» incompleto no borra la decisión anterior.
-        const descartado = decidePattern(base, 'p2', 'discarded', {}, AT);
+        expect(decidePattern(p, 'nada', 'discarded', { reason: 'x' })).toEqual(p);
+        // «guide» incompleto no borra la decisión anterior; el completo borra la razón del descarte.
+        const descartado = decidePattern(base, 'p2', 'discarded', { reason: 'No aplica a este curso' }, AT);
         expect(decidePattern(descartado, 'p2', 'guide', { guideId: 'g1', ruleText: '  ' }, AT)).toEqual(descartado);
+        expect(decidePattern(descartado, 'p2', 'guide', { guideId: 'g1', ruleText: 'Regla' }, AT)[1]).toEqual({ id: 'p2', name: 'FDA', decision: 'guide', guideId: 'g1', ruleText: 'Regla', decidedAt: AT });
+        // La razón tiene tope.
+        expect(decidePattern(base, 'p1', 'discarded', { reason: 'y'.repeat(400) }, AT)[0]!.discardReason).toHaveLength(FEEDBACK_DISCARD_REASON_MAX);
+    });
+
+    it('isRecurringPattern: la única regla, dos entregas distintas o más', () => {
+        expect(isRecurringPattern({ entries: 1 })).toBe(false);
+        expect(isRecurringPattern({ entries: 2 })).toBe(true);
+        expect(isRecurringPattern({ entries: [{ entryId: 'e7' }] })).toBe(false);
+        expect(isRecurringPattern({ entries: ['e7', 'e8', 'e9'] })).toBe(true);
     });
 
     it('patternRecurrence cuenta correcciones y entregas, y ordena por repetición', () => {
@@ -288,12 +310,17 @@ describe('patrones', () => {
             { id: 'en', workTypeId: 'wt_ensayo', label: 'Ensayo', feedback: { receivedAt: AT, text: '', corrections: [{ id: 'f', patternId: 'p2' }] } },
             tp(9, { feedback: { receivedAt: AT, text: '', corrections: [], none: true } }),
         ];
-        const r = patternRecurrence(schedule, [...base, { id: 'p3', name: 'Nunca', decision: 'pending' }]);
+        const r = patternRecurrence(schedule, [...base, { id: 'p3', name: 'Nunca', decision: 'pending' }, { id: 'p4', name: 'Dos en una', decision: 'pending' }]);
         expect(r.map(x => [x.patternId, x.corrections, x.entries, x.recurring])).toEqual([
             ['p1', 3, 2, true],
             ['p2', 2, 2, true],
+            // Sin entregas, por nombre.
+            ['p4', 0, 0, false],
             ['p3', 0, 0, false],
         ]);
+        // Dos correcciones en UNA entrega no son repetición.
+        const una = patternRecurrence([tp(7, { feedback: { receivedAt: AT, text: '', corrections: [{ id: 'a', patternId: 'p1' }, { id: 'b', patternId: 'p1' }] } })], base);
+        expect(una.find(x => x.patternId === 'p1')).toMatchObject({ corrections: 2, entries: 1, recurring: false });
         expect(r[0]!.entryIds).toEqual(['e7', 'e8']);
         expect(r[1]!.workTypeIds).toEqual(['wt_tp', 'wt_ensayo']);
     });
@@ -342,6 +369,7 @@ describe('applyCourseOps', () => {
             { op: 'markDelivered', entryId: 'e8' },
             { op: 'recordFeedback', entryId: 'e8', feedback: { text: 'ok', corrections: [{ patternName: 'Cierre doble' }] } },
             { op: 'decidePattern', patternId: 'fp1', decision: 'discarded' },
+            { op: 'decidePattern', patternId: 'fp1', decision: 'discarded', reason: 'No aplica a este curso' },
             { op: 'markNoFeedback', entryId: 'e9' },
             { op: 'removeEntry', entryId: 'nada' },
         ], { now: () => new Date(AT), newPatternId: ids('fp'), newCorrectionId: ids('c') });
@@ -350,7 +378,7 @@ describe('applyCourseOps', () => {
             { ...tp(8, { paperId: 'pa8' }), deliveredAt: AT, feedback: { receivedAt: AT, text: 'ok', corrections: [{ id: 'c1', patternId: 'fp1' }] } },
             { id: 'e9', workTypeId: 'wt_tp', label: 'TP #9', dueDate: '2026-10-31', paperId: 'pa9', feedback: { receivedAt: AT, text: '', corrections: [], none: true } },
         ]);
-        expect(r.patterns).toEqual([{ id: 'fp1', name: 'Cierre doble', decision: 'discarded', decidedAt: AT }]);
+        expect(r.patterns).toEqual([{ id: 'fp1', name: 'Cierre doble', decision: 'discarded', discardReason: 'No aplica a este curso', decidedAt: AT }]);
     });
 
     it('un tipo que ya no existe en el proyecto deja la entrada sin tipo', () => {

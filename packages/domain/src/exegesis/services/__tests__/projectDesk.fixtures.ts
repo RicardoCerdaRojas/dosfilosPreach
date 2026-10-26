@@ -223,10 +223,11 @@ export const patronesNT785: FeedbackPattern[] = [
 ];
 
 /**
- * NT785 con calendario: TP #7 devuelto, TP #8 entregado sin devolución,
- * TP #9 en curso y vence el miércoles 28 (48 h desde `NOW_CURSO`), TP #10
- * sin estudio. Moo es obligatoria y está por conseguir; «cierre doble» se
- * repite y no está decidido.
+ * NT785 con calendario: TP #6 y TP #7 devueltos, TP #8 entregado sin
+ * devolución, TP #9 en curso y vence el miércoles 28 (48 h desde
+ * `NOW_CURSO`), TP #10 sin estudio. Moo es obligatoria y está por conseguir;
+ * «cierre doble» se repite (TP #6 y TP #7) y no está decidido. Cada estudio
+ * nace una semana después del anterior (`createdAt`: lo que lee «no repetir»).
  */
 export function nt785(): ProjectDeskInput {
     return {
@@ -240,6 +241,10 @@ export function nt785(): ProjectDeskInput {
                 entrada('e10', { dueDate: '2026-11-06', passage: passage('JAS', 4, 5, 13, 6) }),
                 entrada('e9', { dueDate: '2026-10-28', paperId: 's9', passage: passage('JAS', 4, 4, 11, 17) }),
                 entrada('e8', { dueDate: '2026-10-21', paperId: 's8', deliveredAt: '2026-10-21T20:00:00.000Z' }),
+                entrada('e6', {
+                    dueDate: '2026-10-07', paperId: 's6', deliveredAt: '2026-10-07T20:00:00.000Z',
+                    feedback: { receivedAt: '2026-10-12T10:00:00.000Z', text: 'Revisa los cierres.', corrections: [{ id: 'c0', patternId: 'cd' }] },
+                }),
                 entrada('e7', {
                     dueDate: '2026-10-14', paperId: 's7', deliveredAt: '2026-10-14T20:00:00.000Z',
                     feedback: {
@@ -263,9 +268,10 @@ export function nt785(): ProjectDeskInput {
             },
         },
         studies: [
-            ensamblado('s7', { passage: passage('JAS', 3, 3, 13, 18), citedSourceKeys: ['moo', 'davids'], projectWorkTypeId: 'tp' }),
-            ensamblado('s8', { passage: passage('JAS', 4, 4, 1, 10), citedSourceKeys: ['Moo', 'mcknight'], projectWorkTypeId: 'tp' }),
-            study('s9', { phase: 'in-progress', acceptedStepCount: 5, passage: passage('JAS', 4, 4, 11, 17), citedSourceKeys: ['allison'], updatedAt: '2026-10-26T12:00:00.000Z', projectWorkTypeId: 'tp' }),
+            ensamblado('s6', { passage: passage('JAS', 3, 3, 1, 12), citedSourceKeys: ['ropes'], createdAt: '2026-10-01T10:00:00.000Z', projectWorkTypeId: 'tp' }),
+            ensamblado('s7', { passage: passage('JAS', 3, 3, 13, 18), citedSourceKeys: ['moo', 'davids'], createdAt: '2026-10-08T10:00:00.000Z', projectWorkTypeId: 'tp' }),
+            ensamblado('s8', { passage: passage('JAS', 4, 4, 1, 10), citedSourceKeys: ['Moo', 'mcknight'], createdAt: '2026-10-15T10:00:00.000Z', projectWorkTypeId: 'tp' }),
+            study('s9', { phase: 'in-progress', acceptedStepCount: 5, passage: passage('JAS', 4, 4, 11, 17), citedSourceKeys: ['allison'], createdAt: '2026-10-22T10:00:00.000Z', updatedAt: '2026-10-26T12:00:00.000Z', projectWorkTypeId: 'tp' }),
             // Un TP anterior, suelto: «Traer los trabajos anteriores».
             ensamblado('s1', { passage: passage('JAS', 1, 1, 1, 8), title: 'TP #1' }),
         ],

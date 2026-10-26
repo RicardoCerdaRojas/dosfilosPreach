@@ -21,6 +21,7 @@ import {
     jonasLegacy,
     nt785,
     paraEnsenar,
+    passage,
     proyecto,
     serieEsdras,
     study,
@@ -246,6 +247,22 @@ describe('Exegético · para enseñar, sin serie', () => {
         expect(m.now).toMatchObject({ text: { key: 'desk.now.division' }, target: { type: 'planSeries' } });
     });
 
+    it('para enseñar sin la marca: dos estudios ENSAMBLADOS hacen la división; dos vacíos no', () => {
+        const input = paraEnsenar();
+        delete input.project.framing!.divisionWithoutSeries;
+        input.studies = [...input.studies, ensamblado('t3', { passage: passage('JAS', 4) })];
+        expect(fase(buildProjectDesk(input, NOW), 'division')).toMatchObject({ status: 'ready', evidence: { key: 'desk.exegetical.division.readyStudies', params: { count: 2 } } });
+        input.project.framing!.purpose = 'personal';
+        expect(fase(buildProjectDesk(input, NOW), 'division').status).toBe('ready');
+        // Para predicar hace falta la serie.
+        input.project.framing!.purpose = 'preach';
+        expect(fase(buildProjectDesk(input, NOW), 'division').status).toBe('todo');
+        // Dos sin empezar (y uno en curso) no premian nada.
+        input.project.framing!.purpose = 'teach';
+        input.studies = [study('v1'), study('v2'), study('v3', { phase: 'in-progress' })];
+        expect(fase(buildProjectDesk(input, NOW), 'division').status).toBe('todo');
+    });
+
     it('con el análisis del planificador a medias, en curso', () => {
         const input = paraEnsenar();
         delete input.project.framing!.divisionWithoutSeries;
@@ -358,8 +375,9 @@ describe('Curso · NT785 con calendario', () => {
     it('las fases del curso', () => {
         expect(estados(m)).toEqual({ charge: 'ready', sources: 'doing', calendar: 'ready', works: 'doing', feedback: 'doing' });
         expect(fase(m, 'sources').evidence).toEqual({ key: 'desk.sources.requiredToAcquire', params: { approved: 4, count: 1 } });
-        expect(fase(m, 'works')).toMatchObject({ evidence: { params: { done: 2, total: 4, delivered: 2 } }, progress: { done: 2, total: 4 } });
-        expect(fase(m, 'feedback').evidence).toEqual({ key: 'desk.course.feedback.progress', params: { returned: 1, delivered: 2, pendingPatterns: 1 } });
+        expect(fase(m, 'works')).toMatchObject({ evidence: { params: { done: 3, total: 5, delivered: 3 } }, progress: { done: 3, total: 5 } });
+        // «Con devolución» y «sin devolución» por separado.
+        expect(fase(m, 'feedback').evidence).toEqual({ key: 'desk.course.feedback.progress', params: { returned: 2, none: 0, delivered: 3, pendingPatterns: 1 } });
     });
 
     it('el plazo gobierna: el TP #9 vence en 48 h', () => {
@@ -379,9 +397,10 @@ describe('Curso · NT785 con calendario', () => {
     });
 
     it('el calendario en su orden, con «no repetir» contra la entrega anterior del mismo tipo', () => {
-        expect(co.schedule.rows.map(r => r.label)).toEqual(['TP #7', 'TP #8', 'TP #9', 'TP #10']);
-        const [tp7, tp8, tp9, tp10] = co.schedule.rows;
-        expect(tp7).toMatchObject({ sources: 'noRepeat', comparedWith: null, delivery: 'returned' });
+        expect(co.schedule.rows.map(r => r.label)).toEqual(['TP #6', 'TP #7', 'TP #8', 'TP #9', 'TP #10']);
+        const [tp6, tp7, tp8, tp9, tp10] = co.schedule.rows;
+        expect(tp6).toMatchObject({ sources: 'noRepeat', comparedWith: null, delivery: 'returned' });
+        expect(tp7).toMatchObject({ sources: 'noRepeat', comparedWith: 'TP #6', delivery: 'returned' });
         expect(tp8).toMatchObject({ sources: 'repeats', repeated: ['moo'], comparedWith: 'TP #7', delivery: 'delivered' });
         expect(tp9).toMatchObject({ sources: 'noRepeat', comparedWith: 'TP #8', delivery: 'notDelivered', overdue: false, hoursLeft: 48 });
         expect(tp10).toMatchObject({ sources: 'n/a', study: { id: null, state: 'none' }, dueDate: '2026-11-06' });
@@ -393,10 +412,47 @@ describe('Curso · NT785 con calendario', () => {
         const input = nt785();
         input.project.workTypes = [...input.project.workTypes!, { id: 'ens', label: 'Ensayo', rubricTemplateId: 'rub1' }];
         input.project.courseSchedule = input.project.courseSchedule!.map(e => (e.id === 'e8' ? { ...e, workTypeId: 'ens' } : e));
-        const [tp7, ens, tp9] = buildProjectDesk(input, NOW_CURSO).course!.schedule.rows;
+        const [tp6, tp7, ens, tp9] = buildProjectDesk(input, NOW_CURSO).course!.schedule.rows;
         expect(ens).toMatchObject({ sources: 'noRepeat', comparedWith: null });
         expect(tp9).toMatchObject({ comparedWith: 'TP #7' });
-        expect(tp7!.comparedWith).toBeNull();
+        expect(tp7!.comparedWith).toBe('TP #6');
+        expect(tp6!.comparedWith).toBeNull();
+    });
+
+    it('«no repetir» sigue el nacimiento del estudio, no el calendario: un TP traído sin fecha no compara contra uno posterior', () => {
+        const input = nt785();
+        // TP #7 y TP #8 traídos de antes, sin fecha: el calendario los pone al final.
+        input.project.courseSchedule = input.project.courseSchedule!
+            .filter(e => e.id !== 'e6')
+            .map(e => (e.id === 'e7' || e.id === 'e8' ? { ...e, dueDate: null, imported: true } : e));
+        const rows = buildProjectDesk(input, NOW_CURSO).course!.schedule.rows;
+        // Las sin fecha, al final en el orden guardado (TP #8 antes que TP #7).
+        expect(rows.map(r => r.label)).toEqual(['TP #9', 'TP #10', 'TP #8', 'TP #7']);
+        const por = Object.fromEntries(rows.map(r => [r.label, r]));
+        // TP #7 nació primero: nunca «repite» contra TP #9.
+        expect(por['TP #7']).toMatchObject({ sources: 'noRepeat', comparedWith: null, repeated: [] });
+        expect(por['TP #8']).toMatchObject({ sources: 'repeats', repeated: ['moo'], comparedWith: 'TP #7' });
+        expect(por['TP #9']).toMatchObject({ sources: 'noRepeat', comparedWith: 'TP #8' });
+    });
+
+    it('«no repetir» elige la anterior con la misma regla que el analizador: la última que citó algo', () => {
+        const input = nt785();
+        input.studies = input.studies.map(s => (s.id === 's8' ? { ...s, citedSourceKeys: [] } : s));
+        const por = Object.fromEntries(buildProjectDesk(input, NOW_CURSO).course!.schedule.rows.map(r => [r.label, r]));
+        // TP #8 no citó nada: «sin datos» (no «sin repetir»).
+        expect(por['TP #8']).toMatchObject({ sources: 'unknown', comparedWith: 'TP #7', repeated: [] });
+        // TP #9 se compara con TP #7, como `previousDelivery` en el analizador.
+        expect(por['TP #9']).toMatchObject({ sources: 'noRepeat', comparedWith: 'TP #7' });
+    });
+
+    it('sin claves citadas de un lado, la celda es «sin datos»', () => {
+        const input = nt785();
+        // Ninguna anterior citó nada: no hay con qué comparar, pero sí había anteriores.
+        input.studies = input.studies.map(s => (s.id === 's6' || s.id === 's7' || s.id === 's8' ? { ...s, citedSourceKeys: undefined } : s));
+        const por = Object.fromEntries(buildProjectDesk(input, NOW_CURSO).course!.schedule.rows.map(r => [r.label, r]));
+        expect(por['TP #6']).toMatchObject({ sources: 'noRepeat' });
+        expect(por['TP #7']).toMatchObject({ sources: 'unknown', comparedWith: null });
+        expect(por['TP #9']).toMatchObject({ sources: 'unknown', comparedWith: null });
     });
 
     it('sin la regla «no repetir», las fuentes no se comparan', () => {
@@ -408,7 +464,7 @@ describe('Curso · NT785 con calendario', () => {
     });
 
     it('los tipos de trabajo, las entregas fuera de calendario y la lectura dirigida', () => {
-        expect(co.workTypes).toEqual([{ id: 'tp', label: 'TP Semanal', rubric: 'template', rubricResolved: true, method: 'mixed', guideId: 'g1', entries: 4 }]);
+        expect(co.workTypes).toEqual([{ id: 'tp', label: 'TP Semanal', rubric: 'template', rubricResolved: true, rubricConfirmed: false, rubricLoading: false, method: 'mixed', guideId: 'g1', entries: 5 }]);
         expect(co.offCalendar.map(s => s.id)).toEqual(['s1']);
         expect(co.directedReading).toEqual([{ requirementId: 'pag', text: 'Cien páginas de artículos', pages: 64, target: 100, pending: 1 }]);
         expect(co.sources.requirements).toEqual({ met: 1, total: 1, accepted: 1, incomplete: 0 });
@@ -416,10 +472,10 @@ describe('Curso · NT785 con calendario', () => {
 
     it('el registro de devoluciones: pendientes primero, con conteo y entregas', () => {
         expect(co.feedback.patterns).toEqual([
-            { patternId: 'cd', name: 'Cierre doble', decision: 'pending', corrections: 2, entries: [{ entryId: 'e7', label: 'TP #7' }] },
-            { patternId: 'cat', name: 'Categoría ≠ traducción', decision: 'guide', corrections: 1, entries: [{ entryId: 'e7', label: 'TP #7' }] },
+            { patternId: 'cd', name: 'Cierre doble', decision: 'pending', corrections: 3, entries: [{ entryId: 'e6', label: 'TP #6' }, { entryId: 'e7', label: 'TP #7' }], recurring: true, discardReason: null },
+            { patternId: 'cat', name: 'Categoría ≠ traducción', decision: 'guide', corrections: 1, entries: [{ entryId: 'e7', label: 'TP #7' }], recurring: false, discardReason: null },
         ]);
-        expect(co.feedback).toMatchObject({ delivered: 2, returned: 1, noFeedback: 0, awaiting: 1, repeatedPending: 1 });
+        expect(co.feedback).toMatchObject({ delivered: 3, returned: 2, noFeedback: 0, awaiting: 1, repeatedPending: 1 });
     });
 
     it('fase 5 lista: cada entrega con devolución (o «sin devolución») y el patrón decidido', () => {
@@ -428,10 +484,22 @@ describe('Curso · NT785 con calendario', () => {
             ? { ...e, feedback: { receivedAt: '2026-10-25T10:00:00.000Z', text: '', corrections: [], none: true } }
             : e));
         expect(fase(buildProjectDesk(input, NOW_CURSO), 'feedback').status).toBe('doing');
+        input.project.feedbackPatterns = input.project.feedbackPatterns!.map(p => ({ ...p, decision: 'discarded' as const, discardReason: 'No aplica a este curso' }));
+        const x = buildProjectDesk(input, NOW_CURSO);
+        expect(fase(x, 'feedback')).toMatchObject({ status: 'ready', evidence: { key: 'desk.course.feedback.ready', params: { returned: 2, none: 1 } } });
+        expect(x.course!.schedule.rows[2]!.delivery).toBe('noFeedback');
+        expect(x.course!.feedback.patterns[0]).toMatchObject({ decision: 'discarded', discardReason: 'No aplica a este curso' });
+    });
+
+    it('un descarte sin razón no cuenta: el patrón sigue pendiente y frena la fase 5', () => {
+        const input = nt785();
+        input.project.courseSchedule = input.project.courseSchedule!.map(e => (e.id === 'e8'
+            ? { ...e, feedback: { receivedAt: '2026-10-25T10:00:00.000Z', text: '', corrections: [], none: true } }
+            : e));
         input.project.feedbackPatterns = input.project.feedbackPatterns!.map(p => ({ ...p, decision: 'discarded' as const }));
         const x = buildProjectDesk(input, NOW_CURSO);
-        expect(fase(x, 'feedback')).toMatchObject({ status: 'ready', evidence: { params: { returned: 2 } } });
-        expect(x.course!.schedule.rows[1]!.delivery).toBe('noFeedback');
+        expect(fase(x, 'feedback')).toMatchObject({ status: 'doing', evidence: { params: { returned: 2, none: 1, delivered: 3, pendingPatterns: 1 } } });
+        expect(x.course!.feedback.patterns.find(p => p.patternId === 'cd')).toMatchObject({ decision: 'pending', discardReason: null });
     });
 
     it('una entrega entregada sin devolución frena la fase 5 aunque los patrones estén decididos', () => {
@@ -440,12 +508,23 @@ describe('Curso · NT785 con calendario', () => {
         expect(fase(buildProjectDesk(input, NOW_CURSO), 'feedback').status).toBe('doing');
     });
 
-    it('un patrón con una sola corrección no frena la fase 5', () => {
+    it('un patrón en una sola entrega no se repite (aunque tenga dos correcciones) y no frena la fase 5', () => {
         const input = nt785();
-        input.project.courseSchedule = input.project.courseSchedule!.filter(e => e.id !== 'e8').map(e => (e.id === 'e7'
-            ? { ...e, feedback: { ...e.feedback!, corrections: [{ id: 'c1', patternId: 'cd' }] } }
-            : e));
-        expect(fase(buildProjectDesk(input, NOW_CURSO), 'feedback').status).toBe('ready');
+        // Sin TP #6: «cierre doble» queda con dos correcciones, las dos en TP #7.
+        input.project.courseSchedule = input.project.courseSchedule!.filter(e => e.id !== 'e8' && e.id !== 'e6');
+        const x = buildProjectDesk(input, NOW_CURSO);
+        expect(x.course!.feedback.patterns.find(p => p.patternId === 'cd')).toMatchObject({ corrections: 2, recurring: false });
+        expect(x.course!.feedback.repeatedPending).toBe(0);
+        expect(fase(x, 'feedback').status).toBe('ready');
+        expect(x.notes.map(n => n.text.key)).not.toContain('desk.notes.pendingPatterns');
+    });
+
+    it('dos o más entregas sin devolución: UNA nota con el conteo', () => {
+        const input = nt785();
+        input.project.courseSchedule = input.project.courseSchedule!.map(e => (e.id === 'e7' ? { ...e, feedback: null } : e));
+        const x = buildProjectDesk(input, NOW_CURSO);
+        const sin = x.notes.filter(n => n.text.key.startsWith('desk.notes.noFeedback'));
+        expect(sin).toEqual([{ text: { key: 'desk.notes.noFeedbackMany', params: { count: 2 } }, target: { type: 'phase', phaseId: 'feedback' }, phaseId: 'feedback' }]);
     });
 
     it('sin devoluciones, por empezar', () => {
@@ -458,7 +537,7 @@ describe('Curso · NT785 con calendario', () => {
         const input = nt785();
         input.project.courseSchedule = input.project.courseSchedule!.map(e => (e.id === 'e8' ? { ...e, deliveredAt: null } : e));
         const x = buildProjectDesk(input, NOW_CURSO);
-        expect(x.course!.schedule.rows[1]!.overdue).toBe(true);
+        expect(x.course!.schedule.rows[2]!.overdue).toBe(true);
         expect(x.notes.find(n => n.text.key === 'desk.notes.overdue')).toMatchObject({ text: { params: { label: 'TP #8', dueDate: '2026-10-21' } }, target: { type: 'study', id: 's8' } });
     });
 
@@ -466,12 +545,21 @@ describe('Curso · NT785 con calendario', () => {
         const input = nt785();
         input.project.courseSchedule = [...input.project.courseSchedule!, { id: 'e11', workTypeId: 'borrado', label: 'Ensayo' }];
         const x = buildProjectDesk(input, NOW_CURSO);
-        expect(fase(x, 'calendar')).toMatchObject({ status: 'doing', evidence: { params: { entries: 5, missing: 1 } }, progress: { done: 4, total: 5 } });
+        expect(fase(x, 'calendar')).toMatchObject({ status: 'doing', evidence: { params: { entries: 6, missing: 1 } }, progress: { done: 5, total: 6 } });
         // N son las entradas del calendario, con o sin estudio.
-        expect(fase(x, 'works').progress).toEqual({ done: 2, total: 5 });
+        expect(fase(x, 'works').progress).toEqual({ done: 3, total: 6 });
         // La entrada sin fecha va al final; su tipo desconocido, en su grupo.
         expect(x.course!.schedule.rows.at(-1)!.label).toBe('Ensayo');
         expect(x.course!.schedule.groups.map(g => g.workTypeId)).toEqual(['tp', 'borrado']);
+    });
+
+    it('una entrada traída de antes o ya entregada no pide fecha', () => {
+        const input = nt785();
+        input.project.courseSchedule = input.project.courseSchedule!.map(e => (e.id === 'e6' ? { ...e, dueDate: null } : e.id === 'e7' ? { ...e, dueDate: null, deliveredAt: null, feedback: null, imported: true } : e));
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'calendar')).toMatchObject({ status: 'ready', evidence: { key: 'desk.course.calendar.ready', params: { entries: 5 } } });
+        // Sin fecha, sin entregar y no traída: sí la pide.
+        input.project.courseSchedule = input.project.courseSchedule!.map(e => (e.id === 'e10' ? { ...e, dueDate: null } : e));
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'calendar')).toMatchObject({ status: 'doing', evidence: { params: { missing: 1 } } });
     });
 
     it('las herramientas: griego para Santiago', () => {
@@ -481,26 +569,58 @@ describe('Curso · NT785 con calendario', () => {
 
 describe('Curso · rúbrica resuelta', () => {
     const cat = { ids: ['rub1'], defaultId: null };
+    const conDefecto = { ids: ['rub1'], defaultId: 'rub1' };
+    const si = { rubricConfirmed: true };
     it.each([
-        ['una plantilla que existe', { rubricTemplateId: 'rub1' }, cat, 'template', true],
-        ['una plantilla borrada', { rubricTemplateId: 'rub9' }, cat, 'missing', false],
-        ['la del sistema a propósito', { rubricTemplateId: null }, cat, 'system', true],
-        ['solo estrategia', { rubricTemplateId: '__strategy-only' }, cat, 'system', true],
-        ['ausente con plantilla por defecto', {}, { ids: ['rub1'], defaultId: 'rub1' }, 'default', true],
-        ['ausente sin plantilla por defecto', {}, cat, 'unset', false],
-        ['sin catálogo (cargando): no se inventa un faltante', { rubricTemplateId: 'rub9' }, null, 'template', true],
-        ['sin catálogo y ausente', {}, null, 'default', true],
-    ] as const)('%s', (_n, wt, catalogo, source, resolved) => {
-        expect(workTypeRubric(wt, catalogo)).toEqual({ source, resolved });
+        ['una plantilla que existe (la del profesor)', { rubricTemplateId: 'rub1' }, cat, 'template', true, false, false],
+        ['una plantilla borrada, aunque confirme', { rubricTemplateId: 'rub9', ...si }, cat, 'missing', false, true, false],
+        ['la del sistema sin confirmar', { rubricTemplateId: null }, cat, 'system', false, false, false],
+        ['la del sistema confirmada', { rubricTemplateId: null, ...si }, cat, 'system', true, true, false],
+        ['solo estrategia sin confirmar', { rubricTemplateId: '__strategy-only' }, cat, 'system', false, false, false],
+        ['solo estrategia confirmada', { rubricTemplateId: '__strategy-only', ...si }, cat, 'system', true, true, false],
+        ['ausente con plantilla por defecto, sin confirmar', {}, conDefecto, 'default', false, false, false],
+        ['ausente con plantilla por defecto, confirmada', si, conDefecto, 'default', true, true, false],
+        ['ausente sin plantilla por defecto', {}, cat, 'unset', false, false, false],
+        ['ausente sin plantilla por defecto, confirmada (la del sistema)', si, cat, 'unset', true, true, false],
+        ['sin catálogo (cargando): no se inventa un faltante ni se da por resuelta', { rubricTemplateId: 'rub9' }, null, 'template', false, false, true],
+        ['sin catálogo y ausente: la resolución no depende del catálogo', {}, null, 'default', false, false, false],
+        ['sin catálogo y ausente, confirmada', si, null, 'default', true, true, false],
+        ['sin catálogo y la del sistema confirmada', { rubricTemplateId: null, ...si }, null, 'system', true, true, false],
+    ] as const)('%s', (_n, wt, catalogo, source, resolved, confirmed, loading) => {
+        expect(workTypeRubric(wt, catalogo)).toEqual({ source, resolved, confirmed, loading });
     });
 
-    it('un tipo sin rúbrica resuelta deja la fase 1 en curso; sin tipos, por empezar', () => {
+    it('la del sistema o la por defecto sin confirmar: fase 1 en curso, «sin la rúbrica del profesor»', () => {
         const input = nt785();
-        input.project.workTypes = [...input.project.workTypes!, { id: 'ens', label: 'Ensayo' }];
+        input.project.workTypes = [...input.project.workTypes!, { id: 'ens', label: 'Ensayo' }, { id: 'pf', label: 'Paper final', rubricTemplateId: null }];
         const x = buildProjectDesk(input, NOW_CURSO);
-        expect(fase(x, 'charge')).toMatchObject({ status: 'doing', evidence: { key: 'desk.course.charge.unresolved', params: { types: 2, unresolved: 1 } } });
+        expect(fase(x, 'charge')).toEqual({ id: 'charge', status: 'doing', evidence: { key: 'desk.course.charge.noProfessorRubric', params: { types: 3, count: 2 } } });
+        // «El curso no da rúbrica»: con la confirmación, lista.
+        input.project.workTypes = input.project.workTypes!.map(t => ({ ...t, rubricConfirmed: true }));
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge')).toMatchObject({ status: 'ready', evidence: { key: 'desk.course.charge.ready', params: { types: 3 } } });
+        expect(buildProjectDesk(input, NOW_CURSO).course!.workTypes.map(w => w.rubricConfirmed)).toEqual([true, true, true]);
         input.project.workTypes = [];
         expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge').status).toBe('todo');
+    });
+
+    it('una plantilla borrada: «sin resolver», con cuántas faltan', () => {
+        const input = nt785();
+        input.project.workTypes = [...input.project.workTypes!, { id: 'ens', label: 'Ensayo', rubricTemplateId: 'borrada' }, { id: 'pf', label: 'Paper final' }];
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge')).toMatchObject({
+            status: 'doing', evidence: { key: 'desk.course.charge.unresolved', params: { types: 3, unresolved: 2, missing: 1 } },
+        });
+    });
+
+    it('con el catálogo cargando, la fase 1 no se decide: en curso con `loading`, nunca lista', () => {
+        const input = nt785();
+        input.rubricCatalog = null;
+        const x = buildProjectDesk(input, NOW_CURSO);
+        expect(fase(x, 'charge')).toEqual({ id: 'charge', status: 'doing', evidence: { key: 'desk.course.charge.loading', params: { types: 1 } }, loading: true });
+        expect(x.course!.workTypes[0]).toMatchObject({ rubric: 'template', rubricResolved: false, rubricLoading: true });
+        // Sin plantilla elegida, no hace falta el catálogo para decidir.
+        input.project.workTypes = [{ id: 'tp', label: 'TP', rubricTemplateId: null, rubricConfirmed: true }];
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge')).toMatchObject({ status: 'ready' });
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge').loading).toBeUndefined();
     });
 
     it('la guía del curso cuando el tipo no tiene', () => {
@@ -512,7 +632,7 @@ describe('Curso · rúbrica resuelta', () => {
 
 describe('Curso · semana a semana, sin calendario', () => {
     const input = (): ProjectDeskInput => ({
-        project: { id: 'c2', type: 'course', courseScheduleMode: 'free', workTypes: [{ id: 'tp', label: 'TP', rubricTemplateId: null }] },
+        project: { id: 'c2', type: 'course', courseScheduleMode: 'free', workTypes: [{ id: 'tp', label: 'TP', rubricTemplateId: null, rubricConfirmed: true }] },
         studies: [ensamblado('a1'), study('a2')],
     });
 
@@ -572,10 +692,27 @@ describe('claves de texto', () => {
             [esdrasRecienCreado(), NOW], [esdrasAMedias(), NOW], [esdrasEnSintesis(), NOW], [paraEnsenar(), NOW],
             [jonasLegacy(), NOW], [nt785(), NOW_CURSO], [nt785(), new Date(2026, 10, 20)],
         ];
+        // Los que producen las claves de la ronda de arreglos.
+        const sinDevoluciones = nt785();
+        sinDevoluciones.project.courseSchedule = sinDevoluciones.project.courseSchedule!.map(e => ({ ...e, feedback: null }));
+        const cargando = nt785();
+        cargando.rubricCatalog = null;
+        const delSistema = nt785();
+        delSistema.project.workTypes = [{ id: 'tp', label: 'TP', rubricTemplateId: null }];
+        const borrada = nt785();
+        borrada.project.workTypes = [{ id: 'tp', label: 'TP', rubricTemplateId: 'borrada' }];
+        const ensenar = paraEnsenar();
+        delete ensenar.project.framing!.divisionWithoutSeries;
+        ensenar.studies = [...ensenar.studies, ensamblado('t3')];
+        escenarios.push([sinDevoluciones, NOW_CURSO], [cargando, NOW_CURSO], [delSistema, NOW_CURSO], [borrada, NOW_CURSO], [ensenar, NOW]);
+        const vistas = new Set<string>();
         for (const [input, now] of escenarios) {
             const m = buildProjectDesk(input, now);
             const claves = [...m.phases.map(p => p.evidence.key), ...m.notes.map(n => n.text.key), ...(m.now ? [m.now.text.key] : [])];
-            for (const k of claves) expect(conocidas.has(k), k).toBe(true);
+            for (const k of claves) { expect(conocidas.has(k), k).toBe(true); vistas.add(k); }
+        }
+        for (const k of ['desk.notes.noFeedbackMany', 'desk.course.charge.loading', 'desk.course.charge.noProfessorRubric', 'desk.course.charge.unresolved', 'desk.exegetical.division.readyStudies']) {
+            expect(vistas.has(k), k).toBe(true);
         }
     });
 });

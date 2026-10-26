@@ -60,7 +60,10 @@ export interface AddRuleToStyleGuideResult {
  * - Respeta el tope de reglas (`GUIDE_MAX_ADDITIONAL_RULES`).
  * - Registra la decisión en el proyecto (`decision: 'guide'`, `guideId`,
  *   `ruleText`, `decidedAt`) por `UpdateProjectUseCase` con `courseOps`, que
- *   relee el proyecto.
+ *   la aplica en la transacción del curso (`updateCourseRecord`): sobre el
+ *   proyecto leído en ella, sin pisar lo que otra pestaña escriba en medio.
+ *   Si el patrón desapareció entre medio, la decisión no se aplica (la regla
+ *   ya quedó en la guía).
  *
  * Orden: primero la guía y después el proyecto. Si falla el segundo paso, la
  * regla ya está en la guía y repetir no la duplica.

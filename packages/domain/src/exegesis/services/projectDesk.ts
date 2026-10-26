@@ -7,7 +7,7 @@ import type { ExegeticalMethod } from '../entities/ExegeticalPaper';
 import { STRATEGY_ONLY_RUBRIC_PRESET_ID } from '../entities/PaperRubric';
 import type { SourceType } from '../entities/SourceType';
 import { projectBibleBooks } from './bibliographyCandidates';
-import type { CourseScheduleEntry, CourseScheduleMode, FeedbackPatternDecision } from './courseSchedule';
+import { isRecurringPattern, type CourseScheduleEntry, type CourseScheduleMode, type FeedbackPattern, type FeedbackPatternDecision } from './courseSchedule';
 import {
     bibliographyCoverage,
     measureRequirement,
@@ -35,6 +35,7 @@ import {
     type SerieLike,
     type SermonProgressLike,
 } from './projectSeriesLink';
+import { previousDelivery, type DeliveryMemorySummary } from './sourceMemory';
 
 /**
  * El escritorio del proyecto (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md`):
@@ -85,6 +86,13 @@ export interface DeskPhase {
     progress?: { done: number; total: number };
     /** Lo que conviene tener antes (informativo: no bloquea ni cambia el estado). */
     dependsOn?: string[];
+    /**
+     * La fase todavía no se puede decidir porque falta un dato que está
+     * cargando (Curso, fase 1: el catálogo de rúbricas). Sale `doing` con
+     * evidencia `desk.course.charge.loading`; nunca `ready`. La web la muestra
+     * como «cargando» y espera para el recorrido y «Ahora».
+     */
+    loading?: boolean;
 }
 
 export type DeskTargetType =
@@ -287,7 +295,12 @@ export interface DeskWorkType {
     id: string;
     label: string;
     rubric: DeskRubricSource;
+    /** Ver `workTypeRubric`: la del profesor, o la del sistema / por defecto confirmada. */
     rubricResolved: boolean;
+    /** «El curso no da rúbrica»: `ProjectWorkType.rubricConfirmed`. */
+    rubricConfirmed: boolean;
+    /** Su estado depende del catálogo de rúbricas, que todavía carga. */
+    rubricLoading: boolean;
     method: ExegeticalMethod | null;
     /** La guía del tipo o, si no tiene, la del curso. */
     guideId: string | null;
@@ -296,7 +309,16 @@ export interface DeskWorkType {
 }
 
 export type DeskDelivery = 'notDelivered' | 'delivered' | 'returned' | 'noFeedback';
-export type DeskSourceRepeat = 'noRepeat' | 'repeats' | 'n/a';
+/**
+ * «No repetir» en una fila:
+ *   - `noRepeat`: no repite de la anterior (o es la primera de su tipo);
+ *   - `repeats`: repite (`repeated`);
+ *   - `unknown`: «sin datos»: hay una anterior del tipo pero a uno de los dos
+ *     lados le faltan las claves citadas (trabajo sin citas todavía, o
+ *     anteriores sin citas registradas);
+ *   - `n/a`: sin estudio, o el curso no tiene la regla.
+ */
+export type DeskSourceRepeat = 'noRepeat' | 'repeats' | 'unknown' | 'n/a';
 
 export interface DeskScheduleRow {
     entryId: string;
@@ -310,7 +332,11 @@ export interface DeskScheduleRow {
     overdue: boolean;
     hoursLeft: number | null;
     study: DeskStudyCell;
-    /** «Sin repetir de TP #8» / «repite Moo», contra la entrega anterior del mismo tipo. */
+    /**
+     * «Sin repetir de TP #8» / «repite Moo», contra la entrega anterior del
+     * mismo tipo: la de `createdAt` del estudio inmediatamente anterior que
+     * citó algo, con la regla del analizador (`previousDelivery`).
+     */
     sources: DeskSourceRepeat;
     repeated: string[];
     /** El rótulo de la entrega con que se comparó. */
@@ -328,9 +354,14 @@ export interface DeskScheduleGroup {
 export interface DeskPatternRow {
     patternId: string;
     name: string;
+    /** La decisión vigente: un descarte sin razón o un «a la guía» sin guía cuentan como `pending`. */
     decision: FeedbackPatternDecision;
     corrections: number;
     entries: Array<{ entryId: string; label: string }>;
+    /** Se repite (`isRecurringPattern`): en dos entregas distintas o más. */
+    recurring: boolean;
+    /** Con `discarded`: por qué se descartó. */
+    discardReason: string | null;
 }
 
 /** Lectura dirigida: un requisito de páginas, medido sobre fichas con `pageCount` y reseña. */
@@ -365,7 +396,7 @@ export interface CourseDesk {
         noFeedback: number;
         /** Entregadas sin devolución registrada. */
         awaiting: number;
-        /** Patrones con ≥ 2 correcciones y sin decidir. */
+        /** Patrones que se repiten (`isRecurringPattern`) y sin decidir. */
         repeatedPending: number;
     };
 }
@@ -477,6 +508,8 @@ export const DESK_UPCOMING_DAYS = 7;
  * el acto y no llegan a este margen.
  */
 export const DESK_TOUCH_MS = 2 * 60 * 1000;
+/** Exegético para enseñar o para ti, sin serie: con tantos estudios ensamblados la división está hecha. */
+export const DESK_DIVISION_MIN_ASSEMBLED = 2;
 
 const MEDIBLES = new Set(['minimum-type', 'quantity', 'date-range', 'perspectives', 'variety']);
 const HORA = 3600 * 1000;
@@ -850,15 +883,21 @@ function buildExegetical(input: ProjectDeskInput, studies: DeskStudy[]): { desk:
 
     const fase2 = sourcesPhase(sources, false);
 
-    const sinSerie = (purpose === 'teach' || purpose === 'personal') && deskFraming.divisionWithoutSeries;
+    // Para enseñar o para ti, sin serie: la marca «di por hecha la división»
+    // o ≥ 2 estudios ENSAMBLADOS (el recorrido de antes contaba estudios; un
+    // estudio vacío no divide nada). Para predicar hace falta la serie.
+    const sinSerieVale = purpose === 'teach' || purpose === 'personal';
+    const ensamblados = studies.filter(s => s.state === 'assembled').length;
     const unidadesPlan = groups.reduce((n, g) => n + g.counts.units, 0);
     const fase3: DeskPhase = series.length > 0
         ? { id: 'division', status: 'ready', evidence: phaseText('desk.exegetical.division.readySeries', { series: series.length, units: unidadesPlan }), dependsOn: ['passage'] }
-        : sinSerie
+        : sinSerieVale && deskFraming.divisionWithoutSeries
             ? { id: 'division', status: 'ready', evidence: phaseText('desk.exegetical.division.readyWithoutSeries'), dependsOn: ['passage'] }
-            : input.plannerDraft
-                ? { id: 'division', status: 'doing', evidence: phaseText('desk.exegetical.division.draft'), dependsOn: ['passage'] }
-                : { id: 'division', status: 'todo', evidence: phaseText('desk.exegetical.division.todo'), dependsOn: ['passage'] };
+            : sinSerieVale && ensamblados >= DESK_DIVISION_MIN_ASSEMBLED
+                ? { id: 'division', status: 'ready', evidence: phaseText('desk.exegetical.division.readyStudies', { count: ensamblados }), dependsOn: ['passage'] }
+                : input.plannerDraft
+                    ? { id: 'division', status: 'doing', evidence: phaseText('desk.exegetical.division.draft'), dependsOn: ['passage'] }
+                    : { id: 'division', status: 'todo', evidence: phaseText('desk.exegetical.division.todo'), dependsOn: ['passage'] };
 
     // Fase 4: solo cuentan los ensamblados; la anotación no.
     const progreso = { done: counts.assembled, total: counts.units };
@@ -888,20 +927,54 @@ function buildExegetical(input: ProjectDeskInput, studies: DeskStudy[]): { desk:
 
 // ── Curso ──────────────────────────────────────────────────────────────
 
+export interface WorkTypeRubricState {
+    source: DeskRubricSource;
+    /**
+     * Resuelta: la del profesor (una plantilla que existe), o la del sistema /
+     * la por defecto con «El curso no da rúbrica» confirmado
+     * (`rubricConfirmed`). Una plantilla borrada nunca.
+     */
+    resolved: boolean;
+    confirmed: boolean;
+    /**
+     * Lo resuelto depende del catálogo y el catálogo carga (`null`/ausente):
+     * una plantilla elegida que no se sabe si existe. Sale como `template`
+     * sin resolver, para no inventar un faltante. Sin plantilla elegida, la
+     * resolución no depende del catálogo (solo de la confirmación); el
+     * origen, sí (`default` mientras carga, `unset` si no hay por defecto).
+     */
+    loading: boolean;
+}
+
 /** De dónde sale la rúbrica del tipo y si está resuelta (ver `DeskRubricSource`). */
 export function workTypeRubric(
-    workType: Pick<ProjectWorkType, 'rubricTemplateId'>,
+    workType: Pick<ProjectWorkType, 'rubricTemplateId' | 'rubricConfirmed'>,
     catalog: DeskRubricCatalog | null | undefined,
-): { source: DeskRubricSource; resolved: boolean } {
+): WorkTypeRubricState {
     const id = workType.rubricTemplateId;
-    if (id === null || id === STRATEGY_ONLY_RUBRIC_PRESET_ID) return { source: 'system', resolved: true };
+    const confirmed = workType.rubricConfirmed === true;
+    const sinProfesor = (source: DeskRubricSource): WorkTypeRubricState => ({ source, resolved: confirmed, confirmed, loading: false });
+    if (id === null || id === STRATEGY_ONLY_RUBRIC_PRESET_ID) return sinProfesor('system');
     if (typeof id === 'string' && id.trim()) {
         // Sin catálogo no se sabe si existe: no se inventa un faltante mientras carga.
-        if (!catalog || catalog.ids.includes(id)) return { source: 'template', resolved: true };
-        return { source: 'missing', resolved: false };
+        if (!catalog) return { source: 'template', resolved: false, confirmed, loading: true };
+        return catalog.ids.includes(id)
+            ? { source: 'template', resolved: true, confirmed, loading: false }
+            : { source: 'missing', resolved: false, confirmed, loading: false };
     }
-    if (!catalog) return { source: 'default', resolved: true };
-    return catalog.defaultId ? { source: 'default', resolved: true } : { source: 'unset', resolved: false };
+    if (!catalog) return sinProfesor('default');
+    return sinProfesor(catalog.defaultId ? 'default' : 'unset');
+}
+
+/**
+ * La decisión que vale de un patrón guardado: un descarte sin razón o un «a
+ * la guía» sin guía o sin texto no dicen nada y cuentan como pendientes (la
+ * limpieza los devuelve a `pending`; esto cubre lo que no pasó por ella).
+ */
+function effectiveDecision(p: FeedbackPattern): FeedbackPatternDecision {
+    if (p.decision === 'discarded' && !hasText(p.discardReason)) return 'pending';
+    if (p.decision === 'guide' && (!hasText(p.guideId) || !hasText(p.ruleText))) return 'pending';
+    return p.decision === 'guide' || p.decision === 'discarded' ? p.decision : 'pending';
 }
 
 function deliveryOf(e: CourseScheduleEntry): DeskDelivery {
@@ -931,9 +1004,19 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
     const mode: CourseScheduleMode | null = project.courseScheduleMode ?? (entradas.length > 0 ? 'calendar' : null);
     const hoy = localDay(now);
 
-    // Las filas, en el orden del calendario. «No repetir» compara con la
-    // entrega anterior del MISMO tipo que ya tiene estudio.
-    const anteriorPorTipo = new Map<string, { label: string; keys: string[] }>();
+    // «No repetir»: la anterior es la del MISMO tipo cuyo estudio nació
+    // inmediatamente antes (`createdAt`) y citó algo, con la función del
+    // analizador. No el orden del calendario: los trabajos traídos sin fecha
+    // van al final y compararían contra uno posterior.
+    const creado = new Map(input.studies.map(s => [s.id, new Date(tiempo(s.createdAt))]));
+    const memoriaPorTipo = new Map<string, DeliveryMemorySummary[]>();
+    for (const e of entradas) {
+        const st = e.paperId ? porId.get(e.paperId) : undefined;
+        if (!st) continue;
+        const lista = memoriaPorTipo.get(e.workTypeId) ?? [];
+        lista.push({ id: st.id, title: e.label?.trim() ?? '', passage: st.passage, createdAt: creado.get(st.id) ?? new Date(0), citedSourceKeys: citas.get(st.id) ?? [] });
+        memoriaPorTipo.set(e.workTypeId, lista);
+    }
     const rows: DeskScheduleRow[] = entradas.map(e => {
         const study = e.paperId ? porId.get(e.paperId) : undefined;
         const delivery = deliveryOf(e);
@@ -942,14 +1025,19 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
         let repeated: string[] = [];
         let comparedWith: string | null = null;
         if (noRepeat && study) {
-            const keys = citas.get(study.id) ?? [];
-            const previa = anteriorPorTipo.get(e.workTypeId);
-            if (previa) {
-                comparedWith = previa.label;
-                repeated = [...new Set(keys.filter(k => previa.keys.includes(k)))];
+            const memoria = memoriaPorTipo.get(e.workTypeId) ?? [];
+            const actual = memoria.find(m => m.id === study.id)!;
+            const hayAnterior = memoria.some(m => m.id !== study.id && m.createdAt.getTime() < actual.createdAt.getTime());
+            const previa = previousDelivery(memoria, study.id);
+            comparedWith = previa?.title || null;
+            if (!hayAnterior) sources = 'noRepeat';
+            // Sin las claves de un lado no se puede afirmar «sin repetir».
+            else if (actual.citedSourceKeys.length === 0 || !previa) sources = 'unknown';
+            else {
+                const anteriores = new Set(previa.citedSourceKeys);
+                repeated = [...new Set(actual.citedSourceKeys.filter(k => anteriores.has(k)))];
+                sources = repeated.length > 0 ? 'repeats' : 'noRepeat';
             }
-            sources = repeated.length > 0 ? 'repeats' : 'noRepeat';
-            anteriorPorTipo.set(e.workTypeId, { label: e.label, keys });
         }
         return {
             entryId: e.id,
@@ -979,6 +1067,7 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
         const r = workTypeRubric(t, input.rubricCatalog);
         return {
             id: t.id, label: t.label, rubric: r.source, rubricResolved: r.resolved,
+            rubricConfirmed: r.confirmed, rubricLoading: r.loading,
             method: t.exegeticalMethod ?? null, guideId: t.styleGuideId || guiaCurso || null,
             entries: rows.filter(x => x.workTypeId === t.id).length,
         };
@@ -1009,25 +1098,41 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
             corrections += n;
             donde.push({ entryId: e.id, label: e.label?.trim() ?? '' });
         }
-        return { patternId: p.id, name: p.name, decision: p.decision, corrections, entries: donde };
+        const decision = effectiveDecision(p);
+        return {
+            patternId: p.id, name: p.name, decision, corrections, entries: donde,
+            recurring: isRecurringPattern({ entries: donde }),
+            discardReason: decision === 'discarded' ? p.discardReason!.trim() : null,
+        };
     }).sort((a, b) => Number(a.decision !== 'pending') - Number(b.decision !== 'pending') || b.corrections - a.corrections);
     const delivered = rows.filter(r => r.delivery !== 'notDelivered').length;
     const returned = rows.filter(r => r.delivery === 'returned').length;
     const noFeedback = rows.filter(r => r.delivery === 'noFeedback').length;
     const awaiting = rows.filter(r => r.delivery === 'delivered').length;
-    const repeatedPending = patterns.filter(p => p.decision === 'pending' && p.corrections >= 2).length;
+    const repeatedPending = patterns.filter(p => p.decision === 'pending' && p.recurring).length;
 
     // ── Fases (§9.1) ──
-    const sinResolver = workTypes.filter(w => !w.rubricResolved).length;
-    const fase1: DeskPhase = workTypes.length === 0
+    // Fase 1: cada tipo con la rúbrica del profesor, o con «El curso no da
+    // rúbrica» confirmado. Mientras el catálogo carga no se decide: `doing`
+    // con `loading` (nunca `ready` antes de saber).
+    const cargando = workTypes.some(w => w.rubricLoading);
+    const faltantes = workTypes.filter(w => w.rubric === 'missing').length;
+    const sinProfesor = workTypes.filter(w => !w.rubricResolved && w.rubric !== 'missing').length;
+    const nTipos = workTypes.length;
+    const fase1: DeskPhase = nTipos === 0
         ? { id: 'charge', status: 'todo', evidence: phaseText('desk.course.charge.todo') }
-        : sinResolver > 0
-            ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.unresolved', { types: workTypes.length, unresolved: sinResolver }) }
-            : { id: 'charge', status: 'ready', evidence: phaseText('desk.course.charge.ready', { types: workTypes.length }) };
+        : cargando
+            ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.loading', { types: nTipos }), loading: true }
+            : faltantes > 0
+                ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.unresolved', { types: nTipos, unresolved: faltantes + sinProfesor, missing: faltantes }) }
+                : sinProfesor > 0
+                    ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.noProfessorRubric', { types: nTipos, count: sinProfesor }) }
+                    : { id: 'charge', status: 'ready', evidence: phaseText('desk.course.charge.ready', { types: nTipos }) };
 
     const fase2 = sourcesPhase(sources, true);
 
-    const incompletas = rows.filter(r => !r.workTypeKnown || !r.dueDate).length;
+    // Una traída de antes o ya entregada no necesita fecha: ya no vence.
+    const incompletas = rows.filter(r => !r.workTypeKnown || (!r.dueDate && !r.imported && r.delivery === 'notDelivered')).length;
     const fase3: DeskPhase = mode === 'free'
         ? { id: 'calendar', status: 'ready', evidence: phaseText('desk.course.calendar.free'), dependsOn: ['charge'] }
         : rows.length === 0
@@ -1056,8 +1161,8 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
     const fase5: DeskPhase = conDevolucion === 0
         ? { id: 'feedback', status: 'todo', evidence: phaseText('desk.course.feedback.todo'), dependsOn: ['works'] }
         : awaiting === 0 && repeatedPending === 0
-            ? { id: 'feedback', status: 'ready', evidence: phaseText('desk.course.feedback.ready', { returned: conDevolucion }), dependsOn: ['works'] }
-            : { id: 'feedback', status: 'doing', evidence: phaseText('desk.course.feedback.progress', { returned: conDevolucion, delivered, pendingPatterns: repeatedPending }), dependsOn: ['works'] };
+            ? { id: 'feedback', status: 'ready', evidence: phaseText('desk.course.feedback.ready', { returned, none: noFeedback }), dependsOn: ['works'] }
+            : { id: 'feedback', status: 'doing', evidence: phaseText('desk.course.feedback.progress', { returned, none: noFeedback, delivered, pendingPatterns: repeatedPending }), dependsOn: ['works'] };
 
     return {
         desk: {
@@ -1310,8 +1415,13 @@ export function deskNotes(basis: DeskNowBasis, current: DeskNow | null): DeskNot
                 phaseId: 'works',
             });
         }
-        for (const r of co.schedule.rows.filter(x => x.delivery === 'delivered')) {
+        // Sin devolución: una nota por entrega si es una; si son varias, UNA con el conteo.
+        const sinDevolucion = co.schedule.rows.filter(x => x.delivery === 'delivered');
+        if (sinDevolucion.length === 1) {
+            const r = sinDevolucion[0]!;
             add({ text: phaseText('desk.notes.noFeedback', { label: r.label }), target: { type: 'recordFeedback', id: r.entryId, label: r.label }, phaseId: 'feedback' });
+        } else if (sinDevolucion.length > 1) {
+            add({ text: phaseText('desk.notes.noFeedbackMany', { count: sinDevolucion.length }), target: { type: 'phase', phaseId: 'feedback' }, phaseId: 'feedback' });
         }
         if (co.feedback.repeatedPending > 0) {
             add({ text: phaseText('desk.notes.pendingPatterns', { count: co.feedback.repeatedPending }), target: { type: 'phase', phaseId: 'feedback' }, phaseId: 'feedback' });
@@ -1409,6 +1519,7 @@ export const DESK_TEXT_KEYS = [
     'desk.exegetical.division.draft',
     'desk.exegetical.division.readySeries', // {series, units}
     'desk.exegetical.division.readyWithoutSeries',
+    'desk.exegetical.division.readyStudies', // {count} (enseñar / para ti: ≥ 2 ensamblados)
     // Fase 4 Exegético · Estudios por perícopa
     'desk.exegetical.pericopes.empty',
     'desk.exegetical.pericopes.todo', // {total}
@@ -1421,7 +1532,9 @@ export const DESK_TEXT_KEYS = [
     'desk.exegetical.synthesis.ready',
     // Curso · fases 1, 3, 4 y 5
     'desk.course.charge.todo',
-    'desk.course.charge.unresolved', // {types, unresolved}
+    'desk.course.charge.loading', // {types} (el catálogo de rúbricas carga: `loading: true`)
+    'desk.course.charge.unresolved', // {types, unresolved, missing} (alguna plantilla ya no existe)
+    'desk.course.charge.noProfessorRubric', // {types, count} («sin la rúbrica del profesor: N»)
     'desk.course.charge.ready', // {types}
     'desk.course.calendar.todo',
     'desk.course.calendar.incomplete', // {entries, missing}
@@ -1432,8 +1545,8 @@ export const DESK_TEXT_KEYS = [
     'desk.course.works.progress', // {done, total, delivered}
     'desk.course.works.ready', // {total, delivered}
     'desk.course.feedback.todo',
-    'desk.course.feedback.progress', // {returned, delivered, pendingPatterns}
-    'desk.course.feedback.ready', // {returned}
+    'desk.course.feedback.progress', // {returned, none, delivered, pendingPatterns} (returned: con devolución; none: «sin devolución»)
+    'desk.course.feedback.ready', // {returned, none}
     // «Ahora»
     'desk.now.deadline.review', // {label}
     'desk.now.deadline.continue', // {label, done, total}
@@ -1469,7 +1582,8 @@ export const DESK_TEXT_KEYS = [
     'desk.notes.revisionStale',
     'desk.notes.requiredToAcquire', // {title}
     'desk.notes.overdue', // {label, dueDate}
-    'desk.notes.noFeedback', // {label}
+    'desk.notes.noFeedback', // {label} (una sola entrega sin devolución)
+    'desk.notes.noFeedbackMany', // {count} (dos o más: una sola nota)
     'desk.notes.pendingPatterns', // {count}
     // La fase activa como nota, con los parámetros de su evidencia
     'desk.notes.phase.passage',

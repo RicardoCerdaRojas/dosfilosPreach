@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildDefaultStyleManifest, type AIProject } from '@dosfilos/domain';
+import { buildDefaultStyleManifest, type AIProject, type CourseRecord } from '@dosfilos/domain';
 import { AddRuleToStyleGuideUseCase, AddRuleToStyleGuideError } from '../AddRuleToStyleGuideUseCase';
 import { ImportPreviousWorksUseCase } from '../ImportPreviousWorksUseCase';
 
@@ -10,17 +10,33 @@ function rechazaUndefined(v: unknown, ruta = 'raíz'): void {
     else if (v && typeof v === 'object' && !(v instanceof Date)) for (const [k, x] of Object.entries(v)) rechazaUndefined(x, `${ruta}.${k}`);
 }
 
-/** Un repositorio de proyectos que guarda en memoria: lo escrito se relee. */
+/**
+ * Un repositorio de proyectos que guarda en memoria: lo escrito se relee.
+ * `updateCourseRecord` es la transacción del curso; `antesDeConfirmar` simula
+ * otra pestaña que escribe entre la lectura y la escritura (se repite).
+ */
 function proyectos(inicial: Partial<AIProject>) {
     let guardado = { id: 'curso', userId: 'u1', ...inicial } as AIProject;
+    let antesDeConfirmar: Partial<AIProject> | null = null;
     return {
         actual: () => guardado,
         cambiarPorFuera: (p: Partial<AIProject>) => { guardado = { ...guardado, ...p }; },
+        cambiarDuranteLaTransaccion: (p: Partial<AIProject>) => { antesDeConfirmar = p; },
         getProject: vi.fn(async () => guardado),
         updateProject: vi.fn(async (_id: string, u: Record<string, unknown>) => {
             rechazaUndefined(u);
             guardado = { ...guardado, ...u } as AIProject;
             return guardado;
+        }),
+        updateCourseRecord: vi.fn(async (_id: string, mutate: (p: AIProject) => CourseRecord, alongside: Record<string, unknown> = {}) => {
+            for (;;) {
+                const r = mutate(guardado);
+                if (antesDeConfirmar) { guardado = { ...guardado, ...antesDeConfirmar }; antesDeConfirmar = null; continue; }
+                const u = { ...alongside, courseSchedule: r.schedule, feedbackPatterns: r.patterns };
+                rechazaUndefined(u);
+                guardado = { ...guardado, ...u } as AIProject;
+                return guardado;
+            }
         }),
     };
 }
@@ -81,10 +97,20 @@ describe('AddRuleToStyleGuideUseCase — «Pasar a tu guía»', () => {
         expect(projects.actual().feedbackPatterns!.map(p => p.id)).toEqual(['fp1', 'fp2']);
     });
 
+    it('la decisión va por la transacción del curso: otra pestaña que escribe en medio no se pierde', async () => {
+        const { uc, projects } = montar([]);
+        projects.cambiarDuranteLaTransaccion({ feedbackPatterns: [PATRON, { id: 'fp3', name: 'Gramática', decision: 'pending' }] });
+        await uc.execute(input);
+        expect(projects.updateCourseRecord).toHaveBeenCalledTimes(1);
+        expect(projects.updateProject).not.toHaveBeenCalled();
+        expect(projects.actual().feedbackPatterns!.map(p => [p.id, p.decision])).toEqual([['fp1', 'guide'], ['fp3', 'pending']]);
+    });
+
     it('errores claros: guía sin manifiesto, regla vacía, patrón ajeno, guía llena', async () => {
         const sinManifiesto = montar(null);
         await expect(sinManifiesto.uc.execute(input)).rejects.toMatchObject({ code: 'guide-without-manifest' });
         expect(sinManifiesto.projects.updateProject).not.toHaveBeenCalled();
+        expect(sinManifiesto.projects.updateCourseRecord).not.toHaveBeenCalled();
         await expect(montar([]).uc.execute({ ...input, ruleText: ' . ' })).rejects.toMatchObject({ code: 'empty-rule' });
         await expect(montar([], []).uc.execute(input)).rejects.toMatchObject({ code: 'pattern-not-found' });
         const llena = montar(Array.from({ length: 200 }, (_, i) => `Regla ${i}`));
@@ -162,6 +188,7 @@ describe('ImportPreviousWorksUseCase — «Traer los trabajos anteriores»', () 
         })).rejects.toThrow(/no existe/);
         expect(setProjectLinks).not.toHaveBeenCalled();
         expect(projects.updateProject).not.toHaveBeenCalled();
+        expect(projects.updateCourseRecord).not.toHaveBeenCalled();
     });
 
     it('un proyecto ajeno, archivado o en la papelera se rechaza', async () => {

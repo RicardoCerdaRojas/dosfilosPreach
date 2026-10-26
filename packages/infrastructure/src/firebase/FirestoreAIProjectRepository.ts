@@ -11,16 +11,30 @@ import {
     query,
     where,
     orderBy,
+    runTransaction,
     type DocumentData,
     type UpdateData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { AIProject, IAIProjectRepository, ProjectOutput, withCappedHypothesisLog, type AIProjectUpdate, type ProjectFraming } from '@dosfilos/domain';
+import { AIProject, IAIProjectRepository, ProjectOutput, withCappedHypothesisLog, type AIProjectUpdate, type CourseRecord, type ProjectFraming } from '@dosfilos/domain';
 
 /** El registro del encuadre se agrega sin tope (`arrayUnion`): el tope de 200 se aplica aquí, al leer. */
 function framingLeido(data: DocumentData): { framing?: ProjectFraming } {
     const f = data.framing as ProjectFraming | undefined;
     return f && typeof f === 'object' ? { framing: withCappedHypothesisLog(f) } : {};
+}
+
+/** Un documento leído como proyecto: fechas de Firestore a `Date` y el registro del encuadre con tope. */
+function proyectoLeido(id: string, data: DocumentData): AIProject {
+    return {
+        id,
+        ...data,
+        ...framingLeido(data),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+        archivedAt: data.archivedAt?.toDate?.() ?? data.archivedAt ?? undefined,
+        deletedAt: data.deletedAt?.toDate?.() ?? data.deletedAt ?? undefined,
+    } as AIProject;
 }
 
 export class FirestoreAIProjectRepository implements IAIProjectRepository {
@@ -41,34 +55,14 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
         );
         const snap = await getDocs(q);
         return snap.docs
-            .map(d => {
-                const data = d.data();
-                return {
-                    id: d.id,
-                    ...data,
-                    ...framingLeido(data),
-                    createdAt: data.createdAt?.toDate() || new Date(),
-                    updatedAt: data.updatedAt?.toDate() || new Date(),
-                    archivedAt: data.archivedAt?.toDate?.() ?? data.archivedAt ?? undefined,
-                    deletedAt: data.deletedAt?.toDate?.() ?? data.deletedAt ?? undefined,
-                } as AIProject;
-            })
+            .map(d => proyectoLeido(d.id, d.data()))
             .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     }
 
     async getProject(projectId: string): Promise<AIProject | null> {
         const snap = await getDoc(this.docRef(projectId));
         if (!snap.exists()) return null;
-        const data = snap.data();
-        return {
-            id: snap.id,
-            ...data,
-            ...framingLeido(data),
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date(),
-            archivedAt: data.archivedAt?.toDate?.() ?? data.archivedAt ?? undefined,
-            deletedAt: data.deletedAt?.toDate?.() ?? data.deletedAt ?? undefined,
-        } as AIProject;
+        return proyectoLeido(snap.id, snap.data());
     }
 
     async createProject(project: Omit<AIProject, 'id' | 'createdAt' | 'updatedAt'>): Promise<AIProject> {
@@ -92,6 +86,32 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
         await updateDoc(this.docRef(projectId), this.buildFirestoreUpdates(updates) as UpdateData<DocumentData>);
         const updated = await this.getProject(projectId);
         if (!updated) throw new Error(`Project ${projectId} not found after update`);
+        return updated;
+    }
+
+    /**
+     * Curso: leer, aplicar y escribir en UNA transacción. Si otra pestaña
+     * escribió el proyecto entre la lectura y la escritura, Firestore repite
+     * la función sobre lo nuevo; por eso `mutate` es pura. El resto del cambio
+     * (`alongside`) va en la misma escritura, con las mismas reglas que
+     * `updateProject` (`buildFirestoreUpdates`).
+     */
+    async updateCourseRecord(
+        projectId: string,
+        mutate: (project: AIProject) => CourseRecord,
+        alongside: Omit<AIProjectUpdate, 'courseSchedule' | 'feedbackPatterns'> = {},
+    ): Promise<AIProject> {
+        const ref = this.docRef(projectId);
+        await runTransaction(db, async tx => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error(`updateCourseRecord: proyecto ${projectId} no encontrado`);
+            const { schedule, patterns } = mutate(proyectoLeido(snap.id, snap.data()));
+            // Las listas salen solo de `mutate`, aunque `alongside` trajera otras.
+            const { courseSchedule: _s, feedbackPatterns: _p, ...resto } = alongside as AIProjectUpdate;
+            tx.update(ref, this.buildFirestoreUpdates({ ...resto, courseSchedule: schedule, feedbackPatterns: patterns }) as UpdateData<DocumentData>);
+        });
+        const updated = await this.getProject(projectId);
+        if (!updated) throw new Error(`Project ${projectId} not found after course update`);
         return updated;
     }
 

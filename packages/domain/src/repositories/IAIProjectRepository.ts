@@ -1,7 +1,7 @@
 import { AIProject, ProjectOutput } from '../entities/AIProject';
 import type { BibleBookId } from '../bible/canon/BibleCanon';
 import type { HypothesisEntry, ProjectFramingPatch } from '../exegesis/services/projectFraming';
-import type { CourseScheduleEntry, CourseScheduleMode, FeedbackPattern } from '../exegesis/services/courseSchedule';
+import type { CourseRecord, CourseScheduleEntry, CourseScheduleMode, FeedbackPattern } from '../exegesis/services/courseSchedule';
 
 /**
  * Lo que acepta `updateProject` (lista blanca). Además de los campos enteros:
@@ -13,8 +13,9 @@ import type { CourseScheduleEntry, CourseScheduleMode, FeedbackPattern } from '.
  *   - `hypothesisAppend` agrega UNA anotación al registro con `arrayUnion`,
  *     sin leerlo: dos anotaciones casi simultáneas no se pisan. El tope de
  *     200 lo aplica la lectura (`withCappedHypothesisLog`);
- *   - `courseSchedule`, `feedbackPatterns` (Curso): enteros y ya limpios; el
- *     caso de uso los arma sobre el proyecto releído. `null` o `[]` los borran;
+ *   - `courseSchedule`, `feedbackPatterns` (Curso): enteros y ya limpios.
+ *     `null` o `[]` los borran. Las operaciones del curso NO van por aquí
+ *     sino por `updateCourseRecord`, que lee y escribe en una transacción;
  *   - `courseScheduleMode: null` lo borra.
  * Todo va en un solo `updateDoc`.
  */
@@ -36,6 +37,22 @@ export interface IAIProjectRepository {
     getProject(projectId: string): Promise<AIProject | null>;
     createProject(project: Omit<AIProject, 'id' | 'createdAt' | 'updatedAt'>): Promise<AIProject>;
     updateProject(projectId: string, updates: AIProjectUpdate): Promise<AIProject>;
+    /**
+     * Curso: el calendario y los patrones en UNA transacción. Lee el proyecto,
+     * le aplica `mutate` y escribe `courseSchedule` y `feedbackPatterns` (más
+     * `alongside`, si viene) en la misma transacción: dos pestañas que
+     * registran a la vez no se pisan, porque si el proyecto cambió entre la
+     * lectura y la escritura, la transacción se repite sobre lo nuevo.
+     *
+     * `mutate` puede correr más de una vez (cada reintento): debe ser pura
+     * sobre el proyecto que recibe. Sin proyecto, error («no encontrado»).
+     * Devuelve el proyecto como quedó.
+     */
+    updateCourseRecord(
+        projectId: string,
+        mutate: (project: AIProject) => CourseRecord,
+        alongside?: Omit<AIProjectUpdate, 'courseSchedule' | 'feedbackPatterns'>,
+    ): Promise<AIProject>;
     /**
      * Toggle archive state. Pass `true` to archive (sets `archivedAt = now`)
      * or `false` to unarchive (clears the field).

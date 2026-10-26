@@ -42,6 +42,14 @@ export interface PreviousDelivery {
 }
 
 /**
+ * Lo que la memoria de entregas lee de un resumen. El escritorio del curso
+ * (`projectDesk`) arma este mínimo con sus estudios y usa la MISMA regla, así
+ * la mesa y el analizador no eligen «la anterior» de dos maneras distintas.
+ */
+export type DeliveryMemorySummary = Pick<ExegesisPaperSummary, 'id' | 'title' | 'passage' | 'createdAt' | 'citedSourceKeys'>
+    & { sources?: ExegesisPaperSummary['sources'] };
+
+/**
  * La entrega inmediatamente anterior a un trabajo, entre las del mismo autor.
  *
  * Sólo cuentan las que CITARON algo: un trabajo abierto y sin aceptar nada no
@@ -52,7 +60,7 @@ export interface PreviousDelivery {
  * ninguno de los anteriores citó nada.
  */
 export function previousDelivery(
-    summaries: ReadonlyArray<ExegesisPaperSummary>,
+    summaries: ReadonlyArray<DeliveryMemorySummary>,
     currentPaperId: string,
 ): PreviousDelivery | null {
     return previousDeliveries(summaries, currentPaperId, 1)[0] ?? null;
@@ -63,7 +71,7 @@ export function previousDelivery(
  * La gramática se alterna (A7): para sugerir «la otra» hay que mirar dos.
  */
 export function previousDeliveries(
-    summaries: ReadonlyArray<ExegesisPaperSummary>,
+    summaries: ReadonlyArray<DeliveryMemorySummary>,
     currentPaperId: string,
     count: number,
 ): PreviousDelivery[] {

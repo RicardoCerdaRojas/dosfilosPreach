@@ -45,4 +45,26 @@ describe('paperBackLink', () => {
         expect(safeInternalPath(42)).toBeNull();
         expect(safeInternalPath('/dashboard/projects/p1')).toBe('/dashboard/projects/p1');
     });
+
+    it('caracteres de control y barra invertida: el navegador los quita o los lee como `/`', () => {
+        // Escritos tal cual (estado de la navegación) y codificados en `?from=` (URLSearchParams los decodifica).
+        const malos = ['/\t/otro.sitio', '/\n/otro.sitio', '/\r/otro.sitio', '/\u0000x', '/\u007Fx', '/\\otro.sitio', '/dashboard\\..\\x', '/\t'];
+        for (const malo of malos) {
+            expect(safeInternalPath(malo)).toBeNull();
+            expect(paperBackLink({ from: malo }, `?from=${encodeURIComponent(malo)}`).to).toBe(PAPER_LIST_PATH);
+        }
+        for (const codificado of ['%09', '%0A', '%0D', '%5C']) {
+            expect(paperBackLink(null, `?from=/${codificado}/otro.sitio`).to).toBe(PAPER_LIST_PATH);
+        }
+        // Una sola `/` al comienzo; esquemas, nunca.
+        for (const malo of ['//', '///otro.sitio', 'https:', 'https://x.invalid/a', 'javascript:', 'JavaScript:alert(1)', ' /dashboard', '\t/dashboard']) {
+            expect(safeInternalPath(malo)).toBeNull();
+        }
+    });
+
+    it('lo interno sigue valiendo: consulta, ancla, «%» literal y dos puntos en el camino', () => {
+        for (const bueno of ['/dashboard/projects/p1?tab=desk#ahora', '/dashboard/plans/s1', '/a%09b', '/dashboard/x:y', '/']) {
+            expect(safeInternalPath(bueno)).toBe(bueno);
+        }
+    });
 });

@@ -48,11 +48,11 @@ export interface UpdateProjectDTO {
     hypothesisEntry?: NewHypothesisEntry;
     /**
      * Curso: operaciones sobre el calendario de entregas y los patrones de
-     * corrección (`applyCourseOps`). Se aplican sobre el proyecto RELEÍDO, no
-     * sobre la caché de la página, y se guardan las dos listas enteras y
-     * limpias. Dos pestañas no se pisan a ciegas: cada una aplica SUS
-     * operaciones sobre lo último guardado. Entre la lectura y la escritura
-     * (milisegundos) gana la última; no hay transacción.
+     * corrección (`applyCourseOps`). Se aplican DENTRO de una transacción
+     * (`updateCourseRecord`): sobre el proyecto leído en ella, no sobre la
+     * caché de la página, y se guardan las dos listas enteras y limpias junto
+     * con el resto del cambio. Dos pestañas no se pisan: si el proyecto cambió
+     * entre la lectura y la escritura, Firestore repite la transacción.
      */
     courseOps?: CourseOp[];
     /** Curso: con calendario o semana a semana. `null` lo quita. */
@@ -68,7 +68,6 @@ export class UpdateProjectUseCase {
         const criterios = this.criterios(dto, guardado, libros);
         const framingPatch = this.encuadre(dto, guardado, libros);
         const hypothesisAppend = dto.hypothesisEntry ? newHypothesisEntry(dto.hypothesisEntry) : null;
-        const curso = this.curso(dto, guardado);
         const update: AIProjectUpdate = {
             ...(dto.title !== undefined && { title: dto.title.trim() }),
             ...(dto.color !== undefined && { color: dto.color }),
@@ -85,10 +84,10 @@ export class UpdateProjectUseCase {
             ...(dto.bibliographySearchLog !== undefined && { bibliographySearchLog: cleanSearchLog(dto.bibliographySearchLog) }),
             ...(framingPatch && { framingPatch }),
             ...(hypothesisAppend && { hypothesisAppend }),
-            ...curso,
             ...(dto.courseScheduleMode !== undefined && { courseScheduleMode: cleanCourseScheduleMode(dto.courseScheduleMode) }),
             ...this.fuentes(dto),
         };
+        if (dto.courseOps?.length) return this.curso(projectId, dto.courseOps, update);
         return this.projectRepository.updateProject(projectId, update);
     }
 
@@ -100,8 +99,8 @@ export class UpdateProjectUseCase {
     private hayQueLeer(dto: UpdateProjectDTO): boolean {
         const p = dto.framingPatch ?? {};
         const presente = (v: unknown) => v !== undefined && v !== null;
-        return !!dto.courseOps?.length
-            || dto.bibliographyCriteria !== undefined
+        // Las operaciones del curso leen dentro de su transacción: no cuentan aquí.
+        return dto.bibliographyCriteria !== undefined
             || dto.bibleBooks !== undefined
             || presente(p.scope)
             || presente(p.reading)
@@ -143,18 +142,23 @@ export class UpdateProjectUseCase {
     }
 
     /**
-     * Las operaciones del curso sobre lo GUARDADO. Sin proyecto no hay sobre
-     * qué aplicarlas: error, para que la página no crea que guardó.
+     * Las operaciones del curso, en la transacción del repositorio: se aplican
+     * sobre el proyecto leído EN ella (si otra pestaña escribió entre medio, se
+     * repite sobre lo nuevo) y el resto del cambio va en la misma escritura.
+     * Sin proyecto, el repositorio falla: la página no cree que guardó. Las
+     * fechas que faltan se fijan aquí, una vez: un reintento no las mueve.
      */
-    private curso(dto: UpdateProjectDTO, guardado: AIProject | null): Pick<AIProjectUpdate, 'courseSchedule' | 'feedbackPatterns'> {
-        if (!dto.courseOps?.length) return {};
-        if (!guardado) throw new Error('UpdateProject: proyecto no encontrado');
-        const { schedule, patterns } = applyCourseOps(
-            { schedule: guardado.courseSchedule ?? [], patterns: guardado.feedbackPatterns ?? [] },
-            dto.courseOps,
-            { workTypeIds: projectWorkTypes(guardado).map(t => t.id) },
+    private curso(projectId: string, ops: CourseOp[], resto: AIProjectUpdate): Promise<AIProject> {
+        const ahora = new Date();
+        return this.projectRepository.updateCourseRecord(
+            projectId,
+            guardado => applyCourseOps(
+                { schedule: guardado.courseSchedule ?? [], patterns: guardado.feedbackPatterns ?? [] },
+                ops,
+                { workTypeIds: projectWorkTypes(guardado).map(t => t.id), now: () => ahora },
+            ),
+            resto,
         );
-        return { courseSchedule: schedule, feedbackPatterns: patterns };
     }
 
     /** La bibliografía manda sobre `sourceIds`: no pueden quedar contradiciéndose. */

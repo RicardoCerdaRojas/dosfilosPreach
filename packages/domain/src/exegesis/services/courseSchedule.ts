@@ -81,6 +81,11 @@ export interface FeedbackPattern {
     ruleText?: string | null;
     /** Cuándo se decidió (ISO). */
     decidedAt?: string | null;
+    /**
+     * Con `discarded`: por qué («No aplica a este curso»). Descartar sin
+     * razón no se puede: un descarte mudo esconde lo que el profesor corrige.
+     */
+    discardReason?: string | null;
 }
 
 /**
@@ -109,6 +114,23 @@ export const FEEDBACK_PATTERN_NAME_MAX = 120;
  */
 export const GUIDE_RULE_TEXT_MAX = 1_000;
 export const GUIDE_MAX_ADDITIONAL_RULES = 200;
+/** Tope de la razón de un descarte: una frase corta. */
+export const FEEDBACK_DISCARD_REASON_MAX = 300;
+/** Un patrón «se repite» desde esta cantidad de entregas distintas. */
+export const PATTERN_RECURRING_MIN_ENTRIES = 2;
+
+/**
+ * La ÚNICA regla de «patrón que se repite»: aparece en dos entregas
+ * distintas o más. Dos correcciones en la misma entrega no son repetición
+ * (el profesor marcó dos veces lo mismo en un solo trabajo); lo que forma es
+ * que vuelva en el trabajo siguiente. La usan `patternRecurrence`, el
+ * escritorio (`repeatedPending`, `DeskPatternRow.recurring`) y la pantalla.
+ * Acepta la cuenta de entregas o la lista de entregas.
+ */
+export function isRecurringPattern(p: { entries: number | ReadonlyArray<unknown> }): boolean {
+    const n = typeof p.entries === 'number' ? p.entries : p.entries.length;
+    return n >= PATTERN_RECURRING_MIN_ENTRIES;
+}
 const ID_MAX = 128;
 
 // ── Utilidades de limpieza ───────────────────────────────────────────────
@@ -274,14 +296,18 @@ function cleanPattern(v: unknown): FeedbackPattern | null {
     let decision: FeedbackPatternDecision = DECISIONES.has(r.decision as FeedbackPatternDecision) ? r.decision as FeedbackPatternDecision : 'pending';
     const guideId = idValido(r.guideId);
     const ruleText = texto(r.ruleText, GUIDE_RULE_TEXT_MAX);
+    const discardReason = texto(r.discardReason, FEEDBACK_DISCARD_REASON_MAX);
     // «Pasado a la guía» sin la guía ni el texto no dice dónde quedó: vuelve a pendiente.
     if (decision === 'guide' && (!guideId || !ruleText)) decision = 'pending';
+    // Un descarte sin razón no debería existir: vuelve a pendiente, como el de arriba.
+    if (decision === 'discarded' && !discardReason) decision = 'pending';
     const decidedAt = decision === 'pending' ? undefined : instante(r.decidedAt);
     return {
         id, name,
         ...(description ? { description } : {}),
         decision,
         ...(decision === 'guide' ? { guideId, ruleText } : {}),
+        ...(decision === 'discarded' ? { discardReason } : {}),
         ...(decidedAt ? { decidedAt } : {}),
     };
 }
@@ -547,20 +573,21 @@ export function upsertPattern(
 
 /**
  * Decide un patrón. `guide` pide la guía y el texto de la regla (sin ellos no
- * hace nada: «pasado a la guía» tiene que decir dónde quedó); `pending` borra
- * la decisión anterior. Escribir la regla en la guía es otro paso
+ * hace nada: «pasado a la guía» tiene que decir dónde quedó); `discarded` pide
+ * la razón (`reason`, tope `FEEDBACK_DISCARD_REASON_MAX`; sin ella no hace
+ * nada); `pending` borra la decisión anterior. Escribir la regla en la guía es otro paso
  * (`AddRuleToStyleGuideUseCase`): esto solo la registra en el proyecto.
  */
 export function decidePattern(
     patterns: ReadonlyArray<FeedbackPattern>,
     patternId: string,
     decision: FeedbackPatternDecision,
-    detail: { guideId?: string | null; ruleText?: string | null } = {},
+    detail: { guideId?: string | null; ruleText?: string | null; reason?: string | null } = {},
     at: Date | string = new Date(),
 ): FeedbackPattern[] {
     const i = patterns.findIndex(p => p.id === patternId);
     if (i < 0 || !DECISIONES.has(decision)) return [...patterns];
-    const { guideId: _g, ruleText: _r, decidedAt: _a, decision: _d, ...base } = patterns[i]!;
+    const { guideId: _g, ruleText: _r, decidedAt: _a, decision: _d, discardReason: _dr, ...base } = patterns[i]!;
     let nuevo: FeedbackPattern;
     if (decision === 'pending') nuevo = { ...base, decision };
     else {
@@ -570,7 +597,11 @@ export function decidePattern(
             const ruleText = texto(detail.ruleText, GUIDE_RULE_TEXT_MAX);
             if (!guideId || !ruleText) return [...patterns];
             nuevo = { ...base, decision, guideId, ruleText, decidedAt };
-        } else nuevo = { ...base, decision, decidedAt };
+        } else {
+            const discardReason = texto(detail.reason, FEEDBACK_DISCARD_REASON_MAX);
+            if (!discardReason) return [...patterns];
+            nuevo = { ...base, decision, discardReason, decidedAt };
+        }
     }
     const out = [...patterns];
     out[i] = nuevo;
@@ -591,7 +622,7 @@ export interface PatternRecurrence {
     entryIds: string[];
     /** Los tipos de trabajo de esas entregas (para ofrecer su guía). */
     workTypeIds: string[];
-    /** Se repite: aparece en dos entregas o más. Es lo que la fase 5 pide decidir. */
+    /** Se repite (`isRecurringPattern`): aparece en dos entregas o más. Es lo que la fase 5 pide decidir. */
     recurring: boolean;
 }
 
@@ -619,7 +650,7 @@ export function patternRecurrence(
         }
     }
     const out = [...por.values()];
-    for (const r of out) r.recurring = r.entries >= 2;
+    for (const r of out) r.recurring = isRecurringPattern(r);
     return out.sort((a, b) => b.entries - a.entries || b.corrections - a.corrections || a.name.localeCompare(b.name));
 }
 
@@ -691,9 +722,9 @@ export function courseGuideCandidates(
 
 /**
  * Una operación del escritorio sobre el calendario o los patrones. La página
- * manda la lista y el caso de uso la aplica sobre el proyecto RELEÍDO: dos
- * pestañas no se pisan a ciegas (cada una aplica sus operaciones sobre lo
- * último guardado; entre la lectura y la escritura gana la última).
+ * manda la lista y el caso de uso la aplica dentro de una transacción
+ * (`updateCourseRecord`): lee el proyecto, aplica y escribe de una vez, así
+ * dos pestañas no se pisan.
  */
 export type CourseOp =
     | { op: 'upsertEntry'; entry: CourseEntryInput }
@@ -705,7 +736,7 @@ export type CourseOp =
     | { op: 'markNoFeedback'; entryId: string; at?: string | null }
     | { op: 'clearFeedback'; entryId: string }
     | { op: 'upsertPattern'; pattern: { id?: string | null; name: string; description?: string | null } }
-    | { op: 'decidePattern'; patternId: string; decision: FeedbackPatternDecision; guideId?: string | null; ruleText?: string | null; at?: string | null };
+    | { op: 'decidePattern'; patternId: string; decision: FeedbackPatternDecision; guideId?: string | null; ruleText?: string | null; reason?: string | null; at?: string | null };
 
 export interface ApplyCourseOpsOptions extends CourseOpOptions {
     /**

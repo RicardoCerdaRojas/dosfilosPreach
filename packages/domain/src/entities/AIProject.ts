@@ -135,6 +135,13 @@ export interface ProjectCourseInfo {
 export interface ProjectWorkType extends Omit<ProjectCharge, 'course'> {
     id: string;
     label: string;
+    /**
+     * «El curso no da rúbrica»: el estudiante confirmó que el tipo se evalúa
+     * con la del sistema o con su plantilla por defecto. Sin esta marca, una
+     * rúbrica que no es del profesor deja la fase 1 del Curso en curso. Solo
+     * se guarda `true`.
+     */
+    rubricConfirmed?: boolean;
 }
 
 /** Sin campos `undefined` (Firestore los rechaza también anidados) y sin texto vacío. */
@@ -160,7 +167,9 @@ export function cleanProjectWorkTypes(types: ReadonlyArray<ProjectWorkType>): Pr
         const label = t.label?.trim();
         if (!t.id || !label || vistos.has(t.id)) continue;
         vistos.add(t.id);
-        out.push({ ...limpio(t), id: t.id, label });
+        // `rubricConfirmed` solo como `true`: un `false` o basura no dice nada.
+        const { rubricConfirmed, ...resto } = t;
+        out.push({ ...limpio(resto), id: t.id, label, ...(rubricConfirmed === true ? { rubricConfirmed: true } : {}) });
     }
     return out;
 }
@@ -205,7 +214,8 @@ export function resolveProjectCharge(
     const tipo = workTypeId ? projectWorkTypes(project).find(t => t.id === workTypeId) ?? null : null;
     const out: ProjectCharge = {};
     if (tipo) {
-        const { id: _id, label: _label, ...resto } = tipo;
+        // `rubricConfirmed` es del escritorio del curso, no del estudio.
+        const { id: _id, label: _label, rubricConfirmed: _rc, ...resto } = tipo;
         Object.assign(out, resto);
     }
     if (curso?.course?.trim()) out.course = curso.course.trim();

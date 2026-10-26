@@ -78,4 +78,16 @@ describe('los tipos de trabajo del proyecto', () => {
         ])).toEqual([{ ...tp, label: 'TP' }]);
         expect(cleanProjectCourseInfo({ course: '  ', styleGuideId: undefined })).toEqual({ course: null });
     });
+
+    it('«El curso no da rúbrica» (`rubricConfirmed`) se guarda solo como true y no pasa al estudio', () => {
+        const limpios = cleanProjectWorkTypes([
+            { ...tp, rubricConfirmed: true },
+            { ...paper, rubricConfirmed: false },
+            { id: 'x', label: 'X', rubricConfirmed: 'sí' as unknown as boolean },
+        ]);
+        expect(limpios[0]).toEqual({ ...tp, rubricConfirmed: true });
+        expect(limpios[1]).not.toHaveProperty('rubricConfirmed');
+        expect(limpios[2]).toEqual({ id: 'x', label: 'X' });
+        expect(resolveProjectCharge({ workTypes: limpios }, tp.id)).not.toHaveProperty('rubricConfirmed');
+    });
 });
