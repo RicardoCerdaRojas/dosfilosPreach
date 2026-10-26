@@ -33,9 +33,12 @@ const DINAMICAS = [
     ...['mixed', 'exegetical', 'research'].map(m => `charge.method.${m}`),
     ...['notDelivered', 'delivered', 'returned', 'noFeedback'].map(d => `works.delivery.${d}`),
     ...['empty-rule', 'rule-too-long', 'project-unavailable', 'pattern-not-found', 'guide-not-found', 'guide-without-manifest', 'guide-full'].map(c => `guideRule.errors.${c}`),
+    ...['calendar', 'works', 'feedback'].map(f => `later.${f}`),
+    ...['notForCourse', 'professorChanged'].map(s => `discard.suggestion.${s}`),
+    ...['default', 'system', 'unset'].flatMap(r => [`charge.rubric.${r}`, `charge.rubric.${r}Confirmed`]),
 ];
 
-const PATRON = /'((?:calendar|charge|works|feedback|feedbackDialog|guideRule|import|sources|common|toast)\.[\w.-]+)'/g;
+const PATRON = /'((?:calendar|charge|works|feedback|feedbackDialog|guideRule|import|sources|common|toast|discard|discardChanges|later|create)\.[\w.-]+)'/g;
 
 /** Las claves literales que piden los archivos del escritorio del Curso y la página de creación. */
 function clavesUsadas(): string[] {

@@ -223,7 +223,7 @@
     "roadmap": {
         "label": "Path · {{type}}",
         "loading": "Loading the roadmap…",
-        "loadError": "The project roadmap could not be loaded.",
+        "loadError": "Part of the project could not be loaded (studies, series, library or rubrics). Nothing saved was lost.",
         "phaseLabel": "Phase {{number}}",
         "allComplete": {
             "title": "All phases complete",
@@ -304,6 +304,7 @@
         },
         "seeAll": "See all ({{count}})",
         "seeLess": "See less",
+        "loading": "Loading the material…",
         "chars": "{{n}} characters"
     },
     "linkSession": {
@@ -628,22 +629,23 @@
     "desk": {
         "exegetical": {
             "passage": {
-                "todo": "No framing yet",
-                "oldNote": "There is an earlier note to move into the framing",
-                "partial": "Framing half done · fields to complete: {{missing}}",
+                "todo": "You haven't written your reading of the book yet",
+                "oldNote": "There is an earlier note to move into your reading of the book",
+                "partial": "Half written: the book or your one-sentence central idea is missing · empty fields: {{missing}}",
                 "ready": "Book and central idea written · movements: {{movements}}"
             },
             "division": {
                 "todo": "No series yet",
                 "draft": "There is an unfinished planner analysis",
                 "readySeries": "Planned pericopes: {{units}} · series: {{series}}",
-                "readyWithoutSeries": "You marked the division as done without a series"
+                "readyWithoutSeries": "You marked the division as done without a series",
+                "readyStudies": "No series · assembled studies: {{count}}"
             },
             "pericopes": {
                 "empty": "No studies yet",
-                "todo": "0 of {{total}} pericopes studied",
-                "progress": "{{done}} of {{total}} pericopes studied · noted in your reading: {{annotated}}",
-                "ready": "All {{total}} pericopes studied · noted in your reading: {{annotated}}"
+                "todo": "0 of {{total}} pericopes with their study assembled",
+                "progress": "{{done}} of {{total}} pericopes with their study assembled · noted in your reading: {{annotated}}",
+                "ready": "All {{total}} pericopes with their study assembled · noted in your reading: {{annotated}}"
             },
             "synthesis": {
                 "todo": "No notes in your reading yet",
@@ -656,16 +658,18 @@
             "todo": "No bibliography yet",
             "candidatesOnly": "Candidates only ({{candidates}}): none approved yet",
             "requiredToAcquire": "Approved: {{approved}} · required, still to get: {{count}}",
-            "requirementsPending": "Approved: {{approved}} · requirements {{met}}/{{total}}",
+            "requirementsPending": "Approved: {{approved}} · requirements: {{met}} of {{total}}",
             "ready": "Approved: {{approved}} · still to get: {{toAcquire}}",
-            "readyRequirements": "Approved: {{approved}} · still to get: {{toAcquire}} · requirements {{met}}/{{total}}",
+            "readyRequirements": "Approved: {{approved}} · still to get: {{toAcquire}} · requirements: {{met}} of {{total}}",
             "readyManual": "Added by hand: {{count}}"
         },
         "course": {
             "charge": {
                 "todo": "No work types yet",
-                "unresolved": "Work types: {{types}} · without a settled rubric: {{unresolved}}",
-                "ready": "Work types: {{types}}, each with its rubric"
+                "unresolved": "Work types: {{types}} · without a settled rubric: {{unresolved}} · with a template that no longer exists: {{missing}}",
+                "ready": "Work types: {{types}}, each with its rubric",
+                "loading": "Work types: {{types}} · checking their rubrics…",
+                "noProfessorRubric": "Work types: {{types}} · without the professor's rubric: {{count}}"
             },
             "calendar": {
                 "todo": "No calendar yet",
@@ -681,8 +685,8 @@
             },
             "feedback": {
                 "todo": "No feedback yet",
-                "progress": "Feedback: {{returned}} of {{delivered}} deliveries · repeated corrections to decide: {{pendingPatterns}}",
-                "ready": "Feedback: {{returned}}, and every repeated correction decided"
+                "progress": "With feedback: {{returned}} · without feedback: {{none}} · of {{delivered}} deliveries · repeated corrections to decide: {{pendingPatterns}}",
+                "ready": "With feedback: {{returned}} · without feedback: {{none}} · every repeated correction decided"
             }
         },
         "now": {
@@ -697,7 +701,7 @@
             "createScheduled": "{{label}} is next",
             "passage": "Write your reading of the book",
             "passagePartial": "Complete your reading of the book",
-            "passageOldNote": "Move your earlier note into the framing",
+            "passageOldNote": "Move your earlier note into your reading of the book",
             "sources": "Choose your sources",
             "division": "Divide the book into pericopes",
             "pericope": "Pericope {{position}} · {{label}}",
@@ -705,7 +709,7 @@
             "newStudy": "Start the study of a pericope",
             "reviseIdea": "Revise your central idea with what you noted",
             "annotate": "Note what {{label}} says about your reading",
-            "synthesis": "Note what each study says about your reading",
+            "synthesis": "Note what each pericope shows about your reading",
             "charge": "Define what the course asks for",
             "calendar": "Build the delivery calendar",
             "work": "Keep going with {{label}}",
@@ -719,7 +723,7 @@
             "recentOutput": "Pick up {{label}}"
         },
         "notes": {
-            "oldNote": "You have an earlier note: move it into the framing",
+            "oldNote": "Move your earlier note into your reading of the book",
             "readingPending_one": "One assembled study is not yet noted in your reading",
             "readingPending_other": "{{count}} assembled studies are not yet noted in your reading",
             "revisionStale": "Your revised idea is out of date: revise it again",
@@ -729,16 +733,18 @@
             "pendingPatterns_one": "One correction repeats and is undecided",
             "pendingPatterns_other": "{{count}} corrections repeat and are undecided",
             "phase": {
-                "passage": "Your reading of the book is not complete yet",
+                "passage": "Write your reading of the book: without it, your studies have nothing to correct",
                 "sources": "Your sources are not ready yet",
                 "division": "The book still needs to be divided into pericopes",
                 "pericopes": "Some pericopes are still to be studied",
                 "synthesis": "Your central idea still needs revising",
-                "charge": "What the course asks for is not defined yet",
+                "charge": "What the course asks for is not complete yet",
                 "calendar": "The delivery calendar is incomplete",
                 "works": "Some assignments are still to be assembled",
                 "feedback": "Some feedback is still to be recorded"
-            }
+            },
+            "noFeedbackMany_one": "One delivery without recorded feedback",
+            "noFeedbackMany_other": "{{count}} deliveries without recorded feedback"
         },
         "journey": {
             "label": "Path",
@@ -748,7 +754,8 @@
             "status": {
                 "todo": "Not started",
                 "doing": "In progress",
-                "ready": "Ready"
+                "ready": "Ready",
+                "loading": "Loading…"
             },
             "nowLabel": "Now",
             "kind": {
@@ -769,7 +776,7 @@
                 "scheduleEntry": "See the delivery",
                 "createScheduled": "Create {{label}}",
                 "phase": "Go to the phase",
-                "framing": "Open the framing",
+                "framing": "Write your reading",
                 "stateOfArt": "Choose your sources",
                 "planSeries": "Plan the series",
                 "reviseIdea": "Revise your central idea",
@@ -786,31 +793,31 @@
                 "exegetical": {
                     "passage": {
                         "name": "Your reading of the book",
-                        "purpose": "Write what you think the book says before dividing it, so you have something to measure your findings against.",
-                        "wellDone": "The book, why you study it, its movements and a one-sentence central idea, written by you.",
-                        "commonError": "Waiting until the studies are done to write it: by then there is no reading left for the text to correct."
+                        "purpose": "Read the whole book, several times, and write what you think it says before dividing it: a hypothesis the text can confirm or correct.",
+                        "wellDone": "The book, why you study it, its movements and your central idea in one sentence (what the book is about and what it says about it), written by you.",
+                        "commonError": "Waiting until the studies are done to write it: by then there is no reading left for the text to correct. Or copying it from a commentary or the overview: then it is not your reading."
                     },
                     "sources": {
                         "name": "Sources",
-                        "purpose": "Choose with judgment the works you will use for the whole book: your state of the art, the reasoned list of works you will work with.",
-                        "wellDone": "Approved works of several kinds (commentaries, lexicons, grammars) and the requirements met or accepted on purpose. An approved work can still be «to get».",
+                        "purpose": "Choose with judgment, in your state of the art, the works you will use for the whole book.",
+                        "wellDone": "Works of several kinds —original-language text, commentaries, lexicons, grammars— and from more than one point of view; the requirements met or marked as met on purpose.",
                         "commonError": "Gathering everything in the library without deciding what each work contributes."
                     },
                     "division": {
                         "name": "Division into pericopes",
-                        "purpose": "Divide the book into pericopes (each unit of the text that is preached whole) following the text's own markers.",
+                        "purpose": "Divide the book into pericopes following the text's own markers.",
                         "wellDone": "Each pericope with a beginning and an end the text justifies, ordered in a series.",
                         "commonError": "Cutting by chapters or by the number of Sundays instead of by the units of the text."
                     },
                     "pericopes": {
                         "name": "Studies by pericope",
-                        "purpose": "Study each pericope in depth, in the order of the plan.",
+                        "purpose": "Study each pericope in its context and in the original language, and note what it confirms, nuances or contradicts in your reading of the book.",
                         "wellDone": "Assembled studies, each noted in your reading: what it confirms, nuances or contradicts.",
-                        "commonError": "Opening many studies at once and finishing none."
+                        "commonError": "Studying each pericope as if it stood alone, without asking what it does with the whole book."
                     },
                     "synthesis": {
                         "name": "Synthesis",
-                        "purpose": "Return to your central idea with what the studies said.",
+                        "purpose": "Return to your central idea with what the text showed in each pericope.",
                         "wellDone": "A revised idea, with its reason, that comes from your notes.",
                         "commonError": "Repeating the original idea without looking at what the text nuanced or contradicted."
                     }
@@ -819,12 +826,12 @@
                     "charge": {
                         "name": "What the course asks for",
                         "purpose": "Know what the course asks for before writing: the work types, their rubric, method and guide.",
-                        "wellDone": "Each work type with its rubric settled and, where it applies, its style guide.",
+                        "wellDone": "Each work type with the rubric the professor grades it with and, where it applies, its guide.",
                         "commonError": "Starting the first assignment without knowing which rubric will grade it."
                     },
                     "sources": {
                         "name": "Course sources",
-                        "purpose": "Gather the course bibliography in the state of the art, the reasoned list of works you will work with.",
+                        "purpose": "Gather the course bibliography in your state of the art, with the required works first.",
                         "wellDone": "The required works approved and on hand; the rest chosen for what they bring to each work type.",
                         "commonError": "Leaving a required work «to get» until the week it is due."
                     },
@@ -838,7 +845,7 @@
                         "name": "Assignments",
                         "purpose": "Do each assignment with its type, its rules and its sources.",
                         "wellDone": "Assignments assembled before the date and, if the course asks, without repeating sources from the previous one.",
-                        "commonError": "Finishing at the last minute and delivering without the review before delivering."
+                        "commonError": "Delivering what was assembled without rewriting it in your own words, or without the review before delivering."
                     },
                     "feedback": {
                         "name": "Feedback and learning",
@@ -847,14 +854,19 @@
                         "commonError": "Reading the grade and filing the feedback without changing anything in the next assignment."
                     }
                 }
-            }
+            },
+            "allReadyCourse": "Every phase is ready. When new feedback arrives, record it and decide what goes into your guide.",
+            "laterLine": "{{status}} — {{reason}}"
         },
         "tools": {
             "eyebrow": "At the end",
             "title": "Tools",
             "description": "The languages of the book, to use inside each study, where the passage is already set.",
             "hebrewAramaic": "Hebrew and Aramaic",
-            "sourcesEyebrow": "For reference"
+            "sourcesEyebrow": "For reference",
+            "untitledSession": "Untitled session",
+            "openSession": "Open in {{tool}}: {{label}}",
+            "descriptionCourse": "The languages of the course text, to use inside each assignment, where the passage is already set."
         }
     }
 }

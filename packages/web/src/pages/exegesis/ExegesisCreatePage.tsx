@@ -86,6 +86,20 @@ export function ExegesisCreatePage() {
         : null;
     /** Qué tipo de trabajo del proyecto es (etapa 1b): TP semanal, paper final. */
     const [workTypeId, setWorkTypeId] = useState<string | null>(null);
+    // Si el estudiante cambia el tipo después de llegar con una entrega (o
+    // con el tipo de la URL), el trabajo ya no la cumple: «Crear el TP #10»
+    // y elegir «Ensayo» no puede dejar el ensayo como TP #10. Se crea una
+    // entrada nueva del tipo elegido, sin fecha, con el número que sigue de
+    // ESE tipo (y se dice antes de crear). Una entrega sin tipo conocido no
+    // pone condición: el estudiante lo está eligiendo.
+    const tipoPedido = entradaDelCalendario ? entradaDelCalendario.workTypeId || null : tipoDeLaUrl;
+    const otroTipo = !!entrega && !!workTypeId && !!tipoPedido && workTypeId !== tipoPedido;
+    const entregaFinal = !entrega
+        ? null
+        : otroTipo
+            // Sin entrega del calendario (semana a semana), solo cambia el número que sigue.
+            ? { entry: null, label: nextLabelFor(workTypeId!, proyectoElegido?.courseSchedule ?? []) ?? '', changedFrom: entrega.entry ? entrega.label : null }
+            : { ...entrega, changedFrom: null as string | null };
     const tiposDelProyecto = projectWorkTypes(proyectoElegido);
     /** Lo que hereda del estado del arte del proyecto (etapa 2). */
     const [fuentesDelProyecto, setFuentesDelProyecto] = useState<AddProjectSourceInput[]>([]);
@@ -268,17 +282,40 @@ export function ExegesisCreatePage() {
      * dónde vivir. Si falla, el trabajo ya existe: se avisa y se sigue.
      */
     const vincularEntrega = async (proyecto: string, paperId: string) => {
-        if (!entrega) return;
-        const ops: CourseOp[] = entrega.entry
-            ? [{ op: 'linkPaper', entryId: entrega.entry.id, paperId }]
+        if (!entregaFinal) return;
+        const label = entregaFinal.label || (passage ? formatPassageForReader(passage, displayLanguage) : '');
+        const ops: CourseOp[] = entregaFinal.entry
+            ? [{ op: 'linkPaper', entryId: entregaFinal.entry.id, paperId }]
             // Sin rótulo, el pasaje: la fila de la mesa necesita cómo llamarse.
-            : [{ op: 'upsertEntry', entry: { workTypeId: workTypeId ?? '', label: entrega.label || (passage ? formatPassageForReader(passage, displayLanguage) : ''), paperId } }];
+            : [{ op: 'upsertEntry', entry: { workTypeId: workTypeId ?? '', label, paperId } }];
+        const vincular = async () => { await updateProject?.mutateAsync({ projectId: proyecto, courseOps: ops }); };
         try {
-            await updateProject?.mutateAsync({ projectId: proyecto, courseOps: ops });
+            await vincular();
+            return;
+        } catch (err) {
+            console.error('[exegesis] link schedule entry failed, retrying:', err);
+        }
+        // Un segundo intento: el corte suele ser de un momento.
+        try {
+            await vincular();
+            return;
         } catch (err) {
             console.error('[exegesis] link schedule entry failed:', err);
-            toast.error(tc('create.linkFailed', { label: entrega.label }));
         }
+        // El trabajo ya existe: crearlo de nuevo dejaría dos. El aviso queda
+        // abierto (también en la página siguiente) con «Vincular» para reintentar.
+        const avisar = () => toast.error(tc('create.linkFailed', { label }), {
+            duration: Infinity,
+            action: {
+                label: tc('create.linkRetry'),
+                onClick: () => {
+                    vincular()
+                        .then(() => toast.success(tc('create.linked', { label })))
+                        .catch(e => { console.error('[exegesis] link schedule entry retry failed:', e); avisar(); });
+                },
+            },
+        });
+        avisar();
     };
 
     const handleCreate = async () => {
@@ -308,8 +345,10 @@ export function ExegesisCreatePage() {
                 ...(cover ? { cover } : {}),
             });
             toast.success(t('create.toast.created'));
-            if (entrega && proyectoElegido) await vincularEntrega(proyectoElegido.id, paper.id);
-            navigate(`/dashboard/exegesis/${paper.id}/setup`);
+            if (entregaFinal && proyectoElegido) await vincularEntrega(proyectoElegido.id, paper.id);
+            // Nacido en un proyecto, la configuración y el estudio vuelven a él.
+            const vuelta = proyectoElegido ? `?from=${encodeURIComponent(`/dashboard/projects/${proyectoElegido.id}`)}` : '';
+            navigate(`/dashboard/exegesis/${paper.id}/setup${vuelta}`);
         } catch (err) {
             console.error('[exegesis] create failed:', err);
             toast.error(t('create.toast.createFailed'));
@@ -423,13 +462,17 @@ export function ExegesisCreatePage() {
                         onWorkType={tipo => aplicarEncargo(proyectoElegido, tipo)}
                     />
                 )}
-                {entrega && (
+                {entregaFinal && (
                     <p role="note" data-testid="create-schedule-entry" className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground">
-                        {entrega.entry
-                            ? tc('create.fulfills', { label: entrega.label })
-                            : entrega.label
-                                ? tc('create.newEntry', { label: entrega.label })
-                                : tc('create.newEntryUnlabeled')}
+                        {entregaFinal.changedFrom !== null
+                            ? entregaFinal.label
+                                ? tc('create.otherType', { from: entregaFinal.changedFrom, label: entregaFinal.label })
+                                : tc('create.otherTypeUnlabeled', { from: entregaFinal.changedFrom })
+                            : entregaFinal.entry
+                                ? tc('create.fulfills', { label: entregaFinal.label })
+                                : entregaFinal.label
+                                    ? tc('create.newEntry', { label: entregaFinal.label })
+                                    : tc('create.newEntryUnlabeled')}
                     </p>
                 )}
                 <ProjectBibliographyOffer project={proyectoElegido} bookId={passage?.bookId ?? null} onChange={setFuentesDelProyecto} />

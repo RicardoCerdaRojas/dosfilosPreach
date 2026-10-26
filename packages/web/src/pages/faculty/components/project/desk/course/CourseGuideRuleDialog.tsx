@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
-import { courseGuideCandidates, GUIDE_RULE_TEXT_MAX, projectWorkTypes, type AIProject, type DeskPatternRow } from '@dosfilos/domain';
-import type { AddRuleToStyleGuideErrorCode } from '@dosfilos/application';
-import { toast } from 'sonner';
+import { useEffect, useId, useState } from 'react';
+import { courseGuideCandidates, GUIDE_RULE_TEXT_MAX, normalizeGuideRule, projectWorkTypes, type AIProject, type DeskPatternRow } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
-import { useCourseRecordActions } from '@/hooks/faculty/useCourseRecordActions';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
-import { FIELD, TOUCH } from './courseDeskFormat';
+import { cn } from '@/lib/utils';
+import { DIALOG, DIALOG_BODY, DIALOG_FOOTER, DIALOG_HEADER, FIELD, TOUCH } from './courseDeskFormat';
+import type { AddRuleInput } from './useCourseOps';
 
 interface CourseGuideRuleDialogProps {
     project: AIProject;
@@ -16,19 +15,23 @@ interface CourseGuideRuleDialogProps {
     workTypeIds: ReadonlyArray<string>;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** Escribe la regla en la guía (la espera única del escritorio); `true` si quedó. */
+    onConfirm: (input: AddRuleInput) => Promise<boolean>;
+    saving: boolean;
 }
 
 /**
  * «Pasar a tu guía» (§9.1): la corrección que se repite pasa a la guía que
- * leen el analizador y el revisor de prosa del trabajo siguiente. El texto
- * de la regla lo escribe o lo confirma el estudiante (empieza con el nombre
- * que él le dio al patrón; aquí no se redacta por él). La guía destino: la
- * del tipo de trabajo o la del curso.
+ * leen el análisis y la revisión antes de entregar del trabajo siguiente. La
+ * regla la escribe el estudiante, como instrucción para sí mismo: el nombre
+ * del patrón va de ejemplo en el campo (no como valor) y una regla igual al
+ * nombre no se acepta, porque «cierre doble» no dice qué hacer. La guía
+ * destino: la del tipo de trabajo o la del curso.
  */
-export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onOpenChange }: CourseGuideRuleDialogProps) {
+export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onOpenChange, onConfirm, saving }: CourseGuideRuleDialogProps) {
     const { t } = useTranslation('projectDeskCourse');
+    const ids = useId();
     const { guides } = useUserStyleGuides();
-    const { addRuleToGuide } = useCourseRecordActions();
     const candidatas = courseGuideCandidates(project, workTypeIds.length ? workTypeIds : undefined);
     // Sin candidatas para esos tipos (otra guía por tipo), se ofrecen todas las del curso.
     const opciones = candidatas.length ? candidatas : courseGuideCandidates(project);
@@ -38,7 +41,7 @@ export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onO
 
     useEffect(() => {
         if (!open || !pattern) return;
-        setRuleText(pattern.name);
+        setRuleText('');
         setGuideId(opciones[0]?.guideId ?? '');
         // Solo al abrir.
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,54 +55,54 @@ export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onO
             ? t('guideRule.optionCourse', { name: nombreGuia(c.guideId) })
             : t('guideRule.optionWorkType', { name: nombreGuia(c.guideId), types: para });
     };
+    const texto = ruleText.trim();
+    const igualAlNombre = !!texto && normalizeGuideRule(texto) === normalizeGuideRule(pattern.name);
 
     const confirmar = async () => {
-        try {
-            const r = await addRuleToGuide.mutateAsync({ projectId: project.id, patternId: pattern.patternId, guideId, ruleText: ruleText.trim() });
-            toast.success(t(r.added ? 'guideRule.added' : 'guideRule.already'));
-            onOpenChange(false);
-        } catch (err) {
-            console.error('[projects] add rule to guide failed:', err);
-            const code = errorCode(err);
-            toast.error(t(code ? `guideRule.errors.${code}` : 'toast.saveFailed'));
-        }
+        if (await onConfirm({ patternId: pattern.patternId, guideId, ruleText: texto })) onOpenChange(false);
     };
-    const pending = addRuleToGuide.isPending;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
+            <DialogContent className={cn(DIALOG, 'sm:max-w-lg')}>
+                <DialogHeader className={DIALOG_HEADER}>
                     <DialogTitle className="font-reading">{t('guideRule.title', { name: pattern.name })}</DialogTitle>
                     <DialogDescription>{t('guideRule.hint')}</DialogDescription>
                 </DialogHeader>
-                {opciones.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t('guideRule.noGuide')}</p>
-                ) : (
-                    <div className="space-y-3">
-                        <label className="block space-y-1">
-                            <span className="text-xs text-muted-foreground">{t('guideRule.ruleText')}</span>
-                            <textarea
-                                className={`${FIELD} min-h-24 resize-y`}
-                                rows={4}
-                                value={ruleText}
-                                maxLength={GUIDE_RULE_TEXT_MAX}
-                                onChange={e => setRuleText(e.target.value)}
-                            />
-                            <span className="block text-[11px] text-muted-foreground">{t('guideRule.ruleTextHint')}</span>
-                        </label>
-                        <label className="block space-y-1">
-                            <span className="text-xs text-muted-foreground">{t('guideRule.guide')}</span>
-                            <select className={FIELD} value={guideId} onChange={e => setGuideId(e.target.value)}>
-                                {opciones.map(c => <option key={c.guideId} value={c.guideId}>{rotulo(c)}</option>)}
-                            </select>
-                        </label>
-                    </div>
-                )}
-                <DialogFooter>
+                <div className={cn(DIALOG_BODY, 'space-y-3')}>
+                    {opciones.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{t('guideRule.noGuide')}</p>
+                    ) : (
+                        <>
+                            <label className="block space-y-1">
+                                <span className="text-xs text-muted-foreground">{t('guideRule.ruleText')}</span>
+                                <textarea
+                                    className={`${FIELD} min-h-24 resize-y`}
+                                    rows={4}
+                                    value={ruleText}
+                                    maxLength={GUIDE_RULE_TEXT_MAX}
+                                    placeholder={pattern.name}
+                                    onChange={e => setRuleText(e.target.value)}
+                                    aria-describedby={`${ids}-hint`}
+                                    aria-invalid={igualAlNombre || undefined}
+                                />
+                                <span id={`${ids}-hint`} className={cn('block text-[11px]', igualAlNombre ? 'font-medium text-warning-subtle-foreground' : 'text-muted-foreground')}>
+                                    {t(igualAlNombre ? 'guideRule.sameAsName' : 'guideRule.ruleTextHint')}
+                                </span>
+                            </label>
+                            <label className="block space-y-1">
+                                <span className="text-xs text-muted-foreground">{t('guideRule.guide')}</span>
+                                <select className={FIELD} value={guideId} onChange={e => setGuideId(e.target.value)}>
+                                    {opciones.map(c => <option key={c.guideId} value={c.guideId}>{rotulo(c)}</option>)}
+                                </select>
+                            </label>
+                        </>
+                    )}
+                </div>
+                <DialogFooter className={DIALOG_FOOTER}>
                     <Button variant="ghost" className={TOUCH} onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
                     {opciones.length > 0 && (
-                        <Button className={TOUCH} onClick={() => void confirmar()} disabled={pending || !ruleText.trim() || !guideId}>
+                        <Button className={TOUCH} onClick={() => void confirmar()} disabled={saving || !texto || igualAlNombre || !guideId}>
                             {t('guideRule.confirm')}
                         </Button>
                     )}
@@ -107,18 +110,4 @@ export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onO
             </DialogContent>
         </Dialog>
     );
-}
-
-const CODIGOS: ReadonlySet<AddRuleToStyleGuideErrorCode> = new Set([
-    'empty-rule', 'rule-too-long', 'project-unavailable', 'pattern-not-found', 'guide-not-found', 'guide-without-manifest', 'guide-full',
-]);
-
-/**
- * El código estable de `AddRuleToStyleGuideError`, leído por forma y no con
- * `instanceof`: importar la clase arrastraría todos los servicios de la capa
- * de aplicación a este componente.
- */
-function errorCode(err: unknown): AddRuleToStyleGuideErrorCode | null {
-    const code = (err as { code?: unknown } | null)?.code;
-    return typeof code === 'string' && CODIGOS.has(code as AddRuleToStyleGuideErrorCode) ? code as AddRuleToStyleGuideErrorCode : null;
 }

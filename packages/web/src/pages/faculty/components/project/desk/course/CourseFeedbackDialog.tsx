@@ -12,8 +12,13 @@ import {
 } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useTranslation } from '@/i18n';
-import { FIELD, TOUCH } from './courseDeskFormat';
+import { cn } from '@/lib/utils';
+import { useConfirmDiscard } from './ConfirmDiscard';
+import { DESTRUCTIVE, DIALOG, DIALOG_BODY, DIALOG_FOOTER, DIALOG_HEADER, FIELD, TOUCH } from './courseDeskFormat';
 
 /** El valor del selector que pide escribir el nombre de un patrón nuevo. */
 const NUEVO = '__new';
@@ -58,17 +63,26 @@ export function CourseFeedbackDialog({ entry, patterns, open, onOpenChange, onSu
     const [text, setText] = useState('');
     const [grade, setGrade] = useState('');
     const [rows, setRows] = useState<CorrectionRow[]>([]);
+    /** Lo que había al abrir: cerrar con cambios pregunta antes (una devolución pegada no se pierde con Escape). */
+    const [inicial, setInicial] = useState('');
+    const [quitando, setQuitando] = useState(false);
+    const foto = (x: { text: string; grade: string; rows: CorrectionRow[] }) =>
+        JSON.stringify([x.text, x.grade, x.rows.map(r => [r.key, r.patternId, r.patternName, r.note])]);
 
     useEffect(() => {
         if (!open) return;
         const conContenido = previa && !previa.none ? previa : null;
+        const filas = (conContenido?.corrections ?? []).map(c => ({ key: c.id, patternId: c.patternId, patternName: '', note: c.note ?? '', saved: true }));
         setText(conContenido?.text ?? '');
         setGrade(conContenido?.grade ?? '');
-        setRows((conContenido?.corrections ?? []).map(c => ({ key: c.id, patternId: c.patternId, patternName: '', note: c.note ?? '', saved: true })));
+        setRows(filas);
+        setInicial(foto({ text: conContenido?.text ?? '', grade: conContenido?.grade ?? '', rows: filas }));
+        setQuitando(false);
         // Solo al abrir: lo que se escribe no se pisa con cada render.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, entry?.id]);
 
+    const { requestOpenChange, confirm } = useConfirmDiscard(open && foto({ text, grade, rows }) !== inicial, onOpenChange);
     if (!entry) return null;
     const cambiar = (key: string, patch: Partial<CorrectionRow>) => setRows(rs => rs.map(r => (r.key === key ? { ...r, ...patch } : r)));
     const filaValida = (r: CorrectionRow) => (r.patternId === NUEVO ? !!r.patternName.trim() : patterns.some(p => p.id === r.patternId));
@@ -99,18 +113,21 @@ export function CourseFeedbackDialog({ entry, patterns, open, onOpenChange, onSu
         if (await onSubmit([{ op: 'markNoFeedback', entryId: entry.id }], 'toast.noFeedbackSaved')) onOpenChange(false);
     };
     const quitar = async () => {
+        setQuitando(false);
         if (await onSubmit([{ op: 'clearFeedback', entryId: entry.id }], 'toast.feedbackCleared')) onOpenChange(false);
     };
+    const guardadas = previa && !previa.none ? previa.corrections.length : 0;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-                <DialogHeader>
+        <>
+        <Dialog open={open} onOpenChange={requestOpenChange}>
+            <DialogContent className={cn(DIALOG, 'sm:max-w-2xl')}>
+                <DialogHeader className={DIALOG_HEADER}>
                     <DialogTitle className="font-reading">{t('feedbackDialog.title', { label: entry.label })}</DialogTitle>
                     <DialogDescription>{t('feedbackDialog.hint')}</DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4">
+                <div className={cn(DIALOG_BODY, 'space-y-4')}>
                     <label className="block space-y-1">
                         <span className="text-xs text-muted-foreground">{t('feedbackDialog.text')}</span>
                         <textarea
@@ -168,7 +185,8 @@ export function CourseFeedbackDialog({ entry, patterns, open, onOpenChange, onSu
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className={TOUCH}
+                                            // Compacta: un cuadrado de 44 px, a la derecha; no una franja a todo el ancho en el teléfono.
+                                            className="h-11 w-11 justify-self-end p-0 sm:h-9 sm:w-9"
                                             onClick={() => setRows(rs => rs.filter(x => x.key !== r.key))}
                                             aria-label={t('feedbackDialog.removeCorrection', { n: i + 1 })}
                                         >
@@ -186,10 +204,11 @@ export function CourseFeedbackDialog({ entry, patterns, open, onOpenChange, onSu
                     </fieldset>
                 </div>
 
-                <DialogFooter className="gap-2 sm:justify-between">
+                <DialogFooter className={cn(DIALOG_FOOTER, 'sm:justify-between')}>
                     <div className="flex flex-col gap-2 sm:flex-row">
                         {previa && (
-                            <Button variant="ghost" className={TOUCH} onClick={() => void quitar()} disabled={saving}>
+                            // Borra lo registrado: se confirma diciendo qué se pierde.
+                            <Button variant="ghost" className={TOUCH} onClick={() => setQuitando(true)} disabled={saving}>
                                 {t(previa.none ? 'feedbackDialog.clearNone' : 'feedbackDialog.clear')}
                             </Button>
                         )}
@@ -200,11 +219,31 @@ export function CourseFeedbackDialog({ entry, patterns, open, onOpenChange, onSu
                         )}
                     </div>
                     <div className="flex flex-col-reverse gap-2 sm:flex-row">
-                        <Button variant="ghost" className={TOUCH} onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
+                        <Button variant="ghost" className={TOUCH} onClick={() => requestOpenChange(false)}>{t('common.cancel')}</Button>
                         <Button className={TOUCH} onClick={() => void guardar()} disabled={saving || vacia || incompletas}>{t('feedbackDialog.save')}</Button>
                     </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        {confirm}
+        <AlertDialog open={quitando} onOpenChange={setQuitando}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{t(previa?.none ? 'feedbackDialog.clearNoneTitle' : 'feedbackDialog.clearTitle', { label: entry.label })}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {previa?.none
+                            ? t('feedbackDialog.clearNoneHint')
+                            : t('feedbackDialog.clearHint', { count: guardadas })}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel className={TOUCH}>{t('common.cancel')}</AlertDialogCancel>
+                    <AlertDialogAction className={cn(TOUCH, DESTRUCTIVE)} onClick={() => void quitar()}>
+                        {t(previa?.none ? 'feedbackDialog.clearNone' : 'feedbackDialog.clear')}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }

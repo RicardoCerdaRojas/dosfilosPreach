@@ -23,7 +23,8 @@
   "common": {
     "cancel": "Cancelar",
     "save": "Guardar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "close": "Cerrar"
   },
   "toast": {
     "saved": "Cambios guardados.",
@@ -37,7 +38,8 @@
     "noFeedbackSaved": "Marcado «sin devolución».",
     "feedbackCleared": "Devolución quitada.",
     "patternDiscarded": "Corrección descartada.",
-    "patternReopened": "La corrección vuelve a quedar por decidir."
+    "patternReopened": "La corrección vuelve a quedar por decidir.",
+    "rubricConfirmed": "Listo: ese tipo de trabajo se evalúa con la rúbrica que elegiste, porque el curso no da una."
   },
   "charge": {
     "typesLabel": "Tipos de trabajo del curso",
@@ -53,16 +55,24 @@
     "guideRules_other": "{{name}} · {{count}} reglas",
     "rubric": {
       "template": "Rúbrica",
-      "default": "Rúbrica por defecto",
-      "system": "Rúbrica del sistema",
+      "default": "Tu rúbrica por defecto, sin confirmar",
+      "system": "Rúbrica del sistema, sin confirmar",
       "unset": "Sin rúbrica elegida",
-      "missing": "Su rúbrica ya no existe"
+      "missing": "Su rúbrica ya no existe",
+      "loading": "Rúbrica: cargando…",
+      "systemConfirmed": "Rúbrica del sistema (el curso no da rúbrica)",
+      "defaultConfirmed": "Tu rúbrica por defecto (el curso no da rúbrica)",
+      "unsetConfirmed": "Rúbrica del sistema (el curso no da rúbrica)"
     },
     "method": {
       "mixed": "Mixto",
       "exegetical": "Exegético",
       "research": "Investigación"
-    }
+    },
+    "confirmHint": "Estos tipos de trabajo no tienen la rúbrica del profesor. Si el curso no da una, confírmalo; si la da, cárgala en «Editar lo que pide el curso».",
+    "confirmLabel": "{{type}}: el curso no da rúbrica",
+    "confirmSystem": "{{type}}: el curso no da rúbrica, uso la del sistema",
+    "confirmDefault": "{{type}}: el curso no da rúbrica, uso la mía por defecto"
   },
   "calendar": {
     "modeLabel": "Cómo trabaja el curso",
@@ -75,7 +85,7 @@
     "empty": "Todavía no hay entregas. Agrega la primera con su tipo y su fecha.",
     "emptyFree": "Sin calendario: cada trabajo que crees desde la mesa queda aquí como entrega, sin fecha.",
     "listLabel": "Entregas del curso",
-    "noLabel": "Sin rótulo",
+    "noLabel": "Sin nombre",
     "missingType": "Sin tipo de trabajo",
     "due": "vence {{date}}",
     "noDate": "sin fecha",
@@ -88,8 +98,8 @@
     "formHint": "El tipo de trabajo decide con qué rúbrica, método y guía nace el trabajo.",
     "workType": "Tipo de trabajo",
     "pickWorkType": "Elige un tipo",
-    "label": "Rótulo",
-    "labelHint": "Cómo la llama el curso: «TP #9», «Ensayo», «Paper final».",
+    "label": "Nombre",
+    "labelHint": "Cómo lo llama el curso: «TP #9», «Ensayo», «Paper final».",
     "labelSuggested": "Sugerido: «{{label}}», el número que sigue. Puedes cambiarlo.",
     "passage": "Pasaje (opcional)",
     "passagePlaceholder": "4:13-5:6",
@@ -100,7 +110,7 @@
     "noWorkTypes": "Primero define los tipos de trabajo en «Lo que pide el curso».",
     "removeTitle": "¿Quitar «{{label}}» del calendario?",
     "removeHint": "El trabajo, si existe, no se borra: solo deja de figurar como entrega.",
-    "removeWithRecord": "Esta entrega tiene registrada la entrega o la devolución del profesor, y se pierden con ella. El trabajo no se borra.",
+    "removeWithRecord": "Con ella se borra lo que registraste de esta entrega: que la entregaste y, si la hay, la devolución del profesor con su nota y sus correcciones, que dejan de contar en tu registro. El trabajo no se borra.",
     "removeConfirm": "Quitar",
     "paper": "Trabajo que la cumple",
     "noPaper": "Ninguno todavía",
@@ -131,7 +141,9 @@
     "sources": {
       "first": "Primero de su tipo",
       "noRepeatFrom": "Sin repetir de {{label}}",
-      "repeats": "Repite {{sources}}"
+      "repeats": "Repite {{sources}}",
+      "unknown": "Sin datos para comparar",
+      "unknownFrom": "Sin datos para comparar con {{label}}"
     },
     "delivery": {
       "notDelivered": "Sin entregar",
@@ -155,7 +167,8 @@
     "offCalendar_one": "1 trabajo del curso no figura como entrega:",
     "offCalendar_other": "{{count}} trabajos del curso no figuran como entrega:",
     "importHint": "¿Tienes trabajos anteriores sueltos o en otro proyecto? Tráelos al curso con su tipo, sin cambiarles las reglas.",
-    "import": "Traer los trabajos anteriores"
+    "import": "Traer los trabajos anteriores",
+    "archived": "Archivado · abrir"
   },
   "feedbackDialog": {
     "title": "Devolución de {{label}}",
@@ -178,19 +191,24 @@
     "save": "Guardar la devolución",
     "none": "Sin devolución",
     "clear": "Quitar la devolución",
-    "clearNone": "Quitar «sin devolución»"
+    "clearNone": "Quitar «sin devolución»",
+    "clearTitle": "¿Quitar la devolución de {{label}}?",
+    "clearHint_one": "Se borran lo que escribió el profesor, la nota y 1 corrección, que deja de contar en tu registro. La entrega sigue marcada como entregada.",
+    "clearHint_other": "Se borran lo que escribió el profesor, la nota y {{count}} correcciones, que dejan de contar en tu registro. La entrega sigue marcada como entregada.",
+    "clearNoneTitle": "¿Quitar «sin devolución» de {{label}}?",
+    "clearNoneHint": "La entrega vuelve a esperar la devolución del profesor."
   },
   "feedback": {
     "emptyTitle": "Todavía no hay entregas",
     "empty": "Cuando entregues un trabajo, registra aquí lo que devolvió el profesor. Las correcciones que se repiten forman tu registro.",
-    "summary": "{{delivered}} entregados · {{returned}} con devolución · {{noFeedback}} sin devolución",
+    "summary": "{{delivered}} entregados · {{returned}} con devolución · {{none}} sin devolución",
     "awaitingTitle": "Entregados sin devolución",
     "recordFor": "Registrar la devolución de {{label}}",
     "patternsTitle": "Tu registro de correcciones",
     "patternsEmpty": "Todavía no hay correcciones registradas.",
     "repeats": "se repite",
-    "count_one": "1 corrección en {{entries}} entrega(s)",
-    "count_other": "{{count}} correcciones en {{entries}} entrega(s)",
+    "count_one": "1 corrección",
+    "count_other": "{{count}} correcciones",
     "toGuide": "Pasar a tu guía",
     "discard": "Descartar",
     "discardLabel": "Descartar «{{name}}»",
@@ -200,19 +218,23 @@
     },
     "reopen": "Volver a decidir",
     "reopenLabel": "Volver a decidir «{{name}}»",
-    "reopenGuideHint": "Volver a decidir no quita la regla de la guía: eso se hace en su editor."
+    "reopenGuideHint": "Volver a decidir no quita la regla de la guía: eso se hace en su editor.",
+    "inEntries_one": "en 1 entrega",
+    "inEntries_other": "en {{count}} entregas",
+    "discardedBecause": "Descartada porque: {{reason}}",
+    "toGuideLabel": "Pasar «{{name}}» a tu guía"
   },
   "guideRule": {
     "title": "Pasar «{{name}}» a tu guía",
-    "hint": "La regla entra a la guía que leen el análisis y la revisión de prosa del trabajo siguiente. Escríbela con tus palabras.",
+    "hint": "La regla queda en tu guía: la tendrás a la vista en el trabajo siguiente, y la revisión antes de entregar te avisará si no la cumples.",
     "ruleText": "La regla",
-    "ruleTextHint": "Empieza con el nombre que le diste a la corrección. Escríbela como la quieres leer en tu guía.",
+    "ruleTextHint": "Escríbela como instrucción para ti: qué hacer y qué evitar. El nombre de la corrección queda de ejemplo; escríbela con tus palabras.",
     "guide": "Guía donde queda",
     "optionWorkType": "{{name}} (la de {{types}})",
     "optionCourse": "{{name}} (la del curso)",
     "unnamedGuide": "Guía sin nombre",
     "noGuide": "Este curso no tiene guía de estilo. Elige una en «Editar lo que pide el curso» y vuelve aquí.",
-    "confirm": "Pasar a la guía",
+    "confirm": "Pasar a tu guía",
     "added": "Regla agregada a tu guía.",
     "already": "Tu guía ya tenía esa regla: quedó registrada la decisión.",
     "errors": {
@@ -223,12 +245,13 @@
       "guide-not-found": "No se encontró la guía.",
       "guide-without-manifest": "La guía todavía no tiene sus reglas leídas: ábrela en su editor antes de pasarle una regla.",
       "guide-full": "La guía ya tiene el máximo de reglas."
-    }
+    },
+    "sameAsName": "Así es solo el nombre de la corrección: escribe qué hacer y qué evitar."
   },
   "import": {
     "title": "Traer los trabajos anteriores",
     "hint": "Cada trabajo se vincula al curso con su tipo y queda en el calendario. No se le vuelven a aplicar las reglas del curso: un trabajo entregado no cambia de encargo.",
-    "empty": "No hay trabajos que traer: todos tus estudios ya figuran en el calendario.",
+    "empty": "No hay trabajos que traer: tus estudios sin archivar ya figuran en el calendario.",
     "thisCourse": "de este curso, sin entrega",
     "loose": "suelto",
     "otherProject": "de «{{title}}»",
@@ -244,7 +267,13 @@
     "warningsTitle": "Revisa estos avisos:",
     "warnLinked": "«{{title}}» sigue siendo de su proyecto de origen; aquí aparece vinculado.",
     "warnNotFound": "«{{title}}» no se encontró y no se trajo.",
-    "close": "Entendido"
+    "close": "Entendido",
+    "loading": "Cargando tus estudios…",
+    "loadFailed": "No se pudieron cargar tus estudios. Cierra y vuelve a intentarlo.",
+    "dueDate": "Fecha de entrega del curso (opcional)",
+    "deliveredOn": "Entregado el",
+    "deliveredOnHint": "Viene puesta la fecha del último cambio del estudio ({{date}}). Cámbiala si lo entregaste otro día; si la borras, se usa esa.",
+    "deliveredOnNoDate": "Escribe el día en que lo entregaste; si lo dejas vacío, se usa hoy."
   },
   "sources": {
     "requiredTitle": "Obligatorias por conseguir",
@@ -256,7 +285,34 @@
   "create": {
     "fulfills": "Este trabajo cumple «{{label}}» del calendario del curso.",
     "newEntry": "Este trabajo queda en el calendario del curso como «{{label}}», sin fecha.",
-    "linkFailed": "El trabajo se creó, pero no se pudo vincular con «{{label}}». Vincúlalo editando esa entrega en el calendario del curso.",
-    "newEntryUnlabeled": "Este trabajo queda en el calendario del curso como entrega, sin fecha."
+    "linkFailed": "El trabajo se creó, pero no se pudo vincular con «{{label}}». Pulsa «Vincular» para intentarlo otra vez; no lo crees de nuevo.",
+    "newEntryUnlabeled": "Este trabajo queda en el calendario del curso como entrega, sin fecha.",
+    "linkRetry": "Vincular",
+    "linked": "Listo: el trabajo quedó vinculado con «{{label}}».",
+    "otherType": "Elegiste otro tipo de trabajo: este trabajo no cumple «{{from}}». Queda en el calendario del curso como «{{label}}», sin fecha.",
+    "otherTypeUnlabeled": "Elegiste otro tipo de trabajo: este trabajo no cumple «{{from}}». Queda en el calendario del curso como entrega, sin fecha."
+  },
+  "discardChanges": {
+    "title": "¿Descartar lo que escribiste?",
+    "hint": "Hay cambios sin guardar en este diálogo. Si lo cierras, se pierden.",
+    "keep": "Seguir editando",
+    "discard": "Descartar los cambios"
+  },
+  "discard": {
+    "title": "Descartar «{{name}}»",
+    "hint": "Di en una frase por qué no la pasas a tu guía. La razón queda en tu registro de correcciones.",
+    "reason": "Por qué la descartas",
+    "suggestions": "Sugerencias:",
+    "suggestion": {
+      "notForCourse": "No aplica a este curso",
+      "professorChanged": "El profesor cambió de criterio"
+    },
+    "confirm": "Descartar"
+  },
+  "later": {
+    "sources": "se abre cuando definas lo que pide el curso: las fuentes se eligen para sus trabajos",
+    "calendar": "se abre cuando definas los tipos de trabajo: cada entrega nace con su tipo",
+    "works": "se abre con el calendario: cada trabajo cumple una entrega",
+    "feedback": "se abre cuando entregues el primer trabajo: aquí registras lo que devuelve el profesor"
   }
 }

@@ -16,8 +16,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 let proyectos: unknown[] = [];
 let estudios: unknown[] = [];
 let cargandoEstudios = false;
+let errorEstudios: Error | null = null;
 let sermones: unknown[] = [];
-let biblioteca: { resources: unknown[]; isLoading: boolean } = { resources: [], isLoading: false };
+let errorSermones: string | null = null;
+let cargandoSermones = false;
+let biblioteca: { resources: unknown[]; isLoading: boolean; isError?: boolean } = { resources: [], isLoading: false };
 let rubricas: { rubrics: unknown[]; isLoading: boolean } = { rubrics: [], isLoading: false };
 const getUserSeries = vi.fn();
 const fuentesPedidas = vi.fn();
@@ -28,10 +31,10 @@ vi.mock('@/hooks/faculty/useFacultyProjects', () => ({
     useFacultyProjects: () => ({ projects: proyectos, isLoadingProjects: false, updateProject: { mutateAsync: vi.fn(), isPending: false } }),
 }));
 vi.mock('@/hooks/faculty/useFacultySessions', () => ({ useFacultySessions: () => ({ sessions: [] }) }));
-vi.mock('@/hooks/use-sermons', () => ({ useSermons: () => ({ sermons: sermones, loading: false }) }));
+vi.mock('@/hooks/use-sermons', () => ({ useSermons: () => ({ sermons: sermones, loading: cargandoSermones, error: errorSermones, refetch: vi.fn() }) }));
 vi.mock('@/hooks/useGreekSessions', () => ({ useGreekSessions: () => ({ sessions: [] }) }));
 vi.mock('@/hooks/useHebrewSessions', () => ({ useHebrewSessions: () => ({ sessions: [] }) }));
-vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ papers: estudios, isLoading: cargandoEstudios }) }));
+vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ papers: estudios, isLoading: cargandoEstudios, error: errorEstudios }) }));
 vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => rubricas }));
 vi.mock('@/hooks/library', () => ({ useLibrary: () => biblioteca }));
 const mutacion = { mutateAsync: vi.fn(), isPending: false };
@@ -71,7 +74,10 @@ beforeEach(() => {
     proyectos = [esdras];
     estudios = [];
     cargandoEstudios = false;
+    errorEstudios = null;
     sermones = [];
+    errorSermones = null;
+    cargandoSermones = false;
     biblioteca = { resources: [], isLoading: false };
     rubricas = { rubrics: [], isLoading: false };
     getUserSeries.mockResolvedValue([]);
@@ -173,10 +179,57 @@ describe('las rúbricas del curso', () => {
         proyectos = [curso];
         rubricas = { rubrics: [], isLoading: true };
         const cargando = renderHook(() => useProjectDesk('c'), { wrapper: envolver() });
-        expect(cargando.result.current.desk!.course!.workTypes[0]!.rubricResolved).toBe(true);
+        // FX-1: con el catálogo cargando, la rúbrica no se decide (ni faltante ni resuelta) y la fase 1 dice «cargando».
+        const tipo = cargando.result.current.desk!.course!.workTypes[0]!;
+        expect(tipo.rubricLoading).toBe(true);
+        expect(tipo.rubricResolved).toBe(false);
+        expect(tipo.rubric).not.toBe('missing');
+        expect(cargando.result.current.desk!.phases.find(p => p.id === 'charge')!.loading).toBe(true);
+        // Y el recorrido del Curso espera a las rúbricas (aunque lo demás ya llegó).
+        await waitFor(() => expect(cargando.result.current.blocks.series).toBe('ready'));
+        expect(cargando.result.current.blocks.rubrics).toBe('loading');
+        expect(cargando.result.current.journey).toBe('loading');
 
         rubricas = { rubrics: [{ id: 'otra', isDefault: true, rubric: { sourceRequirements: [] } }], isLoading: false };
         const listo = renderHook(() => useProjectDesk('c'), { wrapper: envolver() });
         expect(listo.result.current.desk!.course!.workTypes[0]!.rubric).toBe('missing');
+    });
+});
+
+describe('cada bloque con su carga y su error (FX-4)', () => {
+    it('si los estudios fallan, la mesa no dice «sin estudios»: el bloque y el recorrido dicen «error»', async () => {
+        errorEstudios = new Error('red');
+        const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(result.current.blocks.series).toBe('ready'));
+        expect(result.current.blocks.studies).toBe('error');
+        expect(result.current.blocks.work).toBe('error');
+        expect(result.current.journey).toBe('error');
+    });
+
+    it('si la biblioteca falla, las fuentes no se dan por vacías: el recorrido dice «error»', async () => {
+        biblioteca = { resources: [], isLoading: false, isError: true };
+        const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(result.current.blocks.series).toBe('ready'));
+        expect(result.current.blocks.sources).toBe('error');
+        expect(result.current.journey).toBe('error');
+    });
+
+    it('los sermones: mientras cargan, el recorrido espera; si fallan, solo su bloque dice «error»', async () => {
+        cargandoSermones = true;
+        const cargando = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(cargando.result.current.blocks.series).toBe('ready'));
+        expect(cargando.result.current.journey).toBe('loading');
+        cargandoSermones = false;
+        errorSermones = 'red';
+        const fallo = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(fallo.result.current.blocks.series).toBe('ready'));
+        expect(fallo.result.current.blocks.sermons).toBe('error');
+        expect(fallo.result.current.journey).toBe('ready');
+    });
+
+    it('en un Exegético, las rúbricas que cargan no detienen el recorrido', async () => {
+        rubricas = { rubrics: [], isLoading: true };
+        const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(result.current.journey).toBe('ready'));
     });
 });

@@ -13,7 +13,7 @@ vi.mock('@/hooks/exegesis/useWorkProfiles', () => ({ useWorkProfiles: () => ({ p
 vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => ({ rubrics: [{ id: 'r1', displayName: 'TP Semanal Griego NT' }, { id: 'r2', displayName: 'Paper' }] }) }));
 vi.mock('@/hooks/exegesis/useUserAssignmentBriefs', () => ({ useUserAssignmentBriefs: () => ({ briefs: [{ id: 'b1', displayName: 'TP' }] }) }));
 vi.mock('@/hooks/exegesis/useUserStyleGuides', () => ({ useUserStyleGuides: () => ({ guides: [{ id: 'g1', displayName: 'Guía TMS' }] }) }));
-const { ProjectWorkTypesCard } = await import('../ProjectWorkTypesCard');
+const { ProjectWorkTypesCard, withRubric } = await import('../ProjectWorkTypesCard');
 const { ProjectCourseCard } = await import('../ProjectCourseCard');
 const { ProjectSetupCards } = await import('../ProjectSetupCards');
 
@@ -45,6 +45,19 @@ describe('ProjectWorkTypesCard', () => {
         const [ensayo] = onSave.mock.calls[0]![0];
         expect(ensayo).toMatchObject({ label: 'Ensayo', rubricTemplateId: null });
         expect(ensayo.exegeticalStrategy).toBeUndefined();
+    });
+
+    it('cambiar la rúbrica borra «el curso no da rúbrica» (se dijo de la anterior); elegir la misma, no', () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const confirmado = { id: 'a', label: 'TP', rubricTemplateId: null, rubricConfirmed: true };
+        render(<ProjectWorkTypesCard project={{ ...curso, workTypes: [confirmado] } as never} onSave={onSave} saving={false} />);
+        fireEvent.click(screen.getByText('workTypes.edit'));
+        fireEvent.change(screen.getByLabelText('workTypes.rubric'), { target: { value: 'r1' } });
+        fireEvent.click(screen.getByText('workTypes.save'));
+        const [tipo] = onSave.mock.calls[0]![0];
+        expect(tipo).toEqual({ id: 'a', label: 'TP', rubricTemplateId: 'r1' });
+        expect('rubricConfirmed' in tipo).toBe(false);
+        expect(withRubric(confirmado as never, null)).toBe(confirmado);
     });
 
     it('cada tipo guarda su método (capa 3)', () => {

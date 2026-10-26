@@ -15,6 +15,18 @@ import { canonico } from '@/utils/canonico';
  * pero en la rúbrica de un tipo `null` es «la del sistema» y ausente es «la
  * por defecto». Se marca antes de comparar.
  */
+/**
+ * Cambia la rúbrica de un tipo. «El curso no da rúbrica: uso la del sistema /
+ * la mía» (`rubricConfirmed`) se dijo de la rúbrica de ANTES: si cambia, la
+ * confirmación se borra (la clave entera, no `undefined`) y el estudiante
+ * vuelve a decidir. Elegir la misma no la toca.
+ */
+export function withRubric(tipo: ProjectWorkType, rubricTemplateId: ProjectWorkType['rubricTemplateId']): ProjectWorkType {
+    if (tipo.rubricTemplateId === rubricTemplateId) return tipo;
+    const { rubricConfirmed: _confirmada, ...resto } = tipo;
+    return { ...resto, rubricTemplateId };
+}
+
 const paraComparar = (tipos: ProjectWorkType[]) =>
     canonico(tipos.map(x => (x.rubricTemplateId === null ? { ...x, rubricTemplateId: '__system' } : x)));
 
@@ -52,7 +64,7 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
 
     const sinNombre = draft.some(x => !x.label.trim());
     const sinCambios = paraComparar(draft) === paraComparar(guardados);
-    const campo = 'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40';
+    const campo = 'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-focus';
     // Vacía, la guía del tipo es la del curso; si el curso no tiene, ninguna.
     const guiaHeredada = projectCourseInfo(project)?.styleGuideId
         ? t(project.type === 'course' ? 'workTypes.styleGuideCourse' : 'workTypes.styleGuideProject')
@@ -104,7 +116,7 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
                                             <select
                                                 className={campo}
                                                 value={x.rubricTemplateId === null ? '__system' : x.rubricTemplateId ?? ''}
-                                                onChange={e => cambiar(x.id, { rubricTemplateId: e.target.value === '__system' ? null : e.target.value || undefined })}
+                                                onChange={e => setDraft(ts => ts.map(y => (y.id === x.id ? withRubric(y, e.target.value === '__system' ? null : e.target.value || undefined) : y)))}
                                             >
                                                 <option value="">{t('workTypes.rubricDefault')}</option>
                                                 <option value="__system">{t('workTypes.rubricSystem')}</option>
@@ -168,7 +180,9 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
             </div>
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-                <Button size="sm" onClick={() => onSave(draft)} disabled={saving || sinCambios || sinNombre}>
+                {/* De contorno: estas tarjetas van junto a «Ahora» (General) y son dos;
+                    dos «Guardar» llenos competirían con el único botón lleno de la página. */}
+                <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={() => onSave(draft)} disabled={saving || sinCambios || sinNombre}>
                     {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                     {t('workTypes.save')}
                 </Button>

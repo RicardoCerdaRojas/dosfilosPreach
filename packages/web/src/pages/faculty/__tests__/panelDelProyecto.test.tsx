@@ -68,7 +68,7 @@ const armar = (project: Record<string, unknown>, desk: ProjectDeskModel | null, 
     project, projects: [project], isLoadingProject: false, updateProject: mutacion,
     typeMeta: getProjectTypeMeta(project.type as never), desk, legacyRoadmap: null,
     blocks: { work: 'ready', series: 'ready', sources: 'ready', sermons: 'ready', material: 'ready' }, journey: 'ready',
-    retrySeries: vi.fn(), papers: [], series: [], sermons: [], slices: slicesVacias(),
+    retry: vi.fn(), retrySeries: vi.fn(), papers: [], series: [], sermons: [], slices: slicesVacias(),
     attached: { sources: [], isLoading: false, error: null, reprocessing: {}, reprocessSource: vi.fn() },
     workspace: { outputs: [], isLoadingOutputs: false, createOutput: mutacion, updateOutput: mutacion, deleteOutput: mutacion },
     ...over,
@@ -230,15 +230,24 @@ describe('mientras carga y si falla', () => {
         expect(screen.queryByTestId('secciones-exegeticas')).toBeNull();
     });
 
-    it('si las series fallan, lo avisa y ofrece reintentar, sin secciones', () => {
+    it('si algo falla, lo avisa y reintenta lo caído, sin secciones ni herramientas', () => {
         const input = esdrasAMedias();
-        const retrySeries = vi.fn();
-        vista = armar(completo(input.project as never), buildProjectDesk(input, NOW), { journey: 'error', retrySeries });
+        const retry = vi.fn();
+        vista = armar(completo(input.project as never), buildProjectDesk(input, NOW), { journey: 'error', retry });
         montar();
         expect(screen.getByTestId('project-roadmap-error')).toBeInTheDocument();
         expect(screen.queryByTestId('secciones-exegeticas')).toBeNull();
+        expect(screen.queryByTestId('desk-tools')).toBeNull();
         fireEvent.click(screen.getByText('seriesSection.retry'));
-        expect(retrySeries).toHaveBeenCalled();
+        expect(retry).toHaveBeenCalled();
+    });
+
+    it('cargando: esqueleto por sección, y herramientas y material ocultos hasta que todo llegue', () => {
+        const input = esdrasAMedias();
+        vista = armar(completo(input.project as never), buildProjectDesk(input, NOW), { journey: 'loading' });
+        montar();
+        expect(screen.getAllByTestId('desk-section-skeleton').length).toBeGreaterThan(1);
+        expect(screen.queryByTestId('desk-tools')).toBeNull();
     });
 
     it('en frío, el esqueleto; ya cargado y sin proyecto, «no encontrado»', () => {

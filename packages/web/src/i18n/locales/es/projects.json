@@ -223,7 +223,7 @@
     "roadmap": {
         "label": "Recorrido · {{type}}",
         "loading": "Cargando el recorrido…",
-        "loadError": "No se pudo cargar el recorrido del proyecto.",
+        "loadError": "No se pudo cargar todo lo del proyecto (estudios, series, biblioteca o rúbricas). Lo guardado no se perdió.",
         "phaseLabel": "Fase {{number}}",
         "allComplete": {
             "title": "Todas las fases completadas",
@@ -304,6 +304,7 @@
         },
         "seeAll": "Ver todo ({{count}})",
         "seeLess": "Ver menos",
+        "loading": "Cargando el material…",
         "chars": "{{n}} caracteres"
     },
     "linkSession": {
@@ -628,22 +629,23 @@
     "desk": {
         "exegetical": {
             "passage": {
-                "todo": "Todavía no hay encuadre",
-                "oldNote": "Hay una nota de antes por pasar al encuadre",
-                "partial": "Encuadre a medias · campos por completar: {{missing}}",
+                "todo": "Todavía no escribiste tu lectura del libro",
+                "oldNote": "Hay una nota de antes por pasar a tu lectura del libro",
+                "partial": "A medias: falta el libro o tu idea central en una frase · campos sin llenar: {{missing}}",
                 "ready": "Libro e idea central escritos · movimientos: {{movements}}"
             },
             "division": {
                 "todo": "Todavía no hay serie",
                 "draft": "Hay un análisis del planificador a medias",
                 "readySeries": "Perícopas planificadas: {{units}} · series: {{series}}",
-                "readyWithoutSeries": "Diste por hecha la división sin serie"
+                "readyWithoutSeries": "Diste por hecha la división sin serie",
+                "readyStudies": "Sin serie · estudios ensamblados: {{count}}"
             },
             "pericopes": {
                 "empty": "Todavía no hay estudios",
-                "todo": "0 de {{total}} perícopas estudiadas",
-                "progress": "{{done}} de {{total}} perícopas estudiadas · anotadas en tu lectura: {{annotated}}",
-                "ready": "Las {{total}} perícopas estudiadas · anotadas en tu lectura: {{annotated}}"
+                "todo": "0 de {{total}} perícopas con su estudio ensamblado",
+                "progress": "{{done}} de {{total}} perícopas con su estudio ensamblado · anotadas en tu lectura: {{annotated}}",
+                "ready": "Las {{total}} perícopas con su estudio ensamblado · anotadas en tu lectura: {{annotated}}"
             },
             "synthesis": {
                 "todo": "Todavía no hay anotaciones en tu lectura",
@@ -656,16 +658,18 @@
             "todo": "Todavía no hay bibliografía",
             "candidatesOnly": "Solo candidatas ({{candidates}}): ninguna aprobada todavía",
             "requiredToAcquire": "Aprobadas: {{approved}} · obligatorias por conseguir: {{count}}",
-            "requirementsPending": "Aprobadas: {{approved}} · requisitos {{met}}/{{total}}",
+            "requirementsPending": "Aprobadas: {{approved}} · requisitos: {{met}} de {{total}}",
             "ready": "Aprobadas: {{approved}} · por conseguir: {{toAcquire}}",
-            "readyRequirements": "Aprobadas: {{approved}} · por conseguir: {{toAcquire}} · requisitos {{met}}/{{total}}",
+            "readyRequirements": "Aprobadas: {{approved}} · por conseguir: {{toAcquire}} · requisitos: {{met}} de {{total}}",
             "readyManual": "Agregadas a mano: {{count}}"
         },
         "course": {
             "charge": {
                 "todo": "Todavía no hay tipos de trabajo",
-                "unresolved": "Tipos de trabajo: {{types}} · sin rúbrica resuelta: {{unresolved}}",
-                "ready": "Tipos de trabajo: {{types}}, cada uno con su rúbrica"
+                "unresolved": "Tipos de trabajo: {{types}} · sin rúbrica resuelta: {{unresolved}} · con una plantilla que ya no existe: {{missing}}",
+                "ready": "Tipos de trabajo: {{types}}, cada uno con su rúbrica",
+                "loading": "Tipos de trabajo: {{types}} · revisando sus rúbricas…",
+                "noProfessorRubric": "Tipos de trabajo: {{types}} · sin la rúbrica del profesor: {{count}}"
             },
             "calendar": {
                 "todo": "Todavía no hay calendario",
@@ -681,8 +685,8 @@
             },
             "feedback": {
                 "todo": "Todavía no hay devoluciones",
-                "progress": "Devoluciones: {{returned}} de {{delivered}} entregas · correcciones repetidas por decidir: {{pendingPatterns}}",
-                "ready": "Devoluciones: {{returned}}, y cada corrección repetida decidida"
+                "progress": "Con devolución: {{returned}} · sin devolución: {{none}} · de {{delivered}} entregas · correcciones repetidas por decidir: {{pendingPatterns}}",
+                "ready": "Con devolución: {{returned}} · sin devolución: {{none}} · cada corrección que se repite, decidida"
             }
         },
         "now": {
@@ -697,7 +701,7 @@
             "createScheduled": "{{label}} es lo que sigue",
             "passage": "Escribe tu lectura del libro",
             "passagePartial": "Completa tu lectura del libro",
-            "passageOldNote": "Pasa tu nota de antes al encuadre",
+            "passageOldNote": "Pasa tu nota de antes a tu lectura del libro",
             "sources": "Elige tus fuentes",
             "division": "Divide el libro en perícopas",
             "pericope": "Perícopa {{position}} · {{label}}",
@@ -705,7 +709,7 @@
             "newStudy": "Empieza el estudio de una perícopa",
             "reviseIdea": "Revisa tu idea central con lo que anotaste",
             "annotate": "Anota qué dice {{label}} de tu lectura",
-            "synthesis": "Anota qué dice cada estudio de tu lectura",
+            "synthesis": "Anota qué muestra cada perícopa de tu lectura",
             "charge": "Define lo que pide el curso",
             "calendar": "Arma el calendario de entregas",
             "work": "Sigue con {{label}}",
@@ -719,7 +723,7 @@
             "recentOutput": "Retoma {{label}}"
         },
         "notes": {
-            "oldNote": "Tienes una nota de antes: pásala al encuadre",
+            "oldNote": "Pasa tu nota de antes a tu lectura del libro",
             "readingPending_one": "Un estudio ensamblado todavía no está anotado en tu lectura",
             "readingPending_other": "{{count}} estudios ensamblados todavía no están anotados en tu lectura",
             "revisionStale": "Tu idea revisada quedó desactualizada: vuelve a revisarla",
@@ -729,16 +733,18 @@
             "pendingPatterns_one": "Una corrección se repite y está sin decidir",
             "pendingPatterns_other": "{{count}} correcciones se repiten y están sin decidir",
             "phase": {
-                "passage": "Tu lectura del libro todavía no está completa",
+                "passage": "Escribe tu lectura del libro: sin ella, tus estudios no tienen nada que corregir",
                 "sources": "Tus fuentes todavía no están listas",
                 "division": "Falta dividir el libro en perícopas",
                 "pericopes": "Quedan perícopas por estudiar",
                 "synthesis": "Falta revisar tu idea central",
-                "charge": "Falta definir lo que pide el curso",
+                "charge": "Lo que pide el curso todavía no está completo",
                 "calendar": "El calendario de entregas está incompleto",
                 "works": "Quedan trabajos por ensamblar",
                 "feedback": "Quedan devoluciones por registrar"
-            }
+            },
+            "noFeedbackMany_one": "Una entrega sin devolución registrada",
+            "noFeedbackMany_other": "{{count}} entregas sin devolución registrada"
         },
         "journey": {
             "label": "Recorrido",
@@ -748,7 +754,8 @@
             "status": {
                 "todo": "Por empezar",
                 "doing": "En curso",
-                "ready": "Lista"
+                "ready": "Lista",
+                "loading": "Cargando…"
             },
             "nowLabel": "Ahora",
             "kind": {
@@ -769,7 +776,7 @@
                 "scheduleEntry": "Ver la entrega",
                 "createScheduled": "Crear {{label}}",
                 "phase": "Ir a la fase",
-                "framing": "Abrir el encuadre",
+                "framing": "Escribir tu lectura",
                 "stateOfArt": "Elegir tus fuentes",
                 "planSeries": "Planificar la serie",
                 "reviseIdea": "Revisar tu idea central",
@@ -786,31 +793,31 @@
                 "exegetical": {
                     "passage": {
                         "name": "Tu lectura del libro",
-                        "purpose": "Escribir lo que crees que dice el libro antes de dividirlo, para tener contra qué medir lo que encuentres después.",
-                        "wellDone": "El libro, para qué lo estudias, sus movimientos y una idea central en una frase, escrita por ti.",
-                        "commonError": "Esperar a terminar los estudios para escribirla: entonces ya no hay una lectura que el texto pueda corregir."
+                        "purpose": "Leer el libro entero, varias veces, y escribir lo que crees que dice antes de dividirlo: una hipótesis que el texto podrá confirmar o corregir.",
+                        "wellDone": "El libro, para qué lo estudias, sus movimientos y tu idea central en una frase (de qué habla el libro y qué dice de eso), escrita por ti.",
+                        "commonError": "Esperar a terminar los estudios para escribirla: entonces ya no hay una lectura que el texto pueda corregir. O copiarla de un comentario o del panorama: entonces no es tu lectura."
                     },
                     "sources": {
                         "name": "Fuentes",
-                        "purpose": "Elegir con criterio las obras que vas a usar en todo el libro: tu estado del arte, la lista razonada de obras con que vas a trabajar.",
-                        "wellDone": "Obras aprobadas de varios tipos (comentarios, léxicos, gramáticas) y los requisitos cumplidos o aceptados a propósito. Una obra aprobada puede quedar «por conseguir».",
+                        "purpose": "Elegir con criterio, en tu estado del arte, las obras que vas a usar en todo el libro.",
+                        "wellDone": "Obras de varios tipos —texto en lengua original, comentarios, léxicos, gramáticas— y de más de un punto de vista; los requisitos cumplidos o dados por cumplidos a propósito.",
                         "commonError": "Juntar todo lo que hay en la biblioteca sin decidir qué aporta cada obra."
                     },
                     "division": {
                         "name": "División en perícopas",
-                        "purpose": "Dividir el libro en perícopas (cada unidad del texto que se predica entera) siguiendo las marcas del propio texto.",
+                        "purpose": "Dividir el libro en perícopas siguiendo las marcas del propio texto.",
                         "wellDone": "Cada perícopa con un comienzo y un final que el texto justifica, ordenadas en una serie.",
                         "commonError": "Cortar por capítulos o por la cantidad de domingos en vez de por las unidades del texto."
                     },
                     "pericopes": {
                         "name": "Estudios por perícopa",
-                        "purpose": "Estudiar cada perícopa a fondo, en el orden del plan.",
+                        "purpose": "Estudiar cada perícopa en su contexto y en la lengua original, y anotar qué confirma, matiza o contradice de tu lectura del libro.",
                         "wellDone": "Estudios ensamblados, y cada uno anotado en tu lectura: qué confirma, qué matiza o qué contradice.",
-                        "commonError": "Abrir muchos estudios a la vez y no terminar ninguno."
+                        "commonError": "Estudiar cada perícopa como si estuviera suelta, sin preguntar qué hace con el libro entero."
                     },
                     "synthesis": {
                         "name": "Síntesis",
-                        "purpose": "Volver a tu idea central con lo que dijeron los estudios.",
+                        "purpose": "Volver a tu idea central con lo que el texto mostró en cada perícopa.",
                         "wellDone": "Una idea revisada, con su porqué, que sale de tus anotaciones.",
                         "commonError": "Repetir la idea original sin mirar lo que el texto matizó o contradijo."
                     }
@@ -819,12 +826,12 @@
                     "charge": {
                         "name": "Lo que pide el curso",
                         "purpose": "Saber qué pide el curso antes de escribir: los tipos de trabajo, su rúbrica, su método y su guía.",
-                        "wellDone": "Cada tipo de trabajo con su rúbrica resuelta y, si corresponde, su guía de estilo.",
+                        "wellDone": "Cada tipo de trabajo con la rúbrica con que lo evalúa el profesor y, si corresponde, su guía.",
                         "commonError": "Empezar el primer trabajo sin saber con qué rúbrica se va a evaluar."
                     },
                     "sources": {
                         "name": "Fuentes del curso",
-                        "purpose": "Reunir la bibliografía del curso en el estado del arte, la lista razonada de obras con que vas a trabajar.",
+                        "purpose": "Reunir la bibliografía del curso en tu estado del arte, con las obligatorias primero.",
                         "wellDone": "Las obligatorias aprobadas y conseguidas; el resto, elegido por lo que aporta a cada tipo de trabajo.",
                         "commonError": "Dejar una obligatoria «por conseguir» hasta la semana de la entrega."
                     },
@@ -838,7 +845,7 @@
                         "name": "Trabajos",
                         "purpose": "Hacer cada trabajo con su tipo, sus reglas y sus fuentes.",
                         "wellDone": "Trabajos ensamblados antes de la fecha y, si el curso lo pide, sin repetir fuentes del trabajo anterior.",
-                        "commonError": "Terminar a último momento y entregar sin la revisión antes de entregar."
+                        "commonError": "Entregar lo armado sin reescribirlo con tus palabras, o sin la revisión antes de entregar."
                     },
                     "feedback": {
                         "name": "Devolución y aprendizaje",
@@ -847,14 +854,19 @@
                         "commonError": "Leer la nota y guardar la devolución sin cambiar nada del trabajo siguiente."
                     }
                 }
-            }
+            },
+            "allReadyCourse": "Todas las fases están listas. Cuando llegue una devolución, regístrala y decide qué pasa a tu guía.",
+            "laterLine": "{{status}} — {{reason}}"
         },
         "tools": {
             "eyebrow": "Al final",
             "title": "Herramientas",
             "description": "Las lenguas del libro, para usarlas dentro de cada estudio, donde el pasaje ya está definido.",
             "hebrewAramaic": "Hebreo y arameo",
-            "sourcesEyebrow": "Para consultar"
+            "sourcesEyebrow": "Para consultar",
+            "untitledSession": "Sesión sin título",
+            "openSession": "Abrir en {{tool}}: {{label}}",
+            "descriptionCourse": "Las lenguas del texto del curso, para usarlas dentro de cada trabajo, donde el pasaje ya está definido."
         }
     }
 }

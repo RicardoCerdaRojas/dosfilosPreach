@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { CalendarPlus, Check, Pencil, Trash2 } from 'lucide-react';
 import type { AIProject, CourseDesk, CourseEntryInput, CourseOp, CourseScheduleEntry, CourseScheduleMode, DeskScheduleRow, ProjectDeskModel } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { CourseEntryDialog } from './CourseEntryDialog';
-import { TOUCH, formatDueDate, langOf, passageLabel } from './courseDeskFormat';
+import { FOCUS_RING } from '../primitives';
+import { DESTRUCTIVE, ICON_TOUCH, TOUCH, formatDueDate, langOf, passageLabel } from './courseDeskFormat';
 
 interface CourseCalendarSectionProps {
     project: AIProject;
@@ -38,6 +39,19 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
         if (m === mode) return;
         void run({ mode: m }, m === 'free' ? 'toast.modeFree' : 'toast.modeCalendar');
     };
+    // Un grupo de radio: Tab entra a la opción elegida (o a la primera) y las
+    // flechas mueven el foco. Elegir es Espacio, Intro o el clic: cada
+    // elección GUARDA el modo, y recorrer las opciones con las flechas no
+    // tiene que escribir dos veces en el proyecto.
+    const MODOS = ['calendar', 'free'] as const;
+    const botones = useRef<Array<HTMLButtonElement | null>>([]);
+    const enfocable = mode ?? 'calendar';
+    const mover = (e: KeyboardEvent, i: number) => {
+        const paso = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+        if (!paso) return;
+        e.preventDefault();
+        botones.current[(i + paso + MODOS.length) % MODOS.length]?.focus();
+    };
     const guardar = (entry: CourseEntryInput) => run({ ops: [{ op: 'upsertEntry', entry }] });
     // Los trabajos del curso sin entrega, y el que ya cumple esta.
     const trabajosPara = (e: CourseScheduleEntry | null) => {
@@ -47,17 +61,23 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
 
     return (
         <div className="space-y-3">
-            <div role="group" aria-label={t('calendar.modeLabel')} className="flex flex-col gap-2 sm:flex-row">
-                {(['calendar', 'free'] as const).map(m => (
+            <div role="radiogroup" aria-label={t('calendar.modeLabel')} className="flex flex-col gap-2 sm:flex-row">
+                {MODOS.map((m, i) => (
                     <button
                         key={m}
+                        ref={el => { botones.current[i] = el; }}
                         type="button"
-                        aria-pressed={mode === m}
-                        disabled={saving}
-                        onClick={() => elegirModo(m)}
+                        role="radio"
+                        aria-checked={mode === m}
+                        tabIndex={enfocable === m ? 0 : -1}
+                        aria-disabled={saving || undefined}
+                        onClick={() => { if (!saving) elegirModo(m); }}
+                        onKeyDown={e => mover(e, i)}
                         className={cn(
-                            'min-h-11 rounded-lg border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 sm:flex-1',
-                            mode === m ? 'border-primary bg-primary/5 text-foreground' : 'border-border bg-background text-foreground hover:bg-accent',
+                            'min-h-11 rounded-lg border px-3 py-2 text-left text-sm text-foreground transition-colors aria-disabled:opacity-60 sm:flex-1',
+                            FOCUS_RING,
+                            // La elegida, sobre la tarjeta con el borde de la marca; la otra, sobre el fondo.
+                            mode === m ? 'border-primary bg-card shadow-sm' : 'border-border bg-background hover:bg-accent',
                         )}
                     >
                         <span className="flex items-center gap-1.5 font-medium">
@@ -75,11 +95,12 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
                 <ol className="divide-y divide-border/60 rounded-lg border border-border" aria-label={t('calendar.listLabel')}>
                     {rows.map(r => {
                         const faltaTipo = !r.workTypeKnown;
-                        const faltaFecha = !r.dueDate && mode !== 'free';
+                        // Una traída de antes o ya entregada no necesita fecha (ya no vence).
+                        const faltaFecha = !r.dueDate && mode !== 'free' && !r.imported && r.delivery === 'notDelivered';
                         return (
                             <li key={r.entryId} data-testid="course-calendar-row" className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium text-foreground">
+                                    <p className="break-words text-sm font-medium text-foreground">
                                         {r.label || t('calendar.noLabel')}
                                         {r.passage && <span className="font-normal text-muted-foreground"> · {passageLabel(r.passage, lang)}</span>}
                                     </p>
@@ -96,7 +117,7 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        className={TOUCH}
+                                        className={ICON_TOUCH}
                                         onClick={() => setEditing(entradaDe(r.entryId))}
                                         aria-label={t('calendar.editEntry', { label: r.label })}
                                     >
@@ -106,7 +127,8 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        className={TOUCH}
+                                        className={ICON_TOUCH}
+                                        disabled={saving}
                                         onClick={() => setRemoving(r)}
                                         aria-label={t('calendar.removeEntry', { label: r.label })}
                                     >
@@ -146,7 +168,7 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
                     <AlertDialogFooter>
                         <AlertDialogCancel className={TOUCH}>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
-                            className={TOUCH}
+                            className={cn(TOUCH, DESTRUCTIVE)}
                             onClick={() => { if (removing) void run({ ops: [{ op: 'removeEntry', entryId: removing.entryId }] }, 'toast.removed'); setRemoving(null); }}
                         >
                             {t('calendar.removeConfirm')}

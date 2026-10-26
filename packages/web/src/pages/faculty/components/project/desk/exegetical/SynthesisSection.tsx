@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { Aviso } from '../../ProjectFramingFields';
 import { HypothesisLogList, type FramingStudy } from '../../ProjectFramingLogDialog';
-import { DeskSection, EmptyState, TOUCH, deskSectionId, useDeskText } from '../primitives';
+import { cn } from '@/lib/utils';
+import { DeskSection, EmptyState, FOCUS_RING, LaterPhase, TOUCH, deskSectionId, useDeskText } from '../primitives';
 
 interface SynthesisSectionProps {
     synthesis: DeskSynthesis;
@@ -14,6 +15,8 @@ interface SynthesisSectionProps {
     onAnnotate: () => void;
     onRevise: () => void;
     onShowHistory: () => void;
+    /** Posterior a la fase activa y sin anotaciones: una línea, sin acción. */
+    later?: boolean;
 }
 
 /**
@@ -22,8 +25,9 @@ interface SynthesisSectionProps {
  * contradicen— y las tres últimas; «Revisar tu idea central» y «Ver cómo
  * cambió tu lectura». La fase queda lista solo con la idea revisada y vigente.
  */
-export function SynthesisSection({ synthesis: s, framing, phase, studies, onAnnotate, onRevise, onShowHistory }: SynthesisSectionProps) {
+export function SynthesisSection({ synthesis: s, framing, phase, studies, onAnnotate, onRevise, onShowHistory, later = false }: SynthesisSectionProps) {
     const { t } = useTranslation('projectDeskExegetical');
+    const { t: tp } = useTranslation('projects');
     const deskText = useDeskText();
     const registro = [
         t('synthesis.confirms', { count: s.counts.confirms }),
@@ -31,12 +35,25 @@ export function SynthesisSection({ synthesis: s, framing, phase, studies, onAnno
         t('synthesis.contradicts', { count: s.counts.contradicts }),
     ].join(' · ');
 
+    if (!s.open && later) {
+        return (
+            <LaterPhase
+                id={deskSectionId('synthesis')}
+                eyebrow={tp('desk.journey.phaseLabel', { number: 5 })}
+                title={t('synthesis.title')}
+                reason={t('later.synthesis')}
+                data-testid="desk-section-synthesis"
+            />
+        );
+    }
+
     return (
         <DeskSection
             id={deskSectionId('synthesis')}
             phase={5}
             title={t('synthesis.title')}
             status={phase?.status}
+            loading={phase?.loading}
             evidence={phase ? deskText(phase.evidence) : undefined}
             description={t('synthesis.description')}
             data-testid="desk-section-synthesis"
@@ -71,7 +88,7 @@ export function SynthesisSection({ synthesis: s, framing, phase, studies, onAnno
                     <p className="text-sm font-medium text-foreground" data-testid="desk-synthesis-counts">{registro}</p>
                     <HypothesisLogList entries={[...s.latest].reverse()} studies={studies} />
                     {s.annotations > s.latest.length && (
-                        <button type="button" onClick={onShowHistory} className="min-h-11 rounded-sm text-[13px] text-primary-text underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0">
+                        <button type="button" onClick={onShowHistory} className={cn('rounded-sm text-[13px] text-primary-text underline underline-offset-2', TOUCH, FOCUS_RING)}>
                             {t('synthesis.seeAll', { count: s.annotations })}
                         </button>
                     )}

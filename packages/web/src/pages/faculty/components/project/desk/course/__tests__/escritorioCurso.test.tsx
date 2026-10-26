@@ -38,7 +38,8 @@ vi.mock('@/hooks/faculty/useCourseRecordActions', () => ({
     }),
 }));
 let papers: ExegesisPaperSummary[] = [];
-vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ papers }) }));
+let papersLoading = false;
+vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ papers, isLoading: papersLoading, error: null }) }));
 vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => ({ rubrics: [{ id: 'rub1', displayName: 'Rúbrica TP' }], defaultRubric: null }) }));
 vi.mock('@/hooks/exegesis/useUserStyleGuides', () => ({
     useUserStyleGuides: () => ({ guides: [
@@ -96,11 +97,12 @@ function curso(over: Partial<AIProject> = {}): AIProject {
         ...over,
     } as unknown as AIProject;
 }
+// Cada estudio nace en su semana: «no repetir» compara por `createdAt`.
 const estudios = [
-    estudio('s7', { citedSourceKeys: ['moo', 'davids'] }),
-    estudio('s8', { citedSourceKeys: ['Moo', 'mcknight'] }),
-    estudio('s9', { phase: 'in-progress', acceptedStepCount: 5, updatedAt: '2026-10-26T12:00:00.000Z' }),
-    estudio('s2', { title: 'TP #2 de antes' }),
+    estudio('s7', { citedSourceKeys: ['moo', 'davids'], createdAt: '2026-10-08T10:00:00.000Z' }),
+    estudio('s8', { citedSourceKeys: ['Moo', 'mcknight'], createdAt: '2026-10-15T10:00:00.000Z' }),
+    estudio('s9', { phase: 'in-progress', acceptedStepCount: 5, createdAt: '2026-10-22T10:00:00.000Z', updatedAt: '2026-10-26T12:00:00.000Z' }),
+    estudio('s2', { title: 'TP #2 de antes', createdAt: '2026-08-20T10:00:00.000Z' }),
 ];
 
 function pintar(project: AIProject = curso(), studies: DeskStudyInput[] = estudios) {
@@ -114,6 +116,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mutateAsync.mockResolvedValue({});
     papers = [];
+    papersLoading = false;
 });
 
 describe('el escritorio del Curso', () => {
@@ -146,6 +149,40 @@ describe('el escritorio del Curso', () => {
             expect(screen.queryByText('workTypes.save')).toBeNull();
         });
 
+        it('«El curso no da rúbrica»: por tipo sin la del profesor, guarda `rubricConfirmed` en los tipos', async () => {
+            pintar();
+            const caja = screen.getByTestId('course-rubric-confirm');
+            // Solo el ensayo: el TP tiene la rúbrica del profesor.
+            expect(within(caja).getAllByRole('button')).toHaveLength(1);
+            fireEvent.click(within(caja).getByText('charge.confirmSystem:Ensayo'));
+            await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+            expect(ops()).toEqual({ projectId: 'nt785', workTypes: [
+                { id: 'tp', label: 'TP Semanal', rubricTemplateId: 'rub1', exegeticalMethod: 'mixed', styleGuideId: 'g1' },
+                { id: 'ens', label: 'Ensayo', rubricConfirmed: true },
+            ] });
+        });
+
+        it('confirmado, el chip lo dice y ya no se ofrece; mientras carga el catálogo, ni aviso ni botón', () => {
+            const project = curso({ workTypes: [{ id: 'tp', label: 'TP Semanal', rubricTemplateId: 'rub1' }, { id: 'ens', label: 'Ensayo', rubricConfirmed: true }] } as Partial<AIProject>);
+            pintar(project);
+            expect(screen.getAllByTestId('course-work-type-chip')[1]).toHaveTextContent('charge.rubric.unsetConfirmed');
+            expect(screen.queryByTestId('course-rubric-confirm')).toBeNull();
+            cleanup();
+            const desk = buildProjectDesk({ project: curso(), studies: estudios, rubricCatalog: null }, NOW);
+            render(<MemoryRouter><CourseDeskSections project={curso()} desk={desk} /></MemoryRouter>);
+            const chips = screen.getAllByTestId('course-work-type-chip');
+            expect(chips[0]).toHaveTextContent('charge.rubric.loading');
+            expect(chips[0]!.className).not.toContain('bg-warning-subtle');
+        });
+
+        it('los avisos dentro del chip van en el tono del aviso, no en gris', () => {
+            pintar(curso({ workTypes: [{ id: 'ens', label: 'Ensayo', exegeticalMethod: 'research', styleGuideId: 'g1' }, { id: 'tp', label: 'TP Semanal', rubricTemplateId: 'rub1' }] } as Partial<AIProject>));
+            const chip = screen.getAllByTestId('course-work-type-chip')[0]!;
+            expect(chip).toHaveTextContent('charge.method.research');
+            expect(chip).toHaveTextContent('charge.guideRules:TP Semanal|17');
+            expect(chip.querySelector('.text-muted-foreground')).toBeNull();
+        });
+
         it('«Editar» abre un diálogo con los dos formularios de antes', () => {
             pintar();
             fireEvent.click(screen.getByText('charge.edit'));
@@ -156,6 +193,45 @@ describe('el escritorio del Curso', () => {
     });
 
     describe('el calendario', () => {
+        it('el modo es un grupo de radio: la opción elegida marcada y la única con Tab', () => {
+            pintar();
+            const grupo = screen.getByRole('radiogroup');
+            const [cal, libre] = within(grupo).getAllByRole('radio');
+            expect(cal).toHaveAttribute('aria-checked', 'true');
+            expect(cal).toHaveAttribute('tabindex', '0');
+            expect(libre).toHaveAttribute('tabindex', '-1');
+            // Las flechas mueven el foco sin guardar.
+            cal!.focus();
+            fireEvent.keyDown(cal!, { key: 'ArrowRight' });
+            expect(document.activeElement).toBe(libre);
+            expect(mutateAsync).not.toHaveBeenCalled();
+        });
+
+        it('quitar una entrega pide confirmación en rojo y dice qué se pierde si tiene registro', async () => {
+            pintar();
+            fireEvent.click(screen.getByLabelText('calendar.removeEntry:TP #7'));
+            const alerta = screen.getByRole('alertdialog');
+            expect(alerta).toHaveTextContent('calendar.removeWithRecord');
+            const quitar = within(alerta).getByText('calendar.removeConfirm');
+            expect(quitar.className).toContain('bg-destructive-solid');
+            fireEvent.click(quitar);
+            await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+            expect(ops().courseOps).toEqual([{ op: 'removeEntry', entryId: 'e7' }]);
+        });
+
+        it('cerrar una entrega con cambios pregunta antes; sin cambios, cierra', () => {
+            pintar();
+            fireEvent.click(screen.getByText('calendar.add'));
+            fireEvent.click(within(screen.getByRole('dialog')).getByText('common.cancel'));
+            expect(screen.queryByRole('dialog')).toBeNull();
+            fireEvent.click(screen.getByText('calendar.add'));
+            fireEvent.change(within(screen.getByRole('dialog')).getByPlaceholderText('calendar.passagePlaceholder'), { target: { value: '5:7-12' } });
+            fireEvent.click(within(screen.getByRole('dialog')).getByText('common.cancel'));
+            expect(screen.getByRole('alertdialog')).toHaveTextContent('discardChanges.title');
+            fireEvent.click(screen.getByText('discardChanges.keep'));
+            expect(screen.getByPlaceholderText('calendar.passagePlaceholder')).toHaveValue('5:7-12');
+        });
+
         it('elegir «semana a semana» guarda el modo y nada más', async () => {
             pintar();
             fireEvent.click(screen.getByText('calendar.mode.free'));
@@ -253,6 +329,34 @@ describe('el escritorio del Curso', () => {
             expect(screen.getByText('works.createOfType:Ensayo')).toBeInTheDocument();
         });
 
+        it('fuentes «sin datos» si a uno de los dos lados le faltan las citas', () => {
+            pintar(curso(), estudios.map(e => (e.id === 's8' ? { ...e, citedSourceKeys: [] } : e)));
+            const tp8 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #8'))!;
+            expect(tp8).toHaveTextContent('works.sources.unknownFrom:TP #7');
+            expect(tp8).not.toHaveTextContent('works.sources.noRepeat');
+        });
+
+        it('una entrega cuyo estudio está archivado no ofrece «Crear» otra vez: muestra «archivado» con enlace', () => {
+            const project = curso();
+            const sched = project.courseSchedule!.map(e => (e.id === 'e10' ? { ...e, paperId: 'viejo' } : e));
+            pintar({ ...project, courseSchedule: sched } as AIProject);
+            expect(screen.queryByText('works.create:TP #10')).toBeNull();
+            expect(screen.getByTestId('course-works-archived').getAttribute('href')).toBe('/dashboard/exegesis/viejo?from=%2Fdashboard%2Fprojects%2Fnt785');
+        });
+
+        it('los trabajos fuera del calendario se ven aunque el curso no tenga tipos', () => {
+            pintar(curso({ workTypes: [], courseSchedule: [] } as Partial<AIProject>));
+            expect(screen.getByText('works.offCalendar:4')).toBeInTheDocument();
+            expect(screen.getByText('Estudio s7')).toBeInTheDocument();
+        });
+
+        it('la cabecera de la mesa no es un elemento de la lista', () => {
+            pintar();
+            for (const ol of screen.getAllByTestId('course-works-group').map(g => g.querySelector('ol')!)) {
+                expect([...ol.children].every(li => li.getAttribute('data-testid') === 'course-works-row')).toBe(true);
+            }
+        });
+
         it('la lectura dirigida va como fila: páginas reseñadas de la meta', () => {
             pintar();
             expect(screen.getByTestId('course-directed-reading')).toHaveTextContent('works.reading.pages:64|100');
@@ -300,6 +404,30 @@ describe('el escritorio del Curso', () => {
             expect(within(dialogo).getAllByTestId('feedback-correction-row')).toHaveLength(3);
         });
 
+        it('«Quitar la devolución» confirma diciendo qué se borra', async () => {
+            pintar();
+            const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
+            fireEvent.click(within(tp7).getByText('works.editFeedback'));
+            fireEvent.click(within(screen.getByRole('dialog')).getByText('feedbackDialog.clear'));
+            expect(mutateAsync).not.toHaveBeenCalled();
+            const alerta = screen.getByRole('alertdialog');
+            expect(alerta).toHaveTextContent('feedbackDialog.clearHint:3');
+            fireEvent.click(within(alerta).getByText('feedbackDialog.clear'));
+            await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+            expect(ops().courseOps).toEqual([{ op: 'clearFeedback', entryId: 'e7' }]);
+        });
+
+        it('cerrar la devolución con texto escrito pregunta antes de perderlo', () => {
+            pintar();
+            const tp8 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #8'))!;
+            fireEvent.click(within(tp8).getByText('works.recordFeedback'));
+            fireEvent.change(within(screen.getByRole('dialog')).getByPlaceholderText('feedbackDialog.textPlaceholder'), { target: { value: 'Pegado del profesor.' } });
+            fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+            expect(screen.getByRole('alertdialog')).toHaveTextContent('discardChanges.title');
+            fireEvent.click(screen.getByText('discardChanges.discard'));
+            expect(screen.queryByRole('dialog')).toBeNull();
+        });
+
         it('al editar, las correcciones guardadas conservan su id y su fecha de llegada', async () => {
             pintar();
             const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
@@ -327,7 +455,8 @@ describe('el escritorio del Curso', () => {
             pintar();
             const filas = screen.getAllByTestId('course-pattern-row');
             expect(filas[0]).toHaveTextContent('Cierre doble');
-            expect(filas[0]).toHaveTextContent('feedback.count:2|1');
+            expect(filas[0]).toHaveTextContent('feedback.count:2');
+            expect(filas[0]).toHaveTextContent('feedback.inEntries:1');
             expect(filas[1]).toHaveTextContent('feedback.decided.guide');
         });
 
@@ -336,7 +465,14 @@ describe('el escritorio del Curso', () => {
             pintar();
             fireEvent.click(within(screen.getAllByTestId('course-pattern-row')[0]!).getByText('feedback.toGuide'));
             const dialogo = screen.getByRole('dialog');
-            const regla = within(dialogo).getByDisplayValue('Cierre doble');
+            // El nombre va de ejemplo, no como valor: la regla la escribe el estudiante.
+            const regla = within(dialogo).getByPlaceholderText('Cierre doble') as HTMLTextAreaElement;
+            expect(regla.value).toBe('');
+            expect(within(dialogo).getByText('guideRule.confirm').closest('button')).toBeDisabled();
+            // Igual al nombre (sin contar mayúsculas ni espacios) no dice qué hacer: no se acepta.
+            fireEvent.change(regla, { target: { value: '  cierre DOBLE ' } });
+            expect(within(dialogo).getByText('guideRule.confirm').closest('button')).toBeDisabled();
+            expect(within(dialogo).getByText('guideRule.sameAsName')).toBeInTheDocument();
             fireEvent.change(regla, { target: { value: 'No cierres dos veces la misma idea.' } });
             expect((within(dialogo).getByRole('combobox') as HTMLSelectElement).value).toBe('g1');
             fireEvent.click(within(dialogo).getByText('guideRule.confirm'));
@@ -350,17 +486,72 @@ describe('el escritorio del Curso', () => {
             addRule.mockRejectedValue(Object.assign(new Error('x'), { name: 'AddRuleToStyleGuideError', code: 'guide-without-manifest' }));
             pintar();
             fireEvent.click(within(screen.getAllByTestId('course-pattern-row')[0]!).getByText('feedback.toGuide'));
+            fireEvent.change(within(screen.getByRole('dialog')).getByPlaceholderText('Cierre doble'), { target: { value: 'Cierra una sola vez.' } });
             fireEvent.click(within(screen.getByRole('dialog')).getByText('guideRule.confirm'));
             await waitFor(() => expect(toastError).toHaveBeenCalledWith('guideRule.errors.guide-without-manifest'));
         });
 
-        it('«Descartar» decide el patrón sin tocar la guía', async () => {
+        it('«Descartar» pide la razón (con sugerencias) y decide el patrón sin tocar la guía', async () => {
             pintar();
             fireEvent.click(screen.getByLabelText('feedback.discardLabel:Cierre doble'));
+            const dialogo = screen.getByRole('dialog');
+            // Sin razón no se descarta.
+            expect(within(dialogo).getByText('discard.confirm').closest('button')).toBeDisabled();
+            fireEvent.click(within(dialogo).getByText('discard.suggestion.notForCourse'));
+            expect(within(dialogo).getByDisplayValue('discard.suggestion.notForCourse')).toBeInTheDocument();
+            fireEvent.change(within(dialogo).getByLabelText('discard.reason'), { target: { value: 'No aplica: el profesor lo pidió solo en el TP #7.' } });
+            fireEvent.click(within(dialogo).getByText('discard.confirm'));
             await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
-            expect(ops().courseOps).toEqual([{ op: 'decidePattern', patternId: 'cd', decision: 'discarded' }]);
+            expect(ops().courseOps).toEqual([{ op: 'decidePattern', patternId: 'cd', decision: 'discarded', reason: 'No aplica: el profesor lo pidió solo en el TP #7.' }]);
             expect(addRule).not.toHaveBeenCalled();
         });
+
+        it('un patrón descartado muestra su razón en la fila', () => {
+            pintar(curso({ feedbackPatterns: [patrones[0]!, { id: 'cd', name: 'Cierre doble', decision: 'discarded', discardReason: 'No aplica a este curso' }] } as Partial<AIProject>));
+            const fila = screen.getAllByTestId('course-pattern-row').find(f => f.textContent?.includes('Cierre doble'))!;
+            expect(within(fila).getByTestId('course-pattern-reason')).toHaveTextContent('feedback.discardedBecause:No aplica a este curso');
+            expect(fila).toHaveTextContent('feedback.decided.discarded');
+        });
+
+        it('«se repite» sigue la regla única: dos correcciones en UNA entrega no se repiten', () => {
+            pintar();
+            const cd = screen.getAllByTestId('course-pattern-row').find(f => f.textContent?.includes('Cierre doble'))!;
+            expect(cd).not.toHaveTextContent('feedback.repeats');
+            cleanup();
+            const project = curso();
+            const sched = project.courseSchedule!.map(e => (e.id === 'e8'
+                ? { ...e, feedback: { receivedAt: '2026-10-25T10:00:00.000Z', text: 'x', corrections: [{ id: 'c9', patternId: 'cd' }] } }
+                : e));
+            pintar({ ...project, courseSchedule: sched } as AIProject);
+            const cd2 = screen.getAllByTestId('course-pattern-row').find(f => f.textContent?.includes('Cierre doble'))!;
+            expect(cd2).toHaveTextContent('feedback.repeats');
+        });
+
+        it('una sola escritura a la vez: mientras «Pasar a tu guía» guarda, descartar y reabrir esperan', async () => {
+            let soltar: (v: unknown) => void = () => {};
+            addRule.mockReturnValue(new Promise(r => { soltar = r; }));
+            pintar();
+            fireEvent.click(within(screen.getAllByTestId('course-pattern-row')[0]!).getByText('feedback.toGuide'));
+            fireEvent.change(within(screen.getByRole('dialog')).getByPlaceholderText('Cierre doble'), { target: { value: 'Cierra una sola vez.' } });
+            fireEvent.click(within(screen.getByRole('dialog')).getByText('guideRule.confirm'));
+            await waitFor(() => expect(addRule).toHaveBeenCalled());
+            expect(screen.getByLabelText('feedback.discardLabel:Cierre doble')).toBeDisabled();
+            expect(screen.getByLabelText('feedback.reopenLabel:Categoría ≠ traducción')).toBeDisabled();
+            soltar({ added: true });
+            await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+            expect(screen.getByLabelText('feedback.discardLabel:Cierre doble')).not.toBeDisabled();
+        });
+    });
+
+    it('las fases posteriores por empezar y vacías van en una línea, sin acción', () => {
+        const project = curso({ workTypes: [], courseSchedule: [], courseScheduleMode: undefined, feedbackPatterns: [] } as Partial<AIProject>);
+        pintar(project, []);
+        for (const id of ['calendar', 'works', 'feedback']) {
+            const sec = screen.getByTestId(`desk-section-${id}`);
+            expect(sec).toHaveAttribute('data-later-phase');
+            expect(within(sec).queryAllByRole('button')).toHaveLength(0);
+            expect(sec).toHaveTextContent(`later.${id}`);
+        }
     });
 
     describe('traer los trabajos anteriores', () => {
@@ -375,6 +566,38 @@ describe('el escritorio del Curso', () => {
                 resumen('t4', { archivedAt: new Date() }), resumen('s2', { projectId: 'nt785' }),
             ], curso());
             expect(lista.map(p => p.id)).toEqual(['t1', 't2', 's2', 't3']);
+        });
+
+        it('mientras llegan los estudios no dice «no hay trabajos»', () => {
+            papersLoading = true;
+            pintar();
+            fireEvent.click(screen.getByText('works.import'));
+            const dialogo = screen.getByRole('dialog');
+            expect(within(dialogo).getByTestId('import-loading')).toHaveAttribute('role', 'status');
+            expect(within(dialogo).queryByText('import.empty')).toBeNull();
+        });
+
+        it('pide la fecha de entrega (opcional) y «entregado el» viene puesta con el último cambio, a la vista y editable', async () => {
+            papers = [resumen('t1', { updatedAt: new Date(2026, 8, 3, 9) }), resumen('t2', { updatedAt: new Date(2026, 8, 10, 9) })];
+            importWorks.mockResolvedValue({ results: [{ paperId: 't1', status: 'origin-set', entryId: 'n1' }, { paperId: 't2', status: 'origin-set', entryId: 'n2' }] });
+            pintar();
+            fireEvent.click(screen.getByText('works.import'));
+            const dialogo = screen.getByRole('dialog');
+            const [c1, c2] = within(dialogo).getAllByTestId('import-candidate');
+            fireEvent.click(within(c1!).getAllByRole('checkbox')[0]!);
+            fireEvent.click(within(c2!).getAllByRole('checkbox')[0]!);
+            const entregado1 = within(c1!).getByLabelText('import.deliveredOn') as HTMLInputElement;
+            expect(entregado1.value).toBe('2026-09-03');
+            fireEvent.change(within(c1!).getByLabelText('import.dueDate'), { target: { value: '2026-09-04' } });
+            fireEvent.change(entregado1, { target: { value: '2026-09-05' } });
+            // Borrada: se usa la que el estudiante vio puesta, no hoy.
+            fireEvent.change(within(c2!).getByLabelText('import.deliveredOn'), { target: { value: '' } });
+            fireEvent.click(within(dialogo).getByText('import.confirm:2'));
+            await waitFor(() => expect(importWorks).toHaveBeenCalled());
+            const { works } = importWorks.mock.calls[0]![0];
+            expect(works[0]).toMatchObject({ paperId: 't1', dueDate: '2026-09-04', deliveredAt: new Date(2026, 8, 5, 12).toISOString() });
+            expect(works[1]).toMatchObject({ paperId: 't2', deliveredAt: new Date(2026, 8, 10, 12).toISOString() });
+            expect(works[1]).not.toHaveProperty('dueDate');
         });
 
         it('trae los elegidos con su tipo, su rótulo y si se entregaron; avisa el que queda solo vinculado', async () => {

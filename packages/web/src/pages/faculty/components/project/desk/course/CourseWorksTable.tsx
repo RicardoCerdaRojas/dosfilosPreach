@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Check, Plus } from 'lucide-react';
+import { Archive, BookOpen, Check, Plus } from 'lucide-react';
 import {
     nextLabelFor,
     type AIProject,
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { FOCUS_RING, WRAP_LABEL } from '../primitives';
 import { TOUCH, createWorkUrl, formatDueDate, langOf, passageLabel, studyUrl } from './courseDeskFormat';
 
 interface CourseWorksTableProps {
@@ -42,6 +43,10 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
     const lang = langOf(i18n.language);
     const libre = course.schedule.mode === 'free';
     const schedule = project.courseSchedule ?? [];
+    // El estudio que cumple cada entrega, aunque el escritorio no lo traiga
+    // (archivado): una entrega con estudio no ofrece «Crear» otra vez.
+    const paperDe = new Map(schedule.map(e => [e.id, e.paperId ?? null]));
+    const COLS = 'lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.6fr)]';
 
     // Un grupo por tipo de trabajo (en el orden del curso), aunque no tenga
     // filas todavía; luego las entregas cuyo tipo ya no existe.
@@ -61,6 +66,8 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
     const fuentes = (r: DeskScheduleRow) => {
         if (r.sources === 'repeats') return { text: t('works.sources.repeats', { sources: r.repeated.join(', ') }), warn: true };
         if (r.sources === 'noRepeat') return { text: r.comparedWith ? t('works.sources.noRepeatFrom', { label: r.comparedWith }) : t('works.sources.first'), warn: false };
+        // A un lado le faltan las fuentes citadas: no se puede afirmar «sin repetir».
+        if (r.sources === 'unknown') return { text: r.comparedWith ? t('works.sources.unknownFrom', { label: r.comparedWith }) : t('works.sources.unknown'), warn: false };
         return null;
     };
 
@@ -79,7 +86,7 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                             <span className="text-xs text-muted-foreground">{t('works.groupCount', { count: g.rows.length })}</span>
                             {libre && g.known && (
                                 // Semana a semana: el trabajo nace con su entrada (sin fecha) para que entregado y devolución tengan dónde vivir.
-                                <Button asChild size="sm" variant="outline" className={cn(TOUCH, 'ml-auto')}>
+                                <Button asChild size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL, 'sm:ml-auto')}>
                                     <Link to={createWorkUrl({ projectId: project.id, workTypeId: g.workTypeId, label: siguiente ?? '' })}>
                                         <Plus className="h-3.5 w-3.5" aria-hidden />
                                         {siguiente ? t('works.createNamed', { label: siguiente }) : t('works.createOfType', { type: g.label })}
@@ -89,29 +96,32 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                         </div>
 
                         {g.rows.length > 0 && (
-                            <ol className="divide-y divide-border/60 rounded-lg border border-border">
-                                <li aria-hidden className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.6fr)] gap-3 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground lg:grid">
+                            <div className="rounded-lg border border-border">
+                                {/* La cabecera, fuera de la lista: un `<li>` oculto contaba como entrega para el lector. */}
+                                <div aria-hidden className={cn('hidden gap-3 border-b border-border/60 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground lg:grid', COLS)}>
                                     <span>{t('works.col.work')}</span>
                                     <span>{t('works.col.progress')}</span>
                                     <span>{t('works.col.sources')}</span>
                                     <span>{t('works.col.delivery')}</span>
-                                </li>
+                                </div>
+                            <ol className="divide-y divide-border/60">
                                 {g.rows.map(r => {
                                     const f = fuentes(r);
                                     const urgente = r.delivery === 'notDelivered' && r.hoursLeft !== null && r.hoursLeft >= 0 && r.hoursLeft <= 72;
+                                    const archivado = !r.study.id ? paperDe.get(r.entryId) ?? null : null;
                                     return (
                                         <li
                                             key={r.entryId}
                                             data-testid="course-works-row"
-                                            className="grid gap-2 px-3 py-2.5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.6fr)] lg:items-center lg:gap-3"
+                                            className={cn('grid gap-2 px-3 py-2.5 lg:items-center lg:gap-3', COLS)}
                                         >
                                             <div className="min-w-0">
                                                 {r.study.id ? (
-                                                    <Link to={studyUrl(r.study.id, project.id)} className="rounded-sm text-sm font-medium text-foreground underline-offset-2 hover:text-primary-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                                        {r.label || t('calendar.noLabel')}
+                                                    <Link to={studyUrl(r.study.id, project.id)} className={cn('inline-flex max-w-full items-center rounded-sm text-sm font-medium text-foreground underline-offset-2 hover:text-primary-text hover:underline', TOUCH, FOCUS_RING)}>
+                                                        <span className="break-words">{r.label || t('calendar.noLabel')}</span>
                                                     </Link>
                                                 ) : (
-                                                    <span className="text-sm font-medium text-foreground">{r.label || t('calendar.noLabel')}</span>
+                                                    <span className="break-words text-sm font-medium text-foreground">{r.label || t('calendar.noLabel')}</span>
                                                 )}
                                                 <p className="text-xs text-muted-foreground">
                                                     {[r.passage ? passageLabel(r.passage, lang) : null, r.dueDate ? t('calendar.due', { date: formatDueDate(r.dueDate, lang) }) : t('calendar.noDate')].filter(Boolean).join(' · ')}
@@ -131,8 +141,18 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                                                     {r.delivery === 'returned' && <Check className="h-3 w-3" aria-hidden />}
                                                     {t(`works.delivery.${r.delivery}`)}
                                                 </span>
-                                                {!r.study.id && (
-                                                    <Button asChild size="sm" variant="outline" className={TOUCH}>
+                                                {archivado ? (
+                                                    // Su estudio está archivado: se abre ese, no se crea otro para la misma entrega.
+                                                    <Link
+                                                        to={studyUrl(archivado, project.id)}
+                                                        data-testid="course-works-archived"
+                                                        className={cn('inline-flex items-center gap-1 rounded-md border border-border px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground sm:py-1', TOUCH, FOCUS_RING)}
+                                                    >
+                                                        <Archive className="h-3.5 w-3.5" aria-hidden />
+                                                        {t('works.archived')}
+                                                    </Link>
+                                                ) : !r.study.id && (
+                                                    <Button asChild size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)}>
                                                         <Link to={createWorkUrl({ projectId: project.id, workTypeId: r.workTypeKnown ? r.workTypeId : null, scheduleEntryId: r.entryId, label: r.label })}>
                                                             {t('works.create', { label: r.label })}
                                                         </Link>
@@ -148,7 +168,7 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                                                     </Button>
                                                 ) : null}
                                                 {r.delivery !== 'notDelivered' && (
-                                                    <Button size="sm" variant="outline" className={TOUCH} onClick={() => onRecordFeedback(r)}>
+                                                    <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={() => onRecordFeedback(r)}>
                                                         {t(r.delivery === 'delivered' ? 'works.recordFeedback' : 'works.editFeedback')}
                                                     </Button>
                                                 )}
@@ -157,6 +177,7 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                                     );
                                 })}
                             </ol>
+                            </div>
                         )}
                     </section>
                 );
@@ -187,7 +208,7 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                         <ul className="flex flex-wrap gap-2">
                             {course.offCalendar.map(s => (
                                 <li key={s.id}>
-                                    <Link to={studyUrl(s.id, project.id)} className="inline-flex min-h-11 items-center rounded-md border border-border px-2 text-xs text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:py-1">
+                                    <Link to={studyUrl(s.id, project.id)} className={cn('inline-flex max-w-full items-center rounded-md border border-border px-2 text-left text-xs text-foreground hover:bg-accent sm:py-1', TOUCH, FOCUS_RING)}>
                                         {s.title || passageLabel(s.passage, lang)}
                                     </Link>
                                 </li>
@@ -197,7 +218,7 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                 )}
                 <div className="flex flex-wrap items-center gap-2">
                     <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t('works.importHint')}</p>
-                    <Button size="sm" variant="outline" className={TOUCH} onClick={onImport} disabled={course.workTypes.length === 0}>
+                    <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={onImport} disabled={course.workTypes.length === 0}>
                         {t('works.import')}
                     </Button>
                 </div>

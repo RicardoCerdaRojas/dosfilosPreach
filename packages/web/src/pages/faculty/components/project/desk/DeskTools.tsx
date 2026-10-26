@@ -53,6 +53,8 @@ interface DeskToolsProps {
         onDelete: (output: ProjectOutput) => void;
     };
     onNavigate: (path: string) => void;
+    /** En el Curso las lenguas se usan dentro de cada trabajo; en el Exegético, de cada estudio. */
+    workNoun?: 'study' | 'work';
 }
 
 /**
@@ -64,7 +66,7 @@ interface DeskToolsProps {
  * libros del proyecto, con lo ya vinculado a mano. Una sesión vinculada en
  * una lengua que no es la del libro se sigue viendo: no se esconde trabajo.
  */
-export function DeskTools({ projectId, languages, conversations, greek, hebrew, sources, material, onNavigate }: DeskToolsProps) {
+export function DeskTools({ projectId, languages, conversations, greek, hebrew, sources, material, onNavigate, workNoun = 'study' }: DeskToolsProps) {
     const { t } = useTranslation('projects');
     const sinLibro = !!languages && languages.length === 0;
     const verGriego = !!languages && (sinLibro || languages.includes('greek') || greek.sessions.length > 0);
@@ -80,7 +82,7 @@ export function DeskTools({ projectId, languages, conversations, greek, hebrew, 
                 id="herramientas"
                 eyebrow={t('desk.tools.eyebrow')}
                 title={t('desk.tools.title')}
-                description={verGriego || verHebreo ? t('desk.tools.description') : undefined}
+                description={verGriego || verHebreo ? t(workNoun === 'work' ? 'desk.tools.descriptionCourse' : 'desk.tools.description') : undefined}
                 data-testid="desk-tools"
             >
                 <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -88,7 +90,7 @@ export function DeskTools({ projectId, languages, conversations, greek, hebrew, 
                         icon={MessageSquareQuote}
                         name={t('resources.conversations.label')}
                         count={conversations.length}
-                        items={conversations.slice(0, 3).map(s => ({ id: s.id, label: s.title || '', to: `/dashboard/faculty/${s.id}` }))}
+                        items={conversations.slice(0, 3).map(s => ({ id: s.id, label: s.title || '', to: `/dashboard/faculty/${encodeURIComponent(s.id)}` }))}
                         primary={{ label: t('resources.conversations.ctaStart'), onClick: () => onNavigate(`/dashboard/faculty?projectId=${pid}`) }}
                     />
                     {verGriego && (
@@ -107,7 +109,8 @@ export function DeskTools({ projectId, languages, conversations, greek, hebrew, 
                             // El tutor de hebreo también lee las secciones en arameo (Esdras, Daniel).
                             name={t(conArameo ? 'desk.tools.hebrewAramaic' : 'resources.hebrew.label')}
                             count={hebrew.sessions.length}
-                            items={hebrew.sessions.slice(0, 3).map(s => ({ id: s.id, label: s.passage || s.title || '', to: '/dashboard/hebrew-tutor' }))}
+                            // Con el id de la sesión (y el proyecto): el enlace dice cuál abrir, no solo el tutor.
+                            items={hebrew.sessions.slice(0, 3).map(s => ({ id: s.id, label: s.passage || s.title || '', to: `/dashboard/hebrew-tutor?sessionId=${encodeURIComponent(s.id)}&projectId=${pid}` }))}
                             primary={{ label: t('resources.hebrew.ctaAnalyze'), onClick: () => onNavigate(`/dashboard/hebrew-tutor?projectId=${pid}`) }}
                             secondary={hebrew.canLink ? { label: t('resources.hebrew.ctaLink'), onClick: hebrew.onLink } : undefined}
                         />
@@ -139,6 +142,7 @@ function ToolCard({ icon: Icon, name, count, items, primary, secondary }: {
     primary: ToolAction;
     secondary?: ToolAction;
 }) {
+    const { t } = useTranslation('projects');
     return (
         <li className="flex min-w-0 flex-col gap-2 rounded-lg border border-border p-3" data-testid="desk-tool">
             <p className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground">
@@ -148,16 +152,21 @@ function ToolCard({ icon: Icon, name, count, items, primary, secondary }: {
             </p>
             {items.length > 0 && (
                 <ul className="space-y-0.5">
-                    {items.map(it => (
-                        <li key={it.id}>
-                            <Link
-                                to={it.to}
-                                className={cn('block truncate rounded-sm py-1 text-[12.5px] text-foreground hover:text-primary-text', TOUCH, FOCUS_RING)}
-                            >
-                                {it.label}
-                            </Link>
-                        </li>
-                    ))}
+                    {items.map(it => {
+                        // Una sesión sin título ni pasaje igual se nombra: un enlace vacío no se puede leer.
+                        const rotulo = it.label.trim() || t('desk.tools.untitledSession');
+                        return (
+                            <li key={it.id}>
+                                <Link
+                                    to={it.to}
+                                    aria-label={t('desk.tools.openSession', { tool: name, label: rotulo })}
+                                    className={cn('flex items-center truncate rounded-sm py-1 text-[12.5px] text-foreground hover:text-primary-text', TOUCH, FOCUS_RING)}
+                                >
+                                    <span className={cn('truncate', !it.label.trim() && 'italic text-muted-foreground')}>{rotulo}</span>
+                                </Link>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
             <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1">

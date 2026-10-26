@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { DESK_TEXT_KEYS } from '@dosfilos/domain';
 import es from '@/i18n/locales/es/projects.json';
 import en from '@/i18n/locales/en/projects.json';
+import exegetico from '@/i18n/locales/es/projectDeskExegetical.json';
+import exegeticoEn from '@/i18n/locales/en/projectDeskExegetical.json';
 
 /**
  * Los textos del escritorio (W2-A): cada clave `desk.*` que produce el
@@ -25,8 +27,9 @@ const FASES = {
 };
 const PROPIAS = [
     'desk.journey.label', 'desk.journey.nowOnlyLabel', 'desk.journey.phaseLabel', 'desk.journey.goToPhase',
-    'desk.journey.status.todo', 'desk.journey.status.doing', 'desk.journey.status.ready',
-    'desk.journey.nowLabel', 'desk.journey.due', 'desk.journey.allReady', 'desk.journey.notesLabel',
+    'desk.journey.status.todo', 'desk.journey.status.doing', 'desk.journey.status.ready', 'desk.journey.status.loading',
+    'desk.journey.nowLabel', 'desk.journey.due', 'desk.journey.allReady', 'desk.journey.allReadyCourse', 'desk.journey.notesLabel',
+    'desk.journey.laterLine',
     ...['deadline', 'continuity', 'upcoming', 'scheduled', 'phase', 'recent'].map(k => `desk.journey.kind.${k}`),
     // Un verbo por cada destino del modelo (`DeskTargetType`) más los dos especiales.
     ...['study', 'scheduleEntry', 'createScheduled', 'phase', 'framing', 'stateOfArt', 'planSeries', 'reviseIdea', 'recordFeedback', 'output', 'review', 'oldNote']
@@ -34,7 +37,8 @@ const PROPIAS = [
     'desk.journey.scaffold.title', 'desk.journey.scaffold.purpose', 'desk.journey.scaffold.wellDone', 'desk.journey.scaffold.commonError',
     ...Object.entries(FASES).flatMap(([tipo, ids]) => ids.flatMap(id => ['name', 'purpose', 'wellDone', 'commonError'].map(p => `desk.journey.phases.${tipo}.${id}.${p}`))),
     'desk.tools.eyebrow', 'desk.tools.title', 'desk.tools.description', 'desk.tools.hebrewAramaic', 'desk.tools.sourcesEyebrow',
-    'material.seeAll', 'material.seeLess', 'material.chars', 'roadmap.label',
+    'desk.tools.untitledSession', 'desk.tools.openSession',
+    'material.seeAll', 'material.seeLess', 'material.chars', 'material.loading', 'roadmap.label',
 ];
 
 describe('las claves que produce el dominio (DESK_TEXT_KEYS)', () => {
@@ -56,6 +60,12 @@ describe('paridad y vocabulario', () => {
         expect(hojas((es as Arbol).desk).sort()).toEqual(hojas((en as Arbol).desk).sort());
     });
 
+    it('los textos del escritorio Exegético tienen las mismas claves y parámetros en es y en', () => {
+        const params = (s: unknown) => [...String(s ?? '').matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]).sort();
+        expect(hojas(exegetico).sort()).toEqual(hojas(exegeticoEn).sort());
+        for (const h of hojas(exegetico)) expect(params(leer(exegeticoEn as Arbol, h)), h).toEqual(params(leer(exegetico as Arbol, h)));
+    });
+
     it('ningún texto del escritorio nombra la tecnología, y el recorrido ya no se llama «Roadmap»', () => {
         for (const json of [es, en] as Arbol[]) {
             for (const h of hojas(json.desk)) {
@@ -73,8 +83,35 @@ describe('paridad y vocabulario', () => {
         }
     });
 
-    it('«perícopa» y «estado del arte» se glosan en el andamiaje', () => {
-        expect(leer(es as Arbol, 'desk.journey.phases.exegetical.division.purpose')).toContain('cada unidad del texto que se predica entera');
-        expect(leer(es as Arbol, 'desk.journey.phases.exegetical.sources.purpose')).toContain('la lista razonada de obras con que vas a trabajar');
+    it('«perícopa», «estado del arte» y «ensamblado» se glosan UNA vez, en la sección que siempre se ve', () => {
+        // El glosario fijo de la fase (esc_fix.md). La glosa va en la descripción de la sección
+        // (visible aunque el andamiaje esté plegado o la fase no sea la activa), no repetida en él.
+        const mesa = leer(exegetico as Arbol, 'table.description') as string;
+        expect(mesa).toContain('unidad completa del texto, con comienzo y final propios');
+        expect(mesa).toContain('todos los pasos hechos y el trabajo armado');
+        expect(leer(exegetico as Arbol, 'sources.description')).toContain('lo que se ha escrito sobre el libro, de donde eliges, con su razón, las obras con que vas a trabajar');
+        const andamiaje = JSON.stringify((es as Arbol).desk);
+        expect(andamiaje).not.toContain('con comienzo y final propios');
+        expect(andamiaje).not.toContain('de donde eliges, con su razón');
+    });
+
+    it('el vocabulario fijo: «tu lectura del libro» (no «encuadre»), «provisional», «3 de 4», «a última hora»', () => {
+        for (const json of [(es as Arbol).desk, exegetico] as Arbol[]) {
+            for (const h of hojas(json)) {
+                const v = leer(json, h) as string;
+                expect(v, h).not.toMatch(/encuadre|provisori|rótulo|\}\}\/\{\{|último momento/i);
+            }
+        }
+    });
+
+    it('los textos del método que pidió la revisión', () => {
+        const f = (k: string) => leer(es as Arbol, `desk.journey.phases.${k}`) as string;
+        expect(f('exegetical.passage.purpose')).toContain('una hipótesis que el texto podrá confirmar o corregir');
+        expect(f('exegetical.passage.wellDone')).toContain('de qué habla el libro y qué dice de eso');
+        expect(f('exegetical.passage.commonError')).toContain('entonces no es tu lectura');
+        expect(f('exegetical.pericopes.commonError')).toContain('como si estuviera suelta');
+        expect(f('exegetical.synthesis.purpose')).toContain('lo que el texto mostró en cada perícopa');
+        expect(leer(es as Arbol, 'desk.notes.phase.passage')).toContain('sin ella, tus estudios no tienen nada que corregir');
+        expect(leer(es as Arbol, 'desk.journey.action.framing')).toBe('Escribir tu lectura');
     });
 });

@@ -56,7 +56,7 @@ export function ProjectDashboard() {
 
     const {
         project, projects, isLoadingProject, updateProject, typeMeta, desk, legacyRoadmap,
-        blocks, journey, retrySeries, papers, sermons, slices, attached, workspace,
+        blocks, journey, retry, retrySeries, papers, sermons, slices, attached, workspace,
     } = useProjectDesk(projectId);
     const caps = typeMeta.capabilities;
     const {
@@ -264,20 +264,16 @@ export function ProjectDashboard() {
                 />
 
                 {journey === 'error' ? (
-                    // Sin saber si hay serie, el escritorio ofrecería «Planificar la serie»
-                    // aunque ya exista: se dice que falló y se ofrece reintentar.
+                    // Sin saber si hay serie o estudios, el escritorio ofrecería «Planificar
+                    // la serie» o diría «sin estudios»: se dice que falló y se reintenta lo caído.
                     <div role="alert" data-testid="project-roadmap-error" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
                         <p className="text-sm text-foreground">{t('roadmap.loadError')}</p>
-                        <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={retrySeries}>{t('seriesSection.retry')}</Button>
+                        <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={retry}>{t('seriesSection.retry')}</Button>
                     </div>
                 ) : journey === 'loading' ? (
-                    // Mientras carga, «sin serie», «sin estudios» o «sin fuentes» serían falsos.
-                    <div
-                        role="status"
-                        aria-label={t('roadmap.loading')}
-                        data-testid="project-roadmap-loading"
-                        className="h-[132px] rounded-xl border border-border/60 bg-muted/40 animate-pulse"
-                    />
+                    // Mientras carga, «sin serie», «sin estudios» o «sin fuentes» serían
+                    // falsos: el recorrido y cada sección esperan con su esqueleto.
+                    <DeskLoading label={t('roadmap.loading')} sections={conEscritorio ? 4 : 2} />
                 ) : caps.desk === 'legacy' ? (
                     legacyRoadmap && <ProjectRoadmap roadmap={legacyRoadmap} typeLabel={typeMeta.label} onPhaseCta={handleRoadmapCta} />
                 ) : desk ? (
@@ -286,7 +282,14 @@ export function ProjectDashboard() {
 
                 {/* Las secciones de cada fase, en el orden del trabajo. */}
                 {journey === 'ready' && desk && caps.desk === 'exegetical' && (
-                    <ExegeticalDeskSections project={project} desk={desk} onOpenFraming={() => setFramingOpen(true)} sermons={sermons} />
+                    <ExegeticalDeskSections
+                        project={project}
+                        desk={desk}
+                        onOpenFraming={() => setFramingOpen(true)}
+                        // Si los sermones fallaron, la columna dice «—», no «sin sermón».
+                        sermons={blocks.sermons === 'ready' ? sermons : undefined}
+                        sermonsFailed={blocks.sermons === 'error'}
+                    />
                 )}
                 {journey === 'ready' && desk && caps.desk === 'course' && (
                     <CourseDeskSections project={project} desk={desk} feedbackEntryId={feedbackEntryId} onFeedbackEntryChange={setFeedbackEntryId} />
@@ -320,7 +323,9 @@ export function ProjectDashboard() {
                     />
                 )}
 
-                <DeskTools
+                {/* Herramientas y material, al final y cuando lo de arriba ya está: si
+                    aparecieran antes, la página saltaría al llegar las secciones. */}
+                {journey === 'ready' && <DeskTools
                     projectId={project.id}
                     languages={caps.languages ? (desk?.languages ?? []) : null}
                     conversations={projectSessions}
@@ -342,7 +347,8 @@ export function ProjectDashboard() {
                         onDelete: (o) => setOutputToDelete(o),
                     }}
                     onNavigate={(path) => navigate(path)}
-                />
+                    workNoun={caps.desk === 'course' ? 'work' : 'study'}
+                />}
             </div>
 
             <ProjectLinkSessionDialog
@@ -424,15 +430,42 @@ export function ProjectDashboard() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>{t('deleteOutput.cancel')}</AlertDialogCancel>
+                        {/* `destructive-solid`: AA con el texto en claro y en oscuro; el hover oscurece. */}
                         <AlertDialogAction
                             onClick={handleDeleteOutput}
-                            className="bg-destructive hover:bg-destructive/90"
+                            className="bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid-hover"
                         >
                             {t('deleteOutput.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+        </div>
+    );
+}
+
+/**
+ * Mientras llega lo que cambia una fase: el recorrido y cada sección con su
+ * esqueleto, para que la página no afirme vacíos ni salte al cargar.
+ */
+function DeskLoading({ label, sections }: { label: string; sections: number }) {
+    return (
+        <div role="status" aria-label={label} data-testid="project-roadmap-loading" className="space-y-6">
+            <div className="space-y-3">
+                <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-5">
+                    {Array.from({ length: 5 }, (_, i) => <div key={i} className="h-11 rounded-lg border border-border/60 bg-muted/40 animate-pulse" />)}
+                </div>
+                <div className="h-24 rounded-xl border border-border/60 bg-muted/40 animate-pulse" />
+            </div>
+            {Array.from({ length: sections }, (_, i) => (
+                <div key={i} data-testid="desk-section-skeleton" className="space-y-3 rounded-xl border border-border/60 bg-card p-4 sm:p-5">
+                    <div className="h-3 w-16 rounded bg-muted animate-pulse" />
+                    <div className="h-5 w-56 max-w-full rounded bg-muted animate-pulse" />
+                    <div className="h-16 rounded-lg bg-muted/40 animate-pulse" />
+                </div>
+            ))}
+            <span className="sr-only">{label}</span>
         </div>
     );
 }

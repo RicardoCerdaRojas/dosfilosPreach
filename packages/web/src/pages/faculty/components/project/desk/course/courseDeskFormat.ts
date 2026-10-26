@@ -56,9 +56,46 @@ export function createWorkUrl(input: { projectId: string; workTypeId?: string | 
 /** Las clases de un control táctil del escritorio: 44 px en el teléfono, compacto desde `sm`. */
 export const TOUCH = 'min-h-11 sm:min-h-0';
 
+/** Un botón de solo ícono: 44 × 44 en el teléfono (el alto solo no basta para el dedo). */
+export const ICON_TOUCH = 'min-h-11 min-w-11 sm:min-h-0 sm:min-w-0';
+
 /** Los campos de los formularios del escritorio, como los de las tarjetas del curso. */
 export const FIELD =
-    'w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-11 sm:min-h-0 sm:py-1.5';
+    'w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus min-h-11 sm:min-h-0 sm:py-1.5';
+
+/** Las casillas: el tono sólido de la marca (AA como control) y foco visible. */
+export const CHECKBOX = 'h-5 w-5 shrink-0 accent-primary-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus';
+
+/**
+ * Los diálogos del escritorio en el teléfono: no pasan del alto visible
+ * (`dvh`, que descuenta la barra del navegador), el cuerpo hace scroll y el
+ * pie queda fijo, para que «Guardar» no se pierda debajo de un texto largo.
+ */
+export const DIALOG = 'flex max-h-[90dvh] flex-col gap-0 p-0';
+export const DIALOG_HEADER = 'shrink-0 px-4 pb-3 pt-5 pr-12 sm:px-6';
+export const DIALOG_BODY = 'min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6';
+export const DIALOG_FOOTER = 'shrink-0 gap-2 border-t border-border px-4 py-3 sm:px-6';
+
+/** Lo que borra y no se recupera: el rojo sólido con AA (`--destructive-solid`). */
+export const DESTRUCTIVE = 'bg-destructive-solid text-destructive-foreground hover:bg-destructive-solid-hover';
+
+/**
+ * Un instante ISO desde un día `YYYY-MM-DD` local, a mediodía: así el día
+ * no cambia al pasar a UTC (medianoche en Chile ya es el día anterior en
+ * algunos husos, y al revés).
+ */
+export function localDayToIso(day: string): string | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day.trim());
+    if (!m) return null;
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12).toISOString();
+}
+
+/** El día local `YYYY-MM-DD` de una fecha (o `''` si no es una fecha válida). */
+export function localDayOf(v: Date | string | null | undefined): string {
+    if (!v) return '';
+    const d = v instanceof Date ? v : new Date(v);
+    return Number.isNaN(d.getTime()) ? '' : todayLocal(d);
+}
 
 /**
  * Los estudios que se pueden traer: los del usuario sin proyecto, los de

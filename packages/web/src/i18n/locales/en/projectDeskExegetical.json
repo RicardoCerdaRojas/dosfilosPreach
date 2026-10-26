@@ -18,8 +18,8 @@
         "untitledMovement": "Untitled",
         "oldNote": {
             "title": "You have an earlier note",
-            "body": "It no longer counts as your reading of the book. Move it into the framing: it is copied as is, and you correct and confirm it.",
-            "action": "Move your note into the framing",
+            "body": "It no longer counts as your reading of the book. Move it into your reading: it is copied as is and you correct and confirm it.",
+            "action": "Move your note into your reading",
             "loading": "Loading your note…",
             "missing": "The note's text was not found."
         }
@@ -32,7 +32,7 @@
     },
     "sources": {
         "title": "Sources",
-        "description": "The reasoned list of works you will work with (the state of the art): what the work requires, the candidates and the ones you approve, with your reason.",
+        "description": "Your state of the art: what has been written on the book, from which you choose, with your reason, the works you will work with. Here you see what the work asks for, the candidates and the ones you approve.",
         "open": "See your sources",
         "choose": "Choose your sources",
         "emptyTitle": "No sources yet",
@@ -57,7 +57,7 @@
     "table": {
         "eyebrow": "Phases 3 and 4",
         "title": "The pericope table",
-        "description": "A pericope is each unit of the text that is preached whole. For each one you see its study, what you noted in your reading and its sermon.",
+        "description": "A pericope is a complete unit of the text, with its own beginning and end. For each one you see its study (assembled: every step done and the work put together), what you noted in your reading and its sermon.",
         "phase": {
             "division": "Division into pericopes",
             "pericopes": "Studies by pericope"
@@ -101,10 +101,11 @@
         "noSeries": "The planner helps you divide it: you write your division first and then compare it with the overview. When the series is created, each pericope gets its study.",
         "withoutSeries": "You said the division is done without a series: your studies are below.",
         "untitledSeries": "Untitled series",
-        "groupCounts": "{{done}} of {{total}} studied · {{annotated}} noted in your reading",
+        "groupCounts": "{{done}} of {{total}} assembled · {{annotated}} noted in your reading",
         "looseTitle": "Outside the series",
         "studiesTitle": "Studies",
-        "nothingPending": "Nothing pending here."
+        "nothingPending": "Nothing pending here.",
+        "sermonsError": "The sermons could not be loaded: the «Sermon» column has no data for now."
     },
     "synthesis": {
         "title": "Synthesis",
@@ -139,5 +140,10 @@
         "why": "Why:",
         "stale": "This revision is out of date: you changed the original idea afterwards.",
         "close": "Close"
+    },
+    "later": {
+        "sources": "opens once you write your reading of the book: you choose the works to read that book",
+        "division": "opens with your reading of the book and your sources: you divide the book with your movements in view",
+        "synthesis": "opens with your first note on an assembled study"
     }
 }

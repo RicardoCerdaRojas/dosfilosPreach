@@ -19,7 +19,7 @@ let pasajeElegido: unknown = { bookId: 'JAS', chapterStart: 4, chapterEnd: 4, ve
 let pasajeRecibido: unknown = null;
 
 vi.mock('react-router-dom', async (orig) => ({ ...(await orig<typeof import('react-router-dom')>()), useNavigate: () => navigate }));
-vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string, p?: { label?: string }) => (p?.label ? `${k}:${p.label}` : k), i18n: { language: 'es' } }) }));
+vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string, p?: { label?: string; from?: string }) => (p?.from ? `${k}:${p.from}>${p.label ?? ''}` : p?.label ? `${k}:${p.label}` : k), i18n: { language: 'es' } }) }));
 vi.mock('@/hooks/faculty/useFacultyProjects', () => ({ useFacultyProjects: () => ({ projects: proyectos, updateProject: { mutateAsync } }) }));
 vi.mock('@/hooks/exegesis/useWorkProfiles', () => ({ useWorkProfiles: () => ({ profiles: [], defaultProfile: null }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ createPaper: { isPending: false, mutateAsync: createPaper } }) }));
@@ -35,7 +35,8 @@ vi.mock('@/components/exegesis/PassagePicker', () => ({
 }));
 vi.mock('@/components/exegesis/setup/RubricTemplatePicker', () => ({ RubricTemplatePicker: () => <div>rúbrica</div> }));
 vi.mock('@/components/exegesis/setup/AssignmentBriefPicker', () => ({ AssignmentBriefPicker: () => <div>consigna</div> }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: (...a: unknown[]) => toastError(...a) } }));
+const toastSuccess = vi.fn();
+vi.mock('sonner', () => ({ toast: { success: (...a: unknown[]) => toastSuccess(...a), error: (...a: unknown[]) => toastError(...a) } }));
 vi.mock('@/hooks/library', () => ({ useLibrary: () => ({ resources: [] }) }));
 const { ExegesisCreatePage } = await import('../ExegesisCreatePage');
 
@@ -48,6 +49,7 @@ const nt785 = {
 };
 const abrir = (q: string) => render(<MemoryRouter initialEntries={[`/dashboard/exegesis/new?${q}`]}><ExegesisCreatePage /></MemoryRouter>);
 const crear = () => fireEvent.click(screen.getByText('create.submit'));
+const SETUP = '/dashboard/exegesis/nuevo/setup?from=%2Fdashboard%2Fprojects%2Fnt785';
 
 beforeEach(() => {
     cleanup();
@@ -79,7 +81,25 @@ describe('crear un trabajo desde el escritorio del curso', () => {
         crear();
         await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
         expect(mutateAsync.mock.calls[0]![0]).toEqual({ projectId: 'nt785', courseOps: [{ op: 'linkPaper', entryId: 'e10', paperId: 'nuevo' }] });
-        expect(navigate).toHaveBeenCalledWith('/dashboard/exegesis/nuevo/setup');
+        // La configuración y el estudio vuelven al proyecto.
+        expect(navigate).toHaveBeenCalledWith(SETUP);
+    });
+
+    it('si el estudiante cambia de tipo, no cumple la entrega de otro tipo: crea una entrada nueva del tipo elegido', async () => {
+        abrir('projectId=nt785&workTypeId=tp&scheduleEntryId=e10&label=TP%20%2310');
+        fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'ens' } });
+        // El ensayo no tiene rótulos con número: se dice que no cumple «TP #10».
+        expect(screen.getByTestId('create-schedule-entry')).toHaveTextContent('create.otherTypeUnlabeled:TP #10');
+        crear();
+        await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+        expect(mutateAsync.mock.calls[0]![0].courseOps).toEqual([{ op: 'upsertEntry', entry: { workTypeId: 'ens', label: 'Santiago 4:1-10', paperId: 'nuevo' } }]);
+    });
+
+    it('volver al tipo de la entrega la vuelve a cumplir', async () => {
+        abrir('projectId=nt785&workTypeId=tp&scheduleEntryId=e10&label=TP%20%2310');
+        fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'ens' } });
+        fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'tp' } });
+        expect(screen.getByTestId('create-schedule-entry')).toHaveTextContent('create.fulfills:TP #10');
     });
 
     it('el pasaje de la entrega viene puesto si el estudiante no eligió otro', async () => {
@@ -143,11 +163,28 @@ describe('crear un trabajo desde el escritorio del curso', () => {
         expect(mutateAsync).not.toHaveBeenCalled();
     });
 
-    it('si vincular falla, el trabajo ya existe: se avisa y se sigue a su configuración', async () => {
+    it('si vincular falla un momento, se reintenta solo', async () => {
+        mutateAsync.mockRejectedValueOnce(new Error('red'));
+        abrir('projectId=nt785&workTypeId=tp&scheduleEntryId=e10&label=TP%20%2310');
+        crear();
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith(SETUP));
+        expect(mutateAsync).toHaveBeenCalledTimes(2);
+        expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('si vincular falla, el trabajo ya existe: no se crea otro; el aviso queda con «Vincular» y se sigue a su configuración', async () => {
         mutateAsync.mockRejectedValue(new Error('red'));
         abrir('projectId=nt785&workTypeId=tp&scheduleEntryId=e10&label=TP%20%2310');
         crear();
-        await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard/exegesis/nuevo/setup'));
-        expect(toastError).toHaveBeenCalledWith('create.linkFailed:TP #10');
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith(SETUP));
+        expect(createPaper).toHaveBeenCalledTimes(1);
+        const [texto, opciones] = toastError.mock.calls[0]!;
+        expect(texto).toBe('create.linkFailed:TP #10');
+        expect(opciones).toMatchObject({ duration: Infinity, action: { label: 'create.linkRetry' } });
+        // «Vincular» reintenta la misma operación, y avisa si quedó.
+        mutateAsync.mockResolvedValue({});
+        opciones.action.onClick();
+        await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('create.linked:TP #10'));
+        expect(mutateAsync.mock.calls.at(-1)![0]).toEqual({ projectId: 'nt785', courseOps: [{ op: 'linkPaper', entryId: 'e10', paperId: 'nuevo' }] });
     });
 });

@@ -16,6 +16,9 @@ interface DeskJourneyProps {
     onPhase?: (phaseId: string) => void;
 }
 
+/** La nota de la fase 1 sin tu lectura: se destaca entre las demás. */
+const STRONG_NOTE = 'desk.notes.phase.passage';
+
 /** El tipo del escritorio como clave de textos (`desk.journey.phases.<tipo>.<fase>`). */
 const tipoDeTextos = (desk: ProjectDeskModel) => (desk.type === 'course' ? 'course' : 'exegetical');
 
@@ -65,7 +68,9 @@ export function DeskJourney({ desk, onNow, onNote, onPhase }: DeskJourneyProps) 
     if (!conFases && !desk.now) return null;
 
     return (
-        <section aria-labelledby="desk-journey-title" className="space-y-3" data-testid="desk-journey">
+        // En el teléfono «Ahora» va primero (`order-first`): es lo que el pastor
+        // viene a hacer; en pantalla ancha, debajo de las fases que explica.
+        <section aria-labelledby="desk-journey-title" className="flex flex-col gap-3" data-testid="desk-journey">
             <h2 id="desk-journey-title" className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary-text">
                 {t(conFases ? 'desk.journey.label' : 'desk.journey.nowOnlyLabel')}
             </h2>
@@ -79,6 +84,7 @@ export function DeskJourney({ desk, onNow, onNote, onPhase }: DeskJourneyProps) 
                                 name={nombre(p.id)}
                                 status={p.status}
                                 active={p.id === desk.activePhaseId}
+                                loading={p.loading}
                                 onClick={() => irAFase(p.id)}
                             />
                         </li>
@@ -97,7 +103,12 @@ export function DeskJourney({ desk, onNow, onNote, onPhase }: DeskJourneyProps) 
                                 <button
                                     type="button"
                                     onClick={() => onNote(n)}
-                                    className={cn('group flex w-full items-center gap-2 rounded-sm py-1.5 text-left text-[13px] leading-snug text-foreground hover:text-primary-text', TOUCH, FOCUS_RING)}
+                                    className={cn(
+                                        'group flex w-full items-center gap-2 rounded-sm py-1.5 text-left text-[13px] leading-snug text-foreground hover:text-primary-text',
+                                        // Sin tu lectura del libro, los estudios no tienen qué corregir: la nota pesa más.
+                                        n.text.key === STRONG_NOTE && 'font-medium',
+                                        TOUCH, FOCUS_RING,
+                                    )}
                                 >
                                     {n.phaseId && numero(n.phaseId) > 0 && (
                                         <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
@@ -138,11 +149,14 @@ function NowCard({ desk, lang, nombre, numero, onNow }: {
     const texto = useDeskText();
     const now = desk.now;
     if (!now) {
-        // Todas las fases listas: nada que empujar.
+        // Todas las fases listas: nada que empujar. El Curso tiene su propio cierre.
         return (
-            <div className="rounded-xl border border-success/30 bg-success-subtle px-4 py-3" role="status">
-                <p className="text-[13px] font-medium text-success-subtle-foreground">{t('desk.journey.allReady')}</p>
-            </div>
+            <section aria-labelledby="desk-now-title" className="order-first rounded-xl border border-success/30 bg-success-subtle px-4 py-3 md:order-none" data-testid="desk-now">
+                <h3 id="desk-now-title" className="sr-only">{t('desk.journey.nowLabel')}</h3>
+                <p className="text-[13px] font-medium text-success-subtle-foreground" role="status">
+                    {t(desk.type === 'course' ? 'desk.journey.allReadyCourse' : 'desk.journey.allReady')}
+                </p>
+            </section>
         );
     }
     const fecha = now.dueDate ? formatDeskDay(now.dueDate, lang) : null;
@@ -152,22 +166,27 @@ function NowCard({ desk, lang, nombre, numero, onNow }: {
         ? t('desk.journey.kind.phase', { number: numero(faseId), name: nombre(faseId) })
         : t(`desk.journey.kind.${now.kind}`, { date: fecha ?? '' });
     return (
-        <div className="flex flex-col gap-3 rounded-xl border border-primary/40 bg-card p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5" data-testid="desk-now">
+        <section
+            aria-labelledby="desk-now-title"
+            className="order-first flex flex-col gap-3 rounded-xl border border-primary/40 bg-card p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5 md:order-none"
+            data-testid="desk-now"
+        >
             <div className="min-w-0 flex-1 space-y-1">
-                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary-text">
+                <h3 id="desk-now-title" className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary-text">
                     {t('desk.journey.nowLabel')}
                     <span className="normal-case tracking-normal text-muted-foreground"> · {porQue}</span>
-                </p>
+                </h3>
                 <p className="font-reading text-[18px] leading-snug text-foreground">{texto(now.text)}</p>
                 {fecha && now.kind !== 'deadline' && now.kind !== 'upcoming' && now.kind !== 'scheduled' && (
                     <p className="text-[12.5px] text-muted-foreground">{t('desk.journey.due', { date: fecha })}</p>
                 )}
             </div>
-            <Button onClick={() => onNow(now)} className="min-h-11 w-full shrink-0 gap-1.5 sm:w-auto sm:min-h-9">
-                {t(nowActionKey(now), { label: now.target.label ?? '' })}
+            {/* Un rótulo largo («Crear TP #10 · Stg 4:13–5:6») pasa a otra línea en el teléfono. */}
+            <Button onClick={() => onNow(now)} className="h-auto min-h-11 w-full shrink-0 gap-1.5 whitespace-normal py-2 text-left sm:h-9 sm:w-auto sm:min-h-9 sm:whitespace-nowrap sm:py-2">
+                <span className="min-w-0">{t(nowActionKey(now), { label: now.target.label ?? '' })}</span>
                 <ChevronRight className="h-4 w-4" aria-hidden />
             </Button>
-        </div>
+        </section>
     );
 }
 
@@ -203,16 +222,15 @@ function Scaffold({ tipo, phase, number, name }: { tipo: string; phase: DeskPhas
                 <span className="min-w-0 flex-1">{t('desk.journey.scaffold.title', { number, name })}</span>
                 <Icono className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             </button>
-            {!plegado && (
-                <dl id={cuerpoId} className="grid gap-3 border-t border-border px-4 pb-4 pt-3 md:grid-cols-3">
-                    {(['purpose', 'wellDone', 'commonError'] as const).map(parte => (
-                        <div key={parte} className="space-y-0.5">
-                            <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-primary-text">{t(`desk.journey.scaffold.${parte}`)}</dt>
-                            <dd className="text-[13px] leading-relaxed text-foreground">{t(`${base}.${parte}`)}</dd>
-                        </div>
-                    ))}
-                </dl>
-            )}
+            {/* Siempre montado (`hidden` al plegar): `aria-controls` apunta a algo que existe. */}
+            <dl id={cuerpoId} hidden={plegado} className="grid gap-3 border-t border-border px-4 pb-4 pt-3 md:grid-cols-3">
+                {(['purpose', 'wellDone', 'commonError'] as const).map(parte => (
+                    <div key={parte} className="space-y-0.5">
+                        <dt className="text-[11px] font-medium uppercase tracking-[0.12em] text-primary-text">{t(`desk.journey.scaffold.${parte}`)}</dt>
+                        <dd className="text-[13px] leading-relaxed text-foreground">{t(`${base}.${parte}`)}</dd>
+                    </div>
+                ))}
+            </dl>
         </div>
     );
 }

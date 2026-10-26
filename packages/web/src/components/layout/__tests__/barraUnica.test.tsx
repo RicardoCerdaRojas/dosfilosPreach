@@ -165,6 +165,85 @@ describe('contraste del texto de la marca y del ✓ de éxito en cada tema', () 
     });
 });
 
+/**
+ * El anillo de foco (`--focus`, `ring-focus`) y el botón destructivo lleno
+ * (`--destructive-solid`). Un indicador de foco pide 3:1 contra lo que lo
+ * rodea (la tarjeta y el fondo, que es también el color del `ring-offset`);
+ * el texto del botón destructivo, 4,5:1 en reposo y en hover. Fase
+ * «Escritorio del proyecto», ronda de arreglos (2026-10-26).
+ */
+describe('contraste del foco y del botón destructivo en cada tema', () => {
+    const css = readFileSync(resolve(__dirname, '../../../index.css'), 'utf8');
+    const hsl = (h: number, s: number, l: number) => {
+        s /= 100; l /= 100;
+        const k = (n: number) => (n + h / 30) % 12;
+        const a = s * Math.min(l, 1 - l);
+        return [0, 8, 4].map(n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))));
+    };
+    const luminancia = ([r, g, b]: number[]) => {
+        const f = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+        return 0.2126 * f(r!) + 0.7152 * f(g!) + 0.0722 * f(b!);
+    };
+    const contraste = (x: number[], y: number[]) => {
+        const [a, b] = [luminancia(x), luminancia(y)];
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    };
+    const rgb = (texto: string) => hsl(...(texto.trim().split(/\s+/).map(x => parseFloat(x)) as [number, number, number]));
+    const bloques = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(b => ({
+        selector: b[1]!.split('*/').pop()!.trim().replace(/\s+/g, ' '),
+        cuerpo: b[2]!,
+    }));
+    const token = (cuerpo: string, nombre: string) => cuerpo.match(new RegExp(`${nombre}:\\s*([^;]+);`))?.[1];
+    const base = (oscuro: boolean) => bloques.find(b => (oscuro ? b.selector === '.dark' : b.selector.startsWith(':root')))!.cuerpo;
+    const esOscuro = (selector: string) => selector.includes('.dark') && !selector.includes('.light');
+
+    it('cada tema que define el texto de la marca define también su foco, con el mismo tono', () => {
+        const conTexto = bloques.filter(b => token(b.cuerpo, '--primary-text'));
+        expect(conTexto.length).toBeGreaterThanOrEqual(9);
+        for (const { selector, cuerpo } of conTexto) {
+            expect(token(cuerpo, '--focus'), selector).toBe(token(cuerpo, '--primary-text'));
+        }
+    });
+
+    it('el anillo de foco llega a 3:1 sobre la tarjeta y el fondo', () => {
+        const conFoco = bloques.filter(b => token(b.cuerpo, '--focus'));
+        expect(conFoco.length).toBeGreaterThanOrEqual(9);
+        for (const { selector, cuerpo } of conFoco) {
+            const delModo = base(esOscuro(selector));
+            const de = (nombre: string) => rgb(token(cuerpo, nombre) ?? token(delModo, nombre)!);
+            for (const fondo of ['--card', '--background']) {
+                const c = contraste(de('--focus'), de(fondo));
+                expect(c, `${selector} foco sobre ${fondo}: ${c.toFixed(2)}`).toBeGreaterThanOrEqual(3);
+            }
+        }
+    });
+
+    it('el botón destructivo lleno llega a AA con su texto y con blanco, en reposo y en hover', () => {
+        const conRojo = bloques.filter(b => token(b.cuerpo, '--destructive-solid'));
+        // Claro, oscuro y el claro forzado de la landing.
+        expect(conRojo.map(b => b.selector)).toEqual(expect.arrayContaining(['.dark']));
+        expect(conRojo.some(b => b.selector.startsWith(':root'))).toBe(true);
+        expect(conRojo.some(b => b.selector.includes('.light'))).toBe(true);
+        for (const { selector, cuerpo } of conRojo) {
+            for (const fondo of ['--destructive-solid', '--destructive-solid-hover']) {
+                for (const texto of [token(cuerpo, '--destructive-foreground')!, '0 0% 100%']) {
+                    const c = contraste(rgb(texto), rgb(token(cuerpo, fondo)!));
+                    expect(c, `${selector} ${fondo} con ${texto}: ${c.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
+                }
+            }
+            // El hover oscurece: más contraste con el texto, nunca menos.
+            const l = (t: string) => luminancia(rgb(token(cuerpo, t)!));
+            expect(l('--destructive-solid-hover'), selector).toBeLessThan(l('--destructive-solid'));
+        }
+    });
+
+    it('los temas no redefinen el rojo destructivo: todos heredan el medido', () => {
+        const temas = bloques.filter(b => b.selector.includes('data-theme'));
+        expect(temas.length).toBeGreaterThanOrEqual(6);
+        for (const { selector, cuerpo } of temas) expect(token(cuerpo, '--destructive-solid'), selector).toBeUndefined();
+    });
+});
+
 describe('las páginas del proyecto usan el texto de la marca, no `text-primary`', () => {
     it('ningún `text-primary` como color de texto en components/project ni en pages/projects', async () => {
         const { readdirSync, statSync } = await import('node:fs');

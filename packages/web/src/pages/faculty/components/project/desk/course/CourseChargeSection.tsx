@@ -1,22 +1,31 @@
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { CheckCircle2, Pencil } from 'lucide-react';
 import { projectCourseInfo, projectWorkTypes, type AIProject, type CourseDesk, type DeskWorkType, type ProjectCourseInfo, type ProjectWorkType } from '@dosfilos/domain';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/i18n';
-import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
 import { cn } from '@/lib/utils';
 import { ProjectCourseCard } from '../../ProjectCourseCard';
 import { ProjectWorkTypesCard } from '../../ProjectWorkTypesCard';
-import { TOUCH } from './courseDeskFormat';
+import { WRAP_LABEL } from '../primitives';
+import { DIALOG, DIALOG_BODY, DIALOG_FOOTER, DIALOG_HEADER, TOUCH } from './courseDeskFormat';
+import type { CourseOpsApi } from './useCourseOps';
 
 interface CourseChargeSectionProps {
     project: AIProject;
     course: CourseDesk;
+    ops: Pick<CourseOpsApi, 'saveProject' | 'pending'>;
 }
+
+/**
+ * Sin la rúbrica del profesor (la del sistema o la por defecto), el tipo
+ * deja la fase 1 en curso hasta que el estudiante confirme que el curso no
+ * da rúbrica. Una plantilla borrada no se confirma: hay que elegir otra.
+ */
+const confirmable = (w: DeskWorkType) =>
+    !w.rubricResolved && !w.rubricConfirmed && !w.rubricLoading && (w.rubric === 'system' || w.rubric === 'default' || w.rubric === 'unset');
 
 /**
  * Fase 1 · Lo que pide el curso (§9.1): un resumen de SOLO LECTURA, con cada
@@ -24,7 +33,7 @@ interface CourseChargeSectionProps {
  * diálogo con los dos formularios de antes: abiertos en la página competían
  * con el trabajo del curso y se guardaban por separado sin aviso.
  */
-export function CourseChargeSection({ project, course }: CourseChargeSectionProps) {
+export function CourseChargeSection({ project, course, ops }: CourseChargeSectionProps) {
     const { t } = useTranslation('projectDeskCourse');
     const { rubrics } = useUserRubrics();
     const { guides } = useUserStyleGuides();
@@ -33,14 +42,25 @@ export function CourseChargeSection({ project, course }: CourseChargeSectionProp
     const guiaCurso = guides.find(g => g.id === info?.styleGuideId);
 
     const rubrica = (w: DeskWorkType): { text: string; warn: boolean } => {
+        // Mientras carga el catálogo no se sabe si la plantilla existe: ni aviso ni «resuelta».
+        if (w.rubricLoading) return { text: t('charge.rubric.loading'), warn: false };
+        // Sin la del profesor: la del sistema o la por defecto, confirmada o por confirmar.
+        const sinProfesor = (key: string) => ({ text: t(w.rubricConfirmed ? `${key}Confirmed` : key), warn: !w.rubricResolved });
         switch (w.rubric) {
             case 'template': return { text: rubrics.find(r => r.id === projectWorkTypes(project).find(x => x.id === w.id)?.rubricTemplateId)?.displayName ?? t('charge.rubric.template'), warn: false };
-            case 'default': return { text: t('charge.rubric.default'), warn: false };
-            case 'system': return { text: t('charge.rubric.system'), warn: false };
+            case 'default': return sinProfesor('charge.rubric.default');
+            case 'system': return sinProfesor('charge.rubric.system');
             case 'missing': return { text: t('charge.rubric.missing'), warn: true };
-            default: return { text: t('charge.rubric.unset'), warn: true };
+            default: return sinProfesor('charge.rubric.unset');
         }
     };
+    // «El curso no da rúbrica»: se guarda en el tipo (`rubricConfirmed`), con
+    // los tipos tal como están guardados, como guarda el formulario de tipos.
+    const confirmar = (w: DeskWorkType) => {
+        const tipos = projectWorkTypes(project).map(x => (x.id === w.id ? { ...x, rubricConfirmed: true } : x));
+        void ops.saveProject({ workTypes: tipos }, 'toast.rubricConfirmed');
+    };
+    const porConfirmar = course.workTypes.filter(confirmable);
     const guia = (w: DeskWorkType): string | null => {
         if (!w.guideId) return null;
         const g = guides.find(x => x.id === w.guideId);
@@ -76,13 +96,37 @@ export function CourseChargeSection({ project, course }: CourseChargeSectionProp
                                 )}
                             >
                                 <span className="font-semibold">{w.label || t('charge.untitled')}</span>
-                                <span className={r.warn ? '' : 'text-muted-foreground'}> · {r.text}</span>
-                                {w.method && <span className="text-muted-foreground"> · {t(`charge.method.${w.method}`)}</span>}
-                                {g && <span className="text-muted-foreground"> · {g}</span>}
+                                {/* Dentro del chip de aviso, todo en su tono: el gris no llega a AA sobre el fondo ámbar. */}
+                                <span className={r.warn ? undefined : 'text-muted-foreground'}> · {r.text}</span>
+                                {w.method && <span className={r.warn ? undefined : 'text-muted-foreground'}> · {t(`charge.method.${w.method}`)}</span>}
+                                {g && <span className={r.warn ? undefined : 'text-muted-foreground'}> · {g}</span>}
                             </li>
                         );
                     })}
                 </ul>
+            )}
+
+            {porConfirmar.length > 0 && (
+                <div className="space-y-2 rounded-lg border border-border p-3" data-testid="course-rubric-confirm">
+                    <p className="text-xs text-muted-foreground">{t('charge.confirmHint')}</p>
+                    <ul className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        {porConfirmar.map(w => (
+                            <li key={w.id}>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className={cn(TOUCH, WRAP_LABEL)}
+                                    disabled={ops.pending}
+                                    onClick={() => confirmar(w)}
+                                    aria-label={t('charge.confirmLabel', { type: w.label || t('charge.untitled') })}
+                                >
+                                    <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                                    {t(w.rubric === 'default' ? 'charge.confirmDefault' : 'charge.confirmSystem', { type: w.label || t('charge.untitled') })}
+                                </Button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             )}
 
             {course.noRepeat && <p className="text-xs text-muted-foreground">{t('charge.noRepeat')}</p>}
@@ -92,42 +136,44 @@ export function CourseChargeSection({ project, course }: CourseChargeSectionProp
                 {t('charge.edit')}
             </Button>
 
-            <CourseChargeDialog project={project} open={open} onOpenChange={setOpen} />
+            <CourseChargeDialog project={project} open={open} onOpenChange={setOpen} ops={ops} />
         </div>
     );
 }
 
 /**
  * Los datos del curso y los tipos de trabajo, en un diálogo. Cada tarjeta
- * guarda lo suyo y muestra su propio «guardando» (como antes en la página).
+ * guarda lo suyo con su botón y muestra su propio «guardando»: un solo
+ * «Guardar» en el pie pediría sacar el borrador de las dos tarjetas
+ * (`ProjectCourseCard`, `ProjectWorkTypesCard`), que también se usan fuera
+ * del escritorio; queda para cuando se rehagan. El pie solo cierra. Las dos
+ * escrituras pasan por la espera única del escritorio.
  */
-function CourseChargeDialog({ project, open, onOpenChange }: { project: AIProject; open: boolean; onOpenChange: (o: boolean) => void }) {
+function CourseChargeDialog({ project, open, onOpenChange, ops }: { project: AIProject; open: boolean; onOpenChange: (o: boolean) => void; ops: Pick<CourseOpsApi, 'saveProject'> }) {
     const { t } = useTranslation('projectDeskCourse');
-    const { updateProject } = useFacultyProjects();
     const [guardando, setGuardando] = useState<'course' | 'workTypes' | null>(null);
     const guardar = async (cual: 'course' | 'workTypes', cambio: { courseInfo?: ProjectCourseInfo | null; workTypes?: ProjectWorkType[] }) => {
         setGuardando(cual);
         try {
-            await updateProject.mutateAsync({ projectId: project.id, ...cambio });
-            toast.success(t('toast.saved'));
-        } catch (err) {
-            console.error('[projects] save course data / work types failed:', err);
-            toast.error(t('toast.saveFailed'));
+            await ops.saveProject(cambio);
         } finally {
             setGuardando(null);
         }
     };
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-                <DialogHeader>
+            <DialogContent className={cn(DIALOG, 'sm:max-w-3xl')}>
+                <DialogHeader className={DIALOG_HEADER}>
                     <DialogTitle className="font-reading">{t('charge.dialogTitle')}</DialogTitle>
                     <DialogDescription>{t('charge.dialogHint')}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className={cn(DIALOG_BODY, 'space-y-4')}>
                     <ProjectCourseCard project={project} saving={guardando === 'course'} onSave={courseInfo => guardar('course', { courseInfo })} />
                     <ProjectWorkTypesCard project={project} saving={guardando === 'workTypes'} onSave={workTypes => guardar('workTypes', { workTypes })} />
                 </div>
+                <DialogFooter className={DIALOG_FOOTER}>
+                    <Button variant="outline" className={TOUCH} onClick={() => onOpenChange(false)}>{t('common.close')}</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

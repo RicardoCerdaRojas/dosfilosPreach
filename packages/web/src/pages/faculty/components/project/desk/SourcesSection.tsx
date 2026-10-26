@@ -4,7 +4,7 @@ import { Library } from 'lucide-react';
 import type { DeskPhase, DeskSourcesSummary } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
-import { DeskSection, EmptyState, TOUCH, deskSectionId, useDeskText } from './primitives';
+import { DeskSection, EmptyState, LaterPhase, TOUCH, deskSectionId, useDeskText } from './primitives';
 
 /** El estado del arte del proyecto: la entrada a las fuentes por el método. */
 export function stateOfArtUrl(projectId: string): string {
@@ -22,6 +22,13 @@ interface SourcesSectionProps {
     title?: ReactNode;
     /** Lo propio de un tipo (Curso: la cobertura por tipo de trabajo). */
     children?: ReactNode;
+    /**
+     * Posterior a la fase activa y sin bibliografía: una línea, sin acción
+     * (el vacío completo es solo para la fase activa). Por defecto, no.
+     */
+    later?: boolean;
+    /** Cuándo se abre, en esa línea. Por defecto, la del Exegético («cuando escribas tu lectura del libro»). */
+    laterReason?: string;
 }
 
 /**
@@ -30,8 +37,9 @@ interface SourcesSectionProps {
  * con que se va a trabajar), y esta sección solo resume y lleva allí. Lo
  * que ya se agregó a mano se cuenta aparte y no retrocede.
  */
-export function SourcesSection({ projectId, sources: s, phase, phaseNumber, title, children }: SourcesSectionProps) {
+export function SourcesSection({ projectId, sources: s, phase, phaseNumber, title, children, later = false, laterReason }: SourcesSectionProps) {
     const { t } = useTranslation('projectDeskExegetical');
+    const { t: tp } = useTranslation('projects');
     const deskText = useDeskText();
     const vacia = s.total === 0;
     const url = stateOfArtUrl(projectId);
@@ -43,12 +51,25 @@ export function SourcesSection({ projectId, sources: s, phase, phaseNumber, titl
         s.requirements.total > 0 ? t('sources.requirements', { met: s.requirements.met, total: s.requirements.total }) : null,
     ].filter((x): x is string => !!x);
 
+    if (vacia && later) {
+        return (
+            <LaterPhase
+                id={deskSectionId('sources')}
+                eyebrow={tp('desk.journey.phaseLabel', { number: phaseNumber })}
+                title={title ?? t('sources.title')}
+                reason={laterReason ?? t('later.sources')}
+                data-testid="desk-section-sources"
+            />
+        );
+    }
+
     return (
         <DeskSection
             id={deskSectionId('sources')}
             phase={phaseNumber}
             title={title ?? t('sources.title')}
             status={phase?.status}
+            loading={phase?.loading}
             evidence={phase ? deskText(phase.evidence) : undefined}
             description={t('sources.description')}
             data-testid="desk-section-sources"

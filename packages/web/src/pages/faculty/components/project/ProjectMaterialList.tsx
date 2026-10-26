@@ -9,6 +9,7 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ProjectOutput, ProjectOutputKind } from '@dosfilos/domain';
 import { exportOutputMarkdown } from '../../utils/exportMarkdown';
+import { DeskSection, FOCUS_RING, TOUCH } from './desk/primitives';
 
 /** Visual config per output kind. Brand colours sourced from `phase-*` tokens. */
 const KIND_META: Record<ProjectOutputKind, {
@@ -79,30 +80,40 @@ export function ProjectMaterialList({
     const visibles = todo ? items : items.slice(0, MATERIAL_VISIBLE);
     const ocultas = items.length - MATERIAL_VISIBLE;
 
+    // La misma sección que las demás del escritorio (rótulo, título, ancla).
     return (
-        <section className="bg-card border border-border rounded-xl p-4 sm:p-5" aria-labelledby="project-material-title" id="material">
-            <header className="flex items-center justify-between gap-3 mb-4">
-                <h2 id="project-material-title" className="text-[11px] uppercase tracking-[0.16em] text-primary-text font-medium inline-flex items-center gap-2">
+        <DeskSection
+            id="material"
+            eyebrow={(
+                <span className="inline-flex items-center gap-1.5">
                     <FileText className="h-3.5 w-3.5" aria-hidden />
-                    <span>{t('material.sectionLabel')}</span>
-                    <span className="text-muted-foreground normal-case tracking-normal font-mono">
-                        · {items.length}
-                    </span>
-                </h2>
-                {/* De contorno: el único botón lleno del escritorio es «Ahora». */}
+                    {t('desk.tools.eyebrow')}
+                </span>
+            )}
+            title={(
+                <>
+                    {t('material.sectionLabel')}
+                    {!isLoading && <span className="ml-1.5 font-sans text-[13px] tabular-nums text-muted-foreground">· {items.length}</span>}
+                </>
+            )}
+            data-testid="desk-material"
+            actions={(
+                // De contorno: el único botón lleno del escritorio es «Ahora».
                 <Button
                     onClick={onCreateOutput}
                     variant="outline"
-                    className="font-medium gap-1.5 min-h-11 sm:min-h-0 h-8 text-[12.5px]"
+                    size="sm"
+                    className={cn('font-medium gap-1.5 text-[12.5px]', TOUCH)}
                 >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
                     {t('material.newButton')}
                 </Button>
-            </header>
-
+            )}
+            isEmpty={false}
+        >
             {isLoading ? (
-                <div className="text-center py-6 text-muted-foreground text-sm">
-                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                <div className="flex justify-center py-6 text-muted-foreground" role="status" aria-label={t('material.loading')}>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                 </div>
             ) : items.length === 0 ? (
                 <p className="text-[13px] leading-relaxed text-muted-foreground py-2">
@@ -127,7 +138,7 @@ export function ProjectMaterialList({
                                         <button
                                             type="button"
                                             onClick={() => navigate(`/dashboard/sermons/${item.id}`)}
-                                            className="text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors rounded-sm min-h-11 sm:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                            className={cn('text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors rounded-sm', TOUCH, FOCUS_RING)}
                                         >
                                             {item.title}
                                         </button>
@@ -162,7 +173,7 @@ export function ProjectMaterialList({
                                     <button
                                         type="button"
                                         onClick={() => onEditOutput(o)}
-                                        className="text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors rounded-sm min-h-11 sm:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                                        className={cn('text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors rounded-sm', TOUCH, FOCUS_RING)}
                                     >
                                         {o.title}
                                     </button>
@@ -209,13 +220,13 @@ export function ProjectMaterialList({
                         type="button"
                         onClick={() => setTodo(v => !v)}
                         aria-expanded={todo}
-                        className="mt-2 inline-flex min-h-11 items-center rounded-sm text-[13px] text-primary-text underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0"
+                        className={cn('mt-2 inline-flex items-center rounded-sm text-[13px] text-primary-text underline-offset-2 hover:underline', TOUCH, FOCUS_RING)}
                     >
                         {todo ? t('material.seeLess') : t('material.seeAll', { count: items.length })}
                     </button>
                 )}
                 </>
             )}
-        </section>
+        </DeskSection>
     );
 }

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     buildProjectDesk,
     type AIProject,
@@ -17,10 +17,11 @@ import { useGreekSessions } from '@/hooks/useGreekSessions';
 import { useHebrewSessions } from '@/hooks/useHebrewSessions';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
-import { useLibrary } from '@/hooks/library';
+import { libraryQueryKey, useLibrary } from '@/hooks/library';
 import { loadExpositoryDraft } from '@/hooks/series/expositoryDraftStorage';
 import { computeRoadmapState, getProjectTypeMeta, type ProjectTypeMeta, type RoadmapState } from '@/pages/projects/projectRoadmaps';
 import { useProjectSlices } from './useProjectSlices';
+import { useDeskClock } from './useDeskClock';
 import { useProjectAttachedSources } from './useProjectAttachedSources';
 
 /** El estado de un bloque del escritorio: mientras carga, su vacío sería falso. */
@@ -56,14 +57,16 @@ export function hasPlannerDraft(projectId: string | undefined): boolean {
  */
 export function useProjectDesk(projectId: string | undefined) {
     const { user } = useFirebase();
+    const queryClient = useQueryClient();
+    const ahora = useDeskClock();
     const { projects, isLoadingProjects, updateProject } = useFacultyProjects();
     const { sessions } = useFacultySessions();
-    const { sermons, loading: cargandoSermones } = useSermons();
+    const { sermons, loading: cargandoSermones, error: errorSermones, refetch: releerSermones } = useSermons();
     const { sessions: greekSessions } = useGreekSessions();
     const { sessions: hebrewSessions } = useHebrewSessions();
-    const { papers, isLoading: cargandoEstudios } = useExegesisPapers();
-    const { rubrics, isLoading: cargandoRubricas } = useUserRubrics();
-    const { resources, isLoading: cargandoBiblioteca } = useLibrary();
+    const { papers, isLoading: cargandoEstudios, error: errorEstudios } = useExegesisPapers();
+    const { rubrics, isLoading: cargandoRubricas, error: errorRubricas } = useUserRubrics();
+    const { resources, isLoading: cargandoBiblioteca, isError: errorBiblioteca } = useLibrary();
     // La misma clave que ExegesisPage: comparten caché, y la invalidación
     // ['series'] de useExegesisPapers también la refresca.
     const seriesQuery = useQuery({
@@ -110,20 +113,44 @@ export function useProjectDesk(projectId: string | undefined) {
 
     const plannerDraft = useMemo(() => hasPlannerDraft(project?.id), [project?.id, series]);
 
-    const seriesStatus: DeskBlockStatus = seriesQuery.isLoading ? 'loading' : seriesQuery.isError && !series ? 'error' : 'ready';
+    const estado = (cargando: boolean, fallo: boolean): DeskBlockStatus => (cargando ? 'loading' : fallo ? 'error' : 'ready');
+    const seriesStatus: DeskBlockStatus = estado(seriesQuery.isLoading, seriesQuery.isError && !series);
+    // Un error con datos en caché (una relectura que falló) no borra lo que hay.
+    const estudiosStatus = estado(cargandoEstudios, !!errorEstudios && (papers ?? []).length === 0);
     const blocks = {
-        /** Estudios y series: la mesa y las fases 3 y 4. */
-        work: (cargandoEstudios || seriesStatus === 'loading' ? 'loading' : seriesStatus) as DeskBlockStatus,
+        /** Estudios y series: la mesa y las fases 3 y 4. Si fallaron, la mesa no dice «sin estudios». */
+        work: (estudiosStatus === 'loading' || seriesStatus === 'loading' ? 'loading'
+            : estudiosStatus === 'error' || seriesStatus === 'error' ? 'error' : 'ready') as DeskBlockStatus,
+        studies: estudiosStatus,
         series: seriesStatus,
         /** La biblioteca da la clasificación de las obras: sin ella, los requisitos por tipo saldrían sin cumplir. */
-        sources: (cargandoBiblioteca || attached.isLoading ? 'loading' : 'ready') as DeskBlockStatus,
-        sermons: (cargandoSermones ? 'loading' : 'ready') as DeskBlockStatus,
-        material: (isLoadingOutputs ? 'loading' : 'ready') as DeskBlockStatus,
+        sources: estado(cargandoBiblioteca || attached.isLoading, !!errorBiblioteca && resources.length === 0),
+        /** Sin sermones, la columna «Sermón» diría «sin sermón» de todo. */
+        sermons: estado(cargandoSermones, !!errorSermones && (sermons ?? []).length === 0),
+        /** Sin catálogo, la fase 1 del Curso no se puede decidir. */
+        rubrics: estado(cargandoRubricas, !!errorRubricas && rubrics.length === 0),
+        material: estado(isLoadingOutputs, false),
     };
-    /** El recorrido y «Ahora» esperan a todo lo que cambia una fase. */
-    const journey: DeskBlockStatus = blocks.work === 'error' ? 'error'
-        : blocks.work === 'loading' || blocks.sources === 'loading' || blocks.material === 'loading' ? 'loading'
-            : 'ready';
+    const conRubricas = caps.desk === 'course';
+    /**
+     * El recorrido y «Ahora» esperan a todo lo que cambia una fase o una
+     * fila: estudios, series, biblioteca, sermones, material y, en el Curso,
+     * las rúbricas. Si algo de eso falló, dice que falló (no un vacío falso).
+     * Los sermones que fallan no tumban el escritorio: su columna dice «—».
+     */
+    const journey: DeskBlockStatus =
+        blocks.work === 'error' || blocks.sources === 'error' || (conRubricas && blocks.rubrics === 'error') ? 'error'
+            : blocks.work === 'loading' || blocks.sources === 'loading' || blocks.material === 'loading'
+                || blocks.sermons === 'loading' || (conRubricas && blocks.rubrics === 'loading') ? 'loading'
+                : 'ready';
+    /** Vuelve a pedir lo que falló (y solo eso). */
+    const retry = () => {
+        if (seriesStatus === 'error') void seriesQuery.refetch();
+        if (estudiosStatus === 'error') void queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        if (blocks.sources === 'error') void queryClient.invalidateQueries({ queryKey: libraryQueryKey(user?.uid) });
+        if (blocks.rubrics === 'error') void queryClient.invalidateQueries({ queryKey: ['exegesis', 'userRubrics', user?.uid] });
+        if (blocks.sermons === 'error') void releerSermones?.();
+    };
 
     const desk = useMemo<ProjectDeskModel | null>(() => {
         if (!project) return null;
@@ -138,8 +165,8 @@ export function useProjectDesk(projectId: string | undefined) {
             rubricCatalog,
             coverageRequirements,
             plannerDraft,
-        }, new Date());
-    }, [project, slices.projectStudies, series, sermons, outputs, slices.projectSessions.length, resourceOf, rubricCatalog, coverageRequirements, plannerDraft]);
+        }, ahora);
+    }, [project, slices.projectStudies, series, sermons, outputs, slices.projectSessions.length, resourceOf, rubricCatalog, coverageRequirements, plannerDraft, ahora]);
 
     // Los tipos sin escritorio propio conservan su recorrido de hoy.
     const legacyRoadmap = useMemo<RoadmapState | null>(() => {
@@ -170,6 +197,8 @@ export function useProjectDesk(projectId: string | undefined) {
         blocks,
         journey,
         retrySeries: () => { void seriesQuery.refetch(); },
+        /** Reintenta los bloques que fallaron (estudios, series, biblioteca, rúbricas, sermones). */
+        retry,
         papers: papers ?? [],
         series: series ?? [],
         sermons: sermons ?? [],

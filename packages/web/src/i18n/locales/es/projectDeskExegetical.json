@@ -1,7 +1,7 @@
 {
     "reading": {
         "title": "Tu lectura del libro",
-        "description": "Lo que tú lees en el libro antes de ver el panorama (la vista del libro que propone el asistente): tu idea central provisoria y sus movimientos. Es tu hipótesis; cada perícopa la va a poner a prueba.",
+        "description": "Lo que tú lees en el libro antes de ver el panorama (la vista del libro que propone el asistente): tu idea central provisional y sus movimientos. Es tu hipótesis; cada perícopa la va a poner a prueba.",
         "edit": "Editar",
         "editLabel": "Editar tu lectura del libro",
         "write": "Escribir tu lectura",
@@ -10,7 +10,7 @@
         "passage": "Pasaje",
         "purpose": "Para qué",
         "idea": "Tu idea central",
-        "ideaOriginal": "provisoria",
+        "ideaOriginal": "provisional",
         "ideaRevised": "revisada",
         "noIdea": "Todavía no escribiste tu idea central.",
         "movements_one": "{{count}} movimiento",
@@ -18,8 +18,8 @@
         "untitledMovement": "Sin título",
         "oldNote": {
             "title": "Tienes una nota de antes",
-            "body": "Ya no cuenta como tu lectura del libro. Pásala al encuadre: se copia tal cual y tú la corriges y confirmas.",
-            "action": "Pasar tu nota al encuadre",
+            "body": "Ya no cuenta como tu lectura del libro. Pásala a tu lectura: se copia tal cual y tú la corriges y confirmas.",
+            "action": "Pasar tu nota a tu lectura",
             "loading": "Cargando tu nota…",
             "missing": "No se encontró el texto de la nota."
         }
@@ -32,7 +32,7 @@
     },
     "sources": {
         "title": "Fuentes",
-        "description": "La lista razonada de obras con que vas a trabajar (el estado del arte): qué pide el trabajo, las candidatas y las que apruebas, con su razón.",
+        "description": "Tu estado del arte: lo que se ha escrito sobre el libro, de donde eliges, con su razón, las obras con que vas a trabajar. Aquí ves qué pide el trabajo, las candidatas y las que apruebas.",
         "open": "Ver tus fuentes",
         "choose": "Elegir tus fuentes",
         "emptyTitle": "Todavía no hay fuentes",
@@ -57,7 +57,7 @@
     "table": {
         "eyebrow": "Fases 3 y 4",
         "title": "La mesa de perícopas",
-        "description": "Una perícopa es cada unidad del texto que se predica entera. Por cada una ves su estudio, lo que anotaste en tu lectura y su sermón.",
+        "description": "Una perícopa es una unidad completa del texto, con comienzo y final propios. Por cada una ves su estudio (ensamblado: todos los pasos hechos y el trabajo armado), lo que anotaste en tu lectura y su sermón.",
         "phase": {
             "division": "División en perícopas",
             "pericopes": "Estudios por perícopa"
@@ -101,10 +101,11 @@
         "noSeries": "El planificador te ayuda a dividirlo: escribes tu división primero y después la comparas con el panorama. Al crear la serie, cada perícopa recibe su estudio.",
         "withoutSeries": "Dijiste que la división queda hecha sin serie: tus estudios van aquí abajo.",
         "untitledSeries": "Serie sin título",
-        "groupCounts": "{{done}} de {{total}} estudiadas · {{annotated}} anotadas en tu lectura",
+        "groupCounts": "{{done}} de {{total}} ensambladas · {{annotated}} anotadas en tu lectura",
         "looseTitle": "Fuera de la serie",
         "studiesTitle": "Estudios",
-        "nothingPending": "Nada pendiente aquí."
+        "nothingPending": "Nada pendiente aquí.",
+        "sermonsError": "No se pudieron cargar los sermones: la columna «Sermón» queda sin datos por ahora."
     },
     "synthesis": {
         "title": "Síntesis",
@@ -139,5 +140,10 @@
         "why": "Por qué:",
         "stale": "Esta revisión quedó vieja: cambiaste la idea original después.",
         "close": "Cerrar"
+    },
+    "later": {
+        "sources": "se abre cuando escribas tu lectura del libro: eliges las obras para leer ese libro",
+        "division": "se abre con tu lectura del libro y tus fuentes: divides el libro con tus movimientos a la vista",
+        "synthesis": "se abre con tu primera anotación de un estudio ensamblado"
     }
 }

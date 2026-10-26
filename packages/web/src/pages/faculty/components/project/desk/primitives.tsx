@@ -20,8 +20,36 @@ import { cn } from '@/lib/utils';
 /** En el teléfono, cada control mide al menos 44 px de alto. */
 export const TOUCH = 'min-h-11 sm:min-h-0';
 
-/** El anillo de foco de la casa, para controles que no son `Button`. */
-export const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background';
+/**
+ * El anillo de foco de la casa, para controles que no son `Button`: el token
+ * `--focus` (el tono del texto de la marca), ≥ 3:1 sobre la tarjeta y el
+ * fondo en todos los temas (`barraUnica.test.tsx`). `ring-primary/40` no
+ * llegaba en varios temas.
+ */
+export const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+/**
+ * Un botón con un nombre largo («Agregar un estudio fuera de la serie»,
+ * «Crear TP #10»): en el teléfono pasa a otra línea en vez de desbordar.
+ * `Button` trae `whitespace-nowrap` y alto fijo.
+ */
+export const WRAP_LABEL = 'h-auto whitespace-normal py-1.5 text-left sm:h-8 sm:whitespace-nowrap sm:py-0';
+
+/**
+ * Una fase que todavía no toca: posterior a la activa y sin nada que mostrar.
+ * Su sección se reduce a una línea, sin acción: el vacío completo (con su
+ * invitación) es solo para la fase activa, para no llenar la página de
+ * vacíos que compiten con «Ahora».
+ */
+export function isLaterEmptyPhase(
+    phases: ReadonlyArray<{ id: string; status: DeskPhaseStatus }>,
+    activePhaseId: string | null | undefined,
+    phaseId: string,
+): boolean {
+    const i = phases.findIndex(p => p.id === phaseId);
+    const activa = activePhaseId ? phases.findIndex(p => p.id === activePhaseId) : -1;
+    return i >= 0 && activa >= 0 && i > activa && phases[i]!.status === 'todo';
+}
 
 /** El ancla de la sección de una fase: el recorrido salta a ella. */
 export function deskSectionId(phaseId: string): string {
@@ -77,16 +105,20 @@ const CHIP: Record<DeskPhaseStatus, string> = {
     todo: 'border-border bg-card text-muted-foreground',
 };
 
-/** El estado de una fase en palabras: por empezar · en curso · lista. Nunca un puntaje. */
-export function StatusChip({ status, className }: { status: DeskPhaseStatus; className?: string }) {
+/**
+ * El estado de una fase en palabras: por empezar · en curso · lista. Nunca un
+ * puntaje. Con `loading` (la fase 1 del Curso mientras llega el catálogo de
+ * rúbricas, `DeskPhase.loading`) dice «cargando»: no está «en curso».
+ */
+export function StatusChip({ status, loading = false, className }: { status: DeskPhaseStatus; loading?: boolean; className?: string }) {
     const { t } = useTranslation('projects');
     return (
         <span
-            data-status={status}
-            className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4', CHIP[status], className)}
+            data-status={loading ? 'loading' : status}
+            className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4', loading ? CHIP.todo : CHIP[status], className)}
         >
-            {status === 'ready' && <Check className="h-3 w-3" aria-hidden />}
-            {t(`desk.journey.status.${status}`)}
+            {!loading && status === 'ready' && <Check className="h-3 w-3" aria-hidden />}
+            {t(loading ? 'desk.journey.status.loading' : `desk.journey.status.${status}`)}
         </span>
     );
 }
@@ -99,21 +131,23 @@ interface PhaseStepProps {
     status: DeskPhaseStatus;
     /** La primera fase que no está lista: lleva la marca. */
     active?: boolean;
+    /** Su estado todavía no se puede decidir (`DeskPhase.loading`). */
+    loading?: boolean;
     /** Las fases NAVEGAN a su sección: nada se crea desde el recorrido. */
     onClick: () => void;
 }
 
 /** Una fase del recorrido: número, nombre y estado, en 44 px. */
-export function PhaseStep({ number, name, status, active = false, onClick }: PhaseStepProps) {
+export function PhaseStep({ number, name, status, active = false, loading = false, onClick }: PhaseStepProps) {
     const { t } = useTranslation('projects');
-    const estado = t(`desk.journey.status.${status}`);
+    const estado = t(loading ? 'desk.journey.status.loading' : `desk.journey.status.${status}`);
     return (
         <button
             type="button"
             onClick={onClick}
             aria-current={active ? 'step' : undefined}
             aria-label={t('desk.journey.goToPhase', { number, name, status: estado })}
-            data-phase-status={status}
+            data-phase-status={loading ? 'loading' : status}
             className={cn(
                 'flex h-full min-h-11 w-full items-center gap-2.5 rounded-lg border bg-card px-3 py-2 text-left transition-colors hover:border-primary/50',
                 FOCUS_RING,
@@ -155,6 +189,8 @@ interface DeskSectionProps {
     eyebrow?: ReactNode;
     title: ReactNode;
     status?: DeskPhaseStatus;
+    /** El estado todavía no se puede decidir (`DeskPhase.loading`): «cargando». */
+    loading?: boolean;
     /** La evidencia del estado, en texto («9 aprobadas · 3 por conseguir»). */
     evidence?: ReactNode;
     /** Una línea que explica la sección, debajo del título. */
@@ -175,7 +211,7 @@ interface DeskSectionProps {
  * recibe el foco cuando el recorrido salta aquí.
  */
 export function DeskSection({
-    id, phase, eyebrow, title, status, evidence, description, actions, empty, isEmpty, children, className, ...rest
+    id, phase, eyebrow, title, status, loading, evidence, description, actions, empty, isEmpty, children, className, ...rest
 }: DeskSectionProps) {
     const { t } = useTranslation('projects');
     const tituloId = `${id}-title`;
@@ -203,7 +239,7 @@ export function DeskSection({
                     </h2>
                     {(status || evidence) && (
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-0.5">
-                            {status && <StatusChip status={status} />}
+                            {status && <StatusChip status={status} loading={loading} />}
                             {evidence && <p className="text-[13px] leading-snug text-muted-foreground">{evidence}</p>}
                         </div>
                     )}
@@ -212,6 +248,48 @@ export function DeskSection({
                 {actions && <div className="flex flex-wrap items-center gap-2 sm:justify-end">{actions}</div>}
             </header>
             {vacia ? (empty ?? null) : children}
+        </section>
+    );
+}
+
+// ── LaterPhase ─────────────────────────────────────────────────────────
+
+interface LaterPhaseProps {
+    /** El ancla de la sección: el recorrido sigue saltando aquí. */
+    id: string;
+    /** «Fase 3» o «Fases 3 y 4». */
+    eyebrow: ReactNode;
+    title: ReactNode;
+    /** Cuándo se abre («se abre cuando…»): enseña el orden, no bloquea. */
+    reason: string;
+    'data-testid'?: string;
+}
+
+/**
+ * Una fase posterior a la activa, todavía por empezar: una sola línea
+ * («Fase 3 · División en perícopas · por empezar — se abre cuando…»), sin
+ * acción. Conserva el ancla y el título enfocable para el recorrido.
+ */
+export function LaterPhase({ id, eyebrow, title, reason, ...rest }: LaterPhaseProps) {
+    const { t } = useTranslation('projects');
+    const tituloId = `${id}-title`;
+    return (
+        <section
+            id={id}
+            aria-labelledby={tituloId}
+            data-testid={rest['data-testid']}
+            data-later-phase
+            className="scroll-mt-4 rounded-xl border border-dashed border-border bg-card px-4 py-3"
+        >
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[13px] leading-snug">
+                <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary-text">{eyebrow}</span>
+                <h2 id={tituloId} tabIndex={-1} data-desk-heading className={cn('rounded-sm font-medium text-foreground', FOCUS_RING)}>
+                    {title}
+                </h2>
+                <p className="min-w-0 text-muted-foreground">
+                    {t('desk.journey.laterLine', { status: t('desk.journey.status.todo').toLowerCase(), reason })}
+                </p>
+            </div>
         </section>
     );
 }

@@ -2,7 +2,8 @@ import { NotebookPen, Pencil, StickyNote } from 'lucide-react';
 import { formatPassageForReader, type AIProject, type DeskFraming, type DeskPhase } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
-import { DeskSection, EmptyState, TOUCH, deskSectionId, useDeskText } from '../primitives';
+import { cn } from '@/lib/utils';
+import { DeskSection, EmptyState, TOUCH, WRAP_LABEL, deskSectionId, useDeskText } from '../primitives';
 import { framingPassageLabel } from '../../ProjectFramingForm';
 
 interface ReadingSectionProps {
@@ -47,7 +48,7 @@ export function ReadingSection({ project, framing, phase, onEdit, onPassNote, no
                         ? <blockquote className="whitespace-pre-line border-l-2 border-border pl-3 text-[13px] italic text-foreground/90">{nota}</blockquote>
                         : <p className="text-xs text-muted-foreground">{t('reading.oldNote.missing')}</p>}
             </div>
-            <Button size="sm" variant="outline" className={TOUCH} onClick={onPassNote} disabled={note.loading || !note.text}>
+            <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={onPassNote} disabled={note.loading || !note.text}>
                 <NotebookPen className="h-3.5 w-3.5" aria-hidden />
                 {t('reading.oldNote.action')}
             </Button>
@@ -60,6 +61,7 @@ export function ReadingSection({ project, framing, phase, onEdit, onPassNote, no
             phase={1}
             title={t('reading.title')}
             status={phase?.status}
+            loading={phase?.loading}
             evidence={phase ? deskText(phase.evidence) : undefined}
             description={t('reading.description')}
             data-testid="desk-section-passage"

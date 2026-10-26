@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useTranslation } from '@/i18n';
 import { formatPassageReference, passageToReader } from '@dosfilos/domain';
 import { parseReaderRange, primaryBook, rangeText } from '../../ProjectFramingForm';
-import { FIELD, TOUCH, langOf, type DeskLang } from './courseDeskFormat';
+import { cn } from '@/lib/utils';
+import { useConfirmDiscard } from './ConfirmDiscard';
+import { DIALOG, DIALOG_BODY, DIALOG_FOOTER, DIALOG_HEADER, FIELD, TOUCH, langOf, type DeskLang } from './courseDeskFormat';
 
 interface CourseEntryDialogProps {
     project: AIProject;
@@ -50,6 +52,9 @@ export function CourseEntryDialog({ project, entry, open, onOpenChange, onSave, 
     const [dueDate, setDueDate] = useState('');
     const [passageError, setPassageError] = useState(false);
     const [paperId, setPaperId] = useState('');
+    /** Lo que había al abrir: cerrar con cambios pregunta antes. */
+    const [inicial, setInicial] = useState('');
+    const actual = JSON.stringify([workTypeId, label, passage, dueDate, paperId]);
 
     // Al abrir: lo guardado, o una entrada nueva del primer tipo con su rótulo siguiente.
     useEffect(() => {
@@ -62,6 +67,10 @@ export function CourseEntryDialog({ project, entry, open, onOpenChange, onSave, 
         setDueDate(entry?.dueDate ?? '');
         setPassageError(false);
         setPaperId(entry?.paperId ?? '');
+        setInicial(JSON.stringify([
+            tipo, entry?.label ?? (tipo ? nextLabelFor(tipo, schedule) ?? '' : ''),
+            entry?.passage ? rangeTextFor(entry.passage, libro, lang) : '', entry?.dueDate ?? '', entry?.paperId ?? '',
+        ]));
         // Solo al abrir: lo que el estudiante escribe no se pisa con cada render.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, entry?.id]);
@@ -88,15 +97,17 @@ export function CourseEntryDialog({ project, entry, open, onOpenChange, onSave, 
         if (ok) onOpenChange(false);
     };
     const puedeGuardar = !!workTypeId && !!label.trim() && !saving;
+    const { requestOpenChange, confirm } = useConfirmDiscard(open && actual !== inicial, onOpenChange);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
+        <>
+        <Dialog open={open} onOpenChange={requestOpenChange}>
+            <DialogContent className={cn(DIALOG, 'sm:max-w-md')}>
+                <DialogHeader className={DIALOG_HEADER}>
                     <DialogTitle className="font-reading">{t(entry ? 'calendar.editTitle' : 'calendar.addTitle')}</DialogTitle>
                     <DialogDescription>{t('calendar.formHint')}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-3">
+                <div className={cn(DIALOG_BODY, 'space-y-3')}>
                     <label className="block space-y-1">
                         <span className="text-xs text-muted-foreground">{t('calendar.workType')}</span>
                         <select className={FIELD} value={workTypeId} onChange={e => cambiarTipo(e.target.value)}>
@@ -148,12 +159,14 @@ export function CourseEntryDialog({ project, entry, open, onOpenChange, onSave, 
                     )}
                     {tipos.length === 0 && <p className="text-xs text-warning-subtle-foreground">{t('calendar.noWorkTypes')}</p>}
                 </div>
-                <DialogFooter>
-                    <Button variant="ghost" className={TOUCH} onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
+                <DialogFooter className={DIALOG_FOOTER}>
+                    <Button variant="ghost" className={TOUCH} onClick={() => requestOpenChange(false)}>{t('common.cancel')}</Button>
                     <Button className={TOUCH} onClick={() => void guardar()} disabled={!puedeGuardar}>{t('common.save')}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        {confirm}
+        </>
     );
 }
 

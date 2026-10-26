@@ -23,7 +23,8 @@
   "common": {
     "cancel": "Cancel",
     "save": "Save",
-    "edit": "Edit"
+    "edit": "Edit",
+    "close": "Close"
   },
   "toast": {
     "saved": "Changes saved.",
@@ -37,7 +38,8 @@
     "noFeedbackSaved": "Marked «no feedback».",
     "feedbackCleared": "Feedback removed.",
     "patternDiscarded": "Correction dismissed.",
-    "patternReopened": "The correction is undecided again."
+    "patternReopened": "The correction is undecided again.",
+    "rubricConfirmed": "Done: that kind of work is assessed with the rubric you chose, because the course does not provide one."
   },
   "charge": {
     "typesLabel": "Kinds of work in the course",
@@ -53,16 +55,24 @@
     "guideRules_other": "{{name}} · {{count}} rules",
     "rubric": {
       "template": "Rubric",
-      "default": "Default rubric",
-      "system": "System rubric",
+      "default": "Your default rubric, not confirmed",
+      "system": "System rubric, not confirmed",
       "unset": "No rubric chosen",
-      "missing": "Its rubric no longer exists"
+      "missing": "Its rubric no longer exists",
+      "loading": "Rubric: loading…",
+      "systemConfirmed": "System rubric (the course provides none)",
+      "defaultConfirmed": "Your default rubric (the course provides none)",
+      "unsetConfirmed": "System rubric (the course provides none)"
     },
     "method": {
       "mixed": "Mixed",
       "exegetical": "Exegetical",
       "research": "Research"
-    }
+    },
+    "confirmHint": "These kinds of work do not have the professor's rubric. If the course provides none, confirm it; if it does, load it in «Edit what the course asks for».",
+    "confirmLabel": "{{type}}: the course provides no rubric",
+    "confirmSystem": "{{type}}: the course provides no rubric, I use the system one",
+    "confirmDefault": "{{type}}: the course provides no rubric, I use my default one"
   },
   "calendar": {
     "modeLabel": "How the course works",
@@ -75,7 +85,7 @@
     "empty": "There are no assignments yet. Add the first one with its kind and its date.",
     "emptyFree": "No calendar: each work you create from the table appears here as an assignment, without a date.",
     "listLabel": "Course assignments",
-    "noLabel": "No label",
+    "noLabel": "Unnamed",
     "missingType": "No kind of work",
     "due": "due {{date}}",
     "noDate": "no date",
@@ -88,7 +98,7 @@
     "formHint": "The kind of work decides the rubric, method and guide the work is created with.",
     "workType": "Kind of work",
     "pickWorkType": "Choose a kind",
-    "label": "Label",
+    "label": "Name",
     "labelHint": "What the course calls it: «Paper #9», «Essay», «Final paper».",
     "labelSuggested": "Suggested: «{{label}}», the next number. You can change it.",
     "passage": "Passage (optional)",
@@ -100,7 +110,7 @@
     "noWorkTypes": "First define the kinds of work in «What the course asks for».",
     "removeTitle": "Remove «{{label}}» from the calendar?",
     "removeHint": "The work, if it exists, is not deleted: it just stops being an assignment.",
-    "removeWithRecord": "This assignment has its submission or the professor's feedback recorded, and they are lost with it. The work is not deleted.",
+    "removeWithRecord": "This also deletes what you recorded for this assignment: that you submitted it and, if there is one, the professor's feedback with its grade and corrections, which stop counting in your record. The work is not deleted.",
     "removeConfirm": "Remove",
     "paper": "Work that fulfills it",
     "noPaper": "None yet",
@@ -131,7 +141,9 @@
     "sources": {
       "first": "First of its kind",
       "noRepeatFrom": "No repeats from {{label}}",
-      "repeats": "Repeats {{sources}}"
+      "repeats": "Repeats {{sources}}",
+      "unknown": "No data to compare",
+      "unknownFrom": "No data to compare with {{label}}"
     },
     "delivery": {
       "notDelivered": "Not submitted",
@@ -155,7 +167,8 @@
     "offCalendar_one": "1 course work is not an assignment:",
     "offCalendar_other": "{{count}} course works are not assignments:",
     "importHint": "Do you have previous works on their own or in another project? Bring them into the course with their kind, without changing their rules.",
-    "import": "Bring in previous works"
+    "import": "Bring in previous works",
+    "archived": "Archived · open"
   },
   "feedbackDialog": {
     "title": "Feedback on {{label}}",
@@ -178,19 +191,24 @@
     "save": "Save the feedback",
     "none": "No feedback",
     "clear": "Remove the feedback",
-    "clearNone": "Remove «no feedback»"
+    "clearNone": "Remove «no feedback»",
+    "clearTitle": "Remove the feedback on {{label}}?",
+    "clearHint_one": "This deletes what the professor wrote, the grade and 1 correction, which stops counting in your record. The assignment stays marked as submitted.",
+    "clearHint_other": "This deletes what the professor wrote, the grade and {{count}} corrections, which stop counting in your record. The assignment stays marked as submitted.",
+    "clearNoneTitle": "Remove «no feedback» from {{label}}?",
+    "clearNoneHint": "The assignment goes back to waiting for the professor's feedback."
   },
   "feedback": {
     "emptyTitle": "No assignments yet",
     "empty": "When you submit a work, record here what the professor returned. The corrections that repeat make up your record.",
-    "summary": "{{delivered}} submitted · {{returned}} with feedback · {{noFeedback}} without feedback",
+    "summary": "{{delivered}} submitted · {{returned}} with feedback · {{none}} without feedback",
     "awaitingTitle": "Submitted without feedback",
     "recordFor": "Record the feedback on {{label}}",
     "patternsTitle": "Your record of corrections",
     "patternsEmpty": "No corrections recorded yet.",
     "repeats": "repeats",
-    "count_one": "1 correction in {{entries}} assignment(s)",
-    "count_other": "{{count}} corrections in {{entries}} assignment(s)",
+    "count_one": "1 correction",
+    "count_other": "{{count}} corrections",
     "toGuide": "Add to your guide",
     "discard": "Dismiss",
     "discardLabel": "Dismiss «{{name}}»",
@@ -200,19 +218,23 @@
     },
     "reopen": "Decide again",
     "reopenLabel": "Decide again on «{{name}}»",
-    "reopenGuideHint": "Deciding again does not remove the rule from the guide: do that in its editor."
+    "reopenGuideHint": "Deciding again does not remove the rule from the guide: do that in its editor.",
+    "inEntries_one": "in 1 assignment",
+    "inEntries_other": "in {{count}} assignments",
+    "discardedBecause": "Dismissed because: {{reason}}",
+    "toGuideLabel": "Add «{{name}}» to your guide"
   },
   "guideRule": {
     "title": "Add «{{name}}» to your guide",
-    "hint": "The rule goes into the guide read by the analysis and the prose review of the next work. Write it in your own words.",
+    "hint": "The rule goes into your guide: you will have it in view in the next work, and the review before submitting will warn you if you do not follow it.",
     "ruleText": "The rule",
-    "ruleTextHint": "It starts with the name you gave the correction. Write it the way you want to read it in your guide.",
+    "ruleTextHint": "Write it as an instruction to yourself: what to do and what to avoid. The name of the correction is only an example; write it in your own words.",
     "guide": "Guide where it goes",
     "optionWorkType": "{{name}} (the one for {{types}})",
     "optionCourse": "{{name}} (the course's)",
     "unnamedGuide": "Untitled guide",
     "noGuide": "This course has no style guide. Choose one in «Edit what the course asks for» and come back here.",
-    "confirm": "Add to the guide",
+    "confirm": "Add to your guide",
     "added": "Rule added to your guide.",
     "already": "Your guide already had that rule: the decision was recorded.",
     "errors": {
@@ -223,12 +245,13 @@
       "guide-not-found": "The guide was not found.",
       "guide-without-manifest": "The guide's rules have not been read yet: open it in its editor before adding a rule.",
       "guide-full": "The guide already has the maximum number of rules."
-    }
+    },
+    "sameAsName": "That is just the name of the correction: write what to do and what to avoid."
   },
   "import": {
     "title": "Bring in previous works",
     "hint": "Each work is linked to the course with its kind and appears in the calendar. The course rules are not applied again: a submitted work does not change its assignment.",
-    "empty": "There is nothing to bring in: all your studies are already in the calendar.",
+    "empty": "There is nothing to bring in: your unarchived studies are already in the calendar.",
     "thisCourse": "from this course, not an assignment",
     "loose": "on its own",
     "otherProject": "from «{{title}}»",
@@ -244,7 +267,13 @@
     "warningsTitle": "Check these notices:",
     "warnLinked": "«{{title}}» still belongs to its original project; here it appears linked.",
     "warnNotFound": "«{{title}}» was not found and was not brought in.",
-    "close": "Got it"
+    "close": "Got it",
+    "loading": "Loading your studies…",
+    "loadFailed": "Your studies could not be loaded. Close and try again.",
+    "dueDate": "Course due date (optional)",
+    "deliveredOn": "Submitted on",
+    "deliveredOnHint": "It comes set to the study's last change ({{date}}). Change it if you submitted it on another day; if you clear it, that date is used.",
+    "deliveredOnNoDate": "Enter the day you submitted it; if you leave it empty, today is used."
   },
   "sources": {
     "requiredTitle": "Required, still to acquire",
@@ -256,7 +285,34 @@
   "create": {
     "fulfills": "This work fulfills «{{label}}» in the course calendar.",
     "newEntry": "This work goes into the course calendar as «{{label}}», without a date.",
-    "linkFailed": "The work was created, but it could not be linked to «{{label}}». Link it by editing that assignment in the course calendar.",
-    "newEntryUnlabeled": "This work goes into the course calendar as an assignment, without a date."
+    "linkFailed": "The work was created, but it could not be linked to «{{label}}». Press «Link» to try again; do not create it again.",
+    "newEntryUnlabeled": "This work goes into the course calendar as an assignment, without a date.",
+    "linkRetry": "Link",
+    "linked": "Done: the work is now linked to «{{label}}».",
+    "otherType": "You chose another kind of work: this work does not fulfill «{{from}}». It goes into the course calendar as «{{label}}», without a date.",
+    "otherTypeUnlabeled": "You chose another kind of work: this work does not fulfill «{{from}}». It goes into the course calendar as an assignment, without a date."
+  },
+  "discardChanges": {
+    "title": "Discard what you wrote?",
+    "hint": "There are unsaved changes in this dialog. If you close it, they are lost.",
+    "keep": "Keep editing",
+    "discard": "Discard the changes"
+  },
+  "discard": {
+    "title": "Dismiss «{{name}}»",
+    "hint": "Say in one sentence why you are not adding it to your guide. The reason stays in your record of corrections.",
+    "reason": "Why you dismiss it",
+    "suggestions": "Suggestions:",
+    "suggestion": {
+      "notForCourse": "It does not apply to this course",
+      "professorChanged": "The professor changed the criterion"
+    },
+    "confirm": "Dismiss"
+  },
+  "later": {
+    "sources": "opens once you define what the course asks for: sources are chosen for its works",
+    "calendar": "opens once you define the kinds of work: each assignment is born with its kind",
+    "works": "opens with the calendar: each work fulfills an assignment",
+    "feedback": "opens when you submit the first work: here you record what the professor returns"
   }
 }

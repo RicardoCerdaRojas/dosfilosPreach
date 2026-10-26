@@ -55,6 +55,12 @@ const sermones = [
     { id: 'c1', status: 'published', sourceSermonId: 'd1', updatedAt: new Date(2026, 9, 3) },
 ];
 
+/** Fases 1 y 2 listas (lectura escrita, una obra aprobada): la activa es la división. */
+const listo = esdras({
+    framing: { centralIdea: 'Dios restaura a su pueblo.' },
+    bibliography: [{ id: 'a', title: 'A', resourceId: 'ra', weight: 'recommended', decision: 'approved', origins: ['catalog'] }],
+});
+
 function desk(input: Partial<ProjectDeskInput> & { project: ProjectDeskInput['project'] }) {
     return buildProjectDesk({ studies: [], ...input } as ProjectDeskInput, NOW);
 }
@@ -186,8 +192,19 @@ describe('fase 1 · tu lectura del libro', () => {
 });
 
 describe('fase 2 · fuentes', () => {
-    it('sin fichas: el vacío lleva al estado del arte, sin atajo', () => {
+    it('sin fichas y con la fase 1 por hacer: una línea, sin acción (el vacío completo es de la fase activa)', () => {
         montar(esdras());
+        const seccion = document.getElementById('fase-sources')!;
+        expect(seccion.hasAttribute('data-later-phase')).toBe(true);
+        expect(seccion.textContent).toContain('later.sources');
+        expect(within(seccion).queryByRole('link')).toBeNull();
+        expect(within(seccion).queryByRole('button')).toBeNull();
+        // El recorrido sigue pudiendo saltar aquí: el título es enfocable.
+        expect(seccion.querySelector('[data-desk-heading]')).not.toBeNull();
+    });
+
+    it('sin fichas, siendo la fase activa: el vacío lleva al estado del arte, sin atajo', () => {
+        montar(esdras({ framing: { centralIdea: 'Dios restaura a su pueblo.' } }));
         const s = within(document.getElementById('fase-sources')!);
         expect(s.getByText('sources.emptyTitle')).toBeInTheDocument();
         expect(s.getByRole('link', { name: 'sources.choose' }).getAttribute('href')).toBe('/dashboard/projects/ezr/estado-del-arte');
@@ -225,8 +242,18 @@ describe('fases 3 y 4 · la mesa de perícopas', () => {
     }) as Partial<ProjectDeskInput>;
     const anotada = esdras({ framing: { centralIdea: 'Dios restaura.', hypothesisLog: [{ id: 'h1', at: '2026-10-20T00:00:00.000Z', source: 'study', studyId: 'e1', verdict: 'confirms', note: 'sí' }] } });
 
-    it('sin serie: la invitación a planificar la serie lleva al planificador con el libro', () => {
+    it('sin serie y antes de su turno: una línea «Fases 3 y 4 · por empezar», sin acción', () => {
         montar(esdras());
+        const mesa = document.getElementById('fase-pericopes')!;
+        expect(mesa.hasAttribute('data-later-phase')).toBe(true);
+        expect(mesa.textContent).toContain('later.division');
+        expect(within(mesa).queryByRole('button')).toBeNull();
+        // La fase 3 sigue saltando aquí.
+        expect(document.getElementById('fase-division')!.contains(mesa)).toBe(true);
+    });
+
+    it('sin serie, siendo la fase activa: la invitación a planificar la serie lleva al planificador con el libro', () => {
+        montar(listo);
         const mesa = within(document.getElementById('fase-pericopes')!);
         expect(mesa.getByText('table.noSeriesTitle')).toBeInTheDocument();
         fireEvent.click(mesa.getByRole('button', { name: 'table.planSeries' }));
@@ -276,10 +303,29 @@ describe('fases 3 y 4 · la mesa de perícopas', () => {
         const grupo = screen.getByTestId('desk-table-group');
         // e1 (ensamblado y anotado) sale; e2, e3 y la perícopa sin estudio quedan.
         expect(within(grupo).getAllByTestId('desk-table-row')).toHaveLength(3);
-        expect(window.localStorage.getItem('desk.exegetical.tableFilter')).toBe('pending');
+        expect(window.localStorage.getItem('desk.exegetical.tableFilter.ezr')).toBe('pending');
         cleanup();
         montar(anotada, conSerie());
         expect(within(screen.getByTestId('desk-table-group')).getAllByTestId('desk-table-row')).toHaveLength(3);
+    });
+
+    it('el filtro se recuerda POR PROYECTO: otro proyecto abre con todas las filas', () => {
+        window.localStorage.setItem('desk.exegetical.tableFilter.otro', 'pending');
+        montar(anotada, conSerie());
+        expect(screen.getByRole('button', { name: 'table.filter.all' }).getAttribute('aria-pressed')).toBe('true');
+        expect(within(screen.getByTestId('desk-table-group')).getAllByTestId('desk-table-row')).toHaveLength(4);
+    });
+
+    it('si los sermones fallaron, la columna dice «—» (no «sin sermón») y se avisa', () => {
+        const d = desk({ project: anotada as never, ...conSerie() });
+        render(
+            <MemoryRouter>
+                <ExegeticalDeskSections project={anotada as never} desk={d} onOpenFraming={vi.fn()} sermonsFailed />
+            </MemoryRouter>,
+        );
+        const filas = within(screen.getByTestId('desk-table-group')).getAllByTestId('desk-table-row');
+        expect(filas[0]!.textContent).not.toContain('table.sermon.');
+        expect(screen.getByText('table.sermonsError')).toBeInTheDocument();
     });
 
     it('la regla de «pendiente»', () => {
@@ -304,10 +350,22 @@ describe('fases 3 y 4 · la mesa de perícopas', () => {
 });
 
 describe('fase 5 · síntesis', () => {
-    it('cerrada hasta la primera anotación', () => {
+    it('cerrada hasta la primera anotación; antes de su turno, una línea sin acción', () => {
         montar(esdras({ framing: { centralIdea: 'Dios restaura.' } }), { studies: [estudio('e1', 'assembled')] });
+        const linea = document.getElementById('fase-synthesis')!;
+        expect(linea.hasAttribute('data-later-phase')).toBe(true);
+        expect(linea.textContent).toContain('later.synthesis');
+        expect(within(linea).queryByRole('button')).toBeNull();
+    });
+
+    it('cerrada y siendo la fase activa: el vacío completo, con «Anotar un estudio»', () => {
+        montar(
+            { ...listo, framing: { centralIdea: 'Dios restaura.', purpose: 'teach', divisionWithoutSeries: true } },
+            { studies: [estudio('e1', 'assembled')] },
+        );
         const s = within(document.getElementById('fase-synthesis')!);
         expect(s.getByText('synthesis.emptyTitle')).toBeInTheDocument();
+        expect(s.getByRole('button', { name: /synthesis\.annotate/ })).toBeInTheDocument();
         expect(s.queryByRole('button', { name: /synthesis\.history/ })).toBeNull();
     });
 

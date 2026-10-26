@@ -48,4 +48,16 @@ describe('SourcesSection', () => {
         expect(screen.getByText('sources.accepted:{"count":1}')).toBeInTheDocument();
         expect(screen.queryByTestId('desk-sources-manual')).toBeNull();
     });
+
+    it('posterior a la activa y sin fichas: una línea; el Curso da su propia razón (no «tu lectura del libro»)', () => {
+        const vacio = deskSourcesSummary({ bibliography: [] as never });
+        render(<MemoryRouter><SourcesSection projectId="ezr" sources={vacio} phase={undefined} phaseNumber={2} later /></MemoryRouter>);
+        expect(document.getElementById('fase-sources')!.textContent).toContain('later.sources');
+        cleanup();
+        render(<MemoryRouter><SourcesSection projectId="nt" sources={vacio} phase={undefined} phaseNumber={2} later laterReason="se abre cuando definas lo que pide el curso" /></MemoryRouter>);
+        const linea = document.getElementById('fase-sources')!;
+        expect(linea.textContent).toContain('se abre cuando definas lo que pide el curso');
+        expect(linea.textContent).not.toContain('later.sources');
+        expect(screen.queryByRole('link')).toBeNull();
+    });
 });

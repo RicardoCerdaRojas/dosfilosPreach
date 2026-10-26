@@ -5,6 +5,7 @@ import { ProjectFramingConsolidateDialog } from '../ProjectFramingConsolidateDia
 import { ProjectFramingDialog } from '../ProjectFramingDialog';
 import { ProjectFramingLogDialog, type FramingStudy } from '../ProjectFramingLogDialog';
 import { SourcesSection } from './SourcesSection';
+import { isLaterEmptyPhase } from './primitives';
 import { PericopeTable } from './exegetical/PericopeTable';
 import { ReadingHistoryDialog } from './exegetical/ReadingHistoryDialog';
 import { ReadingSection } from './exegetical/ReadingSection';
@@ -21,6 +22,8 @@ export interface ExegeticalDeskSectionsProps {
      * publicada y reconoce el sermón de un estudio fuera de la serie.
      */
     sermons?: ReadonlyArray<DeskSermonInput>;
+    /** Los sermones no se pudieron leer: la columna «Sermón» dice «—», no «sin sermón». */
+    sermonsFailed?: boolean;
 }
 
 /**
@@ -31,7 +34,7 @@ export interface ExegeticalDeskSectionsProps {
  * pastor: la nota de antes se precarga y él confirma; las anotaciones y la
  * idea revisada son suyas.
  */
-export function ExegeticalDeskSections({ project, desk, onOpenFraming, sermons }: ExegeticalDeskSectionsProps) {
+export function ExegeticalDeskSections({ project, desk, onOpenFraming, sermons, sermonsFailed = false }: ExegeticalDeskSectionsProps) {
     const navigate = useNavigate();
     const acciones = useExegeticalDeskActions(project);
     const ex = desk.exegetical;
@@ -49,6 +52,8 @@ export function ExegeticalDeskSections({ project, desk, onOpenFraming, sermons }
 
     const fase = (id: string): DeskPhase | undefined => desk.phases.find(p => p.id === id);
     const framing = project.framing ?? null;
+    // El vacío completo, solo en la fase activa; las posteriores por empezar, en una línea.
+    const despues = (id: string) => isLaterEmptyPhase(desk.phases, desk.activePhaseId, id);
 
     return (
         <>
@@ -60,7 +65,7 @@ export function ExegeticalDeskSections({ project, desk, onOpenFraming, sermons }
                 onPassNote={() => setPasarNota(true)}
                 note={nota}
             />
-            <SourcesSection projectId={project.id} sources={ex.sources} phase={fase('sources')} phaseNumber={2} />
+            <SourcesSection projectId={project.id} sources={ex.sources} phase={fase('sources')} phaseNumber={2} later={despues('sources')} />
             <PericopeTable
                 project={project}
                 desk={ex}
@@ -68,6 +73,8 @@ export function ExegeticalDeskSections({ project, desk, onOpenFraming, sermons }
                 pericopes={fase('pericopes')}
                 studies={desk.studies}
                 sermons={sermons}
+                sermonsFailed={sermonsFailed}
+                later={despues('division')}
                 onAnnotate={studyId => setAnotar({ studyId })}
                 onNavigate={to => navigate(to)}
             />
@@ -76,6 +83,7 @@ export function ExegeticalDeskSections({ project, desk, onOpenFraming, sermons }
                 framing={ex.framing}
                 phase={fase('synthesis')}
                 studies={estudios}
+                later={despues('synthesis')}
                 onAnnotate={() => setAnotar({ studyId: null })}
                 onRevise={() => setRevisar(true)}
                 onShowHistory={() => setHistoria(true)}

@@ -155,9 +155,14 @@ describe('el andamiaje de la fase activa', () => {
         for (const parte of ['purpose', 'wellDone', 'commonError']) {
             expect(within(andamio).getByText(`desk.journey.phases.exegetical.passage.${parte}`)).toBeInTheDocument();
         }
+        // `aria-controls` apunta a un cuerpo que existe, abierto o plegado.
+        const cuerpo = document.getElementById(boton.getAttribute('aria-controls')!)!;
+        expect(cuerpo).not.toBeNull();
+        expect(cuerpo.hidden).toBe(false);
         fireEvent.click(boton);
         expect(boton.getAttribute('aria-expanded')).toBe('false');
-        expect(within(andamio).queryByText('desk.journey.phases.exegetical.passage.purpose')).toBeNull();
+        expect(document.getElementById(boton.getAttribute('aria-controls')!)).toBe(cuerpo);
+        expect(cuerpo.hidden).toBe(true);
 
         // Otra visita: sigue plegado.
         cleanup();

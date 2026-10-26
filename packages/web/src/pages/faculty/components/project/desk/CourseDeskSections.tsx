@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { MessageSquareText, Table2 } from 'lucide-react';
 import type { AIProject, BibliographyCoverage, CourseDeskPhaseId, DeskPhase, DeskScheduleRow, ProjectDeskModel } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
-import { DeskSection, EmptyState, deskSectionId, useDeskText } from './primitives';
+import { DeskSection, EmptyState, LaterPhase, deskSectionId, isLaterEmptyPhase, useDeskText } from './primitives';
 import { SourcesSection } from './SourcesSection';
 import { CourseChargeSection } from './course/CourseChargeSection';
 import { CourseCalendarSection } from './course/CourseCalendarSection';
@@ -36,7 +36,9 @@ interface CourseDeskSectionsProps {
 export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackEntryChange }: CourseDeskSectionsProps) {
     const { t } = useTranslation('projectDeskCourse');
     const deskText = useDeskText();
-    const { run, pending } = useCourseOps(project.id);
+    const { t: tp } = useTranslation('projects');
+    const ops = useCourseOps(project.id);
+    const { run, pending } = ops;
     const [propio, setPropio] = useState<string | null>(null);
     const controlado = feedbackEntryId !== undefined;
     const feedbackFor = controlado ? feedbackEntryId : propio;
@@ -57,10 +59,32 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
             title: t(`phase.${id}.title`),
             description: t(`phase.${id}.description`),
             status: phase?.status,
+            loading: phase?.loading,
             evidence: phase ? deskText(phase.evidence) : undefined,
             'data-testid': `desk-section-${id}`,
         };
     };
+
+    // El vacío completo, solo en la fase activa; las posteriores por empezar
+    // y sin nada que mostrar, en una línea sin acción (como en el Exegético).
+    const despues = (id: CourseDeskPhaseId) => isLaterEmptyPhase(desk.phases, desk.activePhaseId, id);
+    const enUnaLinea = (id: CourseDeskPhaseId) => {
+        const { number } = fase(id);
+        return (
+            <LaterPhase
+                id={deskSectionId(id)}
+                eyebrow={tp('desk.journey.phaseLabel', { number })}
+                title={t(`phase.${id}.title`)}
+                reason={t(`later.${id}`)}
+                data-testid={`desk-section-${id}`}
+            />
+        );
+    };
+    // La mesa: sin tipos de trabajo igual se muestran los trabajos fuera del
+    // calendario (con «Traer los trabajos anteriores»): el vacío no los tapa.
+    const mesaVacia = course.workTypes.length === 0 && course.offCalendar.length === 0 && course.schedule.rows.length === 0;
+    const calendarioVacio = course.schedule.rows.length === 0 && course.schedule.mode === null;
+    const devolucionVacia = course.schedule.rows.length === 0 && course.feedback.patterns.length === 0;
 
     const marcarEntregado = (r: DeskScheduleRow, entregado: boolean) =>
         void run(
@@ -74,10 +98,11 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
     return (
         <>
             <DeskSection {...encabezado('charge')}>
-                <CourseChargeSection project={project} course={course} />
+                <CourseChargeSection project={project} course={course} ops={ops} />
             </DeskSection>
 
-            <SourcesSection projectId={project.id} sources={course.sources} phase={fuentes.phase} phaseNumber={fuentes.number || 2} title={t('phase.sources.title')}>
+            {/* Con su propia razón: la de `SourcesSection` habla de la lectura del libro, que es del Exegético. */}
+            <SourcesSection projectId={project.id} sources={course.sources} phase={fuentes.phase} phaseNumber={fuentes.number || 2} title={t('phase.sources.title')} later={despues('sources')} laterReason={t('later.sources')}>
                 {course.sources.requiredToAcquire.length > 0 && (
                     // Las obligatorias primero: la fase 2 del curso las espera conseguidas.
                     <div className="space-y-1" data-testid="course-required-to-acquire">
@@ -92,32 +117,38 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
                 )}
             </SourcesSection>
 
-            <DeskSection {...encabezado('calendar')}>
-                <CourseCalendarSection project={project} course={course} desk={desk} run={run} saving={pending} />
-            </DeskSection>
+            {calendarioVacio && despues('calendar') ? enUnaLinea('calendar') : (
+                <DeskSection {...encabezado('calendar')}>
+                    <CourseCalendarSection project={project} course={course} desk={desk} run={run} saving={pending} />
+                </DeskSection>
+            )}
 
-            <DeskSection
-                {...encabezado('works')}
-                isEmpty={course.workTypes.length === 0}
-                empty={<EmptyState icon={Table2} title={t('works.emptyTitle')}>{t('works.noWorkTypes')}</EmptyState>}
-            >
-                <CourseWorksTable
-                    project={project}
-                    course={course}
-                    onMarkDelivered={marcarEntregado}
-                    onRecordFeedback={abrirDevolucion}
-                    onImport={() => setImportOpen(true)}
-                    saving={pending}
-                />
-            </DeskSection>
+            {mesaVacia && despues('works') ? enUnaLinea('works') : (
+                <DeskSection
+                    {...encabezado('works')}
+                    isEmpty={mesaVacia}
+                    empty={<EmptyState icon={Table2} title={t('works.emptyTitle')}>{t('works.noWorkTypes')}</EmptyState>}
+                >
+                    <CourseWorksTable
+                        project={project}
+                        course={course}
+                        onMarkDelivered={marcarEntregado}
+                        onRecordFeedback={abrirDevolucion}
+                        onImport={() => setImportOpen(true)}
+                        saving={pending}
+                    />
+                </DeskSection>
+            )}
 
-            <DeskSection
-                {...encabezado('feedback')}
-                isEmpty={course.schedule.rows.length === 0 && course.feedback.patterns.length === 0}
-                empty={<EmptyState icon={MessageSquareText} title={t('feedback.emptyTitle')}>{t('feedback.empty')}</EmptyState>}
-            >
-                <CourseFeedbackSection project={project} course={course} run={run} onRecordFeedback={abrirDevolucion} saving={pending} />
-            </DeskSection>
+            {devolucionVacia && despues('feedback') ? enUnaLinea('feedback') : (
+                <DeskSection
+                    {...encabezado('feedback')}
+                    isEmpty={devolucionVacia}
+                    empty={<EmptyState icon={MessageSquareText} title={t('feedback.emptyTitle')}>{t('feedback.empty')}</EmptyState>}
+                >
+                    <CourseFeedbackSection project={project} course={course} ops={ops} onRecordFeedback={abrirDevolucion} />
+                </DeskSection>
+            )}
 
             <CourseFeedbackDialog
                 entry={entradaDevolucion}
@@ -127,7 +158,7 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
                 onSubmit={(ops, key) => run({ ops }, key)}
                 saving={pending}
             />
-            <CourseImportDialog project={project} open={importOpen} onOpenChange={setImportOpen} />
+            <CourseImportDialog project={project} open={importOpen} onOpenChange={setImportOpen} onImport={ops.importWorks} saving={pending} />
         </>
     );
 }

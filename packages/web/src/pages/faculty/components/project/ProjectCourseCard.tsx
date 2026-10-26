@@ -29,7 +29,7 @@ export function ProjectCourseCard({ project, onSave, saving }: ProjectCourseCard
     // Canónico: elegir una guía y volver a «Ninguna» deja `null` donde lo
     // guardado no tenía la clave, y eso no es un cambio.
     const sinCambios = canonico(draft) === canonico(guardado);
-    const campo = 'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40';
+    const campo = 'w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-focus';
 
     return (
         <section className="rounded-xl border border-border bg-card p-4 space-y-3" aria-labelledby="project-course-title">
@@ -58,7 +58,9 @@ export function ProjectCourseCard({ project, onSave, saving }: ProjectCourseCard
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" onClick={() => onSave(draft)} disabled={saving || sinCambios}>
+                {/* De contorno: estas tarjetas van junto a «Ahora» (General) y son dos;
+                    dos «Guardar» llenos competirían con el único botón lleno de la página. */}
+                <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={() => onSave(draft)} disabled={saving || sinCambios}>
                     {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                     {t('course.save')}
                 </Button>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, NotebookPen, Plus } from 'lucide-react';
 import {
@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { DeskSection, EmptyState, FOCUS_RING, StatusChip, TOUCH, deskSectionId, formatDeskDay, useDeskText } from '../primitives';
+import { DeskSection, EmptyState, FOCUS_RING, LaterPhase, StatusChip, TOUCH, WRAP_LABEL, deskSectionId, formatDeskDay, useDeskText } from '../primitives';
 import { planSeriesUrl } from '../../ProjectSeriesSection';
 
 /** La celda de sermón de una fila: estado y adónde lleva. */
@@ -67,7 +67,7 @@ export function looseRow(study: DeskStudy, sermons: ReadonlyArray<DeskSermonInpu
     };
 }
 
-function seriesRow(r: DeskPericopeRow): TableRow {
+function seriesRow(r: DeskPericopeRow, sermonsFailed = false): TableRow {
     return {
         key: r.plannedId,
         position: r.position,
@@ -76,22 +76,27 @@ function seriesRow(r: DeskPericopeRow): TableRow {
         date: r.date,
         study: r.study,
         reading: r.reading,
-        sermon: { state: r.sermon, id: r.sermonId },
+        // Sin los sermones, «sin sermón» sería falso: la celda dice «—».
+        sermon: sermonsFailed ? null : { state: r.sermon, id: r.sermonId },
     };
 }
 
-const FILTER_KEY = 'desk.exegetical.tableFilter';
+/**
+ * El filtro se recuerda POR PROYECTO: «Pendientes» en Esdras no debe
+ * esconder filas al abrir Jonás.
+ */
+export const tableFilterKey = (projectId: string) => `desk.exegetical.tableFilter.${projectId}`;
 
-function leerFiltro(): TableFilter {
+export function readTableFilter(projectId: string): TableFilter {
     try {
-        return window.localStorage.getItem(FILTER_KEY) === 'pending' ? 'pending' : 'all';
+        return window.localStorage.getItem(tableFilterKey(projectId)) === 'pending' ? 'pending' : 'all';
     } catch {
         return 'all';
     }
 }
 
-function guardarFiltro(f: TableFilter) {
-    try { window.localStorage.setItem(FILTER_KEY, f); } catch { /* sin almacenamiento: el filtro vale solo aquí */ }
+function guardarFiltro(projectId: string, f: TableFilter) {
+    try { window.localStorage.setItem(tableFilterKey(projectId), f); } catch { /* sin almacenamiento: el filtro vale solo aquí */ }
 }
 
 interface PericopeTableProps {
@@ -103,6 +108,10 @@ interface PericopeTableProps {
     studies: ReadonlyArray<DeskStudy>;
     /** Los sermones del usuario, si el panel los tiene: la copia publicada y los de los estudios sueltos. */
     sermons?: ReadonlyArray<DeskSermonInput>;
+    /** Los sermones no se pudieron leer: la columna dice «—» y se avisa. */
+    sermonsFailed?: boolean;
+    /** La fase 3 es posterior a la activa y no hay nada en la mesa: una línea, sin acción. */
+    later?: boolean;
     onAnnotate: (studyId: string) => void;
     onNavigate: (to: string) => void;
 }
@@ -113,12 +122,14 @@ interface PericopeTableProps {
  * por anotar) y su sermón; después, los estudios fuera de la serie. En el
  * teléfono cada fila es una tarjeta. Sin serie, la invitación a dividir.
  */
-export function PericopeTable({ project, desk, division, pericopes, studies, sermons, onAnnotate, onNavigate }: PericopeTableProps) {
+export function PericopeTable({ project, desk, division, pericopes, studies, sermons, sermonsFailed = false, later = false, onAnnotate, onNavigate }: PericopeTableProps) {
     const { t, i18n } = useTranslation('projectDeskExegetical');
     const deskText = useDeskText();
     const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
-    const [filtro, setFiltro] = useState<TableFilter>(leerFiltro);
-    const elegir = (f: TableFilter) => { setFiltro(f); guardarFiltro(f); };
+    const [filtro, setFiltro] = useState<TableFilter>(() => readTableFilter(project.id));
+    // El mismo panel puede pasar a otro proyecto sin desmontarse.
+    useEffect(() => { setFiltro(readTableFilter(project.id)); }, [project.id]);
+    const elegir = (f: TableFilter) => { setFiltro(f); guardarFiltro(project.id, f); };
 
     const conSerie = desk.series.length > 0;
     const sueltos = desk.looseStudies.map(s => looseRow(s, sermons, lang));
@@ -133,7 +144,7 @@ export function PericopeTable({ project, desk, division, pericopes, studies, ser
     const estado = (fase: DeskPhase | undefined, nombre: string) => fase && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-[13px] font-medium text-foreground">{nombre}</span>
-            <StatusChip status={fase.status} />
+            <StatusChip status={fase.status} loading={fase.loading} />
             <span className="text-[13px] text-muted-foreground">{deskText(fase.evidence)}</span>
         </div>
     );
@@ -209,9 +220,10 @@ export function PericopeTable({ project, desk, division, pericopes, studies, ser
                         <div className="flex min-w-0 gap-2">
                             {r.position !== null && <span className="w-5 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground" aria-hidden>{r.position}</span>}
                             <div className="min-w-0">
-                                <p className="truncate font-medium text-foreground" title={r.title || undefined}>{r.label}</p>
+                                {/* En el teléfono, dos líneas antes de cortar; en la grilla, una. */}
+                                <p className="line-clamp-2 break-words font-medium text-foreground sm:line-clamp-none sm:truncate" title={r.title || undefined}>{r.label}</p>
                                 {(r.title || r.date) && (
-                                    <p className="truncate text-xs text-muted-foreground">
+                                    <p className="line-clamp-2 break-words text-xs text-muted-foreground sm:line-clamp-none sm:truncate">
                                         {[r.title, r.date ? formatDeskDay(r.date, lang) : null].filter(Boolean).join(' · ')}
                                     </p>
                                 )}
@@ -264,6 +276,20 @@ export function PericopeTable({ project, desk, division, pericopes, studies, ser
         </div>
     );
 
+    if (vacia && later) {
+        return (
+            <div id={deskSectionId('division')} className="scroll-mt-4">
+                <LaterPhase
+                    id={deskSectionId('pericopes')}
+                    eyebrow={t('table.eyebrow')}
+                    title={t('table.title')}
+                    reason={t('later.division')}
+                    data-testid="desk-section-table"
+                />
+            </div>
+        );
+    }
+
     return (
         // La fase 3 salta aquí también: la mesa es su sección.
         <div id={deskSectionId('division')} className="scroll-mt-4">
@@ -277,12 +303,12 @@ export function PericopeTable({ project, desk, division, pericopes, studies, ser
                     <>
                         {filtroBotones}
                         {conSerie && (
-                            <Button size="sm" variant="outline" className={TOUCH} onClick={planificar}>
+                            <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={planificar}>
                                 <Plus className="h-3.5 w-3.5" aria-hidden />{t('table.planAnother')}
                             </Button>
                         )}
                         {(conSerie || sueltos.length > 0) && (
-                            <Button size="sm" variant="outline" className={TOUCH} onClick={nuevoEstudio}>
+                            <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={nuevoEstudio}>
                                 <Plus className="h-3.5 w-3.5" aria-hidden />{t(conSerie ? 'table.addOutside' : 'table.newStudy')}
                             </Button>
                         )}
@@ -295,6 +321,10 @@ export function PericopeTable({ project, desk, division, pericopes, studies, ser
                         {estado(division, t('table.phase.division'))}
                         {estado(pericopes, t('table.phase.pericopes'))}
                     </div>
+
+                    {sermonsFailed && (
+                        <p className="text-[13px] text-muted-foreground" role="status">{t('table.sermonsError')}</p>
+                    )}
 
                     {!conSerie && desk.framing.divisionWithoutSeries && (
                         <p className="text-[13px] text-muted-foreground">{t('table.withoutSeries')}</p>
@@ -335,7 +365,7 @@ export function PericopeTable({ project, desk, division, pericopes, studies, ser
                                 </span>
                             </div>
                             {encabezado}
-                            {filas(g.rows.map(seriesRow))}
+                            {filas(g.rows.map(r => seriesRow(r, sermonsFailed)))}
                         </section>
                     ))}
 
