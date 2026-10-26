@@ -2380,6 +2380,9 @@
   },
   "detail": {
     "back": "Volver al listado",
+    "backToProject": "Volver al proyecto",
+    "backToSeries": "Volver a la serie",
+    "backGeneric": "Volver",
     "loading": "Cargando trabajo...",
     "openSetup": "Configurar",
     "moreActions": "Más acciones",

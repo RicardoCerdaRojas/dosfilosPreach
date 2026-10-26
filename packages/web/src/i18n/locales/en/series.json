@@ -159,6 +159,7 @@
             "overlapTitle": "You already have project studies on these pericopes",
             "overlapHint": "The series will create new studies; yours stay in the project.",
             "createdInProject": "Series created in the project «{{title}}».",
+            "openSeries": "Open the series",
             "noSources": "The project has no approved works for this book in your library: the studies will start without sources.",
             "openStateOfArt": "Go to the state of the art",
             "sourcesHint": "They come from the project's approved bibliography. Uncheck the ones this series' studies don't need: the series will remember it for the studies you create later."
@@ -627,6 +628,7 @@
         },
         "header": {
             "back": "Back to plans",
+            "backToProject": "Back to «{{title}}»",
             "edit": "Edit plan",
             "viewTimeline": "View timeline",
             "noStart": "No start date",

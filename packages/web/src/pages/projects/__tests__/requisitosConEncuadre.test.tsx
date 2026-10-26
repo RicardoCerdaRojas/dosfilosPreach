@@ -6,7 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 /**
  * Fase «Encuadre de la serie»: con encuadre, los libros del proyecto son del
  * encuadre. En Requisitos se ven en solo lectura, con «Cambiar en el
- * encuadre», y guardar el estado del arte no los pisa. Sin encuadre, como hoy.
+ * encuadre» que abre su diálogo en el lugar (escritorio, deuda 13), y
+ * guardar el estado del arte no los pisa. Sin encuadre, como hoy.
  */
 const updateProject = vi.fn();
 let proyecto: Record<string, unknown> = {};
@@ -51,18 +52,28 @@ describe('Requisitos con encuadre', () => {
         expect(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }).getAttribute('aria-selected')).not.toBe('true');
     });
 
-    it('los libros se ven en solo lectura y el enlace lleva al encuadre del panel', () => {
+    it('los libros se ven en solo lectura y «Cambiar en el encuadre» abre el diálogo AQUÍ, sin ir al panel', async () => {
         montar();
         requisitos();
         const lista = screen.getByRole('list', { name: 'stateOfArt.criteria.books' });
         expect(within(lista).getByText('Esdras')).toBeInTheDocument();
         expect(within(lista).queryByRole('button')).toBeNull();
         expect(screen.queryByLabelText('stateOfArt.criteria.addBook')).toBeNull();
-        const enlace = screen.getByRole('link', { name: /stateOfArt.criteria.changeInFraming/ });
-        // Con «volver»: al guardar el encuadre, el panel ofrece volver a Requisitos.
-        expect(enlace.getAttribute('href')).toBe('/dashboard/projects/ezr?encuadre=1&volver=requisitos');
-        fireEvent.click(enlace);
-        expect(screen.getByText('panel del proyecto')).toBeInTheDocument();
+        // Lo que no se guardó del estado del arte no se pierde: no se sale de la página.
+        fireEvent.change(screen.getByLabelText(/stateOfArt\.criteria\.exclusionHint/), { target: { value: 'Devocionales' } });
+        expect(screen.queryByRole('link', { name: /stateOfArt.criteria.changeInFraming/ })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: /stateOfArt.criteria.changeInFraming/ }));
+        const dialogo = await screen.findByRole('dialog');
+        expect(within(dialogo).getByText('framing.dialog.title')).toBeInTheDocument();
+        expect(screen.queryByText('panel del proyecto')).toBeNull();
+        // Guardar escribe el encuadre (una sola escritura, con sus libros), cierra y sigue en Requisitos.
+        fireEvent.click(within(dialogo).getByRole('button', { name: /framing\.dialog\.save/ }));
+        await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(1));
+        expect(updateProject.mock.calls[0]![0]).toMatchObject({ projectId: 'ezr', bibleBooks: ['EZR'], framingPatch: expect.objectContaining({ centralIdea: 'Dios restaura.' }) });
+        expect(updateProject.mock.calls[0]![0]).not.toHaveProperty('bibliography');
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(screen.getByRole('tab', { name: /stateOfArt.step.requirements/ }).getAttribute('aria-selected')).toBe('true');
+        expect((screen.getByLabelText(/stateOfArt\.criteria\.exclusionHint/) as HTMLTextAreaElement).value).toBe('Devocionales');
     });
 
     it('guardar el estado del arte manda los libros GUARDADOS, no los de su borrador', async () => {
@@ -85,7 +96,7 @@ describe('Requisitos con encuadre', () => {
         montar();
         requisitos();
         expect(screen.getByLabelText('stateOfArt.criteria.addBook')).toBeInTheDocument();
-        expect(screen.queryByRole('link', { name: /stateOfArt.criteria.changeInFraming/ })).toBeNull();
+        expect(screen.queryByRole('button', { name: /stateOfArt.criteria.changeInFraming/ })).toBeNull();
         expect(within(screen.getByRole('list', { name: 'stateOfArt.criteria.books' })).getByRole('button', { name: /removeBook/ })).toBeInTheDocument();
     });
 });

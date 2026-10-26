@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { unitsVsSundays } from '../utils/serieDesdeProyecto';
@@ -9,17 +8,17 @@ import { unitsVsSundays } from '../utils/serieDesdeProyecto';
  * texto y el calendario se ajusta: los domingos nunca fueron meta del
  * planificador. Por eso las dos salidas son reales y en ese orden: revisar
  * la división (vuelve al Pase 4) y, si se confirma, ajustar el calendario en
- * el encuadre del proyecto. Iguales, o sin domingos en el encuadre, no aparece.
+ * el encuadre del proyecto, que se abre aquí mismo (sin perder el análisis). Iguales, o sin domingos en el encuadre, no aparece.
  *
  * No promete «una unidad en varios domingos»: esa opción no existe todavía.
  */
-export function UnitsVsSundaysNotice({ units, sundays, onReviewDivision, calendarHref, t }: {
+export function UnitsVsSundaysNotice({ units, sundays, onReviewDivision, onAdjustCalendar, t }: {
     units: number;
     sundays: number | null | undefined;
     /** Despliega el Pase 4 y lleva el foco ahí. */
     onReviewDivision: () => void;
-    /** El panel del proyecto con el encuadre abierto. */
-    calendarHref: string;
+    /** Abre el diálogo del encuadre del proyecto en el planificador. */
+    onAdjustCalendar: () => void;
     t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
     const diff = unitsVsSundays(units, sundays);
@@ -45,8 +44,8 @@ export function UnitsVsSundaysNotice({ units, sundays, onReviewDivision, calenda
                     <Button type="button" size="sm" variant="outline" className="min-h-11 text-foreground sm:min-h-0" onClick={onReviewDivision}>
                         {t('expository.framing.units.reviewDivision')}
                     </Button>
-                    <Button asChild size="sm" variant="ghost" className="min-h-11 sm:min-h-0">
-                        <Link to={calendarHref}>{t('expository.framing.units.adjustCalendar')}</Link>
+                    <Button type="button" size="sm" variant="ghost" className="min-h-11 sm:min-h-0" onClick={onAdjustCalendar}>
+                        {t('expository.framing.units.adjustCalendar')}
                     </Button>
                 </div>
             </div>

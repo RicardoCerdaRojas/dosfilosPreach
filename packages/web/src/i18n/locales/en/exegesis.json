@@ -2380,6 +2380,9 @@
   },
   "detail": {
     "back": "Back to list",
+    "backToProject": "Back to the project",
+    "backToSeries": "Back to the series",
+    "backGeneric": "Back",
     "loading": "Loading paper...",
     "openSetup": "Configure",
     "moreActions": "More actions",

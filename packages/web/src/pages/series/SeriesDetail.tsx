@@ -277,14 +277,17 @@ export function SeriesDetail() {
         <div className="px-6 py-6 space-y-6 max-w-6xl mx-auto">
             {/* Compact header — 3 rows: breadcrumb + title/actions + meta */}
             <header className="space-y-3">
+                {/* Una serie de un proyecto vuelve a su escritorio, no a la lista de planes. */}
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate('/dashboard/plans')}
-                    className="pl-0 -ml-2 text-muted-foreground h-7"
+                    onClick={() => navigate(linkedProject ? `/dashboard/projects/${encodeURIComponent(linkedProject.id)}` : '/dashboard/plans')}
+                    className="pl-0 -ml-2 text-muted-foreground min-h-11 sm:min-h-0 sm:h-7"
                 >
-                    <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-                    {t('detail.header.back')}
+                    <ArrowLeft className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                    {linkedProject
+                        ? t('detail.header.backToProject', { title: linkedProject.title })
+                        : t('detail.header.back')}
                 </Button>
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0 space-y-1.5">

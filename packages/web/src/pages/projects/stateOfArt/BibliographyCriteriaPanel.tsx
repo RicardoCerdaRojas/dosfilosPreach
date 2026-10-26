@@ -1,6 +1,5 @@
 import { BIBLE_CANON, getBookById, type BibleBookId, type BibliographyWarning, type ProjectBibliographyCriteria, type ProjectBibliographyEntry, type SourceType } from '@dosfilos/domain';
 import { AlertTriangle, Pencil, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from '@/i18n';
 import { campo } from './BibliographyEntryEditor';
 
@@ -14,9 +13,10 @@ interface BibliographyCriteriaPanelProps {
     studyBooks: ReadonlyArray<BibleBookId>;
     /**
      * Con encuadre, los libros se ven en solo lectura: estos (los guardados)
-     * y un enlace a su diálogo. Sin encuadre, se eligen aquí como siempre.
+     * y un botón que abre su diálogo en el lugar. Sin encuadre, se eligen
+     * aquí como siempre.
      */
-    framing?: { books: ReadonlyArray<BibleBookId>; href: string; /** Con cambios sin guardar, pregunta antes de salir. */ canLeave?: () => boolean };
+    framing?: { books: ReadonlyArray<BibleBookId>; onEdit: () => void };
 }
 
 interface BibleBooksPickerProps {
@@ -145,14 +145,14 @@ export function BibliographyCriteriaPanel({ isCourse, criteria, onChange, requir
                         <>
                             <BibleBooksPicker books={framing.books} listLabel={t('stateOfArt.criteria.books')} emptyText={t('stateOfArt.criteria.noBooksFraming')} />
                             <p className="text-xs text-muted-foreground">{t('stateOfArt.criteria.booksFromFraming')}</p>
-                            <Link
-                                to={framing.href}
-                                onClick={e => { if (framing.canLeave && !framing.canLeave()) e.preventDefault(); }}
+                            <button
+                                type="button"
+                                onClick={framing.onEdit}
                                 // `text-primary` chico no alcanza AA: texto normal, subrayado como enlace.
                                 className="inline-flex min-h-11 items-center gap-1 rounded-md text-xs font-medium text-foreground underline underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0"
                             >
-                                <Pencil className="h-3 w-3" />{t('stateOfArt.criteria.changeInFraming')}
-                            </Link>
+                                <Pencil className="h-3 w-3" aria-hidden="true" />{t('stateOfArt.criteria.changeInFraming')}
+                            </button>
                         </>
                     ) : (
                         <>

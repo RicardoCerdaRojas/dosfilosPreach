@@ -2,20 +2,15 @@ import { useMemo } from 'react';
 import { History } from 'lucide-react';
 import { searchGuide, type AIProject, type BibliographyApproach, type SourceType } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
+import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
+import { ProjectFramingDialog } from '@/pages/faculty/components/project/ProjectFramingDialog';
+import { useFramingDialogInPlace } from '@/pages/faculty/hooks/useProjectFramingActions';
 import { BibliographyCriteriaPanel } from './BibliographyCriteriaPanel';
 import { BibliographyImportPanel } from './BibliographyImportPanel';
 import { RequirementsEditor } from './RequirementsEditor';
 import { SearchGuidePanel } from './SearchGuidePanel';
 import type { CoverageFilter } from './BibliographyCoverageTable';
 import type { useProjectBibliography } from './useProjectBibliography';
-
-/**
- * El panel del proyecto con el diálogo del encuadre abierto. `volver` le
- * dice al panel que, al guardar, ofrezca volver a Requisitos.
- */
-function framingDialogUrl(projectId: string): string {
-    return `/dashboard/projects/${encodeURIComponent(projectId)}?encuadre=1&volver=requisitos`;
-}
 
 interface RequirementsTabProps {
     project: AIProject;
@@ -32,6 +27,10 @@ interface RequirementsTabProps {
  */
 export function RequirementsTab({ project, bib, library, onShow }: RequirementsTabProps) {
     const { t, i18n } = useTranslation('projects');
+    // «Cambiar en el encuadre» abre su diálogo aquí mismo: ir al panel y
+    // volver perdía la pestaña y lo que no se había guardado del estado del arte.
+    const { updateProject } = useFacultyProjects();
+    const encuadre = useFramingDialogInPlace({ project, updateProject });
     // Lo que algún requisito pide y todavía no se cumple: orienta qué conseguir primero.
     const unmetTypes = useMemo(() => {
         const s = new Set<SourceType>();
@@ -76,8 +75,9 @@ export function RequirementsTab({ project, bib, library, onShow }: RequirementsT
                 requirements={bib.requirements}
                 studyBooks={[...new Set(bib.passages.map(p => p.bookId))]}
                 // Con encuadre, los libros son suyos: aquí se ven y se cambian allá.
-                framing={bib.booksFromFraming ? { books: project.bibliographyCriteria?.bibleBooks ?? [], href: framingDialogUrl(project.id), canLeave: () => !bib.dirty || window.confirm(t('stateOfArt.leaveUnsaved')) } : undefined}
+                framing={bib.booksFromFraming ? { books: project.bibliographyCriteria?.bibleBooks ?? [], onEdit: () => encuadre.onOpenChange(true) } : undefined}
             />
+            {bib.booksFromFraming && <ProjectFramingDialog project={project} {...encuadre} />}
             {bib.searchLog.length > 0 && (
                 <section className="space-y-1" aria-labelledby="search-log-title">
                     <h3 id="search-log-title" className="text-sm font-medium text-foreground inline-flex items-center gap-1.5">

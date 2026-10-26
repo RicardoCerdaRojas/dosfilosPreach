@@ -159,6 +159,7 @@
             "overlapTitle": "Ya tienes estudios del proyecto en estas perícopas",
             "overlapHint": "La serie creará estudios nuevos; los tuyos siguen en el proyecto.",
             "createdInProject": "Serie creada en el proyecto «{{title}}».",
+            "openSeries": "Ver la serie",
             "noSources": "El proyecto no tiene obras aprobadas de este libro en tu biblioteca: los estudios nacerán sin fuentes.",
             "openStateOfArt": "Ir al estado del arte",
             "sourcesHint": "Vienen de la bibliografía aprobada del proyecto. Desmarca las que los estudios de esta serie no necesitan: la serie lo recordará para los estudios que crees después."
@@ -627,6 +628,7 @@
         },
         "header": {
             "back": "Volver a Planes",
+            "backToProject": "Volver a «{{title}}»",
             "edit": "Editar plan",
             "viewTimeline": "Ver timeline",
             "noStart": "Sin fecha de inicio",

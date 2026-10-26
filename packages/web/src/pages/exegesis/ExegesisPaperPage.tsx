@@ -73,6 +73,7 @@ import { ReadingOfTheBookPanel } from './components/ReadingOfTheBookPanel';
 import { TextZoomControl } from '@/components/ui/text-zoom-control';
 import { getTextZoomClass, type TextZoomLevel } from '@/lib/textZoom';
 import { exportPaperToDocx } from '@/lib/exegesis/exportPaperToDocx';
+import { paperBackLink, type PaperBackKind } from './paperBackLink';
 import {
     exportPaperToMarkdown,
     formatPassageReference,
@@ -89,6 +90,15 @@ import {
     sectionBudgets,
     uncitedRubricRequirements,
 } from '@dosfilos/domain';
+
+/** El rótulo de la flecha cuando quien abrió el estudio no mandó uno. */
+const BACK_LABEL_KEY: Record<PaperBackKind, string> = {
+    given: 'detail.back',
+    project: 'detail.backToProject',
+    series: 'detail.backToSeries',
+    list: 'detail.back',
+    other: 'detail.backGeneric',
+};
 
 /**
  * Detail view for a single exegetical paper.
@@ -107,13 +117,12 @@ export function ExegesisPaperPage() {
     const { t, i18n } = useTranslation('exegesis');
     const activeLanguage: SupportedLanguage = i18n.language?.split('-')[0] === 'en' ? 'en' : 'es';
 
-    // Context-aware back: when the user came from a planner / series /
-    // dashboard surface, return them there instead of the global paper
-    // list. The originating page passes `{ from, fromLabel }` via
-    // react-router state when navigating in.
-    const navState = (location.state ?? null) as { from?: string; fromLabel?: string } | null;
-    const backTo = navState?.from && navState.from.startsWith('/') ? navState.from : '/dashboard/exegesis';
-    const backLabel = navState?.fromLabel ?? (t('detail.back') as string);
+    // La flecha vuelve adonde se abrió el estudio (el escritorio del
+    // proyecto, la serie, el panel): `{ from, fromLabel }` en el estado o
+    // `?from=` en la dirección. Sin eso, al listado.
+    const back = paperBackLink(location.state, location.search);
+    const backTo = back.to;
+    const backLabel = back.label ?? (t(BACK_LABEL_KEY[back.kind]) as string);
 
     const {
         archivePaper,
@@ -186,7 +195,8 @@ export function ExegesisPaperPage() {
         try {
             await archivePaper.mutateAsync({ paperId: paper.id, archived: true });
             toast.success(t('detail.toast.archived'));
-            navigate('/dashboard/exegesis');
+            // Archivado, vuelve adonde se abrió (el proyecto, la serie), no al listado.
+            navigate(backTo);
         } catch (err) {
             console.error('[exegesis] archive failed:', err);
             toast.error(t('detail.toast.archiveFailed'));
