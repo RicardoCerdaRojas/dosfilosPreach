@@ -11,7 +11,7 @@
   "unsaved": "Unsaved changes.",
   "stateOfArt": {
     "title": "State of the art",
-    "requirement": {"title": "Measurable requirements", "hint": "What is required of the bibliography, measured on what is approved. They come from the syllabus, from a level template (a starting point, not a norm) or you write them.", "level": "Level", "levels": {"seminary": "Seminary", "research": "Research", "publishable": "Publishable"}, "propose": "Propose the level's requirements", "empty": "No requirements yet. Import the syllabus, propose a level's requirements or add one by hand.", "kind": {"minimum-type": "Minimum by type", "quantity": "Quantity", "date-range": "Older and recent sources", "perspectives": "Opposing views", "variety": "Variety of resources", "rule": "Rule", "other": "Other (checked by hand)"}, "origin": {"syllabus": "from the syllabus", "level": "from the level", "manual": "by hand"}, "measure": "{{value}} of {{target}}", "manual": "Checked by hand", "done": "Done", "remove": "Remove «{{text}}»", "kindLabel": "Kind", "textLabel": "Requirement", "minimum": "Minimum", "add": "Add requirement", "unmeasurable": {"quantity_one": "1 work without pages or review", "quantity_other": "{{count}} works without pages or review", "date-range_one": "1 work without a year", "date-range_other": "{{count}} works without a year", "perspectives_one": "1 work without an approach", "perspectives_other": "{{count}} works without an approach", "minimum-type_one": "1 not measured", "minimum-type_other": "{{count}} not measured", "variety_one": "1 not measured", "variety_other": "{{count}} not measured", "rule_one": "1 not measured", "rule_other": "{{count}} not measured", "other_one": "1 not measured", "other_other": "{{count}} not measured"}, "coverageLabel": "Project requirements", "incomplete": "Missing the figure", "assumedNote": "Assumed because the source does not say: {{what}}. Correct it if the course asks otherwise.", "assumedPart": {"before": "one before {{value}}", "after": "recent since {{value}}", "recentMinimum": "{{value}} recent", "minimum": "at least {{value}} approaches"}, "field": {"minimum": "Minimum", "before": "Before", "after": "Since", "recentMinimum": "Recent", "types": "Types that must be present"}, "anyType": "Any type", "unit": "Unit", "units": {"works": "works", "pages": "pages"}, "needs": {"minimum-type": "Choose the type and the minimum so it can be measured.", "quantity": "Set the minimum so it can be measured.", "date-range": "Set at least one cut-off year.", "variety": "Check at least two types.", "perspectives": "", "rule": "", "other": ""}, "template": {"criticalText": "The original-language text, in a critical edition.", "criticalCommentaries": "Critical commentaries on the book: at least {{minimum}}.", "articles": "Scholarly journal articles: at least {{minimum}}.", "lexicon": "A technical lexicon.", "grammar": "A reference grammar.", "perspectives": "Opposing views: at least {{minimum}} different approaches (Fee 4.1).", "dateRange": "Older and recent sources: one before {{before}} and {{recent}} since {{after}}.", "monographs": "Monographs on the topic: at least {{minimum}}."}},
+    "requirement": {"title": "Measurable requirements", "hint": "What is required of the bibliography, measured on what is approved. They come from the syllabus, from a level template (a starting point, not a norm) or you write them.", "level": "Level", "levels": {"seminary": "Seminary", "research": "Research", "publishable": "Publishable"}, "propose": "Propose the level's requirements", "empty": "No requirements yet. Import the syllabus, propose a level's requirements or add one by hand.", "kind": {"minimum-type": "Minimum by type", "quantity": "Quantity", "date-range": "Older and recent sources", "perspectives": "Opposing views", "variety": "Variety of resources", "rule": "Rule", "other": "Other (checked by hand)"}, "origin": {"syllabus": "from the syllabus", "level": "from the level", "manual": "by hand"}, "measure": "{{value}} of {{target}}", "manual": "Checked by hand", "done": "Done", "accept": "Mark as met", "acceptLabel": "Mark «{{text}}» as met", "accepted": "You marked it as met: it counts as met even though the measure falls short.", "undoAccept": "Undo", "undoAcceptLabel": "Undo «mark as met» for «{{text}}»", "remove": "Remove «{{text}}»", "kindLabel": "Kind", "textLabel": "Requirement", "minimum": "Minimum", "add": "Add requirement", "unmeasurable": {"quantity_one": "1 work without pages or review", "quantity_other": "{{count}} works without pages or review", "date-range_one": "1 work without a year", "date-range_other": "{{count}} works without a year", "perspectives_one": "1 work without an approach", "perspectives_other": "{{count}} works without an approach", "minimum-type_one": "1 not measured", "minimum-type_other": "{{count}} not measured", "variety_one": "1 not measured", "variety_other": "{{count}} not measured", "rule_one": "1 not measured", "rule_other": "{{count}} not measured", "other_one": "1 not measured", "other_other": "{{count}} not measured"}, "coverageLabel": "Project requirements", "incomplete": "Missing the figure", "assumedNote": "Assumed because the source does not say: {{what}}. Correct it if the course asks otherwise.", "assumedPart": {"before": "one before {{value}}", "after": "recent since {{value}}", "recentMinimum": "{{value}} recent", "minimum": "at least {{value}} approaches"}, "field": {"minimum": "Minimum", "before": "Before", "after": "Since", "recentMinimum": "Recent", "types": "Types that must be present"}, "anyType": "Any type", "unit": "Unit", "units": {"works": "works", "pages": "pages"}, "needs": {"minimum-type": "Choose the type and the minimum so it can be measured.", "quantity": "Set the minimum so it can be measured.", "date-range": "Set at least one cut-off year.", "variety": "Check at least two types.", "perspectives": "", "rule": "", "other": ""}, "template": {"criticalText": "The original-language text, in a critical edition.", "criticalCommentaries": "Critical commentaries on the book: at least {{minimum}}.", "articles": "Scholarly journal articles: at least {{minimum}}.", "lexicon": "A technical lexicon.", "grammar": "A reference grammar.", "perspectives": "Opposing views: at least {{minimum}} different approaches (Fee 4.1).", "dateRange": "Older and recent sources: one before {{before}} and {{recent}} since {{after}}.", "monographs": "Monographs on the topic: at least {{minimum}}."}},
     "review": {"titleAssignment": "Read from the assignment: {{label}}", "titleBibliography": "Read from the bibliography: {{label}}", "summary_one": "1 work: {{required}} required · {{library}} in your library · {{already}} already in your list · {{gap}} fill a missing requirement.", "summary_other": "{{count}} works: {{required}} required · {{library}} in your library · {{already}} already in your list · {{gap}} fill a missing requirement.", "citedBy": "Which work is this bibliography from? (optional)", "citedByPlaceholder": "For example: Moo, The Letter of James", "group": {"required": "Required readings", "gap": "Get first: they fill a missing requirement", "passage": "They name your studies' passages", "library": "Already in your library", "rest": "The rest of the repertoire", "already": "Already in your list: check it to complete its record"}, "already": "already in your list", "mentions": "mentions chapter {{chapter}}", "fillsGap": "fills a requirement", "confirm": "Add to the list", "cancel": "Discard what was read", "saveHint": "It is saved when added.", "reading": "Reading record (review)", "willAddWorks_one": "1 new work", "willAddWorks_other": "{{count}} new works", "willUpdate_one": "1 completes a record you already have", "willUpdate_other": "{{count}} complete records you already have", "truncated": "The document is so long that the reading was cut off: {{count}} works came in, up to «{{after}}». Add them, then import the rest of the bibliography (from the next work) in parts, typing or pasting that part of the list."},
     "log": {"title": "Searches and imports", "hint": "What was consulted, when and with what result: so the search can be explained and repeated.", "kind": {"syllabus": "Syllabus", "bibliography": "Bibliography", "file": "File", "catalog": "Catalog", "library": "Library", "studies": "Studies", "database": "Database search"}, "result": "{{found}} read · {{added}} new"},
     "approach": {"historical-grammatical": "Historical-grammatical", "historical-critical": "Historical-critical", "socio-rhetorical": "Socio-rhetorical", "discourse-linguistic": "Discourse or linguistic analysis", "literary-narrative": "Literary or narrative", "canonical-theological": "Canonical or theological", "other": "Other"},
@@ -88,7 +88,8 @@
       "library": "Library",
       "studies": "Project studies",
       "manual": "By hand",
-      "legacy": "Project sources"
+      "legacy": "Project sources",
+      "selector": "Picked in the source picker"
     },
     "field": {
       "rating": "Worth reading? (1 to 10)",
@@ -220,7 +221,7 @@
         "back": "Back to projects"
     },
     "roadmap": {
-        "label": "Roadmap · {{type}}",
+        "label": "Path · {{type}}",
         "loading": "Loading the roadmap…",
         "loadError": "The project roadmap could not be loaded.",
         "phaseLabel": "Phase {{number}}",
@@ -230,45 +231,6 @@
         },
         "activePhase": {
             "label": "Next step · Phase {{number}}"
-        },
-        "phases": {
-            "exegetical": {
-                "passage": {
-                    "title": "Passage and purpose",
-                    "description": "Your reading of the book before dividing it: the passage, why you study it, its structure and its central idea.",
-                    "cta": "Define the framing"
-                },
-                "passageEdit": {
-                    "title": "Passage and purpose",
-                    "description": "Your framing of the book. Come back to it when a study changes your reading.",
-                    "cta": "Edit the framing"
-                },
-                "sources": {
-                    "title": "Sources",
-                    "description": "The commentaries, lexicons and grammars that serve the whole passage.",
-                    "cta": "Prepare the state of the art"
-                },
-                "division": {
-                    "title": "Division into pericopes",
-                    "description": "Divide the book into pericopes with the planner. Each pericope is born as a study of this project, with its bibliography.",
-                    "cta": "Plan the series"
-                },
-                "pericopes": {
-                    "title": "Studies by pericope",
-                    "description": "A worked study for each pericope of the passage.",
-                    "cta": "New study"
-                },
-                "pericopesSeries": {
-                    "title": "Studies by pericope",
-                    "description": "The series already created one study per pericope: work on them from its card, in the plan's order.",
-                    "cta": "Work on the series studies"
-                },
-                "synthesis": {
-                    "title": "Synthesis",
-                    "description": "What the passage says as a whole: talk with the tutors or write the synthesis.",
-                    "cta": "Start conversation"
-                }
-            }
         }
     },
     "seriesSection": {
@@ -339,7 +301,10 @@
             "downloadMarkdown": "Download as Markdown",
             "edit": "Edit",
             "delete": "Delete"
-        }
+        },
+        "seeAll": "See all ({{count}})",
+        "seeLess": "See less",
+        "chars": "{{n}} characters"
     },
     "linkSession": {
         "greek": {
@@ -620,7 +585,6 @@
             "save": "Save the framing",
             "saved": "Framing saved.",
             "saveFailed": "The framing could not be saved. Try again.",
-            "backToRequirements": "Back to Requirements",
             "unsavedTitle": "You have unsaved changes",
             "unsavedBody": "Leave without saving?",
             "unsavedLeave": "Leave without saving",
@@ -659,6 +623,238 @@
             "save": "Save the revised idea",
             "saved": "Revised idea saved.",
             "saveFailed": "The revised idea could not be saved. Try again."
+        }
+    },
+    "desk": {
+        "exegetical": {
+            "passage": {
+                "todo": "No framing yet",
+                "oldNote": "There is an earlier note to move into the framing",
+                "partial": "Framing half done · fields to complete: {{missing}}",
+                "ready": "Book and central idea written · movements: {{movements}}"
+            },
+            "division": {
+                "todo": "No series yet",
+                "draft": "There is an unfinished planner analysis",
+                "readySeries": "Planned pericopes: {{units}} · series: {{series}}",
+                "readyWithoutSeries": "You marked the division as done without a series"
+            },
+            "pericopes": {
+                "empty": "No studies yet",
+                "todo": "0 of {{total}} pericopes studied",
+                "progress": "{{done}} of {{total}} pericopes studied · noted in your reading: {{annotated}}",
+                "ready": "All {{total}} pericopes studied · noted in your reading: {{annotated}}"
+            },
+            "synthesis": {
+                "todo": "No notes in your reading yet",
+                "progress": "Notes in your reading: {{annotations}}",
+                "stale": "Your revised idea is out of date: the original idea changed",
+                "ready": "Central idea revised and current"
+            }
+        },
+        "sources": {
+            "todo": "No bibliography yet",
+            "candidatesOnly": "Candidates only ({{candidates}}): none approved yet",
+            "requiredToAcquire": "Approved: {{approved}} · required, still to get: {{count}}",
+            "requirementsPending": "Approved: {{approved}} · requirements {{met}}/{{total}}",
+            "ready": "Approved: {{approved}} · still to get: {{toAcquire}}",
+            "readyRequirements": "Approved: {{approved}} · still to get: {{toAcquire}} · requirements {{met}}/{{total}}",
+            "readyManual": "Added by hand: {{count}}"
+        },
+        "course": {
+            "charge": {
+                "todo": "No work types yet",
+                "unresolved": "Work types: {{types}} · without a settled rubric: {{unresolved}}",
+                "ready": "Work types: {{types}}, each with its rubric"
+            },
+            "calendar": {
+                "todo": "No calendar yet",
+                "incomplete": "Deliveries: {{entries}} · missing type or date: {{missing}}",
+                "ready": "Deliveries with type and date: {{entries}}",
+                "free": "Week by week, without a calendar"
+            },
+            "works": {
+                "empty": "No assignments yet",
+                "todo": "0 of {{total}} assignments assembled",
+                "progress": "{{done}} of {{total}} assembled · delivered: {{delivered}}",
+                "ready": "All {{total}} assembled · delivered: {{delivered}}"
+            },
+            "feedback": {
+                "todo": "No feedback yet",
+                "progress": "Feedback: {{returned}} of {{delivered}} deliveries · repeated corrections to decide: {{pendingPatterns}}",
+                "ready": "Feedback: {{returned}}, and every repeated correction decided"
+            }
+        },
+        "now": {
+            "deadline": {
+                "review": "{{label}} is assembled and due soon",
+                "continue": "{{label}} is due soon · {{done}} of {{total}} steps",
+                "create": "{{label}} is due soon and has no assignment yet"
+            },
+            "continue": "{{label}} · {{done}} of {{total}} steps",
+            "continuePericope": "Pericope {{position}} · {{label}} · {{done}} of {{total}} steps",
+            "upcomingPericope": "Pericope {{position}} · {{label}}",
+            "createScheduled": "{{label}} is next",
+            "passage": "Write your reading of the book",
+            "passagePartial": "Complete your reading of the book",
+            "passageOldNote": "Move your earlier note into the framing",
+            "sources": "Choose your sources",
+            "division": "Divide the book into pericopes",
+            "pericope": "Pericope {{position}} · {{label}}",
+            "study": "Keep going with {{label}}",
+            "newStudy": "Start the study of a pericope",
+            "reviseIdea": "Revise your central idea with what you noted",
+            "annotate": "Note what {{label}} says about your reading",
+            "synthesis": "Note what each study says about your reading",
+            "charge": "Define what the course asks for",
+            "calendar": "Build the delivery calendar",
+            "work": "Keep going with {{label}}",
+            "workCreate": "{{label}} has no assignment yet",
+            "newWork": "Start a course assignment",
+            "recordFeedback": "Record the feedback on {{label}}",
+            "decidePatterns_one": "Decide what to do with the repeated correction",
+            "decidePatterns_other": "Decide what to do with the {{count}} repeated corrections",
+            "feedback": "Record the professor's feedback",
+            "recentStudy": "Keep going with {{label}}",
+            "recentOutput": "Pick up {{label}}"
+        },
+        "notes": {
+            "oldNote": "You have an earlier note: move it into the framing",
+            "readingPending_one": "One assembled study is not yet noted in your reading",
+            "readingPending_other": "{{count}} assembled studies are not yet noted in your reading",
+            "revisionStale": "Your revised idea is out of date: revise it again",
+            "requiredToAcquire": "{{title}}: required, still to get",
+            "overdue": "{{label}} was due on {{dueDate}} and is not delivered",
+            "noFeedback": "{{label}}: delivered, no feedback recorded",
+            "pendingPatterns_one": "One correction repeats and is undecided",
+            "pendingPatterns_other": "{{count}} corrections repeat and are undecided",
+            "phase": {
+                "passage": "Your reading of the book is not complete yet",
+                "sources": "Your sources are not ready yet",
+                "division": "The book still needs to be divided into pericopes",
+                "pericopes": "Some pericopes are still to be studied",
+                "synthesis": "Your central idea still needs revising",
+                "charge": "What the course asks for is not defined yet",
+                "calendar": "The delivery calendar is incomplete",
+                "works": "Some assignments are still to be assembled",
+                "feedback": "Some feedback is still to be recorded"
+            }
+        },
+        "journey": {
+            "label": "Path",
+            "nowOnlyLabel": "Your work",
+            "phaseLabel": "Phase {{number}}",
+            "goToPhase": "Phase {{number}}: {{name}} ({{status}}). Go to its section",
+            "status": {
+                "todo": "Not started",
+                "doing": "In progress",
+                "ready": "Ready"
+            },
+            "nowLabel": "Now",
+            "kind": {
+                "deadline": "due {{date}}",
+                "continuity": "what you left in progress",
+                "upcoming": "preached on {{date}}",
+                "scheduled": "next on the calendar",
+                "phase": "phase {{number}} · {{name}}",
+                "recent": "the last thing you touched"
+            },
+            "due": "For {{date}}",
+            "allReady": "Every phase is ready. Come back to any of them when a study changes your reading.",
+            "notesLabel": "Also missing",
+            "action": {
+                "study": "Continue",
+                "review": "Review before delivering",
+                "oldNote": "Go to your note",
+                "scheduleEntry": "See the delivery",
+                "createScheduled": "Create {{label}}",
+                "phase": "Go to the phase",
+                "framing": "Open the framing",
+                "stateOfArt": "Choose your sources",
+                "planSeries": "Plan the series",
+                "reviseIdea": "Revise your central idea",
+                "recordFeedback": "Record the feedback",
+                "output": "Open"
+            },
+            "scaffold": {
+                "title": "Phase {{number}} · {{name}}: how it is done",
+                "purpose": "What it is for",
+                "wellDone": "What it looks like done well",
+                "commonError": "Common mistake"
+            },
+            "phases": {
+                "exegetical": {
+                    "passage": {
+                        "name": "Your reading of the book",
+                        "purpose": "Write what you think the book says before dividing it, so you have something to measure your findings against.",
+                        "wellDone": "The book, why you study it, its movements and a one-sentence central idea, written by you.",
+                        "commonError": "Waiting until the studies are done to write it: by then there is no reading left for the text to correct."
+                    },
+                    "sources": {
+                        "name": "Sources",
+                        "purpose": "Choose with judgment the works you will use for the whole book: your state of the art, the reasoned list of works you will work with.",
+                        "wellDone": "Approved works of several kinds (commentaries, lexicons, grammars) and the requirements met or accepted on purpose. An approved work can still be «to get».",
+                        "commonError": "Gathering everything in the library without deciding what each work contributes."
+                    },
+                    "division": {
+                        "name": "Division into pericopes",
+                        "purpose": "Divide the book into pericopes (each unit of the text that is preached whole) following the text's own markers.",
+                        "wellDone": "Each pericope with a beginning and an end the text justifies, ordered in a series.",
+                        "commonError": "Cutting by chapters or by the number of Sundays instead of by the units of the text."
+                    },
+                    "pericopes": {
+                        "name": "Studies by pericope",
+                        "purpose": "Study each pericope in depth, in the order of the plan.",
+                        "wellDone": "Assembled studies, each noted in your reading: what it confirms, nuances or contradicts.",
+                        "commonError": "Opening many studies at once and finishing none."
+                    },
+                    "synthesis": {
+                        "name": "Synthesis",
+                        "purpose": "Return to your central idea with what the studies said.",
+                        "wellDone": "A revised idea, with its reason, that comes from your notes.",
+                        "commonError": "Repeating the original idea without looking at what the text nuanced or contradicted."
+                    }
+                },
+                "course": {
+                    "charge": {
+                        "name": "What the course asks for",
+                        "purpose": "Know what the course asks for before writing: the work types, their rubric, method and guide.",
+                        "wellDone": "Each work type with its rubric settled and, where it applies, its style guide.",
+                        "commonError": "Starting the first assignment without knowing which rubric will grade it."
+                    },
+                    "sources": {
+                        "name": "Course sources",
+                        "purpose": "Gather the course bibliography in the state of the art, the reasoned list of works you will work with.",
+                        "wellDone": "The required works approved and on hand; the rest chosen for what they bring to each work type.",
+                        "commonError": "Leaving a required work «to get» until the week it is due."
+                    },
+                    "calendar": {
+                        "name": "Delivery calendar",
+                        "purpose": "Keep in view what is due and when.",
+                        "wellDone": "Each delivery with its work type and date, or the explicit decision to work week by week.",
+                        "commonError": "Writing down only the next delivery and learning about the following one too late."
+                    },
+                    "works": {
+                        "name": "Assignments",
+                        "purpose": "Do each assignment with its type, its rules and its sources.",
+                        "wellDone": "Assignments assembled before the date and, if the course asks, without repeating sources from the previous one.",
+                        "commonError": "Finishing at the last minute and delivering without the review before delivering."
+                    },
+                    "feedback": {
+                        "name": "Feedback and learning",
+                        "purpose": "Learn from what the professor corrects so the next assignment is better.",
+                        "wellDone": "Each piece of feedback recorded, and each repeated correction decided: moved to your guide or dismissed.",
+                        "commonError": "Reading the grade and filing the feedback without changing anything in the next assignment."
+                    }
+                }
+            }
+        },
+        "tools": {
+            "eyebrow": "At the end",
+            "title": "Tools",
+            "description": "The languages of the book, to use inside each study, where the passage is already set.",
+            "hebrewAramaic": "Hebrew and Aramaic",
+            "sourcesEyebrow": "For reference"
         }
     }
 }

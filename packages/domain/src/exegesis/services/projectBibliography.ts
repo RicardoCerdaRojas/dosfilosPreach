@@ -27,8 +27,14 @@ export type BibliographyWeight = 'required' | 'recommended' | 'complementary';
 /** Qué se decidió sobre la obra. Descartar exige una razón. */
 export type BibliographyDecision = 'candidate' | 'approved' | 'discarded';
 
-/** De dónde salió la candidata. Una ficha puede tener varios orígenes. */
-export type BibliographyOrigin = 'syllabus' | 'catalog' | 'library' | 'studies' | 'manual' | 'legacy' | 'import' | 'citation';
+/**
+ * De dónde salió la candidata. Una ficha puede tener varios orígenes.
+ * `library` es la candidata que el estado del arte trae de la biblioteca;
+ * `selector`, lo aprobado con el selector de fuentes del proyecto (marcar
+ * libros sin pasar por el estado del arte). El escritorio los distingue:
+ * lo del selector cuenta como «agregadas a mano».
+ */
+export type BibliographyOrigin = 'syllabus' | 'catalog' | 'library' | 'selector' | 'studies' | 'manual' | 'legacy' | 'import' | 'citation';
 
 /**
  * Enfoque o método de la obra (etapa 2b): categorías académicas neutrales,
@@ -506,6 +512,11 @@ export function inheritableBibliography(
  * aplicado a la bibliografía: lo marcado queda aprobado —si no tenía ficha,
  * nace una—, y lo que se desmarcó vuelve a candidata, con su evaluación.
  * Así el selector y el estado del arte no se contradicen.
+ *
+ * Lo que el selector aprueba lleva el origen `selector` (también una
+ * candidata que ya estaba): así el escritorio sabe que se aprobó sin pasar
+ * por el estado del arte. Desmarcar no lo quita: el origen dice de dónde
+ * vino, no qué se decidió.
  */
 export function applyLibrarySelection(
     entries: ReadonlyArray<ProjectBibliographyEntry>,
@@ -516,9 +527,11 @@ export function applyLibrarySelection(
 ): ProjectBibliographyEntry[] {
     const marcados = new Set(selectedIds);
     const cuando = now.toISOString();
+    const conSelector = (origins: ReadonlyArray<BibliographyOrigin>): BibliographyOrigin[] =>
+        origins.includes('selector') ? [...origins] : [...origins, 'selector'];
     const out = entries.map(e => {
         if (!e.resourceId) return e;
-        if (marcados.has(e.resourceId) && e.decision !== 'approved') return { ...e, decision: 'approved' as const, decidedAt: cuando };
+        if (marcados.has(e.resourceId) && e.decision !== 'approved') return { ...e, decision: 'approved' as const, decidedAt: cuando, origins: conSelector(e.origins) };
         if (!marcados.has(e.resourceId) && e.decision === 'approved') return { ...e, decision: 'candidate' as const, decidedAt: cuando };
         return e;
     });
@@ -528,13 +541,13 @@ export function applyLibrarySelection(
         // Una obra por conseguir que es este libro se liga, en vez de duplicarse.
         const porConseguir = r ? out.findIndex(e => !e.resourceId && e.decision !== 'discarded' && sameWork(e, { title: r.title, author: r.author ?? null, resourceId: null })) : -1;
         if (porConseguir >= 0) {
-            out[porConseguir] = { ...out[porConseguir]!, resourceId: id, decision: 'approved', decidedAt: cuando };
+            out[porConseguir] = { ...out[porConseguir]!, resourceId: id, decision: 'approved', decidedAt: cuando, origins: conSelector(out[porConseguir]!.origins) };
             continue;
         }
         out.push({
             id: newId(), title: r?.title ?? '', author: r?.author ?? null, resourceId: id,
             sourceType: r?.exegeticalType ?? null, weight: 'recommended', decision: 'approved',
-            origins: ['library'], decidedAt: cuando,
+            origins: ['selector'], decidedAt: cuando,
         });
     }
     return out;

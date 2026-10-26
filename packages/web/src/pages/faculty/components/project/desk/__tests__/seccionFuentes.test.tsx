@@ -1,0 +1,51 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { deskSourcesSummary } from '@dosfilos/domain';
+
+/** «Fuentes», compartida por el Exegético y el Curso: resume y lleva al estado del arte. */
+vi.mock('@/i18n', () => ({
+    useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k), i18n: { language: 'es' } }),
+}));
+const { SourcesSection, stateOfArtUrl } = await import('../SourcesSection');
+beforeEach(cleanup);
+
+const ficha = (id: string, over: Record<string, unknown> = {}) => ({ id, title: `Obra ${id}`, resourceId: `r_${id}`, weight: 'recommended', decision: 'approved', origins: ['catalog'], ...over });
+
+describe('SourcesSection', () => {
+    it('el ancla, el número de fase, el título propio y lo de cada tipo', () => {
+        const s = deskSourcesSummary({ bibliography: [ficha('a')] as never });
+        render(
+            <MemoryRouter>
+                <SourcesSection projectId="nt 785" sources={s} phase={{ id: 'sources', status: 'ready', evidence: { key: 'desk.sources.ready', params: { approved: 1, toAcquire: 0 } } }} phaseNumber={2} title="Fuentes del curso">
+                    <p>cobertura por tipo</p>
+                </SourcesSection>
+            </MemoryRouter>,
+        );
+        const seccion = document.getElementById('fase-sources')!;
+        expect(seccion).toBeTruthy();
+        expect(seccion.textContent).toContain('desk.journey.phaseLabel:{"number":2}');
+        expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Fuentes del curso');
+        expect(screen.getByText('cobertura por tipo')).toBeInTheDocument();
+        expect(screen.getByText('desk.sources.ready:{"approved":1,"toAcquire":0}')).toBeInTheDocument();
+        expect(stateOfArtUrl('nt 785')).toBe('/dashboard/projects/nt%20785/estado-del-arte');
+    });
+
+    it('las obligatorias por conseguir, los requisitos sin cifra y los aceptados a propósito', () => {
+        const s = deskSourcesSummary({
+            bibliography: [ficha('moo', { title: 'James (PNTC)', resourceId: null, weight: 'required' }), ficha('b')] as never,
+            bibliographyCriteria: {
+                requirementItems: [
+                    { id: 'r1', kind: 'minimum-type', text: 'tres', origin: 'manual', sourceType: 'commentary-critical', minimum: 3, done: true },
+                    { id: 'r2', kind: 'perspectives', text: 'opuestos', origin: 'manual' },
+                ],
+            } as never,
+        });
+        render(<MemoryRouter><SourcesSection projectId="p" sources={s} phase={undefined} phaseNumber={2} /></MemoryRouter>);
+        expect(screen.getByTestId('desk-sources-summary').textContent).toBe('sources.approved:{"count":2} · sources.toAcquire:{"count":1} · sources.requirements:{"met":1,"total":2}');
+        expect(screen.getByTestId('desk-sources-required').textContent).toContain('James (PNTC)');
+        expect(screen.getByText('sources.incomplete:{"count":1}')).toBeInTheDocument();
+        expect(screen.getByText('sources.accepted:{"count":1}')).toBeInTheDocument();
+        expect(screen.queryByTestId('desk-sources-manual')).toBeNull();
+    });
+});

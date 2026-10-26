@@ -18,8 +18,9 @@ import enExegesis from '../locales/en/exegesis.json';
  */
 
 const NUEVAS_PROJECTS = [
+    // Las fases del Exegético salieron del recorrido viejo: viven en el escritorio.
     ...['passage', 'sources', 'division', 'pericopes', 'synthesis'].flatMap((fase) =>
-        ['title', 'description', 'cta'].map((campo) => `roadmap.phases.exegetical.${fase}.${campo}`),
+        ['name', 'purpose', 'wellDone', 'commonError'].map((campo) => `desk.journey.phases.exegetical.${fase}.${campo}`),
     ),
     'seriesSection.title',
     'seriesSection.plan',

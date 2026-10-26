@@ -171,8 +171,7 @@ export interface DeskSourcesSummary {
     toAcquire: number;
     /**
      * Aprobadas «a mano»: las `sourceIds` de antes (`legacy`) o las del
-     * selector de la biblioteca (`library`), sin otro origen. Ver la nota de
-     * `deskSourcesSummary`.
+     * selector de fuentes (`selector`), sin otro origen. Ver `isManualApproval`.
      */
     manual: number;
     candidates: number;
@@ -586,17 +585,32 @@ function continuityStudy(studies: ReadonlyArray<DeskStudy>): DeskStudy | null {
 
 // ── Fuentes ────────────────────────────────────────────────────────────
 
-const MANUAL_ORIGINS = new Set(['legacy', 'library']);
+const MANUAL_ORIGINS = new Set<string>(['legacy', 'selector', 'library']);
+
+/**
+ * «A mano»: una ficha aprobada sin pasar por el método. Sus orígenes son
+ * solo `legacy` (las `sourceIds` de antes), `selector` (el selector de
+ * fuentes) o `library`, y al menos uno es de la puerta lateral:
+ *   - `legacy` o `selector`;
+ *   - o una ficha del selector de ANTES del origen `selector`: solo
+ *     `library` y peso «recomendada», con que el selector las creaba. Las
+ *     candidatas que el estado del arte trae de la biblioteca nacen
+ *     «complementarias» (`libraryCandidates`). Supuesto: si alguien les
+ *     subió el peso antes de aprobarlas, cuentan como a mano.
+ * Así lo de antes no retrocede (Jonás, NT785) y una candidata de la
+ * biblioteca aprobada dentro del estado del arte no cuenta como atajo.
+ */
+export function isManualApproval(entry: Pick<ProjectBibliographyEntry, 'decision' | 'origins' | 'weight'>): boolean {
+    if (entry.decision !== 'approved' || entry.origins.length === 0) return false;
+    if (!entry.origins.every(o => MANUAL_ORIGINS.has(o))) return false;
+    if (entry.origins.some(o => o === 'legacy' || o === 'selector')) return true;
+    return entry.weight === 'recommended';
+}
 
 /**
  * El resumen de las fuentes del proyecto, con las funciones del estado del
  * arte (`projectBibliography`, `measureRequirement`, `bibliographyCoverage`).
- *
- * «A mano»: una ficha aprobada cuyos orígenes son solo `legacy` (las
- * `sourceIds` de antes) o `library` (el selector). Ojo: una candidata que el
- * estado del arte trajo de la biblioteca también tiene origen `library`; los
- * datos no distinguen el selector de esa vía. Pendiente: un origen propio del
- * selector en `applyLibrarySelection`.
+ * «A mano»: ver `isManualApproval`.
  */
 export function deskSourcesSummary(
     project: Pick<DeskProject, 'bibliography' | 'sourceIds' | 'bibliographyCriteria'>,
@@ -629,7 +643,7 @@ export function deskSourcesSummary(
         total: entries.filter(e => e.decision !== 'discarded').length,
         approved: aprobadas.length,
         toAcquire: aprobadas.filter(e => !e.resourceId).length,
-        manual: aprobadas.filter(e => e.origins.length > 0 && e.origins.every(o => MANUAL_ORIGINS.has(o))).length,
+        manual: aprobadas.filter(isManualApproval).length,
         candidates: entries.filter(e => e.decision === 'candidate').length,
         discarded: entries.filter(e => e.decision === 'discarded').length,
         requirements: { met, total: requisitos.length, accepted, incomplete },

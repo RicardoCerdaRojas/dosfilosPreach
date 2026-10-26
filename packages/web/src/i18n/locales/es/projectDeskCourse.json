@@ -1,1 +1,262 @@
-{}
+{
+  "phase": {
+    "charge": {
+      "title": "Lo que pide el curso",
+      "description": "Cada tipo de trabajo del curso con su rúbrica, su método y su guía: lo que hereda cada trabajo al nacer."
+    },
+    "sources": {
+      "title": "Fuentes del curso"
+    },
+    "calendar": {
+      "title": "Calendario de entregas",
+      "description": "Cada entrega con su tipo y su fecha. Lo armas tú, con el programa del curso a la vista."
+    },
+    "works": {
+      "title": "Trabajos",
+      "description": "Cada trabajo con su avance, sus fuentes y su entrega. «Entregado» lo marcas tú: no depende del avance."
+    },
+    "feedback": {
+      "title": "Devolución y aprendizaje",
+      "description": "Lo que corrige el profesor y cómo cambia el trabajo siguiente. Una corrección que se repite se decide: pasa a tu guía o se descarta."
+    }
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edit": "Editar"
+  },
+  "toast": {
+    "saved": "Cambios guardados.",
+    "saveFailed": "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+    "removed": "Entrega quitada del calendario.",
+    "modeFree": "Listo: trabajas semana a semana, sin calendario.",
+    "modeCalendar": "Listo: trabajas con calendario de entregas.",
+    "delivered": "Marcado como entregado.",
+    "undelivered": "Ya no figura como entregado.",
+    "feedbackSaved": "Devolución registrada.",
+    "noFeedbackSaved": "Marcado «sin devolución».",
+    "feedbackCleared": "Devolución quitada.",
+    "patternDiscarded": "Corrección descartada.",
+    "patternReopened": "La corrección vuelve a quedar por decidir."
+  },
+  "charge": {
+    "typesLabel": "Tipos de trabajo del curso",
+    "empty": "Todavía no hay tipos de trabajo. Cada uno (un TP semanal, un ensayo, el paper final) tiene su rúbrica, su método y su guía.",
+    "untitled": "Sin nombre",
+    "edit": "Editar lo que pide el curso",
+    "dialogTitle": "Lo que pide el curso",
+    "dialogHint": "Los datos del curso y sus tipos de trabajo. Cada bloque se guarda con su botón.",
+    "courseGuide": "Guía del curso: {{name}}",
+    "noRepeat": "«No repetir fuentes» activo: cada trabajo se compara con el anterior del mismo tipo.",
+    "guide": "Guía",
+    "guideRules_one": "{{name}} · 1 regla",
+    "guideRules_other": "{{name}} · {{count}} reglas",
+    "rubric": {
+      "template": "Rúbrica",
+      "default": "Rúbrica por defecto",
+      "system": "Rúbrica del sistema",
+      "unset": "Sin rúbrica elegida",
+      "missing": "Su rúbrica ya no existe"
+    },
+    "method": {
+      "mixed": "Mixto",
+      "exegetical": "Exegético",
+      "research": "Investigación"
+    }
+  },
+  "calendar": {
+    "modeLabel": "Cómo trabaja el curso",
+    "mode": {
+      "calendar": "Con calendario de entregas",
+      "calendarHint": "Cada entrega con su tipo y su fecha.",
+      "free": "Semana a semana, sin calendario",
+      "freeHint": "Cada trabajo que crees aquí queda como entrega, sin fecha."
+    },
+    "empty": "Todavía no hay entregas. Agrega la primera con su tipo y su fecha.",
+    "emptyFree": "Sin calendario: cada trabajo que crees desde la mesa queda aquí como entrega, sin fecha.",
+    "listLabel": "Entregas del curso",
+    "noLabel": "Sin rótulo",
+    "missingType": "Sin tipo de trabajo",
+    "due": "vence {{date}}",
+    "noDate": "sin fecha",
+    "imported": "traído de antes",
+    "add": "Agregar una entrega",
+    "addTitle": "Nueva entrega",
+    "editTitle": "Editar la entrega",
+    "editEntry": "Editar «{{label}}»",
+    "removeEntry": "Quitar «{{label}}» del calendario",
+    "formHint": "El tipo de trabajo decide con qué rúbrica, método y guía nace el trabajo.",
+    "workType": "Tipo de trabajo",
+    "pickWorkType": "Elige un tipo",
+    "label": "Rótulo",
+    "labelHint": "Cómo la llama el curso: «TP #9», «Ensayo», «Paper final».",
+    "labelSuggested": "Sugerido: «{{label}}», el número que sigue. Puedes cambiarlo.",
+    "passage": "Pasaje (opcional)",
+    "passagePlaceholder": "4:13-5:6",
+    "passageHint": "Con la numeración de tu Biblia. Si es del libro del curso, basta el tramo.",
+    "passageInvalid": "No se reconoce el pasaje. Escríbelo como «4:13-5:6» o «Stg 4:13-5:6».",
+    "dueDate": "Fecha de entrega",
+    "dueDateHint": "Sin fecha, la entrega queda «sin plazo».",
+    "noWorkTypes": "Primero define los tipos de trabajo en «Lo que pide el curso».",
+    "removeTitle": "¿Quitar «{{label}}» del calendario?",
+    "removeHint": "El trabajo, si existe, no se borra: solo deja de figurar como entrega.",
+    "removeWithRecord": "Esta entrega tiene registrada la entrega o la devolución del profesor, y se pierden con ella. El trabajo no se borra.",
+    "removeConfirm": "Quitar",
+    "paper": "Trabajo que la cumple",
+    "noPaper": "Ninguno todavía",
+    "paperHint": "Los trabajos del curso que todavía no figuran como entrega."
+  },
+  "works": {
+    "emptyTitle": "Sin tipos de trabajo",
+    "noWorkTypes": "Define los tipos de trabajo en «Lo que pide el curso» para armar la mesa.",
+    "empty": "Todavía no hay entregas. Agrégalas en el calendario o trae los trabajos anteriores.",
+    "unknownType": "Tipo de trabajo que ya no existe",
+    "groupCount_one": "1 entrega",
+    "groupCount_other": "{{count}} entregas",
+    "createNamed": "Crear el {{label}}",
+    "createOfType": "Nuevo trabajo: {{type}}",
+    "create": "Crear el {{label}}",
+    "col": {
+      "work": "Trabajo",
+      "progress": "Avance",
+      "sources": "Fuentes",
+      "delivery": "Entrega"
+    },
+    "study": {
+      "none": "Sin trabajo",
+      "notStarted": "Sin empezar",
+      "progress": "{{done}} de {{total}} pasos",
+      "assembled": "Ensamblado"
+    },
+    "sources": {
+      "first": "Primero de su tipo",
+      "noRepeatFrom": "Sin repetir de {{label}}",
+      "repeats": "Repite {{sources}}"
+    },
+    "delivery": {
+      "notDelivered": "Sin entregar",
+      "delivered": "Entregado",
+      "returned": "Devuelto",
+      "noFeedback": "Sin devolución"
+    },
+    "overdue": "vencida",
+    "dueSoon": "vence en {{hours}} h",
+    "markDelivered": "Marcar como entregado",
+    "unmarkDelivered": "Desmarcar",
+    "unmarkDeliveredLabel": "Desmarcar «{{label}}» como entregado",
+    "recordFeedback": "Registrar la devolución",
+    "editFeedback": "Ver la devolución",
+    "reading": {
+      "title": "Lectura dirigida",
+      "pages": "{{pages}} de {{target}} páginas reseñadas",
+      "pending_one": "1 obra sin páginas o sin reseña",
+      "pending_other": "{{count}} obras sin páginas o sin reseña"
+    },
+    "offCalendar_one": "1 trabajo del curso no figura como entrega:",
+    "offCalendar_other": "{{count}} trabajos del curso no figuran como entrega:",
+    "importHint": "¿Tienes trabajos anteriores sueltos o en otro proyecto? Tráelos al curso con su tipo, sin cambiarles las reglas.",
+    "import": "Traer los trabajos anteriores"
+  },
+  "feedbackDialog": {
+    "title": "Devolución de {{label}}",
+    "hint": "Pega o escribe lo que devolvió el profesor y clasifica cada corrección. Registrarla no marca el trabajo como entregado.",
+    "text": "Lo que escribió el profesor",
+    "textPlaceholder": "Pega aquí la devolución tal como llegó.",
+    "grade": "Nota (opcional)",
+    "gradePlaceholder": "6,5",
+    "corrections": "Correcciones",
+    "correctionsHint": "Cada corrección con su patrón: uno que ya tienes o uno nuevo con el nombre que le das («cierre doble», «categoría ≠ traducción»).",
+    "pattern": "Patrón de la corrección {{n}}",
+    "newPattern": "Patrón nuevo…",
+    "patternName": "Nombre del patrón nuevo de la corrección {{n}}",
+    "patternNamePlaceholder": "Nombre del patrón",
+    "note": "Detalle de la corrección {{n}}",
+    "notePlaceholder": "Detalle (opcional): «v. 14, cierre doble en la conclusión»",
+    "removeCorrection": "Quitar la corrección {{n}}",
+    "addCorrection": "Agregar una corrección",
+    "incomplete": "Falta el nombre del patrón en alguna corrección.",
+    "save": "Guardar la devolución",
+    "none": "Sin devolución",
+    "clear": "Quitar la devolución",
+    "clearNone": "Quitar «sin devolución»"
+  },
+  "feedback": {
+    "emptyTitle": "Todavía no hay entregas",
+    "empty": "Cuando entregues un trabajo, registra aquí lo que devolvió el profesor. Las correcciones que se repiten forman tu registro.",
+    "summary": "{{delivered}} entregados · {{returned}} con devolución · {{noFeedback}} sin devolución",
+    "awaitingTitle": "Entregados sin devolución",
+    "recordFor": "Registrar la devolución de {{label}}",
+    "patternsTitle": "Tu registro de correcciones",
+    "patternsEmpty": "Todavía no hay correcciones registradas.",
+    "repeats": "se repite",
+    "count_one": "1 corrección en {{entries}} entrega(s)",
+    "count_other": "{{count}} correcciones en {{entries}} entrega(s)",
+    "toGuide": "Pasar a tu guía",
+    "discard": "Descartar",
+    "discardLabel": "Descartar «{{name}}»",
+    "decided": {
+      "guide": "Pasada a tu guía",
+      "discarded": "Descartada"
+    },
+    "reopen": "Volver a decidir",
+    "reopenLabel": "Volver a decidir «{{name}}»",
+    "reopenGuideHint": "Volver a decidir no quita la regla de la guía: eso se hace en su editor."
+  },
+  "guideRule": {
+    "title": "Pasar «{{name}}» a tu guía",
+    "hint": "La regla entra a la guía que leen el análisis y la revisión de prosa del trabajo siguiente. Escríbela con tus palabras.",
+    "ruleText": "La regla",
+    "ruleTextHint": "Empieza con el nombre que le diste a la corrección. Escríbela como la quieres leer en tu guía.",
+    "guide": "Guía donde queda",
+    "optionWorkType": "{{name}} (la de {{types}})",
+    "optionCourse": "{{name}} (la del curso)",
+    "unnamedGuide": "Guía sin nombre",
+    "noGuide": "Este curso no tiene guía de estilo. Elige una en «Editar lo que pide el curso» y vuelve aquí.",
+    "confirm": "Pasar a la guía",
+    "added": "Regla agregada a tu guía.",
+    "already": "Tu guía ya tenía esa regla: quedó registrada la decisión.",
+    "errors": {
+      "empty-rule": "La regla está vacía.",
+      "rule-too-long": "La regla es demasiado larga.",
+      "project-unavailable": "No se encontró el proyecto.",
+      "pattern-not-found": "Esa corrección ya no existe en el curso.",
+      "guide-not-found": "No se encontró la guía.",
+      "guide-without-manifest": "La guía todavía no tiene sus reglas leídas: ábrela en su editor antes de pasarle una regla.",
+      "guide-full": "La guía ya tiene el máximo de reglas."
+    }
+  },
+  "import": {
+    "title": "Traer los trabajos anteriores",
+    "hint": "Cada trabajo se vincula al curso con su tipo y queda en el calendario. No se le vuelven a aplicar las reglas del curso: un trabajo entregado no cambia de encargo.",
+    "empty": "No hay trabajos que traer: todos tus estudios ya figuran en el calendario.",
+    "thisCourse": "de este curso, sin entrega",
+    "loose": "suelto",
+    "otherProject": "de «{{title}}»",
+    "unknownProject": "otro proyecto",
+    "delivered": "Entregado",
+    "willLink": "Es de otro proyecto: queda vinculado a este curso sin dejar de ser de aquel.",
+    "confirm_one": "Traer 1 trabajo",
+    "confirm_other": "Traer {{count}} trabajos",
+    "tooMany": "Se pueden traer hasta {{max}} trabajos a la vez.",
+    "done_one": "1 trabajo quedó en el calendario.",
+    "done_other": "{{count}} trabajos quedaron en el calendario.",
+    "failed": "No se pudieron traer los trabajos. Inténtalo de nuevo.",
+    "warningsTitle": "Revisa estos avisos:",
+    "warnLinked": "«{{title}}» sigue siendo de su proyecto de origen; aquí aparece vinculado.",
+    "warnNotFound": "«{{title}}» no se encontró y no se trajo.",
+    "close": "Entendido"
+  },
+  "sources": {
+    "requiredTitle": "Obligatorias por conseguir",
+    "coverageTitle": "Lo que piden los tipos de trabajo",
+    "coverageMet": "{{approved}} de {{minimum}} aprobadas",
+    "coverageMissing": "faltan: {{approved}} de {{minimum}} aprobadas",
+    "coverageProject": "el curso"
+  },
+  "create": {
+    "fulfills": "Este trabajo cumple «{{label}}» del calendario del curso.",
+    "newEntry": "Este trabajo queda en el calendario del curso como «{{label}}», sin fecha.",
+    "linkFailed": "El trabajo se creó, pero no se pudo vincular con «{{label}}». Vincúlalo editando esa entrega en el calendario del curso.",
+    "newEntryUnlabeled": "Este trabajo queda en el calendario del curso como entrega, sin fecha."
+  }
+}

@@ -1,50 +1,51 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ProjectOutput, ProjectOutputKind, plannerBookForProject, projectWorkTypes } from '@dosfilos/domain';
-import { seriesService } from '@dosfilos/application';
+import { ProjectOutput, ProjectOutputKind, plannerBookForProject, projectWorkTypes, type DeskNote, type DeskNow, type DeskTarget } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { useFirebase } from '@/context/firebase-context';
 import { useAuthorization } from '@/hooks/useAuthorization';
-import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
-import { useFacultySessions } from '@/hooks/faculty/useFacultySessions';
-import { useProjectWorkspace } from '@/hooks/faculty/useProjectWorkspace';
-import { useSermons } from '@/hooks/use-sermons';
-import { useGreekSessions } from '@/hooks/useGreekSessions';
-import { useHebrewSessions } from '@/hooks/useHebrewSessions';
-import { computeRoadmapState, getProjectTypeMeta, type RoadmapCtaKind } from '@/pages/projects/projectRoadmaps';
-import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import type { RoadmapCtaKind } from '@/pages/projects/projectRoadmaps';
 
 import { ProjectHeader } from './components/project/ProjectHeader';
 import { ProjectDashboardSkeleton } from './components/project/ProjectDashboardSkeleton';
-import { ProjectRoadmap, RoadmapState } from './components/project/ProjectRoadmap';
+import { ProjectRoadmap } from './components/project/ProjectRoadmap';
 import { ProjectSetupCards, type ProjectSetupChange } from './components/project/ProjectSetupCards';
 import { ProjectStudiesSection } from './components/project/ProjectStudiesSection';
-import { ProjectSeriesSection, planSeriesUrl, seriesWorkUrl } from './components/project/ProjectSeriesSection';
-import { ProjectFramingCard } from './components/project/ProjectFramingCard';
+import { ProjectSeriesSection, planSeriesUrl } from './components/project/ProjectSeriesSection';
 import { ProjectFramingDialog } from './components/project/ProjectFramingDialog';
-import { ProjectResourceGrid } from './components/project/ProjectResourceGrid';
-import { ProjectMaterialList, MaterialItem } from './components/project/ProjectMaterialList';
+import { ProjectFramingConsolidateDialog } from './components/project/ProjectFramingConsolidateDialog';
+import type { MaterialItem } from './components/project/ProjectMaterialList';
 import { ProjectSourcePickerModal } from './components/project/ProjectSourcePickerModal';
 import { ProjectOutputEditorDialog } from './components/project/ProjectOutputEditorDialog';
 import { ProjectLinkSessionDialog } from './components/project/ProjectLinkSessionDialog';
-import { useProjectAttachedSources } from './hooks/useProjectAttachedSources';
+import { DeskJourney } from './components/project/desk/DeskJourney';
+import { DeskTools } from './components/project/desk/DeskTools';
+import { ExegeticalDeskSections } from './components/project/desk/ExegeticalDeskSections';
+import { CourseDeskSections } from './components/project/desk/CourseDeskSections';
+import { scrollToDeskSection } from './components/project/desk/primitives';
+import { createWorkUrl, studyUrl } from './components/project/desk/course/courseDeskFormat';
+import { useProjectDesk } from './hooks/useProjectDesk';
 import { useLinkProjectSession } from './hooks/useLinkProjectSession';
-import { useProjectSlices } from './hooks/useProjectSlices';
 import { useSaveProjectSources } from './hooks/useSaveProjectSources';
 import { useProjectFramingActions } from './hooks/useProjectFramingActions';
 
 /**
- * Project workspace page. Pure composer — orchestrates the project header,
- * roadmap, resource grid (Sources / Conversations / Greek / Hebrew), and
- * material list, plus three modals (source picker, output editor, link
- * session) and one delete dialog.
+ * El escritorio del proyecto (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md`).
+ * Compositor puro: la página es el recorrido.
  *
- * All business logic lives in dedicated hooks under `./hooks/`. UI assembly
- * lives in `./components/project/`.
+ *   1. Recorrido + «Ahora» (el único botón lleno) + notas + andamiaje.
+ *   2. Las secciones del tipo, una por fase y en el orden del trabajo
+ *      (Exegético y Curso: `desk/*DeskSections`). Los tipos sin escritorio
+ *      propio (Investigación, Consejería, Sermón, Serie) conservan su
+ *      recorrido y sus tarjetas de hoy; General, «Ahora» sin fases.
+ *   3. Al final: herramientas (según los libros) y material.
+ *
+ * Los datos vienen de `useProjectDesk` (selector sobre lo que ya está en
+ * caché, con estado por bloque); lo que muestra cada tipo, de
+ * `ProjectTypeMeta.capabilities`.
  */
 export function ProjectDashboard() {
     const { t } = useTranslation('projects');
@@ -53,41 +54,17 @@ export function ProjectDashboard() {
     const { user } = useFirebase();
     const { isAdmin } = useAuthorization();
 
-    // ── Data sources ────────────────────────────────────────────────────────
-    const { projects, isLoadingProjects, updateProject } = useFacultyProjects();
-    const { sessions } = useFacultySessions();
-    const { sermons } = useSermons();
-    const { sessions: greekSessions } = useGreekSessions();
-    const { sessions: hebrewSessions } = useHebrewSessions();
-    const { papers, isLoading: cargandoEstudios } = useExegesisPapers();
-    // La misma clave que ExegesisPage: comparten caché y la invalidación
-    // ['series'] de useExegesisPapers también la refresca.
-    const { data: series, isLoading: cargandoSeries, isError: seriesFallaron, refetch: reintentarSeries } = useQuery({
-        queryKey: ['series', 'forExegesisPapers', user?.uid],
-        queryFn: async () => (user?.uid ? seriesService.getUserSeries(user.uid) : []),
-        enabled: !!user?.uid,
-    });
-    const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput } =
-        useProjectWorkspace(projectId);
-
-    const project = useMemo(
-        () => projects?.find(p => p.id === projectId),
-        [projects, projectId]
-    );
-
-    // ── Lo que pertenece a este proyecto ───────────────────────────────────
     const {
-        projectSessions, projectSermons, projectSermonsAll, projectGreekSessions, linkableGreekSessions,
+        project, projects, isLoadingProject, updateProject, typeMeta, desk, legacyRoadmap,
+        blocks, journey, retrySeries, papers, sermons, slices, attached, workspace,
+    } = useProjectDesk(projectId);
+    const caps = typeMeta.capabilities;
+    const {
+        projectSessions, projectSermons, projectGreekSessions, linkableGreekSessions,
         projectHebrewSessions, linkableHebrewSessions, projectStudies, projectSeries, seriesStudyIds,
-    } = useProjectSlices(projectId, { sessions, sermons, greekSessions, hebrewSessions, papers, series });
+    } = slices;
+    const { outputs, isLoadingOutputs, createOutput, updateOutput, deleteOutput } = workspace;
 
-    // ── Hooks: attached sources + link sessions ────────────────────────────
-    const {
-        sources: attachedSources, isLoading: cargandoFuentes, error: fallaronFuentes, reprocessing, reprocessSource,
-    } = useProjectAttachedSources({
-        userId: user?.uid,
-        sourceIds: project?.sourceIds,
-    });
     const fuentesDelProyecto = useSaveProjectSources(project);
     const greekLinker = useLinkProjectSession({ projectId, domain: 'greek' });
     const hebrewLinker = useLinkProjectSession({ projectId, domain: 'hebrew' });
@@ -100,11 +77,17 @@ export function ProjectDashboard() {
         { mode: 'create' } | { mode: 'edit'; output: ProjectOutput } | null
     >(null);
     const [outputToDelete, setOutputToDelete] = useState<ProjectOutput | null>(null);
+    // «Revisar tu idea central» desde «Ahora» o una nota (la síntesis tiene el suyo).
+    const [consolidando, setConsolidando] = useState(false);
+    // La entrega cuya devolución se registra desde «Ahora» o una nota (Curso).
+    const [feedbackEntryId, setFeedbackEntryId] = useState<string | null>(null);
     // El encuadre del Exegético: su diálogo (también desde «Cambiar en el encuadre») y sus escrituras.
-    const { framingOpen, setFramingOpen, guardarEncuadre, anotarEncuadre, consolidarEncuadre } =
+    const { framingOpen, setFramingOpen, guardarEncuadre, consolidarEncuadre } =
         useProjectFramingActions({ projectId, projects, project, updateProject });
 
+    // El material, sin los sermones de la serie: ya se ven en su fila de la mesa.
     const materialItems = useMemo<MaterialItem[]>(() => {
+        const deLaSerie = new Set(projectSeries.map(s => s.id));
         const fromOutputs: MaterialItem[] = (outputs ?? []).map(o => ({
             source: 'output',
             id: o.id,
@@ -113,21 +96,23 @@ export function ProjectDashboard() {
             kind: o.kind,
             output: o,
         }));
-        const fromSermons: MaterialItem[] = projectSermons.map(s => ({
-            source: 'sermon',
-            id: s.id,
-            title: s.title,
-            updatedAt: new Date(s.updatedAt),
-            status: s.status,
-        }));
+        const fromSermons: MaterialItem[] = projectSermons
+            .filter(s => !(s.seriesId && deLaSerie.has(s.seriesId)) && !(s.sourcePaperId && seriesStudyIds.has(s.sourcePaperId)))
+            .map(s => ({
+                source: 'sermon',
+                id: s.id,
+                title: s.title,
+                updatedAt: new Date(s.updatedAt),
+                status: s.status,
+            }));
         return [...fromOutputs, ...fromSermons].sort(
             (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()
         );
-    }, [outputs, projectSermons]);
+    }, [outputs, projectSermons, projectSeries, seriesStudyIds]);
 
     // ── Project not found ─────────────────────────────────────────────────
     // En una carga en frío la lista todavía no llegó: no es «no encontrado».
-    if (!project && isLoadingProjects) return <ProjectDashboardSkeleton />;
+    if (isLoadingProject) return <ProjectDashboardSkeleton />;
     if (!project) {
         return (
             <div className="flex-1 flex items-center justify-center p-8">
@@ -141,37 +126,50 @@ export function ProjectDashboard() {
         );
     }
 
-    // Mientras cargan, «sin series» y «sin estudios» serían falsos: el
-    // recorrido ofrecería planificar otra serie y la lista no separaría los
-    // estudios de la serie. Con datos en caché, un fallo no los borra.
-    // Las fuentes, igual: mientras cargan, la fase 2 saldría como próximo paso.
-    const cargandoTrabajo = cargandoEstudios || cargandoSeries || cargandoFuentes;
-    // Si la lectura de las fuentes falló, el recorrido cuenta las que el
-    // proyecto tiene anotadas en vez de afirmar que no hay ninguna.
-    const cuentaDeFuentes = fallaronFuentes && attachedSources.length === 0
-        ? (project.sourceIds ?? []).length
-        : attachedSources.length;
-    const estadoSeries = cargandoSeries ? 'loading' : seriesFallaron && !series ? 'error' : 'ready';
+    const conEscritorio = caps.desk === 'exegetical' || caps.desk === 'course';
+    const pid = encodeURIComponent(project.id);
+    const nuevoEstudio = () => navigate(`/dashboard/exegesis/new?projectId=${pid}`);
+    const planificar = () => navigate(planSeriesUrl(project.id, plannerBookForProject(project, projectStudies)));
+    const estadoDelArte = () => navigate(`/dashboard/projects/${pid}/estado-del-arte`);
 
-    // ── Roadmap computation ────────────────────────────────────────────────
-    const typeMeta = getProjectTypeMeta(project.type);
-    const roadmap = computeRoadmapState(typeMeta, {
-        project,
-        studyCount: projectStudies.length,
-        deliveredCount: projectStudies.filter(p => p.phase === 'assembled').length,
-        workedStudyCount: projectStudies.filter(p => p.phase !== 'configuring').length,
-        seriesCount: projectSeries.length,
-        sourceCount: cuentaDeFuentes,
-        greekCount: projectGreekSessions.length,
-        hebrewCount: projectHebrewSessions.length,
-        sessionCount: projectSessions.length,
-        outputs: outputs ?? [],
-        // Cada versión: el recorrido de Serie cuenta como antes, sin agrupar.
-        sermons: projectSermonsAll,
-        sessions: projectSessions,
-    }) as unknown as RoadmapState;
+    /**
+     * Adónde lleva un destino del escritorio (el botón «Ahora» o una nota).
+     * Lo que vive en una sección (la entrega, la devolución, la fase) salta a
+     * ella; lo que tiene página propia navega, con la vuelta al proyecto.
+     */
+    const irA = (target: DeskTarget) => {
+        switch (target.type) {
+            case 'study': return target.id ? navigate(studyUrl(target.id, project.id)) : undefined;
+            case 'createScheduled':
+                return navigate(createWorkUrl({ projectId: project.id, workTypeId: target.workTypeId, scheduleEntryId: target.id, label: target.label }));
+            case 'scheduleEntry': return void scrollToDeskSection('works');
+            case 'recordFeedback':
+                // El diálogo de la devolución es de la sección del Curso: se le pide abrir esa entrega.
+                scrollToDeskSection('feedback');
+                return setFeedbackEntryId(target.id ?? null);
+            case 'phase': return void scrollToDeskSection(target.phaseId ?? desk?.activePhaseId ?? '');
+            case 'framing':
+                // Con nota de antes, «Pasar tu nota al encuadre» está en la sección de la fase 1: la precarga allí.
+                if (desk?.exegetical?.framing.oldNote && scrollToDeskSection('passage')) return;
+                return setFramingOpen(true);
+            case 'stateOfArt': return estadoDelArte();
+            case 'planSeries': return planificar();
+            case 'reviseIdea': return setConsolidando(true);
+            case 'output': {
+                const o = (outputs ?? []).find(x => x.id === target.id);
+                return o ? setOutputEditor({ mode: 'edit', output: o }) : undefined;
+            }
+            default: {
+                // Exhaustivo: un destino nuevo sin su caso no compila.
+                const sinCaso: never = target.type;
+                return sinCaso;
+            }
+        }
+    };
+    const onNow = (now: DeskNow) => irA(now.target);
+    const onNote = (note: DeskNote) => irA(note.target);
 
-    /** Guarda los datos del curso o los tipos de trabajo, con aviso. */
+    /** Guarda los datos del curso o los tipos de trabajo, con aviso (tipos que conservan las tarjetas). */
     const guardar = async (cambio: ProjectSetupChange) => {
         try {
             await updateProject.mutateAsync({ projectId: project.id, ...cambio });
@@ -182,34 +180,29 @@ export function ProjectDashboard() {
         }
     };
 
+    /** El botón del recorrido de los tipos viejos. */
     const handleRoadmapCta = (kind: RoadmapCtaKind) => {
         switch (kind) {
-            case 'frame': return setFramingOpen(true);
-            case 'study': return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
-            case 'charge': return document.getElementById('project-charge-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            case 'newSession': return navigate(`/dashboard/faculty?projectId=${projectId}`);
-            case 'greek': return navigate(`/dashboard/greek-tutor?projectId=${projectId}`);
-            case 'hebrew': return navigate(`/dashboard/hebrew-tutor?projectId=${projectId}`);
-            case 'sermon': return navigate(`/dashboard/faculty?projectId=${projectId}`);
+            case 'study': return nuevoEstudio();
+            case 'newSession': return navigate(`/dashboard/faculty?projectId=${pid}`);
+            case 'greek': return navigate(`/dashboard/greek-tutor?projectId=${pid}`);
+            case 'hebrew': return navigate(`/dashboard/hebrew-tutor?projectId=${pid}`);
+            case 'sermon': return navigate(`/dashboard/faculty?projectId=${pid}`);
             case 'output': return setOutputEditor({ mode: 'create' });
             case 'sources': return setSourcePickerOpen(true);
-            case 'stateOfArt': return navigate(`/dashboard/projects/${projectId}/estado-del-arte`);
-            case 'planSeries': return navigate(planSeriesUrl(project.id, plannerBookForProject(project, projectStudies)));
-            case 'openSeries': {
-                // La serie más nueva: su primer estudio sin empezar o su plan.
-                const serie = projectSeries[0];
-                if (!serie) return navigate(`/dashboard/exegesis/new?projectId=${projectId}`);
-                const faseDe = new Map((papers ?? []).map(p => [p.id, p.phase]));
-                return navigate(seriesWorkUrl(serie, id => faseDe.get(id)));
-            }
+            case 'stateOfArt': return estadoDelArte();
+            case 'planSeries': return planificar();
+            // Los de Exegético y Curso: sus recorridos viven en el escritorio.
+            case 'frame': return setFramingOpen(true);
+            case 'charge':
+            case 'openSeries':
+                return undefined;
             default: {
-                // Exhaustivo: un botón nuevo sin su caso no compila.
                 const sinCaso: never = kind;
                 return sinCaso;
             }
         }
     };
-
 
     // ── Output mutation handlers ───────────────────────────────────────────
     const handleCreateOutput = async (input: { kind: ProjectOutputKind; title: string; content: string }) => {
@@ -258,10 +251,11 @@ export function ProjectDashboard() {
     };
 
     const findProjectTitle = (id: string) => projects?.find(p => p.id === id)?.title ?? null;
+    const verSerie = !conEscritorio && (caps.seriesCard === 'always' || projectSeries.length > 0);
 
     return (
         <div className="flex-1 overflow-y-auto bg-background text-foreground antialiased">
-            <div className="max-w-[1600px] mx-auto px-6 lg:px-10 py-5 lg:py-6 space-y-6">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-5 lg:py-6 space-y-6">
                 <ProjectHeader
                     title={project.title}
                     contextNote={project.contextNote}
@@ -269,101 +263,91 @@ export function ProjectDashboard() {
                     TypeIcon={typeMeta.icon}
                 />
 
-                {estadoSeries === 'error' ? (
-                    // Sin saber si hay serie, el recorrido ofrecería «Planificar la serie»
+                {journey === 'error' ? (
+                    // Sin saber si hay serie, el escritorio ofrecería «Planificar la serie»
                     // aunque ya exista: se dice que falló y se ofrece reintentar.
                     <div role="alert" data-testid="project-roadmap-error" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
                         <p className="text-sm text-foreground">{t('roadmap.loadError')}</p>
-                        <Button size="sm" variant="outline" onClick={() => void reintentarSeries()}>{t('seriesSection.retry')}</Button>
+                        <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" onClick={retrySeries}>{t('seriesSection.retry')}</Button>
                     </div>
-                ) : cargandoTrabajo ? (
+                ) : journey === 'loading' ? (
+                    // Mientras carga, «sin serie», «sin estudios» o «sin fuentes» serían falsos.
                     <div
                         role="status"
                         aria-label={t('roadmap.loading')}
                         data-testid="project-roadmap-loading"
                         className="h-[132px] rounded-xl border border-border/60 bg-muted/40 animate-pulse"
                     />
-                ) : (
-                    <ProjectRoadmap
-                        roadmap={roadmap}
-                        typeLabel={typeMeta.label}
-                        onPhaseCta={handleRoadmapCta}
-                    />
+                ) : caps.desk === 'legacy' ? (
+                    legacyRoadmap && <ProjectRoadmap roadmap={legacyRoadmap} typeLabel={typeMeta.label} onPhaseCta={handleRoadmapCta} />
+                ) : desk ? (
+                    <DeskJourney desk={desk} onNow={onNow} onNote={onNote} />
+                ) : null}
+
+                {/* Las secciones de cada fase, en el orden del trabajo. */}
+                {journey === 'ready' && desk && caps.desk === 'exegetical' && (
+                    <ExegeticalDeskSections project={project} desk={desk} onOpenFraming={() => setFramingOpen(true)} sermons={sermons} />
+                )}
+                {journey === 'ready' && desk && caps.desk === 'course' && (
+                    <CourseDeskSections project={project} desk={desk} feedbackEntryId={feedbackEntryId} onFeedbackEntryChange={setFeedbackEntryId} />
                 )}
 
-                {/* El encuadre del Exegético: su fase 1 (fase «Encuadre de la serie»). */}
-                {project.type === 'exegetical' && (
-                    <ProjectFramingCard
-                        project={project}
-                        studies={projectStudies}
-                        onEdit={() => setFramingOpen(true)}
-                        onAnnotate={anotarEncuadre}
-                        onConsolidate={consolidarEncuadre}
-                        saving={updateProject.isPending}
-                    />
+                {/* Los tipos sin escritorio propio: sus tarjetas de hoy. */}
+                {caps.courseSetup !== 'none' && (
+                    <ProjectSetupCards project={project} onSave={guardar} collapsible={caps.courseSetup === 'collapsible'} />
                 )}
 
-                {/* Los datos del curso y sus tipos de trabajo (ADR-046, etapa
-                    1b): no aplican a los proyectos de predicación ni de
-                    consejería. Un Exegético las pliega mientras no las use. */}
-                {!['sermon', 'series', 'counseling'].includes(project.type ?? 'general') && (
-                    <ProjectSetupCards project={project} onSave={guardar} collapsible={project.type === 'exegetical'} />
-                )}
-
-                {/* Las series de predicación del proyecto (etapa 3 de ADR-046). */}
-                {(['exegetical', 'series', 'sermon'].includes(project.type ?? 'general') || projectSeries.length > 0) && (
+                {verSerie && (
                     <ProjectSeriesSection
                         project={project}
                         series={projectSeries}
-                        papers={papers ?? []}
-                        sermons={sermons ?? []}
-                        onPlanSeries={() => handleRoadmapCta('planSeries')}
-                        status={estadoSeries}
-                        onRetry={() => { void reintentarSeries(); }}
+                        papers={papers}
+                        sermons={sermons}
+                        onPlanSeries={planificar}
+                        status={blocks.series}
+                        onRetry={retrySeries}
                     />
                 )}
 
-                <ProjectStudiesSection
+                {caps.studies && (
+                    <ProjectStudiesSection
+                        projectId={project.id}
+                        studies={projectStudies}
+                        excludeIds={seriesStudyIds}
+                        loading={blocks.work === 'loading'}
+                        workTypes={projectWorkTypes(project)}
+                        onNewStudy={nuevoEstudio}
+                    />
+                )}
+
+                <DeskTools
                     projectId={project.id}
-                    studies={projectStudies}
-                    excludeIds={seriesStudyIds}
-                    loading={cargandoTrabajo}
-                    workTypes={projectWorkTypes(project)}
-                    onNewStudy={() => navigate(`/dashboard/exegesis/new?projectId=${project.id}`)}
-                />
-
-                <ProjectResourceGrid
-                    projectId={projectId!}
-                    isAdmin={isAdmin}
-                    attachedSources={attachedSources}
-                    reprocessing={reprocessing}
-                    onReprocessSource={reprocessSource}
-                    onOpenSourcePicker={() => setSourcePickerOpen(true)}
-                    onOpenStateOfArt={typeMeta.roadmap.some(f => f.cta.kind === 'stateOfArt') ? () => handleRoadmapCta('stateOfArt') : undefined}
-                    projectSessions={projectSessions}
-                    projectGreekSessions={projectGreekSessions}
-                    hasLinkableGreekSessions={linkableGreekSessions.length > 0}
-                    onOpenGreekLinker={() => setGreekLinkOpen(true)}
-                    projectHebrewSessions={projectHebrewSessions}
-                    hasLinkableHebrewSessions={linkableHebrewSessions.length > 0}
-                    onOpenHebrewLinker={() => setHebrewLinkOpen(true)}
+                    languages={caps.languages ? (desk?.languages ?? []) : null}
+                    conversations={projectSessions}
+                    greek={{ sessions: projectGreekSessions, canLink: linkableGreekSessions.length > 0, onLink: () => setGreekLinkOpen(true) }}
+                    hebrew={{ sessions: projectHebrewSessions, canLink: linkableHebrewSessions.length > 0, onLink: () => setHebrewLinkOpen(true) }}
+                    sources={caps.sources === 'stateOfArt' ? null : {
+                        attached: attached.sources,
+                        isAdmin,
+                        reprocessing: attached.reprocessing ?? {},
+                        onReprocess: attached.reprocessSource,
+                        onOpenPicker: () => setSourcePickerOpen(true),
+                        onOpenStateOfArt: caps.sources === 'both' ? estadoDelArte : undefined,
+                    }}
+                    material={{
+                        items: materialItems,
+                        isLoading: isLoadingOutputs,
+                        onCreate: () => setOutputEditor({ mode: 'create' }),
+                        onEdit: (o) => setOutputEditor({ mode: 'edit', output: o }),
+                        onDelete: (o) => setOutputToDelete(o),
+                    }}
                     onNavigate={(path) => navigate(path)}
-                />
-
-                <ProjectMaterialList
-                    items={materialItems}
-                    isLoading={isLoadingOutputs}
-                    onCreateOutput={() => setOutputEditor({ mode: 'create' })}
-                    onEditOutput={(o) => setOutputEditor({ mode: 'edit', output: o })}
-                    onDeleteOutput={(o) => setOutputToDelete(o)}
                 />
             </div>
 
             <ProjectLinkSessionDialog
                 open={hebrewLinkOpen}
-                onOpenChange={async (o) => {
-                    setHebrewLinkOpen(o);
-                }}
+                onOpenChange={setHebrewLinkOpen}
                 domain="hebrew"
                 sessions={linkableHebrewSessions}
                 projects={{ findProjectTitle }}
@@ -409,13 +393,23 @@ export function ProjectDashboard() {
             )}
 
             {project.type === 'exegetical' && (
-                <ProjectFramingDialog
-                    project={project}
-                    open={framingOpen}
-                    onOpenChange={setFramingOpen}
-                    onSave={guardarEncuadre}
-                    saving={updateProject.isPending}
-                />
+                <>
+                    <ProjectFramingDialog
+                        project={project}
+                        open={framingOpen}
+                        onOpenChange={setFramingOpen}
+                        onSave={guardarEncuadre}
+                        saving={updateProject.isPending}
+                    />
+                    <ProjectFramingConsolidateDialog
+                        open={consolidando}
+                        onOpenChange={setConsolidando}
+                        framing={project.framing}
+                        studies={projectStudies}
+                        onSave={async (input) => { await consolidarEncuadre(input); setConsolidando(false); }}
+                        saving={updateProject.isPending}
+                    />
+                </>
             )}
 
             <AlertDialog open={!!outputToDelete} onOpenChange={(o) => !o && setOutputToDelete(null)}>

@@ -142,8 +142,23 @@ describe('el selector de fuentes y la evaluación desde la biblioteca', () => {
             ficha({ id: 'c', resourceId: null, decision: 'approved' }),
         ], ['r2', 'r3'], id => (id === 'r3' ? { title: 'BDAG', exegeticalType: 'lexicon-technical' } : null), () => 'nueva', ahora);
         expect(out.map(e => [e.id, e.decision])).toEqual([['a', 'candidate'], ['b', 'approved'], ['c', 'approved'], ['nueva', 'approved']]);
-        expect(out[3]).toMatchObject({ resourceId: 'r3', title: 'BDAG', sourceType: 'lexicon-technical', origins: ['library'] });
+        expect(out[3]).toMatchObject({ resourceId: 'r3', title: 'BDAG', sourceType: 'lexicon-technical', origins: ['selector'] });
         expect(out[1]!.decidedAt).toBe(ahora.toISOString());
+        // Lo que el selector aprueba lleva su origen; desmarcar no lo quita ni lo duplica.
+        expect(out[1]!.origins).toEqual(['manual', 'selector']);
+        expect(out[0]!.origins).toEqual(['manual']);
+        const otraVez = applyLibrarySelection(applyLibrarySelection(out, [], () => null, () => 'x', ahora), ['r2'], () => null, () => 'x', ahora);
+        expect(otraVez.find(e => e.id === 'b')!.origins).toEqual(['manual', 'selector']);
+    });
+
+    it('el selector liga una obra por conseguir a su libro y la marca como suya', () => {
+        const ahora = new Date('2026-10-23T12:00:00Z');
+        const out = applyLibrarySelection(
+            [ficha({ id: 's', title: 'The Epistle of James', author: 'Douglas J. Moo', resourceId: null, decision: 'candidate', origins: ['syllabus'] })],
+            ['moo'], id => (id === 'moo' ? { title: 'The Epistle of James', author: 'Moo' } : null), () => 'nueva', ahora,
+        );
+        expect(out).toHaveLength(1);
+        expect(out[0]).toMatchObject({ resourceId: 'moo', decision: 'approved', origins: ['syllabus', 'selector'] });
     });
 
     it('precompleta cobertura y páginas impresas sin pisar lo respondido', () => {

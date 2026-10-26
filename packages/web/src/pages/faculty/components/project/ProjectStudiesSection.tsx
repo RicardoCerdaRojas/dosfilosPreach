@@ -57,7 +57,8 @@ export function ProjectStudiesSection({ projectId, studies: todos, workTypes = [
                         const tipo = vinculado ? null : workTypes.find(x => x.id === p.projectWorkTypeId)?.label ?? null;
                         return (
                             <li key={p.id}>
-                                <Link to={`/dashboard/exegesis/${p.id}`} className="flex items-center gap-3 py-2 hover:bg-accent/50 rounded-md px-2 -mx-2">
+                                {/* Con `?from=`: la flecha del estudio vuelve a este proyecto. */}
+                                <Link to={`/dashboard/exegesis/${encodeURIComponent(p.id)}?from=${encodeURIComponent(`/dashboard/projects/${projectId}`)}`} className="flex min-h-11 items-center gap-3 py-2 hover:bg-accent/50 rounded-md px-2 -mx-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm text-foreground">{p.title?.trim() || formatPassageReference(p.passage, lang)}</p>
                                         <p className="truncate text-[11px] text-muted-foreground">{formatPassageReference(p.passage, lang)}</p>

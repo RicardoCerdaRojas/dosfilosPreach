@@ -16,11 +16,14 @@ import { MethodPicker } from '@/components/exegesis/MethodPicker';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
     defaultWorkTypeId,
+    formatPassageForReader,
     nextAssignmentDate,
+    nextLabelFor,
     projectWorkTypes,
     resolveProjectCharge,
     type AddProjectSourceInput,
     type AIProject,
+    type CourseOp,
     type ExegeticalMethod,
     type ExegeticalStrategy,
     type PassageReference,
@@ -55,10 +58,32 @@ export function ExegesisCreatePage() {
     // estudio asociado por error a otro curso confunde más de lo que ahorra
     // (decisión del fundador, 2026-10-22). Se puede asociar después.
     const [searchParams] = useSearchParams();
-    const { projects } = useFacultyProjects();
+    const { t: tc } = useTranslation('projectDeskCourse');
+    const { projects, updateProject } = useFacultyProjects();
     const proyectosActivos = (projects ?? []).filter(p => !p.archivedAt && !p.deletedAt);
     const [projectId, setProjectId] = useState<string | null>(() => searchParams.get('projectId'));
     const proyectoElegido = proyectosActivos.find(p => p.id === projectId) ?? null;
+    // Desde el escritorio del Curso (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md`
+    // §9.1): «Crear el TP #10» trae el tipo de trabajo, la entrega del
+    // calendario y su rótulo. Solo valen mientras el estudio siga naciendo en
+    // ESE curso: si el estudiante elige otro proyecto, no se vincula nada.
+    const proyectoDeLaUrl = searchParams.get('projectId');
+    const delCurso = !!proyectoElegido && proyectoElegido.id === proyectoDeLaUrl && proyectoElegido.type === 'course';
+    const entradaDeLaUrl = searchParams.get('scheduleEntryId');
+    const rotuloDeLaUrl = searchParams.get('label')?.trim() || null;
+    const entradaDelCalendario = delCurso && entradaDeLaUrl
+        ? (proyectoElegido.courseSchedule ?? []).find(e => e.id === entradaDeLaUrl) ?? null
+        : null;
+    // Semana a semana, un trabajo creado desde el escritorio (trae su tipo) crea
+    // igual su entrada sin fecha: entregado y devolución necesitan dónde vivir.
+    const tipoDeLaUrl = searchParams.get('workTypeId');
+    const semanaASemana = delCurso && proyectoElegido.courseScheduleMode === 'free' && !!tipoDeLaUrl;
+    const rotuloSugerido = rotuloDeLaUrl
+        ?? (semanaASemana && tipoDeLaUrl ? nextLabelFor(tipoDeLaUrl, proyectoElegido.courseSchedule ?? []) : null);
+    /** El trabajo cumple una entrega: la del calendario, o una nueva (sin fecha). */
+    const entrega = delCurso && (entradaDelCalendario || rotuloSugerido || semanaASemana)
+        ? { entry: entradaDelCalendario, label: entradaDelCalendario?.label || rotuloSugerido || '' }
+        : null;
     /** Qué tipo de trabajo del proyecto es (etapa 1b): TP semanal, paper final. */
     const [workTypeId, setWorkTypeId] = useState<string | null>(null);
     const tiposDelProyecto = projectWorkTypes(proyectoElegido);
@@ -195,8 +220,21 @@ export function ExegesisCreatePage() {
     useEffect(() => {
         if (encargoAplicado.current || !proyectoElegido) return;
         encargoAplicado.current = true;
-        aplicarEncargo(proyectoElegido, defaultWorkTypeId(proyectoElegido));
-    }, [proyectoElegido, aplicarEncargo]);
+        // El tipo que pidió el escritorio, si es de este proyecto; si no, el de siempre.
+        const pedido = searchParams.get('workTypeId');
+        const tipo = pedido && proyectoElegido.id === searchParams.get('projectId') && projectWorkTypes(proyectoElegido).some(x => x.id === pedido)
+            ? pedido
+            : defaultWorkTypeId(proyectoElegido);
+        aplicarEncargo(proyectoElegido, tipo);
+    }, [proyectoElegido, aplicarEncargo, searchParams]);
+
+    // El pasaje de la entrega, si el calendario lo tiene, mientras el estudiante no haya elegido otro.
+    const pasajeDeLaEntrega = useRef(false);
+    useEffect(() => {
+        if (pasajeDeLaEntrega.current || !entradaDelCalendario?.passage) return;
+        pasajeDeLaEntrega.current = true;
+        setPassage(p => p ?? entradaDelCalendario.passage ?? null);
+    }, [entradaDelCalendario]);
 
     // El perfil por defecto se aplica al entrar, y sólo mientras el
     // estudiante no haya tocado nada. Si se llegó desde un proyecto, su
@@ -222,6 +260,26 @@ export function ExegesisCreatePage() {
     const isCreating = createPaper.isPending;
     const canCreate = !!passage && !isCreating;
     const briefCharCount = assignmentBrief.length;
+
+    /**
+     * Vincula el trabajo recién creado con su entrega. Si la entrega ya no
+     * está (otra pestaña la quitó) o no había (semana a semana), se crea con
+     * su tipo y su rótulo, sin fecha: así «entregado» y la devolución tienen
+     * dónde vivir. Si falla, el trabajo ya existe: se avisa y se sigue.
+     */
+    const vincularEntrega = async (proyecto: string, paperId: string) => {
+        if (!entrega) return;
+        const ops: CourseOp[] = entrega.entry
+            ? [{ op: 'linkPaper', entryId: entrega.entry.id, paperId }]
+            // Sin rótulo, el pasaje: la fila de la mesa necesita cómo llamarse.
+            : [{ op: 'upsertEntry', entry: { workTypeId: workTypeId ?? '', label: entrega.label || (passage ? formatPassageForReader(passage, displayLanguage) : ''), paperId } }];
+        try {
+            await updateProject?.mutateAsync({ projectId: proyecto, courseOps: ops });
+        } catch (err) {
+            console.error('[exegesis] link schedule entry failed:', err);
+            toast.error(tc('create.linkFailed', { label: entrega.label }));
+        }
+    };
 
     const handleCreate = async () => {
         if (!passage) return;
@@ -250,6 +308,7 @@ export function ExegesisCreatePage() {
                 ...(cover ? { cover } : {}),
             });
             toast.success(t('create.toast.created'));
+            if (entrega && proyectoElegido) await vincularEntrega(proyectoElegido.id, paper.id);
             navigate(`/dashboard/exegesis/${paper.id}/setup`);
         } catch (err) {
             console.error('[exegesis] create failed:', err);
@@ -363,6 +422,15 @@ export function ExegesisCreatePage() {
                         onProject={p => aplicarEncargo(p, defaultWorkTypeId(p))}
                         onWorkType={tipo => aplicarEncargo(proyectoElegido, tipo)}
                     />
+                )}
+                {entrega && (
+                    <p role="note" data-testid="create-schedule-entry" className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                        {entrega.entry
+                            ? tc('create.fulfills', { label: entrega.label })
+                            : entrega.label
+                                ? tc('create.newEntry', { label: entrega.label })
+                                : tc('create.newEntryUnlabeled')}
+                    </p>
                 )}
                 <ProjectBibliographyOffer project={proyectoElegido} bookId={passage?.bookId ?? null} onChange={setFuentesDelProyecto} />
 

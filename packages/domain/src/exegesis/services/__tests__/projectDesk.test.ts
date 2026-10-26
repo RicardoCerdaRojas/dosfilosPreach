@@ -3,6 +3,7 @@ import {
     DESK_TEXT_KEYS,
     buildProjectDesk,
     deskSourcesSummary,
+    isManualApproval,
     workTypeRubric,
     type DeskPhase,
     type ProjectDeskInput,
@@ -290,6 +291,36 @@ describe('fuentes · resumen', () => {
         const m = buildProjectDesk({ project: proyecto({ bibliography: [ficha('x', { decision: 'candidate' })] }), studies: [] }, NOW);
         expect(fase(m, 'sources')).toMatchObject({ status: 'doing', evidence: { key: 'desk.sources.candidatesOnly', params: { candidates: 1 } } });
         expect(fase(buildProjectDesk({ project: proyecto(), studies: [] }, NOW), 'sources').evidence.key).toBe('desk.sources.todo');
+    });
+
+    it('«a mano»: el selector y las de antes sí; una candidata de la biblioteca aprobada en el estado del arte, no', () => {
+        const s = deskSourcesSummary({
+            bibliography: [
+                ficha('sel', { origins: ['selector'] }),
+                ficha('leg', { origins: ['legacy'] }),
+                // Una candidata del estado del arte que el selector aprobó después: atajo.
+                ficha('lsel', { origins: ['library', 'selector'], weight: 'complementary' }),
+                // Del estado del arte: la biblioteca la trae «complementaria».
+                ficha('lib', { origins: ['library'], weight: 'complementary' }),
+                // El selector de antes: solo `library`, «recomendada».
+                ficha('viejo', { origins: ['library'], weight: 'recommended' }),
+                // Un sílabo ligado a su libro con el selector sigue siendo del método.
+                ficha('sil', { origins: ['syllabus', 'selector'] }),
+                ficha('cand', { origins: ['selector'], decision: 'candidate' }),
+            ],
+        });
+        expect(s).toMatchObject({ approved: 6, manual: 4 });
+        expect(isManualApproval(ficha('x', { origins: [] }))).toBe(false);
+    });
+
+    it('con una candidata de la biblioteca aprobada en el estado del arte, mandan los requisitos', () => {
+        const input = jonasLegacy();
+        input.project.bibliography = [ficha('l1', { origins: ['legacy'] }), ficha('lib', { origins: ['library'], weight: 'complementary' })];
+        input.project.bibliographyCriteria = { bibleBooks: ['JON'], requirementItems: [{ id: 'q', kind: 'minimum-type', text: 'tres', origin: 'manual', sourceType: 'commentary-critical', minimum: 3 }] };
+        expect(fase(buildProjectDesk(input, NOW), 'sources').status).toBe('doing');
+        // Las dos del selector: lista como «a mano».
+        input.project.bibliography = [ficha('l1', { origins: ['legacy'] }), ficha('sel', { origins: ['selector'], weight: 'complementary' })];
+        expect(fase(buildProjectDesk(input, NOW), 'sources')).toMatchObject({ status: 'ready', evidence: { key: 'desk.sources.readyManual', params: { count: 2 } } });
     });
 
     it('un requisito aceptado a propósito cuenta como cumplido; uno sin cifra, no', () => {

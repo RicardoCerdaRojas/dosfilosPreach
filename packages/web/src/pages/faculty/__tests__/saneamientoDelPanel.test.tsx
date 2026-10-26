@@ -10,8 +10,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
  *    «Proyecto no encontrado».
  *  - Los avisos de error no repiten el texto de éxito ni pegan el mensaje
  *    técnico del error.
- *  - Mientras cargan las fuentes, el recorrido no ofrece la fase 2 como
- *    próximo paso.
+ *  - Mientras cargan las fuentes (o la biblioteca que las clasifica), el
+ *    recorrido no ofrece la fase 2 como próximo paso.
  */
 vi.mock('@/i18n', () => ({
     useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'es' } }),
@@ -33,7 +33,10 @@ vi.mock('@/hooks/faculty/useFacultyProjects', () => ({
     }),
 }));
 vi.mock('@/hooks/faculty/useFacultySessions', () => ({ useFacultySessions: () => ({ sessions: [] }) }));
-vi.mock('@/hooks/use-sermons', () => ({ useSermons: () => ({ sermons: [] }) }));
+vi.mock('@/hooks/use-sermons', () => ({ useSermons: () => ({ sermons: [], loading: false }) }));
+let biblioteca = { resources: [] as unknown[], isLoading: false };
+vi.mock('@/hooks/library', () => ({ useLibrary: () => biblioteca }));
+vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => ({ rubrics: [], isLoading: false }) }));
 vi.mock('@/hooks/useGreekSessions', () => ({ useGreekSessions: () => ({ sessions: [] }) }));
 vi.mock('@/hooks/useHebrewSessions', () => ({ useHebrewSessions: () => ({ sessions: [] }) }));
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({ useExegesisPapers: () => ({ papers: [], isLoading: false }) }));
@@ -53,7 +56,7 @@ vi.mock('../hooks/useSaveProjectSources', () => ({ useSaveProjectSources: () => 
 vi.mock('../hooks/useLinkProjectSession', () => ({ useLinkProjectSession: () => ({ linkingId: null, link: vi.fn() }) }));
 
 vi.mock('../components/project/ProjectSetupCards', () => ({ ProjectSetupCards: () => null }));
-vi.mock('../components/project/ProjectResourceGrid', () => ({ ProjectResourceGrid: () => null }));
+vi.mock('../components/project/desk/CourseDeskSections', () => ({ CourseDeskSections: () => null }));
 vi.mock('../components/project/ProjectSourcePickerModal', () => ({ ProjectSourcePickerModal: () => null }));
 vi.mock('../components/project/ProjectLinkSessionDialog', () => ({ ProjectLinkSessionDialog: () => null }));
 // La lista de material abre el editor; el editor manda crear o actualizar.
@@ -96,6 +99,7 @@ beforeEach(() => {
     proyectos = [proyecto];
     cargandoProyectos = false;
     fuentes = { sources: [{ id: 'f1' }, { id: 'f2' }], isLoading: false, error: null };
+    biblioteca = { resources: [], isLoading: false };
 });
 
 describe('la carga en frío', () => {
@@ -140,10 +144,20 @@ describe('los avisos de error del material', () => {
 });
 
 describe('las fuentes en el recorrido', () => {
-    it('mientras cargan, el recorrido espera: no ofrece «Adjuntar fuentes» como próximo paso', async () => {
+    it('Curso: mientras carga la biblioteca que clasifica las obras, el recorrido espera', async () => {
+        biblioteca = { resources: [], isLoading: true };
+        montar();
+        // Que lleguen las series y los estudios: lo único que falta es la biblioteca.
+        await waitFor(() => expect(getUserSeries).toHaveBeenCalled());
+        await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+        expect(screen.getByTestId('project-roadmap-loading')).toBeInTheDocument();
+        expect(screen.queryByTestId('desk-now')).toBeNull();
+    });
+
+    it('un tipo viejo (Investigación): mientras cargan las fuentes del selector, el recorrido espera', async () => {
+        proyectos = [{ ...proyecto, type: 'study', contextNote: 'La justificación en Romanos' }];
         fuentes = { sources: [], isLoading: true, error: null };
         montar();
-        // Que lleguen las series y los estudios: lo único que falta son las fuentes.
         await waitFor(() => expect(getUserSeries).toHaveBeenCalled());
         await act(async () => { await new Promise(r => setTimeout(r, 20)); });
         expect(screen.getByTestId('project-roadmap-loading')).toBeInTheDocument();
@@ -151,7 +165,7 @@ describe('las fuentes en el recorrido', () => {
     });
 
     it('si la lectura de las fuentes falla, cuenta las anotadas en el proyecto: no manda a preparar el estado del arte', async () => {
-        proyectos = [{ ...proyecto, workTypes: [{ id: 'tp', name: 'TP semanal' }] }];
+        proyectos = [{ ...proyecto, type: 'study', contextNote: 'La justificación en Romanos' }];
         fuentes = { sources: [], isLoading: false, error: new Error('sin red') };
         montar();
         expect(await screen.findByText(/roadmap\.activePhase\.label/)).toBeInTheDocument();
@@ -159,15 +173,16 @@ describe('las fuentes en el recorrido', () => {
         cleanup();
 
         // Sin fuentes anotadas, el mismo fallo sí deja la fase por hacer.
-        proyectos = [{ ...proyecto, sourceIds: [], workTypes: [{ id: 'tp', name: 'TP semanal' }] }];
+        proyectos = [{ ...proyecto, type: 'study', contextNote: 'La justificación en Romanos', sourceIds: [] }];
         montar();
         expect(await screen.findByRole('button', { name: /Preparar el estado del arte/ })).toBeInTheDocument();
     });
 
-    it('cargadas, el recorrido se dibuja', async () => {
+    it('cargadas, el escritorio se dibuja', async () => {
         montar();
         await waitFor(() => expect(screen.queryByTestId('project-roadmap-loading')).toBeNull());
         expect(screen.queryByTestId('project-roadmap-error')).toBeNull();
+        expect(screen.getByTestId('desk-now')).toBeInTheDocument();
     });
 });
 

@@ -11,7 +11,7 @@
   "unsaved": "Cambios sin guardar.",
   "stateOfArt": {
     "title": "Estado del arte",
-    "requirement": {"title": "Requisitos medibles", "hint": "Lo que se pide de la bibliografía, medido sobre lo aprobado. Vienen del sílabo, de la plantilla de un nivel (un punto de partida, no una norma) o los escribes tú.", "level": "Nivel", "levels": {"seminary": "Seminario", "research": "Investigación", "publishable": "Publicable"}, "propose": "Proponer requisitos del nivel", "empty": "Todavía no hay requisitos. Importa el sílabo, propón los de un nivel o agrega uno a mano.", "kind": {"minimum-type": "Mínimo por tipo", "quantity": "Cantidad", "date-range": "Fuentes antiguas y actuales", "perspectives": "Puntos de vista opuestos", "variety": "Variedad de recursos", "rule": "Regla", "other": "Otro (se marca a mano)"}, "origin": {"syllabus": "del sílabo", "level": "del nivel", "manual": "a mano"}, "measure": "{{value}} de {{target}}", "manual": "Se marca a mano", "done": "Cumplido", "remove": "Quitar «{{text}}»", "kindLabel": "Clase", "textLabel": "Requisito", "minimum": "Mínimo", "add": "Agregar requisito", "unmeasurable": {"quantity_one": "1 obra sin páginas o sin reseña", "quantity_other": "{{count}} obras sin páginas o sin reseña", "date-range_one": "1 obra sin año", "date-range_other": "{{count}} obras sin año", "perspectives_one": "1 obra sin enfoque", "perspectives_other": "{{count}} obras sin enfoque", "minimum-type_one": "1 sin medir", "minimum-type_other": "{{count}} sin medir", "variety_one": "1 sin medir", "variety_other": "{{count}} sin medir", "rule_one": "1 sin medir", "rule_other": "{{count}} sin medir", "other_one": "1 sin medir", "other_other": "{{count}} sin medir"}, "coverageLabel": "Requisitos del proyecto", "incomplete": "Falta la cifra", "assumedNote": "Supuesto porque la fuente no lo dice: {{what}}. Corrígelo si el curso pide otra cosa.", "assumedPart": {"before": "una anterior a {{value}}", "after": "recientes desde {{value}}", "recentMinimum": "{{value}} reciente(s)", "minimum": "al menos {{value}} enfoques"}, "field": {"minimum": "Mínimo", "before": "Anterior a", "after": "Desde", "recentMinimum": "Recientes", "types": "Tipos que tienen que estar"}, "anyType": "Cualquier tipo", "unit": "Unidad", "units": {"works": "obras", "pages": "páginas"}, "needs": {"minimum-type": "Elige el tipo y el mínimo para poder medirlo.", "quantity": "Pon el mínimo para poder medirlo.", "date-range": "Pon al menos un año de corte.", "variety": "Marca al menos dos tipos.", "perspectives": "", "rule": "", "other": ""}, "template": {"criticalText": "El texto en lengua original, en edición crítica.", "criticalCommentaries": "Comentarios críticos sobre el libro: al menos {{minimum}}.", "articles": "Artículos académicos de revista: al menos {{minimum}}.", "lexicon": "Un léxico técnico.", "grammar": "Una gramática de referencia.", "perspectives": "Puntos de vista opuestos: al menos {{minimum}} enfoques distintos (Fee 4.1).", "dateRange": "Fuentes antiguas y actuales: una anterior a {{before}} y {{recent}} desde {{after}}.", "monographs": "Monografías sobre el tema: al menos {{minimum}}."}},
+    "requirement": {"title": "Requisitos medibles", "hint": "Lo que se pide de la bibliografía, medido sobre lo aprobado. Vienen del sílabo, de la plantilla de un nivel (un punto de partida, no una norma) o los escribes tú.", "level": "Nivel", "levels": {"seminary": "Seminario", "research": "Investigación", "publishable": "Publicable"}, "propose": "Proponer requisitos del nivel", "empty": "Todavía no hay requisitos. Importa el sílabo, propón los de un nivel o agrega uno a mano.", "kind": {"minimum-type": "Mínimo por tipo", "quantity": "Cantidad", "date-range": "Fuentes antiguas y actuales", "perspectives": "Puntos de vista opuestos", "variety": "Variedad de recursos", "rule": "Regla", "other": "Otro (se marca a mano)"}, "origin": {"syllabus": "del sílabo", "level": "del nivel", "manual": "a mano"}, "measure": "{{value}} de {{target}}", "manual": "Se marca a mano", "done": "Cumplido", "accept": "Dar por cumplido", "acceptLabel": "Dar por cumplido «{{text}}»", "accepted": "Lo diste por cumplido: cuenta como cumplido aunque la medida no llegue.", "undoAccept": "Deshacer", "undoAcceptLabel": "Deshacer «dar por cumplido» en «{{text}}»", "remove": "Quitar «{{text}}»", "kindLabel": "Clase", "textLabel": "Requisito", "minimum": "Mínimo", "add": "Agregar requisito", "unmeasurable": {"quantity_one": "1 obra sin páginas o sin reseña", "quantity_other": "{{count}} obras sin páginas o sin reseña", "date-range_one": "1 obra sin año", "date-range_other": "{{count}} obras sin año", "perspectives_one": "1 obra sin enfoque", "perspectives_other": "{{count}} obras sin enfoque", "minimum-type_one": "1 sin medir", "minimum-type_other": "{{count}} sin medir", "variety_one": "1 sin medir", "variety_other": "{{count}} sin medir", "rule_one": "1 sin medir", "rule_other": "{{count}} sin medir", "other_one": "1 sin medir", "other_other": "{{count}} sin medir"}, "coverageLabel": "Requisitos del proyecto", "incomplete": "Falta la cifra", "assumedNote": "Supuesto porque la fuente no lo dice: {{what}}. Corrígelo si el curso pide otra cosa.", "assumedPart": {"before": "una anterior a {{value}}", "after": "recientes desde {{value}}", "recentMinimum": "{{value}} reciente(s)", "minimum": "al menos {{value}} enfoques"}, "field": {"minimum": "Mínimo", "before": "Anterior a", "after": "Desde", "recentMinimum": "Recientes", "types": "Tipos que tienen que estar"}, "anyType": "Cualquier tipo", "unit": "Unidad", "units": {"works": "obras", "pages": "páginas"}, "needs": {"minimum-type": "Elige el tipo y el mínimo para poder medirlo.", "quantity": "Pon el mínimo para poder medirlo.", "date-range": "Pon al menos un año de corte.", "variety": "Marca al menos dos tipos.", "perspectives": "", "rule": "", "other": ""}, "template": {"criticalText": "El texto en lengua original, en edición crítica.", "criticalCommentaries": "Comentarios críticos sobre el libro: al menos {{minimum}}.", "articles": "Artículos académicos de revista: al menos {{minimum}}.", "lexicon": "Un léxico técnico.", "grammar": "Una gramática de referencia.", "perspectives": "Puntos de vista opuestos: al menos {{minimum}} enfoques distintos (Fee 4.1).", "dateRange": "Fuentes antiguas y actuales: una anterior a {{before}} y {{recent}} desde {{after}}.", "monographs": "Monografías sobre el tema: al menos {{minimum}}."}},
     "review": {"titleAssignment": "Lo leído del encargo: {{label}}", "titleBibliography": "Lo leído de la bibliografía: {{label}}", "summary_one": "1 obra: {{required}} obligatorias · {{library}} en tu biblioteca · {{already}} ya en tu lista · {{gap}} llenan un requisito que falta.", "summary_other": "{{count}} obras: {{required}} obligatorias · {{library}} en tu biblioteca · {{already}} ya en tu lista · {{gap}} llenan un requisito que falta.", "citedBy": "¿De qué obra es esta bibliografía? (opcional)", "citedByPlaceholder": "Por ejemplo: Moo, Comentario de la epístola de Santiago", "group": {"required": "Lo que manda leer", "gap": "Conseguir primero: llenan un requisito que falta", "passage": "Nombran los pasajes de tus estudios", "library": "Ya en tu biblioteca", "rest": "El resto del repertorio", "already": "Ya en tu lista: márcala para completar su ficha"}, "already": "ya en tu lista", "mentions": "menciona el capítulo {{chapter}}", "fillsGap": "llena un requisito", "confirm": "Agregar a la lista", "cancel": "Descartar lo leído", "saveHint": "Se guarda al agregar.", "reading": "Ficha de lectura (reseña)", "willAddWorks_one": "1 obra nueva", "willAddWorks_other": "{{count}} obras nuevas", "willUpdate_one": "1 completa una ficha que ya tienes", "willUpdate_other": "{{count}} completan fichas que ya tienes", "truncated": "El documento es tan largo que la lectura se cortó: entraron {{count}} obras, hasta «{{after}}». Agrégalas y después importa el resto de la bibliografía (desde la obra siguiente) por partes, escribiendo o pegando esa parte de la lista."},
     "log": {"title": "Búsquedas e importaciones", "hint": "Lo consultado, cuándo y con qué resultado: para que la búsqueda se pueda explicar y repetir.", "kind": {"syllabus": "Sílabo", "bibliography": "Bibliografía", "file": "Archivo", "catalog": "Catálogo", "library": "Biblioteca", "studies": "Estudios", "database": "Búsqueda en una base"}, "result": "{{found}} leídas · {{added}} nuevas"},
     "approach": {"historical-grammatical": "Histórico-gramatical", "historical-critical": "Histórico-crítico", "socio-rhetorical": "Socio-retórico", "discourse-linguistic": "Análisis del discurso o lingüístico", "literary-narrative": "Literario o narrativo", "canonical-theological": "Canónico o teológico", "other": "Otro"},
@@ -88,7 +88,8 @@
       "library": "Biblioteca",
       "studies": "Estudios del proyecto",
       "manual": "A mano",
-      "legacy": "Fuentes del proyecto"
+      "legacy": "Fuentes del proyecto",
+      "selector": "Elegida en el selector"
     },
     "field": {
       "rating": "¿Vale la pena leerlo? (1 a 10)",
@@ -220,7 +221,7 @@
         "project": "Cargando el proyecto…"
     },
     "roadmap": {
-        "label": "Roadmap · {{type}}",
+        "label": "Recorrido · {{type}}",
         "loading": "Cargando el recorrido…",
         "loadError": "No se pudo cargar el recorrido del proyecto.",
         "phaseLabel": "Fase {{number}}",
@@ -230,45 +231,6 @@
         },
         "activePhase": {
             "label": "Próximo paso · Fase {{number}}"
-        },
-        "phases": {
-            "exegetical": {
-                "passage": {
-                    "title": "Pasaje y propósito",
-                    "description": "Tu lectura del libro antes de dividirlo: el pasaje, para qué lo estudias, su estructura y su idea central.",
-                    "cta": "Definir el encuadre"
-                },
-                "passageEdit": {
-                    "title": "Pasaje y propósito",
-                    "description": "Tu encuadre del libro. Vuelve a él cuando un estudio cambie tu lectura.",
-                    "cta": "Editar el encuadre"
-                },
-                "sources": {
-                    "title": "Fuentes",
-                    "description": "Los comentarios, léxicos y gramáticas que sirven para todo el pasaje.",
-                    "cta": "Preparar el estado del arte"
-                },
-                "division": {
-                    "title": "División en perícopas",
-                    "description": "Divide el libro en perícopas con el planificador. Cada perícopa nace como un estudio de este proyecto, con su bibliografía.",
-                    "cta": "Planificar la serie"
-                },
-                "pericopes": {
-                    "title": "Estudios por perícopa",
-                    "description": "Un estudio trabajado por cada perícopa del pasaje.",
-                    "cta": "Nuevo estudio"
-                },
-                "pericopesSeries": {
-                    "title": "Estudios por perícopa",
-                    "description": "La serie ya creó un estudio por perícopa: trabájalos desde su tarjeta, en el orden del plan.",
-                    "cta": "Trabajar los estudios de la serie"
-                },
-                "synthesis": {
-                    "title": "Síntesis",
-                    "description": "Lo que el pasaje dice como un todo: conversa con los tutores o escribe la síntesis.",
-                    "cta": "Iniciar conversación"
-                }
-            }
         }
     },
     "seriesSection": {
@@ -339,7 +301,10 @@
             "downloadMarkdown": "Descargar como Markdown",
             "edit": "Editar",
             "delete": "Eliminar"
-        }
+        },
+        "seeAll": "Ver todo ({{count}})",
+        "seeLess": "Ver menos",
+        "chars": "{{n}} caracteres"
     },
     "linkSession": {
         "greek": {
@@ -620,7 +585,6 @@
             "save": "Guardar el encuadre",
             "saved": "Encuadre guardado.",
             "saveFailed": "No se pudo guardar el encuadre. Inténtalo de nuevo.",
-            "backToRequirements": "Volver a Requisitos",
             "unsavedTitle": "Tienes cambios sin guardar",
             "unsavedBody": "¿Salir sin guardar?",
             "unsavedLeave": "Salir sin guardar",
@@ -659,6 +623,238 @@
             "save": "Guardar la idea revisada",
             "saved": "Idea revisada guardada.",
             "saveFailed": "No se pudo guardar la idea revisada. Inténtalo de nuevo."
+        }
+    },
+    "desk": {
+        "exegetical": {
+            "passage": {
+                "todo": "Todavía no hay encuadre",
+                "oldNote": "Hay una nota de antes por pasar al encuadre",
+                "partial": "Encuadre a medias · campos por completar: {{missing}}",
+                "ready": "Libro e idea central escritos · movimientos: {{movements}}"
+            },
+            "division": {
+                "todo": "Todavía no hay serie",
+                "draft": "Hay un análisis del planificador a medias",
+                "readySeries": "Perícopas planificadas: {{units}} · series: {{series}}",
+                "readyWithoutSeries": "Diste por hecha la división sin serie"
+            },
+            "pericopes": {
+                "empty": "Todavía no hay estudios",
+                "todo": "0 de {{total}} perícopas estudiadas",
+                "progress": "{{done}} de {{total}} perícopas estudiadas · anotadas en tu lectura: {{annotated}}",
+                "ready": "Las {{total}} perícopas estudiadas · anotadas en tu lectura: {{annotated}}"
+            },
+            "synthesis": {
+                "todo": "Todavía no hay anotaciones en tu lectura",
+                "progress": "Anotaciones en tu lectura: {{annotations}}",
+                "stale": "Tu idea revisada quedó desactualizada: cambió la idea original",
+                "ready": "Idea central revisada y vigente"
+            }
+        },
+        "sources": {
+            "todo": "Todavía no hay bibliografía",
+            "candidatesOnly": "Solo candidatas ({{candidates}}): ninguna aprobada todavía",
+            "requiredToAcquire": "Aprobadas: {{approved}} · obligatorias por conseguir: {{count}}",
+            "requirementsPending": "Aprobadas: {{approved}} · requisitos {{met}}/{{total}}",
+            "ready": "Aprobadas: {{approved}} · por conseguir: {{toAcquire}}",
+            "readyRequirements": "Aprobadas: {{approved}} · por conseguir: {{toAcquire}} · requisitos {{met}}/{{total}}",
+            "readyManual": "Agregadas a mano: {{count}}"
+        },
+        "course": {
+            "charge": {
+                "todo": "Todavía no hay tipos de trabajo",
+                "unresolved": "Tipos de trabajo: {{types}} · sin rúbrica resuelta: {{unresolved}}",
+                "ready": "Tipos de trabajo: {{types}}, cada uno con su rúbrica"
+            },
+            "calendar": {
+                "todo": "Todavía no hay calendario",
+                "incomplete": "Entregas: {{entries}} · sin tipo o sin fecha: {{missing}}",
+                "ready": "Entregas con tipo y fecha: {{entries}}",
+                "free": "Trabajo semana a semana, sin calendario"
+            },
+            "works": {
+                "empty": "Todavía no hay trabajos",
+                "todo": "0 de {{total}} trabajos ensamblados",
+                "progress": "{{done}} de {{total}} ensamblados · entregados: {{delivered}}",
+                "ready": "Los {{total}} ensamblados · entregados: {{delivered}}"
+            },
+            "feedback": {
+                "todo": "Todavía no hay devoluciones",
+                "progress": "Devoluciones: {{returned}} de {{delivered}} entregas · correcciones repetidas por decidir: {{pendingPatterns}}",
+                "ready": "Devoluciones: {{returned}}, y cada corrección repetida decidida"
+            }
+        },
+        "now": {
+            "deadline": {
+                "review": "{{label}} está ensamblado y vence pronto",
+                "continue": "{{label}} vence pronto · {{done}} de {{total}} pasos",
+                "create": "{{label}} vence pronto y todavía no tiene trabajo"
+            },
+            "continue": "{{label}} · {{done}} de {{total}} pasos",
+            "continuePericope": "Perícopa {{position}} · {{label}} · {{done}} de {{total}} pasos",
+            "upcomingPericope": "Perícopa {{position}} · {{label}}",
+            "createScheduled": "{{label}} es lo que sigue",
+            "passage": "Escribe tu lectura del libro",
+            "passagePartial": "Completa tu lectura del libro",
+            "passageOldNote": "Pasa tu nota de antes al encuadre",
+            "sources": "Elige tus fuentes",
+            "division": "Divide el libro en perícopas",
+            "pericope": "Perícopa {{position}} · {{label}}",
+            "study": "Sigue con {{label}}",
+            "newStudy": "Empieza el estudio de una perícopa",
+            "reviseIdea": "Revisa tu idea central con lo que anotaste",
+            "annotate": "Anota qué dice {{label}} de tu lectura",
+            "synthesis": "Anota qué dice cada estudio de tu lectura",
+            "charge": "Define lo que pide el curso",
+            "calendar": "Arma el calendario de entregas",
+            "work": "Sigue con {{label}}",
+            "workCreate": "{{label}} todavía no tiene trabajo",
+            "newWork": "Empieza un trabajo del curso",
+            "recordFeedback": "Registra la devolución de {{label}}",
+            "decidePatterns_one": "Decide qué hacer con la corrección que se repite",
+            "decidePatterns_other": "Decide qué hacer con las {{count}} correcciones que se repiten",
+            "feedback": "Registra la devolución del profesor",
+            "recentStudy": "Sigue con {{label}}",
+            "recentOutput": "Retoma {{label}}"
+        },
+        "notes": {
+            "oldNote": "Tienes una nota de antes: pásala al encuadre",
+            "readingPending_one": "Un estudio ensamblado todavía no está anotado en tu lectura",
+            "readingPending_other": "{{count}} estudios ensamblados todavía no están anotados en tu lectura",
+            "revisionStale": "Tu idea revisada quedó desactualizada: vuelve a revisarla",
+            "requiredToAcquire": "{{title}}: obligatoria, por conseguir",
+            "overdue": "{{label}} venció el {{dueDate}} sin entregar",
+            "noFeedback": "{{label}}: entregado, sin devolución registrada",
+            "pendingPatterns_one": "Una corrección se repite y está sin decidir",
+            "pendingPatterns_other": "{{count}} correcciones se repiten y están sin decidir",
+            "phase": {
+                "passage": "Tu lectura del libro todavía no está completa",
+                "sources": "Tus fuentes todavía no están listas",
+                "division": "Falta dividir el libro en perícopas",
+                "pericopes": "Quedan perícopas por estudiar",
+                "synthesis": "Falta revisar tu idea central",
+                "charge": "Falta definir lo que pide el curso",
+                "calendar": "El calendario de entregas está incompleto",
+                "works": "Quedan trabajos por ensamblar",
+                "feedback": "Quedan devoluciones por registrar"
+            }
+        },
+        "journey": {
+            "label": "Recorrido",
+            "nowOnlyLabel": "Tu trabajo",
+            "phaseLabel": "Fase {{number}}",
+            "goToPhase": "Fase {{number}}: {{name}} ({{status}}). Ir a su sección",
+            "status": {
+                "todo": "Por empezar",
+                "doing": "En curso",
+                "ready": "Lista"
+            },
+            "nowLabel": "Ahora",
+            "kind": {
+                "deadline": "vence el {{date}}",
+                "continuity": "lo que dejaste en curso",
+                "upcoming": "se predica el {{date}}",
+                "scheduled": "lo que sigue en el calendario",
+                "phase": "fase {{number}} · {{name}}",
+                "recent": "lo último que tocaste"
+            },
+            "due": "Para el {{date}}",
+            "allReady": "Todas las fases están listas. Vuelve a cualquiera cuando un estudio cambie tu lectura.",
+            "notesLabel": "También falta",
+            "action": {
+                "study": "Continuar",
+                "review": "Revisar antes de entregar",
+                "oldNote": "Ir a tu nota",
+                "scheduleEntry": "Ver la entrega",
+                "createScheduled": "Crear {{label}}",
+                "phase": "Ir a la fase",
+                "framing": "Abrir el encuadre",
+                "stateOfArt": "Elegir tus fuentes",
+                "planSeries": "Planificar la serie",
+                "reviseIdea": "Revisar tu idea central",
+                "recordFeedback": "Registrar la devolución",
+                "output": "Abrir"
+            },
+            "scaffold": {
+                "title": "Fase {{number}} · {{name}}: cómo se hace",
+                "purpose": "Para qué",
+                "wellDone": "Cómo se ve bien hecha",
+                "commonError": "Error común"
+            },
+            "phases": {
+                "exegetical": {
+                    "passage": {
+                        "name": "Tu lectura del libro",
+                        "purpose": "Escribir lo que crees que dice el libro antes de dividirlo, para tener contra qué medir lo que encuentres después.",
+                        "wellDone": "El libro, para qué lo estudias, sus movimientos y una idea central en una frase, escrita por ti.",
+                        "commonError": "Esperar a terminar los estudios para escribirla: entonces ya no hay una lectura que el texto pueda corregir."
+                    },
+                    "sources": {
+                        "name": "Fuentes",
+                        "purpose": "Elegir con criterio las obras que vas a usar en todo el libro: tu estado del arte, la lista razonada de obras con que vas a trabajar.",
+                        "wellDone": "Obras aprobadas de varios tipos (comentarios, léxicos, gramáticas) y los requisitos cumplidos o aceptados a propósito. Una obra aprobada puede quedar «por conseguir».",
+                        "commonError": "Juntar todo lo que hay en la biblioteca sin decidir qué aporta cada obra."
+                    },
+                    "division": {
+                        "name": "División en perícopas",
+                        "purpose": "Dividir el libro en perícopas (cada unidad del texto que se predica entera) siguiendo las marcas del propio texto.",
+                        "wellDone": "Cada perícopa con un comienzo y un final que el texto justifica, ordenadas en una serie.",
+                        "commonError": "Cortar por capítulos o por la cantidad de domingos en vez de por las unidades del texto."
+                    },
+                    "pericopes": {
+                        "name": "Estudios por perícopa",
+                        "purpose": "Estudiar cada perícopa a fondo, en el orden del plan.",
+                        "wellDone": "Estudios ensamblados, y cada uno anotado en tu lectura: qué confirma, qué matiza o qué contradice.",
+                        "commonError": "Abrir muchos estudios a la vez y no terminar ninguno."
+                    },
+                    "synthesis": {
+                        "name": "Síntesis",
+                        "purpose": "Volver a tu idea central con lo que dijeron los estudios.",
+                        "wellDone": "Una idea revisada, con su porqué, que sale de tus anotaciones.",
+                        "commonError": "Repetir la idea original sin mirar lo que el texto matizó o contradijo."
+                    }
+                },
+                "course": {
+                    "charge": {
+                        "name": "Lo que pide el curso",
+                        "purpose": "Saber qué pide el curso antes de escribir: los tipos de trabajo, su rúbrica, su método y su guía.",
+                        "wellDone": "Cada tipo de trabajo con su rúbrica resuelta y, si corresponde, su guía de estilo.",
+                        "commonError": "Empezar el primer trabajo sin saber con qué rúbrica se va a evaluar."
+                    },
+                    "sources": {
+                        "name": "Fuentes del curso",
+                        "purpose": "Reunir la bibliografía del curso en el estado del arte, la lista razonada de obras con que vas a trabajar.",
+                        "wellDone": "Las obligatorias aprobadas y conseguidas; el resto, elegido por lo que aporta a cada tipo de trabajo.",
+                        "commonError": "Dejar una obligatoria «por conseguir» hasta la semana de la entrega."
+                    },
+                    "calendar": {
+                        "name": "Calendario de entregas",
+                        "purpose": "Tener a la vista qué se entrega y cuándo.",
+                        "wellDone": "Cada entrega con su tipo de trabajo y su fecha, o la decisión explícita de trabajar semana a semana.",
+                        "commonError": "Anotar solo la próxima entrega y enterarse tarde de la siguiente."
+                    },
+                    "works": {
+                        "name": "Trabajos",
+                        "purpose": "Hacer cada trabajo con su tipo, sus reglas y sus fuentes.",
+                        "wellDone": "Trabajos ensamblados antes de la fecha y, si el curso lo pide, sin repetir fuentes del trabajo anterior.",
+                        "commonError": "Terminar a último momento y entregar sin la revisión antes de entregar."
+                    },
+                    "feedback": {
+                        "name": "Devolución y aprendizaje",
+                        "purpose": "Aprender de lo que corrige el profesor para que el trabajo siguiente sea mejor.",
+                        "wellDone": "Cada devolución registrada, y cada corrección que se repite decidida: pasada a tu guía o descartada.",
+                        "commonError": "Leer la nota y guardar la devolución sin cambiar nada del trabajo siguiente."
+                    }
+                }
+            }
+        },
+        "tools": {
+            "eyebrow": "Al final",
+            "title": "Herramientas",
+            "description": "Las lenguas del libro, para usarlas dentro de cada estudio, donde el pasaje ya está definido.",
+            "hebrewAramaic": "Hebreo y arameo",
+            "sourcesEyebrow": "Para consultar"
         }
     }
 }

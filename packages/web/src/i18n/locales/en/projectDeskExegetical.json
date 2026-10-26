@@ -1,1 +1,143 @@
-{}
+{
+    "reading": {
+        "title": "Your reading of the book",
+        "description": "What you read in the book before seeing the overview (the view of the book the assistant proposes): your provisional central idea and its movements. It is your hypothesis; each pericope will test it.",
+        "edit": "Edit",
+        "editLabel": "Edit your reading of the book",
+        "write": "Write your reading",
+        "emptyTitle": "You have not written your reading of the book yet",
+        "empty": "Before seeing the overview, write what you think the book says and the movements it advances in. It does not have to be final: it is what you will test against the text.",
+        "passage": "Passage",
+        "purpose": "Purpose",
+        "idea": "Your central idea",
+        "ideaOriginal": "provisional",
+        "ideaRevised": "revised",
+        "noIdea": "You have not written your central idea yet.",
+        "movements_one": "{{count}} movement",
+        "movements_other": "{{count}} movements",
+        "untitledMovement": "Untitled",
+        "oldNote": {
+            "title": "You have an earlier note",
+            "body": "It no longer counts as your reading of the book. Move it into the framing: it is copied as is, and you correct and confirm it.",
+            "action": "Move your note into the framing",
+            "loading": "Loading your note…",
+            "missing": "The note's text was not found."
+        }
+    },
+    "noteDialog": {
+        "title": "Your earlier note",
+        "intoIdea": "It was copied as is into «Central idea». Cut it, move it to another field or delete it: nothing is saved until you confirm.",
+        "ideaTaken": "Your central idea already has text and was left untouched. Your note stays here so you can copy what helps.",
+        "truncated": "The note is longer than the field: its beginning was copied ({{max}} characters)."
+    },
+    "sources": {
+        "title": "Sources",
+        "description": "The reasoned list of works you will work with (the state of the art): what the work requires, the candidates and the ones you approve, with your reason.",
+        "open": "See your sources",
+        "choose": "Choose your sources",
+        "emptyTitle": "No sources yet",
+        "empty": "In the state of the art you set what the work requires, gather candidates from your library, the syllabus and the catalog, and approve works with your reason.",
+        "approved_one": "{{count}} approved",
+        "approved_other": "{{count}} approved",
+        "toAcquire_one": "{{count}} to acquire",
+        "toAcquire_other": "{{count}} to acquire",
+        "candidates_one": "{{count}} candidate",
+        "candidates_other": "{{count}} candidates",
+        "requirements": "requirements {{met}} of {{total}}",
+        "manual_one": "{{count}} added by hand, before the state of the art.",
+        "manual_other": "{{count}} added by hand, before the state of the art.",
+        "incomplete_one": "{{count}} requirement is missing the figure needed to measure it.",
+        "incomplete_other": "{{count}} requirements are missing the figure needed to measure them.",
+        "accepted_one": "{{count}} requirement accepted as met on purpose.",
+        "accepted_other": "{{count}} requirements accepted as met on purpose.",
+        "requiredToAcquire_one": "Required, still to acquire:",
+        "requiredToAcquire_other": "Required, still to acquire:",
+        "toAcquireNote": "An approved work can stay «to acquire»: approving decides on the work, not whether it is already in your library."
+    },
+    "table": {
+        "eyebrow": "Phases 3 and 4",
+        "title": "The pericope table",
+        "description": "A pericope is each unit of the text that is preached whole. For each one you see its study, what you noted in your reading and its sermon.",
+        "phase": {
+            "division": "Division into pericopes",
+            "pericopes": "Studies by pericope"
+        },
+        "filter": {
+            "label": "Which rows to show",
+            "pending": "Pending",
+            "all": "All"
+        },
+        "columns": {
+            "pericope": "Pericope",
+            "study": "Study",
+            "reading": "Your reading",
+            "sermon": "Sermon"
+        },
+        "study": {
+            "none": "No study",
+            "notStarted": "Not started",
+            "inProgress": "{{done}} of {{total}} steps",
+            "assembled": "Assembled",
+            "open": "Open the study of {{label}}: {{state}}"
+        },
+        "reading": {
+            "none": "—",
+            "pending": "To note",
+            "annotated": "Noted",
+            "annotate": "Note",
+            "annotateLabel": "Note in your reading what the study of {{label}} says"
+        },
+        "sermon": {
+            "none": "No sermon",
+            "draft": "Draft",
+            "published": "Published"
+        },
+        "planSeries": "Plan the series",
+        "planAnother": "Plan another series",
+        "addOutside": "Add a study outside the series",
+        "newStudy": "Start a study",
+        "orStudy": "If you would rather start with one pericope before dividing the book:",
+        "noSeriesTitle": "You have not divided the book into pericopes yet",
+        "noSeries": "The planner helps you divide it: you write your division first and then compare it with the overview. When the series is created, each pericope gets its study.",
+        "withoutSeries": "You said the division is done without a series: your studies are below.",
+        "untitledSeries": "Untitled series",
+        "groupCounts": "{{done}} of {{total}} studied · {{annotated}} noted in your reading",
+        "looseTitle": "Outside the series",
+        "studiesTitle": "Studies",
+        "nothingPending": "Nothing pending here."
+    },
+    "synthesis": {
+        "title": "Synthesis",
+        "description": "Test your central idea against what you noted from each pericope and revise it. Only your revised idea, while current, reaches the sermon.",
+        "emptyTitle": "The synthesis opens with your first note",
+        "empty": "When you finish a study, note whether it confirms, nuances or contradicts your reading of the book. That way your idea is tested while you work, not only at the end.",
+        "annotate": "Note a study",
+        "history": "See how your reading changed",
+        "confirms_one": "{{count}} confirms",
+        "confirms_other": "{{count}} confirm",
+        "nuances_one": "{{count}} nuances",
+        "nuances_other": "{{count}} nuance",
+        "contradicts_one": "{{count}} contradicts",
+        "contradicts_other": "{{count}} contradict",
+        "seeAll": "See all {{count}} notes",
+        "revisedIdea": "Your revised idea",
+        "stale": "You changed your original idea after revising it: revise it again so it reaches the sermon.",
+        "revise": "Revise your central idea",
+        "reviseAgain": "Revise your central idea again",
+        "needsIdea": "To revise your central idea, first write it in your reading of the book."
+    },
+    "history": {
+        "title": "How your reading changed",
+        "description": "Your original idea, what you noted from each study and your revised idea. Only your own words.",
+        "original": "1 · Your original idea",
+        "noOriginal": "You did not write a central idea in your reading of the book.",
+        "log_one": "2 · Your record ({{count}} note)",
+        "log_other": "2 · Your record ({{count}} notes)",
+        "noLog": "You have not noted any study yet.",
+        "revised": "3 · Your revised idea",
+        "noRevision": "You have not revised your central idea yet.",
+        "why": "Why:",
+        "stale": "This revision is out of date: you changed the original idea afterwards.",
+        "close": "Close"
+    }
+}
