@@ -1,6 +1,7 @@
 import { AIProject, ProjectOutput } from '../entities/AIProject';
 import type { BibleBookId } from '../bible/canon/BibleCanon';
 import type { HypothesisEntry, ProjectFramingPatch } from '../exegesis/services/projectFraming';
+import type { CourseScheduleEntry, CourseScheduleMode, FeedbackPattern } from '../exegesis/services/courseSchedule';
 
 /**
  * Lo que acepta `updateProject` (lista blanca). Además de los campos enteros:
@@ -11,7 +12,10 @@ import type { HypothesisEntry, ProjectFramingPatch } from '../exegesis/services/
  *     resto de los criterios;
  *   - `hypothesisAppend` agrega UNA anotación al registro con `arrayUnion`,
  *     sin leerlo: dos anotaciones casi simultáneas no se pisan. El tope de
- *     200 lo aplica la lectura (`withCappedHypothesisLog`).
+ *     200 lo aplica la lectura (`withCappedHypothesisLog`);
+ *   - `courseSchedule`, `feedbackPatterns` (Curso): enteros y ya limpios; el
+ *     caso de uso los arma sobre el proyecto releído. `null` o `[]` los borran;
+ *   - `courseScheduleMode: null` lo borra.
  * Todo va en un solo `updateDoc`.
  */
 export type AIProjectUpdate =
@@ -21,6 +25,9 @@ export type AIProjectUpdate =
         framingPatch?: ProjectFramingPatch;
         bibleBooks?: BibleBookId[];
         hypothesisAppend?: HypothesisEntry;
+        courseSchedule?: CourseScheduleEntry[] | null;
+        feedbackPatterns?: FeedbackPattern[] | null;
+        courseScheduleMode?: CourseScheduleMode | null;
     };
 
 export interface IAIProjectRepository {

@@ -103,11 +103,16 @@ export class FirestoreAIProjectRepository implements IAIProjectRepository {
      * ni reescribe el registro.
      */
     buildFirestoreUpdates(updates: AIProjectUpdate): Record<string, unknown> {
-        const { framingPatch, bibleBooks, contextNote, hypothesisAppend, ...resto } = updates;
+        const { framingPatch, bibleBooks, contextNote, hypothesisAppend, courseSchedule, feedbackPatterns, courseScheduleMode, ...resto } = updates;
         // Firestore does not accept undefined values — strip them before the update
         const out: Record<string, unknown> = Object.fromEntries(
             Object.entries(resto).filter(([, v]) => v !== undefined)
         );
+        // Curso: listas enteras (ya limpias en el caso de uso). Vacías o null se
+        // borran: un campo ausente se lee igual que una lista vacía.
+        if (courseSchedule !== undefined) out.courseSchedule = courseSchedule?.length ? courseSchedule : deleteField();
+        if (feedbackPatterns !== undefined) out.feedbackPatterns = feedbackPatterns?.length ? feedbackPatterns : deleteField();
+        if (courseScheduleMode !== undefined) out.courseScheduleMode = courseScheduleMode ?? deleteField();
         // Vaciar la nota la borra: antes '' se volvía undefined y se descartaba.
         if (contextNote !== undefined) out.contextNote = contextNote?.trim() ? contextNote.trim() : deleteField();
         if (bibleBooks !== undefined) {

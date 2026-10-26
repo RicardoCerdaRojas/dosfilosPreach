@@ -50,6 +50,10 @@ import exegesisEn from '../locales/en/exegesis.json';
 import exegesisEs from '../locales/es/exegesis.json';
 import projectsEn from '../locales/en/projects.json';
 import projectsEs from '../locales/es/projects.json';
+import projectDeskExegeticalEn from '../locales/en/projectDeskExegetical.json';
+import projectDeskExegeticalEs from '../locales/es/projectDeskExegetical.json';
+import projectDeskCourseEn from '../locales/en/projectDeskCourse.json';
+import projectDeskCourseEs from '../locales/es/projectDeskCourse.json';
 import adminEn from '../locales/en/admin.json';
 import adminEs from '../locales/es/admin.json';
 import settingsEn from '../locales/en/settings.json';
@@ -100,6 +104,8 @@ export const initI18n = () => {
                     faculty: facultyEn,
                     exegesis: exegesisEn,
                     projects: projectsEn,
+                    projectDeskExegetical: projectDeskExegeticalEn,
+                    projectDeskCourse: projectDeskCourseEn,
                     admin: adminEn,
                     settings: settingsEn,
                     wordStudy: wordStudyEn,
@@ -127,6 +133,8 @@ export const initI18n = () => {
                     faculty: facultyEs,
                     exegesis: exegesisEs,
                     projects: projectsEs,
+                    projectDeskExegetical: projectDeskExegeticalEs,
+                    projectDeskCourse: projectDeskCourseEs,
                     admin: adminEs,
                     settings: settingsEs,
                     wordStudy: wordStudyEs,

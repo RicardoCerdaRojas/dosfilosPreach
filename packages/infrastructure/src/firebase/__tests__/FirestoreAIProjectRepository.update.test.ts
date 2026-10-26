@@ -111,3 +111,29 @@ describe('FirestoreAIProjectRepository — registro con arrayUnion (C7)', () => 
         expect(await repo.getProject('p1')).not.toHaveProperty('framing');
     });
 });
+
+describe('FirestoreAIProjectRepository — calendario y devoluciones del curso', () => {
+    const entrada = { id: 'e9', workTypeId: 'wt_tp', label: 'TP #9', dueDate: '2026-10-31' };
+    const patron = { id: 'fp1', name: 'Cierre doble', decision: 'pending' as const };
+
+    it('escribe las listas enteras y el modo, en el mismo updateDoc', async () => {
+        await repo.updateProject('p1', { courseSchedule: [entrada], feedbackPatterns: [patron], courseScheduleMode: 'calendar' });
+        expect(escrituras).toHaveLength(1);
+        const d = escrituras[0]!;
+        expect(d.courseSchedule).toEqual([entrada]);
+        expect(d.feedbackPatterns).toEqual([patron]);
+        expect(d.courseScheduleMode).toBe('calendar');
+    });
+
+    it('vacías o null se borran con deleteField(); ausentes no se tocan', async () => {
+        await repo.updateProject('p1', { courseSchedule: [], feedbackPatterns: null, courseScheduleMode: null });
+        const d = escrituras[0]!;
+        expect(d.courseSchedule).toBe(BORRAR);
+        expect(d.feedbackPatterns).toBe(BORRAR);
+        expect(d.courseScheduleMode).toBe(BORRAR);
+        await repo.updateProject('p1', { title: 'Otro' });
+        expect(escrituras[1]).not.toHaveProperty('courseSchedule');
+        expect(escrituras[1]).not.toHaveProperty('feedbackPatterns');
+        expect(escrituras[1]).not.toHaveProperty('courseScheduleMode');
+    });
+});

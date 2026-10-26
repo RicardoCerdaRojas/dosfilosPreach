@@ -2,6 +2,8 @@ import {
     IAIProjectRepository, AIProject, ProjectColor, ProjectType,
     cleanBibliographyCriteria, cleanProjectBibliography, cleanSearchLog, cleanProjectCourseInfo, cleanProjectWorkTypes, sourceIdsFromBibliography,
     FRAMING_TEXT_MAX, cleanFramingPatch, newHypothesisEntry, scopeFitsBooks,
+    applyCourseOps, cleanCourseScheduleMode, projectWorkTypes,
+    type CourseOp, type CourseScheduleMode,
     type AIProjectUpdate, type BibleBookId, type BibliographySearchLogEntry, type NewHypothesisEntry, type ProjectBibliographyCriteria,
     type ProjectBibliographyEntry, type ProjectCourseInfo, type ProjectFraming, type ProjectFramingPatch, type ProjectWorkType,
 } from '@dosfilos/domain';
@@ -44,6 +46,17 @@ export interface UpdateProjectDTO {
      * (sin leer el proyecto): dos anotaciones casi simultáneas no se pisan.
      */
     hypothesisEntry?: NewHypothesisEntry;
+    /**
+     * Curso: operaciones sobre el calendario de entregas y los patrones de
+     * corrección (`applyCourseOps`). Se aplican sobre el proyecto RELEÍDO, no
+     * sobre la caché de la página, y se guardan las dos listas enteras y
+     * limpias. Dos pestañas no se pisan a ciegas: cada una aplica SUS
+     * operaciones sobre lo último guardado. Entre la lectura y la escritura
+     * (milisegundos) gana la última; no hay transacción.
+     */
+    courseOps?: CourseOp[];
+    /** Curso: con calendario o semana a semana. `null` lo quita. */
+    courseScheduleMode?: CourseScheduleMode | null;
 }
 
 export class UpdateProjectUseCase {
@@ -55,6 +68,7 @@ export class UpdateProjectUseCase {
         const criterios = this.criterios(dto, guardado, libros);
         const framingPatch = this.encuadre(dto, guardado, libros);
         const hypothesisAppend = dto.hypothesisEntry ? newHypothesisEntry(dto.hypothesisEntry) : null;
+        const curso = this.curso(dto, guardado);
         const update: AIProjectUpdate = {
             ...(dto.title !== undefined && { title: dto.title.trim() }),
             ...(dto.color !== undefined && { color: dto.color }),
@@ -71,6 +85,8 @@ export class UpdateProjectUseCase {
             ...(dto.bibliographySearchLog !== undefined && { bibliographySearchLog: cleanSearchLog(dto.bibliographySearchLog) }),
             ...(framingPatch && { framingPatch }),
             ...(hypothesisAppend && { hypothesisAppend }),
+            ...curso,
+            ...(dto.courseScheduleMode !== undefined && { courseScheduleMode: cleanCourseScheduleMode(dto.courseScheduleMode) }),
             ...this.fuentes(dto),
         };
         return this.projectRepository.updateProject(projectId, update);
@@ -84,7 +100,8 @@ export class UpdateProjectUseCase {
     private hayQueLeer(dto: UpdateProjectDTO): boolean {
         const p = dto.framingPatch ?? {};
         const presente = (v: unknown) => v !== undefined && v !== null;
-        return dto.bibliographyCriteria !== undefined
+        return !!dto.courseOps?.length
+            || dto.bibliographyCriteria !== undefined
             || dto.bibleBooks !== undefined
             || presente(p.scope)
             || presente(p.reading)
@@ -123,6 +140,21 @@ export class UpdateProjectUseCase {
             patch.revision = { ...patch.revision, ofIdea: (idea ?? '').trim().slice(0, FRAMING_TEXT_MAX) };
         }
         return Object.keys(patch).length ? patch : undefined;
+    }
+
+    /**
+     * Las operaciones del curso sobre lo GUARDADO. Sin proyecto no hay sobre
+     * qué aplicarlas: error, para que la página no crea que guardó.
+     */
+    private curso(dto: UpdateProjectDTO, guardado: AIProject | null): Pick<AIProjectUpdate, 'courseSchedule' | 'feedbackPatterns'> {
+        if (!dto.courseOps?.length) return {};
+        if (!guardado) throw new Error('UpdateProject: proyecto no encontrado');
+        const { schedule, patterns } = applyCourseOps(
+            { schedule: guardado.courseSchedule ?? [], patterns: guardado.feedbackPatterns ?? [] },
+            dto.courseOps,
+            { workTypeIds: projectWorkTypes(guardado).map(t => t.id) },
+        );
+        return { courseSchedule: schedule, feedbackPatterns: patterns };
     }
 
     /** La bibliografía manda sobre `sourceIds`: no pueden quedar contradiciéndose. */

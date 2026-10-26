@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facultyService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
 import { ProjectColor, DEFAULT_LANGUAGE } from '@dosfilos/domain';
-import type { AIChatSession, AIProject, BibleBookId, BibliographySearchLogEntry, NewHypothesisEntry, ProjectBibliographyCriteria, ProjectBibliographyEntry, ProjectCourseInfo, ProjectFraming, ProjectType, ProjectWorkType, SupportedLanguage } from '@dosfilos/domain';
+import type { AIChatSession, AIProject, BibleBookId, BibliographySearchLogEntry, CourseOp, CourseScheduleMode, NewHypothesisEntry, ProjectBibliographyCriteria, ProjectBibliographyEntry, ProjectCourseInfo, ProjectFraming, ProjectType, ProjectWorkType, SupportedLanguage } from '@dosfilos/domain';
 import { useTranslation } from 'react-i18next';
 import {
     removeFromCachedLists,
@@ -41,12 +41,14 @@ export function useFacultyProjects() {
 
     const updateProject = useMutation({
         // El encuadre va por campo (`framingPatch`) y sus libros aparte (`bibleBooks`);
-        // `contextNote: null` o '' borra la nota.
+        // `contextNote: null` o '' borra la nota. Curso: `courseOps` se aplican
+        // sobre el proyecto releído (no sobre esta caché).
         mutationFn: async ({ projectId, ...updates }: {
             projectId: string; title?: string; color?: ProjectColor; type?: ProjectType; contextNote?: string | null;
             courseInfo?: ProjectCourseInfo | null; workTypes?: ProjectWorkType[]; bibliography?: ProjectBibliographyEntry[];
             bibliographyCriteria?: ProjectBibliographyCriteria | null; bibliographySearchLog?: BibliographySearchLogEntry[];
             framingPatch?: Partial<Record<keyof ProjectFraming, unknown | null>>; bibleBooks?: BibleBookId[]; hypothesisEntry?: NewHypothesisEntry;
+            courseOps?: CourseOp[]; courseScheduleMode?: CourseScheduleMode | null;
         }) => {
             return facultyService.updateProject.execute(projectId, updates);
         },
