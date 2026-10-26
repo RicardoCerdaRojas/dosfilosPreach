@@ -120,6 +120,13 @@ export interface ProjectFraming {
     rhythm?: FramingRhythm;
     hypothesisLog?: HypothesisEntry[];
     revision?: FramingRevision;
+    /**
+     * «Di por hecha la división»: con propósito «enseñar» o «personal» no
+     * siempre hay serie que planificar, y la fase 3 del escritorio no debe
+     * quedar trabada (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md` §4). Lo
+     * marca el pastor a propósito; solo se guarda `true` (desmarcar lo borra).
+     */
+    divisionWithoutSeries?: boolean;
     /** ISO. Lo escribe el repositorio con cada cambio. */
     updatedAt?: string;
 }
@@ -146,7 +153,7 @@ const PASTORAL_KEYS = ['audience', 'need', 'needEvidence', 'desiredChange', 'rhy
 const PATCH_KEYS: ReadonlyArray<FramingPatchKey> = [
     'purpose', 'scope', 'reading', 'genre', 'genreReading', 'genreEvidence', 'occasion', 'occasionEvidence', 'structure',
     'centralIdea', 'centralIdeaEvidence', 'christTrajectory', 'christTrajectoryEvidence',
-    'audience', 'need', 'needEvidence', 'desiredChange', 'rhythm', 'hypothesisLog', 'revision',
+    'audience', 'need', 'needEvidence', 'desiredChange', 'rhythm', 'hypothesisLog', 'revision', 'divisionWithoutSeries',
 ];
 
 const TEXT_KEYS = new Set<FramingPatchKey>([
@@ -215,6 +222,8 @@ function cleanFramingField(key: FramingPatchKey, v: unknown, opts: FramingCleanO
         case 'rhythm': return cleanRhythm(v);
         case 'hypothesisLog': return cleanHypothesisLog(v);
         case 'revision': return cleanRevision(v);
+        // Solo el sí explícito: `false` o cualquier otra cosa se borra.
+        case 'divisionWithoutSeries': return v === true ? true : undefined;
         default: return undefined;
     }
 }

@@ -109,6 +109,8 @@ export * from './services/corpusQuestionReview';
 export * from './services/seriesPaperDefaults';
 export * from './services/projectSeriesLink';
 export * from './services/projectFraming';
+export * from './services/courseSchedule';
+export * from './services/projectDesk';
 export * from './services/seriesPlacement';
 export * from './services/paperDelivery';
 export * from './services/briefQuestionCandidates';

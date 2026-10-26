@@ -1,6 +1,7 @@
 import type { PaperCover } from '../exegesis/entities/ExegeticalPaper';
 import type { BibliographySearchLogEntry, ProjectBibliographyCriteria, ProjectBibliographyEntry } from '../exegesis/services/projectBibliography';
 import type { ProjectFraming } from '../exegesis/services/projectFraming';
+import type { CourseScheduleEntry, CourseScheduleMode, FeedbackPattern } from '../exegesis/services/courseSchedule';
 
 export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'slate' | 'orange' | 'teal';
 
@@ -84,6 +85,15 @@ export interface AIProject {
      * Los libros NO van aquí: viven en `bibliographyCriteria.bibleBooks`.
      */
     framing?: ProjectFraming;
+    /**
+     * Curso: el calendario de entregas, con lo entregado y la devolución del
+     * profesor de cada una (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md` §9.1).
+     */
+    courseSchedule?: CourseScheduleEntry[];
+    /** Curso: con calendario, o semana a semana sin calendario. */
+    courseScheduleMode?: CourseScheduleMode | null;
+    /** Curso: los patrones de corrección del profesor y qué se decidió con cada uno. */
+    feedbackPatterns?: FeedbackPattern[];
     /**
      * @deprecated Etapa 1: un solo encargo por proyecto. Ya no se escribe;
      * se lee como datos del curso y un tipo de trabajo, para no perder uno
