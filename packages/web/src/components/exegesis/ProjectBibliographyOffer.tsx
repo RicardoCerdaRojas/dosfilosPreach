@@ -67,6 +67,10 @@ export function ProjectBibliographyOffer({ project, bookId, onChange, hint }: Pr
                             <input type="checkbox" className="mt-1" checked={!desmarcadas.has(e.id)} onChange={() => alternar(e.id)} />
                             <span className="min-w-0">
                                 <span className="block truncate">{e.title || porId.get(e.resourceId!)?.title}</span>
+                                {/* El autor a la vista, para saber qué desmarcar (p. ej. lo citado la semana anterior). */}
+                                {(e.author || porId.get(e.resourceId!)?.author) && (
+                                    <span className="block truncate text-xs text-foreground/80" data-testid="project-source-author">{e.author || porId.get(e.resourceId!)?.author}</span>
+                                )}
                                 {(e.sourceType ?? porId.get(e.resourceId!)?.exegeticalType) && (
                                     <span className="block text-[11px] text-muted-foreground">{t(`sourceTypes.${e.sourceType ?? porId.get(e.resourceId!)?.exegeticalType}.label`)}</span>
                                 )}

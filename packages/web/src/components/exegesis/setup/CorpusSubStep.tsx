@@ -1081,6 +1081,12 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                         )}
                         {isExtracted && <SourceSelectionModeBadge mode={source.excerptSelectionMode} />}
                     </p>
+                    {/* El autor a la vista: sin él no se puede cumplir «no repetir
+                        fuentes de la semana anterior» (TP #9, el fundador no sabía
+                        cuál de los títulos era Adamson, Mayor o Metzger). */}
+                    {recursoDeBiblioteca?.author && (
+                        <p className="text-xs text-muted-foreground truncate" data-testid="corpus-source-author">{recursoDeBiblioteca.author}</p>
+                    )}
                     <SourceCitationKey
                         paper={paper}
                         source={source}
