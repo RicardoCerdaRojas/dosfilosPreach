@@ -1,39 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { SermonEntity, FindOptions, type PublishOverrideInput } from '@dosfilos/domain';
 import { sermonService, facultyService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
 import { toast } from 'sonner';
 
+/**
+ * La lista de sermones del usuario, en la caché de React Query.
+ *
+ * Antes era un `useState` que volvía a pedir TODA la lista cada vez que una
+ * página se montaba: volver al escritorio del proyecto desde un estudio lo
+ * dejaba en esqueleto hasta que llegaba (medido por el fundador: ~5 s). La
+ * clave `['sermons', uid, …]` es la que ya invalidan otros hooks
+ * (`useExegesisPapers`), que hasta ahora no surtía efecto.
+ */
 export function useSermons(options?: FindOptions) {
     const { user } = useFirebase();
-    const [sermons, setSermons] = useState<SermonEntity[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const query = useQuery({
+        queryKey: ['sermons', user?.uid, options ?? null],
+        // Lectura recortada: la lista solo necesita los campos del resumen;
+        // el sermón entero se carga en su página.
+        queryFn: () => sermonService.getUserSermonSummaries(user!.uid, options),
+        enabled: !!user,
+        staleTime: 60_000,
+    });
 
-    const fetchSermons = async () => {
-        if (!user) return;
-
-        setLoading(true);
-        setError(null);
-        try {
-            // Trimmed list read — the sermons page only needs summary fields;
-            // the full sermon (content, citation manifest, fidelity report…)
-            // loads on the detail page.
-            const data = await sermonService.getUserSermonSummaries(user.uid, options);
-            setSermons(data);
-        } catch (err: any) {
-            setError(err.message);
-            toast.error(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    const error = query.error ? (query.error as Error).message : null;
     useEffect(() => {
-        fetchSermons();
-    }, [user, JSON.stringify(options)]);
+        if (error) toast.error(error);
+    }, [error]);
 
-    return { sermons, loading, error, refetch: fetchSermons };
+    const refetch = useCallback(async () => {
+        await query.refetch();
+    }, [query]);
+
+    return {
+        sermons: (query.data ?? []) as SermonEntity[],
+        // Sin usuario todavía no hay nada que esperar; con datos en caché, no se muestra carga.
+        loading: !!user && query.isLoading,
+        error,
+        refetch,
+    };
 }
 
 export function useSermon(id: string | undefined) {

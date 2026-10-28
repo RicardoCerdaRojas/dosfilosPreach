@@ -141,7 +141,8 @@ export function useProjectDesk(projectId: string | undefined) {
     const journey: DeskBlockStatus =
         blocks.work === 'error' || blocks.sources === 'error' || (conRubricas && blocks.rubrics === 'error') ? 'error'
             : blocks.work === 'loading' || blocks.sources === 'loading' || blocks.material === 'loading'
-                || blocks.sermons === 'loading' || (conRubricas && blocks.rubrics === 'loading') ? 'loading'
+                // Los sermones solo cuentan en el Exegético (la columna Sermón de la mesa); el Curso no los usa.
+                || (caps.desk === 'exegetical' && blocks.sermons === 'loading') || (conRubricas && blocks.rubrics === 'loading') ? 'loading'
                 : 'ready';
     /** Vuelve a pedir lo que falló (y solo eso). */
     const retry = () => {
