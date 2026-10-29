@@ -173,7 +173,8 @@ export function formatBibliographyEntry(data: BibliographicData): string {
             ? `Vol. ${data.volume.trim()}, *${data.volumeTitle.trim()}*.`
             : `Vol. ${data.volume.trim()}.`);
     }
-    if (data.edition?.trim()) parts.push(`${data.edition.trim()}.`);
+    // «5.ª ed.» ya termina en punto: agregarle otro deja «ed..».
+    if (data.edition?.trim()) parts.push(data.edition.trim().endsWith('.') ? data.edition.trim() : `${data.edition.trim()}.`);
     if (data.translator?.trim()) parts.push(`Traducido por ${data.translator.trim()}.`);
     if (data.editor?.trim()) parts.push(`Editado por ${data.editor.trim()}.`);
     if (data.series?.trim()) parts.push(`${data.series.trim()}.`);
@@ -221,8 +222,23 @@ export function formatShortNote(data: BibliographicData, pages?: string): string
     return appendPages(head, pages);
 }
 
-/** Apellido solo, que es como empiezan las notas abreviadas. */
+/**
+ * Apellido solo, que es como empiezan las notas abreviadas. Con dos autores,
+ * los dos apellidos: «Waltke y O’Connor», no «Waltke» (TI #2, nota 33).
+ */
 function shortAuthor(data: BibliographicData): string {
+    const nombres = (data.author ?? '').trim().replace(/,\s*eds?\.?$/i, '');
+    const coordinado = nombres.match(/^(.+?)\s+(and|y|e|&)\s+(.+)$/i);
+    // Mismo criterio que `proposeSortedAuthor`: «Ortega y Gasset» es UN apellido.
+    if (coordinado && !LINAJE.test(nombres) && coordinado[3]!.trim().split(/\s+/).length >= 2) {
+        const primero = shortAuthor({ ...data, author: coordinado[1]!, authorSorted: (data.authorSorted ?? '').split(/\s+(?:and|y|e|&)\s+/i)[0] });
+        const segundo = coordinado[3]!.trim().split(/\s+/);
+        // «Pedro Ortiz V.»: la inicial del segundo apellido va con el primero.
+        const apellido = /^\p{L}\.$/u.test(segundo[segundo.length - 1]!) && segundo.length > 2
+            ? segundo.slice(-2).join(' ')
+            : segundo[segundo.length - 1]!;
+        return `${primero} ${coordinado[2]} ${apellido}`;
+    }
     const sorted = (data.authorSorted ?? '').trim();
     if (sorted) return sorted.split(',')[0]!.trim();
     const author = (data.author ?? '').trim();

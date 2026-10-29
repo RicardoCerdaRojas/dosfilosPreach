@@ -292,6 +292,42 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         expect(n).toMatch(/<w:i\/>.*?Psalms 1-50/s);
     });
 
+    const ROSS_FICHA = { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', shortTitle: 'Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' };
+    const exportarConDos = async (texto: string) => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's0', citationKey: 'Craigie' }, { id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', texto].join('\n'),
+        }), {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [
+                { citationKey: 'Craigie', displayLabel: 'Psalms 1-50', text: 'x', missing: [], data: CRAIGIE },
+                { citationKey: 'Ross', displayLabel: 'Commentary', text: 'y', missing: [], data: ROSS_FICHA },
+            ],
+        });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const plano = (x: string) => x.replace(/<w:footnoteReference w:id="(\d+)"\/>/g, '[^$1]').replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        return { notas: plano(await zip.file('word/footnotes.xml')!.async('string')), cuerpo: plano(await zip.file('word/document.xml')!.async('string')) };
+    };
+
+    it('REGRESIÓN TI #2: «(A, 638; B, 59)» es UNA nota con las dos obras, sin «)» suelto ni espacio antes de la llamada', async () => {
+        const { notas, cuerpo } = await exportarConDos('Lo dicen (Craigie, "Psalms 1-50", p. 206; Ross, "A Commentary on the Psalms", p. 59). Fin.');
+        expect(cuerpo).toContain('Lo dicen[^1]. Fin.');
+        expect(cuerpo).not.toMatch(/\[\^\d+\]\)/);
+        expect(notas).toContain('Word Books, 1983), 206; Allen P. Ross, A Commentary on the Psalms (Grand Rapids: Kregel, 2011), 59.');
+        expect(notas).not.toContain('[^2]');
+    });
+
+    it('después de una nota con dos obras no hay «Ibid.»: no diría a cuál', async () => {
+        const { notas } = await exportarConDos('Uno (Craigie, "Psalms 1-50", p. 206; Ross, "A Commentary on the Psalms", p. 59). Dos (Ross, p. 60).');
+        expect(notas).not.toContain('Ibid.');
+        expect(notas).toContain('Ross, Commentary on the Psalms, 60.');
+    });
+
+    it('Turabian: la misma página que la nota anterior es «Ibid.» solo', async () => {
+        const { notas } = await exportarConDos('Uno (Ross, p. 565). Dos (Ross, p. 565). Tres (Ross, p. 566).');
+        expect(notas).toMatch(/2011\), 565\.\s*Ibid\.\s*Ibid\., 566\./);
+    });
+
     it('REGRESIÓN: una nota sin ficha entre dos de la misma obra corta la racha del «Ibid.»', async () => {
         const blob = await exportPaperToDocx(paper({
             sources: [{ id: 's0', citationKey: 'Craigie' }, { id: 's1', citationKey: 'Ross' }] as never,

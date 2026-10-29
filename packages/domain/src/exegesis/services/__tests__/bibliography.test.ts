@@ -69,6 +69,30 @@ describe('formatShortNote', () => {
         expect(formatShortNote({ author: 'Allen P. Ross', title: 'A Commentary on the Psalms' }, '562'))
             .toBe('Ross, *A Commentary on the Psalms*, 562');
     });
+
+    it('REGRESIÓN TI #2: con dos autores, los dos apellidos', () => {
+        expect(formatShortNote({ author: 'Bruce K. Waltke y M. O’Connor', authorSorted: 'Waltke, Bruce K., y M. O’Connor', title: 'An Introduction to Biblical Hebrew Syntax', shortTitle: 'Introduction to Biblical Hebrew Syntax' }, '527'))
+            .toBe('Waltke y O’Connor, *Introduction to Biblical Hebrew Syntax*, 527');
+        // Editores: el «eds.» no va en la nota abreviada.
+        expect(formatShortNote({ author: 'K. Elliger y W. Rudolph, eds.', title: 'Biblia Hebraica Stuttgartensia' }, '1106'))
+            .toBe('Elliger y Rudolph, *Biblia Hebraica Stuttgartensia*, 1106');
+        expect(formatShortNote({ author: 'Bill T. Arnold and John H. Choi', title: 'A Guide' }, '59')).toBe('Arnold and Choi, *A Guide*, 59');
+        expect(formatShortNote({ author: 'Juan Pérez y Pedro Ortiz V.', title: 'X' }, '1')).toBe('Pérez y Ortiz V., *X*, 1');
+    });
+
+    it('un apellido compuesto con «y» sigue siendo UN autor', () => {
+        expect(formatShortNote({ author: 'José Ortega y Gasset', authorSorted: 'Ortega y Gasset, José', title: 'Meditaciones' }, '3'))
+            .toBe('Ortega y Gasset, *Meditaciones*, 3');
+    });
+});
+
+describe('formatBibliographyEntry · edición', () => {
+    it('REGRESIÓN TI #2: «5.ª ed.» no termina en «ed..»', () => {
+        const e = formatBibliographyEntry({ author: 'K. Elliger y W. Rudolph, eds.', title: 'Biblia Hebraica Stuttgartensia', edition: '5.ª ed.', city: 'Stuttgart', publisher: 'Deutsche Bibelgesellschaft', year: '1997' });
+        expect(e).toContain('5.ª ed. Stuttgart');
+        expect(e).not.toContain('ed..');
+        expect(formatBibliographyEntry({ author: 'A B', title: 'T', edition: '2nd ed' })).toContain('2nd ed.');
+    });
 });
 
 describe('proposeSortedAuthor', () => {

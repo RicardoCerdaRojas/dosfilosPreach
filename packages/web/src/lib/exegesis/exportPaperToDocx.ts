@@ -122,6 +122,7 @@ export async function exportPaperToDocx(
     const yaCitadas = new Set<string>();
     /** La obra de la nota anterior: con la misma, «Ibid.». */
     let ultimaClave: string | null = null;
+    let ultimaPagina: string | null = null;
     const blocks = parseMarkdownBlocks(markdown);
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
@@ -224,7 +225,7 @@ export async function exportPaperToDocx(
      * se ve. El aviso de fichas cojas al descargar ya nombra a los libros que
      * están en este caso.
      */
-    function textoDeLaNota(author: string, pages: string | null, crudo: string): string {
+    function textoDeLaNota(author: string, pages: string | null, crudo: string, sinIbid = false): string {
         const clave = [...fichas.keys()].find(k => resolvesToCitedSource(author, [k]));
         const ficha = clave ? fichas.get(clave)! : null;
         // Una nota sin ficha corta la racha: el «Ibid.» siguiente sería ambiguo.
@@ -233,20 +234,30 @@ export async function exportPaperToDocx(
         yaCitadas.add(clave);
         // La misma obra que la nota inmediatamente anterior: «Ibid.», como
         // admite la guía de TMS (y como salió el TI #1, notas 24, 40 y 44).
-        const repetida = !primera && ultimaClave === clave;
+        const repetida = !sinIbid && !primera && ultimaClave === clave;
+        const pagina = pages?.trim() || null;
+        // Turabian: la misma página que la nota anterior, «Ibid.» solo.
+        const mismaPagina = repetida && pagina === ultimaPagina;
         ultimaClave = clave;
+        ultimaPagina = pagina;
         const nota = primera
             ? formatFirstNote(ficha, pages ?? undefined)
             : repetida
-                ? (pages ? `Ibid., ${pages}` : 'Ibid.')
+                ? (pagina && !mismaPagina ? `Ibid., ${pagina}` : 'Ibid.')
                 : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.
         return nota.endsWith('.') ? nota : `${nota}.`;
     }
 
-    function registerFootnote(cita: { author: string; pages: string | null; raw: string }): number {
-        const citationText = textoDeLaNota(cita.author, cita.pages, cita.raw);
+    function registerFootnote(citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>): number {
+        // «(A, 638; B, 59)» es UNA nota con dos obras separadas por punto y
+        // coma, como en Turabian; dos llamadas seguidas no lo son. Dentro de
+        // ella no hay «Ibid.», y después tampoco: no diría a cuál de las dos.
+        const citationText = citas.length === 1
+            ? textoDeLaNota(citas[0]!.author, citas[0]!.pages, citas[0]!.raw)
+            : `${citas.map(c => textoDeLaNota(c.author, c.pages, c.raw, true).replace(/\.$/, '')).join('; ')}.`;
+        if (citas.length > 1) ultimaClave = null;
         footnoteCounter += 1;
         footnotes[footnoteCounter] = {
             children: [
@@ -539,7 +550,7 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
  */
 function buildInlineRuns(
     paragraphText: string,
-    registerFootnote: (cita: { author: string; pages: string | null; raw: string }) => number,
+    registerFootnote: (citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>) => number,
     /**
      * `'parenthetical'` deja la cita donde está, tal como se escribió.
      *
@@ -575,6 +586,8 @@ function buildInlineRuns(
         /** Sólo en las citas: lo que hace falta para buscar su ficha. */
         author?: string;
         pages?: string | null;
+        /** Las obras de una cita combinada «(A, 638; B, 59)», en orden. */
+        parts?: Array<{ author: string; pages: string | null; raw: string }>;
     }
     const markers: Marker[] = [];
 
@@ -583,20 +596,33 @@ function buildInlineRuns(
         // Las claves viajan al reconocedor porque hay una forma —título sin
         // comillas— que sin el corpus no se puede distinguir de un pie de
         // imprenta, y por eso sólo participa cuando se las pasan.
-        for (const cita of findInlineCitations(paragraphText, citationKeys)) {
+        // En orden de aparición: el reconocedor no las devuelve así, y unir
+        // «(A; B)» exige ver la primera antes que la segunda.
+        for (const cita of [...findInlineCitations(paragraphText, citationKeys)].sort((a, b) => a.offset - b.offset)) {
             // Con título entre comillas es inequívoca por su forma. Sin
             // título, sólo si el autor es una fuente que el trabajo declara:
             // es la única señal que la separa de un pie de imprenta o de una
             // referencia bíblica.
             if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
-            markers.push({
-                kind: 'citation',
-                start: cita.offset,
-                end: cita.end,
-                body: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
+            const part = {
                 author: cita.author,
                 pages: cita.pages,
-            });
+                raw: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
+            };
+            // «; B, 59» pegado a la cita anterior es la segunda obra del mismo
+            // paréntesis: va en la misma nota, no en una llamada aparte.
+            const previa = markers[markers.length - 1];
+            if (cita.raw.startsWith(';') && previa?.kind === 'citation' && previa.end === cita.offset) {
+                previa.parts!.push(part);
+                previa.end = cita.end;
+                continue;
+            }
+            markers.push({ kind: 'citation', start: cita.offset, end: cita.end, body: part.raw, author: cita.author, pages: cita.pages, parts: [part] });
+        }
+        // El reconocedor deja fuera el «)» que cierra una cita combinada; si
+        // queda, el Word muestra «condicional³⁴).».
+        for (const mk of markers) {
+            if (mk.kind === 'citation' && mk.parts!.length > 1 && paragraphText[mk.end] === ')') mk.end += 1;
         }
     }
     BOLD_PATTERN.lastIndex = 0;
@@ -628,10 +654,12 @@ function buildInlineRuns(
             // `textRuns` y no un run suelto: el hebreo que aparece en
             // mitad de una frase castellana necesita su propia marca de
             // derecha a izquierda o Word lo reordena al abrir.
-            runs.push(...textRuns(paragraphText.slice(cursor, mk.start)));
+            // La llamada de nota va pegada a la palabra: «ellos¹.», no «ellos ¹.».
+            const antes = paragraphText.slice(cursor, mk.start);
+            runs.push(...textRuns(mk.kind === 'citation' && paragraphText[mk.start] === '(' ? antes.trimEnd() : antes));
         }
         if (mk.kind === 'citation') {
-            const id = registerFootnote({ author: mk.author ?? '', pages: mk.pages ?? null, raw: mk.body });
+            const id = registerFootnote(mk.parts ?? [{ author: mk.author ?? '', pages: mk.pages ?? null, raw: mk.body }]);
             runs.push(new FootnoteReferenceRun(id));
         } else if (mk.kind === 'bold') {
             runs.push(...textRuns(mk.body, { bold: true }));
