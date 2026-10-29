@@ -45,7 +45,7 @@ export function CourseDiscardDialog({ pattern, open, onOpenChange, onConfirm, sa
             <DialogContent className={cn(DIALOG, 'sm:max-w-md')}>
                 <DialogHeader className={DIALOG_HEADER}>
                     <DialogTitle className="font-reading">{t('discard.title', { name: pattern.name })}</DialogTitle>
-                    <DialogDescription>{t('discard.hint')}</DialogDescription>
+                    <DialogDescription>{t(pattern.kind === 'strength' ? 'discard.hintStrength' : 'discard.hint')}</DialogDescription>
                 </DialogHeader>
                 <div className={cn(DIALOG_BODY, 'space-y-3')}>
                     <label htmlFor={`${id}-reason`} className="block text-xs text-muted-foreground">{t('discard.reason')}</label>

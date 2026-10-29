@@ -144,14 +144,16 @@ describe('los avisos de error del material', () => {
 });
 
 describe('las fuentes en el recorrido', () => {
-    it('Curso: si la fase 2 sería la activa, mientras carga la biblioteca que clasifica las obras, el recorrido espera', async () => {
+    it('REGRESIÓN Curso: si la fase 2 sería la activa, el escritorio se muestra y solo «Ahora» espera la biblioteca', async () => {
+        // Fundador, 2026-10-29: salir y volver lo dejaba en esqueleto hasta bajar la biblioteca (39 MB).
         proyectos = [{ ...proyecto, sourceIds: [], workTypes: [{ id: 'tp', label: 'TP', rubricTemplateId: null, rubricConfirmed: true }] }];
         biblioteca = { resources: [], isLoading: true };
         montar();
-        // Que lleguen las series y los estudios: lo único que falta es la biblioteca.
         await waitFor(() => expect(getUserSeries).toHaveBeenCalled());
         await act(async () => { await new Promise(r => setTimeout(r, 20)); });
-        expect(screen.getByTestId('project-roadmap-loading')).toBeInTheDocument();
+        expect(screen.queryByTestId('project-roadmap-loading')).toBeNull();
+        expect(screen.getByTestId('desk-journey')).toBeInTheDocument();
+        expect(screen.getByTestId('desk-now-pending')).toBeInTheDocument();
         expect(screen.queryByTestId('desk-now')).toBeNull();
     });
 

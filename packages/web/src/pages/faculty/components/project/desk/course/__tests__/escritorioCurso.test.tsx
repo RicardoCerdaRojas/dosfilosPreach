@@ -394,7 +394,8 @@ describe('el escritorio del Curso', () => {
             await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
             expect(ops().courseOps).toEqual([{ op: 'recordFeedback', entryId: 'e8', feedback: {
                 text: 'Revisa los cierres.', grade: '6,0',
-                corrections: [{ patternId: 'cat' }, { patternName: 'Falta la glosa', note: 'v. 3' }],
+                // Un patrón nuevo va con su clase (aquí la que viene puesta: corrección).
+                corrections: [{ patternId: 'cat' }, { patternName: 'Falta la glosa', patternKind: 'correction', note: 'v. 3' }],
             } }]);
         });
 
@@ -409,6 +410,7 @@ describe('el escritorio del Curso', () => {
             pintar();
             const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
             fireEvent.click(within(tp7).getByText('works.editFeedback'));
+            fireEvent.click(screen.getByText('feedbackSummary.edit'));
             const dialogo = screen.getByRole('dialog');
             expect(within(dialogo).queryByText('feedbackDialog.none')).toBeNull();
             // Editar conserva el texto, la nota y las correcciones con su id.
@@ -420,10 +422,11 @@ describe('el escritorio del Curso', () => {
             pintar();
             const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
             fireEvent.click(within(tp7).getByText('works.editFeedback'));
+            fireEvent.click(screen.getByText('feedbackSummary.edit'));
             fireEvent.click(within(screen.getByRole('dialog')).getByText('feedbackDialog.clear'));
             expect(mutateAsync).not.toHaveBeenCalled();
             const alerta = screen.getByRole('alertdialog');
-            expect(alerta).toHaveTextContent('feedbackDialog.clearHint:3');
+            expect(alerta).toHaveTextContent('feedbackDialog.clearHint:feedbackDialog.clearCount.corrections:3');
             fireEvent.click(within(alerta).getByText('feedbackDialog.clear'));
             await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
             expect(ops().courseOps).toEqual([{ op: 'clearFeedback', entryId: 'e7' }]);
@@ -444,6 +447,7 @@ describe('el escritorio del Curso', () => {
             pintar();
             const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
             fireEvent.click(within(tp7).getByText('works.editFeedback'));
+            fireEvent.click(screen.getByText('feedbackSummary.edit'));
             fireEvent.click(within(screen.getByRole('dialog')).getByText('feedbackDialog.save'));
             await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
             const fb = ops().courseOps[0].feedback;

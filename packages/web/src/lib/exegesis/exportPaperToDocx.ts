@@ -37,6 +37,8 @@ import {
     BODY_RUN,
     bodyParagraphFor,
     HEADING_PARAGRAPH,
+    HEADING3_PARAGRAPH,
+    TITLE_HEADING_SPACING,
     isMostlyHebrew,
     splitHebrew,
     TMS,
@@ -139,7 +141,10 @@ export async function exportPaperToDocx(
                     // del título: con el salto adentro, Word deja un renglón
                     // vacío con estilo de título al pie de la hoja anterior.
                     ...(index === bibliographyAt ? { pageBreakBefore: true } : {}),
-                    children: textRuns(block.text),
+                    // La bibliografía es un encabezado de título (guía, hoja 11):
+                    // en mayúsculas y con dos líneas en blanco después.
+                    ...(index === bibliographyAt ? { spacing: TITLE_HEADING_SPACING } : {}),
+                    children: textRuns(index === bibliographyAt ? block.text.toLocaleUpperCase('es') : block.text),
                 }));
                 break;
             case 'paragraph':
@@ -169,10 +174,9 @@ export async function exportPaperToDocx(
                 }));
                 break;
             case 'rule':
-                paragraphs.push(new Paragraph({
-                    children: [new TextRun({ text: '' })],
-                    spacing: { after: 240 },
-                }));
+                // Una línea «---» del ensamblado separa secciones en pantalla; en
+                // el Word era un párrafo vacío más antes de cada título, y la guía
+                // pide no agregar espacios a mano (B51). El encabezado ya separa.
                 break;
         }
     });
@@ -280,7 +284,7 @@ function documentStyles(formatting: PaperFormatting | null) {
         },
         heading3: {
             run: { ...BODY_RUN, bold: false, italics: true, color: '000000' },
-            paragraph: HEADING_PARAGRAPH,
+            paragraph: HEADING3_PARAGRAPH,
         },
     },
     } as const;
@@ -299,9 +303,24 @@ function pageNumberParagraph(alignment: (typeof AlignmentType)[keyof typeof Alig
 /**
  * Texto en runs, con el hebreo marcado de derecha a izquierda.
  */
+/**
+ * El apóstrofo y la comilla simple tipográficos: «O'Connor» → «O’Connor».
+ * El profesor del TI #1 marcó «Este apóstrofe no es de redacción, sino de
+ * programación» (B52). Va al final, sobre el texto ya armado: las claves de
+ * cita («Waltke-O'Connor») se reconocen antes, con el apóstrofo recto. El
+ * hebreo no se toca.
+ */
+export function typographicQuotes(text: string): string {
+    return text
+        // Comilla de apertura: al comienzo o tras un espacio, paréntesis o comilla, antes de una letra.
+        .replace(/(^|[\s([«“])'(?=\p{L})/gu, '$1\u2018')
+        // El resto —entre letras, al final de una palabra— es apóstrofo o cierre.
+        .replace(/'/g, '\u2019');
+}
+
 function textRuns(text: string, options: { size?: number; bold?: boolean; italics?: boolean } = {}): TextRun[] {
     return splitHebrew(text).map(seg => new TextRun({
-        text: seg.text,
+        text: seg.hebrew ? seg.text : typographicQuotes(seg.text),
         font: TMS.font,
         size: options.size ?? TMS.bodyHalfPt,
         ...(options.bold ? { bold: true } : {}),

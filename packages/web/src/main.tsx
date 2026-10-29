@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 // pestaña abierta desde antes pide nombres que ya no existen y recibe HTML
 // donde espera JavaScript. Esto lo detecta y recarga, una vez.
 import { recargarSiLaVersionCambio } from '@/lib/versionNueva'
+import { QUERY_GC_TIME_MS, queryRetry } from '@/lib/queryDefaults'
 recargarSiLaVersionCambio();
 
 // Initialize i18n before rendering
@@ -40,7 +41,7 @@ setExegesisPricingTracker((event, metadata) => {
 });
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: QUERY_GC_TIME_MS, retry: queryRetry } } });
 
 // Suppress known Excalidraw warning about controlled/uncontrolled inputs
 // This is a known issue in the Excalidraw library and doesn't affect functionality

@@ -55,14 +55,35 @@ export interface ProfessorFeedback {
     none?: boolean;
 }
 
-/** Una corrección del profesor, clasificada por el estudiante. */
+/**
+ * Dónde la hizo el profesor: la página impresa y la frase que marcó. Viene
+ * del PDF anotado (o la escribe el estudiante). Sin esto, «Revisa el
+ * espaciado» no dice de qué título habla (fundador, TI #1 del Salmo 23).
+ */
+export interface FeedbackAnchor {
+    /** La página impresa («4», «iv») o, si no se sabe, la hoja del PDF, neutral: «h. 6» (la pantalla la traduce). */
+    page?: string | null;
+    /** La frase marcada, tal como está en el trabajo. */
+    quote?: string | null;
+}
+
+/** Una observación del profesor, clasificada por el estudiante: una corrección o una fortaleza. */
 export interface FeedbackCorrection {
     id: string;
     /** El patrón (`FeedbackPattern.id`). */
     patternId: string;
-    /** El detalle de esta corrección («v. 14: cierre doble en la conclusión»). */
+    /** El detalle de esta corrección («v. 14: cierre doble en la conclusión»), o el comentario del profesor. */
     note?: string | null;
+    anchor?: FeedbackAnchor | null;
 }
+
+/**
+ * Qué clase de patrón es. «Corrección», lo que el profesor corrige (y lo que
+ * la fase 5 pide decidir cuando se repite); «fortaleza», lo que elogió y hay
+ * que repetir (en el TI #1 del Salmo 23, 12 de 15 comentarios). Ausente:
+ * corrección, como todos los patrones de antes.
+ */
+export type FeedbackPatternKind = 'correction' | 'strength';
 
 /** Qué hizo el estudiante con un patrón. */
 export type FeedbackPatternDecision = 'pending' | 'guide' | 'discarded';
@@ -74,6 +95,8 @@ export type FeedbackPatternDecision = 'pending' | 'guide' | 'discarded';
 export interface FeedbackPattern {
     id: string;
     name: string;
+    /** Ausente: `correction`. */
+    kind?: FeedbackPatternKind;
     description?: string | null;
     decision: FeedbackPatternDecision;
     /** Con `guide`: la guía donde quedó la regla y el texto que confirmó. */
@@ -208,13 +231,28 @@ export const normalizeGuideRule = normalizePatternName;
 
 // ── Limpieza profunda ────────────────────────────────────────────────────
 
+/** Topes del ancla de una observación. */
+export const FEEDBACK_ANCHOR_PAGE_MAX = 20;
+export const FEEDBACK_ANCHOR_QUOTE_MAX = 500;
+
+/** El ancla limpia, o nada si no dice dónde. */
+export function cleanFeedbackAnchor(v: unknown): FeedbackAnchor | null {
+    const r = asRecord(v);
+    if (!r) return null;
+    const page = texto(r.page, FEEDBACK_ANCHOR_PAGE_MAX);
+    const quote = texto(r.quote, FEEDBACK_ANCHOR_QUOTE_MAX);
+    if (!page && !quote) return null;
+    return { ...(page ? { page } : {}), ...(quote ? { quote } : {}) };
+}
+
 function cleanCorrection(v: unknown): FeedbackCorrection | null {
     const r = asRecord(v);
     const id = idValido(r?.id);
     const patternId = idValido(r?.patternId);
     if (!r || !id || !patternId) return null;
     const note = texto(r.note, COURSE_NOTE_MAX);
-    return { id, patternId, ...(note ? { note } : {}) };
+    const anchor = cleanFeedbackAnchor(r.anchor);
+    return { id, patternId, ...(note ? { note } : {}), ...(anchor ? { anchor } : {}) };
 }
 
 function cleanFeedback(v: unknown): ProfessorFeedback | undefined {
@@ -304,6 +342,7 @@ function cleanPattern(v: unknown): FeedbackPattern | null {
     const decidedAt = decision === 'pending' ? undefined : instante(r.decidedAt);
     return {
         id, name,
+        ...(r.kind === 'strength' ? { kind: 'strength' as const } : {}),
         ...(description ? { description } : {}),
         decision,
         ...(decision === 'guide' ? { guideId, ruleText } : {}),
@@ -447,7 +486,10 @@ export interface FeedbackCorrectionInput {
     patternId?: string | null;
     /** El nombre del patrón: si ya hay uno con ese nombre (normalizado), se reutiliza; si no, se crea. */
     patternName?: string | null;
+    /** Con `patternName` y un patrón nuevo: su clase. Ausente: corrección. */
+    patternKind?: FeedbackPatternKind | null;
     note?: string | null;
+    anchor?: FeedbackAnchor | null;
 }
 
 export interface ProfessorFeedbackInput {
@@ -493,16 +535,35 @@ export function recordFeedback(
             const name = texto(c.patternName, FEEDBACK_PATTERN_NAME_MAX);
             const n = name ? normalizePatternName(name) : '';
             if (!name || !n) continue;
-            const existente = patterns.find(p => normalizePatternName(p.name) === n);
-            if (existente) patternId = existente.id;
+            const kind: FeedbackPatternKind = c.patternKind === 'strength' ? 'strength' : 'correction';
+            const claseDe = (p: FeedbackPattern): FeedbackPatternKind => (p.kind === 'strength' ? 'strength' : 'correction');
+            // El mismo nombre en la otra clase no se reutiliza (una fortaleza
+            // perdería su clase): va con el nombre distinguido, «Tesis (2)», y
+            // la vez siguiente se reutiliza ese.
+            const distinguidos = (k: number) => normalizePatternName(`${name.slice(0, FEEDBACK_PATTERN_NAME_MAX - 6)} (${k})`);
+            const mismaClase = patterns.find(p => claseDe(p) === kind && (normalizePatternName(p.name) === n
+                || [2, 3, 4, 5, 6, 7, 8, 9].some(k => normalizePatternName(p.name) === distinguidos(k))));
+            if (mismaClase) patternId = mismaClase.id;
             else {
                 if (patterns.length >= FEEDBACK_PATTERNS_MAX) continue;
+                let nombre = name;
+                // El sufijo se agrega sobre un nombre recortado: con 120 caracteres, «… (2)» volvía a ser el mismo nombre.
+                for (let k = 2; patterns.some(p => normalizePatternName(p.name) === normalizePatternName(nombre)) && k < 100; k++) {
+                    nombre = `${name.slice(0, FEEDBACK_PATTERN_NAME_MAX - 6)} (${k})`;
+                }
+                if (patterns.some(p => normalizePatternName(p.name) === normalizePatternName(nombre))) continue;
                 patternId = (opts.newPatternId ?? newFeedbackPatternId)();
-                patterns.push({ id: patternId, name, decision: 'pending' });
+                patterns.push({ id: patternId, name: nombre, ...(kind === 'strength' ? { kind } : {}), decision: 'pending' });
             }
         }
         const note = texto(c.note, COURSE_NOTE_MAX);
-        corrections.push({ id: idValido(c.id) ?? (opts.newCorrectionId ?? newFeedbackCorrectionId)(), patternId, ...(note ? { note } : {}) });
+        const anchor = cleanFeedbackAnchor(c.anchor);
+        corrections.push({
+            id: idValido(c.id) ?? (opts.newCorrectionId ?? newFeedbackCorrectionId)(),
+            patternId,
+            ...(note ? { note } : {}),
+            ...(anchor ? { anchor } : {}),
+        });
     }
     const grade = texto(feedback.grade, COURSE_GRADE_MAX);
     const nueva: ProfessorFeedback = {
@@ -511,9 +572,13 @@ export function recordFeedback(
         ...(grade ? { grade } : {}),
         corrections,
     };
+    const limpios = cleanFeedbackPatterns(patterns);
+    // Ninguna observación apunta a un patrón que la limpieza descartó.
+    const validos = new Set(limpios.map(p => p.id));
+    nueva.corrections = nueva.corrections.filter(c => validos.has(c.patternId));
     return {
         schedule: editar(record.schedule, entryId, e => ({ ...e, feedback: nueva })),
-        patterns: cleanFeedbackPatterns(patterns),
+        patterns: limpios,
     };
 }
 
@@ -552,7 +617,7 @@ export function clearFeedback(schedule: ReadonlyArray<CourseScheduleEntry>, entr
  */
 export function upsertPattern(
     patterns: ReadonlyArray<FeedbackPattern>,
-    input: { id?: string | null; name: string; description?: string | null },
+    input: { id?: string | null; name: string; description?: string | null; kind?: FeedbackPatternKind | null },
     newId: () => string = newFeedbackPatternId,
 ): FeedbackPattern[] {
     const name = texto(input.name, FEEDBACK_PATTERN_NAME_MAX);
@@ -565,10 +630,16 @@ export function upsertPattern(
     if (i >= 0) {
         const { description: _d, ...resto } = patterns[i]!;
         const out = [...patterns];
-        out[i] = { ...resto, name, ...(description ? { description } : {}) };
+        // La clase solo cambia si se pide: editar el nombre no convierte una fortaleza en corrección.
+        const { kind: kindPrevio, ...sinKind } = resto;
+        const kind = input.kind === undefined || input.kind === null ? kindPrevio : input.kind;
+        out[i] = { ...sinKind, name, ...(kind === 'strength' ? { kind } : {}), ...(description ? { description } : {}) };
         return cleanFeedbackPatterns(out);
     }
-    return cleanFeedbackPatterns([...patterns, { id: id ?? newId(), name, decision: 'pending', ...(description ? { description } : {}) }]);
+    return cleanFeedbackPatterns([...patterns, {
+        id: id ?? newId(), name, ...(input.kind === 'strength' ? { kind: 'strength' as const } : {}),
+        decision: 'pending', ...(description ? { description } : {}),
+    }]);
 }
 
 /**
@@ -735,7 +806,7 @@ export type CourseOp =
     | { op: 'recordFeedback'; entryId: string; feedback: ProfessorFeedbackInput }
     | { op: 'markNoFeedback'; entryId: string; at?: string | null }
     | { op: 'clearFeedback'; entryId: string }
-    | { op: 'upsertPattern'; pattern: { id?: string | null; name: string; description?: string | null } }
+    | { op: 'upsertPattern'; pattern: { id?: string | null; name: string; description?: string | null; kind?: FeedbackPatternKind | null } }
     | { op: 'decidePattern'; patternId: string; decision: FeedbackPatternDecision; guideId?: string | null; ruleText?: string | null; reason?: string | null; at?: string | null };
 
 export interface ApplyCourseOpsOptions extends CourseOpOptions {

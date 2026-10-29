@@ -55,6 +55,13 @@ export function useLibrarySync(): void {
         // (fires once when the promise resolves). Both go through
         // `pushMerged` so whichever finishes first still emits a valid
         // merged list, and the slower one re-pushes once it lands.
+        // La lista la escribe este escucha, no un `useQuery`: fuera de las
+        // páginas que la leen no tiene observadores, y React Query la borraba
+        // a los 5 minutos. Al volver al escritorio del proyecto se descargaba
+        // entera otra vez (39 MB, ~10 s) y el escritorio quedaba en esqueleto
+        // (fundador, 2026-10-29). El escucha la mantiene al día: no caduca.
+        queryClient.setQueryDefaults(libraryQueryKey(uid), { gcTime: Infinity });
+
         let systemResources: LibraryResourceEntity[] = [];
         let userResources: LibraryResourceEntity[] = [];
         let cancelled = false;

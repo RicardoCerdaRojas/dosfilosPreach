@@ -7,7 +7,7 @@ import type { ExegeticalMethod } from '../entities/ExegeticalPaper';
 import { STRATEGY_ONLY_RUBRIC_PRESET_ID } from '../entities/PaperRubric';
 import type { SourceType } from '../entities/SourceType';
 import { projectBibleBooks } from './bibliographyCandidates';
-import { isRecurringPattern, type CourseScheduleEntry, type CourseScheduleMode, type FeedbackPattern, type FeedbackPatternDecision } from './courseSchedule';
+import { isRecurringPattern, type CourseScheduleEntry, type CourseScheduleMode, type FeedbackPattern, type FeedbackPatternDecision, type FeedbackPatternKind } from './courseSchedule';
 import {
     bibliographyCoverage,
     measureRequirement,
@@ -354,6 +354,8 @@ export interface DeskScheduleGroup {
 export interface DeskPatternRow {
     patternId: string;
     name: string;
+    /** Corrección o fortaleza (lo que hay que repetir). */
+    kind: FeedbackPatternKind;
     /** La decisión vigente: un descarte sin razón o un «a la guía» sin guía cuentan como `pending`. */
     decision: FeedbackPatternDecision;
     corrections: number;
@@ -417,6 +419,11 @@ export interface ProjectDeskModel {
     /** La primera fase que no está lista; `null` sin fases o con todas listas. */
     activePhaseId: string | null;
     now: DeskNow | null;
+    /**
+     * «Ahora» todavía no se puede decidir: la fase activa depende de datos que
+     * siguen cargando (la biblioteca, en la web). Lo pone la web, no el modelo.
+     */
+    nowPending?: boolean;
     notes: DeskNote[];
     /** Todos los estudios del proyecto (sin archivados), el más reciente primero. */
     studies: DeskStudy[];
@@ -1113,7 +1120,7 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
         }
         const decision = effectiveDecision(p);
         return {
-            patternId: p.id, name: p.name, decision, corrections, entries: donde,
+            patternId: p.id, name: p.name, kind: (p.kind === 'strength' ? 'strength' : 'correction') as FeedbackPatternKind, decision, corrections, entries: donde,
             recurring: isRecurringPattern({ entries: donde }),
             discardReason: decision === 'discarded' ? p.discardReason!.trim() : null,
         };
@@ -1122,7 +1129,9 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
     const returned = rows.filter(r => r.delivery === 'returned').length;
     const noFeedback = rows.filter(r => r.delivery === 'noFeedback').length;
     const awaiting = rows.filter(r => r.delivery === 'delivered').length;
-    const repeatedPending = patterns.filter(p => p.decision === 'pending' && p.recurring).length;
+    // Lo que la fase 5 pide decidir son las correcciones que se repiten; una
+    // fortaleza se puede pasar a la guía, pero no deja la fase en curso.
+    const repeatedPending = patterns.filter(p => p.kind === 'correction' && p.decision === 'pending' && p.recurring).length;
 
     // ── Fases (§9.1) ──
     // Fase 1: cada tipo con la rúbrica del profesor, o con «El curso no da

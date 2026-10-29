@@ -36,6 +36,7 @@ const DINAMICAS = [
     ...['calendar', 'works', 'feedback'].map(f => `later.${f}`),
     ...['notForCourse', 'professorChanged'].map(s => `discard.suggestion.${s}`),
     ...['default', 'system', 'unset'].flatMap(r => [`charge.rubric.${r}`, `charge.rubric.${r}Confirmed`]),
+    ...['correction', 'strength', 'ignore'].map(k => `feedbackDialog.kind.${k}`),
 ];
 
 const PATRON = /'((?:calendar|charge|works|feedback|feedbackDialog|guideRule|import|sources|common|toast|discard|discardChanges|later|create)\.[\w.-]+)'/g;

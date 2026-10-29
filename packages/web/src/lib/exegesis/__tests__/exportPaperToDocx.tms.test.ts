@@ -414,13 +414,13 @@ describe('exportPaperToDocx — la bibliografía generada', () => {
         });
         const zip = await JSZip.loadAsync(await blob.arrayBuffer());
         const xml = await zip.file('word/document.xml')!.async('string');
-        expect(xml).toContain('Bibliograf');
+        expect(xml).toContain('BIBLIOGRAF');
         expect(xml).toContain('Ross, Allen P.');
         // Sangría francesa: medio pulgada a la izquierda y media negativa en
         // la primera línea. Sin esto la entrada sale como un párrafo normal.
         expect(xml).toMatch(/w:ind[^>]*w:hanging="720"/);
         // Y sin viñeta: una bibliografía con topos no es una bibliografía.
-        const desdeBiblio = xml.slice(xml.indexOf('Bibliograf'));
+        const desdeBiblio = xml.slice(xml.indexOf('BIBLIOGRAF'));
         expect(desdeBiblio).not.toContain('w:numPr');
     });
 
@@ -488,7 +488,7 @@ describe('exportPaperToDocx — formato de la guía', () => {
         // El título de la bibliografía empieza la hoja por sí mismo: sin un
         // salto de página DENTRO del título, que dejaba un renglón de título
         // vacío al pie de la hoja anterior.
-        const titulo = doc.slice(doc.lastIndexOf('<w:p>', doc.indexOf('Bibliograf')) , doc.indexOf('Bibliograf'));
+        const titulo = doc.slice(doc.lastIndexOf('<w:p>', doc.indexOf('BIBLIOGRAF')) , doc.indexOf('BIBLIOGRAF'));
         expect(titulo).toContain('<w:pageBreakBefore/>');
         expect(titulo).not.toContain('<w:br w:type="page"/>');
         expect(doc).toMatch(/w:hanging="720"/);
@@ -505,10 +505,10 @@ describe('exportPaperToDocx — formato de la guía', () => {
         } as Partial<ExegeticalPaper>), 'word/document.xml');
 
         // El apóstrofo viaja escapado en el XML.
-        expect(doc).toContain('THE MASTER&apos;S SEMINARY');
+        expect(doc).toContain('THE MASTER’S SEMINARY');
         expect(doc).toContain('RICARDO CERDA');
         expect(doc).toContain('POR');
-        expect(doc.indexOf('THE MASTER&apos;S SEMINARY')).toBeLessThan(doc.indexOf('Introducción'));
+        expect(doc.indexOf('THE MASTER’S SEMINARY')).toBeLessThan(doc.indexOf('Introducción'));
         // Dos secciones: la portada y el cuerpo.
         expect(doc.match(/<w:sectPr/g)?.length).toBe(2);
     });
@@ -528,7 +528,7 @@ describe('exportPaperToDocx — formato de la guía', () => {
         } as Partial<ExegeticalPaper>), 'word/document.xml');
 
         expect(doc).toContain('TRABAJO PRÁCTICO #3');
-        expect(doc.indexOf('THE MASTER&apos;S SEMINARY')).toBeLessThan(doc.indexOf('TRABAJO PRÁCTICO #3'));
+        expect(doc.indexOf('THE MASTER’S SEMINARY')).toBeLessThan(doc.indexOf('TRABAJO PRÁCTICO #3'));
         expect(doc.indexOf('TRABAJO PRÁCTICO #3')).toBeLessThan(doc.indexOf('POR'));
     });
 
@@ -653,3 +653,52 @@ describe('exportPaperToDocx — la portada sigue la guía de estilo', () => {
         expect(r).toContain('RICARDO CERDA');
     });
 });
+
+describe('exportPaperToDocx — encabezados y apóstrofos como pide la guía de TMS (devolución del TI #1)', () => {
+    const conSecciones = paper({
+        assembledMarkdown: [
+            '## Análisis sintáctico y léxico de Salmo 23:1–3',
+            '',
+            'El texto. Waltke y O\'Connor explican el polel.',
+            '',
+            '---',
+            '',
+            '### Una identidad sin verbo',
+            '',
+            'Otro párrafo con \'comillas simples\'.',
+            '',
+            '## Bibliografía',
+            '',
+            '- Waltke, Bruce K., y M. O\'Connor. *An Introduction to Biblical Hebrew Syntax*.',
+        ].join('\n'),
+    });
+
+    it('REGRESIÓN (B51): 12 pt antes de cada encabezado, una línea después; sin párrafo vacío por «---»', async () => {
+        const styles = await xmlOf(conSecciones, 'word/styles.xml');
+        const h2 = styles.slice(styles.indexOf('w:styleId="Heading2"'), styles.indexOf('</w:style>', styles.indexOf('w:styleId="Heading2"')));
+        expect(h2).toMatch(/w:before="240"/);
+        expect(h2).toMatch(/w:after="240"/);
+        expect(h2).not.toMatch(/w:before="480"/);
+        const doc = await xmlOf(conSecciones, 'word/document.xml');
+        // Ningún párrafo vacío entre la sección y el subtítulo.
+        expect(doc).not.toMatch(/<w:p>(?:<w:pPr>(?:(?!<\/w:pPr>).)*<\/w:pPr>)?<w:r>(?:<w:rPr>(?:(?!<\/w:rPr>).)*<\/w:rPr>)?<w:t(?: [^>]*)?><\/w:t><\/w:r><\/w:p>/);
+    });
+
+    it('el nivel tres va alineado a la izquierda; la bibliografía, en mayúsculas con dos líneas después', async () => {
+        const styles = await xmlOf(conSecciones, 'word/styles.xml');
+        const h3 = styles.slice(styles.indexOf('w:styleId="Heading3"'), styles.indexOf('</w:style>', styles.indexOf('w:styleId="Heading3"')));
+        expect(h3).toMatch(/w:jc w:val="(left|start)"/);
+        const doc = await xmlOf(conSecciones, 'word/document.xml');
+        const biblio = doc.slice(doc.lastIndexOf('<w:p>', doc.indexOf('BIBLIOGRAF')), doc.indexOf('BIBLIOGRAF'));
+        expect(biblio).toMatch(/w:after="480"/);
+    });
+
+    it('REGRESIÓN (B52): «O\'Connor» sale con apóstrofo tipográfico, en el cuerpo y en la bibliografía', async () => {
+        const doc = await xmlOf(conSecciones, 'word/document.xml');
+        expect(doc).toContain('O’Connor explican');
+        expect(doc).toContain('M. O’Connor');
+        expect(doc).toContain('‘comillas simples’');
+        expect(doc).not.toContain('O&apos;Connor');
+    });
+});
+

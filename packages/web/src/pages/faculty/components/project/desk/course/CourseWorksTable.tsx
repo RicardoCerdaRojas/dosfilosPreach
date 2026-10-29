@@ -19,6 +19,8 @@ interface CourseWorksTableProps {
     course: CourseDesk;
     onMarkDelivered: (row: DeskScheduleRow, delivered: boolean) => void;
     onRecordFeedback: (row: DeskScheduleRow) => void;
+    /** Con devolución: el resumen para leerla (el editor queda dentro). Sin esto, el editor. */
+    onViewFeedback?: (row: DeskScheduleRow) => void;
     onImport: () => void;
     /** Abre la entrada del calendario de esa fila (fecha, tipo, rótulo, pasaje): TP #9, B2. */
     onEditEntry?: (row: DeskScheduleRow) => void;
@@ -40,7 +42,7 @@ const ENTREGA: Record<DeskDelivery, string> = {
  * una tarjeta por fila. «Entregado» se marca aparte del avance: ninguna
  * acción de una fase completa otra.
  */
-export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFeedback, onImport, onEditEntry, saving }: CourseWorksTableProps) {
+export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFeedback, onViewFeedback, onImport, onEditEntry, saving }: CourseWorksTableProps) {
     const { t, i18n } = useTranslation('projectDeskCourse');
     const lang = langOf(i18n.language);
     const libre = course.schedule.mode === 'free';
@@ -170,7 +172,7 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                                                     </Button>
                                                 ) : null}
                                                 {r.delivery !== 'notDelivered' && (
-                                                    <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={() => onRecordFeedback(r)}>
+                                                    <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={() => (r.delivery === 'returned' && onViewFeedback ? onViewFeedback(r) : onRecordFeedback(r))}>
                                                         {t(r.delivery === 'delivered' ? 'works.recordFeedback' : 'works.editFeedback')}
                                                     </Button>
                                                 )}

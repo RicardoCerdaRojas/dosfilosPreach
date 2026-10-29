@@ -870,6 +870,7 @@
                     }
                 }
             },
+            "nowPending": "Working out what comes next: your library is still loading…",
             "allReadyCourse": "Every phase is ready. When new feedback arrives, record it and decide what goes into your guide.",
             "laterLine": "{{status}} — {{reason}}"
         },
