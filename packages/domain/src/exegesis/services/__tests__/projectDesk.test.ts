@@ -472,8 +472,8 @@ describe('Curso · NT785 con calendario', () => {
 
     it('el registro de devoluciones: pendientes primero, con conteo y entregas', () => {
         expect(co.feedback.patterns).toEqual([
-            { patternId: 'cd', name: 'Cierre doble', decision: 'pending', corrections: 3, entries: [{ entryId: 'e6', label: 'TP #6' }, { entryId: 'e7', label: 'TP #7' }], recurring: true, discardReason: null },
-            { patternId: 'cat', name: 'Categoría ≠ traducción', decision: 'guide', corrections: 1, entries: [{ entryId: 'e7', label: 'TP #7' }], recurring: false, discardReason: null },
+            { patternId: 'cd', name: 'Cierre doble', kind: 'correction', decision: 'pending', corrections: 3, entries: [{ entryId: 'e6', label: 'TP #6' }, { entryId: 'e7', label: 'TP #7' }], recurring: true, discardReason: null },
+            { patternId: 'cat', name: 'Categoría ≠ traducción', kind: 'correction', decision: 'guide', corrections: 1, entries: [{ entryId: 'e7', label: 'TP #7' }], recurring: false, discardReason: null },
         ]);
         expect(co.feedback).toMatchObject({ delivered: 3, returned: 2, noFeedback: 0, awaiting: 1, repeatedPending: 1 });
     });
@@ -781,5 +781,25 @@ describe('Curso · Fuentes no queda «Lista» con la rúbrica sin cubrir (B10, T
         const input = jonasLegacy();
         input.coverageRequirements = [{ sourceType: 'commentary-critical', minimum: 5, workType: 'x' }];
         expect(fase(buildProjectDesk(input, NOW), 'sources').status).toBe('ready');
+    });
+});
+
+describe('Curso · una fortaleza que se repite no deja la fase 5 en curso', () => {
+    it('REGRESIÓN: solo las correcciones repetidas piden decisión; la fortaleza sale con su clase', () => {
+        const input = nt785();
+        input.project.feedbackPatterns = [
+            ...input.project.feedbackPatterns!.filter(p => p.id !== 'cd'),
+            { id: 'cd', name: 'Cierre doble', decision: 'guide', guideId: 'g1', ruleText: 'Un cierre, una afirmación.' },
+            { id: 'tes', name: 'Tesis verificable', kind: 'strength', decision: 'pending' },
+        ];
+        // La fortaleza aparece en las dos entregas devueltas (TP #6 y TP #7).
+        input.project.courseSchedule = input.project.courseSchedule!.map(e => e.feedback && !e.feedback.none
+            ? { ...e, feedback: { ...e.feedback, corrections: [...e.feedback.corrections, { id: `t-${e.id}`, patternId: 'tes' }] } }
+            : e);
+        const co = buildProjectDesk(input, NOW_CURSO).course!;
+        const tesis = co.feedback.patterns.find(p => p.patternId === 'tes')!;
+        expect(tesis).toMatchObject({ kind: 'strength', recurring: true, decision: 'pending' });
+        expect(co.feedback.patterns.find(p => p.patternId === 'cd')!.kind).toBe('correction');
+        expect(co.feedback.repeatedPending).toBe(0);
     });
 });

@@ -39,7 +39,9 @@
     "feedbackCleared": "Devolución quitada.",
     "patternDiscarded": "Corrección descartada.",
     "patternReopened": "La corrección vuelve a quedar por decidir.",
-    "rubricConfirmed": "Listo: ese tipo de trabajo se evalúa con la rúbrica que elegiste, porque el curso no da una."
+    "rubricConfirmed": "Listo: ese tipo de trabajo se evalúa con la rúbrica que elegiste, porque el curso no da una.",
+    "strengthDiscarded": "Fortaleza descartada.",
+    "strengthReopened": "La fortaleza vuelve a quedar por decidir."
   },
   "charge": {
     "typesLabel": "Tipos de trabajo del curso",
@@ -174,31 +176,92 @@
   },
   "feedbackDialog": {
     "title": "Devolución de {{label}}",
-    "hint": "Pega o escribe lo que devolvió el profesor y clasifica cada corrección. Registrarla no marca el trabajo como entregado.",
+    "hint": "Pega o escribe lo que devolvió el profesor, o lee los comentarios del PDF corregido, y clasifica cada observación. Registrarla no marca el trabajo como entregado.",
     "text": "Lo que escribió el profesor",
     "textPlaceholder": "Pega aquí la devolución tal como llegó.",
     "grade": "Nota (opcional)",
     "gradePlaceholder": "6,5",
-    "corrections": "Correcciones",
-    "correctionsHint": "Cada corrección con su patrón: uno que ya tienes o uno nuevo con el nombre que le das («cierre doble», «categoría ≠ traducción»).",
-    "pattern": "Patrón de la corrección {{n}}",
+    "corrections": "Correcciones y fortalezas",
+    "correctionsHint": "Cada observación con su clase y su patrón: uno que ya tienes o uno nuevo con el nombre que le das («cierre doble», «categoría ≠ traducción»). Si sabes dónde la hizo el profesor, anota la página y la frase.",
+    "pattern": "Patrón de la observación {{n}}",
     "newPattern": "Patrón nuevo…",
-    "patternName": "Nombre del patrón nuevo de la corrección {{n}}",
+    "patternName": "Nombre del patrón nuevo de la observación {{n}}",
     "patternNamePlaceholder": "Nombre del patrón",
-    "note": "Detalle de la corrección {{n}}",
+    "note": "Detalle de la observación {{n}}",
     "notePlaceholder": "Detalle (opcional): «v. 14, cierre doble en la conclusión»",
-    "removeCorrection": "Quitar la corrección {{n}}",
-    "addCorrection": "Agregar una corrección",
-    "incomplete": "Falta el nombre del patrón en alguna corrección.",
+    "removeCorrection": "Quitar la observación {{n}}",
+    "addCorrection": "Agregar una observación",
+    "incomplete": "Falta el nombre del patrón en alguna observación, o su nombre ya lo usa un patrón de la otra clase.",
     "save": "Guardar la devolución",
     "none": "Sin devolución",
     "clear": "Quitar la devolución",
     "clearNone": "Quitar «sin devolución»",
     "clearTitle": "¿Quitar la devolución de {{label}}?",
-    "clearHint_one": "Se borran lo que escribió el profesor, la nota y 1 corrección, que deja de contar en tu registro. La entrega sigue marcada como entregada.",
-    "clearHint_other": "Se borran lo que escribió el profesor, la nota y {{count}} correcciones, que dejan de contar en tu registro. La entrega sigue marcada como entregada.",
     "clearNoneTitle": "¿Quitar «sin devolución» de {{label}}?",
-    "clearNoneHint": "La entrega vuelve a esperar la devolución del profesor."
+    "clearNoneHint": "La entrega vuelve a esperar la devolución del profesor.",
+    "kind": {
+      "correction": "Corrección",
+      "strength": "Fortaleza",
+      "ignore": "Ignorar"
+    },
+    "kindLabel": "Clase de la observación {{n}}",
+    "clashCorrection": "«{{name}}» ya es una corrección de tu registro: dale otro nombre a esta fortaleza.",
+    "clashStrength": "«{{name}}» ya es una fortaleza de tu registro: dale otro nombre a esta corrección.",
+    "anchorPage": "Página",
+    "anchorPagePlaceholder": "6",
+    "anchorPageLabel": "Página de la observación {{n}}",
+    "anchorQuote": "Frase marcada",
+    "anchorQuotePlaceholder": "Opcional: la frase junto a la que comentó",
+    "anchorQuoteLabel": "Frase marcada de la observación {{n}}",
+    "pdf": {
+      "hint": "¿El profesor comentó en el PDF? Elige el PDF corregido (Canvas lo descarga con sus comentarios). Se lee aquí, en tu navegador: el archivo no se sube a ningún lado.",
+      "read": "Leer los comentarios del PDF",
+      "reading": "Leyendo el PDF…",
+      "error": "No se pudo leer ese PDF. Descárgalo otra vez desde el curso y vuelve a intentarlo.",
+      "empty": "«{{file}}» no trae comentarios anotados.",
+      "found_one": "1 comentario en «{{file}}».",
+      "found_other": "{{count}} comentarios en «{{file}}».",
+      "classifyHint": "La clase viene propuesta por el texto de cada comentario: cámbiala si no es así. «Ignorar» lo deja fuera del registro. «Agregar al registro» pasa los completos; nada se guarda hasta «Guardar la devolución».",
+      "kindLabel": "Clase del comentario {{n}}",
+      "proposalStrength": "Propuesta: un elogio",
+      "proposalCorrection": "Propuesta: una corrección",
+      "proposalEmpty": "Sin comentario: escribe qué era",
+      "comment": "Comentario del profesor (queda como detalle)",
+      "commentEmpty": "Marca sin texto: escribe qué era",
+      "patternName": "Nombre del patrón",
+      "newPatternHint": "Será un patrón nuevo de tu registro. Cámbiale el nombre si quieres.",
+      "sameName": "Se suma a «{{name}}», que ya está en tu registro.",
+      "reuse": "Sumar a «{{name}}»",
+      "joins": "Se suma a «{{name}}».",
+      "ownName": "Usar otro nombre",
+      "incomplete_one": "A 1 comentario le falta qué era o el nombre del patrón: se queda aquí hasta completarlo; los demás se pueden agregar.",
+      "incomplete_other": "A {{count}} comentarios les falta qué era o el nombre del patrón: se quedan aquí hasta completarlos; los demás se pueden agregar.",
+      "dismiss": "Descartar lo leído",
+      "add_one": "Agregar al registro (1)",
+      "add_other": "Agregar al registro ({{count}})",
+      "locked": "Este PDF está protegido con contraseña: ábrelo, guárdalo sin contraseña y vuelve a elegirlo.",
+      "ignoreBlank_one": "Ignorar la marca sin texto",
+      "ignoreBlank_other": "Ignorar las {{count}} marcas sin texto"
+    },
+    "pdfPending": {
+      "title_one": "Hay 1 comentario leído sin agregar",
+      "title_other": "Hay {{count}} comentarios leídos sin agregar",
+      "hint": "Agrégalos o descártalos antes de guardar: si guardas sin ellos, se pierde su clasificación.",
+      "incomplete_one": "A 1 comentario le falta qué era o el nombre del patrón: no se agrega. Vuelve si quieres completarlo.",
+      "incomplete_other": "A {{count}} comentarios les falta qué era o el nombre del patrón: no se agregan. Vuelve si quieres completarlos.",
+      "addAndSave": "Agregarlos y guardar",
+      "saveWithout": "Guardar sin ellos",
+      "back": "Volver"
+    },
+    "clearHint": "Se borran lo que escribió el profesor, la nota y {{what}}: dejan de contar en tu registro. La entrega sigue marcada como entregada.",
+    "clearHintEmpty": "Se borran lo que escribió el profesor y la nota. La entrega sigue marcada como entregada.",
+    "clearAnd": " y ",
+    "clearCount": {
+      "corrections_one": "1 corrección",
+      "corrections_other": "{{count}} correcciones",
+      "strengths_one": "1 fortaleza",
+      "strengths_other": "{{count}} fortalezas"
+    }
   },
   "feedback": {
     "emptyTitle": "Todavía no hay entregas",
@@ -224,7 +287,16 @@
     "inEntries_one": "en 1 entrega",
     "inEntries_other": "en {{count}} entregas",
     "discardedBecause": "Descartada porque: {{reason}}",
-    "toGuideLabel": "Pasar «{{name}}» a tu guía"
+    "toGuideLabel": "Pasar «{{name}}» a tu guía",
+    "anchorPage": "p. {{page}}",
+    "strengthsTitle": "Lo que hay que mantener",
+    "strengthsHint": "Lo que destacó el profesor. Pásalo a tu guía para repetirlo; no queda pendiente.",
+    "countStrength_one": "1 observación",
+    "countStrength_other": "{{count}} observaciones",
+    "observations_one": "Ver dónde (1)",
+    "observations_other": "Ver dónde ({{count}})",
+    "observationsLabel": "Las observaciones de «{{name}}»",
+    "anchorSheet": "hoja {{n}}"
   },
   "guideRule": {
     "title": "Pasar «{{name}}» a tu guía",
@@ -248,7 +320,10 @@
       "guide-without-manifest": "La guía todavía no tiene sus reglas leídas: ábrela en su editor antes de pasarle una regla.",
       "guide-full": "La guía ya tiene el máximo de reglas."
     },
-    "sameAsName": "Así es solo el nombre de la corrección: escribe qué hacer y qué evitar."
+    "sameAsName": "Así es solo el nombre de la corrección: escribe qué hacer y qué evitar.",
+    "hintStrength": "Lo que destacó el profesor queda en tu guía como regla: lo tendrás a la vista en el trabajo siguiente para repetirlo.",
+    "ruleTextHintStrength": "Escríbela como instrucción para ti: qué repetir. El nombre de la fortaleza queda de ejemplo; escríbela con tus palabras.",
+    "sameAsNameStrength": "Así es solo el nombre de la fortaleza: escribe qué repetir."
   },
   "import": {
     "title": "Traer los trabajos anteriores",
@@ -309,7 +384,8 @@
       "notForCourse": "No aplica a este curso",
       "professorChanged": "El profesor cambió de criterio"
     },
-    "confirm": "Descartar"
+    "confirm": "Descartar",
+    "hintStrength": "Di en una frase por qué no la pasas a tu guía. La razón queda en tu registro."
   },
   "later": {
     "sources": "se abre cuando definas lo que pide el curso: las fuentes se eligen para sus trabajos",

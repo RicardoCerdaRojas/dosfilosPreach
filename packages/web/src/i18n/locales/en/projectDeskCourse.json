@@ -39,7 +39,9 @@
     "feedbackCleared": "Feedback removed.",
     "patternDiscarded": "Correction dismissed.",
     "patternReopened": "The correction is undecided again.",
-    "rubricConfirmed": "Done: that kind of work is assessed with the rubric you chose, because the course does not provide one."
+    "rubricConfirmed": "Done: that kind of work is assessed with the rubric you chose, because the course does not provide one.",
+    "strengthDiscarded": "Strength discarded.",
+    "strengthReopened": "The strength is up for decision again."
   },
   "charge": {
     "typesLabel": "Kinds of work in the course",
@@ -174,31 +176,92 @@
   },
   "feedbackDialog": {
     "title": "Feedback on {{label}}",
-    "hint": "Paste or type what the professor returned and classify each correction. Recording it does not mark the work as submitted.",
+    "hint": "Paste or type what the professor returned, or read the comments from the graded PDF, and classify each remark. Recording it does not mark the work as submitted.",
     "text": "What the professor wrote",
     "textPlaceholder": "Paste the feedback here as it arrived.",
     "grade": "Grade (optional)",
     "gradePlaceholder": "A-",
-    "corrections": "Corrections",
-    "correctionsHint": "Each correction with its pattern: one you already have or a new one with the name you give it («double closing», «category ≠ translation»).",
-    "pattern": "Pattern of correction {{n}}",
+    "corrections": "Corrections and strengths",
+    "correctionsHint": "Each remark with its kind and its pattern: one you already have or a new one with the name you give it (\"double conclusion\", \"category ≠ translation\"). If you know where the professor made it, note the page and the phrase.",
+    "pattern": "Pattern of remark {{n}}",
     "newPattern": "New pattern…",
-    "patternName": "Name of the new pattern of correction {{n}}",
+    "patternName": "Name of the new pattern for remark {{n}}",
     "patternNamePlaceholder": "Pattern name",
-    "note": "Detail of correction {{n}}",
+    "note": "Detail of remark {{n}}",
     "notePlaceholder": "Detail (optional): «v. 14, double closing in the conclusion»",
-    "removeCorrection": "Remove correction {{n}}",
-    "addCorrection": "Add a correction",
-    "incomplete": "A correction is missing its pattern name.",
+    "removeCorrection": "Remove remark {{n}}",
+    "addCorrection": "Add a remark",
+    "incomplete": "A remark is missing its pattern name, or its name is already used by a pattern of the other kind.",
     "save": "Save the feedback",
     "none": "No feedback",
     "clear": "Remove the feedback",
     "clearNone": "Remove «no feedback»",
     "clearTitle": "Remove the feedback on {{label}}?",
-    "clearHint_one": "This deletes what the professor wrote, the grade and 1 correction, which stops counting in your record. The assignment stays marked as submitted.",
-    "clearHint_other": "This deletes what the professor wrote, the grade and {{count}} corrections, which stop counting in your record. The assignment stays marked as submitted.",
     "clearNoneTitle": "Remove «no feedback» from {{label}}?",
-    "clearNoneHint": "The assignment goes back to waiting for the professor's feedback."
+    "clearNoneHint": "The assignment goes back to waiting for the professor's feedback.",
+    "kind": {
+      "correction": "Correction",
+      "strength": "Strength",
+      "ignore": "Ignore"
+    },
+    "kindLabel": "Kind of remark {{n}}",
+    "clashCorrection": "\"{{name}}\" is already a correction in your record: give this strength another name.",
+    "clashStrength": "\"{{name}}\" is already a strength in your record: give this correction another name.",
+    "anchorPage": "Page",
+    "anchorPagePlaceholder": "6",
+    "anchorPageLabel": "Page of remark {{n}}",
+    "anchorQuote": "Marked phrase",
+    "anchorQuotePlaceholder": "Optional: the phrase the comment sits next to",
+    "anchorQuoteLabel": "Marked phrase of remark {{n}}",
+    "pdf": {
+      "hint": "Did the professor comment on the PDF? Choose the graded PDF (Canvas downloads it with the comments). It is read here, in your browser: the file is not uploaded anywhere.",
+      "read": "Read the comments from the PDF",
+      "reading": "Reading the PDF…",
+      "error": "That PDF could not be read. Download it again from the course and try again.",
+      "empty": "\"{{file}}\" has no annotated comments.",
+      "found_one": "1 comment in \"{{file}}\".",
+      "found_other": "{{count}} comments in \"{{file}}\".",
+      "classifyHint": "The kind is proposed from the text of each comment: change it if it is wrong. \"Ignore\" leaves it out of the record. \"Add to the record\" moves the complete ones; nothing is saved until \"Save the feedback\".",
+      "kindLabel": "Kind of comment {{n}}",
+      "proposalStrength": "Proposed: praise",
+      "proposalCorrection": "Proposed: a correction",
+      "proposalEmpty": "No comment: write what it was",
+      "comment": "Professor’s comment (kept as the detail)",
+      "commentEmpty": "Mark without text: write what it was",
+      "patternName": "Pattern name",
+      "newPatternHint": "It will be a new pattern in your record. Rename it if you like.",
+      "sameName": "Joins \"{{name}}\", already in your record.",
+      "reuse": "Add to \"{{name}}\"",
+      "joins": "Joins \"{{name}}\".",
+      "ownName": "Use another name",
+      "incomplete_one": "1 comment is missing what it was or the pattern name: it stays here until you complete it; the others can be added.",
+      "incomplete_other": "{{count}} comments are missing what it was or the pattern name: they stay here until you complete them; the others can be added.",
+      "dismiss": "Discard what was read",
+      "add_one": "Add to the record (1)",
+      "add_other": "Add to the record ({{count}})",
+      "locked": "This PDF is password-protected: open it, save it without a password and choose it again.",
+      "ignoreBlank_one": "Ignore the mark without text",
+      "ignoreBlank_other": "Ignore the {{count}} marks without text"
+    },
+    "pdfPending": {
+      "title_one": "There is 1 comment read but not added",
+      "title_other": "There are {{count}} comments read but not added",
+      "hint": "Add them or discard them before saving: if you save without them, their classification is lost.",
+      "incomplete_one": "1 comment is missing what it was or the pattern name: it is not added. Go back if you want to complete it.",
+      "incomplete_other": "{{count}} comments are missing what it was or the pattern name: they are not added. Go back if you want to complete them.",
+      "addAndSave": "Add them and save",
+      "saveWithout": "Save without them",
+      "back": "Go back"
+    },
+    "clearHint": "What the professor wrote, the grade and {{what}} are deleted: they stop counting in your record. The work stays marked as submitted.",
+    "clearHintEmpty": "What the professor wrote and the grade are deleted. The work stays marked as submitted.",
+    "clearAnd": " and ",
+    "clearCount": {
+      "corrections_one": "1 correction",
+      "corrections_other": "{{count}} corrections",
+      "strengths_one": "1 strength",
+      "strengths_other": "{{count}} strengths"
+    }
   },
   "feedback": {
     "emptyTitle": "No assignments yet",
@@ -224,7 +287,16 @@
     "inEntries_one": "in 1 assignment",
     "inEntries_other": "in {{count}} assignments",
     "discardedBecause": "Dismissed because: {{reason}}",
-    "toGuideLabel": "Add «{{name}}» to your guide"
+    "toGuideLabel": "Add «{{name}}» to your guide",
+    "anchorPage": "p. {{page}}",
+    "strengthsTitle": "What to keep doing",
+    "strengthsHint": "What the professor highlighted. Move it to your guide to repeat it; it is not left pending.",
+    "countStrength_one": "1 remark",
+    "countStrength_other": "{{count}} remarks",
+    "observations_one": "See where (1)",
+    "observations_other": "See where ({{count}})",
+    "observationsLabel": "The remarks on \"{{name}}\"",
+    "anchorSheet": "sheet {{n}}"
   },
   "guideRule": {
     "title": "Add «{{name}}» to your guide",
@@ -248,7 +320,10 @@
       "guide-without-manifest": "The guide's rules have not been read yet: open it in its editor before adding a rule.",
       "guide-full": "The guide already has the maximum number of rules."
     },
-    "sameAsName": "That is just the name of the correction: write what to do and what to avoid."
+    "sameAsName": "That is just the name of the correction: write what to do and what to avoid.",
+    "hintStrength": "What the professor highlighted becomes a rule in your guide: you will have it in view in the next work so you repeat it.",
+    "ruleTextHintStrength": "Write it as an instruction to yourself: what to repeat. The strength’s name is only an example; write it in your own words.",
+    "sameAsNameStrength": "That is only the strength’s name: write what to repeat."
   },
   "import": {
     "title": "Bring in previous works",
@@ -309,7 +384,8 @@
       "notForCourse": "It does not apply to this course",
       "professorChanged": "The professor changed the criterion"
     },
-    "confirm": "Dismiss"
+    "confirm": "Dismiss",
+    "hintStrength": "Say in one sentence why you are not moving it to your guide. The reason stays in your record."
   },
   "later": {
     "sources": "opens once you define what the course asks for: sources are chosen for its works",

@@ -57,6 +57,8 @@ export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onO
     };
     const texto = ruleText.trim();
     const igualAlNombre = !!texto && normalizeGuideRule(texto) === normalizeGuideRule(pattern.name);
+    // Una fortaleza se pasa a la guía para repetirla, no para evitarla: los textos lo dicen así.
+    const fortaleza = pattern.kind === 'strength';
 
     const confirmar = async () => {
         if (await onConfirm({ patternId: pattern.patternId, guideId, ruleText: texto })) onOpenChange(false);
@@ -67,7 +69,7 @@ export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onO
             <DialogContent className={cn(DIALOG, 'sm:max-w-lg')}>
                 <DialogHeader className={DIALOG_HEADER}>
                     <DialogTitle className="font-reading">{t('guideRule.title', { name: pattern.name })}</DialogTitle>
-                    <DialogDescription>{t('guideRule.hint')}</DialogDescription>
+                    <DialogDescription>{t(fortaleza ? 'guideRule.hintStrength' : 'guideRule.hint')}</DialogDescription>
                 </DialogHeader>
                 <div className={cn(DIALOG_BODY, 'space-y-3')}>
                     {opciones.length === 0 ? (
@@ -87,7 +89,9 @@ export function CourseGuideRuleDialog({ project, pattern, workTypeIds, open, onO
                                     aria-invalid={igualAlNombre || undefined}
                                 />
                                 <span id={`${ids}-hint`} className={cn('block text-[11px]', igualAlNombre ? 'font-medium text-warning-subtle-foreground' : 'text-muted-foreground')}>
-                                    {t(igualAlNombre ? 'guideRule.sameAsName' : 'guideRule.ruleTextHint')}
+                                    {igualAlNombre
+                                        ? t(fortaleza ? 'guideRule.sameAsNameStrength' : 'guideRule.sameAsName')
+                                        : t(fortaleza ? 'guideRule.ruleTextHintStrength' : 'guideRule.ruleTextHint')}
                                 </span>
                             </label>
                             <label className="block space-y-1">

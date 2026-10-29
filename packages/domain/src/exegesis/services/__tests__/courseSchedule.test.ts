@@ -386,3 +386,83 @@ describe('applyCourseOps', () => {
         expect(r.schedule).toEqual([{ id: 'x', workTypeId: '', label: 'TP' }]);
     });
 });
+
+describe('fortalezas y anclas (devolución del TI #1 del Salmo 23)', () => {
+    it('REGRESIÓN: una fortaleza se guarda como patrón «strength», con su ancla; la corrección, con la suya', () => {
+        const r = recordFeedback({ schedule: [tp(8)], patterns: [] }, 'e8', {
+            text: '', grade: '98/100', receivedAt: AT,
+            corrections: [
+                { patternName: 'Tesis interpretativa y verificable', patternKind: 'strength', note: 'Muy buena tesis', anchor: { page: '1', quote: 'Así que la tesis de este trabajo es…' } },
+                { patternName: 'Apóstrofo tipográfico', note: 'Este apóstrofe no es de redacción, sino de programación.', anchor: { page: '6', quote: "Waltke y O'Connor" } },
+                { patternName: 'Erratas', anchor: { page: '9', quote: '  ' } },
+            ],
+        }, { newPatternId: ids('np'), newCorrectionId: ids('c') });
+        rechazaUndefined(r);
+        expect(r.patterns).toEqual([
+            { id: 'np1', name: 'Tesis interpretativa y verificable', kind: 'strength', decision: 'pending' },
+            { id: 'np2', name: 'Apóstrofo tipográfico', decision: 'pending' },
+            { id: 'np3', name: 'Erratas', decision: 'pending' },
+        ]);
+        expect(r.schedule[0]!.feedback!.corrections).toEqual([
+            { id: 'c1', patternId: 'np1', note: 'Muy buena tesis', anchor: { page: '1', quote: 'Así que la tesis de este trabajo es…' } },
+            { id: 'c2', patternId: 'np2', note: 'Este apóstrofe no es de redacción, sino de programación.', anchor: { page: '6', quote: "Waltke y O'Connor" } },
+            // Un ancla con solo la página sirve; vacía, no se guarda.
+            { id: 'c3', patternId: 'np3', anchor: { page: '9' } },
+        ]);
+    });
+
+    it('la limpieza conserva la clase y el ancla, y descarta lo que no es', () => {
+        const [p] = cleanFeedbackPatterns([{ id: 'p', name: 'Tesis', kind: 'strength', decision: 'pending' }, { id: 'q', name: 'Otro', kind: 'rara', decision: 'pending' }]);
+        expect(p).toEqual({ id: 'p', name: 'Tesis', kind: 'strength', decision: 'pending' });
+        expect(cleanFeedbackPatterns([{ id: 'q', name: 'Otro', kind: 'rara', decision: 'pending' }])[0]).not.toHaveProperty('kind');
+        const [e] = cleanCourseSchedule([{ ...tp(8), feedback: { receivedAt: AT, text: '', corrections: [{ id: 'c', patternId: 'p', anchor: { page: 'x'.repeat(40), quote: '' } }, { id: 'd', patternId: 'p', anchor: { quote: '   ' } }] } }]);
+        expect(e!.feedback!.corrections[0]!.anchor!.page).toHaveLength(20);
+        expect(e!.feedback!.corrections[1]).not.toHaveProperty('anchor');
+    });
+
+    it('renombrar o decidir una fortaleza no la vuelve corrección', () => {
+        const base: FeedbackPattern[] = [{ id: 'p', name: 'Tesis', kind: 'strength', decision: 'pending' }];
+        expect(upsertPattern(base, { id: 'p', name: 'Tesis verificable' })[0]).toMatchObject({ kind: 'strength', name: 'Tesis verificable' });
+        expect(decidePattern(base, 'p', 'guide', { guideId: 'g', ruleText: 'La tesis es interpretativa' }, AT)[0]).toMatchObject({ kind: 'strength', decision: 'guide' });
+        expect(upsertPattern([], { name: 'Nueva', kind: 'strength' }, ids('np'))[0]).toMatchObject({ kind: 'strength' });
+    });
+});
+
+describe('recordFeedback — el nombre no cruza de clase', () => {
+    it('REGRESIÓN: una fortaleza con el nombre de una corrección no se suma a ella', () => {
+        const patterns: FeedbackPattern[] = [{ id: 'p1', name: 'Tesis', decision: 'pending' }];
+        const r = recordFeedback({ schedule: [tp(8)], patterns }, 'e8', {
+            text: '', receivedAt: AT,
+            corrections: [{ patternName: 'tesis', patternKind: 'strength' }, { patternName: 'Tesis' }],
+        }, { newPatternId: ids('np'), newCorrectionId: ids('c') });
+        expect(r.patterns).toEqual([
+            { id: 'p1', name: 'Tesis', decision: 'pending' },
+            { id: 'np1', name: 'tesis (2)', kind: 'strength', decision: 'pending' },
+        ]);
+        expect(r.schedule[0]!.feedback!.corrections.map(c => c.patternId)).toEqual(['np1', 'p1']);
+    });
+});
+
+describe('recordFeedback — el nombre distinguido se reutiliza', () => {
+    it('REGRESIÓN: dos fortalezas «tesis» junto a la corrección «Tesis» van a UN patrón «tesis (2)»', () => {
+        const patterns: FeedbackPattern[] = [{ id: 'p1', name: 'Tesis', decision: 'pending' }];
+        const r = recordFeedback({ schedule: [tp(8)], patterns }, 'e8', {
+            text: '', receivedAt: AT,
+            corrections: [{ patternName: 'tesis', patternKind: 'strength' }, { patternName: 'Tesis', patternKind: 'strength' }],
+        }, { newPatternId: ids('np'), newCorrectionId: ids('c') });
+        expect(r.patterns).toHaveLength(2);
+        expect(r.schedule[0]!.feedback!.corrections.map(c => c.patternId)).toEqual(['np1', 'np1']);
+    });
+
+    it('con un nombre del largo máximo, el distinguido no se trunca al mismo ni deja observaciones huérfanas', () => {
+        const largo = 'x'.repeat(120);
+        const patterns: FeedbackPattern[] = [{ id: 'p1', name: largo, decision: 'pending' }];
+        const r = recordFeedback({ schedule: [tp(8)], patterns }, 'e8', {
+            text: '', receivedAt: AT, corrections: [{ patternName: largo, patternKind: 'strength' }],
+        }, { newPatternId: ids('np'), newCorrectionId: ids('c') });
+        const ids_ = new Set(r.patterns.map(p => p.id));
+        expect(r.patterns.find(p => p.kind === 'strength')!.name.endsWith(' (2)')).toBe(true);
+        expect(r.schedule[0]!.feedback!.corrections.every(c => ids_.has(c.patternId))).toBe(true);
+    });
+});
+

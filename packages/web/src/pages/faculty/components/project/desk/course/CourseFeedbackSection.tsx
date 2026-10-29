@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { BookMarked, Check } from 'lucide-react';
-import { isRecurringPattern, type AIProject, type CourseDesk, type DeskPatternRow, type DeskScheduleRow } from '@dosfilos/domain';
+import { useMemo, useState } from 'react';
+import type { AIProject, CourseDesk, DeskPatternRow, DeskScheduleRow } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { WRAP_LABEL } from '../primitives';
 import { CourseDiscardDialog } from './CourseDiscardDialog';
+import { CoursePatternRow, observationsByPattern } from './CoursePatternRow';
 import { CourseGuideRuleDialog } from './CourseGuideRuleDialog';
 import { TOUCH } from './courseDeskFormat';
 import type { CourseOpsApi } from './useCourseOps';
@@ -24,6 +24,10 @@ interface CourseFeedbackSectionProps {
  * primero. Un patrón que se repite (la regla única del dominio,
  * `isRecurringPattern`: en dos entregas distintas o más) se decide: pasa a
  * tu guía (el texto lo escribe el estudiante) o se descarta con su razón.
+ *
+ * Las fortalezas (lo que el profesor elogió: 12 de 15 comentarios en el TI
+ * #1 del Salmo 23) van aparte, «Lo que hay que mantener»: también pasan a
+ * la guía, pero no quedan pendientes.
  */
 export function CourseFeedbackSection({ project, course, ops, onRecordFeedback }: CourseFeedbackSectionProps) {
     const { t } = useTranslation('projectDeskCourse');
@@ -35,11 +39,26 @@ export function CourseFeedbackSection({ project, course, ops, onRecordFeedback }
     const tipoDeEntrada = new Map(course.schedule.rows.map(r => [r.entryId, r.workTypeId]));
     const tiposDe = (p: DeskPatternRow) => [...new Set(p.entries.map(e => tipoDeEntrada.get(e.entryId)).filter((x): x is string => !!x))];
 
+    const observaciones = useMemo(() => observationsByPattern(project), [project]);
+    const correcciones = f.patterns.filter(p => p.kind !== 'strength');
+    const fortalezas = f.patterns.filter(p => p.kind === 'strength');
+
     const reabrir = (p: DeskPatternRow) =>
-        void ops.run({ ops: [{ op: 'decidePattern', patternId: p.patternId, decision: 'pending' }] }, 'toast.patternReopened');
+        void ops.run({ ops: [{ op: 'decidePattern', patternId: p.patternId, decision: 'pending' }] }, p.kind === 'strength' ? 'toast.strengthReopened' : 'toast.patternReopened');
     // Descartar exige la razón (sin ella, el dominio no hace nada): un descarte mudo esconde lo que corrige el profesor.
     const descartar = (p: DeskPatternRow, reason: string) =>
-        ops.run({ ops: [{ op: 'decidePattern', patternId: p.patternId, decision: 'discarded', reason }] }, 'toast.patternDiscarded');
+        ops.run({ ops: [{ op: 'decidePattern', patternId: p.patternId, decision: 'discarded', reason }] }, p.kind === 'strength' ? 'toast.strengthDiscarded' : 'toast.patternDiscarded');
+    const fila = (p: DeskPatternRow) => (
+        <CoursePatternRow
+            key={p.patternId}
+            pattern={p}
+            observations={observaciones.get(p.patternId) ?? []}
+            saving={saving}
+            onToGuide={() => setParaGuia(p)}
+            onDiscard={() => setDescartando(p)}
+            onReopen={() => reabrir(p)}
+        />
+    );
 
     return (
         <div className="space-y-4">
@@ -64,64 +83,21 @@ export function CourseFeedbackSection({ project, course, ops, onRecordFeedback }
 
             <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground">{t('feedback.patternsTitle')}</h3>
-                {f.patterns.length === 0 ? (
+                {correcciones.length === 0 ? (
                     <p className="text-sm text-muted-foreground">{t('feedback.patternsEmpty')}</p>
                 ) : (
-                    <ul className="divide-y divide-border/60 rounded-lg border border-border">
-                        {f.patterns.map(p => {
-                            const repite = isRecurringPattern(p);
-                            return (
-                                <li key={p.patternId} data-testid="course-pattern-row" className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="break-words text-sm font-medium text-foreground">
-                                            {p.name}
-                                            {repite && p.decision === 'pending' && (
-                                                <span className="ml-2 inline-block rounded-full border border-warning/40 bg-warning-subtle px-2 py-0.5 text-[11px] font-normal text-warning-subtle-foreground">{t('feedback.repeats')}</span>
-                                            )}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {t('feedback.count', { count: p.corrections })}
-                                            {' · '}
-                                            {t('feedback.inEntries', { count: p.entries.length })}
-                                            {p.entries.length > 0 && <> · {p.entries.map(e => e.label).filter(Boolean).join(', ')}</>}
-                                        </p>
-                                        {p.decision === 'discarded' && p.discardReason && (
-                                            <p className="break-words text-xs text-muted-foreground" data-testid="course-pattern-reason">
-                                                {t('feedback.discardedBecause', { reason: p.discardReason })}
-                                            </p>
-                                        )}
-                                    </div>
-                                    {p.decision === 'pending' ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button size="sm" variant="outline" className={TOUCH} disabled={saving} onClick={() => setParaGuia(p)} aria-label={t('feedback.toGuideLabel', { name: p.name })}>
-                                                <BookMarked className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-                                                {t('feedback.toGuide')}
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className={TOUCH} disabled={saving} onClick={() => setDescartando(p)} aria-label={t('feedback.discardLabel', { name: p.name })}>
-                                                {t('feedback.discard')}
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className={cn(
-                                                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]',
-                                                p.decision === 'guide' ? 'border-success/30 bg-success-subtle text-success-subtle-foreground' : 'border-border text-muted-foreground',
-                                            )}>
-                                                {p.decision === 'guide' && <Check className="h-3 w-3" aria-hidden />}
-                                                {t(p.decision === 'guide' ? 'feedback.decided.guide' : 'feedback.decided.discarded')}
-                                            </span>
-                                            <Button size="sm" variant="ghost" className={TOUCH} disabled={saving} onClick={() => reabrir(p)} aria-label={t('feedback.reopenLabel', { name: p.name })}>
-                                                {t('feedback.reopen')}
-                                            </Button>
-                                        </div>
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
+                    <ul className="divide-y divide-border/60 rounded-lg border border-border">{correcciones.map(fila)}</ul>
                 )}
-                {f.patterns.some(p => p.decision === 'guide') && <p className="text-xs text-muted-foreground">{t('feedback.reopenGuideHint')}</p>}
             </div>
+
+            {fortalezas.length > 0 && (
+                <div className="space-y-2" data-testid="course-strengths">
+                    <h3 className="text-sm font-semibold text-foreground">{t('feedback.strengthsTitle')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('feedback.strengthsHint')}</p>
+                    <ul className="divide-y divide-border/60 rounded-lg border border-border">{fortalezas.map(fila)}</ul>
+                </div>
+            )}
+            {f.patterns.some(p => p.decision === 'guide') && <p className="text-xs text-muted-foreground">{t('feedback.reopenGuideHint')}</p>}
 
             <CourseGuideRuleDialog
                 project={project}

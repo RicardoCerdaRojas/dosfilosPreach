@@ -112,3 +112,32 @@ export function importCandidates(
         .filter(p => !p.archivedAt && p.phase !== 'archived' && !conEntrada.has(p.id))
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }
+
+/** Una frase larga, para leerla en una fila: corta en una palabra, con «…». */
+export function shortQuote(q: string, max = 90): string {
+    const t = q.replace(/\s+/g, ' ').trim();
+    if (t.length <= max) return t;
+    const corte = t.slice(0, max - 1);
+    const espacio = corte.lastIndexOf(' ');
+    return `${(espacio > max / 2 ? corte.slice(0, espacio) : corte).replace(/[\s,;:]+$/, '')}…`;
+}
+
+/**
+ * Dónde hizo el profesor una observación: «p. 6 · «Waltke y O'Connor…»».
+ * La hoja sin número impreso se guarda neutral («h. 5») y aquí se lee en
+ * el idioma de cada uno («hoja 5»). Otra cosa escrita a mano va tal cual.
+ * Sin ancla, vacío.
+ */
+export function anchorLabel(
+    anchor: { page?: string | null; quote?: string | null } | null | undefined,
+    t: (k: string, o?: Record<string, unknown>) => string,
+    max = 90,
+): string {
+    const page = anchor?.page?.trim();
+    const quote = anchor?.quote?.trim();
+    const hoja = page ? /^h\.\s?(\d{1,4})$/.exec(page) : null;
+    const pagina = !page ? ''
+        : hoja ? t('feedback.anchorSheet', { n: hoja[1] })
+            : /^(\d{1,4}|[ivxlcdm]{1,7})$/i.test(page) ? t('feedback.anchorPage', { page }) : page;
+    return [pagina, quote ? `«${shortQuote(quote, max)}»` : ''].filter(Boolean).join(' · ');
+}
