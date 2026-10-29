@@ -147,7 +147,7 @@ export async function exportPaperToDocx(
         switch (block.type) {
             case 'heading':
                 paragraphs.push(new Paragraph({
-                    heading: HEADING_LEVELS[Math.min(block.level, 3) as 1 | 2 | 3],
+                    heading: HEADING_LEVELS[nivelDeWord(block.level)],
                     // «Salto de página antes» del párrafo, no un salto DENTRO
                     // del título: con el salto adentro, Word deja un renglón
                     // vacío con estilo de título al pie de la hoja anterior.
@@ -155,7 +155,13 @@ export async function exportPaperToDocx(
                     // La bibliografía es un encabezado de título (guía, hoja 11):
                     // en mayúsculas y con dos líneas en blanco después.
                     ...(index === bibliographyAt ? { spacing: TITLE_HEADING_SPACING } : {}),
-                    children: textRuns(index === bibliographyAt ? block.text.toLocaleUpperCase('es') : block.text),
+                    // Nivel uno para el índice (guía, hoja 6: «trátela como un
+                    // encabezado de nivel uno»), pero sin negrita: el nivel de
+                    // título es «centrado, mayúsculas», y así sale en la propia
+                    // guía (BIBLIOGRAFÍA y CONTENIDO en redonda, medido en su PDF).
+                    children: index === bibliographyAt
+                        ? textRuns(block.text.toLocaleUpperCase('es'), { bold: false })
+                        : textRuns(block.text),
                 }));
                 break;
             case 'paragraph':
@@ -375,7 +381,8 @@ function textRuns(text: string, options: { size?: number; bold?: boolean; italic
         text: seg.hebrew ? seg.text : typographicQuotes(seg.text),
         font: TMS.font,
         size: options.size ?? TMS.bodyHalfPt,
-        ...(options.bold ? { bold: true } : {}),
+        // `false` explícito apaga la negrita del estilo del párrafo (BIBLIOGRAFÍA en nivel uno).
+        ...(options.bold !== undefined ? { bold: options.bold } : {}),
         ...(options.italics ? { italics: true } : {}),
         ...(seg.hebrew ? { rightToLeft: true } : {}),
     }));
@@ -480,10 +487,28 @@ const HEADING_LEVELS = {
     3: HeadingLevel.HEADING_3,
 } as const;
 
+/**
+ * El nivel de la guía para un encabezado del markdown.
+ *
+ * El ensamble escribe el título del trabajo en `#` y cada sección
+ * (introducción, versículo, conclusión, bibliografía) en `##`; los
+ * subtítulos de una sección, en `###`. La guía de TMS (2024–2025, hoja 11)
+ * dice que los trabajos de MDiv y MMB «comienzan el cuerpo del texto con
+ * un encabezado Nivel Uno», y el TI #1 entregado lleva el título y cada
+ * versículo en nivel uno y las cuestiones en nivel dos. Pasado tal cual,
+ * el TI #2 salió con todas las secciones en nivel dos, sin negrita.
+ *
+ * Se corre aquí y no en el markdown: la pantalla y el reensamble buscan
+ * el `## ` escrito (`replaceVerseSection`, `sectionHeadings`).
+ */
+export function nivelDeWord(nivelMarkdown: number): 1 | 2 | 3 {
+    return Math.min(Math.max(nivelMarkdown - 1, 1), 3) as 1 | 2 | 3;
+}
+
 // ── Markdown parsing (block level) ──────────────────────────────────
 
 type Block =
-    | { type: 'heading'; level: 1 | 2 | 3; text: string }
+    | { type: 'heading'; level: 1 | 2 | 3 | 4; text: string }
     | { type: 'paragraph'; text: string }
     | { type: 'list-item'; text: string }
     | { type: 'blockquote'; text: string }
@@ -491,7 +516,7 @@ type Block =
 
 /**
  * Tiny block-level parser tailored to exegetical paper output.
- * Handles `#` `##` `###` headings, `-`/`*` lists, `>` blockquotes,
+ * Handles `#` to `####` headings, `-`/`*` lists, `>` blockquotes,
  * `---` rules, and paragraph blocks separated by blank lines. Inline
  * formatting is left in the text and parsed at run-render time.
  */
@@ -518,12 +543,12 @@ function parseMarkdownBlocks(markdown: string): Block[] {
             blocks.push({ type: 'rule' });
             continue;
         }
-        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        const heading = line.match(/^(#{1,4})\s+(.+)$/);
         if (heading) {
             flushParagraph();
             blocks.push({
                 type: 'heading',
-                level: heading[1]!.length as 1 | 2 | 3,
+                level: heading[1]!.length as 1 | 2 | 3 | 4,
                 text: heading[2]!.trim(),
             });
             continue;

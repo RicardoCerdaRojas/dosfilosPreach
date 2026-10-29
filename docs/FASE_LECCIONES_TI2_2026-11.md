@@ -241,6 +241,7 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
    - Un título en tope de página sin espacio antes.
    - *Dónde:* `tmsLayout.ts`, `exportPaperToDocx.ts:142,299-307`.
    - *Mide:* la prueba del XML, y el PDF del TI #1 como referencia (51 pt después de un párrafo).
+   - **Hecho (2026-10-29).** Medido en el PDF del TI #1: Word pone el espacio extra del doble espacio **debajo** de cada línea, así que el párrafo anterior ya deja una línea en blanco. Con 24 pt antes, el TI #1 tuvo **tres** líneas en blanco antes de cada título (51,6 pt entre líneas base): eso marcó el profesor. Los 12 pt de hoy (nota 10 de la guía) dan las dos que pide; después, una (25,8 pt); en tope de página Word quita el espacio. El defecto real era el nivel: el ensamble escribe cada sección en `##` y el Word la pasaba a nivel dos. Ahora `#` y `##` son nivel uno, `###` nivel dos y `####` nivel tres (`nivelDeWord`), sin tocar el markdown. BIBLIOGRAFÍA va en nivel uno sin negrita, como en la propia guía (redonda en su PDF, hoja 66).
 2. **«Salmo» para un solo salmo (B68a).**
    - *Dónde:* `formatPassageReference` (`passage-reference.ts:326`, `BibleCanon.ts:141`).
    - *Riesgo:* 153 llamadas; `sectionHeadings` y `replaceVerseSection` buscan el rótulo escrito. Se aceptan las dos formas al leer y se escribe la nueva.

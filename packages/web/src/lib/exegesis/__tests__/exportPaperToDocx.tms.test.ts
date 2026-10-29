@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
-import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS, buildCitationFormBlock } from '@dosfilos/domain';
+import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS, assembleMarkdown, buildCitationFormBlock } from '@dosfilos/domain';
 import type { CoverStyle, ExegeticalPaper, PaperCover } from '@dosfilos/domain';
 import { EMPTY_VERIFICATION_SUMMARY } from '@dosfilos/domain';
-import { exportPaperToDocx } from '../exportPaperToDocx';
+import { exportPaperToDocx, nivelDeWord } from '../exportPaperToDocx';
 
 /**
  * El formato ES el entregable.
@@ -822,3 +822,63 @@ describe('exportPaperToDocx — encabezados y apóstrofos como pide la guía de 
     });
 });
 
+
+describe('exportPaperToDocx — niveles de encabezado de la guía de TMS (hoja 11)', () => {
+    /** Lo que de verdad escribe el ensamble: `#` título, `##` cada sección, `###` las cuestiones. */
+    const ensamblado = (): ExegeticalPaper => {
+        const PSA = (v: number) => ({ bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: v, verseEnd: v });
+        const base = paper({ title: 'Análisis sintáctico y léxico de Salmo 23:4–6' });
+        const steps = [
+            { id: 'i', order: 0, kind: 'introduction', verseRef: null, includeInDocument: true, accepted: { markdown: 'La introducción.' } },
+            { id: 'v4', order: 4, kind: 'verse', verseRef: PSA(4), includeInDocument: true, accepted: { markdown: 'El versículo.\n\n### La vara y el cayado\n\nLa cuestión.' } },
+            { id: 'c', order: 90, kind: 'conclusion', verseRef: null, includeInDocument: true, accepted: { markdown: 'La conclusión.' } },
+        ];
+        const conPasos = { ...base, passage: PSA(4), steps } as unknown as ExegeticalPaper;
+        return { ...conPasos, assembledMarkdown: assembleMarkdown(conPasos, 'es') };
+    };
+    const nivelDe = (doc: string, texto: string): string | null => {
+        // El párrafo que contiene el texto: `<w:p>` o `<w:p …>` (docx le pone atributos).
+        // La última aparición: sin portada, la cabecera de trabajo repite el
+        // título y el pasaje antes del cuerpo.
+        const i = doc.lastIndexOf(texto);
+        const p = doc.slice(0, i).split(/(?=<w:p[ >])/).pop() ?? '';
+        return p.match(/<w:pStyle w:val="(Heading\d)"/)?.[1] ?? null;
+    };
+
+    it('REGRESIÓN TI #2: el título y cada sección van en nivel uno; las cuestiones, en nivel dos', async () => {
+        const doc = await xmlOf(ensamblado(), 'word/document.xml');
+        expect(nivelDe(doc, 'Análisis sintáctico y léxico')).toBe('Heading1');
+        expect(nivelDe(doc, 'Introducción')).toBe('Heading1');
+        expect(nivelDe(doc, 'Salmos 23:4')).toBe('Heading1');
+        expect(nivelDe(doc, 'La vara y el cayado')).toBe('Heading2');
+        expect(nivelDe(doc, 'Conclusión')).toBe('Heading1');
+    });
+
+    it('nivel uno en negrita y centrado; nivel dos centrado y sin negrita; los dos con 12 pt antes y una línea después', async () => {
+        const styles = await xmlOf(ensamblado(), 'word/styles.xml');
+        const estilo = (id: string) => styles.slice(styles.indexOf(`w:styleId="${id}"`), styles.indexOf('</w:style>', styles.indexOf(`w:styleId="${id}"`)));
+        for (const id of ['Heading1', 'Heading2']) {
+            // Medido en el PDF del TI #1: con 24 pt antes quedan TRES líneas en
+            // blanco (51,6 pt entre líneas base), porque el párrafo anterior a
+            // doble espacio ya deja una. La guía pide dos: 12 pt (su nota 10).
+            expect(estilo(id)).toMatch(/w:before="240"/);
+            expect(estilo(id)).toMatch(/w:after="240"/);
+            expect(estilo(id)).toMatch(/w:jc w:val="center"/);
+        }
+        expect(estilo('Heading1')).toMatch(/<w:b\/>/);
+        expect(estilo('Heading2')).not.toMatch(/<w:b\/>/);
+    });
+
+    it('BIBLIOGRAFÍA: nivel uno para el índice, en mayúsculas y sin negrita, como en la propia guía', async () => {
+        const doc = await xmlOf(ensamblado(), 'word/document.xml');
+        const conBiblio = await xmlOf({ ...ensamblado(), assembledMarkdown: `${ensamblado().assembledMarkdown}\n## Bibliografía\n\n- Ross, Allen P. *A Commentary on the Psalms*.\n` } as ExegeticalPaper, 'word/document.xml');
+        expect(doc).not.toContain('BIBLIOGRAF');
+        expect(nivelDe(conBiblio, 'BIBLIOGRAFÍA')).toBe('Heading1');
+        const run = conBiblio.slice(conBiblio.lastIndexOf('<w:r>', conBiblio.indexOf('BIBLIOGRAFÍA')), conBiblio.indexOf('BIBLIOGRAFÍA'));
+        expect(run).toMatch(/<w:b w:val="(false|0)"\/>/);
+    });
+
+    it('`####` es nivel tres y nada pasa del tres', () => {
+        expect([1, 2, 3, 4, 5].map(nivelDeWord)).toEqual([1, 1, 2, 3, 3]);
+    });
+});
