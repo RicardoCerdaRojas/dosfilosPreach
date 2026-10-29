@@ -413,7 +413,7 @@ Se cuenta lo mismo que en el TI #2. La fase cumple si:
 ## 5. Decisiones del fundador antes de empezar
 
 1. **¿Separamos la guía por curso?** Hebreo y griego comparten hoy las reglas 2–17, que nacieron del profesor de griego.
-2. **¿Las «doce páginas» cuentan la portada, el índice y la bibliografía?** Hay que preguntarlo al profesor o leerlo en el sílabo. El TI #2 quedó con 11 páginas de cuerpo más 1 de bibliografía.
+2. **Las «doce páginas» ya tienen interpretación.** Byblos tiene una entrada del 2026-09-17, del TI #1: 12 páginas de **cuerpo**, sin portada, contenido ni bibliografía, unas 3.000 palabras con alrededor de 50 notas. Con esa interpretación, el TI #2 quedó corto: 11 páginas de cuerpo, 2.740 palabras y 34 notas (medido). Solo falta confirmar que el criterio sigue vigente y, si se puede, preguntarlo al profesor.
 3. **P4:** al aplicar una corrección propuesta, ¿se vuelven a verificar las citas de esa oración? Hoy una edición manual no las verifica, a propósito.
 4. **Títulos temáticos:** ¿los propone el sistema y tú los apruebas, o los escribes tú y el sistema solo los revisa?
 5. **¿Pasamos a la guía las 4 fortalezas pendientes** (etapa 7.1) y el «Cierre que vuelve a la tesis»?
