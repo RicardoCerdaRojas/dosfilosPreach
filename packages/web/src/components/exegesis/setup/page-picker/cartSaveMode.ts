@@ -14,6 +14,12 @@ export type CartSaveMode =
     | 'resave'
     /** Ya había una selección guardada y cambió. */
     | 'update'
+    /**
+     * Había páginas guardadas y se quitaron TODAS: se guarda la fuente sin
+     * páginas, vacía en el corpus. TP #9 (B20): al quitar todo Tuggy el botón
+     * quedaba apagado y no había forma de guardarlo.
+     */
+    | 'clear'
     /** Primera selección de esta fuente. */
     | 'add';
 
@@ -22,9 +28,24 @@ export function cartSaveMode(input: {
     selectionChanged: boolean;
     needsResave: boolean;
     hadSaved: boolean;
+    /** El carrito quedó sin ningún tramo. */
+    isEmpty?: boolean;
 }): CartSaveMode {
     if (input.isSaving) return 'saving';
-    if (input.selectionChanged) return input.hadSaved ? 'update' : 'add';
+    if (input.selectionChanged) {
+        if (!input.hadSaved) return 'add';
+        return input.isEmpty ? 'clear' : 'update';
+    }
     if (input.needsResave) return 'resave';
     return 'saved';
+}
+
+/**
+ * Si el botón se puede pulsar. Sin hojas sólo se guarda para vaciar una
+ * fuente que tenía páginas (`clear`); una primera selección vacía no tiene
+ * nada que guardar.
+ */
+export function cartCanSave(mode: CartSaveMode, sheetCount: number): boolean {
+    if (mode === 'saving' || mode === 'saved') return false;
+    return mode === 'clear' || sheetCount > 0;
 }

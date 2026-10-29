@@ -1,6 +1,5 @@
 import {
-    printedLabelIn,
-    printedPageFor,
+    printedLabelForSheet,
     sheetForPrintedIn,
     sheetForPrintedPage,
     type CitationPageKind,
@@ -44,25 +43,18 @@ export function resolveCitationSheet(
         ?? Math.max(1, citation.page);
 }
 
-/**
- * A qué hoja lleva un número escrito en «ir a página».
- *
- * El lector escribe lo que ve en el libro: el folio impreso. Se convierte
- * cuando el libro está calibrado o tiene desfase deducido; si ninguna de
- * las dos produce esa página —número fuera del libro, o libro sin
- * calibrar—, se toma como hoja. Así el mismo cuadro sirve para los dos
- * casos sin pedirle al lector que sepa cuál es.
- */
-export function sheetForPageInput(input: number, ctx: SheetContext): number | null {
-    if (!Number.isInteger(input) || input < 1) return null;
-    return sheetForPrintedIn(ctx.numbering, input)
-        ?? sheetForPrintedPage(input, ctx.offset)
-        ?? input;
-}
+// «Ir a página» ya no vive aquí: tomaba en silencio como hoja la página que
+// no existía, y el mismo número significaba dos cosas (TP #9, B27). Ver
+// `resolvePageJump` en el dominio e `IrAPagina`.
 
-/** Qué número lleva impreso una hoja, con la calibración o con el desfase. */
-export function printedOfSheet(sheet: number, ctx: SheetContext): string | number | null {
-    return ctx.numbering ? printedLabelIn(ctx.numbering, sheet) : printedPageFor(sheet, ctx.offset);
+/**
+ * Qué número lleva impreso una hoja: la MISMA regla que «Ir a»
+ * (`resolvePageJump`) y el selector. Antes, con una numeración por tramos
+ * que no cubría todas las hojas, no caía al desfase: «Ir a 150» iba a la
+ * hoja 145 y la cabecera la rotulaba «sin número» (revisión de B27).
+ */
+export function printedOfSheet(sheet: number, ctx: SheetContext): string | null {
+    return printedLabelForSheet(sheet, ctx.numbering, ctx.offset);
 }
 
 export function clampSheet(sheet: number, total: number | null): number {

@@ -40,6 +40,20 @@ export function hasPlannerDraft(projectId: string | undefined): boolean {
 }
 
 /**
+ * El modelo mientras la biblioteca carga (B6): la fase 2 sale «cargando» (no
+ * «en curso» por falta de datos) y la lectura dirigida, que cuenta páginas de
+ * los libros, no se muestra todavía. Sin carga, el modelo tal cual.
+ */
+export function deskWhileLibraryLoads(desk: ProjectDeskModel | null, libraryLoading: boolean): ProjectDeskModel | null {
+    if (!desk || !libraryLoading) return desk;
+    return {
+        ...desk,
+        phases: desk.phases.map(p => (p.id === 'sources' ? { ...p, loading: true } : p)),
+        ...(desk.course ? { course: { ...desk.course, directedReading: [] } } : {}),
+    };
+}
+
+/**
  * El escritorio del proyecto (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md`
  * §5.5 y §8): un SELECTOR en el cliente sobre las listas del usuario que ya
  * están en caché (proyectos, estudios, series, sermones, material,
@@ -113,6 +127,22 @@ export function useProjectDesk(projectId: string | undefined) {
 
     const plannerDraft = useMemo(() => hasPlannerDraft(project?.id), [project?.id, series]);
 
+    const modelo = useMemo<ProjectDeskModel | null>(() => {
+        if (!project) return null;
+        return buildProjectDesk({
+            project,
+            studies: slices.projectStudies,
+            series: series ?? [],
+            sermons: sermons ?? [],
+            outputs: outputs ?? [],
+            sessionCount: slices.projectSessions.length,
+            resourceOf,
+            rubricCatalog,
+            coverageRequirements,
+            plannerDraft,
+        }, ahora);
+    }, [project, slices.projectStudies, series, sermons, outputs, slices.projectSessions.length, resourceOf, rubricCatalog, coverageRequirements, plannerDraft, ahora]);
+
     const estado = (cargando: boolean, fallo: boolean): DeskBlockStatus => (cargando ? 'loading' : fallo ? 'error' : 'ready');
     const seriesStatus: DeskBlockStatus = estado(seriesQuery.isLoading, seriesQuery.isError && !series);
     // Un error con datos en caché (una relectura que falló) no borra lo que hay.
@@ -133,14 +163,31 @@ export function useProjectDesk(projectId: string | undefined) {
     };
     const conRubricas = caps.desk === 'course';
     /**
-     * El recorrido y «Ahora» esperan a todo lo que cambia una fase o una
-     * fila: estudios, series, biblioteca, sermones, material y, en el Curso,
-     * las rúbricas. Si algo de eso falló, dice que falló (no un vacío falso).
-     * Los sermones que fallan no tumban el escritorio: su columna dice «—».
+     * La biblioteca solo da la CLASIFICACIÓN de las obras (fase 2 y la lectura
+     * dirigida), y es lo más pesado de la carga: medido el 2026-10-28 en la
+     * cuenta del fundador, 72 libros y 39 MB, casi todo `textContent` (B6). En
+     * Exegético y Curso el escritorio no la espera salvo que la fase 2 sea la
+     * activa: su fase sale «cargando» y lo que depende de ella se oculta
+     * hasta que llega (`deskWhileLibraryLoads`).
+     *
+     * Supuesto (leído en `deskSourcesSummary`): la biblioteca solo AGREGA
+     * clasificación, así que con ella la fase 2 queda igual o más lista. Si
+     * sin ella ya no es la activa, con ella tampoco.
      */
+    const bibliotecaEnCamino = cargandoBiblioteca && (caps.desk === 'exegetical' || caps.desk === 'course');
+    const desk = useMemo(() => deskWhileLibraryLoads(modelo, bibliotecaEnCamino), [modelo, bibliotecaEnCamino]);
+    /**
+     * El recorrido y «Ahora» esperan a todo lo que cambia una fase o una
+     * fila: estudios, series, sermones, material, en el Curso las rúbricas, y
+     * la biblioteca cuando decide la fase activa. Si algo de eso falló, dice
+     * que falló (no un vacío falso). Los sermones que fallan no tumban el
+     * escritorio: su columna dice «—».
+     */
+    const esperaBiblioteca = blocks.sources === 'loading'
+        && !(bibliotecaEnCamino && !attached.isLoading && desk && desk.activePhaseId !== 'sources');
     const journey: DeskBlockStatus =
         blocks.work === 'error' || blocks.sources === 'error' || (conRubricas && blocks.rubrics === 'error') ? 'error'
-            : blocks.work === 'loading' || blocks.sources === 'loading' || blocks.material === 'loading'
+            : blocks.work === 'loading' || esperaBiblioteca || blocks.material === 'loading'
                 // Los sermones solo cuentan en el Exegético (la columna Sermón de la mesa); el Curso no los usa.
                 || (caps.desk === 'exegetical' && blocks.sermons === 'loading') || (conRubricas && blocks.rubrics === 'loading') ? 'loading'
                 : 'ready';
@@ -152,22 +199,6 @@ export function useProjectDesk(projectId: string | undefined) {
         if (blocks.rubrics === 'error') void queryClient.invalidateQueries({ queryKey: ['exegesis', 'userRubrics', user?.uid] });
         if (blocks.sermons === 'error') void releerSermones?.();
     };
-
-    const desk = useMemo<ProjectDeskModel | null>(() => {
-        if (!project) return null;
-        return buildProjectDesk({
-            project,
-            studies: slices.projectStudies,
-            series: series ?? [],
-            sermons: sermons ?? [],
-            outputs: outputs ?? [],
-            sessionCount: slices.projectSessions.length,
-            resourceOf,
-            rubricCatalog,
-            coverageRequirements,
-            plannerDraft,
-        }, ahora);
-    }, [project, slices.projectStudies, series, sermons, outputs, slices.projectSessions.length, resourceOf, rubricCatalog, coverageRequirements, plannerDraft, ahora]);
 
     // Los tipos sin escritorio propio conservan su recorrido de hoy.
     const legacyRoadmap = useMemo<RoadmapState | null>(() => {

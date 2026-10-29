@@ -4,12 +4,14 @@ import {
     normalizeSheetRanges,
     formatPassageReference,
     isPickedByPages,
+    isTextEditionSourceType,
     passageReferenceQuery,
     proposePassageSheets,
     outlineStructureQuality,
     resolveOutlineReferences,
     selectChunksForPassage,
     sheetsForChunkRanges,
+    textEditionSheetsForPassage,
     type DocumentOutlineEntry,
     type ExcerptSelectionMode,
     type PageIndexEntry,
@@ -34,6 +36,9 @@ import { searchDocumentByReference } from './DocumentPageIndexClient';
  *      eran 14 tramos por parecido y ninguno contenía las tres hojas que
  *      nombran Stg 4.
  *   3. Coincidencia semántica contra el pasaje, para todo lo demás.
+ *
+ * Una edición del texto (NA28) va aparte: sólo su encabezado corrido o el
+ * índice del libro (`proposeTextEdition`, TP #9, B26).
  *
  * Si ninguno encuentra nada, el carrito arranca vacío y la interfaz lo dice. No
  * se inventa un tramo: proponer las primeras hojas «por si acaso» sería repetir
@@ -119,6 +124,8 @@ const HOJAS_ANTES_POR_TIPO: Partial<Record<SourceType, number>> = {
 export async function proposeSheetRanges(
     input: ProposeSheetRangesInput,
 ): Promise<SheetRangeProposal> {
+    if (isTextEditionSourceType(input.sourceType)) return proposeTextEdition(input);
+
     const porPaginas = input.sourceType ? isPickedByPages({ sourceType: input.sourceType }) : false;
     if (porPaginas) {
         const passage = await proposePassage(input);
@@ -137,6 +144,23 @@ export async function proposeSheetRanges(
     if (semantic.ranges.length > 0) return semantic;
 
     return { ranges: [], kind: 'none' };
+}
+
+/**
+ * Una edición del texto (NA28, aparato crítico): sólo las hojas cuyo
+ * encabezado corrido es del libro del pasaje y trae sus versículos, y si no,
+ * el índice del libro cuando nombra el pasaje.
+ *
+ * TP #9 (B26): el NA28 cayó al camino semántico y la sugerencia fueron 40 hojas
+ * de otros libros. Ni el parecido de contenido ni las hojas que «nombran» el
+ * pasaje sirven en el texto bíblico: lo nombran las referencias cruzadas del
+ * margen de OTROS libros. Sin encabezado reconocible no se propone nada.
+ */
+async function proposeTextEdition(input: ProposeSheetRangesInput): Promise<SheetRangeProposal> {
+    const ranges = textEditionSheetsForPassage(input.pageIndex, input.passage);
+    if (ranges.length > 0) return { ranges, kind: 'structural' };
+    const structural = await proposeStructural(input);
+    return structural.ranges.length > 0 ? structural : { ranges: [], kind: 'none' };
 }
 
 /**

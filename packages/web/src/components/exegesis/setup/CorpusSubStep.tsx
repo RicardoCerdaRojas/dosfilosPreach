@@ -52,6 +52,7 @@ import {
     usesExtractedExcerpts,
     hasCuratedScope,
     isEmptyExtractedSource,
+    isSourceEmptiedByHand,
     isSourceWithoutScope,
     declaresNoFolios,
     countSheets,
@@ -948,7 +949,8 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
     const memoria = useDeliveryMemory(paper);
     const entregaPrevia = useMemo(() => previousDelivery(memoria.summaries, paper.id), [memoria.summaries, paper.id]);
     // Ver `warnsRepeatedSource` (A7, TP #8 #15).
-    const yaCitadaAntes = memoria.noRepeat && warnsRepeatedSource(source, paper.excludedSources, entregaPrevia);
+    // Con la regla del tipo de trabajo: una gramática que el curso deja repetir no avisa (B15).
+    const yaCitadaAntes = memoria.noRepeat && warnsRepeatedSource(source, paper.excludedSources, entregaPrevia, memoria.repetition.policy);
     const library = useLibrary();
     const isCitable = CITABLE_SOURCE_TYPES.has(source.sourceType);
     const isExtracted = usesExtractedExcerpts(source);
@@ -1130,7 +1132,7 @@ function SourceRow({ paper, source }: { paper: ExegeticalPaper; source: ProjectS
                 <SourceSinPaginas paperId={paper.id} sourceId={source.id} />
             )}
             {isEmptyExtractedSource(source) && (
-                <SourceSinPaginas paperId={paper.id} sourceId={source.id} vacia />
+                <SourceSinPaginas paperId={paper.id} sourceId={source.id} vacia aMano={isSourceEmptiedByHand(source)} />
             )}
 
             {isCitable && libraryResource && declaresNoFolios(libraryResource.pageNumbering) && (

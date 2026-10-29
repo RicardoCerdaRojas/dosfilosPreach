@@ -4,7 +4,7 @@ import { useDocumentPageIndex, useDocumentPdfUrl } from '@/hooks/exegesis/useDoc
 import { usePageNumbering } from '@/hooks/library/usePageNumbering';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import type { CitationTarget } from './CitationSourceModal';
-import { clampSheet, printedOfSheet, resolveCitationSheet, sheetForPageInput, type SheetContext } from './citationSheet';
+import { clampSheet, printedOfSheet, resolveCitationSheet, type SheetContext } from './citationSheet';
 
 /**
  * El libro detrás de una cita y la hoja que se está mirando.
@@ -67,19 +67,18 @@ export function useCitationSheet(paperId: string | null, citation: CitationTarge
     const [viewSheet, setViewSheet] = useState(startSheet);
     useEffect(() => { setViewSheet(startSheet); }, [startSheet]);
 
+    // «Ir a» resuelve la página impresa por su cuenta (`IrAPagina`, TP #9 B27):
+    // aquí sólo se mueve la hoja.
     const goTo = (sheet: number) => setViewSheet(clampSheet(sheet, totalSheets));
-    const goToPageInput = (input: number): boolean => {
-        const sheet = sheetForPageInput(input, ctx);
-        if (sheet === null) return false;
-        goTo(sheet);
-        return true;
-    };
 
     return {
         source,
         resourceId,
         /** Cómo se llama el libro arriba del visor. */
         label: source?.displayLabel ?? citation?.label ?? citation?.sourceKey ?? '',
+        /** Título y autor del recurso de biblioteca, si los trae (TP #9, B19). */
+        bookTitle: numberingState.data?.title ?? null,
+        author: numberingState.data?.author ?? null,
         /** La clave con que se cita: la del trabajo, o la que trajo el destino. */
         citationKey: source?.citationKey ?? citation?.sourceKey ?? null,
         pdfUrl: pdf.data?.url ?? null,
@@ -102,7 +101,8 @@ export function useCitationSheet(paperId: string | null, citation: CitationTarge
             numberingState.data?.numbering ?? null,
         ),
         goTo,
-        goToPageInput,
+        /** El desfase único deducido del índice, respaldo de la numeración. */
+        printedPageOffset: ctx.offset,
         /** La numeración del libro tal como la ve el visor (guardada o deducida; quien cita decide si le basta). */
         numbering: numberingState.data?.numbering ?? null,
         /** De quién es el libro; `null` mientras carga o si no se sabe. */

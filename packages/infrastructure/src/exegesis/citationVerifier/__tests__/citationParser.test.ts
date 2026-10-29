@@ -255,3 +255,54 @@ describe('parseCitations — la evidencia no cruza la cita anterior', () => {
         expect(b!.evidence).not.toContain('pedir para sí');
     });
 });
+
+describe('parseCitations — la cita textual de la oración, no una glosa ni la del párrafo anterior (TP #9)', () => {
+    it('una glosa entre paréntesis de la oración anterior no es la afirmación', () => {
+        const md = 'Lleva como complementos σῶσαι («salvar») y ἀπολέσαι («destruir»), infinitivos aoristos activos coordinados. '
+            + 'Tuggy documenta esta construcción de δύναμαι con infinitivo (Tuggy, p. 257).';
+        const [cita] = parseCitations(md);
+        expect(cita!.evidence).toBe('Tuggy documenta esta construcción de δύναμαι con infinitivo');
+        expect(cita!.evidenceIsQuoted).toBe(false);
+    });
+
+    it('una glosa en la misma oración tampoco lo es', () => {
+        const md = 'Tuggy define ἀπόλλυμι («destruir») como perder o matar (Tuggy, 115).';
+        expect(parseCitations(md)[0]!.evidence).toBe('Tuggy define ἀπόλλυμι («destruir») como perder o matar');
+    });
+
+    it('una cita textual del párrafo anterior no es la de esta cita', () => {
+        const md = 'Además, el paso de «su vida» a «ustedes son» es una variación retórica comprensible.\n\n'
+            + 'El relativo οἵτινες tiene aquí valor concesivo (Wallace, 663; Robertson, 961): la ignorancia contradice los planes.';
+        const citas = parseCitations(md);
+        expect(citas.map(c => c.evidence)).toEqual([
+            'El relativo οἵτινες tiene aquí valor concesivo',
+            'El relativo οἵτινες tiene aquí valor concesivo',
+        ]);
+    });
+
+    it('sigue tomando la cita textual de la misma oración', () => {
+        const md = 'Ya estaba dicho antes. Adamson lo glosa como «invencible al asalto de los males» (Adamson, 74).';
+        expect(parseCitations(md)[0]).toMatchObject({ evidence: 'invencible al asalto de los males', evidenceIsQuoted: true });
+    });
+
+    it('una cita textual de dos oraciones sigue siendo una', () => {
+        const md = 'Varner traduce: «No saben lo que traerá el mañana. Qué frágil es la vida» (Varner, 162).';
+        expect(parseCitations(md)[0]).toMatchObject({
+            evidence: 'No saben lo que traerá el mañana. Qué frágil es la vida',
+            evidenceIsQuoted: true,
+        });
+    });
+
+    it('si la última comilla es una glosa, toma la cita textual anterior de la misma oración', () => {
+        const md = 'Ropes llama a καλόν «el bien moral que se conoce» y a ἁμαρτία («un pecado grave») su omisión (Ropes, 282).';
+        expect(parseCitations(md)[0]).toMatchObject({ evidence: 'el bien moral que se conoce', evidenceIsQuoted: true });
+    });
+
+    it('dos o tres palabras entre comillas son una mención: la afirmación es la oración', () => {
+        const md = 'McCartney prefiere la atributiva, que modifica los sustantivos «legislador y juez», tengan o no artículo (McCartney, 222).';
+        expect(parseCitations(md)[0]).toMatchObject({
+            evidence: 'McCartney prefiere la atributiva, que modifica los sustantivos «legislador y juez», tengan o no artículo',
+            evidenceIsQuoted: false,
+        });
+    });
+});

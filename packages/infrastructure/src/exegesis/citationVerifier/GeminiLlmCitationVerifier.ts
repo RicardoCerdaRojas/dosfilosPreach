@@ -10,7 +10,7 @@ import type {
     VerifierSourceChunk,
     PageNumbering,
 } from '@dosfilos/domain';
-import { citationAnchorFor, classifyOriginalLanguageAbsence, inheritFromAnalysisCitations, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, isOnCitedPage, pageVerdictFor, pagesOverlap } from '@dosfilos/domain';
+import { citationAnchorFor, classifyOriginalLanguageAbsence, inheritFromAnalysisCitations, countOriginalLanguageChars, MIN_CHARS_PARA_AFIRMAR_AUSENCIA, prioritizeChunksForCitedPage, isOnCitedPage, pageVerdictFor, pagesOverlap, reuseIdenticalVerdicts, dependsOnContext, sourceFingerprint } from '@dosfilos/domain';
 import { withGeminiRetry } from '../geminiRetry';
 import { runLlmPromptWithUsage } from '../../llm/callableLlm';
 import { parseCitations } from './citationParser';
@@ -100,18 +100,28 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         const parsed = input.citations
             ? [...input.citations]
             // La prosa hereda lo que el análisis del paso ya resolvió (D1).
-            : inheritFromAnalysisCitations(parseCitations(input.markdown), input.inheritFrom ?? []);
+            : inheritFromAnalysisCitations(parseCitations(input.markdown, input.sources.map(s => s.citationKey)), input.inheritFrom ?? []);
 
         // Idioma explícito cuando el llamador lo sabe. Adivinarlo desde la
         // evidencia falla justo cuando la evidencia es una oración textual
         // de una fuente en inglés dentro de un trabajo en español.
         const language = input.language ?? detectLanguage(parsed);
 
+        // Una cita idéntica a una ya verificada conserva su verde sin volver
+        // al juez (TP #9, B46: «Varner, 162» verde a las 19:46 y «página no
+        // coincide» a las 22:03 con el mismo texto).
+        const reusados = input.reuseVerified?.length
+            ? reuseIdenticalVerdicts(parsed, input.reuseVerified, new Map(input.sources.map(s => [s.corpusId, sourceFingerprint(s)] as const)))
+            : [];
+        const cuantos = reusados.filter(Boolean).length;
+        if (cuantos > 0) console.info('[GeminiLlmCitationVerifier] veredictos reusados de citas idénticas', { cuantos, de: parsed.length });
+
         const verdicts = await Promise.all(
-            parsed.map(p => this.verifyOne(p, lookup, language, input.userId ?? null, input.maxCharsPerChunk)),
+            parsed.map((p, i) => reusados[i]
+                ?? this.verifyOne(p, lookup, language, input.userId ?? null, input.maxCharsPerChunk, input.passageRef)),
         );
 
-        return { citations: verdicts };
+        return { citations: verdicts.map(sinContextoDeMas) };
     }
 
     private async verifyOne(
@@ -120,6 +130,7 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
         language: 'es' | 'en',
         userId: string | null,
         maxCharsPerChunk?: number,
+        passageRef?: string,
     ): Promise<VerifiedCitation> {
         const matched = lookup.match(parsed.author, parsed.title);
         if (!matched) {
@@ -205,6 +216,8 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
             chunks,
             language,
             ...(parsed.otherSources?.length ? { otherSources: parsed.otherSources } : {}),
+            ...(parsed.evidenceContext ? { evidenceContext: parsed.evidenceContext } : {}),
+            ...(passageRef ? { passageRef } : {}),
             sourceLostOriginalScript: lostOriginalScript(parsed.evidence, chunks),
         });
 
@@ -257,9 +270,13 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                     citedPageHolds = true;
                 } else if (verdict === 'mismatch') {
                     status = 'page-mismatch';
-                    note = language === 'en'
+                    // La razón del juez se conserva detrás: se perdía, y era lo
+                    // único que decía si halló la afirmación entera o algo
+                    // parecido (TP #9, Robertson 1069–1070 → 1067).
+                    const base = language === 'en'
                         ? `Cited p. ${parsed.pages} but the supporting passage is at ${matchedPage}.`
                         : `Citaste p. ${parsed.pages} pero el pasaje de apoyo está en ${matchedPage}.`;
+                    note = parsedResp.reasoning ? `${base} ${parsedResp.reasoning}` : base;
                 }
             }
 
@@ -279,6 +296,10 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
                     : (parsedResp.bestPageHint.trim() || null),
                 note,
                 ...(parsedResp.takenFromSource ? { takenFromSource: parsedResp.takenFromSource } : {}),
+                // Lo que la oración agrega a la fuente; si no la halló, todo
+                // sobra y el dato no distingue nada.
+                ...(parsedResp.notFromSource && status !== 'not-found' ? { notFromSource: parsedResp.notFromSource } : {}),
+                ...(parsedResp.claimCoverage && status !== 'not-found' ? { claimCoverage: parsedResp.claimCoverage } : {}),
                 ...(parsedResp.supportingQuote && status !== 'not-found' ? {
                     supportingSpan: {
                         text: parsedResp.supportingQuote,
@@ -356,6 +377,18 @@ export class GeminiLlmCitationVerifier implements ICitationVerifier {
 }
 
 /**
+ * El contexto previo solo se guarda con el veredicto si la afirmación depende
+ * de él («sin él», «este versículo»): es lo único para lo que sirve después
+ * (la identidad de la cita al reusar su veredicto, B46), y hasta 300
+ * veredictos viven en el documento del trabajo.
+ */
+function sinContextoDeMas(v: VerifiedCitation): VerifiedCitation {
+    if (!v.evidenceContext || dependsOnContext(v.evidence)) return v;
+    const { evidenceContext: _c, ...resto } = v;
+    return resto;
+}
+
+/**
  * Qué evidencia recibe el modelo para UNA cita, dentro del presupuesto.
  *
  *   1. La página citada y sus vecinas van primero. Sin esto el tope se
@@ -414,6 +447,10 @@ export interface ParsedLlmResponse {
     supportingQuote: string;
     /** Un fragmento de la página CITADA respalda la afirmación por sí solo. */
     citedPageSupports: boolean;
+    /** Lo que la oración afirma bajo la cita y la fuente no dice. Vacío si nada. */
+    notFromSource: string;
+    /** Si el apoyo dice la afirmación central (`whole`) o algo vecino (`partial`). */
+    claimCoverage: 'whole' | 'partial' | null;
     reasoning: string;
 }
 
@@ -501,6 +538,8 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
             takenFromSource: '',
             supportingQuote: '',
             citedPageSupports: false,
+            notFromSource: '',
+            claimCoverage: null,
             // `finishReason` viene del servidor justamente para no tener que
             // adivinar aquí: cuando dice MAX_TOKENS el corte es un hecho, y el
             // arreglo es subir el presupuesto, no revisar la cita.
@@ -535,7 +574,17 @@ export function parseLlmResponse(rawJson: string, finishReason: string | null = 
         // Con tope, como la nota: hasta 300 veredictos viven en el documento del trabajo.
         takenFromSource: texto(parsed?.takenFromSource).slice(0, MAX_SUPPORTING_QUOTE),
         supportingQuote: texto(parsed?.supportingQuote).slice(0, MAX_SUPPORTING_QUOTE),
+        notFromSource: sinRelleno(texto(parsed?.notFromSource)).slice(0, MAX_SUPPORTING_QUOTE),
+        claimCoverage: parsed?.claimCoverage === 'whole' || parsed?.claimCoverage === 'partial' ? parsed.claimCoverage : null,
     };
+}
+
+/**
+ * «Nada», «ninguno», «N/A»: el juez a veces escribe que no hay nada en vez de
+ * dejar el campo vacío, y eso no es una parte de la oración.
+ */
+function sinRelleno(s: string): string {
+    return /^(nada|ninguna?|ning[uú]n|none|nothing|n\/?a|-+|—)\.?$/i.test(s.trim()) ? '' : s;
 }
 
 function extractPageFromHint(hint: string): string | null {

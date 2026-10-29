@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PageNumbering } from '@dosfilos/domain';
-import { clampSheet, printedOfSheet, resolveCitationSheet, sheetForPageInput } from '../citationSheet';
+import { clampSheet, printedOfSheet, resolveCitationSheet } from '../citationSheet';
 
 // Waltke-O'Connor: un tramo, la p. 440 vive en la hoja 458.
 const WO: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 792, offset: -18 }] };
@@ -28,29 +28,30 @@ describe('resolveCitationSheet', () => {
     });
 });
 
-describe('sheetForPageInput', () => {
-    it('el folio que escribe el lector se convierte con la calibración', () => {
-        expect(sheetForPageInput(421, { numbering: WO, offset: null })).toBe(439);
-    });
-
-    it('un número que ningún tramo produce se toma como hoja', () => {
-        expect(sheetForPageInput(900, { numbering: WO, offset: null })).toBe(900);
-        expect(sheetForPageInput(12, { numbering: null, offset: null })).toBe(12);
-    });
-
-    it('rechaza lo que no es un número de página', () => {
-        expect(sheetForPageInput(0, { numbering: WO, offset: null })).toBeNull();
-        expect(sheetForPageInput(NaN, { numbering: WO, offset: null })).toBeNull();
-        expect(sheetForPageInput(3.5, { numbering: WO, offset: null })).toBeNull();
-    });
-});
-
 describe('printedOfSheet y clampSheet', () => {
     it('dice qué folio lleva la hoja y no sale del libro', () => {
         expect(printedOfSheet(458, { numbering: WO, offset: null })).toBe('440');
-        expect(printedOfSheet(458, { numbering: null, offset: -18 })).toBe(440);
+        expect(printedOfSheet(458, { numbering: null, offset: -18 })).toBe('440'); // Un solo formato: el rótulo, como en el selector.
         expect(clampSheet(0, 792)).toBe(1);
         expect(clampSheet(800, 792)).toBe(792);
         expect(clampSheet(800, null)).toBe(800);
+    });
+});
+
+/**
+ * Revisión de B27 (H5): con una numeración por tramos que no cubre todas las
+ * hojas más el desfase del índice, «Ir a 150» va a la hoja 155 y la cabecera
+ * tiene que rotular esa hoja como p. 150: «Ir a» y la cabecera, una regla.
+ */
+describe('la cabecera y «Ir a» rotulan la hoja con la misma regla', () => {
+    const PARCIAL: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 100, offset: -5 }] };
+    it('la hoja a la que salta «Ir a» lleva el número pedido', async () => {
+        const { resolvePageJump } = await import('@dosfilos/domain');
+        const ctx = { numbering: PARCIAL, offset: -5 };
+        const r = resolvePageJump('150', 'printed', { ...ctx, totalSheets: 300 });
+        expect(r).toEqual({ kind: 'go', sheet: 155 });
+        expect(printedOfSheet(155, ctx)).toBe('150');
+        // Dentro del tramo calibrado, la calibración.
+        expect(printedOfSheet(50, ctx)).toBe('45');
     });
 });

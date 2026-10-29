@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import type { PageNumbering } from '@dosfilos/domain';
 import { ChevronLeft, ChevronRight, Search, ZoomIn, ZoomOut } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { IrAPagina } from './IrAPagina';
 
 export type SearchScope = 'sheet' | 'book';
 
@@ -9,8 +10,9 @@ interface Props {
     viewSheet: number;
     totalSheets: number | null;
     onGo: (sheet: number) => void;
-    /** Devuelve `false` cuando lo escrito no es un número de página. */
-    onGoToPageInput: (input: number) => boolean;
+    /** La numeración del libro, para que «Ir a» acepte la página impresa. */
+    numbering: PageNumbering | null;
+    printedPageOffset: number | null | undefined;
     search: string;
     onSearch: (v: string) => void;
     scope: SearchScope;
@@ -23,23 +25,13 @@ interface Props {
 /**
  * Hojear, ir a una página y buscar en la hoja.
  *
- * El cuadro «ir a» acepta el folio impreso, que es lo que el lector ve en
- * la nota al pie de la cita y en el libro; la conversión a hoja la hace
- * quien conoce la calibración. Las flechas del teclado hojean cuando el
- * foco no está en un cuadro de texto.
+ * El cuadro «ir a» (`IrAPagina`) pide el folio impreso cuando el libro lo
+ * tiene —es lo que el lector ve en la nota al pie de la cita— y la hoja del
+ * archivo cuando no, y dice cuál (TP #9, B27). Las flechas del teclado
+ * hojean cuando el foco no está en un cuadro de texto.
  */
-export function CitationViewerToolbar({ viewSheet, totalSheets, onGo, onGoToPageInput, search, onSearch, scope, onScope, matches, zoom, onZoom }: Props) {
+export function CitationViewerToolbar({ viewSheet, totalSheets, onGo, numbering, printedPageOffset, search, onSearch, scope, onScope, matches, zoom, onZoom }: Props) {
     const { t } = useTranslation('exegesis');
-    const [pageInput, setPageInput] = useState('');
-    const [rejected, setRejected] = useState(false);
-    useEffect(() => { setRejected(false); }, [pageInput]);
-
-    const submitPage = () => {
-        const n = Number(pageInput.trim());
-        const ok = pageInput.trim() !== '' && onGoToPageInput(n);
-        setRejected(!ok);
-        if (ok) setPageInput('');
-    };
 
     return (
         <div className="flex flex-wrap items-center gap-3 px-6 py-2 border-b border-border bg-card/60">
@@ -71,22 +63,7 @@ export function CitationViewerToolbar({ viewSheet, totalSheets, onGo, onGoToPage
                 </button>
             </div>
 
-            <form
-                onSubmit={e => { e.preventDefault(); submitPage(); }}
-                className="flex items-center gap-1"
-            >
-                <input
-                    type="text"
-                    inputMode="numeric"
-                    value={pageInput}
-                    onChange={e => setPageInput(e.target.value)}
-                    placeholder={t('citationViewer.goToPage')}
-                    aria-label={t('citationViewer.goToPage')}
-                    aria-invalid={rejected || undefined}
-                    className="w-20 rounded-md border border-border bg-background px-2 py-1 text-xs tabular-nums focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring aria-[invalid]:border-destructive"
-                />
-                {rejected && <span className="text-[11px] text-destructive">{t('citationViewer.goToPageInvalid')}</span>}
-            </form>
+            <IrAPagina numbering={numbering} printedPageOffset={printedPageOffset} totalSheets={totalSheets} onGo={onGo} />
 
             <div className="relative flex-1 min-w-40 max-w-sm">
                 <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />

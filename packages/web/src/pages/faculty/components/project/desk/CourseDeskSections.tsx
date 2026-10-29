@@ -44,6 +44,8 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
     const feedbackFor = controlado ? feedbackEntryId : propio;
     const setFeedbackFor = (id: string | null) => { if (!controlado) setPropio(id); onFeedbackEntryChange?.(id); };
     const [importOpen, setImportOpen] = useState(false);
+    // La entrada del calendario que se edita: la abren el calendario y la mesa (B2).
+    const [entradaEditada, setEntradaEditada] = useState<string | null>(null);
     const course = desk.course;
     if (desk.type !== 'course' || !course) return null;
 
@@ -112,14 +114,15 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
                         </ul>
                     </div>
                 )}
-                {course.sources.coverage && course.sources.coverage.rows.length > 0 && (
+                {/* La cobertura cuenta por tipo de obra: espera a la biblioteca (B6). */}
+                {course.sources.coverage && course.sources.coverage.rows.length > 0 && !fuentes.phase?.loading && (
                     <CoverageByWorkType coverage={course.sources.coverage} />
                 )}
             </SourcesSection>
 
             {calendarioVacio && despues('calendar') ? enUnaLinea('calendar') : (
                 <DeskSection {...encabezado('calendar')}>
-                    <CourseCalendarSection project={project} course={course} desk={desk} run={run} saving={pending} />
+                    <CourseCalendarSection project={project} course={course} desk={desk} run={run} saving={pending} editingEntryId={entradaEditada} onEditingEntryIdChange={setEntradaEditada} />
                 </DeskSection>
             )}
 
@@ -135,6 +138,7 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
                         onMarkDelivered={marcarEntregado}
                         onRecordFeedback={abrirDevolucion}
                         onImport={() => setImportOpen(true)}
+                        onEditEntry={r => setEntradaEditada(r.entryId)}
                         saving={pending}
                     />
                 </DeskSection>

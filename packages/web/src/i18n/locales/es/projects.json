@@ -205,6 +205,18 @@
     "free": "Libre",
     "none": "Ninguno",
     "coverFromProfile": "Trae la portada del perfil.",
+    "briefSlotsHint": "En el encuadre, escribe [PASAJE] donde va el pasaje y [FUENTES DE LA SEMANA ANTERIOR] donde van las fuentes que no se pueden repetir: se llenan solos al crear cada trabajo.",
+    "noRepeatLegend": "No se repiten entre entregas seguidas",
+    "noRepeatHint": "Lo que el profesor no deja repetir del trabajo anterior de este tipo. La propuesta de fuentes excluidas del corpus usa esta lista.",
+    "noRepeatUnset": "Sin fijar: rige la regla general (los comentarios; la gramática se sugiere alternar).",
+    "noRepeatFix": "Fijar esta regla",
+    "noRepeatSet": "Fijado para este tipo de trabajo.",
+    "noRepeatGroup_commentaries": "Comentarios (críticos, expositivos y textuales, como Metzger)",
+    "noRepeatGroup_grammars": "Gramáticas",
+    "noRepeatGroup_lexicons": "Léxicos y diccionarios",
+    "noRepeatGroup_text": "Texto base y aparato crítico",
+    "noRepeatGroup_studies": "Monografías, artículos y trasfondo",
+    "noRepeatGroup_ancient": "Fuentes antiguas",
     "labelRequired": "Cada tipo necesita un nombre.",
     "save": "Guardar tipos de trabajo",
     "saved": "Cambios guardados.",
@@ -661,15 +673,18 @@
             "requirementsPending": "Aprobadas: {{approved}} · requisitos: {{met}} de {{total}}",
             "ready": "Aprobadas: {{approved}} · por conseguir: {{toAcquire}}",
             "readyRequirements": "Aprobadas: {{approved}} · por conseguir: {{toAcquire}} · requisitos: {{met}} de {{total}}",
-            "readyManual": "Agregadas a mano: {{count}}"
+            "readyManual": "Agregadas a mano: {{count}}",
+            "coveragePending": "Aprobadas: {{approved}} · tipos que pide la rúbrica sin cubrir: {{missing}}",
+            "coveragePendingUnclassified": "Aprobadas: {{approved}} · tipos que pide la rúbrica sin cubrir: {{missing}} · sin clasificar: {{unclassified}} (clasifícalas para que cuenten)"
         },
         "course": {
             "charge": {
                 "todo": "Todavía no hay tipos de trabajo",
-                "unresolved": "Tipos de trabajo: {{types}} · sin rúbrica resuelta: {{unresolved}} · con una plantilla que ya no existe: {{missing}}",
+                "unresolved": "Tipos de trabajo: {{types}} · la plantilla de rúbrica ya no existe en: {{missingNames}} (elige otra)",
+                "unresolvedMixed": "Tipos de trabajo: {{types}} · la plantilla de rúbrica ya no existe en: {{missingNames}} (elige otra) · sin la rúbrica del profesor: {{names}} (elígela o confirma que el curso no la da)",
                 "ready": "Tipos de trabajo: {{types}}, cada uno con su rúbrica",
                 "loading": "Tipos de trabajo: {{types}} · revisando sus rúbricas…",
-                "noProfessorRubric": "Tipos de trabajo: {{types}} · sin la rúbrica del profesor: {{count}}"
+                "noProfessorRubric": "Tipos de trabajo: {{types}} · sin la rúbrica del profesor: {{names}} (elígela o confirma que el curso no la da)"
             },
             "calendar": {
                 "todo": "Todavía no hay calendario",

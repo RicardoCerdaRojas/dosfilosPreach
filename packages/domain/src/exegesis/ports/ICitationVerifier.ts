@@ -66,6 +66,20 @@ export interface CitationVerifierInput {
      */
     inheritFrom?: ReadonlyArray<ParsedCitation>;
     /**
+     * Veredictos `verified` ya emitidos para este paso (cualquier versión). Una
+     * cita IDÉNTICA —misma fuente, páginas, afirmación, marca de textual y
+     * otras fuentes— conserva el suyo sin volver a juzgarse (TP #9, B46):
+     * «(Varner, 162)» salió verificada a las 19:46 y «página no coincide» a
+     * las 22:03 con el mismo texto; solo se había editado otra oración.
+     * Solo los verdes: ver `reuseIdenticalVerdicts`.
+     */
+    reuseVerified?: ReadonlyArray<VerifiedCitation>;
+    /**
+     * El pasaje que estudia el paso («Santiago 4:14»), para que el juez sepa
+     * a qué se refieren «este versículo» y «aquí» (TP #9, B35b).
+     */
+    passageRef?: string;
+    /**
      * Tope de caracteres por fragmento. Sin él, el del adaptador (4.000). Al
      * releer la página citada se pasa uno mayor: una hoja densa perdía su
      * parte de abajo (revisión de 8b).

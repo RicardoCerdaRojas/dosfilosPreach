@@ -43,12 +43,15 @@ export function SourcesSection({ projectId, sources: s, phase, phaseNumber, titl
     const deskText = useDeskText();
     const vacia = s.total === 0;
     const url = stateOfArtUrl(projectId);
+    // Mientras la biblioteca carga no se sabe el tipo de cada obra: lo que se
+    // mide por tipo (requisitos, evidencia) espera (B6). Las fichas, no.
+    const midiendo = !!phase?.loading;
 
     const cifras = [
         t('sources.approved', { count: s.approved }),
         s.toAcquire > 0 ? t('sources.toAcquire', { count: s.toAcquire }) : null,
         s.candidates > 0 ? t('sources.candidates', { count: s.candidates }) : null,
-        s.requirements.total > 0 ? t('sources.requirements', { met: s.requirements.met, total: s.requirements.total }) : null,
+        s.requirements.total > 0 && !midiendo ? t('sources.requirements', { met: s.requirements.met, total: s.requirements.total }) : null,
     ].filter((x): x is string => !!x);
 
     if (vacia && later) {
@@ -70,7 +73,7 @@ export function SourcesSection({ projectId, sources: s, phase, phaseNumber, titl
             title={title ?? t('sources.title')}
             status={phase?.status}
             loading={phase?.loading}
-            evidence={phase ? deskText(phase.evidence) : undefined}
+            evidence={phase && !midiendo ? deskText(phase.evidence) : undefined}
             description={t('sources.description')}
             data-testid="desk-section-sources"
             actions={!vacia && (
@@ -101,10 +104,10 @@ export function SourcesSection({ projectId, sources: s, phase, phaseNumber, titl
                 {s.manual > 0 && (
                     <p className="text-[13px] text-muted-foreground" data-testid="desk-sources-manual">{t('sources.manual', { count: s.manual })}</p>
                 )}
-                {s.requirements.incomplete > 0 && (
+                {s.requirements.incomplete > 0 && !midiendo && (
                     <p className="text-[13px] text-foreground">{t('sources.incomplete', { count: s.requirements.incomplete })}</p>
                 )}
-                {s.requirements.accepted > 0 && (
+                {s.requirements.accepted > 0 && !midiendo && (
                     <p className="text-[13px] text-muted-foreground">{t('sources.accepted', { count: s.requirements.accepted })}</p>
                 )}
                 {s.requiredToAcquire.length > 0 && (

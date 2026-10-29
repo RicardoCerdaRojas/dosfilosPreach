@@ -106,6 +106,15 @@ export interface ParsedCitation {
     /** True when `evidence` came from a `"..."` quote (high confidence claim). */
     evidenceIsQuoted: boolean;
     /**
+     * Lo que precede a la afirmación en su párrafo (la oración anterior y lo
+     * que la cita previa dejó fuera), para que el juez sepa a qué se refieren
+     * «él», «esto», «este versículo». NO es parte de la afirmación: no se le
+     * exige a la fuente. TP #9 (B35b): «Robertson cita el versículo sin él
+     * (Robertson, 961)» —él = el artículo, de la oración anterior— se juzgó
+     * sin saber qué era «él» y salió alarma. Ausente si no hay nada antes.
+     */
+    evidenceContext?: string;
+    /**
      * De dónde sale la cita: del análisis estructurado o de la prosa que se
      * entrega. Ausente equivale a `'analysis'` en las que vienen del análisis
      * y a la prosa en el camino sin análisis.
@@ -198,6 +207,36 @@ export interface VerifiedCitation extends ParsedCitation {
      * de la oración, la afirmación es mixta.
      */
     supportingSpan?: { text: string; pageLabel: string | null };
+    /**
+     * Lo que la oración afirma bajo la cita y la fuente no dice, como lo leyó
+     * el juez (análisis propio del autor o lo que sobra). Vacío/ausente si la
+     * fuente lo cubre todo. No cambia el veredicto —el análisis del autor no
+     * se le exige a la fuente—; distingue en «Diagnosticar» una cita hallada
+     * ENTERA en otra página de una que halló ALGO parecido. TP #9, 4:15:
+     * «El genitivo se manifiesta en el artículo…; el pronombre funciona como
+     * sujeto acusativo (Robertson, pp. 1069–1070)» halló algo en la 1067 y el
+     * diagnóstico propuso cambiar la página, cuando la afirmación es del
+     * estudiante con la etiqueta de Robertson.
+     */
+    notFromSource?: string;
+    /**
+     * Si el tramo de apoyo dice la afirmación central de la oración
+     * (`whole`) o solo algo vecino —el tema, un dato parecido— (`partial`),
+     * como lo leyó el juez. La conclusión propia que la oración agrega no la
+     * vuelve `partial`. Es lo que separa, en «Diagnosticar», a Adamson 171 →
+     * 170 (la afirmación entera está en la 170: corregir la página, y aparte
+     * separar lo propio) de Robertson 1069–1070 → 1067 (en la 1067 hay algo
+     * parecido: no es la página, es la atribución). Ausente en veredictos
+     * anteriores a TP #9.
+     */
+    claimCoverage?: 'whole' | 'partial';
+    /**
+     * Huella de la fuente con que se juzgó: su numeración y el texto de sus
+     * fragmentos (`sourceFingerprint`). Un verde solo se reusa si la fuente
+     * sigue igual: si se recalibró la numeración o se re-extrajo el libro, se
+     * juzga de nuevo (revisión adversarial de B46).
+     */
+    sourceFingerprint?: string;
     /**
      * No está en la fuente citada pero sí en OTRA del corpus (D4, causa 3):
      * «eso lo dice Mayor, no Adamson». Lo halla la búsqueda antes de alarmar.

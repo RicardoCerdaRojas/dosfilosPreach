@@ -86,14 +86,18 @@ export * from './services/bookSearchForCitation';
 export * from './services/citationDiagnosis';
 export * from './services/citationReview';
 export * from './services/proseReview';
+export * from './services/proseReviewerContext';
+export * from './services/rangeDash';
 export * from './services/paperProjects';
 export * from './services/citationCorrection';
 export * from './services/paperLength';
 export * from './services/citationStyle';
+export * from './services/editedProsePageLabels';
 export * from './services/inlineCitations';
 export * from './services/passagePages';
 export * from './services/grammarSearchKeys';
 export * from './services/assignmentBriefWindows';
+export * from './services/assignmentBriefSlots';
 export * from './services/originalLanguageEvidence';
 export * from './services/verseMorphologyBriefing';
 export * from './services/sourceMemory';
@@ -154,9 +158,13 @@ export * from './outline/documentOutline';
 // Índice de hojas del documento: qué hay en cada hoja física del PDF, y la
 // traducción de «las hojas 68 a 71» a los fragmentos que van al prompt.
 export * from './outline/documentPageIndex';
+// Hojas de una edición del texto (NA28) por su encabezado corrido (TP #9, B26).
+export * from './outline/textEditionPages';
 // Desfase entre la hoja física y el número que el libro imprime.
 export * from './outline/printedPageOffset';
 export * from './outline/pageNumbering';
+// «Ir a»: página impresa u hoja del archivo, dicho explícito (TP #9, B27).
+export * from './outline/pageJump';
 export * from './outline/findQuoteInPageText';
 export * from './ports/IPageNumberingReader';
 export * from './ports/IBibliographyReader';

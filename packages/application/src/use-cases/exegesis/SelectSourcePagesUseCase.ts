@@ -68,6 +68,14 @@ export interface SelectSourcePagesInput {
      * vigente una selección que estaba vieja.
      */
     mergeWithExisting?: boolean;
+    /**
+     * Guardar la fuente SIN páginas: el usuario quitó todas en el selector y
+     * lo confirmó. La fuente queda en el corpus, vacía: no aporta texto al
+     * análisis ni cuenta para la rúbrica (`isEmptyExtractedSource`). TP #9
+     * (B20): quitar todo Tuggy no se podía guardar. Sin esta marca, una lista
+     * vacía sigue siendo un error: ningún otro camino vacía una fuente.
+     */
+    allowEmpty?: boolean;
 }
 
 export interface SelectSourcePagesResult {
@@ -127,7 +135,10 @@ export class SelectSourcePagesUseCase {
             throw new Error('La fuente no tiene páginas elegidas a las que sumar');
         }
         const sheetRanges = normalizeSheetRanges([...(sumar?.sheetRanges ?? []), ...input.sheetRanges]);
-        if (sheetRanges.length === 0) {
+        // Vaciar sólo una fuente que ya está en el trabajo, y nunca al sumar:
+        // crear una fuente vacía no tiene sentido.
+        const vaciar = input.allowEmpty === true && !input.mergeWithExisting && !!previa;
+        if (sheetRanges.length === 0 && !vaciar) {
             throw new Error('La selección no tiene ninguna hoja');
         }
 

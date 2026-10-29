@@ -18,8 +18,17 @@ import { findInlineCitations, SENTENCE_ABBREVIATIONS, type ParsedCitation } from
  * `(Adamson, "The Epistle of James", p. 53)` se lee entera, y no como
  * un `(Autor, N)` recortado adentro.
  */
-export function parseCitations(markdown: string): ParsedCitation[] {
-    const accepted = findInlineCitations(markdown);
+export function parseCitations(
+    markdown: string,
+    /**
+     * Claves de cita del trabajo. Sin ellas la cuarta forma, «(Robertson,
+     * Gramática, 1069–1070)», no se reconoce (el dominio no la distingue de un
+     * pie de imprenta sin el corpus): la prosa que solo cita así daba cero
+     * citas y salía verde por vacío (revisión adversarial).
+     */
+    citationKeys: ReadonlyArray<string | null | undefined> = [],
+): ParsedCitation[] {
+    const accepted = findInlineCitations(markdown, citationKeys.filter((k): k is string => !!k?.trim()));
 
     // Las citas se tapan ANTES de buscar la evidencia. Sus títulos van entre
     // comillas rectas, y el buscador de comillas las tomaba por una frase
@@ -44,6 +53,7 @@ export function parseCitations(markdown: string): ParsedCitation[] {
         const anterior = grupos[i]!.first > 0 ? ordenadas[grupos[i]!.first - 1]!.end : 0;
         const evidence = extractEvidence(masked, primera.offset, ultima.end, anterior, /^\s*[(;]/.test(primera.raw));
         const otras = grupos[i]!.members.filter(j => j !== i).map(j => ordenadas[j]!.author).filter(Boolean);
+        const contexto = contextBefore(masked, evidence.start);
         return {
             raw: m.raw,
             author: m.author,
@@ -52,6 +62,7 @@ export function parseCitations(markdown: string): ParsedCitation[] {
             offset: m.offset,
             evidence: evidence.text,
             evidenceIsQuoted: evidence.fromQuote,
+            ...(contexto ? { evidenceContext: contexto } : {}),
             ...(otras.length > 0 ? { otherSources: [...new Set(otras)] } : {}),
         };
     });
@@ -108,30 +119,56 @@ function extractEvidence(
     previousEnd: number = 0,
     /** La cita es un paréntesis («(Mayor, 129)»), no «Mayor (p. 129)». */
     isParenthesis: boolean = true,
-): { text: string; fromQuote: boolean } {
+): { text: string; fromQuote: boolean; start: number } {
     // Search the 250-char window preceding the citation for a closing
     // quote. Use the LAST one (closest to the cite) — earlier quotes
     // in the same paragraph belong to other claims.
     const lookBack = Math.max(0, citationOffset - 250, previousEnd);
     const window = markdown.slice(lookBack, citationOffset);
+    const sentenceStart = Math.max(findSentenceStart(markdown, citationOffset, isParenthesis), previousEnd);
 
     // Se admiten las comillas rectas Y las angulares: la prosa académica en
     // español cita con «», y mirar sólo `"` dejaba sin detectar toda cita
     // verbatim de un paper en castellano.
+    //
+    // La cita textual tiene que CERRAR en la oración de la cita (puede abrir
+    // antes: una cita de dos oraciones sigue siendo una). Y una glosa entre
+    // paréntesis, «ἀπολέσαι («destruir»)», no es una cita: es la traducción
+    // del autor. TP #9: con las dos, «(Tuggy, p. 257)» cotejó «destruir» de
+    // la oración anterior y halló ἀπόλλυμι en la p. 115, y «(Wallace, 663)»
+    // cotejó «ustedes son» del párrafo anterior.
     for (const [open, close] of [['«', '»'], ['"', '"']] as const) {
-        const closeIdx = window.lastIndexOf(close);
-        if (closeIdx <= 0) continue;
-        const openIdx = window.lastIndexOf(open, close === open ? closeIdx - 1 : closeIdx);
-        if (openIdx < 0 || closeIdx - openIdx < 4) continue;
-        const quoteText = window.slice(openIdx + 1, closeIdx).trim();
-        if (quoteText.length >= 8) {
-            return { text: quoteText, fromQuote: true };
+        let hasta = window.length;
+        while (hasta > 0) {
+            const closeIdx = window.lastIndexOf(close, hasta - 1);
+            if (closeIdx <= 0 || lookBack + closeIdx < sentenceStart) break;
+            // Las angulares se anidan: en «El texto «hoy o mañana» introduce…»
+            // la de apertura es la de afuera, no la última «.
+            const openIdx = open === close ? window.lastIndexOf(open, closeIdx - 1) : aperturaPareada(window, closeIdx, open, close);
+            if (openIdx < 0) break;
+            hasta = openIdx;
+            if (closeIdx - openIdx < 4 || isGloss(window, openIdx, closeIdx)) continue;
+            const quoteText = window.slice(openIdx + 1, closeIdx).trim();
+            // Dos o tres palabras en castellano entre comillas nombran algo
+            // («legislador y juez»), no son lo que la fuente dice: la oración,
+            // que las contiene, es la afirmación. TP #9: McCartney 222 cotejó
+            // «legislador y juez» y halló «one lawgiver and judge» en la 221.
+            // El griego o el hebreo corto sí es textual: «πρὸς φθόνον» es la
+            // lectura de un testigo y se busca tal cual.
+            //
+            // Solo en castellano: unas palabras en inglés entre comillas, en un
+            // trabajo en español, solo pueden venir copiadas de la fuente
+            // —«one lawgiver and judge» es McCartney tal cual— y se buscan tal
+            // cual (revisión adversarial).
+            const textual = quoteText.split(/\s+/).length >= MIN_QUOTE_WORDS
+                || ORIGINAL_SCRIPT.test(quoteText)
+                || esInglesSinCastellano(quoteText);
+            if (quoteText.length >= 8 && textual) return { text: quoteText, fromQuote: true, start: lookBack + openIdx };
         }
     }
 
     // Fallback: containing sentence. Walk back to the previous
     // sentence-ending punctuation or paragraph break.
-    const sentenceStart = Math.max(findSentenceStart(markdown, citationOffset, isParenthesis), previousEnd);
     const sentence = markdown
         .slice(sentenceStart, citationOffset)
         .replace(/\s+/g, ' ')
@@ -143,10 +180,77 @@ function extractEvidence(
     // cita salía «no se pudo extraer el texto reclamado».
     if (sentence.length < MIN_EVIDENCE_CHARS) {
         const adelante = forwardSentence(markdown, citationEnd);
-        if (adelante.length >= MIN_EVIDENCE_CHARS) return { text: adelante, fromQuote: false };
+        if (adelante.length >= MIN_EVIDENCE_CHARS) return { text: adelante, fromQuote: false, start: citationEnd };
     }
-    return { text: sentence, fromQuote: false };
+    return { text: sentence, fromQuote: false, start: sentenceStart };
 }
+
+/**
+ * Lo que precede a la afirmación en su párrafo: lo que quedó antes de ella en
+ * su propia oración (una cita previa en la misma oración corta la evidencia) y
+ * la oración anterior. Solo para que el juez sepa a qué se refieren «él»,
+ * «esto», «este versículo» (TP #9, B35b): «…y solo B omite el artículo (NA28,
+ * 693); Robertson cita el versículo sin él (Robertson, 961)» se juzgó con la
+ * evidencia «Robertson cita el versículo sin él» y nada más.
+ *
+ * No cruza el párrafo, y lleva las citas tapadas (`masked`). `undefined` si no
+ * hay nada antes. Con tope: es contexto, no otra afirmación.
+ */
+function contextBefore(masked: string, evidenceStart: number): string | undefined {
+    const salto = evidenceStart > 0 ? masked.lastIndexOf('\n\n', evidenceStart - 1) : -1;
+    const parrafo = salto < 0 ? 0 : salto + 2;
+    const propia = Math.max(findSentenceStart(masked, evidenceStart, false), parrafo);
+    // La oración anterior, si la de la afirmación no abre el párrafo. Se busca
+    // desde antes del «. » que la cierra (`propia - 2`): desde el espacio, el
+    // punto se leería como el comienzo de la propia.
+    const desde = propia > parrafo ? Math.max(findSentenceStart(masked, Math.max(0, propia - 2), false), parrafo) : propia;
+    let texto = masked.slice(desde, evidenceStart).replace(/\s+/g, ' ')
+        // El paréntesis que cierra una cita tapada queda huérfano: «concesivo ):».
+        .replace(/ [)\]]+/g, '')
+        .trim();
+    if (texto.length > MAX_CONTEXT_CHARS) {
+        const corte = texto.indexOf(' ', texto.length - MAX_CONTEXT_CHARS);
+        texto = `…${texto.slice(corte > 0 ? corte + 1 : texto.length - MAX_CONTEXT_CHARS)}`;
+    }
+    return texto.length >= MIN_EVIDENCE_CHARS ? texto : undefined;
+}
+
+/** Contexto previo, como mucho (una oración larga y lo que le precede). */
+const MAX_CONTEXT_CHARS = 400;
+
+/** «(«destruir»)»: la comilla va sola dentro de un paréntesis, como la glosa de una palabra. */
+function isGloss(text: string, openIdx: number, closeIdx: number): boolean {
+    return /\(\s*$/.test(text.slice(0, openIdx)) && /^\s*\)/.test(text.slice(closeIdx + 1));
+}
+
+/**
+ * La « que abre la » de `closeIdx`, contando las anidadas; -1 si no cierra
+ * dentro de la ventana.
+ */
+function aperturaPareada(text: string, closeIdx: number, open: string, close: string): number {
+    let profundidad = 0;
+    for (let i = closeIdx - 1; i >= 0; i--) {
+        const c = text[i];
+        if (c === close) profundidad++;
+        else if (c === open) {
+            if (profundidad === 0) return i;
+            profundidad--;
+        }
+    }
+    return -1;
+}
+
+/** Palabras de función del inglés sin ninguna del castellano: lo copiado de una fuente inglesa. */
+function esInglesSinCastellano(texto: string): boolean {
+    return INGLES.test(texto) && !CASTELLANO.test(texto);
+}
+const INGLES = /(^|[^\p{L}])(the|of|and|to|is|are|an|that|with|for|as|by|one|be|this|which|from)(?=$|[^\p{L}])/iu;
+const CASTELLANO = /(^|[^\p{L}])(el|la|los|las|de|del|y|e|o|u|que|en|un|una|es|son|por|con|para|se|lo|su|sus|al)(?=$|[^\p{L}])/iu;
+
+/** Menos palabras entre comillas no son una cita textual sino una mención. */
+const MIN_QUOTE_WORDS = 5;
+/** Griego (con politónico) o hebreo. */
+const ORIGINAL_SCRIPT = /[\u0370-\u03FF\u1F00-\u1FFF\u0590-\u05FF]/;
 
 /** Menos que esto no es una afirmación que se pueda cotejar. */
 const MIN_EVIDENCE_CHARS = 8;

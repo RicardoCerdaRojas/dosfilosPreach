@@ -16,6 +16,13 @@ interface CourseCalendarSectionProps {
     desk: Pick<ProjectDeskModel, 'studies'>;
     run: (input: { ops?: CourseOp[]; mode?: CourseScheduleMode | null }, successKey?: string) => Promise<boolean>;
     saving: boolean;
+    /**
+     * La entrada que se edita (`'new'` para una nueva), controlada desde
+     * afuera: la mesa de trabajos abre el mismo diálogo desde su fila (TP #9,
+     * B2). Sin estas dos props, la sección lo maneja sola.
+     */
+    editingEntryId?: string | null;
+    onEditingEntryIdChange?: (entryId: string | null) => void;
 }
 
 /**
@@ -25,15 +32,20 @@ interface CourseCalendarSectionProps {
  * crea igual su entrada (sin fecha), para que «entregado» y la devolución
  * tengan dónde vivir.
  */
-export function CourseCalendarSection({ project, course, desk, run, saving }: CourseCalendarSectionProps) {
+export function CourseCalendarSection({ project, course, desk, run, saving, editingEntryId, onEditingEntryIdChange }: CourseCalendarSectionProps) {
     const { t, i18n } = useTranslation('projectDeskCourse');
     const lang = langOf(i18n.language);
-    const [editing, setEditing] = useState<CourseScheduleEntry | null | 'new'>(null);
+    const [propia, setPropia] = useState<string | null>(null);
+    const controlada = editingEntryId !== undefined;
+    const editingId = controlada ? editingEntryId : propia;
+    const setEditingId = (id: string | null) => { if (!controlada) setPropia(id); onEditingEntryIdChange?.(id); };
     const [removing, setRemoving] = useState<DeskScheduleRow | null>(null);
     const mode = course.schedule.mode;
     const rows = course.schedule.rows;
     const tipoDe = new Map(course.workTypes.map(w => [w.id, w.label]));
     const entradaDe = (id: string) => (project.courseSchedule ?? []).find(e => e.id === id) ?? null;
+    // Una entrada que ya no existe (borrada mientras tanto) no abre el diálogo vacío.
+    const editing: CourseScheduleEntry | null | 'new' = editingId === 'new' ? 'new' : editingId ? entradaDe(editingId) : null;
 
     const elegirModo = (m: CourseScheduleMode) => {
         if (m === mode) return;
@@ -118,7 +130,7 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
                                         size="sm"
                                         variant="ghost"
                                         className={ICON_TOUCH}
-                                        onClick={() => setEditing(entradaDe(r.entryId))}
+                                        onClick={() => setEditingId(r.entryId)}
                                         aria-label={t('calendar.editEntry', { label: r.label })}
                                     >
                                         <Pencil className="h-3.5 w-3.5" aria-hidden />
@@ -141,7 +153,7 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
                 </ol>
             )}
 
-            <Button size="sm" variant="outline" className={TOUCH} onClick={() => setEditing('new')} disabled={course.workTypes.length === 0}>
+            <Button size="sm" variant="outline" className={TOUCH} onClick={() => setEditingId('new')} disabled={course.workTypes.length === 0}>
                 <CalendarPlus className="mr-1.5 h-3.5 w-3.5" aria-hidden />
                 {t('calendar.add')}
             </Button>
@@ -151,7 +163,7 @@ export function CourseCalendarSection({ project, course, desk, run, saving }: Co
                 project={project}
                 entry={editing === 'new' ? null : editing}
                 open={editing !== null}
-                onOpenChange={o => { if (!o) setEditing(null); }}
+                onOpenChange={o => { if (!o) setEditingId(null); }}
                 onSave={guardar}
                 saving={saving}
                 studies={trabajosPara(editing === 'new' ? null : editing)}

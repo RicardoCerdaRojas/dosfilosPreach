@@ -1,5 +1,9 @@
 import {
     applyPageLabelStyle,
+    availableCitationLabel,
+    availableCitations,
+    reviewNotesForReviewer,
+    withoutInventedCitations,
     formatPassageReference,
     grammarCitationsOf,
     parseBriefQuestions,
@@ -73,6 +77,11 @@ export class ReviewVerseProseUseCase {
         const criteria = proseReviewCriteria(language, rules);
         const questions = questionsOfStep(step, parseBriefQuestions(paper.assignmentBrief, paper.passage))
             .map(q => ({ number: q.number, text: q.text }));
+        // Las notas de revisión manual pesan más que el análisis: el estudiante
+        // puede apartarse de él a propósito y dejarlo escrito (TP #9, B39).
+        const reviewNotes = reviewNotesForReviewer(analysis, version.citationVerdicts ?? [], version.citationReviews ?? [], language);
+        const keys = [...new Set(paper.sources.map(s => (s.citationKey ?? s.displayLabel ?? '').trim()).filter(Boolean))];
+        const available = availableCitations(analysis, reviewedMarkdown, reviewNotes, keys);
 
         const reservation = await ExegesisCreditReservation.open(input.ownerId, 'reviewVerseProse');
         try {
@@ -84,16 +93,25 @@ export class ReviewVerseProseUseCase {
                 questions,
                 decisiveCriteria: (analysis?.questionAnswers ?? [])
                     .filter(qa => qa.decisiveCriterion?.text?.trim())
-                    .map(qa => ({
-                        questionNumber: qa.questionNumber,
-                        text: qa.decisiveCriterion.text,
-                        whyThisOverThat: qa.decisiveCriterion.whyThisOverThat ?? '',
-                        decision: qa.decision ?? '',
-                    })),
+                    .map(qa => {
+                        const notas = reviewNotes.filter(n => n.questionNumber === qa.questionNumber).map(n => `${n.citation}: ${n.note}`);
+                        return {
+                            questionNumber: qa.questionNumber,
+                            text: qa.decisiveCriterion.text,
+                            whyThisOverThat: qa.decisiveCriterion.whyThisOverThat ?? '',
+                            decision: qa.decision ?? '',
+                            ...(notas.length > 0 ? { reviewNotes: notas } : {}),
+                        };
+                    }),
                 grammarCitations: grammarCitationsOf(analysis, grammarKeys).map(g => `${g.key}, p. ${g.page}`),
                 criteria,
+                ...(reviewNotes.length > 0 ? { reviewNotes: reviewNotes.map(n => ({ citation: n.citation, note: n.note })) } : {}),
+                // Una hoja se nombra como hoja, no como página impresa.
+                ...(available.length > 0 ? { availableCitations: [...new Set(available.map(c => availableCitationLabel(c, language)))] } : {}),
             });
-            return { findings, criteria, reviewedMarkdown };
+            // Una observación que nombra una cita que el trabajo no tiene
+            // («Wallace, p. 961», TP #9, B40) se descarta.
+            return { findings: withoutInventedCitations(findings, available, keys), criteria, reviewedMarkdown };
         } catch (err) {
             await reservation.refundIfPreLlm();
             throw err;

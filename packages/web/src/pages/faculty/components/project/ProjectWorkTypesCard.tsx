@@ -9,6 +9,7 @@ import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
 import { useUserAssignmentBriefs } from '@/hooks/exegesis/useUserAssignmentBriefs';
 import { useUserStyleGuides } from '@/hooks/exegesis/useUserStyleGuides';
 import { canonico } from '@/utils/canonico';
+import { WorkTypeNoRepeatField } from './WorkTypeNoRepeatField';
 
 /**
  * Para «Cambios sin guardar»: la forma canónica trata `null` como ausente,
@@ -129,6 +130,8 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
                                                 <option value="">{t('workTypes.none')}</option>
                                                 {briefs.map(b => <option key={b.id} value={b.id}>{b.displayName}</option>)}
                                             </select>
+                                            {/* El pasaje y las fuentes cambian por entrega: van como huecos (TP #9, B5/B4). */}
+                                            <span className="block text-[11px] text-muted-foreground">{t('workTypes.briefSlotsHint')}</span>
                                         </label>
                                         <label className="block space-y-1">
                                             <span className="text-xs text-muted-foreground">{t('workTypes.styleGuide')}</span>
@@ -152,6 +155,7 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
                                         <div className="sm:col-span-2">
                                             <MethodPicker id={`method-${x.id}`} value={x.exegeticalMethod} onChange={m => cambiar(x.id, { exegeticalMethod: m })} />
                                         </div>
+                                        <WorkTypeNoRepeatField value={x.noRepeatSourceTypes} onChange={types => cambiar(x.id, { noRepeatSourceTypes: types })} />
                                         {x.cover && <p className="text-[11px] text-muted-foreground sm:col-span-2">{t('workTypes.coverFromProfile')}</p>}
                                     </div>
                                 )}

@@ -132,12 +132,23 @@ export function analysisClaimsToCitations(
     claims: ReadonlyArray<AnalysisClaim>,
     pageFor: (claim: AnalysisClaim) => string | null,
 ): ParsedCitation[] {
-    return claims.map((claim, index) => {
-        // Un rango se rotula entero, «170–171», en la misma unidad que su
-        // comienzo; si el final no se puede traducir, queda la página sola.
+    // Un rango se rotula entero, «170–171», en la misma unidad que su
+    // comienzo; si el final no se puede traducir, queda la página sola.
+    const rotulos = claims.map(claim => {
         const desde = pageFor(claim);
         const hasta = claim.pageEnd !== undefined ? pageFor({ ...claim, page: claim.pageEnd }) : null;
-        const pages = desde && hasta && hasta !== desde ? `${desde}–${hasta}` : desde;
+        return { desde, pages: desde && hasta && hasta !== desde ? `${desde}–${hasta}` : desde };
+    });
+    const hermanas = siblingClaimIndexes(claims);
+    return claims.map((claim, index) => {
+        const { desde, pages: propias } = rotulos[index]!;
+        // La misma afirmación citada a la misma fuente en varias páginas
+        // («Robertson, pp. 574, 1060») llega como una entrada por página. Cada
+        // una se coteja contra TODAS sus páginas, la propia primero: si no, la
+        // de la 1060 hallaba la mitad que está en la 574 y salía «página no
+        // coincide» sobre una cita correcta (TP #9, 4:15).
+        const otrasPaginas = (hermanas.get(index) ?? []).map(j => rotulos[j]!.pages).filter((p): p is string => !!p && p !== propias);
+        const pages = propias && otrasPaginas.length > 0 ? [propias, ...new Set(otrasPaginas)].join(', ') : propias;
         const otras = otherSourcesOf(claim, claims);
         // Por sección no hay hoja: «hoja 0» llevaba al verificador a priorizar
         // los fragmentos rotulados con 0 o 1 en vez de la sección citada.
@@ -163,6 +174,25 @@ export function analysisClaimsToCitations(
             evidenceIsQuoted: claim.verbatimQuote !== null,
         };
     });
+}
+
+/**
+ * Las entradas hermanas de cada afirmación: el mismo sitio del análisis
+ * (`…sources[0]`, `…sources[1]`), la misma fuente y el mismo texto.
+ */
+function siblingClaimIndexes(claims: ReadonlyArray<AnalysisClaim>): Map<number, number[]> {
+    const grupos = new Map<string, number[]>();
+    claims.forEach((c, i) => {
+        if (c.pageKind === 'section') return;
+        const clave = [c.site, c.path.replace(/\[\d+\]$/, ''), c.sourceKey.trim().toLowerCase(), c.claim].join('|');
+        grupos.set(clave, [...(grupos.get(clave) ?? []), i]);
+    });
+    const out = new Map<number, number[]>();
+    for (const miembros of grupos.values()) {
+        if (miembros.length < 2) continue;
+        for (const i of miembros) out.set(i, miembros.filter(j => j !== i));
+    }
+    return out;
 }
 
 /**

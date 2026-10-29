@@ -87,7 +87,9 @@ describe('la tarjeta de fuentes excluidas', () => {
         expect(guardar).toHaveBeenLastCalledWith({ paperId: 'tp6', excludedSources: [] });
     });
 
-    it('TP #8: propone comentarios y gramática; el léxico y el texto base, no; y sugiere la otra gramática', () => {
+    // TP #9 (B15): la gramática se puede repetir; se ofrece para alternar,
+    // SIN marcar. Antes venía marcada y la propuesta sacaba a Wallace.
+    it('TP #8: propone comentarios; la gramática se ofrece sin marcar (con la otra); el léxico y el texto base, no', () => {
         const conFuentes = (id: string, dia: number, cited: string[], title: string, fuentes: Array<[string, string]>) => ({
             ...resumen(id, dia, cited, title),
             sources: fuentes.map(([citationKey, sourceType]) => ({ citationKey, sourceType, corpusId: citationKey, sourceLibraryResourceId: null, displayLabel: citationKey })),
@@ -101,16 +103,16 @@ describe('la tarjeta de fuentes excluidas', () => {
         ];
         render(<ExcludedSourcesCard paper={trabajo(undefined)} />);
         expect(screen.getByLabelText(/McCartney/)).toBeChecked();
-        expect(screen.getByLabelText(/Robertson/).closest('label')).toHaveTextContent('excluded.alternateWith {"others":"Wallace"}');
+        expect(screen.getByLabelText(/Robertson/)).not.toBeChecked();
+        expect(screen.getByLabelText(/Robertson/).closest('li')).toHaveTextContent('excluded.alternateWith {"others":"Wallace"}');
+        // El porqué de la exclusión, a la vista (B15).
+        expect(screen.getByLabelText(/McCartney/)).toHaveAccessibleDescription(/excluded\.whyDefault/);
         expect(screen.queryByLabelText(/Tuggy/)).toBeNull();
         expect(screen.getByText(/excluded\.freeByType/)).toHaveTextContent('NA28, Tuggy');
         fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.excluded.accept'));
         expect(guardar).toHaveBeenCalledWith({
             paperId: 'tp6',
-            excludedSources: [
-                { key: 'McCartney', previousPaperTitle: 'TP #7' },
-                { key: 'Robertson', previousPaperTitle: 'TP #7' },
-            ],
+            excludedSources: [{ key: 'McCartney', previousPaperTitle: 'TP #7' }],
         });
     });
 

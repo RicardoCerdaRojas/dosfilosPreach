@@ -179,9 +179,10 @@ describe('lo que el estudio hereda del proyecto', () => {
             ficha({ id: 'b', resourceId: 'bdag', title: 'BDAG', sourceType: null }),
             ficha({ id: 'c', resourceId: null, title: 'Por conseguir' }),
         ], id => (id === 'bdag' ? 'lexicon-technical' : null));
+        // Con la clave de cita del autor de la ficha (TP #9, B14).
         expect(out).toEqual([
-            { corpusId: 'ropes', sourceLibraryResourceId: 'ropes', sourceType: 'commentary-critical', displayLabel: 'ICC James', mode: 'full-document' },
-            { corpusId: 'bdag', sourceLibraryResourceId: 'bdag', sourceType: 'lexicon-technical', displayLabel: 'BDAG', mode: 'full-document' },
+            { corpusId: 'ropes', sourceLibraryResourceId: 'ropes', sourceType: 'commentary-critical', displayLabel: 'ICC James', mode: 'full-document', citationKey: 'Moo' },
+            { corpusId: 'bdag', sourceLibraryResourceId: 'bdag', sourceType: 'lexicon-technical', displayLabel: 'BDAG', mode: 'full-document', citationKey: 'Moo' },
         ]);
     });
 

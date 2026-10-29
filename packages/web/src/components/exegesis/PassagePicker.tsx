@@ -3,6 +3,7 @@ import { Search, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
 import {
+    getBookById,
     parsePassageReference,
     formatPassageReference,
     type PassageReference,
@@ -85,7 +86,8 @@ export function PassagePicker({
             setTextParseResult(null);
             return;
         }
-        setTextParseResult(parsePassageReference(trimmed));
+        // Lo que el estudiante escribe: solo versículos que existen (TP #9, B1).
+        setTextParseResult(parsePassageReference(trimmed, { strictVerses: true }));
     }, [inputText]);
 
     // Push the authoritative result up. Builder result wins when the
@@ -238,7 +240,7 @@ function FeedbackLine({
 }: {
     result: ParseResult | null;
     lang: 'es' | 'en';
-    t: (key: string) => string;
+    t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
     if (result === null) {
         return (
@@ -257,10 +259,15 @@ function FeedbackLine({
             </p>
         );
     }
+    // El versículo que no existe, dicho en el idioma de la pantalla (TP #9, B1).
+    const book = result.limit ? getBookById(result.limit.bookId) : null;
+    const mensaje = result.error === 'verse-out-of-range' && result.limit && book
+        ? t('setup.passage.errorVerseOutOfRange', { book: lang === 'en' ? book.nameEn : book.nameEs, chapter: result.limit.chapter, count: result.limit.verses, verse: result.limit.verse })
+        : result.hint;
     return (
-        <p className="inline-flex items-start gap-1.5 text-xs font-medium text-rose-700 dark:text-rose-300">
+        <p className="inline-flex items-start gap-1.5 text-xs font-medium text-destructive" role="alert">
             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>{result.hint}</span>
+            <span>{mensaje}</span>
         </p>
     );
 }

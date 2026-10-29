@@ -15,6 +15,7 @@ import { useCorpusFootprint } from '@/hooks/exegesis/useCorpusFootprint';
 import { PaperCorpusTooLargeError } from '@dosfilos/application';
 import { useSelectSourcePages } from '@/hooks/exegesis/useSelectSourcePages';
 import { SourcePagesWorkspace } from '@/components/exegesis/setup/page-picker/SourcePagesWorkspace';
+import { SubtituloDelLibro } from '@/components/exegesis/citation/SubtituloDelLibro';
 import { useLemmaPages } from '@/hooks/exegesis/useLemmaPages';
 import { usePassagePages } from '@/hooks/exegesis/usePassagePages';
 import { usePageNumbering } from '@/hooks/library/usePageNumbering';
@@ -177,10 +178,13 @@ export function ExegesisSourcePagesPage() {
                 proposedRanges: proposal?.ranges ?? [],
                 pageIndex: index.data.pages,
                 selectionMode: 'manual',
+                // El carrito vacío llega aquí sólo tras confirmar «Guardar sin
+                // páginas» (TP #9, B20): la fuente queda vacía en el corpus.
+                allowEmpty: ranges.length === 0,
             });
-            toast.success(
-                t('paperSetup.subSteps.corpus.picker.toast.saved', { count: result.excerptCount }),
-            );
+            toast.success(ranges.length === 0
+                ? t('paperSetup.subSteps.corpus.picker.toast.savedEmpty', { source: source.displayLabel })
+                : t('paperSetup.subSteps.corpus.picker.toast.saved', { count: result.excerptCount }));
             if (result.incomplete) {
                 toast.warning(t('paperSetup.subSteps.corpus.picker.toast.incomplete', {
                     saved: result.excerptCount,
@@ -237,6 +241,8 @@ export function ExegesisSourcePagesPage() {
                     <h1 className="truncate text-base font-semibold text-foreground">
                         {source.displayLabel}
                     </h1>
+                    {/* Título y autor del libro (TP #9, B19). */}
+                    <SubtituloDelLibro label={source.displayLabel} title={numbering.data?.title} author={numbering.data?.author} className="text-foreground" />
                     <p className="text-xs text-muted-foreground">
                         {t('paperSetup.subSteps.corpus.picker.subtitle')}
                     </p>

@@ -24,6 +24,7 @@ import {
     type VerifiedCitation,
 } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
+import { conPuntoFinal } from '@/lib/exegesis/conPuntoFinal';
 import { useTranslation } from '@/i18n';
 import { CitationStatusDot } from '../review/CitationStatusBadge';
 
@@ -745,7 +746,7 @@ function SyntacticElementRow({ element }: { element: CanonicalVerseAnalysis['syn
                 <span className="text-[11px] text-muted-foreground italic">{element.morphology}</span>
             </div>
             <p className="text-[11px] text-foreground/85">
-                <span className="font-semibold">{element.syntacticFunction}.</span>{' '}
+                <span className="font-semibold">{conPuntoFinal(element.syntacticFunction)}</span>{' '}
                 {element.interpretiveSignificance}
             </p>
         </div>

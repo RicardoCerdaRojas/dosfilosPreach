@@ -53,6 +53,30 @@ describe('la cuarta forma — título sin comillas — necesita el corpus', () =
         expect(c!.pages).toBe('560');
     });
 
+    it('«(Wallace, p. 232, 236)» y «(Tuggy, p. 90; Robertson, p. 574)» no son títulos (TP #9, B37)', () => {
+        const claves = ['Wallace', 'Tuggy', 'Robertson'];
+        expect(findInlineCitations('(Wallace, p. 232, 236)', claves).map(c => [c.author, c.pages]))
+            .toEqual([['Wallace', '232, 236']]);
+        expect(findInlineCitations('(Tuggy, p. 90; Robertson, p. 574)', claves).map(c => [c.author, c.pages]).sort())
+            .toEqual([['Robertson', '574'], ['Tuggy', '90']]);
+    });
+
+    it('con título, la página admite una lista (TP #9, B37, revisión)', () => {
+        expect(findInlineCitations('(Wallace, Gramática griega, pp. 232, 236)', ['Wallace']).map(c => [c.author, c.title, c.pages]))
+            .toEqual([['Wallace', 'Gramática griega', '232, 236']]);
+    });
+
+    it('un «;» en el título no corta si lo que sigue no es otra fuente del trabajo', () => {
+        expect(findInlineCitations('(Moo, The Letter of James; Pillar, 206)', ['Moo']).map(c => [c.author, c.title, c.pages]))
+            .toEqual([['Moo', 'The Letter of James; Pillar', '206']]);
+    });
+
+    it('«Autor, N, N» es lista de páginas, con claves o sin ellas (decisión documentada)', () => {
+        const con = findInlineCitations('(Calvino, 3, 120)', ['Calvino']).map(c => [c.author, c.pages]);
+        expect(con).toEqual([['Calvino', '3, 120']]);
+        expect(findInlineCitations('(Calvino, 3, 120)').map(c => [c.author, c.pages])).toEqual(con);
+    });
+
     it('pasar claves no cambia lo que las otras tres formas ya veían', () => {
         const texto = 'El genitivo (Mayor, "The Epistle of St. James", p. 77) y Kistemaker (p. 259).';
         expect(findInlineCitations(texto).map(c => c.author).sort())

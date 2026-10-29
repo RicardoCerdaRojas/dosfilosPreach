@@ -668,8 +668,10 @@ export function deskSourcesSummary(
         else if (r.done === true) { met++; accepted++; }
         else if (m.status === 'incomplete') incomplete++;
     }
+    // Un requisito propio dado por cumplido a propósito («Dar por cumplido»)
+    // no vuelve a abrir la fase desde la cobertura (revisión de B10).
     const propios = (project.bibliographyCriteria?.requirementItems ?? [])
-        .filter(r => r.kind === 'minimum-type' && r.sourceType && (r.minimum ?? 0) > 0)
+        .filter(r => r.kind === 'minimum-type' && r.sourceType && (r.minimum ?? 0) > 0 && r.done !== true)
         .map(r => ({ sourceType: r.sourceType!, minimum: r.minimum!, workType: '' }));
     const pedidos = [...(coverageRequirements ?? []), ...propios];
     return {
@@ -701,6 +703,17 @@ function sourcesPhase(s: DeskSourcesSummary, course: boolean): DeskPhase {
     if (s.approved === 0) return base('doing', phaseText('desk.sources.candidatesOnly', { candidates: s.candidates }));
     if (course && s.requiredToAcquire.length > 0) {
         return base('doing', phaseText('desk.sources.requiredToAcquire', { approved: s.approved, count: s.requiredToAcquire.length }));
+    }
+    // En el Curso, «Lista» mira lo que pide la rúbrica de cada tipo de trabajo
+    // (B10, TP #9: «Lista» al lado de «no alcanza: 0 de 1»). Tampoco las
+    // agregadas a mano la dan por cumplida: agregar no clasifica. Las aprobadas
+    // sin clasificar no cuentan para ningún tipo, y se nombran.
+    const sinCubrir = course ? (s.coverage?.rows ?? []).filter(r => r.approved < r.minimum) : [];
+    if (sinCubrir.length > 0) {
+        const unclassified = s.coverage?.unclassifiedApproved ?? 0;
+        return base('doing', unclassified > 0
+            ? phaseText('desk.sources.coveragePendingUnclassified', { approved: s.approved, missing: sinCubrir.length, unclassified })
+            : phaseText('desk.sources.coveragePending', { approved: s.approved, missing: sinCubrir.length }));
     }
     if (s.manual === s.approved) return base('ready', phaseText('desk.sources.readyManual', { count: s.approved }));
     if (s.requirements.met >= s.requirements.total) {
@@ -1115,18 +1128,28 @@ function buildCourse(input: ProjectDeskInput, studies: DeskStudy[], now: Date): 
     // Fase 1: cada tipo con la rúbrica del profesor, o con «El curso no da
     // rúbrica» confirmado. Mientras el catálogo carga no se decide: `doing`
     // con `loading` (nunca `ready` antes de saber).
+    // «En curso» dice QUÉ tipos faltan y qué les falta: «sin la rúbrica del
+    // profesor: 1» no decía cuál (TP #9). Los nombres van como dato; un tipo
+    // sin nombre sale «—».
     const cargando = workTypes.some(w => w.rubricLoading);
-    const faltantes = workTypes.filter(w => w.rubric === 'missing').length;
-    const sinProfesor = workTypes.filter(w => !w.rubricResolved && w.rubric !== 'missing').length;
+    const conPlantillaBorrada = workTypes.filter(w => w.rubric === 'missing');
+    const porConfirmar = workTypes.filter(w => !w.rubricResolved && w.rubric !== 'missing');
+    const faltantes = conPlantillaBorrada.length;
+    const sinProfesor = porConfirmar.length;
+    const nombres = (ws: ReadonlyArray<DeskWorkType>) => ws.map(w => (w.label ?? '').trim() || '—').join(', ');
     const nTipos = workTypes.length;
     const fase1: DeskPhase = nTipos === 0
         ? { id: 'charge', status: 'todo', evidence: phaseText('desk.course.charge.todo') }
         : cargando
             ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.loading', { types: nTipos }), loading: true }
             : faltantes > 0
-                ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.unresolved', { types: nTipos, unresolved: faltantes + sinProfesor, missing: faltantes }) }
+                ? { id: 'charge', status: 'doing', evidence: phaseText(sinProfesor > 0 ? 'desk.course.charge.unresolvedMixed' : 'desk.course.charge.unresolved', {
+                    types: nTipos, unresolved: faltantes + sinProfesor, missing: faltantes,
+                    missingNames: nombres(conPlantillaBorrada),
+                    ...(sinProfesor > 0 ? { count: sinProfesor, names: nombres(porConfirmar) } : {}),
+                }) }
                 : sinProfesor > 0
-                    ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.noProfessorRubric', { types: nTipos, count: sinProfesor }) }
+                    ? { id: 'charge', status: 'doing', evidence: phaseText('desk.course.charge.noProfessorRubric', { types: nTipos, count: sinProfesor, names: nombres(porConfirmar) }) }
                     : { id: 'charge', status: 'ready', evidence: phaseText('desk.course.charge.ready', { types: nTipos }) };
 
     const fase2 = sourcesPhase(sources, true);
@@ -1514,6 +1537,8 @@ export const DESK_TEXT_KEYS = [
     'desk.sources.ready', // {approved, toAcquire}
     'desk.sources.readyRequirements', // {approved, toAcquire, met, total}
     'desk.sources.readyManual', // {count}
+    'desk.sources.coveragePending', // {approved, missing} (Curso)
+    'desk.sources.coveragePendingUnclassified', // {approved, missing, unclassified} (Curso)
     // Fase 3 Exegético · División en perícopas
     'desk.exegetical.division.todo',
     'desk.exegetical.division.draft',
@@ -1533,8 +1558,9 @@ export const DESK_TEXT_KEYS = [
     // Curso · fases 1, 3, 4 y 5
     'desk.course.charge.todo',
     'desk.course.charge.loading', // {types} (el catálogo de rúbricas carga: `loading: true`)
-    'desk.course.charge.unresolved', // {types, unresolved, missing} (alguna plantilla ya no existe)
-    'desk.course.charge.noProfessorRubric', // {types, count} («sin la rúbrica del profesor: N»)
+    'desk.course.charge.unresolved', // {types, unresolved, missing, missingNames} (alguna plantilla ya no existe)
+    'desk.course.charge.unresolvedMixed', // {types, unresolved, missing, missingNames, count, names} (y otras sin confirmar)
+    'desk.course.charge.noProfessorRubric', // {types, count, names} (los tipos sin la rúbrica del profesor, por nombre)
     'desk.course.charge.ready', // {types}
     'desk.course.calendar.todo',
     'desk.course.calendar.incomplete', // {entries, missing}

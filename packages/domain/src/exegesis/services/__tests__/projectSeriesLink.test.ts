@@ -60,9 +60,10 @@ describe('la bibliografía que hereda un estudio del proyecto', () => {
 
     it('un proyecto de antes, con solo sourceIds, da fuentes con título y tipo de la biblioteca', () => {
         const fuentes = projectSourcesForBook({ sourceIds: ['halot', 'williamson'] }, 'NEH', resourceOf);
+        // Con la clave de cita del autor del libro (TP #9, B14).
         expect(fuentes).toEqual([
-            { corpusId: 'halot', sourceLibraryResourceId: 'halot', sourceType: 'lexicon-technical', displayLabel: 'HALOT', mode: 'full-document' },
-            { corpusId: 'williamson', sourceLibraryResourceId: 'williamson', sourceType: 'commentary-critical', displayLabel: 'Ezra, Nehemiah', mode: 'full-document' },
+            { corpusId: 'halot', sourceLibraryResourceId: 'halot', sourceType: 'lexicon-technical', displayLabel: 'HALOT', mode: 'full-document', citationKey: 'Koehler y Baumgartner' },
+            { corpusId: 'williamson', sourceLibraryResourceId: 'williamson', sourceType: 'commentary-critical', displayLabel: 'Ezra, Nehemiah', mode: 'full-document', citationKey: 'Williamson' },
         ]);
     });
 

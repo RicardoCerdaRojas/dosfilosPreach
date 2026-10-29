@@ -115,9 +115,16 @@ function collect(
  *
  * El título admite paréntesis anidados —`A Commentary on the Psalms 1-41
  * (Kregel Exegetical Library)`— porque los lleva de verdad.
+ *
+ * Y la página admite una lista: «(Wallace, Gramática griega, pp. 232, 236)»
+ * daba el título «Gramática griega, pp. 232» y la página 236 (TP #9, B37).
+ * «Autor, N, N» se lee como lista de páginas y no como tomo y página: es lo
+ * que escribe el compositor («(Wallace, 232, 236)» en el TP #9) y lo que lee
+ * el verificador sin claves; un tomo sin título («(Calvino, 3, 120)») queda
+ * como páginas 3 y 120. Sin el título no hay con qué distinguirlos.
  */
 const TITLED_UNQUOTED_CITATION =
-    /\(\s*([^,():"]{2,40}?)\s*,\s*((?:[^()"]|\([^()]*\))+?)\s*,\s*(?:pp?\.\s*|hojas?\s+)?([\d][\d–\-—]*)\s*\)/g;
+    /\(\s*([^,():"]{2,40}?)\s*,\s*((?:[^()"]|\([^()]*\))+?)\s*,\s*(?:pp?\.\s*|hojas?\s+)?(\d[\d–\-—]*(?:\s*,\s*\d[\d–\-—]*)*)\s*\)/g;
 
 /**
  * Todas las citas inline de un texto, resueltos los solapamientos.
@@ -156,7 +163,7 @@ export function findInlineCitations(
         ...(citationKeys.length > 0
             ? collect(markdown, TITLED_UNQUOTED_CITATION, m => ({
                 author: m[1] ?? '', title: m[2] ?? '', pages: m[3] ?? null,
-            })).filter(m => resolvesToCitedSource(m.author, citationKeys))
+            })).filter(m => resolvesToCitedSource(m.author, citationKeys) && esTituloDeVerdad(m.title, citationKeys))
             : []),
         ...collect(markdown, QUOTED_CITATION, m => ({
             author: m[1] ?? '', title: m[2] ?? '', pages: m[3] ?? null,
@@ -178,6 +185,21 @@ export function findInlineCitations(
         if (!overlaps) accepted.push(candidate);
     }
     return accepted;
+}
+
+/**
+ * El «título» de la cuarta forma tiene que ser un título. Con las claves
+ * puestas, «(Wallace, p. 232, 236)» se leía como título «p. 232» y página 236,
+ * y «(Tuggy, p. 90; Robertson, p. 574)» como título «p. 90; Robertson» y la
+ * cita de Robertson desaparecía (TP #9, Stg 4:14-15): la revisión avisaba que
+ * la prosa no citaba a Wallace 232 ni a Robertson 574, y las citaba.
+ *
+ * Un «;» solo corta cuando lo que sigue empieza con otra fuente del trabajo:
+ * «(Moo, The Letter of James; Pillar, 206)» es un título con punto y coma.
+ */
+function esTituloDeVerdad(titulo: string, citationKeys: ReadonlyArray<string | null | undefined>): boolean {
+    if (/^(?:pp?\.\s*|hojas?\s+)?\d[\d\s,–\-—]*$/.test(titulo.trim())) return false;
+    return !titulo.split(';').slice(1).some(tramo => resolvesToCitedSource(tramo.split(',')[0] ?? '', citationKeys));
 }
 
 /** Acentos y mayúsculas fuera: «Wallace» y «wallace» son el mismo autor. */

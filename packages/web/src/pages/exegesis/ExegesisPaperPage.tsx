@@ -70,10 +70,13 @@ import { CoherencePassDialog } from '@/components/exegesis/CoherencePassDialog';
 import { ExegesisQuotaBadge } from '@/components/exegesis/ExegesisQuotaBadge';
 import { PaperDerivedArtifactsPanel } from '@/components/exegesis/PaperDerivedArtifactsPanel';
 import { ReadingOfTheBookPanel } from './components/ReadingOfTheBookPanel';
+import { NotRequestedSteps, splitNotRequestedSteps } from './components/NotRequestedSteps';
 import { TextZoomControl } from '@/components/ui/text-zoom-control';
 import { getTextZoomClass, type TextZoomLevel } from '@/lib/textZoom';
 import { exportPaperToDocx } from '@/lib/exegesis/exportPaperToDocx';
 import { paperBackLink, type PaperBackKind } from './paperBackLink';
+import { offersSermonStart } from './paperSermonStart';
+import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import {
     exportPaperToMarkdown,
     formatPassageReference,
@@ -704,13 +707,16 @@ function StartStudyButton({
     pending: boolean;
     t: (key: string) => string;
 }) {
+    // En un TP del curso no se ofrece el sermón (TP #9, B24).
+    const { projects, isLoadingProjects } = useFacultyProjects();
+    const derivados = usePaperDerivedArtifacts(paper.id);
+    if (!offersSermonStart(paper, isLoadingProjects ? null : projects)) return null;
     const hasAcceptedAnalysis = paper.steps.some(
         (step) => step.kind === 'verse' && Boolean(step.accepted?.canonicalAnalysis),
     );
     // Si este paper ya abrió un borrador, el botón NO empieza nada: vuelve.
     // Decir «comenzar» sobre algo ya empezado fue lo que llevó a cinco
     // borradores del mismo pasaje, todos parados en el paso 1.
-    const derivados = usePaperDerivedArtifacts(paper.id);
     const yaHayBorrador = (derivados.data ?? []).some(a => a.kind === 'sermon' && a.isDraft);
 
     return (
@@ -769,11 +775,28 @@ function StepsPanel({
     // (`verseWordBudget`): es el número que muestra y que el diálogo de
     // recomposición propone.
     const formatting = paper.rubric?.formatting ?? null;
+    const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
     const wordsPerShare = sectionBudgets(
         paper.rubric?.expectedLength ?? null,
-        documentSections(steps, parseBriefQuestions(paper.assignmentBrief, paper.passage)),
+        documentSections(steps, preguntas),
         formatting,
     ).perShare;
+    const { requested: pedidos, notRequested: noPedidos } = splitNotRequestedSteps(sortedSteps);
+    const renderStep = (step: ExegeticalPaper['steps'][number]) => (
+        <StepCard
+            key={step.id}
+            step={step}
+            paperId={paper.id}
+            language={language}
+            allSteps={paper.steps}
+            assignmentBrief={paper.assignmentBrief}
+            passage={paper.passage}
+            assembledMarkdown={paper.assembledMarkdown}
+            hasAssembly={!!paper.assembledMarkdown?.trim()}
+            wordsPerShare={wordsPerShare}
+            formatting={formatting}
+        />
+    );
 
     return (
         <section className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
@@ -826,21 +849,14 @@ function StepsPanel({
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {sortedSteps.map(step => (
-                        <StepCard
-                            key={step.id}
-                            step={step}
-                            paperId={paper.id}
-                            language={language}
-                            allSteps={paper.steps}
-                            assignmentBrief={paper.assignmentBrief}
-                            passage={paper.passage}
-                            assembledMarkdown={paper.assembledMarkdown}
-                            hasAssembly={!!paper.assembledMarkdown?.trim()}
-                            wordsPerShare={wordsPerShare}
-                            formatting={formatting}
-                        />
-                    ))}
+                    {pedidos.map(renderStep)}
+                    {/* Lo que el encargo no pide, plegado al final (TP #9, B22). */}
+                    <NotRequestedSteps
+                        steps={noPedidos}
+                        language={language}
+                        hasQuestions={preguntas.length > 0}
+                        renderStep={renderStep}
+                    />
                     {/* v1.7 corpus-usage planning — coverage report
                         once the user starts accepting steps. Self-hides
                         when there's nothing to report (no sources or

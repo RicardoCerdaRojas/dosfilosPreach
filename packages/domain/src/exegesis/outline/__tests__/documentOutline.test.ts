@@ -113,6 +113,39 @@ describe('parseHeadingReference — encabezado de página de un comentario de no
     });
 });
 
+describe('parseHeadingReference — capítulo en romanos con coma (TP #9, B18)', () => {
+    // Ropes, ICC: las páginas impares llevan «Ⅳ, 9–11» (con el carácter de
+    // numeral romano U+2163) y el comentario quedaba sin índice.
+    it('lee «IV, 11» y sus variantes con el libro del contexto', () => {
+        expect(parseHeadingReference('IV, 11', 'JAS')).toEqual(ref('James 4:11'));
+        expect(parseHeadingReference('IV. 11', 'JAS')).toEqual(ref('James 4:11'));
+        expect(parseHeadingReference('iv, 11', 'JAS')).toEqual(ref('James 4:11'));
+        expect(parseHeadingReference('IV 11-12', 'JAS')).toEqual(ref('James 4:11-12'));
+        expect(parseHeadingReference('IV, 11-17', 'JAS')).toEqual(ref('James 4:11-17'));
+        expect(parseHeadingReference('V, 1-3', 'JAS')).toEqual(ref('James 5:1-3'));
+    });
+
+    it('lee los numerales romanos de Unicode y el tramo que cruza de capítulo', () => {
+        expect(parseHeadingReference('Ⅳ, 9–11', 'JAS')).toEqual(ref('James 4:9-11'));
+        expect(parseHeadingReference('Ⅳ, 17–Ⅴ, 1', 'JAS')).toEqual(ref('James 4:17-5:1'));
+    });
+
+    it('no lee como capítulo lo que es otra cosa', () => {
+        expect(parseHeadingReference('IV', 'JAS')).toBeNull();
+        expect(parseHeadingReference('CHAPTER IV', 'JAS')).toBeNull();
+        expect(parseHeadingReference('CHAPTER V.', 'JAS')).toBeNull();
+        expect(parseHeadingReference('Chapter IV, 11', 'JAS')).toBeNull();
+        // «v. 11» y «V. 11» son «versículo 11», no el capítulo 5.
+        expect(parseHeadingReference('v. 11', 'JAS')).toBeNull();
+        expect(parseHeadingReference('V. 11', 'JAS')).toBeNull();
+        expect(parseHeadingReference('v, 11', 'JAS')).toBeNull();
+        // Un capítulo que el libro no tiene, o un tramo al revés.
+        expect(parseHeadingReference('VI, 2', 'JAS')).toBeNull();
+        expect(parseHeadingReference('IV, 17–11', 'JAS')).toBeNull();
+        expect(parseHeadingReference('IV, 11', null)).toBeNull();
+    });
+});
+
 describe('resolveOutlineReferences', () => {
     it('lee los encabezados de Mayor con el libro del trabajo y las páginas pares heredan', () => {
         const resolved = resolveOutlineReferences(
@@ -323,6 +356,81 @@ describe('selectChunksForPassage', () => {
         });
 
         expect(selection.ranges).toEqual([{ start: 0, end: 1 }]);
+    });
+
+    describe('los bordes del pasaje (TP #9, B17)', () => {
+        const stg = ref('James 4:11-17');
+
+        it('Ropes: entran la página que abre 4:11 y la que cierra 4:17, no el capítulo 5', () => {
+            // Encabezados reales de Ropes (h. 287-301): las impares nombran los
+            // versículos y las pares dicen «JAMES» y heredan.
+            const ropes = resolveOutlineReferences([
+                entry(0, 'Ⅳ, 8–9', ['JAMES', 'Ⅳ, 8–9'], 287),
+                entry(1, 'JAMES', ['JAMES', 'JAMES'], 288),
+                entry(2, 'Ⅳ, 9–11', ['JAMES', 'Ⅳ, 9–11'], 289),
+                entry(3, 'JAMES', ['JAMES', 'JAMES'], 290),
+                entry(4, 'Ⅳ, 11–13', ['JAMES', 'Ⅳ, 11–13'], 291),
+                entry(5, 'JAMES', ['JAMES', 'JAMES'], 292),
+                entry(6, 'Ⅳ, 13–14', ['JAMES', 'Ⅳ, 13–14'], 293),
+                entry(7, 'Ⅳ, 15–17', ['JAMES', 'Ⅳ, 15–17'], 297),
+                entry(8, 'JAMES', ['JAMES', 'JAMES'], 298),
+                entry(9, 'Ⅳ, 17–Ⅴ, 1', ['JAMES', 'Ⅳ, 17–Ⅴ, 1'], 299),
+                entry(10, 'JAMES', ['JAMES', 'JAMES'], 300),
+                entry(11, 'V, 1-3', ['JAMES', 'V, 1-3'], 301),
+            ], 'JAS');
+
+            const selection = selectChunksForPassage(ropes, stg, { contextChunks: 0 });
+            expect(selection.ranges).toEqual([{ start: 2, end: 9 }]);
+        });
+
+        it('la sección que empieza en el pasaje y sigue después trae el final del pasaje', () => {
+            const outline = resolveOutlineReferences([
+                entry(0, 'James 4:1-10'),
+                entry(1, 'James 4:11-12'),
+                entry(2, 'VI. Two Oracles of Warning (4:13–5:6)', ['James']),
+                entry(3, 'VI. Two Oracles of Warning (4:13–5:6)', ['James']),
+                entry(4, 'James 5:7-11'),
+            ]);
+            expect(selectChunksForPassage(outline, stg, { contextChunks: 0 }).ranges).toEqual([{ start: 1, end: 3 }]);
+        });
+
+        it('McCartney: la introducción a «4:13–5:6» entre 4:11-12 y 4:13-17 no deja hueco', () => {
+            const outline = resolveOutlineReferences([
+                entry(0, 'James 4:1-10'),
+                entry(1, 'B. Part 2: Defamation and Censure (4:11–12)', ['James']),
+                entry(2, 'VI. Interjection: Two Oracles of Warning (4:13–5:6)', ['James']),
+                entry(3, 'A. Oracle 1: Warning to Merchants (4:13–17)', ['James']),
+                entry(4, 'B. Oracle 2: Warning to Landlords (5:1–6)', ['James']),
+            ]);
+            expect(selectChunksForPassage(outline, stg, { contextChunks: 0 }).ranges).toEqual([{ start: 1, end: 3 }]);
+            // Para 4:13-17, «4:13–5:6» lo envuelve y sigue descartado.
+            expect(selectChunksForPassage(outline, ref('James 4:13-17'), { contextChunks: 0 }).ranges).toEqual([{ start: 3, end: 3 }]);
+        });
+
+        it('una sección que se pisa con el pasaje pero queda lejos no se suma', () => {
+            const outline = resolveOutlineReferences([
+                entry(0, 'James 4:1-12'),
+                entry(1, 'James 4:1-10'),
+                entry(2, 'James 4:11-12'),
+                entry(3, 'James 4:13-17'),
+                entry(4, 'James 5:1-6'),
+            ]);
+            expect(selectChunksForPassage(outline, stg, { contextChunks: 0 }).ranges).toEqual([{ start: 2, end: 3 }]);
+        });
+
+        it('el tope recorta lo de afuera, no el final del pasaje', () => {
+            const outline = resolveOutlineReferences([
+                entry(0, 'James 4:9-11'),
+                entry(1, 'James 4:9-11'),
+                entry(2, 'James 4:11-17'),
+                entry(3, null, ['James']),
+                entry(4, null, ['James']),
+                entry(5, null, ['James']),
+            ]);
+            const selection = selectChunksForPassage(outline, stg, { contextChunks: 0, maxChunks: 4 });
+            expect(selection.ranges).toEqual([{ start: 2, end: 5 }]);
+            expect(selection.truncated).toBe(true);
+        });
     });
 
     it('separa tramos no contiguos', () => {

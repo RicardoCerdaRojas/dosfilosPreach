@@ -10,6 +10,8 @@ vi.mock('@/i18n', () => ({
 const { SourcesSection, stateOfArtUrl } = await import('../SourcesSection');
 beforeEach(cleanup);
 
+/** Un título propio, ya traducido por quien llama (dato de prueba). */
+const TITULO_PROPIO = 'Fuentes del curso';
 const ficha = (id: string, over: Record<string, unknown> = {}) => ({ id, title: `Obra ${id}`, resourceId: `r_${id}`, weight: 'recommended', decision: 'approved', origins: ['catalog'], ...over });
 
 describe('SourcesSection', () => {
@@ -17,7 +19,7 @@ describe('SourcesSection', () => {
         const s = deskSourcesSummary({ bibliography: [ficha('a')] as never });
         render(
             <MemoryRouter>
-                <SourcesSection projectId="nt 785" sources={s} phase={{ id: 'sources', status: 'ready', evidence: { key: 'desk.sources.ready', params: { approved: 1, toAcquire: 0 } } }} phaseNumber={2} title="Fuentes del curso">
+                <SourcesSection projectId="nt 785" sources={s} phase={{ id: 'sources', status: 'ready', evidence: { key: 'desk.sources.ready', params: { approved: 1, toAcquire: 0 } } }} phaseNumber={2} title={TITULO_PROPIO}>
                     <p>cobertura por tipo</p>
                 </SourcesSection>
             </MemoryRouter>,
@@ -25,7 +27,7 @@ describe('SourcesSection', () => {
         const seccion = document.getElementById('fase-sources')!;
         expect(seccion).toBeTruthy();
         expect(seccion.textContent).toContain('desk.journey.phaseLabel:{"number":2}');
-        expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Fuentes del curso');
+        expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(TITULO_PROPIO);
         expect(screen.getByText('cobertura por tipo')).toBeInTheDocument();
         expect(screen.getByText('desk.sources.ready:{"approved":1,"toAcquire":0}')).toBeInTheDocument();
         expect(stateOfArtUrl('nt 785')).toBe('/dashboard/projects/nt%20785/estado-del-arte');
@@ -47,6 +49,22 @@ describe('SourcesSection', () => {
         expect(screen.getByText('sources.incomplete:{"count":1}')).toBeInTheDocument();
         expect(screen.getByText('sources.accepted:{"count":1}')).toBeInTheDocument();
         expect(screen.queryByTestId('desk-sources-manual')).toBeNull();
+    });
+
+    it('mientras la biblioteca carga (B6): «cargando», las fichas a la vista y lo que se mide por tipo, no', () => {
+        const s = deskSourcesSummary({
+            bibliography: [ficha('a'), ficha('b')] as never,
+            bibliographyCriteria: { requirementItems: [{ id: 'r2', kind: 'perspectives', text: 'opuestos', origin: 'manual' }] } as never,
+        });
+        render(
+            <MemoryRouter>
+                <SourcesSection projectId="p" sources={s} phase={{ id: 'sources', status: 'doing', loading: true, evidence: { key: 'desk.sources.requirementsPending', params: { approved: 2, met: 0, total: 1 } } }} phaseNumber={2} />
+            </MemoryRouter>,
+        );
+        expect(screen.getByText('desk.journey.status.loading')).toBeInTheDocument();
+        expect(screen.getByTestId('desk-sources-summary').textContent).toBe('sources.approved:{"count":2}');
+        expect(screen.queryByText(/desk\.sources\.requirementsPending/)).toBeNull();
+        expect(screen.queryByText(/sources\.incomplete/)).toBeNull();
     });
 
     it('posterior a la activa y sin fichas: una línea; el Curso da su propia razón (no «tu lectura del libro»)', () => {

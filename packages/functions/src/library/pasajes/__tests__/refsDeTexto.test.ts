@@ -322,3 +322,37 @@ describe('refsDeFragmento · comentarios clásicos de notas', () => {
         expect(libroDelTitulo('Greek Grammar Beyond the Basics')).toBeNull();
     });
 });
+
+/**
+ * TP #9 (2026-10-28, B18). Encabezados reales de Ropes, ICC (h. 287-301): el
+ * capítulo en romanos —con el carácter de numeral romano «Ⅳ»—, coma y los
+ * versículos de la página. El índice de pasajes quedaba vacío.
+ */
+describe('refsDeFragmento · capítulo en romanos con coma (Ropes)', () => {
+    it('lee «Ⅳ, 9–11» y «IV, 11-17» con el libro del encabezado de arriba', () => {
+        expect(refsDeFragmento('', ['JAMES', 'Ⅳ, 9–11'])).toEqual(['JAS.4', 'JAS.4.9', 'JAS.4.10', 'JAS.4.11']);
+        expect(refsDeFragmento('', ['JAMES', 'IV, 11-12'])).toEqual(['JAS.4', 'JAS.4.11', 'JAS.4.12']);
+        expect(refsDeFragmento('', ['JAMES', 'iv, 11'])).toEqual(['JAS.4', 'JAS.4.11']);
+        expect(refsDeFragmento('', ['JAMES', 'IV. 11'])).toEqual(['JAS.4', 'JAS.4.11']);
+        expect(refsDeFragmento('', ['JAMES', 'IV 11-12'])).toEqual(['JAS.4', 'JAS.4.11', 'JAS.4.12']);
+        expect(refsDeFragmento('', ['JAMES', 'V, 1-3'])).toEqual(['JAS.5', 'JAS.5.1', 'JAS.5.2', 'JAS.5.3']);
+    });
+
+    it('cruza de capítulo', () => {
+        expect(refsDeFragmento('', ['JAMES', 'Ⅳ, 17–Ⅴ, 1'])).toEqual(['JAS.4', 'JAS.4.17', 'JAS.5', 'JAS.5.1']);
+    });
+
+    it('el «v. 14» del texto se lee con el capítulo del encabezado', () => {
+        expect(refsDeFragmento('the latter part of this same verse and v. 15', ['JAMES', 'Ⅳ, 14–15'])).toEqual(['JAS.4', 'JAS.4.14', 'JAS.4.15']);
+    });
+
+    it('no lee como capítulo lo que es otra cosa', () => {
+        expect(refsDeFragmento('', ['JAMES', 'CHAPTER V.'])).toEqual([]);
+        expect(refsDeFragmento('', ['JAMES', 'IV'])).toEqual([]);
+        expect(refsDeFragmento('', ['JAMES', 'v. 11'])).toEqual([]);
+        expect(refsDeFragmento('', ['JAMES', 'V. 11'])).toEqual([]);
+        expect(refsDeFragmento('', ['JAMES', 'VI, 2'])).toEqual([]);
+        // Sin libro en el contexto, no se adivina.
+        expect(refsDeFragmento('', ['Ⅳ, 9–11'])).toEqual([]);
+    });
+});

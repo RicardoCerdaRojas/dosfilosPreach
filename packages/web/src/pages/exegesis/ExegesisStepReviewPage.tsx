@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { paginaHallada } from '@/components/exegesis/review/paginaHallada';
 import { Link, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
-import { formatPassageReference, isProsePath, type CitationStatus, type SupportedLanguage } from '@dosfilos/domain';
+import { ArrowLeft, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
+import { findInlineCitations, formatPassageReference, isProsePath, type CitationStatus, type SupportedLanguage } from '@dosfilos/domain';
 import { citaDeLaProsa } from '@/components/exegesis/review/citaDeLaProsa';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
@@ -15,6 +15,8 @@ import { CitationStatusBadge } from '@/components/exegesis/review/CitationStatus
 import { useStepReview } from '@/components/exegesis/review/useStepReview';
 import { OrphanCitationKeysNotice } from '@/components/exegesis/review/OrphanCitationKeysNotice';
 import { CitationLabel } from '@/components/exegesis/citation/CitationLabel';
+import { ProsaConVeredictos } from '@/components/exegesis/review/ProsaConVeredictos';
+import { UnreadableOriginalNotice } from '@/components/exegesis/review/UnreadableOriginalNotice';
 
 // «Página no comprobable» bloquea aceptar y no tenía filtro (TP #8, D5).
 const FILTERS: ReadonlyArray<CitationStatus> = ['not-found', 'page-unverifiable', 'page-mismatch', 'fuzzy-low', 'manual-pending', 'verified'];
@@ -22,8 +24,9 @@ const FILTERS: ReadonlyArray<CitationStatus> = ['not-found', 'page-unverifiable'
 /**
  * Revisar las citas de un paso antes de aceptarlo.
  *
- * A la izquierda, el análisis con cada cita marcada con su veredicto; a la
- * derecha, la evidencia de la cita elegida y la decisión humana. Es página
+ * A la izquierda, la prosa (lo que va al Word) y debajo el análisis, cada
+ * cita marcada con su veredicto; a la derecha, la evidencia de la cita
+ * elegida y la decisión humana. Es página
  * y no diálogo por lo mismo que el selector de hojas: dieciséis veredictos
  * con sus notas y el libro abierto al lado no entran en un recuadro.
  */
@@ -61,13 +64,23 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
     setOpenCitation: (c: CitationTarget | null) => void;
 }) {
     // Las claves del corpus, para reconocer la segunda mano al diagnosticar (D4).
-    const claves = paper.sources.map(s => s.citationKey?.trim()).filter((k): k is string => !!k);
+    const claves = useMemo(() => paper.sources.map(s => s.citationKey?.trim()).filter((k): k is string => !!k), [paper.sources]);
     const { t } = useTranslation('exegesis');
     const r = useStepReview(paper, step);
     const title = step.verseRef ? formatPassageReference(step.verseRef, lang) : t(`detail.steps.kind.${step.kind}`);
     const selectedVerdict = r.selectedPath ? r.verdicts.get(r.selectedPath) ?? null : null;
     const selectedReview = r.selectedPath ? r.reviews.get(r.selectedPath) ?? null : null;
     const selectedClaim = r.selectedPath ? r.claims.get(r.selectedPath) ?? null : null;
+    const prosa = r.version?.markdown?.trim() ? r.version.markdown : null;
+    const reviewedPaths = useMemo(() => new Set(r.reviews.keys()), [r.reviews]);
+    // «Editar contenido aceptado» hereda la fecha de verificación y borra los
+    // veredictos de la prosa: con fecha y sin veredictos, la prosa cambió y
+    // hay que volver a verificar (revisión de B41).
+    const avisoDeLaProsa = useMemo(() => {
+        if (!prosa || findInlineCitations(prosa, claves).length === 0) return null;
+        if (!r.verifiedAt) return 'canonical.review.prose.notVerified';
+        return [...r.verdicts.keys()].some(isProsePath) ? 'canonical.review.prose.subtitle' : 'canonical.review.prose.needsVerify';
+    }, [prosa, claves, r.verifiedAt, r.verdicts]);
     // La numeración se arregla en la biblioteca, sobre el recurso de la
     // fuente citada: sin el enlace, «puede ser la calibración» es un
     // diagnóstico sin puerta.
@@ -183,51 +196,35 @@ function ReviewBody({ paper, step, lang, openCitation, setOpenCitation }: {
 
                 <OrphanCitationKeysNotice paper={paper} analysis={r.analysis} />
 
-                {r.unreadableOriginal.length > 0 && (
-                    <section className="rounded-xl border border-warning/40 bg-warning-subtle/40 px-4 py-3 space-y-1.5">
-                        <h2 className="inline-flex items-center gap-1.5 text-xs font-semibold text-warning-subtle-foreground">
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            {t('canonical.review.unreadableOriginal.title', { count: r.unreadableOriginal.length })}
-                        </h2>
-                        <p className="text-[11px] text-warning-subtle-foreground">
-                            {t('canonical.review.unreadableOriginal.body')}
-                        </p>
-                        <ul className="space-y-0.5">
-                            {r.unreadableOriginal.map(c => (
-                                <li key={c.path}>
-                                    <button
-                                        type="button"
-                                        onClick={() => select(c.path)}
-                                        className="text-[11px] text-warning-subtle-foreground underline-offset-2 hover:underline"
-                                    >
-                                        {t('canonical.review.unreadableOriginal.item', { form: c.form, source: c.sourceKey })}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                        {/* Qué hacer depende de POR QUÉ falta, y son dos cosas
-                            distintas: un libro que translitera no se
-                            re-extrae. Se agrupan las razones presentes para no
-                            repetir el mismo párrafo por cada afirmación. */}
-                        {[...new Set(r.unreadableOriginal.map(c => c.absence))].map(razon => (
-                            <p key={razon} className="text-[11px] text-muted-foreground">
-                                {t(`canonical.review.unreadableOriginal.${razon}`)}
-                            </p>
-                        ))}
-                    </section>
-                )}
+                <UnreadableOriginalNotice claims={r.unreadableOriginal} onSelect={select} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
-                    <main className="rounded-2xl border border-border bg-card p-6">
-                        {r.analysis ? (
-                            <CanonicalAnalysisStudyView
-                                analysis={r.analysis}
-                                marks={{ verdicts: r.verdicts, reviewed: new Set(r.reviews.keys()), selectedPath: r.selectedPath, onSelect: select }}
-                            />
-                        ) : (
-                            <p className="text-sm text-muted-foreground">
-                                {r.verdicts.size > 0 ? t('canonical.review.proseOnly') : t('canonical.review.noAnalysis')}
-                            </p>
+                    <main className="space-y-6 min-w-0">
+                        {/* La prosa primero: es lo que va al Word, y sus citas
+                            también se verifican (TP #9, B41). */}
+                        {prosa && (
+                            <section className="rounded-2xl border border-border bg-card p-6" aria-labelledby="revision-prosa">
+                                <h2 id="revision-prosa" className="mb-1 text-sm font-semibold text-foreground">{t('canonical.review.prose.title')}</h2>
+                                {avisoDeLaProsa && (
+                                    <p className={avisoDeLaProsa === 'canonical.review.prose.needsVerify' ? 'mb-4 text-[11px] text-warning-subtle-foreground' : 'mb-4 text-[11px] text-muted-foreground'}>{t(avisoDeLaProsa)}</p>
+                                )}
+                                <ProsaConVeredictos markdown={prosa} verdicts={r.verdicts} reviewed={reviewedPaths} selectedPath={r.selectedPath} onSelect={select} />
+                            </section>
+                        )}
+                        {(r.analysis || !prosa) && (
+                            <section className="rounded-2xl border border-border bg-card p-6" aria-labelledby={r.analysis && prosa ? 'revision-analisis' : undefined}>
+                                {r.analysis ? (
+                                    <>
+                                        {prosa && <h2 id="revision-analisis" className="mb-4 text-sm font-semibold text-foreground">{t('canonical.review.analysisTitle')}</h2>}
+                                        <CanonicalAnalysisStudyView
+                                            analysis={r.analysis}
+                                            marks={{ verdicts: r.verdicts, reviewed: reviewedPaths, selectedPath: r.selectedPath, onSelect: select }}
+                                        />
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">{t('canonical.review.noAnalysis')}</p>
+                                )}
+                            </section>
                         )}
                     </main>
 

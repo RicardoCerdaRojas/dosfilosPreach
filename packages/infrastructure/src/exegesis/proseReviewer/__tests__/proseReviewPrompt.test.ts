@@ -51,3 +51,35 @@ describe('la lectura de la respuesta', () => {
         expect(() => parseProseReview('no sé', PROSA, n)).toThrow(/no es JSON/);
     });
 });
+
+/** TP #9 (Santiago 4:14): el revisor tomó el análisis como verdad e inventó Wallace 961. */
+describe('el prompt del revisor — las notas del estudiante y las citas disponibles (B39, B40)', () => {
+    const NOTA = 'Robertson p. 767 no dice que τό permita reconocer un objeto completo: esa inferencia es del análisis. El criterio no decide; se corrige en la prosa.';
+    const con = {
+        ...entrada,
+        decisiveCriteria: [{ ...entrada.decisiveCriteria[0]!, reviewNotes: [`Robertson, p. 767 (pregunta 2, criterio decisivo): ${NOTA}`] }],
+        reviewNotes: [{ citation: 'Robertson, p. 767 (pregunta 2, criterio decisivo)', note: NOTA }],
+        availableCitations: ['Wallace, p. 236', 'Robertson, p. 767', 'Robertson, p. 961'],
+    };
+
+    it('la nota va pegada al criterio que corrige y en su propio bloque', () => {
+        const { userMessage } = buildProseReviewPrompt(con);
+        expect(userMessage).toContain(`· Nota de revisión del estudiante: Robertson, p. 767 (pregunta 2, criterio decisivo): ${NOTA}`);
+        expect(userMessage).toContain('NOTAS DE REVISIÓN DEL ESTUDIANTE (pesan más que el análisis):\n- Robertson, p. 767');
+        expect(userMessage).toContain('CITAS DISPONIBLES: Wallace, p. 236; Robertson, p. 767; Robertson, p. 961');
+    });
+
+    it('enseña a preguntar, no a ordenar restituir, y a no nombrar citas que no están', () => {
+        const { systemInstruction } = buildProseReviewPrompt(con);
+        expect(systemInstruction).toContain('¿es a propósito?');
+        expect(systemInstruction).toContain('nunca como orden de restituir');
+        expect(systemInstruction).toContain('Nunca nombres una cita (autor y página) que no esté en CITAS DISPONIBLES');
+        expect(buildProseReviewPrompt({ ...con, language: 'en' }).systemInstruction).toContain('is this on purpose?');
+    });
+
+    it('sin notas ni citas, los bloques no aparecen', () => {
+        const { userMessage } = buildProseReviewPrompt(entrada);
+        expect(userMessage).not.toContain('NOTAS DE REVISIÓN');
+        expect(userMessage).not.toContain('CITAS DISPONIBLES');
+    });
+});

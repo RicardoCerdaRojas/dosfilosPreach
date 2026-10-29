@@ -126,6 +126,8 @@
     "createNamed": "Crear el {{label}}",
     "createOfType": "Nuevo trabajo: {{type}}",
     "create": "Crear el {{label}}",
+    "editEntry": "Editar la entrega",
+    "editEntryLabel": "Editar la entrega {{label}}: fecha, tipo, rótulo o pasaje",
     "col": {
       "work": "Trabajo",
       "progress": "Avance",
@@ -279,7 +281,7 @@
     "requiredTitle": "Obligatorias por conseguir",
     "coverageTitle": "Lo que piden los tipos de trabajo",
     "coverageMet": "{{approved}} de {{minimum}} aprobadas",
-    "coverageMissing": "faltan: {{approved}} de {{minimum}} aprobadas",
+    "coverageMissing": "no alcanza: {{approved}} de {{minimum}} aprobadas",
     "coverageProject": "el curso"
   },
   "create": {

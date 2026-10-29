@@ -19,6 +19,7 @@ import {
     findInlineCitations,
     formatFirstNote,
     formatPassageReference,
+    rangosConRaya,
     formatShortNote,
     hasCover,
     TMS_COVER_STYLE,
@@ -321,9 +322,13 @@ function titleDisplayOf(paper: ExegeticalPaper): string {
     return paper.title?.trim() || formatPassageReference(paper.passage, paper.displayLanguage);
 }
 
-/** Un rango de versículos va con guion medio: «3:1–12», no con el signo menos (−) ni el guion corto. */
+/**
+ * Un rango de versículos va con raya corta: «3:1–12», no con el signo menos
+ * (−) ni el guion corto. La regla es la del dominio, la misma del título del
+ * ensamble (TP #9, B44); no toca fechas.
+ */
 function coverText(text: string): string {
-    return text.replace(/(\d)\s*[\u2212\u2010\u2011-]\s*(\d)/g, '$1–$2');
+    return rangosConRaya(text);
 }
 
 /** Lo que se compara para saber si un renglón ya dice lo que diría otro. */

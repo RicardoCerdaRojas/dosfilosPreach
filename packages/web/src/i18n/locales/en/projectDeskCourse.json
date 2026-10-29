@@ -126,6 +126,8 @@
     "createNamed": "Create {{label}}",
     "createOfType": "New work: {{type}}",
     "create": "Create {{label}}",
+    "editEntry": "Edit the assignment",
+    "editEntryLabel": "Edit the assignment {{label}}: date, kind, label or passage",
     "col": {
       "work": "Work",
       "progress": "Progress",
@@ -279,7 +281,7 @@
     "requiredTitle": "Required, still to acquire",
     "coverageTitle": "What the kinds of work ask for",
     "coverageMet": "{{approved}} of {{minimum}} approved",
-    "coverageMissing": "missing: {{approved}} of {{minimum}} approved",
+    "coverageMissing": "not enough: {{approved}} of {{minimum}} approved",
     "coverageProject": "the course"
   },
   "create": {

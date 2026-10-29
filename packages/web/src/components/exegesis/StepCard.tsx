@@ -33,13 +33,14 @@ import { destinoDeCita, type CitaEnlazada } from '@/components/exegesis/citation
 import { ProsaConCitas } from '@/components/exegesis/citation/ProsaConCitas';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { ObservationCitationNotice, StudentReadingPanel } from './StudentReadingPanel';
+import { useStudentReadingDraft } from './useStudentReadingDraft';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { AgregarIdeaDialog } from '@/components/exegesis/AgregarIdeaDialog';
 import { ProseReviewCard } from '@/components/exegesis/ProseReviewCard';
 import { Link, useNavigate } from 'react-router-dom';
-import { applyPageLabelStyle, assemblyContents, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, pertenceAlDocumento, questionsForVerse, resolveExegeticalMethod, separatesObservation, verseWordBudget } from '@dosfilos/domain';
+import { applyPageLabelStyle, assemblyContents, assemblyHandEdit, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, pertenceAlDocumento, questionsForVerse, resolveExegeticalMethod, restoreStoredPageLabels, separatesObservation, verseWordBudget } from '@dosfilos/domain';
 import type { PaperFormatting } from '@dosfilos/domain';
 import { AssemblyManifest } from '@/components/exegesis/AssemblyManifest';
 import { CitationVerificationDialog } from '@/components/exegesis/CitationVerificationDialog';
@@ -225,6 +226,16 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // "algo falló" sería inexacto —no falló nada, el navegador se fue.
     const abandoned = isAbandonedGeneration(step, now);
 
+    // El trabajo completo (ya en caché por la página que monta esta tarjeta):
+    // las citas de la prosa, el método y «Mi lectura».
+    const { paper: paperDeLasCitas } = useExegesisPaper(paperId);
+    // «Mi lectura» se guarda antes de generar el análisis (TP #9, B25).
+    const lectura = useStudentReadingDraft({
+        paperId,
+        stepId: step.id,
+        initial: paperDeLasCitas?.stepPlan?.perStep?.[step.id]?.studentReading,
+    });
+
     const isPending = step.state === 'pending';
     const isGenerating = step.state === 'generating' && !abandoned;
     const isReview = step.state === 'awaiting-review';
@@ -313,6 +324,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // legacy `generateStep` path until composers for them ship.
     const runAnalyzeCanonically = async (regenerationHint?: string) => {
         if (step.kind !== 'verse') return;
+        // Lo escrito en «Mi lectura» y sin guardar quedaba fuera del análisis
+        // (TP #9, B25): se guarda primero, y si no se puede, no se genera.
+        if (!(await lectura.guardar())) {
+            toast.error(t('studentReading.analyzeBlocked'));
+            return;
+        }
         try {
             await analyzeVerseCanonically.mutateAsync({
                 paperId,
@@ -357,6 +374,14 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         ? verseWordBudget(wordsPerShare, preguntaPropia.length)
         : null;
     const enElDocumento = step.includeInDocument !== false;
+    // Un paso que el encargo no pide (4:11, 4:13, 4:16, introducción y
+    // conclusión en el TP #9, que solo responde cuatro preguntas) no es
+    // trabajo atrasado: se rotula así y su botón no compite (B22).
+    const fueraDelEncargo = isPending && step.kind !== 'assembly' && !pertenceAlDocumento(step);
+    const estadoRotulo = fueraDelEncargo ? (preguntas.length > 0 ? 'notRequested' : 'excluded') : step.state;
+    const botonPrincipal = fueraDelEncargo
+        ? { variant: 'outline' as const }
+        : { className: 'bg-emerald-500 hover:bg-emerald-400 text-slate-900' };
 
     const isAssembly = step.kind === 'assembly';
     // Qué va a entrar al documento y qué no. La misma regla que usa el
@@ -365,6 +390,14 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     const contents = useMemo(
         () => (isAssembly && allSteps ? assemblyContents(allSteps, language) : null),
         [isAssembly, allSteps, language],
+    );
+    // Volver a ensamblar reemplaza las ediciones a mano del ensamble: se dice
+    // en el diálogo antes de confirmar (TP #9, B33). «Rehacer» no las pierde
+    // (deja el paso en revisión con la edición como versión vigente) y el
+    // regenerar de ahí pasa por este mismo diálogo.
+    const edicionAMano = useMemo(
+        () => (isAssembly && paperDeLasCitas?.steps ? assemblyHandEdit(paperDeLasCitas) : null),
+        [isAssembly, paperDeLasCitas],
     );
 
     const isVerse = step.kind === 'verse';
@@ -449,9 +482,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
      * hace que ese re-render no cueste nada.
      */
     // Las citas de la prosa que nombran una fuente del trabajo se pueden
-    // pulsar: abren el visor en su página (fase F). El trabajo ya está en
-    // caché por la página que monta esta tarjeta.
-    const { paper: paperDeLasCitas } = useExegesisPaper(paperId);
+    // pulsar: abren el visor en su página (fase F). `paperDeLasCitas` se lee
+    // arriba, con «Mi lectura».
     /** El método del trabajo (etapa 2, capa 3). */
     const metodoDelTrabajo = resolveExegeticalMethod(paperDeLasCitas?.exegeticalMethod);
     // Atado al TEXTO de las claves, no a la identidad del trabajo: marcar una
@@ -603,7 +635,9 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
 
     const handleSaveEdit = async () => {
         try {
-            await saveStepEdit.mutateAsync({ paperId, stepId: step.id, markdown: editDraft });
+            // Se guarda en la forma interna: las citas que no tocó vuelven a
+            // «(Tuggy, p. 257)» (TP #9, B45; `restoreStoredPageLabels`).
+            await saveStepEdit.mutateAsync({ paperId, stepId: step.id, markdown: restoreStoredPageLabels(editDraft, previewMarkdown, formatting) });
             setEditing(false);
             toast.success(t('detail.steps.toast.edited'));
         } catch (err) {
@@ -758,7 +792,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     </h3>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                         <span>
-                            {t(`detail.steps.state.${step.state}`)}
+                            {t(`detail.steps.state.${estadoRotulo}`)}
                             {step.versions.length > 0 ? ` · v${step.versions.length}` : ''}
                         </span>
                         {/* Qué pregunta del encuadre le toca a este paso. Se
@@ -797,7 +831,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     onClick={() => handleAnalyzeCanonically()}
                                     disabled={anyPipelinePending}
                                     title={t('canonical.actions.analyzeTooltip')}
-                                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
+                                    {...botonPrincipal}
                                 >
                                     {analyzeVerseCanonically.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <NotebookPen className="h-3.5 w-3.5 mr-1.5" />}
                                     {t('canonical.actions.analyze')}
@@ -826,7 +860,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     onClick={() => handleComposeConclusion()}
                                     disabled={anyPipelinePending}
                                     title={t('canonical.actions.composeConclusionTooltip')}
-                                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
+                                    {...botonPrincipal}
                                 >
                                     {composeConclusionFromAnalyses.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <NotebookPen className="h-3.5 w-3.5 mr-1.5" />}
                                     {t('canonical.actions.composeFromAnalyses')}
@@ -845,7 +879,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                     onClick={() => handleComposeIntroduction()}
                                     disabled={anyPipelinePending}
                                     title={t('canonical.actions.composeIntroductionTooltip')}
-                                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
+                                    {...botonPrincipal}
                                 >
                                     {composeIntroductionFromAnalyses.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <NotebookPen className="h-3.5 w-3.5 mr-1.5" />}
                                     {t('canonical.actions.composeFromAnalyses')}
@@ -1006,6 +1040,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         stepId={step.id}
                         initial={paperDeLasCitas.stepPlan?.perStep?.[step.id]?.studentReading}
                         method={metodoDelTrabajo}
+                        draft={lectura}
                     />
                 )}
                 {isVerse && canonicalAnalysis && paperDeLasCitas && (
@@ -1422,6 +1457,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 stepLabel={stepLabel}
                 stepKind={step.kind}
                 redoesAnalysis={shouldRegenerateCanonically}
+                warning={edicionAMano ? t('detail.steps.regenerate.handEditWarning') : undefined}
                 isPending={anyPipelinePending}
                 onRegenerate={(hint) => { setRegenerateOpen(false); handleAdaptiveRegenerate(hint); }}
             />
@@ -1435,7 +1471,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 // edición acepta el paso y se salta la revisión de citas.
                 // Se aplica sobre el texto VIGENTE, no sobre el de la propuesta.
                 onInsert={async (placement) => {
-                    await saveStepEdit.mutateAsync({ paperId, stepId: step.id, markdown: insertIdea(prosaEntregada, placement).markdown });
+                    await saveStepEdit.mutateAsync({ paperId, stepId: step.id, markdown: restoreStoredPageLabels(insertIdea(prosaEntregada, placement).markdown, previewMarkdown, formatting) });
                 }}
                 // En el ensamble la idea YA entra al documento: «vuelve a
                 // ensamblar» la borraría (revisión adversarial).

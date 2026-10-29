@@ -48,7 +48,7 @@ vi.mock('../useProjectAttachedSources', () => ({
     },
 }));
 
-const { useProjectDesk, hasPlannerDraft } = await import('../useProjectDesk');
+const { useProjectDesk, hasPlannerDraft, deskWhileLibraryLoads } = await import('../useProjectDesk');
 
 const envolver = () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -81,6 +81,17 @@ beforeEach(() => {
     biblioteca = { resources: [], isLoading: false };
     rubricas = { rubrics: [], isLoading: false };
     getUserSeries.mockResolvedValue([]);
+});
+
+describe('deskWhileLibraryLoads', () => {
+    it('sin carga devuelve el modelo tal cual; con carga, solo la fase 2 «cargando» y sin lectura dirigida', () => {
+        const modelo = { phases: [{ id: 'charge', status: 'ready' }, { id: 'sources', status: 'doing' }], course: { directedReading: [{ requirementId: 'pag' }] } } as never;
+        expect(deskWhileLibraryLoads(modelo, false)).toBe(modelo);
+        expect(deskWhileLibraryLoads(null, true)).toBeNull();
+        const v = deskWhileLibraryLoads(modelo, true)!;
+        expect(v.phases).toEqual([{ id: 'charge', status: 'ready' }, { id: 'sources', status: 'doing', loading: true }]);
+        expect(v.course!.directedReading).toEqual([]);
+    });
 });
 
 describe('el borrador del planificador', () => {
@@ -135,11 +146,32 @@ describe('el estado por bloque', () => {
         expect(result.current.journey).toBe('loading');
     });
 
-    it('mientras carga la biblioteca (la clasificación de las obras), las fuentes y el recorrido esperan', async () => {
+    it('mientras carga la biblioteca, el recorrido NO la espera si la fase 2 no es la activa: esa fase sale «cargando» (B6)', async () => {
+        // La biblioteca del fundador pesa 39 MB (medido el 2026-10-28): el escritorio no la espera para lo que no la usa.
         biblioteca = { resources: [], isLoading: true };
         const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
         await waitFor(() => expect(result.current.blocks.series).toBe('ready'));
         expect(result.current.blocks.sources).toBe('loading');
+        expect(result.current.desk!.activePhaseId).toBe('passage');
+        expect(result.current.journey).toBe('ready');
+        expect(result.current.desk!.phases.find(p => p.id === 'sources')!.loading).toBe(true);
+        expect(result.current.desk!.phases.find(p => p.id === 'passage')!.loading).toBeUndefined();
+    });
+
+    it('si la fase 2 es la activa, la biblioteca decide: el recorrido espera', async () => {
+        proyectos = [{ ...esdras, sourceIds: [], framing: { centralIdea: 'Dios restaura a su pueblo' } }];
+        biblioteca = { resources: [], isLoading: true };
+        const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(result.current.blocks.series).toBe('ready'));
+        expect(result.current.desk!.activePhaseId).toBe('sources');
+        expect(result.current.journey).toBe('loading');
+    });
+
+    it('un tipo viejo, que cuenta las fuentes del selector, sigue esperando la biblioteca', async () => {
+        proyectos = [{ ...esdras, type: 'counseling' }];
+        biblioteca = { resources: [], isLoading: true };
+        const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(result.current.blocks.series).toBe('ready'));
         expect(result.current.journey).toBe('loading');
     });
 

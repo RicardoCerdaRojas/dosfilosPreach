@@ -78,4 +78,31 @@ describe('ReviewVerseProseUseCase', () => {
         expect(review).not.toHaveBeenCalled();
         expect(consumeExegesis).not.toHaveBeenCalled();
     });
+
+    // TP #9 (4:14): la nota «el criterio no decide; se corrige en la prosa»
+    // no llegaba al revisor, y el revisor pidió Wallace 961, que no existe.
+    it('pasa las notas de revisión manual y descarta la cita inventada (B39, B40)', async () => {
+        const p = paper();
+        const qa = analisis.questionAnswers[0]!;
+        Object.assign(p.steps[0]!.accepted, {
+            citationReviews: [{ path: 'questionAnswers[0].decisiveCriterion.sources[0]', note: 'Mayor 135 no decide; se corrige en la prosa.' }],
+            canonicalAnalysis: { ...analisis, questionAnswers: [{ ...qa, decisiveCriterion: { ...qa.decisiveCriterion, sources: [{ sourceKey: 'Mayor', page: 135 }] } }] },
+        });
+        const review = vi.fn().mockResolvedValue({
+            findings: [
+                { criterion: 9, quote: '', problem: 'Falta la referencia a Wallace, p. 961.', fix: '' },
+                { criterion: 1, quote: '', problem: 'La prosa no sigue al análisis en el criterio: ¿es a propósito?', fix: '' },
+                { criterion: 9, quote: '', problem: 'El análisis cita Wallace, p. 533 y la prosa no.', fix: '' },
+            ],
+            modelId: 'm', tokensUsed: 1,
+        });
+        const { r, input } = await correr(p, review);
+        expect(input.reviewNotes).toEqual([{ citation: 'Mayor, p. 135 (pregunta 4, criterio decisivo)', note: 'Mayor 135 no decide; se corrige en la prosa.' }]);
+        expect(input.decisiveCriteria[0].reviewNotes).toEqual(['Mayor, p. 135 (pregunta 4, criterio decisivo): Mayor 135 no decide; se corrige en la prosa.']);
+        expect(input.availableCitations).toEqual(expect.arrayContaining(['Mayor, p. 135', 'Wallace, p. 533']));
+        expect(r.findings.map((f: { problem: string }) => f.problem)).toEqual([
+            'La prosa no sigue al análisis en el criterio: ¿es a propósito?',
+            'El análisis cita Wallace, p. 533 y la prosa no.',
+        ]);
+    });
 });

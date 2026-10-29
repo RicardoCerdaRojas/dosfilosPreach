@@ -144,7 +144,8 @@ describe('los avisos de error del material', () => {
 });
 
 describe('las fuentes en el recorrido', () => {
-    it('Curso: mientras carga la biblioteca que clasifica las obras, el recorrido espera', async () => {
+    it('Curso: si la fase 2 sería la activa, mientras carga la biblioteca que clasifica las obras, el recorrido espera', async () => {
+        proyectos = [{ ...proyecto, sourceIds: [], workTypes: [{ id: 'tp', label: 'TP', rubricTemplateId: null, rubricConfirmed: true }] }];
         biblioteca = { resources: [], isLoading: true };
         montar();
         // Que lleguen las series y los estudios: lo único que falta es la biblioteca.
@@ -152,6 +153,16 @@ describe('las fuentes en el recorrido', () => {
         await act(async () => { await new Promise(r => setTimeout(r, 20)); });
         expect(screen.getByTestId('project-roadmap-loading')).toBeInTheDocument();
         expect(screen.queryByTestId('desk-now')).toBeNull();
+    });
+
+    it('Curso: si la activa es otra, el recorrido no espera la biblioteca y la fase 2 dice «cargando» (B6)', async () => {
+        biblioteca = { resources: [], isLoading: true };
+        montar();
+        await waitFor(() => expect(getUserSeries).toHaveBeenCalled());
+        await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+        expect(screen.queryByTestId('project-roadmap-loading')).toBeNull();
+        expect(screen.getByTestId('desk-journey')).toBeInTheDocument();
+        expect(document.querySelector('[data-phase-status="loading"]')).not.toBeNull();
     });
 
     it('un tipo viejo (Investigación): mientras cargan las fuentes del selector, el recorrido espera', async () => {

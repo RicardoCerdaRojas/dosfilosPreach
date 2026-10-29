@@ -1,4 +1,5 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
+import { rangosConRaya } from '../services/rangeDash';
 import { esEncabezadoDeBibliografia } from '../services/paperBibliography';
 import type { BibliographyEntry } from '../services/paperBibliography';
 import type { RequiredBibliographyField } from '../services/bibliography';
@@ -53,8 +54,9 @@ export function exportPaperToMarkdown(
 ): string {
     const labels = paper.displayLanguage === 'en' ? LABELS_EN : LABELS_ES;
     const exportedAt = options.exportedAt ?? new Date();
-    const passageDisplay = formatPassageReference(paper.passage, paper.displayLanguage);
-    const titleDisplay = paper.title?.trim() || passageDisplay;
+    // Raya corta en los rangos de la cabecera, como en la portada (TP #9, B44).
+    const passageDisplay = rangosConRaya(formatPassageReference(paper.passage, paper.displayLanguage));
+    const titleDisplay = rangosConRaya(paper.title?.trim() || passageDisplay);
 
     // El rótulo de página que pide la entrega se aplica aquí, al entregar:
     // el Word y el .md salen de esta función.

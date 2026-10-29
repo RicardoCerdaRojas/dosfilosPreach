@@ -13,7 +13,8 @@ import { namesCitationKey } from './analysisClaims';
  * nota de revisión ya escrita. No llama a ningún modelo.
  *
  * Las causas, en el orden en que se prueban:
- *   1 · está en otra página del libro   → corregir a p. N
+ *   1 · está en otra página del libro   → corregir a p. N (si lo hallado dice
+ *       la afirmación central; si es algo parecido, `claimCoverage: partial`, es la 2)
  *   3 · otra fuente del corpus lo dice  → cambiar la atribución (con nota)
  *   5 · segunda mano                    → reescribir «según X»
  *   2 · afirmación mixta                → separar la conclusión propia
@@ -37,6 +38,8 @@ export interface CitationDiagnosis {
         sentenceAdds?: string;
         otherSource?: string;
         reportedAuthor?: string;
+        /** Hallada en otra página, y además la oración agrega esto propio. */
+        ownPart?: string;
     };
     remedy: CitationRemedy;
 }
@@ -61,10 +64,42 @@ export function diagnoseCitation(
     if (verdict.status === 'page-mismatch' && verdict.matchedPage) {
         const pagina = parseInt(verdict.matchedPage, 10);
         const etiqueta = verdict.matchedPageLabel ?? `p. ${verdict.matchedPage}`;
+        const propio = verdict.notFromSource?.trim() || '';
+        // …pero lo hallado es solo ALGO PARECIDO: no es la página lo que está
+        // mal sino la atribución, y cambiar la página pegaría la etiqueta a
+        // otro sitio sin arreglarla. TP #9, 4:15: «El genitivo se manifiesta en
+        // el artículo…; el pronombre funciona como sujeto acusativo de «decir»
+        // (Robertson, pp. 1069–1070)» halló en la 1067 que el infinitivo perdió
+        // sus terminaciones, y el diagnóstico proponía «corregir a p. 1067».
+        //
+        // Lo decide `claimCoverage` (el juez: ¿el apoyo dice la afirmación
+        // central?), no `notFromSource`: casi toda oración trae análisis propio
+        // —el prompt no se lo exige a la fuente—, y con esa regla una página
+        // realmente equivocada (Adamson 171 → 170, con «lo que confirma su
+        // trasfondo sapiencial» agregado) salía «mixta» y escondía la
+        // corrección (revisión adversarial).
+        if (verdict.claimCoverage === 'partial') {
+            // Lo que la fuente dice, con sus palabras: el tramo copiado antes que
+            // la paráfrasis del juez.
+            const dice = verdict.supportingSpan?.text?.trim() || verdict.takenFromSource?.trim() || '';
+            const agrega = propio || verdict.evidence;
+            return {
+                cause: 'mixed-claim',
+                detail: { foundAt: etiqueta, sourceSays: dice, sentenceAdds: agrega },
+                remedy: {
+                    kind: 'review-with-note',
+                    note: es
+                        ? `Afirmación mixta: la fuente no dice exactamente eso. Lo más cercano (${etiqueta}) dice «${recortar(dice)}»; «${recortar(agrega)}» es tuyo: va en otra oración, sin la cita, y la cita respalda solo lo que la fuente dice.`
+                        : `Mixed claim: the source does not say exactly that. The closest passage (${etiqueta}) says "${recortar(dice)}"; "${recortar(agrega)}" is yours: it goes in another sentence, without the citation, and the citation backs only what the source says.`,
+                },
+            };
+        }
         if (Number.isInteger(pagina) && pagina > 0) {
             return {
                 cause: 'other-page',
-                detail: { foundAt: etiqueta },
+                // Hallada entera en otra página: se corrige la página. Si además
+                // agrega algo propio, se dice aparte («además, X es tuyo»).
+                detail: { foundAt: etiqueta, ...(propio ? { ownPart: propio } : {}) },
                 remedy: { kind: 'correct-page', page: pagina, pageKind: /\bhoja\b/i.test(etiqueta) ? 'sheet' : 'printed', label: etiqueta },
             };
         }
@@ -110,7 +145,7 @@ export function diagnoseCitation(
         const atribuido = verdict.takenFromSource?.trim() || apoyo;
         return {
             cause: 'mixed-claim',
-            detail: { sourceSays: atribuido, sentenceAdds: verdict.evidence },
+            detail: { sourceSays: atribuido, sentenceAdds: verdict.notFromSource?.trim() || verdict.evidence },
             remedy: {
                 kind: 'review-with-note',
                 note: es

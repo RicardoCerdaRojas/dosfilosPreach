@@ -97,7 +97,9 @@ describe('la fase posterior a la activa', () => {
     });
 
     it('la línea dice la fase, «por empezar» y cuándo se abre, sin acción, y conserva el ancla enfocable', () => {
-        render(<LaterPhase id="fase-x" eyebrow="Fase 3" title="División" reason="se abre cuando…" />);
+        // Los textos llegan ya traducidos por quien llama: aquí son datos de prueba.
+        const rotulos = { eyebrow: 'Fase 3', title: 'División', reason: 'se abre cuando…' };
+        render(<LaterPhase id="fase-x" {...rotulos} />);
         const seccion = document.getElementById('fase-x')!;
         expect(seccion.textContent).toContain('desk.journey.laterLine');
         expect(seccion.textContent).toContain('se abre cuando…');

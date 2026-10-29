@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Archive, BookOpen, Check, Plus } from 'lucide-react';
+import { Archive, BookOpen, Check, Pencil, Plus } from 'lucide-react';
 import {
     nextLabelFor,
     type AIProject,
@@ -20,6 +20,8 @@ interface CourseWorksTableProps {
     onMarkDelivered: (row: DeskScheduleRow, delivered: boolean) => void;
     onRecordFeedback: (row: DeskScheduleRow) => void;
     onImport: () => void;
+    /** Abre la entrada del calendario de esa fila (fecha, tipo, rótulo, pasaje): TP #9, B2. */
+    onEditEntry?: (row: DeskScheduleRow) => void;
     saving: boolean;
 }
 
@@ -38,7 +40,7 @@ const ENTREGA: Record<DeskDelivery, string> = {
  * una tarjeta por fila. «Entregado» se marca aparte del avance: ninguna
  * acción de una fase completa otra.
  */
-export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFeedback, onImport, saving }: CourseWorksTableProps) {
+export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFeedback, onImport, onEditEntry, saving }: CourseWorksTableProps) {
     const { t, i18n } = useTranslation('projectDeskCourse');
     const lang = langOf(i18n.language);
     const libre = course.schedule.mode === 'free';
@@ -170,6 +172,20 @@ export function CourseWorksTable({ project, course, onMarkDelivered, onRecordFee
                                                 {r.delivery !== 'notDelivered' && (
                                                     <Button size="sm" variant="outline" className={cn(TOUCH, WRAP_LABEL)} onClick={() => onRecordFeedback(r)}>
                                                         {t(r.delivery === 'delivered' ? 'works.recordFeedback' : 'works.editFeedback')}
+                                                    </Button>
+                                                )}
+                                                {/* La fecha o el pasaje se corrigen aquí mismo, sin bajar al calendario (B2). */}
+                                                {onEditEntry && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className={TOUCH}
+                                                        onClick={() => onEditEntry(r)}
+                                                        aria-label={t('works.editEntryLabel', { label: r.label || t('calendar.noLabel') })}
+                                                        data-testid="course-works-edit-entry"
+                                                    >
+                                                        <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                                                        {t('works.editEntry')}
                                                     </Button>
                                                 )}
                                             </div>

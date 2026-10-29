@@ -366,6 +366,47 @@ function citasDeEncabezadoDeNotas(encabezado: string, libro: string): Cita[] | n
     return citas;
 }
 
+/**
+ * El encabezado de página de Ropes (ICC): capítulo en romanos, coma y los
+ * versículos de la página. «Ⅳ, 9–11» (con el carácter de numeral romano),
+ * «IV, 11», «IV. 11», «IV 11-12», «Ⅳ, 17–Ⅴ, 1». Sin libro: se lee con el del
+ * contexto (TP #9, B18). La misma forma la reconoce `parseHeadingReference` en
+ * domain. «v. 11» y «V. 11» son «versículo 11», no el capítulo 5: el punto pide
+ * un numeral de dos letras, y una letra minúscula sola nunca es capítulo.
+ */
+const ENCABEZADO_ROMANO = /^([IVXL]{1,6})(\s*,\s*|\.\s*|\s+)(\d{1,3})(?:\s*[–—-]\s*(?:([IVXL]{1,6})(\s*,\s*|\.\s*|\s+))?(\d{1,3}))?\.?$/i;
+
+function separadorRomanoValido(romano: string, separador: string): boolean {
+    const minuscula = romano !== romano.toUpperCase();
+    if (minuscula && romano.length < 2) return false;
+    if (separador.includes(',')) return true;
+    if (separador.includes('.')) return romano.length >= 2;
+    return !minuscula;
+}
+
+/** Las citas de un encabezado «IV, 11-17», o `null` si no lo es. */
+function citasDeEncabezadoRomano(encabezado: string, libro: string): Cita[] | null {
+    const m = encabezado.normalize('NFKC').trim().match(ENCABEZADO_ROMANO);
+    if (!m) return null;
+    const [, romanoInicio, sepInicio, versInicio, romanoFin, sepFin, versFin] = m;
+    if (!separadorRomanoValido(romanoInicio!, sepInicio!)) return null;
+    if (romanoFin && !separadorRomanoValido(romanoFin, sepFin!)) return null;
+    const capitulo = romanoANumero(romanoInicio!);
+    const capituloFin = romanoFin ? romanoANumero(romanoFin) : capitulo;
+    const maximo = armarPatron().capitulos.get(libro) ?? 0;
+    if (!capitulo || !capituloFin || capituloFin > maximo || capituloFin < capitulo) return null;
+    if (capituloFin === capitulo) {
+        if (versFin !== undefined && Number(versFin) < Number(versInicio)) return null;
+        const versiculos = versiculosDe(versInicio, versFin);
+        return versiculos.length > 0 ? [{ texto: encabezado, libro, capitulo, versiculos }] : null;
+    }
+    // «Ⅳ, 17–Ⅴ, 1»: el comienzo, los capítulos del medio y el final.
+    const citas: Cita[] = [{ texto: encabezado, libro, capitulo, versiculos: versiculosDe(versInicio, undefined) }];
+    for (let c = capitulo + 1; c < capituloFin; c++) citas.push({ texto: encabezado, libro, capitulo: c, versiculos: [] });
+    citas.push({ texto: encabezado, libro, capitulo: capituloFin, versiculos: versiculosDe('1', versFin) });
+    return citas;
+}
+
 /** Las notas de versículo del texto, leídas con el capítulo del contexto. */
 function citasDeNotas(texto: string, contexto: Contexto): Cita[] {
     if (contexto.capitulo === null || !contexto.deNotas) return [];
@@ -452,6 +493,13 @@ export function refsDeFragmento(
         if (deNotas) {
             citas.push(...deNotas);
             contexto = { libro: contexto!.libro, capitulo: deNotas[deNotas.length - 1]!.capitulo, firme: true, deNotas: true };
+            continue;
+        }
+        const romano = contexto ? citasDeEncabezadoRomano(encabezado, contexto.libro) : null;
+        if (romano) {
+            citas.push(...romano);
+            const caps = new Set(romano.map(c => c.capitulo));
+            contexto = { libro: contexto!.libro, capitulo: caps.size === 1 ? romano[0]!.capitulo : null, firme: true };
             continue;
         }
         const propias = citasDeTexto(encabezado);

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { Ban, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ExcludedSource, ExegeticalPaper, ProposedExclusion } from '@dosfilos/domain';
@@ -23,12 +23,16 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     const { updatePaperExcludedSources } = useExegesisPapers();
     // Por tipo (A7, TP #8): comentarios y gramáticas; los léxicos y el texto
     // base se pueden repetir y ya no se proponen.
-    const { proposal: propuestaPorTipo, previous } = useProposedExclusions(paper);
+    const { proposal: propuestaPorTipo, previous, repetition } = useProposedExclusions(paper);
     const { noRepeat } = useDeliveryMemory(paper);
     const [nueva, setNueva] = useState('');
-    // Claves de la propuesta que el estudiante desmarcó: lo citado la vez
-    // pasada incluye léxicos y gramáticas que el sílabo suele permitir.
-    const [desmarcadas, setDesmarcadas] = useState<Set<string>>(new Set());
+    // Claves cuya marca el estudiante invirtió. Lo que se excluye por regla
+    // viene marcado; lo que solo conviene alternar (la gramática, sin regla
+    // del curso) viene SIN marcar: en el TP #9 la propuesta sacaba a Wallace
+    // y el curso lo deja repetir (B15).
+    const [invertidas, setInvertidas] = useState<Set<string>>(new Set());
+    const uid = useId();
+    const marcada = (e: ProposedExclusion) => (e.rule === 'exclude') !== invertidas.has(e.key);
     // La propuesta que se está revisando. Cada marca se GUARDA al momento:
     // antes vivía sólo aquí, y en el TP #7 NA28 desmarcada volvió marcada al
     // refrescar, los pasos que redactan no recibían la decisión (#9) y su
@@ -72,13 +76,27 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
     };
 
     const alternar = (key: string) => {
-        const next = new Set(desmarcadas);
+        const next = new Set(invertidas);
         if (next.has(key)) next.delete(key); else next.add(key);
-        setDesmarcadas(next);
+        setInvertidas(next);
         setEnRevision(propuesta);
-        void guardar(propuesta.filter(e => !next.has(e.key)));
+        void guardar(propuesta.filter(e => (e.rule === 'exclude') !== next.has(e.key)));
     };
-    const elegidas = propuesta.filter(e => !desmarcadas.has(e.key));
+    const elegidas = propuesta.filter(marcada);
+    // El porqué de cada una (B15): el tipo de fuente y de dónde sale la regla.
+    const porque = (e: ProposedExclusion): string => {
+        if (e.rule === 'alternate') {
+            return e.alternatives.length > 0
+                ? t('paperSetup.subSteps.corpus.excluded.alternateWith', { others: e.alternatives.join(', ') })
+                : t('paperSetup.subSteps.corpus.excluded.alternate');
+        }
+        if (!e.sourceType) return t('paperSetup.subSteps.corpus.excluded.whyUnknownType');
+        const type = t(`sourceTypes.${e.sourceType}.label`);
+        return repetition.origin === 'workType' && repetition.workTypeLabel
+            ? t('paperSetup.subSteps.corpus.excluded.whyWorkType', { type, workType: repetition.workTypeLabel })
+            : t('paperSetup.subSteps.corpus.excluded.whyDefault', { type });
+    };
+    const hayAlternables = propuesta.some(e => e.rule === 'alternate');
     const terminar = async (excludedSources: ReadonlyArray<ExcludedSource>) => {
         if (await guardar(excludedSources)) setEnRevision(null);
     };
@@ -109,33 +127,30 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                         })}
                     </p>
                     <ul className="flex flex-wrap gap-x-3 gap-y-1">
-                        {propuesta.map(e => (
-                            <li key={e.key}>
+                        {propuesta.map((e, i) => (
+                            <li key={e.key} className="inline-flex flex-wrap items-center gap-x-1.5">
                                 <label className="inline-flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        checked={!desmarcadas.has(e.key)}
+                                        checked={marcada(e)}
                                         onChange={() => alternar(e.key)}
                                         // Una marca a la vez: dos guardados en vuelo podían
                                         // volver en desorden y dejar la lista vieja.
                                         disabled={ocupado}
+                                        aria-describedby={`${uid}-why-${i}`}
                                         className="h-3.5 w-3.5 rounded border-border accent-primary"
                                     />
                                     {e.key}
-                                    {e.rule === 'alternate' && (
-                                        <span className="text-[11px] text-muted-foreground">
-                                            {e.alternatives.length > 0
-                                                ? t('paperSetup.subSteps.corpus.excluded.alternateWith', { others: e.alternatives.join(', ') })
-                                                : t('paperSetup.subSteps.corpus.excluded.alternate')}
-                                        </span>
-                                    )}
                                 </label>
+                                <span id={`${uid}-why-${i}`} className="text-[11px] text-muted-foreground" data-testid="exclusion-why">{porque(e)}</span>
                             </li>
                         ))}
                     </ul>
-                    {libres.length > 0 && (
-                        <p className="text-[11px] text-muted-foreground">
-                            {t('paperSetup.subSteps.corpus.excluded.freeByType', { sources: libres.join(', ') })}
+                    {hayAlternables && <p className="text-[11px] text-muted-foreground">{t('paperSetup.subSteps.corpus.excluded.alternateUnchecked')}</p>}
+                    {libres.length > 0 && <LibresPorTipo libres={libres} workType={repetition.origin === 'workType' ? repetition.workTypeLabel : null} />}
+                    {repetition.origin === 'default' && repetition.workTypeLabel && (
+                        <p className="text-[11px] text-muted-foreground" data-testid="exclusion-default-rule">
+                            {t('paperSetup.subSteps.corpus.excluded.defaultRuleHint', { workType: repetition.workTypeLabel })}
                         </p>
                     )}
                     <div className="flex flex-wrap gap-2">
@@ -153,9 +168,7 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
             )}
 
             {propuesta.length === 0 && libres.length > 0 && (
-                <p className="text-[11px] text-muted-foreground">
-                    {t('paperSetup.subSteps.corpus.excluded.freeByType', { sources: libres.join(', ') })}
-                </p>
+                <LibresPorTipo libres={libres} workType={repetition.origin === 'workType' ? repetition.workTypeLabel : null} />
             )}
 
             {lista.length > 0 && (
@@ -200,5 +213,17 @@ export function ExcludedSourcesCard({ paper }: { paper: ExegeticalPaper }) {
                 </Button>
             </form>}
         </section>
+    );
+}
+
+/** Lo citado que la regla deja libre, y por qué no se propone. */
+function LibresPorTipo({ libres, workType }: { libres: ReadonlyArray<string>; workType: string | null }) {
+    const { t } = useTranslation('exegesis');
+    return (
+        <p className="text-[11px] text-muted-foreground">
+            {workType
+                ? t('paperSetup.subSteps.corpus.excluded.freeByWorkType', { sources: libres.join(', '), workType })
+                : t('paperSetup.subSteps.corpus.excluded.freeByType', { sources: libres.join(', ') })}
+        </p>
     );
 }

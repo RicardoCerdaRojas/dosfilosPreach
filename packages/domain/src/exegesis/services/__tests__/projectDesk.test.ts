@@ -594,7 +594,7 @@ describe('Curso · rúbrica resuelta', () => {
         const input = nt785();
         input.project.workTypes = [...input.project.workTypes!, { id: 'ens', label: 'Ensayo' }, { id: 'pf', label: 'Paper final', rubricTemplateId: null }];
         const x = buildProjectDesk(input, NOW_CURSO);
-        expect(fase(x, 'charge')).toEqual({ id: 'charge', status: 'doing', evidence: { key: 'desk.course.charge.noProfessorRubric', params: { types: 3, count: 2 } } });
+        expect(fase(x, 'charge')).toEqual({ id: 'charge', status: 'doing', evidence: { key: 'desk.course.charge.noProfessorRubric', params: { types: 3, count: 2, names: 'Ensayo, Paper final' } } });
         // «El curso no da rúbrica»: con la confirmación, lista.
         input.project.workTypes = input.project.workTypes!.map(t => ({ ...t, rubricConfirmed: true }));
         expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge')).toMatchObject({ status: 'ready', evidence: { key: 'desk.course.charge.ready', params: { types: 3 } } });
@@ -603,12 +603,23 @@ describe('Curso · rúbrica resuelta', () => {
         expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge').status).toBe('todo');
     });
 
-    it('una plantilla borrada: «sin resolver», con cuántas faltan', () => {
+    it('una plantilla borrada: «sin resolver», con cuántas faltan y cuáles (TP #9: «en curso» no decía qué faltaba)', () => {
         const input = nt785();
         input.project.workTypes = [...input.project.workTypes!, { id: 'ens', label: 'Ensayo', rubricTemplateId: 'borrada' }, { id: 'pf', label: 'Paper final' }];
         expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge')).toMatchObject({
-            status: 'doing', evidence: { key: 'desk.course.charge.unresolved', params: { types: 3, unresolved: 2, missing: 1 } },
+            status: 'doing', evidence: { key: 'desk.course.charge.unresolvedMixed', params: { types: 3, unresolved: 2, missing: 1, missingNames: 'Ensayo', count: 1, names: 'Paper final' } },
         });
+        // Solo la borrada: la clave sin la segunda parte.
+        input.project.workTypes = input.project.workTypes!.map(t => (t.id === 'pf' ? { ...t, rubricConfirmed: true } : t));
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge').evidence).toEqual({
+            key: 'desk.course.charge.unresolved', params: { types: 3, unresolved: 1, missing: 1, missingNames: 'Ensayo' },
+        });
+    });
+
+    it('un tipo sin nombre sale «—», no como un hueco', () => {
+        const input = nt785();
+        input.project.workTypes = [...input.project.workTypes!, { id: 'x', label: '  ' }];
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'charge').evidence.params).toMatchObject({ names: '—' });
     });
 
     it('con el catálogo cargando, la fase 1 no se decide: en curso con `loading`, nunca lista', () => {
@@ -701,18 +712,74 @@ describe('claves de texto', () => {
         delSistema.project.workTypes = [{ id: 'tp', label: 'TP', rubricTemplateId: null }];
         const borrada = nt785();
         borrada.project.workTypes = [{ id: 'tp', label: 'TP', rubricTemplateId: 'borrada' }];
+        const mezcla = nt785();
+        mezcla.project.workTypes = [{ id: 'tp', label: 'TP', rubricTemplateId: 'borrada' }, { id: 'pf', label: 'Paper final' }];
         const ensenar = paraEnsenar();
         delete ensenar.project.framing!.divisionWithoutSeries;
         ensenar.studies = [...ensenar.studies, ensamblado('t3')];
-        escenarios.push([sinDevoluciones, NOW_CURSO], [cargando, NOW_CURSO], [delSistema, NOW_CURSO], [borrada, NOW_CURSO], [ensenar, NOW]);
+        escenarios.push([sinDevoluciones, NOW_CURSO], [cargando, NOW_CURSO], [delSistema, NOW_CURSO], [borrada, NOW_CURSO], [mezcla, NOW_CURSO], [ensenar, NOW]);
         const vistas = new Set<string>();
         for (const [input, now] of escenarios) {
             const m = buildProjectDesk(input, now);
             const claves = [...m.phases.map(p => p.evidence.key), ...m.notes.map(n => n.text.key), ...(m.now ? [m.now.text.key] : [])];
             for (const k of claves) { expect(conocidas.has(k), k).toBe(true); vistas.add(k); }
         }
-        for (const k of ['desk.notes.noFeedbackMany', 'desk.course.charge.loading', 'desk.course.charge.noProfessorRubric', 'desk.course.charge.unresolved', 'desk.exegetical.division.readyStudies']) {
+        for (const k of ['desk.notes.noFeedbackMany', 'desk.course.charge.loading', 'desk.course.charge.noProfessorRubric', 'desk.course.charge.unresolved', 'desk.course.charge.unresolvedMixed', 'desk.exegetical.division.readyStudies']) {
             expect(vistas.has(k), k).toBe(true);
         }
+    });
+});
+
+describe('Curso · Fuentes no queda «Lista» con la rúbrica sin cubrir (B10, TP #9)', () => {
+    /** NT785 sin la obligatoria por conseguir, con dos gramáticas aprobadas y una rúbrica que pide un comentario. */
+    const conRubrica = (fichas = [ficha('wal', { sourceType: 'grammar-syntax' }), ficha('rob', { sourceType: 'grammar-syntax' })]) => {
+        const input = nt785();
+        input.project.bibliography = fichas;
+        input.coverageRequirements = [{ sourceType: 'commentary-critical', minimum: 1, workType: 'TP Semanal' }];
+        return input;
+    };
+
+    it('REGRESIÓN: «Lista» con «no alcanza: 0 de 1» pasa a «en curso» y lo dice', () => {
+        expect(fase(buildProjectDesk(conRubrica(), NOW_CURSO), 'sources')).toMatchObject({
+            status: 'doing', evidence: { key: 'desk.sources.coveragePending', params: { approved: 2, missing: 1 } },
+        });
+    });
+
+    it('las agregadas a mano tampoco la dan por cumplida', () => {
+        const input = conRubrica([ficha('wal', { sourceType: 'grammar-syntax', origins: ['selector'] })]);
+        const m = buildProjectDesk(input, NOW_CURSO);
+        expect(m.course!.sources).toMatchObject({ approved: 1, manual: 1 });
+        expect(fase(m, 'sources').status).toBe('doing');
+    });
+
+    it('nombra las aprobadas sin clasificar, que no cuentan para ningún tipo', () => {
+        const input = conRubrica([ficha('x', { sourceType: undefined, resourceId: null } as never)]);
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'sources').evidence).toMatchObject({
+            key: 'desk.sources.coveragePendingUnclassified', params: { missing: 1, unclassified: 1 },
+        });
+    });
+
+    it('con la rúbrica cubierta, vuelve a «Lista»', () => {
+        const input = conRubrica([ficha('mcc', { sourceType: 'commentary-critical' })]);
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'sources').status).toBe('ready');
+    });
+
+    it('un requisito propio dado por cumplido a propósito no la reabre', () => {
+        const input = conRubrica();
+        input.coverageRequirements = [];
+        input.project.bibliographyCriteria = {
+            bibleBooks: ['JAS'],
+            requirementItems: [{ id: 'com', kind: 'minimum-type', text: 'Un comentario', origin: 'syllabus', sourceType: 'commentary-critical', minimum: 1, done: true }],
+        } as never;
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'sources').status).toBe('ready');
+        // Sin darlo por cumplido, sí la deja en curso.
+        (input.project.bibliographyCriteria!.requirementItems![0] as { done?: boolean }).done = false;
+        expect(fase(buildProjectDesk(input, NOW_CURSO), 'sources').status).toBe('doing');
+    });
+
+    it('el Exegético no mira la cobertura de un curso', () => {
+        const input = jonasLegacy();
+        input.coverageRequirements = [{ sourceType: 'commentary-critical', minimum: 5, workType: 'x' }];
+        expect(fase(buildProjectDesk(input, NOW), 'sources').status).toBe('ready');
     });
 });

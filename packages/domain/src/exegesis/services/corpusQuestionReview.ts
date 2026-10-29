@@ -86,6 +86,24 @@ export interface QuestionReviewRow {
     /** Los versículos de la pregunta dentro del capítulo del pasaje. */
     verses: number[];
     sources: QuestionSourceCoverage[];
+    /**
+     * Las fuentes revisadas que no aportan nada a ESTA pregunta: su índice no
+     * nombra los versículos ni abre la entrada del lema. Antes no salían, y
+     * el estudiante no sabía si Tuggy se había revisado o se había olvidado
+     * (TP #9, B21). Las que no se pudieron revisar (cargando, sin índice o
+     * con la búsqueda fallida) no van aquí: están en `pending`.
+     */
+    unmatched: QuestionUnmatchedSource[];
+}
+
+/** Una fuente revisada que no toca la pregunta. */
+export interface QuestionUnmatchedSource {
+    sourceId: string;
+    /**
+     * Léxico o diccionario donde la palabra de la pregunta aparece, pero sin
+     * entrada propia detectada: no es «nada», es material que no se ubicó.
+     */
+    lemmaMentioned: boolean;
 }
 
 export type CorpusReviewWarning =
@@ -168,6 +186,7 @@ export function reviewCorpusByQuestion(input: {
             text: q.text,
             verses: [...new Set(q.verses.filter(v => v.chapter === input.chapter).map(v => v.verse))],
             sources: [] as QuestionSourceCoverage[],
+            unmatched: [] as QuestionUnmatchedSource[],
         }))
         .filter(r => r.verses.length > 0);
 
@@ -197,6 +216,7 @@ export function reviewCorpusByQuestion(input: {
         let tocaAlguna = false;
 
         for (const row of rows) {
+            const aportesAntes = row.sources.length;
             // En un léxico manda la entrada del lema: con la de αἰτέω en el
             // corpus, la hoja de otra palabra que cita 4:3 (Tuggy 209,
             // δαπανάω) no es material que falte para esa pregunta.
@@ -260,6 +280,12 @@ export function reviewCorpusByQuestion(input: {
                     });
                 }
             }
+            if (row.sources.length === aportesAntes) {
+                row.unmatched.push({
+                    sourceId: source.sourceId,
+                    lemmaMentioned: lemasDeLaPregunta.some(l => !l.entry && l.appears === true),
+                });
+            }
         }
 
         // «No sirve para ninguna pregunta» sólo cuando hay con qué juzgar. Un
@@ -280,6 +306,45 @@ export function reviewCorpusByQuestion(input: {
     }
 
     return { rows, warnings, pending };
+}
+
+/**
+ * Las fuentes que una pregunta NO tiene, cada una con su porqué: revisada sin
+ * referencias (o con la palabra mencionada fuera de una entrada), sin índice,
+ * con la búsqueda fallida o todavía revisándose. Es lo que «Ver por pregunta»
+ * muestra debajo de las que sí aportan, para que se vea que el libro se
+ * revisó (TP #9, B21: Tuggy y el léxico no salían y parecían olvidados).
+ *
+ * «Sin índice» y «falló» vienen de quien buscó (el índice de pasajes): la
+ * revisión sólo sabe que esas fuentes no tienen datos (`pending`). Decir «no
+ * nombra el pasaje» de un libro sin índice sería inventar.
+ */
+export type QuestionSourceCheck =
+    | { sourceId: string; state: 'no-references'; lemmaMentioned: boolean }
+    | { sourceId: string; state: 'unindexed' | 'failed' | 'pending' };
+
+export function uncoveredSourcesOfRow(
+    row: Pick<QuestionReviewRow, 'unmatched'>,
+    review: Pick<CorpusQuestionReview, 'pending'>,
+    status: { unindexed: ReadonlyArray<string>; failed: ReadonlyArray<string> },
+): QuestionSourceCheck[] {
+    const out: QuestionSourceCheck[] = row.unmatched.map(u => ({
+        sourceId: u.sourceId,
+        state: 'no-references' as const,
+        lemmaMentioned: u.lemmaMentioned,
+    }));
+    const vistas = new Set(out.map(c => c.sourceId));
+    const sumar = (sourceId: string, state: 'unindexed' | 'failed' | 'pending') => {
+        if (vistas.has(sourceId)) return;
+        vistas.add(sourceId);
+        out.push({ sourceId, state });
+    };
+    // Una fuente que falló y además no tiene índice se reporta como fallida:
+    // así lo decide la tarjeta (`failed` excluye a las sin índice).
+    for (const id of status.failed) sumar(id, 'failed');
+    for (const id of status.unindexed) sumar(id, 'unindexed');
+    for (const id of review.pending) sumar(id, 'pending');
+    return out;
 }
 
 /**

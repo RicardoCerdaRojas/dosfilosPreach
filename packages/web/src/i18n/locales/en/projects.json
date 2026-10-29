@@ -205,6 +205,18 @@
     "free": "Free",
     "none": "None",
     "coverFromProfile": "Brings the profile's cover.",
+    "briefSlotsHint": "In the framing, write [PASSAGE] where the passage goes and [PREVIOUS SOURCES] where the sources that cannot be repeated go: they are filled in when each work is created.",
+    "noRepeatLegend": "Not repeated between consecutive assignments",
+    "noRepeatHint": "What the professor does not allow you to repeat from the previous work of this kind. The corpus proposal of excluded sources uses this list.",
+    "noRepeatUnset": "Not set: the general rule applies (commentaries; grammars are suggested to alternate).",
+    "noRepeatFix": "Set this rule",
+    "noRepeatSet": "Set for this kind of work.",
+    "noRepeatGroup_commentaries": "Commentaries (critical, expository and textual, like Metzger)",
+    "noRepeatGroup_grammars": "Grammars",
+    "noRepeatGroup_lexicons": "Lexicons and dictionaries",
+    "noRepeatGroup_text": "Base text and critical apparatus",
+    "noRepeatGroup_studies": "Monographs, articles and background",
+    "noRepeatGroup_ancient": "Ancient sources",
     "labelRequired": "Each type needs a name.",
     "save": "Save work types",
     "saved": "Changes saved.",
@@ -661,15 +673,18 @@
             "requirementsPending": "Approved: {{approved}} · requirements: {{met}} of {{total}}",
             "ready": "Approved: {{approved}} · still to get: {{toAcquire}}",
             "readyRequirements": "Approved: {{approved}} · still to get: {{toAcquire}} · requirements: {{met}} of {{total}}",
-            "readyManual": "Added by hand: {{count}}"
+            "readyManual": "Added by hand: {{count}}",
+            "coveragePending": "Approved: {{approved}} · source types the rubric requires still uncovered: {{missing}}",
+            "coveragePendingUnclassified": "Approved: {{approved}} · source types the rubric requires still uncovered: {{missing}} · unclassified: {{unclassified}} (classify them so they count)"
         },
         "course": {
             "charge": {
                 "todo": "No work types yet",
-                "unresolved": "Work types: {{types}} · without a settled rubric: {{unresolved}} · with a template that no longer exists: {{missing}}",
+                "unresolved": "Work types: {{types}} · the rubric template no longer exists for: {{missingNames}} (choose another)",
+                "unresolvedMixed": "Work types: {{types}} · the rubric template no longer exists for: {{missingNames}} (choose another) · without the professor's rubric: {{names}} (choose it or confirm the course gives none)",
                 "ready": "Work types: {{types}}, each with its rubric",
                 "loading": "Work types: {{types}} · checking their rubrics…",
-                "noProfessorRubric": "Work types: {{types}} · without the professor's rubric: {{count}}"
+                "noProfessorRubric": "Work types: {{types}} · without the professor's rubric: {{names}} (choose it or confirm the course gives none)"
             },
             "calendar": {
                 "todo": "No calendar yet",

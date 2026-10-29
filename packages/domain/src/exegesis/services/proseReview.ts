@@ -3,6 +3,7 @@ import type { CitationReview, VerifiedCitation } from '../entities/CitationVerif
 import { collectAnalysisClaims } from './analysisClaims';
 import { findInlineCitations } from './inlineCitations';
 import { isCitationAlarm, mapAllVerdictsByPath, mapVerdictsByPath } from './citationReview';
+import { pagesOverlap } from './evidenceForCitation';
 
 /**
  * «Revisión antes de entregar» (TP #8, fase 8b, E3).
@@ -40,7 +41,9 @@ export type ProseCheckKind =
     /** Un párrafo que abre en minúscula. */
     | 'lowercase-start'
     /** La misma palabra o frase repetida (síntesis). */
-    | 'repetition';
+    | 'repetition'
+    /** La traducción que adopta el cierre no es la traducción final del análisis. */
+    | 'translation-mismatch';
 
 export interface ProseFinding {
     kind: ProseCheckKind;
@@ -82,6 +85,7 @@ export function reviewProseFixed(ctx: ProseReviewContext): ProseFinding[] {
         ...punctuation(prose),
         ...lowercaseStarts(parrafos),
         ...repetitions(parrafos, keys),
+        ...translationMismatch(parrafos, ctx.analysis),
     ];
     const porClase = new Map<ProseCheckKind, number>();
     return out.filter(f => {
@@ -144,7 +148,9 @@ function missingGrammar(
     citasDeLaProsa: ReturnType<typeof findInlineCitations>,
 ): ProseFinding[] {
     return grammarCitationsOf(analysis, grammarKeys)
-        .filter(g => !citasDeLaProsa.some(c => normal(c.author).startsWith(normal(g.key)) && pagesOf(c.pages).includes(g.page)))
+        // `pagesOverlap` y no una lista de páginas: lee «232, 236» y «559–61»
+        // como el verificador (TP #9, B37).
+        .filter(g => !citasDeLaProsa.some(c => normal(c.author).startsWith(normal(g.key)) && pagesOverlap(c.pages, String(g.page))))
         .map(g => ({ kind: 'missing-grammar' as const, excerpt: '', data: { key: g.key, page: g.page } }));
 }
 
@@ -327,6 +333,114 @@ function repetitions(parrafos: ReadonlyArray<string>, keys: ReadonlyArray<string
     return out;
 }
 
+// ── 7 · La traducción adoptada (TP #9, B31) ─────────────────────────────
+
+/**
+ * En 4:14 el análisis decidió «Aunque no saben lo que traerá el mañana…»
+ * (relativo concesivo) y la prosa cerró «se adopta la traducción: «No saben lo
+ * que traerá el mañana. ¿Qué es su vida?»»: perdió la concesión y nadie lo
+ * vio. Se compara la traducción del cierre con `finalTranslation`, sin
+ * puntuación, mayúsculas, tildes ni comillas.
+ *
+ * El cierre puede traducir solo una frase («el que puede salvar y destruir»):
+ * basta con que esté en la traducción final. Si trae oraciones enteras (tiene
+ * punto o signo de cierre adentro), además tiene que empezar y terminar donde
+ * empieza y termina una oración de la final: si no, le falta un trozo, como
+ * el «Aunque» de 4:14.
+ */
+function translationMismatch(parrafos: ReadonlyArray<string>, analysis: CanonicalVerseAnalysis | null): ProseFinding[] {
+    const final = analysis?.finalTranslation?.trim();
+    if (!final || parrafos.length === 0) return [];
+    const adoptada = adoptedTranslation(parrafos[parrafos.length - 1]!);
+    if (!adoptada) return [];
+    return translationFits(adoptada, final)
+        ? []
+        : [{ kind: 'translation-mismatch', excerpt: adoptada, data: { analysis: final } }];
+}
+
+/** La traducción entre « » (o “ ”) que sigue a la última «traducción» del párrafo. */
+export function adoptedTranslation(parrafo: string): string | null {
+    const marcas = [...parrafo.matchAll(/traducci[oó]n|translation/giu)];
+    for (let i = marcas.length - 1; i >= 0; i--) {
+        const desde = marcas[i]!.index! + marcas[i]![0].length;
+        const resto = parrafo.slice(desde);
+        // La comilla abre cerca y sin cerrar la oración antes: «una traducción
+        // que presenta la omisión del bien conocido como pecado: «…»» (4:17).
+        const abre = resto.search(/[«“]/u);
+        if (abre < 0 || abre > 160 || /[.!?]\s/u.test(resto.slice(0, abre))) continue;
+        if (!adopta(parrafo.slice(0, marcas[i]!.index!))) continue;
+        const contenido = balancedQuote(resto.slice(abre));
+        if (contenido?.trim()) return contenido.trim();
+    }
+    return null;
+}
+
+/**
+ * Si la oración, hasta «traducción», dice que la adopta: «se adopta la
+ * traducción», «se prefiere expresar … mediante la traducción». La rechazada
+ * no cuenta: «se prefiere «condenar» y no la traducción «juzgar» de la RVR60»
+ * (revisión de B31).
+ */
+const VERBO_DE_ADOPCION = /(?<!\p{L})(?:adopt|prefier|prefer|propon|propuest|eleg|elig|opt[ao]|optamos|propos|choos|chose)\p{L}*/iu;
+
+function adopta(antes: string): boolean {
+    const fin = Math.max(-1, ...[...antes.matchAll(/[.!?]\s/gu)].map(m => m.index!));
+    const oracion = antes.slice(fin + 1);
+    if (/(?<!\p{L})(?:no|not|instead\s+of|en\s+lugar\s+de|antes\s+que|y\s+no)\s+(?:la|una|el|the|a)?\s*$/iu.test(oracion)) return false;
+    return VERBO_DE_ADOPCION.test(oracion);
+}
+
+function balancedQuote(texto: string): string | null {
+    const abre = texto[0]!;
+    const cierra = abre === '«' ? '»' : '”';
+    let nivel = 0;
+    for (let i = 0; i < texto.length; i++) {
+        if (texto[i] === abre) nivel++;
+        else if (texto[i] === cierra && --nivel === 0) return texto.slice(1, i);
+    }
+    return null;
+}
+
+interface TokenDeTraduccion { palabra: string; corteAntes: boolean; corteDespues: boolean }
+
+/**
+ * Las palabras sin marcas, con si las separa un fin de oración (. ? ! ; :).
+ * «¿» y «¡» abren una: «pero tú, ¿quién eres…?» empieza en «quién».
+ */
+function tokensDeTraduccion(s: string): TokenDeTraduccion[] {
+    const out: TokenDeTraduccion[] = [];
+    let corte = true;
+    for (const m of s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().matchAll(/[\p{L}\p{N}]+|[.?!;:¿¡]/gu)) {
+        if (m[0] === '¿' || m[0] === '¡') {
+            corte = true;
+            continue;
+        }
+        if (/^[.?!;:]$/.test(m[0])) {
+            corte = true;
+            if (out.length > 0) out[out.length - 1]!.corteDespues = true;
+            continue;
+        }
+        out.push({ palabra: m[0], corteAntes: corte, corteDespues: false });
+        corte = false;
+    }
+    if (out.length > 0) out[out.length - 1]!.corteDespues = true;
+    return out;
+}
+
+export function translationFits(adoptada: string, final: string): boolean {
+    const a = tokensDeTraduccion(adoptada).map(t => t.palabra);
+    const f = tokensDeTraduccion(final);
+    if (a.length === 0) return true;
+    // Un punto solo al final no hace oración: «el que puede salvar y destruir.»
+    // sigue siendo una frase (revisión de B31).
+    const oraciones = /[.?!]/u.test(adoptada.trim().replace(/[.!?…]+$/u, ''));
+    for (let i = 0; i + a.length <= f.length; i++) {
+        if (!a.every((w, j) => f[i + j]!.palabra === w)) continue;
+        if (!oraciones || (f[i]!.corteAntes && f[i + a.length - 1]!.corteDespues)) return true;
+    }
+    return false;
+}
+
 /** Términos de la morfología: describir dos formas iguales no es repetirse. */
 const MORFOLOGIA = new Set([
     'presente', 'aoristo', 'imperfecto', 'perfecto', 'pluscuamperfecto', 'futuro', 'activo', 'activa', 'medio', 'media',
@@ -373,7 +487,7 @@ function parecidas(a: string, b: string): boolean {
 }
 
 const CRITERIA_ES = [
-    'La prosa decide con el criterio decisivo del análisis y conserva las citas de la gramática del curso; si el análisis ya resolvió algo, la prosa no vuelve a una razón más débil.',
+    'La prosa decide con el criterio decisivo del análisis y conserva las citas de la gramática del curso; si el análisis ya resolvió algo, la prosa no vuelve a una razón más débil. Si el estudiante corrigió el análisis a propósito (lo dice una nota de revisión), la prosa sigue al estudiante.',
     'Cada oración de cierre afirma una sola cosa; dos afirmaciones van en dos oraciones.',
     'La categoría gramatical coincide con la traducción, y se dice qué sustantivo califica a cuál.',
     'Una lectura rival se refuta con una razón del contexto, no repitiendo la definición de la categoría.',
@@ -386,7 +500,7 @@ const CRITERIA_ES = [
 ];
 
 const CRITERIA_EN = [
-    'The prose decides with the analysis\'s decisive criterion and keeps the course grammar\'s citations; if the analysis already settled something, the prose does not fall back to a weaker reason.',
+    'The prose decides with the analysis\'s decisive criterion and keeps the course grammar\'s citations; if the analysis already settled something, the prose does not fall back to a weaker reason. If the student corrected the analysis on purpose (a review note says so), the prose follows the student.',
     'Each closing sentence states one thing only; two claims go in two sentences.',
     'The grammatical category matches the translation, and it says which noun qualifies which.',
     'A rival reading is refuted with a reason from the context, not by restating the category\'s definition.',
@@ -446,6 +560,10 @@ function guidanceLine(f: ProseFinding, en: boolean): string | null {
                 : `Divide este cierre en dos oraciones: «${f.excerpt}».`;
         case 'repetition':
             return en ? `Do not repeat "${f.excerpt}".` : `No repitas «${f.excerpt}».`;
+        case 'translation-mismatch':
+            return en
+                ? `The closing adopts "${f.excerpt}", but the analysis's final translation is "${d.analysis}": close with the analysis's translation.`
+                : `El cierre adopta «${f.excerpt}», pero la traducción final del análisis es «${d.analysis}»: cierra con la traducción del análisis.`;
         // Las mecánicas (raya, grave, comas, mayúscula) se corrigen a mano:
         // recomponer para cambiar un acento reescribe todo lo demás.
         default:

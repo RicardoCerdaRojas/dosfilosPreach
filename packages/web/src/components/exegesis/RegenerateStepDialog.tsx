@@ -27,6 +27,11 @@ interface Props {
     redoesAnalysis: boolean;
     isPending: boolean;
     onRegenerate: (hint: string | undefined) => void;
+    /**
+     * Lo que se pierde al regenerar, si algo (TP #9, B33: volver a ensamblar
+     * sobre un ensamble editado a mano). Va a la vista antes de confirmar.
+     */
+    warning?: string;
 }
 
 /**
@@ -48,7 +53,7 @@ interface Props {
  * después de cambiar cualquiera de las tres.
  */
 export function RegenerateStepDialog({
-    open, onOpenChange, stepLabel, stepKind, redoesAnalysis, isPending, onRegenerate,
+    open, onOpenChange, stepLabel, stepKind, redoesAnalysis, isPending, onRegenerate, warning,
 }: Props) {
     const { t } = useTranslation('exegesis');
     const [hint, setHint] = useState('');
@@ -72,6 +77,11 @@ export function RegenerateStepDialog({
                 </DialogHeader>
 
                 <div className="space-y-3">
+                    {warning && (
+                        <p role="alert" data-testid="regenerate-warning" className="rounded-md border border-warning/40 bg-warning-subtle px-3 py-2 text-sm text-warning-subtle-foreground">
+                            {warning}
+                        </p>
+                    )}
                     <QuickHintChips stepKind={stepKind} onPick={setHint} disabled={isPending} />
 
                     <div className="space-y-1">

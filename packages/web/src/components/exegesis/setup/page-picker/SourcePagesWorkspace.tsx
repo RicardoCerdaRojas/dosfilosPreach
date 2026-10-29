@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Loader2, Pin, Sparkles } from 'lucide-react';
+import { Loader2, Pin, Sparkles } from 'lucide-react';
 import {
     clipRangesTo,
     countChars,
     countSheets,
+    hasKnownPrintedNumbering,
     normalizeSheetRanges,
     printedLabelForSheet,
     togglePinnedRange,
@@ -32,6 +33,7 @@ import { LemmaPagesPanel } from './LemmaPagesPanel';
 import { PassagePagesPanel } from './PassagePagesPanel';
 import { GrammarSectionsPanel } from './GrammarSectionsPanel';
 import { BuscarEnElLibro } from './BuscarEnElLibro';
+import { HojaActual } from './HojaActual';
 
 /**
  * Los tres paneles del selector: índice, hoja y carrito.
@@ -192,6 +194,7 @@ export function SourcePagesWorkspace({
         selectionChanged,
         needsResave,
         hadSaved: initialRanges.length > 0,
+        isEmpty: ranges.length === 0,
     });
     const pinnedChars = useMemo(() => countChars(pages, effectivePinned), [pages, effectivePinned]);
     const sheetCount = useMemo(() => countSheets(ranges), [ranges]);
@@ -348,6 +351,7 @@ export function SourcePagesWorkspace({
     }, [pickSheet]);
 
     const printedCurrent = printedLabelForSheet(currentSheet, numbering, printedPageOffset);
+    const lastSheet = useMemo(() => pages.reduce((m, p) => Math.max(m, p.sheet), 0) || null, [pages]);
     // Lo buscado en el libro se resalta en la hoja (fase F, F5).
     const [terminoBuscado, setTerminoBuscado] = useState<string | null>(null);
     const irAHoja = useCallback((sheet: number) => goToSheet(sheet), [goToSheet]);
@@ -433,30 +437,12 @@ export function SourcePagesWorkspace({
 
                 <div className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-muted/30">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2">
-                        <div className="flex items-center gap-1.5">
-                            <Button
-                                type="button" variant="outline" size="icon" className="h-7 w-7"
-                                onClick={() => step(-1)}
-                                aria-label={t('paperSetup.subSteps.corpus.picker.viewer.previous')}
-                            >
-                                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                            </Button>
-                            <Button
-                                type="button" variant="outline" size="icon" className="h-7 w-7"
-                                onClick={() => step(1)}
-                                aria-label={t('paperSetup.subSteps.corpus.picker.viewer.next')}
-                            >
-                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                            </Button>
-                            <span className="ml-1 text-xs font-semibold tabular-nums text-foreground">
-                                {t('paperSetup.subSteps.corpus.picker.viewer.sheet', { sheet: currentSheet })}
-                            </span>
-                            <span className="text-[11px] tabular-nums text-muted-foreground">
-                                {printedCurrent === null
-                                    ? t('paperSetup.subSteps.corpus.picker.viewer.noPrinted')
-                                    : t('paperSetup.subSteps.corpus.picker.viewer.printed', { printed: printedCurrent })}
-                            </span>
-                        </div>
+                        <HojaActual
+                            sheet={currentSheet}
+                            printed={printedCurrent}
+                            numberingKnown={hasKnownPrintedNumbering(numbering, printedPageOffset)}
+                            onStep={step}
+                        />
                         <div className="flex items-center gap-1.5">
                             <Button
                                 type="button"
@@ -501,6 +487,7 @@ export function SourcePagesWorkspace({
                         resourceId={resourceId}
                         numbering={numbering}
                         printedPageOffset={printedPageOffset}
+                        totalSheets={lastSheet}
                         currentSheet={currentSheet}
                         onGo={irAHoja}
                         onSearchTerm={setTerminoBuscado}

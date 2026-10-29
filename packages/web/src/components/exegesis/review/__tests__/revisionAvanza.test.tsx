@@ -102,3 +102,16 @@ describe('una cita ya revisada no sigue pidiendo revisión', () => {
         expect(screen.queryByText('canonical.review.panel.pageHintCalibrate')).not.toBeInTheDocument();
     });
 });
+
+describe('el diagnóstico es de UNA cita (TP #9)', () => {
+    it('REGRESIÓN: al elegir otra cita, el diagnóstico vuelve a cerrarse', async () => {
+        const { fireEvent } = await import('@testing-library/react');
+        const props = { claim: null, review: null, isReviewing: false, onReview: vi.fn(), onOpenSource: vi.fn(),
+            noteFromView: null, viewed: null, onCorrect: vi.fn(), calibrationPath: null } as const;
+        const { rerender } = render(<MemoryRouter><CitationEvidencePanel path="p1" verdict={verdict} {...props} /></MemoryRouter>);
+        fireEvent.click(screen.getByTestId('diagnosticar-cita'));
+        expect(screen.queryByTestId('diagnosticar-cita')).toBeNull();
+        rerender(<MemoryRouter><CitationEvidencePanel path="p2" verdict={{ ...verdict, raw: 'Ropes, p. 282' } as VerifiedCitation} {...props} /></MemoryRouter>);
+        expect(screen.getByTestId('diagnosticar-cita')).toBeInTheDocument();
+    });
+});

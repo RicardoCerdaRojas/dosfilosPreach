@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ExegeticalPaper } from '../../entities/ExegeticalPaper';
-import { assembleMarkdown, assemblyContents, documentSections, stepVerseKeys } from '../assemblyContents';
+import { assembleMarkdown, assemblyContents, assemblyHandEdit, documentSections, stepVerseKeys } from '../assemblyContents';
 import { parseBriefQuestions } from '../briefQuestions';
 
 /**
@@ -110,6 +110,17 @@ describe('assembleMarkdown', () => {
     it('abre con el título del trabajo', () => {
         expect(assembleMarkdown(TRABAJO, 'es').startsWith('# Santiago 2:1–13')).toBe(true);
     });
+
+    // TP #9: «# Santiago 4:11-17» salió con guion; el profesor descuenta el guion en rangos.
+    it('sin título, el pasaje con raya corta (TP #9, B44)', () => {
+        const sinTitulo = {
+            ...paper(paso({ id: 'v1', kind: 'verse', order: 1, verse: 11, body: 'Prosa.' })),
+            title: undefined,
+            passage: { bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 11, verseEnd: 17 },
+        } as unknown as ExegeticalPaper;
+        expect(assembleMarkdown(sinTitulo, 'es').split('\n')[0]).toBe('# Santiago 4:11–17');
+        expect(assembleMarkdown({ ...sinTitulo, title: 'Santiago 4:11-17' } as ExegeticalPaper, 'es').split('\n')[0]).toBe('# Santiago 4:11–17');
+    });
 });
 
 describe('documentSections — entre cuántas secciones se reparte la extensión', () => {
@@ -146,5 +157,31 @@ describe('stepVerseKeys', () => {
 
     it('la introducción no lleva claves', () => {
         expect(stepVerseKeys({ kind: 'introduction', verseRef: null }, preguntas, 'JAS')).toEqual([]);
+    });
+});
+
+// TP #9: reensamblar pisó sin aviso una edición del ensamble, que además no se verificó.
+describe('assemblyHandEdit — el ensamble editado a mano (B33)', () => {
+    const conEnsamble = (version: Record<string, unknown> | null, state = 'accepted') => {
+        const base = paper(paso({ id: 'v1', kind: 'verse', order: 1, verse: 1, body: 'Prosa del uno.' }));
+        const ensamble = { id: 'a', kind: 'assembly', order: 99, verseRef: null, state, accepted: state === 'accepted' ? version : null, current: version };
+        return { ...base, steps: [...base.steps, ensamble] } as unknown as ExegeticalPaper;
+    };
+
+    it('una edición a mano que cambia el texto, sin verificar', () => {
+        expect(assemblyHandEdit(conEnsamble({ origin: 'edited', markdown: '# Santiago 2:1–13\n\nCorregí esto a mano.' }))).toEqual({ verified: false });
+    });
+
+    it('reabierto (en revisión) sigue mostrando la edición; verificada después, lo dice', () => {
+        const v = { origin: 'edited', markdown: 'Otro texto.', verifications: { lastRunAt: new Date() } };
+        expect(assemblyHandEdit(conEnsamble(v, 'awaiting-review'))).toEqual({ verified: true });
+    });
+
+    it('el ensamble generado, o una edición que dejó el mismo texto, no avisan', () => {
+        expect(assemblyHandEdit(conEnsamble({ origin: 'generated', markdown: 'Otro texto.' }))).toBeNull();
+        const igual = conEnsamble(null);
+        const md = assembleMarkdown(igual, 'es');
+        expect(assemblyHandEdit(conEnsamble({ origin: 'edited', markdown: `${md}\n` }))).toBeNull();
+        expect(assemblyHandEdit(igual)).toBeNull();
     });
 });

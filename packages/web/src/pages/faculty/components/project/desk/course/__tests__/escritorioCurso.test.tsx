@@ -294,6 +294,18 @@ describe('el escritorio del Curso', () => {
             expect(Object.fromEntries(url.searchParams)).toEqual({ projectId: 'nt785', workTypeId: 'tp', scheduleEntryId: 'e10', label: 'TP #10' });
         });
 
+        it('cada fila edita su entrada del calendario sin bajar al calendario (TP #9, B2)', async () => {
+            pintar();
+            fireEvent.click(screen.getByLabelText('works.editEntryLabel:TP #9'));
+            const dialogo = screen.getByRole('dialog');
+            // El mismo diálogo del calendario, con la entrada de esa fila.
+            expect(within(dialogo).getByDisplayValue('TP #9')).toBeInTheDocument();
+            fireEvent.change(within(dialogo).getByDisplayValue('2026-10-28'), { target: { value: '2026-10-30' } });
+            fireEvent.click(within(dialogo).getByText('common.save'));
+            await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+            expect(ops().courseOps[0]).toMatchObject({ op: 'upsertEntry', entry: { id: 'e9', paperId: 's9', dueDate: '2026-10-30' } });
+        });
+
         it('el trabajo abre con la vuelta al proyecto', () => {
             pintar();
             const link = screen.getAllByText('TP #9').map(e => e.closest('a')).find(Boolean)!;

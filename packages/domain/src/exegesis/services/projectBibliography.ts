@@ -2,6 +2,7 @@ import { getBookById, type BibleBookId } from '../../bible/canon/BibleCanon';
 import type { LibraryResource } from '../../entities/LibraryResource';
 import type { SourceType } from '../entities/SourceType';
 import { commentaryBookCoverage, isCommentaryType } from './commentaryCoverage';
+import { deriveCitationKeyFromAuthor } from './citationKeyFromAuthor';
 
 /**
  * La bibliografía del proyecto: el estado del arte (ADR-046, etapa 2,
@@ -598,15 +599,76 @@ export function initialSourcesFromBibliography(
     entries: ReadonlyArray<ProjectBibliographyEntry>,
     typeOf: (resourceId: string) => SourceType | null | undefined,
     titleOf: (resourceId: string) => string | null | undefined = () => null,
+    known: KnownSourceIdentity = {},
 ): import('../use-cases/dtos').AddProjectSourceInput[] {
-    return entries.filter(e => e.resourceId).map(e => ({
-        corpusId: e.resourceId!,
-        sourceLibraryResourceId: e.resourceId!,
-        sourceType: e.sourceType ?? typeOf(e.resourceId!) ?? 'other',
-        // Una ficha de las fuentes de antes no trae título: el del libro.
-        displayLabel: e.title.trim() || titleOf(e.resourceId!)?.trim() || e.resourceId!,
-        mode: 'full-document' as const,
-    }));
+    return entries.filter(e => e.resourceId).map(e => {
+        const id = e.resourceId!;
+        const usada = known.usedBefore?.(id) ?? null;
+        // La clave con que ya se citó en el curso; si no, la del autor (B14:
+        // las heredadas llegaban sin clave y no se podían citar).
+        const autor = e.author?.trim() || known.authorOf?.(id)?.trim() || '';
+        const clave = usada?.citationKey?.trim()
+            || (autor ? deriveCitationKeyFromAuthor(autor, e.title || titleOf(id), known.language ?? 'es') : '');
+        return {
+            corpusId: id,
+            sourceLibraryResourceId: id,
+            sourceType: sourceTypeForInherited(e, typeOf, known),
+            // Una ficha de las fuentes de antes no trae título: el del libro.
+            displayLabel: e.title.trim() || titleOf(id)?.trim() || id,
+            mode: 'full-document' as const,
+            ...(clave ? { citationKey: clave } : {}),
+        };
+    });
+}
+
+/**
+ * Lo que ya se sabe de un libro fuera de la ficha: cómo lo clasificó y lo
+ * citó un trabajo anterior del curso, y su autor en la biblioteca.
+ */
+export interface KnownSourceIdentity {
+    usedBefore?: (resourceId: string) => { sourceType?: SourceType | null; citationKey?: string | null } | null | undefined;
+    authorOf?: (resourceId: string) => string | null | undefined;
+    language?: 'es' | 'en';
+}
+
+/**
+ * El tipo de una obra heredada: la clasificación del proyecto, la del
+ * libro en la biblioteca, o la que le dio un trabajo anterior del curso.
+ * TP #9 (B13): una obra aprobada traída al curso no tenía ninguna de las dos
+ * primeras y llegaba como «otro», aunque el TP #8 la había usado como
+ * comentario.
+ */
+export function sourceTypeForInherited(
+    entry: Pick<ProjectBibliographyEntry, 'sourceType' | 'resourceId'>,
+    typeOf: (resourceId: string) => SourceType | null | undefined,
+    known: Pick<KnownSourceIdentity, 'usedBefore'> = {},
+): SourceType {
+    const id = entry.resourceId;
+    return entry.sourceType ?? (id ? typeOf(id) ?? known.usedBefore?.(id)?.sourceType : null) ?? 'other';
+}
+
+/**
+ * Cómo usaron cada libro los trabajos anteriores: el más reciente que lo
+ * tiene con tipo (y clave) manda. Recibe los resúmenes ya acotados al curso.
+ */
+export function sourceIdentitiesFromStudies(
+    studies: ReadonlyArray<{ createdAt: Date; sources: ReadonlyArray<{ sourceLibraryResourceId: string | null; sourceType: SourceType; citationKey: string | null }> }>,
+): Map<string, { sourceType: SourceType | null; citationKey: string | null }> {
+    const out = new Map<string, { sourceType: SourceType | null; citationKey: string | null }>();
+    const ordenados = [...studies].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    for (const s of ordenados) {
+        // Un resumen viejo puede venir sin fuentes.
+        for (const f of s.sources ?? []) {
+            const id = f.sourceLibraryResourceId;
+            if (!id) continue;
+            const tipo = f.sourceType && f.sourceType !== 'other' ? f.sourceType : null;
+            const previo = out.get(id);
+            if (!previo) { out.set(id, { sourceType: tipo, citationKey: f.citationKey?.trim() || null }); continue; }
+            // Completa lo que el más reciente no sabía.
+            out.set(id, { sourceType: previo.sourceType ?? tipo, citationKey: previo.citationKey ?? (f.citationKey?.trim() || null) });
+        }
+    }
+    return out;
 }
 
 /** Una fila de la cobertura: lo que piden las rúbricas de un tipo de fuente y lo que hay. */
