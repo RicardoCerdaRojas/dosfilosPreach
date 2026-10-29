@@ -238,10 +238,46 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
 2. **«Salmo» para un solo salmo (B68a).**
    - *Dónde:* `formatPassageReference` (`passage-reference.ts:326`, `BibleCanon.ts:141`).
    - *Riesgo:* 153 llamadas; `sectionHeadings` y `replaceVerseSection` buscan el rótulo escrito. Se aceptan las dos formas al leer y se escribe la nueva.
-3. **«CONTENIDO» automático con página «i» (B68b).**
-   - `TableOfContents` y `features.updateFields` (docx 9.6.1 los trae, leído).
-   - Una sección en romanos entre la portada y el cuerpo.
-   - *Mide:* abrir en Word (AppleScript → PDF) y comprobar el índice y las páginas. **Supuesto** que Word para Mac actualice el campo al abrir; si no, el índice va con entradas guardadas y se avisa «Actualizar tabla».
+3. **«CONTENIDO» automático y paginación por secciones, como pide la guía (B68b).**
+
+   La guía (leída, hojas 8, 10, 17 y 57) arma el documento en cuatro secciones, cada una con su numeración:
+
+   | Sección | Número | Dónde |
+   |---|---|---|
+   | Portada | ninguno | — |
+   | CONTENIDO | romanos en minúscula (i, ii…), **forma parte de la portada** | abajo al centro, en todas sus páginas |
+   | Cuerpo | arábigos, **empieza en 1** | página 1 abajo al centro; las siguientes, arriba a la derecha |
+   | BIBLIOGRAFÍA | arábigos, **sigue la numeración del cuerpo** | **su primera página abajo al centro**, «como si comenzara un nuevo capítulo» (hoja 17); las siguientes, arriba a la derecha |
+
+   El APÉNDICE, si lo hay, va como la bibliografía: página nueva y encabezado de título.
+
+   **El índice:**
+   - campo automático (`TableOfContents` + `features.updateFields`; docx 9.6.1 los trae, leído);
+   - títulos a la izquierda, números a la derecha y línea de puntos en medio;
+   - 12 pt y sin negrita;
+   - tres niveles, con sangría por nivel;
+   - espaciado de doble (nivel uno) a simple (niveles más bajos);
+   - la bibliografía entra como nivel uno.
+
+   **La bibliografía (hoja 17):**
+   - entradas a espacio simple, separadas por 12 pt, con sangría francesa de 0,5";
+   - **una entrada no se parte entre dos páginas** (`keepLines`);
+   - dos espacios simples entre el título y la primera entrada;
+   - las subsecciones, si las hay, en nivel uno y en negrita.
+
+   **Estado actual (leído en `exportPaperToDocx.ts`):**
+   - la portada va sin número;
+   - el cuerpo tiene la primera página abajo al centro y las siguientes arriba a la derecha (`titlePage`);
+   - **la bibliografía va dentro de la sección del cuerpo, con `pageBreakBefore`, así que su primera página sale arriba a la derecha.** Va en una sección propia, que continúa la numeración, con `titlePage` y el pie centrado.
+
+   **El TI #1 entregado** (medido en el PDF) cumplió con la portada, el índice en «i» y el cuerpo; **la bibliografía llevó el «13» arriba a la derecha**, contra la hoja 17. El profesor no lo marcó.
+
+   **Mide:**
+   - exportar, abrir en Word por AppleScript, guardar como PDF;
+   - leer la posición y el valor del número en cada página: portada sin número; índice «i» abajo al centro; cuerpo «1» abajo al centro y las siguientes arriba a la derecha; bibliografía con su primera página abajo al centro, continuando la numeración;
+   - comprobar que el índice trae las páginas reales.
+
+   **Supuesto:** que Word para Mac actualice el campo al abrir. Si no lo hace, el índice va con las entradas guardadas y un aviso «Actualizar tabla».
 4. **Hebreo y traducción bajo el título del versículo (B68c).** De `originalText` del análisis (`CanonicalVerseAnalysis.ts:56`) y de la traducción final, sin acentos (como el TI #1).
 5. **La introducción bajo el título del trabajo, sin el rótulo «Introducción» (B68d).**
    - *Dónde:* `assemblyContents.ts:240-246`, prompt de `GeminiIntroductionComposer.ts:215`.
