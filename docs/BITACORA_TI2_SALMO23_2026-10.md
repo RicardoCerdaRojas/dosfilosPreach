@@ -95,6 +95,21 @@ Lo que el fundador decidió conservar: «Dentro del Salterio…» en la introduc
 
 Correcciones mías que estaban mal, para no repetirlas:
 - quitar la coma Oxford, que la regla 5 de la guía exige;
-- cambiar «Salmos» por «Salmo», que el TI #1 usó 4 veces sin corrección.
+- **retirar «Salmo»**: dije que el TI #1 usaba «Salmos», pero ese dato venía del borrador del sistema. El Word **entregado** (98/100) dice «Salmo 23» 6 veces y «Salmos» ninguna. La corrección original era correcta: un solo salmo es «Salmo».
 
-**Antes de corregir, leer las reglas de la guía y el trabajo anterior con nota.**
+**Antes de corregir, leer las reglas de la guía y el trabajo anterior ENTREGADO** (el Word en Google Drive), no el borrador del sistema. El fundador termina el trabajo a mano: el borrador del TI #1 tiene 1.188 palabras y solo títulos por versículo, y el Word entregado tiene 3.384 palabras, «CONTENIDO» y subtítulos temáticos.
+
+## 4. Estructura del TI #1 entregado que el sistema no produce (B68)
+
+Medido en el Word entregado del TI #1, frente al Word que exporta el sistema:
+
+| TI #1 entregado | Exportación del TI #2 |
+|---|---|
+| «CONTENIDO» automático, con página «i» en números romanos (guía, hojas 8 y 10: opcional, «muy recomendable») | no hay |
+| La introducción va bajo el título del trabajo («Análisis sintáctico y léxico de Salmo 23:1–3») | «Introducción» |
+| Un título temático por versículo, en nivel 1: «El SEÑOR es mi pastor (v. 1)» | «Salmos 23:4» |
+| El texto hebreo del versículo debajo de ese título | no está |
+| Subtítulos de nivel 2 por cuestión: «Una identidad sin verbo», «Restaurar: el polel frente al hifil» | no hay |
+| «Salmo 23» | «Salmos 23» (`formatPassageReference`) |
+
+El enunciado del TI #2 dice «mismos lineamientos que el primero», y la rúbrica da 25 puntos a la organización. El sistema debe proponer esa estructura: títulos y subtítulos sacados de las preguntas y las decisiones del análisis, el índice como campo de Word con página romana, el hebreo del versículo y «Salmo» para un solo salmo.
