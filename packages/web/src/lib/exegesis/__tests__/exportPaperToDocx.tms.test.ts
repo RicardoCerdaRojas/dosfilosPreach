@@ -317,6 +317,11 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         expect(notas).not.toContain('[^2]');
     });
 
+    it('REGRESIÓN TI #2: la cita corta «(Ross, 565)» no deja un «)» suelto en el cuerpo', async () => {
+        const { cuerpo } = await exportarConDos('Es mayor (Ross, 565). Otra (Craigie, "Psalms 1-50", p. 27). Y (Ross, A Commentary on the Psalms 1-41 (Kregel Exegetical Library), 566). Fin.');
+        expect(cuerpo).toContain('Es mayor[^1]. Otra[^2]. Y[^3]. Fin.');
+    });
+
     it('después de una nota con dos obras no hay «Ibid.»: no diría a cuál', async () => {
         const { notas } = await exportarConDos('Uno (Craigie, "Psalms 1-50", p. 206; Ross, "A Commentary on the Psalms", p. 59). Dos (Ross, p. 60).');
         expect(notas).not.toContain('Ibid.');

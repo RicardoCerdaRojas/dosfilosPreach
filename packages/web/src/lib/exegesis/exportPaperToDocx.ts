@@ -621,10 +621,13 @@ function buildInlineRuns(
             }
             markers.push({ kind: 'citation', start: cita.offset, end: cita.end, body: part.raw, author: cita.author, pages: cita.pages, parts: [part] });
         }
-        // El reconocedor deja fuera el «)» que cierra una cita combinada; si
-        // queda, el Word muestra «condicional³⁴).».
+        // El reconocedor deja fuera el «)» que cierra la cita —«(Ross, 565»—,
+        // y el Word mostraba «divinos¹²).» (TI #2: siete veces, más las tres
+        // combinadas). Se consume si el paréntesis de la cita quedó abierto.
         for (const mk of markers) {
-            if (mk.kind === 'citation' && mk.parts!.length > 1 && paragraphText[mk.end] === ')') mk.end += 1;
+            if (mk.kind !== 'citation' || paragraphText[mk.end] !== ')') continue;
+            const tramo = paragraphText.slice(mk.start, mk.end);
+            if ((tramo.match(/\(/g) ?? []).length > (tramo.match(/\)/g) ?? []).length) mk.end += 1;
         }
     }
     BOLD_PATTERN.lastIndex = 0;
