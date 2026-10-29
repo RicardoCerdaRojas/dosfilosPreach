@@ -417,6 +417,11 @@ export interface ProjectDeskModel {
     /** La primera fase que no está lista; `null` sin fases o con todas listas. */
     activePhaseId: string | null;
     now: DeskNow | null;
+    /**
+     * «Ahora» todavía no se puede decidir: la fase activa depende de datos que
+     * siguen cargando (la biblioteca, en la web). Lo pone la web, no el modelo.
+     */
+    nowPending?: boolean;
     notes: DeskNote[];
     /** Todos los estudios del proyecto (sin archivados), el más reciente primero. */
     studies: DeskStudy[];

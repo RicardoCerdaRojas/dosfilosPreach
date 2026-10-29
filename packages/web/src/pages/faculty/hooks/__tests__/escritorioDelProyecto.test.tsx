@@ -21,6 +21,7 @@ let sermones: unknown[] = [];
 let errorSermones: string | null = null;
 let cargandoSermones = false;
 let biblioteca: { resources: unknown[]; isLoading: boolean; isError?: boolean } = { resources: [], isLoading: false };
+let materialCargando = false;
 let rubricas: { rubrics: unknown[]; isLoading: boolean } = { rubrics: [], isLoading: false };
 const getUserSeries = vi.fn();
 const fuentesPedidas = vi.fn();
@@ -39,7 +40,7 @@ vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => rubric
 vi.mock('@/hooks/library', () => ({ useLibrary: () => biblioteca }));
 const mutacion = { mutateAsync: vi.fn(), isPending: false };
 vi.mock('@/hooks/faculty/useProjectWorkspace', () => ({
-    useProjectWorkspace: () => ({ outputs: [], isLoadingOutputs: false, createOutput: mutacion, updateOutput: mutacion, deleteOutput: mutacion }),
+    useProjectWorkspace: () => ({ outputs: [], isLoadingOutputs: materialCargando, createOutput: mutacion, updateOutput: mutacion, deleteOutput: mutacion }),
 }));
 vi.mock('../useProjectAttachedSources', () => ({
     useProjectAttachedSources: (o: { sourceIds?: string[] }) => {
@@ -79,6 +80,7 @@ beforeEach(() => {
     errorSermones = null;
     cargandoSermones = false;
     biblioteca = { resources: [], isLoading: false };
+    materialCargando = false;
     rubricas = { rubrics: [], isLoading: false };
     getUserSeries.mockResolvedValue([]);
 });
@@ -91,6 +93,9 @@ describe('deskWhileLibraryLoads', () => {
         const v = deskWhileLibraryLoads(modelo, true)!;
         expect(v.phases).toEqual([{ id: 'charge', status: 'ready' }, { id: 'sources', status: 'doing', loading: true }]);
         expect(v.course!.directedReading).toEqual([]);
+        expect(v.nowPending).toBeUndefined();
+        // Con la fase 2 activa, «Ahora» espera a la biblioteca.
+        expect(deskWhileLibraryLoads({ ...(modelo as object), activePhaseId: 'sources' } as never, true)!.nowPending).toBe(true);
     });
 });
 
@@ -158,13 +163,24 @@ describe('el estado por bloque', () => {
         expect(result.current.desk!.phases.find(p => p.id === 'passage')!.loading).toBeUndefined();
     });
 
-    it('si la fase 2 es la activa, la biblioteca decide: el recorrido espera', async () => {
+    it('REGRESIÓN: si la fase 2 es la activa, el escritorio no espera la biblioteca; solo «Ahora» queda pendiente', async () => {
+        // Fundador, 2026-10-29: salir y volver al escritorio lo dejaba en esqueleto hasta bajar 39 MB.
         proyectos = [{ ...esdras, sourceIds: [], framing: { centralIdea: 'Dios restaura a su pueblo' } }];
         biblioteca = { resources: [], isLoading: true };
         const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
         await waitFor(() => expect(result.current.blocks.series).toBe('ready'));
         expect(result.current.desk!.activePhaseId).toBe('sources');
-        expect(result.current.journey).toBe('loading');
+        expect(result.current.journey).toBe('ready');
+        expect(result.current.desk!.nowPending).toBe(true);
+        expect(result.current.desk!.phases.find(p => p.id === 'sources')!.loading).toBe(true);
+    });
+
+    it('con la biblioteca cargada, «Ahora» deja de estar pendiente', async () => {
+        proyectos = [{ ...esdras, sourceIds: [], framing: { centralIdea: 'Dios restaura a su pueblo' } }];
+        biblioteca = { resources: [], isLoading: false };
+        const { result } = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(result.current.journey).toBe('ready'));
+        expect(result.current.desk!.nowPending).toBeUndefined();
     });
 
     it('un tipo viejo, que cuenta las fuentes del selector, sigue esperando la biblioteca', async () => {
@@ -206,6 +222,19 @@ describe('las fuentes del selector', () => {
 
 describe('las rúbricas del curso', () => {
     const curso = { id: 'c', userId: 'u1', title: 'NT785', color: 'amber', type: 'course', workTypes: [{ id: 'tp', label: 'TP', rubricTemplateId: 'rub-borrada' }] };
+
+    it('REGRESIÓN: el Curso no espera el material, que no decide nada en él; el Exegético sí', async () => {
+        // Fundador, 2026-10-29: el material (sin regla en Firestore) dejaba el escritorio en esqueleto.
+        materialCargando = true;
+        rubricas = { rubrics: [{ id: 'rub-borrada', isDefault: true, rubric: { sourceRequirements: [] } }], isLoading: false };
+        proyectos = [curso];
+        const c = renderHook(() => useProjectDesk('c'), { wrapper: envolver() });
+        await waitFor(() => expect(c.result.current.journey).toBe('ready'));
+        proyectos = [esdras];
+        const e = renderHook(() => useProjectDesk('ezr'), { wrapper: envolver() });
+        await waitFor(() => expect(e.result.current.blocks.series).toBe('ready'));
+        expect(e.result.current.journey).toBe('loading');
+    });
 
     it('mientras cargan, la rúbrica no se da por faltante; cargadas, sí', async () => {
         proyectos = [curso];

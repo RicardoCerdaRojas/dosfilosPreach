@@ -870,6 +870,7 @@
                     }
                 }
             },
+            "nowPending": "Calculando lo que sigue: falta leer tu biblioteca…",
             "allReadyCourse": "Todas las fases están listas. Cuando llegue una devolución, regístrala y decide qué pasa a tu guía.",
             "laterLine": "{{status}} — {{reason}}"
         },

@@ -49,6 +49,10 @@ export function deskWhileLibraryLoads(desk: ProjectDeskModel | null, libraryLoad
     return {
         ...desk,
         phases: desk.phases.map(p => (p.id === 'sources' ? { ...p, loading: true } : p)),
+        // Si la fase activa es la 2, la biblioteca la decide: «Ahora» espera,
+        // el resto del escritorio no (fundador, 2026-10-29: volver al
+        // escritorio lo dejaba en esqueleto hasta bajar 39 MB).
+        ...(desk.activePhaseId === 'sources' ? { nowPending: true } : {}),
         ...(desk.course ? { course: { ...desk.course, directedReading: [] } } : {}),
     };
 }
@@ -183,11 +187,14 @@ export function useProjectDesk(projectId: string | undefined) {
      * que falló (no un vacío falso). Los sermones que fallan no tumban el
      * escritorio: su columna dice «—».
      */
-    const esperaBiblioteca = blocks.sources === 'loading'
-        && !(bibliotecaEnCamino && !attached.isLoading && desk && desk.activePhaseId !== 'sources');
+    // La biblioteca no se espera en el Exegético ni en el Curso: la fase 2 sale
+    // «cargando» y, si es la activa, «Ahora» espera (`nowPending`). Los tipos
+    // viejos cuentan las fuentes del selector y sí la esperan.
+    const esperaBiblioteca = blocks.sources === 'loading' && !(bibliotecaEnCamino && !attached.isLoading);
     const journey: DeskBlockStatus =
         blocks.work === 'error' || blocks.sources === 'error' || (conRubricas && blocks.rubrics === 'error') ? 'error'
-            : blocks.work === 'loading' || esperaBiblioteca || blocks.material === 'loading'
+            // El material solo cuenta donde decide algo (Exegético: la nota vieja; General: «Ahora»).
+            : blocks.work === 'loading' || esperaBiblioteca || (caps.desk !== 'course' && blocks.material === 'loading')
                 // Los sermones solo cuentan en el Exegético (la columna Sermón de la mesa); el Curso no los usa.
                 || (caps.desk === 'exegetical' && blocks.sermons === 'loading') || (conRubricas && blocks.rubrics === 'loading') ? 'loading'
                 : 'ready';

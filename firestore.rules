@@ -190,6 +190,14 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
 
+    // El material del proyecto (notas, borradores, bosquejos guardados en un
+    // proyecto). No tenía regla: Firestore negaba toda lectura y escritura, la
+    // función nunca guardó nada (0 documentos, leído el 2026-10-29) y el
+    // escritorio esperaba ~7 s de reintentos en cada carga.
+    match /users/{userId}/projects/{projectId}/outputs/{outputId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
     match /users/{userId}/greekFindings/{findingId} {
       allow read, create: if isAuthenticated() && request.auth.uid == userId;
       allow update, delete: if false;

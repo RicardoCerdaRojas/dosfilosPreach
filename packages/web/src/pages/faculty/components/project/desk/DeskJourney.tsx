@@ -148,6 +148,14 @@ function NowCard({ desk, lang, nombre, numero, onNow }: {
     const { t } = useTranslation('projects');
     const texto = useDeskText();
     const now = desk.now;
+    if (desk.nowPending) {
+        return (
+            <section aria-labelledby="desk-now-title" className="order-first rounded-xl border border-border bg-card px-4 py-3 md:order-none" data-testid="desk-now-pending">
+                <h3 id="desk-now-title" className="sr-only">{t('desk.journey.nowLabel')}</h3>
+                <p className="text-[13px] text-muted-foreground" role="status">{t('desk.journey.nowPending')}</p>
+            </section>
+        );
+    }
     if (!now) {
         // Todas las fases listas: nada que empujar. El Curso tiene su propio cierre.
         return (
