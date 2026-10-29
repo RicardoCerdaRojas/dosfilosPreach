@@ -326,7 +326,12 @@ export function ExegesisPaperPage() {
         try {
             // La portada se arma como dice la guía del trabajo (renglones,
             // mayúsculas, «POR»); sin guía o sin portada en ella, la de TMS.
-            const blob = await exportPaperToDocx(paper, { bibliography, coverStyle: paperCoverStyle(paper, guiaDelTrabajo?.manifest) });
+            // El «Ibid.» también sale de la guía: la copia del trabajo primero, como la portada.
+            const blob = await exportPaperToDocx(paper, {
+                bibliography,
+                coverStyle: paperCoverStyle(paper, guiaDelTrabajo?.manifest),
+                ibid: (paper.styleGuideSnapshot?.manifest ?? guiaDelTrabajo?.manifest)?.footnotes?.ibid,
+            });
             triggerDownload(blob, buildSafeFilename('docx'));
             toast.success(t('detail.exportDocx.toast.exported'));
             // Sin datos de portada el Word sale sin portada, y nada lo decía.

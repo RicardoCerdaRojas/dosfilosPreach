@@ -1,3 +1,4 @@
+import { buildStyleRulesBlock } from '../styleRulesBlock';
 import {
     buildCitationFormBlock,
     buildAcademicRegisterBlock,
@@ -116,7 +117,10 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             ``,
             `## Hard rules for the conclusion`,
             `- Synthesize what the body's verse analyses ACTUALLY ESTABLISHED. Do NOT introduce new arguments, new sources, or new lines of inquiry.`,
-            `- Restate the paper's thesis in the form the body demonstrated it — not the form the author originally hoped for.`,
+            `- Restate the paper's thesis in the form the body demonstrated it — not the form the author originally hoped for. If the regeneration hint states the thesis, that IS the thesis: the author wrote it after the analysis. A thesis in the assignment brief is a hypothesis: restate it only as far as the body demonstrated it.`,
+            `- Return EXPLICITLY to that thesis and sustain it verse by verse with what the grammar, syntax and lexicon showed (verbal conjugations, clauses, constructions). Do NOT list the translations chosen; say what they demonstrate for the thesis.`,
+            `- End with a sentence that returns to the thesis.`,
+            `- NEVER write "Ibid." or "Id.": every citation names its author key; the exporter builds the shortened notes.`,
             `- 2-3 paragraphs. NOT a checklist. Continuous academic prose.`,
             `- Citations sparingly: only when restating an exact verse-level claim that benefits from anchor citation. The bibliographic apparatus belongs to the body, not the conclusion.`,
             `- NO devotional language, NO pastoral application, NO modern relevance. Pure synthesis of what the analysis established.`,
@@ -146,7 +150,10 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             ``,
             `## Reglas duras para la conclusión`,
             `- Sintetiza lo que los análisis verso por verso EFECTIVAMENTE ESTABLECIERON. NO introduzcas argumentos nuevos, fuentes nuevas, ni líneas de indagación nuevas.`,
-            `- Reformula la tesis del paper en la forma que el cuerpo demostró — no la forma que el autor inicialmente esperaba.`,
+            `- Reformula la tesis del paper en la forma que el cuerpo demostró — no la forma que el autor inicialmente esperaba. Si la indicación de regeneración enuncia la tesis, ESA es la tesis: el autor la escribió después del análisis. Una tesis del encuadre es una hipótesis: reformúlala solo hasta donde el cuerpo la demostró.`,
+            `- Vuelve EXPLÍCITAMENTE a esa tesis y sostenla versículo por versículo con lo que la gramática, la sintaxis y el léxico demostraron (conjugaciones verbales, cláusulas, construcciones). NO enumeres las traducciones elegidas: di qué demuestran para la tesis.`,
+            `- Termina con una oración que vuelva a la tesis.`,
+            `- NUNCA escribas «Ibid.» ni «Id.»: toda cita nombra la clave de su autor; el exportador arma las notas abreviadas.`,
             `- 2-3 párrafos. NO un checklist. Prosa académica continua.`,
             `- Citas con moderación: solo al reformular un compromiso específico del cuerpo que se beneficia de cita ancla. El aparato bibliográfico pertenece al cuerpo, no a la conclusión.`,
             `- SIN lenguaje devocional, SIN aplicación pastoral, SIN relevancia contemporánea. Síntesis pura de lo que el análisis estableció.`,
@@ -164,6 +171,11 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
     // con los briefings la deja compitiendo con el contenido.
     const conVoz = [
         system,
+        // Las reglas de la guía del curso (lo pasado desde las devoluciones del
+        // profesor), como reglas obligatorias y no sepultadas en el JSON del
+        // manifest: antes solo las leían el analizador y la prosa del
+        // versículo (TI #2 del Salmo 23, «la tesis es interpretativa…»).
+        buildStyleRulesBlock(input.styleGuideManifest?.additionalRules, lang),
         buildWordBudgetBlock(input.wordBudget ?? null, lang),
         buildAcademicRegisterBlock(lang),
         buildAcademicVoiceBlock(input.voiceSamples ?? [], lang),

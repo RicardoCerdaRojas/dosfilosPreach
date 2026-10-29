@@ -1,3 +1,4 @@
+import { buildStyleRulesBlock } from '../styleRulesBlock';
 import {
     buildCitationFormBlock,
     buildAcademicRegisterBlock,
@@ -108,7 +109,10 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             ``,
             `## Hard rules for the introduction`,
             `- Present the passage and its importance within its book (1 paragraph).`,
-            `- State a precise thesis DERIVED FROM what the body and conclusion actually demonstrated. NOT the thesis the original assignment brief hoped for — the thesis the analysis established.`,
+            `- State a precise thesis DERIVED FROM what the body and conclusion actually demonstrated. NOT the thesis the original assignment brief hoped for — the thesis the analysis established. If the accepted conclusion restates a thesis, use THAT thesis, so introduction and conclusion argue the same claim.`,
+            `- The thesis is an interpretive, concrete and verifiable claim about what the text does — never a description of the paper ("this paper analyzes…").`,
+            `- End the introduction with the thesis: the passage, the methodology and the direction of the argument come BEFORE it.`,
+            `- NEVER write "Ibid." or "Id.": every citation names its author key.`,
             `- Briefly state methodology: morphological, syntactic, lexical, intertextual, theological — only those actually used in the body.`,
             `- Sketch the direction of the argument: what the paper builds toward.`,
             `- 2-3 paragraphs. Continuous academic prose. No bullets.`,
@@ -139,7 +143,10 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             ``,
             `## Reglas duras para la introducción`,
             `- Presenta el pasaje y su importancia dentro del libro (1 párrafo).`,
-            `- Enuncia una tesis precisa DERIVADA de lo que el cuerpo y la conclusión efectivamente demostraron. NO la tesis que el encuadre original del paper esperaba — la tesis que el análisis estableció.`,
+            `- Enuncia una tesis precisa DERIVADA de lo que el cuerpo y la conclusión efectivamente demostraron. NO la tesis que el encuadre original del paper esperaba — la tesis que el análisis estableció. Si la conclusión aceptada reformula una tesis, usa ESA tesis, para que introducción y conclusión defiendan la misma afirmación.`,
+            `- La tesis es una afirmación interpretativa, concreta y verificable sobre lo que el texto hace — nunca una descripción del trabajo («este trabajo analiza…»).`,
+            `- Termina la introducción con la tesis: el pasaje, la metodología y la dirección del argumento van ANTES.`,
+            `- NUNCA escribas «Ibid.» ni «Id.»: toda cita nombra la clave de su autor.`,
             `- Declara brevemente la metodología: morfológica, sintáctica, léxica, intertextual, teológica — solo las efectivamente usadas en el cuerpo.`,
             `- Esboza la dirección del argumento: hacia dónde construye el paper.`,
             `- 2-3 párrafos. Prosa académica continua. Sin viñetas.`,
@@ -158,6 +165,8 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
     // con los briefings la deja compitiendo con el contenido.
     const conVoz = [
         system,
+        // Las reglas de la guía del curso, obligatorias (ver el compositor de la conclusión).
+        buildStyleRulesBlock(input.styleGuideManifest?.additionalRules, lang),
         buildWordBudgetBlock(input.wordBudget ?? null, lang),
         buildAcademicRegisterBlock(lang),
         buildAcademicVoiceBlock(input.voiceSamples ?? [], lang),

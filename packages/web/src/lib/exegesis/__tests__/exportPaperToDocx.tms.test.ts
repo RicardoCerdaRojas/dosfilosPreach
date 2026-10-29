@@ -262,13 +262,133 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         expect(n).toContain('206');
     });
 
-    it('la primera nota va completa y la siguiente abreviada', async () => {
+    it('la primera nota va completa y la siguiente, de la misma obra, es «Ibid.» con su página', async () => {
         // Turabian: repetir la ficha entera en cada nota no es más prolijo,
-        // es otro estilo.
+        // es otro estilo. La guía de TMS admite «Ibid.» (TI #1, notas 24, 40 y 44).
         const n = await notasDe('Primero (Craigie, p. 206). Después (Craigie, p. 210).');
         expect(n).toContain('Peter C. Craigie');
         expect((n.match(/Word Books/g) ?? []).length).toBe(1);
-        expect(n).toContain('210');
+        expect(n.replace(/<[^>]+>/g, '')).toContain('Ibid., 210.');
+    });
+
+    it('REGRESIÓN: «Ibid.» solo cuando la nota anterior es de la misma obra; si no, la abreviada', async () => {
+        const ROSS = { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', shortTitle: 'Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' };
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's0', citationKey: 'Craigie' }, { id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', 'Uno (Craigie, p. 206). Dos (Ross, p. 5). Tres (Craigie, p. 210).'].join('\n'),
+        }), {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [
+                { citationKey: 'Craigie', displayLabel: 'Psalms 1-50', text: 'x', missing: [], data: CRAIGIE },
+                { citationKey: 'Ross', displayLabel: 'Commentary', text: 'y', missing: [], data: ROSS },
+            ],
+        });
+        const n = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        expect(n).not.toContain('Ibid.');
+        const texto = n.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        expect(texto).toContain('Craigie, Psalms, 210.');
+        // El título va en cursiva, no entre asteriscos.
+        expect(texto).not.toContain('*');
+        expect(n).toMatch(/<w:i\/>.*?Psalms 1-50/s);
+    });
+
+    const ROSS_FICHA = { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', shortTitle: 'Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' };
+    const exportarConDos = async (texto: string) => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's0', citationKey: 'Craigie' }, { id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', texto].join('\n'),
+        }), {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [
+                { citationKey: 'Craigie', displayLabel: 'Psalms 1-50', text: 'x', missing: [], data: CRAIGIE },
+                { citationKey: 'Ross', displayLabel: 'Commentary', text: 'y', missing: [], data: ROSS_FICHA },
+            ],
+        });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const plano = (x: string) => x.replace(/<w:footnoteReference w:id="(\d+)"\/>/g, '[^$1]').replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        return { notas: plano(await zip.file('word/footnotes.xml')!.async('string')), cuerpo: plano(await zip.file('word/document.xml')!.async('string')) };
+    };
+
+    it('REGRESIÓN TI #2: «(A, 638; B, 59)» es UNA nota con las dos obras, sin «)» suelto ni espacio antes de la llamada', async () => {
+        const { notas, cuerpo } = await exportarConDos('Lo dicen (Craigie, "Psalms 1-50", p. 206; Ross, "A Commentary on the Psalms", p. 59). Fin.');
+        expect(cuerpo).toContain('Lo dicen[^1]. Fin.');
+        expect(cuerpo).not.toMatch(/\[\^\d+\]\)/);
+        expect(notas).toContain('Word Books, 1983), 206; Allen P. Ross, A Commentary on the Psalms (Grand Rapids: Kregel, 2011), 59.');
+        expect(notas).not.toContain('[^2]');
+    });
+
+    it('REGRESIÓN TI #2: la cita corta «(Ross, 565)» no deja un «)» suelto en el cuerpo', async () => {
+        const { cuerpo } = await exportarConDos('Es mayor (Ross, 565). Otra (Craigie, "Psalms 1-50", p. 27). Y (Ross, A Commentary on the Psalms 1-41 (Kregel Exegetical Library), 566). Fin.');
+        expect(cuerpo).toContain('Es mayor[^1]. Otra[^2]. Y[^3]. Fin.');
+    });
+
+    it('después de una nota con dos obras no hay «Ibid.»: no diría a cuál', async () => {
+        const { notas } = await exportarConDos('Uno (Craigie, "Psalms 1-50", p. 206; Ross, "A Commentary on the Psalms", p. 59). Dos (Ross, p. 60).');
+        expect(notas).not.toContain('Ibid.');
+        expect(notas).toContain('Ross, Commentary on the Psalms, 60.');
+    });
+
+    it('Turabian: la misma página que la nota anterior es «Ibid.» solo', async () => {
+        const { notas } = await exportarConDos('Uno (Ross, p. 565). Dos (Ross, p. 565). Tres (Ross, p. 566).');
+        expect(notas).toMatch(/2011\), 565\.\s*Ibid\.\s*Ibid\., 566\./);
+        expect(notas).not.toContain('Ibid..');
+    });
+
+    it('REGRESIÓN: una nota sin página detrás de una con página no es «Ibid.» solo (diría «la misma página»)', async () => {
+        const { notas } = await exportarConDos('Uno (Ross, p. 565). Dos (Ross, "A Commentary on the Psalms").');
+        expect(notas).not.toContain('Ibid.');
+        expect(notas).toContain('Ross, Commentary on the Psalms.');
+    });
+
+    describe('el «Ibid.» lo decide la guía del trabajo', () => {
+        const exportarRoss = async (ibid: { enabled: boolean; label: string; allowPageOverride: boolean }) => {
+            const blob = await exportPaperToDocx(paper({
+                sources: [{ id: 's1', citationKey: 'Ross' }] as never,
+                assembledMarkdown: ['## Versículo 1', '', 'Uno (Ross, p. 565). Dos (Ross, p. 565). Tres (Ross, p. 566).'].join('\n'),
+            }), { exportedAt: new Date('2026-09-17'), ibid, bibliography: [{ citationKey: 'Ross', displayLabel: 'C', text: 'y', missing: [], data: ROSS_FICHA }] });
+            return (await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string')).replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        };
+
+        it('REGRESIÓN: una guía que no admite «Ibid.» (SBL) da la forma abreviada', async () => {
+            const notas = await exportarRoss({ enabled: false, label: 'Ibid.', allowPageOverride: true });
+            expect(notas).not.toContain('Ibid');
+            expect(notas).toMatch(/Ross, Commentary on the Psalms, 565\.\s*Ross, Commentary on the Psalms, 566\./);
+        });
+
+        it('usa el rótulo de la guía', async () => {
+            const notas = await exportarRoss({ enabled: true, label: 'Ibíd.', allowPageOverride: true });
+            expect(notas).toMatch(/2011\), 565\.\s*Ibíd\.\s*Ibíd\., 566\./);
+        });
+
+        it('sin «Ibid.» con otra página, la página distinta va con la forma abreviada', async () => {
+            const notas = await exportarRoss({ enabled: true, label: 'Ibid.', allowPageOverride: false });
+            expect(notas).toMatch(/2011\), 565\.\s*Ibid\.\s*Ross, Commentary on the Psalms, 566\./);
+        });
+    });
+
+    it('«Ibid.» va en cursiva, como el ejemplo de la guía de TMS', async () => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', 'Uno (Ross, p. 565). Dos (Ross, p. 566).'].join('\n'),
+        }), { exportedAt: new Date('2026-09-17'), bibliography: [{ citationKey: 'Ross', displayLabel: 'C', text: 'y', missing: [], data: ROSS_FICHA }] });
+        const xml = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        expect(xml).toMatch(/<w:i\/>(?:(?!<\/w:r>).)*<w:t[^>]*>Ibid\.<\/w:t>/s);
+        expect(xml.replace(/<[^>]+>/g, '')).toContain('Ibid., 566.');
+    });
+
+    it('REGRESIÓN: una nota sin ficha entre dos de la misma obra corta la racha del «Ibid.»', async () => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's0', citationKey: 'Craigie' }, { id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', 'Uno (Craigie, p. 206). Dos (Ross, p. 5). Tres (Craigie, p. 210).'].join('\n'),
+        }), {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [{ citationKey: 'Craigie', displayLabel: 'Psalms 1-50', text: 'x', missing: [], data: CRAIGIE }],
+        });
+        const n = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        const texto = n.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        expect(texto).toContain('Ross, p. 5');
+        expect(texto).not.toContain('Ibid.');
+        expect(texto).toContain('Craigie, Psalms, 210.');
     });
 
     it('sin ficha se escribe lo que decía el cuerpo, sin inventar editorial', async () => {

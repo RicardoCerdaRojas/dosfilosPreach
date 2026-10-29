@@ -24,6 +24,7 @@ import {
     hasCover,
     TMS_COVER_STYLE,
     type CoverStyle,
+    type IbidRules,
     resolvesToCitedSource,
     type BibliographyEntry,
     type ExegeticalPaper,
@@ -77,6 +78,11 @@ export async function exportPaperToDocx(
         bibliography?: ReadonlyArray<BibliographyEntry>;
         /** Cómo arma la portada la guía del trabajo; sin ella, la de TMS. */
         coverStyle?: CoverStyle;
+        /**
+         * El «Ibid.» de la guía del trabajo: si lo admite, con qué rótulo y
+         * si lleva página distinta. Sin guía, el de TMS («Ibid.», con página).
+         */
+        ibid?: IbidRules;
     } = {},
 ): Promise<Blob> {
     const exportedAt = options.exportedAt ?? new Date();
@@ -120,6 +126,11 @@ export async function exportPaperToDocx(
      * completa en cada nota no es un estilo más prolijo, es otro estilo.
      */
     const yaCitadas = new Set<string>();
+    const ibid = options.ibid ?? { enabled: true, label: 'Ibid.', allowPageOverride: true };
+    const rotuloIbid = ibid.label.trim() || 'Ibid.';
+    /** La obra de la nota anterior: con la misma, «Ibid.». */
+    let ultimaClave: string | null = null;
+    let ultimaPagina: string | null = null;
     const blocks = parseMarkdownBlocks(markdown);
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
@@ -222,22 +233,45 @@ export async function exportPaperToDocx(
      * se ve. El aviso de fichas cojas al descargar ya nombra a los libros que
      * están en este caso.
      */
-    function textoDeLaNota(author: string, pages: string | null, crudo: string): string {
+    function textoDeLaNota(author: string, pages: string | null, crudo: string, sinIbid = false): string {
         const clave = [...fichas.keys()].find(k => resolvesToCitedSource(author, [k]));
         const ficha = clave ? fichas.get(clave)! : null;
-        if (!ficha || !clave) return crudo;
+        // Una nota sin ficha corta la racha: el «Ibid.» siguiente sería ambiguo.
+        if (!ficha || !clave) { ultimaClave = null; return crudo; }
         const primera = !yaCitadas.has(clave);
         yaCitadas.add(clave);
+        // La misma obra que la nota inmediatamente anterior: «Ibid.», como
+        // admite la guía de TMS (y como salió el TI #1, notas 24, 40 y 44).
+        // Sin página detrás de una nota con página, «Ibid.» solo diría «la
+        // misma página»: va la abreviada. Y lo que la guía no admite, tampoco.
+        const pagina = pages?.trim() || null;
+        const repetida = ibid.enabled && !sinIbid && !primera && ultimaClave === clave
+            && !(pagina === null && ultimaPagina !== null)
+            && (pagina === ultimaPagina || ibid.allowPageOverride);
+        // Turabian: la misma página que la nota anterior, «Ibid.» solo.
+        const mismaPagina = repetida && pagina === ultimaPagina;
+        ultimaClave = clave;
+        ultimaPagina = pagina;
         const nota = primera
             ? formatFirstNote(ficha, pages ?? undefined)
-            : formatShortNote(ficha, pages ?? undefined);
+            : repetida
+                // En cursiva, como el ejemplo de la guía de TMS (hoja 22): «² *Ibid.*, 12».
+                ? (pagina && !mismaPagina ? `*${rotuloIbid}*, ${pagina}` : `*${rotuloIbid}*`)
+                : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.
-        return nota.endsWith('.') ? nota : `${nota}.`;
+        // «*Ibid.*» ya termina en punto, aunque detrás venga el cierre de la cursiva.
+        return /\.\*?$/.test(nota) ? nota : `${nota}.`;
     }
 
-    function registerFootnote(cita: { author: string; pages: string | null; raw: string }): number {
-        const citationText = textoDeLaNota(cita.author, cita.pages, cita.raw);
+    function registerFootnote(citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>): number {
+        // «(A, 638; B, 59)» es UNA nota con dos obras separadas por punto y
+        // coma, como en Turabian; dos llamadas seguidas no lo son. Dentro de
+        // ella no hay «Ibid.», y después tampoco: no diría a cuál de las dos.
+        const citationText = citas.length === 1
+            ? textoDeLaNota(citas[0]!.author, citas[0]!.pages, citas[0]!.raw)
+            : `${citas.map(c => textoDeLaNota(c.author, c.pages, c.raw, true).replace(/\.$/, '')).join('; ')}.`;
+        if (citas.length > 1) ultimaClave = null;
         footnoteCounter += 1;
         footnotes[footnoteCounter] = {
             children: [
@@ -247,7 +281,7 @@ export async function exportPaperToDocx(
                     // tres notas y empuja el texto fuera de la página.
                     spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 120 },
                     indent: { firstLine: TMS.firstLineIndent },
-                    children: textRuns(citationText, { size: TMS.footnoteHalfPt }),
+                    children: noteRuns(citationText),
                 }),
             ],
         };
@@ -316,6 +350,24 @@ export function typographicQuotes(text: string): string {
         .replace(/(^|[\s([«“])'(?=\p{L})/gu, '$1\u2018')
         // El resto —entre letras, al final de una palabra— es apóstrofo o cierre.
         .replace(/'/g, '\u2019');
+}
+
+/**
+ * El texto de una nota, con el título de la obra en cursiva. La nota
+ * Turabian llega con el título entre asteriscos (`*Psalms 1-50*`, igual que
+ * en pantalla); un run plano los dejaba impresos en el Word.
+ */
+function noteRuns(text: string): TextRun[] {
+    const size = TMS.footnoteHalfPt;
+    const runs: TextRun[] = [];
+    let cursor = 0;
+    for (const m of text.matchAll(ITALIC_PATTERN)) {
+        if (m.index > cursor) runs.push(...textRuns(text.slice(cursor, m.index), { size }));
+        runs.push(...textRuns(m[1] ?? '', { size, italics: true }));
+        cursor = m.index + m[0].length;
+    }
+    if (cursor < text.length) runs.push(...textRuns(text.slice(cursor), { size }));
+    return runs;
 }
 
 function textRuns(text: string, options: { size?: number; bold?: boolean; italics?: boolean } = {}): TextRun[] {
@@ -512,7 +564,7 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
  */
 function buildInlineRuns(
     paragraphText: string,
-    registerFootnote: (cita: { author: string; pages: string | null; raw: string }) => number,
+    registerFootnote: (citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>) => number,
     /**
      * `'parenthetical'` deja la cita donde está, tal como se escribió.
      *
@@ -548,6 +600,8 @@ function buildInlineRuns(
         /** Sólo en las citas: lo que hace falta para buscar su ficha. */
         author?: string;
         pages?: string | null;
+        /** Las obras de una cita combinada «(A, 638; B, 59)», en orden. */
+        parts?: Array<{ author: string; pages: string | null; raw: string }>;
     }
     const markers: Marker[] = [];
 
@@ -556,20 +610,36 @@ function buildInlineRuns(
         // Las claves viajan al reconocedor porque hay una forma —título sin
         // comillas— que sin el corpus no se puede distinguir de un pie de
         // imprenta, y por eso sólo participa cuando se las pasan.
-        for (const cita of findInlineCitations(paragraphText, citationKeys)) {
+        // En orden de aparición: el reconocedor no las devuelve así, y unir
+        // «(A; B)» exige ver la primera antes que la segunda.
+        for (const cita of [...findInlineCitations(paragraphText, citationKeys)].sort((a, b) => a.offset - b.offset)) {
             // Con título entre comillas es inequívoca por su forma. Sin
             // título, sólo si el autor es una fuente que el trabajo declara:
             // es la única señal que la separa de un pie de imprenta o de una
             // referencia bíblica.
             if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
-            markers.push({
-                kind: 'citation',
-                start: cita.offset,
-                end: cita.end,
-                body: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
+            const part = {
                 author: cita.author,
                 pages: cita.pages,
-            });
+                raw: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
+            };
+            // «; B, 59» pegado a la cita anterior es la segunda obra del mismo
+            // paréntesis: va en la misma nota, no en una llamada aparte.
+            const previa = markers[markers.length - 1];
+            if (cita.raw.startsWith(';') && previa?.kind === 'citation' && previa.end === cita.offset) {
+                previa.parts!.push(part);
+                previa.end = cita.end;
+                continue;
+            }
+            markers.push({ kind: 'citation', start: cita.offset, end: cita.end, body: part.raw, author: cita.author, pages: cita.pages, parts: [part] });
+        }
+        // El reconocedor deja fuera el «)» que cierra la cita —«(Ross, 565»—,
+        // y el Word mostraba «divinos¹²).» (TI #2: siete veces, más las tres
+        // combinadas). Se consume si el paréntesis de la cita quedó abierto.
+        for (const mk of markers) {
+            if (mk.kind !== 'citation' || paragraphText[mk.end] !== ')') continue;
+            const tramo = paragraphText.slice(mk.start, mk.end);
+            if ((tramo.match(/\(/g) ?? []).length > (tramo.match(/\)/g) ?? []).length) mk.end += 1;
         }
     }
     BOLD_PATTERN.lastIndex = 0;
@@ -601,10 +671,12 @@ function buildInlineRuns(
             // `textRuns` y no un run suelto: el hebreo que aparece en
             // mitad de una frase castellana necesita su propia marca de
             // derecha a izquierda o Word lo reordena al abrir.
-            runs.push(...textRuns(paragraphText.slice(cursor, mk.start)));
+            // La llamada de nota va pegada a la palabra: «ellos¹.», no «ellos ¹.».
+            const antes = paragraphText.slice(cursor, mk.start);
+            runs.push(...textRuns(mk.kind === 'citation' && paragraphText[mk.start] === '(' ? antes.trimEnd() : antes));
         }
         if (mk.kind === 'citation') {
-            const id = registerFootnote({ author: mk.author ?? '', pages: mk.pages ?? null, raw: mk.body });
+            const id = registerFootnote(mk.parts ?? [{ author: mk.author ?? '', pages: mk.pages ?? null, raw: mk.body }]);
             runs.push(new FootnoteReferenceRun(id));
         } else if (mk.kind === 'bold') {
             runs.push(...textRuns(mk.body, { bold: true }));

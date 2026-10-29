@@ -173,7 +173,8 @@ export function formatBibliographyEntry(data: BibliographicData): string {
             ? `Vol. ${data.volume.trim()}, *${data.volumeTitle.trim()}*.`
             : `Vol. ${data.volume.trim()}.`);
     }
-    if (data.edition?.trim()) parts.push(`${data.edition.trim()}.`);
+    // «5.ª ed.» ya termina en punto: agregarle otro deja «ed..».
+    if (data.edition?.trim()) parts.push(data.edition.trim().endsWith('.') ? data.edition.trim() : `${data.edition.trim()}.`);
     if (data.translator?.trim()) parts.push(`Traducido por ${data.translator.trim()}.`);
     if (data.editor?.trim()) parts.push(`Editado por ${data.editor.trim()}.`);
     if (data.series?.trim()) parts.push(`${data.series.trim()}.`);
@@ -221,14 +222,64 @@ export function formatShortNote(data: BibliographicData, pages?: string): string
     return appendPages(head, pages);
 }
 
-/** Apellido solo, que es como empiezan las notas abreviadas. */
+/**
+ * Apellido solo, que es como empiezan las notas abreviadas. Con dos autores,
+ * los dos apellidos: «Waltke y O’Connor», no «Waltke» (TI #2, nota 33).
+ */
 function shortAuthor(data: BibliographicData): string {
     const sorted = (data.authorSorted ?? '').trim();
+    const coautores = coAuthorsOf(data.author ?? '', sorted);
+    if (coautores) {
+        const { nombres, conjuncion } = coautores;
+        // El primero, como lo dejó ordenado el autor: «Pérez Millos, Samuel, y…».
+        const apellidos = nombres.map((n, i) => (i === 0 && sorted.includes(',') ? sorted.split(',')[0]!.trim() : surnameOf(n)));
+        // Turabian: dos o tres apellidos; de cuatro en adelante, el primero y «et al.».
+        if (apellidos.length > 3) return `${apellidos[0]} et al.`;
+        return apellidos.length === 2
+            ? `${apellidos[0]} ${conjuncion} ${apellidos[1]}`
+            : `${apellidos.slice(0, -1).join(', ')}, ${conjuncion} ${apellidos[apellidos.length - 1]}`;
+    }
     if (sorted) return sorted.split(',')[0]!.trim();
-    const author = (data.author ?? '').trim();
+    const author = sinRolEditorial((data.author ?? '').trim().replace(/\s+/g, ' ')).replace(/,?\s+(?:jr|sr|ii|iii)\.?$/i, '');
     if (!author) return '';
-    const parts = author.split(/\s+/);
-    return parts[parts.length - 1]!;
+    // «Ortega y Gasset, José»: ya viene invertido, el apellido es lo de antes de la coma.
+    return author.includes(',') ? author.split(',')[0]!.trim() : surnameOf(author);
+}
+
+/** «, eds.» y «(eds.)» no van en la nota abreviada. */
+function sinRolEditorial(nombre: string): string {
+    return nombre.replace(/,?\s*\((?:eds?|comps?|trads?)\.?\)$|,\s*(?:eds?|comps?|trads?)\.?$/i, '');
+}
+
+/**
+ * Los autores de una obra con varios, en orden, o `null` si es UNO.
+ *
+ * Es uno cuando alguna parte no trae nombre y apellido: «Ramón y Cajal,
+ * Santiago», «José Ortega y Gasset» y «Pedro e Inés Gómez» tienen una «y»
+ * y un solo autor. Un autor ordenado sin coma —«Nestle-Aland», una
+ * entidad— es una forma decidida a mano y manda sobre el nombre.
+ */
+function coAuthorsOf(author: string, sorted: string): { nombres: string[]; conjuncion: string } | null {
+    if (sorted && !sorted.includes(',')) return null;
+    const limpio = sinRolEditorial(author.trim().replace(/\s+/g, ' '));
+    const conjuncion = limpio.match(/\s(and|y|e|&)\s/i)?.[1];
+    if (!conjuncion) return null;
+    const nombres: string[] = [];
+    for (const parte of limpio.split(/,\s*(?:(?:and|y|e|&)\s+)?|\s+(?:and|y|e|&)\s+/i).map(p => p.trim()).filter(Boolean)) {
+        // «Walter C. Kaiser, Jr.»: el linaje va con el nombre de antes.
+        if (/^(?:jr|sr|ii|iii)\.?$/i.test(parte) && nombres.length) nombres[nombres.length - 1] += `, ${parte}`;
+        else nombres.push(parte);
+    }
+    if (nombres.length < 2 || nombres.some(n => n.split(' ').length < 2)) return null;
+    return { nombres, conjuncion };
+}
+
+/** El apellido de un nombre de pila completo, sin «Jr.». */
+function surnameOf(nombre: string): string {
+    const palabras = nombre.replace(/,?\s+(?:jr|sr|ii|iii)\.?$/i, '').split(' ');
+    const ultima = palabras[palabras.length - 1]!;
+    // «Pedro Ortiz V.»: la inicial del segundo apellido va con el primero.
+    return /^\p{L}\.$/u.test(ultima) && palabras.length > 2 ? palabras.slice(-2).join(' ') : ultima;
 }
 
 function titleWithSubtitle(data: BibliographicData): string {

@@ -69,6 +69,60 @@ describe('formatShortNote', () => {
         expect(formatShortNote({ author: 'Allen P. Ross', title: 'A Commentary on the Psalms' }, '562'))
             .toBe('Ross, *A Commentary on the Psalms*, 562');
     });
+
+    it('REGRESIÓN TI #2: con dos autores, los dos apellidos', () => {
+        expect(formatShortNote({ author: 'Bruce K. Waltke y M. O’Connor', authorSorted: 'Waltke, Bruce K., y M. O’Connor', title: 'An Introduction to Biblical Hebrew Syntax', shortTitle: 'Introduction to Biblical Hebrew Syntax' }, '527'))
+            .toBe('Waltke y O’Connor, *Introduction to Biblical Hebrew Syntax*, 527');
+        // Editores: el «eds.» no va en la nota abreviada.
+        expect(formatShortNote({ author: 'K. Elliger y W. Rudolph, eds.', title: 'Biblia Hebraica Stuttgartensia' }, '1106'))
+            .toBe('Elliger y Rudolph, *Biblia Hebraica Stuttgartensia*, 1106');
+        expect(formatShortNote({ author: 'Bill T. Arnold and John H. Choi', title: 'A Guide' }, '59')).toBe('Arnold and Choi, *A Guide*, 59');
+        expect(formatShortNote({ author: 'Juan Pérez y Pedro Ortiz V.', title: 'X' }, '1')).toBe('Pérez y Ortiz V., *X*, 1');
+    });
+
+    it('un apellido compuesto con «y» sigue siendo UN autor', () => {
+        expect(formatShortNote({ author: 'José Ortega y Gasset', authorSorted: 'Ortega y Gasset, José', title: 'Meditaciones' }, '3'))
+            .toBe('Ortega y Gasset, *Meditaciones*, 3');
+        // Revisión adversarial: con el nombre invertido daba «Ramón y Santiago».
+        expect(formatShortNote({ author: 'Ramón y Cajal, Santiago', authorSorted: 'Ramón y Cajal, Santiago', title: 'Textura' }, '1'))
+            .toBe('Ramón y Cajal, *Textura*, 1');
+        // Sin forma ordenada, el nombre ya invertido se lee hasta la coma.
+        expect(formatShortNote({ author: 'Ortega y Gasset, José', title: 'Meditaciones' }, '3')).toBe('Ortega y Gasset, *Meditaciones*, 3');
+        expect(formatShortNote({ author: 'Walter C. Kaiser, Jr.', title: 'T' }, '1')).toBe('Kaiser, *T*, 1');
+        // «Pedro» solo no es un autor: «Pedro e Inés Gómez» es una persona.
+        expect(formatShortNote({ author: 'Pedro e Inés Gómez', title: 'X' }, '1')).toBe('Gómez, *X*, 1');
+    });
+
+    it('un autor ordenado sin coma (entidad o forma decidida) manda sobre el nombre', () => {
+        expect(formatShortNote({ author: 'Sociedad Bíblica de Chile y Sociedades Bíblicas Unidas', authorSorted: 'Sociedad Bíblica de Chile y Sociedades Bíblicas Unidas', title: 'RVR' }, '1'))
+            .toBe('Sociedad Bíblica de Chile y Sociedades Bíblicas Unidas, *RVR*, 1');
+        expect(formatShortNote({ author: 'Eberhard Nestle y Kurt Aland', authorSorted: 'Nestle-Aland', title: 'NA28' }, '1'))
+            .toBe('Nestle-Aland, *NA28*, 1');
+    });
+
+    it('Turabian: tres autores con sus tres apellidos; cuatro o más, el primero y «et al.»', () => {
+        expect(formatShortNote({ author: 'A. B. Smith, C. D. Jones, and E. F. Brown', authorSorted: 'Smith, A. B., C. D. Jones, and E. F. Brown', title: 'T' }, '1'))
+            .toBe('Smith, Jones, and Brown, *T*, 1');
+        expect(formatShortNote({ author: 'A. B. Smith, C. D. Jones, and E. F. Brown', title: 'T' }, '1')).toBe('Smith, Jones, and Brown, *T*, 1');
+        expect(formatShortNote({ author: 'A. Uno, B. Dos, C. Tres y D. Cuatro', title: 'T' }, '1')).toBe('Uno et al., *T*, 1');
+    });
+
+    it('el «Jr.» de un coautor no se lo come', () => {
+        expect(formatShortNote({ author: 'Moisés Silva and Walter C. Kaiser Jr.', authorSorted: 'Silva, Moisés, and Walter C. Kaiser Jr.', title: 'T' }, '1'))
+            .toBe('Silva and Kaiser, *T*, 1');
+        expect(formatShortNote({ author: 'Mark D. Futato and David M. Howard, Jr.', title: 'T' }, '1')).toBe('Futato and Howard, *T*, 1');
+        expect(formatShortNote({ author: 'R. Laird Harris, Gleason L. Archer Jr., y Bruce K. Waltke, eds.', title: 'TWOT' }, '1'))
+            .toBe('Harris, Archer, y Waltke, *TWOT*, 1');
+    });
+});
+
+describe('formatBibliographyEntry · edición', () => {
+    it('REGRESIÓN TI #2: «5.ª ed.» no termina en «ed..»', () => {
+        const e = formatBibliographyEntry({ author: 'K. Elliger y W. Rudolph, eds.', title: 'Biblia Hebraica Stuttgartensia', edition: '5.ª ed.', city: 'Stuttgart', publisher: 'Deutsche Bibelgesellschaft', year: '1997' });
+        expect(e).toContain('5.ª ed. Stuttgart');
+        expect(e).not.toContain('ed..');
+        expect(formatBibliographyEntry({ author: 'A B', title: 'T', edition: '2nd ed' })).toContain('2nd ed.');
+    });
 });
 
 describe('proposeSortedAuthor', () => {
