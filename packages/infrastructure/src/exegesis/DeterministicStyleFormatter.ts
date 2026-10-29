@@ -237,16 +237,13 @@ function renderCitation(input: RenderInput): string {
     const { manifest, source, pages, decision } = input;
 
     if (decision.kind === 'ibid') {
-        const ibid = manifest.footnotes.ibid;
-        if (!ibid.enabled) {
-            // Some modern guides forbid ibid; degrade to subsequent.
-            const tpl = manifest.footnotes.subsequentMentionTemplate;
-            return wrap(substituteTemplate(tpl, source, pages));
-        }
-        if (decision.pageOverride && ibid.allowPageOverride) {
-            return wrap(`${ibid.label}, ${decision.pageOverride}`);
-        }
-        return wrap(ibid.label);
+        // En la prosa, «Ibid.» nunca: va la forma abreviada, con el autor.
+        // Un «(Ibid., 567)» no lo resuelve el verificador (TI #2, 23:4–23:6:
+        // una alarma «no encontrada» por cada uno) y depende de qué cita
+        // quede antes al ensamblar. El «Ibid.» de la guía lo pone el
+        // exportador, sobre el orden final de las notas.
+        const tpl = manifest.footnotes.subsequentMentionTemplate;
+        return wrap(substituteTemplate(tpl, source, pages));
     }
 
     const tpl = decision.kind === 'first'

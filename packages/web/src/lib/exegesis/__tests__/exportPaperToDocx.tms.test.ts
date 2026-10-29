@@ -262,13 +262,49 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         expect(n).toContain('206');
     });
 
-    it('la primera nota va completa y la siguiente abreviada', async () => {
+    it('la primera nota va completa y la siguiente, de la misma obra, es «Ibid.» con su página', async () => {
         // Turabian: repetir la ficha entera en cada nota no es más prolijo,
-        // es otro estilo.
+        // es otro estilo. La guía de TMS admite «Ibid.» (TI #1, notas 24, 40 y 44).
         const n = await notasDe('Primero (Craigie, p. 206). Después (Craigie, p. 210).');
         expect(n).toContain('Peter C. Craigie');
         expect((n.match(/Word Books/g) ?? []).length).toBe(1);
-        expect(n).toContain('210');
+        expect(n).toContain('Ibid., 210.');
+    });
+
+    it('REGRESIÓN: «Ibid.» solo cuando la nota anterior es de la misma obra; si no, la abreviada', async () => {
+        const ROSS = { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', shortTitle: 'Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' };
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's0', citationKey: 'Craigie' }, { id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', 'Uno (Craigie, p. 206). Dos (Ross, p. 5). Tres (Craigie, p. 210).'].join('\n'),
+        }), {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [
+                { citationKey: 'Craigie', displayLabel: 'Psalms 1-50', text: 'x', missing: [], data: CRAIGIE },
+                { citationKey: 'Ross', displayLabel: 'Commentary', text: 'y', missing: [], data: ROSS },
+            ],
+        });
+        const n = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        expect(n).not.toContain('Ibid.');
+        const texto = n.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        expect(texto).toContain('Craigie, Psalms, 210.');
+        // El título va en cursiva, no entre asteriscos.
+        expect(texto).not.toContain('*');
+        expect(n).toMatch(/<w:i\/>.*?Psalms 1-50/s);
+    });
+
+    it('REGRESIÓN: una nota sin ficha entre dos de la misma obra corta la racha del «Ibid.»', async () => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's0', citationKey: 'Craigie' }, { id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', 'Uno (Craigie, p. 206). Dos (Ross, p. 5). Tres (Craigie, p. 210).'].join('\n'),
+        }), {
+            exportedAt: new Date('2026-09-17'),
+            bibliography: [{ citationKey: 'Craigie', displayLabel: 'Psalms 1-50', text: 'x', missing: [], data: CRAIGIE }],
+        });
+        const n = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        const texto = n.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        expect(texto).toContain('Ross, p. 5');
+        expect(texto).not.toContain('Ibid.');
+        expect(texto).toContain('Craigie, Psalms, 210.');
     });
 
     it('sin ficha se escribe lo que decía el cuerpo, sin inventar editorial', async () => {

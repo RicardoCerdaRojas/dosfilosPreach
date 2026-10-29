@@ -120,6 +120,8 @@ export async function exportPaperToDocx(
      * completa en cada nota no es un estilo más prolijo, es otro estilo.
      */
     const yaCitadas = new Set<string>();
+    /** La obra de la nota anterior: con la misma, «Ibid.». */
+    let ultimaClave: string | null = null;
     const blocks = parseMarkdownBlocks(markdown);
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
@@ -225,12 +227,19 @@ export async function exportPaperToDocx(
     function textoDeLaNota(author: string, pages: string | null, crudo: string): string {
         const clave = [...fichas.keys()].find(k => resolvesToCitedSource(author, [k]));
         const ficha = clave ? fichas.get(clave)! : null;
-        if (!ficha || !clave) return crudo;
+        // Una nota sin ficha corta la racha: el «Ibid.» siguiente sería ambiguo.
+        if (!ficha || !clave) { ultimaClave = null; return crudo; }
         const primera = !yaCitadas.has(clave);
         yaCitadas.add(clave);
+        // La misma obra que la nota inmediatamente anterior: «Ibid.», como
+        // admite la guía de TMS (y como salió el TI #1, notas 24, 40 y 44).
+        const repetida = !primera && ultimaClave === clave;
+        ultimaClave = clave;
         const nota = primera
             ? formatFirstNote(ficha, pages ?? undefined)
-            : formatShortNote(ficha, pages ?? undefined);
+            : repetida
+                ? (pages ? `Ibid., ${pages}` : 'Ibid.')
+                : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.
         return nota.endsWith('.') ? nota : `${nota}.`;
@@ -247,7 +256,7 @@ export async function exportPaperToDocx(
                     // tres notas y empuja el texto fuera de la página.
                     spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 120 },
                     indent: { firstLine: TMS.firstLineIndent },
-                    children: textRuns(citationText, { size: TMS.footnoteHalfPt }),
+                    children: noteRuns(citationText),
                 }),
             ],
         };
@@ -316,6 +325,24 @@ export function typographicQuotes(text: string): string {
         .replace(/(^|[\s([«“])'(?=\p{L})/gu, '$1\u2018')
         // El resto —entre letras, al final de una palabra— es apóstrofo o cierre.
         .replace(/'/g, '\u2019');
+}
+
+/**
+ * El texto de una nota, con el título de la obra en cursiva. La nota
+ * Turabian llega con el título entre asteriscos (`*Psalms 1-50*`, igual que
+ * en pantalla); un run plano los dejaba impresos en el Word.
+ */
+function noteRuns(text: string): TextRun[] {
+    const size = TMS.footnoteHalfPt;
+    const runs: TextRun[] = [];
+    let cursor = 0;
+    for (const m of text.matchAll(ITALIC_PATTERN)) {
+        if (m.index > cursor) runs.push(...textRuns(text.slice(cursor, m.index), { size }));
+        runs.push(...textRuns(m[1] ?? '', { size, italics: true }));
+        cursor = m.index + m[0].length;
+    }
+    if (cursor < text.length) runs.push(...textRuns(text.slice(cursor), { size }));
+    return runs;
 }
 
 function textRuns(text: string, options: { size?: number; bold?: boolean; italics?: boolean } = {}): TextRun[] {
