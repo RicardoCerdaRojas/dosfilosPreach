@@ -24,6 +24,7 @@ import {
     hasCover,
     TMS_COVER_STYLE,
     type CoverStyle,
+    type IbidRules,
     resolvesToCitedSource,
     type BibliographyEntry,
     type ExegeticalPaper,
@@ -77,6 +78,11 @@ export async function exportPaperToDocx(
         bibliography?: ReadonlyArray<BibliographyEntry>;
         /** Cómo arma la portada la guía del trabajo; sin ella, la de TMS. */
         coverStyle?: CoverStyle;
+        /**
+         * El «Ibid.» de la guía del trabajo: si lo admite, con qué rótulo y
+         * si lleva página distinta. Sin guía, el de TMS («Ibid.», con página).
+         */
+        ibid?: IbidRules;
     } = {},
 ): Promise<Blob> {
     const exportedAt = options.exportedAt ?? new Date();
@@ -120,6 +126,8 @@ export async function exportPaperToDocx(
      * completa en cada nota no es un estilo más prolijo, es otro estilo.
      */
     const yaCitadas = new Set<string>();
+    const ibid = options.ibid ?? { enabled: true, label: 'Ibid.', allowPageOverride: true };
+    const rotuloIbid = ibid.label.trim() || 'Ibid.';
     /** La obra de la nota anterior: con la misma, «Ibid.». */
     let ultimaClave: string | null = null;
     let ultimaPagina: string | null = null;
@@ -234,8 +242,12 @@ export async function exportPaperToDocx(
         yaCitadas.add(clave);
         // La misma obra que la nota inmediatamente anterior: «Ibid.», como
         // admite la guía de TMS (y como salió el TI #1, notas 24, 40 y 44).
-        const repetida = !sinIbid && !primera && ultimaClave === clave;
+        // Sin página detrás de una nota con página, «Ibid.» solo diría «la
+        // misma página»: va la abreviada. Y lo que la guía no admite, tampoco.
         const pagina = pages?.trim() || null;
+        const repetida = ibid.enabled && !sinIbid && !primera && ultimaClave === clave
+            && !(pagina === null && ultimaPagina !== null)
+            && (pagina === ultimaPagina || ibid.allowPageOverride);
         // Turabian: la misma página que la nota anterior, «Ibid.» solo.
         const mismaPagina = repetida && pagina === ultimaPagina;
         ultimaClave = clave;
@@ -244,7 +256,7 @@ export async function exportPaperToDocx(
             ? formatFirstNote(ficha, pages ?? undefined)
             : repetida
                 // En cursiva, como el ejemplo de la guía de TMS (hoja 22): «² *Ibid.*, 12».
-                ? (pagina && !mismaPagina ? `*Ibid.*, ${pagina}` : '*Ibid.*')
+                ? (pagina && !mismaPagina ? `*${rotuloIbid}*, ${pagina}` : `*${rotuloIbid}*`)
                 : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.

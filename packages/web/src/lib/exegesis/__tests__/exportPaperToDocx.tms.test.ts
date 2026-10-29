@@ -334,6 +334,38 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         expect(notas).not.toContain('Ibid..');
     });
 
+    it('REGRESIÓN: una nota sin página detrás de una con página no es «Ibid.» solo (diría «la misma página»)', async () => {
+        const { notas } = await exportarConDos('Uno (Ross, p. 565). Dos (Ross, "A Commentary on the Psalms").');
+        expect(notas).not.toContain('Ibid.');
+        expect(notas).toContain('Ross, Commentary on the Psalms.');
+    });
+
+    describe('el «Ibid.» lo decide la guía del trabajo', () => {
+        const exportarRoss = async (ibid: { enabled: boolean; label: string; allowPageOverride: boolean }) => {
+            const blob = await exportPaperToDocx(paper({
+                sources: [{ id: 's1', citationKey: 'Ross' }] as never,
+                assembledMarkdown: ['## Versículo 1', '', 'Uno (Ross, p. 565). Dos (Ross, p. 565). Tres (Ross, p. 566).'].join('\n'),
+            }), { exportedAt: new Date('2026-09-17'), ibid, bibliography: [{ citationKey: 'Ross', displayLabel: 'C', text: 'y', missing: [], data: ROSS_FICHA }] });
+            return (await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string')).replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        };
+
+        it('REGRESIÓN: una guía que no admite «Ibid.» (SBL) da la forma abreviada', async () => {
+            const notas = await exportarRoss({ enabled: false, label: 'Ibid.', allowPageOverride: true });
+            expect(notas).not.toContain('Ibid');
+            expect(notas).toMatch(/Ross, Commentary on the Psalms, 565\.\s*Ross, Commentary on the Psalms, 566\./);
+        });
+
+        it('usa el rótulo de la guía', async () => {
+            const notas = await exportarRoss({ enabled: true, label: 'Ibíd.', allowPageOverride: true });
+            expect(notas).toMatch(/2011\), 565\.\s*Ibíd\.\s*Ibíd\., 566\./);
+        });
+
+        it('sin «Ibid.» con otra página, la página distinta va con la forma abreviada', async () => {
+            const notas = await exportarRoss({ enabled: true, label: 'Ibid.', allowPageOverride: false });
+            expect(notas).toMatch(/2011\), 565\.\s*Ibid\.\s*Ross, Commentary on the Psalms, 566\./);
+        });
+    });
+
     it('«Ibid.» va en cursiva, como el ejemplo de la guía de TMS', async () => {
         const blob = await exportPaperToDocx(paper({
             sources: [{ id: 's1', citationKey: 'Ross' }] as never,

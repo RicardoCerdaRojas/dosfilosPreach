@@ -222,6 +222,12 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
 4. Verificar la ficha de Niccacci contra la portada del PDF.
 5. Decisiones del fundador (§5).
 
+**Hallado en la revisión adversarial de la etapa 0 (2026-10-29).** Se corrigió en el mismo PR lo que el diff introducía: el «Ibid.» ignoraba `footnotes.ibid` de la guía; una nota sin página tras una con página salía «Ibid.» solo; `shortAuthor` partía «Ramón y Cajal, Santiago», entidades con «y», tres autores y coautores con «Jr.»; el prompt de la conclusión daba por tesis la del encuadre. Queda para la etapa 1, porque ya estaba antes (leído con sondas sobre el exportador):
+- `Como dice Ross (p. 565)` → «Como dice ¹»: el nombre del autor desaparece de la prosa.
+- `(Ross, 565; Génesis 19, 25)` → una sola nota a Ross con página 25: la forma con título sin comillas toma «565; Génesis 19» como título.
+- `(Ross, Commentary, 565; Craigie, 12)` → la parte de Ross queda en la prosa y solo Craigie baja a nota.
+- Dudas sin confirmar: la conjunción se copia de la ficha («Arnold and Choi» en un trabajo en español; la guía espera «y»); «Keil and Delitzsch» sale con un solo apellido; el manifiesto en JSON del prompt sigue diciendo `ibid.enabled: true` junto a «NUNCA Ibid» (en la prosa no aplica); la llamada pegada a hebreo RTL falta verla en Word.
+
 ### Etapa 1 · El Word como lo pide TMS y como salió el TI #1 (L)
 **Por qué:**
 - el formato es la única corrección de forma que hizo el profesor en el TI #1;

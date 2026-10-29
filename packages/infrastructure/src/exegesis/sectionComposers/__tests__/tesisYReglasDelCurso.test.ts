@@ -58,6 +58,14 @@ describe('la conclusión vuelve a la tesis', () => {
         expect(s).toContain('NO enumeres las traducciones elegidas');
         expect(s).toContain('Termina con una oración que vuelva a la tesis');
     });
+
+    it('la tesis del encuadre es hipótesis; la de la indicación, decisión del autor (no se contradicen)', () => {
+        for (const lang of ['es', 'en'] as const) {
+            const s = buildConclusionPrompt(base(lang, null) as unknown as ComposeConclusionInput).systemInstruction;
+            expect(s).toMatch(lang === 'es' ? /Una tesis del encuadre es una hipótesis/ : /A thesis in the assignment brief is a hypothesis/);
+            expect(s).not.toMatch(lang === 'es' ? /Si el encuadre o la indicación/ : /If the assignment brief or the regeneration hint/);
+        }
+    });
 });
 
 describe('la introducción termina con la tesis de la conclusión', () => {

@@ -240,8 +240,9 @@ function renderCitation(input: RenderInput): string {
         // En la prosa, «Ibid.» nunca: va la forma abreviada, con el autor.
         // Un «(Ibid., 567)» no lo resuelve el verificador (TI #2, 23:4–23:6:
         // una alarma «no encontrada» por cada uno) y depende de qué cita
-        // quede antes al ensamblar. El «Ibid.» de la guía lo pone el
-        // exportador, sobre el orden final de las notas.
+        // quede antes al ensamblar. El «Ibid.» lo pone el exportador del
+        // Word, sobre el orden final de las notas y con `footnotes.ibid` de
+        // la guía del trabajo (`ExegesisPaperPage` → `exportPaperToDocx`).
         const tpl = manifest.footnotes.subsequentMentionTemplate;
         return wrap(substituteTemplate(tpl, source, pages));
     }
