@@ -391,6 +391,35 @@ Y marca, sin modelo:
 3. Ortografía de la BHS extraída: medir la vocalización, y la búsqueda de צַלְמָוֶת y וְשַׁבְתִּי.
 
 ### Etapa 7 · La devolución alimenta el trabajo siguiente (M)
+0. **La guía en tres capas (decidido por el fundador el 2026-10-29; reemplaza el punto 4).**
+
+   **Por qué:** hoy un trabajo apunta a UNA guía por id, sin copia al crearse (`CreateExegeticalPaperUseCase.ts:126`); la copia solo nace al volver a elegir la guía (`SetPaperStyleGuideUseCase.ts:32-67`). NT785 y OT603 apuntan a la misma, así que las reglas del profesor de griego rigen en hebreo, y un cambio en la guía alcanza a los trabajos ya entregados. `AddRuleToStyleGuideUseCase` escribe la regla del profesor en esa guía compartida. Además, sin guía, el servidor cae a TMS y el navegador a la guía activa del usuario (`useEffectiveStyleGuide.ts:10-13`): no coinciden.
+
+   **El modelo:**
+   | Capa | Qué tiene | Dónde vive | A quién alcanza un cambio |
+   |---|---|---|---|
+   | Institución | la guía de TMS (notas, portada, bibliografía, reglas de Turabian) | la guía (`UserStyleGuide`) | todos los cursos que la usan |
+   | Mías | la forma de escribir del estudiante | el usuario | todos sus trabajos, de cualquier curso |
+   | Curso | lo que pide el profesor, salido de sus devoluciones | el curso (`ai_projects`) | solo los trabajos de ese curso |
+
+   - Una sola función arma las reglas vigentes (institución + mías + curso) y la usan el servidor y el navegador.
+   - Si dos reglas chocan, gana la del curso: el profesor califica. El choque se muestra; no se resuelve en silencio.
+   - «Pasar a la guía» desde una devolución escribe en la capa del **curso**. Desde ahí se puede subir a «Mías» si el estudiante la quiere en todos sus cursos.
+   - Un trabajo **en curso** lee las reglas vigentes y avisa cuando se agrega una. Al **entregarlo**, se congela la copia con las reglas de ese día: un trabajo entregado no cambia nunca, y la devolución se lee contra las reglas con que se escribió.
+   - Un proyecto sin curso (serie de sermones, proyecto exegético) usa solo institución y mías.
+   - Las copias que ya existen se respetan hasta que se refresquen.
+
+   **Migración de «Guia Test 2026»** (propuesta por origen; el fundador confirma regla por regla, con el texto leído de producción):
+   | Reglas | Origen | Capa propuesta |
+   |---|---|---|
+   | 1–8 | Turabian y TMS | Institución |
+   | 9–17 | profesor de griego (TP #7) | Curso NT785. Las 11, 12 y 13 se aplicaron en el TI #2 de hebreo: candidatas a «Mías» |
+   | 18–21 | fortalezas del TI #1 de hebreo | Curso OT603 |
+   | 22 | vocabulario, de las correcciones del fundador | Mías |
+
+   **Descartado:** una copia completa de la guía por curso (la parte de TMS se desfasa entre copias); herencia de guías con bifurcación (lo mismo, más complejo, y no separa «mías» de «curso»).
+
+   **Mide:** con los TP de NT785 y el TI de OT603, el prompt de cada uno lleva solo sus reglas de curso, más las de institución y las mías; un trabajo entregado conserva sus reglas aunque se edite la guía.
 1. **Las fortalezas como reglas «a mantener».** Pasar a la guía las 4 que siguen `pending` y que el profesor elogió:
    - cierre que vuelve a la tesis;
    - transparencia metodológica;
@@ -399,7 +428,7 @@ Y marca, sin modelo:
    - Con el OK del fundador, desde la pantalla.
 2. **Patrón «Erratas».** Una marca sin texto («afimar») se importa como errata, no se descarta.
 3. **La copia de la guía se refresca:** al agregar una regla, el sistema ofrece aplicarla a los trabajos abiertos que tienen copia (`SetPaperStyleGuideUseCase`).
-4. **Una guía por curso, o una base común más las reglas del curso** (§5). Hoy NT785 y OT603 comparten «Guia Test 2026».
+4. ~~Una guía por curso, o una base común más las reglas del curso~~: resuelto en 7.0.
 5. **La devolución del trabajo anterior como contexto del revisor.** Lo que el profesor corrigió una vez se vigila en el siguiente: espaciado, apóstrofo y errata en el TI #1.
 
 ### Etapa 8 · Flujo y pantallas (M)
@@ -454,13 +483,13 @@ Se cuenta lo mismo que en el TI #2. La fase cumple si:
 
 ## 5. Decisiones del fundador antes de empezar
 
-1. **¿Separamos la guía por curso?** Hebreo y griego comparten hoy las reglas 2–17, que nacieron del profesor de griego.
-2. **Las «doce páginas» ya tienen interpretación.** Byblos tiene una entrada del 2026-09-17, del TI #1: 12 páginas de **cuerpo**, sin portada, contenido ni bibliografía, unas 3.000 palabras con alrededor de 50 notas. Con esa interpretación, el TI #2 quedó corto: 11 páginas de cuerpo, 2.740 palabras y 34 notas (medido). Solo falta confirmar que el criterio sigue vigente y, si se puede, preguntarlo al profesor.
+1. **¿Separamos la guía por curso?** Hebreo y griego comparten hoy las reglas 2–17, que nacieron del profesor de griego. **Decidido (2026-10-29): tres capas —institución, mías y curso— con copia congelada al entregar (etapa 7.0).**
+2. **Las «doce páginas» ya tienen interpretación.** Byblos tiene una entrada del 2026-09-17, del TI #1: 12 páginas de **cuerpo**, sin portada, contenido ni bibliografía, unas 3.000 palabras con alrededor de 50 notas. Con esa interpretación, el TI #2 quedó corto: 11 páginas de cuerpo, 2.740 palabras y 34 notas (medido). Solo falta confirmar que el criterio sigue vigente y, si se puede, preguntarlo al profesor. **Decidido (2026-10-29): sigue vigente, 12 páginas de cuerpo.**
 3. **P4:** al aplicar una corrección propuesta, ¿se vuelven a verificar las citas de esa oración? Hoy una edición manual no las verifica, a propósito.
-4. **Títulos temáticos:** ¿los propone el sistema y tú los apruebas, o los escribes tú y el sistema solo los revisa?
+4. **Títulos temáticos:** ¿los propone el sistema y tú los apruebas, o los escribes tú y el sistema solo los revisa? **Decidido (2026-10-29): el sistema propone y el estudiante aprueba.**
 5. **¿Pasamos a la guía las 4 fortalezas pendientes** (etapa 7.1) y el «Cierre que vuelve a la tesis»?
 6. **Rangos de páginas abreviados («567–68»):** se confirma con la guía antes de cambiarlos.
-7. **Orden de las etapas:** el propuesto es 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Si el TI #3 tiene fecha cercana, lo mínimo es 0, 1, 2 y 4.1–4.3. Esas etapas eliminan los defectos medidos del Word y la mayor parte de las correcciones humanas.
+7. **Orden de las etapas:** el propuesto es 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Si el TI #3 tiene fecha cercana, lo mínimo es 0, 1, 2 y 4.1–4.3. Esas etapas eliminan los defectos medidos del Word y la mayor parte de las correcciones humanas. **Decidido (2026-10-29): el orden completo, 0 → 8.**
 
 ## 6. Crítica previa
 
