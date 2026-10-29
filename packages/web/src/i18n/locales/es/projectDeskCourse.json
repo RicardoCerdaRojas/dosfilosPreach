@@ -392,5 +392,18 @@
     "calendar": "se abre cuando definas los tipos de trabajo: cada entrega nace con su tipo",
     "works": "se abre con el calendario: cada trabajo cumple una entrega",
     "feedback": "se abre cuando entregues el primer trabajo: aquí registras lo que devuelve el profesor"
+  },
+  "feedbackSummary": {
+    "title": "Devolución de {{label}}",
+    "delivered": "Entregado el {{date}}",
+    "returned": "devuelto el {{date}}",
+    "grade": "nota {{grade}}",
+    "professorText": "Lo que escribió el profesor",
+    "corrections": "Lo que corrigió",
+    "strengths": "Lo que hay que mantener",
+    "none": "Nada en este grupo.",
+    "pattern": "Patrón: {{name}}",
+    "openWork": "Abrir el trabajo",
+    "edit": "Editar la devolución"
   }
 }

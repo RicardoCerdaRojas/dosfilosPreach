@@ -410,6 +410,7 @@ describe('el escritorio del Curso', () => {
             pintar();
             const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
             fireEvent.click(within(tp7).getByText('works.editFeedback'));
+            fireEvent.click(screen.getByText('feedbackSummary.edit'));
             const dialogo = screen.getByRole('dialog');
             expect(within(dialogo).queryByText('feedbackDialog.none')).toBeNull();
             // Editar conserva el texto, la nota y las correcciones con su id.
@@ -421,6 +422,7 @@ describe('el escritorio del Curso', () => {
             pintar();
             const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
             fireEvent.click(within(tp7).getByText('works.editFeedback'));
+            fireEvent.click(screen.getByText('feedbackSummary.edit'));
             fireEvent.click(within(screen.getByRole('dialog')).getByText('feedbackDialog.clear'));
             expect(mutateAsync).not.toHaveBeenCalled();
             const alerta = screen.getByRole('alertdialog');
@@ -445,6 +447,7 @@ describe('el escritorio del Curso', () => {
             pintar();
             const tp7 = screen.getAllByTestId('course-works-row').find(f => f.textContent?.includes('TP #7'))!;
             fireEvent.click(within(tp7).getByText('works.editFeedback'));
+            fireEvent.click(screen.getByText('feedbackSummary.edit'));
             fireEvent.click(within(screen.getByRole('dialog')).getByText('feedbackDialog.save'));
             await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
             const fb = ops().courseOps[0].feedback;

@@ -314,10 +314,29 @@ describe('una observación a mano', () => {
         });
         pintar(project);
         fireEvent.click(screen.getByText('works.editFeedback'));
+        fireEvent.click(screen.getByText('feedbackSummary.edit'));
         const fila = within(screen.getByRole('dialog')).getByTestId('feedback-correction-row');
         fireEvent.click(within(fila).getByText('feedbackDialog.kind.strength'));
         expect((within(fila).getByRole('combobox') as HTMLSelectElement).value).toBe('__new');
         expect(within(fila).getByPlaceholderText('feedbackDialog.patternNamePlaceholder')).toHaveValue('');
+    });
+
+    it('REGRESIÓN: «Ver la devolución» abre el resumen para leerla; el editor queda dentro', () => {
+        const project = curso({
+            feedbackPatterns: [{ id: 'apo', name: 'Apóstrofe', decision: 'pending' }, { id: 'tc', name: 'Crítica textual', kind: 'strength', decision: 'pending' }],
+            courseSchedule: [entrada('e1', {
+                deliveredAt: '2026-09-20T20:00:00.000Z',
+                feedback: { receivedAt: '2026-09-25T10:00:00.000Z', text: 'x', grade: '98/100', corrections: [{ id: 'c1', patternId: 'apo', anchor: { page: '6' } }, { id: 'c2', patternId: 'tc' }] },
+            })],
+        });
+        pintar(project);
+        fireEvent.click(screen.getByText('works.editFeedback'));
+        const resumen = screen.getByTestId('feedback-summary-dialog');
+        expect(within(resumen).getByTestId('feedback-summary-corrections').querySelectorAll('li')).toHaveLength(1);
+        expect(within(resumen).getByTestId('feedback-summary-strengths').querySelectorAll('li')).toHaveLength(1);
+        expect(screen.queryByText('feedbackDialog.save')).toBeNull();
+        fireEvent.click(screen.getByText('feedbackSummary.edit'));
+        expect(screen.getByText('feedbackDialog.save')).toBeInTheDocument();
     });
 
     it('«Quitar la devolución» cuenta correcciones y fortalezas por separado', () => {
@@ -330,6 +349,7 @@ describe('una observación a mano', () => {
         });
         pintar(project);
         fireEvent.click(screen.getByText('works.editFeedback'));
+        fireEvent.click(screen.getByText('feedbackSummary.edit'));
         fireEvent.click(within(screen.getByRole('dialog')).getByText('feedbackDialog.clear'));
         expect(screen.getByRole('alertdialog')).toHaveTextContent('feedbackDialog.clearHint:feedbackDialog.clearCount.corrections:1feedbackDialog.clearAndfeedbackDialog.clearCount.strengths:2');
     });
@@ -344,6 +364,7 @@ describe('una observación a mano', () => {
         });
         pintar(project);
         fireEvent.click(screen.getByText('works.editFeedback'));
+        fireEvent.click(screen.getByText('feedbackSummary.edit'));
         const dialogo = screen.getByRole('dialog');
         expect(within(dialogo).getByDisplayValue("Waltke y O'Connor")).toBeInTheDocument();
         fireEvent.click(within(dialogo).getByText('feedbackDialog.save'));

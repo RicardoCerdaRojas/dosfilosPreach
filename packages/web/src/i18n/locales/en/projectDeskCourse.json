@@ -392,5 +392,18 @@
     "calendar": "opens once you define the kinds of work: each assignment is born with its kind",
     "works": "opens with the calendar: each work fulfills an assignment",
     "feedback": "opens when you submit the first work: here you record what the professor returns"
+  },
+  "feedbackSummary": {
+    "title": "Feedback on {{label}}",
+    "delivered": "Delivered {{date}}",
+    "returned": "returned {{date}}",
+    "grade": "grade {{grade}}",
+    "professorText": "What the professor wrote",
+    "corrections": "What was corrected",
+    "strengths": "What to keep doing",
+    "none": "Nothing in this group.",
+    "pattern": "Pattern: {{name}}",
+    "openWork": "Open the work",
+    "edit": "Edit the feedback"
   }
 }

@@ -9,6 +9,7 @@ import { CourseCalendarSection } from './course/CourseCalendarSection';
 import { CourseWorksTable } from './course/CourseWorksTable';
 import { CourseFeedbackSection } from './course/CourseFeedbackSection';
 import { CourseFeedbackDialog } from './course/CourseFeedbackDialog';
+import { CourseFeedbackSummary } from './course/CourseFeedbackSummary';
 import { CourseImportDialog } from './course/CourseImportDialog';
 import { useCourseOps } from './course/useCourseOps';
 
@@ -40,6 +41,8 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
     const ops = useCourseOps(project.id);
     const { run, pending } = ops;
     const [propio, setPropio] = useState<string | null>(null);
+    // Una devolución ya registrada se lee primero; el editor queda dentro del resumen.
+    const [resumenDe, setResumenDe] = useState<string | null>(null);
     const controlado = feedbackEntryId !== undefined;
     const feedbackFor = controlado ? feedbackEntryId : propio;
     const setFeedbackFor = (id: string | null) => { if (!controlado) setPropio(id); onFeedbackEntryChange?.(id); };
@@ -94,6 +97,7 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
             entregado ? 'toast.delivered' : 'toast.undelivered',
         );
     const abrirDevolucion = (r: DeskScheduleRow) => setFeedbackFor(r.entryId);
+    const entradaResumen = resumenDe ? (project.courseSchedule ?? []).find(e => e.id === resumenDe) ?? null : null;
     const entradaDevolucion = feedbackFor ? (project.courseSchedule ?? []).find(e => e.id === feedbackFor) ?? null : null;
     const fuentes = fase('sources');
 
@@ -137,6 +141,7 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
                         course={course}
                         onMarkDelivered={marcarEntregado}
                         onRecordFeedback={abrirDevolucion}
+                        onViewFeedback={r => setResumenDe(r.entryId)}
                         onImport={() => setImportOpen(true)}
                         onEditEntry={r => setEntradaEditada(r.entryId)}
                         saving={pending}
@@ -154,6 +159,14 @@ export function CourseDeskSections({ project, desk, feedbackEntryId, onFeedbackE
                 </DeskSection>
             )}
 
+            <CourseFeedbackSummary
+                entry={entradaResumen}
+                patterns={project.feedbackPatterns ?? []}
+                projectId={project.id}
+                open={!!entradaResumen}
+                onOpenChange={o => { if (!o) setResumenDe(null); }}
+                onEdit={() => { const id = resumenDe; setResumenDe(null); if (id) setFeedbackFor(id); }}
+            />
             <CourseFeedbackDialog
                 entry={entradaDevolucion}
                 patterns={project.feedbackPatterns ?? []}
