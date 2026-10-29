@@ -268,7 +268,7 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         const n = await notasDe('Primero (Craigie, p. 206). Después (Craigie, p. 210).');
         expect(n).toContain('Peter C. Craigie');
         expect((n.match(/Word Books/g) ?? []).length).toBe(1);
-        expect(n).toContain('Ibid., 210.');
+        expect(n.replace(/<[^>]+>/g, '')).toContain('Ibid., 210.');
     });
 
     it('REGRESIÓN: «Ibid.» solo cuando la nota anterior es de la misma obra; si no, la abreviada', async () => {
@@ -326,6 +326,17 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
     it('Turabian: la misma página que la nota anterior es «Ibid.» solo', async () => {
         const { notas } = await exportarConDos('Uno (Ross, p. 565). Dos (Ross, p. 565). Tres (Ross, p. 566).');
         expect(notas).toMatch(/2011\), 565\.\s*Ibid\.\s*Ibid\., 566\./);
+        expect(notas).not.toContain('Ibid..');
+    });
+
+    it('«Ibid.» va en cursiva, como el ejemplo de la guía de TMS', async () => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Versículo 1', '', 'Uno (Ross, p. 565). Dos (Ross, p. 566).'].join('\n'),
+        }), { exportedAt: new Date('2026-09-17'), bibliography: [{ citationKey: 'Ross', displayLabel: 'C', text: 'y', missing: [], data: ROSS_FICHA }] });
+        const xml = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        expect(xml).toMatch(/<w:i\/>(?:(?!<\/w:r>).)*<w:t[^>]*>Ibid\.<\/w:t>/s);
+        expect(xml.replace(/<[^>]+>/g, '')).toContain('Ibid., 566.');
     });
 
     it('REGRESIÓN: una nota sin ficha entre dos de la misma obra corta la racha del «Ibid.»', async () => {

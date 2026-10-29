@@ -243,11 +243,13 @@ export async function exportPaperToDocx(
         const nota = primera
             ? formatFirstNote(ficha, pages ?? undefined)
             : repetida
-                ? (pagina && !mismaPagina ? `Ibid., ${pagina}` : 'Ibid.')
+                // En cursiva, como el ejemplo de la guía de TMS (hoja 22): «² *Ibid.*, 12».
+                ? (pagina && !mismaPagina ? `*Ibid.*, ${pagina}` : '*Ibid.*')
                 : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.
-        return nota.endsWith('.') ? nota : `${nota}.`;
+        // «*Ibid.*» ya termina en punto, aunque detrás venga el cierre de la cursiva.
+        return /\.\*?$/.test(nota) ? nota : `${nota}.`;
     }
 
     function registerFootnote(citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>): number {
