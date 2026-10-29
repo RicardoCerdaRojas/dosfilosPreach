@@ -849,7 +849,7 @@ describe('exportPaperToDocx — niveles de encabezado de la guía de TMS (hoja 1
         const doc = await xmlOf(ensamblado(), 'word/document.xml');
         expect(nivelDe(doc, 'Análisis sintáctico y léxico')).toBe('Heading1');
         expect(nivelDe(doc, 'Introducción')).toBe('Heading1');
-        expect(nivelDe(doc, 'Salmos 23:4')).toBe('Heading1');
+        expect(nivelDe(doc, 'Salmo 23:4')).toBe('Heading1');
         expect(nivelDe(doc, 'La vara y el cayado')).toBe('Heading2');
         expect(nivelDe(doc, 'Conclusión')).toBe('Heading1');
     });

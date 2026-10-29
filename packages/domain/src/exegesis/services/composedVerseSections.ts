@@ -169,7 +169,8 @@ function headingNames(headingText: string, normalizedKey: string): boolean {
  * Así «### Santiago 1:2 — La prueba» encuentra la clave «Santiago 1:2».
  */
 function normalizeHeading(text: string): string {
-    return text
+    // «## Salmos 23:4», guardado antes de B68a, es la sección de «Salmo 23:4».
+    return sameBookNameForPsalms(text)
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
@@ -315,4 +316,5 @@ function reemplazaTramo(assembled: string, inicio: number, fin: number, body: st
     const nuevo = `${body}\n\n${separador}`;
     if (viejo.trim() === nuevo.trim()) return assembled;
     return `${assembled.slice(0, inicio)}${nuevo}${assembled.slice(fin)}`;
-}
+}import { sameBookNameForPsalms } from '../../bible/canon/psalmName';
+

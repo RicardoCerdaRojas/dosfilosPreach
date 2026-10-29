@@ -245,6 +245,7 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
 2. **«Salmo» para un solo salmo (B68a).**
    - *Dónde:* `formatPassageReference` (`passage-reference.ts:326`, `BibleCanon.ts:141`).
    - *Riesgo:* 153 llamadas; `sectionHeadings` y `replaceVerseSection` buscan el rótulo escrito. Se aceptan las dos formas al leer y se escribe la nueva.
+   - **Hecho (2026-10-29).** `formatPassageReference` escribe «Salmo 23:4» / «Psalm 23:4» con un solo salmo; un rango de salmos sigue en plural. Una auditoría de los llamadores encontró tres lugares que comparan con texto guardado y que se habrían roto en un trabajo sobre un salmo: la huella de extracción de cada fuente (todas habrían salido «desactualizadas», y «Re-extraer» reemplaza las páginas elegidas), la búsqueda de la sección en el ensamble al recomponer un versículo, y el aviso de edición a mano del ensamble. Los tres, más la búsqueda de la lista de trabajos, comparan con `sameBookNameForPsalms`, que trata «Salmo» y «Salmos» como el mismo libro. El analizador lee las dos formas (alias de `BibleCanon.ts:142`).
 3. **«CONTENIDO» automático y paginación por secciones, como pide la guía (B68b).**
 
    La guía (leída, hojas 8, 10, 17 y 57) arma el documento en cuatro secciones, cada una con su numeración:

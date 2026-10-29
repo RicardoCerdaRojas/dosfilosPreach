@@ -177,6 +177,19 @@ describe('assemblyHandEdit — el ensamble editado a mano (B33)', () => {
         expect(assemblyHandEdit(conEnsamble(v, 'awaiting-review'))).toEqual({ verified: true });
     });
 
+    it('REGRESIÓN B68a: un ensamble guardado con «Salmos 23:4» no cuenta como edición a mano', () => {
+        const salmo = {
+            title: '', displayLanguage: 'es',
+            passage: { bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 4, verseEnd: 6 },
+            steps: [{ id: 'v4', kind: 'verse', order: 4, verseRef: { bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 4, verseEnd: 4 }, accepted: { markdown: 'Prosa del cuatro.' } }],
+        } as unknown as ExegeticalPaper;
+        const nuevo = assembleMarkdown(salmo, 'es');
+        expect(nuevo).toContain('## Salmo 23:4');
+        const guardado = nuevo.replace(/Salmo 23/g, 'Salmos 23');
+        const conEdicion = { ...salmo, steps: [...salmo.steps, { id: 'a', kind: 'assembly', order: 99, verseRef: null, state: 'accepted', accepted: { origin: 'edited', markdown: guardado }, current: { origin: 'edited', markdown: guardado } }] } as unknown as ExegeticalPaper;
+        expect(assemblyHandEdit(conEdicion)).toBeNull();
+    });
+
     it('el ensamble generado, o una edición que dejó el mismo texto, no avisan', () => {
         expect(assemblyHandEdit(conEnsamble({ origin: 'generated', markdown: 'Otro texto.' }))).toBeNull();
         const igual = conEnsamble(null);

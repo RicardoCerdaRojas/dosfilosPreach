@@ -69,7 +69,7 @@ describe.each([
 
     it('conserva los análisis de los tres versos', () => {
         const { userMessage } = build(2, 900_000);
-        for (const v of [1, 2, 3]) expect(userMessage).toContain(`Salmos 23:${v}`);
+        for (const v of [1, 2, 3]) expect(userMessage).toContain(`Salmo 23:${v}`);
     });
 
     it('reparte el presupuesto: cada fuente asignada aparece con contenido', () => {

@@ -1,4 +1,5 @@
 import { briefForQuery } from '../services/assignmentBriefWindows';
+import { sameBookNameForPsalms } from '../../bible/canon/psalmName';
 import type { SourceType } from './SourceType';
 import type { SourceRole } from './StepSourcePlan';
 import { isCitableSourceType } from './SourceType';
@@ -358,10 +359,14 @@ export function isExcerptSetStale(
     // viejas un cambio de PASAJE. En el TP #7 agregar «(Stg. 3:15)» a una
     // pregunta marcó desactualizadas las siete fuentes, y «Re-extraer» sobre
     // una con páginas las habría reemplazado por búsqueda semántica (#21).
+    // Una huella guardada con «salmos 23» es la misma que «salmo 23» (B68a):
+    // sin esto, todas las fuentes de un trabajo sobre un salmo saldrían viejas.
+    const guardada = sameBookNameForPsalms(source.extractionFingerprint);
+    const viva = sameBookNameForPsalms(actual);
     if ((source.excerptRecipe?.sheetRanges.length ?? 0) > 0) {
-        return pasajeDeLaHuella(source.extractionFingerprint) !== pasajeDeLaHuella(actual);
+        return pasajeDeLaHuella(guardada) !== pasajeDeLaHuella(viva);
     }
-    return source.extractionFingerprint !== actual;
+    return guardada !== viva;
 }
 
 /** `v1|santiago 3:13-18|…` → `santiago 3:13-18`. */

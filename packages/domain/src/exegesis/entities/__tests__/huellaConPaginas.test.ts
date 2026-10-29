@@ -24,6 +24,14 @@ describe('isExcerptSetStale', () => {
     it('con páginas elegidas, un cambio de pasaje sí', () => {
         expect(isExcerptSetStale(conPaginas, { passageRef: 'Santiago 3:13-4:3', assignmentBrief: viejo })).toBe(true);
     });
+    it('REGRESIÓN B68a: una huella guardada con «salmos 23:4-6» sigue vigente con «Salmo 23:4-6»', () => {
+        const vieja = computeExtractionFingerprint('Salmos 23:4-6', viejo);
+        for (const fuente of [{ ...conPaginas, extractionFingerprint: vieja }, { ...porPasaje, extractionFingerprint: vieja }]) {
+            expect(isExcerptSetStale(fuente, { passageRef: 'Salmo 23:4-6', assignmentBrief: viejo })).toBe(false);
+            // Otro salmo sí la vuelve vieja.
+            expect(isExcerptSetStale(fuente, { passageRef: 'Salmo 24:4-6', assignmentBrief: viejo })).toBe(true);
+        }
+    });
     it('extraída por el pasaje, el encuadre sigue contando: cambia la consulta', () => {
         expect(isExcerptSetStale(porPasaje, { passageRef: PASAJE, assignmentBrief: nuevo })).toBe(true);
         expect(isExcerptSetStale(porPasaje, { passageRef: PASAJE, assignmentBrief: viejo })).toBe(false);
