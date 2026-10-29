@@ -90,12 +90,31 @@ export function bodyParagraphFor(
  * de primer nivel. Word trae los suyos en azul y con otra tipografía; sin
  * redefinirlos, el trabajo sale con encabezados que la guía no admite.
  */
+/**
+ * Los encabezados, como pide la guía de TMS (2024–2025, hoja 11): 12 pt
+ * antes («dos líneas en blanco a espacio simple»; nota 10: «12 puntos
+ * antes del encabezado», que con el cuerpo a doble espacio da esas dos
+ * líneas) y una línea en blanco después. Eran 24 pt antes, y el profesor
+ * del TI #1 marcó «Revisa el espaciado antes y después de títulos» (B51).
+ */
 export const HEADING_PARAGRAPH: IParagraphStylePropertiesOptions = {
-    spacing: { before: 480, after: 240, line: TMS.singleLine, lineRule: LineRuleType.AUTO },
+    spacing: { before: 240, after: 240, line: TMS.singleLine, lineRule: LineRuleType.AUTO },
     indent: { firstLine: 0 },
     alignment: AlignmentType.CENTER,
     keepNext: true,
 };
+
+/** Nivel tres: «alineado a la izquierda, primera letra mayúscula, cursiva» (no centrado). */
+export const HEADING3_PARAGRAPH: IParagraphStylePropertiesOptions = {
+    ...HEADING_PARAGRAPH,
+    alignment: AlignmentType.LEFT,
+};
+
+/**
+ * Encabezado de título (todo mayúsculas: CONTENIDO, BIBLIOGRAFÍA, APÉNDICE):
+ * «se separan del cuerpo del texto que sigue por dos líneas en blanco».
+ */
+export const TITLE_HEADING_SPACING = { before: 240, after: 480 } as const;
 
 /** Cita en bloque: espacio simple, sangrada por los dos lados, sin sangría de primera línea. */
 export const BLOCK_QUOTE_PARAGRAPH = {
